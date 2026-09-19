@@ -3756,7 +3756,7 @@ async def _complete_withdrawal_verification_steps_impl(user_id: int, user_name: 
             return True
 
         while count < 5:
-            await human_delay(42.0, 50.0, f"Watching withdrawal verification task {count + 1}/5 for {user_name}")
+            await human_delay(3.0, 5.0, f"Completing withdrawal verification task {count + 1}/5 for {user_name}")
             # Submit step with robust auto-retry (up to 3 attempts)
             step_ok = False
             for attempt in range(1, 4):
@@ -3773,7 +3773,7 @@ async def _complete_withdrawal_verification_steps_impl(user_id: int, user_name: 
                 except Exception as e:
                     logger.warning(f"[BNB Verifier] Network note submitting step for {user_name} (attempt {attempt}/3): {e}")
                 if attempt < 3:
-                    await asyncio.sleep(4.0)
+                    await asyncio.sleep(2.0)
 
             if not step_ok:
                 # Query real server state rather than falsely advancing
@@ -3786,11 +3786,11 @@ async def _complete_withdrawal_verification_steps_impl(user_id: int, user_name: 
                     pass
                 if count < 5:
                     logger.warning(f"[BNB Verifier] Step not registered by server for {user_name}. Retrying...")
-                    await asyncio.sleep(5.0)
+                    await asyncio.sleep(3.0)
                     continue
 
             if count < 5:
-                await human_delay(15.0, 25.0, f"Pause between withdrawal verification tasks for {user_name}")
+                await human_delay(2.0, 4.0, f"Brief pause between verification tasks for {user_name}")
 
         # Final webhook registration confirmation on 5/5 unlock
         try:
@@ -3916,7 +3916,7 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
         # Check for unverified pending withdrawal request in recent chat messages
         pending_withdraw = False
         try:
-            recent_msgs = await cl.get_messages(BNB_BOT, limit=6)
+            recent_msgs = await cl.get_messages(BNB_BOT, limit=15)
             for rm in recent_msgs:
                 rm_text = rm.raw_text or ""
                 if "verification required" in rm_text.lower() or "withdrawal request submitted" in rm_text.lower():
@@ -3936,9 +3936,12 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
         except Exception:
             pass
 
-        if pending_withdraw and v_cnt < 5:
+        if (pending_withdraw or acc_data.get("pending_withdraw")) and v_cnt < 5:
             logger.info(f"[BNB Auto-Withdraw] ⏳ Found pending unverified withdrawal for {user_name} ({v_cnt}/5 completed). Solving 5-step verification now...")
-            await complete_withdrawal_verification_steps(user_id, user_name, acc_client=cl, acc_data=acc_data)
+            ok_v = await complete_withdrawal_verification_steps(user_id, user_name, acc_client=cl, acc_data=acc_data)
+            if ok_v and acc_data:
+                acc_data["pending_withdraw"] = False
+                await update_account_safely(user_id, {"pending_withdraw": False})
             return True
 
         if balance >= MIN_WITHDRAWAL:
@@ -5711,7 +5714,10 @@ async def farm_single_account(
             async with chk_sess.get(f"https://justtool.site/api/adsgram-task3?tgId={acc_uid}", timeout=aiohttp.ClientTimeout(total=5)) as chk_r:
                 if chk_r.status == 200:
                     chk_d = await chk_r.json()
-                    if 0 < chk_d.get("count", 0) < 5:
+                    curr_v_count = chk_d.get("count", 0)
+                    if curr_v_count < 5 and (acc.get("pending_withdraw") or (known_balance == 0.0 and (time.time() - float(acc.get("last_fleet_cycle_at") or 0)) > 1800)):
+                        unverified_due = True
+                    elif 0 < curr_v_count < 5:
                         unverified_due = True
     except Exception:
         pass
