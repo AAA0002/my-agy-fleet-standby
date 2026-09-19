@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
 render_failover_manager.py
-Automated Render Cloud High-Availability Fallback Controller
-Active Account: coz1gameh1@gmail.com
-Workspace Owner: tea-d8j9clt8nd3s73eb041g (My Workspace)
+Automated Render Multi-Account Cloud Failover Mesh Controller
+Dual Account High Availability:
+  Node 1: coz1gameh1@gmail.com (Singapore) -> https://my-agy-fleet-standby.onrender.com
+  Node 2: abidhasanch2001@gmail.com (Frankfurt) -> https://my-agy-fleet-standby-node2.onrender.com
 
 Strict Rules & Protections:
-1. 100% Free Plan Only (plan: "free", $0 cost).
-2. Completely isolated: Dedicated service name "my-agy-fleet-standby".
-3. STRICT GUARDRAIL: Protected existing services (temp-mail-bot, atf-mtproto-relayer-backup)
+1. 100% Free Plan Only (plan: "free", $0 cost forever).
+2. Completely isolated: Dedicated services only.
+3. STRICT GUARDRAIL: Protected existing user services (temp-mail-bot, atf-mtproto-relayer-backup)
    are BLACKLISTED and will NEVER be modified, triggered, or deleted.
 """
 
@@ -18,15 +19,32 @@ import json
 import asyncio
 import aiohttp
 
-RENDER_API_KEY = os.getenv("RENDER_API_KEY", "rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1")
-OWNER_ID = "tea-d8j9clt8nd3s73eb041g"
-ACCOUNT_EMAIL = "coz1gameh1@gmail.com"
-DEDICATED_SERVICE_NAME = "my-agy-fleet-standby"
-STANDBY_SERVICE_ID = "srv-damuhkmgekts73f1osag"
-STANDBY_URL = "https://my-agy-fleet-standby.onrender.com"
+RENDER_ACCOUNTS = [
+    {
+        "name": "Render Node 1 (Singapore)",
+        "email": "coz1gameh1@gmail.com",
+        "api_key": os.getenv("RENDER_API_KEY_1", "rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1"),
+        "owner_id": "tea-d8j9clt8nd3s73eb041g",
+        "service_name": "my-agy-fleet-standby",
+        "service_id": "srv-damuhkmgekts73f1osag",
+        "url": "https://my-agy-fleet-standby.onrender.com",
+        "region": "singapore"
+    },
+    {
+        "name": "Render Node 2 (Frankfurt)",
+        "email": "abidhasanch2001@gmail.com",
+        "api_key": os.getenv("RENDER_API_KEY_2", "rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB"),
+        "owner_id": "tea-dan5pgbm8hqs73a5cvig",
+        "service_name": "my-agy-fleet-standby-node2",
+        "service_id": "srv-dan5q00ae00c73djummg",
+        "url": "https://my-agy-fleet-standby-node2.onrender.com",
+        "region": "frankfurt"
+    }
+]
+
 BASE_URL = "https://api.render.com/v1"
 
-# Hardcoded blacklisted services that must NEVER be touched under any circumstances
+# Blacklisted user services that must NEVER be touched under any circumstances
 PROTECTED_EXISTING_SERVICES = [
     "srv-d8j9n867r5hc73dlqvgg",
     "temp-mail-bot",
@@ -38,59 +56,68 @@ def assert_safe_service(service_id: str, service_name: str = ""):
     if service_id in PROTECTED_EXISTING_SERVICES or service_name in PROTECTED_EXISTING_SERVICES:
         raise PermissionError(f"CRITICAL SAFETY ABORT: Service {service_id} ({service_name}) is a protected user project and cannot be touched!")
 
-async def list_our_services(session: aiohttp.ClientSession) -> list:
-    """Lists services, filtering out protected existing user projects."""
+async def check_account_health(session: aiohttp.ClientSession, account: dict) -> dict:
     headers = {
-        "Authorization": f"Bearer {RENDER_API_KEY}",
+        "Authorization": f"Bearer {account['api_key']}",
         "Accept": "application/json"
     }
-    url = f"{BASE_URL}/services?limit=20"
-    async with session.get(url, headers=headers) as resp:
-        if resp.status == 200:
-            services = await resp.json()
-            fleet_services = []
-            for s in services:
-                svc = s.get("service", {})
-                sid = svc.get("id")
-                sname = svc.get("name")
-                if sid not in PROTECTED_EXISTING_SERVICES and sname not in PROTECTED_EXISTING_SERVICES:
-                    fleet_services.append(svc)
-            return fleet_services
-        return []
+    # 1. Check service status
+    svc_info = {"name": account["name"], "email": account["email"], "url": account["url"], "status": "unknown"}
+    try:
+        async with session.get(f"{BASE_URL}/services/{account['service_id']}", headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
+            if r.status == 200:
+                data = await r.json()
+                svc = data.get("service", {})
+                svc_info["service_status"] = svc.get("suspended", "active")
+                svc_info["plan"] = svc.get("serviceDetails", {}).get("plan")
+                svc_info["region"] = svc.get("serviceDetails", {}).get("region")
+            else:
+                svc_info["error"] = f"HTTP {r.status}"
+    except Exception as e:
+        svc_info["error"] = str(e)
 
-async def get_protected_services_status(session: aiohttp.ClientSession) -> dict:
-    """Read-only health check to verify protected services remain untouched and online."""
-    headers = {
-        "Authorization": f"Bearer {RENDER_API_KEY}",
-        "Accept": "application/json"
-    }
-    url = f"{BASE_URL}/services?limit=20"
-    async with session.get(url, headers=headers) as resp:
-        if resp.status == 200:
-            services = await resp.json()
-            status_map = {}
-            for s in services:
-                svc = s.get("service", {})
-                sid = svc.get("id")
-                sname = svc.get("name")
-                if sid in PROTECTED_EXISTING_SERVICES or sname in PROTECTED_EXISTING_SERVICES:
-                    status_map[sname] = {
-                        "id": sid,
-                        "suspended": svc.get("suspended"),
-                        "type": svc.get("type"),
-                        "updated_at": svc.get("updatedAt")
-                    }
-            return status_map
-        return {}
+    # 2. Check live web endpoint
+    try:
+        async with session.get(f"{account['url']}/health", timeout=aiohttp.ClientTimeout(total=10)) as hr:
+            svc_info["endpoint_alive"] = (hr.status == 200)
+    except Exception:
+        svc_info["endpoint_alive"] = False
+
+    return svc_info
+
+async def trigger_batch_collection(session: aiohttp.ClientSession, secret_key: str = "agy_cf_secret_7d36994e_2026") -> dict:
+    """Tries Node 1 first. If Node 1 fails or times out, immediately triggers Node 2."""
+    for acc in RENDER_ACCOUNTS:
+        url = f"{acc['url']}/collect-tokens"
+        try:
+            async with session.post(
+                url,
+                headers={"Authorization": f"Bearer {secret_key}", "Content-Type": "application/json"},
+                json={},
+                timeout=aiohttp.ClientTimeout(total=45)
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    return {"success": True, "active_node": acc["name"], "result": data}
+        except Exception as e:
+            print(f"[{acc['name']}] Attempt failed: {e}. Falling back to next Render node...")
+            continue
+
+    return {"success": False, "error": "All Render standby nodes failed or sleeping."}
 
 async def main():
     async with aiohttp.ClientSession() as session:
-        print(f"[Render Fallback Manager] Connected to active account: {ACCOUNT_EMAIL}")
-        protected = await get_protected_services_status(session)
-        print(f"[Render Fallback Manager] User Projects Safe & Online: {protected}")
-        fleet_services = await list_our_services(session)
-        print(f"[Render Fallback Manager] Dedicated fleet services found: {len(fleet_services)}")
-        print("[Render Fallback Manager] Guardrails active: temp-mail-bot & atf-mtproto-relayer-backup protected ✅")
+        print("=" * 65)
+        print("RENDER DUAL-ACCOUNT CLOUD FAILOVER MESH STATUS")
+        print("=" * 65)
+        for acc in RENDER_ACCOUNTS:
+            health = await check_account_health(session, acc)
+            status_symbol = "🟢 ONLINE" if health.get("endpoint_alive") else "🟡 DEPLOYING / SLEEPING"
+            print(f"• {acc['name']} ({acc['region'].upper()}): {status_symbol}")
+            print(f"  Email: {acc['email']}")
+            print(f"  URL: {acc['url']}")
+            print(f"  Plan: {health.get('plan', 'free')} ($0/mo)")
+            print("-" * 65)
 
 if __name__ == "__main__":
     asyncio.run(main())

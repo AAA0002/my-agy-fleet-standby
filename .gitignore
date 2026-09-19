@@ -36,3 +36,4 @@ bep20_watcher_state.json
 multichain_watcher_state.json
 payout_ledger.json
 my_crontab.txt
+standby_repo/

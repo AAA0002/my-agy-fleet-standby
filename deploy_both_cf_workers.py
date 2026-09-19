@@ -1692,14 +1692,26 @@ fi
 
         if (needBatchRefresh) {
           // Render takes ~30-50s to wake from cold sleep on Free Tier; Cloudflare waits gracefully in waitUntil
-          await fetch("https://my-agy-fleet-standby.onrender.com/collect-tokens", {
+          // Try Render Node 1 (Singapore), automatic fallback to Render Node 2 (Frankfurt)
+          const r1 = await fetch("https://my-agy-fleet-standby.onrender.com/collect-tokens", {
             method: "POST",
             headers: {
               "Authorization": `Bearer ${env.SECRET_KEY}`,
               "Content-Type": "application/json"
             },
-            body: JSON.stringify({ source: "cf_cron_2_to_4h_expiry_check" })
-          }).catch(() => {});
+            body: JSON.stringify({ source: "cf_cron_expiry_check_node1" })
+          }).catch(() => null);
+
+          if (!r1 || !r1.ok) {
+            await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${env.SECRET_KEY}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({ source: "cf_cron_expiry_check_node2" })
+            }).catch(() => {});
+          }
         }
 
       } catch (_) {}
