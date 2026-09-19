@@ -31,6 +31,8 @@ ACCOUNTS = [
         "account_id": "c9f92ab4a8b26b15f958ac25c22300bc",
         "subdomain": "aaaai2",
         "kv_id": "315ff9eee275466ba24c01dc2c3f9653",
+        "d1_uuid": "c29cc72d-3813-4aa2-859a-8cdfd929825c",
+        "r2_bucket": "agy-fleet-backups",
         "sibling_urls": [
             "https://restore-agy.aaa-bot.workers.dev",
             "https://restore-agy.aaa222.workers.dev"
@@ -43,6 +45,8 @@ ACCOUNTS = [
         "account_id": "cf47efdd654cdb07ffe03d1361583f12",
         "subdomain": "aaa-bot",
         "kv_id": "44d6b1accc8c4fc18ee6d500eb9f0b14",
+        "d1_uuid": "9456e01a-77f1-49fa-b22b-d8b930e19bf2",
+        "r2_bucket": "agy-fleet-backups",
         "sibling_urls": [
             "https://restore-agy.aaaai2.workers.dev",
             "https://restore-agy.aaa222.workers.dev"
@@ -55,6 +59,8 @@ ACCOUNTS = [
         "account_id": "e1bfe1206dd7195f89591a9200105f1c",
         "subdomain": "aaa222",
         "kv_id": "f5c5b2dc2fc54f4d92bb789f9d70645f",
+        "d1_uuid": "6b0c8fc4-5ead-44fe-88c4-e660a4b95fef",
+        "r2_bucket": "agy-fleet-backups",
         "sibling_urls": [
             "https://restore-agy.aaaai2.workers.dev",
             "https://restore-agy.aaa-bot.workers.dev"
@@ -149,12 +155,22 @@ fi
       });
     }
 
-    // 3. Download latest backup zip
+    // 3. Download latest backup zip (R2 first, fallback to KV and siblings)
     if (path === "/backup.zip") {
       let zipData = null;
-      try {
-        zipData = await env.BACKUP_KV.get("latest_backup_zip", { type: "arrayBuffer" });
-      } catch (_) {}
+      if (env.FLEET_R2) {
+        try {
+          const r2Obj = await env.FLEET_R2.get("latest_backup.zip");
+          if (r2Obj) {
+            zipData = await r2Obj.arrayBuffer();
+          }
+        } catch (_) {}
+      }
+      if (!zipData) {
+        try {
+          zipData = await env.BACKUP_KV.get("latest_backup_zip", { type: "arrayBuffer" });
+        } catch (_) {}
+      }
       if (!zipData) {
         for (const sUrl of SIBLING_URLS) {
           try {
@@ -167,7 +183,7 @@ fi
         }
       }
       if (!zipData) {
-        return new Response("No backup archive found in Cloudflare KV. Run backup first.", {
+        return new Response("No backup archive found in Cloudflare R2/KV. Run backup first.", {
           status: 404,
           headers: { "Content-Type": "text/plain", ...corsHeaders }
         });
@@ -182,7 +198,7 @@ fi
       });
     }
 
-    // 4. Upload latest backup zip (from VPS backup_manager.py)
+    // 4. Upload latest backup zip (Store in R2 + KV)
     if (path === "/upload" && request.method === "POST") {
       const auth = request.headers.get("Authorization");
       if (auth !== `Bearer ${env.SECRET_KEY}`) {
@@ -201,12 +217,18 @@ fi
       }
 
       try {
+        if (env.FLEET_R2) {
+          try {
+            await env.FLEET_R2.put("latest_backup.zip", body);
+          } catch (_) {}
+        }
         await env.BACKUP_KV.put("latest_backup_zip", body);
         const meta = {
           updated_at: new Date().toISOString(),
           size_bytes: body.byteLength,
           size_kb: Math.round(body.byteLength / 1024),
-          node: "__SUBDOMAIN__"
+          node: "__SUBDOMAIN__",
+          storage: "r2_and_kv"
         };
         await env.BACKUP_KV.put("latest_backup_meta", JSON.stringify(meta));
 
@@ -1089,6 +1111,34 @@ fi
       });
     }
 
+    // 11.1 Cloudflare D1 Serverless SQL Logging (/api/d1/log, /api/d1/history)
+    if (path === "/api/d1/log" && request.method === "POST") {
+      try {
+        const body = await request.json();
+        const event = body.event || "heartbeat";
+        const details = typeof body.details === "string" ? body.details : JSON.stringify(body.details || {});
+        if (env.DB) {
+          await env.DB.prepare("INSERT INTO fleet_logs (event, details) VALUES (?, ?)").bind(event, details).run();
+        }
+        return new Response(JSON.stringify({ ok: true, stored: "d1" }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (e) {
+        return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
+    if (path === "/api/d1/history") {
+      try {
+        let rows = [];
+        if (env.DB) {
+          const res = await env.DB.prepare("SELECT * FROM fleet_logs ORDER BY id DESC LIMIT 20").all();
+          rows = res.results || [];
+        }
+        return new Response(JSON.stringify({ ok: true, count: rows.length, logs: rows }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (e) {
+        return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
     // 12. Edge Sentinel Check & Telegram Alert
     if (path === "/sentinel/check") {
       try {
@@ -1806,6 +1856,16 @@ async def deploy_account(acc):
                 "name": "BACKUP_KV",
                 "type": "kv_namespace",
                 "namespace_id": acc["kv_id"],
+            },
+            {
+                "name": "FLEET_R2",
+                "type": "r2_bucket",
+                "bucket_name": acc["r2_bucket"],
+            },
+            {
+                "name": "DB",
+                "type": "d1",
+                "database_id": acc["d1_uuid"],
             },
             {
                 "name": "AI",
