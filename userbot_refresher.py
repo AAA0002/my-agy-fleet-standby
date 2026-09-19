@@ -2722,18 +2722,92 @@ async def handle_single_update(update: dict):
                 await send_message_chunks(rep, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
 
         elif text.startswith("/addaccount") or text.startswith("/add_account") or text in ["➕ Add Account", "➕ Add", "Add Account"]:
-            login_sessions[str(chat_id)] = {"step": "WAITING_PHONE", "client": None, "time": time.time()}
-            prompt = (
-                "📱 *Add New Telegram Account*\n\n"
-                "Please send the phone number of the Telegram account you want to connect.\n\n"
-                "💡 *Country Code Auto-Detection Enabled!*\n"
-                "You can enter:\n"
-                "• `019XXXXXXXX` or `19XXXXXXXX` (Bangladesh 🇧🇩)\n"
-                "• `+88017XXXXXXXX` (Standard E.164)\n"
-                "• Any international number (e.g. `+1...`, `+44...`, `+92...`)\n\n"
-                "_(Tap ❌ Cancel Login below to abort at any time)_"
+            parts = text.split(maxsplit=1)
+            raw_phone = parts[1].strip() if len(parts) > 1 else None
+            if raw_phone and any(c.isdigit() for c in raw_phone):
+                cleaned_phone, country_label = detect_and_normalize_phone(raw_phone)
+                await send_report_message(
+                    f"📡 *Auto-Detected Country:* {country_label}\n"
+                    f"📱 *Normalized Number:* `{cleaned_phone}`\n\n"
+                    f"⏳ Requesting verification code from Telegram...",
+                    reply_markup=CANCEL_KEYBOARD,
+                    chat_id=chat_id
+                )
+                temp_cl = TelegramClient(StringSession(), API_ID, API_HASH)
+                await temp_cl.connect()
+                try:
+                    sent_code = await temp_cl.send_code_request(cleaned_phone)
+                    login_sessions[str(chat_id)] = {
+                        "step": "WAITING_CODE",
+                        "phone": cleaned_phone,
+                        "country": country_label,
+                        "phone_code_hash": sent_code.phone_code_hash,
+                        "client": temp_cl,
+                        "time": time.time()
+                    }
+                    await send_report_message(
+                        f"✉️ Telegram has sent a login code to `{cleaned_phone}`.\n\n"
+                        f"Please send the login code here (e.g. `12345`).",
+                        reply_markup=CANCEL_KEYBOARD,
+                        chat_id=chat_id
+                    )
+                except Exception as e:
+                    await send_report_message(f"❌ Failed to send code to `{cleaned_phone}`: {e}", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
+                    try:
+                        await temp_cl.disconnect()
+                    except Exception:
+                        pass
+            else:
+                login_sessions[str(chat_id)] = {"step": "WAITING_PHONE", "client": None, "time": time.time()}
+                prompt = (
+                    "📱 *Add New Telegram Account*\n\n"
+                    "Please send the phone number of the Telegram account you want to connect.\n\n"
+                    "💡 *Country Code Auto-Detection Enabled!*\n"
+                    "You can enter:\n"
+                    "• `019XXXXXXXX` or `19XXXXXXXX` (Bangladesh 🇧🇩)\n"
+                    "• `+88017XXXXXXXX` (Standard E.164)\n"
+                    "• Any international number (e.g. `+1...`, `+44...`, `+92...`)\n\n"
+                    "_(Tap ❌ Cancel Login below to abort at any time)_"
+                )
+                await send_report_message(prompt, reply_markup=CANCEL_KEYBOARD, chat_id=chat_id)
+
+        elif (
+            (text.startswith("+") and sum(1 for c in text if c.isdigit()) >= 8)
+            or (text.startswith("01") and len(text.replace(" ", "").replace("-", "")) == 11 and text.replace(" ", "").replace("-", "").isdigit())
+            or (text.startswith("1") and len(text.replace(" ", "").replace("-", "")) == 10 and text.replace(" ", "").replace("-", "").isdigit() and text[1] in "3456789")
+        ):
+            cleaned_phone, country_label = detect_and_normalize_phone(text)
+            await send_report_message(
+                f"📡 *Auto-Detected Country:* {country_label}\n"
+                f"📱 *Normalized Number:* `{cleaned_phone}`\n\n"
+                f"⏳ Requesting verification code from Telegram...",
+                reply_markup=CANCEL_KEYBOARD,
+                chat_id=chat_id
             )
-            await send_report_message(prompt, reply_markup=CANCEL_KEYBOARD, chat_id=chat_id)
+            temp_cl = TelegramClient(StringSession(), API_ID, API_HASH)
+            await temp_cl.connect()
+            try:
+                sent_code = await temp_cl.send_code_request(cleaned_phone)
+                login_sessions[str(chat_id)] = {
+                    "step": "WAITING_CODE",
+                    "phone": cleaned_phone,
+                    "country": country_label,
+                    "phone_code_hash": sent_code.phone_code_hash,
+                    "client": temp_cl,
+                    "time": time.time()
+                }
+                await send_report_message(
+                    f"✉️ Telegram has sent a login code to `{cleaned_phone}`.\n\n"
+                    f"Please send the login code here (e.g. `12345`).",
+                    reply_markup=CANCEL_KEYBOARD,
+                    chat_id=chat_id
+                )
+            except Exception as e:
+                await send_report_message(f"❌ Failed to send code to `{cleaned_phone}`: {e}", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
+                try:
+                    await temp_cl.disconnect()
+                except Exception:
+                    pass
 
         elif text.startswith("/briefing") or text.startswith("/morning") or text in ["🌅 Morning Briefing", "🌅 Briefing"]:
             rep = await build_morning_briefing(caller_uid)

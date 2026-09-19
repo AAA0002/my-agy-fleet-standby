@@ -871,26 +871,31 @@ fi
           <!-- Tier 2: 13 Fleet Account Nodes -->
           <!-- Node 1 Shard (1, 4, 7, 10, 13) -->
           <g class="topo-node" onclick="inspectTopo('acc-1')">
+            <circle cx="30" cy="195" r="16" fill="transparent" pointer-events="all"/>
             <circle cx="30" cy="195" r="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
             <text x="30" y="198" text-anchor="middle" fill="#1e40af" font-size="7.5" font-weight="800">1</text>
             <circle cx="36" cy="189" r="2.2" fill="#10b981"/>
           </g>
           <g class="topo-node" onclick="inspectTopo('acc-4')">
+            <circle cx="58" cy="195" r="16" fill="transparent" pointer-events="all"/>
             <circle cx="58" cy="195" r="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
             <text x="58" y="198" text-anchor="middle" fill="#1e40af" font-size="7.5" font-weight="800">4</text>
             <circle cx="64" cy="189" r="2.2" fill="#10b981"/>
           </g>
           <g class="topo-node" onclick="inspectTopo('acc-7')">
+            <circle cx="85" cy="195" r="16" fill="transparent" pointer-events="all"/>
             <circle cx="85" cy="195" r="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
             <text x="85" y="198" text-anchor="middle" fill="#1e40af" font-size="7.5" font-weight="800">7</text>
             <circle cx="91" cy="189" r="2.2" fill="#10b981"/>
           </g>
           <g class="topo-node" onclick="inspectTopo('acc-10')">
+            <circle cx="112" cy="195" r="16" fill="transparent" pointer-events="all"/>
             <circle cx="112" cy="195" r="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
             <text x="112" y="198" text-anchor="middle" fill="#1e40af" font-size="7.5" font-weight="800">10</text>
             <circle cx="118" cy="189" r="2.2" fill="#10b981"/>
           </g>
           <g class="topo-node" onclick="inspectTopo('acc-13')">
+            <circle cx="140" cy="195" r="16" fill="transparent" pointer-events="all"/>
             <circle cx="140" cy="195" r="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
             <text x="140" y="198" text-anchor="middle" fill="#1e40af" font-size="7.5" font-weight="800">13</text>
             <circle cx="146" cy="189" r="2.2" fill="#10b981"/>
@@ -898,21 +903,25 @@ fi
 
           <!-- Node 2 Shard (2, 5, 8, 11) -->
           <g class="topo-node" onclick="inspectTopo('acc-2')">
+            <circle cx="205" cy="195" r="16" fill="transparent" pointer-events="all"/>
             <circle cx="205" cy="195" r="9" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
             <text x="205" y="198" text-anchor="middle" fill="#92400e" font-size="7.5" font-weight="800">2</text>
             <circle cx="211" cy="189" r="2.2" fill="#10b981"/>
           </g>
           <g class="topo-node" onclick="inspectTopo('acc-5')">
+            <circle cx="235" cy="195" r="16" fill="transparent" pointer-events="all"/>
             <circle cx="235" cy="195" r="9" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
             <text x="235" y="198" text-anchor="middle" fill="#92400e" font-size="7.5" font-weight="800">5</text>
             <circle cx="241" cy="189" r="2.2" fill="#10b981"/>
           </g>
           <g class="topo-node" onclick="inspectTopo('acc-8')">
+            <circle cx="265" cy="195" r="16" fill="transparent" pointer-events="all"/>
             <circle cx="265" cy="195" r="9" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
             <text x="265" y="198" text-anchor="middle" fill="#92400e" font-size="7.5" font-weight="800">8</text>
             <circle cx="271" cy="189" r="2.2" fill="#10b981"/>
           </g>
           <g class="topo-node" onclick="inspectTopo('acc-11')">
+            <circle cx="295" cy="195" r="16" fill="transparent" pointer-events="all"/>
             <circle cx="295" cy="195" r="9" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
             <text x="295" y="198" text-anchor="middle" fill="#92400e" font-size="7.5" font-weight="800">11</text>
             <circle cx="301" cy="189" r="2.2" fill="#10b981"/>
@@ -920,21 +929,25 @@ fi
 
           <!-- Node 3 Shard (3, 6, 9, 12) -->
           <g class="topo-node" onclick="inspectTopo('acc-3')">
+            <circle cx="360" cy="195" r="16" fill="transparent" pointer-events="all"/>
             <circle cx="360" cy="195" r="9" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
             <text x="360" y="198" text-anchor="middle" fill="#5b21b6" font-size="7.5" font-weight="800">3</text>
             <circle cx="366" cy="189" r="2.2" fill="#10b981"/>
           </g>
           <g class="topo-node" onclick="inspectTopo('acc-6')">
+            <circle cx="390" cy="195" r="16" fill="transparent" pointer-events="all"/>
             <circle cx="390" cy="195" r="9" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
             <text x="390" y="198" text-anchor="middle" fill="#5b21b6" font-size="7.5" font-weight="800">6</text>
             <circle cx="396" cy="189" r="2.2" fill="#10b981"/>
           </g>
           <g class="topo-node" onclick="inspectTopo('acc-9')">
+            <circle cx="420" cy="195" r="16" fill="transparent" pointer-events="all"/>
             <circle cx="420" cy="195" r="9" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
             <text x="420" y="198" text-anchor="middle" fill="#5b21b6" font-size="7.5" font-weight="800">9</text>
             <circle cx="426" cy="189" r="2.2" fill="#10b981"/>
           </g>
           <g class="topo-node" onclick="inspectTopo('acc-12')">
+            <circle cx="450" cy="195" r="16" fill="transparent" pointer-events="all"/>
             <circle cx="450" cy="195" r="9" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
             <text x="450" y="198" text-anchor="middle" fill="#5b21b6" font-size="7.5" font-weight="800">12</text>
             <circle cx="456" cy="189" r="2.2" fill="#10b981"/>
@@ -1011,6 +1024,11 @@ fi
             <span class="hud-item-label">Active Daemons</span>
             <span class="hud-item-val" id="hudDaemons">7/7 Mining Platforms</span>
           </div>
+        </div>
+        <div id="hudActionContainer" style="margin-top:8px; display:none;">
+          <a id="hudActionBtn" href="#" target="_blank" class="action-btn btn-primary" style="padding:6px 12px; font-size:0.75rem; text-decoration:none; display:inline-flex; justify-content:center; align-items:center; width:100%; box-sizing:border-box;">
+            Action
+          </a>
         </div>
       </div>
 
@@ -1133,7 +1151,10 @@ fi
             <div class="bot-network">@CryptoProUpRobot • BSC BEP-20</div>
           </div>
         </div>
-        <span class="badge badge-gold">130/130 Tasks</span>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+          <span class="badge badge-gold">130/130 Tasks</span>
+          <a href="https://t.me/CryptoProUpRobot" target="_blank" style="font-size:0.7rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">Launch ↗</a>
+        </div>
       </div>
       <div class="progress-bar-bg" style="margin: 6px 0 2px 0;">
         <div class="progress-bar-fill bg-gold" style="width: 100%;"></div>
@@ -1164,7 +1185,10 @@ fi
             <div class="bot-network">@stoneswithestand_bot • Arbitrum</div>
           </div>
         </div>
-        <span class="badge badge-purple">500 STONES</span>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+          <span class="badge badge-purple">500 STONES</span>
+          <a href="https://t.me/stoneswithestand_bot" target="_blank" style="font-size:0.7rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">Launch ↗</a>
+        </div>
       </div>
       <div class="progress-bar-bg" style="margin: 6px 0 2px 0;">
         <div class="progress-bar-fill bg-purple" style="width: 80%;"></div>
@@ -1195,7 +1219,10 @@ fi
             <div class="bot-network">@art_airdrop_bot • TON Network</div>
           </div>
         </div>
-        <span class="badge badge-ton">Level 5 Active</span>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+          <span class="badge badge-ton">Level 5 Active</span>
+          <a href="https://t.me/art_airdrop_bot" target="_blank" style="font-size:0.7rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">Launch ↗</a>
+        </div>
       </div>
       <div class="progress-bar-bg" style="margin: 6px 0 2px 0;">
         <div class="progress-bar-fill bg-blue" style="width: 50%;"></div>
@@ -1226,7 +1253,10 @@ fi
             <div class="bot-network">@mrgminerbot • TON Network</div>
           </div>
         </div>
-        <span class="badge badge-green">Peak Level 21</span>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+          <span class="badge badge-green">Peak Level 21</span>
+          <a href="https://t.me/mrgminerbot" target="_blank" style="font-size:0.7rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">Launch ↗</a>
+        </div>
       </div>
       <div class="bot-stats-row">
         <div class="bot-stat-item">
@@ -1254,7 +1284,10 @@ fi
             <div class="bot-network">@ai_lab_robot • Cloud AI</div>
           </div>
         </div>
-        <span class="badge badge-blue">6,810 H/s</span>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+          <span class="badge badge-blue">6,810 H/s</span>
+          <a href="https://t.me/ai_lab_robot" target="_blank" style="font-size:0.7rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">Launch ↗</a>
+        </div>
       </div>
       <div class="bot-stats-row">
         <div class="bot-stat-item">
@@ -1282,7 +1315,10 @@ fi
             <div class="bot-network">@Ultra_wallet_bot • Multi-Asset</div>
           </div>
         </div>
-        <span class="badge badge-green">24h Streaks Active</span>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+          <span class="badge badge-green">24h Streaks</span>
+          <a href="https://t.me/Ultra_wallet_bot" target="_blank" style="font-size:0.7rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">Launch ↗</a>
+        </div>
       </div>
       <div class="bot-stats-row">
         <div class="bot-stat-item">
@@ -1310,7 +1346,10 @@ fi
             <div class="bot-network">@ApxMinerBot • Multi-Chain</div>
           </div>
         </div>
-        <span class="badge badge-gold">12,950 Pts/Acc</span>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+          <span class="badge badge-gold">12,950 Pts/Acc</span>
+          <a href="https://t.me/ApxMinerBot" target="_blank" style="font-size:0.7rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">Launch ↗</a>
+        </div>
       </div>
       <div class="bot-stats-row">
         <div class="bot-stat-item">
@@ -1337,11 +1376,16 @@ fi
     </div>
 
     <!-- Add Account Callout Button -->
-    <button onclick="openAddAccountModal()" class="action-btn btn-primary" style="margin-bottom:12px; box-shadow:0 2px 8px rgba(37,99,235,0.25);">
+    <button onclick="openAddAccountModal()" class="action-btn btn-primary" style="margin-bottom:10px; box-shadow:0 2px 8px rgba(37,99,235,0.25);">
       <span>➕ Connect New Account to Fleet</span>
     </button>
 
-    <div style="display:flex; flex-direction:column; gap:4px;">
+    <!-- Instant Fleet Search Filter Input -->
+    <div style="margin-bottom:12px; position:relative;">
+      <input type="text" id="fleetSearchInput" placeholder="🔍 Search accounts by name, ID, or wallet..." oninput="filterFleet()" style="width:100%; box-sizing:border-box; padding:9px 12px; font-size:0.8rem; border:1px solid var(--border); border-radius:8px; background:#ffffff; color:var(--text-main); font-family:inherit; outline:none;" />
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:4px;" id="fleetContainer">
       ${accounts.map((a, idx) => {
         const rawW = a.ton_wallet;
         const wStr = (typeof rawW === 'string') ? rawW : (rawW && typeof rawW === 'object' && rawW.address ? String(rawW.address) : '');
@@ -1351,7 +1395,7 @@ fi
         const shardBadge = shardNum === 1 ? 'badge-blue' : (shardNum === 2 ? 'badge-gold' : 'badge-purple');
         const initials = (a.name || 'Account').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
         return `
-        <div class="acc-card">
+        <div class="acc-card account-row" data-name="${(a.name || '').replace(/"/g, '&quot;')}" data-id="${a.user_id || ''}" data-wallet="${wStr.replace(/"/g, '&quot;')}">
           <div class="acc-left">
             <div class="acc-avatar">${initials}</div>
             <div class="acc-details">
@@ -1553,6 +1597,18 @@ fi
     document.body.scrollTop = 0;
   }
 
+  const accountsData = ${JSON.stringify(accounts)};
+
+  const botLinks = {
+    'bot-bnb': 'https://t.me/CryptoProUpRobot',
+    'bot-stones': 'https://t.me/stoneswithestand_bot',
+    'bot-art': 'https://t.me/art_airdrop_bot',
+    'bot-mrg': 'https://t.me/mrgminerbot',
+    'bot-ailab': 'https://t.me/ai_lab_robot',
+    'bot-ultra': 'https://t.me/Ultra_wallet_bot',
+    'bot-apx': 'https://t.me/ApxMinerBot'
+  };
+
   const topoData = {
     'core': {
       title: '⚡ MY AGY AI Master Core',
@@ -1658,20 +1714,33 @@ fi
   function inspectTopo(nodeId) {
     haptic('light');
     let info = topoData[nodeId];
+    let actionUrl = null;
+    let actionText = null;
+
     if (!info && nodeId.startsWith('acc-')) {
       const idx = parseInt(nodeId.replace('acc-', ''));
+      const acc = accountsData.find(a => (a.index === idx || accountsData.indexOf(a) === idx - 1)) || {};
       const shardNum = ((idx - 1) % 3) + 1;
       const shardName = shardNum === 1 ? 'aaaai2' : (shardNum === 2 ? 'aaa-bot' : 'aaa222');
+      const tonShort = acc.ton_wallet ? (acc.ton_wallet.substring(0, 6) + '...' + acc.ton_wallet.substring(acc.ton_wallet.length - 4)) : 'Dedicated v4r2';
       info = {
-        title: '👤 Account #' + idx + ' (Active Node)',
+        title: '👤 #' + idx + ' ' + (acc.name || 'Account #' + idx),
         status: '🟢 10/10 Tasks Online',
-        desc: 'Managed Telegram fleet account running autonomous mining across all 7 platforms. Assigned to Cloudflare Shard ' + shardNum + ' (' + shardName + ').',
+        desc: 'Telegram ID: ' + (acc.user_id || 'N/A') + ' • TON: ' + tonShort + ' • Cloudflare Shard ' + shardNum + ' (' + shardName + '). 24/7 autonomous mining active.',
         tier: 'Tier 2 (Worker Account)',
         latency: (12 + (idx % 5)) + 'ms',
         coverage: 'Assigned: Node ' + shardNum + ' (' + shardName + ')',
         daemons: '7/7 Platforms Mining'
       };
+      actionText = '👤 View #' + idx + ' in Fleet Roster';
+      actionUrl = 'tab:fleet';
     }
+
+    if (botLinks[nodeId]) {
+      actionUrl = botLinks[nodeId];
+      actionText = '🚀 Launch Bot on Telegram ↗';
+    }
+
     if (!info) return;
 
     const elTitle = document.getElementById('hudTitle');
@@ -1689,6 +1758,41 @@ fi
     if (elLatency) elLatency.innerText = info.latency;
     if (elCoverage) elCoverage.innerText = info.coverage;
     if (elDaemons) elDaemons.innerText = info.daemons;
+
+    const actContainer = document.getElementById('hudActionContainer');
+    const actBtn = document.getElementById('hudActionBtn');
+    if (actContainer && actBtn) {
+      if (actionUrl && actionText) {
+        actContainer.style.display = 'block';
+        actBtn.innerText = actionText;
+        if (actionUrl === 'tab:fleet') {
+          actBtn.removeAttribute('href');
+          actBtn.removeAttribute('target');
+          actBtn.onclick = (e) => { e.preventDefault(); switchTab('fleet'); };
+        } else {
+          actBtn.onclick = null;
+          actBtn.setAttribute('href', actionUrl);
+          actBtn.setAttribute('target', '_blank');
+        }
+      } else {
+        actContainer.style.display = 'none';
+      }
+    }
+  }
+
+  function filterFleet() {
+    const q = (document.getElementById('fleetSearchInput')?.value || '').toLowerCase().trim();
+    const rows = document.querySelectorAll('.account-row');
+    rows.forEach(r => {
+      const name = (r.getAttribute('data-name') || '').toLowerCase();
+      const id = (r.getAttribute('data-id') || '').toLowerCase();
+      const wallet = (r.getAttribute('data-wallet') || '').toLowerCase();
+      if (!q || name.includes(q) || id.includes(q) || wallet.includes(q)) {
+        r.style.display = 'flex';
+      } else {
+        r.style.display = 'none';
+      }
+    });
   }
 
   function pingMesh() {
@@ -2373,8 +2477,44 @@ fi
           return new Response("OK");
         }
 
-        // 2. Add Account Command
-        if (text === "➕ Add Account" || text.startsWith("/addaccount") || text.startsWith("/add_account") || text === "➕ Add" || text === "Add Account") {
+        // 2. Add Account Command & Raw Phone Auto-Detection
+        const isPhonePattern = /^(\+?\d{8,15}|01[3-9]\d{8}|1[3-9]\d{8})$/.test(text.replace(/[\s\-]/g, ''));
+        if (text === "➕ Add Account" || text.startsWith("/addaccount") || text.startsWith("/add_account") || text === "➕ Add" || text === "Add Account" || isPhonePattern) {
+          let extractedPhone = "";
+          if (isPhonePattern && !text.startsWith("/")) {
+            extractedPhone = text.replace(/[\s\-]/g, '');
+          } else {
+            const parts = text.split(/\s+/);
+            if (parts.length > 1 && /\d/.test(parts[1])) {
+              extractedPhone = parts[1].replace(/[\s\-]/g, '');
+            }
+          }
+
+          if (extractedPhone) {
+            let normalized = extractedPhone;
+            if (normalized.startsWith("01") && normalized.length === 11) {
+              normalized = "+88" + normalized;
+            } else if (normalized.startsWith("1") && normalized.length === 10) {
+              normalized = "+880" + normalized;
+            } else if (!normalized.startsWith("+")) {
+              normalized = "+" + normalized;
+            }
+
+            const opAlert = `➕ *New Telegram Account Submission*\n\n📱 **Phone:** \`${normalized}\`\n👤 **Chat ID:** \`${chatId}\`\n🌐 **Source:** Cloudflare Edge (${CURRENT_SUBDOMAIN})\n\n_Dispatched to VPS Userbot Refresher for MTProto session code generation._`;
+            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: env.OWNER_ID || "6727787768", text: opAlert, parse_mode: "Markdown" })
+            }).catch(() => {});
+
+            const userConfirm = `✅ *Phone Number Received:* \`${normalized}\`\n\n` +
+              `📡 **Status:** Connecting to Telegram MTProto Gateway...\n` +
+              `⏳ Verification code request is being dispatched.\n\n` +
+              `💡 _Tip: You can also manage all fleet members directly inside the Mini App below:_`;
+            ctx.waitUntil(sendReply(userConfirm, statusInlineKeyboard));
+            return new Response("OK");
+          }
+
           const rep = `📱 *Add New Telegram Account to Fleet*\n\n` +
             `Please send the phone number of the Telegram account you want to connect.\n\n` +
             `💡 *Country Code Auto-Detection Enabled!*\n` +
