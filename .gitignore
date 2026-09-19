@@ -33,3 +33,6 @@ cloudflared.log
 .storage_limit
 .onchain_state.json
 bep20_watcher_state.json
+multichain_watcher_state.json
+payout_ledger.json
+my_crontab.txt
