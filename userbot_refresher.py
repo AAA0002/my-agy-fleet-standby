@@ -4318,15 +4318,47 @@ async def scan_fleet_balances(caller_chat_id=None):
 # =======================================================
 
 FLEET_MINIAPP_TOKENS = {}
+FLEET_TOKENS_FILE = os.path.join(BASE_DIR, "fleet_miniapp_tokens.json")
+
+def load_local_fleet_tokens():
+    """Loads cached 24h WebApp tokens from local JSON disk storage."""
+    global FLEET_MINIAPP_TOKENS
+    if os.path.exists(FLEET_TOKENS_FILE):
+        try:
+            with open(FLEET_TOKENS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    for uid, t in data.items():
+                        if uid not in FLEET_MINIAPP_TOKENS:
+                            FLEET_MINIAPP_TOKENS[uid] = t
+                        else:
+                            FLEET_MINIAPP_TOKENS[uid].update(t)
+        except Exception:
+            pass
+
+def save_local_fleet_tokens():
+    """Persists memory tokens to local JSON file safely with atomic replace."""
+    try:
+        temp_f = f"{FLEET_TOKENS_FILE}.tmp.{os.getpid()}_{int(time.time()*1000)}"
+        with open(temp_f, "w", encoding="utf-8") as f:
+            json.dump(FLEET_MINIAPP_TOKENS, f, indent=2)
+        os.replace(temp_f, FLEET_TOKENS_FILE)
+    except Exception:
+        pass
+
+# Initialize local tokens into memory at module load
+load_local_fleet_tokens()
 
 async def sync_account_tokens_to_edge(session: aiohttp.ClientSession, acc_uid: str, acc_name: str, **tokens):
-    """Syncs 24h WebApp tokens to Cloudflare Workers KV for autonomous edge harvesting."""
+    """Syncs 24h WebApp tokens to local disk storage and Cloudflare Workers KV for autonomous edge harvesting."""
     uid_str = str(acc_uid)
     if uid_str not in FLEET_MINIAPP_TOKENS:
         FLEET_MINIAPP_TOKENS[uid_str] = {"account_id": uid_str, "name": acc_name}
     for k, v in tokens.items():
         if v:
             FLEET_MINIAPP_TOKENS[uid_str][k] = v
+
+    save_local_fleet_tokens()
 
     payload = {
         "account_id": uid_str,
@@ -4356,8 +4388,9 @@ async def sync_account_tokens_to_edge(session: aiohttp.ClientSession, acc_uid: s
 
 
 async def load_fleet_tokens_from_edge(session: aiohttp.ClientSession):
-    """Preloads cached 24h WebApp tokens (Stones, MRG, ART) from Cloudflare Edge into memory."""
+    """Preloads cached 24h WebApp tokens (Stones, MRG, ART, AI Lab, UltraWallet, Apex) from local disk & Cloudflare Edge."""
     global FLEET_MINIAPP_TOKENS
+    load_local_fleet_tokens()
     for cf_url in CF_WORKER_URLS:
         try:
             async with session.get(
@@ -4373,11 +4406,12 @@ async def load_fleet_tokens_from_edge(session: aiohttp.ClientSession):
                                 FLEET_MINIAPP_TOKENS[uid] = t
                             else:
                                 FLEET_MINIAPP_TOKENS[uid].update(t)
+                        save_local_fleet_tokens()
                         logger.info(f"🌐 Preloaded cached 24h WebApp tokens for {len(FLEET_MINIAPP_TOKENS)} fleet accounts from Cloudflare Edge ({cf_url})")
                         return True
         except Exception:
             pass
-    return False
+    return bool(FLEET_MINIAPP_TOKENS)
 
 
 async def collect_account_session_links(acc_cl, acc: dict) -> dict:
