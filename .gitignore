@@ -37,3 +37,5 @@ multichain_watcher_state.json
 payout_ledger.json
 standby_repo/
 .deno/
+.npm/
+my_crontab.txt

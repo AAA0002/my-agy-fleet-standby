@@ -166,6 +166,23 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
             except Exception:
                 pass
 
+            # 0.5 Pin to Pinata IPFS Decentralized Network
+            pinata_jwt = os.getenv("PINATA_JWT")
+            ipfs_cid = None
+            if pinata_jwt:
+                try:
+                    form = aiohttp.FormData()
+                    form.add_field("file", open(zip_path, "rb"), filename=zip_filename)
+                    form.add_field("pinataMetadata", json.dumps({"name": zip_filename}))
+                    headers_pinata = {"Authorization": f"Bearer {pinata_jwt}"}
+                    async with session.post("https://api.pinata.cloud/pinning/pinFileToIPFS", data=form, headers=headers_pinata, timeout=aiohttp.ClientTimeout(total=25)) as p_resp:
+                        if p_resp.status == 200:
+                            p_data = await p_resp.json()
+                            ipfs_cid = p_data.get("IpfsHash")
+                            logging.info(f"[Pinata IPFS] Backup pinned: {ipfs_cid}")
+                except Exception as pe:
+                    logging.warning(f"[Pinata IPFS] Pinning error: {pe}")
+
             # 1. Upload backup archive directly to @myagyai Telegram channel (Unlimited, bypasses Cloudflare KV)
             async with session.post(url_doc, data=data) as resp:
                 result = await resp.json()

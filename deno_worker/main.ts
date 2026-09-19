@@ -10,13 +10,16 @@ const SUPABASE_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "eyJhbGciOiJIUzI1NiIsI
 const UPSTASH_URL = Deno.env.get("UPSTASH_REDIS_REST_URL") || "https://relaxing-starfish-285827.upstash.io";
 const UPSTASH_TOKEN = Deno.env.get("UPSTASH_REDIS_REST_TOKEN") || "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw";
 const TONAPI_KEY = Deno.env.get("TONAPI_KEY") || "AGCD63WTWLGKKWYAAAAKRKZU45HTYMDI3PV7UBKKL6QDVIHG54NQDVNSQF7W3LQJ3X77QKY";
+const TURSO_URL = Deno.env.get("TURSO_URL") || "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io";
+const TURSO_TOKEN = Deno.env.get("TURSO_TOKEN") || "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODk4MjQ5NjMsImlkIjoiMDFhMGI5ZTEtNzYwMS03ZDIwLWIwNTAtZDkyNmJkMDRiYzhmIiwia2lkIjoiVXI0T3NhVlRiZktFaWU3aEMydjFPYUQ3T01sQ2RZSjhDa3M3bGZKWEh0MCIsInJpZCI6IjcyYjQ5N2Y4LWVhY2UtNDI5Yy04YTIzLWI4MDRmYjg2ODBhOCJ9.W1W5nHYEFXTFLgIh6Q8yLmH3bL9QgCTEI7d4k-tG_Q_-oZwEZz-Ryq0oYtyvChD0ivOqn6NA_asbPAOYAFVaDw";
 
 const NODES = [
   { name: "Render Singapore (Node 1)", url: "https://my-agy-fleet-standby.onrender.com/health", type: "render" },
   { name: "Render Frankfurt (Node 2)", url: "https://my-agy-fleet-standby-node2.onrender.com/health", type: "render" },
   { name: "Cloudflare Shard 0 (aaaai2)", url: "https://restore-agy.aaaai2.workers.dev/health", type: "cloudflare" },
   { name: "Cloudflare Shard 1 (aaa-bot)", url: "https://restore-agy.aaa-bot.workers.dev/health", type: "cloudflare" },
-  { name: "Cloudflare Shard 2 (aaa222)", url: "https://restore-agy.aaa222.workers.dev/health", type: "cloudflare" }
+  { name: "Cloudflare Shard 2 (aaa222)", url: "https://restore-agy.aaa222.workers.dev/health", type: "cloudflare" },
+  { name: "Vercel Edge Node (agy)", url: "https://agy-aaa000.vercel.app/api/health", type: "vercel" }
 ];
 
 // Deno KV
