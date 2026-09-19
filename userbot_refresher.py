@@ -4675,16 +4675,86 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
             except Exception as te:
                 logger.debug(f"[{acc_name}] Stones channel verify note: {te}")
 
-        # 5. Mining start / restart if inactive
+        # 5. Harvest accumulated mining pool into coins (Holding Wallet)
+        if bal > 0:
+            try:
+                async with session.post(f"{base_url}/api/claim", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as cr:
+                    if cr.status == 200:
+                        c_data = await cr.json()
+                        if c_data.get("ok"):
+                            claimed_stones = c_data.get("claimed", 0)
+                            coins = c_data.get("coins", coins)
+                            bal = 0
+                            mining_active = False
+                            logger.info(f"[{acc_name}] 💎 [Stones] Collected +{claimed_stones} STONES into Holding Wallet (Total: {coins})!")
+            except Exception as ce:
+                logger.debug(f"[{acc_name}] Stones claim note: {ce}")
+
+        # 6. Mining start / restart if inactive
         if not mining_active:
             try:
-                async with session.post(f"{base_url}/api/mining/start", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as r:
+                async with session.post(f"{base_url}/api/mining/start", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
                     if r.status == 200:
+                        mining_active = True
                         logger.info(f"[{acc_name}] 💎 [Stones] Mining started/renewed!")
             except Exception as me:
                 logger.debug(f"[{acc_name}] Stones mining start note: {me}")
 
-        # 6. Auto-Withdrawal check for all fleet accounts (routes directly to Arif's Arbitrum One wallet)
+        # 7. Lucky Spin Roulette (Auto-spin wheel when tickets are available)
+        try:
+            async with session.post(f"{base_url}/api/sr/status", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as srr:
+                if srr.status == 200:
+                    sr_d = await srr.json()
+                    tickets = sr_d.get("tickets", 0)
+                    while tickets > 0:
+                        async with session.post(f"{base_url}/api/sr/spin", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as sp_r:
+                            if sp_r.status == 200:
+                                sp_d = await sp_r.json()
+                                if sp_d.get("ok"):
+                                    res_item = sp_d.get("result", {})
+                                    lbl = res_item.get("label", "Prize")
+                                    stn = res_item.get("stones", 0)
+                                    tickets = res_item.get("tickets", 0)
+                                    if stn > 0:
+                                        coins += stn
+                                    logger.info(f"[{acc_name}] 💎 [Stones] 🎰 Lucky Spin won: {lbl} (+{stn} STONES)!")
+                                else:
+                                    break
+                            else:
+                                break
+                        await asyncio.sleep(1.0)
+        except Exception as sre:
+            logger.debug(f"[{acc_name}] Stones spin note: {sre}")
+
+        # 8. Treasure Hunt Mini-quest (Hourly reward)
+        try:
+            async with session.post(f"{base_url}/api/th/status", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as thr:
+                if thr.status == 200:
+                    th_d = await thr.json()
+                    if th_d.get("ok") and th_d.get("hour_left", 0) > 0 and th_d.get("day_left", 0) > 0:
+                        async with session.post(f"{base_url}/api/th/start", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as ths:
+                            if ths.status == 200:
+                                ths_d = await ths.json()
+                                sess_id = ths_d.get("session", {}).get("session_id")
+                                if sess_id:
+                                    c_idx = random.randint(0, 4)
+                                    async with session.post(f"{base_url}/api/th/pick", json={"initData": init_data, "session_id": sess_id, "choice_idx": c_idx}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as thp:
+                                        if thp.status == 200:
+                                            thp_d = await thp.json()
+                                            if thp_d.get("ok"):
+                                                rew = thp_d.get("result", {}).get("reward", 0)
+                                                coins += rew
+                                                logger.info(f"[{acc_name}] 💎 [Stones] 🗝️ Treasure Hunt found: +{rew} STONES!")
+        except Exception as the:
+            logger.debug(f"[{acc_name}] Stones treasure hunt note: {the}")
+
+        # 9. Ensure Arbitrum wallet is bound
+        try:
+            await session.post(f"{base_url}/api/wallet", json={"initData": init_data, "wallet": ARBITRUM_WALLET}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
+        except Exception:
+            pass
+
+        # 10. Auto-Withdrawal check for all fleet accounts (routes directly to Arif's Arbitrum One wallet)
         # Note: In Stones Miners, 'coins' represents the spendable Wallet Holding; 'balance' is total in-game score/EXP.
         if coins >= 500:
             withdraw_stones = min(500, int(coins))
@@ -5227,7 +5297,7 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
                 pass
 
         # 3. Exchange accumulated hashes to balance
-        if hashes_bal > 10.0:
+        if hashes_bal >= 1.0:
             try:
                 async with session.post(f"{base_url}/miner-exchange_hashes", json={"exchange": True}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as eh:
                     if eh.status == 200:
@@ -5356,7 +5426,52 @@ async def automate_ultrawallet_cycle(session: aiohttp.ClientSession, acc_client,
         except Exception:
             pass
 
-        # 5. Milestone referrals sweep (primary account)
+        # 5. Check & Play Lucky Wheel Spins (USDT, TON & LT tokens)
+        try:
+            async with session.get(f"{base_url}/spin/status", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as sps:
+                if sps.status == 200:
+                    sp_info = await sps.json()
+                    spins_avail = sp_info.get("tickets", 0) + sp_info.get("freeSpinsRemaining", 0)
+                    while spins_avail > 0:
+                        async with session.post(f"{base_url}/spin/play", json={}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as spp:
+                            if spp.status == 200:
+                                spp_d = await spp.json()
+                                if spp_d.get("ok"):
+                                    prz = spp_d.get("prize", {})
+                                    logger.info(f"[{acc_name}] 💳 [UltraWallet] 🎰 Wheel Spin won: {prz.get('amount')} {prz.get('prizeType')} ({prz.get('label')})!")
+                                    spins_avail = spp_d.get("spinTickets", 0)
+                                else:
+                                    break
+                            else:
+                                break
+                        await asyncio.sleep(1.0)
+        except Exception as se:
+            logger.debug(f"[{acc_name}] UltraWallet spin note: {se}")
+
+        # 6. Discover & Complete Available Tasks
+        try:
+            async with session.get(f"{base_url}/tasks", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as tr:
+                if tr.status == 200:
+                    td = await tr.json()
+                    for t in td.get("tasks", []):
+                        if not t.get("completed"):
+                            tid = t.get("id")
+                            ttitle = t.get("title", tid)
+                            try:
+                                async with session.post(f"{base_url}/tasks/complete", json={"taskId": tid}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as tcr:
+                                    if tcr.status == 200:
+                                        tcd = await tcr.json()
+                                        if tcd.get("ok"):
+                                            rew_c = tcd.get("rewardCoin", "LT")
+                                            rew_a = tcd.get("rewardAmount", 0)
+                                            logger.info(f"[{acc_name}] 💳 [UltraWallet] Task '{ttitle}' completed (+{rew_a} {rew_c})!")
+                            except Exception:
+                                pass
+                            await asyncio.sleep(1.0)
+        except Exception as te:
+            logger.debug(f"[{acc_name}] UltraWallet tasks note: {te}")
+
+        # 7. Milestone referrals sweep (primary account)
         if str(acc_uid) == str(REPORT_CHAT_ID):
             try:
                 await session.post(f"{base_url}/referral/milestones/claim", json={}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6))
