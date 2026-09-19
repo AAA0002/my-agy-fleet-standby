@@ -10,6 +10,7 @@ venv/
 .cloudflare_credentials
 accounts.json
 fleet_ton_wallets.json
+fleet_miniapp_tokens.json
 FLEET_TELEGRAM_TON_WALLETS_BACKUP.txt
 
 # Telegram sessions, journals and process logs

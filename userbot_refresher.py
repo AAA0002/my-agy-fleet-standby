@@ -1206,7 +1206,17 @@ STATUS_INLINE_KEYBOARD = {
             {"text": "💰 Withdraw", "callback_data": "btn_withdraw"}
         ],
         [
-            {"text": "💼 Wallet & Earnings", "callback_data": "btn_wallet"},
+            {"text": "⚡ Apex", "callback_data": "btn_apx"},
+            {"text": "🚀 ART", "callback_data": "btn_art"},
+            {"text": "⛏️ MRG", "callback_data": "btn_mrg"}
+        ],
+        [
+            {"text": "💎 Stones", "callback_data": "btn_stones"},
+            {"text": "🪙 BNB", "callback_data": "btn_bnb"},
+            {"text": "💳 Ultra", "callback_data": "btn_ultra"}
+        ],
+        [
+            {"text": "💼 Wallet Hub", "callback_data": "btn_wallet"},
             {"text": "👥 Accounts", "callback_data": "btn_accounts"}
         ],
         [
@@ -1221,6 +1231,10 @@ WALLET_INLINE_KEYBOARD = {
         [
             {"text": "🔄 Refresh", "callback_data": "btn_wallet"},
             {"text": "💰 Withdraw", "callback_data": "btn_withdraw"}
+        ],
+        [
+            {"text": "⚡ Apex Miner", "callback_data": "btn_apx"},
+            {"text": "🚀 ART Airdrop", "callback_data": "btn_art"}
         ],
         [
             {"text": "📜 Payouts", "callback_data": "btn_payouts"},
@@ -1273,6 +1287,13 @@ async def setup_bot_tab_menu():
         {"command": "status", "description": "📊 Fleet Dashboard & Real-Time Stats"},
         {"command": "wallet", "description": "💼 Multi-Chain Portfolio & Earnings"},
         {"command": "withdraw", "description": "💰 Check & Withdraw BNB"},
+        {"command": "apx", "description": "⚡ Apex Miner Yield & Speed Boost"},
+        {"command": "art", "description": "🚀 ART Airdrop Mining & Leveling"},
+        {"command": "mrg", "description": "⛏️ MRG Miner Hashrate & Cut"},
+        {"command": "stones", "description": "💎 Stones Miners & Coin Balance"},
+        {"command": "bnb", "description": "🪙 BNB Galaxy Daily Tasks"},
+        {"command": "ultra", "description": "💳 UltraWallet & USDT Yield"},
+        {"command": "ailab", "description": "🧪 AI Lab Robot Cloud Nodes"},
         {"command": "audit", "description": "🩺 Audit MTProto Fleet Sessions"},
         {"command": "miningbots", "description": "⛏️ Manage Mining Bots & Add New"},
         {"command": "accounts", "description": "👥 Manage Connected Accounts"},
@@ -2061,10 +2082,12 @@ async def build_wallet_hub_report():
         f"• **ART Airdrop:** `800 ART` submitted directly to TON payout queue\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
         f"📈 *4. Fleet Yield & Analytics ({len(accounts)} Accounts):*\n"
-        f"• **Daily Fleet Yield:** `~{daily_est_bnb:.6f} BNB` (~${daily_usd:.2f} USD / ৳{daily_bdt:.2f} BDT)\n"
-        f"• **Monthly Projected:** `~{monthly_est_bnb:.6f} BNB` (~${monthly_usd:.2f} USD / ৳{monthly_bdt:.2f} BDT)\n"
+        f"• **Daily BNB Fleet Yield:** `~{daily_est_bnb:.6f} BNB` (~${daily_usd:.2f} USD / ৳{daily_bdt:.2f} BDT)\n"
+        f"• **Monthly Projected BNB:** `~{monthly_est_bnb:.6f} BNB` (~${monthly_usd:.2f} USD / ৳{monthly_bdt:.2f} BDT)\n"
+        f"• **Apex Miner Pool:** `~{len(accounts) * 12950:,} Points` (12,950 pts/account + Continuous 8h Boost)\n"
         f"• **ART Cloud Mining:** `+21.3 ART/hr` (~511 ART/day)\n"
-        f"• **MRG Squad Cut:** `~2.0 MRG/day` (10% lifetime commission)\n\n"
+        f"• **MRG Squad Cut:** `~2.0 MRG/day` (10% lifetime team cut)\n"
+        f"• **UltraWallet Yield:** `Active Mining` (USDT Commissions & Auto Energy Refill)\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
         f"🛡️ *5. Dedicated Anti-Sybil TON Wallets (Accounts 2 to 13):*\n"
         f"• **Count:** `{len(fleet_ton)} Unique Dedicated Wallets` (0 duplicates across fleet)\n"
@@ -4991,6 +5014,22 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         rem_sec = ms.get("remainingSeconds", 0)
         accumulated = float(ms.get("accumulatedAtf", 0) or 0)
         hr_rate = ms.get("hourlyRate", 5)
+
+        # Ensure TON wallet is connected in ART Airdrop to prevent WALLET_REQUIRED failure
+        ton_addr = u.get("tonWalletAddress")
+        if not ton_addr:
+            try:
+                ton_addr = ensure_account_ton_wallet(acc) or TON_PRIMARY_WALLET
+                async with session.post(
+                    f"{base_url}/api/user/connect-wallet",
+                    json={"userId": acc_uid, "tonAddress": ton_addr},
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=4.0)
+                ) as wr:
+                    if wr.status == 200:
+                        logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Linked TON wallet: {ton_addr}")
+            except Exception as w_err:
+                logger.debug(f"[{acc_name}] ART connect-wallet note: {w_err}")
 
         # 3. Mining claim & 8-hour cycle restart
         if not is_mining or rem_sec <= 0 or accumulated > 0:
