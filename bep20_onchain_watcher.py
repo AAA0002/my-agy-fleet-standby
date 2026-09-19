@@ -14,15 +14,29 @@ import json
 import asyncio
 import urllib.request
 import aiohttp
+from dotenv import load_dotenv
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
+
+try:
+    import sentry_sdk
+    SENTRY_DSN = os.getenv("SENTRY_DSN", "https://af8cd9bec30d8551a01c5554c4d24a6b@o4512113387044864.ingest.us.sentry.io/4512113405132800")
+    if SENTRY_DSN:
+        sentry_sdk.init(dsn=SENTRY_DSN, traces_sample_rate=0.2)
+except Exception:
+    pass
+
 WALLET_ADDRESS = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 REPORT_BOT_TOKEN = "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o"
 PAYOUT_CHANNEL_ID = "-1004402765950"
 ADMIN_ID = "6727787768"
 STATE_FILE = os.path.join(BASE_DIR, "bep20_watcher_state.json")
+BETTERSTACK_HEARTBEAT_URL = os.getenv("BETTERSTACK_HEARTBEAT_URL", "https://uptime.betterstack.com/api/v1/heartbeat/bABS7gYDXgHp6H35XGcU7S6p")
+DRPC_KEY = os.getenv("DRPC_API_KEY", "Aj3ei0uTXUwutp4cQUkyTyjgB8oqtDAR8YBVEl_NDNxu")
 
 RPC_ENDPOINTS = [
+    f"https://bsc.drpc.org/ogrpc?dkey={DRPC_KEY}",
     "https://bsc-dataseed.binance.org",
     "https://binance.llamarpc.com",
     "https://bsc-dataseed1.defibit.io",
@@ -52,9 +66,10 @@ async def get_onchain_balance(session: aiohttp.ClientSession) -> float:
         "params": [WALLET_ADDRESS, "latest"],
         "id": 1
     }
+    headers = {"Content-Type": "application/json", "User-Agent": "my-agy-fleet/1.0"}
     for rpc in RPC_ENDPOINTS:
         try:
-            async with session.post(rpc, json=payload, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+            async with session.post(rpc, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                     wei = int(data["result"], 16)
@@ -153,6 +168,15 @@ async def run_check_once(session: aiohttp.ClientSession) -> dict:
         
     state["last_checked_at"] = time.time()
     save_state(state)
+
+    # Ping Better Stack Dead Man's Switch Heartbeat
+    if BETTERSTACK_HEARTBEAT_URL:
+        try:
+            async with session.get(BETTERSTACK_HEARTBEAT_URL, timeout=aiohttp.ClientTimeout(total=4)) as _:
+                pass
+        except Exception:
+            pass
+
     return {"ok": True, "balance": current_bal, "diff": diff, "bnb_price": bnb_price}
 
 async def main():

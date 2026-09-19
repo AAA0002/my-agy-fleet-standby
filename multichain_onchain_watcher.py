@@ -33,6 +33,14 @@ def load_env_file():
 
 load_env_file()
 
+try:
+    import sentry_sdk
+    SENTRY_DSN = os.getenv("SENTRY_DSN", "https://af8cd9bec30d8551a01c5554c4d24a6b@o4512113387044864.ingest.us.sentry.io/4512113405132800")
+    if SENTRY_DSN:
+        sentry_sdk.init(dsn=SENTRY_DSN, traces_sample_rate=0.2)
+except Exception:
+    pass
+
 EVM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 TON_PRIMARY_WALLET = "UQA0aO4Ybdg76l2ewtiGxA7vtk8CHbVaGvrcpA0G1kionhsP"
 REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o")
@@ -41,6 +49,7 @@ ADMIN_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
 STATE_FILE = os.path.join(BASE_DIR, "multichain_watcher_state.json")
 PAYOUT_LEDGER_FILE = os.path.join(BASE_DIR, "payout_ledger.json")
 PAYOUTS_JSON_FILE = os.path.join(BASE_DIR, "payouts.json")
+BETTERSTACK_HEARTBEAT_URL = os.getenv("BETTERSTACK_HEARTBEAT_URL", "https://uptime.betterstack.com/api/v1/heartbeat/bABS7gYDXgHp6H35XGcU7S6p")
 
 # Cloud integrations
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://znbbaozpevurvbfkxakz.supabase.co")
@@ -49,6 +58,7 @@ UPSTASH_REDIS_REST_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://relaxing-s
 UPSTASH_REDIS_REST_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw")
 TONAPI_KEY = os.getenv("TONAPI_KEY", "AGCD63WTWLGKKWYAAAAKRKZU45HTYMDI3PV7UBKKL6QDVIHG54NQDVNSQF7W3LQJ3X77QKY")
 ETHERSCAN_API_KEY = os.getenv("ETHERSCAN_API_KEY", "Z7TRGEGWC7C3CG9574D531ZRAJ1KC6MAMK")
+DRPC_KEY = os.getenv("DRPC_API_KEY", "Aj3ei0uTXUwutp4cQUkyTyjgB8oqtDAR8YBVEl_NDNxu")
 
 CF_WORKER_URLS = [
     os.getenv("CF_WORKER_URL_1", "https://restore-agy.aaaai2.workers.dev"),
@@ -58,6 +68,7 @@ CF_WORKER_URLS = [
 SECRET_KEY = os.getenv("CF_SECRET_KEY", "agy_cf_secret_7d36994e_2026")
 
 BSC_RPCS = [
+    f"https://bsc.drpc.org/ogrpc?dkey={DRPC_KEY}",
     "https://bsc-dataseed.binance.org",
     "https://binance.llamarpc.com",
     "https://bsc-dataseed1.defibit.io",
@@ -65,6 +76,7 @@ BSC_RPCS = [
 ]
 
 ARB_RPCS = [
+    f"https://arbitrum.drpc.org/ogrpc?dkey={DRPC_KEY}",
     "https://arb1.arbitrum.io/rpc",
     "https://arbitrum.llamarpc.com",
     "https://rpc.ankr.com/arbitrum"

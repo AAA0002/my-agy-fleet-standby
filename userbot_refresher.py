@@ -33,6 +33,18 @@ from phone_detector import detect_and_normalize_phone, get_country_flag
 from proxy_manager import parse_proxy, get_account_fingerprint, build_proxy_security_report, set_account_proxy
 from backup_manager import send_backup_to_telegram
 
+try:
+    import sentry_sdk
+    SENTRY_DSN = os.getenv("SENTRY_DSN", "https://af8cd9bec30d8551a01c5554c4d24a6b@o4512113387044864.ingest.us.sentry.io/4512113405132800")
+    if SENTRY_DSN:
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            traces_sample_rate=0.2,
+            environment="production"
+        )
+except Exception:
+    pass
+
 
 START_TIME = time.time()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -332,14 +344,15 @@ async def get_onchain_bnb_balance(wallet_address: str) -> float:
         "params": [wallet_address, "latest"],
         "id": 1
     }
-    # Proven, resilient public BSC RPC nodes (zero-cost, zero-auth)
+    # Proven, resilient BSC RPC nodes (prioritizing high-speed dRPC)
+    drpc_key = os.getenv("DRPC_API_KEY", "Aj3ei0uTXUwutp4cQUkyTyjgB8oqtDAR8YBVEl_NDNxu")
     rpc_urls = [
+        f"https://bsc.drpc.org/ogrpc?dkey={drpc_key}",
         "https://bsc-dataseed.binance.org",
         "https://bsc-dataseed1.binance.org",
         "https://bsc-dataseed2.binance.org",
         "https://bsc.meowrpc.com",
         "https://1rpc.io/bnb",
-        "https://bsc.drpc.org",
         "https://bsc-dataseed1.defibit.io",
         "https://bsc-dataseed1.ninicoin.io"
     ]
