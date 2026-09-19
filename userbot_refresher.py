@@ -21,7 +21,8 @@ from telethon.errors import (
     UserIsBlockedError,
     AuthKeyUnregisteredError,
     UserDeactivatedError,
-    SessionRevokedError
+    SessionRevokedError,
+    FloodWaitError
 )
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.functions.contacts import UnblockRequest
@@ -150,8 +151,10 @@ client = TelegramClient(StringSession(STRING_SESSION or ""), API_ID, API_HASH, *
 
 current_bnb_webhook = BNB_WEBHOOK_FALLBACK
 task_lock = asyncio.Lock()
+accounts_lock = asyncio.Lock()
 wake_worker_event = asyncio.Event()
 CURRENTLY_ACTIVE_ACCOUNT_ID = None
+CURRENTLY_ACTIVE_ACCOUNT_IDS = set()
 PRIORITY_ACCOUNT_IDS = set()
 
 
@@ -209,6 +212,18 @@ def save_accounts(accounts_list):
         os.replace(temp_file, ACCOUNTS_FILE)
     except Exception as e:
         logger.error(f"Error saving accounts.json: {e}")
+
+
+async def update_account_safely(acc_uid, updates: dict):
+    """Safely updates account properties in accounts.json under accounts_lock."""
+    async with accounts_lock:
+        accs = load_accounts()
+        for a in accs:
+            if str(a.get("user_id")) == str(acc_uid):
+                a.update(updates)
+                break
+        save_accounts(accs)
+        return accs
 
 
 def ensure_account_ton_wallet(acc: dict) -> str:
@@ -1290,7 +1305,16 @@ async def build_full_status_report(user_id: int):
         bnb_text = f"• Error loading BNB: {e}"
 
     active_str = "Idle / Resting between cycles"
-    if CURRENTLY_ACTIVE_ACCOUNT_ID:
+    if CURRENTLY_ACTIVE_ACCOUNT_IDS:
+        active_names = []
+        for aid in list(CURRENTLY_ACTIVE_ACCOUNT_IDS):
+            found_acc = next((a for a in accounts if str(a.get("user_id")) == str(aid)), None)
+            if found_acc:
+                active_names.append(f"#{accounts.index(found_acc)+1} {found_acc.get('name')}")
+            else:
+                active_names.append(f"ID:{aid}")
+        active_str = f"⚡ 3x Parallel Active ({len(CURRENTLY_ACTIVE_ACCOUNT_IDS)}/3): {', '.join(active_names)}"
+    elif CURRENTLY_ACTIVE_ACCOUNT_ID:
         curr_acc = next((a for a in accounts if str(a.get("user_id")) == str(CURRENTLY_ACTIVE_ACCOUNT_ID)), None)
         active_str = f"Account #{accounts.index(curr_acc)+1} ({curr_acc.get('name')})" if curr_acc else f"ID: {CURRENTLY_ACTIVE_ACCOUNT_ID}"
 
@@ -2633,6 +2657,7 @@ async def cloudflare_edge_bridge_loop():
                             "node": "vps-main",
                             "timestamp": now,
                             "active_worker_id": CURRENTLY_ACTIVE_ACCOUNT_ID,
+                            "active_worker_ids": list(CURRENTLY_ACTIVE_ACCOUNT_IDS),
                             "accounts_total": len(accs),
                             "accounts": [
                                 {
@@ -2652,7 +2677,7 @@ async def cloudflare_edge_bridge_loop():
                             "fleet_ton_wallets": ton_wallets
                         }
 
-                        # Sync to both Cloudflare accounts concurrently (Dual-Edge Parallel Replication)
+                        # Sync to all 3 Cloudflare accounts concurrently (Triple-Edge Parallel Replication)
                         async def push_telemetry(cf_url: str):
                             try:
                                 async with session.post(
@@ -2667,7 +2692,7 @@ async def cloudflare_edge_bridge_loop():
                             try:
                                 async with session.post(
                                     f"{cf_url}/heartbeat",
-                                    json={"status": "online", "active_worker": CURRENTLY_ACTIVE_ACCOUNT_ID},
+                                    json={"status": "online", "active_worker": CURRENTLY_ACTIVE_ACCOUNT_ID, "active_workers": list(CURRENTLY_ACTIVE_ACCOUNT_IDS)},
                                     headers=headers,
                                     timeout=aiohttp.ClientTimeout(total=5)
                                 ) as h_resp:
@@ -2800,12 +2825,7 @@ async def ensure_referral_bound(acc_client, acc: dict):
                     break
 
             acc["bnb_referral_bound"] = True
-            accs = load_accounts()
-            for a in accs:
-                if str(a.get("user_id")) == str(acc.get("user_id")):
-                    a["bnb_referral_bound"] = True
-                    break
-            save_accounts(accs)
+            await update_account_safely(acc.get("user_id"), {"bnb_referral_bound": True})
             logger.info(f"[{acc_name}] ✅ BNB Galaxy successfully bound to referral {BNB_REFERRAL_CODE}!")
 
         except Exception as e:
@@ -2826,12 +2846,7 @@ async def ensure_referral_bound(acc_client, acc: dict):
             except Exception:
                 pass
             acc["stones_referral_bound"] = True
-            accs = load_accounts()
-            for a in accs:
-                if str(a.get("user_id")) == str(acc_uid):
-                    a["stones_referral_bound"] = True
-                    break
-            save_accounts(accs)
+            await update_account_safely(acc_uid, {"stones_referral_bound": True})
             logger.info(f"[{acc_name}] ✅ Stones Miners successfully bound to referral {STONES_REFERRAL_CODE}!")
         except Exception as e:
             logger.warning(f"[{acc_name}] Stones referral notice: {e}")
@@ -2851,12 +2866,7 @@ async def ensure_referral_bound(acc_client, acc: dict):
             except Exception:
                 pass
             acc["mrg_referral_bound"] = True
-            accs = load_accounts()
-            for a in accs:
-                if str(a.get("user_id")) == str(acc_uid):
-                    a["mrg_referral_bound"] = True
-                    break
-            save_accounts(accs)
+            await update_account_safely(acc_uid, {"mrg_referral_bound": True})
             logger.info(f"[{acc_name}] ✅ MRG Miner successfully bound to referral {MRG_REFERRAL_CODE}!")
         except Exception as e:
             logger.warning(f"[{acc_name}] MRG referral notice: {e}")
@@ -2876,12 +2886,7 @@ async def ensure_referral_bound(acc_client, acc: dict):
             except Exception:
                 pass
             acc["art_referral_bound"] = True
-            accs = load_accounts()
-            for a in accs:
-                if str(a.get("user_id")) == str(acc_uid):
-                    a["art_referral_bound"] = True
-                    break
-            save_accounts(accs)
+            await update_account_safely(acc_uid, {"art_referral_bound": True})
             logger.info(f"[{acc_name}] ✅ ART Airdrop successfully bound to referral {ART_REFERRAL_CODE}!")
         except Exception as e:
             logger.warning(f"[{acc_name}] ART referral notice: {e}")
@@ -2926,12 +2931,7 @@ async def self_heal_account_channels_and_bots(acc_client, acc: dict):
                 logger.debug(f"[{acc_name}] Channel guard check (@{ch}): {ce}")
 
     acc["last_healed_at"] = now_ts
-    accs = load_accounts()
-    for a in accs:
-        if str(a.get("user_id")) == str(acc_uid):
-            a["last_healed_at"] = now_ts
-            break
-    save_accounts(accs)
+    await update_account_safely(acc_uid, {"last_healed_at": now_ts})
     logger.info(f"[{acc_name}] 🛡️ Self-Healing Channel & Bot Guard check completed.")
 
 
@@ -3190,8 +3190,8 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
     if not acc_data:
         acc_data = next((a for a in accounts if str(a.get("user_id")) == str(user_id)), None)
 
-    global CURRENTLY_ACTIVE_ACCOUNT_ID
-    if acc_client is None and CURRENTLY_ACTIVE_ACCOUNT_ID is not None and str(CURRENTLY_ACTIVE_ACCOUNT_ID) == str(user_id):
+    global CURRENTLY_ACTIVE_ACCOUNT_ID, CURRENTLY_ACTIVE_ACCOUNT_IDS
+    if acc_client is None and (str(user_id) in CURRENTLY_ACTIVE_ACCOUNT_IDS or (CURRENTLY_ACTIVE_ACCOUNT_ID is not None and str(CURRENTLY_ACTIVE_ACCOUNT_ID) == str(user_id))):
         logger.info(f"[BNB Auto-Withdraw] {user_name} is currently busy in 24/7 worker. Deferring to active worker.")
         if notify_manual:
             await send_report_message(
@@ -3208,7 +3208,8 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
     if cl is None:
         if CURRENTLY_ACTIVE_ACCOUNT_ID is None:
             CURRENTLY_ACTIVE_ACCOUNT_ID = user_id
-            claimed_lock = True
+        CURRENTLY_ACTIVE_ACCOUNT_IDS.add(str(user_id))
+        claimed_lock = True
         if acc_data and acc_data.get("session_string"):
             sess = acc_data.get("session_string")
             if sess == STRING_SESSION:
@@ -3499,7 +3500,8 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
         return False
     finally:
         if claimed_lock:
-            CURRENTLY_ACTIVE_ACCOUNT_ID = None
+            CURRENTLY_ACTIVE_ACCOUNT_IDS.discard(str(user_id))
+            CURRENTLY_ACTIVE_ACCOUNT_ID = next(iter(CURRENTLY_ACTIVE_ACCOUNT_IDS), None)
         if should_disconnect and cl:
             try:
                 await cl.disconnect()
@@ -3571,7 +3573,7 @@ async def scan_fleet_balances(caller_chat_id=None):
             should_disc = False
             try:
                 # If this account is currently being processed by 24/7 worker, read cached balance directly
-                if str(uid) == str(CURRENTLY_ACTIVE_ACCOUNT_ID):
+                if str(uid) in CURRENTLY_ACTIVE_ACCOUNT_IDS or str(uid) == str(CURRENTLY_ACTIVE_ACCOUNT_ID):
                     if str(uid) in ACCOUNT_BALANCES:
                         balance = ACCOUNT_BALANCES[str(uid)].get("balance", 0.0)
                 elif sess == STRING_SESSION:
@@ -4115,6 +4117,184 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         logger.warning(f"[{acc_name}] ART automation note: {err_msg}")
 
 
+async def farm_single_account(
+    acc_idx: int,
+    total_accounts: int,
+    acc: dict,
+    worker_slot: int,
+    fleet_next_resets: list,
+    fleet_ready_counts: list,
+    primary_user_id: int
+):
+    """
+    Executes autonomous farming cycle for a single account:
+    - Pre-checks BNB task readiness
+    - Connects isolated MTProto session
+    - Binds referrals & runs self-healing checks
+    - Watches BNB Galaxy ads/tasks
+    - Performs balance checks & auto-withdrawals
+    - Cycles Stones, MRG, and ART miners
+    - Distributes telemetry and heartbeats to assigned Cloudflare Node
+    """
+    acc_name = acc.get("name", f"Account #{acc_idx}")
+    acc_uid = int(acc.get("user_id", primary_user_id))
+    acc_sess = acc.get("session_string")
+    if not acc_sess:
+        return
+
+    if acc.get("status") == "revoked":
+        logger.warning(f"[{acc_name}] Account session marked as revoked. Skipping until re-login.")
+        return
+
+    cf_node_url = CF_WORKER_URLS[worker_slot % len(CF_WORKER_URLS)]
+    cf_tag = f"CF-Node-{worker_slot + 1}"
+
+    # 1. Pre-check BNB task readiness via fast HTTP call before MTProto session
+    acc_proxy = parse_proxy(acc.get("proxy"))
+    states = {}
+    ready_tasks_count = 0
+    next_bnb_avail_ms = None
+    try:
+        async with aiohttp.ClientSession() as http_check_session:
+            states = await get_bnb_tasks_status(http_check_session, acc_uid, proxy=acc.get("proxy"))
+    except Exception:
+        states = {}
+
+    now_ms = int(time.time() * 1000)
+    if states:
+        ready_tasks = [int(tid) for tid, avail in states.items() if avail == 0 or avail <= now_ms]
+        ready_tasks_count = len(ready_tasks)
+        for avail in states.values():
+            if avail > 0 and (next_bnb_avail_ms is None or avail < next_bnb_avail_ms):
+                next_bnb_avail_ms = avail
+    else:
+        ready_tasks_count = 10
+
+    if next_bnb_avail_ms:
+        fleet_next_resets.append(next_bnb_avail_ms)
+
+    # Check if self-healing is due (every 12 hours)
+    last_heal = float(acc.get("last_healed_at") or 0)
+    heal_due = (time.time() - last_heal) > (12 * 3600)
+
+    # Check if withdrawal is already eligible
+    known_balance = ACCOUNT_BALANCES.get(str(acc_uid), {}).get("balance", 0.0)
+    withdraw_due = known_balance >= MIN_WITHDRAWAL
+
+    # Check if unverified withdrawal verification tasks are pending on Adsgram
+    unverified_due = False
+    try:
+        async with aiohttp.ClientSession() as chk_sess:
+            async with chk_sess.get(f"https://justtool.site/api/adsgram-task3?tgId={acc_uid}", timeout=aiohttp.ClientTimeout(total=5)) as chk_r:
+                if chk_r.status == 200:
+                    chk_d = await chk_r.json()
+                    if 0 < chk_d.get("count", 0) < 5:
+                        unverified_due = True
+    except Exception:
+        pass
+
+    # If 10/10 BNB tasks completed (0 ready), no heal due, no BNB withdrawal due, and no unverified tasks, skip MTProto connection completely!
+    if ready_tasks_count == 0 and not heal_due and not withdraw_due and not unverified_due:
+        hours_left = max(0.0, (next_bnb_avail_ms - now_ms) / 3600000.0) if next_bnb_avail_ms else 8.0
+        logger.info(f"[{cf_tag} | Slot {worker_slot+1}/3] === [Account {acc_idx}/{total_accounts}] {acc_name} (ID: {acc_uid}) ===")
+        logger.info(f"[{acc_name}] 10/10 BNB tasks completed & mining up-to-date. Next reset in ~{hours_left:.1f}h. Skipping MTProto to conserve shared RAM.")
+        gc.collect()
+        return
+
+    fleet_ready_counts.append(ready_tasks_count)
+    logger.info(f"🚀 [{cf_tag} | Slot {worker_slot+1}/3] === [Account {acc_idx}/{total_accounts}] {acc_name} (ID: {acc_uid}) Starting Parallel Farming ===")
+
+    acc_cl = None
+    should_disconnect = False
+    try:
+        global CURRENTLY_ACTIVE_ACCOUNT_ID, CURRENTLY_ACTIVE_ACCOUNT_IDS
+        CURRENTLY_ACTIVE_ACCOUNT_IDS.add(str(acc_uid))
+        CURRENTLY_ACTIVE_ACCOUNT_ID = acc_uid
+
+        # Ping assigned Cloudflare Edge node with heartbeat
+        try:
+            async with aiohttp.ClientSession() as hb_session:
+                await hb_session.post(
+                    f"{cf_node_url}/heartbeat",
+                    json={"status": "farming", "worker_slot": worker_slot + 1, "account_id": acc_uid, "account_name": acc_name},
+                    headers={"Authorization": "Bearer agy_cf_secret_7d36994e_2026", "Content-Type": "application/json"},
+                    timeout=aiohttp.ClientTimeout(total=5)
+                )
+        except Exception:
+            pass
+
+        if acc_sess == STRING_SESSION:
+            acc_cl = client
+            should_disconnect = False
+        else:
+            acc_fp = get_account_fingerprint(acc_uid)
+            acc_cl = TelegramClient(StringSession(acc_sess), API_ID, API_HASH, proxy=acc_proxy, **acc_fp)
+            await acc_cl.connect()
+            should_disconnect = True
+
+        # 0. Ensure account is registered under user's referral links
+        await ensure_referral_bound(acc_cl, acc)
+
+        # 0b. Autonomous Self-Healing Channel & Bot Guard
+        await self_heal_account_channels_and_bots(acc_cl, acc)
+
+        async with aiohttp.ClientSession() as http_sess:
+            # 1. Complete BNB Galaxy daily tasks
+            if ready_tasks_count > 0:
+                done, total, next_avail = await process_bnb_galaxy_tasks(http_sess, acc_uid, acc_cl, acc)
+                if next_avail:
+                    fleet_next_resets.append(next_avail)
+
+            # 2. Check BNB balance & auto-withdraw if >= 0.00005 BNB
+            await human_delay(3.0, 6.0, f"[{acc_name}] Pause before BNB balance check")
+            await check_and_auto_withdraw(acc_uid, acc_name, notify_manual=False, acc_client=acc_cl, acc_data=acc)
+
+            # 3. Stones Miners Automation (Daily check-in, mining renew, auto-withdraw check)
+            await human_delay(3.0, 5.0, f"[{acc_name}] Pause before Stones Miners")
+            await automate_stones_cycle(http_sess, acc_cl, acc)
+
+            # 4. MRG Miner Automation (Mining harvest, squad commission sweep, wallet binding)
+            await human_delay(3.0, 5.0, f"[{acc_name}] Pause before MRG Miner")
+            await automate_mrg_cycle(http_sess, acc_cl, acc)
+
+            # 5. ART Airdrop Automation (Mining claim, 8h cycle restart, channel task)
+            await human_delay(3.0, 5.0, f"[{acc_name}] Pause before ART Airdrop")
+            await automate_art_cycle(http_sess, acc_cl, acc)
+
+        # Record completed multi-bot cycle timestamp safely
+        acc["last_fleet_cycle_at"] = time.time()
+        await update_account_safely(acc_uid, {"last_fleet_cycle_at": time.time()})
+        PRIORITY_ACCOUNT_IDS.discard(str(acc_uid))
+        logger.info(f"✅ [{cf_tag} | Slot {worker_slot+1}/3] Completed farming cycle for {acc_name} ({acc_uid})")
+
+    except (AuthKeyUnregisteredError, UserDeactivatedError, SessionRevokedError) as auth_err:
+        logger.error(f"[Account Revoked] Session for {acc_name} ({acc_uid}) was revoked: {auth_err}")
+        await update_account_safely(acc_uid, {"status": "revoked", "revoked_reason": str(auth_err)})
+        alert_msg = (
+            f"⚠️ *Account Session Revoked!*\n\n"
+            f"• **Account:** {acc_name}\n"
+            f"• **Phone:** `{acc.get('phone', 'N/A')}`\n"
+            f"• **Reason:** `{auth_err}`\n\n"
+            f"❌ This account was disconnected on mobile or revoked by Telegram.\n"
+            f"💡 Send `➕ Add Account` to reconnect it whenever you are ready."
+        )
+        await broadcast_admin_message(alert_msg, reply_markup=MAIN_TAB_KEYBOARD)
+    except FloodWaitError as fwe:
+        logger.warning(f"[{acc_name}] Telegram FloodWait: {fwe.seconds}s. Skipping until next cycle.")
+    except Exception as acc_err:
+        logger.error(f"[Account Exception] Error processing account {acc_name} ({acc_uid}): {acc_err}", exc_info=True)
+    finally:
+        if should_disconnect and acc_cl:
+            try:
+                await acc_cl.disconnect()
+            except Exception:
+                pass
+            acc_cl = None
+        CURRENTLY_ACTIVE_ACCOUNT_IDS.discard(str(acc_uid))
+        CURRENTLY_ACTIVE_ACCOUNT_ID = next(iter(CURRENTLY_ACTIVE_ACCOUNT_IDS), None)
+        # Aggressively release unreferenced memory on shared VPS RAM
+        gc.collect()
+
 
 # =======================================================
 # 24/7 UNIFIED BACKGROUND WORKER
@@ -4150,11 +4330,11 @@ async def task_worker_247(user_id: int, user_name: str):
         try:
             logger.info("Starting automated cycle check across bots...")
             fleet_next_resets = []
-            fleet_total_ready = 0
+            fleet_ready_counts = []
 
             async with task_lock:
                 accounts = load_accounts()
-                logger.info(f"Farming cycle running for {len(accounts)} account(s)...")
+                logger.info(f"⚡ Farming cycle running for {len(accounts)} account(s) with 3x Parallel Concurrency across 3 Cloudflare Nodes...")
 
                 # Priority sorting: queued priority IDs first, never-cycled accounts second, then remaining by oldest cycle
                 accounts.sort(key=lambda a: (
@@ -4164,159 +4344,38 @@ async def task_worker_247(user_id: int, user_name: str):
                     float(a.get("last_fleet_cycle_at") or 0)
                 ))
 
-                for acc_idx, acc in enumerate(accounts, 1):
-                    acc_name = acc.get("name", f"Account #{acc_idx}")
-                    acc_uid = int(acc.get("user_id", user_id))
-                    acc_sess = acc.get("session_string")
-                    if not acc_sess:
-                        continue
+                slot_queue = asyncio.Queue()
+                for slot_idx in range(3):
+                    await slot_queue.put(slot_idx)
 
-                    if acc.get("status") == "revoked":
-                        logger.warning(f"[{acc_name}] Account session marked as revoked. Skipping until re-login.")
-                        continue
-
-                    # 1. Pre-check BNB task readiness via fast HTTP call before MTProto session
-                    acc_proxy = parse_proxy(acc.get("proxy"))
-                    states = {}
-                    ready_tasks_count = 0
-                    next_bnb_avail_ms = None
+                async def run_parallel_worker(acc_idx, acc_data, total_accs):
+                    slot_id = await slot_queue.get()
                     try:
-                        async with aiohttp.ClientSession() as http_check_session:
-                            states = await get_bnb_tasks_status(http_check_session, acc_uid, proxy=acc.get("proxy"))
-                    except Exception:
-                        states = {}
-
-                    now_ms = int(time.time() * 1000)
-                    if states:
-                        ready_tasks = [int(tid) for tid, avail in states.items() if avail == 0 or avail <= now_ms]
-                        ready_tasks_count = len(ready_tasks)
-                        for avail in states.values():
-                            if avail > 0 and (next_bnb_avail_ms is None or avail < next_bnb_avail_ms):
-                                next_bnb_avail_ms = avail
-                    else:
-                        ready_tasks_count = 10
-
-                    if next_bnb_avail_ms:
-                        fleet_next_resets.append(next_bnb_avail_ms)
-
-                    # Check if self-healing is due (every 12 hours)
-                    last_heal = float(acc.get("last_healed_at") or 0)
-                    heal_due = (time.time() - last_heal) > (12 * 3600)
-
-                    # Check if withdrawal is already eligible
-                    known_balance = ACCOUNT_BALANCES.get(str(acc_uid), {}).get("balance", 0.0)
-                    withdraw_due = known_balance >= MIN_WITHDRAWAL
-
-                    # Check if unverified withdrawal verification tasks are pending on Adsgram
-                    unverified_due = False
-                    try:
-                        async with aiohttp.ClientSession() as chk_sess:
-                            async with chk_sess.get(f"https://justtool.site/api/adsgram-task3?tgId={acc_uid}", timeout=aiohttp.ClientTimeout(total=5)) as chk_r:
-                                if chk_r.status == 200:
-                                    chk_d = await chk_r.json()
-                                    if 0 < chk_d.get("count", 0) < 5:
-                                        unverified_due = True
-                    except Exception:
-                        pass
-
-                    # If 10/10 BNB tasks completed (0 ready), no heal due, no BNB withdrawal due, and no unverified tasks, skip MTProto connection completely!
-                    if ready_tasks_count == 0 and not heal_due and not withdraw_due and not unverified_due:
-                        hours_left = max(0.0, (next_bnb_avail_ms - now_ms) / 3600000.0) if next_bnb_avail_ms else 8.0
-                        logger.info(f"=== [Account {acc_idx}/{len(accounts)}] {acc_name} (ID: {acc_uid}) ===")
-                        logger.info(f"[{acc_name}] 10/10 BNB tasks completed & mining up-to-date. Next reset in ~{hours_left:.1f}h. Skipping MTProto to conserve shared RAM.")
-                        gc.collect()
-                        continue
-
-                    fleet_total_ready += ready_tasks_count
-                    logger.info(f"=== [Account {acc_idx}/{len(accounts)}] {acc_name} (ID: {acc_uid}) ===")
-
-                    acc_cl = None
-                    should_disconnect = False
-                    try:
-                        global CURRENTLY_ACTIVE_ACCOUNT_ID
-                        CURRENTLY_ACTIVE_ACCOUNT_ID = acc_uid
-
-                        if acc_sess == STRING_SESSION:
-                            acc_cl = client
-                            should_disconnect = False
+                        if acc_idx <= 3:
+                            # Stagger initial launches by 3.5s so connections don't burst
+                            await asyncio.sleep(slot_id * 3.5)
                         else:
-                            acc_fp = get_account_fingerprint(acc_uid)
-                            acc_cl = TelegramClient(StringSession(acc_sess), API_ID, API_HASH, proxy=acc_proxy, **acc_fp)
-                            await acc_cl.connect()
-                            should_disconnect = True
+                            await human_delay(10.0, 25.0, f"Pacing pause on Slot {slot_id+1} before Account #{acc_idx}")
 
-                        # 0. Ensure account is registered under user's referral links
-                        await ensure_referral_bound(acc_cl, acc)
-
-                        # 0b. Autonomous Self-Healing Channel & Bot Guard
-                        await self_heal_account_channels_and_bots(acc_cl, acc)
-
-                        async with aiohttp.ClientSession() as http_sess:
-                            # 1. Complete BNB Galaxy daily tasks
-                            if ready_tasks_count > 0:
-                                done, total, next_avail = await process_bnb_galaxy_tasks(http_sess, acc_uid, acc_cl, acc)
-                                if next_avail:
-                                    fleet_next_resets.append(next_avail)
-
-                            # 2. Check BNB balance & auto-withdraw if >= 0.00005 BNB
-                            await human_delay(3.0, 6.0, f"[{acc_name}] Pause before BNB balance check")
-                            await check_and_auto_withdraw(acc_uid, acc_name, notify_manual=False, acc_client=acc_cl, acc_data=acc)
-
-                            # 3. Stones Miners Automation (Daily check-in, mining renew, auto-withdraw check)
-                            await human_delay(3.0, 5.0, f"[{acc_name}] Pause before Stones Miners")
-                            await automate_stones_cycle(http_sess, acc_cl, acc)
-
-                            # 4. MRG Miner Automation (Mining harvest, squad commission sweep, wallet binding)
-                            await human_delay(3.0, 5.0, f"[{acc_name}] Pause before MRG Miner")
-                            await automate_mrg_cycle(http_sess, acc_cl, acc)
-
-                            # 5. ART Airdrop Automation (Mining claim, 8h cycle restart, channel task)
-                            await human_delay(3.0, 5.0, f"[{acc_name}] Pause before ART Airdrop")
-                            await automate_art_cycle(http_sess, acc_cl, acc)
-
-                        # Record completed multi-bot cycle timestamp
-                        acc["last_fleet_cycle_at"] = time.time()
-                        accs_curr = load_accounts()
-                        for a in accs_curr:
-                            if str(a.get("user_id")) == str(acc_uid):
-                                a["last_fleet_cycle_at"] = time.time()
-                                break
-                        save_accounts(accs_curr)
-                        PRIORITY_ACCOUNT_IDS.discard(str(acc_uid))
-
-                    except (AuthKeyUnregisteredError, UserDeactivatedError, SessionRevokedError) as auth_err:
-                        logger.error(f"[Account Revoked] Session for {acc_name} ({acc_uid}) was revoked: {auth_err}")
-                        accs = load_accounts()
-                        for a in accs:
-                            if str(a.get("user_id")) == str(acc_uid):
-                                a["status"] = "revoked"
-                                a["revoked_reason"] = str(auth_err)
-                                break
-                        save_accounts(accs)
-                        alert_msg = (
-                            f"⚠️ *Account Session Revoked!*\n\n"
-                            f"• **Account:** {acc_name}\n"
-                            f"• **Phone:** `{acc.get('phone', 'N/A')}`\n"
-                            f"• **Reason:** `{auth_err}`\n\n"
-                            f"❌ This account was disconnected on mobile or revoked by Telegram.\n"
-                            f"💡 Send `➕ Add Account` to reconnect it whenever you are ready."
+                        await farm_single_account(
+                            acc_idx=acc_idx,
+                            total_accounts=total_accs,
+                            acc=acc_data,
+                            worker_slot=slot_id,
+                            fleet_next_resets=fleet_next_resets,
+                            fleet_ready_counts=fleet_ready_counts,
+                            primary_user_id=user_id
                         )
-                        await broadcast_admin_message(alert_msg, reply_markup=MAIN_TAB_KEYBOARD)
-                    except Exception as acc_err:
-                        logger.error(f"[Account Exception] Error processing account {acc_name} ({acc_uid}): {acc_err}", exc_info=True)
                     finally:
-                        if should_disconnect and acc_cl:
-                            try:
-                                await acc_cl.disconnect()
-                            except Exception:
-                                pass
-                            acc_cl = None
-                        CURRENTLY_ACTIVE_ACCOUNT_ID = None
-                        # Aggressively release unreferenced memory on shared VPS RAM
-                        gc.collect()
+                        await slot_queue.put(slot_id)
 
-                    if acc_idx < len(accounts):
-                        await human_delay(20.0, 45.0, "Stagger pause between multi-accounts")
+                worker_tasks = [
+                    asyncio.create_task(run_parallel_worker(idx, acc, len(accounts)))
+                    for idx, acc in enumerate(accounts, 1)
+                ]
+                await asyncio.gather(*worker_tasks, return_exceptions=True)
+
+            fleet_total_ready = sum(fleet_ready_counts)
 
             # Send Daily Digest Report once per day
             current_day = datetime.now(timezone.utc).day
