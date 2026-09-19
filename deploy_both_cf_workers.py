@@ -448,8 +448,8 @@ fi
       }
     }
 
-    // 7.5 Real-Time Web Dashboard (/dashboard & /status-ui)
-    if (path === "/dashboard" || path === "/status-ui") {
+    // 7.5 Real-Time Graphical Web Dashboard & Telegram Mini App (/dashboard, /status-ui, /miniapp, /app)
+    if (path === "/dashboard" || path === "/status-ui" || path === "/miniapp" || path === "/app") {
       try {
         let state = {};
         try {
@@ -457,318 +457,612 @@ fi
           if (raw) state = JSON.parse(raw);
         } catch (_) {}
 
-      let rates = { bnb_usd: 764.0, arb_usd: 0.55, ton_usd: 5.60, eth_usd: 2616.0, btc_usd: 64500.0 };
-      try {
-        const rawR = await env.BACKUP_KV.get("binance_rates_cache");
-        if (rawR) rates = { ...rates, ...JSON.parse(rawR) };
-      } catch (_) {}
+        let rates = { bnb_usd: 764.0, arb_usd: 0.55, ton_usd: 5.60, eth_usd: 2616.0, btc_usd: 64500.0 };
+        try {
+          const rawR = await env.BACKUP_KV.get("binance_rates_cache");
+          if (rawR) rates = { ...rates, ...JSON.parse(rawR) };
+        } catch (_) {}
 
-      let mcState = {};
-      try {
-        const rawMC = await env.BACKUP_KV.get("multichain_balances_state");
-        if (rawMC) mcState = JSON.parse(rawMC);
-      } catch (_) {}
+        let mcState = {};
+        try {
+          const rawMC = await env.BACKUP_KV.get("multichain_balances_state");
+          if (rawMC) mcState = JSON.parse(rawMC);
+        } catch (_) {}
 
-      let payouts = [];
-      try {
-        const rawP = await env.BACKUP_KV.get("recent_payouts_list");
-        if (rawP) payouts = JSON.parse(rawP);
-      } catch (_) {}
+        let payouts = [];
+        try {
+          const rawP = await env.BACKUP_KV.get("recent_payouts_list");
+          if (rawP) payouts = JSON.parse(rawP);
+        } catch (_) {}
 
-      let rawTokens = {};
-      try {
-        const rawT = await env.BACKUP_KV.get("miniapp_tokens");
-        if (rawT) rawTokens = JSON.parse(rawT);
-      } catch (_) {}
-      const tokenCount = Object.keys(rawTokens).length;
+        let rawTokens = {};
+        try {
+          const rawT = await env.BACKUP_KV.get("miniapp_tokens");
+          if (rawT) rawTokens = JSON.parse(rawT);
+        } catch (_) {}
+        const tokenCount = Object.keys(rawTokens).length;
 
-      const accounts = (state && state.accounts) || [
-        { index: 1, name: "Arif Hossain", user_id: 6727787768, status: "active", ton_wallet: "UQA0aO4Ybdg76l2ewtiGxA7vtk8CHbVaGvrcpA0G1kionhsP" },
-        { index: 2, name: "Arif", user_id: 8826375659, status: "active", ton_wallet: "UQBWp2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t7" },
-        { index: 3, name: "Nadim Никитин", user_id: 8450010161, status: "active", ton_wallet: "UQCrq2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t8" },
-        { index: 4, name: "Kaitlyn Морозов", user_id: 8782429452, status: "active", ton_wallet: "UQDst2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t9" },
-        { index: 5, name: "Abid Hasan", user_id: 7734849205, status: "active", ton_wallet: "UQEtv2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t0" },
-        { index: 6, name: "Abid Hasan", user_id: 8025472383, status: "active", ton_wallet: "UQFuw2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t1" },
-        { index: 7, name: "Tg Соколов", user_id: 8851426148, status: "active", ton_wallet: "UQGvx2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t2" },
-        { index: 8, name: "Girtt Кузнецов", user_id: 8203342513, status: "active", ton_wallet: "UQHwy2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t3" },
-        { index: 9, name: "Nancy", user_id: 8881914294, status: "active", ton_wallet: "UQIz02i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t4" },
-        { index: 10, name: "Koram Shah", user_id: 7648254021, status: "active", ton_wallet: "UQJ012i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t5" },
-        { index: 11, name: "MD. ARIF HOSSAIN", user_id: 8190649727, status: "active", ton_wallet: "UQK122i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t6" },
-        { index: 12, name: "Nadim", user_id: 7306260278, status: "active", ton_wallet: "UQL232i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t7" },
-        { index: 13, name: "Milon", user_id: 7490632948, status: "active", ton_wallet: "UQM342i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t8" }
-      ];
+        const accounts = (state && state.accounts) || [
+          { index: 1, name: "Arif Hossain", user_id: 6727787768, status: "active", ton_wallet: "UQA0aO4Ybdg76l2ewtiGxA7vtk8CHbVaGvrcpA0G1kionhsP" },
+          { index: 2, name: "Arif", user_id: 8826375659, status: "active", ton_wallet: "UQBWp2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t7" },
+          { index: 3, name: "Nadim Никитин", user_id: 8450010161, status: "active", ton_wallet: "UQCrq2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t8" },
+          { index: 4, name: "Kaitlyn Морозов", user_id: 8782429452, status: "active", ton_wallet: "UQDst2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t9" },
+          { index: 5, name: "Abid Hasan", user_id: 7734849205, status: "active", ton_wallet: "UQEtv2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t0" },
+          { index: 6, name: "Abid Hasan", user_id: 8025472383, status: "active", ton_wallet: "UQFuw2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t1" },
+          { index: 7, name: "Tg Соколов", user_id: 8851426148, status: "active", ton_wallet: "UQGvx2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t2" },
+          { index: 8, name: "Girtt Кузнецов", user_id: 8203342513, status: "active", ton_wallet: "UQHwy2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t3" },
+          { index: 9, name: "Nancy", user_id: 8881914294, status: "active", ton_wallet: "UQIz02i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t4" },
+          { index: 10, name: "Koram Shah", user_id: 7648254021, status: "active", ton_wallet: "UQJ012i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t5" },
+          { index: 11, name: "MD. ARIF HOSSAIN", user_id: 8190649727, status: "active", ton_wallet: "UQK122i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t6" },
+          { index: 12, name: "Nadim", user_id: 7306260278, status: "active", ton_wallet: "UQL232i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t7" },
+          { index: 13, name: "Milon", user_id: 7490632948, status: "active", ton_wallet: "UQM342i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t8" }
+        ];
 
-      const bnbBal = mcState.bsc_bnb_balance !== undefined ? mcState.bsc_bnb_balance : 0.000622;
-      const ethBal = mcState.arb_eth_balance !== undefined ? mcState.arb_eth_balance : 0.0;
-      const tonBal = mcState.ton_balance !== undefined ? mcState.ton_balance : 0.0;
-      const bnbUsd = (bnbBal * (rates.bnb_usd || 764.0)).toFixed(2);
-      const bnbBdt = ((bnbBal * (rates.bnb_usd || 764.0)) * 122.50).toFixed(1);
+        const bnbBal = mcState.bsc_bnb_balance !== undefined ? mcState.bsc_bnb_balance : 0.000622;
+        const tonBal = mcState.ton_balance !== undefined ? mcState.ton_balance : 0.0;
+        const bnbUsd = (bnbBal * (rates.bnb_usd || 764.0)).toFixed(2);
+        const bnbBdt = ((bnbBal * (rates.bnb_usd || 764.0)) * 122.50).toFixed(1);
 
-      const html = `<!DOCTYPE html>
+        const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MY AGY AI — Autonomous Multi-Chain Fleet Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>MY AGY AI — Autonomous Fleet Dashboard</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #06080e;
-    --card: #0d121d;
-    --card-hover: #121826;
-    --card-border: #1a2235;
-    --accent: #00f0ff;
-    --gold: #f3ba2f;
-    --green: #00ff88;
-    --purple: #a855f7;
-    --text: #f0f4fc;
-    --muted: #8492a6;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text-main: #0f172a;
+    --text-sub: #475569;
+    --text-muted: #64748b;
+    --primary: #2563eb;
+    --primary-bg: #eff6ff;
+    --green: #059669;
+    --green-bg: #ecfdf5;
+    --green-border: #a7f3d0;
+    --gold: #b45309;
+    --gold-bg: #fef3c7;
+    --gold-border: #fcd34d;
+    --ton: #0284c7;
+    --ton-bg: #f0f9ff;
+    --ton-border: #bae6fd;
+    --purple: #7c3aed;
+    --purple-bg: #f5f3ff;
+    --purple-border: #ddd6fe;
+    --safe-bottom: env(safe-area-inset-bottom, 16px);
   }
-  * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-  body { background: var(--bg); color: var(--text); padding: 20px; line-height: 1.5; min-height: 100vh; }
-  .container { max-width: 1240px; margin: 0 auto; }
-  header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--card-border); margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
-  .logo { display: flex; align-items: center; gap: 14px; }
-  .logo h1 { font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em; background: linear-gradient(135deg, var(--gold) 0%, #ffe8ad 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .badge { background: rgba(0, 255, 136, 0.12); color: var(--green); border: 1px solid rgba(0, 255, 136, 0.35); border-radius: 20px; padding: 4px 12px; font-size: 0.78rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
-  .badge::before { content:''; width:8px; height:8px; background:var(--green); border-radius:50%; box-shadow:0 0 8px var(--green); }
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text-main); line-height: 1.45; min-height: 100vh; padding-bottom: calc(74px + var(--safe-bottom)); -webkit-font-smoothing: antialiased; }
+  .app-container { max-width: 580px; margin: 0 auto; padding: 12px 14px; }
   
-  .ticker-bar { display: flex; gap: 18px; overflow-x: auto; background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 10px 18px; margin-bottom: 24px; align-items: center; font-size: 0.85rem; }
-  .ticker-item { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-  .ticker-name { color: var(--muted); font-weight: 600; }
-  .ticker-price { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text); }
+  /* Top App Bar */
+  .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 6px 0 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+  .logo-box { display: flex; align-items: center; gap: 8px; }
+  .logo-icon { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #2563eb, #1d4ed8); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 1.05rem; box-shadow: 0 2px 6px rgba(37,99,235,0.25); }
+  .logo-title { font-size: 1.05rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.02em; }
+  .logo-badge { font-size: 0.65rem; font-weight: 800; background: var(--primary-bg); color: var(--primary); padding: 2px 6px; border-radius: 6px; border: 1px solid #bfdbfe; }
+  .live-pill { display: inline-flex; align-items: center; gap: 5px; background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin-bottom: 24px; }
-  .card { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 22px; transition: transform 0.2s, border-color 0.2s; position: relative; overflow: hidden; }
-  .card:hover { transform: translateY(-2px); border-color: rgba(243, 186, 47, 0.4); background: var(--card-hover); }
-  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  .card-title { font-size: 0.82rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
-  .card-value { font-size: 1.85rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
-  .card-sub { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
-  
-  .chain-badge { font-size: 0.72rem; padding: 3px 9px; border-radius: 6px; font-weight: 700; letter-spacing: 0.03em; }
-  .chain-bsc { background: rgba(243, 186, 47, 0.15); color: var(--gold); border: 1px solid rgba(243, 186, 47, 0.4); }
-  .chain-arb { background: rgba(0, 240, 255, 0.15); color: var(--accent); border: 1px solid rgba(0, 240, 255, 0.4); }
-  .chain-ton { background: rgba(0, 152, 234, 0.15); color: #0098ea; border: 1px solid rgba(0, 152, 234, 0.4); }
-  .chain-ok { background: rgba(0, 255, 136, 0.15); color: var(--green); border: 1px solid rgba(0, 255, 136, 0.4); }
+  /* Ticker */
+  .ticker-scroll { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 10px; margin-bottom: 6px; }
+  .ticker-scroll::-webkit-scrollbar { display: none; }
+  .ticker-chip { flex-shrink: 0; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; font-size: 0.72rem; display: flex; align-items: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+  .t-label { color: var(--text-muted); font-weight: 600; }
+  .t-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text-main); }
 
-  .actions-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
-  .btn { background: var(--gold); color: #000; padding: 10px 18px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; border: none; cursor: pointer; transition: opacity 0.2s; }
-  .btn:hover { opacity: 0.9; }
-  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--card-border); }
-  .btn-outline:hover { border-color: var(--gold); }
+  /* Cards */
+  .card { background: #ffffff; border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.02); }
+  .card-hero { background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border: 1px solid #bbf7d0; }
+  .hero-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; }
+  .hero-val { font-size: 1.75rem; font-weight: 800; color: var(--text-main); font-family: 'JetBrains Mono', monospace; margin: 4px 0; }
+  .hero-sub { font-size: 0.8rem; color: var(--green); font-weight: 600; display: flex; align-items: center; gap: 6px; }
 
-  .table-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 24px; margin-bottom: 24px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 14px; }
-  th, td { text-align: left; padding: 13px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.88rem; }
-  th { color: var(--muted); font-size: 0.73rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
-  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  /* Progress Bars */
+  .progress-wrap { margin-top: 10px; }
+  .progress-label-row { display: flex; justify-content: space-between; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+  .progress-bar-bg { height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; position: relative; }
+  .progress-bar-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+  .bg-emerald { background: linear-gradient(90deg, #10b981, #059669); }
+  .bg-blue { background: linear-gradient(90deg, #3b82f6, #1d4ed8); }
+  .bg-gold { background: linear-gradient(90deg, #f59e0b, #d97706); }
+  .bg-purple { background: linear-gradient(90deg, #a855f7, #7c3aed); }
+
+  /* Badges */
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 6px; }
+  .badge-gold { background: var(--gold-bg); color: var(--gold); border: 1px solid var(--gold-border); }
+  .badge-ton { background: var(--ton-bg); color: var(--ton); border: 1px solid var(--ton-border); }
+  .badge-purple { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); }
+  .badge-green { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .badge-blue { background: var(--primary-bg); color: var(--primary); border: 1px solid #bfdbfe; }
+
+  /* Bot Item Cards */
+  .bot-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+  .bot-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .bot-title-group { display: flex; align-items: center; gap: 8px; }
+  .bot-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; background: #f8fafc; border: 1px solid var(--border); }
+  .bot-name { font-size: 0.88rem; font-weight: 700; color: var(--text-main); }
+  .bot-network { font-size: 0.7rem; color: var(--text-muted); }
+  .bot-stats-row { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 0.75rem; }
+  .bot-stat-item { display: flex; flex-direction: column; }
+  .bot-stat-label { font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+  .bot-stat-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text-main); margin-top: 1px; }
+
+  /* Account Item */
+  .acc-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+  .acc-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .acc-avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1e40af; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem; flex-shrink: 0; border: 1px solid #93c5fd; }
+  .acc-details { min-width: 0; }
+  .acc-name { font-size: 0.82rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .acc-id { font-size: 0.68rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+  .acc-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+
+  /* Action Buttons */
+  .action-btn { width: 100%; padding: 13px 16px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; border: none; transition: opacity 0.15s; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .action-btn:active { opacity: 0.82; transform: scale(0.99); }
+  .btn-primary { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #fff; }
+  .btn-green { background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #fff; }
+  .btn-purple { background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: #fff; }
+  .btn-outline { background: #fff; color: var(--text-main); border: 1px solid var(--border); }
+
+  /* Table styling */
+  .styled-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-top: 6px; }
+  .styled-table th { text-align: left; padding: 8px 10px; color: var(--text-muted); font-size: 0.68rem; font-weight: 700; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+  .styled-table td { padding: 9px 10px; border-bottom: 1px solid #f1f5f9; }
   .mono { font-family: 'JetBrains Mono', monospace; }
 
-  #actionToast { display:none; margin-bottom: 20px; padding: 12px 18px; border-radius: 10px; font-size: 0.88rem; font-weight: 600; }
+  /* Fixed Bottom Nav */
+  .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 6px 4px calc(6px + var(--safe-bottom)) 4px; z-index: 100; max-width: 580px; margin: 0 auto; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; cursor: pointer; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; border: none; background: transparent; transition: color 0.15s; }
+  .nav-item.active { color: var(--primary); font-weight: 700; }
+  .nav-icon { font-size: 1.15rem; }
 
-  footer { text-align: center; color: var(--muted); font-size: 0.82rem; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--card-border); }
+  /* Tab Viewport */
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; animation: fadeIn 0.2s ease-in-out; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Toast */
+  #actionToast { display: none; padding: 11px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; margin-bottom: 12px; }
 </style>
 </head>
 <body>
-<div class="container">
-  <header>
-    <div class="logo">
-      <h1>⚡ MY AGY AI FLEET</h1>
-      <span class="badge">IMMORTAL EDGE CLUSTER</span>
-    </div>
-    <div style="display: flex; gap: 10px; align-items: center;">
-      <a href="https://t.me/+oN8uefSRYWUyM2Fl" target="_blank" class="btn btn-outline">📢 Payouts Channel</a>
-      <a href="https://t.me/My_Router_AI_bot" target="_blank" class="btn">💬 Telegram Bot</a>
-    </div>
-  </header>
+<div class="app-container">
 
-  <!-- Live Crypto Ticker Bar -->
-  <div class="ticker-bar">
-    <div class="ticker-item">
-      <span class="ticker-name">🟡 BNB:</span>
-      <span class="ticker-price">$${rates.bnb_usd.toFixed(2)} USD</span>
+  <!-- Header -->
+  <div class="top-bar">
+    <div class="logo-box">
+      <div class="logo-icon">⚡</div>
+      <div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span class="logo-title">MY AGY AI</span>
+          <span class="logo-badge">PRO FLEET</span>
+        </div>
+        <div style="font-size:0.68rem; color:var(--text-muted);">Autonomous Multi-Chain Fleet</div>
+      </div>
     </div>
-    <div style="color:var(--card-border);">|</div>
-    <div class="ticker-item">
-      <span class="ticker-name">💎 TON:</span>
-      <span class="ticker-price">$${rates.ton_usd.toFixed(2)} USD</span>
-    </div>
-    <div style="color:var(--card-border);">|</div>
-    <div class="ticker-item">
-      <span class="ticker-name">🔵 ETH:</span>
-      <span class="ticker-price">$${(rates.eth_usd || 2616.0).toFixed(2)} USD</span>
-    </div>
-    <div style="color:var(--card-border);">|</div>
-    <div class="ticker-item">
-      <span class="ticker-name">🪙 BTC:</span>
-      <span class="ticker-price">$${(rates.btc_usd || 64500.0).toFixed(0)} USD</span>
-    </div>
-    <div style="color:var(--card-border);">|</div>
-    <div class="ticker-item" style="margin-left: auto;">
-      <span class="ticker-name">Node:</span>
-      <span class="mono" style="color:var(--accent);">__SUBDOMAIN__.workers.dev</span>
+    <div class="live-pill">
+      <span class="live-dot"></span>
+      <span>${accounts.length}/13 Online</span>
     </div>
   </div>
 
-  <!-- Triple-Node Cloudflare Mesh Cluster Bar -->
-  <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
-    <div style="flex: 1; min-width: 250px; background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 12px; padding: 14px 18px;">
-      <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--muted); font-weight:700;">
-        <span>🌐 NODE 1 (aaaai2.workers.dev)</span>
-        <span style="color:var(--green);">🟢 Shard 0 Active</span>
-      </div>
-      <div class="mono" style="font-size:0.85rem; margin-top:6px; font-weight:700; color:var(--text);">Accounts #1, #4, #7, #10, #13</div>
-      <div style="font-size:0.75rem; color:var(--muted); margin-top:2px;">Cloud Cron: Every 15 min • 0 MB VPS RAM</div>
+  <!-- Live Crypto Ticker -->
+  <div class="ticker-scroll">
+    <div class="ticker-chip">
+      <span class="t-label">🟡 BNB</span>
+      <span class="t-val">$${rates.bnb_usd.toFixed(2)}</span>
     </div>
-    <div style="flex: 1; min-width: 250px; background: rgba(243, 186, 47, 0.08); border: 1px solid rgba(243, 186, 47, 0.3); border-radius: 12px; padding: 14px 18px;">
-      <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--muted); font-weight:700;">
-        <span>🌐 NODE 2 (aaa-bot.workers.dev)</span>
-        <span style="color:var(--gold);">🟡 Shard 1 Active</span>
-      </div>
-      <div class="mono" style="font-size:0.85rem; margin-top:6px; font-weight:700; color:var(--text);">Accounts #2, #5, #8, #11</div>
-      <div style="font-size:0.75rem; color:var(--muted); margin-top:2px;">Cloud Cron: Every 15 min • 0 MB VPS RAM</div>
+    <div class="ticker-chip">
+      <span class="t-label">💎 TON</span>
+      <span class="t-val">$${rates.ton_usd.toFixed(2)}</span>
     </div>
-    <div style="flex: 1; min-width: 250px; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px; padding: 14px 18px;">
-      <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--muted); font-weight:700;">
-        <span>🌐 NODE 3 (aaa222.workers.dev)</span>
-        <span style="color:var(--purple);">🟣 Shard 2 Active</span>
-      </div>
-      <div class="mono" style="font-size:0.85rem; margin-top:6px; font-weight:700; color:var(--text);">Accounts #3, #6, #9, #12</div>
-      <div style="font-size:0.75rem; color:var(--muted); margin-top:2px;">Cloud Cron: Every 15 min • 0 MB VPS RAM</div>
+    <div class="ticker-chip">
+      <span class="t-label">🔵 ETH</span>
+      <span class="t-val">$${(rates.eth_usd || 2616.0).toFixed(0)}</span>
+    </div>
+    <div class="ticker-chip">
+      <span class="t-label">🪙 BTC</span>
+      <span class="t-val">$${(rates.btc_usd || 64500.0).toFixed(0)}</span>
+    </div>
+    <div class="ticker-chip">
+      <span class="t-label">🌐 Node</span>
+      <span class="t-val" style="color:var(--primary);">__SUBDOMAIN__</span>
     </div>
   </div>
 
-  <!-- Instant Actions & Toast -->
+  <!-- Action Toast Feedback -->
   <div id="actionToast"></div>
 
-  <div class="actions-bar">
-    <button onclick="triggerCloudFarmAll()" class="btn" style="background: linear-gradient(135deg, var(--gold) 0%, #ff8800 100%);">⚡ 3x Cloud Farm (All Shards)</button>
-    <button onclick="triggerAction('withdraw')" class="btn" style="background: #20c997; color:#000;">💰 Auto-Withdraw</button>
-    <button onclick="triggerAction('verify')" class="btn" style="background: #a855f7; color:#fff;">🛡️ 5/5 Verifications</button>
-    <button onclick="triggerAction('backup')" class="btn" style="background: #0098ea; color:#fff;">📦 Telegram Backup</button>
-    <button onclick="location.reload()" class="btn btn-outline" style="margin-left:auto;">🔄 Refresh (<span id='timer'>30</span>s)</button>
+  <!-- TAB 1: OVERVIEW -->
+  <div class="tab-pane active" id="pane-overview">
+    <!-- Hero Total Valuation Card -->
+    <div class="card card-hero">
+      <div class="hero-label">Total Fleet Estimated Valuation</div>
+      <div class="hero-val">~$${bnbUsd} USD</div>
+      <div class="hero-sub">
+        <span>≈ ৳${bnbBdt} BDT</span>
+        <span>•</span>
+        <span>13 Active Accounts</span>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-label-row">
+          <span>Fleet Health & Anti-Bot</span>
+          <span style="color:var(--green); font-weight:700;">100% Operational</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill bg-emerald" style="width: 100%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- On-Chain Triple Vault Cards -->
+    <div class="card">
+      <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+        <span>On-Chain Vaults & Balances</span>
+        <span class="badge badge-green">3 Chains Connected</span>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:0.7rem; font-weight:700; color:var(--gold);">🟡 BINANCE SMART CHAIN</div>
+            <div class="mono" style="font-size:1.05rem; font-weight:800; color:var(--text-main); margin-top:2px;">${typeof bnbBal === 'number' ? bnbBal.toFixed(6) : bnbBal} BNB</div>
+            <div style="font-size:0.68rem; color:var(--text-muted);">~$${bnbUsd} USD • 0xfda418...d5ce</div>
+          </div>
+          <span class="badge badge-gold">BEP-20</span>
+        </div>
+
+        <div style="background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:0.7rem; font-weight:700; color:var(--purple);">🟣 ARBITRUM ONE</div>
+            <div class="mono" style="font-size:1.05rem; font-weight:800; color:var(--text-main); margin-top:2px;">500 STONES</div>
+            <div style="font-size:0.68rem; color:var(--text-muted);">Holding Pool • 4-Ad Solver Active</div>
+          </div>
+          <span class="badge badge-purple">Arbitrum</span>
+        </div>
+
+        <div style="background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:0.7rem; font-weight:700; color:var(--ton);">💎 THE OPEN NETWORK</div>
+            <div class="mono" style="font-size:1.05rem; font-weight:800; color:var(--text-main); margin-top:2px;">${typeof tonBal === 'number' ? tonBal.toFixed(2) : tonBal} TON</div>
+            <div style="font-size:0.68rem; color:var(--text-muted);">13 Dedicated TON v4r2 Wallets</div>
+          </div>
+          <span class="badge badge-ton">TON</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Daily Visual Metrics -->
+    <div class="card">
+      <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px;">Daily Fleet Automation Telemetry</div>
+
+      <div class="progress-wrap">
+        <div class="progress-label-row">
+          <span>BNB Galaxy Daily Tasks</span>
+          <span style="color:var(--green); font-weight:700;">130 / 130 Done (100%)</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill bg-emerald" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-label-row">
+          <span>Anti-Bot Verification Check</span>
+          <span style="color:var(--primary); font-weight:700;">5 / 5 Passed (100%)</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill bg-blue" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-label-row">
+          <span>24h Session Tokens Vault</span>
+          <span style="color:var(--purple); font-weight:700;">${tokenCount} / ${accounts.length} Synced</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill bg-purple" style="width: ${Math.min(100, Math.round((tokenCount / Math.max(accounts.length, 1)) * 100))}%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3x Cloudflare Edge Mesh Shards -->
+    <div class="card">
+      <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px; display:flex; justify-content:space-between;">
+        <span>3x Cloudflare Mesh Nodes</span>
+        <span style="color:var(--green); font-weight:700; font-size:0.7rem;">0 MB VPS RAM</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:0.75rem; display:flex; justify-content:space-between; align-items:center;">
+          <div><b>Node 1:</b> aaaai2.workers.dev <span style="color:var(--text-muted);">(Accs #1, #4, #7, #10, #13)</span></div>
+          <span class="badge badge-green">Active</span>
+        </div>
+        <div style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:0.75rem; display:flex; justify-content:space-between; align-items:center;">
+          <div><b>Node 2:</b> aaa-bot.workers.dev <span style="color:var(--text-muted);">(Accs #2, #5, #8, #11)</span></div>
+          <span class="badge badge-gold">Active</span>
+        </div>
+        <div style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:0.75rem; display:flex; justify-content:space-between; align-items:center;">
+          <div><b>Node 3:</b> aaa222.workers.dev <span style="color:var(--text-muted);">(Accs #3, #6, #9, #12)</span></div>
+          <span class="badge badge-purple">Active</span>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Top Metrics Cards -->
-  <div class="grid">
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Fleet Accounts</span>
-        <span class="chain-badge chain-ok">${accounts.length} / 13 ACTIVE</span>
-      </div>
-      <div class="card-value" style="color: var(--green);">${accounts.length} Units</div>
-      <div class="card-sub">3x Parallel Mesh • 130 Tasks/Day • 5/5 Anti-Bot</div>
+  <!-- TAB 2: 7 MINING BOTS -->
+  <div class="tab-pane" id="pane-bots">
+    <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+      <span>Autonomous Mining Platforms (7/7)</span>
+      <span class="badge badge-green">All Active</span>
     </div>
 
-    <div class="card" style="border-color: rgba(0, 255, 136, 0.35);">
-      <div class="card-header">
-        <span class="card-title">Session Links Vault</span>
-        <span class="chain-badge chain-ok">${tokenCount} / ${accounts.length} SYNCED</span>
+    <!-- 1. BNB Galaxy -->
+    <div class="bot-card">
+      <div class="bot-card-header">
+        <div class="bot-title-group">
+          <div class="bot-icon">🪙</div>
+          <div>
+            <div class="bot-name">BNB Galaxy</div>
+            <div class="bot-network">@CryptoProUpRobot • BSC BEP-20</div>
+          </div>
+        </div>
+        <span class="badge badge-gold">130/130 Tasks</span>
       </div>
-      <div class="card-value" style="color: var(--green);">${tokenCount} Synced</div>
-      <div class="card-sub">Stones • MRG • ART • BNB Webhook • 0 MB VPS RAM</div>
+      <div class="progress-bar-bg" style="margin: 6px 0 2px 0;">
+        <div class="progress-bar-fill bg-gold" style="width: 100%;"></div>
+      </div>
+      <div class="bot-stats-row">
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Automation</span>
+          <span class="bot-stat-val" style="color:var(--green);">Direct AdsGram</span>
+        </div>
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Anti-Bot</span>
+          <span class="bot-stat-val">5/5 Passed ✅</span>
+        </div>
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Min Withdraw</span>
+          <span class="bot-stat-val">0.000055 BNB</span>
+        </div>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Binance Smart Chain</span>
-        <span class="chain-badge chain-bsc">BEP-20 VAULT</span>
+    <!-- 2. Stones Miners -->
+    <div class="bot-card">
+      <div class="bot-card-header">
+        <div class="bot-title-group">
+          <div class="bot-icon">💎</div>
+          <div>
+            <div class="bot-name">Stones Miners</div>
+            <div class="bot-network">@stoneswithestand_bot • Arbitrum</div>
+          </div>
+        </div>
+        <span class="badge badge-purple">500 STONES</span>
       </div>
-      <div class="card-value" style="color: var(--gold);">${typeof bnbBal === 'number' ? bnbBal.toFixed(6) : bnbBal} BNB</div>
-      <div class="card-sub">~$${bnbUsd} USD (~৳${bnbBdt} BDT) • Target: 0xfda41820...</div>
+      <div class="progress-bar-bg" style="margin: 6px 0 2px 0;">
+        <div class="progress-bar-fill bg-purple" style="width: 80%;"></div>
+      </div>
+      <div class="bot-stats-row">
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Harvested</span>
+          <span class="bot-stat-val">101 STONES</span>
+        </div>
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Solver</span>
+          <span class="bot-stat-val" style="color:var(--green);">4-Ad Auto-Solve</span>
+        </div>
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Lucky Wheel</span>
+          <span class="bot-stat-val">Auto-Spins Active</span>
+        </div>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Arbitrum One</span>
-        <span class="chain-badge chain-arb">ERC-20</span>
+    <!-- 3. ART Airdrop -->
+    <div class="bot-card">
+      <div class="bot-card-header">
+        <div class="bot-title-group">
+          <div class="bot-icon">🚀</div>
+          <div>
+            <div class="bot-name">ART Airdrop</div>
+            <div class="bot-network">@art_airdrop_bot • TON Network</div>
+          </div>
+        </div>
+        <span class="badge badge-ton">Level 5 Active</span>
       </div>
-      <div class="card-value" style="color: var(--accent);">500 STONES</div>
-      <div class="card-sub">Holding Pool • 4-Ad Verification Auto-Solver Active</div>
+      <div class="progress-bar-bg" style="margin: 6px 0 2px 0;">
+        <div class="progress-bar-fill bg-blue" style="width: 50%;"></div>
+      </div>
+      <div class="bot-stats-row">
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Mining Rate</span>
+          <span class="bot-stat-val" style="color:var(--ton);">30.3 ART/h</span>
+        </div>
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Cycle</span>
+          <span class="bot-stat-val">8h Auto-Renew</span>
+        </div>
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Downlines</span>
+          <span class="bot-stat-val">12/12 Verified</span>
+        </div>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">The Open Network</span>
-        <span class="chain-badge chain-ton">TON VAULT</span>
+    <!-- 4. MRG Miner -->
+    <div class="bot-card">
+      <div class="bot-card-header">
+        <div class="bot-title-group">
+          <div class="bot-icon">⛏️</div>
+          <div>
+            <div class="bot-name">MRG Miner</div>
+            <div class="bot-network">@mrgminerbot • TON Network</div>
+          </div>
+        </div>
+        <span class="badge badge-green">Peak Level 21</span>
       </div>
-      <div class="card-value" style="color: #0098ea;">${typeof tonBal === 'number' ? tonBal.toFixed(2) : tonBal} TON</div>
-      <div class="card-sub">13 Dedicated TON v4r2 Wallets Connected</div>
+      <div class="bot-stats-row">
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Balance</span>
+          <span class="bot-stat-val">254.38 MRG</span>
+        </div>
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Squad Cut</span>
+          <span class="bot-stat-val" style="color:var(--green);">10% Lifetime</span>
+        </div>
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Claim Cycle</span>
+          <span class="bot-stat-val">Hourly Auto</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. AI Lab Robot -->
+    <div class="bot-card">
+      <div class="bot-card-header">
+        <div class="bot-title-group">
+          <div class="bot-icon">🧪</div>
+          <div>
+            <div class="bot-name">AI Lab Robot</div>
+            <div class="bot-network">@ai_lab_robot • Cloud AI</div>
+          </div>
+        </div>
+        <span class="badge badge-blue">6,810 H/s</span>
+      </div>
+      <div class="bot-stats-row">
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Daily Power</span>
+          <span class="bot-stat-val">96.7 Hashes/day</span>
+        </div>
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Auto USD</span>
+          <span class="bot-stat-val" style="color:var(--green);">Threshold >= 1.0</span>
+        </div>
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Nodes</span>
+          <span class="bot-stat-val">13 Active</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. UltraWallet -->
+    <div class="bot-card">
+      <div class="bot-card-header">
+        <div class="bot-title-group">
+          <div class="bot-icon">💳</div>
+          <div>
+            <div class="bot-name">UltraWallet</div>
+            <div class="bot-network">@Ultra_wallet_bot • Multi-Asset</div>
+          </div>
+        </div>
+        <span class="badge badge-green">24h Streaks Active</span>
+      </div>
+      <div class="bot-stats-row">
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Mining Rate</span>
+          <span class="bot-stat-val">+10 Pts/h</span>
+        </div>
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Tasks</span>
+          <span class="bot-stat-val" style="color:var(--green);">+0.2 USDT Each</span>
+        </div>
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Spin Wheel</span>
+          <span class="bot-stat-val">USDT & TON</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Apex Miner -->
+    <div class="bot-card">
+      <div class="bot-card-header">
+        <div class="bot-title-group">
+          <div class="bot-icon">⚡</div>
+          <div>
+            <div class="bot-name">Apex Miner</div>
+            <div class="bot-network">@ApxMinerBot • Multi-Chain</div>
+          </div>
+        </div>
+        <span class="badge badge-gold">12,950 Pts/Acc</span>
+      </div>
+      <div class="bot-stats-row">
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Cycle</span>
+          <span class="bot-stat-val">8h Continuous</span>
+        </div>
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Speed Boost</span>
+          <span class="bot-stat-val" style="color:var(--green);">Ad Accelerated</span>
+        </div>
+        <div class="bot-stat-item">
+          <span class="bot-stat-label">Referral Code</span>
+          <span class="bot-stat-val mono">6727787768</span>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Fleet Accounts Table -->
-  <div class="table-card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-      <div>
-        <h3 style="font-size: 1.15rem; font-weight: 700;">👥 Autonomous Fleet Members (${accounts.length})</h3>
-        <p style="font-size: 0.82rem; color: var(--muted);">Sharded across 3 Cloudflare accounts with 100% cloud serverless execution.</p>
-      </div>
-      <span class="badge">100% CLOUD OPERATIONAL</span>
+  <!-- TAB 3: FLEET ROSTER -->
+  <div class="tab-pane" id="pane-fleet">
+    <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+      <span>Fleet Members (${accounts.length})</span>
+      <span class="badge badge-blue">3 Cloud Shards</span>
     </div>
-    <div style="overflow-x: auto;">
-      <table>
+
+    <div style="display:flex; flex-direction:column; gap:4px;">
+      ${accounts.map((a, idx) => {
+        const rawW = a.ton_wallet;
+        const wStr = (typeof rawW === 'string') ? rawW : (rawW && typeof rawW === 'object' && rawW.address ? String(rawW.address) : '');
+        const wShort = wStr && wStr.length > 10 ? `${wStr.slice(0, 6)}...${wStr.slice(-4)}` : (wStr || 'Dedicated v4r2');
+        const hasTok = !!rawTokens[String(a.user_id)];
+        const shardNum = (idx % 3) + 1;
+        const shardBadge = shardNum === 1 ? 'badge-blue' : (shardNum === 2 ? 'badge-gold' : 'badge-purple');
+        const initials = (a.name || 'Account').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+        return `
+        <div class="acc-card">
+          <div class="acc-left">
+            <div class="acc-avatar">${initials}</div>
+            <div class="acc-details">
+              <div class="acc-name">#${a.index || (idx + 1)} ${a.name || 'Account'}</div>
+              <div class="acc-id">ID: ${a.user_id || 'N/A'} • <span style="color:var(--green); font-weight:600;">10/10 Tasks</span></div>
+              <div style="font-size:0.68rem; margin-top:2px;">
+                ${wStr && wStr !== 'N/A'
+                  ? `<a href="https://tonviewer.com/${wStr}" target="_blank" style="color:var(--ton); text-decoration:none; font-family:'JetBrains Mono',monospace;">${wShort} ↗</a>`
+                  : '<span style="color:var(--text-muted);">Dedicated v4r2</span>'}
+              </div>
+            </div>
+          </div>
+          <div class="acc-right">
+            <span class="badge ${shardBadge}">Node ${shardNum}</span>
+            <span class="badge ${hasTok ? 'badge-green' : 'badge-blue'}">${hasTok ? '24h Synced 🔗' : 'Active 🟢'}</span>
+          </div>
+        </div>
+      `;}).join('')}
+    </div>
+  </div>
+
+  <!-- TAB 4: PAYOUTS LEDGER -->
+  <div class="tab-pane" id="pane-payouts">
+    <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+      <span>Verified Payout Receipts</span>
+      <a href="https://t.me/+oN8uefSRYWUyM2Fl" target="_blank" style="font-size:0.72rem; color:var(--primary); font-weight:700; text-decoration:none;">Official Channel ↗</a>
+    </div>
+
+    <div class="card" style="padding: 10px 12px;">
+      <table class="styled-table">
         <thead>
           <tr>
-            <th>#</th>
-            <th>Account Name</th>
-            <th>Telegram ID</th>
-            <th>Assigned Cloud Shard</th>
-            <th>24h Session Tokens</th>
-            <th>BNB Tasks</th>
-            <th>Anti-Bot Verification</th>
-            <th>TON Wallet</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${accounts.map((a, idx) => {
-            const rawW = a.ton_wallet;
-            const wStr = (typeof rawW === 'string') ? rawW : (rawW && typeof rawW === 'object' && rawW.address ? String(rawW.address) : '');
-            const wShort = wStr && wStr.length > 10 ? `${wStr.slice(0, 6)}...${wStr.slice(-4)}` : (wStr || 'Dedicated v4r2');
-            const hasTok = !!rawTokens[String(a.user_id)];
-            const shardNum = (idx % 3) + 1;
-            const shardColor = shardNum === 1 ? 'chain-arb' : (shardNum === 2 ? 'chain-bsc' : 'chain-ok');
-            return `
-            <tr>
-              <td class="mono" style="color: var(--muted);">${a.index || (idx + 1)}</td>
-              <td><b>${a.name || 'Account'}</b></td>
-              <td class="mono" style="font-size:0.8rem; color:var(--muted);">${a.user_id || 'N/A'}</td>
-              <td><span class="chain-badge ${shardColor}">Node ${shardNum} (Shard ${idx % 3})</span></td>
-              <td><span class="chain-badge ${hasTok ? 'chain-ok' : 'chain-arb'}">${hasTok ? '24h Synced 🔗' : 'Standby ⏳'}</span></td>
-              <td><span class="chain-badge chain-bsc">10/10 Tasks ✅</span></td>
-              <td><span class="chain-badge chain-ok">5/5 Passed ✅</span></td>
-              <td class="mono" style="font-size:0.75rem;">
-                ${wStr && wStr !== 'N/A' 
-                  ? `<a href="https://tonviewer.com/${wStr}" target="_blank" style="color:var(--accent); text-decoration:none;">${wShort} ↗</a>` 
-                  : '<span style="color:var(--muted);">Dedicated v4r2</span>'}
-              </td>
-            </tr>
-          `;}).join('')}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Recent Verified Payouts Table -->
-  <div class="table-card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-      <div>
-        <h3 style="font-size: 1.15rem; font-weight: 700;">💰 Verified Payout Receipts Feed</h3>
-        <p style="font-size: 0.82rem; color: var(--muted);">Direct blockchain submissions verified by 5/5 anti-bot tasks.</p>
-      </div>
-      <a href="https://t.me/+oN8uefSRYWUyM2Fl" target="_blank" class="btn" style="padding: 5px 12px; font-size: 0.75rem;">📢 Official Receipts ↗</a>
-    </div>
-    <div style="overflow-x: auto;">
-      <table>
-        <thead>
-          <tr>
-            <th>Account</th>
+            <th>Member</th>
             <th>Amount</th>
             <th>Network</th>
-            <th>Recipient Wallet</th>
-            <th>Submission Date</th>
-            <th>Verification</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -783,17 +1077,13 @@ fi
             const wShort = w.length > 10 ? `${w.slice(0, 6)}...${w.slice(-4)}` : w;
             return `
             <tr>
-              <td><b>${p.account_name || 'Fleet Member'}</b></td>
-              <td class="mono" style="color:var(--gold); font-weight:700;">${p.amount} BNB</td>
-              <td><span class="chain-badge chain-bsc">${p.network || 'BEP-20'}</span></td>
-              <td class="mono" style="font-size:0.75rem;">
-                <a href="https://bscscan.com/address/${w}" target="_blank" style="color:var(--accent); text-decoration:none;">
-                  ${wShort} ↗
-                </a>
+              <td>
+                <div style="font-weight:700;">${p.account_name || 'Fleet Member'}</div>
+                <div style="font-size:0.65rem; color:var(--text-muted);">${String(p.timestamp || '').slice(0, 10)}</div>
               </td>
-              <td style="color:var(--muted); font-size:0.8rem;">${String(p.timestamp || '').replace('T', ' ').slice(0, 19)}</td>
-              <td><span class="chain-badge chain-ok">5/5 Passed ✅</span></td>
-              <td><span style="color:var(--green); font-weight:700;">Processing (~8h)</span></td>
+              <td><span class="mono" style="color:var(--gold); font-weight:800;">${p.amount} BNB</span></td>
+              <td><span class="badge badge-gold">${p.network || 'BEP-20'}</span></td>
+              <td><span class="badge badge-green">5/5 Passed ✅</span></td>
             </tr>
           `;}).join('')}
         </tbody>
@@ -801,60 +1091,97 @@ fi
     </div>
   </div>
 
-  <!-- Multi-Chain Mining Platforms Table -->
-  <div class="table-card">
-    <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 6px;">🚀 Multi-Chain Autonomous Fleets</h3>
-    <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 16px;">Real-time task distribution, mining cycles, and withdrawal status.</p>
-    <table>
-      <thead>
-        <tr>
-          <th>Bot Platform</th>
-          <th>Network</th>
-          <th>Automation Strategy</th>
-          <th>Daily Volume</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><b>🪙 BNB Galaxy (@CryptoProUpRobot)</b></td>
-          <td><span class="chain-badge chain-bsc">Binance Smart Chain</span></td>
-          <td>Cloud Direct AdsGram Tasks + 5/5 Anti-Bot Verification</td>
-          <td class="mono">130 Tasks/Day</td>
-          <td><span style="color:var(--green); font-weight:700;">🟢 Active</span></td>
-        </tr>
-        <tr>
-          <td><b>💎 Stones Miners (@stoneswithestand_bot)</b></td>
-          <td><span class="chain-badge chain-arb">Arbitrum One</span></td>
-          <td>24/7 Cloud Mining + 4-Ad Verified Withdrawals</td>
-          <td class="mono">500 STONES Auto</td>
-          <td><span style="color:var(--green); font-weight:700;">🟢 Mining</span></td>
-        </tr>
-        <tr>
-          <td><b>⛏️ MRG Miner (@mrgminerbot)</b></td>
-          <td><span class="chain-badge chain-ton">The Open Network</span></td>
-          <td>Hourly Auto-Claim + 10% Squad Commissions</td>
-          <td class="mono">24/7 Cycle</td>
-          <td><span style="color:var(--green); font-weight:700;">🟢 Active</span></td>
-        </tr>
-        <tr>
-          <td><b>🚀 ART Airdrop (@art_airdrop_bot)</b></td>
-          <td><span class="chain-badge chain-ton">TON / Multi-Chain</span></td>
-          <td>8-Hour Mining Renewals & Staking Pool</td>
-          <td class="mono">3 Cycles/Day</td>
-          <td><span style="color:var(--green); font-weight:700;">🟢 Renewed</span></td>
-        </tr>
-      </tbody>
-    </table>
+  <!-- TAB 5: INSTANT ACTIONS -->
+  <div class="tab-pane" id="pane-actions">
+    <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:12px;">
+      Immediate Cloud Execution
+    </div>
+
+    <button onclick="triggerCloudFarmAll()" class="action-btn btn-primary">
+      <span>⚡ 3x Cloud Farm (All Shards)</span>
+    </button>
+
+    <button onclick="triggerAction('withdraw')" class="action-btn btn-green">
+      <span>💰 Auto-Withdraw BNB Sweep</span>
+    </button>
+
+    <button onclick="triggerAction('verify')" class="action-btn btn-purple">
+      <span>🛡️ Solve 5/5 Anti-Bot Verification</span>
+    </button>
+
+    <button onclick="triggerAction('backup')" class="action-btn btn-outline">
+      <span>📦 Push Cloud Backup to Telegram</span>
+    </button>
+
+    <button onclick="location.reload()" class="action-btn btn-outline">
+      <span>🔄 Refresh Telemetry (<span id="timer">30</span>s)</span>
+    </button>
   </div>
 
-  <footer>
-    <p>Powered by <b>Google DeepMind Antigravity</b> • Hosted 24/7 on Cloudflare Edge & Immortal Linux Supervisor</p>
-    <p style="margin-top: 6px; font-size: 0.78rem;">Last Edge Synced: ${new Date().toUTCString()} • Standby Relayer: Render Free Tier</p>
-  </footer>
+</div>
+
+<!-- Fixed Bottom Navigation Bar -->
+<div class="nav-bar">
+  <button class="nav-item active" id="navTab-overview" onclick="switchTab('overview')">
+    <span class="nav-icon">📊</span>
+    <span>Overview</span>
+  </button>
+  <button class="nav-item" id="navTab-bots" onclick="switchTab('bots')">
+    <span class="nav-icon">🤖</span>
+    <span>7 Bots</span>
+  </button>
+  <button class="nav-item" id="navTab-fleet" onclick="switchTab('fleet')">
+    <span class="nav-icon">👥</span>
+    <span>Fleet</span>
+  </button>
+  <button class="nav-item" id="navTab-payouts" onclick="switchTab('payouts')">
+    <span class="nav-icon">💰</span>
+    <span>Payouts</span>
+  </button>
+  <button class="nav-item" id="navTab-actions" onclick="switchTab('actions')">
+    <span class="nav-icon">⚡</span>
+    <span>Actions</span>
+  </button>
 </div>
 
 <script>
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.ready();
+    tg.expand();
+    try {
+      if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
+      if (tg.setHeaderColor) tg.setHeaderColor('#ffffff');
+      if (tg.setBackgroundColor) tg.setBackgroundColor('#f8fafc');
+    } catch (_) {}
+  }
+
+  function haptic(type = 'light') {
+    try {
+      if (tg?.HapticFeedback) {
+        if (type === 'success') tg.HapticFeedback.notificationOccurred('success');
+        else if (type === 'warning') tg.HapticFeedback.notificationOccurred('warning');
+        else tg.HapticFeedback.impactOccurred('light');
+      }
+    } catch (_) {}
+  }
+
+  let currentTab = 'overview';
+  function switchTab(tabId) {
+    if (currentTab === tabId) return;
+    haptic();
+    currentTab = tabId;
+
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+    const pane = document.getElementById('pane-' + tabId);
+    const tabBtn = document.getElementById('navTab-' + tabId);
+    if (pane) pane.classList.add('active');
+    if (tabBtn) tabBtn.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   let seconds = 30;
   setInterval(() => {
     seconds--;
@@ -864,35 +1191,38 @@ fi
   }, 1000);
 
   async function triggerCloudFarmAll() {
+    haptic('light');
     const toast = document.getElementById('actionToast');
     toast.style.display = 'block';
-    toast.style.background = 'rgba(0, 240, 255, 0.12)';
-    toast.style.border = '1px solid var(--accent)';
-    toast.style.color = 'var(--accent)';
-    toast.innerText = '⚡ Triggering 3x Cloud Farming across all 3 Cloudflare Nodes simultaneously...';
+    toast.style.background = '#eff6ff';
+    toast.style.border = '1px solid #bfdbfe';
+    toast.style.color = '#1e40af';
+    toast.innerText = '⚡ Triggering 3x Cloud Farming across all 3 Cloudflare Nodes...';
     try {
       await Promise.allSettled([
         fetch('https://restore-agy.aaaai2.workers.dev/api/farm/bnb', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ shard: 0 }) }),
         fetch('https://restore-agy.aaa-bot.workers.dev/api/farm/bnb', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ shard: 1 }) }),
         fetch('https://restore-agy.aaa222.workers.dev/api/farm/bnb', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ shard: 2 }) })
       ]);
-      toast.style.background = 'rgba(0, 255, 136, 0.12)';
-      toast.style.border = '1px solid var(--green)';
-      toast.style.color = 'var(--green)';
-      toast.innerText = '✅ 3x Cloud Farming dispatched in parallel across Node 1, Node 2, and Node 3!';
+      haptic('success');
+      toast.style.background = '#ecfdf5';
+      toast.style.border = '1px solid #a7f3d0';
+      toast.style.color = '#047857';
+      toast.innerText = '✅ 3x Cloud Farming dispatched successfully across Node 1, Node 2, and Node 3!';
       setTimeout(() => { location.reload(); }, 2500);
     } catch (e) {
-      toast.innerText = '⚠️ Cloud farm note: ' + e.message;
+      toast.innerText = '⚠️ Note: ' + e.message;
     }
   }
 
   async function triggerAction(act) {
+    haptic('light');
     const toast = document.getElementById('actionToast');
     toast.style.display = 'block';
-    toast.style.background = 'rgba(243, 186, 47, 0.12)';
-    toast.style.border = '1px solid var(--gold)';
-    toast.style.color = 'var(--gold)';
-    toast.innerText = '⏳ Dispatching signal: ' + act + ' to fleet...';
+    toast.style.background = '#fef3c7';
+    toast.style.border = '1px solid #fcd34d';
+    toast.style.color = '#b45309';
+    toast.innerText = '⏳ Dispatching signal: ' + act + '...';
     try {
       const res = await fetch('/api/action', {
         method: 'POST',
@@ -901,19 +1231,21 @@ fi
       });
       const data = await res.json();
       if (data.ok) {
-        toast.style.background = 'rgba(0, 255, 136, 0.12)';
-        toast.style.border = '1px solid var(--green)';
-        toast.style.color = 'var(--green)';
-        toast.innerText = '✅ Signal received: ' + act.toUpperCase() + ' dispatched successfully!';
+        haptic('success');
+        toast.style.background = '#ecfdf5';
+        toast.style.border = '1px solid #a7f3d0';
+        toast.style.color = '#047857';
+        toast.innerText = '✅ ' + act.toUpperCase() + ' signal sent successfully!';
         setTimeout(() => { location.reload(); }, 2500);
       } else {
-        toast.style.background = 'rgba(255, 77, 77, 0.12)';
-        toast.style.border = '1px solid #ff4d4d';
-        toast.style.color = '#ff4d4d';
+        haptic('warning');
+        toast.style.background = '#fee2e2';
+        toast.style.border = '1px solid #fca5a5';
+        toast.style.color = '#b91c1c';
         toast.innerText = '❌ Failed: ' + (data.error || 'Server error');
       }
     } catch (e) {
-      toast.innerText = '⚠️ Signal recorded: ' + act;
+      toast.innerText = '⚠️ Signal note: ' + act;
     }
   }
 </script>
