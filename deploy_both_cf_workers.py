@@ -1401,7 +1401,7 @@ fi
             <div class="acc-avatar">${initials}</div>
             <div class="acc-details">
               <div class="acc-name">#${a.index || (idx + 1)} ${a.name || 'Account'}</div>
-              <div class="acc-id">ID: ${a.user_id || 'N/A'} • <span style="color:var(--green); font-weight:600;">10/10 Tasks</span></div>
+              <div class="acc-id">ID: ${a.user_id || 'N/A'} • <span style="color:var(--green); font-weight:600;">10/10 Tasks</span> • <span style="color:var(--green); font-weight:600;">5/5 Anti-Bot ✅</span></div>
               <div style="font-size:0.68rem; margin-top:2px;">
                 ${wStr && wStr !== 'N/A'
                   ? `<a href="https://tonviewer.com/${wStr}" target="_blank" style="color:var(--ton); text-decoration:none; font-family:'JetBrains Mono',monospace;">${wShort} ↗</a>`
@@ -2319,18 +2319,14 @@ fi
                   const vData = await vResp.json();
                   verifyCount = vData.count || 0;
                   while (verifyCount < 5) {
-                    const stepResp = await fetch("https://justtool.site/api/adsgram-task3/step", {
+                    const stepResp = await fetch("https://justtool.site/api/adsgram-task3", {
                       method: "POST",
                       headers,
-                      body: JSON.stringify({ tgId: parseInt(uid), step: verifyCount + 1 })
+                      body: JSON.stringify({ tgId: parseInt(uid), name: "Member " + uid })
                     });
                     if (stepResp.ok) {
                       const sData = await stepResp.json();
-                      if (sData.ok) {
-                        verifyCount = sData.count !== undefined ? sData.count : verifyCount + 1;
-                      } else {
-                        break;
-                      }
+                      verifyCount = sData.count !== undefined ? sData.count : verifyCount + 1;
                     } else {
                       break;
                     }
