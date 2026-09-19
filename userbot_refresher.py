@@ -3715,6 +3715,107 @@ async def sync_account_tokens_to_edge(session: aiohttp.ClientSession, acc_uid: s
     await asyncio.gather(*(push_token_worker(u) for u in CF_WORKER_URLS), return_exceptions=True)
 
 
+async def collect_account_session_links(acc_cl, acc: dict) -> dict:
+    """
+    On-Demand Collector: Extracts fresh 24h WebApp session links ('season links') for an account:
+    - Stones Miners WebApp initData (Arbitrum One)
+    - MRG Miner WebApp initData (The Open Network)
+    - ART Airdrop WebApp initData (TON / Multi-Chain)
+    - BNB Galaxy Webhook Link (Binance Smart Chain)
+    """
+    acc_name = acc.get("name", "User")
+    acc_uid = str(acc.get("user_id"))
+    tokens = {}
+
+    # 1. Stones Miners initData
+    try:
+        bot_stones = await acc_cl.get_entity(STONES_BOT)
+        res_stones = await acc_cl(RequestWebViewRequest(
+            peer=bot_stones,
+            bot=bot_stones,
+            platform="android",
+            url="https://app.stoneswithestand.my.id/"
+        ))
+        parsed = urllib.parse.urlparse(res_stones.url)
+        s_init = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
+        if s_init:
+            tokens["stones_init_data"] = s_init
+    except Exception as se:
+        logger.debug(f"[{acc_name}] Stones session collection note: {se}")
+
+    # 2. MRG Miner initData
+    try:
+        bot_mrg = await acc_cl.get_input_entity(MRG_BOT)
+        res_mrg = await acc_cl(RequestAppWebViewRequest(
+            peer=bot_mrg,
+            app=InputBotAppShortName(bot_id=bot_mrg, short_name="app"),
+            platform="android",
+            start_param=MRG_REFERRAL_CODE
+        ))
+        parsed = urllib.parse.urlparse(res_mrg.url)
+        m_init = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
+        if m_init:
+            tokens["mrg_init_data"] = m_init
+    except Exception as me:
+        logger.debug(f"[{acc_name}] MRG session collection note: {me}")
+
+    # 3. ART Airdrop initData
+    try:
+        bot_art = await acc_cl.get_entity(ART_BOT)
+        res_art = await acc_cl(RequestWebViewRequest(
+            peer=bot_art,
+            bot=bot_art,
+            platform="android",
+            url=f"https://art.tamimdev.dev/?ref={REPORT_CHAT_ID}"
+        ))
+        parsed = urllib.parse.urlparse(res_art.url)
+        a_init = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
+        if a_init:
+            tokens["art_init_data"] = a_init
+    except Exception as ae:
+        logger.debug(f"[{acc_name}] ART session collection note: {ae}")
+
+    # 4. BNB Galaxy Webhook Link
+    try:
+        wh_url = await extract_bnb_webhook(acc_cl)
+        if wh_url:
+            tokens["bnb_wh_url"] = wh_url
+    except Exception as be:
+        logger.debug(f"[{acc_name}] BNB webhook note: {be}")
+
+    return tokens
+
+
+async def delegate_farm_to_cloudflare(acc_uid: int, cf_node_url: str):
+    """
+    Offloads 10 BNB Galaxy tasks & 5/5 anti-bot verification to Cloudflare Cloud.
+    Executes 100% serverless on Cloudflare Edge with 0 VPS RAM and 0 VPS CPU.
+    """
+    headers = {
+        "Authorization": "Bearer agy_cf_secret_7d36994e_2026",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    }
+    try:
+        async with aiohttp.ClientSession() as sess:
+            async with sess.post(
+                f"{cf_node_url}/api/farm/bnb",
+                json={"user_id": int(acc_uid)},
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=20)
+            ) as r:
+                if r.status == 200:
+                    data = await r.json()
+                    results = data.get("results", [])
+                    total_completed = sum(res.get("completed_tasks", 0) for res in results)
+                    total_verified = max([res.get("verification_count", 0) for res in results] + [0])
+                    logger.info(f"[Cloud Farming] 🌐 Cloudflare Edge completed {total_completed} tasks (Verification: {total_verified}/5) for ID {acc_uid} (0 VPS RAM)")
+                    return data
+    except Exception as e:
+        logger.debug(f"[Cloud Farming] CF delegation note for {acc_uid}: {e}")
+    return None
+
+
 async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc: dict):
     """
     Automates Stones Miners (@stoneswithestand_bot):
@@ -4127,14 +4228,14 @@ async def farm_single_account(
     primary_user_id: int
 ):
     """
-    Executes autonomous farming cycle for a single account:
-    - Pre-checks BNB task readiness
-    - Connects isolated MTProto session
-    - Binds referrals & runs self-healing checks
-    - Watches BNB Galaxy ads/tasks
-    - Performs balance checks & auto-withdrawals
-    - Cycles Stones, MRG, and ART miners
-    - Distributes telemetry and heartbeats to assigned Cloudflare Node
+    Pure On-Demand Collector for single account:
+    - Checks whether session links ('season links') are expired (>18h) or missing
+    - Checks whether balance >= 0.00005 BNB requires on-chain Telegram /withdraw
+    - Fast-Path: If session links are active & no withdrawal needed, delegates 100% of tasks
+      to Cloudflare Cloud (0 MTProto connections, 0 VPS RAM, 0s local delay!)
+    - On-Demand Path: Connects MTProto briefly (3-5s), collects 4 session links (Stones, MRG,
+      ART, BNB webhook), syncs to Cloudflare KV, submits /withdraw if eligible, then IMMEDIATELY
+      disconnects and releases memory to 0!
     """
     acc_name = acc.get("name", f"Account #{acc_idx}")
     acc_uid = int(acc.get("user_id", primary_user_id))
@@ -4173,15 +4274,22 @@ async def farm_single_account(
     if next_bnb_avail_ms:
         fleet_next_resets.append(next_bnb_avail_ms)
 
-    # Check if self-healing is due (every 12 hours)
-    last_heal = float(acc.get("last_healed_at") or 0)
-    heal_due = (time.time() - last_heal) > (12 * 3600)
+    fleet_ready_counts.append(ready_tasks_count)
 
-    # Check if withdrawal is already eligible
+    # 2. Check if session links collection is due (every 18 hours or if missing)
+    tokens_synced_at = float(acc.get("miniapp_tokens_synced_at") or 0)
+    tokens_age_hours = (time.time() - tokens_synced_at) / 3600.0
+    tokens_due = (tokens_age_hours >= 18.0) or not acc.get("miniapp_tokens_synced")
+
+    # 3. Check if self-healing is due (every 12 hours)
+    last_heal = float(acc.get("last_healed_at") or 0)
+    heal_due = (time.time() - last_heal) > (12 * 3600) or not acc.get("stones_referral_bound")
+
+    # 4. Check if withdrawal is already eligible
     known_balance = ACCOUNT_BALANCES.get(str(acc_uid), {}).get("balance", 0.0)
     withdraw_due = known_balance >= MIN_WITHDRAWAL
 
-    # Check if unverified withdrawal verification tasks are pending on Adsgram
+    # 5. Check if unverified withdrawal verification tasks are pending on Adsgram
     unverified_due = False
     try:
         async with aiohttp.ClientSession() as chk_sess:
@@ -4193,16 +4301,25 @@ async def farm_single_account(
     except Exception:
         pass
 
-    # If 10/10 BNB tasks completed (0 ready), no heal due, no BNB withdrawal due, and no unverified tasks, skip MTProto connection completely!
-    if ready_tasks_count == 0 and not heal_due and not withdraw_due and not unverified_due:
-        hours_left = max(0.0, (next_bnb_avail_ms - now_ms) / 3600000.0) if next_bnb_avail_ms else 8.0
-        logger.info(f"[{cf_tag} | Slot {worker_slot+1}/3] === [Account {acc_idx}/{total_accounts}] {acc_name} (ID: {acc_uid}) ===")
-        logger.info(f"[{acc_name}] 10/10 BNB tasks completed & mining up-to-date. Next reset in ~{hours_left:.1f}h. Skipping MTProto to conserve shared RAM.")
+    # =========================================================================
+    # FAST-PATH: If NO session collection, NO withdrawal, NO self-heal needed
+    # -> Run 100% in Cloudflare Cloud with ZERO MTProto connections & ZERO VPS RAM!
+    # =========================================================================
+    if not tokens_due and not withdraw_due and not heal_due and not unverified_due:
+        if ready_tasks_count > 0:
+            logger.info(f"[{cf_tag} | Slot {worker_slot+1}/3] 🌐 [Account {acc_idx}/{total_accounts}] {acc_name} (ID: {acc_uid}): Session links valid (~{max(0, 24-tokens_age_hours):.1f}h left). Delegating {ready_tasks_count} tasks to Cloudflare Cloud (0 VPS RAM)...")
+            await delegate_farm_to_cloudflare(acc_uid, cf_node_url)
+        else:
+            hours_left = max(0.0, (next_bnb_avail_ms - now_ms) / 3600000.0) if next_bnb_avail_ms else 8.0
+            logger.info(f"[{cf_tag} | Slot {worker_slot+1}/3] === [Account {acc_idx}/{total_accounts}] {acc_name} (ID: {acc_uid}) ===")
+            logger.info(f"[{acc_name}] 10/10 BNB tasks completed & session links up-to-date. Next reset in ~{hours_left:.1f}h. Skipping MTProto to conserve shared RAM.")
         gc.collect()
         return
 
-    fleet_ready_counts.append(ready_tasks_count)
-    logger.info(f"🚀 [{cf_tag} | Slot {worker_slot+1}/3] === [Account {acc_idx}/{total_accounts}] {acc_name} (ID: {acc_uid}) Starting Parallel Farming ===")
+    # =========================================================================
+    # ON-DEMAND COLLECTOR PATH: Session links refresh, auto-withdraw, or self-heal
+    # =========================================================================
+    logger.info(f"🚀 [{cf_tag} | Slot {worker_slot+1}/3] === [Account {acc_idx}/{total_accounts}] {acc_name} (ID: {acc_uid}) Running On-Demand Session Collector ===")
 
     acc_cl = None
     should_disconnect = False
@@ -4216,7 +4333,7 @@ async def farm_single_account(
             async with aiohttp.ClientSession() as hb_session:
                 await hb_session.post(
                     f"{cf_node_url}/heartbeat",
-                    json={"status": "farming", "worker_slot": worker_slot + 1, "account_id": acc_uid, "account_name": acc_name},
+                    json={"status": "collector", "worker_slot": worker_slot + 1, "account_id": acc_uid, "account_name": acc_name},
                     headers={"Authorization": "Bearer agy_cf_secret_7d36994e_2026", "Content-Type": "application/json"},
                     timeout=aiohttp.ClientTimeout(total=5)
                 )
@@ -4232,40 +4349,57 @@ async def farm_single_account(
             await acc_cl.connect()
             should_disconnect = True
 
-        # 0. Ensure account is registered under user's referral links
-        await ensure_referral_bound(acc_cl, acc)
-
-        # 0b. Autonomous Self-Healing Channel & Bot Guard
-        await self_heal_account_channels_and_bots(acc_cl, acc)
+        # A. Referral binding & channel self-healing (if due)
+        if heal_due:
+            await ensure_referral_bound(acc_cl, acc)
+            await self_heal_account_channels_and_bots(acc_cl, acc)
+            await update_account_safely(acc_uid, {"last_healed_at": time.time(), "stones_referral_bound": True})
 
         async with aiohttp.ClientSession() as http_sess:
-            # 1. Complete BNB Galaxy daily tasks
-            if ready_tasks_count > 0:
-                done, total, next_avail = await process_bnb_galaxy_tasks(http_sess, acc_uid, acc_cl, acc)
-                if next_avail:
-                    fleet_next_resets.append(next_avail)
+            # B. Collect & Sync Session Links to Cloudflare Edge
+            if tokens_due:
+                logger.info(f"[{acc_name}] 🔗 Collecting fresh 24h WebApp session links (Stones, MRG, ART, BNB webhook)...")
+                fresh_tokens = await collect_account_session_links(acc_cl, acc)
+                if fresh_tokens:
+                    await sync_account_tokens_to_edge(http_sess, str(acc_uid), acc_name, **fresh_tokens)
+                    acc["miniapp_tokens_synced_at"] = time.time()
+                    acc["miniapp_tokens_synced"] = True
+                    await update_account_safely(acc_uid, {"miniapp_tokens_synced_at": time.time(), "miniapp_tokens_synced": True})
+                    logger.info(f"[{acc_name}] ✅ Session links successfully synced to 3x Cloudflare Edge nodes!")
 
-            # 2. Check BNB balance & auto-withdraw if >= 0.00005 BNB
-            await human_delay(3.0, 6.0, f"[{acc_name}] Pause before BNB balance check")
-            await check_and_auto_withdraw(acc_uid, acc_name, notify_manual=False, acc_client=acc_cl, acc_data=acc)
+                    # If bnb webhook was extracted, register adsgram
+                    wh = fresh_tokens.get("bnb_wh_url") or BNB_WEBHOOK_FALLBACK
+                    await register_adsgram(http_sess, acc_uid, wh, proxy=acc.get("proxy"))
 
-            # 3. Stones Miners Automation (Daily check-in, mining renew, auto-withdraw check)
-            await human_delay(3.0, 5.0, f"[{acc_name}] Pause before Stones Miners")
-            await automate_stones_cycle(http_sess, acc_cl, acc)
+            # C. Auto-Withdrawal Check & Execution on MTProto
+            if withdraw_due:
+                logger.info(f"[{acc_name}] 💰 Balance >= {MIN_WITHDRAWAL} BNB. Executing on-chain Telegram /withdraw command...")
+                await check_and_auto_withdraw(acc_uid, acc_name, notify_manual=False, acc_client=acc_cl, acc_data=acc)
 
-            # 4. MRG Miner Automation (Mining harvest, squad commission sweep, wallet binding)
-            await human_delay(3.0, 5.0, f"[{acc_name}] Pause before MRG Miner")
-            await automate_mrg_cycle(http_sess, acc_cl, acc)
+            # D. Withdrawal Verification Step A (Register MTProto view if unverified)
+            if unverified_due:
+                try:
+                    bot_entity = await acc_cl.get_input_entity(BNB_BOT)
+                    await acc_cl(RequestWebViewRequest(
+                        peer=bot_entity,
+                        bot=bot_entity,
+                        platform="android",
+                        url="https://justtool.site/withdraw-adsgram"
+                    ))
+                    logger.info(f"[{acc_name}] 🛡️ Registered MTProto WebApp view for anti-bot verification")
+                except Exception as we:
+                    logger.debug(f"[{acc_name}] MTProto WebApp note: {we}")
 
-            # 5. ART Airdrop Automation (Mining claim, 8h cycle restart, channel task)
-            await human_delay(3.0, 5.0, f"[{acc_name}] Pause before ART Airdrop")
-            await automate_art_cycle(http_sess, acc_cl, acc)
+            # E. Offload BNB task completion & 5/5 verifications to Cloudflare Cloud
+            if ready_tasks_count > 0 or unverified_due:
+                logger.info(f"[{acc_name}] 🌐 Offloading task farming & 5/5 verifications to Cloudflare Edge...")
+                await delegate_farm_to_cloudflare(acc_uid, cf_node_url)
 
         # Record completed multi-bot cycle timestamp safely
         acc["last_fleet_cycle_at"] = time.time()
         await update_account_safely(acc_uid, {"last_fleet_cycle_at": time.time()})
         PRIORITY_ACCOUNT_IDS.discard(str(acc_uid))
-        logger.info(f"✅ [{cf_tag} | Slot {worker_slot+1}/3] Completed farming cycle for {acc_name} ({acc_uid})")
+        logger.info(f"✅ [{cf_tag} | Slot {worker_slot+1}/3] On-demand session collection finished for {acc_name} ({acc_uid}). Disconnecting MTProto.")
 
     except (AuthKeyUnregisteredError, UserDeactivatedError, SessionRevokedError) as auth_err:
         logger.error(f"[Account Revoked] Session for {acc_name} ({acc_uid}) was revoked: {auth_err}")

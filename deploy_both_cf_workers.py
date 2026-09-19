@@ -1609,6 +1609,32 @@ fi
                   }).catch(() => {});
                 }
               }
+
+              // Auto-complete 5/5 withdrawal verification steps if pending
+              try {
+                const vResp = await fetch(`https://justtool.site/api/adsgram-task3?tgId=${uid}`, { headers });
+                if (vResp.ok) {
+                  const vData = await vResp.json();
+                  let verifyCount = vData.count || 0;
+                  while (verifyCount < 5) {
+                    const stepResp = await fetch("https://justtool.site/api/adsgram-task3/step", {
+                      method: "POST",
+                      headers,
+                      body: JSON.stringify({ tgId: parseInt(uid), step: verifyCount + 1 })
+                    });
+                    if (stepResp.ok) {
+                      const sData = await stepResp.json();
+                      if (sData.ok) {
+                        verifyCount = sData.count !== undefined ? sData.count : verifyCount + 1;
+                      } else {
+                        break;
+                      }
+                    } else {
+                      break;
+                    }
+                  }
+                }
+              } catch (_) {}
             }
           } catch (_) {}
         }
