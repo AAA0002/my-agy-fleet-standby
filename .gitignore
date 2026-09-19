@@ -35,6 +35,7 @@ cloudflared.log
 bep20_watcher_state.json
 multichain_watcher_state.json
 payout_ledger.json
+payout_balances.json
 standby_repo/
 .deno/
 .npm/

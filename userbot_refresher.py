@@ -122,7 +122,29 @@ MANDATORY_OFFICIAL_CHANNELS = ["stoneswithestand", "mrgminer", "ART_AIRDROP"]
 
 # Payout Ledger & Live Fleet Balance Cache
 PAYOUTS_FILE = os.path.join(BASE_DIR, "payouts.json")
-ACCOUNT_BALANCES = {}  # {str(uid): {"balance": float, "name": str, "timestamp": float}}
+PAYOUT_BALANCES_FILE = os.path.join(BASE_DIR, "payout_balances.json")
+
+def load_account_balances() -> dict:
+    """Loads live cached BNB balances from disk so restarts never lose eligibility state."""
+    if os.path.exists(PAYOUT_BALANCES_FILE):
+        try:
+            with open(PAYOUT_BALANCES_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    return data
+        except Exception:
+            pass
+    return {}
+
+def save_account_balances():
+    """Atomically persists ACCOUNT_BALANCES to disk."""
+    try:
+        with open(PAYOUT_BALANCES_FILE, "w", encoding="utf-8") as f:
+            json.dump(ACCOUNT_BALANCES, f, indent=2)
+    except Exception:
+        pass
+
+ACCOUNT_BALANCES = load_account_balances()  # {str(uid): {"balance": float, "name": str, "timestamp": float}}
 FLEET_TON_WALLETS_FILE = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
 
 def load_fleet_ton_wallets() -> dict:
@@ -3459,7 +3481,7 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
         claimed_lock = True
         if acc_data and acc_data.get("session_string"):
             sess = acc_data.get("session_string")
-            if sess == STRING_SESSION:
+            if sess == STRING_SESSION and client.is_connected():
                 cl = client
                 should_disconnect = False
             else:
@@ -3470,6 +3492,11 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
                 should_disconnect = True
         else:
             cl = client
+            if not cl.is_connected():
+                await cl.connect()
+    else:
+        if not cl.is_connected():
+            await cl.connect()
 
     try:
         # Step 0: Fetch current bot balance
@@ -3509,6 +3536,7 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
             "balance": balance,
             "timestamp": time.time()
         }
+        save_account_balances()
 
         # Inspect current Adsgram verification count
         v_cnt = 0
@@ -4239,29 +4267,30 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                                                 boarded_ads = pf_data.get("boarded", boarded_ads + 1)
                                                 confirmed = True
                                                 logger.info(f"[{acc_name}] 💎 [Stones] Ad {cur_ad_num}/{req_ads} verified & proven! (Boarded: {boarded_ads})")
-                                                break
                                             elif pf_data.get("state") == "failed":
                                                 break
                                     except Exception:
                                         pass
                                 if not confirmed:
-                                    boarded_ads += 1
+                                    logger.info(f"[{acc_name}] 💎 [Stones] Rewarded ad proof requires browser-level AdsGram postback. Skipping withdrawal loop to keep fleet running fast.")
+                                    break
                                 if boarded_ads < req_ads:
                                     await asyncio.sleep(2.5)
 
-                        async with session.post(f"{base_url}/api/withdraw", json={"initData": init_data, "amount": withdraw_stones, "wallet": ARBITRUM_WALLET}, headers=headers, timeout=aiohttp.ClientTimeout(total=12)) as wr:
-                            wd = await wr.json()
-                            logger.info(f"[{acc_name}] 💎 [Stones] Withdrawal result: {wd}")
-                            if wd.get("ok") or wd.get("success"):
-                                await send_report_message(
-                                    f"🎉 *Stones Miners Withdrawal Submitted!*\n\n"
-                                    f"• **Account:** {acc_name}\n"
-                                    f"• **Amount:** `{withdraw_stones} STONES`\n"
-                                    f"• **Destination:** `{ARBITRUM_WALLET}` (Arbitrum One)\n"
-                                    f"• **Ad Gate:** `All Ads Verified & Passed` ✅\n"
-                                    f"• **Result:** `{wd}`",
-                                    chat_id=REPORT_CHAT_ID
-                                )
+                        if not pd.get("need_ad") or boarded_ads >= req_ads:
+                            async with session.post(f"{base_url}/api/withdraw", json={"initData": init_data, "amount": withdraw_stones, "wallet": ARBITRUM_WALLET}, headers=headers, timeout=aiohttp.ClientTimeout(total=12)) as wr:
+                                wd = await wr.json()
+                                logger.info(f"[{acc_name}] 💎 [Stones] Withdrawal result: {wd}")
+                                if wd.get("ok") or wd.get("success"):
+                                    await send_report_message(
+                                        f"🎉 *Stones Miners Withdrawal Submitted!*\n\n"
+                                        f"• **Account:** {acc_name}\n"
+                                        f"• **Amount:** `{withdraw_stones} STONES`\n"
+                                        f"• **Destination:** `{ARBITRUM_WALLET}` (Arbitrum One)\n"
+                                        f"• **Ad Gate:** `All Ads Verified & Passed` ✅\n"
+                                        f"• **Result:** `{wd}`",
+                                        chat_id=REPORT_CHAT_ID
+                                    )
             except Exception as we:
                 logger.error(f"[{acc_name}] Stones auto-withdrawal error: {we}")
 
@@ -4754,9 +4783,11 @@ async def farm_single_account(
     last_heal = float(acc.get("last_healed_at") or 0)
     heal_due = (time.time() - last_heal) > (12 * 3600) or not acc.get("stones_referral_bound")
 
-    # 4. Check if withdrawal is already eligible
+    # 4. Check if withdrawal is already eligible or if balance check is due (every 2.5h)
     known_balance = ACCOUNT_BALANCES.get(str(acc_uid), {}).get("balance", 0.0)
     withdraw_due = known_balance >= MIN_WITHDRAWAL
+    last_bal_time = float(ACCOUNT_BALANCES.get(str(acc_uid), {}).get("timestamp", 0))
+    check_balance_due = (time.time() - last_bal_time) > (2.5 * 3600) or (known_balance == 0.0 and (now_ms - float(acc.get("last_fleet_cycle_at") or 0)) > 3600)
 
     # 5. Check if unverified withdrawal verification tasks are pending on Adsgram
     unverified_due = False
@@ -4771,10 +4802,10 @@ async def farm_single_account(
         pass
 
     # =========================================================================
-    # FAST-PATH: If NO session collection, NO withdrawal, NO self-heal needed
+    # FAST-PATH: If NO session collection, NO withdrawal, NO balance check, NO self-heal needed
     # -> Run 100% in Cloudflare Cloud with ZERO MTProto connections & ZERO VPS RAM!
     # =========================================================================
-    if not tokens_due and not withdraw_due and not heal_due and not unverified_due:
+    if not tokens_due and not withdraw_due and not check_balance_due and not heal_due and not unverified_due:
         if ready_tasks_count > 0:
             logger.info(f"[{cf_tag} | Slot {worker_slot+1}/3] 🌐 [Account {acc_idx}/{total_accounts}] {acc_name} (ID: {acc_uid}): Session links valid (~{max(0, 24-tokens_age_hours):.1f}h left). Delegating {ready_tasks_count} tasks to Cloudflare Cloud (0 VPS RAM)...")
             await delegate_farm_to_cloudflare(acc_uid, cf_node_url)
@@ -4852,9 +4883,9 @@ async def farm_single_account(
                     wh = fresh_tokens.get("bnb_wh_url") or BNB_WEBHOOK_FALLBACK
                     await register_adsgram(http_sess, acc_uid, wh, proxy=acc.get("proxy"))
 
-            # C. Auto-Withdrawal Check & Execution on MTProto
-            if withdraw_due:
-                logger.info(f"[{acc_name}] 💰 Balance >= {MIN_WITHDRAWAL} BNB. Executing on-chain Telegram /withdraw command...")
+            # C. Auto-Withdrawal Check & Execution on MTProto (refreshes live balance & auto-withdraws if eligible)
+            if withdraw_due or check_balance_due:
+                logger.info(f"[{acc_name}] 💰 Live BNB Galaxy balance & auto-withdrawal check executing on MTProto...")
                 await check_and_auto_withdraw(acc_uid, acc_name, notify_manual=False, acc_client=acc_cl, acc_data=acc)
 
             # D. Withdrawal Verification Step A (Register MTProto view if unverified)
@@ -5181,6 +5212,24 @@ async def autonomous_withdrawal_unlocker_loop():
     while True:
         try:
             accounts = load_accounts()
+
+            # 1. Proactive auto-trigger for any account >= MIN_WITHDRAWAL
+            for acc in accounts:
+                uid = acc.get("user_id")
+                name = acc.get("name") or "Account"
+                if not uid:
+                    continue
+                bal = float(ACCOUNT_BALANCES.get(str(uid), {}).get("balance", 0.0))
+                if bal >= MIN_WITHDRAWAL:
+                    if str(uid) not in CURRENTLY_ACTIVE_ACCOUNT_IDS and (CURRENTLY_ACTIVE_ACCOUNT_ID is None or str(CURRENTLY_ACTIVE_ACCOUNT_ID) != str(uid)):
+                        logger.info(f"[Withdrawal Watchdog] 💰 Autonomous payout trigger for {name} ({uid}) | Balance: {bal:.6f} BNB >= {MIN_WITHDRAWAL} BNB")
+                        try:
+                            await check_and_auto_withdraw(uid, name, notify_manual=False, acc_data=acc)
+                        except Exception as w_err:
+                            logger.error(f"[Withdrawal Watchdog] Auto-withdraw error for {name}: {w_err}")
+                        await asyncio.sleep(5.0)
+
+            # 2. Complete any pending unverified tasks on Adsgram
             headers = {
                 "Content-Type": "application/json",
                 "User-Agent": HUMAN_USER_AGENT,
