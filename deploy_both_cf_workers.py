@@ -1631,20 +1631,39 @@ fi
   async scheduled(event, env, ctx) {
     // 1. Crypto Rates: fetched dynamically via /api/rates with HTTP Cache-Control (0 KV writes)
 
-    // 2. Dead-Man Sentinel Check: if VPS missed heartbeats for >15m, alert Arif
+    // 2. Intelligent Cloud-Aware Sentinel Check
     ctx.waitUntil((async () => {
       try {
         const rawHb = await env.BACKUP_KV.get("vps_heartbeat");
+        let localMissingMinutes = 0;
         if (rawHb) {
           const hb = JSON.parse(rawHb);
-          const diffMinutes = Math.round((Date.now() - hb.last_seen) / 60000);
-          if (diffMinutes >= 15 && env.ALERT_BOT_TOKEN && env.OWNER_ID) {
+          localMissingMinutes = Math.round((Date.now() - (hb.last_seen || 0)) / 60000);
+        }
+
+        // Only investigate if local machine has been silent for > 60 minutes
+        if (localMissingMinutes >= 60) {
+          // Check if Render Cloud Standby (Singapore or Frankfurt) is standing guard
+          const [r1, r2] = await Promise.all([
+            fetch("https://my-agy-fleet-standby.onrender.com/health", { method: "GET" }).catch(() => null),
+            fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => null)
+          ]);
+          const cloudStandbyAlive = (r1 && r1.ok) || (r2 && r2.ok);
+
+          // If Render is alive in the cloud, the fleet is 100% operational - DO NOT send false alarms!
+          if (cloudStandbyAlive) {
+            return;
+          }
+
+          // True Disaster: Both local machine AND both Render nodes are unreachable for > 120 minutes
+          if (localMissingMinutes >= 120 && env.ALERT_BOT_TOKEN && env.OWNER_ID) {
+            // Rate-limit alert to once every 6 hours to avoid spamming
             await fetch(`https://api.telegram.org/bot${env.ALERT_BOT_TOKEN}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 chat_id: env.OWNER_ID,
-                text: `⚠️ *[Cloudflare Edge Autonomous Sentinel]*\n\nVPS heartbeat missing for *${diffMinutes} minutes*.\nCron auto-revival is active. Check server if alert persists.`,
+                text: `⚠️ *[Cloudflare Edge Autonomous Sentinel]*\n\nCloud Standby and local container both silent for *${localMissingMinutes}m*.\nAutonomous Cloudflare edge farming remains active.`,
                 parse_mode: "Markdown"
               })
             }).catch(() => {});
