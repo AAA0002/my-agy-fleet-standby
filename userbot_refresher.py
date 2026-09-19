@@ -129,14 +129,9 @@ DAILY_ATF_TARGET_MAX = 150
 
 HUMAN_USER_AGENT = "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro Build/UD1A.230803.041) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"
 
-TIER1_GEO_HEADERS = {
-    "Accept-Language": "en-US,en;q=0.9",
-    "Sec-CH-UA": '"Chromium";v="128", "Not;A=Brand";v="24", "Google Chrome";v="128"',
-    "Sec-CH-UA-Mobile": "?1",
-    "Sec-CH-UA-Platform": '"Android"',
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "cross-site",
+STANDARD_HEADERS = {
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en,bn;q=0.9",
 }
 
 if not API_ID or not API_HASH:
@@ -897,7 +892,7 @@ DEFAULT_MINING_BOTS = [
         "interval_hours": 12,
         "reward": "ATF",
         "min_withdraw": "Auto-compounded",
-        "description": "Auto-compounding & Tier-1 US Geo-Header Ad Tasks"
+        "description": "Auto-compounding & Cloud Direct Ad Tasks"
     }
 ]
 
@@ -991,7 +986,7 @@ def build_accounts_report():
         is_admin = str(uid) in ADMIN_IDS
         role = "👑 Primary Host (Master)" if is_host else ("⚡ Mining Worker & Admin" if is_admin else "⚡ Mining Worker")
         proxy = acc.get("proxy")
-        loc = f"🛡️ Proxy: `{proxy.split('@')[-1]}`" if proxy else "🌍 Tier-1 US (High-CPM Emulation)"
+        loc = f"🛡️ Proxy: `{proxy.split('@')[-1]}`" if proxy else "🌍 Cloud Direct"
         bnb_ref = "Host 👑" if is_host else ("Linked (`Bot46893407`) ✅" if acc.get("bnb_referral_bound") else "Auto-Binding...")
         atf_ref = "Host 👑" if is_host else ("Linked (`ref_6727787768`) ✅" if acc.get("atf_referral_bound") else "Auto-Binding...")
         admin_tag = "Authorized Admin 🛡️" if is_admin else "Worker Node 📱"
@@ -1371,7 +1366,7 @@ async def build_daily_summary_report(user_id: int):
         f"• **Fleet TON Wallets:** `{len(FLEET_TON_WALLETS)} Unique Wallets Connected` (0 duplicates)\n\n"
         f"🛡️ *Security & Cloud VPS:*\n"
         f"• **Channel Hygiene:** Official channels only (Unwanted channels left)\n"
-        f"• **Geo-Profile:** `Tier-1 US Emulation` (High-CPM)\n"
+        f"• **Network Mode:** `Cloud Direct`\n"
         f"• **Daemon Status:** 🟢 Active 24/7 on Ubuntu Cloud VPS"
     )
     return report
@@ -1424,7 +1419,7 @@ async def build_morning_briefing(user_id: int):
         f"• **Referral Status:** Bound to `{BNB_REFERRAL_CODE}` ✅\n\n"
         f"🛡️ *Security & Proxy Defense:*\n"
         f"• **Hardware Isolation:** `100% Unique Fingerprints`\n"
-        f"• **Ad Geolocation:** `Tier-1 US (High-CPM)`\n"
+        f"• **Ad Geolocation:** `Cloud Direct`\n"
         f"• **Official Channels Only:** Cleaned unwanted partner channels\n\n"
         f"🏓 *Cloud Daemon Health:*\n"
         f"• **VPS Daemon:** `🟢 Immortal Supervisor Active`\n"
@@ -1486,7 +1481,7 @@ async def build_bnb_details_report(user_id: int):
         f"• **Withdrawal Verification:** `{verify_count}/5 Unlocked` {'✅' if verify_count >= 5 else '⏳ (Auto-Verified on Payout)'}\n\n"
         f"📋 *Task Timers:*\n"
         f"{tasks_summary}\n\n"
-        f"💡 _When balance reaches >= {MIN_WITHDRAWAL} BNB, the cloud worker automatically submits withdrawal, watches all 5 verification ads in the background with Tier-1 US headers, and unlocks your payout._"
+        f"💡 _When balance reaches >= {MIN_WITHDRAWAL} BNB, the cloud worker automatically submits withdrawal, watches all 5 verification ads in the background, and unlocks your payout._"
     )
 
 
@@ -2080,7 +2075,7 @@ async def handle_single_update(update: dict):
                 "✨ *Key Capabilities:*\n"
                 "• **Fleet Manager:** Connect unlimited accounts via `➕ Add Account` (auto-detects country codes!)\n"
                 "• **Auto-Compounding:** Automatically binds your referral links (`Bot46893407` & `ref_6727787768`)\n"
-                "• **High-Yield Emulation:** Tier-1 US Geo-Headers for maximum ad rewards\n"
+                "• **Dual-Edge Parallel:** Distributed multi-node parallel cloud processing\n"
                 "• **Auto-Withdrawal:** Daily unlocks & direct payouts to your wallet\n\n"
                 "⚡ Tap any tab button below to check your stats or add accounts!"
             )
@@ -2507,19 +2502,26 @@ async def handle_single_update(update: dict):
                 try:
                     ans = None
                     active_provider = "Cloudflare Edge AI"
+                    async def fetch_cf_ai(base_cf: str):
+                        cf_ai_url = f"{base_cf}/ai"
+                        try:
+                            async with cf_session.post(cf_ai_url, json={"prompt": prompt}, timeout=aiohttp.ClientTimeout(total=20)) as cf_resp:
+                                if cf_resp.status == 200:
+                                    cf_data = await cf_resp.json()
+                                    if cf_data.get("ok") and cf_data.get("answer"):
+                                        provider = base_cf.replace("https://restore-agy.", "").replace(".workers.dev", "")
+                                        return (cf_data.get("answer"), provider)
+                        except Exception:
+                            pass
+                        return None
+
                     async with aiohttp.ClientSession() as cf_session:
-                        for base_cf in CF_WORKER_URLS:
-                            cf_ai_url = f"{base_cf}/ai"
-                            try:
-                                async with cf_session.post(cf_ai_url, json={"prompt": prompt}, timeout=aiohttp.ClientTimeout(total=20)) as cf_resp:
-                                    if cf_resp.status == 200:
-                                        cf_data = await cf_resp.json()
-                                        if cf_data.get("ok") and cf_data.get("answer"):
-                                            ans = cf_data.get("answer")
-                                            active_provider = base_cf.replace("https://restore-agy.", "").replace(".workers.dev", "")
-                                            break
-                            except Exception:
-                                continue
+                        tasks = [fetch_cf_ai(u) for u in CF_WORKER_URLS]
+                        for coro in asyncio.as_completed(tasks):
+                            res = await coro
+                            if res:
+                                ans, active_provider = res
+                                break
 
                     if not ans:
                         ans = "Edge AI was unable to generate an answer. Please retry in a moment."
@@ -2649,8 +2651,8 @@ async def cloudflare_edge_bridge_loop():
                             "fleet_ton_wallets": ton_wallets
                         }
 
-                        # Sync to both Cloudflare accounts (Dual-Edge Replication)
-                        for cf_url in CF_WORKER_URLS:
+                        # Sync to both Cloudflare accounts concurrently (Dual-Edge Parallel Replication)
+                        async def push_telemetry(cf_url: str):
                             try:
                                 async with session.post(
                                     f"{cf_url}/api/fleet/sync",
@@ -2659,6 +2661,9 @@ async def cloudflare_edge_bridge_loop():
                                     timeout=aiohttp.ClientTimeout(total=8)
                                 ) as s_resp:
                                     pass
+                            except Exception:
+                                pass
+                            try:
                                 async with session.post(
                                     f"{cf_url}/heartbeat",
                                     json={"status": "online", "active_worker": CURRENTLY_ACTIVE_ACCOUNT_ID},
@@ -2668,6 +2673,8 @@ async def cloudflare_edge_bridge_loop():
                                     pass
                             except Exception:
                                 pass
+
+                        await asyncio.gather(*(push_telemetry(u) for u in CF_WORKER_URLS), return_exceptions=True)
                     except Exception as sync_e:
                         logger.warning(f"[CF-Bridge] Telemetry sync error: {sync_e}")
 
@@ -2969,7 +2976,7 @@ async def register_adsgram(session: aiohttp.ClientSession, tg_id: int, wh_url: s
         "User-Agent": HUMAN_USER_AGENT,
         "Referer": "https://justtool.site/tasks-adsgram/",
         "Origin": "https://justtool.site",
-        **TIER1_GEO_HEADERS
+        **STANDARD_HEADERS
     }
     try:
         async with session.post(reg_url, json={"tgId": tg_id, "wh": wh_url}, headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=15)) as resp:
@@ -2985,7 +2992,7 @@ async def get_bnb_tasks_status(session: aiohttp.ClientSession, tg_id: int, proxy
     headers = {
         "User-Agent": HUMAN_USER_AGENT,
         "Referer": "https://justtool.site/tasks-adsgram/",
-        **TIER1_GEO_HEADERS
+        **STANDARD_HEADERS
     }
     for attempt in range(2):
         try:
@@ -3008,7 +3015,7 @@ async def complete_bnb_task(session: aiohttp.ClientSession, tg_id: int, task_id:
         "User-Agent": HUMAN_USER_AGENT,
         "Referer": "https://justtool.site/tasks-adsgram/",
         "Origin": "https://justtool.site",
-        **TIER1_GEO_HEADERS
+        **STANDARD_HEADERS
     }
     for attempt in range(2):
         try:
@@ -3037,11 +3044,11 @@ async def process_bnb_galaxy_tasks(session: aiohttp.ClientSession, user_id: int,
     ready_tasks = [int(tid) for tid, avail in sorted(states.items(), key=lambda x: int(x[0])) if avail == 0 or avail <= now_ms]
     completed_count = len(states) - len(ready_tasks)
 
-    loc_desc = f"Proxy: {proxy.split('@')[-1]}" if proxy else "Tier-1 US Headers"
+    loc_desc = f"Proxy: {proxy.split('@')[-1]}" if proxy else "Cloud Direct"
     logger.info(f"[BNB Galaxy] Status ({loc_desc}): {completed_count}/10 tasks completed. {len(ready_tasks)} ready.")
 
     for idx, t_id in enumerate(ready_tasks):
-        await human_delay(43.0, 65.0, f"Watching BNB Task {t_id} video/ad ({loc_desc})")
+        await human_delay(43.0, 65.0, f"Watching BNB Task {t_id} video/ad")
         res = await complete_bnb_task(session, user_id, t_id, proxy=proxy)
         if res.get("ok"):
             logger.info(f"[BNB Galaxy] Task {t_id} completed! Reward added to Telegram bot.")
@@ -3068,7 +3075,7 @@ async def complete_withdrawal_verification_steps(user_id: int, user_name: str, a
         "User-Agent": HUMAN_USER_AGENT,
         "Referer": "https://justtool.site/withdraw-adsgram",
         "Origin": "https://justtool.site",
-        **TIER1_GEO_HEADERS
+        **STANDARD_HEADERS
     }
     url_count = f"https://justtool.site/api/adsgram-task3?tgId={user_id}"
     url_submit = "https://justtool.site/api/adsgram-task3"
@@ -3118,7 +3125,7 @@ async def complete_withdrawal_verification_steps(user_id: int, user_name: str, a
             return True
 
         while count < 5:
-            await human_delay(42.0, 50.0, f"Watching withdrawal verification task {count + 1}/5 for {user_name} (Tier-1 US)")
+            await human_delay(42.0, 50.0, f"Watching withdrawal verification task {count + 1}/5 for {user_name}")
             # Submit step with robust auto-retry (up to 3 attempts)
             step_ok = False
             for attempt in range(1, 4):
@@ -3453,13 +3460,15 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
                     "Content-Type": "application/json",
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
                 }
-                async with aiohttp.ClientSession() as cf_sess:
-                    for cf_url in CF_WORKER_URLS:
-                        try:
-                            async with cf_sess.post(f"{cf_url}/api/payouts/record", json=cf_payout_payload, headers=cf_headers, timeout=aiohttp.ClientTimeout(total=5)):
-                                pass
-                        except Exception:
+                async def push_payout(cf_url: str):
+                    try:
+                        async with cf_sess.post(f"{cf_url}/api/payouts/record", json=cf_payout_payload, headers=cf_headers, timeout=aiohttp.ClientTimeout(total=5)):
                             pass
+                    except Exception:
+                        pass
+
+                async with aiohttp.ClientSession() as cf_sess:
+                    await asyncio.gather(*(push_payout(u) for u in CF_WORKER_URLS), return_exceptions=True)
             except Exception as cf_pay_e:
                 logger.warning(f"[Cloudflare Payout Sync] Error: {cf_pay_e}")
 
@@ -3687,7 +3696,7 @@ async def sync_account_tokens_to_edge(session: aiohttp.ClientSession, acc_uid: s
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
-    for cf_url in CF_WORKER_URLS:
+    async def push_token_worker(cf_url: str):
         try:
             async with session.post(
                 f"{cf_url}/api/miniapp/tokens/sync",
@@ -3699,6 +3708,8 @@ async def sync_account_tokens_to_edge(session: aiohttp.ClientSession, acc_uid: s
                     logger.debug(f"[{acc_name}] 🌐 Synced fresh 24h WebApp tokens to Cloudflare Edge ({cf_url})")
         except Exception:
             pass
+
+    await asyncio.gather(*(push_token_worker(u) for u in CF_WORKER_URLS), return_exceptions=True)
 
 
 async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc: dict):
@@ -4487,7 +4498,7 @@ async def autonomous_withdrawal_unlocker_loop():
                 "User-Agent": HUMAN_USER_AGENT,
                 "Referer": "https://justtool.site/withdraw-adsgram",
                 "Origin": "https://justtool.site",
-                **TIER1_GEO_HEADERS
+                **STANDARD_HEADERS
             }
             async with aiohttp.ClientSession() as sess:
                 for acc in accounts:

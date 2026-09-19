@@ -665,7 +665,7 @@ fi
         <tr>
           <td><b>🪙 BNB Galaxy (@CryptoProUpRobot)</b></td>
           <td><span class="chain-badge chain-bsc">Binance Smart Chain</span></td>
-          <td>Tier-1 US AdsGram Tasks + 5/5 Anti-Bot Verification</td>
+          <td>Cloud Direct AdsGram Tasks + 5/5 Anti-Bot Verification</td>
           <td class="mono">130 Tasks/Day</td>
           <td><span style="color:var(--green); font-weight:700;">🟢 Active</span></td>
         </tr>

@@ -275,13 +275,13 @@ async def interactive_login():
         "status": "active"
     }
 
-    proxy_val = input("\nEnter SOCKS5/HTTP proxy for this account (or press Enter for Tier-1 US headers): ").strip()
+    proxy_val = input("\nEnter SOCKS5/HTTP proxy for this account (or press Enter for Cloud Direct): ").strip()
     if proxy_val:
         acc_entry["proxy"] = proxy_val
         print(f"🛡️ Configured ad proxy: {proxy_val}")
     else:
         acc_entry["proxy"] = None
-        print("🌍 Using built-in Tier-1 High-CPM US Headers.")
+        print("🌍 Using built-in Cloud Direct.")
 
     # Automatically bind referrals to primary user's links
     await bind_referrals(client, me, acc_entry)

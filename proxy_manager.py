@@ -174,7 +174,7 @@ def build_proxy_security_report() -> str:
         f"• **Fleet Size:** `{total_accounts} Account(s)`\n"
         f"• **Proxied Accounts:** `{proxied_count}`\n"
         f"• **Hardware Isolation:** `Active (100% Unique Fingerprints)`\n"
-        f"• **Anti-Ban Engine:** `Active (Human Delays & Tier-1 Headers)`\n"
+        f"• **Anti-Ban Engine:** `Active (Human Delays & Cloud Direct)`\n"
         f"• **Security Grade:** `A+ (Optimal Stealth)`\n\n"
         f"📋 *Account Security Details:*\n\n"
         f"{accounts_block}\n\n"

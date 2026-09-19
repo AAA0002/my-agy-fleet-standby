@@ -66,6 +66,14 @@ async def sync_payouts_history_to_edge(session: aiohttp.ClientSession):
             "Content-Type": "application/json",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
         }
+        async def push_p(cf_url, payload):
+            try:
+                async with session.post(f"{cf_url}/api/payouts/record", json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=4)):
+                    pass
+            except Exception:
+                pass
+
+        payout_tasks = []
         for p in payouts[-6:]:
             payload = {
                 "account_name": p.get("account"),
@@ -76,27 +84,27 @@ async def sync_payouts_history_to_edge(session: aiohttp.ClientSession):
                 "timestamp": p.get("timestamp")
             }
             for cf_url in CF_WORKER_URLS:
-                try:
-                    async with session.post(f"{cf_url}/api/payouts/record", json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=4)):
-                        pass
-                except Exception:
-                    pass
+                payout_tasks.append(push_p(cf_url, payload))
+        if payout_tasks:
+            await asyncio.gather(*payout_tasks, return_exceptions=True)
     except Exception as e:
         print(f"Payout sync note: {e}")
 
 async def sync_multichain_to_edge(session: aiohttp.ClientSession, state: dict):
-    """Broadcasts multichain balances and live prices directly to Cloudflare Edge KV."""
+    """Broadcasts multichain balances and live prices directly to Cloudflare Edge KV concurrently."""
     headers = {
         "Authorization": f"Bearer {SECRET_KEY}",
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
     }
-    for cf_url in CF_WORKER_URLS:
+    async def push_mc_state(cf_url):
         try:
             async with session.post(f"{cf_url}/api/multichain/sync", json=state, headers=headers, timeout=aiohttp.ClientTimeout(total=5)):
                 pass
         except Exception:
             pass
+
+    await asyncio.gather(*(push_mc_state(u) for u in CF_WORKER_URLS), return_exceptions=True)
 
 def load_state() -> dict:
     if os.path.exists(STATE_FILE):

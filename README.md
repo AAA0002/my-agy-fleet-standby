@@ -30,7 +30,7 @@ Production multi-chain cloud automation system combining **Telegram MTProto user
         │ • Telethon MTProto Engine (userbot_refresher.py)    │
         │ • 13 Multi-Chain Accounts                           │
         │ • Goal #1: BNB Galaxy (10 daily tasks & auto-WD)    │
-        │ • Tier-1 US Headers & human interaction delays      │
+        │ • Cloud Direct & human interaction delays           │
         │ • On-chain BEP-20 Watcher & BscScan verification    │
         └──────────────────────────┬──────────────────────────┘
                                    │ Hot Standby
