@@ -30,7 +30,8 @@ PAYOUTS_JSON_FILE = os.path.join(BASE_DIR, "payouts.json")
 
 CF_WORKER_URLS = [
     os.getenv("CF_WORKER_URL_1", "https://restore-agy.aaaai2.workers.dev"),
-    os.getenv("CF_WORKER_URL_2", "https://restore-agy.aaa-bot.workers.dev")
+    os.getenv("CF_WORKER_URL_2", "https://restore-agy.aaa-bot.workers.dev"),
+    os.getenv("CF_WORKER_URL_3", "https://restore-agy.aaa222.workers.dev")
 ]
 SECRET_KEY = os.getenv("CF_SECRET_KEY", "agy_cf_secret_7d36994e_2026")
 

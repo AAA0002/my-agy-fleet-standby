@@ -144,10 +144,11 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
         data.add_field("document", open(zip_path, "rb"), filename=zip_filename)
 
         async with aiohttp.ClientSession() as session:
-            # 0. Sync backup archive to dual Cloudflare Edge KV stores
+            # 0. Sync backup archive to triple Cloudflare Edge KV stores
             cf_endpoints = [
                 "https://restore-agy.aaaai2.workers.dev/upload",
-                "https://restore-agy.aaa-bot.workers.dev/upload"
+                "https://restore-agy.aaa-bot.workers.dev/upload",
+                "https://restore-agy.aaa222.workers.dev/upload"
             ]
             cf_headers = {"Authorization": "Bearer agy_cf_secret_7d36994e_2026", "Content-Type": "application/zip"}
             try:

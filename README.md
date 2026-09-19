@@ -14,14 +14,15 @@ Production multi-chain cloud automation system combining **Telegram MTProto user
                                    ▼
         ┌─────────────────────────────────────────────────────┐
         │        CLOUDFLARE WORKERS (The 24/7 Edge Brain)     │
-        │ • Dual-Node High Availability:                      │
+        │ • Triple-Node High Availability (3x Parallel Work): │
         │   - Node 1: https://restore-agy.aaaai2.workers.dev  │
         │   - Node 2: https://restore-agy.aaa-bot.workers.dev │
+        │   - Node 3: https://restore-agy.aaa222.workers.dev  │
         │ • 0ms cold starts, 100% cloud uptime                │
         │ • Mini-App 24h Token Vault in Cloudflare KV         │
         │ • Real-time Binance Price Oracle (/api/rates)       │
         │ • Workers AI (Llama 3.2 3B Instruct) (/ai)          │
-        │ • Dual-node auto failover & dead-man sentinel       │
+        │ • Triple-node mesh failover & dead-man sentinel     │
         └──────────────────────────┬──────────────────────────┘
                                    │ Cloud Sync
                                    ▼

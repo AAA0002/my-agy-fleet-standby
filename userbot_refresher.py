@@ -62,7 +62,8 @@ REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
 PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
 CF_WORKER_URLS = [
     os.getenv("CF_WORKER_URL_1", "https://restore-agy.aaaai2.workers.dev"),
-    os.getenv("CF_WORKER_URL_2", "https://restore-agy.aaa-bot.workers.dev")
+    os.getenv("CF_WORKER_URL_2", "https://restore-agy.aaa-bot.workers.dev"),
+    os.getenv("CF_WORKER_URL_3", "https://restore-agy.aaa222.workers.dev")
 ]
 
 # Authorized Administrators Whitelist (Only these IDs can access and command the bot)
@@ -2529,7 +2530,7 @@ async def handle_single_update(update: dict):
                     ai_msg = (
                         f"🤖 *Cloudflare Edge AI ({active_provider}):*\n\n"
                         f"{ans}\n\n"
-                        f"⚡ _Powered by Dual Cloudflare Edge (Free Tier Balanced)_"
+                        f"⚡ _Powered by Triple Cloudflare Edge (3x Parallel Work)_"
                     )
                     await send_report_message(ai_msg, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
                 except Exception as e:

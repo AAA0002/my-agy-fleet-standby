@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
 deploy_both_cf_workers.py
-Deploys Cloudflare Edge Worker to BOTH accounts:
-1. Primary (korimhaji210@gmail.com): aaaai2.workers.dev
-2. Secondary (Koramshah2@gmail.com): aaa-bot.workers.dev
+Deploys Cloudflare Edge Worker to ALL 3 accounts for 3x parallel execution:
+1. Node 1 (korimhaji210@gmail.com): aaaai2.workers.dev
+2. Node 2 (Koramshah2@gmail.com): aaa-bot.workers.dev
+3. Node 3 (coz1gameh3@gmail.com): aaa222.workers.dev
 
-Edge Capabilities (NO MiniApp, pure high-performance edge service):
+Edge Capabilities (Pure high-performance edge service):
 • 1-Line Disaster Recovery Bootstrapper (curl -sSL https://... | bash)
 • Instant Disaster Recovery Zip Delivery (/backup.zip)
 • Authorized Cloud Backup Storage & Metadata Sync (/upload)
@@ -14,7 +15,7 @@ Edge Capabilities (NO MiniApp, pure high-performance edge service):
 • Live Multi-Account Fleet Telemetry API (/api/fleet/live, /api/fleet/sync)
 • Live Verified Auto-Withdrawals Feed (/api/payouts, /api/payouts/record)
 • Cloudflare Workers AI with Llama 3.2 3B Instruct (/ai, /ai/summary)
-• Dual-Node Sibling Cross-Replication & Automatic Failover
+• Triple-Node Mesh Cross-Replication & Automatic 3-Way Failover
 """
 
 import os
@@ -24,22 +25,40 @@ import aiohttp
 
 ACCOUNTS = [
     {
-        "name": "Primary (korimhaji)",
+        "name": "Node 1 (korimhaji)",
         "email": "korimhaji210@gmail.com",
         "api_key": "cfk_1NzkotzLPy3htYaju8Ha6KolPDuNCMGiECzsyx6Gb7e6ad9f",
         "account_id": "c9f92ab4a8b26b15f958ac25c22300bc",
         "subdomain": "aaaai2",
         "kv_id": "315ff9eee275466ba24c01dc2c3f9653",
-        "sibling_url": "https://restore-agy.aaa-bot.workers.dev"
+        "sibling_urls": [
+            "https://restore-agy.aaa-bot.workers.dev",
+            "https://restore-agy.aaa222.workers.dev"
+        ]
     },
     {
-        "name": "Secondary (koramshah)",
+        "name": "Node 2 (koramshah)",
         "email": "Koramshah2@gmail.com",
         "api_key": "cfk_6goOEQC3vW220yQbYMwD1P9xsLUdFHjvo4wOYn5A7d36994e",
         "account_id": "cf47efdd654cdb07ffe03d1361583f12",
         "subdomain": "aaa-bot",
         "kv_id": "44d6b1accc8c4fc18ee6d500eb9f0b14",
-        "sibling_url": "https://restore-agy.aaaai2.workers.dev"
+        "sibling_urls": [
+            "https://restore-agy.aaaai2.workers.dev",
+            "https://restore-agy.aaa222.workers.dev"
+        ]
+    },
+    {
+        "name": "Node 3 (coz1gameh3)",
+        "email": "coz1gameh3@gmail.com",
+        "api_key": "cfk_g2He8oRyc1GQbnGziVHxsv7Opopk7ucJZCEh2KfD715c0e54",
+        "account_id": "e1bfe1206dd7195f89591a9200105f1c",
+        "subdomain": "aaa222",
+        "kv_id": "f5c5b2dc2fc54f4d92bb789f9d70645f",
+        "sibling_urls": [
+            "https://restore-agy.aaaai2.workers.dev",
+            "https://restore-agy.aaa-bot.workers.dev"
+        ]
     }
 ]
 
@@ -51,6 +70,7 @@ ALERT_BOT_TOKEN = "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o"
 WORKER_JS_TEMPLATE = r"""
 export default {
   async fetch(request, env, ctx) {
+    const SIBLING_URLS = __SIBLING_URLS_JSON__;
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -70,7 +90,7 @@ export default {
         ok: true,
         service: "MY AGY AI Edge Gateway",
         node: "__SUBDOMAIN__",
-        sibling: "__SIBLING_URL__",
+        siblings: SIBLING_URLS,
         features: ["backup_storage", "sentinel", "rates_oracle", "fleet_sync", "payouts", "ai_llama"],
         timestamp: new Date().toISOString()
       }), {
@@ -105,7 +125,7 @@ elif command -v apt-get &>/dev/null; then
 fi
 
 echo "📦 Downloading latest backup archive from Cloudflare Edge..."
-curl -fsSL "${url.origin}/backup.zip" -o backup.zip || curl -fsSL "__SIBLING_URL__/backup.zip" -o backup.zip
+curl -fsSL "${url.origin}/backup.zip" -o backup.zip || curl -fsSL "https://restore-agy.aaaai2.workers.dev/backup.zip" -o backup.zip || curl -fsSL "https://restore-agy.aaa-bot.workers.dev/backup.zip" -o backup.zip || curl -fsSL "https://restore-agy.aaa222.workers.dev/backup.zip" -o backup.zip
 
 echo "📂 Unpacking fleet and Antigravity session..."
 unzip -o backup.zip
@@ -133,12 +153,15 @@ fi
         zipData = await env.BACKUP_KV.get("latest_backup_zip", { type: "arrayBuffer" });
       } catch (_) {}
       if (!zipData) {
-        try {
-          const sibResp = await fetch("__SIBLING_URL__/backup.zip");
-          if (sibResp.ok) {
-            zipData = await sibResp.arrayBuffer();
-          }
-        } catch (_) {}
+        for (const sUrl of SIBLING_URLS) {
+          try {
+            const sibResp = await fetch(`${sUrl}/backup.zip`);
+            if (sibResp.ok) {
+              zipData = await sibResp.arrayBuffer();
+              break;
+            }
+          } catch (_) {}
+        }
       }
       if (!zipData) {
         return new Response("No backup archive found in Cloudflare KV. Run backup first.", {
@@ -184,17 +207,19 @@ fi
         };
         await env.BACKUP_KV.put("latest_backup_meta", JSON.stringify(meta));
 
-        // Replicate to sibling node in background if not already replicated
+        // Replicate to sibling nodes in background if not already replicated
         if (!request.headers.get("X-From-Sibling")) {
-          ctx.waitUntil(fetch("__SIBLING_URL__/upload", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${env.SECRET_KEY}`,
-              "Content-Type": "application/octet-stream",
-              "X-From-Sibling": "true"
-            },
-            body: body
-          }).catch(() => {}));
+          for (const sUrl of SIBLING_URLS) {
+            ctx.waitUntil(fetch(`${sUrl}/upload`, {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${env.SECRET_KEY}`,
+                "Content-Type": "application/octet-stream",
+                "X-From-Sibling": "true"
+              },
+              body: body
+            }).catch(() => {}));
+          }
         }
 
         return new Response(JSON.stringify({ ok: true, meta }), {
@@ -252,11 +277,13 @@ fi
           await env.BACKUP_KV.put("fleet_live_state", JSON.stringify(body), { expirationTtl: 86400 });
         } catch (_) {}
         if (!incomingNode || incomingNode === "vps-main") {
-          ctx.waitUntil(fetch("__SIBLING_URL__/api/fleet/sync", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
-            body: JSON.stringify({ ...body, node: "__SUBDOMAIN__" })
-          }).catch(() => {}));
+          for (const sUrl of SIBLING_URLS) {
+            ctx.waitUntil(fetch(`${sUrl}/api/fleet/sync`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
+              body: JSON.stringify({ ...body, node: "__SUBDOMAIN__" })
+            }).catch(() => {}));
+          }
         }
         return new Response(JSON.stringify({ ok: true, synced: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
@@ -269,8 +296,13 @@ fi
       try {
         let raw = await env.BACKUP_KV.get("fleet_live_state");
         if (!raw) {
-          const sib = await fetch("__SIBLING_URL__/api/fleet/live").catch(() => null);
-          if (sib && sib.ok) raw = await sib.text();
+          for (const sUrl of SIBLING_URLS) {
+            const sib = await fetch(`${sUrl}/api/fleet/live`).catch(() => null);
+            if (sib && sib.ok) {
+              raw = await sib.text();
+              break;
+            }
+          }
         }
         if (raw) {
           return new Response(raw, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=10", ...corsHeaders } });
@@ -293,11 +325,13 @@ fi
         const body = await request.json();
         await env.BACKUP_KV.put("multichain_balances_state", JSON.stringify(body), { expirationTtl: 86400 });
         if (!request.headers.get("X-From-Sibling")) {
-          ctx.waitUntil(fetch("__SIBLING_URL__/api/multichain/sync", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}`, "X-From-Sibling": "true" },
-            body: JSON.stringify(body)
-          }).catch(() => {}));
+          for (const sUrl of SIBLING_URLS) {
+            ctx.waitUntil(fetch(`${sUrl}/api/multichain/sync`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}`, "X-From-Sibling": "true" },
+              body: JSON.stringify(body)
+            }).catch(() => {}));
+          }
         }
         return new Response(JSON.stringify({ ok: true, synced: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
@@ -309,8 +343,13 @@ fi
       try {
         let raw = await env.BACKUP_KV.get("multichain_balances_state");
         if (!raw) {
-          const sib = await fetch("__SIBLING_URL__/api/multichain").catch(() => null);
-          if (sib && sib.ok) raw = await sib.text();
+          for (const sUrl of SIBLING_URLS) {
+            const sib = await fetch(`${sUrl}/api/multichain`).catch(() => null);
+            if (sib && sib.ok) {
+              raw = await sib.text();
+              break;
+            }
+          }
         }
         if (raw) {
           return new Response(raw, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=10", ...corsHeaders } });
@@ -781,11 +820,13 @@ fi
           await env.BACKUP_KV.put("recent_payouts_list", JSON.stringify(list));
         } catch (_) {}
         if (!body.from_sibling) {
-          ctx.waitUntil(fetch("__SIBLING_URL__/api/payouts/record", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
-            body: JSON.stringify({ ...body, from_sibling: true })
-          }).catch(() => {}));
+          for (const sUrl of SIBLING_URLS) {
+            ctx.waitUntil(fetch(`${sUrl}/api/payouts/record`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
+              body: JSON.stringify({ ...body, from_sibling: true })
+            }).catch(() => {}));
+          }
         }
         return new Response(JSON.stringify({ ok: true, count: list.length }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
@@ -798,8 +839,13 @@ fi
       try {
         let raw = await env.BACKUP_KV.get("recent_payouts_list");
         if (!raw) {
-          const sib = await fetch("__SIBLING_URL__/api/payouts").catch(() => null);
-          if (sib && sib.ok) raw = await sib.text();
+          for (const sUrl of SIBLING_URLS) {
+            const sib = await fetch(`${sUrl}/api/payouts`).catch(() => null);
+            if (sib && sib.ok) {
+              raw = await sib.text();
+              break;
+            }
+          }
         }
         if (raw) {
           return new Response(raw, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=10", ...corsHeaders } });
@@ -834,11 +880,13 @@ fi
         }
         await env.BACKUP_KV.put("miniapp_tokens", JSON.stringify(current));
         if (!body.from_sibling) {
-          ctx.waitUntil(fetch("__SIBLING_URL__/api/miniapp/tokens/sync", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
-            body: JSON.stringify({ ...body, from_sibling: true })
-          }).catch(() => {}));
+          for (const sUrl of SIBLING_URLS) {
+            ctx.waitUntil(fetch(`${sUrl}/api/miniapp/tokens/sync`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
+              body: JSON.stringify({ ...body, from_sibling: true })
+            }).catch(() => {}));
+          }
         }
         return new Response(JSON.stringify({ ok: true, accounts: Object.keys(current).length }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
@@ -851,8 +899,13 @@ fi
       try {
         let raw = await env.BACKUP_KV.get("miniapp_tokens");
         if (!raw) {
-          const sib = await fetch("__SIBLING_URL__/api/miniapp/tokens").catch(() => null);
-          if (sib && sib.ok) raw = await sib.text();
+          for (const sUrl of SIBLING_URLS) {
+            const sib = await fetch(`${sUrl}/api/miniapp/tokens`).catch(() => null);
+            if (sib && sib.ok) {
+              raw = await sib.text();
+              break;
+            }
+          }
         }
         if (raw) {
           return new Response(raw, { headers: { "Content-Type": "application/json", ...corsHeaders } });
@@ -1417,8 +1470,10 @@ fi
       } catch (_) {}
     })());
 
-    // 4. Dual-node sibling cross-ping to keep edge nodes warm
-    ctx.waitUntil(fetch("__SIBLING_URL__/health").catch(() => {}));
+    // 4. Triple-node sibling cross-ping to keep edge nodes warm
+    for (const sUrl of SIBLING_URLS) {
+      ctx.waitUntil(fetch(`${sUrl}/health`).catch(() => {}));
+    }
   }
 };
 """
@@ -1427,7 +1482,10 @@ fi
 async def deploy_account(acc):
     print(f"\n🚀 Deploying to {acc['name']} ({acc['subdomain']}.workers.dev)...")
 
-    worker_code = WORKER_JS_TEMPLATE.replace("__SUBDOMAIN__", acc["subdomain"]).replace("__SIBLING_URL__", acc["sibling_url"])
+    worker_code = (
+        WORKER_JS_TEMPLATE.replace("__SUBDOMAIN__", acc["subdomain"])
+        .replace("__SIBLING_URLS_JSON__", json.dumps(acc["sibling_urls"]))
+    )
 
     headers = {
         "X-Auth-Email": acc["email"],
@@ -1502,7 +1560,7 @@ async def deploy_account(acc):
 
 async def main():
     print("=" * 60)
-    print("  MY AGY AI — Dual Cloudflare Edge Synchronizer (Pure API & Recovery)")
+    print("  MY AGY AI — Triple Cloudflare Edge Synchronizer (3x Parallel Work)")
     print("=" * 60)
 
     for acc in ACCOUNTS:
