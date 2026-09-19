@@ -74,6 +74,32 @@ OWNER_ID = "6727787768"
 ALERT_BOT_TOKEN = "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o"
 
 WORKER_JS_TEMPLATE = r"""
+async function fetchWithRetry(url, options, maxRetries = 3, initialDelayMs = 1200) {
+  let delay = initialDelayMs;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const resp = await fetch(url, options);
+      if (resp.ok || (resp.status >= 400 && resp.status < 429)) {
+        return resp;
+      }
+      if (attempt < maxRetries) {
+        const jitter = Math.floor(Math.random() * 400);
+        await new Promise(r => setTimeout(r, delay + jitter));
+        delay *= 2;
+        continue;
+      }
+      return resp;
+    } catch (err) {
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, delay));
+        delay *= 2;
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const SIBLING_URLS = __SIBLING_URLS_JSON__;
@@ -1687,17 +1713,17 @@ fi
         for (let idx = 0; idx < tokenEntries.length; idx++) {
           if (idx % 3 !== NODE_SHARD_INDEX) continue;
           const [uid, accData] = tokenEntries[idx];
-          // A. Stones Miners Edge Claim
+          // A. Stones Miners Edge Claim (with automatic retry & backoff)
           if (accData.stones_init_data) {
             try {
               // Daily check-in
-              await fetch("https://app.stoneswithestand.my.id/api/task/complete", {
+              await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
                 method: "POST",
                 headers,
                 body: JSON.stringify({ initData: accData.stones_init_data, slug: "daily_checkin" })
               }).catch(() => {});
               // Mining renewal
-              await fetch("https://app.stoneswithestand.my.id/api/mining/start", {
+              await fetchWithRetry("https://app.stoneswithestand.my.id/api/mining/start", {
                 method: "POST",
                 headers,
                 body: JSON.stringify({ initData: accData.stones_init_data })
@@ -1705,16 +1731,16 @@ fi
             } catch (_) {}
           }
 
-          // B. MRG Miner Edge Claim
+          // B. MRG Miner Edge Claim (with automatic retry & backoff)
           if (accData.mrg_init_data) {
             try {
-              await fetch("https://mrg.up.railway.app/api/user/claim-mining", {
+              await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-mining", {
                 method: "POST",
                 headers,
                 body: JSON.stringify({ initData: accData.mrg_init_data })
               }).catch(() => {});
               if (uid === (env.OWNER_ID || "6727787768")) {
-                await fetch("https://mrg.up.railway.app/api/user/claim-commission", {
+                await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-commission", {
                   method: "POST",
                   headers,
                   body: JSON.stringify({ initData: accData.mrg_init_data })
@@ -1723,16 +1749,16 @@ fi
             } catch (_) {}
           }
 
-          // C. ART Airdrop Edge Claim
+          // C. ART Airdrop Edge Claim (with automatic retry & backoff)
           if (accData.art_init_data) {
             try {
               const artHeaders = { ...headers, "X-Telegram-Init-Data": accData.art_init_data };
-              await fetch("https://art.tamimdev.dev/api/user/claim-mining", {
+              await fetchWithRetry("https://art.tamimdev.dev/api/user/claim-mining", {
                 method: "POST",
                 headers: artHeaders,
                 body: JSON.stringify({})
               }).catch(() => {});
-              await fetch("https://art.tamimdev.dev/api/user/start-mining", {
+              await fetchWithRetry("https://art.tamimdev.dev/api/user/start-mining", {
                 method: "POST",
                 headers: artHeaders,
                 body: JSON.stringify({})
