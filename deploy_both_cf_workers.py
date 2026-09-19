@@ -2729,6 +2729,45 @@ fi
               }).catch(() => {});
             } catch (_) {}
           }
+
+          // D. BNB Galaxy Edge Farming & 5/5 Verification Unlock (100% in Cloudflare Cloud)
+          try {
+            const bResp = await fetch(`https://justtool.site/api/adsgram-tasks?tgId=${uid}`, { headers });
+            if (bResp.ok) {
+              const bData = await bResp.json();
+              const states = bData.states || {};
+              const now = Date.now();
+              for (const [tid, avail] of Object.entries(states)) {
+                if (avail === 0 || avail <= now) {
+                  await fetch("https://justtool.site/api/adsgram-tasks/complete", {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify({ tgId: parseInt(uid), taskId: parseInt(tid) })
+                  }).catch(() => {});
+                }
+              }
+            }
+
+            // Auto-advance 5/5 verification if pending
+            const vResp = await fetch(`https://justtool.site/api/adsgram-task3?tgId=${uid}`, { headers });
+            if (vResp.ok) {
+              const vData = await vResp.json();
+              let vCount = vData.count || 0;
+              while (vCount < 5) {
+                const sResp = await fetch("https://justtool.site/api/adsgram-task3", {
+                  method: "POST",
+                  headers,
+                  body: JSON.stringify({ tgId: parseInt(uid), name: "Member " + uid })
+                });
+                if (sResp.ok) {
+                  const sD = await sResp.json();
+                  vCount = sD.count !== undefined ? sD.count : vCount + 1;
+                } else {
+                  break;
+                }
+              }
+            }
+          } catch (_) {}
         }
 
         // 3.5 Token Expiry Watcher: If tokens have <= 4 hours remaining (age >= 20h), wake up Render to collect batch
