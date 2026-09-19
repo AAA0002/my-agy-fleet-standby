@@ -10,6 +10,7 @@ import uuid
 import urllib.parse
 import json
 from datetime import datetime, timezone, timedelta
+from typing import Optional, Tuple, Dict, Any, List
 import aiohttp
 from telethon import TelegramClient, events, functions
 from telethon.sessions import StringSession
@@ -147,6 +148,45 @@ STANDARD_HEADERS = {
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "en,bn;q=0.9",
 }
+
+GROQ_API_KEYS = [
+    os.getenv("GROQ_API_KEY_1", "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"),
+    os.getenv("GROQ_API_KEY_2", "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"),
+    os.getenv("GROQ_API_KEY_3", "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")
+]
+
+async def query_groq_ai(prompt: str) -> Optional[Tuple[str, str]]:
+    """Queries GroqCloud LPU with ultra-low latency (<150ms) and key rotation."""
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    payload = {
+        "model": "qwen/qwen3.8-27b",
+        "messages": [
+            {"role": "system", "content": "You are the autonomous AI assistant for MY AGY AI Fleet. Provide concise, expert, helpful responses about crypto, automation, and general tech."},
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": 800,
+        "temperature": 0.6
+    }
+    for k in GROQ_API_KEYS:
+        if not k:
+            continue
+        headers = {
+            "Authorization": f"Bearer {k}",
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+        }
+        try:
+            async with aiohttp.ClientSession() as s:
+                t0 = time.time()
+                async with s.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        ans = data["choices"][0]["message"]["content"].strip()
+                        latency_ms = round((time.time() - t0) * 1000)
+                        return ans, f"Groq LPU (Qwen 3.8 · {latency_ms}ms)"
+        except Exception:
+            continue
+    return None
 
 if not API_ID or not API_HASH:
     logger.error("Missing TELEGRAM_API_ID or TELEGRAM_API_HASH in .env")
@@ -2525,8 +2565,8 @@ async def handle_single_update(update: dict):
             prompt = parts[1].strip() if len(parts) > 1 else ""
             if not prompt:
                 await send_report_message(
-                    "🧠 *Cloudflare Edge AI Assistant*\n\n"
-                    "Powered serverless by Cloudflare Workers AI (`@cf/meta/llama-3.2-3b-instruct`)!\n\n"
+                    "🧠 *MY AGY AI — Dual-Engine Assistant*\n\n"
+                    "Powered by **GroqCloud LPU** (`qwen/qwen3.8-27b` @ ~100ms) with **Cloudflare Edge AI** failover!\n\n"
                     "Ask anything by sending:\n"
                     "`/ai <your question>`\n\n"
                     "*Examples:*\n"
@@ -2536,38 +2576,46 @@ async def handle_single_update(update: dict):
                     chat_id=chat_id
                 )
             else:
-                await send_report_message("🤔 *Querying Cloudflare Edge AI...*", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
+                await send_report_message("🤔 *Processing query via GroqCloud LPU AI...*", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
                 try:
                     ans = None
-                    active_provider = "Cloudflare Edge AI"
-                    async def fetch_cf_ai(base_cf: str):
-                        cf_ai_url = f"{base_cf}/ai"
-                        try:
-                            async with cf_session.post(cf_ai_url, json={"prompt": prompt}, timeout=aiohttp.ClientTimeout(total=20)) as cf_resp:
-                                if cf_resp.status == 200:
-                                    cf_data = await cf_resp.json()
-                                    if cf_data.get("ok") and cf_data.get("answer"):
-                                        provider = base_cf.replace("https://restore-agy.", "").replace(".workers.dev", "")
-                                        return (cf_data.get("answer"), provider)
-                        except Exception:
-                            pass
-                        return None
+                    active_provider = "GroqCloud LPU"
 
-                    async with aiohttp.ClientSession() as cf_session:
-                        tasks = [fetch_cf_ai(u) for u in CF_WORKER_URLS]
-                        for coro in asyncio.as_completed(tasks):
-                            res = await coro
-                            if res:
-                                ans, active_provider = res
-                                break
+                    # 1. Primary Engine: Ultra-Fast GroqCloud LPU
+                    groq_res = await query_groq_ai(prompt)
+                    if groq_res:
+                        ans, active_provider = groq_res
+
+                    # 2. Secondary Failover: Cloudflare Edge AI
+                    if not ans:
+                        async def fetch_cf_ai(base_cf: str):
+                            cf_ai_url = f"{base_cf}/ai"
+                            try:
+                                async with cf_session.post(cf_ai_url, json={"prompt": prompt}, timeout=aiohttp.ClientTimeout(total=15)) as cf_resp:
+                                    if cf_resp.status == 200:
+                                        cf_data = await cf_resp.json()
+                                        if cf_data.get("ok") and cf_data.get("answer"):
+                                            provider = base_cf.replace("https://restore-agy.", "").replace(".workers.dev", "")
+                                            return (cf_data.get("answer"), f"Cloudflare Edge ({provider})")
+                            except Exception:
+                                pass
+                            return None
+
+                        async with aiohttp.ClientSession() as cf_session:
+                            tasks = [fetch_cf_ai(u) for u in CF_WORKER_URLS]
+                            for coro in asyncio.as_completed(tasks):
+                                res = await coro
+                                if res:
+                                    ans, active_provider = res
+                                    break
 
                     if not ans:
-                        ans = "Edge AI was unable to generate an answer. Please retry in a moment."
+                        ans = "AI was unable to generate an answer at this moment. Please retry in a moment."
 
                     ai_msg = (
-                        f"🤖 *Cloudflare Edge AI ({active_provider}):*\n\n"
+                        f"🤖 *AI Intelligence ({active_provider}):*\n\n"
                         f"{ans}\n\n"
-                        f"⚡ _Powered by Triple Cloudflare Edge (3x Parallel Work)_"
+                        f"⚡ _MY AGY AI Hybrid Cloud (Groq LPU + Triple Cloudflare Edge)_"
                     )
                     await send_report_message(ai_msg, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
                 except Exception as e:
@@ -3087,18 +3135,26 @@ async def complete_bnb_task(session: aiohttp.ClientSession, tg_id: int, task_id:
         "Origin": "https://justtool.site",
         **STANDARD_HEADERS
     }
-    for attempt in range(2):
+    for attempt in range(1, 4):
         try:
-            async with session.post(complete_url, json={"tgId": tg_id, "taskId": task_id}, headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+            async with session.post(complete_url, json={"tgId": tg_id, "taskId": task_id}, headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=20)) as resp:
                 if resp.status == 200:
                     return await resp.json()
+                elif resp.status in (429, 502, 503, 504):
+                    logger.warning(f"[BNB Task {task_id}] Server HTTP {resp.status}, backing off {3.0 * attempt}s (attempt {attempt}/3)...")
+                    await asyncio.sleep(3.0 * attempt)
+                    continue
+                else:
+                    text = await resp.text()
+                    logger.warning(f"[BNB Task {task_id}] HTTP {resp.status}: {text[:120]}")
         except Exception as e:
-            if attempt == 0:
-                await asyncio.sleep(2.5)
+            if attempt < 3:
+                logger.warning(f"[BNB Task {task_id}] Request retry {attempt}/3: {e}")
+                await asyncio.sleep(3.0)
             else:
-                logger.error(f"Error submitting BNB Task {task_id}: {e}")
+                logger.error(f"[BNB Task {task_id}] Failed after 3 attempts: {e}")
                 return {"ok": False, "error": str(e)}
-    return {"ok": False, "error": "HTTP timeout or failure"}
+    return {"ok": False, "error": "HTTP timeout or failure after 3 attempts"}
 
 
 async def process_bnb_galaxy_tasks(session: aiohttp.ClientSession, user_id: int, acc_client=None, acc_data=None):
@@ -3239,11 +3295,12 @@ async def complete_withdrawal_verification_steps(user_id: int, user_name: str, a
 
         logger.info(f"[BNB Verifier] 🎉 5/5 withdrawal verification completed for {user_name}! Payout unlocked.")
 
+        target_wallet = (acc_data or {}).get("bnb_wallet") or WALLET_ADDRESS
         alert_msg = (
             f"🎉 *BNB Withdrawal 5/5 Tasks Completed!* 🔓\n\n"
             f"• **Account:** {user_name} (`{user_id}`)\n"
             f"• **Verification Status:** `5/5 Tasks Unlocked` ✅\n"
-            f"• **Payout Wallet:** `{WALLET_ADDRESS}`\n"
+            f"• **Payout Wallet:** `{target_wallet}`\n"
             f"• **Estimated Arrival:** Within ~8 hours\n\n"
             f"✅ All 5 verification ads have been watched and verified to unlock your BNB payout."
         )

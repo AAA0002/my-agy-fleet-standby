@@ -15,10 +15,13 @@ import json
 import socket
 import time
 import urllib.parse
+import urllib.request
 from typing import Optional, Tuple, Dict, Any
 import socks
+from dotenv import load_dotenv
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
 
 # Pool of realistic hardware device profiles for fingerprint isolation
@@ -125,6 +128,23 @@ def test_proxy_connectivity(proxy_tuple: Tuple, timeout: float = 5.0) -> Tuple[b
         return False, latency, str(e)
 
 
+IPINFO_TOKEN = os.getenv("IPINFO_TOKEN", "3274419685c2d1")
+
+def get_live_ip_telemetry() -> dict:
+    """Fetches real-time egress IP telemetry via ipinfo.io."""
+    try:
+        req = urllib.request.Request(
+            f"https://ipinfo.io/json?token={IPINFO_TOKEN}",
+            headers={"User-Agent": "my-agy-fleet/1.0"}
+        )
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            if resp.status == 200:
+                return json.loads(resp.read().decode())
+    except Exception:
+        pass
+    return {}
+
+
 def build_proxy_security_report() -> str:
     """Compiles the fleet proxy and security status report."""
     accounts = []
@@ -169,6 +189,16 @@ def build_proxy_security_report() -> str:
 
     accounts_block = "\n\n".join(lines) if lines else "• No active accounts found."
 
+    ip_data = get_live_ip_telemetry()
+    ip_block = ""
+    if ip_data:
+        ip_block = (
+            f"🌐 *Egress Network Telemetry (ipinfo.io):*\n"
+            f"• **Exit IP:** `{ip_data.get('ip', 'N/A')}`\n"
+            f"• **Location:** `{ip_data.get('city', 'N/A')}, {ip_data.get('region', 'N/A')}, {ip_data.get('country', 'N/A')}`\n"
+            f"• **ISP / ASN:** `{ip_data.get('org', 'N/A')}`\n\n"
+        )
+
     return (
         f"🛡️ *MY AGY AI — Fleet Proxy & Security Report*\n\n"
         f"• **Fleet Size:** `{total_accounts} Account(s)`\n"
@@ -176,6 +206,7 @@ def build_proxy_security_report() -> str:
         f"• **Hardware Isolation:** `Active (100% Unique Fingerprints)`\n"
         f"• **Anti-Ban Engine:** `Active (Human Delays & Cloud Direct)`\n"
         f"• **Security Grade:** `A+ (Optimal Stealth)`\n\n"
+        f"{ip_block}"
         f"📋 *Account Security Details:*\n\n"
         f"{accounts_block}\n\n"
         f"💡 _To assign or change a proxy for an account, use:_\n"
