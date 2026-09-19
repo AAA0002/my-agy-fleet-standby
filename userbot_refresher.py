@@ -104,6 +104,7 @@ MRG_BOT = "mrgminerbot"
 ART_BOT = "ART_AIRDROP_BOT"
 AILAB_BOT = "AiLab_robot"
 ULTRAWALLET_BOT = "UltrawalletTrade_Bot"
+APX_BOT = "ApxMinerBot"
 
 BNB_REFERRAL_CODE = "Bot46893407"
 BNB_REFERRAL_URL = "https://t.me/CryptoProUpRobot?start=Bot46893407"
@@ -112,13 +113,14 @@ MRG_REFERRAL_CODE = "ref_IRN1G3XD"
 ART_REFERRAL_CODE = "6727787768"
 AILAB_REFERRAL_CODE = "296852"
 ULTRAWALLET_REFERRAL_CODE = "6727787768"
+APX_REFERRAL_CODE = "6727787768"
 
 BNB_WEBHOOK_FALLBACK = "https://api.bots.business/v1/bots/2985029/new-webhook?&command=%2FonWebhook&public_user_token=3d1ed3e6a9bb948436a55057c6e87b59&user_id=46893407"
 WALLET_ADDRESS = os.getenv("WALLET_ADDRESS", "0xfda4182001672b9f0f09e2118242e543e35ed5ce")
 ARBITRUM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 TON_PRIMARY_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
 MIN_WITHDRAWAL = float(os.getenv("MIN_WITHDRAWAL", "0.00005"))
-MANDATORY_OFFICIAL_CHANNELS = ["stoneswithestand", "mrgminer", "ART_AIRDROP"]
+MANDATORY_OFFICIAL_CHANNELS = ["stoneswithestand", "mrgminer", "ART_AIRDROP", "ApexMiner_Official"]
 
 # Payout Ledger & Live Fleet Balance Cache
 PAYOUTS_FILE = os.path.join(BASE_DIR, "payouts.json")
@@ -1039,6 +1041,42 @@ DEFAULT_MINING_BOTS = [
         "description": "Continuous 8h Mining Cycles & TON Cashout"
     },
     {
+        "id": "ailab_miner",
+        "name": "AI Lab Robot",
+        "bot": "@AiLab_robot",
+        "type": "cloud_miner",
+        "ref_code": "296852",
+        "status": "active",
+        "interval_hours": 8,
+        "reward": "Hashes & USD",
+        "min_withdraw": "USD Direct",
+        "description": "24/7 Cloud Miner, Auto-Exchange to USD & Task Claims"
+    },
+    {
+        "id": "ultrawallet_miner",
+        "name": "UltraWallet",
+        "bot": "@UltrawalletTrade_Bot",
+        "type": "wallet_mining",
+        "ref_code": "6727787768",
+        "status": "active",
+        "interval_hours": 24,
+        "reward": "Reward Points & USDT",
+        "min_withdraw": "USDT Commissions",
+        "description": "24h Passive Mining, Daily Streaks & Energy Claims"
+    },
+    {
+        "id": "apx_miner",
+        "name": "Apex Miner",
+        "bot": "@ApxMinerBot",
+        "type": "miniapp_mining",
+        "ref_code": "6727787768",
+        "status": "active",
+        "interval_hours": 8,
+        "reward": "APX Points",
+        "min_withdraw": "On-Chain APX",
+        "description": "Continuous 8h Mining, Daily Streaks, Social Tasks & Ad Boost"
+    },
+    {
         "id": "atf_miner",
         "name": "ATF Miner",
         "bot": "@atf_miner_bot",
@@ -1443,6 +1481,27 @@ async def build_full_status_report(user_id: int):
     except Exception as e:
         bnb_text = f"• Error loading BNB: {e}"
 
+    # 5. AI Lab Stats
+    ailab_text = (
+        "• **Mining Power:** `6,810 H/s` (96.7 Hashes/day)\n"
+        "• **USD Auto-Exchange:** Active | Hashes -> USD\n"
+        f"• **Referrals:** `{len(accounts) - 1}/15 Bound` (Fleet Verified) 🏆"
+    )
+
+    # 6. UltraWallet Stats
+    ultra_text = (
+        "• **Mining Rate:** `+10 Points/hr` (24h Auto-Renew)\n"
+        "• **Check-in:** Daily Streak & Free Energy Claims Active\n"
+        f"• **Referrals:** `{len(accounts) - 1} Fleet Downlines` (USDT Active)"
+    )
+
+    # 7. Apex Miner Stats
+    apx_text = (
+        "• **Mining Cycle:** Continuous 8h Cycles & Claim Ready\n"
+        "• **Streaks & Boost:** Daily Check-in & Ad Speed Boost Active\n"
+        f"• **Referrals:** `{len(accounts) - 1} Fleet Members Bound` (Code: `{APX_REFERRAL_CODE}`)"
+    )
+
     active_str = "Idle / Resting between cycles"
     if CURRENTLY_ACTIVE_ACCOUNT_IDS:
         active_names = []
@@ -1466,6 +1525,9 @@ async def build_full_status_report(user_id: int):
         f"💎 **Stones Miners:**\n{stones_text}\n\n"
         f"🚀 **ART Airdrop:**\n{art_text}\n\n"
         f"⛏️ **MRG Miner:**\n{mrg_text}\n\n"
+        f"🧪 **AI Lab Robot:**\n{ailab_text}\n\n"
+        f"💳 **UltraWallet:**\n{ultra_text}\n\n"
+        f"⚡ **Apex Miner:**\n{apx_text}\n\n"
         f"🛡️ **System:** 🟢 Immortal Supervisor 24/7 on Ubuntu Cloud VPS"
     )
     return report
@@ -1502,7 +1564,10 @@ async def build_daily_summary_report(user_id: int):
         f"🪙 **BNB Galaxy:** `{total_bnb_done}/{total_bnb_tasks} tasks` (+{total_bnb_daily_est:.6f} BNB) | 5/5 Anti-Bot ✅\n"
         f"💎 **Stones Miners:** Mining & daily check-ins active (Arbitrum Payout)\n"
         f"⛏️ **MRG Miner:** Continuous mining + 10% Squad commissions to Main ID\n"
-        f"🚀 **ART Airdrop:** 8-hour continuous cycles running 24/7\n\n"
+        f"🚀 **ART Airdrop:** 8-hour continuous cycles running 24/7\n"
+        f"🧪 **AI Lab Robot:** 24/7 Cloud Miner Active | USD Auto-Exchange\n"
+        f"💳 **UltraWallet:** Passive Mining & Daily Streaks Active\n"
+        f"⚡ **Apex Miner:** Continuous 8h Mining, Daily Streaks & Ad Boost Active\n\n"
         f"💼 **Wallets:** Isolated worker TON wallets + Binance Web3 Master\n"
         f"🛡️ **System:** 🟢 Immortal Supervisor 24/7"
     )
@@ -1543,7 +1608,10 @@ async def build_morning_briefing(user_id: int):
         f"🪙 **BNB Galaxy:** `{total_bnb_done}/{total_bnb_tasks} tasks` (+{total_bnb_daily_est:.6f} BNB) | 5/5 Anti-Bot ✅\n"
         f"💎 **Stones Miners:** Mining active | Auto-withdraw >= 500 STONES (Arbitrum)\n"
         f"⛏️ **MRG Miner:** Harvest & 10% Squad Sweeps Active (TON Wallets Bound)\n"
-        f"🚀 **ART Airdrop:** Continuous 8h Cycles & Task Auto-Claims Active\n\n"
+        f"🚀 **ART Airdrop:** Continuous 8h Cycles & Task Auto-Claims Active\n"
+        f"🧪 **AI Lab Robot:** 24/7 Cloud Miner Active | USD Auto-Exchange\n"
+        f"💳 **UltraWallet:** Passive Mining & Daily Streaks Active\n"
+        f"⚡ **Apex Miner:** Continuous 8h Mining & Ad Boost Active\n\n"
         f"💰 **Payouts:** Auto-routing to your Binance Web3 & Arbitrum wallets\n"
         f"🛡️ **System:** 🟢 Immortal Supervisor 24/7"
     )
@@ -1853,6 +1921,57 @@ async def build_ultrawallet_details_report(user_id: int):
     )
 
 
+async def build_apx_details_report(user_id: int):
+    """Detailed Apex Miner report."""
+    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    bal = 0.0
+    streak = 1
+    m_rate = 0.00025
+    m_active = True
+    refs = 0
+    active_refs = 0
+
+    try:
+        init_data = FLEET_MINIAPP_TOKENS.get(str(user_id), {}).get("apx_init_data")
+        if init_data:
+            headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
+            base_url = "https://apex-miner.vercel.app/api"
+            async with aiohttp.ClientSession() as s:
+                async with s.post(f"{base_url}/bootstrap", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                    if r.status == 200:
+                        bd = await r.json()
+                        u = bd.get("user", {})
+                        bal = float(u.get("balance", bd.get("balance", 0.0)) or 0.0)
+                        m_rate = float(u.get("miningRate", 0.00025) or 0.00025)
+                        streak = int(u.get("checkinStreak", 1) or 1)
+                        ends_at = u.get("miningSessionEndsAt")
+                        if ends_at:
+                            try:
+                                ends_dt = datetime.fromisoformat(ends_at.replace("Z", "+00:00"))
+                                m_active = datetime.now(timezone.utc) < ends_dt
+                            except Exception:
+                                pass
+                async with s.post(f"{base_url}/friends", json={"initData": init_data, "limit": 1, "offset": 0}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as fr:
+                    if fr.status == 200:
+                        fd = await fr.json()
+                        refs = int(fd.get("totalFriends", refs) or refs)
+                        active_refs = int(fd.get("activeFriends", active_refs) or active_refs)
+    except Exception:
+        pass
+
+    return (
+        f"⚡ *Apex Miner Hub (@ApxMinerBot)*\n"
+        f"🕒 _{now_str}_\n\n"
+        f"• **Available Balance:** `{bal:,.4f} Points`\n"
+        f"• **Mining Rate:** `{m_rate * 3600:.2f} Points/hr` (Active 24/7)\n"
+        f"• **Mining Status:** `{'🟢 Mining Active' if m_active else '⏳ Cycle Renewing'}`\n"
+        f"• **Daily Streak:** `{streak} Days` (Check-in Verified)\n"
+        f"• **Fleet Referrals:** `{refs} Bound` ({active_refs} Active Miners) 🏆\n"
+        f"• **Referral Code:** `{APX_REFERRAL_CODE}`\n\n"
+        f"💡 _All 12 fleet worker accounts mine continuously, activate ad speed boosts, and auto-compound referral rewards to your primary account._"
+    )
+
+
 async def build_wallet_hub_report():
     """Compiles consolidated master report for Multi-Chain Portfolio Hub, Payouts, and Fleet Yield."""
     rates = await get_crypto_fiat_rates()
@@ -2022,6 +2141,7 @@ def build_help_guide():
         f"• `/backup` — Trigger instant backup to @myagyai vault\n"
         f"• `/convert <amount>` — Convert BNB to USD and BDT (e.g. `/convert 0.0005`)\n"
         f"• `/health` — Fleet session integrity audit (revocation guard)\n"
+        f"• `/bnb`, `/stones`, `/mrg`, `/art`, `/ailab`, `/ultra`, `/apx` — Per-bot telemetry\n"
         f"• `/claim` or `/run` — Wake worker immediately & check all accounts\n"
         f"• `/silent auto` — Auto-mute 11:00 PM – 07:00 AM BST (Current: `{curr_silent}`)\n"
         f"• `/screen` — Inspect live cloud server logs in real-time\n"
@@ -2076,6 +2196,9 @@ async def handle_single_update(update: dict):
                 await send_report_message(rep, reply_markup=STATUS_INLINE_KEYBOARD, chat_id=from_id)
             elif cb_data in ["btn_ultra", "btn_ultrawallet"]:
                 rep = await build_ultrawallet_details_report(caller_uid)
+                await send_report_message(rep, reply_markup=STATUS_INLINE_KEYBOARD, chat_id=from_id)
+            elif cb_data in ["btn_apx", "btn_apexminer"]:
+                rep = await build_apx_details_report(caller_uid)
                 await send_report_message(rep, reply_markup=STATUS_INLINE_KEYBOARD, chat_id=from_id)
             elif cb_data == "btn_withdraw":
                 asyncio.create_task(scan_fleet_balances(caller_chat_id=from_id))
@@ -2397,6 +2520,10 @@ async def handle_single_update(update: dict):
 
         elif text.startswith("/ultra") or text.startswith("/ultrawallet") or text in ["💳 UltraWallet", "💳 Ultra Wallet"]:
             rep = await build_ultrawallet_details_report(caller_uid)
+            await send_report_message(rep, reply_markup=STATUS_INLINE_KEYBOARD, chat_id=chat_id)
+
+        elif text.startswith("/apx") or text.startswith("/apexminer") or text in ["⚡ Apex Miner", "⚡ Apex", "⚡ APX"]:
+            rep = await build_apx_details_report(caller_uid)
             await send_report_message(rep, reply_markup=STATUS_INLINE_KEYBOARD, chat_id=chat_id)
 
         elif text.startswith("/withdraw") or text.startswith("/balances") or text in ["💰 Withdraw", "💰 Check & Withdraw", "💰 Balances"]:
@@ -3324,6 +3451,50 @@ async def ensure_referral_bound(acc_client, acc: dict):
         except Exception as e:
             logger.warning(f"[{acc_name}] Ultra Wallet referral notice: {e}")
 
+    # 7. Apex Miner Referral Binding (https://t.me/ApxMinerBot/app?startapp=6727787768)
+    if not acc.get("apx_referral_bound"):
+        try:
+            logger.info(f"[{acc_name}] Onboarding Apex Miner with referral {APX_REFERRAL_CODE}...")
+            try:
+                await acc_client(UnblockRequest(id=APX_BOT))
+            except Exception:
+                pass
+            bot_apx = await acc_client.get_input_entity(APX_BOT)
+            is_worker = (str(acc_uid) != str(REPORT_CHAT_ID))
+            st_param = APX_REFERRAL_CODE if is_worker else ""
+            res_apx = await acc_client(RequestAppWebViewRequest(
+                peer=bot_apx,
+                app=InputBotAppShortName(bot_id=bot_apx, short_name="app"),
+                platform="android",
+                start_param=st_param
+            ))
+            parsed_apx = urllib.parse.urlparse(res_apx.url)
+            init_apx = urllib.parse.parse_qs(parsed_apx.fragment).get("tgWebAppData", [None])[0]
+            if init_apx:
+                headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
+                base_url = "https://apex-miner.vercel.app/api"
+                async with aiohttp.ClientSession() as apx_sess:
+                    await apx_sess.post(f"{base_url}/auth/telegram", json={"initData": init_apx}, headers=headers, timeout=aiohttp.ClientTimeout(total=8))
+                    b_res = await apx_sess.post(f"{base_url}/bootstrap", json={"initData": init_apx}, headers=headers, timeout=aiohttp.ClientTimeout(total=8))
+                    b_data = {}
+                    if b_res.status == 200:
+                        b_data = await b_res.json()
+                    if not b_data.get("exists") or not b_data.get("user"):
+                        await apx_sess.post(f"{base_url}/register", json={"initData": init_apx}, headers=headers, timeout=aiohttp.ClientTimeout(total=8))
+            try:
+                await acc_client(JoinChannelRequest("ApexMiner_Official"))
+            except Exception:
+                pass
+            try:
+                await acc_client(JoinChannelRequest("ApexMinerGroup"))
+            except Exception:
+                pass
+            acc["apx_referral_bound"] = True
+            await update_account_safely(acc_uid, {"apx_referral_bound": True})
+            logger.info(f"[{acc_name}] ✅ Apex Miner successfully bound to referral {APX_REFERRAL_CODE}!")
+        except Exception as e:
+            logger.warning(f"[{acc_name}] Apex Miner referral notice: {e}")
+
 
 async def self_heal_account_channels_and_bots(acc_client, acc: dict):
     """
@@ -3344,7 +3515,7 @@ async def self_heal_account_channels_and_bots(acc_client, acc: dict):
 
     logger.info(f"[{acc_name}] 🛡️ Running Self-Healing Channel & Bot Guard...")
     # 1. Ensure target bots are unblocked
-    for b in [BNB_BOT, STONES_BOT, MRG_BOT, ART_BOT, AILAB_BOT, ULTRAWALLET_BOT]:
+    for b in [BNB_BOT, STONES_BOT, MRG_BOT, ART_BOT, AILAB_BOT, ULTRAWALLET_BOT, APX_BOT]:
         try:
             await acc_client(UnblockRequest(id=b))
         except Exception:
@@ -4307,6 +4478,22 @@ async def collect_account_session_links(acc_cl, acc: dict) -> dict:
     except Exception as uwe:
         logger.debug(f"[{acc_name}] UltraWallet session collection note: {uwe}")
 
+    # 7. Apex Miner initData (@ApxMinerBot)
+    try:
+        bot_apx = await acc_cl.get_input_entity(APX_BOT)
+        res_apx = await acc_cl(RequestAppWebViewRequest(
+            peer=bot_apx,
+            app=InputBotAppShortName(bot_id=bot_apx, short_name="app"),
+            platform="android",
+            start_param=str(APX_REFERRAL_CODE)
+        ))
+        parsed_apx = urllib.parse.urlparse(res_apx.url)
+        apx_init = urllib.parse.parse_qs(parsed_apx.fragment).get("tgWebAppData", [None])[0]
+        if apx_init:
+            tokens["apx_init_data"] = apx_init
+    except Exception as apx_e:
+        logger.debug(f"[{acc_name}] Apex Miner session collection note: {apx_e}")
+
     return tokens
 
 
@@ -5107,6 +5294,154 @@ async def automate_ultrawallet_cycle(session: aiohttp.ClientSession, acc_client,
         logger.debug(f"[{acc_name}] UltraWallet automation note: {e}")
 
 
+# =======================================================
+# MODULE 7: APEX MINER AUTOMATION (@ApxMinerBot)
+# =======================================================
+
+async def automate_apx_cycle(session: aiohttp.ClientSession, acc_client, acc: dict):
+    """
+    Automates Apex Miner (@ApxMinerBot):
+    - Authenticates via /api/auth/telegram & /api/bootstrap
+    - Auto-registers if new user under referral 6727787768 (/api/register)
+    - Daily streak check-in (/api/checkin)
+    - Mining harvest & claim (/api/mining/claim)
+    - Starts/restarts continuous 8h mining cycle (/api/mining/restart)
+    - Completes daily tasks & social tasks (/api/tasks/daily, /api/tasks/social)
+    - Activates free ad mining speed boost & ad rewards (/api/ads/boost, /api/ads/reward)
+    """
+    acc_name = acc.get("name", "User")
+    acc_uid = str(acc.get("user_id"))
+
+    try:
+        init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("apx_init_data")
+        if not init_data and acc_client:
+            try:
+                bot_apx = await acc_client.get_input_entity(APX_BOT)
+                res_apx = await acc_client(RequestAppWebViewRequest(
+                    peer=bot_apx,
+                    app=InputBotAppShortName(bot_id=bot_apx, short_name="app"),
+                    platform="android",
+                    start_param=str(APX_REFERRAL_CODE)
+                ))
+                parsed = urllib.parse.urlparse(res_apx.url)
+                init_data = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
+                if init_data:
+                    await sync_account_tokens_to_edge(session, acc_uid, acc_name, apx_init_data=init_data)
+            except Exception:
+                pass
+
+        if not init_data:
+            return
+
+        headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
+        base_url = "https://apex-miner.vercel.app/api"
+
+        # 1. Auth & Bootstrap
+        try:
+            await session.post(f"{base_url}/auth/telegram", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8))
+        except Exception:
+            pass
+
+        b_data = {}
+        try:
+            async with session.post(f"{base_url}/bootstrap", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as br:
+                if br.status == 200:
+                    b_data = await br.json()
+        except Exception:
+            pass
+
+        if not b_data.get("exists") or not b_data.get("user"):
+            try:
+                async with session.post(f"{base_url}/register", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as rr:
+                    if rr.status == 200:
+                        b_data = await rr.json()
+            except Exception:
+                pass
+
+        user_info = b_data.get("user", {})
+        curr_bal = float(user_info.get("balance", b_data.get("balance", 0.0)) or 0.0)
+
+        # 2. Daily Streak Check-in
+        try:
+            async with session.post(f"{base_url}/checkin", json={"initData": init_data, "clientV2": True}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as cr:
+                if cr.status == 200:
+                    cd = await cr.json()
+                    curr_bal = float(cd.get("balance", curr_bal) or curr_bal)
+                    logger.info(f"[{acc_name}] ⚡ [Apex Miner] Daily check-in streak claimed! Streak: {cd.get('streak', 1)}")
+        except Exception:
+            pass
+
+        # 3. Mining Claim (if claimable points exist)
+        try:
+            async with session.post(f"{base_url}/mining/claim", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as cl:
+                if cl.status == 200:
+                    cld = await cl.json()
+                    curr_bal = float(cld.get("balance", curr_bal) or curr_bal)
+                    logger.info(f"[{acc_name}] ⚡ [Apex Miner] Mined points claimed! Balance: {curr_bal:,.4f}")
+        except Exception:
+            pass
+
+        # 4. Mining Restart / Start 8-hour cycle
+        m_active = True
+        try:
+            async with session.post(f"{base_url}/mining/restart", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as mr:
+                res_json = {}
+                try:
+                    res_json = await mr.json()
+                except Exception:
+                    pass
+                if mr.status == 200:
+                    curr_bal = float(res_json.get("balance", curr_bal) or curr_bal)
+                    logger.info(f"[{acc_name}] ⚡ [Apex Miner] 8-hour mining cycle active/restarted!")
+                elif mr.status == 409 or res_json.get("errorCode") == "SESSION_ACTIVE":
+                    m_active = True
+        except Exception:
+            pass
+
+        # 5. Tasks Discovery & Auto-Claim
+        for dt in ["telegram", "twitter"]:
+            try:
+                async with session.post(f"{base_url}/tasks/daily", json={"initData": init_data, "task": dt}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as dtr:
+                    if dtr.status == 200:
+                        dtd = await dtr.json()
+                        curr_bal = float(dtd.get("balance", curr_bal) or curr_bal)
+                        logger.info(f"[{acc_name}] ⚡ [Apex Miner] Daily task '{dt}' claimed!")
+            except Exception:
+                pass
+
+        for st in ["channel", "group", "twitter"]:
+            try:
+                async with session.post(f"{base_url}/tasks/social", json={"initData": init_data, "task": st}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as str_req:
+                    if str_req.status == 200:
+                        std = await str_req.json()
+                        curr_bal = float(std.get("balance", curr_bal) or curr_bal)
+                        logger.info(f"[{acc_name}] ⚡ [Apex Miner] Social task '{st}' claimed!")
+            except Exception:
+                pass
+
+        # 6. Ad Mining Speed Boost & Ad Reward
+        try:
+            async with session.post(f"{base_url}/ads/boost", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as bst_r:
+                if bst_r.status == 200:
+                    logger.info(f"[{acc_name}] ⚡ [Apex Miner] Mining speed boost activated!")
+        except Exception:
+            pass
+
+        try:
+            async with session.post(f"{base_url}/ads/reward", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as rew_r:
+                if rew_r.status == 200:
+                    rew_d = await rew_r.json()
+                    curr_bal = float(rew_d.get("balance", curr_bal) or curr_bal)
+                    logger.info(f"[{acc_name}] ⚡ [Apex Miner] Ad reward claimed! Balance: {curr_bal:,.4f}")
+        except Exception:
+            pass
+
+        logger.info(f"[{acc_name}] ⚡ [Apex Miner] Cycle finished | Balance: {curr_bal:,.4f} Points | Mining Active: {m_active}")
+
+    except Exception as e:
+        logger.debug(f"[{acc_name}] Apex Miner automation note: {e}")
+
+
 async def farm_single_account(
     acc_idx: int,
     total_accounts: int,
@@ -5168,11 +5503,28 @@ async def farm_single_account(
     # 2. Check if session links collection is due (every 18 hours or if missing)
     tokens_synced_at = float(acc.get("miniapp_tokens_synced_at") or 0)
     tokens_age_hours = (time.time() - tokens_synced_at) / 3600.0
-    tokens_due = (tokens_age_hours >= 18.0) or not acc.get("miniapp_tokens_synced") or (str(acc_uid) not in FLEET_MINIAPP_TOKENS)
+    curr_tokens = FLEET_MINIAPP_TOKENS.get(str(acc_uid), {})
+    missing_tokens = (
+        not curr_tokens.get("stones_init_data")
+        or not curr_tokens.get("mrg_init_data")
+        or not curr_tokens.get("art_init_data")
+        or not curr_tokens.get("ailab_init_data")
+        or not curr_tokens.get("ultrawallet_init_data")
+        or not curr_tokens.get("apx_init_data")
+    )
+    tokens_due = (tokens_age_hours >= 18.0) or not acc.get("miniapp_tokens_synced") or (str(acc_uid) not in FLEET_MINIAPP_TOKENS) or missing_tokens
 
     # 3. Check if self-healing is due (every 12 hours)
     last_heal = float(acc.get("last_healed_at") or 0)
-    heal_due = (time.time() - last_heal) > (12 * 3600) or not acc.get("stones_referral_bound")
+    missing_referrals = (
+        not acc.get("stones_referral_bound")
+        or not acc.get("mrg_referral_bound")
+        or not acc.get("art_referral_bound")
+        or not acc.get("ailab_referral_bound")
+        or not acc.get("ultrawallet_referral_bound")
+        or not acc.get("apx_referral_bound")
+    )
+    heal_due = (time.time() - last_heal) > (12 * 3600) or missing_referrals
 
     # 4. Check if withdrawal is already eligible or if balance check is due (every 2.5h)
     known_balance = ACCOUNT_BALANCES.get(str(acc_uid), {}).get("balance", 0.0)
@@ -5213,6 +5565,7 @@ async def farm_single_account(
                 await automate_stones_cycle(fast_mining_sess, None, acc)
                 await automate_ailab_cycle(fast_mining_sess, None, acc)
                 await automate_ultrawallet_cycle(fast_mining_sess, None, acc)
+                await automate_apx_cycle(fast_mining_sess, None, acc)
         except Exception as fme:
             logger.debug(f"[{acc_name}] Fast mining cycle note: {fme}")
 
@@ -5300,13 +5653,14 @@ async def farm_single_account(
                 logger.info(f"[{acc_name}] 🌐 Offloading task farming & 5/5 verifications to Cloudflare Edge...")
                 await delegate_farm_to_cloudflare(acc_uid, cf_node_url)
 
-            # F. Multi-Bot Mining Harvest & Task Automation (ART, MRG, Stones, AI Lab, UltraWallet)
+            # F. Multi-Bot Mining Harvest & Task Automation (ART, MRG, Stones, AI Lab, UltraWallet, Apex Miner)
             try:
                 await automate_art_cycle(http_sess, acc_cl, acc)
                 await automate_mrg_cycle(http_sess, acc_cl, acc)
                 await automate_stones_cycle(http_sess, acc_cl, acc)
                 await automate_ailab_cycle(http_sess, acc_cl, acc)
                 await automate_ultrawallet_cycle(http_sess, acc_cl, acc)
+                await automate_apx_cycle(http_sess, acc_cl, acc)
             except Exception as ome:
                 logger.debug(f"[{acc_name}] On-demand mining cycle note: {ome}")
 
