@@ -2976,15 +2976,52 @@ async def ensure_referral_bound(acc_client, acc: dict):
                 await acc_client(UnblockRequest(id=MRG_BOT))
             except Exception:
                 pass
-            await acc_client.send_message(MRG_BOT, f"/start {MRG_REFERRAL_CODE}")
-            await asyncio.sleep(1.5)
+            bot_mrg = await acc_client.get_input_entity(MRG_BOT)
+            res_mrg = await acc_client(RequestAppWebViewRequest(
+                peer=bot_mrg,
+                app=InputBotAppShortName(bot_id=bot_mrg, short_name="app"),
+                platform="android",
+                start_param=MRG_REFERRAL_CODE
+            ))
+            parsed = urllib.parse.urlparse(res_mrg.url)
+            m_init = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
+
+            if m_init:
+                m_fp = get_account_fingerprint(acc_uid)
+                m_headers = {
+                    "Content-Type": "application/json",
+                    "Origin": "https://app.mrgtoken.xyz",
+                    "Referer": "https://app.mrgtoken.xyz/",
+                    "User-Agent": HUMAN_USER_AGENT
+                }
+                m_payload = {
+                    "initData": m_init,
+                    "startParam": MRG_REFERRAL_CODE,
+                    "start_param": MRG_REFERRAL_CODE,
+                    "deviceInfo": {
+                        "platform": "android",
+                        "deviceName": m_fp.get("device_model", "Android Device"),
+                        "ram": "8 GB",
+                        "cpuCores": 8,
+                        "screenResolution": "1080x2400",
+                        "userAgent": HUMAN_USER_AGENT,
+                        "timezone": "UTC",
+                        "language": "en"
+                    }
+                }
+                try:
+                    async with aiohttp.ClientSession() as m_sess:
+                        await m_sess.post("https://mrg.up.railway.app/api/auth/verify", json=m_payload, headers=m_headers, proxy=acc.get("proxy"), timeout=aiohttp.ClientTimeout(total=12))
+                except Exception:
+                    pass
+
             try:
                 await acc_client(JoinChannelRequest("mrgminer"))
             except Exception:
                 pass
             acc["mrg_referral_bound"] = True
             await update_account_safely(acc_uid, {"mrg_referral_bound": True})
-            logger.info(f"[{acc_name}] ✅ MRG Miner successfully bound to referral {MRG_REFERRAL_CODE}!")
+            logger.info(f"[{acc_name}] ✅ MRG Miner successfully onboarded with referral {MRG_REFERRAL_CODE}!")
         except Exception as e:
             logger.warning(f"[{acc_name}] MRG referral notice: {e}")
 
@@ -4152,12 +4189,33 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         # Offload 24h token to Cloudflare Edge
         await sync_account_tokens_to_edge(session, acc_uid, acc_name, mrg_init_data=init_data)
 
-        headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
+        headers = {
+            "Content-Type": "application/json",
+            "Origin": "https://app.mrgtoken.xyz",
+            "Referer": "https://app.mrgtoken.xyz/",
+            "User-Agent": HUMAN_USER_AGENT
+        }
         base_url = "https://mrg.up.railway.app"
 
-        # 1. Auth verify
+        # 1. Auth verify with camelCase startParam & deviceInfo
+        fp = get_account_fingerprint(acc_uid)
+        auth_payload = {
+            "initData": init_data,
+            "startParam": MRG_REFERRAL_CODE,
+            "start_param": MRG_REFERRAL_CODE,
+            "deviceInfo": {
+                "platform": "android",
+                "deviceName": fp.get("device_model", "Android Device"),
+                "ram": "8 GB",
+                "cpuCores": 8,
+                "screenResolution": "1080x2400",
+                "userAgent": HUMAN_USER_AGENT,
+                "timezone": "UTC",
+                "language": "en"
+            }
+        }
         try:
-            async with session.post(f"{base_url}/api/auth/verify", json={"initData": init_data, "start_param": MRG_REFERRAL_CODE}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as r:
+            async with session.post(f"{base_url}/api/auth/verify", json=auth_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as r:
                 pass
         except Exception:
             pass
