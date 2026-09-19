@@ -3474,13 +3474,15 @@ async def ensure_referral_bound(acc_client, acc: dict):
                 headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
                 base_url = "https://apex-miner.vercel.app/api"
                 async with aiohttp.ClientSession() as apx_sess:
-                    await apx_sess.post(f"{base_url}/auth/telegram", json={"initData": init_apx}, headers=headers, timeout=aiohttp.ClientTimeout(total=8))
-                    b_res = await apx_sess.post(f"{base_url}/bootstrap", json={"initData": init_apx}, headers=headers, timeout=aiohttp.ClientTimeout(total=8))
+                    async with apx_sess.post(f"{base_url}/auth/telegram", json={"initData": init_apx}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as auth_r:
+                        pass
                     b_data = {}
-                    if b_res.status == 200:
-                        b_data = await b_res.json()
+                    async with apx_sess.post(f"{base_url}/bootstrap", json={"initData": init_apx}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as b_res:
+                        if b_res.status == 200:
+                            b_data = await b_res.json()
                     if not b_data.get("exists") or not b_data.get("user"):
-                        await apx_sess.post(f"{base_url}/register", json={"initData": init_apx}, headers=headers, timeout=aiohttp.ClientTimeout(total=8))
+                        async with apx_sess.post(f"{base_url}/register", json={"initData": init_apx}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as reg_r:
+                            pass
             try:
                 await acc_client(JoinChannelRequest("ApexMiner_Official"))
             except Exception:
@@ -5338,7 +5340,8 @@ async def automate_apx_cycle(session: aiohttp.ClientSession, acc_client, acc: di
 
         # 1. Auth & Bootstrap
         try:
-            await session.post(f"{base_url}/auth/telegram", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8))
+            async with session.post(f"{base_url}/auth/telegram", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as auth_r:
+                pass
         except Exception:
             pass
 
