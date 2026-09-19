@@ -307,7 +307,10 @@ PRIORITY_ACCOUNT_IDS = set()
 MAIN_TAB_KEYBOARD = {
     "keyboard": [
         [
-            {"text": "🚀 Open Mini App", "web_app": {"url": "https://restore-agy.aaaai2.workers.dev/dashboard"}},
+            {"text": "🚀 Open Mini App", "web_app": {"url": "https://restore-agy.aaaai2.workers.dev/dashboard"}}
+        ],
+        [
+            {"text": "➕ Add Account"},
             {"text": "💰 Withdraw"}
         ]
     ],
@@ -1209,7 +1212,10 @@ STATUS_INLINE_KEYBOARD = {
             }
         ],
         [
-            {"text": "💰 Instant Withdraw", "callback_data": "btn_withdraw"},
+            {"text": "➕ Add Account", "callback_data": "btn_add_account"},
+            {"text": "💰 Instant Withdraw", "callback_data": "btn_withdraw"}
+        ],
+        [
             {"text": "🔄 Refresh", "callback_data": "btn_status"}
         ]
     ]
@@ -2138,7 +2144,7 @@ async def handle_single_update(update: dict):
             elif cb_data == "btn_accounts":
                 rep = build_accounts_report()
                 await send_message_chunks(rep, reply_markup=MAIN_TAB_KEYBOARD, chat_id=from_id)
-            elif cb_data == "btn_addaccount":
+            elif cb_data in ["btn_addaccount", "btn_add_account"]:
                 login_sessions[str(from_id)] = {"step": "WAITING_PHONE", "client": None, "time": time.time()}
                 prompt = (
                     "📱 *Add New Telegram Account*\n\n"
@@ -2715,7 +2721,7 @@ async def handle_single_update(update: dict):
                 rep = build_accounts_report()
                 await send_message_chunks(rep, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
 
-        elif text.startswith("/addaccount") or text in ["➕ Add Account", "➕ Add"]:
+        elif text.startswith("/addaccount") or text.startswith("/add_account") or text in ["➕ Add Account", "➕ Add", "Add Account"]:
             login_sessions[str(chat_id)] = {"step": "WAITING_PHONE", "client": None, "time": time.time()}
             prompt = (
                 "📱 *Add New Telegram Account*\n\n"
