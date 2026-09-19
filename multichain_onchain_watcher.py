@@ -310,12 +310,24 @@ async def run_multichain_check(session: aiohttp.ClientSession) -> dict:
     state["prices"] = prices
     save_state(state)
 
-    # Sync live state and verified payouts to Cloudflare Edge KV
-    try:
-        await sync_multichain_to_edge(session, state)
-        await sync_payouts_history_to_edge(session)
-    except Exception as e:
-        print(f"Edge sync note: {e}")
+    # Only sync to Cloudflare Edge KV if a deposit occurred or if > 6 hours elapsed
+    new_deposit = any([
+        (bsc_bal >= 0 and state.get("bsc_bnb_balance") is not None and (bsc_bal - state.get("bsc_bnb_balance", 0)) >= 0.00001),
+        (arb_bal >= 0 and state.get("arb_eth_balance") is not None and (arb_bal - state.get("arb_eth_balance", 0)) >= 0.00005),
+        (ton_bal >= 0 and state.get("ton_balance") is not None and (ton_bal - state.get("ton_balance", 0)) >= 0.01)
+    ])
+    last_cloud_sync = state.get("last_cloud_sync_at", 0)
+    time_since_sync = time.time() - last_cloud_sync
+
+    if new_deposit or time_since_sync > 21600:
+        try:
+            await sync_multichain_to_edge(session, state)
+            if new_deposit:
+                await sync_payouts_history_to_edge(session)
+            state["last_cloud_sync_at"] = time.time()
+            save_state(state)
+        except Exception as e:
+            print(f"Edge sync note: {e}")
 
     return {"ok": True, "balances": results, "prices": prices}
 

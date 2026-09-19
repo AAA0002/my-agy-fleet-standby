@@ -256,11 +256,26 @@ fi
         iso: new Date().toISOString(),
         data
       };
+
+      // KV WRITE SAVER: Only write to KV if >10 minutes elapsed since last recorded heartbeat
+      let shouldWrite = true;
       try {
-        await env.BACKUP_KV.put("vps_heartbeat", JSON.stringify(heartbeat));
+        const rawLast = await env.BACKUP_KV.get("vps_heartbeat");
+        if (rawLast) {
+          const lastObj = JSON.parse(rawLast);
+          if (Date.now() - (lastObj.last_seen || 0) < 600000) {
+            shouldWrite = false;
+          }
+        }
       } catch (_) {}
 
-      return new Response(JSON.stringify({ ok: true, recorded: heartbeat.iso }), {
+      if (shouldWrite) {
+        try {
+          await env.BACKUP_KV.put("vps_heartbeat", JSON.stringify(heartbeat), { expirationTtl: 86400 });
+        } catch (_) {}
+      }
+
+      return new Response(JSON.stringify({ ok: true, recorded: heartbeat.iso, kv_written: shouldWrite }), {
         headers: { "Content-Type": "application/json", ...corsHeaders }
       });
     }
@@ -1014,8 +1029,7 @@ fi
           timestamp: new Date().toISOString()
         };
         const resJson = JSON.stringify(data);
-        ctx.waitUntil(env.BACKUP_KV.put("binance_rates_cache", resJson, { expirationTtl: 120 }).catch(() => {}));
-        return new Response(resJson, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=60", ...corsHeaders } });
+        return new Response(resJson, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=120", ...corsHeaders } });
       } catch (e) {
         return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers: corsHeaders });
       }
@@ -1565,27 +1579,7 @@ fi
   },
 
   async scheduled(event, env, ctx) {
-    // 1. Refresh Binance live rates cache on Cloudflare edge
-    ctx.waitUntil((async () => {
-      try {
-        const [bnbR, tonR, arbR, btcR] = await Promise.all([
-          fetch("https://api.binance.com/api/v3/ticker/price?symbol=BNBUSDT").then(r => r.json()).catch(() => ({ price: "645" })),
-          fetch("https://api.binance.com/api/v3/ticker/price?symbol=TONUSDT").then(r => r.json()).catch(() => ({ price: "5.70" })),
-          fetch("https://api.binance.com/api/v3/ticker/price?symbol=ARBUSDT").then(r => r.json()).catch(() => ({ price: "0.55" })),
-          fetch("https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT").then(r => r.json()).catch(() => ({ price: "63500" }))
-        ]);
-        const data = {
-          ok: true,
-          bnb_usd: parseFloat(bnbR.price || "645"),
-          ton_usd: parseFloat(tonR.price || "5.70"),
-          arb_usd: parseFloat(arbR.price || "0.55"),
-          btc_usd: parseFloat(btcR.price || "63500"),
-          usd_bdt: 122.5,
-          timestamp: new Date().toISOString()
-        };
-        await env.BACKUP_KV.put("binance_rates_cache", JSON.stringify(data), { expirationTtl: 300 });
-      } catch (_) {}
-    })());
+    // 1. Crypto Rates: fetched dynamically via /api/rates with HTTP Cache-Control (0 KV writes)
 
     // 2. Dead-Man Sentinel Check: if VPS missed heartbeats for >15m, alert Arif
     ctx.waitUntil((async () => {
