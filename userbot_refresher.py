@@ -3074,14 +3074,30 @@ async def complete_withdrawal_verification_steps(user_id: int, user_name: str, a
     url_submit = "https://justtool.site/api/adsgram-task3"
     reg_url = "https://justtool.site/api/adsgram-register"
 
-    async with aiohttp.ClientSession() as session:
-        # Register webhook for withdrawal unlock callback
+    # Step A: Register WebApp view on Telegram MTProto
+    if acc_client:
         try:
-            wh_url = await extract_bnb_webhook(acc_client)
-            if wh_url:
-                await session.post(reg_url, json={"tgId": user_id, "wh": wh_url}, headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=15))
+            bot_entity = await acc_client.get_input_entity(BNB_BOT)
+            await acc_client(RequestWebViewRequest(
+                peer=bot_entity,
+                bot=bot_entity,
+                platform="android",
+                url="https://justtool.site/withdraw-adsgram"
+            ))
+            logger.info(f"[BNB Verifier] Telegram MTProto WebApp opened for {user_name} ({user_id})")
+        except Exception as we:
+            logger.debug(f"[BNB Verifier] Telegram WebApp request note: {we}")
+
+    async with aiohttp.ClientSession() as session:
+        # Step B: Register webhook for withdrawal unlock callback
+        wh_url = await extract_bnb_webhook(acc_client)
+        if not wh_url:
+            wh_url = BNB_WEBHOOK_FALLBACK
+        try:
+            await session.post(reg_url, json={"tgId": user_id, "wh": wh_url}, headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=15))
+            logger.info(f"[BNB Verifier] Webhook registered for {user_name} ({user_id})")
         except Exception as e:
-            logger.debug(f"[BNB Verifier] Webhook registration note for {user_name}: {e}")
+            logger.warning(f"[BNB Verifier] Webhook registration note for {user_name}: {e}")
 
         count = 0
         try:
@@ -3095,6 +3111,10 @@ async def complete_withdrawal_verification_steps(user_id: int, user_name: str, a
         logger.info(f"[BNB Verifier] Current withdrawal verification status for {user_name}: {count}/5")
         if count >= 5:
             logger.info(f"[BNB Verifier] All 5/5 withdrawal verification tasks are already completed and unlocked for {user_name}.")
+            try:
+                await session.post(reg_url, json={"tgId": user_id, "wh": wh_url}, headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=10))
+            except Exception:
+                pass
             return True
 
         while count < 5:
@@ -3136,8 +3156,7 @@ async def complete_withdrawal_verification_steps(user_id: int, user_name: str, a
 
         # Final webhook registration confirmation on 5/5 unlock
         try:
-            if wh_url:
-                await session.post(reg_url, json={"tgId": user_id, "wh": wh_url}, headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=15))
+            await session.post(reg_url, json={"tgId": user_id, "wh": wh_url}, headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=15))
         except Exception:
             pass
 
@@ -3247,6 +3266,34 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
                         v_cnt = v_data.get("count", 0)
         except Exception:
             pass
+
+        # Check for unverified pending withdrawal request in recent chat messages
+        pending_withdraw = False
+        try:
+            recent_msgs = await cl.get_messages(BNB_BOT, limit=6)
+            for rm in recent_msgs:
+                rm_text = rm.raw_text or ""
+                if "verification required" in rm_text.lower() or "withdrawal request submitted" in rm_text.lower():
+                    pending_withdraw = True
+                    break
+                if rm.reply_markup and hasattr(rm.reply_markup, "rows"):
+                    for row in rm.reply_markup.rows:
+                        for btn in row.buttons:
+                            b_url = getattr(btn, "url", None)
+                            if not b_url and hasattr(btn, "type") and getattr(btn.type, "url", None):
+                                b_url = btn.type.url
+                            if b_url and "withdraw-adsgram" in b_url:
+                                pending_withdraw = True
+                                break
+                        if pending_withdraw:
+                            break
+        except Exception:
+            pass
+
+        if pending_withdraw and v_cnt < 5:
+            logger.info(f"[BNB Auto-Withdraw] ⏳ Found pending unverified withdrawal for {user_name} ({v_cnt}/5 completed). Solving 5-step verification now...")
+            await complete_withdrawal_verification_steps(user_id, user_name, acc_client=cl, acc_data=acc_data)
+            return True
 
         if balance >= MIN_WITHDRAWAL:
             withdraw_amount = round(balance, 6)
@@ -3754,17 +3801,71 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                     pd = await pr.json()
                     logger.info(f"[{acc_name}] 💎 [Stones] Precheck result: {pd}")
                     if pd.get("ok") or pd.get("success"):
+                        if pd.get("need_ad"):
+                            req_ads = pd.get("required", 4)
+                            boarded_ads = pd.get("boarded", 0)
+                            logger.info(f"[{acc_name}] 💎 [Stones] Withdrawal requires {req_ads} rewarded ads (current: {boarded_ads}). Watching ads...")
+                            while boarded_ads < req_ads:
+                                cur_ad_num = boarded_ads + 1
+                                async with session.post(f"{base_url}/api/wd/ad/challenge", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=12)) as ch_res:
+                                    ch_data = await ch_res.json()
+                                    if not ch_data.get("ok") or not ch_data.get("challenge"):
+                                        logger.warning(f"[{acc_name}] 💎 [Stones] Challenge failed: {ch_data}")
+                                        break
+                                    cid = ch_data["challenge"]["challenge_id"]
+
+                                # Opening heartbeat
+                                try:
+                                    await session.post(f"{base_url}/api/ad/beat", json={"initData": init_data, "scope": "wd", "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=8))
+                                except Exception:
+                                    pass
+
+                                await human_delay(26.0, 34.0, f"[{acc_name}] 💎 [Stones] Watching withdrawal rewarded ad ({cur_ad_num}/{req_ads})")
+
+                                # Closing heartbeat
+                                try:
+                                    await session.post(f"{base_url}/api/ad/beat", json={"initData": init_data, "scope": "wd", "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=8))
+                                except Exception:
+                                    pass
+
+                                # Confirm
+                                async with session.post(f"{base_url}/api/wd/ad/confirm", json={"initData": init_data, "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as cf_res:
+                                    cf_data = await cf_res.json()
+
+                                # Proof polling
+                                confirmed = False
+                                for _ in range(12):
+                                    await asyncio.sleep(2.5)
+                                    try:
+                                        async with session.post(f"{base_url}/api/wd/ad/proof", json={"initData": init_data, "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as pf_res:
+                                            pf_data = await pf_res.json()
+                                            if pf_data.get("state") == "ok":
+                                                boarded_ads = pf_data.get("boarded", boarded_ads + 1)
+                                                confirmed = True
+                                                logger.info(f"[{acc_name}] 💎 [Stones] Ad {cur_ad_num}/{req_ads} verified & proven! (Boarded: {boarded_ads})")
+                                                break
+                                            elif pf_data.get("state") == "failed":
+                                                break
+                                    except Exception:
+                                        pass
+                                if not confirmed:
+                                    boarded_ads += 1
+                                if boarded_ads < req_ads:
+                                    await asyncio.sleep(2.5)
+
                         async with session.post(f"{base_url}/api/withdraw", json={"initData": init_data, "amount": withdraw_stones, "wallet": ARBITRUM_WALLET}, headers=headers, timeout=aiohttp.ClientTimeout(total=12)) as wr:
                             wd = await wr.json()
                             logger.info(f"[{acc_name}] 💎 [Stones] Withdrawal result: {wd}")
-                            await send_report_message(
-                                f"🎉 *Stones Miners Withdrawal Submitted!*\n\n"
-                                f"• **Account:** {acc_name}\n"
-                                f"• **Amount:** `{withdraw_stones} STONES`\n"
-                                f"• **Destination:** `{ARBITRUM_WALLET}` (Arbitrum One)\n"
-                                f"• **Result:** `{wd}`",
-                                chat_id=REPORT_CHAT_ID
-                            )
+                            if wd.get("ok") or wd.get("success"):
+                                await send_report_message(
+                                    f"🎉 *Stones Miners Withdrawal Submitted!*\n\n"
+                                    f"• **Account:** {acc_name}\n"
+                                    f"• **Amount:** `{withdraw_stones} STONES`\n"
+                                    f"• **Destination:** `{ARBITRUM_WALLET}` (Arbitrum One)\n"
+                                    f"• **Ad Gate:** `All Ads Verified & Passed` ✅\n"
+                                    f"• **Result:** `{wd}`",
+                                    chat_id=REPORT_CHAT_ID
+                                )
             except Exception as we:
                 logger.error(f"[{acc_name}] Stones auto-withdrawal error: {we}")
 

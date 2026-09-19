@@ -790,6 +790,31 @@ fi
             } catch (_) {}
           }
         }
+
+        // 3.5 Token Expiry Watcher: If tokens have <= 4 hours remaining (age >= 20h), wake up Render to collect batch
+        const nowMs = Date.now();
+        let needBatchRefresh = false;
+        for (const [_, tData] of Object.entries(tokens)) {
+          const syncedAt = new Date(tData.synced_at || 0).getTime();
+          const ageHours = (nowMs - syncedAt) / 3600000;
+          if (ageHours >= 20) { // 24h - 20h = 4 hours remaining
+            needBatchRefresh = true;
+            break;
+          }
+        }
+
+        if (needBatchRefresh) {
+          // Render takes ~30-50s to wake from cold sleep on Free Tier; Cloudflare waits gracefully in waitUntil
+          await fetch("https://my-agy-fleet-standby.onrender.com/collect-tokens", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${env.SECRET_KEY}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ source: "cf_cron_2_to_4h_expiry_check" })
+          }).catch(() => {});
+        }
+
       } catch (_) {}
     })());
 
