@@ -3879,6 +3879,31 @@ async def sync_account_tokens_to_edge(session: aiohttp.ClientSession, acc_uid: s
     await asyncio.gather(*(push_token_worker(u) for u in CF_WORKER_URLS), return_exceptions=True)
 
 
+async def load_fleet_tokens_from_edge(session: aiohttp.ClientSession):
+    """Preloads cached 24h WebApp tokens (Stones, MRG, ART) from Cloudflare Edge into memory."""
+    global FLEET_MINIAPP_TOKENS
+    for cf_url in CF_WORKER_URLS:
+        try:
+            async with session.get(
+                f"{cf_url}/api/miniapp/tokens",
+                headers={"User-Agent": HUMAN_USER_AGENT},
+                timeout=aiohttp.ClientTimeout(total=6)
+            ) as r:
+                if r.status == 200:
+                    data = await r.json()
+                    if isinstance(data, dict):
+                        for uid, t in data.items():
+                            if uid not in FLEET_MINIAPP_TOKENS:
+                                FLEET_MINIAPP_TOKENS[uid] = t
+                            else:
+                                FLEET_MINIAPP_TOKENS[uid].update(t)
+                        logger.info(f"🌐 Preloaded cached 24h WebApp tokens for {len(FLEET_MINIAPP_TOKENS)} fleet accounts from Cloudflare Edge ({cf_url})")
+                        return True
+        except Exception:
+            pass
+    return False
+
+
 async def collect_account_session_links(acc_cl, acc: dict) -> dict:
     """
     On-Demand Collector: Extracts fresh 24h WebApp session links ('season links') for an account:
@@ -3996,21 +4021,29 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
     is_primary = (acc_uid == str(REPORT_CHAT_ID))
 
     try:
-        bot = await acc_client.get_entity(STONES_BOT)
-        res = await acc_client(RequestWebViewRequest(
-            peer=bot,
-            bot=bot,
-            platform="android",
-            url="https://app.stoneswithestand.my.id/"
-        ))
-        parsed = urllib.parse.urlparse(res.url)
-        init_data = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
-        if not init_data:
-            logger.warning(f"[{acc_name}] 💎 [Stones] Could not extract initData from WebApp")
-            return
+        init_data = None
+        if acc_client:
+            try:
+                bot = await acc_client.get_entity(STONES_BOT)
+                res = await acc_client(RequestWebViewRequest(
+                    peer=bot,
+                    bot=bot,
+                    platform="android",
+                    url="https://app.stoneswithestand.my.id/"
+                ))
+                parsed = urllib.parse.urlparse(res.url)
+                init_data = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
+                if init_data:
+                    await sync_account_tokens_to_edge(session, acc_uid, acc_name, stones_init_data=init_data)
+            except Exception as we:
+                logger.debug(f"[{acc_name}] 💎 [Stones] MTProto initData note: {we}")
 
-        # Offload 24h token to Cloudflare Edge
-        await sync_account_tokens_to_edge(session, acc_uid, acc_name, stones_init_data=init_data)
+        if not init_data:
+            init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("stones_init_data")
+
+        if not init_data:
+            logger.debug(f"[{acc_name}] 💎 [Stones] No cached or fresh initData available. Skipping until token collection.")
+            return
 
         headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
         base_url = "https://app.stoneswithestand.my.id"
@@ -4049,7 +4082,7 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                 logger.debug(f"[{acc_name}] Stones checkin note: {ce}")
 
         # 4. Join and verify official channel (@stoneswithestand)
-        if tasks.get("join_channel") != "completed":
+        if tasks.get("join_channel") != "completed" and acc_client:
             try:
                 await acc_client(JoinChannelRequest("stoneswithestand"))
                 await asyncio.sleep(1.0)
@@ -4161,33 +4194,43 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
 async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: dict):
     """
     Automates MRG Miner (@mrgminerbot):
-    - Obtains WebApp initData via RequestAppWebViewRequest
+    - Obtains or uses cached WebApp initData
     - Authenticates via /api/auth/verify
     - Binds unique TON v4r2 wallet from fleet_ton_wallets.json (or Binance Web3 for primary)
     - Claims accumulated mining rewards (/api/user/claim-mining)
-    - Verifies official channel task (@mrgminer) if pending
-    - Primary Account (6727787768): Sweeps 10% squad commission and referral bonuses!
+    - Claims all available tasks (recurring 3h tasks + one-time social/channel tasks)
+    - Auto-claims one-time bonus for all accounts
+    - Primary Account (6727787768): Sweeps 10% squad commission and referral bonuses
+    - Auto-unlocks higher mining level (TH/s boost) when holding balance permits
     """
     acc_name = acc.get("name", "User")
     acc_uid = str(acc.get("user_id"))
     is_primary = (acc_uid == str(REPORT_CHAT_ID))
 
     try:
-        bot_in = await acc_client.get_input_entity(MRG_BOT)
-        res = await acc_client(RequestAppWebViewRequest(
-            peer=bot_in,
-            app=InputBotAppShortName(bot_id=bot_in, short_name="app"),
-            platform="android",
-            start_param=MRG_REFERRAL_CODE
-        ))
-        parsed = urllib.parse.urlparse(res.url)
-        init_data = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
-        if not init_data:
-            logger.warning(f"[{acc_name}] ⛏️ [MRG Miner] Could not extract initData from WebApp")
-            return
+        init_data = None
+        if acc_client:
+            try:
+                bot_in = await acc_client.get_input_entity(MRG_BOT)
+                res = await acc_client(RequestAppWebViewRequest(
+                    peer=bot_in,
+                    app=InputBotAppShortName(bot_id=bot_in, short_name="app"),
+                    platform="android",
+                    start_param=MRG_REFERRAL_CODE
+                ))
+                parsed = urllib.parse.urlparse(res.url)
+                init_data = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
+                if init_data:
+                    await sync_account_tokens_to_edge(session, acc_uid, acc_name, mrg_init_data=init_data)
+            except Exception as we:
+                logger.debug(f"[{acc_name}] ⛏️ [MRG Miner] MTProto initData note: {we}")
 
-        # Offload 24h token to Cloudflare Edge
-        await sync_account_tokens_to_edge(session, acc_uid, acc_name, mrg_init_data=init_data)
+        if not init_data:
+            init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("mrg_init_data")
+
+        if not init_data:
+            logger.debug(f"[{acc_name}] ⛏️ [MRG Miner] No cached or fresh initData available. Skipping until token collection.")
+            return
 
         headers = {
             "Content-Type": "application/json",
@@ -4220,16 +4263,23 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         except Exception:
             pass
 
+        await asyncio.sleep(1.5)
+
         # 2. Profile fetch
         me_data = {}
-        async with session.post(f"{base_url}/api/user/me", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as r:
-            if r.status == 200:
-                me_data = await r.json()
+        try:
+            async with session.post(f"{base_url}/api/user/me", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as r:
+                if r.status == 200:
+                    me_data = await r.json()
+        except Exception:
+            pass
 
         u = me_data.get("user", {})
+        act_lvl = me_data.get("activeLevel") or 1
+        spd_ths = me_data.get("speedTHs") or 0.2
         is_ton_connected = u.get("isTonConnected", False)
         current_wallet = u.get("tonWalletAddress", "")
-        in_app_bal = u.get("inAppBalance", 0)
+        in_app_bal = float(u.get("inAppBalance", 0) or 0)
 
         # 3. Strict TON wallet binding & isolation
         target_wallet = TON_PRIMARY_WALLET if is_primary else None
@@ -4243,7 +4293,6 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                 except Exception:
                     pass
 
-        # Check if disconnection or rebinding is required
         needs_connect = False
         if not is_ton_connected or not current_wallet:
             needs_connect = True
@@ -4269,29 +4318,69 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                     logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Connected TON wallet {target_wallet[:10]}... : {cd.get('success')}")
             except Exception as ce:
                 logger.debug(f"[{acc_name}] MRG wallet connect note: {ce}")
+            await asyncio.sleep(1.5)
 
-        # 4. Claim official channel task (@mrgminer)
-        completed_tasks = u.get("completedTaskIds", [])
-        if "task-1789255007980" not in completed_tasks:
-            try:
-                await acc_client(JoinChannelRequest("mrgminer"))
-                await asyncio.sleep(1.0)
-                async with session.post(f"{base_url}/api/user/claim-task", json={"initData": init_data, "taskId": "task-1789255007980"}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as tr:
-                    td = await tr.json()
-                    logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Channel task claimed: {td.get('success')}")
-            except Exception as te:
-                logger.debug(f"[{acc_name}] MRG task claim note: {te}")
-
-        # 5. Claim Mining harvest
+        # 4. Claim Mining harvest
         try:
             async with session.post(f"{base_url}/api/user/claim-mining", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as mr:
                 md = await mr.json()
-                if md.get("success"):
-                    logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Mining claimed: +{md.get('claimedAmount')} MRG!")
+                if md.get("success") and float(md.get("claimedAmount", 0)) > 0:
+                    claimed_amt = float(md.get("claimedAmount", 0))
+                    in_app_bal += claimed_amt
+                    logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Mining claimed: +{claimed_amt:.4f} MRG!")
         except Exception as me:
             logger.debug(f"[{acc_name}] MRG claim mining note: {me}")
+        await asyncio.sleep(2.0)
 
-        # 6. Primary account special sweeps (10% squad commissions & referral bonuses)
+        # 5. Claim Available Tasks (Recurring 3h + Socials + Channel tasks)
+        mrg_tasks = me_data.get("tasks", [])
+        completed_task_ids = set(me_data.get("completedTaskIds", []))
+        for tsk in mrg_tasks:
+            tid = tsk.get("taskId")
+            ttype = tsk.get("taskType", "")
+            vtype = tsk.get("verificationType", "")
+            title = tsk.get("title", tid)
+
+            if tid in completed_task_ids and "recurring" not in ttype:
+                continue
+
+            # Join channel if Telegram channel task and MTProto is active
+            if vtype == "telegram_channel" and acc_client:
+                turl = tsk.get("url", "")
+                ch_target = None
+                if "mrgminer" in turl:
+                    ch_target = "mrgminer"
+                elif "RevolveDao" in turl or "revolve" in turl.lower():
+                    ch_target = "RevolveDao"
+                if ch_target:
+                    try:
+                        await acc_client(JoinChannelRequest(ch_target))
+                        await asyncio.sleep(1.0)
+                    except Exception:
+                        pass
+
+            try:
+                async with session.post(f"{base_url}/api/user/claim-task", json={"initData": init_data, "taskId": tid}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as tr:
+                    td = await tr.json()
+                    if td.get("success"):
+                        rew = float(tsk.get("reward", 5))
+                        in_app_bal += rew
+                        logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Task '{title}' claimed: +{rew} MRG!")
+            except Exception as te:
+                logger.debug(f"[{acc_name}] MRG task claim note for {tid}: {te}")
+            await asyncio.sleep(2.0)
+
+        # 6. One-time bonus (attempted by all fleet accounts)
+        try:
+            async with session.post(f"{base_url}/api/user/claim-one-time-bonus", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as br:
+                bd = await br.json()
+                if bd.get("success"):
+                    logger.info(f"[{acc_name}] ⛏️ [MRG Miner] One-time bonus claimed successfully!")
+        except Exception:
+            pass
+        await asyncio.sleep(1.5)
+
+        # 7. Primary account special sweeps (10% squad commissions & referral bonuses)
         if is_primary:
             try:
                 async with session.post(f"{base_url}/api/user/claim-commission", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as ccr:
@@ -4300,13 +4389,24 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                         logger.info(f"[{acc_name}] ⛏️ [MRG Miner] 🏆 Squad commission collected: +{ccd.get('claimedAmount')} MRG!")
             except Exception as ce:
                 logger.debug(f"[{acc_name}] MRG commission claim note: {ce}")
+            await asyncio.sleep(1.5)
 
-            try:
-                await session.post(f"{base_url}/api/user/claim-one-time-bonus", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=10))
-            except Exception:
-                pass
+        # 8. Auto-Upgrade Mining Level (doubles mining TH/s when balance >= 101 MRG)
+        try:
+            if in_app_bal >= 101.0 and act_lvl < 2:
+                async with session.post(f"{base_url}/api/user/unlock-level", json={"initData": init_data, "level": 2}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as lr:
+                    ld = await lr.json()
+                    if ld.get("success"):
+                        logger.info(f"[{acc_name}] 🚀 [MRG Miner] Auto-upgraded to Level 2 (0.40 TH/s)! Boost active!")
+            elif in_app_bal >= 250.0 and act_lvl < 3:
+                async with session.post(f"{base_url}/api/user/unlock-level", json={"initData": init_data, "level": 3}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as lr:
+                    ld = await lr.json()
+                    if ld.get("success"):
+                        logger.info(f"[{acc_name}] 🚀 [MRG Miner] Auto-upgraded to Level 3 (0.60 TH/s)!")
+        except Exception as ue:
+            logger.debug(f"[{acc_name}] MRG level upgrade note: {ue}")
 
-        logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Cycle finished | Balance: {in_app_bal:.2f} MRG")
+        logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Cycle finished | Balance: {in_app_bal:.2f} MRG (Lvl: {act_lvl}, {spd_ths} TH/s)")
 
     except Exception as e:
         logger.warning(f"[{acc_name}] MRG automation note: {e}")
@@ -4322,17 +4422,18 @@ ART_CONSECUTIVE_FAILS = 0
 async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: dict):
     """
     Automates ART Airdrop (@ART_AIRDROP_BOT):
-    - Features smart circuit breaker: skips cycle when external API server (art.tamimdev.dev) is down or timing out.
     - Claims accumulated mining rewards (/api/user/claim-mining)
     - Starts/renews continuous 8-hour mining session (/api/user/start-mining)
-    - Verifies official channel task (@ART_AIRDROP) if pending
-    - For Primary Account (6727787768): Tracks pool balance & pending withdrawal status (800 ART).
+    - Automatically discovers and claims all pending tasks (/api/tasks/claim)
+    - Claims daily rewarded ads bonus (/api/ads/claim)
+    - Primary Account (6727787768): Sweeps 10% team squad earnings & referral bonuses
+    - Auto-withdraws to TON Primary Wallet when balance >= 1000 ART
     """
     global ART_CIRCUIT_BREAKER_UNTIL, ART_CONSECUTIVE_FAILS
     acc_name = acc.get("name", "User")
     acc_uid = str(acc.get("user_id"))
+    is_primary = (acc_uid == str(REPORT_CHAT_ID))
 
-    # Circuit breaker check to avoid stalling multi-account cycle
     now = time.time()
     if now < ART_CIRCUIT_BREAKER_UNTIL:
         rem_mins = max(1, int((ART_CIRCUIT_BREAKER_UNTIL - now) / 60))
@@ -4343,59 +4444,147 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         base_url = "https://art.tamimdev.dev"
         headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
 
-        # 1. Obtain WebApp initData
-        try:
-            bot = await acc_client.get_entity("ART_AIRDROP_BOT")
-            res = await acc_client(RequestWebViewRequest(
-                peer=bot,
-                bot=bot,
-                platform="android",
-                url=f"https://art.tamimdev.dev/?ref={REPORT_CHAT_ID}"
-            ))
-            parsed = urllib.parse.urlparse(res.url)
-            init_data = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
-            if init_data:
-                headers["X-Telegram-Init-Data"] = init_data
-                # Offload 24h token to Cloudflare Edge
-                await sync_account_tokens_to_edge(session, acc_uid, acc_name, art_init_data=init_data)
-        except Exception as we:
-            logger.debug(f"[{acc_name}] ART WebApp init note: {we}")
+        # 1. Obtain WebApp initData if client is connected
+        if acc_client:
+            try:
+                bot = await acc_client.get_entity("ART_AIRDROP_BOT")
+                res = await acc_client(RequestWebViewRequest(
+                    peer=bot,
+                    bot=bot,
+                    platform="android",
+                    url=f"https://art.tamimdev.dev/?ref={REPORT_CHAT_ID}"
+                ))
+                parsed = urllib.parse.urlparse(res.url)
+                init_data = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
+                if init_data:
+                    headers["X-Telegram-Init-Data"] = init_data
+                    await sync_account_tokens_to_edge(session, acc_uid, acc_name, art_init_data=init_data)
+            except Exception as we:
+                logger.debug(f"[{acc_name}] ART WebApp init note: {we}")
 
-        # 2. Test reachability with short 3.0s timeout
-        async with session.get(f"{base_url}/api/user/{acc_uid}", headers=headers, timeout=aiohttp.ClientTimeout(total=3.0)) as r:
+        # 2. Fetch user profile & mining status
+        u = {}
+        ms = {}
+        async with session.get(f"{base_url}/api/user/{acc_uid}", headers=headers, timeout=aiohttp.ClientTimeout(total=4.0)) as r:
             if r.status == 200:
                 ud = await r.json()
                 u = ud.get("user", {})
-                bal = u.get("poolWallet", 0)
-                logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Cycle finished | Pool: {bal} ART")
+                ms = ud.get("miningState", {})
                 ART_CONSECUTIVE_FAILS = 0
             else:
                 logger.debug(f"[{acc_name}] 🚀 [ART Airdrop] User API status: {r.status}")
 
-        # 3. Mining claim
+        pool_bal = float(u.get("poolWallet", 0) or 0)
+        is_mining = ms.get("isMining", False)
+        rem_sec = ms.get("remainingSeconds", 0)
+        accumulated = float(ms.get("accumulatedAtf", 0) or 0)
+        hr_rate = ms.get("hourlyRate", 5)
+
+        # 3. Mining claim & 8-hour cycle restart
+        if not is_mining or rem_sec <= 0 or accumulated > 0:
+            try:
+                async with session.post(f"{base_url}/api/user/claim-mining", json={"userId": acc_uid}, headers=headers, timeout=aiohttp.ClientTimeout(total=4.0)) as cr:
+                    cd = await cr.json()
+                    if cd.get("success") and float(cd.get("claimedAtf", 0)) > 0:
+                        claimed_amt = float(cd.get("claimedAtf", 0))
+                        pool_bal += claimed_amt
+                        logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Claimed +{claimed_amt} ART!")
+            except Exception:
+                pass
+
+            try:
+                async with session.post(f"{base_url}/api/user/start-mining", json={"userId": acc_uid}, headers=headers, timeout=aiohttp.ClientTimeout(total=4.0)) as sr:
+                    sd = await sr.json()
+                    if sd.get("success"):
+                        is_mining = True
+                        logger.info(f"[{acc_name}] 🚀 [ART Airdrop] 8h Mining cycle active/renewed at {hr_rate} ART/h!")
+            except Exception:
+                pass
+
+        # 4. Check & Complete Available Tasks
         try:
-            async with session.post(f"{base_url}/api/user/claim-mining", json={"userId": acc_uid}, headers=headers, timeout=aiohttp.ClientTimeout(total=3.0)) as r:
-                cd = await r.json()
-                if cd.get("success") and float(cd.get("claimedAtf", 0)) > 0:
-                    logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Claimed +{cd.get('claimedAtf')} ART!")
+            async with session.get(f"{base_url}/api/tasks/{acc_uid}", headers=headers, timeout=aiohttp.ClientTimeout(total=4.0)) as tr:
+                if tr.status == 200:
+                    td = await tr.json()
+                    tasks = td.get("tasks", [])
+                    for t in tasks:
+                        if not t.get("isCompleted"):
+                            tid = t.get("id")
+                            ttitle = t.get("title", tid)
+                            aurl = t.get("actionUrl", "")
+                            if "t.me" in aurl and acc_client:
+                                try:
+                                    ch_name = aurl.replace("https://t.me/", "").replace("+", "").strip()
+                                    await acc_client(JoinChannelRequest(ch_name))
+                                    await asyncio.sleep(1.0)
+                                except Exception:
+                                    pass
+
+                            async with session.post(f"{base_url}/api/tasks/claim", json={"userId": acc_uid, "taskId": tid}, headers=headers, timeout=aiohttp.ClientTimeout(total=4.0)) as cl_r:
+                                cld = await cl_r.json()
+                                if cld.get("success"):
+                                    rew = float(cld.get("reward", 10))
+                                    pool_bal += rew
+                                    logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Task '{ttitle}' claimed (+{rew} ART)!")
+                            await asyncio.sleep(1.0)
         except Exception:
             pass
 
-        # 4. Start / renew mining
+        # 5. Claim Daily Ads Bonus
         try:
-            async with session.post(f"{base_url}/api/user/start-mining", json={"userId": acc_uid}, headers=headers, timeout=aiohttp.ClientTimeout(total=3.0)) as r:
-                sd = await r.json()
-                if sd.get("success"):
-                    logger.info(f"[{acc_name}] 🚀 [ART Airdrop] 8h Mining cycle active/renewed!")
+            async with session.post(f"{base_url}/api/ads/claim", json={"userId": acc_uid}, headers=headers, timeout=aiohttp.ClientTimeout(total=4.0)) as ar:
+                ad_res = await ar.json()
+                if ad_res.get("success"):
+                    rew = float(ad_res.get("reward", 10))
+                    pool_bal += rew
+                    logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Daily ad bonus claimed (+{rew} ART)!")
         except Exception:
             pass
+
+        # 6. Primary Account Squad Sweeps (Team Wallet Earnings & Referral Bonuses)
+        if is_primary:
+            try:
+                async with session.post(f"{base_url}/api/referrals/claim-team", json={"userId": acc_uid}, headers=headers, timeout=aiohttp.ClientTimeout(total=4.0)) as tr_res:
+                    tr_d = await tr_res.json()
+                    if tr_d.get("success") and float(tr_d.get("claimedAtf", 0)) > 0:
+                        t_amt = float(tr_d.get("claimedAtf", 0))
+                        pool_bal += t_amt
+                        logger.info(f"[{acc_name}] 🚀 [ART Airdrop] 🏆 Squad team earnings collected: +{t_amt} ART!")
+            except Exception:
+                pass
+
+            try:
+                await session.post(f"{base_url}/api/referrals/claim-bonus", json={"userId": acc_uid}, headers=headers, timeout=aiohttp.ClientTimeout(total=4.0))
+            except Exception:
+                pass
+
+            # Auto-Withdrawal check for Primary Account
+            if pool_bal >= 1000.0:
+                try:
+                    wd_amount = int(pool_bal)
+                    async with session.post(f"{base_url}/api/withdraw", json={"userId": acc_uid, "amount": wd_amount, "walletAddress": TON_PRIMARY_WALLET}, headers=headers, timeout=aiohttp.ClientTimeout(total=6.0)) as wr:
+                        w_d = await wr.json()
+                        if w_d.get("success"):
+                            logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Withdrawal of {wd_amount} ART submitted to {TON_PRIMARY_WALLET}!")
+                            await send_report_message(
+                                f"🎉 *ART Airdrop Withdrawal Submitted!*\n\n"
+                                f"• **Account:** {acc_name}\n"
+                                f"• **Amount:** `{wd_amount} ART`\n"
+                                f"• **Destination:** `{TON_PRIMARY_WALLET}` (TON)\n"
+                                f"• **Status:** Processing ✅",
+                                chat_id=REPORT_CHAT_ID
+                            )
+                except Exception as we:
+                    logger.debug(f"[{acc_name}] ART withdrawal note: {we}")
+
+        logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Cycle finished | Pool: {pool_bal:.2f} ART | Mining Active: {is_mining}")
 
     except (asyncio.TimeoutError, aiohttp.ClientError) as net_err:
         ART_CONSECUTIVE_FAILS += 1
         err_msg = type(net_err).__name__
-        if ART_CONSECUTIVE_FAILS >= 2:
-            ART_CIRCUIT_BREAKER_UNTIL = time.time() + 1800  # 30-minute cooldown
-            logger.warning(f"[{acc_name}] 🚀 [ART Airdrop] Server unreachable ({err_msg}). Circuit breaker tripped for 30m.")
+        if ART_CONSECUTIVE_FAILS >= 3:
+            ART_CIRCUIT_BREAKER_UNTIL = time.time() + 900  # 15-minute cooldown
+            logger.warning(f"[{acc_name}] 🚀 [ART Airdrop] Server unreachable ({err_msg}). Circuit breaker tripped for 15m.")
         else:
             logger.debug(f"[{acc_name}] 🚀 [ART Airdrop] Server timed out ({err_msg}).")
     except Exception as e:
@@ -4464,7 +4653,7 @@ async def farm_single_account(
     # 2. Check if session links collection is due (every 18 hours or if missing)
     tokens_synced_at = float(acc.get("miniapp_tokens_synced_at") or 0)
     tokens_age_hours = (time.time() - tokens_synced_at) / 3600.0
-    tokens_due = (tokens_age_hours >= 18.0) or not acc.get("miniapp_tokens_synced")
+    tokens_due = (tokens_age_hours >= 18.0) or not acc.get("miniapp_tokens_synced") or (str(acc_uid) not in FLEET_MINIAPP_TOKENS)
 
     # 3. Check if self-healing is due (every 12 hours)
     last_heal = float(acc.get("last_healed_at") or 0)
@@ -4498,6 +4687,18 @@ async def farm_single_account(
             hours_left = max(0.0, (next_bnb_avail_ms - now_ms) / 3600000.0) if next_bnb_avail_ms else 8.0
             logger.info(f"[{cf_tag} | Slot {worker_slot+1}/3] === [Account {acc_idx}/{total_accounts}] {acc_name} (ID: {acc_uid}) ===")
             logger.info(f"[{acc_name}] 10/10 BNB tasks completed & session links up-to-date. Next reset in ~{hours_left:.1f}h. Skipping MTProto to conserve shared RAM.")
+
+        # Multi-bot continuous mining cycle via pure HTTP & cached WebApp tokens (0 MTProto, 0 VPS RAM)
+        try:
+            async with aiohttp.ClientSession() as fast_mining_sess:
+                await automate_art_cycle(fast_mining_sess, None, acc)
+                await automate_mrg_cycle(fast_mining_sess, None, acc)
+                await automate_stones_cycle(fast_mining_sess, None, acc)
+        except Exception as fme:
+            logger.debug(f"[{acc_name}] Fast mining cycle note: {fme}")
+
+        acc["last_fleet_cycle_at"] = time.time()
+        await update_account_safely(acc_uid, {"last_fleet_cycle_at": time.time()})
         gc.collect()
         return
 
@@ -4580,6 +4781,14 @@ async def farm_single_account(
                 logger.info(f"[{acc_name}] 🌐 Offloading task farming & 5/5 verifications to Cloudflare Edge...")
                 await delegate_farm_to_cloudflare(acc_uid, cf_node_url)
 
+            # F. Multi-Bot Mining Harvest & Task Automation (ART, MRG, Stones)
+            try:
+                await automate_art_cycle(http_sess, acc_cl, acc)
+                await automate_mrg_cycle(http_sess, acc_cl, acc)
+                await automate_stones_cycle(http_sess, acc_cl, acc)
+            except Exception as ome:
+                logger.debug(f"[{acc_name}] On-demand mining cycle note: {ome}")
+
         # Record completed multi-bot cycle timestamp safely
         acc["last_fleet_cycle_at"] = time.time()
         await update_account_safely(acc_uid, {"last_fleet_cycle_at": time.time()})
@@ -4650,6 +4859,13 @@ async def task_worker_247(user_id: int, user_name: str):
             logger.info("Starting automated cycle check across bots...")
             fleet_next_resets = []
             fleet_ready_counts = []
+
+            # Preload cached 24h WebApp tokens (Stones, MRG, ART) from Cloudflare Edge
+            try:
+                async with aiohttp.ClientSession() as preload_sess:
+                    await load_fleet_tokens_from_edge(preload_sess)
+            except Exception as ple:
+                logger.debug(f"Edge token preload note: {ple}")
 
             async with task_lock:
                 accounts = load_accounts()
