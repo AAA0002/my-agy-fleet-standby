@@ -591,7 +591,8 @@ fi
   .topo-link-gold { stroke: #f59e0b; stroke-width: 2; stroke-dasharray: 5 4; animation: flowDash 0.9s linear infinite; }
   .topo-link-purple { stroke: #8b5cf6; stroke-width: 2; stroke-dasharray: 5 4; animation: flowDash 0.9s linear infinite; }
   .topo-link-stream { stroke: #10b981; stroke-width: 1.8; stroke-dasharray: 4 4; animation: flowDash 0.8s linear infinite; }
-  .topo-node { cursor: pointer; transition: transform 0.15s, filter 0.15s; }
+  .topo-node { cursor: pointer; transition: transform 0.15s, filter 0.15s; pointer-events: all; }
+  .topo-node text { pointer-events: none; }
   .topo-node:hover, .topo-node:active { filter: drop-shadow(0 2px 6px rgba(37,99,235,0.3)); cursor: pointer; }
   .hud-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-top: 10px; }
   .hud-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
@@ -1560,7 +1561,24 @@ fi
       if (tg.setHeaderColor) tg.setHeaderColor('#ffffff');
       if (tg.setBackgroundColor) tg.setBackgroundColor('#f8fafc');
     } catch (_) {}
+
+    if (tg.BackButton) {
+      tg.BackButton.onClick(() => {
+        const m = document.getElementById('addAccModal');
+        if (m && m.classList.contains('active')) {
+          closeAddAccountModal();
+          return;
+        }
+        if (currentTab !== 'overview') {
+          switchTab('overview');
+        }
+      });
+    }
   }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeAddAccountModal();
+  });
 
   function haptic(type = 'light') {
     try {
@@ -1590,6 +1608,16 @@ fi
     const tabBtn = document.getElementById('navTab-' + tabId);
     if (pane) pane.classList.add('active');
     if (tabBtn) tabBtn.classList.add('active');
+
+    // Manage native Telegram BackButton visibility
+    if (tg?.BackButton) {
+      const modalActive = document.getElementById('addAccModal')?.classList.contains('active');
+      if (tabId === 'overview' && !modalActive) {
+        tg.BackButton.hide();
+      } else {
+        tg.BackButton.show();
+      }
+    }
 
     // Instantly reset scroll to top so content is NEVER scrolled past
     window.scrollTo(0, 0);
@@ -1814,12 +1842,14 @@ fi
     if (m) m.classList.add('active');
     const input = document.getElementById('addPhoneInput');
     if (input) input.focus();
+    if (tg?.BackButton) tg.BackButton.show();
   }
 
   function closeAddAccountModal() {
     haptic('light');
     const m = document.getElementById('addAccModal');
     if (m) m.classList.remove('active');
+    if (tg?.BackButton && currentTab === 'overview') tg.BackButton.hide();
   }
 
   async function submitAddAccountPhone() {
@@ -1866,12 +1896,20 @@ fi
     }
   }
 
-  let seconds = 30;
+  let seconds = 60;
   setInterval(() => {
     seconds--;
     const el = document.getElementById('timer');
     if (el) el.innerText = seconds;
-    if (seconds <= 0) location.reload();
+    if (seconds <= 0) {
+      const modalActive = document.getElementById('addAccModal')?.classList.contains('active');
+      const isTyping = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA');
+      if (!modalActive && !isTyping) {
+        location.reload();
+      } else {
+        seconds = 30; // postpone while user is actively interacting
+      }
+    }
   }, 1000);
 
   async function triggerCloudFarmAll() {
