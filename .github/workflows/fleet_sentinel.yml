@@ -140,7 +140,7 @@ jobs:
           except Exception as e:
               print(f"❌ Turso error: {e}")
 
-          # 6. Supabase Cloud Postgres Check
+          # 6. Supabase Cloud Postgres Check & Anti-Sleep Active Write
           supabase_ok = False
           try:
               req = urllib.request.Request(f"{sb_url}/rest/v1/fleet_accounts?select=id", headers={"apikey": sb_key})
@@ -149,6 +149,30 @@ jobs:
                       accs = json.loads(r.read().decode())
                       print(f"✅ Supabase Cloud Postgres: ONLINE ({len(accs)} accounts persisted)")
                       supabase_ok = True
+
+              # Active write to prevent 7-day inactivity pause
+              import datetime
+              now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+              sb_write_body = json.dumps([{
+                  "node_name": "GitHub Actions Cloud Sentinel",
+                  "node_url": "github://actions/fleet_sentinel",
+                  "status": "ONLINE",
+                  "latency_ms": 1,
+                  "last_seen": now_iso
+              }]).encode()
+              sb_write_req = urllib.request.Request(
+                  f"{sb_url}/rest/v1/fleet_mesh_heartbeats",
+                  data=sb_write_body,
+                  headers={
+                      "apikey": sb_key,
+                      "Authorization": f"Bearer {sb_key}",
+                      "Content-Type": "application/json",
+                      "Prefer": "resolution=merge-duplicates"
+                  }
+              )
+              with urllib.request.urlopen(sb_write_req, timeout=10) as wr:
+                  if wr.status in (200, 201):
+                      print("✅ Supabase Anti-Sleep Write: ACTIVE (Postgres kept permanently awake)")
           except Exception as e:
               print(f"❌ Supabase error: {e}")
 
