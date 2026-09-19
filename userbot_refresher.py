@@ -153,6 +153,68 @@ STANDARD_HEADERS = {
     "Accept-Language": "en,bn;q=0.9",
 }
 
+# Google Gemini Multi-Key Rotation Pool (14 Active Keys, Suspended Key #8 Excluded)
+GEMINI_API_KEYS = [k.strip() for k in os.getenv("GEMINI_API_KEYS", "").split(",") if k.strip()]
+if not GEMINI_API_KEYS:
+    GEMINI_API_KEYS = [
+        "AQ.Ab8RN6KM84Fxx2_1qtQoOL0T3ZXaty0FEFX1-7Lc8XmR_rmMeg",
+        "AQ.Ab8RN6JlgBLNwrACewVxtg1RxH752VHEouYCAnzN73hOdoNFjA",
+        "AQ.Ab8RN6J6_g_Jr0AeLaUicMkjaPHxVKmoCslAcL1NTQcFSzSe1w",
+        "AQ.Ab8RN6KU9MO7yuDWVIh28uuUfp0MyXMknjo3arWWft8X4jbEtQ",
+        "AQ.Ab8RN6IxuzzZ1m9nWx8w0Ob3xC_zZ2p_7hdjaCRZtfPBYx5cog",
+        "AQ.Ab8RN6Kn0fQD8aYCfG_8KXg9qAKiAQUUSsYrZ10tqgqs1oQvYw",
+        "AQ.Ab8RN6I9tnLMJoWuPBQrmRw3WCvS3MWFcQFKB6_TQsabaI5-gg",
+        "AQ.Ab8RN6LZCvPuue6uZrGA9_xocFC27NHvPiAvGL1h4YGRC9CY7Q",
+        "AQ.Ab8RN6IWzo-mOBhSTwK79wlLILDyImhLCjgiCBp9DQRZ9VVRdQ",
+        "AQ.Ab8RN6IKx4lhqSZWPEFA6Uhu8Wf5iOZmfGEeYqrSx3D3IkQymw",
+        "AQ.Ab8RN6L78IMc1XSC39WY3bukDgGNVyMMZeJ1rdpKKrq3BW3YFQ",
+        "AQ.Ab8RN6IavD_owt-KIaBLLtTbVoGBt_J5R16syXTy3en_6LIDnw",
+        "AQ.Ab8RN6Ic1OPZNPytcdUMj6GJCpHMj3NzzZpV8pIZQO_SWL3pBA",
+        "AQ.Ab8RN6L_FApJMCEgGOi6XXeKRNrWpS3QugJ6pb5LYUyBmyNAJw"
+    ]
+
+async def query_gemini_ai(prompt: str) -> Optional[Tuple[str, str]]:
+    """Queries Google Gemini API with multi-key rotation and intelligent fallback.
+    Primary: gemini-3.8-flash -> Fallback: gemini-3.7-flash -> gemini-3.5-flash -> gemini-flash-latest
+    """
+    models = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash", "gemini-flash-latest"]
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}]
+    }
+    keys_pool = list(GEMINI_API_KEYS)
+    random.shuffle(keys_pool)
+    
+    timeout_cfg = aiohttp.ClientTimeout(total=12)
+    async with aiohttp.ClientSession(timeout=timeout_cfg) as session:
+        for model in models:
+            for key in keys_pool[:6]:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+                headers = {
+                    "Content-Type": "application/json",
+                    "X-goog-api-key": key
+                }
+                t0 = time.time()
+                try:
+                    async with session.post(url, json=payload, headers=headers) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            candidates = data.get("candidates", [])
+                            if candidates:
+                                parts = candidates[0].get("content", {}).get("parts", [])
+                                if parts:
+                                    ans = parts[0].get("text", "").strip()
+                                    latency_ms = round((time.time() - t0) * 1000)
+                                    return ans, f"Google Gemini ({model} · {latency_ms}ms)"
+                        elif resp.status in (429, 503):
+                            # High demand or rate limit: try next key / fallback model
+                            continue
+                        elif resp.status == 403:
+                            # Access denied: skip this key
+                            continue
+                except Exception:
+                    continue
+    return None
+
 GROQ_API_KEYS = [
     os.getenv("GROQ_API_KEY_1", "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"),
     os.getenv("GROQ_API_KEY_2", "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"),
@@ -2535,17 +2597,23 @@ async def handle_single_update(update: dict):
                     chat_id=chat_id
                 )
             else:
-                await send_report_message("🤔 *Processing query via GroqCloud LPU AI...*", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
+                await send_report_message("🤔 *Processing query via Google Gemini 3.8 Flash AI...*", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
                 try:
                     ans = None
-                    active_provider = "GroqCloud LPU"
+                    active_provider = "Google Gemini"
 
-                    # 1. Primary Engine: Ultra-Fast GroqCloud LPU
-                    groq_res = await query_groq_ai(prompt)
-                    if groq_res:
-                        ans, active_provider = groq_res
+                    # 1. Primary Engine: Google Gemini (3.8 Flash -> fallback 3.7 Flash -> 3.5 Flash)
+                    gemini_res = await query_gemini_ai(prompt)
+                    if gemini_res:
+                        ans, active_provider = gemini_res
 
-                    # 2. Secondary Failover: Cloudflare Edge AI
+                    # 2. Secondary Failover: Ultra-Fast GroqCloud LPU
+                    if not ans:
+                        groq_res = await query_groq_ai(prompt)
+                        if groq_res:
+                            ans, active_provider = groq_res
+
+                    # 3. Tertiary Failover: Cloudflare Edge AI
                     if not ans:
                         async def fetch_cf_ai(base_cf: str):
                             cf_ai_url = f"{base_cf}/ai"
@@ -2574,7 +2642,7 @@ async def handle_single_update(update: dict):
                     ai_msg = (
                         f"🤖 *AI Intelligence ({active_provider}):*\n\n"
                         f"{ans}\n\n"
-                        f"⚡ _MY AGY AI Hybrid Cloud (Groq LPU + Triple Cloudflare Edge)_"
+                        f"⚡ _MY AGY AI Hybrid Engine (Google Gemini Flash + Groq LPU + Cloudflare Edge)_"
                     )
                     await send_report_message(ai_msg, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
                 except Exception as e:
