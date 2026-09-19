@@ -45,6 +45,10 @@ except Exception:
 ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
 PAYOUTS_FILE = os.path.join(BASE_DIR, "payouts.json")
 WALLET_ADDRESS = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
+WALLETS = [
+    "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
+    "0x017841f26d5b79cc8c5eb20c65367bb645cc2610"
+]
 REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o")
 PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
 ADMIN_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
@@ -81,12 +85,6 @@ async def get_live_rates(session: aiohttp.ClientSession) -> dict:
     return rates
 
 async def get_onchain_bnb(session: aiohttp.ClientSession) -> float:
-    payload = {
-        "jsonrpc": "2.0",
-        "method": "eth_getBalance",
-        "params": [WALLET_ADDRESS, "latest"],
-        "id": 1
-    }
     drpc_key = os.getenv("DRPC_API_KEY", "Aj3ei0uTXUwutp4cQUkyTyjgB8oqtDAR8YBVEl_NDNxu")
     rpc_nodes = [
         f"https://bsc.drpc.org/ogrpc?dkey={drpc_key}",
@@ -95,22 +93,40 @@ async def get_onchain_bnb(session: aiohttp.ClientSession) -> float:
         "https://rpc.ankr.com/bsc"
     ]
     headers = {"Content-Type": "application/json", "User-Agent": "my-agy-fleet/1.0"}
-    for rpc in rpc_nodes:
-        try:
-            async with session.post(rpc, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as r:
-                if r.status == 200:
-                    d = await r.json()
-                    if "result" in d and d["result"]:
-                        return int(d["result"], 16) / 1e18
-        except Exception:
-            continue
+    total_bal = 0.0
+    for w in WALLETS:
+        w_bal = 0.0
+        payload = {
+            "jsonrpc": "2.0",
+            "method": "eth_getBalance",
+            "params": [w, "latest"],
+            "id": 1
+        }
+        for rpc in rpc_nodes:
+            try:
+                async with session.post(rpc, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as r:
+                    if r.status == 200:
+                        d = await r.json()
+                        if "result" in d and d["result"]:
+                            w_bal = int(d["result"], 16) / 1e18
+                            break
+            except Exception:
+                continue
+        total_bal += w_bal
+
+    if total_bal > 0.0:
+        return total_bal
 
     # Fallback to last recorded state from watcher
     try:
         w_state = os.path.join(BASE_DIR, "bep20_watcher_state.json")
         if os.path.exists(w_state):
             with open(w_state, "r", encoding="utf-8") as f:
-                return float(json.load(f).get("last_known_balance", 0.0))
+                state_data = json.load(f)
+                bals = state_data.get("balances", {})
+                if bals:
+                    return sum(float(v) for v in bals.values())
+                return float(state_data.get("last_known_balance", 0.0))
     except Exception:
         pass
     return 0.0

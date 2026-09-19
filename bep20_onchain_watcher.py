@@ -28,6 +28,10 @@ except Exception:
     pass
 
 WALLET_ADDRESS = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
+WALLETS = [
+    "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
+    "0x017841f26d5b79cc8c5eb20c65367bb645cc2610"
+]
 REPORT_BOT_TOKEN = "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o"
 PAYOUT_CHANNEL_ID = "-1004402765950"
 ADMIN_ID = "6727787768"
@@ -61,11 +65,11 @@ def save_state(state: dict):
     except Exception:
         pass
 
-async def get_onchain_balance(session: aiohttp.ClientSession) -> float:
+async def get_onchain_balance(session: aiohttp.ClientSession, wallet: str = WALLET_ADDRESS) -> float:
     payload = {
         "jsonrpc": "2.0",
         "method": "eth_getBalance",
-        "params": [WALLET_ADDRESS, "latest"],
+        "params": [wallet, "latest"],
         "id": 1
     }
     headers = {"Content-Type": "application/json", "User-Agent": "my-agy-fleet/1.0"}
@@ -90,12 +94,12 @@ async def get_bnb_price(session: aiohttp.ClientSession) -> float:
         pass
     return 645.0
 
-async def broadcast_deposit(session: aiohttp.ClientSession, diff: float, total_bal: float, bnb_price: float):
+async def broadcast_deposit(session: aiohttp.ClientSession, diff: float, total_bal: float, bnb_price: float, wallet: str = WALLET_ADDRESS):
     usd_val = diff * bnb_price
     bdt_val = usd_val * 122.50
     total_usd = total_bal * bnb_price
     
-    explorer_url = f"https://bscscan.com/address/{WALLET_ADDRESS}"
+    explorer_url = f"https://bscscan.com/address/{wallet}"
     
     msg = (
         f"🎉 *[On-Chain BEP-20 Payout Confirmed!]*\n\n"
@@ -103,8 +107,8 @@ async def broadcast_deposit(session: aiohttp.ClientSession, diff: float, total_b
         f"• **Deposit Received:** `+{diff:.6f} BNB`\n"
         f"• **Fiat Value:** `~${usd_val:.4f} USD` (`~৳{bdt_val:.2f} BDT`)\n"
         f"• **Live BNB Price:** `${bnb_price:.2f} USD`\n"
-        f"• **Total Wallet Balance:** `{total_bal:.6f} BNB` (`~${total_usd:.2f} USD`)\n"
-        f"• **Target Wallet:** `{WALLET_ADDRESS}`\n"
+        f"• **Target Wallet Balance:** `{total_bal:.6f} BNB` (`~${total_usd:.2f} USD`)\n"
+        f"• **Target Wallet:** `{wallet}`\n"
         f"• **Network:** Binance Smart Chain (BEP-20) 🟡\n\n"
         f"🔗 [View Live on BscScan Explorer]({explorer_url})"
     )
@@ -142,32 +146,45 @@ async def broadcast_deposit(session: aiohttp.ClientSession, diff: float, total_b
 
 async def run_check_once(session: aiohttp.ClientSession) -> dict:
     state = load_state()
-    prev_bal = state.get("last_known_balance")
-    
-    current_bal = await get_onchain_balance(session)
-    if current_bal < 0:
-        return {"ok": False, "error": "RPC nodes unreachable"}
-        
     bnb_price = await get_bnb_price(session)
-    
-    if prev_bal is None:
-        state["last_known_balance"] = current_bal
-        state["last_checked_at"] = time.time()
-        save_state(state)
-        return {"ok": True, "initialized": True, "balance": current_bal, "bnb_price": bnb_price}
-        
-    diff = current_bal - prev_bal
-    
-    if diff >= 0.00001:  # Meaningful incoming deposit detected
-        print(f"[Deposit Detected] +{diff:.6f} BNB! Broadcasting receipt...")
-        await broadcast_deposit(session, diff, current_bal, bnb_price)
-        state["last_known_balance"] = current_bal
-        state["last_deposit_at"] = time.time()
-        state["last_deposit_amount"] = diff
-        state["total_confirmed_deposits"] = state.get("total_confirmed_deposits", 0) + 1
-    else:
-        state["last_known_balance"] = current_bal
-        
+    wallet_results = {}
+    balances_state = state.setdefault("balances", {})
+
+    for wallet in WALLETS:
+        current_bal = await get_onchain_balance(session, wallet)
+        if current_bal < 0:
+            wallet_results[wallet] = {"ok": False, "error": "RPC nodes unreachable"}
+            continue
+
+        prev_bal = balances_state.get(wallet)
+        if prev_bal is None:
+            # Check legacy single-wallet state key for wallet 1
+            if wallet == WALLET_ADDRESS and "last_known_balance" in state:
+                prev_bal = state["last_known_balance"]
+            else:
+                balances_state[wallet] = current_bal
+                if wallet == WALLET_ADDRESS:
+                    state["last_known_balance"] = current_bal
+                wallet_results[wallet] = {"ok": True, "initialized": True, "balance": current_bal}
+                continue
+
+        diff = current_bal - prev_bal
+        if diff >= 0.00001:  # Meaningful incoming deposit detected
+            print(f"[Deposit Detected on {wallet}] +{diff:.6f} BNB! Broadcasting receipt...")
+            await broadcast_deposit(session, diff, current_bal, bnb_price, wallet=wallet)
+            balances_state[wallet] = current_bal
+            if wallet == WALLET_ADDRESS:
+                state["last_known_balance"] = current_bal
+            state[f"last_deposit_at_{wallet[:8]}"] = time.time()
+            state[f"last_deposit_amount_{wallet[:8]}"] = diff
+            state["total_confirmed_deposits"] = state.get("total_confirmed_deposits", 0) + 1
+        else:
+            balances_state[wallet] = current_bal
+            if wallet == WALLET_ADDRESS:
+                state["last_known_balance"] = current_bal
+
+        wallet_results[wallet] = {"ok": True, "balance": current_bal, "diff": diff}
+
     state["last_checked_at"] = time.time()
     save_state(state)
 
@@ -179,7 +196,7 @@ async def run_check_once(session: aiohttp.ClientSession) -> dict:
         except Exception:
             pass
 
-    return {"ok": True, "balance": current_bal, "diff": diff, "bnb_price": bnb_price}
+    return {"ok": True, "wallets": wallet_results, "bnb_price": bnb_price}
 
 async def main():
     async with aiohttp.ClientSession() as session:

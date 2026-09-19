@@ -42,6 +42,10 @@ except Exception:
     pass
 
 EVM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
+EVM_WALLETS = [
+    "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
+    "0x017841f26d5b79cc8c5eb20c65367bb645cc2610"
+]
 TON_PRIMARY_WALLET = "UQA0aO4Ybdg76l2ewtiGxA7vtk8CHbVaGvrcpA0G1kionhsP"
 REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o")
 PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
@@ -59,6 +63,7 @@ UPSTASH_REDIS_REST_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "gQAAAAAABFyDAA
 TONAPI_KEY = os.getenv("TONAPI_KEY", "AGCD63WTWLGKKWYAAAAKRKZU45HTYMDI3PV7UBKKL6QDVIHG54NQDVNSQF7W3LQJ3X77QKY")
 ETHERSCAN_API_KEY = os.getenv("ETHERSCAN_API_KEY", "Z7TRGEGWC7C3CG9574D531ZRAJ1KC6MAMK")
 DRPC_KEY = os.getenv("DRPC_API_KEY", "Aj3ei0uTXUwutp4cQUkyTyjgB8oqtDAR8YBVEl_NDNxu")
+ALCHEMY_ETH_RPC = os.getenv("ALCHEMY_ETH_RPC", "https://eth-mainnet.g.alchemy.com/v2/alch_bx0bDWIy7_g3VQaH6HPG8")
 
 CF_WORKER_URLS = [
     os.getenv("CF_WORKER_URL_1", "https://restore-agy.aaaai2.workers.dev"),
@@ -80,6 +85,12 @@ ARB_RPCS = [
     "https://arb1.arbitrum.io/rpc",
     "https://arbitrum.llamarpc.com",
     "https://rpc.ankr.com/arbitrum"
+]
+
+ETH_RPCS = [
+    ALCHEMY_ETH_RPC,
+    "https://cloudflare-eth.com",
+    "https://rpc.ankr.com/eth"
 ]
 
 TON_APIS = [
@@ -365,22 +376,27 @@ async def run_multichain_check(session: aiohttp.ClientSession) -> dict:
     prices = await get_crypto_prices(session)
     results = {}
 
-    # 1. BSC Watcher (BNB)
-    bsc_bal = await query_evm_balance(session, BSC_RPCS, EVM_WALLET)
-    if bsc_bal >= 0:
-        prev_bsc = state.get("bsc_bnb_balance")
-        if prev_bsc is not None:
-            diff = bsc_bal - prev_bsc
-            if diff >= 0.00001:
-                print(f"[BSC Deposit] +{diff:.6f} BNB detected!")
-                await record_payout_ledger(session, "BSC", diff, "BNB", diff * prices["BNB"])
-                await broadcast_deposit_alert(
-                    session, "BSC (BEP-20)", "BNB", diff, bsc_bal, prices["BNB"],
-                    EVM_WALLET, f"https://bscscan.com/address/{EVM_WALLET}"
-                )
-                state["total_confirmed_deposits"] = state.get("total_confirmed_deposits", 0) + 1
-        state["bsc_bnb_balance"] = bsc_bal
-        results["bsc_bnb"] = bsc_bal
+    # 1. BSC Watcher (BNB) across all fleet EVM wallets
+    total_bsc = 0.0
+    bsc_wallets_state = state.setdefault("bsc_balances", {})
+    for w in EVM_WALLETS:
+        bsc_bal = await query_evm_balance(session, BSC_RPCS, w)
+        if bsc_bal >= 0:
+            total_bsc += bsc_bal
+            prev_w = bsc_wallets_state.get(w)
+            if prev_w is not None:
+                diff = bsc_bal - prev_w
+                if diff >= 0.00001:
+                    print(f"[BSC Deposit on {w}] +{diff:.6f} BNB detected!")
+                    await record_payout_ledger(session, "BSC", diff, "BNB", diff * prices["BNB"])
+                    await broadcast_deposit_alert(
+                        session, "BSC (BEP-20)", "BNB", diff, bsc_bal, prices["BNB"],
+                        w, f"https://bscscan.com/address/{w}"
+                    )
+                    state["total_confirmed_deposits"] = state.get("total_confirmed_deposits", 0) + 1
+            bsc_wallets_state[w] = bsc_bal
+    state["bsc_bnb_balance"] = total_bsc
+    results["bsc_bnb"] = total_bsc
 
     # 2. Arbitrum One Watcher (ETH)
     arb_bal = await query_arb_balance(session, EVM_WALLET)

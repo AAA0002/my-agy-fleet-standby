@@ -3376,13 +3376,14 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
         if balance >= MIN_WITHDRAWAL:
             withdraw_amount = round(balance, 6)
             amount_str = f"{withdraw_amount:.6f}".rstrip("0").rstrip(".")
-            logger.info(f"[BNB Auto-Withdraw] {user_name} eligible ({balance:.6f} BNB)! Initiating interactive withdrawal...")
+            target_wallet = (acc_data or {}).get("bnb_wallet") or WALLET_ADDRESS
+            logger.info(f"[BNB Auto-Withdraw] {user_name} eligible ({balance:.6f} BNB)! Initiating interactive withdrawal to {target_wallet}...")
 
             if notify_manual:
                 await send_report_message(
                     f"🚀 *Initiating BNB Withdrawal for {user_name}*\n\n"
                     f"• **Amount:** `{amount_str} BNB`\n"
-                    f"• **Recipient Wallet:** `{WALLET_ADDRESS}`\n"
+                    f"• **Recipient Wallet:** `{target_wallet}`\n"
                     f"• **Network:** BEP-20 (Binance Smart Chain)\n"
                     f"⏳ Interacting with @{BNB_BOT} and preparing anti-bot verification...",
                     chat_id=target_chat
@@ -3411,9 +3412,9 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
 
             # Check if wallet address is requested
             if any(w in bot_reply.lower() for w in ["wallet address", "submit your bnb", "bep-20"]):
-                logger.info(f"[BNB Auto-Withdraw] Wallet requested. Submitting {WALLET_ADDRESS}...")
+                logger.info(f"[BNB Auto-Withdraw] Wallet requested. Submitting {target_wallet}...")
                 await human_delay(1.5, 3.0, "Entering wallet address")
-                await cl.send_message(BNB_BOT, WALLET_ADDRESS)
+                await cl.send_message(BNB_BOT, target_wallet)
                 await asyncio.sleep(2.5)
 
             # Check if email is requested
@@ -3449,9 +3450,9 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
                                         logger.warning(f"Error clicking confirmation button: {btn_err}")
                                     break
                     if "wallet address" in m_text.lower() and "0x" not in m_text.lower():
-                        logger.info(f"[BNB Auto-Withdraw] Wallet requested after amount. Submitting: {WALLET_ADDRESS}")
+                        logger.info(f"[BNB Auto-Withdraw] Wallet requested after amount. Submitting: {target_wallet}")
                         await human_delay(1.5, 2.5, "Submitting wallet address")
-                        await cl.send_message(BNB_BOT, WALLET_ADDRESS)
+                        await cl.send_message(BNB_BOT, target_wallet)
                         await asyncio.sleep(2.0)
                     elif "email id" in m_text.lower() and "@" not in m_text.lower():
                         em = generate_random_email()
@@ -3470,7 +3471,7 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
                 f"🎉 *BNB Auto-Withdrawal Submitted & Verified!*\n\n"
                 f"• **Account:** {user_name} (`{user_id}`)\n"
                 f"• **Amount:** `{amount_str} BNB`\n"
-                f"• **Recipient Wallet:** `{WALLET_ADDRESS}`\n"
+                f"• **Recipient Wallet:** `{target_wallet}`\n"
                 f"• **Network:** Binance Smart Chain (BEP-20)\n"
                 f"• **Anti-Bot Verification:** `5/5 Tasks Passed` ✅\n"
                 f"• **Status:** Processing (Estimated within ~8 hours)"
@@ -3482,7 +3483,7 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
                 f"🎉 <b>BNB Auto-Withdrawal Submitted &amp; Verified!</b>\n\n"
                 f"• <b>Account:</b> {user_name} (ID: <code>{user_id}</code>)\n"
                 f"• <b>Amount:</b> <code>{amount_str} BNB</code>\n"
-                f"• <b>Recipient Wallet:</b> <code>{WALLET_ADDRESS}</code>\n"
+                f"• <b>Recipient Wallet:</b> <code>{target_wallet}</code>\n"
                 f"• <b>Network:</b> Binance Smart Chain (BEP-20)\n"
                 f"• <b>Anti-Bot Verification:</b> <code>5/5 Tasks Passed</code> ✅\n"
                 f"• <b>Status:</b> Processing (Estimated within ~8 hours)"
@@ -3493,7 +3494,7 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
                 f"👤 <b>Account:</b> {user_name} (ID: <code>{user_id}</code>)\n"
                 f"💰 <b>Amount:</b> <code>{amount_str} BNB</code>\n"
-                f"💼 <b>Recipient Wallet:</b> <code>{WALLET_ADDRESS}</code>\n"
+                f"💼 <b>Recipient Wallet:</b> <code>{target_wallet}</code>\n"
                 f"🌐 <b>Network:</b> Binance Smart Chain (BEP-20)\n"
                 f"✅ <b>Verification:</b> 5/5 Anti-Bot Human Steps Completed\n"
                 f"🕒 <b>Submitted At:</b> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
@@ -3512,8 +3513,8 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
             except Exception as pe:
                 logger.error(f"[Payout Channel] Error broadcasting submission to {PAYOUT_CHANNEL_ID}: {pe}")
 
-            record_payout(user_name, user_id, amount_str, WALLET_ADDRESS)
-            logger.info(f"[BNB Auto-Withdraw] ✅ Withdrawal of {amount_str} BNB for {user_name} fully verified & recorded!")
+            record_payout(user_name, user_id, amount_str, target_wallet)
+            logger.info(f"[BNB Auto-Withdraw] ✅ Withdrawal of {amount_str} BNB for {user_name} to {target_wallet} fully verified & recorded!")
 
             # Push withdrawal receipt to Cloudflare Edge (MiniApp Payout History)
             try:
@@ -3522,7 +3523,7 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
                     "user_id": user_id,
                     "amount": amount_str,
                     "token": "BNB",
-                    "wallet": WALLET_ADDRESS,
+                    "wallet": target_wallet,
                     "network": "BEP-20",
                     "timestamp": datetime.now(timezone.utc).isoformat()
                 }
