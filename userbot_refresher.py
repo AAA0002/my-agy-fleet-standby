@@ -113,12 +113,6 @@ ART_REFERRAL_CODE = "6727787768"
 AILAB_REFERRAL_CODE = "296852"
 ULTRAWALLET_REFERRAL_CODE = "6727787768"
 
-FLEET_EARN_FOOTER = (
-    "Make your AI work for you — and earn 24/7👆\n"
-    "• https://t.me/AiLab_robot?start=296852\n"
-    "• https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768"
-)
-
 BNB_WEBHOOK_FALLBACK = "https://api.bots.business/v1/bots/2985029/new-webhook?&command=%2FonWebhook&public_user_token=3d1ed3e6a9bb948436a55057c6e87b59&user_id=46893407"
 WALLET_ADDRESS = os.getenv("WALLET_ADDRESS", "0xfda4182001672b9f0f09e2118242e543e35ed5ce")
 ARBITRUM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
@@ -756,8 +750,7 @@ async def build_midnight_summary():
         f"🪙 **Daily Tasks:** `{len(accounts) * 10}/{len(accounts) * 10} Completed`\n"
         f"💰 **Confirmed On-Chain:** `{onchain_bal:.6f} BNB` (~${onchain_usd:.2f} USD / ৳{onchain_bdt:.2f} BDT)\n"
         f"🏆 **Lifetime Withdrawals:** `{total_withdrawn:.6f} BNB` ({len(payouts)} payouts processed)\n"
-        f"🛡️ **System:** 🟢 Immortal Supervisor 24/7\n\n"
-        f"{FLEET_EARN_FOOTER}"
+        f"🛡️ **System:** 🟢 Immortal Supervisor 24/7"
     )
     return card
 
@@ -1389,8 +1382,7 @@ async def build_full_status_report(user_id: int):
         f"💎 **Stones Miners:**\n{stones_text}\n\n"
         f"🚀 **ART Airdrop:**\n{art_text}\n\n"
         f"⛏️ **MRG Miner:**\n{mrg_text}\n\n"
-        f"🛡️ **System:** 🟢 Immortal Supervisor 24/7 on Ubuntu Cloud VPS\n\n"
-        f"{FLEET_EARN_FOOTER}"
+        f"🛡️ **System:** 🟢 Immortal Supervisor 24/7 on Ubuntu Cloud VPS"
     )
     return report
 
@@ -1428,8 +1420,7 @@ async def build_daily_summary_report(user_id: int):
         f"⛏️ **MRG Miner:** Continuous mining + 10% Squad commissions to Main ID\n"
         f"🚀 **ART Airdrop:** 8-hour continuous cycles running 24/7\n\n"
         f"💼 **Wallets:** Isolated worker TON wallets + Binance Web3 Master\n"
-        f"🛡️ **System:** 🟢 Immortal Supervisor 24/7\n\n"
-        f"{FLEET_EARN_FOOTER}"
+        f"🛡️ **System:** 🟢 Immortal Supervisor 24/7"
     )
     return report
 
@@ -1470,8 +1461,7 @@ async def build_morning_briefing(user_id: int):
         f"⛏️ **MRG Miner:** Harvest & 10% Squad Sweeps Active (TON Wallets Bound)\n"
         f"🚀 **ART Airdrop:** Continuous 8h Cycles & Task Auto-Claims Active\n\n"
         f"💰 **Payouts:** Auto-routing to your Binance Web3 & Arbitrum wallets\n"
-        f"🛡️ **System:** 🟢 Immortal Supervisor 24/7\n\n"
-        f"{FLEET_EARN_FOOTER}"
+        f"🛡️ **System:** 🟢 Immortal Supervisor 24/7"
     )
     return report
 
@@ -4584,24 +4574,35 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             except Exception:
                 pass
 
-            # Auto-Withdrawal check for Primary Account
-            if pool_bal >= 1000.0:
+        # 7. Automated Miner Leveling Engine (Reinvest in Mining Speed, Zero Withdrawals)
+        unlocked = set(u.get("unlockedMiners", []))
+        art_levels = [
+            (2, 100),
+            (3, 250),
+            (4, 500),
+            (5, 1000),
+            (6, 2000),
+            (7, 4000),
+            (8, 8000)
+        ]
+        for target_lvl, cost in art_levels:
+            if target_lvl not in unlocked and pool_bal >= cost:
                 try:
-                    wd_amount = int(pool_bal)
-                    async with session.post(f"{base_url}/api/withdraw", json={"userId": acc_uid, "amount": wd_amount, "walletAddress": TON_PRIMARY_WALLET}, headers=headers, timeout=aiohttp.ClientTimeout(total=6.0)) as wr:
-                        w_d = await wr.json()
-                        if w_d.get("success"):
-                            logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Withdrawal of {wd_amount} ART submitted to {TON_PRIMARY_WALLET}!")
-                            await send_report_message(
-                                f"🎉 *ART Airdrop Withdrawal Submitted!*\n\n"
-                                f"• **Account:** {acc_name}\n"
-                                f"• **Amount:** `{wd_amount} ART`\n"
-                                f"• **Destination:** `{TON_PRIMARY_WALLET}` (TON)\n"
-                                f"• **Status:** Processing ✅",
-                                chat_id=REPORT_CHAT_ID
-                            )
-                except Exception as we:
-                    logger.debug(f"[{acc_name}] ART withdrawal note: {we}")
+                    async with session.post(
+                        f"{base_url}/api/user/buy-miner",
+                        json={"userId": acc_uid, "level": target_lvl},
+                        headers=headers,
+                        timeout=aiohttp.ClientTimeout(total=5.0)
+                    ) as b_res:
+                        b_data = await b_res.json()
+                        if b_data.get("success"):
+                            pool_bal -= cost
+                            unlocked.add(target_lvl)
+                            new_hr = b_data.get("miningState", {}).get("hourlyRate", hr_rate)
+                            logger.info(f"[{acc_name}] 🚀 [ART Airdrop] 🎉 Upgraded to Level {target_lvl}! Mining boosted to {new_hr} ART/h!")
+                except Exception as b_err:
+                    logger.debug(f"[{acc_name}] ART level upgrade note: {b_err}")
+                await asyncio.sleep(1.0)
 
         logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Cycle finished | Pool: {pool_bal:.2f} ART | Mining Active: {is_mining}")
 
@@ -4869,7 +4870,7 @@ async def task_worker_247(user_id: int, user_name: str):
         "• **💎 Stones Miners:** Daily Mining (+500 STONES to Arbitrum One)\n"
         "• **⛏️ MRG Miner:** Mining Harvest & 10% Squad Sweeps to Main ID\n"
         "• **🚀 ART Airdrop:** Continuous 8h Mining & Task Claims\n\n"
-        f"{FLEET_EARN_FOOTER}"
+        "Tap any tab button below to view live fleet metrics or withdraw!"
     )
 
     await send_report_message(startup_text, reply_markup=MAIN_TAB_KEYBOARD)
