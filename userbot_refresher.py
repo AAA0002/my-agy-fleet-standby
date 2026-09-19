@@ -2637,8 +2637,13 @@ async def cloudflare_edge_bridge_loop():
     1. Sentinel Heartbeat: Pings /heartbeat every 90s across dual Cloudflare workers to keep dead-man's sentinel active.
     2. Telemetry Replication: Posts live fleet metrics, active worker ID, balances, & status to /api/fleet/sync every 90s.
     """
-    logger.info("[CF-Bridge] Cloudflare Edge Telemetry & Sentinel loop started.")
+    logger.info("[CF-Bridge] Cloudflare, Supabase & Upstash Multi-Cloud Bridge loop started.")
     cf_secret = os.getenv("CF_SECRET_KEY", "agy_cf_secret_7d36994e_2026")
+    supabase_url = os.getenv("SUPABASE_URL", "https://znbbaozpevurvbfkxakz.supabase.co")
+    supabase_key = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_ANON_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYmJhb3pwZXZ1cnZiZmt4YWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTYxNTQsImV4cCI6MjEwNTM5MjE1NH0.ldgn0gCtOLEPUQyvTiG5RgKX6VY0LrS_4LkIKCf8NqM")
+    upstash_url = os.getenv("UPSTASH_REDIS_REST_URL", "https://relaxing-starfish-285827.upstash.io")
+    upstash_token = os.getenv("UPSTASH_REDIS_REST_TOKEN", "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw")
+
     headers = {
         "Authorization": f"Bearer {cf_secret}",
         "Content-Type": "application/json",
@@ -2678,6 +2683,7 @@ async def cloudflare_edge_bridge_loop():
                         }
 
                         # Sync to all 3 Cloudflare accounts concurrently (Triple-Edge Parallel Replication)
+                        sync_tasks = []
                         async def push_telemetry(cf_url: str):
                             try:
                                 async with session.post(
@@ -2700,7 +2706,57 @@ async def cloudflare_edge_bridge_loop():
                             except Exception:
                                 pass
 
-                        await asyncio.gather(*(push_telemetry(u) for u in CF_WORKER_URLS), return_exceptions=True)
+                        for u in CF_WORKER_URLS:
+                            sync_tasks.append(push_telemetry(u))
+
+                        # Sync to Upstash Serverless Redis
+                        if upstash_url and upstash_token:
+                            async def push_upstash():
+                                try:
+                                    up_headers = {
+                                        "Authorization": f"Bearer {upstash_token}",
+                                        "Content-Type": "application/json"
+                                    }
+                                    async with session.post(
+                                        f"{upstash_url}/set/fleet:telemetry",
+                                        data=json.dumps(telemetry_payload),
+                                        headers=up_headers,
+                                        timeout=aiohttp.ClientTimeout(total=5)
+                                    ):
+                                        pass
+                                except Exception:
+                                    pass
+                            sync_tasks.append(push_upstash())
+
+                        # Sync Daemon Heartbeat to Supabase Postgres
+                        if supabase_url and supabase_key:
+                            async def push_supabase():
+                                try:
+                                    sb_headers = {
+                                        "apikey": supabase_key,
+                                        "Authorization": f"Bearer {supabase_key}",
+                                        "Content-Type": "application/json",
+                                        "Prefer": "resolution=merge-duplicates"
+                                    }
+                                    sb_payload = [{
+                                        "node_name": "Autonomous Fleet Daemon (Active)",
+                                        "node_url": "daemon://sequential-queue",
+                                        "status": "ONLINE",
+                                        "latency_ms": 1,
+                                        "last_seen": datetime.now(timezone.utc).isoformat()
+                                    }]
+                                    async with session.post(
+                                        f"{supabase_url}/rest/v1/fleet_mesh_heartbeats",
+                                        json=sb_payload,
+                                        headers=sb_headers,
+                                        timeout=aiohttp.ClientTimeout(total=5)
+                                    ):
+                                        pass
+                                except Exception:
+                                    pass
+                            sync_tasks.append(push_supabase())
+
+                        await asyncio.gather(*sync_tasks, return_exceptions=True)
                     except Exception as sync_e:
                         logger.warning(f"[CF-Bridge] Telemetry sync error: {sync_e}")
 
