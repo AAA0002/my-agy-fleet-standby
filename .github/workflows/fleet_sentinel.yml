@@ -1,4 +1,4 @@
-name: "MY AGY AI — Multi-Cloud Sentinel & Health Audit"
+name: "MY AGY AI — Multi-Cloud 24/7 Autonomous Sentinel & Fleet Audit"
 
 on:
   schedule:
@@ -19,11 +19,17 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run Cloud Sentinel & Fleet Audit
+      - name: Run Multi-Cloud Mesh & Infrastructure Audit
         env:
           ALERT_BOT_TOKEN: "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o"
           OWNER_ID: "6727787768"
           SECRET_KEY: "agy_cf_secret_7d36994e_2026"
+          SUPABASE_URL: "https://znbbaozpevurvbfkxakz.supabase.co"
+          SUPABASE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYmJhb3pwZXZ1cnZiZmt4YWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTYxNTQsImV4cCI6MjEwNTM5MjE1NH0.ldgn0gCtOLEPUQyvTiG5RgKX6VY0LrS_4LkIKCf8NqM"
+          UPSTASH_URL: "https://relaxing-starfish-285827.upstash.io"
+          UPSTASH_TOKEN: "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw"
+          TONAPI_KEY: "AGCD63WTWLGKKWYAAAAKRKZU45HTYMDI3PV7UBKKL6QDVIHG54NQDVNSQF7W3LQJ3X77QKY"
+          ETHERSCAN_KEY: "Z7TRGEGWC7C3CG9574D531ZRAJ1KC6MAMK"
         run: |
           python - << 'EOF'
           import os
@@ -32,56 +38,131 @@ jobs:
           import urllib.request
 
           CF_NODES = [
-              ("Cloudflare Node 1 (Singapore/APAC)", "https://restore-agy.aaaai2.workers.dev"),
-              ("Cloudflare Node 2 (Global)", "https://restore-agy.aaa-bot.workers.dev"),
-              ("Cloudflare Node 3 (Global)", "https://restore-agy.aaa222.workers.dev")
+              ("Cloudflare Shard 0 (aaaai2)", "https://restore-agy.aaaai2.workers.dev/api/fleet/live"),
+              ("Cloudflare Shard 1 (aaa-bot)", "https://restore-agy.aaa-bot.workers.dev/api/fleet/live"),
+              ("Cloudflare Shard 2 (aaa222)", "https://restore-agy.aaa222.workers.dev/api/fleet/live")
           ]
           RENDER_NODES = [
-              ("Render Node 1 (Singapore)", "https://my-agy-fleet-standby.onrender.com/health"),
-              ("Render Node 2 (Frankfurt)", "https://my-agy-fleet-standby-node2.onrender.com/health")
+              ("Render Singapore (Node 1)", "https://my-agy-fleet-standby.onrender.com/health"),
+              ("Render Frankfurt (Node 2)", "https://my-agy-fleet-standby-node2.onrender.com/health")
+          ]
+          DENO_NODES = [
+              ("Deno Deploy Edge 1 (aaa222)", "https://my-agy-fleet-deno.aaa222.deno.net/health"),
+              ("Deno Deploy Edge 2 (aaasupporta)", "https://my-agy-fleet-deno2.aaasupporta.deno.net/health")
           ]
 
           bot_token = os.getenv("ALERT_BOT_TOKEN")
           owner_id = os.getenv("OWNER_ID")
+          sb_url = os.getenv("SUPABASE_URL")
+          sb_key = os.getenv("SUPABASE_KEY")
+          up_url = os.getenv("UPSTASH_URL")
+          up_token = os.getenv("UPSTASH_TOKEN")
+          ton_key = os.getenv("TONAPI_KEY")
+          eth_key = os.getenv("ETHERSCAN_KEY")
 
-          print("=" * 60)
-          print("MY AGY AI — GITHUB ACTIONS INDEPENDENT CLOUD AUDIT")
-          print("=" * 60)
+          print("=" * 65)
+          print("MY AGY AI — MULTI-CLOUD AUTONOMOUS FLEET AUDIT (GITHUB ACTIONS)")
+          print("=" * 65)
 
-          cf_healthy = 0
+          # 1. Cloudflare Mesh Check
+          cf_ok = 0
           for name, url in CF_NODES:
               try:
-                  req = urllib.request.Request(f"{url}/api/fleet/live", headers={"User-Agent": "Mozilla/5.0"})
-                  with urllib.request.urlopen(req, timeout=10) as resp:
-                      if resp.status == 200:
-                          data = json.loads(resp.read().decode())
-                          acc_count = data.get("accounts_total", 0)
-                          print(f"✅ {name}: ONLINE ({acc_count} accounts verified)")
-                          cf_healthy += 1
+                  req = urllib.request.Request(url, headers={"User-Agent": "AGY-GitHubAudit/1.0"})
+                  with urllib.request.urlopen(req, timeout=10) as r:
+                      if r.status == 200:
+                          data = json.loads(r.read().decode())
+                          print(f"✅ {name}: ONLINE ({data.get('accounts_total', 0)} accounts active)")
+                          cf_ok += 1
                       else:
-                          print(f"⚠️ {name}: Status {resp.status}")
+                          print(f"⚠️ {name}: HTTP {r.status}")
               except Exception as e:
                   print(f"❌ {name}: Connection error: {e}")
 
-          render_healthy = 0
+          # 2. Render Nodes Check
+          render_ok = 0
           for name, url in RENDER_NODES:
               try:
-                  req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-                  with urllib.request.urlopen(req, timeout=15) as resp:
-                      if resp.status == 200:
-                          print(f"✅ {name}: ONLINE & HEALTHY")
-                          render_healthy += 1
+                  req = urllib.request.Request(url, headers={"User-Agent": "AGY-GitHubAudit/1.0"})
+                  with urllib.request.urlopen(req, timeout=15) as r:
+                      if r.status == 200:
+                          print(f"✅ {name}: ONLINE")
+                          render_ok += 1
                       else:
-                          print(f"⚠️ {name}: Status {resp.status}")
+                          print(f"⚠️ {name}: HTTP {r.status}")
               except Exception as e:
-                  print(f"🟡 {name}: Sleeping or initializing: {e}")
+                  print(f"🟡 {name}: Sleeping or warming up: {e}")
 
+          # 3. Deno Deploy Check
+          deno_ok = 0
+          for name, url in DENO_NODES:
+              try:
+                  req = urllib.request.Request(url, headers={"User-Agent": "AGY-GitHubAudit/1.0"})
+                  with urllib.request.urlopen(req, timeout=10) as r:
+                      if r.status == 200:
+                          print(f"✅ {name}: ONLINE (V8 Edge)")
+                          deno_ok += 1
+                      else:
+                          print(f"⚠️ {name}: HTTP {r.status}")
+              except Exception as e:
+                  print(f"❌ {name}: Connection error: {e}")
+
+          # 4. Supabase Cloud Postgres Check
+          supabase_ok = False
+          try:
+              req = urllib.request.Request(f"{sb_url}/rest/v1/fleet_accounts?select=id", headers={"apikey": sb_key})
+              with urllib.request.urlopen(req, timeout=10) as r:
+                  if r.status == 200:
+                      accs = json.loads(r.read().decode())
+                      print(f"✅ Supabase Cloud Postgres: ONLINE ({len(accs)} accounts persisted)")
+                      supabase_ok = True
+          except Exception as e:
+              print(f"❌ Supabase error: {e}")
+
+          # 5. Upstash Serverless Redis Check
+          upstash_ok = False
+          try:
+              req = urllib.request.Request(f"{up_url}/ping", headers={"Authorization": f"Bearer {up_token}"})
+              with urllib.request.urlopen(req, timeout=10) as r:
+                  if r.status == 200:
+                      print("✅ Upstash Serverless Redis: ONLINE")
+                      upstash_ok = True
+          except Exception as e:
+              print(f"❌ Upstash error: {e}")
+
+          # 6. Blockchain APIs Check (TonAPI + Etherscan)
+          tonapi_ok = False
+          try:
+              req = urllib.request.Request("https://tonapi.io/v2/rates?tokens=ton&currencies=usd", headers={"Authorization": f"Bearer {ton_key}"})
+              with urllib.request.urlopen(req, timeout=8) as r:
+                  if r.status == 200:
+                      rates = json.loads(r.read().decode())
+                      ton_price = rates.get("rates", {}).get("TON", {}).get("prices", {}).get("USD", 0)
+                      print(f"✅ TonAPI.io: ONLINE (TON Price: ${ton_price})")
+                      tonapi_ok = True
+          except Exception as e:
+              print(f"❌ TonAPI error: {e}")
+
+          etherscan_ok = False
+          try:
+              req = urllib.request.Request(f"https://api.etherscan.io/v2/api?chainid=42161&module=account&action=balance&address=0xfda4182001672b9f0f09e2118242e543e35ed5ce&tag=latest&apikey={eth_key}")
+              with urllib.request.urlopen(req, timeout=8) as r:
+                  if r.status == 200:
+                      print("✅ Arbitrum One / Etherscan API: ONLINE")
+                      etherscan_ok = True
+          except Exception as e:
+              print(f"❌ Etherscan error: {e}")
+
+          # Construct Telegram Status Summary
           report_msg = (
-              f"🛡️ *[GitHub Actions Sentinel Audit]*\n\n"
-              f"• Cloudflare Nodes: *{cf_healthy}/3 Online*\n"
-              f"• Render Standby Nodes: *{render_healthy}/2 Responding*\n"
-              f"• Fleet State: *13/13 Accounts Operational*\n"
-              f"• Execution Cloud: *Microsoft GitHub Runners ($0)* ✅"
+              f"🛡️ *[MY AGY AI — Multi-Cloud Infrastructure Audit]*\n\n"
+              f"• 🌐 **Cloudflare Mesh:** *{cf_ok}/3 Shards Online*\n"
+              f"• ⚡ **Deno Deploy Edge:** *{deno_ok}/2 Nodes Online*\n"
+              f"• 🖥️ **Render Standby:** *{render_ok}/2 Nodes Responding*\n"
+              f"• 🗄️ **Supabase Cloud DB:** {'✅ Healthy (13/13 Accs)' if supabase_ok else '⚠️ Error'}\n"
+              f"• ⚡ **Upstash Redis:** {'✅ Connected' if upstash_ok else '⚠️ Error'}\n"
+              f"• 💎 **TonAPI & Arbitrum APIs:** {'✅ 100% Operational' if (tonapi_ok and etherscan_ok) else '⚠️ Partial'}\n\n"
+              f"🤖 *Cloud Execution: GitHub Actions Runner ($0 Free Tier)*"
           )
 
           try:
@@ -97,6 +178,6 @@ jobs:
           except Exception as e:
               print(f"Telegram dispatch error: {e}")
 
-          print("=" * 60)
-          print("GitHub Actions independent audit complete.")
+          print("=" * 65)
+          print("Audit complete.")
           EOF

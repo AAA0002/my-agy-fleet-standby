@@ -19,14 +19,36 @@ import asyncio
 import aiohttp
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def load_env_file():
+    env_path = os.path.join(BASE_DIR, ".env")
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    if k.strip() not in os.environ:
+                        os.environ[k.strip()] = v.strip()
+
+load_env_file()
+
 EVM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 TON_PRIMARY_WALLET = "UQA0aO4Ybdg76l2ewtiGxA7vtk8CHbVaGvrcpA0G1kionhsP"
-REPORT_BOT_TOKEN = "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o"
-PAYOUT_CHANNEL_ID = "-1004402765950"
-ADMIN_ID = "6727787768"
+REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o")
+PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
+ADMIN_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
 STATE_FILE = os.path.join(BASE_DIR, "multichain_watcher_state.json")
 PAYOUT_LEDGER_FILE = os.path.join(BASE_DIR, "payout_ledger.json")
 PAYOUTS_JSON_FILE = os.path.join(BASE_DIR, "payouts.json")
+
+# Cloud integrations
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://znbbaozpevurvbfkxakz.supabase.co")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_ANON_KEY")
+UPSTASH_REDIS_REST_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://relaxing-starfish-285827.upstash.io")
+UPSTASH_REDIS_REST_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw")
+TONAPI_KEY = os.getenv("TONAPI_KEY", "AGCD63WTWLGKKWYAAAAKRKZU45HTYMDI3PV7UBKKL6QDVIHG54NQDVNSQF7W3LQJ3X77QKY")
+ETHERSCAN_API_KEY = os.getenv("ETHERSCAN_API_KEY", "Z7TRGEGWC7C3CG9574D531ZRAJ1KC6MAMK")
 
 CF_WORKER_URLS = [
     os.getenv("CF_WORKER_URL_1", "https://restore-agy.aaaai2.workers.dev"),
@@ -92,7 +114,8 @@ async def sync_payouts_history_to_edge(session: aiohttp.ClientSession):
         print(f"Payout sync note: {e}")
 
 async def sync_multichain_to_edge(session: aiohttp.ClientSession, state: dict):
-    """Broadcasts multichain balances and live prices directly to Cloudflare Edge KV concurrently."""
+    """Broadcasts multichain balances and live prices to Cloudflare Edge KV and Upstash Redis concurrently."""
+    # 1. Sync to Cloudflare 3x Workers
     headers = {
         "Authorization": f"Bearer {SECRET_KEY}",
         "Content-Type": "application/json",
@@ -105,7 +128,29 @@ async def sync_multichain_to_edge(session: aiohttp.ClientSession, state: dict):
         except Exception:
             pass
 
-    await asyncio.gather(*(push_mc_state(u) for u in CF_WORKER_URLS), return_exceptions=True)
+    tasks = [push_mc_state(u) for u in CF_WORKER_URLS]
+
+    # 2. Sync to Upstash Serverless Redis
+    if UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN:
+        async def push_upstash():
+            try:
+                up_headers = {
+                    "Authorization": f"Bearer {UPSTASH_REDIS_REST_TOKEN}",
+                    "Content-Type": "application/json"
+                }
+                # Store serialized state in Upstash Redis
+                async with session.post(
+                    f"{UPSTASH_REDIS_REST_URL}/set/fleet:multichain",
+                    data=json.dumps(state),
+                    headers=up_headers,
+                    timeout=aiohttp.ClientTimeout(total=5)
+                ):
+                    pass
+            except Exception:
+                pass
+        tasks.append(push_upstash())
+
+    await asyncio.gather(*tasks, return_exceptions=True)
 
 def load_state() -> dict:
     if os.path.exists(STATE_FILE):
@@ -123,7 +168,8 @@ def save_state(state: dict):
     except Exception:
         pass
 
-def record_payout_ledger(chain: str, amount: float, symbol: str, usd_val: float, tx_hash: str = "auto-verified"):
+async def record_payout_ledger(session: aiohttp.ClientSession, chain: str, amount: float, symbol: str, usd_val: float, tx_hash: str = "auto-verified"):
+    recipient = EVM_WALLET if chain != "TON" else TON_PRIMARY_WALLET
     try:
         ledger = []
         if os.path.exists(PAYOUT_LEDGER_FILE):
@@ -135,7 +181,7 @@ def record_payout_ledger(chain: str, amount: float, symbol: str, usd_val: float,
             "symbol": symbol,
             "amount": amount,
             "usd_value": round(usd_val, 4),
-            "wallet": EVM_WALLET if chain != "TON" else TON_PRIMARY_WALLET,
+            "wallet": recipient,
             "tx_hash": tx_hash,
             "timestamp": time.time(),
             "date": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
@@ -144,6 +190,25 @@ def record_payout_ledger(chain: str, amount: float, symbol: str, usd_val: float,
             json.dump(ledger, f, indent=2)
     except Exception as e:
         print(f"Ledger record note: {e}")
+
+    # Sync to Supabase Managed Cloud Postgres
+    if SUPABASE_URL and SUPABASE_KEY:
+        try:
+            sb_headers = {
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json"
+            }
+            sb_payload = {
+                "account_id": recipient,
+                "token_name": symbol,
+                "amount": f"{amount:.6f}",
+                "tx_hash": tx_hash
+            }
+            async with session.post(f"{SUPABASE_URL}/rest/v1/fleet_payouts", json=sb_payload, headers=sb_headers, timeout=aiohttp.ClientTimeout(total=5)):
+                pass
+        except Exception:
+            pass
 
 async def query_evm_balance(session: aiohttp.ClientSession, rpc_list: list, wallet: str) -> float:
     payload = {
@@ -164,7 +229,36 @@ async def query_evm_balance(session: aiohttp.ClientSession, rpc_list: list, wall
             continue
     return -1.0
 
+async def query_arb_balance(session: aiohttp.ClientSession, wallet: str) -> float:
+    """Query Arbitrum One balance using Etherscan V2 unified API first, fallback to RPCs."""
+    if ETHERSCAN_API_KEY:
+        try:
+            url = f"https://api.etherscan.io/v2/api?chainid=42161&module=account&action=balance&address={wallet}&tag=latest&apikey={ETHERSCAN_API_KEY}"
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    if data.get("status") == "1":
+                        wei = int(data.get("result", 0))
+                        return wei / 1e18
+        except Exception:
+            pass
+    return await query_evm_balance(session, ARB_RPCS, wallet)
+
 async def query_ton_balance(session: aiohttp.ClientSession, wallet: str) -> float:
+    """Query TON balance using official TonAPI.io first with API key, fallback to toncenter."""
+    if TONAPI_KEY:
+        try:
+            headers = {"Authorization": f"Bearer {TONAPI_KEY}"}
+            url = f"https://tonapi.io/v2/accounts/{wallet}"
+            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    nanoton = int(data.get("balance", 0))
+                    return nanoton / 1e9
+        except Exception:
+            pass
+
+    # Fallback to toncenter
     url = f"https://toncenter.com/api/v2/getAddressBalance?address={wallet}"
     try:
         async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
@@ -263,7 +357,7 @@ async def run_multichain_check(session: aiohttp.ClientSession) -> dict:
             diff = bsc_bal - prev_bsc
             if diff >= 0.00001:
                 print(f"[BSC Deposit] +{diff:.6f} BNB detected!")
-                record_payout_ledger("BSC", diff, "BNB", diff * prices["BNB"])
+                await record_payout_ledger(session, "BSC", diff, "BNB", diff * prices["BNB"])
                 await broadcast_deposit_alert(
                     session, "BSC (BEP-20)", "BNB", diff, bsc_bal, prices["BNB"],
                     EVM_WALLET, f"https://bscscan.com/address/{EVM_WALLET}"
@@ -273,14 +367,14 @@ async def run_multichain_check(session: aiohttp.ClientSession) -> dict:
         results["bsc_bnb"] = bsc_bal
 
     # 2. Arbitrum One Watcher (ETH)
-    arb_bal = await query_evm_balance(session, ARB_RPCS, EVM_WALLET)
+    arb_bal = await query_arb_balance(session, EVM_WALLET)
     if arb_bal >= 0:
         prev_arb = state.get("arb_eth_balance")
         if prev_arb is not None:
             diff = arb_bal - prev_arb
             if diff >= 0.00005:
                 print(f"[Arbitrum Deposit] +{diff:.6f} ETH detected!")
-                record_payout_ledger("Arbitrum", diff, "ETH", diff * prices["ETH"])
+                await record_payout_ledger(session, "Arbitrum", diff, "ETH", diff * prices["ETH"])
                 await broadcast_deposit_alert(
                     session, "Arbitrum One", "ETH", diff, arb_bal, prices["ETH"],
                     EVM_WALLET, f"https://arbiscan.io/address/{EVM_WALLET}"
@@ -297,7 +391,7 @@ async def run_multichain_check(session: aiohttp.ClientSession) -> dict:
             diff = ton_bal - prev_ton
             if diff >= 0.01:
                 print(f"[TON Deposit] +{diff:.4f} TON detected!")
-                record_payout_ledger("TON", diff, "TON", diff * prices["TON"])
+                await record_payout_ledger(session, "TON", diff, "TON", diff * prices["TON"])
                 await broadcast_deposit_alert(
                     session, "TON Blockchain", "TON", diff, ton_bal, prices["TON"],
                     TON_PRIMARY_WALLET, f"https://tonviewer.com/{TON_PRIMARY_WALLET}"
