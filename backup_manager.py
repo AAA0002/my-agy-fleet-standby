@@ -43,6 +43,13 @@ CORE_BOT_FILES = [
     "cloudflared_tunnel.sh",
     "my_agy_bot.service",
     "payouts.json",
+    "payout_ledger.json",
+    "fleet_ton_wallets.json",
+    "bep20_onchain_watcher.py",
+    "bep20_watcher_state.json",
+    "multichain_onchain_watcher.py",
+    "multichain_watcher_state.json",
+    "daily_profit_reporter.py",
     ".onchain_state.json"
 ]
 

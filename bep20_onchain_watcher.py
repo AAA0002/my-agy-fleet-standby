@@ -54,8 +54,10 @@ def load_state() -> dict:
 
 def save_state(state: dict):
     try:
-        with open(STATE_FILE, "w", encoding="utf-8") as f:
+        tmp_file = f"{STATE_FILE}.tmp"
+        with open(tmp_file, "w", encoding="utf-8") as f:
             json.dump(state, f, indent=2)
+        os.replace(tmp_file, STATE_FILE)
     except Exception:
         pass
 

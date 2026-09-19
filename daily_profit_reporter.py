@@ -34,6 +34,14 @@ def load_env_file():
 
 load_env_file()
 
+try:
+    import sentry_sdk
+    SENTRY_DSN = os.getenv("SENTRY_DSN", "https://af8cd9bec30d8551a01c5554c4d24a6b@o4512113387044864.ingest.us.sentry.io/4512113405132800")
+    if SENTRY_DSN:
+        sentry_sdk.init(dsn=SENTRY_DSN, traces_sample_rate=0.2)
+except Exception:
+    pass
+
 ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
 PAYOUTS_FILE = os.path.join(BASE_DIR, "payouts.json")
 WALLET_ADDRESS = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
@@ -79,15 +87,33 @@ async def get_onchain_bnb(session: aiohttp.ClientSession) -> float:
         "params": [WALLET_ADDRESS, "latest"],
         "id": 1
     }
-    for rpc in ["https://bsc-dataseed.binance.org", "https://binance.llamarpc.com"]:
+    drpc_key = os.getenv("DRPC_API_KEY", "Aj3ei0uTXUwutp4cQUkyTyjgB8oqtDAR8YBVEl_NDNxu")
+    rpc_nodes = [
+        f"https://bsc.drpc.org/ogrpc?dkey={drpc_key}",
+        "https://bsc-dataseed.binance.org",
+        "https://binance.llamarpc.com",
+        "https://rpc.ankr.com/bsc"
+    ]
+    headers = {"Content-Type": "application/json", "User-Agent": "my-agy-fleet/1.0"}
+    for rpc in rpc_nodes:
         try:
-            async with session.post(rpc, json=payload, timeout=aiohttp.ClientTimeout(total=5)) as r:
+            async with session.post(rpc, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as r:
                 if r.status == 200:
                     d = await r.json()
-                    return int(d["result"], 16) / 1e18
+                    if "result" in d and d["result"]:
+                        return int(d["result"], 16) / 1e18
         except Exception:
             continue
-    return 0.000702
+
+    # Fallback to last recorded state from watcher
+    try:
+        w_state = os.path.join(BASE_DIR, "bep20_watcher_state.json")
+        if os.path.exists(w_state):
+            with open(w_state, "r", encoding="utf-8") as f:
+                return float(json.load(f).get("last_known_balance", 0.0))
+    except Exception:
+        pass
+    return 0.0
 
 async def generate_and_send_report():
     async with aiohttp.ClientSession() as session:

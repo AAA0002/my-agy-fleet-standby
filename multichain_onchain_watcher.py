@@ -175,8 +175,10 @@ def load_state() -> dict:
 
 def save_state(state: dict):
     try:
-        with open(STATE_FILE, "w", encoding="utf-8") as f:
+        tmp_file = f"{STATE_FILE}.tmp"
+        with open(tmp_file, "w", encoding="utf-8") as f:
             json.dump(state, f, indent=2)
+        os.replace(tmp_file, STATE_FILE)
     except Exception:
         pass
 
@@ -198,8 +200,10 @@ async def record_payout_ledger(session: aiohttp.ClientSession, chain: str, amoun
             "timestamp": time.time(),
             "date": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
         })
-        with open(PAYOUT_LEDGER_FILE, "w", encoding="utf-8") as f:
+        tmp_ledger = f"{PAYOUT_LEDGER_FILE}.tmp"
+        with open(tmp_ledger, "w", encoding="utf-8") as f:
             json.dump(ledger, f, indent=2)
+        os.replace(tmp_ledger, PAYOUT_LEDGER_FILE)
     except Exception as e:
         print(f"Ledger record note: {e}")
 
