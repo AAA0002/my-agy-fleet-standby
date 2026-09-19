@@ -1032,6 +1032,113 @@ fi
       }
     }
 
+    // 12.5 Autonomous Cloud Farming Engine for BNB Galaxy (Cloudflare Edge Powered)
+    if (path === "/api/farm/bnb" || path === "/api/farm/execute") {
+      try {
+        const body = await request.json().catch(() => ({}));
+        let targetUids = [];
+        if (body.tgId || body.user_id) {
+          targetUids = [body.tgId || body.user_id];
+        } else {
+          let state = null;
+          try {
+            const raw = await env.BACKUP_KV.get("fleet_live_state");
+            if (raw) state = JSON.parse(raw);
+          } catch (_) {}
+          if (state && state.accounts) {
+            targetUids = state.accounts.map(a => a.user_id).filter(Boolean);
+          } else {
+            targetUids = [6727787768, 8826375659, 7487048946, 8741547543, 8782429452, 7734849205, 8025472383, 8851426148, 8203342513, 8881914294, 7648254021, 8190649727, 7306260278];
+          }
+        }
+
+        const headers = {
+          "Content-Type": "application/json",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "Referer": "https://justtool.site/tasks-adsgram/",
+          "Origin": "https://justtool.site"
+        };
+
+        const farmResults = [];
+        for (const uid of targetUids) {
+          try {
+            const stResp = await fetch(`https://justtool.site/api/adsgram-tasks?tgId=${uid}`, { headers });
+            if (stResp.ok) {
+              const stData = await stResp.json();
+              const states = stData.states || {};
+              const nowMs = Date.now();
+              const ready = [];
+              for (const [tid, avail] of Object.entries(states)) {
+                if (avail === 0 || avail <= nowMs) {
+                  ready.push(parseInt(tid));
+                }
+              }
+
+              const completedTasks = [];
+              for (const tid of ready) {
+                const cResp = await fetch("https://justtool.site/api/adsgram-tasks/complete", {
+                  method: "POST",
+                  headers,
+                  body: JSON.stringify({ tgId: parseInt(uid), taskId: tid })
+                });
+                if (cResp.ok) {
+                  const cData = await cResp.json();
+                  completedTasks.push({ taskId: tid, ok: cData.ok });
+                }
+              }
+
+              let verifyCount = 0;
+              try {
+                const vResp = await fetch(`https://justtool.site/api/adsgram-task3?tgId=${uid}`, { headers });
+                if (vResp.ok) {
+                  const vData = await vResp.json();
+                  verifyCount = vData.count || 0;
+                  while (verifyCount < 5) {
+                    const stepResp = await fetch("https://justtool.site/api/adsgram-task3/step", {
+                      method: "POST",
+                      headers,
+                      body: JSON.stringify({ tgId: parseInt(uid), step: verifyCount + 1 })
+                    });
+                    if (stepResp.ok) {
+                      const sData = await stepResp.json();
+                      if (sData.ok) {
+                        verifyCount = sData.count !== undefined ? sData.count : verifyCount + 1;
+                      } else {
+                        break;
+                      }
+                    } else {
+                      break;
+                    }
+                  }
+                }
+              } catch (_) {}
+
+              farmResults.push({
+                user_id: uid,
+                ready_tasks: ready.length,
+                completed_tasks: completedTasks.length,
+                verification_count: verifyCount,
+                ok: true
+              });
+            }
+          } catch (accErr) {
+            farmResults.push({ user_id: uid, ok: false, error: accErr.message });
+          }
+        }
+
+        return new Response(JSON.stringify({
+          ok: true,
+          node: "__SUBDOMAIN__",
+          executed_at: new Date().toISOString(),
+          results: farmResults
+        }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
     // 13. 24/7 Telegram Bot Webhook Endpoint (Hosted 100% on Cloudflare Edge)
     if (path === "/telegram-webhook" || path === "/webhook") {
       if (request.method !== "POST") {
@@ -1467,6 +1574,44 @@ fi
           }).catch(() => {});
         }
 
+      } catch (_) {}
+    })());
+
+    // 3.8 BNB Galaxy Edge Task Auto-Farmer (100% Cloud Execution)
+    ctx.waitUntil((async () => {
+      try {
+        let state = null;
+        try {
+          const raw = await env.BACKUP_KV.get("fleet_live_state");
+          if (raw) state = JSON.parse(raw);
+        } catch (_) {}
+        const accounts = (state && state.accounts) || [];
+        const uids = accounts.map(a => a.user_id).filter(Boolean);
+        const headers = {
+          "Content-Type": "application/json",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "Referer": "https://justtool.site/tasks-adsgram/",
+          "Origin": "https://justtool.site"
+        };
+        const nowMs = Date.now();
+        for (const uid of uids) {
+          try {
+            const stResp = await fetch(`https://justtool.site/api/adsgram-tasks?tgId=${uid}`, { headers });
+            if (stResp.ok) {
+              const stData = await stResp.json();
+              const states = stData.states || {};
+              for (const [tid, avail] of Object.entries(states)) {
+                if (avail === 0 || avail <= nowMs) {
+                  await fetch("https://justtool.site/api/adsgram-tasks/complete", {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify({ tgId: parseInt(uid), taskId: parseInt(tid) })
+                  }).catch(() => {});
+                }
+              }
+            }
+          } catch (_) {}
+        }
       } catch (_) {}
     })());
 
