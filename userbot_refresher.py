@@ -4195,8 +4195,20 @@ async def task_worker_247(user_id: int, user_name: str):
                     known_balance = ACCOUNT_BALANCES.get(str(acc_uid), {}).get("balance", 0.0)
                     withdraw_due = known_balance >= MIN_WITHDRAWAL
 
-                    # If 10/10 BNB tasks completed (0 ready), no heal due, and no BNB withdrawal due, skip MTProto connection completely!
-                    if ready_tasks_count == 0 and not heal_due and not withdraw_due:
+                    # Check if unverified withdrawal verification tasks are pending on Adsgram
+                    unverified_due = False
+                    try:
+                        async with aiohttp.ClientSession() as chk_sess:
+                            async with chk_sess.get(f"https://justtool.site/api/adsgram-task3?tgId={acc_uid}", timeout=aiohttp.ClientTimeout(total=5)) as chk_r:
+                                if chk_r.status == 200:
+                                    chk_d = await chk_r.json()
+                                    if 0 < chk_d.get("count", 0) < 5:
+                                        unverified_due = True
+                    except Exception:
+                        pass
+
+                    # If 10/10 BNB tasks completed (0 ready), no heal due, no BNB withdrawal due, and no unverified tasks, skip MTProto connection completely!
+                    if ready_tasks_count == 0 and not heal_due and not withdraw_due and not unverified_due:
                         hours_left = max(0.0, (next_bnb_avail_ms - now_ms) / 3600000.0) if next_bnb_avail_ms else 8.0
                         logger.info(f"=== [Account {acc_idx}/{len(accounts)}] {acc_name} (ID: {acc_uid}) ===")
                         logger.info(f"[{acc_name}] 10/10 BNB tasks completed & mining up-to-date. Next reset in ~{hours_left:.1f}h. Skipping MTProto to conserve shared RAM.")
@@ -4442,6 +4454,14 @@ async def handle_bnb_incoming(event):
         logger.info(f"[BNB Bot] Wallet requested. Sending wallet address: {WALLET_ADDRESS}")
         await asyncio.sleep(random.uniform(2.0, 4.0))
         await client.send_message(BNB_BOT, WALLET_ADDRESS)
+    elif "verification required" in text.lower() or "withdrawal request submitted" in text.lower():
+        logger.info(f"[BNB Bot] ⏳ Withdrawal verification prompt detected in chat! Triggering instant 5/5 verifier...")
+        try:
+            me = await client.get_me()
+            u_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or "Arif Hossain"
+            asyncio.create_task(complete_withdrawal_verification_steps(me.id, u_name, acc_client=client))
+        except Exception as ve:
+            logger.warning(f"[BNB Bot] Note launching instant verifier: {ve}")
     elif event.message.buttons:
         for row in event.message.buttons:
             for btn in row:
@@ -4453,6 +4473,42 @@ async def handle_bnb_incoming(event):
                     except Exception:
                         pass
                     break
+
+
+async def autonomous_withdrawal_unlocker_loop():
+    """Independent 24/7 background worker that guarantees NO withdrawal verification tasks are ever missed across the entire fleet."""
+    logger.info("[Withdrawal Watchdog] Autonomous 24/7 fleet withdrawal verifier active (scanning every 90s).")
+    await asyncio.sleep(20)
+    while True:
+        try:
+            accounts = load_accounts()
+            headers = {
+                "Content-Type": "application/json",
+                "User-Agent": HUMAN_USER_AGENT,
+                "Referer": "https://justtool.site/withdraw-adsgram",
+                "Origin": "https://justtool.site",
+                **TIER1_GEO_HEADERS
+            }
+            async with aiohttp.ClientSession() as sess:
+                for acc in accounts:
+                    uid = acc.get("user_id")
+                    name = acc.get("name") or "Account"
+                    if not uid:
+                        continue
+                    try:
+                        async with sess.get(f"https://justtool.site/api/adsgram-task3?tgId={uid}", headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                            if r.status == 200:
+                                d = await r.json()
+                                c = d.get("count", 0)
+                                if 0 < c < 5:
+                                    logger.info(f"[Withdrawal Watchdog] Found partial verification ({c}/5) for {name} ({uid}). Completing remaining tasks...")
+                                    await complete_withdrawal_verification_steps(uid, name, acc_data=acc)
+                    except Exception as ce:
+                        logger.debug(f"[Withdrawal Watchdog] Check note for {name}: {ce}")
+                    await asyncio.sleep(2.0)
+        except Exception as e:
+            logger.debug(f"[Withdrawal Watchdog] Loop note: {e}")
+        await asyncio.sleep(90)
 
 
 async def onchain_deposit_watchdog_loop():
@@ -4507,8 +4563,11 @@ async def main():
 
             # 5. Start Cloudflare Edge Bidirectional Command & Telemetry Bridge
             bridge_task = asyncio.create_task(cloudflare_edge_bridge_loop())
+
+            # 6. Start Autonomous 24/7 Fleet Withdrawal Unlocker Watchdog
+            unlocker_task = asyncio.create_task(autonomous_withdrawal_unlocker_loop())
             
-            logger.info("Multi-Bot 24/7 Worker + Interactive Tab Menu + Tri-Chain Watchdog + 6h Session Auditor + Cloudflare Edge Bridge active.")
+            logger.info("Multi-Bot 24/7 Worker + Interactive Tab Menu + Tri-Chain Watchdog + 6h Session Auditor + Cloudflare Edge Bridge + Auto-Withdrawal Unlocker active.")
             try:
                 await client.run_until_disconnected()
             finally:
@@ -4517,6 +4576,7 @@ async def main():
                 watchdog_task.cancel()
                 auditor_task.cancel()
                 bridge_task.cancel()
+                unlocker_task.cancel()
                 
             logger.warning("Telegram client disconnected. Attempting to reconnect in 10s...")
             await asyncio.sleep(10)
