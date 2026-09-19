@@ -102,12 +102,22 @@ BNB_BOT = "CryptoProUpRobot"
 STONES_BOT = "stoneswithestand_bot"
 MRG_BOT = "mrgminerbot"
 ART_BOT = "ART_AIRDROP_BOT"
+AILAB_BOT = "AiLab_robot"
+ULTRAWALLET_BOT = "UltrawalletTrade_Bot"
 
 BNB_REFERRAL_CODE = "Bot46893407"
 BNB_REFERRAL_URL = "https://t.me/CryptoProUpRobot?start=Bot46893407"
 STONES_REFERRAL_CODE = "r6727787768"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
 ART_REFERRAL_CODE = "6727787768"
+AILAB_REFERRAL_CODE = "296852"
+ULTRAWALLET_REFERRAL_CODE = "6727787768"
+
+FLEET_EARN_FOOTER = (
+    "Make your AI work for you — and earn 24/7👆\n"
+    "• https://t.me/AiLab_robot?start=296852\n"
+    "• https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768"
+)
 
 BNB_WEBHOOK_FALLBACK = "https://api.bots.business/v1/bots/2985029/new-webhook?&command=%2FonWebhook&public_user_token=3d1ed3e6a9bb948436a55057c6e87b59&user_id=46893407"
 WALLET_ADDRESS = os.getenv("WALLET_ADDRESS", "0xfda4182001672b9f0f09e2118242e543e35ed5ce")
@@ -740,15 +750,14 @@ async def build_midnight_summary():
     onchain_bdt = onchain_usd * usd_bdt
 
     card = (
-        f"🌙 *Daily Fleet Closing & P&L Summary*\n"
-        f"📅 _{date_str} 00:00 UTC_\n\n"
-        f"• **Fleet Health:** `{len(accounts)}/{len(accounts)} Accounts Active (100%)`\n"
-        f"• **Daily Tasks Completed:** `{len(accounts) * 10} / {len(accounts) * 10} Tasks`\n"
-        f"• **Confirmed On-Chain Balance:** `{onchain_bal:.6f} BNB` (~${onchain_usd:.2f} USD / ৳{onchain_bdt:.2f} BDT)\n"
-        f"• **Lifetime Fleet Withdrawals:** `{total_withdrawn:.6f} BNB` (~${withdrawn_usd:.2f} USD / ৳{withdrawn_bdt:.2f} BDT)\n"
-        f"• **Total Transactions:** `{len(payouts)} Payouts Processed`\n"
-        f"• **Cloud Vault Backup:** `Synced to @myagyai ✅`\n\n"
-        f"🛡️ _MY AGY AI Cloud Supervisor — Autonomous 24/7 Engine_"
+        f"🌙 *MY AGY AI — Daily Closing Summary*\n"
+        f"📅 `{date_str} • 00:00 UTC`\n\n"
+        f"⚡ **Fleet Health:** `{len(accounts)}/{len(accounts)} Accounts Active (100%)`\n"
+        f"🪙 **Daily Tasks:** `{len(accounts) * 10}/{len(accounts) * 10} Completed`\n"
+        f"💰 **Confirmed On-Chain:** `{onchain_bal:.6f} BNB` (~${onchain_usd:.2f} USD / ৳{onchain_bdt:.2f} BDT)\n"
+        f"🏆 **Lifetime Withdrawals:** `{total_withdrawn:.6f} BNB` ({len(payouts)} payouts processed)\n"
+        f"🛡️ **System:** 🟢 Immortal Supervisor 24/7\n\n"
+        f"{FLEET_EARN_FOOTER}"
     )
     return card
 
@@ -1372,31 +1381,23 @@ async def build_full_status_report(user_id: int):
         active_str = f"Account #{accounts.index(curr_acc)+1} ({curr_acc.get('name')})" if curr_acc else f"ID: {CURRENTLY_ACTIVE_ACCOUNT_ID}"
 
     report = (
-        f"📊 *MY AGY AI — Multi-Bot Empire Dashboard ({caller_name})*\n"
-        f"🕒 _{now_str}_\n\n"
-        f"👥 *Fleet Scale:* `{len(accounts)} Accounts Active`\n"
-        f"🏃 *Active Mining Worker:* `{active_str}`\n\n"
-        f"🪙 *1. BNB Galaxy (@CryptoProUpRobot):*\n"
-        f"{bnb_text}\n\n"
-        f"💎 *2. Stones Miners (@stoneswithestand_bot):*\n"
-        f"{stones_text}\n\n"
-        f"🚀 *3. ART Airdrop (@ART_AIRDROP_BOT):*\n"
-        f"{art_text}\n\n"
-        f"⛏️ *4. MRG Miner (@mrgminerbot):*\n"
-        f"{mrg_text}\n\n"
-        f"⚡ *5. Other Automated Miners:*\n"
-        f"• **Gram Workers:** `21,100 Power` (10/10 referrals active)\n"
-        f"• **Zyntrix Mining:** `2.0 ZT / day` (10/10 active referrals)\n"
-        f"• **Ultra Wallet:** `1,442 LT` + `2.36 USDT` (10/10 bound)\n\n"
-        f"🛡️ *Channel Safety:* Official channels only (Left unwanted channels)\n"
-        f"🟢 *Cloud VPS:* Running 24/7 in persistent tmux daemon"
+        f"📊 *MY AGY AI — Fleet Dashboard ({caller_name})*\n"
+        f"🕒 `{now_str}`\n\n"
+        f"👥 **Fleet:** `{len(accounts)} Accounts Active`\n"
+        f"🏃 **Worker Status:** `{active_str}`\n\n"
+        f"🪙 **BNB Galaxy:**\n{bnb_text}\n\n"
+        f"💎 **Stones Miners:**\n{stones_text}\n\n"
+        f"🚀 **ART Airdrop:**\n{art_text}\n\n"
+        f"⛏️ **MRG Miner:**\n{mrg_text}\n\n"
+        f"🛡️ **System:** 🟢 Immortal Supervisor 24/7 on Ubuntu Cloud VPS\n\n"
+        f"{FLEET_EARN_FOOTER}"
     )
     return report
 
 
 async def build_daily_summary_report(user_id: int):
     """Compiles the fleet-wide 24h performance and earnings summary."""
-    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     accounts = load_accounts()
 
     total_bnb_done = 0
@@ -1419,33 +1420,16 @@ async def build_daily_summary_report(user_id: int):
     total_bnb_daily_est = total_bnb_done * 0.0000055
 
     report = (
-        f"📑 *Fleet 24-Hour Daily Earnings & Performance Report*\n"
-        f"🕒 _{now_str}_\n\n"
-        f"👑 *Master Fleet Scale:*\n"
-        f"• **Host Account:** Arif Hossain (`{REPORT_CHAT_ID}`)\n"
-        f"• **Active Accounts:** `{len(accounts)} Connected & Farming`\n\n"
-        f"🪙 *1. BNB Galaxy Fleet:*\n"
-        f"• **Tasks Completed Today:** `{total_bnb_done}/{total_bnb_tasks}`\n"
-        f"• **Est. BNB Farmed Today:** `+{total_bnb_daily_est:.6f} BNB`\n"
-        f"• **Auto-Withdrawal Minimum:** `{MIN_WITHDRAWAL:.5f} BNB`\n"
-        f"• **Payout Wallet:** `{WALLET_ADDRESS}`\n"
-        f"• **Verification Status:** `5/5 Unlocked` ✅\n\n"
-        f"💎 *2. Stones Miners:*\n"
-        f"• **Harvested Balance:** `101 STONES` (Compounding)\n"
-        f"• **Referrals:** `{len(accounts) - 1}/{len(accounts) - 1} Valid` (All Bound & Active) 🏆\n"
-        f"• **Arbitrum Payout Address:** `{WALLET_ADDRESS}`\n\n"
-        f"🚀 *3. ART Airdrop:*\n"
-        f"• **Mining Speed:** `+21.3 ART/hr` (Active 24/7)\n"
-        f"• **Pending Payout:** `800 ART` (Ticket `w-1789742197512-xibbn` - Queue: PENDING)\n"
-        f"• **Destination TON Wallet:** `UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`\n\n"
-        f"⛏️ *4. MRG Miner:*\n"
-        f"• **Primary Balance:** `254.38 MRG` (Peak Level: 21)\n"
-        f"• **Squad Mining Cut:** `10% Lifetime Daily Commission` (~2.0 MRG/day)\n"
-        f"• **Fleet TON Wallets:** `{len(FLEET_TON_WALLETS)} Unique Wallets Connected` (0 duplicates)\n\n"
-        f"🛡️ *Security & Cloud VPS:*\n"
-        f"• **Channel Hygiene:** Official channels only (Unwanted channels left)\n"
-        f"• **Network Mode:** `Cloud Direct`\n"
-        f"• **Daemon Status:** 🟢 Active 24/7 on Ubuntu Cloud VPS"
+        f"📑 *MY AGY AI — Fleet 24h Summary*\n"
+        f"🕒 `{now_str}`\n\n"
+        f"👥 **Fleet:** `{len(accounts)} Accounts Active (Host: Arif Hossain)`\n\n"
+        f"🪙 **BNB Galaxy:** `{total_bnb_done}/{total_bnb_tasks} tasks` (+{total_bnb_daily_est:.6f} BNB) | 5/5 Anti-Bot ✅\n"
+        f"💎 **Stones Miners:** Mining & daily check-ins active (Arbitrum Payout)\n"
+        f"⛏️ **MRG Miner:** Continuous mining + 10% Squad commissions to Main ID\n"
+        f"🚀 **ART Airdrop:** 8-hour continuous cycles running 24/7\n\n"
+        f"💼 **Wallets:** Isolated worker TON wallets + Binance Web3 Master\n"
+        f"🛡️ **System:** 🟢 Immortal Supervisor 24/7\n\n"
+        f"{FLEET_EARN_FOOTER}"
     )
     return report
 
@@ -1477,32 +1461,17 @@ async def build_morning_briefing(user_id: int):
     total_bnb_daily_est = total_bnb_done * 0.0000055
 
     report = (
-        f"🌅 *MY AGY AI — Daily Morning Briefing*\n"
-        f"📅 _{date_str} • {time_str}_\n\n"
+        f"🌅 *MY AGY AI — Morning Fleet Briefing*\n"
+        f"📅 `{date_str} • {time_str}`\n\n"
         f"☀️ *Good morning Arif! Here is your overnight fleet summary:*\n\n"
-        f"🪙 *BNB Galaxy Overnight Yield:*\n"
-        f"• **Farmed Tasks:** `{total_bnb_done}/{total_bnb_tasks} Completed`\n"
-        f"• **Est. Farmed Value:** `+{total_bnb_daily_est:.6f} BNB`\n"
-        f"• **Auto-Withdrawal Threshold:** `{MIN_WITHDRAWAL:.5f} BNB`\n"
-        f"• **Payout Wallet:** `{WALLET_ADDRESS[:6]}...{WALLET_ADDRESS[-4:]}`\n"
-        f"• **Task Verifier:** `5/5 Tasks Solved` ✅\n\n"
-        f"💎 *Stones Miners Status:*\n"
-        f"• **Balance:** `101 STONES` | Referrals: `10/10 Valid` 💎\n"
-        f"• **Arbitrum Address:** `{WALLET_ADDRESS[:6]}...{WALLET_ADDRESS[-4:]}`\n\n"
-        f"🚀 *ART & MRG Overnight Mining:*\n"
-        f"• **ART Airdrop Rate:** `+21.3 ART/hr` (800 ART withdrawal pending)\n"
-        f"• **MRG Miner:** `254.38 MRG` (11 fleet TON wallets earning 10% squad cut)\n\n"
-        f"👥 *Multi-Account Fleet:*\n"
-        f"• **Active Accounts:** `{len(accounts)} Connected`\n"
-        f"• **Referral Status:** Bound to `{BNB_REFERRAL_CODE}` ✅\n\n"
-        f"🛡️ *Security & Proxy Defense:*\n"
-        f"• **Hardware Isolation:** `100% Unique Fingerprints`\n"
-        f"• **Ad Geolocation:** `Cloud Direct`\n"
-        f"• **Official Channels Only:** Cleaned unwanted partner channels\n\n"
-        f"🏓 *Cloud Daemon Health:*\n"
-        f"• **VPS Daemon:** `🟢 Immortal Supervisor Active`\n"
-        f"• **Phone Independence:** `100% Autonomous`\n\n"
-        f"Have a great day ahead! Your automated fleet is working continuously in the cloud."
+        f"⚡ **Fleet Status:** `{len(accounts)} Accounts Active & 100% Autonomous`\n\n"
+        f"🪙 **BNB Galaxy:** `{total_bnb_done}/{total_bnb_tasks} tasks` (+{total_bnb_daily_est:.6f} BNB) | 5/5 Anti-Bot ✅\n"
+        f"💎 **Stones Miners:** Mining active | Auto-withdraw >= 500 STONES (Arbitrum)\n"
+        f"⛏️ **MRG Miner:** Harvest & 10% Squad Sweeps Active (TON Wallets Bound)\n"
+        f"🚀 **ART Airdrop:** Continuous 8h Cycles & Task Auto-Claims Active\n\n"
+        f"💰 **Payouts:** Auto-routing to your Binance Web3 & Arbitrum wallets\n"
+        f"🛡️ **System:** 🟢 Immortal Supervisor 24/7\n\n"
+        f"{FLEET_EARN_FOOTER}"
     )
     return report
 
@@ -3045,6 +3014,63 @@ async def ensure_referral_bound(acc_client, acc: dict):
         except Exception as e:
             logger.warning(f"[{acc_name}] ART referral notice: {e}")
 
+    # 5. AI Lab Robot Referral Binding (https://t.me/AiLab_robot?start=296852)
+    if not acc.get("ailab_referral_bound") and str(acc_uid) != str(REPORT_CHAT_ID):
+        try:
+            logger.info(f"[{acc_name}] Onboarding AI Lab Robot with referral {AILAB_REFERRAL_CODE}...")
+            try:
+                await acc_client(UnblockRequest(id=AILAB_BOT))
+            except Exception:
+                pass
+            bot_ai = await acc_client.get_entity(AILAB_BOT)
+            await acc_client.send_message(bot_ai, f"/start {AILAB_REFERRAL_CODE}")
+            await asyncio.sleep(1.5)
+            try:
+                res_ai = await acc_client(RequestWebViewRequest(
+                    peer=bot_ai,
+                    bot=bot_ai,
+                    platform="android",
+                    url="https://ailab-agent.online/"
+                ))
+                parsed_ai = urllib.parse.urlparse(res_ai.url)
+                init_ai = urllib.parse.parse_qs(parsed_ai.fragment).get("tgWebAppData", [None])[0]
+                if init_ai:
+                    async with aiohttp.ClientSession() as ai_sess:
+                        await ai_sess.post(
+                            "https://api.ailab-agent.online/api/v1/users/auth/login",
+                            json={"user": init_ai},
+                            headers={"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT},
+                            timeout=aiohttp.ClientTimeout(total=8)
+                        )
+            except Exception:
+                pass
+            acc["ailab_referral_bound"] = True
+            await update_account_safely(acc_uid, {"ailab_referral_bound": True})
+            logger.info(f"[{acc_name}] ✅ AI Lab Robot successfully bound to referral {AILAB_REFERRAL_CODE}!")
+        except Exception as e:
+            logger.warning(f"[{acc_name}] AI Lab referral notice: {e}")
+
+    # 6. Ultra Wallet Referral Binding (https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768)
+    if not acc.get("ultrawallet_referral_bound") and str(acc_uid) != str(REPORT_CHAT_ID):
+        try:
+            logger.info(f"[{acc_name}] Onboarding Ultra Wallet with referral {ULTRAWALLET_REFERRAL_CODE}...")
+            try:
+                await acc_client(UnblockRequest(id=ULTRAWALLET_BOT))
+            except Exception:
+                pass
+            bot_uw = await acc_client.get_input_entity(ULTRAWALLET_BOT)
+            await acc_client(RequestAppWebViewRequest(
+                peer=bot_uw,
+                app=InputBotAppShortName(bot_id=bot_uw, short_name="app"),
+                platform="android",
+                start_param=ULTRAWALLET_REFERRAL_CODE
+            ))
+            acc["ultrawallet_referral_bound"] = True
+            await update_account_safely(acc_uid, {"ultrawallet_referral_bound": True})
+            logger.info(f"[{acc_name}] ✅ Ultra Wallet successfully bound to referral {ULTRAWALLET_REFERRAL_CODE}!")
+        except Exception as e:
+            logger.warning(f"[{acc_name}] Ultra Wallet referral notice: {e}")
+
 
 async def self_heal_account_channels_and_bots(acc_client, acc: dict):
     """
@@ -3065,7 +3091,7 @@ async def self_heal_account_channels_and_bots(acc_client, acc: dict):
 
     logger.info(f"[{acc_name}] 🛡️ Running Self-Healing Channel & Bot Guard...")
     # 1. Ensure target bots are unblocked
-    for b in [BNB_BOT, STONES_BOT, MRG_BOT, ART_BOT]:
+    for b in [BNB_BOT, STONES_BOT, MRG_BOT, ART_BOT, AILAB_BOT, ULTRAWALLET_BOT]:
         try:
             await acc_client(UnblockRequest(id=b))
         except Exception:
@@ -4838,14 +4864,12 @@ async def task_worker_247(user_id: int, user_name: str):
     # Send startup notification with persistent Tab Menu keyboard
     startup_text = (
         "🚀 *MY AGY AI Hub Online*\n\n"
-        "Your autonomous multi-crypto automation daemon is running 24/7 on the cloud server.\n\n"
-        "• **🪙 BNB Galaxy:** 10 Daily Tasks & Auto-Withdraw at `0.00005 BNB` (BEP-20)\n"
-        "• **💎 Stones Miners:** Daily Check-in & Mining (+500 STONES to Arbitrum One)\n"
-        "• **⛏️ MRG Miner:** Mining Harvest & 10% Squad Commission Sweep to Main ID\n"
-        "• **🚀 ART Airdrop:** 8h Continuous Mining Cycles & TON Cashout\n"
-        "• **💼 Multi-Chain Wallets:** Binance Web3 for Primary + Isolated TON for Workers\n"
-        "• **🛡️ Anti-Sybil Guard:** 100% Unique Wallet Addresses across Fleet\n\n"
-        "Tap any tab button below to view live fleet metrics or withdraw!"
+        "Autonomous multi-crypto fleet daemon running 24/7 in the cloud.\n\n"
+        "• **🪙 BNB Galaxy:** 10 Daily Tasks & Auto-Withdraw (BEP-20)\n"
+        "• **💎 Stones Miners:** Daily Mining (+500 STONES to Arbitrum One)\n"
+        "• **⛏️ MRG Miner:** Mining Harvest & 10% Squad Sweeps to Main ID\n"
+        "• **🚀 ART Airdrop:** Continuous 8h Mining & Task Claims\n\n"
+        f"{FLEET_EARN_FOOTER}"
     )
 
     await send_report_message(startup_text, reply_markup=MAIN_TAB_KEYBOARD)
