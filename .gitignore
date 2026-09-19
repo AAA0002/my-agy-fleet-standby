@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+*.bak
+
+# Sensitive environment credentials & sessions (Keep Safe)
+.env
+.cloudflare_credentials
+accounts.json
+fleet_ton_wallets.json
+FLEET_TELEGRAM_TON_WALLETS_BACKUP.txt
+
+# Telegram sessions, journals and process logs
+*.session
+*.session-journal
+*.log
+*.pid
+reboot.log
+cloudflared.log
+
+# Backup archives
+*.zip
+*.tar.gz
+
+# System & IDE state
+.gemini/
+.cloudflared/
+.cache/
+.local/
+.bash_history
+.storage_limit
+.onchain_state.json
+bep20_watcher_state.json
