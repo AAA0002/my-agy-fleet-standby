@@ -22,6 +22,8 @@ RENDER_API_KEY = os.getenv("RENDER_API_KEY", "rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1")
 OWNER_ID = "tea-d8j9clt8nd3s73eb041g"
 ACCOUNT_EMAIL = "coz1gameh1@gmail.com"
 DEDICATED_SERVICE_NAME = "my-agy-fleet-standby"
+STANDBY_SERVICE_ID = "srv-damuhkmgekts73f1osag"
+STANDBY_URL = "https://my-agy-fleet-standby.onrender.com"
 BASE_URL = "https://api.render.com/v1"
 
 # Hardcoded blacklisted services that must NEVER be touched under any circumstances
