@@ -3005,6 +3005,33 @@ async def handle_single_update(update: dict):
                 except Exception as e:
                     await send_report_message(f"❌ AI error: {e}", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
 
+        elif text.startswith("/briefing") or text == "📊 Daily Briefing":
+            await send_report_message("⏳ *Generating Daily Executive Briefing via Google Gemini 3.8 Flash...*", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
+            report = await generate_daily_executive_briefing(notify=False)
+            await send_report_message(report, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
+
+        elif text.startswith("/consolidate") or text == "🪙 Consolidate":
+            w1 = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
+            w2 = "0x017841f26d5b79cc8c5eb20c65367bb645cc2610"
+            b1 = await get_onchain_bnb_balance(w1)
+            b2 = await get_onchain_bnb_balance(w2)
+            tot = b1 + b2
+            rep = (
+                f"🪙 *On-Chain BNB Consolidator & Wallet Tracker*\n\n"
+                f"• **Vault 1 (Accounts 1–7):** `{b1:.6f} BNB`\n"
+                f"  `0xfda4182001672b9f0f09e2118242e543e35ed5ce`\n"
+                f"• **Vault 2 (Accounts 8–13):** `{b2:.6f} BNB`\n"
+                f"  `0x017841f26d5b79cc8c5eb20c65367bb645cc2610`\n"
+                f"• **Total On-Chain BNB:** `{tot:.6f} BNB`\n"
+                f"• **Consolidation Target:** `0.005000 BNB` ({(tot / 0.005 * 100):.1f}%)\n\n"
+                f"🎯 _Tracking live BSC blockchain state via Binance Dataseed RPC._"
+            )
+            await send_report_message(rep, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
+
+        elif text.startswith("/sync") or text == "🔄 Sync Fleet":
+            wake_worker_event.set()
+            await send_report_message("🔄 *Multi-Cloud Fleet Sync Dispatched!*\n\n• Mining cycle triggered across all 13 accounts\n• Telemetry replicating to Turso LibSQL, D1 SQL, and Supabase", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
+
         elif text.startswith("/ping") or text == "🏓 Server Health":
             rep = build_server_health_report()
             await send_report_message(rep, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
