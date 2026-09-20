@@ -2522,8 +2522,8 @@ fi
       }
     }
 
-    // 11. Cloudflare Workers AI with Llama 3.2
-    if (path === "/ai") {
+    // 11. Cloudflare Workers AI with Multi-Cloud AI Cascade
+    if (path === "/ai" || path === "/api/ai") {
       let prompt = "";
       if (request.method === "POST") {
         try {
@@ -2541,34 +2541,124 @@ fi
         });
       }
 
-      const models = [
-        "@cf/meta/llama-3.2-3b-instruct",
-        "@cf/meta/llama-3.2-1b-instruct",
-        "@cf/meta/llama-3.1-8b-instruct"
+      // Multi-Cloud Edge AI Cascade: 1. Google Gemini 3.8/3.6 Flash -> 2. Groq LPU -> 3. Cloudflare Workers AI
+      const geminiKeys = [
+        "AQ.Ab8RN6KM84Fxx2_1qtQoOL0T3ZXaty0FEFX1-7Lc8XmR_rmMeg",
+        "AQ.Ab8RN6JlgBLNwrACewVxtg1RxH752VHEouYCAnzN73hOdoNFjA",
+        "AQ.Ab8RN6J6_g_Jr0AeLaUicMkjaPHxVKmoCslAcL1NTQcFSzSe1w",
+        "AQ.Ab8RN6KU9MO7yuDWVIh28uuUfp0MyXMknjo3arWWft8X4jbEtQ",
+        "AQ.Ab8RN6IxuzzZ1m9nWx8w0Ob3xC_zZ2p_7hdjaCRZtfPBYx5cog",
+        "AQ.Ab8RN6Kn0fQD8aYCfG_8KXg9qAKiAQUUSsYrZ10tqgqs1oQvYw",
+        "AQ.Ab8RN6I9tnLMJoWuPBQrmRw3WCvS3MWFcQFKB6_TQsabaI5-gg",
+        "AQ.Ab8RN6LZCvPuue6uZrGA9_xocFC27NHvPiAvGL1h4YGRC9CY7Q",
+        "AQ.Ab8RN6IWzo-mOBhSTwK79wlLILDyImhLCjgiCBp9DQRZ9VVRdQ",
+        "AQ.Ab8RN6IKx4lhqSZWPEFA6Uhu8Wf5iOZmfGEeYqrSx3D3IkQymw",
+        "AQ.Ab8RN6L78IMc1XSC39WY3bukDgGNVyMMZeJ1rdpKKrq3BW3YFQ",
+        "AQ.Ab8RN6IavD_owt-KIaBLLtTbVoGBt_J5R16syXTy3en_6LIDnw",
+        "AQ.Ab8RN6Ic1OPZNPytcdUMj6GJCpHMj3NzzZpV8pIZQO_SWL3pBA",
+        "AQ.Ab8RN6L_FApJMCEgGOi6XXeKRNrWpS3QugJ6pb5LYUyBmyNAJw"
+      ];
+      const groqKeys = [
+        "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",
+        "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",
+        "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"
       ];
 
-      let lastError = null;
-      for (const model of models) {
+      // 1. Google Gemini 3.8 / 3.6 Flash
+      const gemModels = ["gemini-3.8-flash", "gemini-3.6-flash"];
+      const randomKey = geminiKeys[Math.floor(Math.random() * geminiKeys.length)];
+      for (const gm of gemModels) {
         try {
-          const aiRes = await env.AI.run(model, { prompt: prompt, max_tokens: 350 });
-          const ansText = aiRes.response || (aiRes.choices && aiRes.choices[0] ? aiRes.choices[0].text : JSON.stringify(aiRes));
-          return new Response(JSON.stringify({
-            ok: true,
-            model: model,
-            node: "__SUBDOMAIN__",
-            answer: ansText.trim()
-          }), {
-            headers: { "Content-Type": "application/json", ...corsHeaders }
+          const gUrl = `https://generativelanguage.googleapis.com/v1beta/models/${gm}:generateContent`;
+          const gResp = await fetch(gUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-goog-api-key": randomKey },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
           });
-        } catch (mErr) {
-          lastError = mErr;
-          continue;
+          if (gResp.ok) {
+            const gData = await gResp.json();
+            const gText = gData?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (gText) {
+              return new Response(JSON.stringify({
+                ok: true,
+                provider: "Google Gemini",
+                model: gm,
+                node: "__SUBDOMAIN__",
+                answer: gText.trim()
+              }), {
+                headers: { "Content-Type": "application/json", ...corsHeaders }
+              });
+            }
+          }
+        } catch (_) {}
+      }
+
+      // 2. GroqCloud LPU (Qwen 3.8 27B / GPT-OSS 120B)
+      const randomGroqKey = groqKeys[Math.floor(Math.random() * groqKeys.length)];
+      try {
+        const groqResp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${randomGroqKey}`,
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+          },
+          body: JSON.stringify({
+            model: "qwen/qwen3.8-27b",
+            messages: [
+              { role: "system", content: "You are the autonomous AI assistant for MY AGY AI Fleet. Provide concise, expert, helpful responses about crypto, automation, and general tech." },
+              { role: "user", content: prompt }
+            ],
+            max_tokens: 600
+          })
+        });
+        if (groqResp.ok) {
+          const grData = await groqResp.json();
+          const grText = grData?.choices?.[0]?.message?.content;
+          if (grText) {
+            return new Response(JSON.stringify({
+              ok: true,
+              provider: "Groq LPU",
+              model: "qwen/qwen3.8-27b",
+              node: "__SUBDOMAIN__",
+              answer: grText.trim()
+            }), {
+              headers: { "Content-Type": "application/json", ...corsHeaders }
+            });
+          }
+        }
+      } catch (_) {}
+
+      // 3. Cloudflare Workers AI Fallback
+      let lastError = null;
+      if (env.AI) {
+        const cfModels = [
+          "@cf/meta/llama-3.2-3b-instruct",
+          "@cf/meta/llama-3.2-1b-instruct"
+        ];
+        for (const cfm of cfModels) {
+          try {
+            const aiRes = await env.AI.run(cfm, { prompt: prompt, max_tokens: 350 });
+            const ansText = aiRes.response || (aiRes.choices && aiRes.choices[0] ? aiRes.choices[0].text : JSON.stringify(aiRes));
+            return new Response(JSON.stringify({
+              ok: true,
+              provider: "Cloudflare Workers AI",
+              model: cfm,
+              node: "__SUBDOMAIN__",
+              answer: ansText.trim()
+            }), {
+              headers: { "Content-Type": "application/json", ...corsHeaders }
+            });
+          } catch (mErr) {
+            lastError = mErr;
+            continue;
+          }
         }
       }
 
       return new Response(JSON.stringify({
         ok: false,
-        error: lastError ? lastError.message : "AI service unavailable",
+        error: lastError ? lastError.message : "All edge AI providers temporarily unavailable",
         node: "__SUBDOMAIN__"
       }), {
         status: 500,

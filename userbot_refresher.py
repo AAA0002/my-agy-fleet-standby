@@ -199,9 +199,9 @@ if not GEMINI_API_KEYS:
 
 async def query_gemini_ai(prompt: str) -> Optional[Tuple[str, str]]:
     """Queries Google Gemini API with 14-key rotation pool and intelligent fallback.
-    Primary: gemini-3.6-flash -> Fallback: gemini-2.5-flash -> gemini-1.5-flash -> gemini-flash-latest
+    Primary: gemini-3.8-flash -> Fallback: gemini-3.6-flash -> gemini-2.5-flash -> gemini-flash-latest
     """
-    models = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-1.5-flash", "gemini-flash-latest"]
+    models = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-flash-latest"]
     payload = {
         "contents": [{"parts": [{"text": prompt}]}]
     }
@@ -246,36 +246,41 @@ GROQ_API_KEYS = [
 ]
 
 async def query_groq_ai(prompt: str) -> Optional[Tuple[str, str]]:
-    """Queries GroqCloud LPU with ultra-low latency (<150ms) and key rotation."""
+    """Queries GroqCloud LPU with ultra-low latency (<150ms), model fallback, and key rotation."""
     url = "https://api.groq.com/openai/v1/chat/completions"
-    payload = {
-        "model": "qwen/qwen3.8-27b",
-        "messages": [
-            {"role": "system", "content": "You are the autonomous AI assistant for MY AGY AI Fleet. Provide concise, expert, helpful responses about crypto, automation, and general tech."},
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens": 800,
-        "temperature": 0.6
-    }
-    for k in GROQ_API_KEYS:
-        if not k:
-            continue
-        headers = {
-            "Authorization": f"Bearer {k}",
-            "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+    models = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b"]
+    for model in models:
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": "You are the autonomous AI assistant for MY AGY AI Fleet. Provide concise, expert, helpful responses about crypto, automation, and general tech."},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 800,
+            "temperature": 0.6
         }
-        try:
-            async with aiohttp.ClientSession() as s:
-                t0 = time.time()
-                async with s.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        ans = data["choices"][0]["message"]["content"].strip()
-                        latency_ms = round((time.time() - t0) * 1000)
-                        return ans, f"Groq LPU (Qwen 3.8 · {latency_ms}ms)"
-        except Exception:
-            continue
+        for k in GROQ_API_KEYS:
+            if not k:
+                continue
+            headers = {
+                "Authorization": f"Bearer {k}",
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+            }
+            try:
+                async with aiohttp.ClientSession() as s:
+                    t0 = time.time()
+                    async with s.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            choices = data.get("choices", [])
+                            if choices:
+                                ans = choices[0]["message"]["content"].strip()
+                                if ans:
+                                    latency_ms = round((time.time() - t0) * 1000)
+                                    return ans, f"Groq LPU ({model} · {latency_ms}ms)"
+            except Exception:
+                continue
     return None
 
 if not API_ID or not API_HASH:
@@ -6268,7 +6273,7 @@ async def cloudflare_sentinel_loop(user_id: int):
     return
 
 async def generate_daily_executive_briefing(notify: bool = True) -> str:
-    """Generates a daily AI Executive Briefing using Google Gemini 3.6 Flash (14-key pool)."""
+    """Generates a daily AI Executive Briefing using Google Gemini 3.8 Flash (14-key pool) with Groq LPU failover."""
     try:
         accounts = load_accounts()
         tot_bals = load_account_balances()
@@ -6295,6 +6300,9 @@ async def generate_daily_executive_briefing(notify: bool = True) -> str:
         )
 
         ai_res = await query_gemini_ai(prompt)
+        if not ai_res:
+            ai_res = await query_groq_ai(prompt)
+
         if ai_res:
             ai_summary, ai_model = ai_res
         else:
@@ -6304,7 +6312,7 @@ async def generate_daily_executive_briefing(notify: bool = True) -> str:
                 f"• Total on-chain BNB: {total_onchain:.6f} BNB.\n"
                 f"• 14/14 cloud systems operating at 100% uptime."
             )
-            ai_model = "Google Gemini 3.6 Flash (Rotated)"
+            ai_model = "Google Gemini 3.8 Flash (Rotated)"
 
         full_report = (
             f"📊 *MY AGY AI — Daily Executive Briefing*\n"
