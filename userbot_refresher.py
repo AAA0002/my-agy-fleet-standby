@@ -3569,9 +3569,12 @@ async def extract_bnb_webhook(acc_client=None):
             # Check msg text for explicit link
             for text_val in [getattr(msg, "text", None), getattr(msg, "raw_text", None)]:
                 if text_val and "wh=" in text_val:
-                    m = re.search(r"wh=([^&\s\"'>]+)", text_val)
+                    m = re.search(r"wh=(https?://[^\s\"'>]+)", text_val)
                     if m:
-                        current_bnb_webhook = urllib.parse.unquote(m.group(1))
+                        wh_part = m.group(1)
+                        if "#" in wh_part:
+                            wh_part = wh_part.split("#")[0]
+                        current_bnb_webhook = urllib.parse.unquote(wh_part)
                         return current_bnb_webhook
 
             # Check buttons
@@ -3585,8 +3588,8 @@ async def extract_bnb_webhook(acc_client=None):
                             btn_url = btn.web_app.url
                         if btn_url and "wh=" in btn_url:
                             wh_part = btn_url.split("wh=")[1]
-                            if "&" in wh_part:
-                                wh_part = wh_part.split("&")[0]
+                            if "#" in wh_part:
+                                wh_part = wh_part.split("#")[0]
                             wh_part = urllib.parse.unquote(wh_part)
                             current_bnb_webhook = wh_part
                             return current_bnb_webhook
@@ -6232,21 +6235,25 @@ async def miniapp_command_listener_loop():
 
                             logger.info(f"[MiniApp Listener] ⚡ Executing interactive command from Mini App: '{act}'")
                             if act == "withdraw":
-                                accounts = load_accounts()
-                                for acc in accounts:
-                                    uid = acc.get("user_id")
-                                    name = acc.get("name") or "Member"
-                                    bal = float(ACCOUNT_BALANCES.get(str(uid), {}).get("balance", 0.0))
-                                    if bal >= MIN_WITHDRAWAL:
-                                        await check_and_auto_withdraw(uid, name, notify_manual=True, acc_data=acc)
+                                async def _run_sweep():
+                                    accounts = load_accounts()
+                                    for acc in accounts:
+                                        uid = acc.get("user_id")
+                                        name = acc.get("name") or "Member"
+                                        bal = float(ACCOUNT_BALANCES.get(str(uid), {}).get("balance", 0.0))
+                                        if bal >= MIN_WITHDRAWAL:
+                                            await check_and_auto_withdraw(uid, name, notify_manual=True, acc_data=acc)
+                                asyncio.create_task(_run_sweep())
                             elif act == "verify":
-                                accounts = load_accounts()
-                                for acc in accounts:
-                                    uid = acc.get("user_id")
-                                    name = acc.get("name") or "Member"
-                                    await complete_withdrawal_verification_steps(uid, name, acc_data=acc)
+                                async def _run_verify():
+                                    accounts = load_accounts()
+                                    for acc in accounts:
+                                        uid = acc.get("user_id")
+                                        name = acc.get("name") or "Member"
+                                        await complete_withdrawal_verification_steps(uid, name, acc_data=acc)
+                                asyncio.create_task(_run_verify())
                             elif act == "backup":
-                                await send_backup_to_telegram()
+                                asyncio.create_task(send_backup_to_telegram())
         except Exception as e:
             logger.debug(f"[MiniApp Listener] Note: {e}")
         await asyncio.sleep(15)

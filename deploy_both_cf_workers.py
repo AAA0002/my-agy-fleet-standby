@@ -2666,8 +2666,33 @@ fi
         };
 
         const farmResults = [];
+        const staticWebhooks = {
+          "6727787768": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=3d1ed3e6a9bb948436a55057c6e87b59&user_id=46893407",
+          "8881914294": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=72c47501683e2e70dfaccd8d3ed5c285&user_id=60713750",
+          "7648254021": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=10dc29f743913f3a2e4d835b2b676e9e&user_id=59905120",
+          "8826375659": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=2267f8d65e4a2b276e16b2e5ca0e0983&user_id=60678854",
+          "8450010161": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=25f6e7e8e1ef0d6e0a3518a377491e76&user_id=60720095",
+          "8782429452": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=52ac3840bdd35d27bb83c8a4f1a2872f&user_id=60720152",
+          "7734849205": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=9293b429f91c8ab1ffa302f51a3cd5b1&user_id=60720188",
+          "8025472383": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=8dc8684f2a5f84807178ec2733dc41e7&user_id=60720204",
+          "8851426148": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=8f26c5ef29029c66e44f2bbcac81db73&user_id=60720231",
+          "8203342513": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=4a4b7ef9df10b7493cdbd05355918e11&user_id=60720252",
+          "8190649727": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=fe448dcd830cf9d48bc41bb65ff5f930&user_id=60721024",
+          "7487048946": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=5b51557d381ad544453d5fce49a710f3&user_id=44610998",
+          "8741547543": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=587bfc8580acce34971106b176e27223&user_id=60740828"
+        };
         for (const uid of targetUids) {
           try {
+            // 0. Ensure unique BNB webhook is registered on justtool.site so rewards are credited
+            const accWh = staticWebhooks[String(uid)];
+            if (accWh) {
+              await fetch("https://justtool.site/api/adsgram-register", {
+                method: "POST",
+                headers,
+                body: JSON.stringify({ tgId: parseInt(uid), wh: accWh })
+              }).catch(() => {});
+            }
+
             // 1. BNB Galaxy Tasks & 5/5 Anti-Bot Verification Unlock
             const stResp = await fetch(`https://justtool.site/api/adsgram-tasks?tgId=${uid}`, { headers });
             if (stResp.ok) {
