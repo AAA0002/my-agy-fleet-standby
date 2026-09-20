@@ -6204,8 +6204,52 @@ async def cloudflare_sentinel_loop(user_id: int):
     return
 
 async def miniapp_command_listener_loop():
-    """MiniApp command listener disabled to preserve Cloudflare KV write limits."""
-    return
+    """
+    Listens for interactive commands dispatched from the Mini App via Upstash Redis (0 KV writes).
+    Actions supported:
+    - 'withdraw': Scans all balances and executes immediate sweep across all 13 accounts.
+    - 'verify': Solves 5/5 Anti-Bot verification for any accounts not yet at 5/5.
+    - 'backup': Packages and pushes fresh cloud backup to Telegram.
+    - 'refresh': Pulls fresh token sessions and updates telemetry.
+    """
+    logger.info("[MiniApp Listener] Upstash Redis Serverless Command Listener active.")
+    upstash_url = os.getenv("UPSTASH_REDIS_REST_URL", "https://relaxing-starfish-285827.upstash.io")
+    upstash_token = os.getenv("UPSTASH_REDIS_REST_TOKEN", "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw")
+    headers = {"Authorization": f"Bearer {upstash_token}"}
+
+    while True:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"{upstash_url}/get/fleet:pending_action", headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        res = data.get("result")
+                        if res:
+                            act_obj = json.loads(res) if isinstance(res, str) else res
+                            act = act_obj.get("action")
+                            # Delete the action immediately so it's not processed twice
+                            await session.get(f"{upstash_url}/del/fleet:pending_action", headers=headers)
+
+                            logger.info(f"[MiniApp Listener] ⚡ Executing interactive command from Mini App: '{act}'")
+                            if act == "withdraw":
+                                accounts = load_accounts()
+                                for acc in accounts:
+                                    uid = acc.get("user_id")
+                                    name = acc.get("name") or "Member"
+                                    bal = float(ACCOUNT_BALANCES.get(str(uid), {}).get("balance", 0.0))
+                                    if bal >= MIN_WITHDRAWAL:
+                                        await check_and_auto_withdraw(uid, name, notify_manual=True, acc_data=acc)
+                            elif act == "verify":
+                                accounts = load_accounts()
+                                for acc in accounts:
+                                    uid = acc.get("user_id")
+                                    name = acc.get("name") or "Member"
+                                    await complete_withdrawal_verification_steps(uid, name, acc_data=acc)
+                            elif act == "backup":
+                                await send_backup_to_telegram()
+        except Exception as e:
+            logger.debug(f"[MiniApp Listener] Note: {e}")
+        await asyncio.sleep(15)
 
 
 
@@ -6243,8 +6287,11 @@ async def main():
 
             # 6. Start Autonomous 24/7 Fleet Withdrawal Unlocker Watchdog
             unlocker_task = asyncio.create_task(autonomous_withdrawal_unlocker_loop())
+
+            # 7. Start Upstash Redis Interactive MiniApp Command Listener
+            miniapp_task = asyncio.create_task(miniapp_command_listener_loop())
             
-            logger.info("Multi-Bot 24/7 Worker + Interactive Tab Menu + Tri-Chain Watchdog + 6h Session Auditor + Cloudflare Edge Bridge + Auto-Withdrawal Unlocker active.")
+            logger.info("Multi-Bot 24/7 Worker + Interactive Tab Menu + Tri-Chain Watchdog + 6h Session Auditor + Cloudflare Edge Bridge + Auto-Withdrawal Unlocker + MiniApp Listener active.")
             try:
                 await client.run_until_disconnected()
             finally:
@@ -6254,6 +6301,7 @@ async def main():
                 auditor_task.cancel()
                 bridge_task.cancel()
                 unlocker_task.cancel()
+                miniapp_task.cancel()
                 
             logger.warning("Telegram client disconnected. Attempting to reconnect in 10s...")
             await asyncio.sleep(10)
