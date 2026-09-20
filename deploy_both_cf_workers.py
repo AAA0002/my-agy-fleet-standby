@@ -100,6 +100,16 @@ async function fetchWithRetry(url, options, maxRetries = 3, initialDelayMs = 120
   }
 }
 
+// Module-level in-memory cache to strictly protect Cloudflare KV 1,000 writes/day quota
+let memFleetState = null;
+let lastFleetKvWrite = 0;
+let memMultichainState = null;
+let lastMultichainKvWrite = 0;
+let memHeartbeat = null;
+let lastHeartbeatKvWrite = 0;
+let memRecentPayouts = null;
+let memTokens = null;
+
 export default {
   async fetch(request, env, ctx) {
     const SIBLING_URLS = __SIBLING_URLS_JSON__;
@@ -288,7 +298,7 @@ fi
       }
     }
 
-    // 5. VPS Heartbeat Sentinel
+    // 5. VPS Heartbeat Sentinel (In-Memory + 30-min KV Throttle)
     if (path === "/heartbeat" && request.method === "POST") {
       const auth = request.headers.get("Authorization");
       if (auth !== `Bearer ${env.SECRET_KEY}`) {
@@ -304,20 +314,12 @@ fi
         iso: new Date().toISOString(),
         data
       };
+      memHeartbeat = heartbeat;
 
-      // KV WRITE SAVER: Only write to KV if >10 minutes elapsed since last recorded heartbeat
-      let shouldWrite = true;
-      try {
-        const rawLast = await env.BACKUP_KV.get("vps_heartbeat");
-        if (rawLast) {
-          const lastObj = JSON.parse(rawLast);
-          if (Date.now() - (lastObj.last_seen || 0) < 600000) {
-            shouldWrite = false;
-          }
-        }
-      } catch (_) {}
-
+      // KV WRITE SAVER: Throttle to at most once per 30 minutes (max 48 writes/day)
+      let shouldWrite = (Date.now() - lastHeartbeatKvWrite >= 1800000);
       if (shouldWrite) {
+        lastHeartbeatKvWrite = Date.now();
         try {
           await env.BACKUP_KV.put("vps_heartbeat", JSON.stringify(heartbeat), { expirationTtl: 86400 });
         } catch (_) {}
@@ -328,7 +330,7 @@ fi
       });
     }
 
-    // 6. Fleet Live Telemetry Sync (VPS -> Edge)
+    // 6. Fleet Live Telemetry Sync (VPS -> Edge with In-Memory + 30-min KV Throttle)
     if (path === "/api/fleet/sync" && request.method === "POST") {
       const auth = request.headers.get("Authorization");
       if (auth !== `Bearer ${env.SECRET_KEY}`) {
@@ -336,31 +338,35 @@ fi
       }
       try {
         const body = await request.json();
-        const incomingNode = body.node;
         body.node = "__SUBDOMAIN__";
         body.synced_at = new Date().toISOString();
-        try {
-          await env.BACKUP_KV.put("fleet_live_state", JSON.stringify(body), { expirationTtl: 86400 });
-        } catch (_) {}
-        if (!incomingNode || incomingNode === "vps-main") {
-          for (const sUrl of SIBLING_URLS) {
-            ctx.waitUntil(fetch(`${sUrl}/api/fleet/sync`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
-              body: JSON.stringify({ ...body, node: "__SUBDOMAIN__" })
-            }).catch(() => {}));
-          }
+        memFleetState = body;
+
+        // KV WRITE SAVER: Throttle to at most once per 30 minutes (max 48 writes/day)
+        let kvWritten = false;
+        if (Date.now() - lastFleetKvWrite >= 1800000) {
+          lastFleetKvWrite = Date.now();
+          kvWritten = true;
+          try {
+            await env.BACKUP_KV.put("fleet_live_state", JSON.stringify(body), { expirationTtl: 86400 });
+          } catch (_) {}
         }
-        return new Response(JSON.stringify({ ok: true, synced: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+        return new Response(JSON.stringify({ ok: true, synced: true, kv_written: kvWritten }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
         return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
       }
     }
 
-    // 7. Fleet Live Telemetry Query
+    // 7. Fleet Live Telemetry Query (Fast In-Memory First)
     if (path === "/api/fleet/live" || path === "/api/status") {
       try {
-        let raw = await env.BACKUP_KV.get("fleet_live_state");
+        if (memFleetState) {
+          return new Response(JSON.stringify(memFleetState), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
+        }
+        let raw = null;
+        try {
+          raw = await env.BACKUP_KV.get("fleet_live_state");
+        } catch (_) {}
         if (!raw) {
           for (const sUrl of SIBLING_URLS) {
             const sib = await fetch(`${sUrl}/api/fleet/live`).catch(() => null);
@@ -371,7 +377,8 @@ fi
           }
         }
         if (raw) {
-          return new Response(raw, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=10", ...corsHeaders } });
+          try { memFleetState = JSON.parse(raw); } catch (_) {}
+          return new Response(raw, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
         }
         return new Response(JSON.stringify({ ok: true, message: "Fleet telemetry initializing..." }), {
           headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -381,7 +388,7 @@ fi
       }
     }
 
-    // 7.1 Multichain Live Balances Sync (Watcher -> Edge)
+    // 7.1 Multichain Live Balances Sync (In-Memory + 30-min KV Throttle)
     if (path === "/api/multichain/sync" && request.method === "POST") {
       const auth = request.headers.get("Authorization");
       if (auth !== `Bearer ${env.SECRET_KEY}`) {
@@ -389,17 +396,17 @@ fi
       }
       try {
         const body = await request.json();
-        await env.BACKUP_KV.put("multichain_balances_state", JSON.stringify(body), { expirationTtl: 86400 });
-        if (!request.headers.get("X-From-Sibling")) {
-          for (const sUrl of SIBLING_URLS) {
-            ctx.waitUntil(fetch(`${sUrl}/api/multichain/sync`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}`, "X-From-Sibling": "true" },
-              body: JSON.stringify(body)
-            }).catch(() => {}));
-          }
+        memMultichainState = body;
+
+        let kvWritten = false;
+        if (Date.now() - lastMultichainKvWrite >= 1800000) {
+          lastMultichainKvWrite = Date.now();
+          kvWritten = true;
+          try {
+            await env.BACKUP_KV.put("multichain_balances_state", JSON.stringify(body), { expirationTtl: 86400 });
+          } catch (_) {}
         }
-        return new Response(JSON.stringify({ ok: true, synced: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+        return new Response(JSON.stringify({ ok: true, synced: true, kv_written: kvWritten }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
         return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
       }
@@ -407,7 +414,13 @@ fi
 
     if (path === "/api/multichain") {
       try {
-        let raw = await env.BACKUP_KV.get("multichain_balances_state");
+        if (memMultichainState) {
+          return new Response(JSON.stringify(memMultichainState), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
+        }
+        let raw = null;
+        try {
+          raw = await env.BACKUP_KV.get("multichain_balances_state");
+        } catch (_) {}
         if (!raw) {
           for (const sUrl of SIBLING_URLS) {
             const sib = await fetch(`${sUrl}/api/multichain`).catch(() => null);
@@ -418,7 +431,8 @@ fi
           }
         }
         if (raw) {
-          return new Response(raw, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=10", ...corsHeaders } });
+          try { memMultichainState = JSON.parse(raw); } catch (_) {}
+          return new Response(raw, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
         }
         return new Response(JSON.stringify({ ok: true, balances: { bsc_bnb: 0.000622, arb_eth: 0.0, ton: 0.0 } }), {
           headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -1997,7 +2011,7 @@ fi
       }
     }
 
-    // 8. Payout Receipts Record (VPS -> Edge)
+    // 8. Payout Receipts Record (VPS -> Edge with In-Memory + Safe KV)
     if (path === "/api/payouts/record" && request.method === "POST") {
       const auth = request.headers.get("Authorization");
       if (auth !== `Bearer ${env.SECRET_KEY}`) {
@@ -2005,11 +2019,13 @@ fi
       }
       try {
         const body = await request.json().catch(() => ({}));
-        let list = [];
-        try {
-          const raw = await env.BACKUP_KV.get("recent_payouts_list");
-          if (raw) list = JSON.parse(raw);
-        } catch (_) {}
+        let list = memRecentPayouts || [];
+        if (list.length === 0) {
+          try {
+            const raw = await env.BACKUP_KV.get("recent_payouts_list");
+            if (raw) list = JSON.parse(raw);
+          } catch (_) {}
+        }
         list.unshift({
           ...body,
           id: "pay_" + Date.now(),
@@ -2017,28 +2033,26 @@ fi
           recorded_at: new Date().toISOString()
         });
         if (list.length > 50) list = list.slice(0, 50);
+        memRecentPayouts = list;
         try {
           await env.BACKUP_KV.put("recent_payouts_list", JSON.stringify(list));
         } catch (_) {}
-        if (!body.from_sibling) {
-          for (const sUrl of SIBLING_URLS) {
-            ctx.waitUntil(fetch(`${sUrl}/api/payouts/record`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
-              body: JSON.stringify({ ...body, from_sibling: true })
-            }).catch(() => {}));
-          }
-        }
         return new Response(JSON.stringify({ ok: true, count: list.length }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
         return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
       }
     }
 
-    // 9. Payout Receipts Query
+    // 9. Payout Receipts Query (In-Memory First)
     if (path === "/api/payouts") {
       try {
-        let raw = await env.BACKUP_KV.get("recent_payouts_list");
+        if (memRecentPayouts && memRecentPayouts.length > 0) {
+          return new Response(JSON.stringify({ ok: true, payouts: memRecentPayouts }), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
+        }
+        let raw = null;
+        try {
+          raw = await env.BACKUP_KV.get("recent_payouts_list");
+        } catch (_) {}
         if (!raw) {
           for (const sUrl of SIBLING_URLS) {
             const sib = await fetch(`${sUrl}/api/payouts`).catch(() => null);
@@ -2049,7 +2063,8 @@ fi
           }
         }
         if (raw) {
-          return new Response(raw, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=10", ...corsHeaders } });
+          try { memRecentPayouts = JSON.parse(raw); } catch (_) {}
+          return new Response(raw, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
         }
         return new Response(JSON.stringify({ ok: true, payouts: [] }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (e) {
@@ -2057,7 +2072,7 @@ fi
       }
     }
 
-    // 9.5 MiniApp 24h Tokens Sync (/api/miniapp/tokens/sync)
+    // 9.5 MiniApp 24h Tokens Sync (In-Memory + Safe KV)
     if (path === "/api/miniapp/tokens/sync" && request.method === "POST") {
       try {
         const auth = request.headers.get("Authorization") || "";
@@ -2065,11 +2080,13 @@ fi
           return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), { status: 401, headers: corsHeaders });
         }
         const body = await request.json();
-        let current = {};
-        try {
-          const raw = await env.BACKUP_KV.get("miniapp_tokens");
-          if (raw) current = JSON.parse(raw);
-        } catch (_) {}
+        let current = memTokens || {};
+        if (Object.keys(current).length === 0) {
+          try {
+            const raw = await env.BACKUP_KV.get("miniapp_tokens");
+            if (raw) current = JSON.parse(raw);
+          } catch (_) {}
+        }
         if (body.account_id) {
           current[body.account_id] = {
             ...current[body.account_id],
@@ -2079,26 +2096,26 @@ fi
         } else if (typeof body === 'object') {
           current = { ...current, ...body };
         }
-        await env.BACKUP_KV.put("miniapp_tokens", JSON.stringify(current));
-        if (!body.from_sibling) {
-          for (const sUrl of SIBLING_URLS) {
-            ctx.waitUntil(fetch(`${sUrl}/api/miniapp/tokens/sync`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
-              body: JSON.stringify({ ...body, from_sibling: true })
-            }).catch(() => {}));
-          }
-        }
+        memTokens = current;
+        try {
+          await env.BACKUP_KV.put("miniapp_tokens", JSON.stringify(current));
+        } catch (_) {}
         return new Response(JSON.stringify({ ok: true, accounts: Object.keys(current).length }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
         return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
       }
     }
 
-    // 9.6 MiniApp Tokens Status (/api/miniapp/tokens)
+    // 9.6 MiniApp Tokens Status (In-Memory First)
     if (path === "/api/miniapp/tokens") {
       try {
-        let raw = await env.BACKUP_KV.get("miniapp_tokens");
+        if (memTokens && Object.keys(memTokens).length > 0) {
+          return new Response(JSON.stringify(memTokens), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
+        }
+        let raw = null;
+        try {
+          raw = await env.BACKUP_KV.get("miniapp_tokens");
+        } catch (_) {}
         if (!raw) {
           for (const sUrl of SIBLING_URLS) {
             const sib = await fetch(`${sUrl}/api/miniapp/tokens`).catch(() => null);
@@ -2109,7 +2126,8 @@ fi
           }
         }
         if (raw) {
-          return new Response(raw, { headers: { "Content-Type": "application/json", ...corsHeaders } });
+          try { memTokens = JSON.parse(raw); } catch (_) {}
+          return new Response(raw, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
         }
         return new Response(JSON.stringify({ ok: true, tokens: {} }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (e) {

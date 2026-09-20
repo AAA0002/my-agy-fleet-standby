@@ -3120,8 +3120,22 @@ async def cloudflare_edge_bridge_loop():
                             except Exception:
                                 pass
 
-                        for u in CF_WORKER_URLS:
-                            sync_tasks.append(push_telemetry(u))
+                        # Push to primary Cloudflare node (Node 1), fallback to siblings if unreachable
+                        async def push_cf_smart():
+                            for u in CF_WORKER_URLS:
+                                try:
+                                    async with session.post(
+                                        f"{u}/api/fleet/sync",
+                                        json=telemetry_payload,
+                                        headers=headers,
+                                        timeout=aiohttp.ClientTimeout(total=6)
+                                    ) as resp:
+                                        if resp.status == 200:
+                                            break
+                                except Exception:
+                                    continue
+
+                        sync_tasks.append(push_cf_smart())
 
                         # Sync to Upstash Serverless Redis
                         if upstash_url and upstash_token:
@@ -3174,7 +3188,8 @@ async def cloudflare_edge_bridge_loop():
                     except Exception as sync_e:
                         logger.warning(f"[CF-Bridge] Telemetry sync error: {sync_e}")
 
-                    await asyncio.sleep(90.0)
+                    # 5-minute interval (288 cycles/day) to strictly conserve Cloudflare KV write limits
+                    await asyncio.sleep(300.0)
 
         except asyncio.CancelledError:
             logger.info("[CF-Bridge] Bridge task cancelled.")
@@ -4378,7 +4393,7 @@ async def sync_account_tokens_to_edge(session: aiohttp.ClientSession, acc_uid: s
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
-    async def push_token_worker(cf_url: str):
+    for cf_url in CF_WORKER_URLS:
         try:
             async with session.post(
                 f"{cf_url}/api/miniapp/tokens/sync",
@@ -4388,10 +4403,9 @@ async def sync_account_tokens_to_edge(session: aiohttp.ClientSession, acc_uid: s
             ) as r:
                 if r.status == 200:
                     logger.debug(f"[{acc_name}] 🌐 Synced fresh 24h WebApp tokens to Cloudflare Edge ({cf_url})")
+                    break
         except Exception:
-            pass
-
-    await asyncio.gather(*(push_token_worker(u) for u in CF_WORKER_URLS), return_exceptions=True)
+            continue
 
 
 async def load_fleet_tokens_from_edge(session: aiohttp.ClientSession):
@@ -5763,18 +5777,6 @@ async def farm_single_account(
         global CURRENTLY_ACTIVE_ACCOUNT_ID, CURRENTLY_ACTIVE_ACCOUNT_IDS
         CURRENTLY_ACTIVE_ACCOUNT_IDS.add(str(acc_uid))
         CURRENTLY_ACTIVE_ACCOUNT_ID = acc_uid
-
-        # Ping assigned Cloudflare Edge node with heartbeat
-        try:
-            async with aiohttp.ClientSession() as hb_session:
-                await hb_session.post(
-                    f"{cf_node_url}/heartbeat",
-                    json={"status": "collector", "worker_slot": worker_slot + 1, "account_id": acc_uid, "account_name": acc_name},
-                    headers={"Authorization": "Bearer agy_cf_secret_7d36994e_2026", "Content-Type": "application/json"},
-                    timeout=aiohttp.ClientTimeout(total=5)
-                )
-        except Exception:
-            pass
 
         if acc_sess == STRING_SESSION:
             acc_cl = client
