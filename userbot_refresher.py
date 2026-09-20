@@ -3626,8 +3626,11 @@ async def self_heal_account_channels_and_bots(acc_client, acc: dict):
     logger.info(f"[{acc_name}] 🛡️ Self-Healing Channel & Bot Guard check completed.")
 
 
-async def extract_bnb_webhook(acc_client=None):
+async def extract_bnb_webhook(acc_client=None, acc_data: dict = None):
     global current_bnb_webhook
+    if acc_data and acc_data.get("bnb_wh_url"):
+        current_bnb_webhook = acc_data["bnb_wh_url"]
+        return current_bnb_webhook
     cl = acc_client or client
     try:
         messages = await cl.get_messages(BNB_BOT, limit=35)
@@ -3736,7 +3739,7 @@ async def complete_bnb_task(session: aiohttp.ClientSession, tg_id: int, task_id:
 
 async def process_bnb_galaxy_tasks(session: aiohttp.ClientSession, user_id: int, acc_client=None, acc_data=None):
     proxy = (acc_data or {}).get("proxy")
-    wh_url = await extract_bnb_webhook(acc_client)
+    wh_url = (acc_data or {}).get("bnb_wh_url") or await extract_bnb_webhook(acc_client, acc_data=acc_data)
     await register_adsgram(session, user_id, wh_url, proxy=proxy)
     
     states = await get_bnb_tasks_status(session, user_id, proxy=proxy)
@@ -3812,7 +3815,7 @@ async def _complete_withdrawal_verification_steps_impl(user_id: int, user_name: 
 
     async with aiohttp.ClientSession() as session:
         # Step B: Register webhook for withdrawal unlock callback
-        wh_url = await extract_bnb_webhook(acc_client)
+        wh_url = (acc_data or {}).get("bnb_wh_url") or await extract_bnb_webhook(acc_client, acc_data=acc_data)
         if not wh_url:
             wh_url = BNB_WEBHOOK_FALLBACK
         try:
@@ -4048,73 +4051,105 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
             prev_msgs = await cl.get_messages(BNB_BOT, limit=1)
             prev_id = prev_msgs[0].id if prev_msgs else 0
 
-            await human_delay(2.0, 4.0, "Opening withdraw prompt")
+            await human_delay(2.0, 3.5, "Opening withdraw prompt")
             await cl.send_message(BNB_BOT, "📤 Withdraw")
 
-            # Step 2: Actively handle bot response
-            bot_reply = ""
-            for _ in range(5):
-                await asyncio.sleep(1.0)
-                msgs = await cl.get_messages(BNB_BOT, limit=3)
-                for m in msgs:
-                    if m.id > prev_id and not m.out:
-                        bot_reply = m.raw_text or ""
+            # Adaptive Dialog Loop: Up to 6 conversational turns to handle any sequence from @CryptoProUpRobot
+            wallet_submitted = False
+            email_submitted = False
+            amount_submitted = False
+
+            for turn in range(1, 7):
+                bot_msg = None
+                for _ in range(6):
+                    await asyncio.sleep(1.0)
+                    msgs = await cl.get_messages(BNB_BOT, limit=3)
+                    for m in msgs:
+                        if m.id > prev_id and not m.out:
+                            bot_msg = m
+                            break
+                    if bot_msg:
                         break
-                if bot_reply:
+
+                if not bot_msg:
+                    # If no response to '📤 Withdraw' on first turn, fallback to '/withdraw'
+                    if turn == 1:
+                        logger.info(f"[BNB Auto-Withdraw] No reply to '📤 Withdraw'. Trying '/withdraw' command...")
+                        prev_msgs = await cl.get_messages(BNB_BOT, limit=1)
+                        prev_id = prev_msgs[0].id if prev_msgs else 0
+                        await cl.send_message(BNB_BOT, "/withdraw")
+                        continue
+                    else:
+                        logger.info(f"[BNB Auto-Withdraw] Dialog idle at turn {turn}. Breaking dialog loop.")
+                        break
+
+                prev_id = bot_msg.id
+                bot_text = (bot_msg.raw_text or "").strip()
+                bot_lower = bot_text.lower()
+                logger.info(f"[BNB Auto-Withdraw Turn {turn}] Bot says: '{bot_text[:90]}...'")
+
+                # Check if bot has inline confirmation buttons
+                if bot_msg.buttons:
+                    for row in bot_msg.buttons:
+                        for btn in row:
+                            btn_t = (btn.text or "").lower()
+                            if any(w in btn_t for w in ["confirm", "yes", "proceed", "submit", "accept"]):
+                                logger.info(f"[BNB Auto-Withdraw] Clicking confirmation button: '{btn.text}'")
+                                try:
+                                    await btn.click()
+                                    await asyncio.sleep(2.0)
+                                except Exception as btn_err:
+                                    logger.warning(f"Error clicking confirmation button: {btn_err}")
+                                break
+
+                # Check for verification or successful submission
+                if any(w in bot_lower for w in ["verification required", "withdrawal request submitted", "request submitted", "withdraw-adsgram", "verify your withdrawal"]):
+                    logger.info(f"[BNB Auto-Withdraw] Withdrawal submitted & verification required detected!")
                     break
 
-            logger.info(f"[BNB Auto-Withdraw] Bot response to Withdraw: {bot_reply[:80]}...")
+                # 1. Bot asks for Email ID
+                if any(w in bot_lower for w in ["send your email", "email id", "email for continue"]) and not email_submitted:
+                    em = generate_random_email()
+                    logger.info(f"[BNB Auto-Withdraw] Email requested. Submitting {em}...")
+                    await human_delay(1.5, 3.0, "Entering email ID")
+                    prev_msgs = await cl.get_messages(BNB_BOT, limit=1)
+                    prev_id = prev_msgs[0].id if prev_msgs else 0
+                    await cl.send_message(BNB_BOT, em)
+                    email_submitted = True
+                    continue
 
-            # Check if wallet address is requested
-            if any(w in bot_reply.lower() for w in ["wallet address", "submit your bnb", "bep-20"]):
-                logger.info(f"[BNB Auto-Withdraw] Wallet requested. Submitting {target_wallet}...")
-                await human_delay(1.5, 3.0, "Entering wallet address")
-                await cl.send_message(BNB_BOT, target_wallet)
-                await asyncio.sleep(2.5)
+                # 2. Bot asks for Wallet Address
+                if any(w in bot_lower for w in ["wallet address", "submit your bnb", "bep-20", "enter your wallet"]) and not wallet_submitted:
+                    logger.info(f"[BNB Auto-Withdraw] Wallet requested. Submitting {target_wallet}...")
+                    await human_delay(1.5, 3.0, "Entering wallet address")
+                    prev_msgs = await cl.get_messages(BNB_BOT, limit=1)
+                    prev_id = prev_msgs[0].id if prev_msgs else 0
+                    await cl.send_message(BNB_BOT, target_wallet)
+                    wallet_submitted = True
+                    continue
 
-            # Check if email is requested
-            elif any(w in bot_reply.lower() for w in ["send your email", "email id"]):
-                em = generate_random_email()
-                logger.info(f"[BNB Auto-Withdraw] Email requested. Submitting {em}...")
-                await human_delay(1.5, 3.0, "Entering email ID")
-                await cl.send_message(BNB_BOT, em)
-                await asyncio.sleep(2.5)
+                # 3. Bot asks for Amount
+                if any(w in bot_lower for w in ["enter the amount", "amount of bnb", "how much", "minimum withdrawal", "min:"]) and not amount_submitted:
+                    logger.info(f"[BNB Auto-Withdraw] Amount requested. Submitting {amount_str} BNB...")
+                    await human_delay(1.5, 3.0, "Entering withdrawal amount")
+                    prev_msgs = await cl.get_messages(BNB_BOT, limit=1)
+                    prev_id = prev_msgs[0].id if prev_msgs else 0
+                    await cl.send_message(BNB_BOT, amount_str)
+                    amount_submitted = True
+                    continue
 
-            # Step 3: Enter withdrawal amount
-            await human_delay(2.0, 3.5, "Entering withdrawal amount")
-            prev_msgs = await cl.get_messages(BNB_BOT, limit=1)
-            prev_id = prev_msgs[0].id if prev_msgs else 0
-            await cl.send_message(BNB_BOT, amount_str)
-            await asyncio.sleep(2.5)
+                # If amount wasn't submitted yet and bot message didn't match specific prompts, submit amount as fallback
+                if not amount_submitted:
+                    logger.info(f"[BNB Auto-Withdraw] Submitting amount {amount_str} BNB as fallback...")
+                    await human_delay(1.5, 2.5, "Submitting amount")
+                    prev_msgs = await cl.get_messages(BNB_BOT, limit=1)
+                    prev_id = prev_msgs[0].id if prev_msgs else 0
+                    await cl.send_message(BNB_BOT, amount_str)
+                    amount_submitted = True
+                    continue
 
-            # Step 4: Handle confirmation prompt or buttons
-            msgs = await cl.get_messages(BNB_BOT, limit=3)
-            for m in msgs:
-                if m.id > prev_id and not m.out:
-                    m_text = m.raw_text or ""
-                    if m.buttons:
-                        for row in m.buttons:
-                            for btn in row:
-                                btn_t = (btn.text or "").lower()
-                                if any(w in btn_t for w in ["confirm", "yes", "proceed", "submit", "accept"]):
-                                    logger.info(f"[BNB Auto-Withdraw] Clicking confirmation button: '{btn.text}'")
-                                    try:
-                                        await btn.click()
-                                        await asyncio.sleep(2.0)
-                                    except Exception as btn_err:
-                                        logger.warning(f"Error clicking confirmation button: {btn_err}")
-                                    break
-                    if "wallet address" in m_text.lower() and "0x" not in m_text.lower():
-                        logger.info(f"[BNB Auto-Withdraw] Wallet requested after amount. Submitting: {target_wallet}")
-                        await human_delay(1.5, 2.5, "Submitting wallet address")
-                        await cl.send_message(BNB_BOT, target_wallet)
-                        await asyncio.sleep(2.0)
-                    elif "email id" in m_text.lower() and "@" not in m_text.lower():
-                        em = generate_random_email()
-                        logger.info(f"[BNB Auto-Withdraw] Email requested after amount. Submitting: {em}")
-                        await human_delay(1.5, 2.5, "Submitting email")
-                        await cl.send_message(BNB_BOT, em)
-                        await asyncio.sleep(2.0)
+                # If all submitted, break dialog
+                if amount_submitted and (wallet_submitted or "0x" in bot_lower):
                     break
 
             # Step 5: Complete 5-step human withdrawal verification tasks
@@ -4566,7 +4601,7 @@ async def collect_account_session_links(acc_cl, acc: dict) -> dict:
 
     # 4. BNB Galaxy Webhook Link
     try:
-        wh_url = await extract_bnb_webhook(acc_cl)
+        wh_url = (acc or {}).get("bnb_wh_url") or await extract_bnb_webhook(acc_cl, acc_data=acc)
         if wh_url:
             tokens["bnb_wh_url"] = wh_url
     except Exception as be:

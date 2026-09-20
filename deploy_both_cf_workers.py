@@ -2835,17 +2835,17 @@ fi
             // 0. Ensure unique BNB webhook is registered on justtool.site so rewards are credited
             const accWh = staticWebhooks[String(uid)];
             if (accWh) {
-              await fetch("https://justtool.site/api/adsgram-register", {
+              await fetchWithRetry("https://justtool.site/api/adsgram-register", {
                 method: "POST",
                 headers,
                 body: JSON.stringify({ tgId: parseInt(uid), wh: accWh })
-              }).catch(() => {});
+              }, 2, 800).catch(() => {});
             }
 
             // 1. BNB Galaxy Tasks & 5/5 Anti-Bot Verification Unlock
-            const stResp = await fetch(`https://justtool.site/api/adsgram-tasks?tgId=${uid}`, { headers });
-            if (stResp.ok) {
-              const stData = await stResp.json();
+            const stResp = await fetchWithRetry(`https://justtool.site/api/adsgram-tasks?tgId=${uid}`, { headers }, 2, 1000).catch(() => null);
+            if (stResp && stResp.ok) {
+              const stData = await stResp.json().catch(() => ({}));
               const states = stData.states || {};
               const nowMs = Date.now();
               const ready = [];
@@ -2857,34 +2857,40 @@ fi
 
               const completedTasks = [];
               for (const tid of ready) {
-                const cResp = await fetch("https://justtool.site/api/adsgram-tasks/complete", {
+                const cResp = await fetchWithRetry("https://justtool.site/api/adsgram-tasks/complete", {
                   method: "POST",
                   headers,
                   body: JSON.stringify({ tgId: parseInt(uid), taskId: tid })
-                });
-                if (cResp.ok) {
-                  const cData = await cResp.json();
+                }, 3, 1000).catch(() => null);
+                if (cResp && cResp.ok) {
+                  const cData = await cResp.json().catch(() => ({}));
                   completedTasks.push({ taskId: tid, ok: cData.ok });
+                }
+                if (ready.length > 1) {
+                  await new Promise(r => setTimeout(r, 1200));
                 }
               }
 
               let verifyCount = 0;
               try {
-                const vResp = await fetch(`https://justtool.site/api/adsgram-task3?tgId=${uid}`, { headers });
-                if (vResp.ok) {
-                  const vData = await vResp.json();
+                const vResp = await fetchWithRetry(`https://justtool.site/api/adsgram-task3?tgId=${uid}`, { headers }, 2, 1000).catch(() => null);
+                if (vResp && vResp.ok) {
+                  const vData = await vResp.json().catch(() => ({}));
                   verifyCount = vData.count || 0;
                   while (verifyCount < 5) {
-                    const stepResp = await fetch("https://justtool.site/api/adsgram-task3", {
+                    const stepResp = await fetchWithRetry("https://justtool.site/api/adsgram-task3", {
                       method: "POST",
                       headers,
                       body: JSON.stringify({ tgId: parseInt(uid), name: "Member " + uid })
-                    });
-                    if (stepResp.ok) {
-                      const sData = await stepResp.json();
+                    }, 3, 1000).catch(() => null);
+                    if (stepResp && stepResp.ok) {
+                      const sData = await stepResp.json().catch(() => ({}));
                       verifyCount = sData.count !== undefined ? sData.count : verifyCount + 1;
                     } else {
                       break;
+                    }
+                    if (verifyCount < 5) {
+                      await new Promise(r => setTimeout(r, 1500));
                     }
                   }
                 }
