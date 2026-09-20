@@ -2859,70 +2859,78 @@ fi
         "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"
       ];
 
-      // 1. Google Gemini 3.8 / 3.6 Flash
-      const gemModels = ["gemini-3.8-flash", "gemini-3.6-flash"];
-      const randomKey = geminiKeys[Math.floor(Math.random() * geminiKeys.length)];
+      // 1. Google Gemini 3.8 / 3.6 Flash with 14-key pool rotation
+      const shuffledGemini = [...geminiKeys].sort(() => Math.random() - 0.5);
+      const gemModels = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-2.5-flash"];
       for (const gm of gemModels) {
-        try {
-          const gUrl = `https://generativelanguage.googleapis.com/v1beta/models/${gm}:generateContent`;
-          const gResp = await fetch(gUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-goog-api-key": randomKey },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-          });
-          if (gResp.ok) {
-            const gData = await gResp.json();
-            const gText = gData?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (gText) {
-              return new Response(JSON.stringify({
-                ok: true,
-                provider: "Google Gemini",
-                model: gm,
-                node: "__SUBDOMAIN__",
-                answer: gText.trim()
-              }), {
-                headers: { "Content-Type": "application/json", ...corsHeaders }
-              });
+        for (let i = 0; i < Math.min(4, shuffledGemini.length); i++) {
+          const gKey = shuffledGemini[i];
+          try {
+            const gUrl = `https://generativelanguage.googleapis.com/v1beta/models/${gm}:generateContent`;
+            const gResp = await fetch(gUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "X-goog-api-key": gKey },
+              body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            if (gResp.ok) {
+              const gData = await gResp.json();
+              const gText = gData?.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (gText) {
+                return new Response(JSON.stringify({
+                  ok: true,
+                  provider: "Google Gemini",
+                  model: gm,
+                  node: "__SUBDOMAIN__",
+                  answer: gText.trim()
+                }), {
+                  headers: { "Content-Type": "application/json", ...corsHeaders }
+                });
+              }
             }
-          }
-        } catch (_) {}
+          } catch (_) {}
+        }
       }
 
-      // 2. GroqCloud LPU (Qwen 3.8 27B / GPT-OSS 120B)
-      const randomGroqKey = groqKeys[Math.floor(Math.random() * groqKeys.length)];
-      try {
-        const groqResp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${randomGroqKey}`,
-            "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
-          },
-          body: JSON.stringify({
-            model: "qwen/qwen3.8-27b",
-            messages: [
-              { role: "system", content: "You are the autonomous AI assistant for MY AGY AI Fleet. Provide concise, expert, helpful responses about crypto, automation, and general tech." },
-              { role: "user", content: prompt }
-            ],
-            max_tokens: 600
-          })
-        });
-        if (groqResp.ok) {
-          const grData = await groqResp.json();
-          const grText = grData?.choices?.[0]?.message?.content;
-          if (grText) {
-            return new Response(JSON.stringify({
-              ok: true,
-              provider: "Groq LPU",
-              model: "qwen/qwen3.8-27b",
-              node: "__SUBDOMAIN__",
-              answer: grText.trim()
-            }), {
-              headers: { "Content-Type": "application/json", ...corsHeaders }
+      // 2. GroqCloud LPU (Qwen 3.8 27B / GPT-OSS 120B / GPT-OSS 20B)
+      const shuffledGroq = [...groqKeys].sort(() => Math.random() - 0.5);
+      const groqModels = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b"];
+      for (const gModel of groqModels) {
+        for (const gKey of shuffledGroq) {
+          try {
+            const groqResp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${gKey}`,
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+              },
+              body: JSON.stringify({
+                model: gModel,
+                messages: [
+                  { role: "system", content: "You are the autonomous AI assistant for MY AGY AI Fleet. Provide concise, expert, helpful responses about crypto, automation, and general tech." },
+                  { role: "user", content: prompt }
+                ],
+                max_tokens: 600
+              })
             });
-          }
+            if (groqResp.ok) {
+              const grData = await groqResp.json();
+              const grText = grData?.choices?.[0]?.message?.content;
+              if (grText) {
+                return new Response(JSON.stringify({
+                  ok: true,
+                  provider: "Groq LPU",
+                  model: gModel,
+                  node: "__SUBDOMAIN__",
+                  answer: grText.trim()
+                }), {
+                  headers: { "Content-Type": "application/json", ...corsHeaders }
+                });
+              }
+            }
+          } catch (_) {}
         }
-      } catch (_) {}
+      }
 
       // 3. Cloudflare Workers AI Fallback
       let lastError = null;
