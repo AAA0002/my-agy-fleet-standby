@@ -1357,21 +1357,61 @@ fi
       </div>
     </div>
 
-    <!-- Interactive Workers AI Fleet Copilot (Llama 3.2 3B Instruct) -->
+    <!-- On-Chain BNB Consolidator & Multi-Chain Wallet Tracker -->
+    <div class="card" style="border:1px solid #fde68a; background:linear-gradient(135deg, #ffffff 0%, #fffbeb 100%); margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:1.2rem;">🪙</span>
+          <div>
+            <div style="font-size:0.88rem; font-weight:800; color:var(--text-main);">On-Chain BNB Consolidator</div>
+            <div style="font-size:0.68rem; color:var(--gold); font-weight:600;">BEP-20 Payout & Liquidity Vaults</div>
+          </div>
+        </div>
+        <span class="badge badge-gold">Auto-Consolidation</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+        <div style="background:#fff; border:1px solid #fef3c7; border-radius:8px; padding:8px 10px;">
+          <div style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">PRIMARY VAULT (W1)</div>
+          <div style="font-size:0.75rem; font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--text-main); margin:2px 0;">0xfda4...d5ce</div>
+          <a href="https://bscscan.com/address/0xfda4182001672b9f0f09e2118242e543e35ed5ce" target="_blank" style="font-size:0.65rem; color:var(--primary); text-decoration:none; font-weight:600;">View on BscScan ↗</a>
+        </div>
+        <div style="background:#fff; border:1px solid #fef3c7; border-radius:8px; padding:8px 10px;">
+          <div style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">SECONDARY VAULT (W2)</div>
+          <div style="font-size:0.75rem; font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--text-main); margin:2px 0;">0x0178...2610</div>
+          <a href="https://bscscan.com/address/0x017841f26d5b79cc8c5eb20c65367bb645cc2610" target="_blank" style="font-size:0.65rem; color:var(--primary); text-decoration:none; font-weight:600;">View on BscScan ↗</a>
+        </div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-label-row">
+          <span>Consolidation Threshold Progress</span>
+          <span style="color:var(--gold); font-weight:700;">Target: 0.005000 BNB</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill bg-gold" style="width: 15%; background: linear-gradient(90deg, #f59e0b, #d97706);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Multi-Cloud AI Fleet Advisor (Gemini 3.8 Flash • Groq LPU • Workers AI) -->
     <div class="card" style="border:1px solid #bfdbfe; background:linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
         <div style="display:flex; align-items:center; gap:8px;">
           <span style="font-size:1.2rem;">🧠</span>
           <div>
-            <div style="font-size:0.88rem; font-weight:800; color:var(--text-main);">AI Fleet Advisor</div>
-            <div style="font-size:0.68rem; color:var(--primary); font-weight:600;">Powered by Cloudflare Workers AI (Llama 3.2 3B)</div>
+            <div style="font-size:0.88rem; font-weight:800; color:var(--text-main);">Multi-Cloud AI Fleet Advisor</div>
+            <div style="font-size:0.68rem; color:var(--primary); font-weight:600;">Google Gemini 3.8 Flash • Groq LPU • Workers AI</div>
           </div>
         </div>
-        <span class="badge badge-blue">GPU Edge</span>
+        <span class="badge badge-blue">Multi-Cloud AI</span>
       </div>
 
       <!-- Quick Chips -->
       <div style="display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding-bottom:6px; margin-bottom:10px;">
+        <button onclick="askAIPreset('briefing')" class="ticker-chip" style="cursor:pointer; border-color:#93c5fd; background:#fff;">
+          <span>📊 Daily Briefing</span>
+        </button>
         <button onclick="askAIPreset('health')" class="ticker-chip" style="cursor:pointer; border-color:#93c5fd; background:#fff;">
           <span>⚡ Health & Anti-Bot</span>
         </button>
@@ -1388,7 +1428,7 @@ fi
 
       <!-- Custom Input Group -->
       <div style="display:flex; gap:6px;">
-        <input type="text" id="aiCustomPrompt" class="text-input" placeholder="Ask AI Fleet Advisor anything..." style="font-size:0.8rem; padding:8px 10px;" onkeydown="if(event.key==='Enter')askAICustom()" />
+        <input type="text" id="aiCustomPrompt" class="text-input" placeholder="Ask Multi-Cloud AI Advisor anything..." style="font-size:0.8rem; padding:8px 10px;" onkeydown="if(event.key==='Enter')askAICustom()" />
         <button onclick="askAICustom()" id="btnAskAI" style="background:var(--primary); color:#fff; border:none; border-radius:8px; padding:8px 14px; font-weight:700; font-size:0.8rem; cursor:pointer; flex-shrink:0;">
           <span>Ask</span>
         </button>
@@ -1748,8 +1788,20 @@ fi
       <span>➕ Connect New Telegram Account</span>
     </button>
 
-    <button onclick="switchTab('dashboard'); askAIPreset('health')" class="action-btn" style="background:linear-gradient(135deg, #4f46e5, #7c3aed); color:#fff; border:none; box-shadow:0 2px 8px rgba(99,102,241,0.25);">
-      <span>🤖 Run Instant AI Fleet Audit (Llama 3.2)</span>
+    <button onclick="triggerAction('briefing')" class="action-btn" style="background:linear-gradient(135deg, #2563eb, #3b82f6); color:#fff; border:none; box-shadow:0 2px 8px rgba(37,99,235,0.25);">
+      <span>📊 Generate Daily AI Briefing (Gemini 3.8 Flash)</span>
+    </button>
+
+    <button onclick="triggerAction('consolidate')" class="action-btn" style="background:linear-gradient(135deg, #d97706, #f59e0b); color:#fff; border:none; box-shadow:0 2px 8px rgba(217,119,6,0.25);">
+      <span>🪙 Check On-Chain BNB Consolidator</span>
+    </button>
+
+    <button onclick="switchTab('overview'); askAIPreset('health')" class="action-btn" style="background:linear-gradient(135deg, #4f46e5, #7c3aed); color:#fff; border:none; box-shadow:0 2px 8px rgba(99,102,241,0.25);">
+      <span>🤖 Run Instant AI Fleet Audit (Multi-Cloud AI)</span>
+    </button>
+
+    <button onclick="triggerAction('sync')" class="action-btn btn-outline">
+      <span>🔄 Force Multi-Cloud Fleet Sync</span>
     </button>
 
     <button onclick="triggerAction('backup')" class="action-btn btn-outline">
@@ -2281,6 +2333,7 @@ fi
 
   async function askAIPreset(type) {
     const prompts = {
+      briefing: "Generate the latest executive operational briefing for MY AGY AI Fleet covering the 13 accounts, 7 mining platforms, and on-chain earnings.",
       health: "Analyze the operational health and 5/5 anti-bot verification status across all 13 accounts and 7 bots in the fleet. Provide a concise status and readiness assessment.",
       yield: "Provide 3 concrete, actionable optimization tips to maximize daily crypto earnings across BNB Galaxy, Stones, MRG, ART, AI Lab Robot, UltraWallet, and Apex Miner.",
       security: "What anti-detection, IP rotation, and session protection safeguards are keeping this 13-account automated fleet safe from bans?",
@@ -2305,7 +2358,7 @@ fi
     const text = document.getElementById('aiResponseText');
     const btn = document.getElementById('btnAskAI');
     if (box) box.style.display = 'block';
-    if (text) text.innerHTML = '<span style="color:var(--text-muted); font-style:italic;">⚡ Querying Llama 3.2 3B Instruct on Cloudflare GPU Edge...</span>';
+    if (text) text.innerHTML = '<span style="color:var(--text-muted); font-style:italic;">⚡ Querying Multi-Cloud AI Cascade (Gemini 3.8 / Groq / Llama)...</span>';
     if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
 
     try {
@@ -2317,13 +2370,15 @@ fi
       const data = await resp.json();
       haptic('success');
       if (data.ok && data.answer) {
-        text.innerHTML = '<div style="font-weight:700; color:var(--primary); margin-bottom:6px;">🤖 AI Advisor (' + (data.model || 'Llama 3.2') + ') • Node ' + (data.node || '') + ':</div>' +
+        const providerName = data.provider || "AI Engine";
+        const modelName = data.model || "Gemini 3.8 Flash";
+        text.innerHTML = '<div style="font-weight:700; color:var(--primary); margin-bottom:6px;">🤖 ' + providerName + ' (' + modelName + ') • Node ' + (data.node || '') + ':</div>' +
           '<div>' + data.answer.replace(/\n/g, '<br>') + '</div>';
       } else {
         text.innerHTML = '<span style="color:#b91c1c;">⚠️ AI response unavailable: ' + (data.error || 'Unknown error') + '</span>';
       }
     } catch (err) {
-      text.innerHTML = '<span style="color:#b91c1c;">⚠️ Network error contacting Workers AI: ' + err.message + '</span>';
+      text.innerHTML = '<span style="color:#b91c1c;">⚠️ Network error contacting AI service: ' + err.message + '</span>';
     } finally {
       if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
     }

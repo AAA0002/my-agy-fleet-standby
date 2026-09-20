@@ -6422,6 +6422,29 @@ async def miniapp_command_listener_loop():
                                 asyncio.create_task(send_backup_to_telegram())
                             elif act == "briefing":
                                 asyncio.create_task(generate_daily_executive_briefing(notify=True))
+                            elif act == "consolidate":
+                                async def _run_consolidate():
+                                    w1 = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
+                                    w2 = "0x017841f26d5b79cc8c5eb20c65367bb645cc2610"
+                                    bal1 = await get_onchain_bnb_balance(w1)
+                                    bal2 = await get_onchain_bnb_balance(w2)
+                                    total = bal1 + bal2
+                                    msg = (
+                                        f"💼 *On-Chain BNB Balance Check*\n\n"
+                                        f"• **Wallet 1 (W1):** `{bal1:.6f} BNB`\n"
+                                        f"• **Wallet 2 (W2):** `{bal2:.6f} BNB`\n"
+                                        f"• **Total On-Chain:** `{total:.6f} BNB`\n\n"
+                                        f"🎯 Minimum consolidation threshold: `0.005 BNB`"
+                                    )
+                                    await send_report_message(msg, reply_markup=MAIN_TAB_KEYBOARD, chat_id=REPORT_CHAT_ID)
+                                asyncio.create_task(_run_consolidate())
+                            elif act == "sync":
+                                async def _run_sync():
+                                    logger.info("[MiniApp Listener] Manual fleet sync requested...")
+                                    # Trigger instant cycle check across all 13 accounts
+                                    wake_worker_event.set()
+                                    await send_report_message("🔄 *Manual Fleet Sync Dispatched!* Cycle triggered across all 13 accounts.", reply_markup=MAIN_TAB_KEYBOARD, chat_id=REPORT_CHAT_ID)
+                                asyncio.create_task(_run_sync())
         except Exception as e:
             logger.debug(f"[MiniApp Listener] Note: {e}")
         await asyncio.sleep(15)
