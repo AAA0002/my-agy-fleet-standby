@@ -697,9 +697,14 @@ fi
         <div style="font-size:0.68rem; color:var(--text-muted);">Autonomous Multi-Chain Fleet</div>
       </div>
     </div>
-    <div class="live-pill">
-      <span class="live-dot"></span>
-      <span>${accounts.length}/13 Online</span>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button onclick="openAddAccountModal()" style="display:inline-flex; align-items:center; gap:5px; background:linear-gradient(135deg, #2563eb, #1d4ed8); color:#fff; border:none; border-radius:8px; padding:6px 11px; font-size:0.75rem; font-weight:700; cursor:pointer; box-shadow:0 2px 6px rgba(37,99,235,0.3); transition:transform 0.1s;">
+        <span>➕ Add Account</span>
+      </button>
+      <div class="live-pill">
+        <span class="live-dot"></span>
+        <span>${accounts.length}/13</span>
+      </div>
     </div>
   </div>
 
@@ -1537,6 +1542,10 @@ fi
     <span class="nav-icon">🤖</span>
     <span>7 Bots</span>
   </button>
+  <button class="nav-item" id="navTab-add" onclick="openAddAccountModal()" style="color:var(--primary); font-weight:700;">
+    <span class="nav-icon" style="font-size:1.2rem; line-height:1;">➕</span>
+    <span>Add</span>
+  </button>
   <button class="nav-item" id="navTab-fleet" onclick="switchTab('fleet')">
     <span class="nav-icon">👥</span>
     <span>Fleet</span>
@@ -1922,9 +1931,9 @@ fi
     toast.innerText = '⚡ Triggering 3x Cloud Farming across all 3 Cloudflare Nodes...';
     try {
       await Promise.allSettled([
-        fetch('https://restore-agy.aaaai2.workers.dev/api/farm/bnb', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ shard: 0 }) }),
-        fetch('https://restore-agy.aaa-bot.workers.dev/api/farm/bnb', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ shard: 1 }) }),
-        fetch('https://restore-agy.aaa222.workers.dev/api/farm/bnb', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ shard: 2 }) })
+        fetch('https://restore-agy.aaaai2.workers.dev/api/farm/all', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ shard: 0 }) }),
+        fetch('https://restore-agy.aaa-bot.workers.dev/api/farm/all', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ shard: 1 }) }),
+        fetch('https://restore-agy.aaa222.workers.dev/api/farm/all', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ shard: 2 }) })
       ]);
       haptic('success');
       toast.style.background = '#ecfdf5';
@@ -2251,8 +2260,8 @@ fi
       }
     }
 
-    // 12.5 Autonomous Cloud Farming Engine for BNB Galaxy (Cloudflare Edge Powered)
-    if (path === "/api/farm/bnb" || path === "/api/farm/execute") {
+    // 12.5 Autonomous Cloud Farming Engine (BNB Galaxy, Stones, MRG, ART, AI Lab, UltraWallet, Apex Miner)
+    if (path === "/api/farm/all" || path === "/api/farm/bnb" || path === "/api/farm/execute") {
       try {
         const body = await request.json().catch(() => ({}));
         let targetUids = [];
@@ -2287,6 +2296,7 @@ fi
         const farmResults = [];
         for (const uid of targetUids) {
           try {
+            // 1. BNB Galaxy Tasks & 5/5 Anti-Bot Verification Unlock
             const stResp = await fetch(`https://justtool.site/api/adsgram-tasks?tgId=${uid}`, { headers });
             if (stResp.ok) {
               const stData = await stResp.json();
@@ -2347,10 +2357,107 @@ fi
           }
         }
 
+        // If path is /api/farm/all or body.bot === "all", also trigger full multi-bot farming in background
+        const isAllBots = path === "/api/farm/all" || body.bot === "all" || url.searchParams.get("bot") === "all";
+        if (isAllBots) {
+          ctx.waitUntil((async () => {
+            try {
+              const rawTokens = await env.BACKUP_KV.get("miniapp_tokens");
+              if (!rawTokens) return;
+              const tokens = JSON.parse(rawTokens);
+              const mHeaders = {
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36"
+              };
+              for (const uid of targetUids) {
+                const accData = tokens[String(uid)] || {};
+                // Stones
+                if (accData.stones_init_data) {
+                  await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
+                    method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: "daily_checkin" })
+                  }).catch(() => {});
+                  await fetchWithRetry("https://app.stoneswithestand.my.id/api/mining/start", {
+                    method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
+                  }).catch(() => {});
+                }
+                // MRG
+                if (accData.mrg_init_data) {
+                  await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-mining", {
+                    method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
+                  }).catch(() => {});
+                  if (String(uid) === (env.OWNER_ID || "6727787768")) {
+                    await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-commission", {
+                      method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
+                    }).catch(() => {});
+                  }
+                }
+                // ART
+                if (accData.art_init_data) {
+                  const artH = { ...mHeaders, "X-Telegram-Init-Data": accData.art_init_data };
+                  await fetchWithRetry("https://art.tamimdev.dev/api/user/claim-mining", { method: "POST", headers: artH, body: JSON.stringify({}) }).catch(() => {});
+                  await fetchWithRetry("https://art.tamimdev.dev/api/user/start-mining", { method: "POST", headers: artH, body: JSON.stringify({}) }).catch(() => {});
+                }
+                // AI Lab
+                if (accData.ailab_init_data) {
+                  const aiBase = "https://api.ailab-agent.online/api/v1";
+                  const lResp = await fetchWithRetry(`${aiBase}/users/auth/login`, {
+                    method: "POST", headers: mHeaders, body: JSON.stringify({ user: accData.ailab_init_data })
+                  }).catch(() => null);
+                  if (lResp && lResp.ok) {
+                    const lData = await lResp.json().catch(() => ({}));
+                    const tok = lData.result?.bearer || lData.user_info?.session_id;
+                    if (tok) {
+                      const aiAuth = { ...mHeaders, "Authorization": `Bearer ${tok}` };
+                      await fetch(`${aiBase}/miner-start_mining`, { method: "POST", headers: aiAuth, body: JSON.stringify({ start_mining: true }) }).catch(() => {});
+                      await fetch(`${aiBase}/miner-exchange_hashes`, { method: "POST", headers: aiAuth, body: JSON.stringify({ exchange: true }) }).catch(() => {});
+                    }
+                  }
+                }
+                // UltraWallet
+                if (accData.ultrawallet_init_data) {
+                  const uwBase = "https://wallet.trxvault.top/api";
+                  const loginResp = await fetchWithRetry(`${uwBase}/telegramLogin`, {
+                    method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.ultrawallet_init_data, refBy: "6727787768" })
+                  }).catch(() => null);
+                  if (loginResp && loginResp.ok) {
+                    const lD = await loginResp.json().catch(() => ({}));
+                    if (lD.token) {
+                      const fbResp = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyAIKTCEFqC5LFRc89nuOLhTGPHIZTIjEsU", {
+                        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: lD.token, returnSecureToken: true })
+                      }).catch(() => null);
+                      if (fbResp && fbResp.ok) {
+                        const fbD = await fbResp.json().catch(() => ({}));
+                        if (fbD.idToken) {
+                          const uwH = { ...mHeaders, "Authorization": `Bearer ${fbD.idToken}` };
+                          await fetch(`${uwBase}/checkin/claim`, { method: "POST", headers: uwH, body: JSON.stringify({}) }).catch(() => {});
+                          await fetch(`${uwBase}/mining/claim`, { method: "POST", headers: uwH, body: JSON.stringify({}) }).catch(() => {});
+                          await fetch(`${uwBase}/mining/start`, { method: "POST", headers: uwH, body: JSON.stringify({}) }).catch(() => {});
+                          await fetch(`${uwBase}/energy/claim`, { method: "POST", headers: uwH, body: JSON.stringify({}) }).catch(() => {});
+                        }
+                      }
+                    }
+                  }
+                }
+                // Apex Miner
+                if (accData.apx_init_data) {
+                  const apxBase = "https://apex-miner.vercel.app/api";
+                  await fetch(`${apxBase}/auth/telegram`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+                  await fetch(`${apxBase}/checkin`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data, clientV2: true }) }).catch(() => {});
+                  await fetch(`${apxBase}/mining/claim`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+                  await fetch(`${apxBase}/mining/restart`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+                  await fetch(`${apxBase}/ads/boost`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+                  await fetch(`${apxBase}/ads/reward`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+                }
+              }
+            } catch (_) {}
+          })());
+        }
+
         return new Response(JSON.stringify({
           ok: true,
           node: "__SUBDOMAIN__",
           executed_at: new Date().toISOString(),
+          all_bots: isAllBots,
           results: farmResults
         }), {
           headers: { "Content-Type": "application/json", ...corsHeaders }
@@ -2662,7 +2769,7 @@ fi
       } catch (_) {}
     })());
 
-    // 3. Mini-App Automated Edge Claims (Stones, MRG, ART)
+    // 3. Mini-App Automated Edge Claims (All 7 Bots: Stones, MRG, ART, BNB Galaxy, AI Lab, UltraWallet, Apex Miner)
     ctx.waitUntil((async () => {
       try {
         const rawTokens = await env.BACKUP_KV.get("miniapp_tokens");
@@ -2677,6 +2784,7 @@ fi
         for (let idx = 0; idx < tokenEntries.length; idx++) {
           if (idx % 3 !== NODE_SHARD_INDEX) continue;
           const [uid, accData] = tokenEntries[idx];
+
           // A. Stones Miners Edge Claim (with automatic retry & backoff)
           if (accData.stones_init_data) {
             try {
@@ -2703,7 +2811,7 @@ fi
                 headers,
                 body: JSON.stringify({ initData: accData.mrg_init_data })
               }).catch(() => {});
-              if (uid === (env.OWNER_ID || "6727787768")) {
+              if (String(uid) === (env.OWNER_ID || "6727787768")) {
                 await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-commission", {
                   method: "POST",
                   headers,
@@ -2768,6 +2876,174 @@ fi
               }
             }
           } catch (_) {}
+
+          // E. AI Lab Robot Edge Claim & Hashes Exchange & Miner Start
+          if (accData.ailab_init_data) {
+            try {
+              const aiBase = "https://api.ailab-agent.online/api/v1";
+              const lResp = await fetchWithRetry(`${aiBase}/users/auth/login`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify({ user: accData.ailab_init_data })
+              }).catch(() => null);
+
+              if (lResp && lResp.ok) {
+                const lData = await lResp.json().catch(() => ({}));
+                const tok = lData.result?.bearer || lData.user_info?.session_id;
+                if (tok) {
+                  const aiAuth = { ...headers, "Authorization": `Bearer ${tok}` };
+                  let minerRunning = false;
+                  let hashesBal = 0;
+                  try {
+                    const mResp = await fetch(`${aiBase}/miner`, { headers: aiAuth });
+                    if (mResp.ok) {
+                      const mData = await mResp.json();
+                      const curM = mData.result?.miner?.current_miner || {};
+                      minerRunning = curM.is_running && (curM.time_left > 0);
+                      hashesBal = parseFloat(mData.result?.miner?.hashes_balance || 0);
+                    }
+                  } catch (_) {}
+
+                  if (!minerRunning) {
+                    await fetch(`${aiBase}/miner-start_mining`, {
+                      method: "POST",
+                      headers: aiAuth,
+                      body: JSON.stringify({ start_mining: true })
+                    }).catch(() => {});
+                  }
+
+                  if (hashesBal >= 1.0) {
+                    await fetch(`${aiBase}/miner-exchange_hashes`, {
+                      method: "POST",
+                      headers: aiAuth,
+                      body: JSON.stringify({ exchange: true })
+                    }).catch(() => {});
+                  }
+
+                  try {
+                    const tResp = await fetch(`${aiBase}/tasks`, { headers: aiAuth });
+                    if (tResp.ok) {
+                      const tData = await tResp.json();
+                      const tasks = [...(tData.result?.referral || []), ...(tData.result?.follow || [])];
+                      for (const t of tasks) {
+                        if (t.id && (t.progress_current >= (t.progress_finish || 1))) {
+                          await fetch(`${aiBase}/task-check`, {
+                            method: "POST",
+                            headers: aiAuth,
+                            body: JSON.stringify({ task_id: t.id, action: "check" })
+                          }).catch(() => {});
+                        }
+                      }
+                    }
+                  } catch (_) {}
+                }
+              }
+            } catch (_) {}
+          }
+
+          // F. UltraWallet Daily Check-in, Mining Claim/Start, Energy Claim, Lucky Wheel Spins
+          if (accData.ultrawallet_init_data) {
+            try {
+              const uwBase = "https://wallet.trxvault.top/api";
+              const loginResp = await fetchWithRetry(`${uwBase}/telegramLogin`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify({ initData: accData.ultrawallet_init_data, refBy: "6727787768" })
+              }).catch(() => null);
+
+              if (loginResp && loginResp.ok) {
+                const lData = await loginResp.json().catch(() => ({}));
+                const customToken = lData.token;
+                if (customToken) {
+                  const fbUrl = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyAIKTCEFqC5LFRc89nuOLhTGPHIZTIjEsU";
+                  const fbResp = await fetch(fbUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token: customToken, returnSecureToken: true })
+                  }).catch(() => null);
+
+                  if (fbResp && fbResp.ok) {
+                    const fbData = await fbResp.json().catch(() => ({}));
+                    const idToken = fbData.idToken;
+                    if (idToken) {
+                      const uwHeaders = { ...headers, "Authorization": `Bearer ${idToken}` };
+                      await fetch(`${uwBase}/checkin/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
+                      await fetch(`${uwBase}/mining/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
+                      await fetch(`${uwBase}/mining/start`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
+                      await fetch(`${uwBase}/energy/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
+
+                      try {
+                        const spResp = await fetch(`${uwBase}/spin/status`, { headers: uwHeaders });
+                        if (spResp.ok) {
+                          const spInfo = await spResp.json();
+                          let spinsAvail = (spInfo.tickets || 0) + (spInfo.freeSpinsRemaining || 0);
+                          while (spinsAvail > 0) {
+                            const pResp = await fetch(`${uwBase}/spin/play`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) });
+                            if (pResp.ok) {
+                              const pData = await pResp.json();
+                              if (pData.ok) {
+                                spinsAvail = pData.spinTickets || 0;
+                              } else {
+                                break;
+                              }
+                            } else {
+                              break;
+                            }
+                          }
+                        }
+                      } catch (_) {}
+
+                      try {
+                        const trResp = await fetch(`${uwBase}/tasks`, { headers: uwHeaders });
+                        if (trResp.ok) {
+                          const trData = await trResp.json();
+                          for (const t of (trData.tasks || [])) {
+                            if (!t.completed && t.id) {
+                              await fetch(`${uwBase}/tasks/complete`, {
+                                method: "POST",
+                                headers: uwHeaders,
+                                body: JSON.stringify({ taskId: t.id })
+                              }).catch(() => {});
+                            }
+                          }
+                        }
+                      } catch (_) {}
+
+                      if (String(uid) === (env.OWNER_ID || "6727787768")) {
+                        await fetch(`${uwBase}/referral/milestones/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
+                      }
+                    }
+                  }
+                }
+              }
+            } catch (_) {}
+          }
+
+          // G. Apex Miner Daily Check-in, Mining Claim/Restart, Tasks, Ad Boost & Ad Reward
+          if (accData.apx_init_data) {
+            try {
+              const apxBase = "https://apex-miner.vercel.app/api";
+              await fetch(`${apxBase}/auth/telegram`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+              const bResp = await fetch(`${apxBase}/bootstrap`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => null);
+              if (bResp && bResp.ok) {
+                const bData = await bResp.json().catch(() => ({}));
+                if (!bData.exists || !bData.user) {
+                  await fetch(`${apxBase}/register`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+                }
+              }
+              await fetch(`${apxBase}/checkin`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, clientV2: true }) }).catch(() => {});
+              await fetch(`${apxBase}/mining/claim`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+              await fetch(`${apxBase}/mining/restart`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+              for (const t of ["telegram", "twitter"]) {
+                await fetch(`${apxBase}/tasks/daily`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, task: t }) }).catch(() => {});
+              }
+              for (const s of ["channel", "group", "twitter"]) {
+                await fetch(`${apxBase}/tasks/social`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, task: s }) }).catch(() => {});
+              }
+              await fetch(`${apxBase}/ads/boost`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+              await fetch(`${apxBase}/ads/reward`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+            } catch (_) {}
+          }
         }
 
         // 3.5 Token Expiry Watcher: If tokens have <= 4 hours remaining (age >= 20h), wake up Render to collect batch
@@ -2806,72 +3082,6 @@ fi
           }
         }
 
-      } catch (_) {}
-    })());
-
-    // 3.8 BNB Galaxy Edge Task Auto-Farmer (100% Cloud Execution)
-    ctx.waitUntil((async () => {
-      try {
-        let state = null;
-        try {
-          const raw = await env.BACKUP_KV.get("fleet_live_state");
-          if (raw) state = JSON.parse(raw);
-        } catch (_) {}
-        const accounts = (state && state.accounts) || [];
-        const uids = accounts.map(a => a.user_id).filter(Boolean);
-        const headers = {
-          "Content-Type": "application/json",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-          "Referer": "https://justtool.site/tasks-adsgram/",
-          "Origin": "https://justtool.site"
-        };
-        const nowMs = Date.now();
-        for (let idx = 0; idx < uids.length; idx++) {
-          if (idx % 3 !== NODE_SHARD_INDEX) continue;
-          const uid = uids[idx];
-          try {
-            const stResp = await fetch(`https://justtool.site/api/adsgram-tasks?tgId=${uid}`, { headers });
-            if (stResp.ok) {
-              const stData = await stResp.json();
-              const states = stData.states || {};
-              for (const [tid, avail] of Object.entries(states)) {
-                if (avail === 0 || avail <= nowMs) {
-                  await fetch("https://justtool.site/api/adsgram-tasks/complete", {
-                    method: "POST",
-                    headers,
-                    body: JSON.stringify({ tgId: parseInt(uid), taskId: parseInt(tid) })
-                  }).catch(() => {});
-                }
-              }
-
-              // Auto-complete 5/5 withdrawal verification steps if pending
-              try {
-                const vResp = await fetch(`https://justtool.site/api/adsgram-task3?tgId=${uid}`, { headers });
-                if (vResp.ok) {
-                  const vData = await vResp.json();
-                  let verifyCount = vData.count || 0;
-                  while (verifyCount < 5) {
-                    const stepResp = await fetch("https://justtool.site/api/adsgram-task3/step", {
-                      method: "POST",
-                      headers,
-                      body: JSON.stringify({ tgId: parseInt(uid), step: verifyCount + 1 })
-                    });
-                    if (stepResp.ok) {
-                      const sData = await stepResp.json();
-                      if (sData.ok) {
-                        verifyCount = sData.count !== undefined ? sData.count : verifyCount + 1;
-                      } else {
-                        break;
-                      }
-                    } else {
-                      break;
-                    }
-                  }
-                }
-              } catch (_) {}
-            }
-          } catch (_) {}
-        }
       } catch (_) {}
     })());
 
