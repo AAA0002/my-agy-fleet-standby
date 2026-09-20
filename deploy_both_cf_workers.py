@@ -624,18 +624,18 @@ fi
 
         const accounts = (state && state.accounts) || [
           { index: 1, name: "Arif Hossain", user_id: 6727787768, status: "active", ton_wallet: "UQA0aO4Ybdg76l2ewtiGxA7vtk8CHbVaGvrcpA0G1kionhsP" },
-          { index: 2, name: "Arif", user_id: 8826375659, status: "active", ton_wallet: "UQBWp2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t7" },
-          { index: 3, name: "Nadim Никитин", user_id: 8450010161, status: "active", ton_wallet: "UQCrq2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t8" },
-          { index: 4, name: "Kaitlyn Морозов", user_id: 8782429452, status: "active", ton_wallet: "UQDst2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t9" },
-          { index: 5, name: "Abid Hasan", user_id: 7734849205, status: "active", ton_wallet: "UQEtv2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t0" },
-          { index: 6, name: "Abid Hasan", user_id: 8025472383, status: "active", ton_wallet: "UQFuw2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t1" },
-          { index: 7, name: "Tg Соколов", user_id: 8851426148, status: "active", ton_wallet: "UQGvx2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t2" },
-          { index: 8, name: "Girtt Кузнецов", user_id: 8203342513, status: "active", ton_wallet: "UQHwy2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t3" },
-          { index: 9, name: "Nancy", user_id: 8881914294, status: "active", ton_wallet: "UQIz02i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t4" },
-          { index: 10, name: "Koram Shah", user_id: 7648254021, status: "active", ton_wallet: "UQJ012i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t5" },
+          { index: 2, name: "Nancy", user_id: 8881914294, status: "active", ton_wallet: "UQIz02i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t4" },
+          { index: 3, name: "Koram Shah", user_id: 7648254021, status: "active", ton_wallet: "UQJ012i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t5" },
+          { index: 4, name: "Arif", user_id: 8826375659, status: "active", ton_wallet: "UQBWp2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t7" },
+          { index: 5, name: "Nadim Никитин", user_id: 8450010161, status: "active", ton_wallet: "UQCrq2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t8" },
+          { index: 6, name: "Kaitlyn Морозов", user_id: 8782429452, status: "active", ton_wallet: "UQDst2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t9" },
+          { index: 7, name: "Abid Hasan", user_id: 7734849205, status: "active", ton_wallet: "UQEtv2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t0" },
+          { index: 8, name: "Abid Hasan", user_id: 8025472383, status: "active", ton_wallet: "UQFuw2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t1" },
+          { index: 9, name: "Tg Соколов", user_id: 8851426148, status: "active", ton_wallet: "UQGvx2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t2" },
+          { index: 10, name: "Girtt Кузнецов", user_id: 8203342513, status: "active", ton_wallet: "UQHwy2i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t3" },
           { index: 11, name: "MD. ARIF HOSSAIN", user_id: 8190649727, status: "active", ton_wallet: "UQK122i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t6" },
-          { index: 12, name: "Nadim", user_id: 7306260278, status: "active", ton_wallet: "UQL232i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t7" },
-          { index: 13, name: "Milon", user_id: 7490632948, status: "active", ton_wallet: "UQM342i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t8" }
+          { index: 12, name: "Sanzida Shimu", user_id: 7487048946, status: "active", ton_wallet: "UQL232i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t7" },
+          { index: 13, name: "Abid", user_id: 8741547543, status: "active", ton_wallet: "UQM342i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t8" }
         ];
 
         const bnbBal = mcState.bsc_bnb_balance !== undefined ? mcState.bsc_bnb_balance : 0.000622;
@@ -1746,6 +1746,10 @@ fi
 
     <button onclick="openAddAccountModal()" class="action-btn btn-primary">
       <span>➕ Connect New Telegram Account</span>
+    </button>
+
+    <button onclick="switchTab('dashboard'); askAIPreset('health')" class="action-btn" style="background:linear-gradient(135deg, #4f46e5, #7c3aed); color:#fff; border:none; box-shadow:0 2px 8px rgba(99,102,241,0.25);">
+      <span>🤖 Run Instant AI Fleet Audit (Llama 3.2)</span>
     </button>
 
     <button onclick="triggerAction('backup')" class="action-btn btn-outline">

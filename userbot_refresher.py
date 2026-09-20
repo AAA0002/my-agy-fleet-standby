@@ -466,6 +466,32 @@ def record_payout(user_name: str, user_id: int, amount_str: str, wallet: str):
             json.dump(payouts, f, indent=2, ensure_ascii=False)
         os.replace(temp_file, PAYOUTS_FILE)
         logger.info(f"[Payout Ledger] Recorded payout #{entry['id']} for {user_name}: {amount_str} BNB to {wallet}")
+
+        # Replicate payout to Turso LibSQL (AWS Mumbai)
+        try:
+            import urllib.request
+            turso_url = os.getenv("TURSO_URL", "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io")
+            turso_token = os.getenv("TURSO_TOKEN", "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODk4MjQ5NjMsImlkIjoiMDFhMGI5ZTEtNzYwMS03ZDIwLWIwNTAtZDkyNmJkMDRiYzhmIiwia2lkIjoiVXI0T3NhVlRiZktFaWU3aEMydjFPYUQ3T01sQ2RZSjhDa3M3bGZKWEh0MCIsInJpZCI6IjcyYjQ5N2Y4LWVhY2UtNDI5Yy04YTIzLWI4MDRmYjg2ODBhOCJ9.W1W5nHYEFXTFLgIh6Q8yLmH3bL9QgCTEI7d4k-tG_Q_-oZwEZz-Ryq0oYtyvChD0ivOqn6NA_asbPAOYAFVaDw")
+            if turso_url and turso_token:
+                req_data = json.dumps({
+                    "requests": [{
+                        "type": "execute",
+                        "stmt": {
+                            "sql": "INSERT INTO fleet_payouts (user_id, name, amount, wallet, network) VALUES (?, ?, ?, ?, ?)",
+                            "args": [
+                                {"type": "text", "value": str(user_id)},
+                                {"type": "text", "value": str(user_name)},
+                                {"type": "text", "value": str(amount_str)},
+                                {"type": "text", "value": str(wallet)},
+                                {"type": "text", "value": "BEP-20"}
+                            ]
+                        }
+                    }]
+                }).encode()
+                req = urllib.request.Request(f"{turso_url}/v2/pipeline", data=req_data, headers={"Authorization": f"Bearer {turso_token}", "Content-Type": "application/json"})
+                urllib.request.urlopen(req, timeout=3)
+        except Exception:
+            pass
     except Exception as e:
         logger.error(f"[Payout Ledger] Error recording payout: {e}")
 
@@ -3183,6 +3209,41 @@ async def cloudflare_edge_bridge_loop():
                                 except Exception:
                                     pass
                             sync_tasks.append(push_supabase())
+
+                        # Sync Telemetry to Turso LibSQL (AWS Mumbai)
+                        turso_url = os.getenv("TURSO_URL", "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io")
+                        turso_token = os.getenv("TURSO_TOKEN", "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODk4MjQ5NjMsImlkIjoiMDFhMGI5ZTEtNzYwMS03ZDIwLWIwNTAtZDkyNmJkMDRiYzhmIiwia2lkIjoiVXI0T3NhVlRiZktFaWU3aEMydjFPYUQ3T01sQ2RZSjhDa3M3bGZKWEh0MCIsInJpZCI6IjcyYjQ5N2Y4LWVhY2UtNDI5Yy04YTIzLWI4MDRmYjg2ODBhOCJ9.W1W5nHYEFXTFLgIh6Q8yLmH3bL9QgCTEI7d4k-tG_Q_-oZwEZz-Ryq0oYtyvChD0ivOqn6NA_asbPAOYAFVaDw")
+                        if turso_url and turso_token:
+                            async def push_turso():
+                                try:
+                                    t_headers = {
+                                        "Authorization": f"Bearer {turso_token}",
+                                        "Content-Type": "application/json"
+                                    }
+                                    tot_b = sum(float(v.get("balance", 0.0)) for v in ACCOUNT_BALANCES.values())
+                                    t_payload = {
+                                        "requests": [{
+                                            "type": "execute",
+                                            "stmt": {
+                                                "sql": "INSERT INTO fleet_telemetry (total_accounts, active_nodes, bnb_balance) VALUES (?, ?, ?)",
+                                                "args": [
+                                                    {"type": "integer", "value": str(len(load_accounts()))},
+                                                    {"type": "integer", "value": "3"},
+                                                    {"type": "float", "value": float(tot_b)}
+                                                ]
+                                            }
+                                        }]
+                                    }
+                                    async with session.post(
+                                        f"{turso_url}/v2/pipeline",
+                                        json=t_payload,
+                                        headers=t_headers,
+                                        timeout=aiohttp.ClientTimeout(total=5)
+                                    ):
+                                        pass
+                                except Exception:
+                                    pass
+                            sync_tasks.append(push_turso())
 
                         await asyncio.gather(*sync_tasks, return_exceptions=True)
                     except Exception as sync_e:
