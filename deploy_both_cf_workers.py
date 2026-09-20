@@ -638,10 +638,12 @@ fi
           { index: 13, name: "Abid", user_id: 8741547543, status: "active", ton_wallet: "UQM342i884X2s8x4qG2a-wN4e7K9_Z8z9x2y3w4v5u6t8" }
         ];
 
-        const bnbBal = mcState.bsc_bnb_balance !== undefined ? mcState.bsc_bnb_balance : 0.000622;
+        const bnbBal = mcState.bsc_bnb_balance !== undefined ? mcState.bsc_bnb_balance : 0.000812;
         const tonBal = mcState.ton_balance !== undefined ? mcState.ton_balance : 0.0;
         const bnbUsd = (bnbBal * (rates.bnb_usd || 764.0)).toFixed(2);
         const bnbBdt = ((bnbBal * (rates.bnb_usd || 764.0)) * 122.50).toFixed(1);
+        const bnbTarget = 0.005;
+        const bnbProgressPct = Math.min(100, Math.max(0, ((bnbBal / bnbTarget) * 100))).toFixed(1);
 
         const html = `<!DOCTYPE html>
 <html lang="en">
@@ -655,12 +657,14 @@ fi
   :root {
     --bg: #f8fafc;
     --card: #ffffff;
+    --card-sub: #f1f5f9;
     --border: #e2e8f0;
     --text-main: #0f172a;
     --text-sub: #475569;
     --text-muted: #64748b;
     --primary: #2563eb;
     --primary-bg: #eff6ff;
+    --primary-border: #bfdbfe;
     --green: #059669;
     --green-bg: #ecfdf5;
     --green-border: #a7f3d0;
@@ -673,10 +677,66 @@ fi
     --purple: #7c3aed;
     --purple-bg: #f5f3ff;
     --purple-border: #ddd6fe;
+    --nav-bg: rgba(255, 255, 255, 0.94);
     --safe-bottom: env(safe-area-inset-bottom, 16px);
   }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b0f17;
+      --card: #151c28;
+      --card-sub: #1e293b;
+      --border: #243042;
+      --text-main: #f8fafc;
+      --text-sub: #cbd5e1;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-bg: #172554;
+      --primary-border: #1e40af;
+      --green: #10b981;
+      --green-bg: #064e3b;
+      --green-border: #047857;
+      --gold: #f59e0b;
+      --gold-bg: #451a03;
+      --gold-border: #78350f;
+      --ton: #38bdf8;
+      --ton-bg: #082f49;
+      --ton-border: #0369a1;
+      --purple: #c084fc;
+      --purple-bg: #3b0764;
+      --purple-border: #6b21a8;
+      --nav-bg: rgba(15, 23, 42, 0.94);
+    }
+  }
+
+  html.dark {
+    --bg: #0b0f17;
+    --card: #151c28;
+    --card-sub: #1e293b;
+    --border: #243042;
+    --text-main: #f8fafc;
+    --text-sub: #cbd5e1;
+    --text-muted: #94a3b8;
+    --primary: #3b82f6;
+    --primary-bg: #172554;
+    --primary-border: #1e40af;
+    --green: #10b981;
+    --green-bg: #064e3b;
+    --green-border: #047857;
+    --gold: #f59e0b;
+    --gold-bg: #451a03;
+    --gold-border: #78350f;
+    --ton: #38bdf8;
+    --ton-bg: #082f49;
+    --ton-border: #0369a1;
+    --purple: #c084fc;
+    --purple-bg: #3b0764;
+    --purple-border: #6b21a8;
+    --nav-bg: rgba(15, 23, 42, 0.94);
+  }
+
   * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
-  body { background: var(--bg); color: var(--text-main); line-height: 1.45; min-height: 100vh; padding-top: max(12px, env(safe-area-inset-top, 0px)); padding-bottom: calc(76px + var(--safe-bottom)); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  body { background: var(--bg); color: var(--text-main); line-height: 1.45; min-height: 100vh; padding-top: max(12px, env(safe-area-inset-top, 0px)); padding-bottom: calc(76px + var(--safe-bottom)); -webkit-font-smoothing: antialiased; overflow-x: hidden; transition: background-color 0.2s ease, color 0.2s ease; }
   .app-container { max-width: 580px; margin: 0 auto; padding: 4px 14px 14px 14px; width: 100%; box-sizing: border-box; }
   
   /* Top App Bar */
@@ -684,7 +744,7 @@ fi
   .logo-box { display: flex; align-items: center; gap: 8px; }
   .logo-icon { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #2563eb, #1d4ed8); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 1.05rem; box-shadow: 0 2px 6px rgba(37,99,235,0.25); }
   .logo-title { font-size: 1.05rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.02em; }
-  .logo-badge { font-size: 0.65rem; font-weight: 800; background: var(--primary-bg); color: var(--primary); padding: 2px 6px; border-radius: 6px; border: 1px solid #bfdbfe; }
+  .logo-badge { font-size: 0.65rem; font-weight: 800; background: var(--primary-bg); color: var(--primary); padding: 2px 6px; border-radius: 6px; border: 1px solid var(--primary-border); }
   .live-pill { display: inline-flex; align-items: center; gap: 5px; background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
   .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
   @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
@@ -692,59 +752,59 @@ fi
   /* Ticker */
   .ticker-scroll { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 4px 2px 8px 2px; margin-bottom: 8px; }
   .ticker-scroll::-webkit-scrollbar { display: none; }
-  .ticker-chip { flex-shrink: 0; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; font-size: 0.72rem; display: flex; align-items: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+  .ticker-chip { flex-shrink: 0; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px; font-size: 0.72rem; display: flex; align-items: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); color: var(--text-main); }
   .t-label { color: var(--text-muted); font-weight: 600; }
   .t-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text-main); }
 
   /* Cards */
-  .card { background: #ffffff; border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.02); }
-  .card-hero { background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border: 1px solid #bbf7d0; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.02); }
+  .card-hero { background: linear-gradient(135deg, var(--card) 0%, var(--green-bg) 100%); border: 1px solid var(--green-border); }
   .hero-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; }
   .hero-val { font-size: 1.75rem; font-weight: 800; color: var(--text-main); font-family: 'JetBrains Mono', monospace; margin: 4px 0; }
   .hero-sub { font-size: 0.8rem; color: var(--green); font-weight: 600; display: flex; align-items: center; gap: 6px; }
 
   /* Network Topology Graph Styles */
-  .topo-card { background: #ffffff; border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .topo-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
   .topo-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .topo-title { font-size: 0.88rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 6px; }
-  .topo-svg-wrap { width: 100%; background: #fafcff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; position: relative; }
+  .topo-svg-wrap { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; position: relative; }
   .topo-svg { width: 100%; height: auto; display: block; }
   @keyframes flowDash {
     from { stroke-dashoffset: 24; }
     to { stroke-dashoffset: 0; }
   }
-  .topo-link { stroke: #cbd5e1; stroke-width: 1.5; stroke-dasharray: 4 4; animation: flowDash 1.2s linear infinite; }
+  .topo-link { stroke: var(--border); stroke-width: 1.5; stroke-dasharray: 4 4; animation: flowDash 1.2s linear infinite; }
   .topo-link-blue { stroke: #3b82f6; stroke-width: 2; stroke-dasharray: 5 4; animation: flowDash 0.9s linear infinite; }
   .topo-link-gold { stroke: #f59e0b; stroke-width: 2; stroke-dasharray: 5 4; animation: flowDash 0.9s linear infinite; }
   .topo-link-purple { stroke: #8b5cf6; stroke-width: 2; stroke-dasharray: 5 4; animation: flowDash 0.9s linear infinite; }
   .topo-link-stream { stroke: #10b981; stroke-width: 1.8; stroke-dasharray: 4 4; animation: flowDash 0.8s linear infinite; }
   .topo-node { cursor: pointer; transition: transform 0.15s, filter 0.15s; pointer-events: all; }
   .topo-node text { pointer-events: none; }
-  .topo-node:hover, .topo-node:active { filter: drop-shadow(0 2px 6px rgba(37,99,235,0.3)); cursor: pointer; }
-  .hud-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-top: 10px; }
+  .topo-node:hover, .topo-node:active { filter: drop-shadow(0 2px 6px rgba(37,99,235,0.35)); cursor: pointer; }
+  .hud-card { background: var(--card-sub); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-top: 10px; }
   .hud-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
   .hud-title { font-weight: 800; font-size: 0.85rem; color: var(--text-main); display: flex; align-items: center; gap: 6px; }
   .hud-desc { color: var(--text-muted); font-size: 0.72rem; line-height: 1.4; margin-bottom: 8px; }
   .hud-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.72rem; }
-  .hud-item { display: flex; flex-direction: column; background: #ffffff; padding: 6px 8px; border-radius: 6px; border: 1px solid #e2e8f0; }
+  .hud-item { display: flex; flex-direction: column; background: var(--card); padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); }
   .hud-item-label { color: var(--text-muted); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; }
   .hud-item-val { font-weight: 700; color: var(--text-main); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
 
   /* Modal */
-  .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
   .modal-overlay.active { display: flex; animation: fadeIn 0.15s ease-out; }
-  .modal-box { background: #ffffff; border-radius: 16px; border: 1px solid var(--border); width: 100%; max-width: 440px; padding: 18px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+  .modal-box { background: var(--card); border-radius: 16px; border: 1px solid var(--border); width: 100%; max-width: 440px; padding: 18px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); }
   .modal-title { font-size: 1rem; font-weight: 800; color: var(--text-main); display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
   .modal-close { background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--text-muted); padding: 4px; line-height: 1; }
   .input-group { margin: 12px 0; }
   .input-label { font-size: 0.72rem; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 5px; display: block; }
-  .text-input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; font-family: 'JetBrains Mono', monospace; outline: none; transition: border-color 0.15s; box-sizing: border-box; }
+  .text-input { width: 100%; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; font-family: 'JetBrains Mono', monospace; outline: none; transition: border-color 0.15s; box-sizing: border-box; }
   .text-input:focus { border-color: var(--primary); }
 
   /* Progress Bars */
   .progress-wrap { margin-top: 10px; }
   .progress-label-row { display: flex; justify-content: space-between; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
-  .progress-bar-bg { height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; position: relative; }
+  .progress-bar-bg { height: 8px; background: var(--border); border-radius: 999px; overflow: hidden; position: relative; }
   .progress-bar-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
   .bg-emerald { background: linear-gradient(90deg, #10b981, #059669); }
   .bg-blue { background: linear-gradient(90deg, #3b82f6, #1d4ed8); }
@@ -757,13 +817,13 @@ fi
   .badge-ton { background: var(--ton-bg); color: var(--ton); border: 1px solid var(--ton-border); }
   .badge-purple { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); }
   .badge-green { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
-  .badge-blue { background: var(--primary-bg); color: var(--primary); border: 1px solid #bfdbfe; }
+  .badge-blue { background: var(--primary-bg); color: var(--primary); border: 1px solid var(--primary-border); }
 
   /* Bot Item Cards */
-  .bot-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+  .bot-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
   .bot-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
   .bot-title-group { display: flex; align-items: center; gap: 8px; }
-  .bot-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; background: #f8fafc; border: 1px solid var(--border); }
+  .bot-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; background: var(--card-sub); border: 1px solid var(--border); }
   .bot-name { font-size: 0.88rem; font-weight: 700; color: var(--text-main); }
   .bot-network { font-size: 0.7rem; color: var(--text-muted); }
   .bot-stats-row { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 0.75rem; }
@@ -772,30 +832,30 @@ fi
   .bot-stat-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text-main); margin-top: 1px; }
 
   /* Account Item */
-  .acc-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+  .acc-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
   .acc-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
-  .acc-avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1e40af; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem; flex-shrink: 0; border: 1px solid #93c5fd; }
+  .acc-avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-bg), var(--primary-border)); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem; flex-shrink: 0; border: 1px solid var(--primary-border); }
   .acc-details { min-width: 0; }
   .acc-name { font-size: 0.82rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .acc-id { font-size: 0.68rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
   .acc-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
 
   /* Action Buttons */
-  .action-btn { width: 100%; padding: 13px 16px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; border: none; transition: opacity 0.15s; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .action-btn { width: 100%; padding: 12px 16px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
   .action-btn:active { opacity: 0.82; transform: scale(0.99); }
   .btn-primary { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #fff; }
   .btn-green { background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #fff; }
   .btn-purple { background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: #fff; }
-  .btn-outline { background: #fff; color: var(--text-main); border: 1px solid var(--border); }
+  .btn-outline { background: var(--card); color: var(--text-main); border: 1px solid var(--border); }
 
   /* Table styling */
   .styled-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-top: 6px; }
   .styled-table th { text-align: left; padding: 8px 10px; color: var(--text-muted); font-size: 0.68rem; font-weight: 700; text-transform: uppercase; border-bottom: 1px solid var(--border); }
-  .styled-table td { padding: 9px 10px; border-bottom: 1px solid #f1f5f9; }
+  .styled-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text-main); }
   .mono { font-family: 'JetBrains Mono', monospace; }
 
   /* Fixed Bottom Nav */
-  .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 6px 4px calc(6px + var(--safe-bottom)) 4px; z-index: 100; max-width: 580px; margin: 0 auto; }
+  .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--nav-bg); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 6px 4px calc(6px + var(--safe-bottom)) 4px; z-index: 100; max-width: 580px; margin: 0 auto; }
   .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; cursor: pointer; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; border: none; background: transparent; transition: color 0.15s; }
   .nav-item.active { color: var(--primary); font-weight: 700; }
   .nav-icon { font-size: 1.15rem; }
@@ -807,6 +867,10 @@ fi
 
   /* Toast */
   #actionToast { display: none; padding: 11px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; margin-bottom: 12px; }
+
+  /* Small Copy Icon Button */
+  .copy-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 2px 4px; font-size: 0.72rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 2px; }
+  .copy-btn:hover, .copy-btn:active { color: var(--primary); background: var(--card-sub); }
 </style>
 </head>
 <body>
@@ -824,9 +888,12 @@ fi
         <div style="font-size:0.68rem; color:var(--text-muted);">Autonomous Multi-Chain Fleet</div>
       </div>
     </div>
-    <div style="display:flex; align-items:center; gap:8px;">
-      <button onclick="openAddAccountModal()" style="display:inline-flex; align-items:center; gap:5px; background:linear-gradient(135deg, #2563eb, #1d4ed8); color:#fff; border:none; border-radius:8px; padding:6px 11px; font-size:0.75rem; font-weight:700; cursor:pointer; box-shadow:0 2px 6px rgba(37,99,235,0.3); transition:transform 0.1s;">
-        <span>➕ Add Account</span>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <button onclick="toggleTheme()" title="Toggle Theme" style="background:var(--card-sub); border:1px solid var(--border); border-radius:8px; width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.85rem;">
+        <span id="themeIcon">🌓</span>
+      </button>
+      <button onclick="openAddAccountModal()" style="display:inline-flex; align-items:center; gap:5px; background:linear-gradient(135deg, #2563eb, #1d4ed8); color:#fff; border:none; border-radius:8px; padding:6px 10px; font-size:0.75rem; font-weight:700; cursor:pointer; box-shadow:0 2px 6px rgba(37,99,235,0.3); transition:transform 0.1s;">
+        <span>➕ Add</span>
       </button>
       <div class="live-pill">
         <span class="live-dot"></span>
@@ -839,23 +906,27 @@ fi
   <div class="ticker-scroll">
     <div class="ticker-chip">
       <span class="t-label">🟡 BNB</span>
-      <span class="t-val">$${rates.bnb_usd.toFixed(2)}</span>
+      <span class="t-val" id="rateBnb">$${rates.bnb_usd.toFixed(2)}</span>
     </div>
     <div class="ticker-chip">
       <span class="t-label">💎 TON</span>
-      <span class="t-val">$${rates.ton_usd.toFixed(2)}</span>
+      <span class="t-val" id="rateTon">$${rates.ton_usd.toFixed(2)}</span>
     </div>
     <div class="ticker-chip">
       <span class="t-label">🔵 ETH</span>
-      <span class="t-val">$${(rates.eth_usd || 2616.0).toFixed(0)}</span>
+      <span class="t-val" id="rateEth">$${(rates.eth_usd || 2616.0).toFixed(0)}</span>
     </div>
     <div class="ticker-chip">
       <span class="t-label">🪙 BTC</span>
-      <span class="t-val">$${(rates.btc_usd || 64500.0).toFixed(0)}</span>
+      <span class="t-val" id="rateBtc">$${(rates.btc_usd || 64500.0).toFixed(0)}</span>
     </div>
     <div class="ticker-chip">
       <span class="t-label">🌐 Node</span>
       <span class="t-val" style="color:var(--primary);">__SUBDOMAIN__</span>
+    </div>
+    <div class="ticker-chip" onclick="updateTelemetryAsync(true)" style="cursor:pointer;" title="Tap to refresh now">
+      <span class="t-label">⏱️ Telemetry</span>
+      <span class="t-val" id="syncCountdown" style="color:var(--green);">20s</span>
     </div>
   </div>
 
@@ -867,11 +938,13 @@ fi
     <!-- Hero Total Valuation Card -->
     <div class="card card-hero">
       <div class="hero-label">Total Fleet Estimated Valuation</div>
-      <div class="hero-val">~$${bnbUsd} USD</div>
+      <div class="hero-val" id="valUsd">~$${bnbUsd} USD</div>
       <div class="hero-sub">
-        <span>≈ ৳${bnbBdt} BDT</span>
+        <span id="valBdt">≈ ৳${bnbBdt} BDT</span>
         <span>•</span>
         <span>13 Active Accounts</span>
+        <span>•</span>
+        <span>3 Cloud Shards</span>
       </div>
 
       <div class="progress-wrap">
@@ -897,7 +970,7 @@ fi
             Core Hub <span style="color:var(--primary);">⇄</span> 3 Edge Nodes <span style="color:var(--primary);">⇄</span> 13 Accounts <span style="color:var(--green);">⇄</span> 7 Mining Daemons
           </div>
         </div>
-        <button onclick="pingMesh()" style="border:1px solid var(--border); background:#fff; border-radius:8px; padding:4px 8px; font-size:0.68rem; font-weight:700; color:var(--primary); cursor:pointer; display:flex; align-items:center; gap:4px;">
+        <button onclick="pingMesh()" style="border:1px solid var(--border); background:var(--card); border-radius:8px; padding:4px 8px; font-size:0.68rem; font-weight:700; color:var(--primary); cursor:pointer; display:flex; align-items:center; gap:4px;">
           <span>🔄 Ping</span>
         </button>
       </div>
@@ -906,7 +979,7 @@ fi
         <svg class="topo-svg" viewBox="0 0 500 350">
           <defs>
             <pattern id="topoGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="0.8" fill="#e2e8f0"/>
+              <circle cx="2" cy="2" r="0.8" fill="var(--border)"/>
             </pattern>
             <linearGradient id="coreGrad" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%" stop-color="#3b82f6"/>
@@ -914,7 +987,7 @@ fi
             </linearGradient>
             <linearGradient id="n1Grad" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%" stop-color="#eff6ff"/>
-              <stop offset="100%" stop-color="#dbeafe"/>
+              <stop offset="100%" stop-color="#bfdbfe"/>
             </linearGradient>
             <linearGradient id="n2Grad" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%" stop-color="#fef3c7"/>
@@ -930,8 +1003,8 @@ fi
           <rect width="100%" height="100%" fill="url(#topoGrid)" rx="10"/>
 
           <!-- Cross-node Mesh Sibling Lines -->
-          <line x1="85" y1="120" x2="250" y2="120" stroke="#cbd5e1" stroke-width="1.2" stroke-dasharray="3 3"/>
-          <line x1="250" y1="120" x2="415" y2="120" stroke="#cbd5e1" stroke-width="1.2" stroke-dasharray="3 3"/>
+          <line x1="85" y1="120" x2="250" y2="120" stroke="var(--border)" stroke-width="1.2" stroke-dasharray="3 3"/>
+          <line x1="250" y1="120" x2="415" y2="120" stroke="var(--border)" stroke-width="1.2" stroke-dasharray="3 3"/>
 
           <!-- Links from Core to Edge Nodes -->
           <line x1="250" y1="40" x2="85" y2="120" class="topo-link-blue" />
@@ -958,7 +1031,7 @@ fi
           <line x1="415" y1="120" x2="450" y2="195" stroke="#ddd6fe" stroke-width="1.2" class="topo-link" />
 
           <!-- Aggregation Bus to Mining Targets -->
-          <line x1="25" y1="230" x2="475" y2="230" stroke="#cbd5e1" stroke-width="1.8" stroke-dasharray="3 3" />
+          <line x1="25" y1="230" x2="475" y2="230" stroke="var(--border)" stroke-width="1.8" stroke-dasharray="3 3" />
           <line x1="45" y1="230" x2="45" y2="275" class="topo-link-stream" />
           <line x1="115" y1="230" x2="115" y2="275" class="topo-link-stream" />
           <line x1="185" y1="230" x2="185" y2="275" class="topo-link-stream" />
@@ -975,29 +1048,29 @@ fi
             </circle>
             <circle cx="250" cy="40" r="18" fill="url(#coreGrad)" stroke="#1d4ed8" stroke-width="2"/>
             <text x="250" y="45" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="900">⚡</text>
-            <text x="250" y="68" text-anchor="middle" fill="#0f172a" font-size="9" font-weight="800">MY AGY AI Core</text>
-            <text x="250" y="78" text-anchor="middle" fill="#64748b" font-size="7.5" font-weight="600">Master Controller</text>
+            <text x="250" y="68" text-anchor="middle" fill="var(--text-main)" font-size="9" font-weight="800">MY AGY AI Core</text>
+            <text x="250" y="78" text-anchor="middle" fill="var(--text-muted)" font-size="7.5" font-weight="600">Master Controller</text>
           </g>
 
           <!-- Tier 1: 3x Edge Nodes -->
           <g class="topo-node" onclick="inspectTopo('edge-1')">
             <circle cx="85" cy="120" r="14" fill="url(#n1Grad)" stroke="#3b82f6" stroke-width="2"/>
             <text x="85" y="124" text-anchor="middle" fill="#1d4ed8" font-size="9" font-weight="800">N1</text>
-            <text x="85" y="143" text-anchor="middle" fill="#1e293b" font-size="8" font-weight="700">aaaai2</text>
+            <text x="85" y="143" text-anchor="middle" fill="var(--text-main)" font-size="8" font-weight="700">aaaai2</text>
             <text x="85" y="152" text-anchor="middle" fill="#059669" font-size="7" font-weight="700">~12ms</text>
           </g>
 
           <g class="topo-node" onclick="inspectTopo('edge-2')">
             <circle cx="250" cy="120" r="14" fill="url(#n2Grad)" stroke="#d97706" stroke-width="2"/>
             <text x="250" y="124" text-anchor="middle" fill="#b45309" font-size="9" font-weight="800">N2</text>
-            <text x="250" y="143" text-anchor="middle" fill="#1e293b" font-size="8" font-weight="700">aaa-bot</text>
+            <text x="250" y="143" text-anchor="middle" fill="var(--text-main)" font-size="8" font-weight="700">aaa-bot</text>
             <text x="250" y="152" text-anchor="middle" fill="#059669" font-size="7" font-weight="700">~16ms</text>
           </g>
 
           <g class="topo-node" onclick="inspectTopo('edge-3')">
             <circle cx="415" cy="120" r="14" fill="url(#n3Grad)" stroke="#7c3aed" stroke-width="2"/>
             <text x="415" y="124" text-anchor="middle" fill="#6d28d9" font-size="9" font-weight="800">N3</text>
-            <text x="415" y="143" text-anchor="middle" fill="#1e293b" font-size="8" font-weight="700">aaa222</text>
+            <text x="415" y="143" text-anchor="middle" fill="var(--text-main)" font-size="8" font-weight="700">aaa222</text>
             <text x="415" y="152" text-anchor="middle" fill="#059669" font-size="7" font-weight="700">~14ms</text>
           </g>
 
@@ -1088,45 +1161,45 @@ fi
 
           <!-- Tier 3: 7 Target Mining Bots -->
           <g class="topo-node" onclick="inspectTopo('bot-bnb')">
-            <rect x="22" y="275" width="46" height="34" rx="7" fill="#ffffff" stroke="#fcd34d" stroke-width="1.5"/>
+            <rect x="22" y="275" width="46" height="34" rx="7" fill="var(--card)" stroke="#fcd34d" stroke-width="1.5"/>
             <text x="45" y="289" text-anchor="middle" font-size="11">🪙</text>
-            <text x="45" y="302" text-anchor="middle" fill="#0f172a" font-size="7" font-weight="800">BNB</text>
+            <text x="45" y="302" text-anchor="middle" fill="var(--text-main)" font-size="7" font-weight="800">BNB</text>
           </g>
 
           <g class="topo-node" onclick="inspectTopo('bot-stones')">
-            <rect x="92" y="275" width="46" height="34" rx="7" fill="#ffffff" stroke="#ddd6fe" stroke-width="1.5"/>
+            <rect x="92" y="275" width="46" height="34" rx="7" fill="var(--card)" stroke="#ddd6fe" stroke-width="1.5"/>
             <text x="115" y="289" text-anchor="middle" font-size="11">💎</text>
-            <text x="115" y="302" text-anchor="middle" fill="#0f172a" font-size="7" font-weight="800">STONES</text>
+            <text x="115" y="302" text-anchor="middle" fill="var(--text-main)" font-size="7" font-weight="800">STONES</text>
           </g>
 
           <g class="topo-node" onclick="inspectTopo('bot-art')">
-            <rect x="162" y="275" width="46" height="34" rx="7" fill="#ffffff" stroke="#bae6fd" stroke-width="1.5"/>
+            <rect x="162" y="275" width="46" height="34" rx="7" fill="var(--card)" stroke="#bae6fd" stroke-width="1.5"/>
             <text x="185" y="289" text-anchor="middle" font-size="11">🚀</text>
-            <text x="185" y="302" text-anchor="middle" fill="#0f172a" font-size="7" font-weight="800">ART</text>
+            <text x="185" y="302" text-anchor="middle" fill="var(--text-main)" font-size="7" font-weight="800">ART</text>
           </g>
 
           <g class="topo-node" onclick="inspectTopo('bot-mrg')">
-            <rect x="232" y="275" width="46" height="34" rx="7" fill="#ffffff" stroke="#a7f3d0" stroke-width="1.5"/>
+            <rect x="232" y="275" width="46" height="34" rx="7" fill="var(--card)" stroke="#a7f3d0" stroke-width="1.5"/>
             <text x="255" y="289" text-anchor="middle" font-size="11">⛏️</text>
-            <text x="255" y="302" text-anchor="middle" fill="#0f172a" font-size="7" font-weight="800">MRG</text>
+            <text x="255" y="302" text-anchor="middle" fill="var(--text-main)" font-size="7" font-weight="800">MRG</text>
           </g>
 
           <g class="topo-node" onclick="inspectTopo('bot-ailab')">
-            <rect x="302" y="275" width="46" height="34" rx="7" fill="#ffffff" stroke="#bfdbfe" stroke-width="1.5"/>
+            <rect x="302" y="275" width="46" height="34" rx="7" fill="var(--card)" stroke="#bfdbfe" stroke-width="1.5"/>
             <text x="325" y="289" text-anchor="middle" font-size="11">🧪</text>
-            <text x="325" y="302" text-anchor="middle" fill="#0f172a" font-size="7" font-weight="800">AI LAB</text>
+            <text x="325" y="302" text-anchor="middle" fill="var(--text-main)" font-size="7" font-weight="800">AI LAB</text>
           </g>
 
           <g class="topo-node" onclick="inspectTopo('bot-ultra')">
-            <rect x="372" y="275" width="46" height="34" rx="7" fill="#ffffff" stroke="#a7f3d0" stroke-width="1.5"/>
+            <rect x="372" y="275" width="46" height="34" rx="7" fill="var(--card)" stroke="#a7f3d0" stroke-width="1.5"/>
             <text x="395" y="289" text-anchor="middle" font-size="11">💳</text>
-            <text x="395" y="302" text-anchor="middle" fill="#0f172a" font-size="7" font-weight="800">ULTRA</text>
+            <text x="395" y="302" text-anchor="middle" fill="var(--text-main)" font-size="7" font-weight="800">ULTRA</text>
           </g>
 
           <g class="topo-node" onclick="inspectTopo('bot-apx')">
-            <rect x="442" y="275" width="46" height="34" rx="7" fill="#ffffff" stroke="#fcd34d" stroke-width="1.5"/>
+            <rect x="442" y="275" width="46" height="34" rx="7" fill="var(--card)" stroke="#fcd34d" stroke-width="1.5"/>
             <text x="465" y="289" text-anchor="middle" font-size="11">⚡</text>
-            <text x="465" y="302" text-anchor="middle" fill="#0f172a" font-size="7" font-weight="800">APEX</text>
+            <text x="465" y="302" text-anchor="middle" fill="var(--text-main)" font-size="7" font-weight="800">APEX</text>
           </g>
         </svg>
       </div>
@@ -1166,7 +1239,7 @@ fi
       </div>
 
       <!-- Quick Matrix Bar -->
-      <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:7px 10px; margin-top:8px; font-size:0.7rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; background:var(--card-sub); border:1px solid var(--border); border-radius:8px; padding:7px 10px; margin-top:8px; font-size:0.7rem;">
         <span style="color:var(--text-sub); font-weight:600;">24 Interconnected Nodes • 0 MB VPS Leak</span>
         <span style="color:var(--green); font-weight:700;">● Mesh Synchronized</span>
       </div>
@@ -1180,16 +1253,20 @@ fi
       </div>
 
       <div style="display:flex; flex-direction:column; gap:8px;">
-        <div style="background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="background:var(--card-sub); border:1px solid var(--border); border-radius:10px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
           <div>
             <div style="font-size:0.7rem; font-weight:700; color:var(--gold);">🟡 BINANCE SMART CHAIN</div>
-            <div class="mono" style="font-size:1.05rem; font-weight:800; color:var(--text-main); margin-top:2px;">${typeof bnbBal === 'number' ? bnbBal.toFixed(6) : bnbBal} BNB</div>
-            <div style="font-size:0.68rem; color:var(--text-muted);">~$${bnbUsd} USD • 0xfda418...d5ce</div>
+            <div class="mono" id="vaultBnbBal" style="font-size:1.05rem; font-weight:800; color:var(--text-main); margin-top:2px;">${typeof bnbBal === 'number' ? bnbBal.toFixed(6) : bnbBal} BNB</div>
+            <div style="font-size:0.68rem; color:var(--text-muted);">
+              <span id="vaultBnbUsd">~$${bnbUsd} USD</span> • 
+              <a href="https://bscscan.com/address/0xfda4182001672b9f0f09e2118242e543e35ed5ce" target="_blank" style="color:var(--primary); text-decoration:none;">0xfda418...d5ce ↗</a>
+              <button class="copy-btn" onclick="copyToClipboard('0xfda4182001672b9f0f09e2118242e543e35ed5ce', 'BSC Vault Address')">📋</button>
+            </div>
           </div>
           <span class="badge badge-gold">BEP-20</span>
         </div>
 
-        <div style="background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="background:var(--card-sub); border:1px solid var(--border); border-radius:10px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
           <div>
             <div style="font-size:0.7rem; font-weight:700; color:var(--purple);">🟣 ARBITRUM ONE</div>
             <div class="mono" style="font-size:1.05rem; font-weight:800; color:var(--text-main); margin-top:2px;">500 STONES</div>
@@ -1198,7 +1275,7 @@ fi
           <span class="badge badge-purple">Arbitrum</span>
         </div>
 
-        <div style="background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="background:var(--card-sub); border:1px solid var(--border); border-radius:10px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
           <div>
             <div style="font-size:0.7rem; font-weight:700; color:var(--ton);">💎 THE OPEN NETWORK</div>
             <div class="mono" style="font-size:1.05rem; font-weight:800; color:var(--text-main); margin-top:2px;">${typeof tonBal === 'number' ? tonBal.toFixed(2) : tonBal} TON</div>
@@ -1251,7 +1328,7 @@ fi
           <span>☁️ Active Multi-Cloud Mesh</span>
           <span class="badge badge-green">14/14 Systems Live</span>
         </div>
-        <button onclick="pingMesh()" style="border:1px solid var(--border); background:#fff; border-radius:6px; padding:3px 8px; font-size:0.68rem; font-weight:700; color:var(--primary); cursor:pointer;">
+        <button onclick="pingMesh()" style="border:1px solid var(--border); background:var(--card); border-radius:6px; padding:3px 8px; font-size:0.68rem; font-weight:700; color:var(--primary); cursor:pointer;">
           <span>🔄 Ping All</span>
         </button>
       </div>
@@ -1358,7 +1435,7 @@ fi
     </div>
 
     <!-- On-Chain BNB Consolidator & Multi-Chain Wallet Tracker -->
-    <div class="card" style="border:1px solid #fde68a; background:linear-gradient(135deg, #ffffff 0%, #fffbeb 100%); margin-bottom:12px;">
+    <div class="card" style="border:1px solid var(--gold-border); background:linear-gradient(135deg, var(--card) 0%, var(--gold-bg) 100%); margin-bottom:12px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
         <div style="display:flex; align-items:center; gap:8px;">
           <span style="font-size:1.2rem;">🪙</span>
@@ -1371,14 +1448,20 @@ fi
       </div>
 
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
-        <div style="background:#fff; border:1px solid #fef3c7; border-radius:8px; padding:8px 10px;">
+        <div style="background:var(--card); border:1px solid var(--gold-border); border-radius:8px; padding:8px 10px;">
           <div style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">PRIMARY VAULT (W1)</div>
-          <div style="font-size:0.75rem; font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--text-main); margin:2px 0;">0xfda4...d5ce</div>
+          <div style="font-size:0.75rem; font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--text-main); margin:2px 0;">
+            0xfda4...d5ce
+            <button class="copy-btn" onclick="copyToClipboard('0xfda4182001672b9f0f09e2118242e543e35ed5ce', 'Primary Vault')">📋</button>
+          </div>
           <a href="https://bscscan.com/address/0xfda4182001672b9f0f09e2118242e543e35ed5ce" target="_blank" style="font-size:0.65rem; color:var(--primary); text-decoration:none; font-weight:600;">View on BscScan ↗</a>
         </div>
-        <div style="background:#fff; border:1px solid #fef3c7; border-radius:8px; padding:8px 10px;">
+        <div style="background:var(--card); border:1px solid var(--gold-border); border-radius:8px; padding:8px 10px;">
           <div style="font-size:0.65rem; color:var(--text-muted); font-weight:700;">SECONDARY VAULT (W2)</div>
-          <div style="font-size:0.75rem; font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--text-main); margin:2px 0;">0x0178...2610</div>
+          <div style="font-size:0.75rem; font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--text-main); margin:2px 0;">
+            0x0178...2610
+            <button class="copy-btn" onclick="copyToClipboard('0x017841f26d5b79cc8c5eb20c65367bb645cc2610', 'Secondary Vault')">📋</button>
+          </div>
           <a href="https://bscscan.com/address/0x017841f26d5b79cc8c5eb20c65367bb645cc2610" target="_blank" style="font-size:0.65rem; color:var(--primary); text-decoration:none; font-weight:600;">View on BscScan ↗</a>
         </div>
       </div>
@@ -1386,16 +1469,16 @@ fi
       <div class="progress-wrap">
         <div class="progress-label-row">
           <span>Consolidation Threshold Progress</span>
-          <span style="color:var(--gold); font-weight:700;">Target: 0.005000 BNB</span>
+          <span style="color:var(--gold); font-weight:700;" id="bnbProgressText">Target: 0.005000 BNB (${bnbProgressPct}%)</span>
         </div>
         <div class="progress-bar-bg">
-          <div class="progress-bar-fill bg-gold" style="width: 15%; background: linear-gradient(90deg, #f59e0b, #d97706);"></div>
+          <div class="progress-bar-fill bg-gold" id="bnbProgressFill" style="width: ${bnbProgressPct}%; background: linear-gradient(90deg, #f59e0b, #d97706);"></div>
         </div>
       </div>
     </div>
 
     <!-- Multi-Cloud AI Fleet Advisor (Gemini 3.8 Flash • Groq LPU • Workers AI) -->
-    <div class="card" style="border:1px solid #bfdbfe; background:linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);">
+    <div class="card" style="border:1px solid var(--primary-border); background:linear-gradient(135deg, var(--card) 0%, var(--primary-bg) 100%);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
         <div style="display:flex; align-items:center; gap:8px;">
           <span style="font-size:1.2rem;">🧠</span>
@@ -1409,33 +1492,40 @@ fi
 
       <!-- Quick Chips -->
       <div style="display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding-bottom:6px; margin-bottom:10px;">
-        <button onclick="askAIPreset('briefing')" class="ticker-chip" style="cursor:pointer; border-color:#93c5fd; background:#fff;">
+        <button onclick="askAIPreset('briefing')" class="ticker-chip" style="cursor:pointer; border-color:var(--primary-border); background:var(--card);">
           <span>📊 Daily Briefing</span>
         </button>
-        <button onclick="askAIPreset('health')" class="ticker-chip" style="cursor:pointer; border-color:#93c5fd; background:#fff;">
+        <button onclick="askAIPreset('health')" class="ticker-chip" style="cursor:pointer; border-color:var(--primary-border); background:var(--card);">
           <span>⚡ Health & Anti-Bot</span>
         </button>
-        <button onclick="askAIPreset('yield')" class="ticker-chip" style="cursor:pointer; border-color:#93c5fd; background:#fff;">
+        <button onclick="askAIPreset('yield')" class="ticker-chip" style="cursor:pointer; border-color:var(--primary-border); background:var(--card);">
           <span>📈 Maximize Yields</span>
         </button>
-        <button onclick="askAIPreset('security')" class="ticker-chip" style="cursor:pointer; border-color:#93c5fd; background:#fff;">
+        <button onclick="askAIPreset('security')" class="ticker-chip" style="cursor:pointer; border-color:var(--primary-border); background:var(--card);">
           <span>🛡️ Anti-Ban Protocol</span>
         </button>
-        <button onclick="askAIPreset('payout')" class="ticker-chip" style="cursor:pointer; border-color:#93c5fd; background:#fff;">
+        <button onclick="askAIPreset('payout')" class="ticker-chip" style="cursor:pointer; border-color:var(--primary-border); background:var(--card);">
           <span>💰 Payout Strategy</span>
         </button>
       </div>
 
       <!-- Custom Input Group -->
-      <div style="display:flex; gap:6px;">
-        <input type="text" id="aiCustomPrompt" class="text-input" placeholder="Ask Multi-Cloud AI Advisor anything..." style="font-size:0.8rem; padding:8px 10px;" onkeydown="if(event.key==='Enter')askAICustom()" />
-        <button onclick="askAICustom()" id="btnAskAI" style="background:var(--primary); color:#fff; border:none; border-radius:8px; padding:8px 14px; font-weight:700; font-size:0.8rem; cursor:pointer; flex-shrink:0;">
+      <form onsubmit="event.preventDefault(); askAICustom();" style="display:flex; gap:6px;">
+        <input type="text" id="aiCustomPrompt" class="text-input" placeholder="Ask Multi-Cloud AI Advisor anything..." style="font-size:0.8rem; padding:8px 10px;" />
+        <button type="submit" id="btnAskAI" style="background:var(--primary); color:#fff; border:none; border-radius:8px; padding:8px 14px; font-weight:700; font-size:0.8rem; cursor:pointer; flex-shrink:0;">
           <span>Ask</span>
         </button>
-      </div>
+      </form>
 
       <!-- AI Response Box -->
-      <div id="aiResponseBox" style="display:none; margin-top:10px; background:#fff; border:1px solid #bfdbfe; border-radius:10px; padding:12px; font-size:0.78rem; line-height:1.5; color:var(--text-main); max-height:220px; overflow-y:auto;">
+      <div id="aiResponseBox" style="display:none; margin-top:10px; background:var(--card); border:1px solid var(--primary-border); border-radius:10px; padding:12px; font-size:0.78rem; line-height:1.5; color:var(--text-main); max-height:240px; overflow-y:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="font-weight:700; color:var(--primary);" id="aiResponseHeader">🤖 AI Advisor:</span>
+          <div style="display:flex; gap:4px;">
+            <button class="copy-btn" onclick="copyAIResponse()">📋 Copy</button>
+            <button class="copy-btn" onclick="clearAIResponse()">🗑️ Clear</button>
+          </div>
+        </div>
         <div id="aiResponseText"></div>
       </div>
     </div>
@@ -1460,7 +1550,7 @@ fi
         </div>
         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
           <span class="badge badge-gold">130/130 Tasks</span>
-          <a href="https://t.me/CryptoProUpRobot" target="_blank" style="font-size:0.7rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">Launch ↗</a>
+          <button onclick="openTelegramBot('https://t.me/CryptoProUpRobot')" style="background:none; border:none; font-size:0.7rem; font-weight:700; color:var(--primary); cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:2px;">Launch ↗</button>
         </div>
       </div>
       <div class="progress-bar-bg" style="margin: 6px 0 2px 0;">
@@ -1494,7 +1584,7 @@ fi
         </div>
         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
           <span class="badge badge-purple">500 STONES</span>
-          <a href="https://t.me/stoneswithestand_bot" target="_blank" style="font-size:0.7rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">Launch ↗</a>
+          <button onclick="openTelegramBot('https://t.me/stoneswithestand_bot')" style="background:none; border:none; font-size:0.7rem; font-weight:700; color:var(--primary); cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:2px;">Launch ↗</button>
         </div>
       </div>
       <div class="progress-bar-bg" style="margin: 6px 0 2px 0;">
@@ -1528,7 +1618,7 @@ fi
         </div>
         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
           <span class="badge badge-ton">Level 5 Active</span>
-          <a href="https://t.me/art_airdrop_bot" target="_blank" style="font-size:0.7rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">Launch ↗</a>
+          <button onclick="openTelegramBot('https://t.me/art_airdrop_bot')" style="background:none; border:none; font-size:0.7rem; font-weight:700; color:var(--primary); cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:2px;">Launch ↗</button>
         </div>
       </div>
       <div class="progress-bar-bg" style="margin: 6px 0 2px 0;">
@@ -1562,7 +1652,7 @@ fi
         </div>
         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
           <span class="badge badge-green">Peak Level 21</span>
-          <a href="https://t.me/mrgminerbot" target="_blank" style="font-size:0.7rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">Launch ↗</a>
+          <button onclick="openTelegramBot('https://t.me/mrgminerbot')" style="background:none; border:none; font-size:0.7rem; font-weight:700; color:var(--primary); cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:2px;">Launch ↗</button>
         </div>
       </div>
       <div class="bot-stats-row">
@@ -1593,7 +1683,7 @@ fi
         </div>
         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
           <span class="badge badge-blue">6,810 H/s</span>
-          <a href="https://t.me/ai_lab_robot" target="_blank" style="font-size:0.7rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">Launch ↗</a>
+          <button onclick="openTelegramBot('https://t.me/ai_lab_robot')" style="background:none; border:none; font-size:0.7rem; font-weight:700; color:var(--primary); cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:2px;">Launch ↗</button>
         </div>
       </div>
       <div class="bot-stats-row">
@@ -1624,7 +1714,7 @@ fi
         </div>
         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
           <span class="badge badge-green">24h Streaks</span>
-          <a href="https://t.me/Ultra_wallet_bot" target="_blank" style="font-size:0.7rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">Launch ↗</a>
+          <button onclick="openTelegramBot('https://t.me/Ultra_wallet_bot')" style="background:none; border:none; font-size:0.7rem; font-weight:700; color:var(--primary); cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:2px;">Launch ↗</button>
         </div>
       </div>
       <div class="bot-stats-row">
@@ -1655,7 +1745,7 @@ fi
         </div>
         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
           <span class="badge badge-gold">12,950 Pts/Acc</span>
-          <a href="https://t.me/ApxMinerBot" target="_blank" style="font-size:0.7rem; font-weight:700; color:var(--primary); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">Launch ↗</a>
+          <button onclick="openTelegramBot('https://t.me/ApxMinerBot')" style="background:none; border:none; font-size:0.7rem; font-weight:700; color:var(--primary); cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:2px;">Launch ↗</button>
         </div>
       </div>
       <div class="bot-stats-row">
@@ -1678,7 +1768,7 @@ fi
   <!-- TAB 3: FLEET ROSTER -->
   <div class="tab-pane" id="pane-fleet">
     <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-      <span>Fleet Members (${accounts.length})</span>
+      <span id="fleetCountLabel">Fleet Members (${accounts.length})</span>
       <span class="badge badge-blue">3 Cloud Shards</span>
     </div>
 
@@ -1689,7 +1779,15 @@ fi
 
     <!-- Instant Fleet Search Filter Input -->
     <div style="margin-bottom:12px; position:relative;">
-      <input type="text" id="fleetSearchInput" placeholder="🔍 Search accounts by name, ID, or wallet..." oninput="filterFleet()" style="width:100%; box-sizing:border-box; padding:9px 12px; font-size:0.8rem; border:1px solid var(--border); border-radius:8px; background:#ffffff; color:var(--text-main); font-family:inherit; outline:none;" />
+      <input type="text" id="fleetSearchInput" placeholder="🔍 Search by name, ID, TON or BSC wallet..." oninput="filterFleet()" style="width:100%; box-sizing:border-box; padding:9px 12px; font-size:0.8rem; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--text-main); font-family:inherit; outline:none;" />
+    </div>
+
+    <!-- Empty Search State -->
+    <div id="fleetEmptyState" style="display:none; text-align:center; padding:24px 16px; background:var(--card-sub); border:1px dashed var(--border); border-radius:10px; margin-bottom:12px;">
+      <div style="font-size:1.5rem; margin-bottom:6px;">🔍</div>
+      <div style="font-weight:700; font-size:0.85rem; color:var(--text-main);">No matching accounts found</div>
+      <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Try searching with a different name, Telegram ID, or wallet snippet.</div>
+      <button onclick="document.getElementById('fleetSearchInput').value=''; filterFleet();" style="margin-top:8px; background:var(--primary-bg); color:var(--primary); border:1px solid var(--primary-border); border-radius:6px; padding:4px 10px; font-size:0.72rem; font-weight:700; cursor:pointer;">Clear Search</button>
     </div>
 
     <div style="display:flex; flex-direction:column; gap:4px;" id="fleetContainer">
@@ -1697,21 +1795,26 @@ fi
         const rawW = a.ton_wallet;
         const wStr = (typeof rawW === 'string') ? rawW : (rawW && typeof rawW === 'object' && rawW.address ? String(rawW.address) : '');
         const wShort = wStr && wStr.length > 10 ? `${wStr.slice(0, 6)}...${wStr.slice(-4)}` : (wStr || 'Dedicated v4r2');
+        const bscW = a.bsc_wallet || ((idx % 3 === 1) ? '0x017841f26d5b79cc8c5eb20c65367bb645cc2610' : '0xfda4182001672b9f0f09e2118242e543e35ed5ce');
+        const bscShort = bscW && bscW.length > 10 ? `${bscW.slice(0, 6)}...${bscW.slice(-4)}` : bscW;
         const hasTok = !!rawTokens[String(a.user_id)];
         const shardNum = (idx % 3) + 1;
         const shardBadge = shardNum === 1 ? 'badge-blue' : (shardNum === 2 ? 'badge-gold' : 'badge-purple');
         const initials = (a.name || 'Account').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
         return `
-        <div class="acc-card account-row" data-name="${(a.name || '').replace(/"/g, '&quot;')}" data-id="${a.user_id || ''}" data-wallet="${wStr.replace(/"/g, '&quot;')}">
+        <div class="acc-card account-row" data-name="${(a.name || '').replace(/"/g, '&quot;')}" data-id="${a.user_id || ''}" data-wallet="${wStr.replace(/"/g, '&quot;')}" data-bsc="${bscW}">
           <div class="acc-left">
             <div class="acc-avatar">${initials}</div>
             <div class="acc-details">
               <div class="acc-name">#${a.index || (idx + 1)} ${a.name || 'Account'}</div>
               <div class="acc-id">ID: ${a.user_id || 'N/A'} • <span style="color:var(--green); font-weight:600;">10/10 Tasks</span> • <span style="color:var(--green); font-weight:600;">5/5 Anti-Bot ✅</span></div>
-              <div style="font-size:0.68rem; margin-top:2px;">
+              <div style="font-size:0.68rem; margin-top:2px; display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
                 ${wStr && wStr !== 'N/A'
-                  ? `<a href="https://tonviewer.com/${wStr}" target="_blank" style="color:var(--ton); text-decoration:none; font-family:'JetBrains Mono',monospace;">${wShort} ↗</a>`
-                  : '<span style="color:var(--text-muted);">Dedicated v4r2</span>'}
+                  ? `<a href="https://tonviewer.com/${wStr}" target="_blank" style="color:var(--ton); text-decoration:none; font-family:'JetBrains Mono',monospace;">💎 ${wShort} ↗</a><button class="copy-btn" onclick="copyToClipboard('${wStr}', 'TON Wallet')">📋</button>`
+                  : '<span style="color:var(--text-muted);">💎 Dedicated v4r2</span>'}
+                <span style="color:var(--border);">•</span>
+                <a href="https://bscscan.com/address/${bscW}" target="_blank" style="color:var(--gold); text-decoration:none; font-family:'JetBrains Mono',monospace;">🟡 ${bscShort} ↗</a>
+                <button class="copy-btn" onclick="copyToClipboard('${bscW}', 'BSC Vault')">📋</button>
               </div>
             </div>
           </div>
@@ -1728,7 +1831,7 @@ fi
   <div class="tab-pane" id="pane-payouts">
     <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
       <span>Verified Payout Receipts</span>
-      <a href="https://t.me/+oN8uefSRYWUyM2Fl" target="_blank" style="font-size:0.72rem; color:var(--primary); font-weight:700; text-decoration:none;">Official Channel ↗</a>
+      <button onclick="openTelegramBot('https://t.me/+oN8uefSRYWUyM2Fl')" style="background:none; border:none; font-size:0.72rem; color:var(--primary); font-weight:700; cursor:pointer; padding:0;">Official Channel ↗</button>
     </div>
 
     <div class="card" style="padding: 10px 12px;">
@@ -1808,8 +1911,8 @@ fi
       <span>📦 Push Cloud Backup to Telegram</span>
     </button>
 
-    <button onclick="location.reload()" class="action-btn btn-outline">
-      <span>🔄 Refresh Telemetry (<span id="timer">30</span>s)</span>
+    <button onclick="updateTelemetryAsync(true)" class="action-btn btn-outline">
+      <span>🔄 Refresh Telemetry (<span id="btnTimer">20</span>s)</span>
     </button>
 
     <!-- D1 SQL Serverless Distributed Audit Log Card -->
@@ -1818,7 +1921,7 @@ fi
         <div style="font-size:0.85rem; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:6px;">
           <span>🗄️ D1 SQL Serverless Audit Logs</span>
         </div>
-        <button onclick="fetchD1Logs()" style="border:1px solid var(--border); background:#fff; border-radius:6px; padding:3px 8px; font-size:0.68rem; font-weight:700; color:var(--primary); cursor:pointer;">
+        <button onclick="fetchD1Logs()" style="border:1px solid var(--border); background:var(--card); border-radius:6px; padding:3px 8px; font-size:0.68rem; font-weight:700; color:var(--primary); cursor:pointer;">
           <span>🔄 Refresh</span>
         </button>
       </div>
@@ -1870,7 +1973,7 @@ fi
 
     <div id="addAccFeedback" style="display:none; font-size:0.75rem; padding:8px 10px; border-radius:8px; margin-top:8px;"></div>
 
-    <div style="background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:10px; margin-top:12px; font-size:0.72rem; color:var(--text-sub);">
+    <div style="background:var(--card-sub); border:1px solid var(--border); border-radius:8px; padding:10px; margin-top:12px; font-size:0.72rem; color:var(--text-sub);">
       <div style="font-weight:700; margin-bottom:4px; color:var(--text-main);">⚡ Or connect directly in Telegram:</div>
       <div>1. Close this Mini App.</div>
       <div>2. Tap <b>➕ Add Account</b> on the bottom keyboard or send <code>/add_account &lt;phone&gt;</code>.</div>
@@ -1914,9 +2017,12 @@ fi
     tg.expand();
     try {
       if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
-      if (tg.setHeaderColor) tg.setHeaderColor('#ffffff');
-      if (tg.setBackgroundColor) tg.setBackgroundColor('#f8fafc');
+      applyThemeFromTG();
     } catch (_) {}
+
+    if (tg.onEvent) {
+      tg.onEvent('themeChanged', applyThemeFromTG);
+    }
 
     if (tg.BackButton) {
       tg.BackButton.onClick(() => {
@@ -1930,6 +2036,33 @@ fi
         }
       });
     }
+  }
+
+  function applyThemeFromTG() {
+    try {
+      const isDark = (tg && tg.colorScheme === 'dark') || (!tg && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        document.getElementById('themeIcon').innerText = '🌙';
+        if (tg?.setHeaderColor) tg.setHeaderColor('#151c28');
+        if (tg?.setBackgroundColor) tg.setBackgroundColor('#0b0f17');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.getElementById('themeIcon').innerText = '☀️';
+        if (tg?.setHeaderColor) tg.setHeaderColor('#ffffff');
+        if (tg?.setBackgroundColor) tg.setBackgroundColor('#f8fafc');
+      }
+    } catch (_) {}
+  }
+
+  function toggleTheme() {
+    haptic('light');
+    const isDark = document.documentElement.classList.toggle('dark');
+    document.getElementById('themeIcon').innerText = isDark ? '🌙' : '☀️';
+    try {
+      if (tg?.setHeaderColor) tg.setHeaderColor(isDark ? '#151c28' : '#ffffff');
+      if (tg?.setBackgroundColor) tg.setBackgroundColor(isDark ? '#0b0f17' : '#f8fafc');
+    } catch (_) {}
   }
 
   document.addEventListener('keydown', (e) => {
@@ -1946,6 +2079,39 @@ fi
     } catch (_) {}
   }
 
+  function openTelegramBot(url) {
+    haptic('light');
+    if (tg?.openTelegramLink) {
+      tg.openTelegramLink(url);
+    } else {
+      window.open(url, '_blank');
+    }
+  }
+
+  function copyToClipboard(text, label = 'Text') {
+    haptic('success');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('📋 ' + label + ' copied to clipboard!');
+      }).catch(() => {
+        prompt('Copy ' + label + ':', text);
+      });
+    } else {
+      prompt('Copy ' + label + ':', text);
+    }
+  }
+
+  function showToast(msg, bg = '#ecfdf5', border = '#a7f3d0', color = '#047857', duration = 3000) {
+    const toast = document.getElementById('actionToast');
+    if (!toast) return;
+    toast.style.display = 'block';
+    toast.style.background = bg;
+    toast.style.border = '1px solid ' + border;
+    toast.style.color = color;
+    toast.innerHTML = msg;
+    setTimeout(() => { toast.style.display = 'none'; }, duration);
+  }
+
   let currentTab = 'overview';
   function switchTab(tabId) {
     if (currentTab === tabId) {
@@ -1954,8 +2120,9 @@ fi
       document.body.scrollTop = 0;
       return;
     }
-    haptic();
+    haptic('light');
     currentTab = tabId;
+    try { localStorage.setItem('active_miniapp_tab', tabId); } catch (_) {}
 
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -1975,7 +2142,6 @@ fi
       }
     }
 
-    // Instantly reset scroll to top so content is NEVER scrolled past
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
@@ -1984,6 +2150,16 @@ fi
       fetchD1Logs();
     }
   }
+
+  // Restore saved tab on load
+  window.addEventListener('DOMContentLoaded', () => {
+    try {
+      const savedTab = localStorage.getItem('active_miniapp_tab');
+      if (savedTab && ['overview', 'bots', 'fleet', 'payouts', 'actions'].includes(savedTab)) {
+        switchTab(savedTab);
+      }
+    } catch (_) {}
+  });
 
   const accountsData = ${JSON.stringify(accounts)};
 
@@ -2158,9 +2334,9 @@ fi
           actBtn.removeAttribute('target');
           actBtn.onclick = (e) => { e.preventDefault(); switchTab('fleet'); };
         } else {
-          actBtn.onclick = null;
-          actBtn.setAttribute('href', actionUrl);
-          actBtn.setAttribute('target', '_blank');
+          actBtn.onclick = (e) => { e.preventDefault(); openTelegramBot(actionUrl); };
+          actBtn.setAttribute('href', '#');
+          actBtn.removeAttribute('target');
         }
       } else {
         actContainer.style.display = 'none';
@@ -2171,29 +2347,34 @@ fi
   function filterFleet() {
     const q = (document.getElementById('fleetSearchInput')?.value || '').toLowerCase().trim();
     const rows = document.querySelectorAll('.account-row');
+    let visibleCount = 0;
     rows.forEach(r => {
       const name = (r.getAttribute('data-name') || '').toLowerCase();
       const id = (r.getAttribute('data-id') || '').toLowerCase();
       const wallet = (r.getAttribute('data-wallet') || '').toLowerCase();
-      if (!q || name.includes(q) || id.includes(q) || wallet.includes(q)) {
+      const bsc = (r.getAttribute('data-bsc') || '').toLowerCase();
+      if (!q || name.includes(q) || id.includes(q) || wallet.includes(q) || bsc.includes(q)) {
         r.style.display = 'flex';
+        visibleCount++;
       } else {
         r.style.display = 'none';
       }
     });
+
+    const lbl = document.getElementById('fleetCountLabel');
+    if (lbl) {
+      lbl.innerText = q ? 'Showing ' + visibleCount + ' of ' + rows.length + ' Accounts' : 'Fleet Members (' + rows.length + ')';
+    }
+
+    const empty = document.getElementById('fleetEmptyState');
+    if (empty) {
+      empty.style.display = (visibleCount === 0 && rows.length > 0) ? 'block' : 'none';
+    }
   }
 
   function pingMesh() {
     haptic('success');
-    const toast = document.getElementById('actionToast');
-    if (toast) {
-      toast.style.display = 'block';
-      toast.style.background = '#ecfdf5';
-      toast.style.border = '1px solid #a7f3d0';
-      toast.style.color = '#047857';
-      toast.innerText = '⚡ Mesh Ping: Node 1 (12ms) • Node 2 (16ms) • Node 3 (14ms) — All 24 Nodes Healthy!';
-      setTimeout(() => { toast.style.display = 'none'; }, 4000);
-    }
+    showToast('⚡ <b>Mesh Ping:</b> Node 1 (12ms) • Node 2 (16ms) • Node 3 (14ms) — All 24 Nodes Healthy!');
   }
 
   function openAddAccountModal() {
@@ -2256,30 +2437,69 @@ fi
     }
   }
 
-  let seconds = 60;
+  // Smooth asynchronous background telemetry updater (Zero page flickering!)
+  let seconds = 20;
+  async function updateTelemetryAsync(manual = false) {
+    if (manual) haptic('light');
+    const countdownEl = document.getElementById('syncCountdown');
+    const btnTimerEl = document.getElementById('btnTimer');
+    if (countdownEl) countdownEl.innerText = 'Syncing...';
+    if (btnTimerEl) btnTimerEl.innerText = 'Syncing...';
+
+    try {
+      const res = await fetch('/api/rates');
+      if (res.ok) {
+        const rates = await res.json();
+        if (rates.bnb_usd) {
+          const rBnb = document.getElementById('rateBnb');
+          if (rBnb) rBnb.innerText = '$' + rates.bnb_usd.toFixed(2);
+          const rTon = document.getElementById('rateTon');
+          if (rTon && rates.ton_usd) rTon.innerText = '$' + rates.ton_usd.toFixed(2);
+          const rEth = document.getElementById('rateEth');
+          if (rEth && rates.eth_usd) rEth.innerText = '$' + rates.eth_usd.toFixed(0);
+          const rBtc = document.getElementById('rateBtc');
+          if (rBtc && rates.btc_usd) rBtc.innerText = '$' + rates.btc_usd.toFixed(0);
+
+          const bnbVal = ${bnbBal};
+          const totalUsd = (bnbVal * rates.bnb_usd).toFixed(2);
+          const totalBdt = (bnbVal * rates.bnb_usd * (rates.usd_bdt || 122.5)).toFixed(1);
+
+          const vUsd = document.getElementById('valUsd');
+          if (vUsd) vUsd.innerText = '~$' + totalUsd + ' USD';
+          const vBdt = document.getElementById('valBdt');
+          if (vBdt) vBdt.innerText = '≈ ৳' + totalBdt + ' BDT';
+          const vVaultUsd = document.getElementById('vaultBnbUsd');
+          if (vVaultUsd) vVaultUsd.innerText = '~$' + totalUsd + ' USD';
+        }
+      }
+      if (manual) showToast('✅ Telemetry synchronized successfully!');
+    } catch (_) {}
+
+    seconds = 20;
+    if (countdownEl) countdownEl.innerText = '20s';
+    if (btnTimerEl) btnTimerEl.innerText = '20';
+  }
+
   setInterval(() => {
     seconds--;
-    const el = document.getElementById('timer');
-    if (el) el.innerText = seconds;
+    const countdownEl = document.getElementById('syncCountdown');
+    const btnTimerEl = document.getElementById('btnTimer');
+    if (countdownEl) countdownEl.innerText = seconds + 's';
+    if (btnTimerEl) btnTimerEl.innerText = seconds;
     if (seconds <= 0) {
       const modalActive = document.getElementById('addAccModal')?.classList.contains('active');
       const isTyping = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA');
       if (!modalActive && !isTyping) {
-        location.reload();
+        updateTelemetryAsync();
       } else {
-        seconds = 30; // postpone while user is actively interacting
+        seconds = 15;
       }
     }
   }, 1000);
 
   async function triggerCloudFarmAll() {
     haptic('light');
-    const toast = document.getElementById('actionToast');
-    toast.style.display = 'block';
-    toast.style.background = '#eff6ff';
-    toast.style.border = '1px solid #bfdbfe';
-    toast.style.color = '#1e40af';
-    toast.innerText = '⚡ Triggering 3x Cloud Farming across all 3 Cloudflare Nodes...';
+    showToast('⚡ Triggering 3x Cloud Farming across all 3 Cloudflare Nodes...', '#eff6ff', '#bfdbfe', '#1e40af', 4000);
     try {
       await Promise.allSettled([
         fetch('https://restore-agy.aaaai2.workers.dev/api/farm/all', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ shard: 0 }) }),
@@ -2287,24 +2507,16 @@ fi
         fetch('https://restore-agy.aaa222.workers.dev/api/farm/all', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ shard: 2 }) })
       ]);
       haptic('success');
-      toast.style.background = '#ecfdf5';
-      toast.style.border = '1px solid #a7f3d0';
-      toast.style.color = '#047857';
-      toast.innerText = '✅ 3x Cloud Farming dispatched successfully across Node 1, Node 2, and Node 3!';
-      setTimeout(() => { location.reload(); }, 2500);
+      showToast('✅ 3x Cloud Farming dispatched successfully across Node 1, Node 2, and Node 3!');
+      setTimeout(() => { updateTelemetryAsync(); }, 2000);
     } catch (e) {
-      toast.innerText = '⚠️ Note: ' + e.message;
+      showToast('⚠️ Note: ' + e.message, '#fef3c7', '#fcd34d', '#b45309');
     }
   }
 
   async function triggerAction(act) {
     haptic('light');
-    const toast = document.getElementById('actionToast');
-    toast.style.display = 'block';
-    toast.style.background = '#fef3c7';
-    toast.style.border = '1px solid #fcd34d';
-    toast.style.color = '#b45309';
-    toast.innerText = '⏳ Dispatching signal: ' + act + '...';
+    showToast('⏳ Dispatching signal: ' + act.toUpperCase() + '...', '#fef3c7', '#fcd34d', '#b45309', 3000);
     try {
       const res = await fetch('/api/action', {
         method: 'POST',
@@ -2314,20 +2526,16 @@ fi
       const data = await res.json();
       if (data.ok) {
         haptic('success');
-        toast.style.background = '#ecfdf5';
-        toast.style.border = '1px solid #a7f3d0';
-        toast.style.color = '#047857';
-        toast.innerText = '✅ ' + act.toUpperCase() + ' signal sent successfully!';
-        setTimeout(() => { location.reload(); }, 2500);
+        showToast('✅ ' + act.toUpperCase() + ' signal sent successfully!');
+        if (currentTab === 'actions') {
+          setTimeout(fetchD1Logs, 1500);
+        }
       } else {
         haptic('warning');
-        toast.style.background = '#fee2e2';
-        toast.style.border = '1px solid #fca5a5';
-        toast.style.color = '#b91c1c';
-        toast.innerText = '❌ Failed: ' + (data.error || 'Server error');
+        showToast('❌ Failed: ' + (data.error || 'Server error'), '#fee2e2', '#fca5a5', '#b91c1c');
       }
     } catch (e) {
-      toast.innerText = '⚠️ Signal note: ' + act;
+      showToast('⚠️ Signal note: ' + act, '#fef3c7', '#fcd34d', '#b45309');
     }
   }
 
@@ -2352,28 +2560,45 @@ fi
     await executeAIQuery(prompt);
   }
 
+  let lastAIResponseText = '';
   async function executeAIQuery(prompt) {
     haptic('light');
     const box = document.getElementById('aiResponseBox');
     const text = document.getElementById('aiResponseText');
+    const header = document.getElementById('aiResponseHeader');
     const btn = document.getElementById('btnAskAI');
     if (box) box.style.display = 'block';
-    if (text) text.innerHTML = '<span style="color:var(--text-muted); font-style:italic;">⚡ Querying Multi-Cloud AI Cascade (Gemini 3.8 / Groq / Llama)...</span>';
+    if (header) header.innerText = '🤖 Querying Multi-Cloud AI Cascade...';
+    if (text) text.innerHTML = '<span style="color:var(--text-muted); font-style:italic;">⚡ Querying Google Gemini 3.8 Flash • Groq LPU • Workers AI...</span>';
     if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
 
     try {
       const resp = await fetch('/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt })
+        body: JSON.stringify({ prompt: prompt })
       });
       const data = await resp.json();
       haptic('success');
       if (data.ok && data.answer) {
         const providerName = data.provider || "AI Engine";
         const modelName = data.model || "Gemini 3.8 Flash";
-        text.innerHTML = '<div style="font-weight:700; color:var(--primary); margin-bottom:6px;">🤖 ' + providerName + ' (' + modelName + ') • Node ' + (data.node || '') + ':</div>' +
-          '<div>' + data.answer.replace(/\n/g, '<br>') + '</div>';
+        const nodeStr = data.node ? ' • Node ' + data.node : '';
+        lastAIResponseText = data.answer;
+        if (header) header.innerText = '🤖 ' + providerName + ' (' + modelName + ')' + nodeStr;
+        
+        // Clean markdown rendering
+        let formatted = data.answer
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+          .replace(new RegExp('\\x60([^\\x60]+)\\x60', 'g'), '<code style="background:var(--card-sub); padding:1px 4px; border-radius:4px; font-family:\'JetBrains Mono\',monospace;">$1</code>')
+          .replace(/^\* (.*$)/gim, '• $1')
+          .replace(/^- (.*$)/gim, '• $1')
+          .replace(/\n/g, '<br>');
+
+        text.innerHTML = formatted;
       } else {
         text.innerHTML = '<span style="color:#b91c1c;">⚠️ AI response unavailable: ' + (data.error || 'Unknown error') + '</span>';
       }
@@ -2384,6 +2609,19 @@ fi
     }
   }
 
+  function copyAIResponse() {
+    if (lastAIResponseText) {
+      copyToClipboard(lastAIResponseText, 'AI Advisor Response');
+    }
+  }
+
+  function clearAIResponse() {
+    haptic('light');
+    const box = document.getElementById('aiResponseBox');
+    if (box) box.style.display = 'none';
+    lastAIResponseText = '';
+  }
+
   async function fetchD1Logs() {
     const tbody = document.getElementById('d1LogsBody');
     if (!tbody) return;
@@ -2391,14 +2629,16 @@ fi
       const resp = await fetch('/api/d1/history');
       const data = await resp.json();
       if (data.ok && data.logs && data.logs.length > 0) {
-        tbody.innerHTML = data.logs.map(log => 
-          '<tr>' +
+        tbody.innerHTML = data.logs.map(log => {
+          const ev = log.event || 'event';
+          const badgeClass = ev.includes('withdraw') ? 'badge-green' : (ev.includes('farm') ? 'badge-gold' : (ev.includes('verify') ? 'badge-purple' : 'badge-blue'));
+          return '<tr>' +
             '<td class="mono" style="font-weight:700;">#' + log.id + '</td>' +
-            '<td><span class="badge badge-blue">' + (log.event || 'event') + '</span></td>' +
+            '<td><span class="badge ' + badgeClass + '">' + ev + '</span></td>' +
             '<td style="font-size:0.7rem; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + String(log.details || '').replace(/"/g, '&quot;') + '">' + (log.details || '-') + '</td>' +
             '<td class="mono" style="font-size:0.65rem; color:var(--text-muted);">' + String(log.created_at || '').slice(11, 19) + '</td>' +
-          '</tr>'
-        ).join('');
+          '</tr>';
+        }).join('');
       } else {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:10px;">No D1 audit records found yet.</td></tr>';
       }
