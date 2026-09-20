@@ -1186,15 +1186,15 @@ fi
       </div>
     </div>
 
-    <!-- Multi-Cloud Mesh Infrastructure Status -->
+    <!-- Multi-Cloud Mesh Infrastructure Status (14 Active Systems) -->
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div style="font-size:0.8rem; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:6px;">
           <span>☁️ Active Multi-Cloud Mesh</span>
-          <span class="badge badge-green">8/8 Systems Live</span>
+          <span class="badge badge-green">14/14 Systems Live</span>
         </div>
         <button onclick="pingMesh()" style="border:1px solid var(--border); background:#fff; border-radius:6px; padding:3px 8px; font-size:0.68rem; font-weight:700; color:var(--primary); cursor:pointer;">
-          <span>🔄 Ping</span>
+          <span>🔄 Ping All</span>
         </button>
       </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.72rem;">
@@ -1221,17 +1221,38 @@ fi
         </div>
         <div class="hud-item" style="border-left:3px solid #059669;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-weight:700;">Render Standby 1</span>
-            <span class="badge badge-green" style="font-size:0.6rem; padding:1px 4px;">Singapore</span>
+            <span style="font-weight:700;">Render Singapore</span>
+            <span class="badge badge-green" style="font-size:0.6rem; padding:1px 4px;">Standby 1</span>
           </div>
           <div style="font-size:0.65rem; color:var(--text-muted);">Cloud Auto-Failover</div>
         </div>
         <div class="hud-item" style="border-left:3px solid #059669;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-weight:700;">Render Standby 2</span>
-            <span class="badge badge-green" style="font-size:0.6rem; padding:1px 4px;">Frankfurt</span>
+            <span style="font-weight:700;">Render Frankfurt</span>
+            <span class="badge badge-green" style="font-size:0.6rem; padding:1px 4px;">Standby 2</span>
           </div>
           <div style="font-size:0.65rem; color:var(--text-muted);">Cloud Auto-Failover</div>
+        </div>
+        <div class="hud-item" style="border-left:3px solid #000000;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:700;">Deno Edge 1</span>
+            <span class="badge badge-green" style="font-size:0.6rem; padding:1px 4px;">V8 Edge</span>
+          </div>
+          <div style="font-size:0.65rem; color:var(--text-muted);">Keepalive Sentinel</div>
+        </div>
+        <div class="hud-item" style="border-left:3px solid #000000;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:700;">Deno Edge 2</span>
+            <span class="badge badge-green" style="font-size:0.6rem; padding:1px 4px;">V8 Edge</span>
+          </div>
+          <div style="font-size:0.65rem; color:var(--text-muted);">aaasupporta Node</div>
+        </div>
+        <div class="hud-item" style="border-left:3px solid #171717;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:700;">Vercel Serverless</span>
+            <span class="badge badge-green" style="font-size:0.6rem; padding:1px 4px;">Edge</span>
+          </div>
+          <div style="font-size:0.65rem; color:var(--text-muted);">Next.js Ingress</div>
         </div>
         <div class="hud-item" style="border-left:3px solid #dc2626;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -1243,16 +1264,37 @@ fi
         <div class="hud-item" style="border-left:3px solid #2563eb;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <span style="font-weight:700;">Cloudflare D1 SQL</span>
-            <span class="badge badge-green" style="font-size:0.6rem; padding:1px 4px;">Serverless</span>
+            <span class="badge badge-green" style="font-size:0.6rem; padding:1px 4px;">Active</span>
           </div>
           <div style="font-size:0.65rem; color:var(--text-muted);">Distributed Audit DB</div>
+        </div>
+        <div class="hud-item" style="border-left:3px solid #0ea5e9;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:700;">Turso LibSQL</span>
+            <span class="badge badge-green" style="font-size:0.6rem; padding:1px 4px;">Mumbai</span>
+          </div>
+          <div style="font-size:0.65rem; color:var(--text-muted);">Distributed Edge DB</div>
+        </div>
+        <div class="hud-item" style="border-left:3px solid #10b981;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:700;">Supabase Postgres</span>
+            <span class="badge badge-green" style="font-size:0.6rem; padding:1px 4px;">US East</span>
+          </div>
+          <div style="font-size:0.65rem; color:var(--text-muted);">13 Accounts Synced</div>
         </div>
         <div class="hud-item" style="border-left:3px solid #8b5cf6;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <span style="font-weight:700;">Workers AI</span>
             <span class="badge badge-green" style="font-size:0.6rem; padding:1px 4px;">Llama 3.2</span>
           </div>
-          <div style="font-size:0.65rem; color:var(--text-muted);">Neural Edge GPU</div>
+          <div style="font-size:0.65rem; color:var(--text-muted);">Neural GPU Edge</div>
+        </div>
+        <div class="hud-item" style="border-left:3px solid #f59e0b;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:700;">Better Stack</span>
+            <span class="badge badge-green" style="font-size:0.6rem; padding:1px 4px;">10 Monitors</span>
+          </div>
+          <div style="font-size:0.65rem; color:var(--text-muted);">24/7 Global Uptime</div>
         </div>
       </div>
     </div>
