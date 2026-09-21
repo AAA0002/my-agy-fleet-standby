@@ -5388,48 +5388,27 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
             withdraw_stones = min(500, int(coins))
             logger.info(f"[{acc_name}] 💎 [Stones] Coins {coins} STONES >= 500 threshold! Submitting auto-withdrawal of {withdraw_stones} STONES to Arbitrum {ARBITRUM_WALLET}...")
             try:
-                async with session.post(f"{base_url}/api/wd/ad/precheck", json={"initData": init_data, "amount": withdraw_stones, "wallet": ARBITRUM_WALLET, "currency": "stones"}, headers=headers, timeout=aiohttp.ClientTimeout(total=12), proxy=proxy) as pr:
-                    pd = await pr.json()
-                    logger.info(f"[{acc_name}] 💎 [Stones] Precheck result: {pd}")
-                    if pd.get("ok") or pd.get("success"):
-                        boarded_ads = pd.get("boarded", 0)
-                        req_ads = pd.get("required", 4)
-                        attempts = 0
-                        while pd.get("need_ad") and boarded_ads < req_ads and attempts < 6:
-                            attempts += 1
-                            logger.info(f"[{acc_name}] 💎 [Stones] Attempting automated ad confirmation sequence ({boarded_ads}/{req_ads} boarded, attempt {attempts})...")
-                            try:
-                                async with session.post(f"{base_url}/api/wd/ad/challenge", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as ch_res:
-                                    if ch_res.status == 200:
-                                        ch_data = await ch_res.json()
-                                        cid = ch_data.get("challenge", {}).get("challenge_id")
-                                        if cid:
-                                            await session.post(f"{base_url}/api/ad/beat", json={"initData": init_data, "scope": "wd", "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=6), proxy=proxy)
-                                            await asyncio.sleep(16.0)
-                                            await session.post(f"{base_url}/api/ad/beat", json={"initData": init_data, "scope": "wd", "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=6), proxy=proxy)
-                                            await asyncio.sleep(0.5)
-                                            async with session.post(f"{base_url}/api/wd/ad/confirm", json={"initData": init_data, "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cf_res:
-                                                cf_data = await cf_res.json()
-                                                boarded_ads = cf_data.get("verified", boarded_ads + 1)
-                                                logger.info(f"[{acc_name}] 💎 [Stones] Ad confirm result: {cf_data} (Boarded: {boarded_ads}/{req_ads})")
-                            except Exception as ade:
-                                logger.debug(f"[{acc_name}] Stones ad challenge note: {ade}")
-                                break
-                            await asyncio.sleep(2.0)
-                        if not pd.get("need_ad") or boarded_ads >= req_ads:
-                            async with session.post(f"{base_url}/api/withdraw", json={"initData": init_data, "amount": withdraw_stones, "wallet": ARBITRUM_WALLET, "currency": "stones"}, headers=headers, timeout=aiohttp.ClientTimeout(total=12), proxy=proxy) as wr:
-                                wd = await wr.json()
-                                logger.info(f"[{acc_name}] 💎 [Stones] Withdrawal result: {wd}")
-                                if wd.get("ok") or wd.get("success"):
-                                    await send_report_message(
-                                        f"🎉 *Stones Miners Withdrawal Submitted!*\n\n"
-                                        f"• **Account:** {acc_name}\n"
-                                        f"• **Amount:** `{withdraw_stones} STONES`\n"
-                                        f"• **Destination:** `{ARBITRUM_WALLET}` (Arbitrum One)\n"
-                                        f"• **Ad Gate:** `All {boarded_ads}/{req_ads} Ads Verified & Passed` ✅\n"
-                                        f"• **Result:** `{wd}`",
-                                        chat_id=REPORT_CHAT_ID
-                                    )
+                from stones_captcha_solver import execute_stones_withdrawal_with_captcha
+                ok_wd, wd_res = await execute_stones_withdrawal_with_captcha(
+                    session=session,
+                    base_url=base_url,
+                    headers=headers,
+                    init_data=init_data,
+                    amount=withdraw_stones,
+                    wallet=ARBITRUM_WALLET,
+                    proxy=proxy
+                )
+                logger.info(f"[{acc_name}] 💎 [Stones] Withdrawal result: {wd_res}")
+                if ok_wd:
+                    await send_report_message(
+                        f"🎉 *Stones Miners Withdrawal Submitted!*\n\n"
+                        f"• **Account:** {acc_name}\n"
+                        f"• **Amount:** `{withdraw_stones} STONES`\n"
+                        f"• **Destination:** `{ARBITRUM_WALLET}` (Arbitrum One)\n"
+                        f"• **Captcha Verification:** `Passed & Verified` ✅\n"
+                        f"• **Result:** `{wd_res}`",
+                        chat_id=REPORT_CHAT_ID
+                    )
             except Exception as we:
                 logger.error(f"[{acc_name}] Stones auto-withdrawal error: {we}")
 
