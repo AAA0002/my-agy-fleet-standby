@@ -7802,10 +7802,44 @@ async def miniapp_command_listener_loop():
                             elif act == "sync":
                                 async def _run_sync():
                                     logger.info("[MiniApp Listener] Manual fleet sync requested...")
-                                    # Trigger instant cycle check across all 13 accounts
                                     wake_worker_event.set()
                                     await send_report_message("🔄 *Manual Fleet Sync Dispatched!* Cycle triggered across all 13 accounts.", reply_markup=MAIN_TAB_KEYBOARD, chat_id=REPORT_CHAT_ID)
                                 asyncio.create_task(_run_sync())
+                            elif act == "harvest":
+                                async def _run_harvest():
+                                    logger.info("[MiniApp Listener] ⚡ Instant Fleet Harvest triggered by Mini App / AI...")
+                                    wake_worker_event.set()
+                                    await send_report_message("⚡ *Instant Fleet Harvest Dispatched!* All bots triggered across all accounts.", reply_markup=MAIN_TAB_KEYBOARD, chat_id=REPORT_CHAT_ID)
+                                asyncio.create_task(_run_harvest())
+                            elif act == "remove_account":
+                                rem_uid = str(act_obj.get("user_id") or "")
+                                rem_phone = str(act_obj.get("phone") or "")
+                                async def _run_remove():
+                                    accounts = load_accounts()
+                                    target_acc = None
+                                    for a in accounts:
+                                        if (rem_uid and str(a.get("user_id")) == rem_uid) or (rem_phone and str(a.get("phone")) == rem_phone):
+                                            target_acc = a
+                                            break
+                                    if target_acc:
+                                        acc_name = target_acc.get("name", "Account")
+                                        acc_id = str(target_acc.get("user_id"))
+                                        CURRENTLY_ACTIVE_ACCOUNT_IDS.discard(acc_id)
+                                        new_accs = [a for a in accounts if str(a.get("user_id")) != acc_id]
+                                        save_accounts(new_accs)
+                                        ACCOUNT_BALANCES.pop(acc_id, None)
+                                        FLEET_MINIAPP_TOKENS.pop(acc_id, None)
+                                        logger.info(f"[Account Manager] 🗑️ Removed account {acc_name} ({acc_id}) from fleet.")
+                                        await send_report_message(
+                                            f"🗑️ *Account Removed from Fleet*\n\n"
+                                            f"• **Name:** {acc_name}\n"
+                                            f"• **User ID:** `{acc_id}`\n"
+                                            f"• **Phone:** `{target_acc.get('phone', 'N/A')}`\n\n"
+                                            f"✅ Account session disconnected and removed from 24/7 automation.",
+                                            reply_markup=MAIN_TAB_KEYBOARD,
+                                            chat_id=REPORT_CHAT_ID
+                                        )
+                                asyncio.create_task(_run_remove())
         except Exception as e:
             logger.debug(f"[MiniApp Listener] Note: {e}")
         await asyncio.sleep(15)
