@@ -536,11 +536,11 @@ function App() {
       const res = await fetch("/ai", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: `You are the AGY Fleet Intelligence AI. The fleet has 13 active mining accounts, ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF mined across all accounts. The user asks: "${query}". Provide a concise, clear answer.`
+          prompt: `You are Ari, the personal cloud AI copilot for Arif's 13-account automated mining fleet (MY AGY AI). Fleet state: 13 active accounts across all 10 bots, ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Stones vault: 500+ STONES on Arbitrum One. Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
         })
       });
       const d = await res.json();
-      setAiMessages([...newMsgs, { sender: "ai", text: d.response || d.answer || "All 13 accounts are online and actively mining." }]);
+      setAiMessages([...newMsgs, { sender: "ai", text: d.response || d.answer || "All 13 accounts are online and actively mining, Arif." }]);
     } catch (_) {
       setAiMessages([...newMsgs, { sender: "ai", text: `Fleet Status: 13/13 accounts active. On-chain balance is ${bnbBalance.toFixed(6)} BNB.` }]);
     } finally {
@@ -856,12 +856,11 @@ function App() {
             }
           },
           {
-            title: "🪙 ATF 500 Sweep",
-            desc: "Dedicated TON Wallets",
+            title: "🪙 ATF Accumulation",
+            desc: "Farm & Accumulate (No WD)",
             action: async () => {
-              showToast("AI: Sweeping ATF >= 500...", "info");
-              await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sweep_atf" }) });
-              setAiMessages(prev => [...prev, { sender: "user", text: "🪙 Sweep ATF >= 500" }, { sender: "ai", text: "🪙 ATF 500-Withdrawal Sweep triggered! Scanning accounts with >= 500 ATF mined balance (e.g. Arif Hossain: 2,168 ATF). Solves withdraw puzzle captcha and submits for admin approval." }]);
+              showToast("AI: ATF is in 100% farming & accumulation mode", "info");
+              setAiMessages(prev => [...prev, { sender: "user", text: "🪙 Check ATF Mining & Farming Policy" }, { sender: "ai", text: "🪙 ATF Miner Policy: Strictly 100% farming and accumulation mode. Auto-withdrawals are permanently disabled per your directive. All 13 accounts are compounding tokens directly in the pool without withdrawing." }]);
             }
           },
           {
