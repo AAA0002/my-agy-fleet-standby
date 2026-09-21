@@ -120,6 +120,9 @@ fi
 # Added by Antigravity CLI installer
 export PATH="/home/arif2743/.local/bin:$PATH"
 
-# Auto-revive disabled - bots run 100% in the cloud (Render & Cloudflare Edge)
+# Auto-revive Telegram bot supervisor in background tmux if down
+if [ -z "$TMUX" ] && ! tmux has-session -t "telegram_bot" 2>/dev/null; then
+    bash /home/arif2743/start_userbot.sh >/dev/null 2>&1 &
+fi
 
 

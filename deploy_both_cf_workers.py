@@ -2468,7 +2468,10 @@ Respond naturally and helpfully:`;
       ctx.waitUntil(env.DB.prepare("INSERT INTO fleet_logs (event, details) VALUES (?, ?)").bind("cron_cycle", JSON.stringify({ node: CURRENT_SUBDOMAIN, shard: NODE_SHARD_INDEX, time: new Date().toISOString() })).run().catch(() => {}));
     }
 
-    // 1. Crypto Rates: fetched dynamically via /api/rates with HTTP Cache-Control (0 KV writes)
+    // 1. Keepalive for Ari Cloud Agent on Render (100% free - keeps agent active with 0 cold starts)
+    ctx.waitUntil(
+      fetch("https://hermes-grok-cloud-agent.onrender.com/health", { method: "GET" }).catch(() => null)
+    );
 
     // 2. Intelligent Cloud-Aware Sentinel Check
     ctx.waitUntil((async () => {
@@ -2482,12 +2485,13 @@ Respond naturally and helpfully:`;
 
         // Only investigate if local machine has been silent for > 60 minutes
         if (localMissingMinutes >= 60) {
-          // Check if Render Cloud Standby (Singapore or Frankfurt) is standing guard
-          const [r1, r2] = await Promise.all([
+          // Check if Render Cloud Standby or Ari AI Agent is standing guard
+          const [r1, r2, rAri] = await Promise.all([
             fetch("https://my-agy-fleet-standby.onrender.com/health", { method: "GET" }).catch(() => null),
-            fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => null)
+            fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => null),
+            fetch("https://hermes-grok-cloud-agent.onrender.com/health", { method: "GET" }).catch(() => null)
           ]);
-          const cloudStandbyAlive = (r1 && r1.ok) || (r2 && r2.ok);
+          const cloudStandbyAlive = (r1 && r1.ok) || (r2 && r2.ok) || (rAri && rAri.ok);
 
           // If Render is alive in the cloud, the fleet is 100% operational - DO NOT send false alarms!
           if (cloudStandbyAlive) {

@@ -46,3 +46,6 @@ fleet_evm_wallets.json
 .ssh/
 userbot.log.old
 scratch/
+hermes-grok-cloud-agent/
+adk_cli_article.txt
+.agents/

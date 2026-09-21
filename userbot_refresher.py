@@ -7005,50 +7005,11 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                 await asyncio.sleep(1.0)
                 await session.post(f"{base_url}?action=claim_task&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "task_id": tid, "client_started_at": s_at}), headers=headers, timeout=aiohttp.ClientTimeout(total=5))
 
-        # 5. Auto-Withdrawal check for ATF (>= 500 ATF threshold)
+        # 5. ATF Accumulation & Farming (Withdrawal disabled per user directive: farming only)
         mined_bal = float(u.get("mined_balance", 0) or 0)
         acc["atf_balance"] = mined_bal
         await update_account_safely(acc_uid, {"atf_balance": mined_bal})
-        atf_next_wd = float(acc.get("atf_next_wd_at") or 0)
-        now_ts = time.time()
-        if mined_bal >= 500:
-            if now_ts < atf_next_wd:
-                rem_m = max(0.1, (atf_next_wd - now_ts) / 60.0)
-                logger.info(f"[{acc_name}] 🪙 [ATF Miner] Mined {mined_bal:.2f} ATF >= 500 threshold, on withdrawal cooldown (~{rem_m:.1f}m left).")
-            else:
-                logger.info(f"[{acc_name}] 🪙 [ATF Miner] Mined {mined_bal:.2f} ATF >= 500 threshold! Submitting auto-withdrawal of 500 ATF to {target_ton_wallet}...")
-                try:
-                    from stones_captcha_solver import execute_atf_withdrawal_with_captcha
-                    ok_wd, wd_res = await execute_atf_withdrawal_with_captcha(
-                        session=session,
-                        base_url=base_url,
-                        headers=headers,
-                        init_data=init_data,
-                        tg_id=int(acc_uid),
-                        amount=500,
-                        tma_session_token=ld.get("tma_session_token"),
-                        proxy=acc_proxy if "acc_proxy" in locals() else None
-                    )
-                    logger.info(f"[{acc_name}] 🪙 [ATF Miner] Withdrawal result: {wd_res}")
-                    if ok_wd:
-                        acc["atf_next_wd_at"] = now_ts + 86400  # 24h post-withdrawal cooldown
-                        await update_account_safely(acc_uid, {"atf_next_wd_at": now_ts + 86400})
-                        await send_report_message(
-                            f"🎉 *ATF Miners Auto-Withdrawal Submitted!*\n\n"
-                            f"• **Account:** {acc_name}\n"
-                            f"• **Amount:** `500 ATF`\n"
-                            f"• **Destination Wallet:** `{target_ton_wallet}`\n"
-                            f"• **Status:** Pending Admin Approval ✅\n"
-                            f"• **Result:** `{wd_res.get('message', 'Submitted')}`",
-                            chat_id=REPORT_CHAT_ID
-                        )
-                    else:
-                        acc["atf_next_wd_at"] = now_ts + 1800  # 30 min cooldown on retry
-                        await update_account_safely(acc_uid, {"atf_next_wd_at": now_ts + 1800})
-                except Exception as we:
-                    logger.error(f"[{acc_name}] ATF auto-withdrawal error: {we}")
-
-        logger.info(f"[{acc_name}] 🪙 [ATF Miner] Harvested & mining cycle active | Balance: {mined_bal:.2f} ATF!")
+        logger.info(f"[{acc_name}] 🪙 [ATF Miner] Harvested & farming cycle active | Total Pool: {mined_bal:.2f} ATF (Accumulating)")
     except Exception as e:
         logger.debug(f"[{acc_name}] ATF Miner automation note: {e}")
 
@@ -7923,38 +7884,8 @@ async def miniapp_command_listener_loop():
                                 asyncio.create_task(_run_stones_sweep())
                             elif act == "sweep_atf":
                                 async def _run_atf_sweep():
-                                    logger.info("[MiniApp Listener] 🪙 ATF 500-Withdrawal Sweep triggered...")
-                                    accounts = load_accounts()
-                                    ton_wallets = load_fleet_ton_wallets()
-                                    for acc in accounts:
-                                        mined = float(acc.get("atf_balance", 0) or 0)
-                                        uid = str(acc.get("user_id"))
-                                        name = acc.get("name", "User")
-                                        target_ton = ton_wallets.get(uid, {}).get("address") or TON_PRIMARY_WALLET
-                                        if mined >= 500:
-                                            logger.info(f"[ATF Sweep] {name} ({uid}) eligible ({mined} ATF). Submitting 500 withdrawal...")
-                                            init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("atf_init_data")
-                                            if init_data:
-                                                try:
-                                                    from stones_captcha_solver import execute_atf_withdrawal_with_captcha
-                                                    async with aiohttp.ClientSession() as atf_sess:
-                                                        headers = {"Content-Type": "application/json", "User-Agent": get_account_user_agent(uid)}
-                                                        async with atf_sess.post(f"https://atfminers.asloni.online/miner/index.php?action=login&t={int(time.time()*1000)}", json={"initData": init_data, "tg_id": int(uid), "username": acc.get("username", "")}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as lr:
-                                                            ld = await lr.json()
-                                                            tma_token = ld.get("tma_session_token")
-                                                        ok_a, res_a = await execute_atf_withdrawal_with_captcha(
-                                                            session=atf_sess,
-                                                            base_url="https://atfminers.asloni.online/miner/index.php",
-                                                            headers=headers,
-                                                            init_data=init_data,
-                                                            tg_id=int(uid),
-                                                            amount=500,
-                                                            tma_session_token=tma_token
-                                                        )
-                                                        if ok_a:
-                                                            await send_report_message(f"🎉 *ATF Sweep:* `{name}` withdrew 500 ATF to `{target_ton}`! Result: {res_a}", chat_id=REPORT_CHAT_ID)
-                                                except Exception as awe:
-                                                    logger.debug(f"[ATF Sweep] Error for {name}: {awe}")
+                                    logger.info("[MiniApp Listener] 🪙 ATF is set to Farming & Accumulation Mode (Withdrawals disabled per policy).")
+                                    await send_report_message("🪙 *ATF Miner:* Farming & Accumulation Mode is active. Tokens are being continuously mined without withdrawals.", chat_id=REPORT_CHAT_ID)
                                 asyncio.create_task(_run_atf_sweep())
                             elif act == "remove_account":
                                 rem_uid = str(act_obj.get("user_id") or "")
