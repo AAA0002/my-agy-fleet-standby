@@ -39,6 +39,16 @@ RENDER_ACCOUNTS = [
         "service_id": "srv-dan5q00ae00c73djummg",
         "url": "https://my-agy-fleet-standby-node2.onrender.com",
         "region": "frankfurt"
+    },
+    {
+        "name": "Render Node 3 (Hermes-Grok AI Council)",
+        "email": "koramshah2@gmail.com",
+        "api_key": os.getenv("RENDER_API_KEY", "rnd_PqsurfX5D9blSaEEuEDDAUcl393y"),
+        "owner_id": "tea-daoj9nid0e5s738gqp0g",
+        "service_name": "hermes-grok-cloud-agent",
+        "service_id": "srv-daojdt5g1s2s738jsjmg",
+        "url": "https://hermes-grok-cloud-agent.onrender.com",
+        "region": "singapore"
     }
 ]
 
