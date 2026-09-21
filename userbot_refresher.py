@@ -31,8 +31,19 @@ from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebV
 from telethon.tl.types import InputBotAppShortName
 from dotenv import load_dotenv
 from phone_detector import detect_and_normalize_phone, get_country_flag
-from proxy_manager import parse_proxy, get_account_fingerprint, build_proxy_security_report, set_account_proxy
+from proxy_manager import parse_proxy, get_account_fingerprint, build_proxy_security_report, set_account_proxy, get_account_user_agent
 from backup_manager import send_backup_to_telegram
+
+try:
+    from tonsdk.contract.wallet import Wallets, WalletVersionEnum
+    from tonsdk.utils import Address
+    from nacl.signing import SigningKey
+    import struct
+    import hashlib
+    import base64
+    HAS_TON_PROOF_LIBS = True
+except Exception:
+    HAS_TON_PROOF_LIBS = False
 
 try:
     import sentry_sdk
@@ -5294,7 +5305,8 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
             logger.debug(f"[{acc_name}] 💎 [Stones] No cached or fresh initData available. Skipping until token collection.")
             return
 
-        headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
+        acc_ua = get_account_user_agent(acc_uid)
+        headers = {"Content-Type": "application/json", "User-Agent": acc_ua}
         base_url = "https://app.stoneswithestand.my.id"
         proxy = acc.get("proxy")
 
@@ -5551,11 +5563,12 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             logger.debug(f"[{acc_name}] ⛏️ [MRG Miner] No cached or fresh initData available. Skipping until token collection.")
             return
 
+        acc_ua = get_account_user_agent(acc_uid)
         headers = {
             "Content-Type": "application/json",
             "Origin": "https://app.mrgtoken.xyz",
             "Referer": "https://app.mrgtoken.xyz/",
-            "User-Agent": HUMAN_USER_AGENT
+            "User-Agent": acc_ua
         }
         base_url = "https://mrg.up.railway.app"
 
@@ -5571,7 +5584,7 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                 "ram": "8 GB",
                 "cpuCores": 8,
                 "screenResolution": "1080x2400",
-                "userAgent": HUMAN_USER_AGENT,
+                "userAgent": acc_ua,
                 "timezone": "UTC",
                 "language": "en"
             }
@@ -6036,8 +6049,9 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
         if not init_data:
             return
 
+        acc_ua = get_account_user_agent(acc_uid)
         base_url = "https://api.ailab-agent.online/api/v1"
-        headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
+        headers = {"Content-Type": "application/json", "User-Agent": acc_ua}
 
         # 1. Login
         token = None
@@ -6170,7 +6184,8 @@ async def automate_ultrawallet_cycle(session: aiohttp.ClientSession, acc_client,
         if not init_data:
             return
 
-        headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
+        acc_ua = get_account_user_agent(acc_uid)
+        headers = {"Content-Type": "application/json", "User-Agent": acc_ua}
         base_url = "https://wallet.trxvault.top/api"
 
         # 1. Login & Firebase idToken acquisition
@@ -6380,7 +6395,8 @@ async def automate_apx_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         if not init_data:
             return
 
-        headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
+        acc_ua = get_account_user_agent(acc_uid)
+        headers = {"Content-Type": "application/json", "User-Agent": acc_ua}
         base_url = "https://apex-miner.vercel.app/api"
 
         # 1. Auth & Bootstrap
@@ -6541,7 +6557,8 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
             return
 
         proxy = acc.get("proxy")
-        headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
+        acc_ua = get_account_user_agent(acc_uid)
+        headers = {"Content-Type": "application/json", "User-Agent": acc_ua}
         base_url = "https://ainovum.biz"
 
         # 1. Bootstrap & acquire session cookies
@@ -6681,7 +6698,8 @@ async def automate_mininggram_cycle(session: aiohttp.ClientSession, acc_client, 
             return
 
         base_url = "https://mining-gram-worker.muhaisin0888.workers.dev"
-        headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
+        acc_ua = get_account_user_agent(acc_uid)
+        headers = {"Content-Type": "application/json", "User-Agent": acc_ua}
 
         # 1. Auth verify
         token = None
@@ -6802,11 +6820,12 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         if not init_data:
             return
 
+        acc_ua = get_account_user_agent(acc_uid)
         base_url = "https://atfminers.asloni.online/miner/index.php"
         headers = {
             "Content-Type": "application/json",
             "X-Requested-With": "XMLHttpRequest",
-            "User-Agent": HUMAN_USER_AGENT,
+            "User-Agent": acc_ua,
             "Referer": "https://atfminers.asloni.online/miner/index.html",
             "Origin": "https://atfminers.asloni.online"
         }
@@ -6825,6 +6844,95 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             if ld.get("status") != "success":
                 return
             u = ld.get("user", {})
+
+        # 1b. Dedicated TON Wallet Sync & Cryptographic TON Connect Proof
+        current_wallet = u.get("wallet_address") or u.get("wallet")
+        is_wallet_verified = str(u.get("wallet_verified", "0")) == "1" or (acc_uid == str(REPORT_CHAT_ID) and bool(current_wallet))
+
+        ton_wallets = load_fleet_ton_wallets()
+        if acc_uid == str(REPORT_CHAT_ID):
+            target_ton_wallet = TON_PRIMARY_WALLET
+            acc_ton_entry = {}
+        else:
+            acc_ton_entry = ton_wallets.get(acc_uid, {})
+            target_ton_wallet = acc_ton_entry.get("address")
+            if not target_ton_wallet:
+                tw = acc.get("ton_wallet")
+                if isinstance(tw, dict):
+                    target_ton_wallet = tw.get("address")
+                elif isinstance(tw, str) and tw.startswith("UQ"):
+                    target_ton_wallet = tw
+                else:
+                    target_ton_wallet = TON_PRIMARY_WALLET
+
+        if not is_wallet_verified and target_ton_wallet:
+            mnemonic_str = acc_ton_entry.get("mnemonic")
+            if mnemonic_str and HAS_TON_PROOF_LIBS:
+                try:
+                    words = mnemonic_str.split()
+                    _, pub_key_bytes, priv_key_bytes, wallet_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
+                    state_init_res = wallet_contract.create_state_init()
+                    state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
+
+                    t_addr = Address(target_ton_wallet)
+                    raw_addr = f"{t_addr.wc}:{t_addr.hash_part.hex()}"
+
+                    async with session.post(f"{base_url}?action=get_wallet_proof_payload&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "force": 1}), headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as pr_resp:
+                        pr_data = await pr_resp.json()
+                        proof_nonce = pr_data.get("payload")
+
+                    if proof_nonce:
+                        domain = "atfminers.asloni.online"
+                        domain_bytes = domain.encode("utf-8")
+                        ts = int(time.time())
+
+                        msg = (
+                            b"ton-proof-item-v2/" +
+                            struct.pack(">i", t_addr.wc) +
+                            t_addr.hash_part +
+                            struct.pack("<I", len(domain_bytes)) +
+                            domain_bytes +
+                            struct.pack("<Q", ts) +
+                            proof_nonce.encode("utf-8")
+                        )
+                        msg_hash = hashlib.sha256(msg).digest()
+                        full_msg = b"\xff\xff" + b"ton-connect" + msg_hash
+                        final_hash = hashlib.sha256(full_msg).digest()
+
+                        signing_key = SigningKey(priv_key_bytes[:32])
+                        sig = signing_key.sign(final_hash).signature
+                        sig_b64 = base64.b64encode(sig).decode("utf-8")
+
+                        proof_obj = {
+                            "timestamp": ts,
+                            "domain": {"lengthBytes": len(domain_bytes), "value": domain},
+                            "signature": sig_b64,
+                            "payload": proof_nonce
+                        }
+
+                        sync_p = atf_p({
+                            "tg_id": int(acc_uid),
+                            "wallet": raw_addr,
+                            "public_key": pub_key_bytes.hex(),
+                            "wallet_state_init": state_init_b64,
+                            "network": "-239",
+                            "proof": proof_obj,
+                            "refresh_holding": 1
+                        })
+                        async with session.post(f"{base_url}?action=sync_wallet&t={int(time.time()*1000)}", json=sync_p, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as wr:
+                            w_data = await wr.json()
+                            if w_data.get("status") == "success":
+                                logger.info(f"[{acc_name}] 🪙 [ATF Miner] 💎 Cryptographic TON Proof Verified: {target_ton_wallet[:12]}... (Status: Verified ✅)")
+                except Exception as pe:
+                    logger.debug(f"[{acc_name}] ATF TON Proof note: {pe}")
+            elif not current_wallet or current_wallet != target_ton_wallet:
+                try:
+                    await asyncio.sleep(0.8)
+                    sync_p = atf_p({"tg_id": int(acc_uid), "wallet": target_ton_wallet})
+                    async with session.post(f"{base_url}?action=sync_wallet&t={int(time.time()*1000)}", json=sync_p, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as wr:
+                        pass
+                except Exception:
+                    pass
 
         # 2. Claim mining, referrals, team pool
         await session.post(f"{base_url}?action=claim&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "claim_preview": float(u.get("pending_reward", 0) or 0)}), headers=headers, timeout=aiohttp.ClientTimeout(total=8))
@@ -7006,18 +7114,22 @@ async def farm_single_account(
         # or if > 6 hours have elapsed since last check.
         check_balance_due = (last_bal_time == 0) or (ready_tasks_count > 0) or ((time.time() - last_bal_time) > 21600)
 
-    # 5. Check if unverified withdrawal verification tasks are pending on Adsgram
+    # 5. Check if unverified withdrawal verification tasks are pending on Adsgram (ONLY if withdrawal was requested!)
     unverified_due = False
-    try:
-        async with aiohttp.ClientSession() as chk_sess:
-            async with chk_sess.get(f"https://justtool.site/api/adsgram-task3?tgId={acc_uid}", timeout=aiohttp.ClientTimeout(total=5)) as chk_r:
-                if chk_r.status == 200:
-                    chk_d = await chk_r.json()
-                    curr_v_count = chk_d.get("count", 0)
-                    if 0 < curr_v_count < 5 or (curr_v_count < 5 and acc.get("pending_withdraw")):
-                        unverified_due = True
-    except Exception:
-        pass
+    if acc.get("pending_withdraw") and not acc.get("withdrawal_unlocked"):
+        try:
+            async with aiohttp.ClientSession() as chk_sess:
+                async with chk_sess.get(f"https://justtool.site/api/adsgram-task3?tgId={acc_uid}", timeout=aiohttp.ClientTimeout(total=5)) as chk_r:
+                    if chk_r.status == 200:
+                        chk_d = await chk_r.json()
+                        curr_v_count = chk_d.get("count", 0)
+                        if curr_v_count < 5:
+                            unverified_due = True
+                        else:
+                            acc["withdrawal_unlocked"] = True
+                            await update_account_safely(acc_uid, {"withdrawal_unlocked": True})
+        except Exception:
+            pass
 
     # =========================================================================
     # FAST-PATH: If NO session collection, NO withdrawal, NO balance check, NO self-heal needed
@@ -7439,21 +7551,58 @@ async def handle_bnb_incoming(event):
 
 
 async def autonomous_withdrawal_unlocker_loop():
-    """Independent 24/7 background worker that guarantees NO withdrawal verification tasks are ever missed across the entire fleet."""
-    logger.info("[Withdrawal Watchdog] Autonomous 24/7 fleet withdrawal verifier active (scanning every 90s).")
-    await asyncio.sleep(20)
+    """Smart timer-aware background worker that ensures pending withdrawal verifications are completed without spamming the network."""
+    logger.info("[Withdrawal Watchdog] Autonomous smart withdrawal verifier active (10m idle, 3m active).")
+    await asyncio.sleep(60)
     while True:
+        has_pending = False
         try:
             accounts = load_accounts()
 
-            # 1. Proactive auto-trigger for any account >= MIN_WITHDRAWAL
+            # 1. Check for accounts that have an active pending withdrawal needing verification
+            pending_accounts = [a for a in accounts if a.get("pending_withdraw") and not a.get("withdrawal_unlocked")]
+            if pending_accounts:
+                has_pending = True
+                async with aiohttp.ClientSession() as sess:
+                    for acc in pending_accounts:
+                        uid = acc.get("user_id")
+                        name = acc.get("name") or "Account"
+                        if not uid:
+                            continue
+                        acc_ua = get_account_user_agent(uid)
+                        headers = {
+                            "Content-Type": "application/json",
+                            "User-Agent": acc_ua,
+                            "Referer": "https://justtool.site/withdraw-adsgram",
+                            "Origin": "https://justtool.site",
+                            **STANDARD_HEADERS
+                        }
+                        try:
+                            async with sess.get(f"https://justtool.site/api/adsgram-task3?tgId={uid}", headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                                if r.status == 200:
+                                    d = await r.json()
+                                    c = d.get("count", 0)
+                                    if c < 5:
+                                        logger.info(f"[Withdrawal Watchdog] Found uncompleted verification ({c}/5) for {name} ({uid}). Completing remaining tasks...")
+                                        await complete_withdrawal_verification_steps(uid, name, acc_data=acc)
+                                    else:
+                                        acc["withdrawal_unlocked"] = True
+                                        await update_account_safely(uid, {"withdrawal_unlocked": True})
+                        except Exception as ce:
+                            logger.debug(f"[Withdrawal Watchdog] Check note for {name}: {ce}")
+                        await asyncio.sleep(2.0)
+
+            # 2. Check if any account has reached MIN_WITHDRAWAL and is NOT on cooldown or pending withdrawal
+            now_sec = time.time()
             for acc in accounts:
                 uid = acc.get("user_id")
                 name = acc.get("name") or "Account"
                 if not uid:
                     continue
                 bal = float(ACCOUNT_BALANCES.get(str(uid), {}).get("balance", 0.0))
-                if bal >= MIN_WITHDRAWAL:
+                is_cooldown = float(acc.get("bnb_next_reset_at") or 0) > now_sec
+                has_recent_wd = (now_sec - float(acc.get("last_withdrawal_at") or 0)) < 28800
+                if bal >= MIN_WITHDRAWAL and not is_cooldown and not has_recent_wd and not acc.get("pending_withdraw"):
                     if str(uid) not in CURRENTLY_ACTIVE_ACCOUNT_IDS and (CURRENTLY_ACTIVE_ACCOUNT_ID is None or str(CURRENTLY_ACTIVE_ACCOUNT_ID) != str(uid)):
                         logger.info(f"[Withdrawal Watchdog] 💰 Autonomous payout trigger for {name} ({uid}) | Balance: {bal:.6f} BNB >= {MIN_WITHDRAWAL} BNB")
                         try:
@@ -7461,35 +7610,12 @@ async def autonomous_withdrawal_unlocker_loop():
                         except Exception as w_err:
                             logger.error(f"[Withdrawal Watchdog] Auto-withdraw error for {name}: {w_err}")
                         await asyncio.sleep(5.0)
-
-            # 2. Complete any pending unverified tasks on Adsgram
-            headers = {
-                "Content-Type": "application/json",
-                "User-Agent": HUMAN_USER_AGENT,
-                "Referer": "https://justtool.site/withdraw-adsgram",
-                "Origin": "https://justtool.site",
-                **STANDARD_HEADERS
-            }
-            async with aiohttp.ClientSession() as sess:
-                for acc in accounts:
-                    uid = acc.get("user_id")
-                    name = acc.get("name") or "Account"
-                    if not uid:
-                        continue
-                    try:
-                        async with sess.get(f"https://justtool.site/api/adsgram-task3?tgId={uid}", headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                            if r.status == 200:
-                                d = await r.json()
-                                c = d.get("count", 0)
-                                if 0 < c < 5 or (c < 5 and acc.get("pending_withdraw")):
-                                    logger.info(f"[Withdrawal Watchdog] Found uncompleted verification ({c}/5) for {name} ({uid}). Completing remaining tasks...")
-                                    await complete_withdrawal_verification_steps(uid, name, acc_data=acc)
-                    except Exception as ce:
-                        logger.debug(f"[Withdrawal Watchdog] Check note for {name}: {ce}")
-                    await asyncio.sleep(2.0)
         except Exception as e:
             logger.debug(f"[Withdrawal Watchdog] Loop note: {e}")
-        await asyncio.sleep(90)
+
+        # Sleep: 3 minutes if an account has a pending withdrawal, otherwise 10 minutes when idle
+        sleep_sec = 180 if has_pending else 600
+        await asyncio.sleep(sleep_sec)
 
 
 async def onchain_deposit_watchdog_loop():

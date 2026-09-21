@@ -31,8 +31,8 @@ fi
 
 echo "$$" > "$SUPERVISOR_PID_FILE"
 
-# Ignore HUP so closing SSH/terminal never affects this supervisor
-trap '' HUP
+# Ignore HUP, TERM, and INT so closing SSH/terminal or subshell exit never affects this supervisor
+trap '' HUP TERM INT
 
 echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] === Immortal Supervisor started (PID: $$) ===" >> "$SUPERVISOR_LOG"
 

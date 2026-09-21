@@ -26,14 +26,14 @@ ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
 
 # Pool of realistic hardware device profiles for fingerprint isolation
 DEVICE_POOL = [
-    {"model": "Pixel 8 Pro", "sys": "Android 14 (UD1A.230803.041)", "app": "11.1.3 (5221)"},
-    {"model": "Samsung Galaxy S24 Ultra", "sys": "Android 14 (OneUI 6.1)", "app": "11.1.2 (5210)"},
-    {"model": "OnePlus 12", "sys": "Android 14 (OxygenOS 14)", "app": "11.0.9 (5195)"},
-    {"model": "Xiaomi 14 Pro", "sys": "Android 14 (HyperOS 1.0)", "app": "11.1.0 (5202)"},
-    {"model": "Sony Xperia 1 VI", "sys": "Android 14 (Build 69.0.A)", "app": "11.0.7 (5180)"},
-    {"model": "Motorola Edge 50 Ultra", "sys": "Android 14 (U2UW34)", "app": "11.1.1 (5205)"},
-    {"model": "Nothing Phone (2)", "sys": "Android 14 (Nothing OS 2.5)", "app": "11.0.8 (5189)"},
-    {"model": "ASUS ROG Phone 8", "sys": "Android 14 (ROG UI)", "app": "11.1.3 (5221)"}
+    {"model": "Pixel 8 Pro", "sys": "Android 14 (UD1A.230803.041)", "app": "11.1.3 (5221)", "ua": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro Build/UD1A.230803.041) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"},
+    {"model": "Samsung Galaxy S24 Ultra", "sys": "Android 14 (OneUI 6.1)", "app": "11.1.2 (5210)", "ua": "Mozilla/5.0 (Linux; Android 14; SM-S928B Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.2"},
+    {"model": "OnePlus 12", "sys": "Android 14 (OxygenOS 14)", "app": "11.0.9 (5195)", "ua": "Mozilla/5.0 (Linux; Android 14; CPH2581 Build/UKQ1.230924.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.0.9"},
+    {"model": "Xiaomi 14 Pro", "sys": "Android 14 (HyperOS 1.0)", "app": "11.1.0 (5202)", "ua": "Mozilla/5.0 (Linux; Android 14; 23116PN5BC Build/UKQ1.230804.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.0"},
+    {"model": "Sony Xperia 1 VI", "sys": "Android 14 (Build 69.0.A)", "app": "11.0.7 (5180)", "ua": "Mozilla/5.0 (Linux; Android 14; XQ-EC54 Build/69.0.A.2.44) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.0.7"},
+    {"model": "Motorola Edge 50 Ultra", "sys": "Android 14 (U2UW34)", "app": "11.1.1 (5205)", "ua": "Mozilla/5.0 (Linux; Android 14; motorola edge 50 ultra Build/U2UW34.42-32) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.1"},
+    {"model": "Nothing Phone (2)", "sys": "Android 14 (Nothing OS 2.5)", "app": "11.0.8 (5189)", "ua": "Mozilla/5.0 (Linux; Android 14; A065 Build/NothingOS2.5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.0.8"},
+    {"model": "ASUS ROG Phone 8", "sys": "Android 14 (ROG UI)", "app": "11.1.3 (5221)", "ua": "Mozilla/5.0 (Linux; Android 14; ASUS_AI2401_A Build/UKQ1.231003.002) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"}
 ]
 
 
@@ -48,6 +48,13 @@ def get_account_fingerprint(identifier: Any) -> Dict[str, str]:
         "lang_code": "en",
         "system_lang_code": "en-US"
     }
+
+
+def get_account_user_agent(identifier: Any) -> str:
+    """Returns the matching human User-Agent for the account's assigned hardware profile."""
+    seed = abs(hash(str(identifier)))
+    profile = DEVICE_POOL[seed % len(DEVICE_POOL)]
+    return profile.get("ua", "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.1.3")
 
 
 def parse_proxy(proxy_input: Any) -> Optional[Tuple]:
