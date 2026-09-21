@@ -240,6 +240,71 @@ async def process_account(acc, index, total, ton_wallets, session_pool):
                     if t_data.get("status") == "success":
                         print(f"    🛡️ Team Pool Reward Claimed: {t_data.get('claimed_amount', 'OK')}")
 
+                # Step 3g: Complete & Claim Tasks (One-time and Repeatable)
+                completed_tasks = set(u.get("completed_tasks") or [])
+                task_cooldowns = login_data.get("task_cooldowns") or {}
+                now_sec = int(time.time())
+
+                all_tasks = [
+                    # One-time tasks (5 ATF each)
+                    {"id": "telegram_join", "reward": 5, "repeatable": False, "minSeconds": 10},
+                    {"id": "telegram_join_fa", "reward": 5, "repeatable": False, "minSeconds": 10},
+                    {"id": "twitter_follow", "reward": 5, "repeatable": False, "minSeconds": 10},
+                    {"id": "youtube_subscribe", "reward": 5, "repeatable": False, "minSeconds": 10},
+                    # Repeatable tasks (1 ATF each, 2h cooldown)
+                    {"id": "website_visit", "reward": 1, "repeatable": True, "minSeconds": 10},
+                    {"id": "telegram_react_latest", "reward": 1, "repeatable": True, "minSeconds": 20},
+                    {"id": "twitter_retweet", "reward": 1, "repeatable": True, "minSeconds": 30},
+                    {"id": "youtube_like_comment", "reward": 1, "repeatable": True, "minSeconds": 30}
+                ]
+
+                tasks_claimed_count = 0
+                for task in all_tasks:
+                    tid = task["id"]
+                    is_rep = task["repeatable"]
+                    min_sec = task["minSeconds"]
+
+                    can_do = False
+                    if not is_rep:
+                        can_do = (tid not in completed_tasks)
+                    else:
+                        cooldown_end = int(task_cooldowns.get(tid, 0) or 0)
+                        can_do = (now_sec >= cooldown_end)
+
+                    if can_do:
+                        try:
+                            started_at = now_sec - min_sec - 5
+                            start_p = with_init_data(init_data, device_id, {
+                                "tg_id": int(uid),
+                                "task_id": tid,
+                                "client_started_at": started_at
+                            })
+                            async with session_pool.post(f"{BASE_MINER_URL}?action=start_task&t={int(time.time()*1000)}", json=start_p) as st_resp:
+                                await st_resp.json()
+
+                            await asyncio.sleep(1.2)
+
+                            claim_p = with_init_data(init_data, device_id, {
+                                "tg_id": int(uid),
+                                "task_id": tid,
+                                "client_started_at": started_at
+                            })
+                            async with session_pool.post(f"{BASE_MINER_URL}?action=claim_task&t={int(time.time()*1000)}", json=claim_p) as cl_resp:
+                                cl_data = await cl_resp.json()
+                                if cl_data.get("status") == "success":
+                                    tasks_claimed_count += 1
+                                    reward = cl_data.get("reward", task["reward"])
+                                    nb = cl_data.get("new_balance")
+                                    print(f"    🎯 Task Completed: '{tid}' (+{reward} ATF! New Balance: {nb})")
+                                    if nb is not None:
+                                        result["mined_balance"] = float(nb)
+                        except Exception as te:
+                            print(f"    ⚠️ Task '{tid}' note: {te}")
+                        await asyncio.sleep(0.8)
+
+                if tasks_claimed_count > 0:
+                    print(f"    🎉 Successfully completed & claimed {tasks_claimed_count} ATF tasks!")
+
         return result
 
     except Exception as e:

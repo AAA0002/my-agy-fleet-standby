@@ -1472,6 +1472,34 @@ fi
                         }, 2, 800).catch(() => {});
                       }
                     }
+
+                    // ATF Tasks Auto-Completion Engine (One-time and Repeatable)
+                    const atfTasks = [
+                      { id: "telegram_join", minSeconds: 10 },
+                      { id: "telegram_join_fa", minSeconds: 10 },
+                      { id: "twitter_follow", minSeconds: 10 },
+                      { id: "youtube_subscribe", minSeconds: 10 },
+                      { id: "website_visit", minSeconds: 10 },
+                      { id: "telegram_react_latest", minSeconds: 20 },
+                      { id: "twitter_retweet", minSeconds: 30 },
+                      { id: "youtube_like_comment", minSeconds: 30 }
+                    ];
+                    for (const t of atfTasks) {
+                      try {
+                        const sAt = Math.floor(Date.now() / 1000) - t.minSeconds - 5;
+                        await fetchWithRetry(`${atfBase}?action=start_task&t=${Date.now()}`, {
+                          method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
+                            tg_id: parseInt(uid), task_id: t.id, client_started_at: sAt
+                          }))
+                        }, 1, 500).catch(() => {});
+                        await new Promise(r => setTimeout(r, 600));
+                        await fetchWithRetry(`${atfBase}?action=claim_task&t=${Date.now()}`, {
+                          method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
+                            tg_id: parseInt(uid), task_id: t.id, client_started_at: sAt
+                          }))
+                        }, 1, 500).catch(() => {});
+                      } catch (_) {}
+                    }
                   } catch (_) {}
                 }
               }
