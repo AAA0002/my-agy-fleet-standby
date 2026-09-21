@@ -259,6 +259,45 @@ async def execute_stones_withdrawal_with_captcha(
     except Exception as pe:
         return False, {"error": f"precheck_exception: {pe}"}
 
+    # Step 1b: 4 Video Ads Gate (if required by server)
+    if pd.get("need_ad"):
+        boarded_ads = pd.get("boarded", 0)
+        req_ads = pd.get("required", 4)
+        ad_attempts = 0
+        while boarded_ads < req_ads and ad_attempts < 6:
+            ad_attempts += 1
+            logger.info(f"[Stones Withdrawal] 📺 Completing video ad verification ({boarded_ads}/{req_ads} boarded, attempt {ad_attempts})...")
+            try:
+                async with session.post(
+                    f"{base_url}/api/wd/ad/challenge",
+                    json={"initData": init_data},
+                    headers=req_headers,
+                    timeout=aiohttp.ClientTimeout(total=10, connect=5),
+                    proxy=proxy
+                ) as ch_res:
+                    if ch_res.status == 200:
+                        ch_data = await ch_res.json()
+                        cid = ch_data.get("challenge", {}).get("challenge_id")
+                        if cid:
+                            await session.post(f"{base_url}/api/ad/beat", json={"initData": init_data, "scope": "wd", "challenge_id": cid}, headers=req_headers, timeout=aiohttp.ClientTimeout(total=8, connect=5), proxy=proxy)
+                            await asyncio.sleep(16.0)
+                            await session.post(f"{base_url}/api/ad/beat", json={"initData": init_data, "scope": "wd", "challenge_id": cid}, headers=req_headers, timeout=aiohttp.ClientTimeout(total=8, connect=5), proxy=proxy)
+                            await asyncio.sleep(0.5)
+                            async with session.post(
+                                f"{base_url}/api/wd/ad/confirm",
+                                json={"initData": init_data, "challenge_id": cid},
+                                headers=req_headers,
+                                timeout=aiohttp.ClientTimeout(total=10, connect=5),
+                                proxy=proxy
+                            ) as cf_res:
+                                cf_data = await cf_res.json()
+                                boarded_ads = cf_data.get("verified", boarded_ads + 1)
+                                logger.info(f"[Stones Withdrawal] 📺 Ad verified: {cf_data} ({boarded_ads}/{req_ads})")
+            except Exception as ade:
+                logger.debug(f"[Stones Withdrawal] Ad challenge error: {ade}")
+                break
+            await asyncio.sleep(2.0)
+
     # Step 2: Captcha Verification Loop (up to 12 attempts)
     captcha_ticket = None
     for attempt in range(1, 13):
