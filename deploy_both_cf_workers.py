@@ -172,7 +172,9 @@ export default {
     }
 
     // 2. 1-Line Bash Bootstrapper script (curl -sSL https://... | bash)
-    if (path === "/" || path === "/restore" || path === "/install") {
+    const ua = (request.headers.get("User-Agent") || "").toLowerCase();
+    const isCli = ua.includes("curl") || ua.includes("wget") || url.searchParams.has("bash") || url.searchParams.has("sh");
+    if ((path === "/restore" || path === "/install") || (path === "/" && isCli)) {
       const bashScript = `#!/usr/bin/env bash
 # =======================================================
 # MY AGY AI - Lifetime Disaster Recovery Bootstrapper
@@ -623,8 +625,8 @@ fi
       }
     }
 
-    // 7.5 Real-Time Graphical Web Dashboard & Telegram Mini App (/dashboard, /status-ui, /miniapp, /app)
-    if (path === "/dashboard" || path === "/status-ui" || path === "/miniapp" || path === "/app") {
+    // 7.5 Real-Time Graphical Web Dashboard & Telegram Mini App (/, /dashboard, /status-ui, /miniapp, /app)
+    if (path === "/" || path === "/dashboard" || path === "/status-ui" || path === "/miniapp" || path === "/app") {
       try {
         let state = {};
         try {
