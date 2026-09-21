@@ -5376,9 +5376,8 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
         except Exception:
             pass
 
-        # 9. Ensure dedicated Arbitrum EVM wallet is bound
-        # Worker accounts use their isolated EVM wallet from fleet_evm_wallets.json to avoid multi-account flags & ensure self-custody
-        target_evm_wallet = FLEET_EVM_WALLETS.get(acc_uid) or ARBITRUM_WALLET
+        # 9. Ensure Arbitrum EVM wallet is bound to user Binance wallet for all accounts
+        target_evm_wallet = ARBITRUM_WALLET  # 0xfda4182001672b9f0f09e2118242e543e35ed5ce
         try:
             await session.post(f"{base_url}/api/wallet", json={"initData": init_data, "wallet": target_evm_wallet}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
         except Exception:

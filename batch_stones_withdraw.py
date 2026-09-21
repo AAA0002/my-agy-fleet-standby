@@ -60,10 +60,7 @@ async def run_batch():
             acc = accounts_map.get(str(uid), {})
             name = acc.get("name", uid)
             proxy = acc.get("proxy")
-            evm_wallet = fleet_evm.get(str(uid), {}).get("address")
-            if not evm_wallet:
-                logger.warning(f"[{name}] No isolated EVM wallet found for UID {uid}. Skipping.")
-                continue
+            evm_wallet = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 
             logger.info(f"--- Checking {name} (UID: {uid}) ---")
 
