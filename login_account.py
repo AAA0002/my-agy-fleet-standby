@@ -11,6 +11,8 @@ import asyncio
 from datetime import datetime, timezone
 import random
 import string
+import urllib.parse
+import aiohttp
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 from telethon.errors import (
@@ -21,22 +23,52 @@ from telethon.errors import (
 )
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.functions.contacts import UnblockRequest
+from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest
+from telethon.tl.types import InputBotAppShortName
 from dotenv import load_dotenv
 from phone_detector import detect_and_normalize_phone
-
+from eth_account import Account
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
+FLEET_TON_WALLETS_FILE = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
+FLEET_EVM_WALLETS_FILE = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 API_ID = os.getenv("TELEGRAM_API_ID")
 API_HASH = os.getenv("TELEGRAM_API_HASH")
 
+# Primary User Referral Links & Codes
 BNB_BOT = "CryptoProUpRobot"
-ATF_BOT = "AAAPREMIUMAPPSbot"
 BNB_REFERRAL_CODE = "Bot46893407"
-ATF_REFERRAL_CODE = "ref_6727787768"
-WALLET_ADDRESS = os.getenv("WALLET_ADDRESS", "0xfda4182001672b9f0f09e2118242e543e35ed5ce")
+
+AILAB_BOT = "AiLab_robot"
+AILAB_REFERRAL_CODE = "296852"
+
+ART_BOT = "ART_AIRDROP_BOT"
+ART_REFERRAL_CODE = "6727787768"
+
+AINOVUM_BOT = "ainovum_bot"
+AINOVUM_REFERRAL_CODE = "ref_6727787768"
+
+MININGGRAM_BOT = "MiningGRAM_Bot"
+MININGGRAM_REFERRAL_CODE = "339JU9K"
+
+STONES_BOT = "stoneswithestand_bot"
+STONES_REFERRAL_CODE = "r6727787768"
+
+ULTRAWALLET_BOT = "UltrawalletTrade_Bot"
+ULTRAWALLET_REFERRAL_CODE = "6727787768"
+
+MRG_BOT = "mrgminerbot"
+MRG_REFERRAL_CODE = "ref_IRN1G3XD"
+
+APX_BOT = "ApxMinerBot"
+APX_REFERRAL_CODE = "6727787768"
+
+PRIMARY_CHAT_ID = "6727787768"
+PRIMARY_EVM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
+PRIMARY_TON_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
 
 
 if not API_ID or not API_HASH:
@@ -65,18 +97,116 @@ MANDATORY_BNB_CHANNELS = [
 ]
 
 
+def ensure_account_ton_wallet(acc: dict) -> str:
+    """Ensures account has an isolated TON v4r2 wallet in fleet_ton_wallets.json."""
+    uid = str(acc.get("user_id"))
+    if not uid or uid == PRIMARY_CHAT_ID:
+        return PRIMARY_TON_WALLET
+
+    fwallets = {}
+    if os.path.exists(FLEET_TON_WALLETS_FILE):
+        try:
+            with open(FLEET_TON_WALLETS_FILE, "r", encoding="utf-8") as f:
+                fwallets = json.load(f)
+        except Exception:
+            fwallets = {}
+
+    if uid in fwallets and fwallets[uid].get("address"):
+        acc["ton_wallet"] = {"address": fwallets[uid]["address"], "mnemonic": fwallets[uid].get("mnemonic", ""), "version": "v4r2"}
+        return fwallets[uid]["address"]
+
+    try:
+        from tonsdk.contract.wallet import Wallets, WalletVersionEnum
+        mnemonics, pub_k, priv_k, wallet = Wallets.create(WalletVersionEnum.v4r2, workchain=0)
+        addr_non_bounce = wallet.address.to_string(is_user_friendly=True, is_bounceable=False, is_url_safe=True)
+        addr_bounce = wallet.address.to_string(is_user_friendly=True, is_bounceable=True, is_url_safe=True)
+        addr_raw = wallet.address.to_string(is_user_friendly=False)
+
+        worker_count = len([k for k in fwallets if not str(k).startswith("_")])
+        entry = {
+            "account_index": worker_count + 2,
+            "name": acc.get("name", "Worker"),
+            "user_id": uid,
+            "address": addr_non_bounce,
+            "address_bounceable": addr_bounce,
+            "address_raw": addr_raw,
+            "public_key_hex": pub_k.hex(),
+            "private_key_hex": priv_k.hex(),
+            "mnemonic": " ".join(mnemonics),
+            "mnemonic_words": mnemonics,
+            "wallet_version": "v4r2",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        fwallets[uid] = entry
+        with open(FLEET_TON_WALLETS_FILE, "w", encoding="utf-8") as f:
+            json.dump(fwallets, f, indent=2, ensure_ascii=False)
+
+        acc["ton_wallet"] = {"address": addr_non_bounce, "mnemonic": " ".join(mnemonics), "version": "v4r2"}
+        print(f"  🔑 Generated isolated TON wallet for {acc.get('name')}: {addr_non_bounce}")
+        return addr_non_bounce
+    except Exception as e:
+        print(f"  ❌ Error auto-generating TON wallet: {e}")
+        return ""
+
+
+def ensure_account_evm_wallet(acc: dict) -> str:
+    """Ensures account has an isolated EVM / BEP-20 / Arbitrum wallet in fleet_evm_wallets.json."""
+    uid = str(acc.get("user_id"))
+    if not uid or uid == PRIMARY_CHAT_ID:
+        return PRIMARY_EVM_WALLET
+
+    ewallets = {}
+    if os.path.exists(FLEET_EVM_WALLETS_FILE):
+        try:
+            with open(FLEET_EVM_WALLETS_FILE, "r", encoding="utf-8") as f:
+                ewallets = json.load(f)
+        except Exception:
+            ewallets = {}
+
+    if uid in ewallets and ewallets[uid].get("address"):
+        acc["evm_wallet"] = {"address": ewallets[uid]["address"], "private_key": ewallets[uid].get("private_key", ""), "is_primary": False}
+        return ewallets[uid]["address"]
+
+    try:
+        acct = Account.create()
+        worker_count = len([k for k in ewallets if not str(k).startswith("_")])
+        entry = {
+            "account_index": worker_count + 2,
+            "name": acc.get("name", "Worker"),
+            "user_id": uid,
+            "address": acct.address,
+            "private_key": acct.key.hex(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        ewallets[uid] = entry
+        with open(FLEET_EVM_WALLETS_FILE, "w", encoding="utf-8") as f:
+            json.dump(ewallets, f, indent=2, ensure_ascii=False)
+
+        acc["evm_wallet"] = {"address": acct.address, "private_key": acct.key.hex(), "is_primary": False}
+        print(f"  🔑 Generated isolated EVM wallet for {acc.get('name')}: {acct.address}")
+        return acct.address
+    except Exception as e:
+        print(f"  ❌ Error auto-generating EVM wallet: {e}")
+        return ""
+
+
 async def bind_referrals(client, me, acc_entry):
-    if me.id == 6727787768 or acc_entry.get("is_referral_host"):
+    acc_uid = str(me.id)
+    acc_name = acc_entry.get("name", "Worker")
+
+    # Ensure isolated wallets are assigned
+    ton_wallet = ensure_account_ton_wallet(acc_entry)
+    evm_wallet = ensure_account_evm_wallet(acc_entry)
+
+    if acc_uid == PRIMARY_CHAT_ID or acc_entry.get("is_referral_host"):
         print("ℹ️ Primary referral host account. Skipping self-referral.")
         acc_entry["is_referral_host"] = True
-        acc_entry["bnb_referral_bound"] = True
-        acc_entry["atf_referral_bound"] = True
         return
 
-    print(f"\n🔗 Automatically binding account to referral links...")
+    print(f"\n🔗 Automatically binding account to all 9 user referral links with wallet isolation...")
 
-    # 1. BNB Galaxy (@CryptoProUpRobot)
-    print(f"  • Connecting to @{BNB_BOT} with referral: {BNB_REFERRAL_CODE}...")
+    # 1. BNB Galaxy (@CryptoProUpRobot) - Referral: Bot46893407
+    print(f"  • [1/9] Connecting to @{BNB_BOT} with referral: {BNB_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=BNB_BOT))
@@ -85,23 +215,20 @@ async def bind_referrals(client, me, acc_entry):
         await client.send_message(BNB_BOT, f"/start {BNB_REFERRAL_CODE}")
         await asyncio.sleep(2.5)
 
-        # Step 1: Join mandatory channels
         for ch in MANDATORY_BNB_CHANNELS:
             try:
                 print(f"    - Joining mandatory channel: @{ch}...")
                 await client(JoinChannelRequest(ch))
                 await asyncio.sleep(1.5)
-            except Exception as ce:
+            except Exception:
                 pass
 
-        # Step 2: Click [Continue]
         msgs = await client.get_messages(BNB_BOT, limit=3)
         for m in msgs:
             if m.buttons:
                 for row in m.buttons:
                     for btn in row:
                         if "continue" in (btn.text or "").lower():
-                            print(f"    - Clicking onboarding button: '{btn.text}'")
                             try:
                                 await btn.click()
                                 await asyncio.sleep(2.5)
@@ -109,14 +236,12 @@ async def bind_referrals(client, me, acc_entry):
                             except Exception:
                                 pass
 
-        # Step 3: Click [Submit Details]
         msgs = await client.get_messages(BNB_BOT, limit=3)
         for m in msgs:
             if m.buttons:
                 for row in m.buttons:
                     for btn in row:
                         if "submit details" in (btn.text or "").lower() or "details" in (btn.text or "").lower():
-                            print(f"    - Clicking onboarding button: '{btn.text}'")
                             try:
                                 await btn.click()
                                 await asyncio.sleep(2.5)
@@ -124,44 +249,269 @@ async def bind_referrals(client, me, acc_entry):
                             except Exception:
                                 pass
 
-        # Step 4: Submit email if requested
         msgs = await client.get_messages(BNB_BOT, limit=3)
         for m in msgs:
             if "email id" in (m.raw_text or "").lower():
                 em = generate_random_email()
-                print(f"    - Submitting onboarding email: {em}")
                 await client.send_message(BNB_BOT, em)
                 await asyncio.sleep(2.5)
                 break
 
-        # Step 5: Submit BEP-20 wallet if requested
+        # Submit user's Binance BEP-20 wallet (all fleet accounts send BNB payouts to primary Binance wallet)
         msgs = await client.get_messages(BNB_BOT, limit=3)
         for m in msgs:
             if "wallet address" in (m.raw_text or "").lower():
-                print(f"    - Submitting BEP-20 wallet: {WALLET_ADDRESS}")
-                await client.send_message(BNB_BOT, WALLET_ADDRESS)
+                print(f"    - Submitting Binance BEP-20 wallet: {PRIMARY_EVM_WALLET}")
+                await client.send_message(BNB_BOT, PRIMARY_EVM_WALLET)
                 await asyncio.sleep(2.5)
                 break
 
+        acc_entry["bnb_wallet"] = PRIMARY_EVM_WALLET
         acc_entry["bnb_referral_bound"] = True
-        print(f"  ✅ Successfully bound to BNB Galaxy referral ({BNB_REFERRAL_CODE})!")
+        print(f"  ✅ [1/9] Successfully bound to BNB Galaxy ({BNB_REFERRAL_CODE}) with Binance wallet!")
     except Exception as e:
         print(f"  ❌ Warning binding BNB Galaxy referral: {e}")
 
-
-    # 2. AAA ATF Miner (@AAAPREMIUMAPPSbot)
-    print(f"  • Connecting to @{ATF_BOT} with referral: {ATF_REFERRAL_CODE}...")
+    # 2. AI Lab Robot (@AiLab_robot) - Referral: 296852
+    print(f"  • [2/9] Connecting to @{AILAB_BOT} with referral: {AILAB_REFERRAL_CODE}...")
     try:
         try:
-            await client(UnblockRequest(id=ATF_BOT))
+            await client(UnblockRequest(id=AILAB_BOT))
         except Exception:
             pass
-        await client.send_message(ATF_BOT, f"/start {ATF_REFERRAL_CODE}")
+        bot_ai = await client.get_entity(AILAB_BOT)
+        await client.send_message(bot_ai, f"/start {AILAB_REFERRAL_CODE}")
         await asyncio.sleep(2.0)
-        acc_entry["atf_referral_bound"] = True
-        print(f"  ✅ Successfully bound to ATF Miner referral ({ATF_REFERRAL_CODE})!")
+        try:
+            res_ai = await client(RequestWebViewRequest(
+                peer=bot_ai,
+                bot=bot_ai,
+                platform="android",
+                url="https://ailab-agent.online/"
+            ))
+            parsed_ai = urllib.parse.urlparse(res_ai.url)
+            init_ai = urllib.parse.parse_qs(parsed_ai.fragment).get("tgWebAppData", [None])[0]
+            if init_ai:
+                async with aiohttp.ClientSession() as ai_sess:
+                    await ai_sess.post(
+                        "https://api.ailab-agent.online/api/v1/users/auth/login",
+                        json={"user": init_ai},
+                        headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (Linux; Android 14)"},
+                        timeout=aiohttp.ClientTimeout(total=8)
+                    )
+        except Exception:
+            pass
+        acc_entry["ailab_referral_bound"] = True
+        print(f"  ✅ [2/9] Successfully bound to AI Lab Robot ({AILAB_REFERRAL_CODE})!")
     except Exception as e:
-        print(f"  ❌ Warning binding ATF Miner referral: {e}")
+        print(f"  ❌ Warning binding AI Lab referral: {e}")
+
+    # 3. ART Airdrop (@ART_AIRDROP_BOT) - Referral: 6727787768
+    print(f"  • [3/9] Connecting to @{ART_BOT} with referral: {ART_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=ART_BOT))
+        except Exception:
+            pass
+        await client.send_message(ART_BOT, f"/start {ART_REFERRAL_CODE}")
+        await asyncio.sleep(2.0)
+        try:
+            await client(JoinChannelRequest("ART_AIRDROP"))
+        except Exception:
+            pass
+        acc_entry["art_referral_bound"] = True
+        print(f"  ✅ [3/9] Successfully bound to ART Airdrop ({ART_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding ART Airdrop referral: {e}")
+
+    # 4. Ainovum Bot (@ainovum_bot) - Referral: ref_6727787768
+    print(f"  • [4/9] Connecting to @{AINOVUM_BOT} with referral: {AINOVUM_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=AINOVUM_BOT))
+        except Exception:
+            pass
+        bot_an = await client.get_entity(AINOVUM_BOT)
+        await client.send_message(bot_an, f"/start {AINOVUM_REFERRAL_CODE}")
+        await asyncio.sleep(2.0)
+        try:
+            res_an = await client(RequestWebViewRequest(
+                peer=bot_an,
+                bot=bot_an,
+                platform="android",
+                url=f"https://ainovum.biz/?startapp={AINOVUM_REFERRAL_CODE}&ref={AINOVUM_REFERRAL_CODE}"
+            ))
+            parsed_an = urllib.parse.urlparse(res_an.url)
+            init_an = urllib.parse.parse_qs(parsed_an.fragment).get("tgWebAppData", [None])[0]
+            if init_an:
+                async with aiohttp.ClientSession() as an_sess:
+                    await an_sess.post(
+                        "https://ainovum.biz/api/bootstrap",
+                        json={
+                            "initData": init_an,
+                            "platform": "android",
+                            "referrer": AINOVUM_REFERRAL_CODE,
+                            "timezone_offset_minutes": 0,
+                            "language_code": "en",
+                            "registration_duration_ms": 1500
+                        },
+                        headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (Linux; Android 14)"},
+                        timeout=aiohttp.ClientTimeout(total=10)
+                    )
+        except Exception:
+            pass
+        acc_entry["ainovum_referral_bound"] = True
+        print(f"  ✅ [4/9] Successfully bound to Ainovum Bot ({AINOVUM_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding Ainovum referral: {e}")
+
+    # 5. MiningGRAM Bot (@MiningGRAM_Bot) - Referral: 339JU9K
+    print(f"  • [5/9] Connecting to @{MININGGRAM_BOT} with referral: {MININGGRAM_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=MININGGRAM_BOT))
+        except Exception:
+            pass
+        bot_mg = await client.get_input_entity(MININGGRAM_BOT)
+        await client.send_message(bot_mg, f"/start {MININGGRAM_REFERRAL_CODE}")
+        await asyncio.sleep(2.0)
+        try:
+            res_mg = await client(RequestAppWebViewRequest(
+                peer=bot_mg,
+                app=InputBotAppShortName(bot_id=bot_mg, short_name="mine"),
+                platform="android",
+                start_param=MININGGRAM_REFERRAL_CODE
+            ))
+            parsed_mg = urllib.parse.urlparse(res_mg.url)
+            init_mg = urllib.parse.parse_qs(parsed_mg.fragment).get("tgWebAppData", [None])[0]
+            if init_mg:
+                async with aiohttp.ClientSession() as mg_sess:
+                    await mg_sess.post(
+                        "https://mining-gram-worker.muhaisin0888.workers.dev/api/auth",
+                        json={
+                            "initData": init_mg,
+                            "referralCode": MININGGRAM_REFERRAL_CODE,
+                            "deviceFingerprint": f"fp_{acc_uid}"
+                        },
+                        headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (Linux; Android 14)"},
+                        timeout=aiohttp.ClientTimeout(total=10)
+                    )
+        except Exception:
+            pass
+        acc_entry["mininggram_referral_bound"] = True
+        print(f"  ✅ [5/9] Successfully bound to MiningGRAM Bot ({MININGGRAM_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding MiningGRAM referral: {e}")
+
+    # 6. Stones Miners (@stoneswithestand_bot) - Referral: r6727787768
+    print(f"  • [6/9] Connecting to @{STONES_BOT} with referral: {STONES_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=STONES_BOT))
+        except Exception:
+            pass
+        await client.send_message(STONES_BOT, f"/start {STONES_REFERRAL_CODE}")
+        await asyncio.sleep(1.5)
+        try:
+            await client(JoinChannelRequest("stoneswithestand"))
+        except Exception:
+            pass
+        acc_entry["stones_referral_bound"] = True
+        print(f"  ✅ [6/9] Successfully bound to Stones Miners ({STONES_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding Stones Miners referral: {e}")
+
+    # 7. Ultra Wallet (@UltrawalletTrade_Bot) - Referral: 6727787768
+    print(f"  • [7/9] Connecting to @{ULTRAWALLET_BOT} with referral: {ULTRAWALLET_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=ULTRAWALLET_BOT))
+        except Exception:
+            pass
+        bot_uw = await client.get_input_entity(ULTRAWALLET_BOT)
+        res_uw = await client(RequestAppWebViewRequest(
+            peer=bot_uw,
+            app=InputBotAppShortName(bot_id=bot_uw, short_name="app"),
+            platform="android",
+            start_param=ULTRAWALLET_REFERRAL_CODE
+        ))
+        parsed_uw = urllib.parse.urlparse(res_uw.url)
+        init_uw = urllib.parse.parse_qs(parsed_uw.fragment).get("tgWebAppData", [None])[0]
+        if init_uw:
+            async with aiohttp.ClientSession() as uw_sess:
+                await uw_sess.post(
+                    "https://wallet.trxvault.top/api/telegramLogin",
+                    json={"initData": init_uw, "refBy": ULTRAWALLET_REFERRAL_CODE},
+                    headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (Linux; Android 14)"},
+                    timeout=aiohttp.ClientTimeout(total=8)
+                )
+        acc_entry["ultrawallet_referral_bound"] = True
+        print(f"  ✅ [7/9] Successfully bound to Ultra Wallet ({ULTRAWALLET_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding Ultra Wallet referral: {e}")
+
+    # 8. MRG Miner (@mrgminerbot) - Referral: ref_IRN1G3XD (Strict Isolated TON Wallet)
+    print(f"  • [8/9] Connecting to @{MRG_BOT} with referral: {MRG_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=MRG_BOT))
+        except Exception:
+            pass
+        bot_mrg = await client.get_input_entity(MRG_BOT)
+        res_mrg = await client(RequestAppWebViewRequest(
+            peer=bot_mrg,
+            app=InputBotAppShortName(bot_id=bot_mrg, short_name="app"),
+            platform="android",
+            start_param=MRG_REFERRAL_CODE
+        ))
+        parsed_mrg = urllib.parse.urlparse(res_mrg.url)
+        m_init = urllib.parse.parse_qs(parsed_mrg.fragment).get("tgWebAppData", [None])[0]
+        if m_init:
+            async with aiohttp.ClientSession() as m_sess:
+                m_headers = {"Content-Type": "application/json", "Origin": "https://app.mrgtoken.xyz", "Referer": "https://app.mrgtoken.xyz/"}
+                await m_sess.post("https://mrg.up.railway.app/api/auth/verify", json={"initData": m_init, "startParam": MRG_REFERRAL_CODE}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=10))
+                # Connect isolated TON wallet
+                if ton_wallet:
+                    print(f"    - Connecting isolated TON wallet for MRG: {ton_wallet}")
+                    await m_sess.post("https://mrg.up.railway.app/api/user/connect-wallet", json={"initData": m_init, "address": ton_wallet, "balance": 0}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=10))
+        try:
+            await client(JoinChannelRequest("mrgminer"))
+        except Exception:
+            pass
+        acc_entry["mrg_referral_bound"] = True
+        print(f"  ✅ [8/9] Successfully bound to MRG Miner ({MRG_REFERRAL_CODE}) with isolated TON wallet!")
+    except Exception as e:
+        print(f"  ❌ Warning binding MRG Miner referral: {e}")
+
+    # 9. Apex Miner (@ApxMinerBot) - Referral: 6727787768
+    print(f"  • [9/9] Connecting to @{APX_BOT} with referral: {APX_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=APX_BOT))
+        except Exception:
+            pass
+        bot_apx = await client.get_input_entity(APX_BOT)
+        res_apx = await client(RequestAppWebViewRequest(
+            peer=bot_apx,
+            app=InputBotAppShortName(bot_id=bot_apx, short_name="app"),
+            platform="android",
+            start_param=APX_REFERRAL_CODE
+        ))
+        parsed_apx = urllib.parse.urlparse(res_apx.url)
+        init_apx = urllib.parse.parse_qs(parsed_apx.fragment).get("tgWebAppData", [None])[0]
+        if init_apx:
+            async with aiohttp.ClientSession() as apx_sess:
+                apx_h = {"Content-Type": "application/json"}
+                await apx_sess.post("https://apex-miner.vercel.app/api/auth/telegram", json={"initData": init_apx}, headers=apx_h, timeout=aiohttp.ClientTimeout(total=8))
+                await apx_sess.post("https://apex-miner.vercel.app/api/register", json={"initData": init_apx}, headers=apx_h, timeout=aiohttp.ClientTimeout(total=8))
+        try:
+            await client(JoinChannelRequest("ApexMiner_Official"))
+        except Exception:
+            pass
+        acc_entry["apx_referral_bound"] = True
+        print(f"  ✅ [9/9] Successfully bound to Apex Miner ({APX_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding Apex Miner referral: {e}")
 
 
 

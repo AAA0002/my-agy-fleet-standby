@@ -30,7 +30,5 @@ fi
 # Added by Antigravity CLI installer
 export PATH="/home/arif2743/.local/bin:$PATH"
 
-# Auto-start MY AGY AI 24/7 Supervisor daemon if not already running
-if ! tmux has-session -t telegram_bot 2>/dev/null; then
-    bash /home/arif2743/start_userbot.sh >/dev/null 2>&1 &
-fi
+# Local userbot auto-start disabled - bots run 100% in the cloud (Render & Cloudflare Edge)
+

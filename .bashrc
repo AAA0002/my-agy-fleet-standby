@@ -120,8 +120,6 @@ fi
 # Added by Antigravity CLI installer
 export PATH="/home/arif2743/.local/bin:$PATH"
 
-# Auto-revive Telegram Userbot & AI Assistant Supervisor if not running
-if ! pgrep -f "bot_supervisor.sh" > /dev/null 2>&1; then
-    /home/arif2743/start_userbot.sh >/dev/null 2>&1 &
-fi
+# Auto-revive disabled - bots run 100% in the cloud (Render & Cloudflare Edge)
+
 

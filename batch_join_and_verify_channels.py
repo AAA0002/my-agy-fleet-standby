@@ -20,25 +20,21 @@ CHANNELS = [
     "stoneswithestand",
     "mrgminer",
     "ART_AIRDROP",
-    "gramworkers",
-    "zyntrixmining",
-    "ultrawallet",
-    "milonOFFICIALEARN",
-    "AirdropBulider"
+    "ultrawallet"
 ]
 
 def main():
     with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
         accounts = json.load(f)
 
-    # Process Accounts 2 to 10 (indices 1 to 9, since Account 11 is index 10 and was already done)
-    for idx in range(1, len(accounts) - 1):
+    # Process all worker accounts (Accounts 2 to end)
+    for idx in range(1, len(accounts)):
         acc = accounts[idx]
         name = acc.get("name", f"Account #{idx+1}")
         uid = str(acc.get("user_id"))
         sess = acc.get("session_string")
 
-        if not sess or uid in ["6727787768", "8190649727"]:
+        if not sess or uid == "6727787768":
             continue
 
         print(f"\n=======================================================")

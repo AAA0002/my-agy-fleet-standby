@@ -29,22 +29,20 @@ except Exception:
 
 WALLET_ADDRESS = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 WALLETS = [
-    "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
-    "0x017841f26d5b79cc8c5eb20c65367bb645cc2610"
+    "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 ]
 REPORT_BOT_TOKEN = "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o"
 PAYOUT_CHANNEL_ID = "-1004402765950"
 ADMIN_ID = "6727787768"
 STATE_FILE = os.path.join(BASE_DIR, "bep20_watcher_state.json")
 BETTERSTACK_HEARTBEAT_URL = os.getenv("BETTERSTACK_HEARTBEAT_URL", "https://uptime.betterstack.com/api/v1/heartbeat/bABS7gYDXgHp6H35XGcU7S6p")
-DRPC_KEY = os.getenv("DRPC_API_KEY", "Aj3ei0uTXUwutp4cQUkyTyjgB8oqtDAR8YBVEl_NDNxu")
+DRPC_KEY = os.getenv("DRPC_API_KEY", "AqfE-vxQsEgZrdrPasY_EsnLP3satOIR8YH4El_NDNxu")
 
 RPC_ENDPOINTS = [
-    f"https://bsc.drpc.org/ogrpc?dkey={DRPC_KEY}",
     "https://bsc-dataseed.binance.org",
-    "https://binance.llamarpc.com",
     "https://bsc-dataseed1.defibit.io",
-    "https://rpc.ankr.com/bsc"
+    "https://bsc-dataseed1.binance.org",
+    f"https://bsc.drpc.org/ogrpc?dkey={DRPC_KEY}"
 ]
 
 def load_state() -> dict:

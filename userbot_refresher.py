@@ -121,6 +121,7 @@ MININGGRAM_REFERRAL_CODE = "339JU9K"
 
 BNB_WEBHOOK_FALLBACK = "https://api.bots.business/v1/bots/2985029/new-webhook?&command=%2FonWebhook&public_user_token=3d1ed3e6a9bb948436a55057c6e87b59&user_id=46893407"
 WALLET_ADDRESS = os.getenv("WALLET_ADDRESS", "0xfda4182001672b9f0f09e2118242e543e35ed5ce")
+EVM_VAULT_ADDRESS = WALLET_ADDRESS
 ARBITRUM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 TON_PRIMARY_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
 MIN_WITHDRAWAL = float(os.getenv("MIN_WITHDRAWAL", "0.00005"))
@@ -5208,6 +5209,7 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
 
         headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
         base_url = "https://app.stoneswithestand.my.id"
+        proxy = acc.get("proxy")
 
         # 1. Initialize session with referral binding
         init_payload = {"initData": init_data}
@@ -5386,32 +5388,36 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
             withdraw_stones = min(500, int(coins))
             logger.info(f"[{acc_name}] 💎 [Stones] Coins {coins} STONES >= 500 threshold! Submitting auto-withdrawal of {withdraw_stones} STONES to Arbitrum {ARBITRUM_WALLET}...")
             try:
-                async with session.post(f"{base_url}/api/wd/ad/precheck", json={"initData": init_data, "amount": withdraw_stones, "wallet": ARBITRUM_WALLET, "currency": "stones"}, headers=headers, timeout=aiohttp.ClientTimeout(total=12)) as pr:
+                async with session.post(f"{base_url}/api/wd/ad/precheck", json={"initData": init_data, "amount": withdraw_stones, "wallet": ARBITRUM_WALLET, "currency": "stones"}, headers=headers, timeout=aiohttp.ClientTimeout(total=12), proxy=proxy) as pr:
                     pd = await pr.json()
                     logger.info(f"[{acc_name}] 💎 [Stones] Precheck result: {pd}")
                     if pd.get("ok") or pd.get("success"):
                         boarded_ads = pd.get("boarded", 0)
                         req_ads = pd.get("required", 4)
-                        if pd.get("need_ad") and boarded_ads < req_ads:
-                            logger.info(f"[{acc_name}] 💎 [Stones] Attempting automated ad confirmation sequence ({boarded_ads}/{req_ads} boarded)...")
+                        attempts = 0
+                        while pd.get("need_ad") and boarded_ads < req_ads and attempts < 6:
+                            attempts += 1
+                            logger.info(f"[{acc_name}] 💎 [Stones] Attempting automated ad confirmation sequence ({boarded_ads}/{req_ads} boarded, attempt {attempts})...")
                             try:
-                                async with session.post(f"{base_url}/api/wd/ad/challenge", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as ch_res:
+                                async with session.post(f"{base_url}/api/wd/ad/challenge", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as ch_res:
                                     if ch_res.status == 200:
                                         ch_data = await ch_res.json()
                                         cid = ch_data.get("challenge", {}).get("challenge_id")
                                         if cid:
-                                            await session.post(f"{base_url}/api/ad/beat", json={"initData": init_data, "scope": "wd", "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
+                                            await session.post(f"{base_url}/api/ad/beat", json={"initData": init_data, "scope": "wd", "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=6), proxy=proxy)
                                             await asyncio.sleep(16.0)
-                                            await session.post(f"{base_url}/api/ad/beat", json={"initData": init_data, "scope": "wd", "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
+                                            await session.post(f"{base_url}/api/ad/beat", json={"initData": init_data, "scope": "wd", "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=6), proxy=proxy)
                                             await asyncio.sleep(0.5)
-                                            async with session.post(f"{base_url}/api/wd/ad/confirm", json={"initData": init_data, "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as cf_res:
+                                            async with session.post(f"{base_url}/api/wd/ad/confirm", json={"initData": init_data, "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cf_res:
                                                 cf_data = await cf_res.json()
-                                                boarded_ads = cf_data.get("verified", boarded_ads)
-                                                logger.info(f"[{acc_name}] 💎 [Stones] Ad confirm result: {cf_data}")
+                                                boarded_ads = cf_data.get("verified", boarded_ads + 1)
+                                                logger.info(f"[{acc_name}] 💎 [Stones] Ad confirm result: {cf_data} (Boarded: {boarded_ads}/{req_ads})")
                             except Exception as ade:
                                 logger.debug(f"[{acc_name}] Stones ad challenge note: {ade}")
+                                break
+                            await asyncio.sleep(2.0)
                         if not pd.get("need_ad") or boarded_ads >= req_ads:
-                            async with session.post(f"{base_url}/api/withdraw", json={"initData": init_data, "amount": withdraw_stones, "wallet": ARBITRUM_WALLET, "currency": "stones"}, headers=headers, timeout=aiohttp.ClientTimeout(total=12)) as wr:
+                            async with session.post(f"{base_url}/api/withdraw", json={"initData": init_data, "amount": withdraw_stones, "wallet": ARBITRUM_WALLET, "currency": "stones"}, headers=headers, timeout=aiohttp.ClientTimeout(total=12), proxy=proxy) as wr:
                                 wd = await wr.json()
                                 logger.info(f"[{acc_name}] 💎 [Stones] Withdrawal result: {wd}")
                                 if wd.get("ok") or wd.get("success"):
@@ -5420,7 +5426,7 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                                         f"• **Account:** {acc_name}\n"
                                         f"• **Amount:** `{withdraw_stones} STONES`\n"
                                         f"• **Destination:** `{ARBITRUM_WALLET}` (Arbitrum One)\n"
-                                        f"• **Ad Gate:** `All Ads Verified & Passed` ✅\n"
+                                        f"• **Ad Gate:** `All {boarded_ads}/{req_ads} Ads Verified & Passed` ✅\n"
                                         f"• **Result:** `{wd}`",
                                         chat_id=REPORT_CHAT_ID
                                     )
@@ -6467,10 +6473,11 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
         if not init_data:
             return
 
+        proxy = acc.get("proxy")
         headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
         base_url = "https://ainovum.biz"
 
-        # 1. Bootstrap
+        # 1. Bootstrap & acquire session cookies
         boot_payload = {
             "initData": init_data,
             "platform": "android",
@@ -6479,17 +6486,24 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
             "language_code": "en",
             "registration_duration_ms": 1500
         }
+        cookie_hdr = ""
         try:
-            async with session.post(f"{base_url}/api/bootstrap", json=boot_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as br:
-                pass
+            async with session.post(f"{base_url}/api/bootstrap", json=boot_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as br:
+                if br.status == 200:
+                    raw_cookies = br.headers.getall("Set-Cookie", [])
+                    cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
         except Exception:
             pass
+
+        auth_headers = dict(headers)
+        if cookie_hdr:
+            auth_headers["Cookie"] = cookie_hdr
 
         await asyncio.sleep(1.5)
 
         # 2. Claim Mining Profit
         try:
-            async with session.post(f"{base_url}/api/mining/claim", json={"action": "claim_cycle"}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as mr:
+            async with session.post(f"{base_url}/api/mining/claim", json={"action": "claim_cycle"}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as mr:
                 if mr.status == 200:
                     md = await mr.json()
                     if md.get("claimed"):
@@ -6502,7 +6516,7 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
 
         # 3. Claim Channel Bonus
         try:
-            async with session.post(f"{base_url}/api/channel-bonus/claim", json={}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as cbr:
+            async with session.post(f"{base_url}/api/channel-bonus/claim", json={}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cbr:
                 if cbr.status == 200:
                     logger.info(f"[{acc_name}] 🤖 [Ainovum] Channel bonus claimed!")
         except Exception:
@@ -6510,7 +6524,7 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
 
         # 4. Open Gift Box
         try:
-            async with session.post(f"{base_url}/api/gift-box/open", json={}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as gbr:
+            async with session.post(f"{base_url}/api/gift-box/open", json={}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as gbr:
                 if gbr.status == 200:
                     gbd = await gbr.json()
                     logger.info(f"[{acc_name}] 🤖 [Ainovum] Gift box opened: {gbd}")
@@ -6519,32 +6533,40 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
 
         # 5. Auto-Withdrawal to Main Binance BEP-20 Wallet (0.1 USDT Minimum)
         try:
-            async with session.get(f"{base_url}/api/withdraws/usdt/config", headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as cr:
+            async with session.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cr:
                 if cr.status == 200:
                     cd = await cr.json()
                     avail = float(cd.get("freeze", {}).get("available", 0) or 0)
                     if avail >= 0.1:
                         wd_amt = round(avail, 4)
                         logger.info(f"[{acc_name}] 🤖 [Ainovum] Available {avail:.4f} USDT >= 0.1 threshold! Submitting auto-withdrawal to BEP-20 {EVM_VAULT_ADDRESS}...")
-                        async with session.post(
-                            f"{base_url}/api/withdraws/usdt/create",
-                            json={"amount": wd_amt, "wallet": EVM_VAULT_ADDRESS, "network": "bep20"},
-                            headers=headers,
-                            timeout=aiohttp.ClientTimeout(total=10)
-                        ) as wr:
-                            wd = await wr.json()
-                            if wr.status == 200 and not wd.get("access_denied"):
-                                logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal result: {wd}")
-                                await send_report_message(
-                                    f"🎉 *Ainovum USDT Withdrawal Submitted!*\n\n"
-                                    f"• **Account:** {acc_name}\n"
-                                    f"• **Amount:** `{wd_amt} USDT` (BEP-20)\n"
-                                    f"• **Destination:** `{EVM_VAULT_ADDRESS}` (Binance BEP-20)\n"
-                                    f"• **Result:** `{wd}`",
-                                    chat_id=REPORT_CHAT_ID
-                                )
-                            else:
-                                logger.debug(f"[{acc_name}] 🤖 [Ainovum] Withdrawal attempt ({wd_amt} USDT): {wd}")
+                        wd_payload = {"amount": wd_amt, "wallet": EVM_VAULT_ADDRESS, "network": "bep20"}
+                        for attempt in range(2):
+                            async with session.post(
+                                f"{base_url}/api/withdraws/usdt/create",
+                                json=wd_payload,
+                                headers=auth_headers,
+                                timeout=aiohttp.ClientTimeout(total=10),
+                                proxy=proxy
+                            ) as wr:
+                                wd = await wr.json()
+                                if wr.status == 200 and not wd.get("access_denied") and not wd.get("error"):
+                                    logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal success: {wd}")
+                                    await send_report_message(
+                                        f"🎉 *Ainovum USDT Withdrawal Submitted!*\n\n"
+                                        f"• **Account:** {acc_name}\n"
+                                        f"• **Amount:** `{wd_amt} USDT` (BEP-20)\n"
+                                        f"• **Destination:** `{EVM_VAULT_ADDRESS}` (Binance BEP-20)\n"
+                                        f"• **Result:** `{wd}`",
+                                        chat_id=REPORT_CHAT_ID
+                                    )
+                                    break
+                                elif wd.get("code") == "busy":
+                                    logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal gateway busy (Server busy). Will retry next cycle.")
+                                    break
+                                else:
+                                    logger.debug(f"[{acc_name}] 🤖 [Ainovum] Withdrawal attempt ({wd_amt} USDT): {wd}")
+                            await asyncio.sleep(3.0)
         except Exception as we:
             logger.debug(f"[{acc_name}] Ainovum auto-withdrawal note: {we}")
 
