@@ -4401,7 +4401,18 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
             await cl.connect()
 
     try:
-        # Step 0: Fetch current bot balance
+        # Step 0: Fetch current bot balance (Timer-Aware & Anti-Spam Protected)
+        is_cooldown = float((acc_data or {}).get("bnb_next_reset_at") or 0) > time.time()
+        is_recent_wd = (time.time() - float((acc_data or {}).get("last_withdrawal_at") or 0)) < 28800
+        cached_b_ts = float(ACCOUNT_BALANCES.get(str(user_id), {}).get("timestamp", 0))
+        cached_is_fresh = (time.time() - cached_b_ts) < 14400
+
+        # If automated check, skip sending "💰 Balance" if account is in 8h withdrawal window or on task cooldown with fresh cache
+        if not notify_manual and ((is_cooldown and cached_is_fresh) or (is_recent_wd and (acc_data or {}).get("pending_withdraw"))):
+            cached_bal = ACCOUNT_BALANCES.get(str(user_id), {}).get("balance", 0.0)
+            logger.info(f"[BNB Auto-Withdraw] ⏳ {user_name} tasks on cooldown / withdrawal pending (~8h). Using cached balance ({cached_bal:.6f} BNB). Zero Telegram spam.")
+            return False
+
         init_msgs = await cl.get_messages(BNB_BOT, limit=1)
         last_id = init_msgs[0].id if init_msgs else 0
 
@@ -4699,6 +4710,10 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
                 "timestamp": time.time()
             }
             save_account_balances()
+            await update_account_safely(user_id, {"last_withdrawal_at": time.time(), "pending_withdraw": True})
+            if acc_data:
+                acc_data["last_withdrawal_at"] = time.time()
+                acc_data["pending_withdraw"] = True
             logger.info(f"[BNB Auto-Withdraw] ✅ Withdrawal of {amount_str} BNB for {user_name} to {target_wallet} fully verified & recorded!")
 
             # Push withdrawal receipt to Cloudflare Edge (MiniApp Payout History)
@@ -4826,9 +4841,14 @@ async def scan_fleet_balances(caller_chat_id=None):
         if sess and acc.get("status") != "revoked":
             acc_cl = None
             should_disc = False
+            cached_entry = ACCOUNT_BALANCES.get(str(uid), {})
+            cached_ts = float(cached_entry.get("timestamp", 0))
+            is_cooldown = float(acc.get("bnb_next_reset_at") or 0) > time.time()
+            cache_fresh = (time.time() - cached_ts) < 14400
+
             try:
-                # If this account is currently being processed by 24/7 worker, read cached balance directly
-                if str(uid) in CURRENTLY_ACTIVE_ACCOUNT_IDS or str(uid) == str(CURRENTLY_ACTIVE_ACCOUNT_ID):
+                # If account is busy, or on task cooldown with fresh cache, use cached balance without Telegram spam
+                if str(uid) in CURRENTLY_ACTIVE_ACCOUNT_IDS or str(uid) == str(CURRENTLY_ACTIVE_ACCOUNT_ID) or (is_cooldown and cache_fresh) or (cached_entry and (time.time() - cached_ts) < 3600):
                     if str(uid) in ACCOUNT_BALANCES:
                         balance = ACCOUNT_BALANCES[str(uid)].get("balance", 0.0)
                 elif sess == STRING_SESSION:
@@ -6895,24 +6915,42 @@ async def farm_single_account(
     states = {}
     ready_tasks_count = 0
     next_bnb_avail_ms = None
+    stored_reset_sec = float(acc.get("bnb_next_reset_at") or 0)
+    now_sec = time.time()
+    now_ms = int(now_sec * 1000)
+
+    # Pre-seed cooldown from stored account record if still active
+    if stored_reset_sec > now_sec:
+        next_bnb_avail_ms = int(stored_reset_sec * 1000)
+
     try:
         async with aiohttp.ClientSession() as http_check_session:
-            states = await get_bnb_tasks_status(http_check_session, acc_uid, proxy=acc.get("proxy"))
+            # Direct REST API call first (justtool.site doesn't block server IPs and responds in <100ms)
+            states = await get_bnb_tasks_status(http_check_session, acc_uid, proxy=None)
+            if not states and acc.get("proxy"):
+                states = await get_bnb_tasks_status(http_check_session, acc_uid, proxy=acc.get("proxy"))
     except Exception:
         states = {}
 
-    now_ms = int(time.time() * 1000)
     if states:
-        ready_tasks = [int(tid) for tid, avail in states.items() if avail == 0 or avail <= now_ms]
+        ready_tasks = [int(tid) for tid, avail in states.items() if int(avail) == 0 or int(avail) <= now_ms]
         ready_tasks_count = len(ready_tasks)
         for avail in states.values():
-            if avail > 0 and (next_bnb_avail_ms is None or avail < next_bnb_avail_ms):
-                next_bnb_avail_ms = avail
+            avail_int = int(avail)
+            if avail_int > 0 and (next_bnb_avail_ms is None or avail_int < next_bnb_avail_ms):
+                next_bnb_avail_ms = avail_int
     else:
-        ready_tasks_count = 10
+        # If network error but stored reset is in the future, honor the active countdown!
+        if stored_reset_sec > now_sec:
+            ready_tasks_count = 0
+            next_bnb_avail_ms = int(stored_reset_sec * 1000)
+        else:
+            ready_tasks_count = 0
 
     if next_bnb_avail_ms:
         fleet_next_resets.append(next_bnb_avail_ms)
+        acc["bnb_next_reset_at"] = next_bnb_avail_ms / 1000.0
+        await update_account_safely(acc_uid, {"bnb_next_reset_at": next_bnb_avail_ms / 1000.0})
 
     fleet_ready_counts.append(ready_tasks_count)
 
@@ -6946,13 +6984,27 @@ async def farm_single_account(
     )
     heal_due = (time.time() - last_heal) > (12 * 3600) or missing_referrals
 
-    # 4. Check if withdrawal is already eligible or if balance check is due (every 2.5h)
+    # 4. Check if withdrawal is already eligible or if balance check is due (Timer-Aware)
     known_balance = ACCOUNT_BALANCES.get(str(acc_uid), {}).get("balance", 0.0)
     withdraw_due = known_balance >= MIN_WITHDRAWAL
     last_bal_time = float(ACCOUNT_BALANCES.get(str(acc_uid), {}).get("timestamp", 0))
-    check_balance_due = (time.time() - last_bal_time) > 1800 or (known_balance == 0.0 and (time.time() - float(acc.get("last_fleet_cycle_at") or 0)) > 1200) or (ready_tasks_count == 0 and (time.time() - last_bal_time) > 1800)
 
+    # Smart Timer-Aware Check:
+    # If 10/10 tasks are claimed and countdown timer is active (next_bnb_avail_ms > now_ms),
+    # do NOT query balance on Telegram - tasks cannot generate rewards until the timer expires!
+    is_bnb_cooldown = bool(next_bnb_avail_ms and next_bnb_avail_ms > now_ms and ready_tasks_count == 0)
+    has_pending_payout = bool(acc.get("pending_withdraw") or (known_balance == 0.0 and (time.time() - float(acc.get("last_withdrawal_at") or 0)) < 28800))
 
+    if is_bnb_cooldown:
+        # All 10 tasks are on countdown cooldown (~6-8h). Balance from tasks cannot increase.
+        check_balance_due = False
+    elif has_pending_payout:
+        # Payout is already submitted and pending admin approval/transfer (~8h). Do not spam bot.
+        check_balance_due = False
+    else:
+        # Balance check is only due if never checked before, or if ready tasks are available to be claimed,
+        # or if > 6 hours have elapsed since last check.
+        check_balance_due = (last_bal_time == 0) or (ready_tasks_count > 0) or ((time.time() - last_bal_time) > 21600)
 
     # 5. Check if unverified withdrawal verification tasks are pending on Adsgram
     unverified_due = False
@@ -6962,9 +7014,7 @@ async def farm_single_account(
                 if chk_r.status == 200:
                     chk_d = await chk_r.json()
                     curr_v_count = chk_d.get("count", 0)
-                    if curr_v_count < 5 and (acc.get("pending_withdraw") or (known_balance == 0.0 and (time.time() - float(acc.get("last_fleet_cycle_at") or 0)) > 1800)):
-                        unverified_due = True
-                    elif 0 < curr_v_count < 5:
+                    if 0 < curr_v_count < 5 or (curr_v_count < 5 and acc.get("pending_withdraw")):
                         unverified_due = True
     except Exception:
         pass
@@ -7002,6 +7052,7 @@ async def farm_single_account(
 
         acc["last_fleet_cycle_at"] = time.time()
         await update_account_safely(acc_uid, {"last_fleet_cycle_at": time.time()})
+        PRIORITY_ACCOUNT_IDS.discard(str(acc_uid))
         gc.collect()
         return
 
@@ -7056,10 +7107,10 @@ async def farm_single_account(
                     wh = fresh_tokens.get("bnb_wh_url") or BNB_WEBHOOK_FALLBACK
                     await register_adsgram(http_sess, acc_uid, wh, proxy=acc.get("proxy"))
 
-            # C. Auto-Withdrawal Check & Execution on MTProto (refreshes live balance & auto-withdraws if eligible)
-            if withdraw_due or check_balance_due:
-                logger.info(f"[{acc_name}] 💰 Live BNB Galaxy balance & auto-withdrawal check executing on MTProto...")
-                await check_and_auto_withdraw(acc_uid, acc_name, notify_manual=False, acc_client=acc_cl, acc_data=acc)
+            # C. Offload BNB task completion & 5/5 verifications to Cloudflare Edge first
+            if ready_tasks_count > 0 or unverified_due:
+                logger.info(f"[{acc_name}] 🌐 Offloading task farming & 5/5 verifications to Cloudflare Edge...")
+                await delegate_farm_to_cloudflare(acc_uid, cf_node_url)
 
             # D. Withdrawal Verification Step A (Register MTProto view if unverified)
             if unverified_due:
@@ -7075,10 +7126,10 @@ async def farm_single_account(
                 except Exception as we:
                     logger.debug(f"[{acc_name}] MTProto WebApp note: {we}")
 
-            # E. Offload BNB task completion & 5/5 verifications to Cloudflare Cloud
-            if ready_tasks_count > 0 or unverified_due:
-                logger.info(f"[{acc_name}] 🌐 Offloading task farming & 5/5 verifications to Cloudflare Edge...")
-                await delegate_farm_to_cloudflare(acc_uid, cf_node_url)
+            # E. Auto-Withdrawal Check & Execution on MTProto (refreshes live balance & auto-withdraws if eligible)
+            if (withdraw_due or check_balance_due) and not is_bnb_cooldown:
+                logger.info(f"[{acc_name}] 💰 Live BNB Galaxy balance & auto-withdrawal check executing on MTProto...")
+                await check_and_auto_withdraw(acc_uid, acc_name, notify_manual=False, acc_client=acc_cl, acc_data=acc)
 
             # F. Multi-Bot Mining Harvest & Task Automation (ART, MRG, Stones, AI Lab, UltraWallet, Apex Miner, Ainovum, MiningGRAM - Parallel Execution)
             try:
@@ -7273,16 +7324,16 @@ async def task_worker_247(user_id: int, user_name: str):
             uninitialised = [a for a in curr_accs if not a.get("last_fleet_cycle_at") or not a.get("stones_referral_bound")]
             if uninitialised:
                 logger.info(f"⚡ [Auto-Detect] Found {len(uninitialised)} new/uncycled account(s) ready for onboarding. Skipping rest break!")
-                rest_sec = 5
+                rest_sec = 10
             elif fleet_total_ready == 0 and earliest_next_ms:
-                # All accounts have completed BNB tasks for now; rest capped at 75 minutes for periodic mining claims
-                rest_sec = max(int((earliest_next_ms - now_ms) / 1000), 1800)
-                rest_sec = min(rest_sec, 4500)  # Cap at 75 minutes so MRG & ART mining are continuously harvested
+                # All accounts have completed BNB tasks for now; rest capped at 90 minutes for periodic mining claims
+                reset_wait = max(int((earliest_next_ms - now_ms) / 1000), 1800)
+                rest_sec = min(reset_wait, 5400)  # Cap at 90 minutes so MRG & ART mining are continuously harvested without Telegram spam
                 hrs = rest_sec // 3600
                 mins = (rest_sec % 3600) // 60
-                logger.info(f"😴 [Multi-Bot Pacing] Accounts up-to-date. Next cycle in ~{hrs}h {mins}m. Resting to preserve shared VPS RAM & bandwidth...")
+                logger.info(f"😴 [Multi-Bot Pacing] All 10/10 BNB tasks completed (Next batch in ~{(earliest_next_ms - now_ms)/3600000:.1f}h). Resting for ~{hrs}h {mins}m. Zero Telegram spam...")
             else:
-                rest_sec = random.randint(30, 50) * 60
+                rest_sec = random.randint(45, 75) * 60
                 logger.info(f"Cycle completed. Staggered rest break: {rest_sec // 60} minutes before next multi-bot check...")
 
             while rest_sec > 0:
