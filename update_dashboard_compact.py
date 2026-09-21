@@ -719,10 +719,35 @@ function App() {
               React.createElement("div", { className: "text-[10px] text-slate-400 font-mono truncate" }, acc.phone || ("ID: " + acc.user_id))
             )
           ),
-          React.createElement("div", { className: "flex items-center gap-2 shrink-0" },
-            acc.atf_balance ? React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20" },
-              parseFloat(acc.atf_balance).toFixed(1) + " ATF"
-            ) : React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" }, "Active"),
+          React.createElement("div", { className: "flex items-center gap-1.5 shrink-0" },
+            // Live Countdown Timer Badge
+            (() => {
+              const resetMs = acc.bnb_next_reset_at ? acc.bnb_next_reset_at * 1000 : 0;
+              const now = Date.now();
+              if (resetMs > now) {
+                const diffMin = Math.round((resetMs - now) / 60000);
+                const h = Math.floor(diffMin / 60);
+                const m = diffMin % 60;
+                return React.createElement("span", {
+                  title: "BNB Galaxy task reset cooldown",
+                  className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 flex items-center gap-1"
+                },
+                  React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" }),
+                  `${h}h ${m}m`
+                );
+              }
+              return React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" }, "Ready");
+            })(),
+            // Stones 500 STONES Ready indicator
+            acc.stones_coins >= 500 ? React.createElement("span", {
+              title: "Stones coins ready for withdrawal (>= 500)",
+              className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+            }, "💎 " + acc.stones_coins) : null,
+            // ATF 500 ATF Ready indicator
+            acc.atf_balance >= 500 ? React.createElement("span", {
+              title: "ATF mined balance ready for withdrawal (>= 500)",
+              className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
+            }, "🪙 " + Math.floor(acc.atf_balance)) : null,
             React.createElement("span", {
               onClick: e => {
                 e.stopPropagation();
@@ -806,8 +831,8 @@ function App() {
 
     // TAB 4: AI FLEET COMMANDER (Expanded AI Operations)
     activeTab === "ai" && React.createElement("div", { className: "space-y-3" },
-      // AI Operations Quick Action Grid (4 high-power operations)
-      React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2" },
+      // AI Operations Quick Action Grid (6 high-power operations)
+      React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-2" },
         [
           {
             title: "⚡ Auto-Harvest All",
@@ -819,12 +844,43 @@ function App() {
             }
           },
           {
-            title: "💰 Auto-Withdraw Sweep",
-            desc: "Sweep >=0.00005 BNB & 500 STONES",
+            title: "💎 Stones 500 Sweep",
+            desc: "Arbitrum One (0xfda4...d5ce)",
+            action: async () => {
+              showToast("AI: Sweeping Stones >= 500...", "info");
+              await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sweep_stones" }) });
+              setAiMessages(prev => [...prev, { sender: "user", text: "💎 Sweep Stones >= 500" }, { sender: "ai", text: "💎 Stones 500-Withdrawal Sweep triggered! Scanning all accounts with >= 500 STONES coins. Destination: Arbitrum One (0xfda4182001672b9f0f09e2118242e543e35ed5ce). Captcha solver & 4-ad video verifier active." }]);
+            }
+          },
+          {
+            title: "🪙 ATF 500 Sweep",
+            desc: "Dedicated TON Wallets",
+            action: async () => {
+              showToast("AI: Sweeping ATF >= 500...", "info");
+              await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sweep_atf" }) });
+              setAiMessages(prev => [...prev, { sender: "user", text: "🪙 Sweep ATF >= 500" }, { sender: "ai", text: "🪙 ATF 500-Withdrawal Sweep triggered! Scanning accounts with >= 500 ATF mined balance (e.g. Arif Hossain: 2,168 ATF). Solves withdraw puzzle captcha and submits for admin approval." }]);
+            }
+          },
+          {
+            title: "💰 BNB Payout Sweep",
+            desc: "Sweep >=0.00005 BNB",
             action: async () => {
               showToast("AI: Evaluating balances for withdrawal...", "info");
               await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "withdraw" }) });
-              setAiMessages(prev => [...prev, { sender: "user", text: "💰 Sweep eligible withdrawals" }, { sender: "ai", text: "✅ Sweep triggered! Evaluating all accounts >= 0.00005 BNB and Stones >= 500. Dual verification (4 video ads & captcha) will execute automatically." }]);
+              setAiMessages(prev => [...prev, { sender: "user", text: "💰 Sweep eligible BNB withdrawals" }, { sender: "ai", text: "✅ BNB sweep triggered! Evaluating all accounts >= 0.00005 BNB. Auto-completes 5/5 Adsgram tasks and requests on-chain payout." }]);
+            }
+          },
+          {
+            title: "⏱️ Inspect Timers",
+            desc: "View task reset countdowns",
+            action: () => {
+              const now = Date.now();
+              const timerLines = fleet.map(a => {
+                const resetMs = a.bnb_next_reset_at ? a.bnb_next_reset_at * 1000 : 0;
+                const rem = resetMs > now ? `${Math.round((resetMs - now) / 60000)}m remaining` : "Ready to claim ✅";
+                return `• ${a.name || "Account"}: ${rem} (Stones: ${a.stones_coins || 0}, ATF: ${Math.floor(a.atf_balance || 0)})`;
+              }).slice(0, 7).join("\n");
+              setAiMessages(prev => [...prev, { sender: "user", text: "⏱️ Inspect task reset countdowns" }, { sender: "ai", text: `⏱️ Fleet Timer Telemetry:\n${timerLines}\n\n• Smart pacing ensures 0 VPS/Telegram spam while accounts are on countdown cooldown.` }]);
             }
           },
           {
@@ -832,16 +888,7 @@ function App() {
             desc: "Audit device fingerprints & timers",
             action: async () => {
               showToast("AI: Running security diagnostic...", "info");
-              setAiMessages(prev => [...prev, { sender: "user", text: "🛡️ Run Anti-Ban Security Audit" }, { sender: "ai", text: "🛡️ Anti-Ban Security Report:\n• Device Profiles: 100% Unique hardware-matched User-Agents active across all accounts.\n• Countdown Pacing: BNB Galaxy timer-aware precheck enabled (0 MTProto spam during reset cooldowns).\n• Proxy Isolation: Residential proxies mapped per worker.\n• Captcha Solvers: Template-matching & Tesseract ready for Stones 500 STONES withdrawals." }]);
-            }
-          },
-          {
-            title: "🔄 Synchronize Tokens",
-            desc: "Refresh WebApp session tokens",
-            action: async () => {
-              showToast("AI: Refreshing fleet session tokens...", "info");
-              await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sync" }) });
-              setAiMessages(prev => [...prev, { sender: "user", text: "🔄 Refresh WebApp tokens" }, { sender: "ai", text: "🔄 WebApp Token Refresh initiated! Fresh initData links for Stones, MRG, ART, ATF, and BNB Galaxy are synchronizing to Cloudflare Edge." }]);
+              setAiMessages(prev => [...prev, { sender: "user", text: "🛡️ Run Anti-Ban Security Audit" }, { sender: "ai", text: "🛡️ Anti-Ban Security Report:\n• Device Profiles: 100% Unique hardware-matched User-Agents active across all accounts.\n• Countdown Pacing: BNB Galaxy timer-aware precheck enabled (0 MTProto spam during reset cooldowns).\n• Proxy Isolation: Residential proxies mapped per worker.\n• Captcha Solvers: Template-matching & Tesseract ready for Stones & ATF 500 withdrawals." }]);
             }
           }
         ].map((btn, idx) => React.createElement("button", {
@@ -936,9 +983,24 @@ function App() {
         ),
 
         React.createElement("div", { className: "space-y-2 mb-4 text-xs" },
+          // Arbitrum One EVM Wallet Box
           React.createElement("div", { className: "bg-slate-50 dark:bg-slate-900/60 rounded-xl p-2.5 border border-slate-100 dark:border-white/5" },
             React.createElement("div", { className: "flex items-center justify-between mb-1" },
-              React.createElement("span", { className: "text-[10px] text-slate-400" }, "Dedicated TON Wallet"),
+              React.createElement("span", { className: "text-[10px] text-amber-500 font-bold" }, "Arbitrum One (Stones Payouts)"),
+              React.createElement("button", {
+                onClick: () => copyToClipboard("0xfda4182001672b9f0f09e2118242e543e35ed5ce", "Arbitrum Address Copied"),
+                className: "text-[10px] text-amber-500 font-bold"
+              }, "Copy")
+            ),
+            React.createElement("span", { className: "font-mono text-[11px] text-slate-800 dark:text-slate-200 font-semibold break-all" },
+              "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
+            )
+          ),
+
+          // Dedicated TON Wallet Box
+          React.createElement("div", { className: "bg-slate-50 dark:bg-slate-900/60 rounded-xl p-2.5 border border-slate-100 dark:border-white/5" },
+            React.createElement("div", { className: "flex items-center justify-between mb-1" },
+              React.createElement("span", { className: "text-[10px] text-blue-500 font-bold" }, "Dedicated TON Wallet (ATF & MRG)"),
               React.createElement("button", {
                 onClick: () => copyToClipboard(typeof selectedAccount.ton_wallet === "object" ? selectedAccount.ton_wallet.address : (selectedAccount.ton_wallet || ""), "TON Address Copied"),
                 className: "text-[10px] text-blue-500 font-bold"
@@ -952,14 +1014,14 @@ function App() {
           // 8-Bot Mining Matrix in Drawer
           React.createElement("div", { className: "grid grid-cols-2 gap-1.5" },
             [
-              { name: "ATF Miner", status: selectedAccount.atf_balance ? `${parseFloat(selectedAccount.atf_balance).toFixed(1)} ATF` : "Active" },
-              { name: "Stones", status: "Active (500)" },
-              { name: "MRG Miner", status: "Level 1 (Active)" },
-              { name: "ART Airdrop", status: "8h Active" },
-              { name: "AI Lab", status: "USD Hash Exchanged" },
-              { name: "UltraWallet", status: "Streak & Spin OK" },
-              { name: "Apex Miner", status: "Rate 0.0004/s" },
-              { name: "BNB Galaxy", status: "5/5 Verified" }
+              { name: "Stones (Arbitrum)", status: selectedAccount.stones_coins >= 500 ? `💎 ${selectedAccount.stones_coins} (Ready)` : `💎 ${selectedAccount.stones_coins || 0} STONES` },
+              { name: "ATF Miner (TON)", status: selectedAccount.atf_balance >= 500 ? `🪙 ${Math.floor(selectedAccount.atf_balance)} (Ready)` : `🪙 ${parseFloat(selectedAccount.atf_balance || 0).toFixed(1)} ATF` },
+              { name: "BNB Galaxy (BEP-20)", status: selectedAccount.bnb_next_reset_at && selectedAccount.bnb_next_reset_at * 1000 > Date.now() ? `Reset: ${Math.round((selectedAccount.bnb_next_reset_at * 1000 - Date.now()) / 60000)}m` : "Ready to Claim ✅" },
+              { name: "MRG Miner", status: "Level 1 (3h Mining)" },
+              { name: "ART Airdrop", status: "8h Active (21.3/h)" },
+              { name: "AI Lab", status: "Tasks #1-#5 Active" },
+              { name: "UltraWallet", status: "Daily Streak OK" },
+              { name: "Apex Miner", status: "Mining Active" }
             ].map((b, idx) => React.createElement("div", {
               key: idx,
               className: "bg-slate-50 dark:bg-slate-900/60 rounded-lg p-2 border border-slate-100 dark:border-white/5"

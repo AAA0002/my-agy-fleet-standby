@@ -76,29 +76,39 @@ def cosine_sim(v1: List[float], v2: List[float]) -> float:
 
 def extract_character_vectors(img: Image.Image) -> List[Tuple[List[float], Image.Image]]:
     """
-    Extracts the 5 characters by unique solid color,
+    Extracts the characters by unique solid color,
     normalizes them to 20x25, and returns (vector, cropped_canvas) tuples.
+    Supports both Stones Miners (210x68) and ATF Miners (220x80) captchas.
     """
     w, h = img.size
     colors = Counter([img.getpixel((x, y)) for x in range(w) for y in range(h)])
-    # Character colors: dark and frequent (> 120 pixels, average brightness < 110)
-    char_colors = [c for c, cnt in colors.most_common(15) if cnt > 120 and (c[0] + c[1] + c[2]) / 3 < 110]
+    # Get all dark colors across the image (solid character strokes)
+    dark_colors = [c for c, cnt in colors.items() if (c[0] + c[1] + c[2]) / 3 < 125 and cnt >= 25]
+    # Sort by pixel count descending
+    dark_colors.sort(key=lambda c: colors[c], reverse=True)
 
     chars = []
-    for col in char_colors:
+    for col in dark_colors:
         xs = [x for x in range(w) for y in range(h) if img.getpixel((x, y)) == col]
         ys = [y for x in range(w) for y in range(h) if img.getpixel((x, y)) == col]
         if not xs or not ys:
             continue
         min_x, max_x = min(xs), max(xs)
         min_y, max_y = min(ys), max(ys)
-        chars.append((min_x, max_x, min_y, max_y, col))
+        if (max_x - min_x) >= 4 and (max_y - min_y) >= 8:
+            chars.append((min_x, max_x, min_y, max_y, col))
 
     # Sort left to right
     chars.sort(key=lambda t: t[0])
 
+    # De-duplicate any overlapping color components belonging to the same letter
+    filtered_chars = []
+    for c in chars:
+        if not any(abs(c[0] - fc[0]) < 10 for fc in filtered_chars):
+            filtered_chars.append(c)
+
     char_data = []
-    for min_x, max_x, min_y, max_y, col in chars[:5]:
+    for min_x, max_x, min_y, max_y, col in filtered_chars[:5]:
         cw = max_x - min_x + 1
         ch = max_y - min_y + 1
         c_img = Image.new("L", (cw, ch), 0)
@@ -372,3 +382,89 @@ async def execute_stones_withdrawal_with_captcha(
             return ok, wd_res
     except Exception as we:
         return False, {"error": f"withdraw_exception: {we}"}
+
+
+async def execute_atf_withdrawal_with_captcha(
+    session: aiohttp.ClientSession,
+    base_url: str,
+    headers: dict,
+    init_data: str,
+    tg_id: int,
+    amount: int = 500,
+    tma_session_token: Optional[str] = None,
+    proxy: Optional[str] = None
+) -> Tuple[bool, dict]:
+    """
+    Executes complete ATF Miners withdrawal with automated captcha verification:
+    1. Obtains withdrawal puzzle (/index.php?action=get_withdraw_puzzle)
+    2. Solves the 5-character captcha image
+    3. Submits withdrawal (/index.php?action=withdraw) with { withdraw_captcha_id, withdraw_captcha_answer }
+    """
+    req_headers = dict(headers)
+    req_headers["Content-Type"] = "application/json"
+    req_headers["X-Requested-With"] = "XMLHttpRequest"
+    if init_data:
+        req_headers["X-Telegram-Init-Data"] = init_data
+    if tma_session_token:
+        req_headers["X-ATF-TMA-Session"] = tma_session_token
+
+    try:
+        # Step 1: Request withdraw puzzle
+        pz_payload = {
+            "initData": init_data,
+            "tg_id": tg_id,
+            "amount": amount,
+            "request_id": f"rq-wd-{int(time.time()*1000)}",
+            "device_id": f"dev-{tg_id}"
+        }
+        async with session.post(
+            f"{base_url}?action=get_withdraw_puzzle&t={int(time.time()*1000)}",
+            json=pz_payload,
+            headers=req_headers,
+            timeout=aiohttp.ClientTimeout(total=10, connect=5),
+            proxy=proxy
+        ) as pr:
+            pd = await pr.json()
+            if pd.get("status") != "success" or not pd.get("challenge_id") or not pd.get("captcha_image"):
+                return False, {"error": "puzzle_request_failed", "details": pd}
+
+        cid = pd["challenge_id"]
+        raw_img = pd["captcha_image"]
+        img_b64 = raw_img.split(",", 1)[1] if "," in raw_img else raw_img
+        img_bytes = base64.b64decode(img_b64)
+
+        # Step 2: Solve captcha
+        pred_code, confidence = solve_stones_captcha(img_bytes)
+        logger.info(f"[ATF Captcha] Solved #{cid} -> '{pred_code}' (conf: {confidence:.2f})")
+
+        if len(pred_code) != 5 or "?" in pred_code:
+            img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+            ocr_pred = _fallback_full_ocr(img)
+            if len(ocr_pred) == 5:
+                pred_code = ocr_pred
+
+        # Step 3: Submit withdrawal
+        await asyncio.sleep(1.5)
+        wd_payload = {
+            "initData": init_data,
+            "tg_id": tg_id,
+            "amount": amount,
+            "withdraw_captcha_id": cid,
+            "withdraw_captcha_answer": pred_code,
+            "request_id": f"rq-sub-{int(time.time()*1000)}",
+            "device_id": f"dev-{tg_id}"
+        }
+        async with session.post(
+            f"{base_url}?action=withdraw&t={int(time.time()*1000)}",
+            json=wd_payload,
+            headers=req_headers,
+            timeout=aiohttp.ClientTimeout(total=12, connect=5),
+            proxy=proxy
+        ) as wr:
+            wd_res = await wr.json()
+            ok = wd_res.get("status") == "success"
+            if ok:
+                learn_new_captcha(img_bytes, pred_code)
+            return ok, wd_res
+    except Exception as e:
+        return False, {"error": f"atf_withdraw_exception: {e}"}
