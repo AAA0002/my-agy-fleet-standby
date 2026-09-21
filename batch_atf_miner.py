@@ -131,10 +131,11 @@ async def process_account(acc, index, total, ton_wallets, session_pool):
                 print(f"    Note sending /start: {e}")
 
         # 2. Obtain WebApp initData
+        web_url = f"https://atfminers.asloni.online/miner/index.html?v=1789502294&entry=bot_start&ref={PRIMARY_ID}"
         res = await client(functions.messages.RequestWebViewRequest(
             peer=bot,
             bot=bot,
-            url="https://atfminers.asloni.online/miner/index.html?entry=bot_start",
+            url=web_url,
             start_param=PRIMARY_ID,
             platform="android"
         ))
@@ -152,6 +153,7 @@ async def process_account(acc, index, total, ton_wallets, session_pool):
             "user_id": uid,
             "name": name,
             "wallet": wallet_address,
+            "wallet_verified": False,
             "mined_balance": 0,
             "mining_active": False,
             "math_solved": False,
@@ -168,87 +170,95 @@ async def process_account(acc, index, total, ton_wallets, session_pool):
             if login_data.get("status") == "success":
                 u = login_data.get("user", {})
                 result["mined_balance"] = float(u.get("mined_balance", 0) or 0)
-                current_wallet = u.get("wallet")
-                print(f"    ✅ Login OK! Level: {u.get('level')}, Mined: {result['mined_balance']} ATF, Wallet: {current_wallet or 'None'}")
+                current_wallet = u.get("wallet_address") or u.get("wallet")
+                level = u.get("miner_level") or u.get("level")
+                is_wallet_verified = str(u.get("wallet_verified", "0")) == "1"
+                result["wallet_verified"] = is_wallet_verified or (uid == PRIMARY_ID and bool(current_wallet))
+                if u.get("mining_freezes_at", 0) > time.time() and int(u.get("mining_frozen", 0)) == 0:
+                    result["mining_active"] = True
+                print(f"    ✅ Login OK! Level: {level}, Mined: {result['mined_balance']} ATF, Wallet: {current_wallet or 'None'} (Verified: {result['wallet_verified']})")
                 
                 # Step 3b: Cryptographic TON Connect Proof Wallet Sync & Verification
-                is_wallet_verified = str(u.get("wallet_verified", "0")) == "1"
                 acc_ton_entry = ton_wallets.get(uid, {})
                 mnemonic_str = acc_ton_entry.get("mnemonic")
 
-                if mnemonic_str and not is_wallet_verified:
-                    try:
-                        words = mnemonic_str.split()
-                        _, pub_key_bytes, priv_key_bytes, wallet_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
-                        state_init_res = wallet_contract.create_state_init()
-                        state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
+                if not is_wallet_verified:
+                    if mnemonic_str:
+                        try:
+                            words = mnemonic_str.split()
+                            _, pub_key_bytes, priv_key_bytes, wallet_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
+                            state_init_res = wallet_contract.create_state_init()
+                            state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
 
-                        t_addr = Address(wallet_address)
-                        raw_addr = f"{t_addr.wc}:{t_addr.hash_part.hex()}"
+                            t_addr = Address(wallet_address)
+                            raw_addr = f"{t_addr.wc}:{t_addr.hash_part.hex()}"
 
-                        proof_req_p = with_init_data(init_data, device_id, {"tg_id": int(uid), "force": 1})
-                        async with session_pool.post(f"{BASE_MINER_URL}?action=get_wallet_proof_payload&t={int(time.time()*1000)}", json=proof_req_p) as pr_resp:
-                            pr_data = await pr_resp.json()
-                            proof_nonce = pr_data.get("payload")
+                            proof_req_p = with_init_data(init_data, device_id, {"tg_id": int(uid), "force": 1})
+                            async with session_pool.post(f"{BASE_MINER_URL}?action=get_wallet_proof_payload&t={int(time.time()*1000)}", json=proof_req_p) as pr_resp:
+                                pr_data = await pr_resp.json()
+                                proof_nonce = pr_data.get("payload")
 
-                        if proof_nonce:
-                            domain = "atfminers.asloni.online"
-                            domain_bytes = domain.encode("utf-8")
-                            ts = int(time.time())
+                            if proof_nonce:
+                                domain = "atfminers.asloni.online"
+                                domain_bytes = domain.encode("utf-8")
+                                ts = int(time.time())
 
-                            msg = (
-                                b"ton-proof-item-v2/" +
-                                struct.pack(">i", t_addr.wc) +
-                                t_addr.hash_part +
-                                struct.pack("<I", len(domain_bytes)) +
-                                domain_bytes +
-                                struct.pack("<Q", ts) +
-                                proof_nonce.encode("utf-8")
-                            )
-                            msg_hash = hashlib.sha256(msg).digest()
-                            full_msg = b"\xff\xff" + b"ton-connect" + msg_hash
-                            final_hash = hashlib.sha256(full_msg).digest()
+                                msg = (
+                                    b"ton-proof-item-v2/" +
+                                    struct.pack(">i", t_addr.wc) +
+                                    t_addr.hash_part +
+                                    struct.pack("<I", len(domain_bytes)) +
+                                    domain_bytes +
+                                    struct.pack("<Q", ts) +
+                                    proof_nonce.encode("utf-8")
+                                )
+                                msg_hash = hashlib.sha256(msg).digest()
+                                full_msg = b"\xff\xff" + b"ton-connect" + msg_hash
+                                final_hash = hashlib.sha256(full_msg).digest()
 
-                            signing_key = SigningKey(priv_key_bytes[:32])
-                            sig = signing_key.sign(final_hash).signature
-                            sig_b64 = base64.b64encode(sig).decode("utf-8")
+                                signing_key = SigningKey(priv_key_bytes[:32])
+                                sig = signing_key.sign(final_hash).signature
+                                sig_b64 = base64.b64encode(sig).decode("utf-8")
 
-                            proof_obj = {
-                                "timestamp": ts,
-                                "domain": {"lengthBytes": len(domain_bytes), "value": domain},
-                                "signature": sig_b64,
-                                "payload": proof_nonce
-                            }
+                                proof_obj = {
+                                    "timestamp": ts,
+                                    "domain": {"lengthBytes": len(domain_bytes), "value": domain},
+                                    "signature": sig_b64,
+                                    "payload": proof_nonce
+                                }
 
-                            sync_p = with_init_data(init_data, device_id, {
-                                "tg_id": int(uid),
-                                "wallet": raw_addr,
-                                "public_key": pub_key_bytes.hex(),
-                                "wallet_state_init": state_init_b64,
-                                "network": "-239",
-                                "proof": proof_obj,
-                                "refresh_holding": 1
-                            })
-                            async with session_pool.post(f"{BASE_MINER_URL}?action=sync_wallet&t={int(time.time()*1000)}", json=sync_p) as wr:
-                                w_data = await wr.json()
-                                if w_data.get("status") == "success":
-                                    print(f"    💎 Cryptographic TON Proof Verified: {wallet_address[:12]}... (Status: Verified ✅)")
-                                else:
-                                    print(f"    ⚠️ Wallet Proof Note: {w_data.get('message')}")
-                    except Exception as e:
-                        print(f"    ⚠️ TON Proof generation note: {e}")
-                elif not current_wallet or current_wallet != wallet_address:
-                    await asyncio.sleep(0.8)
-                    sync_p = with_init_data(init_data, device_id, {
-                        "tg_id": int(uid),
-                        "wallet": wallet_address
-                    })
-                    async with session_pool.post(f"{BASE_MINER_URL}?action=sync_wallet&t={int(time.time()*1000)}", json=sync_p) as wr:
-                        w_data = await wr.json()
-                        if w_data.get("status") == "success":
-                            print(f"    🔗 Wallet Linked Successfully: {wallet_address[:12]}...")
-                        else:
-                            print(f"    ⚠️ Wallet Sync Note: {w_data.get('message')}")
+                                sync_p = with_init_data(init_data, device_id, {
+                                    "tg_id": int(uid),
+                                    "wallet": raw_addr,
+                                    "public_key": pub_key_bytes.hex(),
+                                    "wallet_state_init": state_init_b64,
+                                    "network": "-239",
+                                    "proof": proof_obj,
+                                    "refresh_holding": 1
+                                })
+                                async with session_pool.post(f"{BASE_MINER_URL}?action=sync_wallet&t={int(time.time()*1000)}", json=sync_p) as wr:
+                                    w_data = await wr.json()
+                                    if w_data.get("status") == "success":
+                                        print(f"    💎 Cryptographic TON Proof Verified: {wallet_address[:12]}... (Status: Verified ✅)")
+                                        result["wallet_verified"] = True
+                                    else:
+                                        print(f"    ⚠️ Wallet Proof Note: {w_data.get('message')}")
+                        except Exception as e:
+                            print(f"    ⚠️ TON Proof generation note: {e}")
+                    elif not current_wallet or current_wallet != wallet_address:
+                        await asyncio.sleep(0.8)
+                        sync_p = with_init_data(init_data, device_id, {
+                            "tg_id": int(uid),
+                            "wallet": wallet_address
+                        })
+                        async with session_pool.post(f"{BASE_MINER_URL}?action=sync_wallet&t={int(time.time()*1000)}", json=sync_p) as wr:
+                            w_data = await wr.json()
+                            if w_data.get("status") == "success":
+                                print(f"    🔗 Wallet Linked Successfully: {wallet_address[:12]}...")
+                            else:
+                                print(f"    ⚠️ Wallet Sync Note: {w_data.get('message')}")
+                else:
+                    print(f"    💎 Dedicated TON Wallet Verified & Active: {wallet_address[:12]}... ✅")
 
                 # Step 3c: Check Math Challenge & Start Mining
                 await asyncio.sleep(0.8)
@@ -375,6 +385,8 @@ async def process_account(acc, index, total, ton_wallets, session_pool):
 
                 if tasks_claimed_count > 0:
                     print(f"    🎉 Successfully completed & claimed {tasks_claimed_count} ATF tasks!")
+            else:
+                print(f"    ❌ Login failed: {login_data.get('message', 'Non-success response')}")
 
         return result
 

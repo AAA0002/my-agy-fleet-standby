@@ -216,7 +216,7 @@ async def fetch_tokens_for_account(acc: dict, index: int, total: int) -> dict:
                 peer=bot_atf,
                 bot=bot_atf,
                 platform="android",
-                url="https://atfminers.asloni.online/miner/index.html?entry=bot_start",
+                url=f"https://atfminers.asloni.online/miner/index.html?v=1789502294&entry=bot_start&ref={PRIMARY_ID}",
                 start_param=PRIMARY_ID
             ))
             atf_init = extract_web_app_data(res_atf.url)
