@@ -1319,8 +1319,24 @@ fi
                     const uResp = await fetchWithRetry(`https://art.tamimdev.dev/api/user/${uid}`, { headers: artH }, 2, 800).catch(() => null);
                     if (uResp && uResp.ok) {
                       const uData = await uResp.json().catch(() => ({}));
-                      const poolBal = parseFloat(uData.user?.poolWallet || 0);
-                      if (poolBal >= 1000) {
+                      let poolBal = parseFloat(uData.user?.poolWallet || 0);
+                      const unlockedMiners = new Set(uData.user?.unlockedMiners || []);
+                      const artLevels = [
+                        [2, 100], [3, 250], [4, 500], [5, 1000], [6, 2000], [7, 4000], [8, 8000]
+                      ];
+                      for (const [lvl, cost] of artLevels) {
+                        if (!unlockedMiners.has(lvl) && poolBal >= cost) {
+                          const buyResp = await fetchWithRetry("https://art.tamimdev.dev/api/user/buy-miner", {
+                            method: "POST", headers: artH, body: JSON.stringify({ userId: uid, level: lvl })
+                          }, 2, 800).catch(() => null);
+                          if (buyResp && buyResp.ok) {
+                            poolBal -= cost;
+                            unlockedMiners.add(lvl);
+                          }
+                        }
+                      }
+                      const hasLvl8 = unlockedMiners.has(8) || (uData.user?.level || 1) >= 8;
+                      if (hasLvl8 && poolBal >= 1000) {
                         const wdAmt = Math.min(30000, Math.floor(poolBal));
                         await fetchWithRetry("https://art.tamimdev.dev/api/withdraw", { method: "POST", headers: artH, body: JSON.stringify({ userId: uid, amount: wdAmt }) }).catch(() => {});
                       }
@@ -2591,7 +2607,7 @@ fi
                 }, 1, 500).catch(() => {});
               }
 
-              // Ensure main Binance TON wallet is linked & Auto-Withdraw Check (>= 1000 ART)
+              // Ensure main Binance TON wallet is linked & Level 8 Reinvestment / Withdrawal Check
               try {
                 const tonPrimary = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT";
                 await fetchWithRetry("https://art.tamimdev.dev/api/user/connect-wallet", {
@@ -2603,8 +2619,24 @@ fi
                 const uResp = await fetchWithRetry(`https://art.tamimdev.dev/api/user/${uid}`, { headers: artHeaders }, 2, 800).catch(() => null);
                 if (uResp && uResp.ok) {
                   const uData = await uResp.json().catch(() => ({}));
-                  const poolBal = parseFloat(uData.user?.poolWallet || 0);
-                  if (poolBal >= 1000) {
+                  let poolBal = parseFloat(uData.user?.poolWallet || 0);
+                  const unlockedMiners = new Set(uData.user?.unlockedMiners || []);
+                  const artLevels = [
+                    [2, 100], [3, 250], [4, 500], [5, 1000], [6, 2000], [7, 4000], [8, 8000]
+                  ];
+                  for (const [lvl, cost] of artLevels) {
+                    if (!unlockedMiners.has(lvl) && poolBal >= cost) {
+                      const buyResp = await fetchWithRetry("https://art.tamimdev.dev/api/user/buy-miner", {
+                        method: "POST", headers: artHeaders, body: JSON.stringify({ userId: uid, level: lvl })
+                      }, 2, 800).catch(() => null);
+                      if (buyResp && buyResp.ok) {
+                        poolBal -= cost;
+                        unlockedMiners.add(lvl);
+                      }
+                    }
+                  }
+                  const hasLvl8 = unlockedMiners.has(8) || (uData.user?.level || 1) >= 8;
+                  if (hasLvl8 && poolBal >= 1000) {
                     const wdAmt = Math.min(30000, Math.floor(poolBal));
                     await fetchWithRetry("https://art.tamimdev.dev/api/withdraw", {
                       method: "POST",

@@ -5766,10 +5766,11 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                             logger.info(f"[{acc_name}] 🚀 [ART Airdrop] 🎉 Upgraded to Level {target_lvl}! Mining boosted to {new_hr} ART/h!")
                 except Exception as b_err:
                     logger.debug(f"[{acc_name}] ART level upgrade note: {b_err}")
-        # 8. Auto-Withdrawal to Main Binance TON Wallet (1000 ART Minimum)
-        if pool_bal >= 1000:
+        # 8. Auto-Withdrawal to Main Binance TON Wallet (Only when Level 8 is reached)
+        has_level_8 = (8 in unlocked) or (int(u.get("level", 1) or 1) >= 8)
+        if has_level_8 and pool_bal >= 1000:
             withdraw_art = min(30000, int(pool_bal))
-            logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Pool {pool_bal:.2f} ART >= 1000 threshold! Submitting auto-withdrawal of {withdraw_art} ART to {TON_PRIMARY_WALLET}...")
+            logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Level 8 reached & Pool {pool_bal:.2f} ART >= 1000 threshold! Submitting auto-withdrawal of {withdraw_art} ART to {TON_PRIMARY_WALLET}...")
             try:
                 # Ensure main Binance TON wallet is connected
                 await session.post(
@@ -5790,8 +5791,9 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                         pool_bal -= withdraw_art
                         w_info = wd.get("withdrawal", {})
                         await send_report_message(
-                            f"🎉 *ART Airdrop Withdrawal Submitted!*\n\n"
+                            f"🎉 *ART Airdrop Level 8 Withdrawal Submitted!*\n\n"
                             f"• **Account:** {acc_name}\n"
+                            f"• **Level:** `Level 8 (Max Boost)` 🚀\n"
                             f"• **Amount:** `{withdraw_art} ART` (~${w_info.get('amountUsd', 0)} USD)\n"
                             f"• **Destination:** `{TON_PRIMARY_WALLET}` (Binance TON Deposit)\n"
                             f"• **Status:** `{w_info.get('status', 'PENDING')}`\n"
@@ -5800,6 +5802,9 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                         )
             except Exception as we:
                 logger.error(f"[{acc_name}] ART auto-withdrawal error: {we}")
+        elif not has_level_8:
+            cur_lvl = max(unlocked or [1])
+            logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Leveling priority active (Current: Lvl {cur_lvl}/8 | Pool: {pool_bal:.2f} ART). Reinvesting towards Level 8 before withdrawals.")
 
         logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Cycle finished | Pool: {pool_bal:.2f} ART | Mining Active: {is_mining}")
 
