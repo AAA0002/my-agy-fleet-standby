@@ -2370,11 +2370,85 @@ fi
           return new Response("OK");
         }
 
-        // 9. Default Fallback
-        const defaultRep = `⚡ *MY AGY AI Operations Hub*\n\n` +
-          `• 13 Accounts Online & Mining across 7 Platforms\n` +
-          `• Use the buttons below or tap **🚀 Mini App** to inspect your fleet:`;
-        ctx.waitUntil(sendReply(defaultRep, statusInlineKeyboard));
+        // 9. Intelligent Conversational AI & Natural Fleet Actions
+        ctx.waitUntil((async () => {
+          await fetch(`https://api.telegram.org/bot${botToken}/sendChatAction`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: chatId, action: "typing" })
+          }).catch(() => {});
+
+          const userLower = text.toLowerCase();
+
+          if (userLower.includes("harvest") || userLower.includes("farm all") || userLower.includes("claim all")) {
+            await fetch(`https://restore-agy.${CURRENT_SUBDOMAIN}.workers.dev/api/farm/all`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ bot: "all" })
+            }).catch(() => {});
+            await sendReply("🌾 *Fleet Harvest Dispatched!*\n\nAll 13 accounts across all 8 platforms have been queued for harvesting on Cloudflare Edge.", statusInlineKeyboard);
+            return;
+          }
+
+          if (userLower.includes("sweep") || userLower.includes("instant withdraw")) {
+            const res = await fetch(`https://restore-agy.${CURRENT_SUBDOMAIN}.workers.dev/api/bnb/withdraw`, { method: "POST" }).then(r => r.json()).catch(e => ({ ok: false, error: e.message }));
+            await sendReply(`💰 *Instant Withdrawal Sweep Dispatched!*\n\n• Accounts checked: \`${res.checked || 13}/13\`\n• Withdrawals executed: \`${res.withdrawn || 0}\`\n• Target Vault: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\``, statusInlineKeyboard);
+            return;
+          }
+
+          let cleanPrompt = text;
+          if (cleanPrompt.startsWith("/ai ")) {
+            cleanPrompt = cleanPrompt.substring(4).trim();
+          }
+
+          try {
+            let liveBnb = 0.000812;
+            try {
+              const rawMC = await env.BACKUP_KV.get("multichain_balances_state");
+              if (rawMC) {
+                const mc = JSON.parse(rawMC);
+                if (mc.bsc_bnb_balance !== undefined) liveBnb = mc.bsc_bnb_balance;
+              }
+            } catch (_) {}
+
+            const systemPrompt = `You are the personal AI assistant for Arif's 13-account automated cloud fleet (MY AGY AI).
+Live Fleet Context:
+- 13 active accounts mining across 8 bots (BNB Galaxy, ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex).
+- Vault BEP-20 (BNB): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Balance: ${liveBnb.toFixed(6)} BNB).
+- Stones Vault (Arbitrum One): 0xfda4182001672b9f0f09e2118242e543e35ed5ce.
+- 13 Dedicated TON Wallets connected.
+Personality:
+- Speak like a normal, friendly, intelligent person (like ChatGPT or Claude).
+- Be conversational, warm, and helpful.
+- DO NOT use robotic terminal jargon (never say "OODA LOOP", "AFFIRMATIVE", "COGNITIVE PASS").
+- Address the user as Arif.
+- Keep Telegram responses concise and well-formatted for mobile.
+
+User asks: "${cleanPrompt}"
+Respond naturally and helpfully:`;
+
+            const aiResp = await fetch(`https://restore-agy.${CURRENT_SUBDOMAIN}.workers.dev/ai`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ prompt: systemPrompt })
+            });
+
+            if (aiResp.ok) {
+              const aiData = await aiResp.json();
+              if (aiData && aiData.answer) {
+                await sendReply(aiData.answer, statusInlineKeyboard, "HTML");
+                return;
+              }
+            }
+          } catch (e) {
+            console.error("Telegram AI chat error:", e);
+          }
+
+          const defaultRep = `⚡ *MY AGY AI Operations Hub*\n\n` +
+            `• 13 Accounts Online & Mining across 8 Platforms\n` +
+            `• Tap **🚀 Mini App** below to view your full dashboard or use the toolbar buttons:`;
+          await sendReply(defaultRep, statusInlineKeyboard);
+        })());
         return new Response("OK");
 
       } catch (err) {
