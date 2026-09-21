@@ -5261,10 +5261,15 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                     ch_d = await abc.json()
                     cid = ch_d.get("challenge", {}).get("challenge_id")
                     if cid:
-                        await asyncio.sleep(1.5)
+                        await session.post(f"{base_url}/api/ad/beat", json={"initData": init_data, "scope": "boost", "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
+                        await asyncio.sleep(16.0)
+                        await session.post(f"{base_url}/api/ad/beat", json={"initData": init_data, "scope": "boost", "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
+                        await asyncio.sleep(0.5)
                         async with session.post(f"{base_url}/api/ad/boost/reward", json={"initData": init_data, "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as abr:
                             if abr.status == 200:
-                                logger.info(f"[{acc_name}] 💎 [Stones] ⚡ Mining Boost activated (+0.5 TH/s)!")
+                                res_b = await abr.json()
+                                if res_b.get("ok"):
+                                    logger.info(f"[{acc_name}] 💎 [Stones] ⚡ Mining Boost activated (+0.5 TH/s for 5 min)!")
         except Exception:
             pass
 
@@ -6499,30 +6504,30 @@ async def automate_mininggram_cycle(session: aiohttp.ClientSession, acc_client, 
             async with session.post(f"{base_url}/api/auth", json=auth_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as ar:
                 if ar.status == 200:
                     ad = await ar.json()
-                    token = ad.get("token") or ad.get("session") or ad.get("accessToken")
+                    token = ad.get("sessionToken") or ad.get("token") or ad.get("session") or ad.get("accessToken")
         except Exception as ae:
             logger.debug(f"[{acc_name}] MiningGRAM auth note: {ae}")
 
         auth_headers = dict(headers)
         if token:
             auth_headers["Authorization"] = f"Bearer {token}"
+        else:
+            return
 
-        await asyncio.sleep(1.5)
+        await asyncio.sleep(1.0)
 
-        # 2. Daily check-in
-        try:
-            async with session.post(f"{base_url}/api/checkin", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as cr:
-                if cr.status == 200:
-                    cd = await cr.json()
-                    logger.info(f"[{acc_name}] ⛏️ [MiningGRAM] Daily check-in: {cd}")
-        except Exception:
-            pass
-
-        # 3. Trickle mining claim
+        # 2. Trickle mining claim
         try:
             async with session.get(f"{base_url}/api/mine/trickle-status", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as tsr:
                 if tsr.status == 200:
                     tsd = await tsr.json()
+                    trickles = tsd.get("trickles", [])
+                    if isinstance(trickles, list):
+                        for tr in trickles:
+                            tr_id = tr.get("id") or tr.get("trickleId")
+                            if tr_id:
+                                await session.post(f"{base_url}/api/mine/trickle-claim", json={"trickleId": tr_id}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8))
+                                logger.info(f"[{acc_name}] ⛏️ [MiningGRAM] Trickle #{tr_id} claimed!")
                     trickle_id = tsd.get("trickleId") or tsd.get("id")
                     if trickle_id:
                         async with session.post(f"{base_url}/api/mine/trickle-claim", json={"trickleId": trickle_id}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as tcr:
@@ -6531,24 +6536,40 @@ async def automate_mininggram_cycle(session: aiohttp.ClientSession, acc_client, 
         except Exception:
             pass
 
-        # 4. Miners check & claim
+        # 3. Miners check & claim
+        active_miners = 0
         try:
             async with session.get(f"{base_url}/api/miners", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as mr:
                 if mr.status == 200:
-                    miners = await mr.json()
-                    if isinstance(miners, list):
-                        for m in miners:
-                            mid = m.get("id") or m.get("minerId")
-                            if m.get("canClaim") or m.get("status") == "ready_to_claim":
-                                async with session.post(f"{base_url}/api/miners/claim", json={"minerId": mid}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as clr:
-                                    if clr.status == 200:
-                                        logger.info(f"[{acc_name}] ⛏️ [MiningGRAM] Miner #{mid} claimed!")
-                            elif m.get("status") == "inactive" or m.get("canActivate"):
-                                async with session.post(f"{base_url}/api/miners/activate", json={"minerId": mid}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as acr:
-                                    if acr.status == 200:
-                                        logger.info(f"[{acc_name}] ⛏️ [MiningGRAM] Miner #{mid} activated!")
-        except Exception:
-            pass
+                    miners_data = await mr.json()
+                    owned = miners_data.get("owned", []) if isinstance(miners_data, dict) else (miners_data if isinstance(miners_data, list) else [])
+                    now_iso = time.time()
+                    for m in owned:
+                        mid = m.get("id") or m.get("minerId")
+                        m_status = m.get("status")
+                        finishes_at = m.get("finishes_at")
+                        fin_ts = 0
+                        if finishes_at:
+                            try:
+                                fin_ts = datetime.datetime.fromisoformat(finishes_at.replace("Z", "+00:00")).timestamp()
+                            except Exception:
+                                pass
+
+                        if m.get("canClaim") or m_status in ("ready_to_claim", "completed") or (m_status == "active" and fin_ts > 0 and now_iso >= fin_ts):
+                            async with session.post(f"{base_url}/api/miners/claim", json={"minerId": mid}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as clr:
+                                if clr.status == 200:
+                                    logger.info(f"[{acc_name}] ⛏️ [MiningGRAM] Miner #{mid} claimed!")
+                        elif m_status in ("inactive", "idle") or m.get("canActivate"):
+                            async with session.post(f"{base_url}/api/miners/activate", json={"minerId": mid}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as acr:
+                                if acr.status == 200:
+                                    logger.info(f"[{acc_name}] ⛏️ [MiningGRAM] Miner #{mid} activated!")
+                                    active_miners += 1
+                        elif m_status == "active":
+                            active_miners += 1
+
+                    logger.info(f"[{acc_name}] ⛏️ [MiningGRAM] Cycle finished | Active Miners: {active_miners} (Owned: {len(owned)})")
+        except Exception as me:
+            logger.debug(f"[{acc_name}] MiningGRAM miners note: {me}")
 
     except Exception as e:
         logger.debug(f"[{acc_name}] MiningGRAM automation note: {e}")

@@ -2468,11 +2468,23 @@ fi
                   body: JSON.stringify({ initData: accData.stones_init_data })
                 }).then(r => r.json()).catch(() => ({}));
                 if (abc.ok && abc.challenge && abc.challenge.challenge_id) {
-                  await new Promise(r => setTimeout(r, 1500));
+                  const cid = abc.challenge.challenge_id;
+                  await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/beat", {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify({ initData: accData.stones_init_data, scope: "boost", challenge_id: cid })
+                  }, 1, 500).catch(() => {});
+                  await new Promise(r => setTimeout(r, 16000));
+                  await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/beat", {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify({ initData: accData.stones_init_data, scope: "boost", challenge_id: cid })
+                  }, 1, 500).catch(() => {});
+                  await new Promise(r => setTimeout(r, 500));
                   await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/boost/reward", {
                     method: "POST",
                     headers,
-                    body: JSON.stringify({ initData: accData.stones_init_data, challenge_id: abc.challenge.challenge_id })
+                    body: JSON.stringify({ initData: accData.stones_init_data, challenge_id: cid })
                   }).catch(() => {});
                 }
               } catch (_) {}
@@ -3030,6 +3042,160 @@ fi
                     }))
                   }, 1, 500).catch(() => {});
                 } catch (_) {}
+              }
+            } catch (_) {}
+          }
+
+          // I. Ainovum Edge Claim & Auto-Withdrawal (Binance BEP-20 0xfda4182001672b9f0f09e2118242e543e35ed5ce)
+          if (accData.ainovum_init_data) {
+            try {
+              const anBase = "https://ainovum.biz";
+              const anHeaders = {
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
+                "Referer": "https://ainovum.biz/",
+                "Origin": "https://ainovum.biz"
+              };
+              const bootResp = await fetchWithRetry(`${anBase}/api/bootstrap`, {
+                method: "POST",
+                headers: anHeaders,
+                body: JSON.stringify({
+                  initData: accData.ainovum_init_data,
+                  platform: "android",
+                  referrer: "ref_6727787768",
+                  timezone_offset_minutes: 0,
+                  language_code: "en",
+                  registration_duration_ms: 1500
+                })
+              }, 2, 800).catch(() => null);
+
+              if (bootResp && bootResp.ok) {
+                const rawCookie = bootResp.headers.get("set-cookie") || "";
+                const sidMatch = rawCookie.match(/astra\.tg\.sid=([^;]+)/);
+                const reqHeaders = { ...anHeaders };
+                if (sidMatch) {
+                  reqHeaders["Cookie"] = `astra.tg.sid=${sidMatch[1]}`;
+                }
+
+                await new Promise(r => setTimeout(r, 1000));
+
+                // Claim AI agent mining profit
+                await fetchWithRetry(`${anBase}/api/mining/claim`, {
+                  method: "POST",
+                  headers: reqHeaders,
+                  body: JSON.stringify({ action: "claim_cycle" })
+                }, 1, 500).catch(() => {});
+
+                // Claim channel bonus
+                await fetchWithRetry(`${anBase}/api/channel-bonus/claim`, {
+                  method: "POST",
+                  headers: reqHeaders,
+                  body: JSON.stringify({})
+                }, 1, 500).catch(() => {});
+
+                // Open daily gift box
+                await fetchWithRetry(`${anBase}/api/gift-box/open`, {
+                  method: "POST",
+                  headers: reqHeaders,
+                  body: JSON.stringify({})
+                }, 1, 500).catch(() => {});
+
+                // Auto-Withdrawal check to Binance BEP-20 (0.1 USDT threshold)
+                try {
+                  const cfgResp = await fetchWithRetry(`${anBase}/api/withdraws/usdt/config`, {
+                    headers: reqHeaders
+                  }, 2, 800).catch(() => null);
+                  if (cfgResp && cfgResp.ok) {
+                    const cfgData = await cfgResp.json().catch(() => ({}));
+                    const avail = parseFloat(cfgData.freeze?.available || 0);
+                    if (avail >= 0.1) {
+                      const wdAmt = Math.round(avail * 10000) / 10000;
+                      await fetchWithRetry(`${anBase}/api/withdraws/usdt/create`, {
+                        method: "POST",
+                        headers: reqHeaders,
+                        body: JSON.stringify({
+                          amount: wdAmt,
+                          wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
+                          network: "bep20"
+                        })
+                      }, 2, 1000).catch(() => {});
+                    }
+                  }
+                } catch (_) {}
+              }
+            } catch (_) {}
+          }
+
+          // J. MiningGRAM Edge Claim & Auto-Miner (Binance TON UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT)
+          if (accData.mininggram_init_data) {
+            try {
+              const mgBase = "https://mining-gram-worker.muhaisin0888.workers.dev";
+              const mgHeaders = {
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36"
+              };
+              const authResp = await fetchWithRetry(`${mgBase}/api/auth`, {
+                method: "POST",
+                headers: mgHeaders,
+                body: JSON.stringify({
+                  initData: accData.mininggram_init_data,
+                  referralCode: "339JU9K",
+                  deviceFingerprint: "fp_" + uid
+                })
+              }, 2, 800).catch(() => null);
+
+              if (authResp && authResp.ok) {
+                const authData = await authResp.json().catch(() => ({}));
+                const sessionTok = authData.sessionToken || authData.token;
+                if (sessionTok) {
+                  const authH = { ...mgHeaders, "Authorization": `Bearer ${sessionTok}` };
+
+                  // Trickle mining status & claim
+                  try {
+                    const tsResp = await fetch(`${mgBase}/api/mine/trickle-status`, { headers: authH }).catch(() => null);
+                    if (tsResp && tsResp.ok) {
+                      const tsData = await tsResp.json().catch(() => ({}));
+                      const trickles = tsData.trickles || [];
+                      for (const tr of trickles) {
+                        const trId = tr.id || tr.trickleId;
+                        if (trId) {
+                          await fetch(`${mgBase}/api/mine/trickle-claim`, {
+                            method: "POST",
+                            headers: authH,
+                            body: JSON.stringify({ trickleId: trId })
+                          }).catch(() => {});
+                        }
+                      }
+                    }
+                  } catch (_) {}
+
+                  // Miners claim & activate
+                  try {
+                    const mResp = await fetch(`${mgBase}/api/miners`, { headers: authH }).catch(() => null);
+                    if (mResp && mResp.ok) {
+                      const mData = await mResp.json().catch(() => ({}));
+                      const owned = mData.owned || [];
+                      const now = Date.now();
+                      for (const m of owned) {
+                        const mid = m.id;
+                        const finishesAt = m.finishes_at ? new Date(m.finishes_at).getTime() : 0;
+                        if (m.status === "ready_to_claim" || (m.status === "active" && finishesAt > 0 && now >= finishesAt)) {
+                          await fetch(`${mgBase}/api/miners/claim`, {
+                            method: "POST",
+                            headers: authH,
+                            body: JSON.stringify({ minerId: mid })
+                          }).catch(() => {});
+                        } else if (m.status === "inactive" || m.status === "idle") {
+                          await fetch(`${mgBase}/api/miners/activate`, {
+                            method: "POST",
+                            headers: authH,
+                            body: JSON.stringify({ minerId: mid })
+                          }).catch(() => {});
+                        }
+                      }
+                    }
+                  } catch (_) {}
+                }
               }
             } catch (_) {}
           }
