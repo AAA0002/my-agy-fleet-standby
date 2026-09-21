@@ -14,7 +14,6 @@ fi
 BOT_SCRIPT="$BASE_DIR/userbot_refresher.py"
 SUPERVISOR_LOG="$BASE_DIR/supervisor.log"
 BOT_LOG="$BASE_DIR/userbot.log"
-LOCK_FILE="$BASE_DIR/supervisor.lock"
 PID_FILE="$BASE_DIR/userbot.pid"
 
 # Single-instance guarantee using supervisor.pid
@@ -32,14 +31,14 @@ fi
 
 echo "$$" > "$SUPERVISOR_PID_FILE"
 
-# Ignore HUP so closing Termux or SSH never affects this supervisor
+# Ignore HUP so closing SSH/terminal never affects this supervisor
 trap '' HUP
 
 echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] === Immortal Supervisor started (PID: $$) ===" >> "$SUPERVISOR_LOG"
 
 while true; do
-    # Rotate logs safely using copytruncate to prevent disk bloat (Lean 2GB VPS settings)
-    for LOG_ITEM in "$BOT_LOG:2097152" "$SUPERVISOR_LOG:1048576" "$BASE_DIR/cloudflared.log:1048576"; do
+    # Rotate logs safely using copytruncate to prevent disk bloat
+    for LOG_ITEM in "$BOT_LOG:2097152" "$SUPERVISOR_LOG:1048576"; do
         TARGET_FILE="${LOG_ITEM%%:*}"
         MAX_BYTES="${LOG_ITEM##*:}"
         if [ -f "$TARGET_FILE" ]; then
@@ -57,19 +56,6 @@ while true; do
     if [ -n "$AVAIL_KB" ] && [ "$AVAIL_KB" -lt 409600 ]; then
         rm -f "$BASE_DIR"/*.old 2>/dev/null || true
     fi
-
-    # Enforce strict 2-archive limit and clean temp pycache (2GB VPS protection)
-    ZIP_COUNT=$(ls -1 "$BASE_DIR"/my_agy_ai_backup_*.zip 2>/dev/null | wc -l)
-    if [ "$ZIP_COUNT" -gt 2 ]; then
-        ls -1t "$BASE_DIR"/my_agy_ai_backup_*.zip | tail -n +3 | xargs -r rm -f 2>/dev/null || true
-    fi
-
-    # Auto-prune __pycache__, bytecode, stale temp files, and oversized tmux logs
-    find "$BASE_DIR" -maxdepth 2 -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-    find "$BASE_DIR" -maxdepth 2 -type f \( -name "*.tmp*" -o -name "*.temp*" \) -mmin +30 -delete 2>/dev/null || true
-    find "$BASE_DIR" -maxdepth 2 -type f -name "*.pyc" -delete 2>/dev/null || true
-    find "$BASE_DIR" -maxdepth 1 -type f -name "tmux-*.log" -size +1M -delete 2>/dev/null || true
-    find /tmp -maxdepth 1 -user "$(whoami)" -type f -mmin +720 -delete 2>/dev/null || true
 
     # Check if userbot_refresher.py is running and not a zombie
     IS_RUNNING=0
@@ -94,12 +80,6 @@ while true; do
         
         # Brief pause to allow the bot to initialize
         sleep 5
-    fi
-
-
-    # Cloudflare Zero-Trust Tunnel Auto-Revival Watchdog
-    if [ -f "$BASE_DIR/cloudflared_tunnel.sh" ] && ! pgrep -f "cloudflared tunnel" > /dev/null 2>&1; then
-        bash "$BASE_DIR/cloudflared_tunnel.sh" start > /dev/null 2>&1 || true
     fi
 
     # Heartbeat interval

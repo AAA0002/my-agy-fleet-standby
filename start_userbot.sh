@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # =======================================================
-# START SCRIPT - 24/7 PERMANENT CLOUD RUNNER
+# START SCRIPT - 24/7 PERMANENT RUNNER
 # =======================================================
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SESSION_NAME="telegram_bot"
 SUPERVISOR="$DIR/bot_supervisor.sh"
+
+chmod +x "$SUPERVISOR"
 
 # Clean up stale dead PID files if old processes died
 for PID_CHECK in "$DIR/supervisor.pid" "$DIR/userbot.pid"; do
@@ -42,7 +44,7 @@ done
 
 echo "=== Verification ==="
 if [ "$TMUX_ACTIVE" -eq 1 ]; then
-    echo "✅ Supervisor daemon is ACTIVE in detached tmux (100% immune to Termux or phone disconnect)."
+    echo "✅ Supervisor daemon is ACTIVE in detached tmux."
 else
     echo "❌ Failed to start tmux session."
 fi
@@ -65,6 +67,5 @@ else
 fi
 
 echo ""
-echo "Processes running in cloud background:"
+echo "Processes running in background:"
 ps -ef | grep -E "tmux|bot_supervisor|userbot_refresher" | grep -v grep
-
