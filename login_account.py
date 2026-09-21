@@ -248,21 +248,32 @@ async def bind_referrals(client, me, acc_entry):
                             except Exception:
                                 pass
 
-        msgs = await client.get_messages(BNB_BOT, limit=3)
-        for m in msgs:
-            if "email id" in (m.raw_text or "").lower():
-                em = generate_random_email()
-                await client.send_message(BNB_BOT, em)
-                await asyncio.sleep(2.5)
+        # Step 4: Wait for email prompt and submit official email
+        email_submitted = False
+        for _ in range(8):
+            await asyncio.sleep(1.5)
+            msgs = await client.get_messages(BNB_BOT, limit=3)
+            for m in msgs:
+                if not m.out and any(w in (m.raw_text or "").lower() for w in ["email", "youtube"]):
+                    print(f"    - Submitting official email: {OFFICIAL_EMAIL}")
+                    await client.send_message(BNB_BOT, OFFICIAL_EMAIL)
+                    email_submitted = True
+                    break
+            if email_submitted:
                 break
 
-        # Submit user's Binance BEP-20 wallet (all fleet accounts send BNB payouts to primary Binance wallet)
-        msgs = await client.get_messages(BNB_BOT, limit=3)
-        for m in msgs:
-            if "wallet address" in (m.raw_text or "").lower():
-                print(f"    - Submitting Binance BEP-20 wallet: {PRIMARY_EVM_WALLET}")
-                await client.send_message(BNB_BOT, PRIMARY_EVM_WALLET)
-                await asyncio.sleep(2.5)
+        # Step 5: Wait for BEP-20 wallet prompt and submit Binance wallet
+        wallet_submitted = False
+        for _ in range(8):
+            await asyncio.sleep(1.5)
+            msgs = await client.get_messages(BNB_BOT, limit=3)
+            for m in msgs:
+                if not m.out and any(w in (m.raw_text or "").lower() for w in ["wallet", "bep-20"]):
+                    print(f"    - Submitting Binance BEP-20 wallet: {PRIMARY_EVM_WALLET}")
+                    await client.send_message(BNB_BOT, PRIMARY_EVM_WALLET)
+                    wallet_submitted = True
+                    break
+            if wallet_submitted:
                 break
 
         acc_entry["bnb_wallet"] = PRIMARY_EVM_WALLET

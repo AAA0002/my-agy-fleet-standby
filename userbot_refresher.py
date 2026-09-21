@@ -3732,24 +3732,34 @@ async def ensure_referral_bound(acc_client, acc: dict):
                                 except Exception:
                                     pass
 
-            # Step 4: Submit email if requested
-            msgs = await acc_client.get_messages(BNB_BOT, limit=3)
-            for m in msgs:
-                if "email id" in (m.raw_text or "").lower():
-                    em = generate_random_email()
-                    logger.info(f"[{acc_name}] Submitting onboarding email: {em}")
-                    await acc_client.send_message(BNB_BOT, em)
-                    await asyncio.sleep(2.5)
+            # Step 4: Wait for email prompt and submit official email
+            email_submitted = False
+            for _ in range(8):
+                await asyncio.sleep(1.5)
+                msgs = await acc_client.get_messages(BNB_BOT, limit=3)
+                for m in msgs:
+                    if not m.out and any(w in (m.raw_text or "").lower() for w in ["email", "youtube"]):
+                        em = OFFICIAL_EMAIL
+                        logger.info(f"[{acc_name}] Submitting onboarding email: {em}")
+                        await acc_client.send_message(BNB_BOT, em)
+                        email_submitted = True
+                        break
+                if email_submitted:
                     break
 
-            # Step 5: Submit BEP-20 wallet if requested (Isolated EVM wallet)
-            msgs = await acc_client.get_messages(BNB_BOT, limit=3)
-            for m in msgs:
-                if "wallet address" in (m.raw_text or "").lower():
-                    worker_evm_wallet = ensure_account_evm_wallet(acc)
-                    logger.info(f"[{acc_name}] Submitting isolated onboarding wallet: {worker_evm_wallet}")
-                    await acc_client.send_message(BNB_BOT, worker_evm_wallet)
-                    await asyncio.sleep(2.5)
+            # Step 5: Wait for BEP-20 wallet prompt and submit wallet address
+            wallet_submitted = False
+            target_bnb_wallet = acc.get("bnb_wallet") or WALLET_ADDRESS
+            for _ in range(8):
+                await asyncio.sleep(1.5)
+                msgs = await acc_client.get_messages(BNB_BOT, limit=3)
+                for m in msgs:
+                    if not m.out and any(w in (m.raw_text or "").lower() for w in ["wallet", "bep-20"]):
+                        logger.info(f"[{acc_name}] Submitting onboarding wallet: {target_bnb_wallet}")
+                        await acc_client.send_message(BNB_BOT, target_bnb_wallet)
+                        wallet_submitted = True
+                        break
+                if wallet_submitted:
                     break
 
             acc["bnb_referral_bound"] = True
