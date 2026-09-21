@@ -5284,11 +5284,26 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                     pd = await pr.json()
                     logger.info(f"[{acc_name}] 💎 [Stones] Precheck result: {pd}")
                     if pd.get("ok") or pd.get("success"):
-                        if pd.get("need_ad"):
-                            req_ads = pd.get("required", 4)
-                            boarded_ads = pd.get("boarded", 0)
-                            if boarded_ads < req_ads:
-                                logger.info(f"[{acc_name}] 💎 [Stones] Coins {coins} >= 500 eligible. AdsGram rewarded ads ({boarded_ads}/{req_ads} boarded) require browser postback in Mini-App. Skipping headless wait to maintain fleet speed.")
+                        boarded_ads = pd.get("boarded", 0)
+                        req_ads = pd.get("required", 4)
+                        if pd.get("need_ad") and boarded_ads < req_ads:
+                            logger.info(f"[{acc_name}] 💎 [Stones] Attempting automated ad confirmation sequence ({boarded_ads}/{req_ads} boarded)...")
+                            try:
+                                async with session.post(f"{base_url}/api/wd/ad/challenge", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as ch_res:
+                                    if ch_res.status == 200:
+                                        ch_data = await ch_res.json()
+                                        cid = ch_data.get("challenge", {}).get("challenge_id")
+                                        if cid:
+                                            await session.post(f"{base_url}/api/ad/beat", json={"initData": init_data, "scope": "wd", "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
+                                            await asyncio.sleep(16.0)
+                                            await session.post(f"{base_url}/api/ad/beat", json={"initData": init_data, "scope": "wd", "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
+                                            await asyncio.sleep(0.5)
+                                            async with session.post(f"{base_url}/api/wd/ad/confirm", json={"initData": init_data, "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as cf_res:
+                                                cf_data = await cf_res.json()
+                                                boarded_ads = cf_data.get("verified", boarded_ads)
+                                                logger.info(f"[{acc_name}] 💎 [Stones] Ad confirm result: {cf_data}")
+                            except Exception as ade:
+                                logger.debug(f"[{acc_name}] Stones ad challenge note: {ade}")
                         if not pd.get("need_ad") or boarded_ads >= req_ads:
                             async with session.post(f"{base_url}/api/withdraw", json={"initData": init_data, "amount": withdraw_stones, "wallet": ARBITRUM_WALLET, "currency": "stones"}, headers=headers, timeout=aiohttp.ClientTimeout(total=12)) as wr:
                                 wd = await wr.json()
