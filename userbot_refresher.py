@@ -700,6 +700,42 @@ async def get_onchain_arb_balance(wallet_address: str) -> float:
     return 0.0
 
 
+async def get_onchain_bep20_usdt_balance(wallet_address: str) -> float:
+    """Queries BSC public RPC for BEP-20 USDT token balance."""
+    clean_addr = wallet_address.lower().replace("0x", "").zfill(64)
+    data = f"0x70a08231{clean_addr}"
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "eth_call",
+        "params": [
+            {"to": "0x55d398326f99059fF775485246999027B3197955", "data": data},
+            "latest"
+        ],
+        "id": 1
+    }
+    rpc_urls = [
+        "https://bsc-dataseed.binance.org",
+        "https://bsc-dataseed1.defibit.io",
+        "https://bsc-dataseed1.binance.org"
+    ]
+    timeout_cfg = aiohttp.ClientTimeout(total=4)
+    try:
+        async with aiohttp.ClientSession(timeout=timeout_cfg) as session:
+            for url in rpc_urls:
+                try:
+                    async with session.post(url, json=payload, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}) as resp:
+                        if resp.status == 200:
+                            res = await resp.json()
+                            hex_val = res.get("result", "0x0")
+                            raw_val = int(hex_val, 16)
+                            return round(raw_val / 1e18, 4)
+                except Exception:
+                    continue
+    except Exception:
+        pass
+    return 0.0
+
+
 ONCHAIN_STATE_FILE = os.path.join(BASE_DIR, ".onchain_state.json")
 
 def load_onchain_state():
@@ -709,7 +745,7 @@ def load_onchain_state():
                 return json.load(f)
         except Exception:
             pass
-    return {"last_balance": 0.0, "last_bnb_balance": 0.0, "last_ton_balance": 0.0, "last_check": 0}
+    return {"last_balance": 0.0, "last_bnb_balance": 0.0, "last_usdt_balance": 0.0, "last_arb_balance": 0.0, "last_ton_balance": 0.0, "last_check": 0}
 
 def save_onchain_state(state):
     """Atomically saves onchain state."""
@@ -722,7 +758,7 @@ def save_onchain_state(state):
         pass
 
 async def check_onchain_deposit_alert():
-    """Tri-Chain On-Chain Watchdog: monitors BSC (BNB) and TON network deposits and posts verification messages."""
+    """Unified Multi-Chain On-Chain Watchdog: monitors BSC (BNB & USDT), Arbitrum One, and TON network deposits."""
     try:
         rates = await get_crypto_fiat_rates()
         bnb_price = rates["bnb_usd"]
@@ -780,7 +816,72 @@ async def check_onchain_deposit_alert():
             state["last_bnb_balance"] = current_bnb
             state["last_balance"] = current_bnb
 
-        # 2. TON Network Deposit Watchdog
+        # 2. BSC USDT Deposit Watchdog (Ainovum auto-withdrawals)
+        current_usdt = await get_onchain_bep20_usdt_balance(WALLET_ADDRESS)
+        last_usdt = float(state.get("last_usdt_balance", 0.0))
+
+        if current_usdt > 0 and last_usdt > 0.0 and current_usdt > last_usdt:
+            delta_usdt = round(current_usdt - last_usdt, 4)
+            bdt_val = delta_usdt * usd_bdt
+
+            usdt_msg = (
+                f"🎉 <b>On-Chain BEP-20 USDT Payout Confirmed!</b>\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"💰 <b>Received:</b> <code>+{delta_usdt:.4f} USDT</code> (~${delta_usdt:.2f} USD / ৳{bdt_val:.2f} BDT)\n"
+                f"💼 <b>Recipient Wallet:</b> <code>{WALLET_ADDRESS}</code>\n"
+                f"🏦 <b>New Confirmed Balance:</b> <code>{current_usdt:.4f} USDT</code>\n"
+                f"🌐 <b>Network:</b> Binance Smart Chain (BEP-20)\n"
+                f"🕒 <b>Confirmed At:</b> {now_str}\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"🔗 <a href=\"https://bscscan.com/token/0x55d398326f99059fF775485246999027B3197955?a={WALLET_ADDRESS}\">Verify on BscScan</a>\n"
+                f"🛡️ <i>Autonomous Cloud Fleet Operations by MY AGY AI</i>"
+            )
+
+            try:
+                tg_url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"
+                async with aiohttp.ClientSession() as session:
+                    await session.post(tg_url, json={"chat_id": PAYOUT_CHANNEL_ID, "text": usdt_msg, "parse_mode": "HTML"}, timeout=aiohttp.ClientTimeout(total=10))
+            except Exception as pe:
+                logger.error(f"[Payout Channel] Failed sending USDT confirmation: {pe}")
+
+            await broadcast_admin_message(usdt_msg, reply_markup=WALLET_INLINE_KEYBOARD)
+
+        if current_usdt > 0:
+            state["last_usdt_balance"] = current_usdt
+
+        # 3. Arbitrum One Watchdog (Stones Miners withdrawals)
+        current_arb = await get_onchain_arb_balance(WALLET_ADDRESS)
+        last_arb = float(state.get("last_arb_balance", 0.0))
+
+        if current_arb > 0 and last_arb > 0.0 and current_arb > last_arb:
+            delta_arb = round(current_arb - last_arb, 6)
+
+            arb_msg = (
+                f"🎉 <b>On-Chain Arbitrum Deposit Confirmed!</b>\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"💰 <b>Received:</b> <code>+{delta_arb:.6f} ETH/ARB</code>\n"
+                f"💼 <b>Recipient Wallet:</b> <code>{WALLET_ADDRESS}</code>\n"
+                f"🏦 <b>New Confirmed Balance:</b> <code>{current_arb:.6f} ETH</code>\n"
+                f"🌐 <b>Network:</b> Arbitrum One (Layer 2)\n"
+                f"🕒 <b>Confirmed At:</b> {now_str}\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"🔗 <a href=\"https://arbiscan.io/address/{WALLET_ADDRESS}\">Verify on Arbiscan</a>\n"
+                f"🛡️ <i>Autonomous Cloud Fleet Operations by MY AGY AI</i>"
+            )
+
+            try:
+                tg_url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"
+                async with aiohttp.ClientSession() as session:
+                    await session.post(tg_url, json={"chat_id": PAYOUT_CHANNEL_ID, "text": arb_msg, "parse_mode": "HTML"}, timeout=aiohttp.ClientTimeout(total=10))
+            except Exception as pe:
+                logger.error(f"[Payout Channel] Failed sending Arbitrum confirmation: {pe}")
+
+            await broadcast_admin_message(arb_msg, reply_markup=WALLET_INLINE_KEYBOARD)
+
+        if current_arb > 0:
+            state["last_arb_balance"] = current_arb
+
+        # 4. TON Network Deposit Watchdog (ART Airdrop & MiningGRAM)
         current_ton = await get_onchain_ton_balance(TON_PRIMARY_WALLET)
         last_ton = float(state.get("last_ton_balance", 0.0))
 
