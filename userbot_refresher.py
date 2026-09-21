@@ -133,6 +133,7 @@ MININGGRAM_REFERRAL_CODE = "339JU9K"
 BNB_WEBHOOK_FALLBACK = "https://api.bots.business/v1/bots/2985029/new-webhook?&command=%2FonWebhook&public_user_token=3d1ed3e6a9bb948436a55057c6e87b59&user_id=46893407"
 WALLET_ADDRESS = os.getenv("WALLET_ADDRESS", "0xfda4182001672b9f0f09e2118242e543e35ed5ce")
 EVM_VAULT_ADDRESS = WALLET_ADDRESS
+OFFICIAL_EMAIL = os.getenv("FLEET_EMAIL", "aaa.support.a@gmail.com")
 ARBITRUM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 TON_PRIMARY_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
 MIN_WITHDRAWAL = float(os.getenv("MIN_WITHDRAWAL", "0.00005"))
@@ -594,16 +595,13 @@ async def get_onchain_bnb_balance(wallet_address: str) -> float:
         "params": [wallet_address, "latest"],
         "id": 1
     }
-    # Proven, resilient BSC RPC nodes (prioritizing high-speed dRPC)
-    drpc_key = os.getenv("DRPC_API_KEY", "Aj3ei0uTXUwutp4cQUkyTyjgB8oqtDAR8YBVEl_NDNxu")
     rpc_urls = [
-        f"https://bsc.drpc.org/ogrpc?dkey={drpc_key}",
         "https://bsc-dataseed.binance.org",
+        "https://bsc-dataseed1.defibit.io",
         "https://bsc-dataseed1.binance.org",
         "https://bsc-dataseed2.binance.org",
         "https://bsc.meowrpc.com",
         "https://1rpc.io/bnb",
-        "https://bsc-dataseed1.defibit.io",
         "https://bsc-dataseed1.ninicoin.io"
     ]
     timeout_cfg = aiohttp.ClientTimeout(total=4)
@@ -1535,8 +1533,8 @@ WALLET_INLINE_KEYBOARD = {
 
 
 def generate_random_email():
-    rand_id = uuid.uuid4().hex[:8]
-    return f"user.{rand_id}@gmail.com"
+    """Returns official fleet email address configured by user."""
+    return OFFICIAL_EMAIL
 
 
 async def ai_classify_bot_prompt(bot_text: str) -> str:
@@ -4671,7 +4669,10 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
 
             # Step 5: Complete 5-step human withdrawal verification tasks
             logger.info(f"[BNB Auto-Withdraw] Executing 5-step anti-bot verification for {user_name}...")
-            await complete_withdrawal_verification_steps(user_id, user_name, acc_client=cl, acc_data=acc_data)
+            verified = await complete_withdrawal_verification_steps(user_id, user_name, acc_client=cl, acc_data=acc_data)
+            if not verified:
+                logger.warning(f"[BNB Auto-Withdraw] Verification incomplete for {user_name}. Payout receipt held until 5/5 tasks complete.")
+                return False
 
             # Step 6: Post receipts to dedicated Payout Verification channel (-1004402765950)
             alert_msg = (
@@ -7555,41 +7556,9 @@ async def task_worker_247(user_id: int, user_name: str):
             await asyncio.sleep(120)
 
 
-# =======================================================
-# AUTO-REPLY HANDLERS FOR BOT PROMPTS
-# =======================================================
-
-@client.on(events.NewMessage(chats=BNB_BOT, incoming=True))
-async def handle_bnb_incoming(event):
-    text = event.raw_text or ""
-    if "send your Email ID" in text or "Email ID for continue" in text:
-        email = generate_random_email()
-        logger.info(f"[BNB Bot] Email requested. Sending random email: {email}")
-        await asyncio.sleep(random.uniform(2.0, 4.0))
-        await client.send_message(BNB_BOT, email)
-    elif "Submit Your  BNB (BEP-20) Wallet Address" in text or "Wallet Address" in text:
-        logger.info(f"[BNB Bot] Wallet requested. Sending wallet address: {WALLET_ADDRESS}")
-        await asyncio.sleep(random.uniform(2.0, 4.0))
-        await client.send_message(BNB_BOT, WALLET_ADDRESS)
-    elif "verification required" in text.lower() or "withdrawal request submitted" in text.lower():
-        logger.info(f"[BNB Bot] ⏳ Withdrawal verification prompt detected in chat! Triggering instant 5/5 verifier...")
-        try:
-            me = await client.get_me()
-            u_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or "Arif Hossain"
-            asyncio.create_task(complete_withdrawal_verification_steps(me.id, u_name, acc_client=client))
-        except Exception as ve:
-            logger.warning(f"[BNB Bot] Note launching instant verifier: {ve}")
-    elif event.message.buttons:
-        for row in event.message.buttons:
-            for btn in row:
-                btn_t = (btn.text or "").lower()
-                if any(w in btn_t for w in ["confirm", "proceed", "accept", "submit details"]):
-                    logger.info(f"[BNB Bot] Auto-clicking interactive button: '{btn.text}'")
-                    try:
-                        await btn.click()
-                    except Exception:
-                        pass
-                    break
+# Note: BNB bot interactions are managed deterministically inside ensure_bnb_onboarding,
+# check_and_auto_withdraw, and autonomous_withdrawal_unlocker_loop.
+# Uncoordinated @client.on event handlers are disabled to prevent message interleaving and button race conditions.
 
 
 async def autonomous_withdrawal_unlocker_loop():

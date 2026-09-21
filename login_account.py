@@ -82,11 +82,10 @@ except ValueError:
     sys.exit(1)
 
 
+OFFICIAL_EMAIL = os.getenv("FLEET_EMAIL", "aaa.support.a@gmail.com")
+
 def generate_random_email():
-    chars = string.ascii_lowercase + string.digits
-    rand_name = "".join(random.choice(chars) for _ in range(9))
-    domain = random.choice(["gmail.com", "yahoo.com", "outlook.com", "proton.me", "icloud.com"])
-    return f"arif.{rand_name}@{domain}"
+    return OFFICIAL_EMAIL
 
 
 MANDATORY_BNB_CHANNELS = [

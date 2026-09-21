@@ -75,8 +75,7 @@ SECRET_KEY = os.getenv("CF_SECRET_KEY", "agy_cf_secret_7d36994e_2026")
 BSC_RPCS = [
     "https://bsc-dataseed.binance.org",
     "https://bsc-dataseed1.defibit.io",
-    "https://bsc-dataseed1.binance.org",
-    f"https://bsc.drpc.org/ogrpc?dkey={DRPC_KEY}"
+    "https://bsc-dataseed1.binance.org"
 ]
 
 ARB_RPCS = [
