@@ -701,6 +701,41 @@ async def get_onchain_arb_balance(wallet_address: str) -> float:
     return 0.0
 
 
+STONES_TOKEN_CONTRACT = "0x77643d2afc2496aab18e2c6a38e32c9cb1beb497"
+
+async def get_onchain_stones_balance(wallet_address: str) -> float:
+    """Queries Arbitrum One public RPC for STONES ERC-20 token balance."""
+    clean_addr = wallet_address.lower().replace("0x", "").zfill(64)
+    data = f"0x70a08231{clean_addr}"
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "eth_call",
+        "params": [{"to": STONES_TOKEN_CONTRACT, "data": data}, "latest"],
+        "id": 1
+    }
+    rpc_urls = [
+        "https://arb1.arbitrum.io/rpc",
+        "https://arbitrum.meowrpc.com",
+        "https://arbitrum-one.publicnode.com"
+    ]
+    timeout_cfg = aiohttp.ClientTimeout(total=4)
+    try:
+        async with aiohttp.ClientSession(timeout=timeout_cfg) as session:
+            for url in rpc_urls:
+                try:
+                    async with session.post(url, json=payload, headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            raw_hex = data.get("result", "0x0")
+                            if raw_hex and raw_hex != "0x":
+                                return round(int(raw_hex, 16) / 1e18, 2)
+                except Exception:
+                    continue
+    except Exception:
+        pass
+    return 0.0
+
+
 async def get_onchain_bep20_usdt_balance(wallet_address: str) -> float:
     """Queries BSC public RPC for BEP-20 USDT token balance."""
     clean_addr = wallet_address.lower().replace("0x", "").zfill(64)
@@ -881,6 +916,38 @@ async def check_onchain_deposit_alert():
 
         if current_arb > 0:
             state["last_arb_balance"] = current_arb
+
+        # 3b. Arbitrum One STONES Token Watchdog (Stones Miners withdrawals)
+        current_stones = await get_onchain_stones_balance(WALLET_ADDRESS)
+        last_stones = float(state.get("last_stones_balance", 0.0))
+
+        if current_stones > 0 and last_stones > 0.0 and current_stones > last_stones:
+            delta_stones = round(current_stones - last_stones, 0)
+
+            stones_msg = (
+                f"💎 <b>On-Chain STONES Deposit Confirmed!</b>\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"💰 <b>Received:</b> <code>+{delta_stones:.0f} STONES</code>\n"
+                f"💼 <b>Recipient Wallet:</b> <code>{WALLET_ADDRESS}</code>\n"
+                f"🏦 <b>New Confirmed Balance:</b> <code>{current_stones:.0f} STONES</code>\n"
+                f"🌐 <b>Network:</b> Arbitrum One (Layer 2)\n"
+                f"🕒 <b>Confirmed At:</b> {now_str}\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"🔗 <a href=\"https://arbiscan.io/token/{STONES_TOKEN_CONTRACT}?a={WALLET_ADDRESS}\">Verify on Arbiscan</a>\n"
+                f"🛡️ <i>Autonomous Cloud Fleet Operations by MY AGY AI</i>"
+            )
+
+            try:
+                tg_url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"
+                async with aiohttp.ClientSession() as session:
+                    await session.post(tg_url, json={"chat_id": PAYOUT_CHANNEL_ID, "text": stones_msg, "parse_mode": "HTML"}, timeout=aiohttp.ClientTimeout(total=10))
+            except Exception as pe:
+                logger.error(f"[Payout Channel] Failed sending STONES confirmation: {pe}")
+
+            await broadcast_admin_message(stones_msg, reply_markup=WALLET_INLINE_KEYBOARD)
+
+        if current_stones > 0:
+            state["last_stones_balance"] = current_stones
 
         # 4. TON Network Deposit Watchdog (ART Airdrop & MiningGRAM)
         current_ton = await get_onchain_ton_balance(TON_PRIMARY_WALLET)

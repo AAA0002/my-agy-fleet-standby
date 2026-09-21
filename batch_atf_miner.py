@@ -487,7 +487,7 @@ async def main():
             f"• **Total Fleet Mined:** `{total_mined:,.2f} ATF`\n"
             f"• **Primary Host Yield:** `{primary_mined:,.2f} ATF`\n"
             f"• **Assigned Wallets:** 13 Dedicated TON v4r2 + Binance TON\n"
-            f"• **Payout Target (BEP-20):** `0xfda4182001672b9f0f09e2118242e543e35ed5ce`\n"
+            f"• **Payout Target (TON):** `{PRIMARY_TON_WALLET}`\n"
             f"• **Next Automatic Cycle:** `8 Hours` via crontab\n\n"
             f"_Cloudflare Edge Mesh synchronized across all 3 nodes._"
         )

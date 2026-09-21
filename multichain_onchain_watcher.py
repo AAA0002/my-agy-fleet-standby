@@ -269,6 +269,30 @@ async def query_arb_balance(session: aiohttp.ClientSession, wallet: str) -> floa
             pass
     return await query_evm_balance(session, ARB_RPCS, wallet)
 
+STONES_TOKEN_CONTRACT = "0x77643d2afc2496aab18e2c6a38e32c9cb1beb497"
+
+async def query_stones_balance(session: aiohttp.ClientSession, wallet: str) -> float:
+    """Queries STONES token balance on Arbitrum One via JSON-RPC eth_call."""
+    clean_addr = wallet[2:].lower().zfill(64)
+    data = "0x70a08231" + clean_addr
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "eth_call",
+        "params": [{"to": STONES_TOKEN_CONTRACT, "data": data}, "latest"],
+        "id": 1
+    }
+    for rpc in ARB_RPCS:
+        try:
+            async with session.post(rpc, json=payload, headers={"Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                if resp.status == 200:
+                    d = await resp.json()
+                    res_hex = d.get("result")
+                    if res_hex and res_hex != "0x":
+                        return int(res_hex, 16) / 1e18
+        except Exception:
+            continue
+    return -1.0
+
 async def query_ton_balance(session: aiohttp.ClientSession, wallet: str) -> float:
     """Query TON balance using official TonAPI.io first with API key, fallback to toncenter."""
     if TONAPI_KEY:
@@ -441,6 +465,23 @@ async def run_multichain_check(session: aiohttp.ClientSession) -> dict:
                 state["total_confirmed_deposits"] = state.get("total_confirmed_deposits", 0) + 1
         state["arb_eth_balance"] = arb_bal
         results["arb_eth"] = arb_bal
+
+    # 2b. Arbitrum One Watcher (STONES Token)
+    stones_bal = await query_stones_balance(session, EVM_WALLET)
+    if stones_bal >= 0:
+        prev_stones = state.get("stones_balance")
+        if prev_stones is not None:
+            diff_stones = stones_bal - prev_stones
+            if diff_stones >= 100.0:
+                print(f"[STONES Deposit] +{diff_stones:.0f} STONES detected on Arbitrum One!")
+                await record_payout_ledger(session, "Arbitrum", diff_stones, "STONES", 0.0)
+                await broadcast_deposit_alert(
+                    session, "Arbitrum One", "STONES", diff_stones, stones_bal, 0.0,
+                    EVM_WALLET, f"https://arbiscan.io/token/{STONES_TOKEN_CONTRACT}?a={EVM_WALLET}"
+                )
+                state["total_confirmed_deposits"] = state.get("total_confirmed_deposits", 0) + 1
+        state["stones_balance"] = stones_bal
+        results["stones"] = stones_bal
 
     # 3. TON Blockchain Watcher (TON)
     ton_bal = await query_ton_balance(session, TON_PRIMARY_WALLET)

@@ -320,7 +320,8 @@ async def execute_stones_withdrawal_with_captcha(
                 continue
 
             cid = issue_data.get("captcha_id")
-            img_b64 = issue_data["image"].split(",", 1)[1]
+            raw_img = issue_data.get("image", "")
+            img_b64 = raw_img.split(",", 1)[1] if "," in raw_img else raw_img
             img_bytes = base64.b64decode(img_b64)
 
             pred_code, confidence = solve_stones_captcha(img_bytes)
