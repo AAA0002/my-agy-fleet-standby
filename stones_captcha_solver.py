@@ -157,19 +157,26 @@ def solve_stones_captcha(img_bytes: bytes) -> Tuple[str, float]:
 
 def _ocr_single_char(c_img: Image.Image) -> str:
     """Runs single-character Tesseract OCR on a cropped character canvas."""
-    cw, ch = c_img.size
-    canvas = Image.new("L", (cw + 16, ch + 16), 255)
-    canvas.paste(c_img, (8, 8))
-    scaled = canvas.resize(((cw + 16) * 3, (ch + 16) * 3), Image.Resampling.NEAREST)
-    try:
-        txt = pytesseract.image_to_string(
-            scaled,
-            config="--psm 10 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        ).strip()
-        cleaned = "".join(c for c in txt.upper() if c.isalnum())
-        return cleaned[:1] if cleaned else ""
-    except Exception:
+    if not HAS_TESSERACT:
         return ""
+    cw, ch = c_img.size
+    canvas = Image.new("L", (cw + 30, ch + 30), 255)
+    inv_c = Image.eval(c_img, lambda p: 0 if p > 100 else 255)
+    canvas.paste(inv_c, (15, 15))
+    for psm in [10, 8]:
+        for scale in [2, 3]:
+            try:
+                s_img = canvas.resize((canvas.width * scale, canvas.height * scale), Image.Resampling.LANCZOS)
+                txt = pytesseract.image_to_string(
+                    s_img,
+                    config=f"--psm {psm} -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+                ).strip()
+                cleaned = "".join(c for c in txt.upper() if c.isalnum())
+                if cleaned:
+                    return cleaned[:1]
+            except Exception:
+                pass
+    return ""
 
 
 def _fallback_full_ocr(img: Image.Image) -> str:
@@ -243,7 +250,7 @@ async def execute_stones_withdrawal_with_captcha(
             f"{base_url}/api/wd/ad/precheck",
             json={"initData": init_data, "amount": amount, "wallet": wallet, "currency": "stones"},
             headers=req_headers,
-            timeout=aiohttp.ClientTimeout(total=12),
+            timeout=aiohttp.ClientTimeout(total=10, connect=5),
             proxy=proxy
         ) as pr:
             pd = await pr.json()
@@ -252,15 +259,15 @@ async def execute_stones_withdrawal_with_captcha(
     except Exception as pe:
         return False, {"error": f"precheck_exception: {pe}"}
 
-    # Step 2: Captcha Verification Loop (up to 5 attempts)
+    # Step 2: Captcha Verification Loop (up to 12 attempts)
     captcha_ticket = None
-    for attempt in range(1, 6):
+    for attempt in range(1, 13):
         try:
             async with session.post(
                 f"{base_url}/api/wd/captcha/issue",
                 json={"initData": init_data},
                 headers=req_headers,
-                timeout=aiohttp.ClientTimeout(total=12),
+                timeout=aiohttp.ClientTimeout(total=10, connect=5),
                 proxy=proxy
             ) as ir:
                 issue_data = await ir.json()
@@ -285,7 +292,7 @@ async def execute_stones_withdrawal_with_captcha(
                     f"{base_url}/api/wd/captcha/verify",
                     json={"initData": init_data, "captcha_id": cid, "answer": pred_code},
                     headers=req_headers,
-                    timeout=aiohttp.ClientTimeout(total=10),
+                    timeout=aiohttp.ClientTimeout(total=10, connect=5),
                     proxy=proxy
                 ) as vr:
                     vd = await vr.json()
@@ -317,7 +324,7 @@ async def execute_stones_withdrawal_with_captcha(
             f"{base_url}/api/withdraw",
             json=wd_payload,
             headers=req_headers,
-            timeout=aiohttp.ClientTimeout(total=15),
+            timeout=aiohttp.ClientTimeout(total=12, connect=5),
             proxy=proxy
         ) as wr:
             wd_res = await wr.json()

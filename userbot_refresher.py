@@ -5376,17 +5376,19 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
         except Exception:
             pass
 
-        # 9. Ensure Arbitrum wallet is bound
+        # 9. Ensure dedicated Arbitrum EVM wallet is bound
+        # Worker accounts use their isolated EVM wallet from fleet_evm_wallets.json to avoid multi-account flags & ensure self-custody
+        target_evm_wallet = FLEET_EVM_WALLETS.get(acc_uid) or ARBITRUM_WALLET
         try:
-            await session.post(f"{base_url}/api/wallet", json={"initData": init_data, "wallet": ARBITRUM_WALLET}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
+            await session.post(f"{base_url}/api/wallet", json={"initData": init_data, "wallet": target_evm_wallet}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
         except Exception:
             pass
 
-        # 10. Auto-Withdrawal check for all fleet accounts (routes directly to Arif's Arbitrum One wallet)
+        # 10. Auto-Withdrawal check for all fleet accounts
         # Note: In Stones Miners, 'coins' represents the spendable Wallet Holding; 'balance' is total in-game score/EXP.
         if coins >= 500:
             withdraw_stones = min(500, int(coins))
-            logger.info(f"[{acc_name}] 💎 [Stones] Coins {coins} STONES >= 500 threshold! Submitting auto-withdrawal of {withdraw_stones} STONES to Arbitrum {ARBITRUM_WALLET}...")
+            logger.info(f"[{acc_name}] 💎 [Stones] Coins {coins} STONES >= 500 threshold! Submitting auto-withdrawal of {withdraw_stones} STONES to Arbitrum {target_evm_wallet}...")
             try:
                 from stones_captcha_solver import execute_stones_withdrawal_with_captcha
                 ok_wd, wd_res = await execute_stones_withdrawal_with_captcha(
@@ -5395,7 +5397,7 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                     headers=headers,
                     init_data=init_data,
                     amount=withdraw_stones,
-                    wallet=ARBITRUM_WALLET,
+                    wallet=target_evm_wallet,
                     proxy=proxy
                 )
                 logger.info(f"[{acc_name}] 💎 [Stones] Withdrawal result: {wd_res}")
@@ -5404,7 +5406,7 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                         f"🎉 *Stones Miners Withdrawal Submitted!*\n\n"
                         f"• **Account:** {acc_name}\n"
                         f"• **Amount:** `{withdraw_stones} STONES`\n"
-                        f"• **Destination:** `{ARBITRUM_WALLET}` (Arbitrum One)\n"
+                        f"• **Destination:** `{target_evm_wallet}` (Arbitrum One)\n"
                         f"• **Captcha Verification:** `Passed & Verified` ✅\n"
                         f"• **Result:** `{wd_res}`",
                         chat_id=REPORT_CHAT_ID
