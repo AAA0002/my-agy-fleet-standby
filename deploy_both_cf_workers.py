@@ -1473,6 +1473,14 @@ fi
                       }
                     }
 
+                    // Activate ATF Mining Speed Boost & Daily Interaction
+                    await fetchWithRetry(`${atfBase}?action=activate_boost&t=${Date.now()}`, {
+                      method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
+                    }, 1, 500).catch(() => {});
+                    await fetchWithRetry(`${atfBase}?action=record_daily_interaction&t=${Date.now()}`, {
+                      method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
+                    }, 1, 500).catch(() => {});
+
                     // ATF Tasks Auto-Completion Engine (One-time and Repeatable)
                     const atfTasks = [
                       { id: "telegram_join", minSeconds: 10 },
@@ -2869,6 +2877,14 @@ fi
                   }, 2, 800).catch(() => {});
                 }
               }
+
+              // Activate ATF Mining Speed Boost & Daily Interaction
+              await fetchWithRetry(`${atfBase}?action=activate_boost&t=${Date.now()}`, {
+                method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
+              }, 1, 500).catch(() => {});
+              await fetchWithRetry(`${atfBase}?action=record_daily_interaction&t=${Date.now()}`, {
+                method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
+              }, 1, 500).catch(() => {});
 
               // ATF Tasks Auto-Completion Engine (One-time and Repeatable)
               const atfTasks = [

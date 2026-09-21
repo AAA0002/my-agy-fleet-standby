@@ -6550,6 +6550,13 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                             ans = str(nums[0] * nums[1])
                     await session.post(f"{base_url}?action=start_mine&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "math_challenge_id": md.get("challenge_id"), "math_answer": ans}), headers=headers, timeout=aiohttp.ClientTimeout(total=8))
 
+        # 3b. Activate Mining Speed Boost & Daily Interaction
+        try:
+            await session.post(f"{base_url}?action=activate_boost&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "display_preview": float(u.get("pending_reward", 0) or 0)}), headers=headers, timeout=aiohttp.ClientTimeout(total=5))
+            await session.post(f"{base_url}?action=record_daily_interaction&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid)}), headers=headers, timeout=aiohttp.ClientTimeout(total=5))
+        except Exception:
+            pass
+
         # 4. Tasks claim (repeatable)
         repeatable_tasks = [
             {"id": "website_visit", "minSeconds": 10},
