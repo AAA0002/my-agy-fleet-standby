@@ -255,20 +255,27 @@ async def execute_stones_withdrawal_with_captcha(
     req_headers = dict(headers)
     req_headers["Content-Type"] = "application/json"
 
-    # Step 1: Precheck
-    try:
-        async with session.post(
-            f"{base_url}/api/wd/ad/precheck",
-            json={"initData": init_data, "amount": amount, "wallet": wallet, "currency": "stones"},
-            headers=req_headers,
-            timeout=aiohttp.ClientTimeout(total=10, connect=5),
-            proxy=proxy
-        ) as pr:
-            pd = await pr.json()
-            if not pd.get("ok") and not pd.get("success"):
-                return False, {"error": "precheck_failed", "details": pd}
-    except Exception as pe:
-        return False, {"error": f"precheck_exception: {pe}"}
+    # Step 1: Precheck (with retry on transient connection/timeout hiccups)
+    pd = None
+    for pre_att in range(2):
+        try:
+            async with session.post(
+                f"{base_url}/api/wd/ad/precheck",
+                json={"initData": init_data, "amount": amount, "wallet": wallet, "currency": "stones"},
+                headers=req_headers,
+                timeout=aiohttp.ClientTimeout(total=15, connect=8),
+                proxy=proxy
+            ) as pr:
+                pd = await pr.json()
+                if not pd.get("ok") and not pd.get("success"):
+                    return False, {"error": "precheck_failed", "details": pd}
+                break
+        except Exception as pe:
+            if pre_att == 0:
+                await asyncio.sleep(2.0)
+                continue
+            err_msg = f"{type(pe).__name__}: {pe}" if str(pe) else type(pe).__name__
+            return False, {"error": f"precheck_exception: {err_msg}"}
 
     # Step 1b: 4 Video Ads Gate (if required by server)
     if pd.get("need_ad"):
