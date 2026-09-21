@@ -6386,7 +6386,11 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
             async with session.post(f"{base_url}/api/mining/claim", json={"action": "claim_cycle"}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as mr:
                 if mr.status == 200:
                     md = await mr.json()
-                    logger.info(f"[{acc_name}] 🤖 [Ainovum] Mining profit claimed: {md}")
+                    if md.get("claimed"):
+                        rew = float(md.get("reward_usdt", 0) or 0)
+                        logger.info(f"[{acc_name}] 🤖 [Ainovum] Mining profit claimed: +{rew:.6f} USDT!")
+                    elif not md.get("below_min"):
+                        logger.info(f"[{acc_name}] 🤖 [Ainovum] Mining profit response: {md.get('message', md)}")
         except Exception as me:
             logger.debug(f"[{acc_name}] Ainovum claim mining note: {me}")
 
@@ -6406,6 +6410,37 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
                     logger.info(f"[{acc_name}] 🤖 [Ainovum] Gift box opened: {gbd}")
         except Exception:
             pass
+
+        # 5. Auto-Withdrawal to Main Binance BEP-20 Wallet (0.1 USDT Minimum)
+        try:
+            async with session.get(f"{base_url}/api/withdraws/usdt/config", headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as cr:
+                if cr.status == 200:
+                    cd = await cr.json()
+                    avail = float(cd.get("freeze", {}).get("available", 0) or 0)
+                    if avail >= 0.1:
+                        wd_amt = round(avail, 4)
+                        logger.info(f"[{acc_name}] 🤖 [Ainovum] Available {avail:.4f} USDT >= 0.1 threshold! Submitting auto-withdrawal to BEP-20 {EVM_VAULT_ADDRESS}...")
+                        async with session.post(
+                            f"{base_url}/api/withdraws/usdt/create",
+                            json={"amount": wd_amt, "wallet": EVM_VAULT_ADDRESS, "network": "bep20"},
+                            headers=headers,
+                            timeout=aiohttp.ClientTimeout(total=10)
+                        ) as wr:
+                            wd = await wr.json()
+                            if wr.status == 200 and not wd.get("access_denied"):
+                                logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal result: {wd}")
+                                await send_report_message(
+                                    f"🎉 *Ainovum USDT Withdrawal Submitted!*\n\n"
+                                    f"• **Account:** {acc_name}\n"
+                                    f"• **Amount:** `{wd_amt} USDT` (BEP-20)\n"
+                                    f"• **Destination:** `{EVM_VAULT_ADDRESS}` (Binance BEP-20)\n"
+                                    f"• **Result:** `{wd}`",
+                                    chat_id=REPORT_CHAT_ID
+                                )
+                            else:
+                                logger.debug(f"[{acc_name}] 🤖 [Ainovum] Withdrawal attempt ({wd_amt} USDT): {wd}")
+        except Exception as we:
+            logger.debug(f"[{acc_name}] Ainovum auto-withdrawal note: {we}")
 
     except Exception as e:
         logger.debug(f"[{acc_name}] Ainovum automation note: {e}")
