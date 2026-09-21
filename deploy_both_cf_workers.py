@@ -1308,6 +1308,24 @@ fi
                   const artH = { ...mHeaders, "X-Telegram-Init-Data": accData.art_init_data };
                   await fetchWithRetry("https://art.tamimdev.dev/api/user/claim-mining", { method: "POST", headers: artH, body: JSON.stringify({ userId: uid }) }).catch(() => {});
                   await fetchWithRetry("https://art.tamimdev.dev/api/user/start-mining", { method: "POST", headers: artH, body: JSON.stringify({ userId: uid }) }).catch(() => {});
+                  await fetchWithRetry("https://art.tamimdev.dev/api/ads/claim", { method: "POST", headers: artH, body: JSON.stringify({ userId: uid }) }).catch(() => {});
+                  if (String(uid) === (env.OWNER_ID || "6727787768")) {
+                    await fetchWithRetry("https://art.tamimdev.dev/api/referrals/claim-team", { method: "POST", headers: artH, body: JSON.stringify({ userId: uid }) }).catch(() => {});
+                    await fetchWithRetry("https://art.tamimdev.dev/api/referrals/claim-bonus", { method: "POST", headers: artH, body: JSON.stringify({ userId: uid }) }).catch(() => {});
+                  }
+                  try {
+                    const tonPrimary = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT";
+                    await fetchWithRetry("https://art.tamimdev.dev/api/user/connect-wallet", { method: "POST", headers: artH, body: JSON.stringify({ userId: uid, tonAddress: tonPrimary }) }).catch(() => {});
+                    const uResp = await fetchWithRetry(`https://art.tamimdev.dev/api/user/${uid}`, { headers: artH }, 2, 800).catch(() => null);
+                    if (uResp && uResp.ok) {
+                      const uData = await uResp.json().catch(() => ({}));
+                      const poolBal = parseFloat(uData.user?.poolWallet || 0);
+                      if (poolBal >= 1000) {
+                        const wdAmt = Math.min(30000, Math.floor(poolBal));
+                        await fetchWithRetry("https://art.tamimdev.dev/api/withdraw", { method: "POST", headers: artH, body: JSON.stringify({ userId: uid, amount: wdAmt }) }).catch(() => {});
+                      }
+                    }
+                  } catch (_) {}
                 }
                 // AI Lab
                 if (accData.ailab_init_data) {
@@ -2551,6 +2569,51 @@ fi
                   }
                 }
               }
+
+              // Daily Ads Bonus (+10 ART)
+              await fetchWithRetry("https://art.tamimdev.dev/api/ads/claim", {
+                method: "POST",
+                headers: artHeaders,
+                body: JSON.stringify({ userId: uid })
+              }, 1, 500).catch(() => {});
+
+              // Primary Account Squad Sweeps (Team Wallet & Bonus)
+              if (String(uid) === (env.OWNER_ID || "6727787768")) {
+                await fetchWithRetry("https://art.tamimdev.dev/api/referrals/claim-team", {
+                  method: "POST",
+                  headers: artHeaders,
+                  body: JSON.stringify({ userId: uid })
+                }, 1, 500).catch(() => {});
+                await fetchWithRetry("https://art.tamimdev.dev/api/referrals/claim-bonus", {
+                  method: "POST",
+                  headers: artHeaders,
+                  body: JSON.stringify({ userId: uid })
+                }, 1, 500).catch(() => {});
+              }
+
+              // Ensure main Binance TON wallet is linked & Auto-Withdraw Check (>= 1000 ART)
+              try {
+                const tonPrimary = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT";
+                await fetchWithRetry("https://art.tamimdev.dev/api/user/connect-wallet", {
+                  method: "POST",
+                  headers: artHeaders,
+                  body: JSON.stringify({ userId: uid, tonAddress: tonPrimary })
+                }, 1, 500).catch(() => {});
+
+                const uResp = await fetchWithRetry(`https://art.tamimdev.dev/api/user/${uid}`, { headers: artHeaders }, 2, 800).catch(() => null);
+                if (uResp && uResp.ok) {
+                  const uData = await uResp.json().catch(() => ({}));
+                  const poolBal = parseFloat(uData.user?.poolWallet || 0);
+                  if (poolBal >= 1000) {
+                    const wdAmt = Math.min(30000, Math.floor(poolBal));
+                    await fetchWithRetry("https://art.tamimdev.dev/api/withdraw", {
+                      method: "POST",
+                      headers: artHeaders,
+                      body: JSON.stringify({ userId: uid, amount: wdAmt })
+                    }, 2, 1000).catch(() => {});
+                  }
+                }
+              } catch (_) {}
             } catch (_) {}
           }
 

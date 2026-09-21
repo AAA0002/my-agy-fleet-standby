@@ -5632,11 +5632,11 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         accumulated = float(ms.get("accumulatedAtf", 0) or 0)
         hr_rate = ms.get("hourlyRate", 5)
 
-        # Ensure TON wallet is connected in ART Airdrop to prevent WALLET_REQUIRED failure
+        # Ensure main Binance TON wallet is connected in ART Airdrop to route all withdrawals
         ton_addr = u.get("tonWalletAddress")
-        if not ton_addr:
+        if not ton_addr or ton_addr != TON_PRIMARY_WALLET:
             try:
-                ton_addr = ensure_account_ton_wallet(acc) or TON_PRIMARY_WALLET
+                ton_addr = TON_PRIMARY_WALLET
                 async with session.post(
                     f"{base_url}/api/user/connect-wallet",
                     json={"userId": acc_uid, "tonAddress": ton_addr},
@@ -5644,7 +5644,7 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                     timeout=aiohttp.ClientTimeout(total=4.0)
                 ) as wr:
                     if wr.status == 200:
-                        logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Linked TON wallet: {ton_addr}")
+                        logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Linked main Binance TON wallet: {ton_addr}")
             except Exception as w_err:
                 logger.debug(f"[{acc_name}] ART connect-wallet note: {w_err}")
 
@@ -5766,7 +5766,40 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                             logger.info(f"[{acc_name}] 🚀 [ART Airdrop] 🎉 Upgraded to Level {target_lvl}! Mining boosted to {new_hr} ART/h!")
                 except Exception as b_err:
                     logger.debug(f"[{acc_name}] ART level upgrade note: {b_err}")
-                await asyncio.sleep(1.0)
+        # 8. Auto-Withdrawal to Main Binance TON Wallet (1000 ART Minimum)
+        if pool_bal >= 1000:
+            withdraw_art = min(30000, int(pool_bal))
+            logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Pool {pool_bal:.2f} ART >= 1000 threshold! Submitting auto-withdrawal of {withdraw_art} ART to {TON_PRIMARY_WALLET}...")
+            try:
+                # Ensure main Binance TON wallet is connected
+                await session.post(
+                    f"{base_url}/api/user/connect-wallet",
+                    json={"userId": acc_uid, "tonAddress": TON_PRIMARY_WALLET},
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=4.0)
+                )
+                async with session.post(
+                    f"{base_url}/api/withdraw",
+                    json={"userId": acc_uid, "amount": withdraw_art},
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=8.0)
+                ) as wr:
+                    wd = await wr.json()
+                    logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Withdrawal result: {wd}")
+                    if wd.get("success"):
+                        pool_bal -= withdraw_art
+                        w_info = wd.get("withdrawal", {})
+                        await send_report_message(
+                            f"🎉 *ART Airdrop Withdrawal Submitted!*\n\n"
+                            f"• **Account:** {acc_name}\n"
+                            f"• **Amount:** `{withdraw_art} ART` (~${w_info.get('amountUsd', 0)} USD)\n"
+                            f"• **Destination:** `{TON_PRIMARY_WALLET}` (Binance TON Deposit)\n"
+                            f"• **Status:** `{w_info.get('status', 'PENDING')}`\n"
+                            f"• **Withdrawal ID:** `{w_info.get('id', 'N/A')}`",
+                            chat_id=REPORT_CHAT_ID
+                        )
+            except Exception as we:
+                logger.error(f"[{acc_name}] ART auto-withdrawal error: {we}")
 
         logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Cycle finished | Pool: {pool_bal:.2f} ART | Mining Active: {is_mining}")
 
