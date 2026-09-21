@@ -43,10 +43,9 @@ except Exception:
 
 EVM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 EVM_WALLETS = [
-    "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
-    "0x017841f26d5b79cc8c5eb20c65367bb645cc2610"
+    "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 ]
-TON_PRIMARY_WALLET = "UQA0aO4Ybdg76l2ewtiGxA7vtk8CHbVaGvrcpA0G1kionhsP"
+TON_PRIMARY_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
 REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o")
 PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
 ADMIN_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
@@ -62,7 +61,8 @@ UPSTASH_REDIS_REST_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://relaxing-s
 UPSTASH_REDIS_REST_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw")
 TONAPI_KEY = os.getenv("TONAPI_KEY", "AGCD63WTWLGKKWYAAAAKRKZU45HTYMDI3PV7UBKKL6QDVIHG54NQDVNSQF7W3LQJ3X77QKY")
 ETHERSCAN_API_KEY = os.getenv("ETHERSCAN_API_KEY", "Z7TRGEGWC7C3CG9574D531ZRAJ1KC6MAMK")
-DRPC_KEY = os.getenv("DRPC_API_KEY", "Aj3ei0uTXUwutp4cQUkyTyjgB8oqtDAR8YBVEl_NDNxu")
+DRPC_KEY = os.getenv("DRPC_API_KEY", "AqfE-vxQsEgZrdrPasY_EsnLP3satOIR8YH4El_NDNxu")
+TONCENTER_API_KEY = os.getenv("TONCENTER_API_KEY", "16b726fb32eb7cedc95169da8aa3948829e1140d770dc740ffeb75b1a51862ad")
 ALCHEMY_ETH_RPC = os.getenv("ALCHEMY_ETH_RPC", "https://eth-mainnet.g.alchemy.com/v2/alch_bx0bDWIy7_g3VQaH6HPG8")
 
 CF_WORKER_URLS = [
@@ -73,18 +73,16 @@ CF_WORKER_URLS = [
 SECRET_KEY = os.getenv("CF_SECRET_KEY", "agy_cf_secret_7d36994e_2026")
 
 BSC_RPCS = [
-    f"https://bsc.drpc.org/ogrpc?dkey={DRPC_KEY}",
     "https://bsc-dataseed.binance.org",
-    "https://binance.llamarpc.com",
     "https://bsc-dataseed1.defibit.io",
-    "https://rpc.ankr.com/bsc"
+    "https://bsc-dataseed1.binance.org",
+    f"https://bsc.drpc.org/ogrpc?dkey={DRPC_KEY}"
 ]
 
 ARB_RPCS = [
-    f"https://arbitrum.drpc.org/ogrpc?dkey={DRPC_KEY}",
     "https://arb1.arbitrum.io/rpc",
-    "https://arbitrum.llamarpc.com",
-    "https://rpc.ankr.com/arbitrum"
+    "https://arbitrum-one.publicnode.com",
+    f"https://arbitrum.drpc.org/ogrpc?dkey={DRPC_KEY}"
 ]
 
 ETH_RPCS = [
@@ -287,36 +285,43 @@ async def query_ton_balance(session: aiohttp.ClientSession, wallet: str) -> floa
 
     # Fallback to toncenter
     url = f"https://toncenter.com/api/v2/getAddressBalance?address={wallet}"
+    headers = {"X-API-Key": TONCENTER_API_KEY} if TONCENTER_API_KEY else {}
     try:
-        async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+        async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as resp:
             if resp.status == 200:
                 data = await resp.json()
                 if data.get("ok"):
                     nanoton = int(data.get("result", 0))
                     return nanoton / 1e9
+            elif resp.status == 401:
+                # If key pending or invalid, fallback to unauthenticated request
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as r2:
+                    if r2.status == 200:
+                        d2 = await r2.json()
+                        if d2.get("ok"):
+                            return int(d2.get("result", 0)) / 1e9
     except Exception:
         pass
     return -1.0
 
 async def get_crypto_prices(session: aiohttp.ClientSession) -> dict:
-    prices = {"BNB": 645.0, "ETH": 3400.0, "TON": 5.60}
+    prices = {"BNB": 750.0, "ETH": 2600.0, "TON": 1.60}
     try:
-        # Fetch from Binance API
-        async with session.get("https://api.binance.com/api/v3/ticker/price?symbol=BNBUSDT", timeout=aiohttp.ClientTimeout(total=3)) as r:
+        async with session.get("https://data-api.binance.vision/api/v3/ticker/price?symbol=BNBUSDT", timeout=aiohttp.ClientTimeout(total=3)) as r:
             if r.status == 200:
-                prices["BNB"] = float((await r.json()).get("price", 645.0))
+                prices["BNB"] = float((await r.json()).get("price", 750.0))
     except Exception:
         pass
     try:
-        async with session.get("https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT", timeout=aiohttp.ClientTimeout(total=3)) as r:
+        async with session.get("https://data-api.binance.vision/api/v3/ticker/price?symbol=ETHUSDT", timeout=aiohttp.ClientTimeout(total=3)) as r:
             if r.status == 200:
-                prices["ETH"] = float((await r.json()).get("price", 3400.0))
+                prices["ETH"] = float((await r.json()).get("price", 2600.0))
     except Exception:
         pass
     try:
-        async with session.get("https://api.binance.com/api/v3/ticker/price?symbol=TONUSDT", timeout=aiohttp.ClientTimeout(total=3)) as r:
+        async with session.get("https://data-api.binance.vision/api/v3/ticker/price?symbol=TONUSDT", timeout=aiohttp.ClientTimeout(total=3)) as r:
             if r.status == 200:
-                prices["TON"] = float((await r.json()).get("price", 5.60))
+                prices["TON"] = float((await r.json()).get("price", 1.60))
     except Exception:
         pass
     return prices
@@ -328,17 +333,36 @@ async def broadcast_deposit_alert(session: aiohttp.ClientSession, chain: str, sy
     
     badge = "🟡 Binance Smart Chain" if "BSC" in chain else ("🔵 Arbitrum One" if "Arbitrum" in chain else "💎 TON Blockchain")
     
-    msg = (
-        f"🎉 *[On-Chain {chain} Payout Confirmed!]*\n\n"
-        f"A verified incoming transaction has arrived on-chain in your fleet vault!\n\n"
-        f"• **Network:** {badge}\n"
-        f"• **Deposit Received:** `+{diff:.6f} {symbol}`\n"
-        f"• **Fiat Value:** `~${usd_val:.4f} USD` (`~৳{bdt_val:.2f} BDT`)\n"
-        f"• **Current Market Price:** `${price:.2f} USD` / {symbol}\n"
-        f"• **Vault Balance:** `{total_bal:.6f} {symbol}` (`~${total_usd:.2f} USD`)\n"
-        f"• **Recipient Wallet:** `{wallet}`\n\n"
-        f"🔗 [View Live on Block Explorer]({explorer_url})"
-    )
+    import datetime
+    bst_time = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=6)).strftime("%Y-%m-%d %I:%M:%S %p BST")
+    
+    if "BSC" in chain or "BNB" in symbol:
+        msg = (
+            f"✅ <b>OFFICIAL BNB GALAXY PAYOUT CONFIRMED &amp; VERIFIED!</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"💰 <b>Amount Credited:</b> <code>+{diff:.6f} {symbol}</code> (~${usd_val:.4f} USD / ~৳{bdt_val:.2f} BDT)\n"
+            f"💼 <b>Recipient Wallet:</b> <a href=\"https://bscscan.com/address/{wallet}\"><code>{wallet}</code></a>\n"
+            f"🌐 <b>Network:</b> Binance Smart Chain (BEP-20)\n"
+            f"🕒 <b>Confirmed At:</b> <code>{bst_time}</code> (Bangladesh Time)\n"
+            f"📊 <b>Status:</b> <b>COMPLETED &amp; ON-CHAIN VERIFIED</b> 🟢\n"
+            f"🏛️ <b>Vault Total:</b> <code>{total_bal:.6f} {symbol}</code> (~${total_usd:.2f} USD)\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"💎 <b>Fleet Growth:</b> Auto-compounded into Fleet Treasury Vault\n"
+            f"🛡️ <b>Autonomous Cloud Fleet Operations by MY AGY AI</b>"
+        )
+    else:
+        msg = (
+            f"✅ <b>ON-CHAIN {chain.upper()} PAYOUT CONFIRMED &amp; VERIFIED!</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"💰 <b>Deposit Received:</b> <code>+{diff:.6f} {symbol}</code> (~${usd_val:.4f} USD / ~৳{bdt_val:.2f} BDT)\n"
+            f"💼 <b>Recipient Wallet:</b> <code>{wallet}</code>\n"
+            f"🌐 <b>Network:</b> {badge}\n"
+            f"🕒 <b>Confirmed At:</b> <code>{bst_time}</code> (Bangladesh Time)\n"
+            f"📊 <b>Status:</b> <b>COMPLETED &amp; ON-CHAIN VERIFIED</b> 🟢\n"
+            f"🏛️ <b>Vault Balance:</b> <code>{total_bal:.6f} {symbol}</code> (~${total_usd:.2f} USD)\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🛡️ <b>Autonomous Cloud Fleet Operations by MY AGY AI</b>"
+        )
     
     markup = {
         "inline_keyboard": [
@@ -354,7 +378,8 @@ async def broadcast_deposit_alert(session: aiohttp.ClientSession, chain: str, sy
         await session.post(send_url, json={
             "chat_id": PAYOUT_CHANNEL_ID,
             "text": msg,
-            "parse_mode": "Markdown",
+            "parse_mode": "HTML",
+            "disable_web_page_preview": True,
             "reply_markup": markup
         }, timeout=aiohttp.ClientTimeout(total=8))
     except Exception as e:
@@ -365,11 +390,13 @@ async def broadcast_deposit_alert(session: aiohttp.ClientSession, chain: str, sy
         await session.post(send_url, json={
             "chat_id": ADMIN_ID,
             "text": msg,
-            "parse_mode": "Markdown",
+            "parse_mode": "HTML",
+            "disable_web_page_preview": True,
             "reply_markup": markup
         }, timeout=aiohttp.ClientTimeout(total=8))
     except Exception as e:
         print(f"Error sending to admin: {e}")
+
 
 async def run_multichain_check(session: aiohttp.ClientSession) -> dict:
     state = load_state()

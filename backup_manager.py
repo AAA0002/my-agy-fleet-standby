@@ -45,12 +45,19 @@ CORE_BOT_FILES = [
     "payouts.json",
     "payout_ledger.json",
     "fleet_ton_wallets.json",
+    "fleet_evm_wallets.json",
     "bep20_onchain_watcher.py",
     "bep20_watcher_state.json",
     "multichain_onchain_watcher.py",
     "multichain_watcher_state.json",
     "daily_profit_reporter.py",
-    ".onchain_state.json"
+    ".onchain_state.json",
+    "fleet_miniapp_tokens.json",
+    "deploy_both_cf_workers.py",
+    "batch_atf_miner.py",
+    "atf_fleet_state.json",
+    "refresh_fleet_tokens.py",
+    "update_dashboard_compact.py"
 ]
 
 

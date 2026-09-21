@@ -41,3 +41,8 @@ standby_repo/
 .deno/
 .npm/
 my_crontab.txt
+atf_fleet_state.json
+fleet_evm_wallets.json
+.ssh/
+userbot.log.old
+scratch/
