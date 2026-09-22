@@ -471,14 +471,6 @@ function App() {
   const [syncing, setSyncing] = useState(false);
   const [syncCountdown, setSyncCountdown] = useState(20);
   const [receiptFilter, setReceiptFilter] = useState("verified"); // "verified" vs "queue"
-  const chatEndRef = useRef(null);
-
-  useEffect(() => {
-    if (activeTab === "ai") {
-      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [aiMessages, aiLoading, activeTab]);
-
   const verifiedCompletedReceipts = useMemo(() => {
     const verified = [];
     // 1. Real on-chain vault settlements
@@ -538,6 +530,14 @@ function App() {
   ]);
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+
+  const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    if (activeTab === "ai") {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [aiMessages, aiLoading, activeTab]);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
