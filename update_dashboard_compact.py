@@ -232,7 +232,7 @@ function parseInlineFormatting(text) {
 
 function renderMarkdownContent(text, onCopy) {
   if (!text) return null;
-  const lines = text.split("\n");
+  const lines = text.split(String.fromCharCode(10));
   const elements = [];
   let inCodeBlock = false;
   let codeBuffer = [];
@@ -241,7 +241,7 @@ function renderMarkdownContent(text, onCopy) {
   lines.forEach((line, idx) => {
     if (line.startsWith("```")) {
       if (inCodeBlock) {
-        const codeText = codeBuffer.join("\n");
+        const codeText = codeBuffer.join(String.fromCharCode(10));
         elements.push(React.createElement("div", { key: `code-${idx}`, className: "my-2 rounded-xl overflow-hidden border border-slate-700 bg-slate-950 font-mono text-[11px] shadow-sm" },
           React.createElement("div", { className: "flex items-center justify-between px-3 py-1.5 bg-slate-900 text-slate-400 text-[10px] border-b border-slate-800" },
             React.createElement("span", { className: "uppercase tracking-wider font-bold text-indigo-400" }, codeLang || "code"),
@@ -1068,7 +1068,7 @@ function App() {
             desc: "Farm & Accumulate (No WD)",
             action: async () => {
               showToast("AI: ATF is in 100% farming & accumulation mode", "info");
-              setAiMessages(prev => [...prev, { sender: "user", text: "🪙 Check ATF Mining & Farming Policy" }, { sender: "ai", text: "🪙 **ATF Miner Policy:** Strictly 100% farming and accumulation mode.\n\n• **Auto-withdrawals:** Permanently disabled per your directive.\n• **Accumulated Yield:** All 13 accounts are compounding tokens directly in the pool without withdrawing.\n• **Current Mined Balance:** 2,221.37 ATF on primary account." }]);
+              setAiMessages(prev => [...prev, { sender: "user", text: "🪙 Check ATF Mining & Farming Policy" }, { sender: "ai", text: ["🪙 **ATF Miner Policy:** Strictly 100% farming and accumulation mode.", "", "• **Auto-withdrawals:** Permanently disabled per your directive.", "• **Accumulated Yield:** All 13 accounts are compounding tokens directly in the pool without withdrawing.", "• **Current Mined Balance:** 2,221.37 ATF on primary account."].join(String.fromCharCode(10)) }]);
             }
           },
           {
@@ -1089,8 +1089,8 @@ function App() {
                 const resetMs = a.bnb_next_reset_at ? a.bnb_next_reset_at * 1000 : 0;
                 const rem = resetMs > now ? `${Math.round((resetMs - now) / 60000)}m remaining` : "Ready to claim ✅";
                 return `• **${a.name || "Account"}**: ${rem} (Stones: ${a.stones_coins || 0}, ATF: ${Math.floor(a.atf_balance || 0)})`;
-              }).slice(0, 7).join("\n");
-              setAiMessages(prev => [...prev, { sender: "user", text: "⏱️ Inspect task reset countdowns" }, { sender: "ai", text: "### ⏱️ Fleet Timer Telemetry\n" + timerLines + "\n\n• Smart pacing ensures 0 VPS/Telegram spam while accounts are on countdown cooldown." }]);
+              }).slice(0, 7).join(String.fromCharCode(10));
+              setAiMessages(prev => [...prev, { sender: "user", text: "⏱️ Inspect task reset countdowns" }, { sender: "ai", text: ["### ⏱️ Fleet Timer Telemetry", timerLines, "", "• Smart pacing ensures 0 VPS/Telegram spam while accounts are on countdown cooldown."].join(String.fromCharCode(10)) }]);
             }
           },
           {
@@ -1098,7 +1098,7 @@ function App() {
             desc: "Audit device fingerprints & timers",
             action: async () => {
               showToast("AI: Running security diagnostic...", "info");
-              setAiMessages(prev => [...prev, { sender: "user", text: "🛡️ Run Anti-Ban Security Audit" }, { sender: "ai", text: "### 🛡️ Anti-Ban Security Report\n• **Device Profiles:** 100% Unique hardware-matched User-Agents active across all accounts.\n• **Countdown Pacing:** BNB Galaxy timer-aware precheck enabled (0 MTProto spam during reset cooldowns).\n• **Proxy Isolation:** 13/13 Dedicated residential proxies mapped 1:1 per worker.\n• **Captcha Solvers:** Template-matching & Tesseract ready for Stones & ATF math challenges." }]);
+              setAiMessages(prev => [...prev, { sender: "user", text: "🛡️ Run Anti-Ban Security Audit" }, { sender: "ai", text: ["### 🛡️ Anti-Ban Security Report", "• **Device Profiles:** 100% Unique hardware-matched User-Agents active across all accounts.", "• **Countdown Pacing:** BNB Galaxy timer-aware precheck enabled (0 MTProto spam during reset cooldowns).", "• **Proxy Isolation:** 13/13 Dedicated residential proxies mapped 1:1 per worker.", "• **Captcha Solvers:** Template-matching & Tesseract ready for Stones & ATF math challenges."].join(String.fromCharCode(10)) }]);
             }
           }
         ].map((btn, idx) => React.createElement("button", {
