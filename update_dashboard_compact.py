@@ -205,6 +205,17 @@ const playSound = (type = "click") => {
   } catch (_) {}
 };
 
+const openExternalLink = (url) => {
+  if (!url) return;
+  try {
+    if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openLink === "function") {
+      window.Telegram.WebApp.openLink(url);
+      return;
+    }
+  } catch (_) {}
+  window.open(url, "_blank", "noopener,noreferrer");
+};
+
 // --- Markdown & Formatting Parsers (ChatGPT & Gemini Grade) ---
 function parseInlineFormatting(text) {
   if (!text) return "";
@@ -1009,11 +1020,10 @@ function App() {
             ),
             React.createElement("div", { className: "text-right shrink-0 flex items-center gap-2" },
               React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" }, "✅ COMPLETED"),
-              r.explorer_url && React.createElement("a", {
-                href: r.explorer_url,
-                target: "_blank",
-                rel: "noopener noreferrer",
-                className: "p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-brand-500/10 hover:text-brand-500 text-slate-500 dark:text-slate-400 transition"
+              r.explorer_url && React.createElement("button", {
+                onClick: () => openExternalLink(r.explorer_url),
+                className: "p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-brand-500/10 hover:text-brand-500 text-slate-500 dark:text-slate-400 transition cursor-pointer",
+                title: "View on " + (r.explorer_name || "Explorer")
               }, React.createElement(Icon, { name: "externalLink", className: "w-3 h-3" }))
             )
           ))
