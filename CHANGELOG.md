@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Monitoring & metrics engines (`bep20_onchain_watcher.py`, `multichain_onchain_watcher.py`, `daily_profit_reporter.py`, `batch_atf_miner.py`, `refresh_fleet_tokens.py`, `update_dashboard_compact.py`).
   - Tunnel and deployment helpers (`cloudflared_tunnel.sh`, `deploy_both_cf_workers.py`, `my_agy_bot.service`).
   - Python dependency definitions (`requirements.txt`).
+- Updated `README.md` with full architectural breakdown, component inventory, and operational guidelines.
 - Updated `.gitignore` to strictly isolate and safeguard private keys, fleet tokens, and credential files.
 - Applied executable permissions across shell and Python execution scripts.
 - Initialized local Git repository with `.gitignore`.
