@@ -2,6 +2,15 @@
 .env
 .env.*
 !.env.example
+.cloudflare_credentials
+accounts.json
+fleet_*.json
+payouts.json
+payout_ledger.json
+*_state.json
+.onchain_state.json
+antigravity_session/
+cloudflared_config/
 
 # Dependencies
 node_modules/

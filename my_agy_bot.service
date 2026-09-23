@@ -1,0 +1,17 @@
+[Unit]
+Description=MY AGY AI - 24/7 Telegram Cloud Bot Supervisor
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+User=arif2743
+WorkingDirectory=/home/arif2743
+ExecStart=/home/arif2743/start_userbot.sh
+ExecStop=/home/arif2743/stop_userbot.sh
+Restart=always
+RestartSec=10
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
