@@ -28,3 +28,14 @@
 ## 4. 📱 Mobile Performance Guardrails (Samsung Galaxy A30)
 - **Lean Footprint**: Keep memory usage low. Avoid heavy memory-hungry dev servers or massive node_modules bloat.
 - **Git Checkpoints**: Always keep Git history clean and run checkpoints regularly so no progress is lost if the mobile session drops.
+
+---
+
+## 5. ☁️ Zero-Trust Ephemeral Infrastructure ("Never Trust VPS or Local")
+- **Ephemeral Mindset**: Always assume any VPS or local machine can die, expire, or get wiped at any moment without warning.
+- **Continuous Off-Machine Durability**:
+  - Keep automated disaster recovery archives flowing to the Telegram vault (`@myagyai`) via `backup_manager.py`.
+  - Replicate state, heartbeat sentinel, and telemetry across the 3-node Cloudflare Edge mesh.
+  - Regularly sync critical architectural decisions and state to Walrus Memory.
+  - Keep Git checkpoints clean and documented in `CHANGELOG.md`.
+- **1-Click Disaster Recovery**: Ensure the self-contained 1-click restore mechanism (`restore.sh` / Telegram one-liner) always works out-of-the-box anywhere.
