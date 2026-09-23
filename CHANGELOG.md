@@ -12,7 +12,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Monitoring & metrics engines (`bep20_onchain_watcher.py`, `multichain_onchain_watcher.py`, `daily_profit_reporter.py`, `batch_atf_miner.py`, `refresh_fleet_tokens.py`, `update_dashboard_compact.py`).
   - Tunnel and deployment helpers (`cloudflared_tunnel.sh`, `deploy_both_cf_workers.py`, `my_agy_bot.service`).
   - Python dependency definitions (`requirements.txt`).
+- Fully installed all Python dependencies from `requirements.txt` (`Telethon`, `phonenumbers`, `pyaes`, `sentry-sdk`, `aiohttp`, etc.).
+- Launched 24/7 immortal supervisor daemon (`bot_supervisor.sh`) inside persistent `tmux` session `telegram_bot`.
+- Verified live Multi-Account userbot fleet resumption across 13 accounts with 3-node Cloudflare edge synchronization.
 - Updated `README.md` with full architectural breakdown, component inventory, and operational guidelines.
+- Fixed hardcoded VPS path in `update_dashboard_compact.py` to use dynamic project directory resolution.
 - Updated `.gitignore` to strictly isolate and safeguard private keys, fleet tokens, and credential files.
 - Applied executable permissions across shell and Python execution scripts.
 - Initialized local Git repository with `.gitignore`.
