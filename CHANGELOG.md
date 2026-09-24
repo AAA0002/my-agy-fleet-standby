@@ -12,6 +12,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Monitoring & metrics engines (`bep20_onchain_watcher.py`, `multichain_onchain_watcher.py`, `daily_profit_reporter.py`, `batch_atf_miner.py`, `refresh_fleet_tokens.py`, `update_dashboard_compact.py`).
   - Tunnel and deployment helpers (`cloudflared_tunnel.sh`, `deploy_both_cf_workers.py`, `my_agy_bot.service`).
   - Python dependency definitions (`requirements.txt`).
+- Linked and synchronized official GitHub repository `https://github.com/AAA2743/my-agy-ai-fleet` (`AAA2743`):
+  - Restored full suite of 10+ batch orchestration engines (`batch_ailab_mrg.py`, `batch_art_airdrop.py`, `batch_stones_withdraw.py`, `batch_referral_onboard.py`, `batch_join_and_verify_channels.py`, etc.).
+  - Restored GitHub Actions automated MTProto session workflows (`cloud_token_refresher.yml`, `fleet_sentinel.yml`).
+  - Restored edge worker and web frontend deployments (`dashboard.html`, `public/`, `deno_worker/`, `worker_index.js`, `vercel.json`, `render.yaml`).
+  - Restored master registries and template databases (`FLEET_MASTER_REGISTRY.json`, `custom_bot_registry.json`, `stones_captcha_templates.json`).
+  - Restored multi-cloud failover agents (`autonomous_cloud_agent.py`, `cf_identity_bot.js`, `fleet_scaling_engine.py`, `render_failover_manager.py`, `sync_to_supabase.py`).
 - Rebuilt and verified `stones_captcha_solver.py` with PIL image enhancement and Gemini Vision OCR to resolve Stones withdrawal captchas.
 - Added `stones_captcha_solver.py` and `payout_balances.json` to `CORE_BOT_FILES` in `backup_manager.py` to prevent data loss in future disaster recoveries.
 - Restored `~/.cloudflared` configuration and updated `config.yml` paths.

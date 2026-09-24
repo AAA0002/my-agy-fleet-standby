@@ -1,0 +1,94 @@
+{
+  "_version": "2.0.0",
+  "_updated_at": "2026-09-21T15:52:00Z",
+  "project_directives": {
+    "zero_vps_reliance": true,
+    "cloud_first_architecture": true,
+    "strictly_free_tier": true,
+    "atf_miner_policy": "FARMING_AND_ACCUMULATION_ONLY_NO_WITHDRAWALS",
+    "dashboard_theme": "LIGHT_DEFAULT"
+  },
+  "telegram_destinations": {
+    "admin_direct_chat": {
+      "id": 6727787768,
+      "handle": "@Arif2743aaa",
+      "purpose": "Admin interactive control, natural AI chat, and commands"
+    },
+    "payouts_channel": {
+      "id": -1004402765950,
+      "env_var": "PAYOUT_CHANNEL_ID",
+      "purpose": "Withdrawal receipts, deposit confirmations, daily accounting"
+    },
+    "backup_vault_channel": {
+      "id": -1004453515167,
+      "handle": "@myagyai",
+      "env_var": "BACKUP_CHANNEL",
+      "purpose": "Encrypted disaster recovery .zip archives & 1-click restore commands"
+    },
+    "community_supergroup": {
+      "id": -1003973231307,
+      "name": "AAA T Wallet Supergroup",
+      "purpose": "Community fleet alerts and broadcast announcements"
+    }
+  },
+  "vault_wallets": {
+    "bep20_bnb_usdt": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
+    "arbitrum_one_stones": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
+    "ton_main_binance": "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT",
+    "ton_workers_count": 12,
+    "ton_workers_file": "fleet_ton_wallets.json"
+  },
+  "cloud_edge_nodes": [
+    {
+      "node": 1,
+      "subdomain": "aaaai2",
+      "url": "https://restore-agy.aaaai2.workers.dev",
+      "account_email": "korimhaji210@gmail.com",
+      "r2_bucket": "agy-fleet-backups",
+      "cron": "*/15 * * * *"
+    },
+    {
+      "node": 2,
+      "subdomain": "aaa-bot",
+      "url": "https://restore-agy.aaa-bot.workers.dev",
+      "account_email": "Koramshah2@gmail.com",
+      "cron": "*/15 * * * *"
+    },
+    {
+      "node": 3,
+      "subdomain": "aaa222",
+      "url": "https://restore-agy.aaa222.workers.dev",
+      "account_email": "coz1gameh3@gmail.com",
+      "cron": "*/15 * * * *"
+    }
+  ],
+  "active_mining_bots": [
+    { "name": "BNB Galaxy", "bot": "CryptoProUpRobot", "policy": "10 daily ads, instant BEP-20 auto-withdrawal" },
+    { "name": "Stones Miners", "bot": "stoneswithestand_bot", "policy": "Mining, treasure hunt, captcha OCR solver, 500 STONES auto-withdrawal to Arbitrum One" },
+    { "name": "MRG Miner", "bot": "mrgminerbot", "policy": "Mining claims, task reaction claims, hash rate upgrades" },
+    { "name": "ART Airdrop", "bot": "ART_AIRDROP_BOT", "policy": "8h mining renewal, task claims, level priority up to Lvl 8" },
+    { "name": "AI Lab Robot", "bot": "AiLab_robot", "policy": "Hash exchange, 20 task claims, USDT conversion" },
+    { "name": "UltraWallet", "bot": "UltrawalletTrade_Bot", "policy": "Daily streak claim, 10/h mining cycle" },
+    { "name": "Apex Miner", "bot": "ApxMinerBot", "policy": "Mined points collection" },
+    { "name": "ATF Miner", "bot": "ATF_AIRDROP_bot", "policy": "FARMING AND ACCUMULATION ONLY - NO WITHDRAWALS" },
+    { "name": "Ainovum", "bot": "ainovum_bot", "policy": "Mining collection, USDT auto-withdrawal >= 0.1 to BEP-20" },
+    { "name": "MiningGRAM", "bot": "MiningGRAM_Bot", "policy": "Trickle claims and miner state verification" }
+  ],
+  "side_project_ai_agent": {
+    "name": "Ari",
+    "host": "Render (Singapore)",
+    "url": "https://hermes-grok-cloud-agent.onrender.com",
+    "primary_llm": "Google Gemini 1.5/2.0 Flash (14 keys rotating)",
+    "fallback_llm": "Groq LPU (3 keys rotating)",
+    "keepalive": "Pings every 10 min via cron-job.org (Job #8484430) and CF Worker cron"
+  },
+  "cron_job_org_jobs": [
+    { "id": 8484430, "title": "Ari AI Agent Keep-Alive (Render)", "interval": "Every 10 min" },
+    { "id": 8472437, "title": "Render Node 1 (Singapore) Keep-Alive", "interval": "Every 10 min" },
+    { "id": 8472438, "title": "Render Node 2 (Frankfurt) Keep-Alive", "interval": "Every 10 min" },
+    { "id": 8472440, "title": "Cloudflare Edge 3x Mesh Sentinel & Health", "interval": "Every 15 min" },
+    { "id": 8472538, "title": "Deno Deploy Edge Sentinel Keep-Alive", "interval": "Every 10 min" },
+    { "id": 8472711, "title": "Vercel Edge Cloud Node Keep-Alive", "interval": "Every 10 min" },
+    { "id": 8472441, "title": "Autonomous 6h Session Link Collector", "interval": "Every 6 hours" }
+  ]
+}

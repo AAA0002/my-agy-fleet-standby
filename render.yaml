@@ -1,0 +1,31 @@
+# =============================================================================
+# Render.com Infrastructure-as-Code Blueprint
+# Deploy Hermes-Grok Autonomous AI Agent as a 24/7 Cloud Background Worker
+# =============================================================================
+
+services:
+  - type: worker
+    name: hermes-grok-cloud-agent
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python autonomous_cloud_agent.py
+    autoDeploy: true
+    envVars:
+      - key: GEMINI_API_KEYS
+        sync: false
+      - key: GROQ_API_KEY_1
+        sync: false
+      - key: GROQ_API_KEY_2
+        sync: false
+      - key: GROQ_API_KEY_3
+        sync: false
+      - key: REPORT_BOT_TOKEN
+        sync: false
+      - key: REPORT_CHAT_ID
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
