@@ -59,8 +59,31 @@ jobs:
               except Exception as e:
                   print(f"Download note for {url}: {e}")
 
+          if not downloaded:
+              try:
+                  print("Checking Upstash Redis & Pinata IPFS fallback...")
+                  import json
+                  up_url = "https://relaxing-starfish-285827.upstash.io/get/fleet:latest_ipfs_cid"
+                  up_req = urllib.request.Request(up_url, headers={"Authorization": "Bearer gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw"})
+                  with urllib.request.urlopen(up_req, timeout=8) as up_r:
+                      if up_r.status == 200:
+                          cid = json.loads(up_r.read().decode()).get("result")
+                          if cid:
+                              ipfs_url = f"https://gateway.pinata.cloud/ipfs/{cid}"
+                              print(f"Downloading from Pinata IPFS Gateway: {ipfs_url}...")
+                              req = urllib.request.Request(ipfs_url, headers={"User-Agent": "Mozilla/5.0"})
+                              with urllib.request.urlopen(req, timeout=20) as r:
+                                  if r.status == 200:
+                                      with zipfile.ZipFile(io.BytesIO(r.read())) as z:
+                                          if "accounts.json" in z.namelist():
+                                              z.extract("accounts.json", ".")
+                                              print("✅ Successfully extracted accounts.json from Pinata IPFS!")
+                                              downloaded = True
+              except Exception as e:
+                  print(f"IPFS fallback note: {e}")
+
           if not downloaded and not os.path.exists("accounts.json"):
-              print("⚠️ Could not download accounts.json from Cloudflare. Checking local checkout.")
+              print("⚠️ Could not download accounts.json from Cloudflare/IPFS. Checking local checkout.")
           EOF
 
       - name: Run Cloud MTProto Token Refresher

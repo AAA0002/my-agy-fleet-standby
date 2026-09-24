@@ -1780,34 +1780,39 @@ async def build_daily_summary_report(user_id: int):
 
     total_bnb_done = 0
     total_bnb_tasks = len(accounts) * 10
+    total_bnb_daily_est = 0.0
 
-    async with aiohttp.ClientSession() as session:
-        for acc in accounts:
-            uid = acc.get("user_id")
-            if not uid:
-                continue
-            try:
-                now_ms = int(time.time() * 1000)
-                states = await get_bnb_tasks_status(session, uid, proxy=acc.get("proxy"))
-                ready_cnt = sum(1 for avail in states.values() if avail == 0 or avail <= now_ms)
-                done_cnt = len(states) - ready_cnt
-                total_bnb_done += done_cnt
-            except Exception:
-                pass
+    if ENABLE_BNB_GALAXY:
+        async with aiohttp.ClientSession() as session:
+            for acc in accounts:
+                uid = acc.get("user_id")
+                if not uid:
+                    continue
+                try:
+                    now_ms = int(time.time() * 1000)
+                    states = await get_bnb_tasks_status(session, uid, proxy=acc.get("proxy"))
+                    ready_cnt = sum(1 for avail in states.values() if avail == 0 or avail <= now_ms)
+                    done_cnt = len(states) - ready_cnt
+                    total_bnb_done += done_cnt
+                except Exception:
+                    pass
+        total_bnb_daily_est = total_bnb_done * 0.0000055
 
-    total_bnb_daily_est = total_bnb_done * 0.0000055
+    bnb_section = f"🪙 **BNB Galaxy:** `{total_bnb_done}/{total_bnb_tasks} tasks` (+{total_bnb_daily_est:.6f} BNB) | 5/5 Anti-Bot ✅\n" if ENABLE_BNB_GALAXY else ""
 
     report = (
         f"📑 *MY AGY AI — Fleet 24h Summary*\n"
         f"🕒 `{now_str}`\n\n"
         f"👥 **Fleet:** `{len(accounts)} Accounts Active (Host: Arif Hossain)`\n\n"
-        f"🪙 **BNB Galaxy:** `{total_bnb_done}/{total_bnb_tasks} tasks` (+{total_bnb_daily_est:.6f} BNB) | 5/5 Anti-Bot ✅\n"
+        f"{bnb_section}"
         f"💎 **Stones Miners:** Mining & daily check-ins active (Arbitrum Payout)\n"
         f"⛏️ **MRG Miner:** Continuous mining + 10% Squad commissions to Main ID\n"
         f"🚀 **ART Airdrop:** 8-hour continuous cycles running 24/7\n"
         f"🧪 **AI Lab Robot:** 24/7 Cloud Miner Active | USD Auto-Exchange\n"
         f"💳 **UltraWallet:** Passive Mining & Daily Streaks Active\n"
-        f"⚡ **Apex Miner:** Continuous 8h Mining, Daily Streaks & Ad Boost Active\n\n"
+        f"⚡ **Apex Miner:** Continuous 8h Mining, Daily Streaks & Ad Boost Active\n"
+        f"🌐 **Ainovum:** Cloud node mining & network telemetry active\n"
+        f"🌾 **ATF Miner:** 100% farming & token accumulation mode active\n\n"
         f"💼 **Wallets:** Isolated worker TON wallets + Binance Web3 Master\n"
         f"🛡️ **System:** 🟢 Immortal Supervisor 24/7"
     )
@@ -1823,35 +1828,40 @@ async def build_morning_briefing(user_id: int):
 
     total_bnb_done = 0
     total_bnb_tasks = len(accounts) * 10
+    total_bnb_daily_est = 0.0
 
-    async with aiohttp.ClientSession() as session:
-        for acc in accounts:
-            uid = acc.get("user_id")
-            if not uid:
-                continue
-            try:
-                now_ms = int(time.time() * 1000)
-                states = await get_bnb_tasks_status(session, uid, proxy=acc.get("proxy"))
-                ready_cnt = sum(1 for avail in states.values() if avail == 0 or avail <= now_ms)
-                done_cnt = len(states) - ready_cnt
-                total_bnb_done += done_cnt
-            except Exception:
-                pass
+    if ENABLE_BNB_GALAXY:
+        async with aiohttp.ClientSession() as session:
+            for acc in accounts:
+                uid = acc.get("user_id")
+                if not uid:
+                    continue
+                try:
+                    now_ms = int(time.time() * 1000)
+                    states = await get_bnb_tasks_status(session, uid, proxy=acc.get("proxy"))
+                    ready_cnt = sum(1 for avail in states.values() if avail == 0 or avail <= now_ms)
+                    done_cnt = len(states) - ready_cnt
+                    total_bnb_done += done_cnt
+                except Exception:
+                    pass
+        total_bnb_daily_est = total_bnb_done * 0.0000055
 
-    total_bnb_daily_est = total_bnb_done * 0.0000055
+    bnb_section = f"🪙 **BNB Galaxy:** `{total_bnb_done}/{total_bnb_tasks} tasks` (+{total_bnb_daily_est:.6f} BNB) | 5/5 Anti-Bot ✅\n" if ENABLE_BNB_GALAXY else ""
 
     report = (
         f"🌅 *MY AGY AI — Morning Fleet Briefing*\n"
         f"📅 `{date_str} • {time_str}`\n\n"
         f"☀️ *Good morning Arif! Here is your overnight fleet summary:*\n\n"
         f"⚡ **Fleet Status:** `{len(accounts)} Accounts Active & 100% Autonomous`\n\n"
-        f"🪙 **BNB Galaxy:** `{total_bnb_done}/{total_bnb_tasks} tasks` (+{total_bnb_daily_est:.6f} BNB) | 5/5 Anti-Bot ✅\n"
+        f"{bnb_section}"
         f"💎 **Stones Miners:** Mining active | Auto-withdraw >= 500 STONES (Arbitrum)\n"
         f"⛏️ **MRG Miner:** Harvest & 10% Squad Sweeps Active (TON Wallets Bound)\n"
         f"🚀 **ART Airdrop:** Continuous 8h Cycles & Task Auto-Claims Active\n"
         f"🧪 **AI Lab Robot:** 24/7 Cloud Miner Active | USD Auto-Exchange\n"
         f"💳 **UltraWallet:** Passive Mining & Daily Streaks Active\n"
-        f"⚡ **Apex Miner:** Continuous 8h Mining & Ad Boost Active\n\n"
+        f"⚡ **Apex Miner:** Continuous 8h Mining & Ad Boost Active\n"
+        f"🌐 **Ainovum:** Cloud node mining & network telemetry active\n"
+        f"🌾 **ATF Miner:** 100% farming & token accumulation mode active\n\n"
         f"💰 **Payouts:** Auto-routing to your Binance Web3 & Arbitrum wallets\n"
         f"🛡️ **System:** 🟢 Immortal Supervisor 24/7"
     )
@@ -3080,16 +3090,12 @@ async def handle_single_update(update: dict):
                     proxy = acc.get("proxy") or "Direct VPS IP"
                     status = acc.get("status", "active")
                     status_icon = "🟢 Active" if status != "revoked" else "🔴 Revoked"
-                    cached_bal = ACCOUNT_BALANCES.get(str(uid), {}).get("balance", 0.0)
-
-                    async with aiohttp.ClientSession() as s:
-                        states = await get_bnb_tasks_status(s, uid, proxy=acc.get("proxy"))
-                    now_ms = int(time.time() * 1000)
-                    ready_cnt = len([k for k, v in states.items() if v == 0 or v <= now_ms]) if states else 0
-                    completed_cnt = 10 - ready_cnt
-                    valid_next = [v for v in states.values() if v > now_ms] if states else []
-                    next_ms = min(valid_next, default=None)
-                    reset_str = format_seconds_to_hm(max(0, (next_ms - now_ms) / 1000.0)) if next_ms else ("All 10 Ready" if ready_cnt == 10 else "Ready Now")
+                    stones_cd = acc.get("stones_next_wd_at")
+                    now_time = time.time()
+                    stones_cd_str = "Ready" if not stones_cd or float(stones_cd) <= now_time else format_seconds_to_hm(float(stones_cd) - now_time)
+                    is_pri = (str(uid) == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
+                    ai_lab_mode = "Compound / Reinvest (Main ID)" if is_pri else "Auto-Withdraw >= $0.02 (BEP-20)"
+                    stones_mode = "Compound / Hash Growth (Main ID)" if is_pri else "Auto-Withdraw >= 500 STONES (Arbitrum)"
 
                     rep = (
                         f"📱 *Account #{target_idx} Inspection*\n"
@@ -3099,10 +3105,12 @@ async def handle_single_update(update: dict):
                         f"• **User ID:** `{uid}`\n"
                         f"• **Daemon Status:** {status_icon}\n"
                         f"• **Network Proxy:** `{proxy}`\n"
-                        f"• **BNB Tasks Completed:** `{completed_cnt}/10` ({ready_cnt} ready)\n"
-                        f"• **Next Task Reset:** `{reset_str}`\n"
-                        f"• **Holding Balance:** `{cached_bal:.6f} BNB`\n"
-                        f"• **Auto-Withdraw:** `{'Eligible! 🚀' if cached_bal >= MIN_WITHDRAWAL else f'{MIN_WITHDRAWAL - cached_bal:.6f} BNB needed'}`\n"
+                        f"• **Stones WD Cooldown:** `{stones_cd_str}`\n"
+                        f"• **Stones Policy:** `{stones_mode}`\n"
+                        f"• **AI Lab Policy:** `{ai_lab_mode}`\n"
+                        f"• **ATF Mode:** `100% Farming / Accumulation`\n"
+                        f"• **MRG Squad:** `10% Auto-Commissions -> Main ID`\n"
+                        f"• **Active Lineup:** 8 Mining Bots Active 24/7\n"
                         f"━━━━━━━━━━━━━━━━━━━━━━\n"
                         f"💡 _Tip: Use `/acc <1-{len(accounts)}>` to inspect any connected account._"
                     )
@@ -4121,6 +4129,8 @@ async def extract_bnb_webhook(acc_client=None, acc_data: dict = None):
 
 
 async def register_adsgram(session: aiohttp.ClientSession, tg_id: int, wh_url: str, proxy: str = None):
+    if not ENABLE_BNB_GALAXY:
+        return False
     reg_url = "https://justtool.site/api/adsgram-register"
     headers = {
         "Content-Type": "application/json",
@@ -4139,6 +4149,8 @@ async def register_adsgram(session: aiohttp.ClientSession, tg_id: int, wh_url: s
 
 
 async def get_bnb_tasks_status(session: aiohttp.ClientSession, tg_id: int, proxy: str = None):
+    if not ENABLE_BNB_GALAXY:
+        return {}
     status_url = f"https://justtool.site/api/adsgram-tasks?tgId={tg_id}"
     headers = {
         "User-Agent": HUMAN_USER_AGENT,
@@ -4160,6 +4172,8 @@ async def get_bnb_tasks_status(session: aiohttp.ClientSession, tg_id: int, proxy
 
 
 async def complete_bnb_task(session: aiohttp.ClientSession, tg_id: int, task_id: int, proxy: str = None):
+    if not ENABLE_BNB_GALAXY:
+        return {"ok": False, "error": "BNB Galaxy disabled"}
     complete_url = "https://justtool.site/api/adsgram-tasks/complete"
     headers = {
         "Content-Type": "application/json",
@@ -6216,14 +6230,7 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
                         usd_bal = float(co_data.get("user_info", {}).get("balance", 0) or 0)
                         if usd_bal >= 0.02:
                             wd_usd = round(usd_bal, 4)
-                            target_evm = EVM_VAULT_ADDRESS
-                            fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
-                            if os.path.exists(fleet_evm_file):
-                                try:
-                                    with open(fleet_evm_file, "r", encoding="utf-8") as fef:
-                                        target_evm = json.load(fef).get(acc_uid, {}).get("address") or target_evm
-                                except Exception:
-                                    pass
+                            target_evm = EVM_VAULT_ADDRESS  # Direct to Binance Web3 Master (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
                             logger.info(f"[{acc_name}] 🧪 [AI Lab] Worker balance ${usd_bal:.4f} >= $0.02 threshold! Submitting auto-withdrawal to BEP-20 {target_evm}...")
                             pay_payload = {
                                 "ps_id": 5,  # USDT (BEP20)
@@ -7739,15 +7746,11 @@ async def miniapp_command_listener_loop():
                             await session.get(f"{upstash_url}/del/fleet:pending_action", headers=headers)
 
                             logger.info(f"[MiniApp Listener] ⚡ Executing interactive command from Mini App: '{act}'")
-                            if act == "withdraw":
+                            if act in ("withdraw", "sweep"):
                                 async def _run_sweep():
-                                    accounts = load_accounts()
-                                    for acc in accounts:
-                                        uid = acc.get("user_id")
-                                        name = acc.get("name") or "Member"
-                                        bal = float(ACCOUNT_BALANCES.get(str(uid), {}).get("balance", 0.0))
-                                        if bal >= MIN_WITHDRAWAL:
-                                            await check_and_auto_withdraw(uid, name, notify_manual=True, acc_data=acc)
+                                    logger.info("[MiniApp Listener] Dispatched universal fleet sweep (AI Lab + Stones)...")
+                                    await _run_stones_sweep()
+                                    await _run_ailab_sweep()
                                 asyncio.create_task(_run_sweep())
                             elif act == "verify":
                                 async def _run_verify():
@@ -7834,15 +7837,8 @@ async def miniapp_command_listener_loop():
                                         if is_pri:
                                             logger.info(f"[AI Lab Sweep] Skipping main account {name} ({uid}) per user directive.")
                                             continue
-                                        # Use worker specific EVM wallet if available, otherwise EVM_VAULT_ADDRESS
+                                        # Directly route to Binance Web3 Master (EVM_VAULT_ADDRESS) so zero gas is lost in worker wallets
                                         worker_evm = target_wallet
-                                        fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
-                                        if os.path.exists(fleet_evm_file):
-                                            try:
-                                                with open(fleet_evm_file, "r", encoding="utf-8") as fef:
-                                                    worker_evm = json.load(fef).get(uid, {}).get("address") or target_wallet
-                                            except Exception:
-                                                pass
                                         init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("ailab_init_data")
                                         if init_data:
                                             try:

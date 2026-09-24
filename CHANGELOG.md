@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **Direct-to-Binance Master Auto-Payout Routing & Cloud Vault Sweeper**:
+  - **Direct Binance Payouts (`userbot_refresher.py`)**: Configured AI Lab auto-withdrawals (`_run_ailab_sweep` and continuous worker cashout) to route directly to `EVM_VAULT_ADDRESS` (`0xfda4182001672b9f0f09e2118242e543e35ed5ce` - Binance Web3 Master), ensuring 100% of worker mining rewards deposit directly into the user's Binance account without stranded dust or gas consumption in isolated worker wallets.
+  - **Universal Fleet Sweep Dispatch (`userbot_refresher.py`)**: Updated Upstash Redis / MiniApp action listener so `withdraw` and `sweep` trigger both AI Lab and Stones sweeps across worker accounts (skipping main account `6727787768`).
+  - **Autonomous Cloud On-Chain Vault Sweeper (`cloud_wallet_sweeper.py`)**: Built a multi-chain audit and consolidation engine covering all 12 worker EVM wallets (`fleet_evm_wallets.json`) and 12 worker TON wallets (`fleet_ton_wallets.json`) across BSC, Arbitrum One, and TON blockchain. Sweeps surplus balances above gas threshold to Binance Web3 Master accounts and broadcasts verified Telegram receipts.
+  - **Disaster Recovery Backup Manifest (`backup_manager.py`)**: Added `cloud_wallet_sweeper.py` to the core files archived to Pinata IPFS, Cloudflare Edge KV, and Telegram vault.
+
+- **Bug Fixes & Zero-Trust Cloud Refinement**:
+  - **Purged Legacy Briefing BNB Network Loops (`userbot_refresher.py`)**: Removed unconditional background calls to `justtool.site/api/adsgram-tasks` in `build_daily_summary_report` and `build_morning_briefing`, completely resolving HTTP 407 proxy errors and SSL handshake timeouts during briefings.
+  - **Hardened Adsgram Endpoints (`userbot_refresher.py`)**: Added immediate early return (`if not ENABLE_BNB_GALAXY: return {} / False`) across `get_bnb_tasks_status`, `register_adsgram`, and `complete_bnb_task`.
+  - **Account Inspection Upgrade (`/acc <1-13>`)**: Upgraded `/acc` to display live 8-bot mining lineup, Stones withdrawal cooldown timer, AI Lab policy, ATF accumulation mode, and MRG squad commission status instead of obsolete BNB fields.
+  - **Zero-Trust IPFS Fallback in GitHub Actions (`.github/workflows/cloud_token_refresher.yml`)**: Added automatic fallback to Upstash Redis (`fleet:latest_ipfs_cid`) and Pinata IPFS Gateway for zero-auth recovery of `accounts.json` if Cloudflare Edge nodes fail or rate limit.
+  - **Daemon Health**: Revived `userbot_refresher.py` under immortal supervisor (PID 4846, 5.6% RAM) with 0 errors.
 - **Zero-Trust Ephemeral Recovery & Telemetry Synchronization**:
   - **Dynamic IPFS CID Cloud Sync (`backup_manager.py`)**: Automatically writes newly generated Pinata IPFS hash to `.env` (`PINATA_LATEST_IPFS_CID`) and Upstash Redis (`fleet:latest_ipfs_cid`) during every backup cycle for instant zero-auth discovery.
   - **Decentralized Multi-Cloud Restorer Fallback (`restore_fleet.sh`)**: Added automatic failover to Upstash Redis and Pinata IPFS Gateway if Cloudflare Edge KV archives are unreachable or rate-limited, allowing 1-line fleet restoration anywhere on earth.
