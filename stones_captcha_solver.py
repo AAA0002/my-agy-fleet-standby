@@ -100,6 +100,75 @@ async def execute_stones_withdrawal_with_captcha(
     req_headers = dict(headers)
     req_headers["Content-Type"] = "application/json"
 
+    # Step 0: Pre-check withdrawal ad boarding requirements
+    try:
+        async with session.post(
+            f"{base_url}/api/wd/ad/precheck",
+            json={"initData": init_data, "amount": amount, "wallet": wallet, "currency": "stones"},
+            headers=req_headers,
+            proxy=proxy,
+            timeout=aiohttp.ClientTimeout(total=10)
+        ) as pcr:
+            if pcr.status == 200:
+                pcd = await pcr.json()
+                if pcd.get("need_ad"):
+                    req_ads = pcd.get("required", 3)
+                    cur_boarded = pcd.get("boarded", 0)
+                    while cur_boarded < req_ads:
+                        logger.info(f"[Stones Withdrawal] Onboarding withdrawal ad ({cur_boarded + 1}/{req_ads})...")
+                        async with session.post(
+                            f"{base_url}/api/wd/ad/challenge",
+                            json={"initData": init_data},
+                            headers=req_headers,
+                            proxy=proxy,
+                            timeout=aiohttp.ClientTimeout(total=10)
+                        ) as chr:
+                            if chr.status != 200:
+                                break
+                            ch_data = await chr.json()
+                            cid = ch_data.get("challenge", {}).get("challenge_id")
+                        if not cid:
+                            break
+                        # Heartbeat 1
+                        await session.post(
+                            f"{base_url}/api/ad/beat",
+                            json={"initData": init_data, "scope": "wd", "challenge_id": cid},
+                            headers=req_headers,
+                            proxy=proxy,
+                            timeout=aiohttp.ClientTimeout(total=8)
+                        )
+                        # Simulate rewarded video duration
+                        await asyncio.sleep(16.0)
+                        # Heartbeat 2
+                        await session.post(
+                            f"{base_url}/api/ad/beat",
+                            json={"initData": init_data, "scope": "wd", "challenge_id": cid},
+                            headers=req_headers,
+                            proxy=proxy,
+                            timeout=aiohttp.ClientTimeout(total=8)
+                        )
+                        await asyncio.sleep(0.5)
+                        # Confirm ad view
+                        async with session.post(
+                            f"{base_url}/api/wd/ad/confirm",
+                            json={"initData": init_data, "challenge_id": cid},
+                            headers=req_headers,
+                            proxy=proxy,
+                            timeout=aiohttp.ClientTimeout(total=10)
+                        ) as cfr:
+                            if cfr.status == 200:
+                                cf_d = await cfr.json()
+                                if cf_d.get("ok"):
+                                    cur_boarded += 1
+                                else:
+                                    logger.warning(f"[Stones Withdrawal] Ad confirm note: {cf_d.get('info')}")
+                                    break
+                            else:
+                                break
+                        await asyncio.sleep(1.0)
+    except Exception as ade:
+        logger.debug(f"[Stones Withdrawal] Precheck/ad onboarding exception: {ade}")
+
     # Step 1: Issue captcha or check if enabled
     ticket = None
     max_attempts = 3
@@ -171,9 +240,10 @@ async def execute_stones_withdrawal_with_captcha(
         "initData": init_data,
         "amount": amount,
         "wallet": wallet,
-        "currency": "STONES"
+        "currency": "stones"
     }
     if ticket:
+        withdraw_payload["ticket"] = ticket
         withdraw_payload["captcha_ticket"] = ticket
 
     try:
@@ -184,12 +254,15 @@ async def execute_stones_withdrawal_with_captcha(
             proxy=proxy,
             timeout=aiohttp.ClientTimeout(total=15)
         ) as wr:
-            wres = await wr.json() if wr.status == 200 else {}
+            try:
+                wres = await wr.json()
+            except Exception:
+                wres = {"info": await wr.text()}
             if wr.status == 200 and wres.get("ok"):
                 msg = wres.get("info") or f"Successfully withdrawn {amount} STONES"
                 return True, msg
             else:
-                err_msg = wres.get("info") or f"HTTP {wr.status}"
+                err_msg = wres.get("info") or wres.get("error") or f"HTTP {wr.status}: {wres}"
                 return False, err_msg
     except Exception as e:
         return False, str(e)
