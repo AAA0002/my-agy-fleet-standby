@@ -204,10 +204,11 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
 
         # 7. Apex Miner
         try:
-            b_apx = await cl.get_entity(APX_BOT)
-            r_apx = await cl(RequestWebViewRequest(
-                peer=b_apx, bot=b_apx, platform="android",
-                url=f"https://apex-miner.vercel.app/?ref={APX_REF}",
+            b_apx = await cl.get_input_entity(APX_BOT)
+            r_apx = await cl(RequestAppWebViewRequest(
+                peer=b_apx,
+                app=InputBotAppShortName(bot_id=b_apx, short_name="app"),
+                platform="android",
                 start_param=APX_REF if acc_uid != str(REPORT_CHAT_ID) else None
             ))
             init_apx = urllib.parse.parse_qs(urllib.parse.urlparse(r_apx.url).fragment).get("tgWebAppData", [None])[0]

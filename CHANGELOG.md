@@ -6,9 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
-- **Apex Miner Cloudflare Workers API Migration (`userbot_refresher.py` & `deploy_both_cf_workers.py`)**:
-  - **Backend URL Migration**: Updated Apex Miner WebApp API endpoint from obsolete Vercel deployment (`https://apex-miner.vercel.app` returning HTTP 404 DEPLOYMENT_NOT_FOUND) to the live Cloudflare Workers backend (`https://apxn-miner-live.apxn-network.workers.dev/api`).
+- **Apex Miner Cloudflare Workers API Migration & Comprehensive Codebase Purge (`userbot_refresher.py`, `deploy_both_cf_workers.py`, `refresh_cloud_tokens.py`, `login_account.py`)**:
+  - **Backend URL Migration**: Updated Apex Miner WebApp API endpoint from obsolete Vercel deployment (`https://apex-miner.vercel.app` returning HTTP 404 DEPLOYMENT_NOT_FOUND) to the live Cloudflare Workers backend (`https://apxn-miner-live.apxn-network.workers.dev/api`) across all fleet automation, including account inspection (`get_apx_account_details`), referral onboarding (`ensure_referral_bound`), edge fast-farming (`fastFarmAccount`), and new account onboarding (`login_account.py`).
+  - **GitHub Actions Token Refresher Modernization (`refresh_cloud_tokens.py`)**: Updated MTProto WebApp token extraction to use `RequestAppWebViewRequest` with `InputBotAppShortName`, automatically fetching live Bot App URLs directly from Telegram and eliminating hardcoded legacy endpoints.
   - **Task Pipeline Streamlining**: Removed deprecated `/start` step on daily/social tasks (which returned 404 on the new API) and updated directly to atomic POST `/api/tasks/daily` and `/api/tasks/social` requests.
+  - **Triple Cloudflare Edge Sync**: Redeployed all 3 Cloudflare Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`) with the unified endpoint.
 
 - **MRG Miner Telegram Channel Auto-Join & Task Claiming (`userbot_refresher.py` & `clean_all_accounts_channels.py`)**:
   - **Autonomous Chat Membership Verification**: Added MTProto `JoinChannelRequest` auto-join prior to claiming tasks with Telegram requirements (e.g. `@mrgfun` for "Join MRG Discussion"), plus dynamic on-demand channel joining and retry if the server responds with a Telegram membership prerequisite error.

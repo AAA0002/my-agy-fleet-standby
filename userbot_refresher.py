@@ -2239,7 +2239,7 @@ async def build_apx_details_report(user_id: int):
         init_data = FLEET_MINIAPP_TOKENS.get(str(user_id), {}).get("apx_init_data")
         if init_data:
             headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
-            base_url = "https://apex-miner.vercel.app/api"
+            base_url = "https://apxn-miner-live.apxn-network.workers.dev/api"
             async with aiohttp.ClientSession() as s:
                 async with s.post(f"{base_url}/bootstrap", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as r:
                     if r.status == 200:
@@ -3977,7 +3977,7 @@ async def ensure_referral_bound(acc_client, acc: dict):
             init_apx = urllib.parse.parse_qs(parsed_apx.fragment).get("tgWebAppData", [None])[0]
             if init_apx:
                 headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
-                base_url = "https://apex-miner.vercel.app/api"
+                base_url = "https://apxn-miner-live.apxn-network.workers.dev/api"
                 async with aiohttp.ClientSession() as apx_sess:
                     async with apx_sess.post(f"{base_url}/auth/telegram", json={"initData": init_apx}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as auth_r:
                         pass

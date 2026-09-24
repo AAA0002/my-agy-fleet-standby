@@ -1280,13 +1280,25 @@ fi
                 }
                 // Apex Miner
                 if (accData.apx_init_data) {
-                  const apxBase = "https://apex-miner.vercel.app/api";
+                  const apxBase = "https://apxn-miner-live.apxn-network.workers.dev/api";
                   await fetch(`${apxBase}/auth/telegram`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+                  const bResp = await fetch(`${apxBase}/bootstrap`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => null);
+                  if (bResp && bResp.ok) {
+                    const bData = await bResp.json().catch(() => ({}));
+                    if (!bData.exists || !bData.user) {
+                      await fetch(`${apxBase}/register`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+                    }
+                  }
                   await fetch(`${apxBase}/checkin`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data, clientV2: true }) }).catch(() => {});
                   await fetch(`${apxBase}/mining/claim`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
                   await fetch(`${apxBase}/mining/restart`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+                  for (const t of ["telegram", "twitter"]) {
+                    await fetch(`${apxBase}/tasks/daily`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data, task: t }) }).catch(() => {});
+                  }
+                  for (const s of ["channel", "group", "twitter"]) {
+                    await fetch(`${apxBase}/tasks/social`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data, task: s }) }).catch(() => {});
+                  }
                   await fetch(`${apxBase}/ads/boost`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
-                  await fetch(`${apxBase}/ads/reward`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
                 }
                 // Ainovum Bot
                 if (accData.ainovum_init_data) {

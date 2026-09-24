@@ -382,8 +382,8 @@ async def bind_referrals(client, me, acc_entry):
         if init_apx:
             async with aiohttp.ClientSession() as apx_sess:
                 apx_h = {"Content-Type": "application/json"}
-                await apx_sess.post("https://apex-miner.vercel.app/api/auth/telegram", json={"initData": init_apx}, headers=apx_h, timeout=aiohttp.ClientTimeout(total=8))
-                await apx_sess.post("https://apex-miner.vercel.app/api/register", json={"initData": init_apx}, headers=apx_h, timeout=aiohttp.ClientTimeout(total=8))
+                await apx_sess.post("https://apxn-miner-live.apxn-network.workers.dev/api/auth/telegram", json={"initData": init_apx}, headers=apx_h, timeout=aiohttp.ClientTimeout(total=8))
+                await apx_sess.post("https://apxn-miner-live.apxn-network.workers.dev/api/register", json={"initData": init_apx}, headers=apx_h, timeout=aiohttp.ClientTimeout(total=8))
         try:
             await client(JoinChannelRequest("ApexMiner_Official"))
         except Exception:
