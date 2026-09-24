@@ -279,15 +279,16 @@ class AutonomousHermesAgent:
 
     async def fetch_fleet_state(self, session: aiohttp.ClientSession) -> Dict[str, Any]:
         """Fetches live telemetry directly from Cloudflare Edge / Upstash."""
-        try:
-            async with session.get(f"{UPSTASH_URL}/get/fleet:live_state", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=5)) as r:
-                if r.status == 200:
-                    d = await r.json()
-                    res = d.get("result")
-                    if res:
-                        return json.loads(res) if isinstance(res, str) else res
-        except Exception:
-            pass
+        for key in ["fleet:live_state", "fleet:telemetry"]:
+            try:
+                async with session.get(f"{UPSTASH_URL}/get/{key}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=5)) as r:
+                    if r.status == 200:
+                        d = await r.json()
+                        res = d.get("result")
+                        if res:
+                            return json.loads(res) if isinstance(res, str) else res
+            except Exception:
+                pass
         return {"accounts_total": 13, "status": "nominal"}
 
     async def dispatch_fleet_action(self, session: aiohttp.ClientSession, action: str):

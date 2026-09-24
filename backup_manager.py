@@ -9,6 +9,7 @@ https://t.me/myagyai
 
 import os
 import sys
+import re
 import json
 import zipfile
 import asyncio
@@ -182,6 +183,36 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
                             p_data = await p_resp.json()
                             ipfs_cid = p_data.get("IpfsHash")
                             logging.info(f"[Pinata IPFS] Backup pinned: {ipfs_cid}")
+
+                            # Sync IPFS CID to local .env and Upstash Redis for global zero-trust access
+                            if ipfs_cid:
+                                env_file = os.path.join(BASE_DIR, ".env")
+                                if os.path.exists(env_file):
+                                    try:
+                                        with open(env_file, "r", encoding="utf-8") as ef:
+                                            e_txt = ef.read()
+                                        if "PINATA_LATEST_IPFS_CID=" in e_txt:
+                                            e_txt = re.sub(r"PINATA_LATEST_IPFS_CID=.*", f"PINATA_LATEST_IPFS_CID={ipfs_cid}", e_txt)
+                                        else:
+                                            e_txt += f"\nPINATA_LATEST_IPFS_CID={ipfs_cid}\n"
+                                        with open(env_file, "w", encoding="utf-8") as ef:
+                                            ef.write(e_txt)
+                                    except Exception:
+                                        pass
+
+                                up_url = os.getenv("UPSTASH_REDIS_REST_URL")
+                                up_tok = os.getenv("UPSTASH_REDIS_REST_TOKEN")
+                                if up_url and up_tok:
+                                    try:
+                                        async with session.post(
+                                            f"{up_url}/set/fleet:latest_ipfs_cid",
+                                            headers={"Authorization": f"Bearer {up_tok}"},
+                                            json=ipfs_cid,
+                                            timeout=aiohttp.ClientTimeout(total=5)
+                                        ):
+                                            pass
+                                    except Exception:
+                                        pass
                 except Exception as pe:
                     logging.warning(f"[Pinata IPFS] Pinning error: {pe}")
 

@@ -74,7 +74,7 @@ if [ -f "requirements.txt" ]; then
 fi
 
 # 7. Make all scripts executable
-chmod +x bot_supervisor.sh start_userbot.sh stop_userbot.sh login_account.py phone_detector.py proxy_manager.py backup_manager.py restore.sh cloudflared_tunnel.sh 2>/dev/null || true
+chmod +x bot_supervisor.sh start_userbot.sh stop_userbot.sh login_account.py phone_detector.py proxy_manager.py backup_manager.py restore.sh restore_fleet.sh cloudflared_tunnel.sh autonomous_cloud_agent.py refresh_cloud_tokens.py render_failover_manager.py deploy_both_cf_workers.py 2>/dev/null || true
 
 # 8. Start 24/7 background supervisor daemon in tmux
 echo "⚡ Starting immortal 24/7 supervisor in tmux session: telegram_bot..."

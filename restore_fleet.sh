@@ -50,12 +50,27 @@ for B_URL in "${CF_BACKUP_URLS[@]}"; do
     fi
 done
 
+# Fallback: If Cloudflare archive is unreachable, try Decentralized Pinata IPFS via Upstash Redis
+if [ "$BACKUP_DOWNLOADED" -eq 0 ]; then
+    echo "  Checking latest decentralized IPFS backup via Upstash & Pinata Gateway..."
+    LATEST_CID=$(curl -sSL -m 6 -H "Authorization: Bearer gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw" "https://relaxing-starfish-285827.upstash.io/get/fleet:latest_ipfs_cid" 2>/dev/null | grep -o '"result":"[^"]*"' | cut -d'"' -f4 || true)
+    if [ -n "$LATEST_CID" ] && [ "$LATEST_CID" != "null" ]; then
+        echo "  Found IPFS CID: $LATEST_CID. Fetching from Pinata IPFS Gateway..."
+        if curl -sSL -f -m 35 "https://gateway.pinata.cloud/ipfs/$LATEST_CID" -o "$BASE_DIR/latest_backup.zip" 2>/dev/null; then
+            if [ -s "$BASE_DIR/latest_backup.zip" ]; then
+                echo "  ✅ Backup archive downloaded from Pinata IPFS Gateway!"
+                BACKUP_DOWNLOADED=1
+            fi
+        fi
+    fi
+fi
+
 if [ "$BACKUP_DOWNLOADED" -eq 1 ]; then
     echo "[4/6] Unpacking fleet configuration, accounts, and session keys..."
     unzip -o -q "$BASE_DIR/latest_backup.zip" -d "$BASE_DIR"
     rm -f "$BASE_DIR/latest_backup.zip"
 else
-    echo "  ⚠️ Cloudflare archive not reachable. Checking local files..."
+    echo "  ⚠️ Cloud archives not reachable. Checking local files..."
 fi
 
 # 4. Install Python dependencies

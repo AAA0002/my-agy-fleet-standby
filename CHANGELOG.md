@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **Zero-Trust Ephemeral Recovery & Telemetry Synchronization**:
+  - **Dynamic IPFS CID Cloud Sync (`backup_manager.py`)**: Automatically writes newly generated Pinata IPFS hash to `.env` (`PINATA_LATEST_IPFS_CID`) and Upstash Redis (`fleet:latest_ipfs_cid`) during every backup cycle for instant zero-auth discovery.
+  - **Decentralized Multi-Cloud Restorer Fallback (`restore_fleet.sh`)**: Added automatic failover to Upstash Redis and Pinata IPFS Gateway if Cloudflare Edge KV archives are unreachable or rate-limited, allowing 1-line fleet restoration anywhere on earth.
+  - **Script Executable Hardening (`restore.sh`)**: Extended executable permissions to all core cloud scripts (`autonomous_cloud_agent.py`, `refresh_cloud_tokens.py`, `render_failover_manager.py`, `deploy_both_cf_workers.py`, `restore_fleet.sh`).
+  - **Live State Pipeline for Cloud AI Copilot (`userbot_refresher.py` & `autonomous_cloud_agent.py`)**: Synchronized `fleet:live_state` alongside `fleet:telemetry` to Upstash Redis, enabling the Render Hermes-Grok AI Copilot to observe live coin counts, account states, and active cooldowns in real-time.
+
 - **Bug Fixes & Dashboard Alignment**:
   - **Stones Captcha Exception & Timeout Handling (`stones_captcha_solver.py`)**: Fixed empty error string logging when `TimeoutError` or network exceptions occur (`err_desc = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__`). Added an immediate fast-fail break on origin network timeouts to prevent 36-second cascading thread blocking across worker loops.
   - **Dashboard WebApp Purge & Alignment (`update_dashboard_compact.py`, `deploy_both_cf_workers.py`, `dashboard.html`, `public/index.html`)**:

@@ -3570,13 +3570,19 @@ async def cloudflare_edge_bridge_loop():
                                         "Authorization": f"Bearer {upstash_token}",
                                         "Content-Type": "application/json"
                                     }
-                                    async with session.post(
+                                    t_data = json.dumps(telemetry_payload)
+                                    await session.post(
                                         f"{upstash_url}/set/fleet:telemetry",
-                                        data=json.dumps(telemetry_payload),
+                                        data=t_data,
                                         headers=up_headers,
                                         timeout=aiohttp.ClientTimeout(total=5)
-                                    ):
-                                        pass
+                                    )
+                                    await session.post(
+                                        f"{upstash_url}/set/fleet:live_state",
+                                        data=t_data,
+                                        headers=up_headers,
+                                        timeout=aiohttp.ClientTimeout(total=5)
+                                    )
                                 except Exception:
                                     pass
                             sync_tasks.append(push_upstash())
@@ -5548,7 +5554,7 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                             acc["stones_next_wd_at"] = now_ts + 600
                             await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 600})
                 except Exception as we:
-                    logger.error(f"[{acc_name}] Stones auto-withdrawal error: {we}")
+                    logger.error(f"[{acc_name}] Stones auto-withdrawal error: {we or type(we).__name__}")
 
         logger.info(f"[{acc_name}] 💎 [Stones] Cycle finished | Balance: {bal} STONES (Coins: {coins}) | Mining Active: {mining_active}")
 
