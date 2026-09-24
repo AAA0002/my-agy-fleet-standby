@@ -6951,6 +6951,69 @@ async def automate_mininggram_cycle(session: aiohttp.ClientSession, acc_client, 
         logger.debug(f"[{acc_name}] MiningGRAM automation note: {e}")
 
 
+async def check_and_claim_mininggram_promo(session: aiohttp.ClientSession = None) -> bool:
+    """
+    Checks if MiningGRAM USDT Promo is unlocked (at or after 19:30 UTC)
+    and submits auto-withdrawal of $28.00 USDT to the personal Binance BEP-20 vault.
+    """
+    try:
+        now_u = datetime.now(timezone.utc)
+        if now_u.hour < 19 or (now_u.hour == 19 and now_u.minute < 30):
+            return False
+
+        mg_init = FLEET_MINIAPP_TOKENS.get(str(REPORT_CHAT_ID), {}).get("mininggram_init_data")
+        if not mg_init:
+            return False
+
+        close_sess = False
+        if session is None:
+            session = aiohttp.ClientSession()
+            close_sess = True
+
+        try:
+            auth_r = await session.post(
+                "https://mining-gram-worker.muhaisin0888.workers.dev/api/auth",
+                json={"initData": mg_init, "referralCode": "339JU9K", "deviceFingerprint": f"fp_{REPORT_CHAT_ID}"},
+                timeout=aiohttp.ClientTimeout(total=10)
+            )
+            if auth_r.status != 200:
+                return False
+            s_tok = (await auth_r.json()).get("sessionToken")
+            if not s_tok:
+                return False
+
+            wd_r = await session.post(
+                "https://mining-gram-worker.muhaisin0888.workers.dev/api/usdt/withdraw",
+                headers={"Authorization": f"Bearer {s_tok}"},
+                json={"bep20Address": EVM_VAULT_ADDRESS},
+                timeout=aiohttp.ClientTimeout(total=10)
+            )
+            wd_d = await wd_r.json()
+            if wd_r.status == 200:
+                logger.info(f"🎉 [MiningGRAM Promo] Auto-withdrawal successful! Details: {wd_d}")
+                msg = (
+                    f"🎉 *MININGGRAM USDT PROMO WITHDRAWAL SUCCESSFUL!*\n\n"
+                    f"• **Amount:** `$28.00 USDT`\n"
+                    f"• **Destination:** `{EVM_VAULT_ADDRESS}` (Personal Binance BEP-20)\n"
+                    f"• **Status:** Submitted & Confirmed ✅\n"
+                    f"• **Server Response:**\n`{json.dumps(wd_d, indent=2)}`"
+                )
+                await broadcast_admin_message(msg)
+                return True
+            elif wd_d.get("error") == "usdt_pending_exists":
+                logger.info("✅ [MiningGRAM Promo] Pending withdrawal already registered.")
+                return True
+            else:
+                logger.debug(f"[MiningGRAM Promo] Unlock check: {wd_d}")
+                return False
+        finally:
+            if close_sess:
+                await session.close()
+    except Exception as e:
+        logger.debug(f"[MiningGRAM Promo] Auto-claim notice: {e}")
+        return False
+
+
 async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: dict):
     """
     Automates ATF Miner (@ATF_AIRDROP_bot):
@@ -7487,6 +7550,7 @@ async def task_worker_247(user_id: int, user_name: str):
     last_daily_report_day = -1
     last_morning_briefing_date = None
     last_midnight_backup_date = None
+    last_mininggram_promo_claimed = False
 
     while True:
         try:
@@ -7588,6 +7652,10 @@ async def task_worker_247(user_id: int, user_name: str):
                 except Exception as b_ex:
                     logger.error(f"[Scheduled Backup] Error in midnight backup: {b_ex}")
 
+            # Check for MiningGRAM USDT Promo Auto-Withdrawal (19:30 UTC)
+            if not last_mininggram_promo_claimed:
+                last_mininggram_promo_claimed = await check_and_claim_mininggram_promo()
+
             # Check on-chain wallet for newly confirmed incoming deposits
             asyncio.create_task(check_onchain_deposit_alert())
 
@@ -7683,6 +7751,10 @@ async def task_worker_247(user_id: int, user_name: str):
                             await broadcast_admin_message(pnl_card, reply_markup=STATUS_INLINE_KEYBOARD)
                     except Exception as b_ex:
                         logger.error(f"[Scheduled Backup] Error during rest break backup: {b_ex}")
+
+                # Check for MiningGRAM USDT Promo Auto-Withdrawal (19:30 UTC) during rest break
+                if not last_mininggram_promo_claimed:
+                    last_mininggram_promo_claimed = await check_and_claim_mininggram_promo()
 
         except asyncio.CancelledError:
             logger.info("24/7 Task worker cancelled.")
