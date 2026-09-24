@@ -2658,6 +2658,31 @@ Reply to Arif naturally:`;
                       }
                     }
                   } catch (_) {}
+
+                  // AI Lab Auto-Withdrawal to BEP-20 (Worker Accounts Only - $0.02 USD Minimum)
+                  // Main Account (6727787768) is strictly protected from withdrawal per user directive.
+                  if (String(uid) !== (env.OWNER_ID || "6727787768")) {
+                    try {
+                      const coResp = await fetch(`${aiBase}/cashout`, { headers: aiAuth });
+                      if (coResp.ok) {
+                        const coData = await coResp.json();
+                        const usdBal = parseFloat(coData.user_info?.balance || 0);
+                        if (usdBal >= 0.02) {
+                          const targetEvm = "0xfda4182001672b9f0f09e2118242e543e35ed5ce";
+                          await fetch(`${aiBase}/cashout-pay`, {
+                            method: "POST",
+                            headers: aiAuth,
+                            body: JSON.stringify({
+                              ps_id: 5,
+                              amount_usd: Math.round(usdBal * 10000) / 10000,
+                              wallet: targetEvm,
+                              dest_tag: ""
+                            })
+                          }).catch(() => {});
+                        }
+                      }
+                    } catch (_) {}
+                  }
                 }
               }
             } catch (_) {}

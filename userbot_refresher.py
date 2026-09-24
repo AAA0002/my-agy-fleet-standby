@@ -7795,25 +7795,48 @@ async def miniapp_command_listener_loop():
                                     init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("ailab_init_data")
                                     if init_data:
                                         try:
+                                            base_url = "https://api.ailab-agent.online/api/v1"
                                             async with aiohttp.ClientSession() as ai_sess:
-                                                ai_headers = {"User-Agent": get_account_user_agent(uid), "authorization": f"Bearer {init_data}"}
-                                                async with ai_sess.get("https://ailab.app/api/cashout", headers=ai_headers, timeout=aiohttp.ClientTimeout(total=8)) as cr:
+                                                ai_headers = {"Content-Type": "application/json", "User-Agent": get_account_user_agent(uid)}
+                                                # Step 1: Login to get bearer token
+                                                async with ai_sess.post(f"{base_url}/users/auth/login", json={"user": init_data}, headers=ai_headers, timeout=aiohttp.ClientTimeout(total=8)) as lr:
+                                                    if lr.status != 200:
+                                                        continue
+                                                    ld = await lr.json()
+                                                    tok = ld.get("result", {}).get("bearer") or ld.get("user_info", {}).get("session_id")
+                                                    if not tok:
+                                                        continue
+                                                auth_h = {**ai_headers, "Authorization": f"Bearer {tok}"}
+                                                # Step 2: Check balance
+                                                async with ai_sess.get(f"{base_url}/cashout", headers=auth_h, timeout=aiohttp.ClientTimeout(total=8)) as cr:
                                                     if cr.status == 200:
                                                         cdata = await cr.json()
                                                         ubal = float(cdata.get("user_info", {}).get("balance", 0) or 0)
                                                         if ubal >= 0.02:
-                                                            wpayload = {"amount": ubal, "address": worker_evm}
-                                                            async with ai_sess.post("https://ailab.app/api/withdraw", json=wpayload, headers=ai_headers, timeout=aiohttp.ClientTimeout(total=8)) as wr:
-                                                                if wr.status == 200:
-                                                                    await send_report_message(f"🎉 *AI Lab Sweep:* `{name}` withdrew ${ubal:.4f} USD to BEP-20 `{worker_evm}`!", chat_id=REPORT_CHAT_ID)
+                                                            wd_usd = round(ubal, 4)
+                                                            pay_payload = {
+                                                                "ps_id": 5,  # USDT (BEP20)
+                                                                "amount_usd": wd_usd,
+                                                                "wallet": worker_evm,
+                                                                "dest_tag": ""
+                                                            }
+                                                            async with ai_sess.post(f"{base_url}/cashout-pay", json=pay_payload, headers=auth_h, timeout=aiohttp.ClientTimeout(total=10)) as wr:
+                                                                wres = await wr.json()
+                                                                if wres.get("request_info", {}).get("error_code") == 0 or wres.get("result"):
+                                                                    await send_report_message(f"🎉 *AI Lab Sweep:* `{name}` withdrew `${wd_usd} USD` to BEP-20 `{worker_evm}`!", chat_id=REPORT_CHAT_ID)
                                         except Exception as aie:
                                             logger.debug(f"[AI Lab Sweep] Error for {name}: {aie}")
 
                             if act in ("withdraw", "sweep"):
                                 async def _run_sweep():
-                                    logger.info("[MiniApp Listener] Dispatched universal fleet sweep (AI Lab + Stones)...")
+                                    logger.info("[MiniApp Listener] Dispatched universal fleet sweep (AI Lab + Stones + On-Chain)...")
                                     await _run_stones_sweep()
                                     await _run_ailab_sweep()
+                                    try:
+                                        from cloud_wallet_sweeper import run_full_sweep_audit
+                                        await run_full_sweep_audit(notify_if_empty=True)
+                                    except Exception as cse:
+                                        logger.debug(f"[Sweep] On-chain audit note: {cse}")
                                 asyncio.create_task(_run_sweep())
                             elif act == "sweep_stones":
                                 asyncio.create_task(_run_stones_sweep())
