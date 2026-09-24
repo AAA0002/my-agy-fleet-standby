@@ -24,10 +24,14 @@ upgrade_dashboard_chat_and_receipts.py
 import re
 import os
 
-UPDATER_FILE = "/home/arif2743/update_dashboard_compact.py"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPDATER_FILE = os.path.join(BASE_DIR, "update_dashboard_compact.py")
 
-with open(UPDATER_FILE, "r", encoding="utf-8") as f:
-    content = f.read()
+if os.path.exists(UPDATER_FILE):
+    with open(UPDATER_FILE, "r", encoding="utf-8") as f:
+        content = f.read()
+else:
+    content = ""
 
 # 1. Insert Markdown helper functions before ProfitChart
 marker_helpers = "// --- Interactive Profit & Yield Chart Component ---"

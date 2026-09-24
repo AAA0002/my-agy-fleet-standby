@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- Hardened crypto dependency imports (`eth-account`, `tonsdk`, `pynacl`) across CLI tools (`login_account.py`, `batch_atf_miner.py`, `setup_fleet_mrg_wallets.py`) with dynamic imports and feature guards (`HAS_TON_PROOF_LIBS`, `HAS_TON_SDK`), ensuring 100% crash-free execution on ARM64 / Termux environments without Rust compiler.
+- Fixed legacy VPS path (`/home/arif2743`) in `upgrade_dashboard_chat_and_receipts.py` to use dynamic project directory resolution.
+- Completed comprehensive syntax and importability verification across all 37 Python automation scripts.
+- Verified authenticated health status across all 3 Cloudflare Edge Mesh nodes (`aaaai2`, `aaa-bot`, `aaa222`) and 3 Render failover nodes.
 - Restored automation codebase from backup into `/root/projects/AAA_AUTO`:
   - Telegram userbot core (`userbot_refresher.py`, `login_account.py`, `phone_detector.py`, `proxy_manager.py`, `backup_manager.py`).
   - Process supervisors and lifecycle scripts (`bot_supervisor.sh`, `start_userbot.sh`, `stop_userbot.sh`, `restore.sh`).

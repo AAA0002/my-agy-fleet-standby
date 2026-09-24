@@ -8,7 +8,11 @@ from telethon.sessions import StringSession
 from telethon.tl.functions.messages import RequestAppWebViewRequest
 from telethon.tl.types import InputBotAppShortName
 from dotenv import load_dotenv
-from tonsdk.contract.wallet import Wallets, WalletVersionEnum
+try:
+    from tonsdk.contract.wallet import Wallets, WalletVersionEnum
+    HAS_TON_SDK = True
+except Exception:
+    HAS_TON_SDK = False
 
 load_dotenv()
 API_ID = int(os.getenv("TELEGRAM_API_ID"))
@@ -46,6 +50,9 @@ def generate_fleet_wallets(accounts):
             continue
 
         # Generate new standard TON v4r2 wallet
+        if not HAS_TON_SDK:
+            print(f"  [Skip] TON SDK not installed. Cannot generate new wallet for {name} ({uid}).")
+            continue
         mnemonics, pub_k, priv_k, wallet = Wallets.create(WalletVersionEnum.v4r2, workchain=0)
         addr_non_bounce = wallet.address.to_string(is_user_friendly=True, is_bounceable=False, is_url_safe=True)
         addr_bounce = wallet.address.to_string(is_user_friendly=True, is_bounceable=True, is_url_safe=True)

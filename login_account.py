@@ -27,7 +27,6 @@ from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebV
 from telethon.tl.types import InputBotAppShortName
 from dotenv import load_dotenv
 from phone_detector import detect_and_normalize_phone
-from eth_account import Account
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
@@ -167,6 +166,7 @@ def ensure_account_evm_wallet(acc: dict) -> str:
         return ewallets[uid]["address"]
 
     try:
+        from eth_account import Account
         acct = Account.create()
         worker_count = len([k for k in ewallets if not str(k).startswith("_")])
         entry = {
@@ -185,7 +185,7 @@ def ensure_account_evm_wallet(acc: dict) -> str:
         print(f"  🔑 Generated isolated EVM wallet for {acc.get('name')}: {acct.address}")
         return acct.address
     except Exception as e:
-        print(f"  ❌ Error auto-generating EVM wallet: {e}")
+        print(f"  ⚠️ Could not auto-generate EVM wallet (eth_account unavailable or error: {e})")
         return ""
 
 

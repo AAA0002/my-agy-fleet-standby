@@ -24,9 +24,13 @@ import aiohttp
 from telethon import TelegramClient, functions
 from telethon.sessions import StringSession
 from dotenv import load_dotenv
-from tonsdk.contract.wallet import Wallets, WalletVersionEnum
-from tonsdk.utils import Address
-from nacl.signing import SigningKey
+try:
+    from tonsdk.contract.wallet import Wallets, WalletVersionEnum
+    from tonsdk.utils import Address
+    from nacl.signing import SigningKey
+    HAS_TON_PROOF_LIBS = True
+except Exception:
+    HAS_TON_PROOF_LIBS = False
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
@@ -183,7 +187,7 @@ async def process_account(acc, index, total, ton_wallets, session_pool):
                 mnemonic_str = acc_ton_entry.get("mnemonic")
 
                 if not is_wallet_verified:
-                    if mnemonic_str:
+                    if mnemonic_str and HAS_TON_PROOF_LIBS:
                         try:
                             words = mnemonic_str.split()
                             _, pub_key_bytes, priv_key_bytes, wallet_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
