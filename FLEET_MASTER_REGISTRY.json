@@ -12,6 +12,7 @@
     "admin_direct_chat": {
       "id": 6727787768,
       "handle": "@Arif2743aaa",
+      "phone": "+8801317342850",
       "purpose": "Admin interactive control, natural AI chat, and commands"
     },
     "payouts_channel": {
@@ -35,6 +36,8 @@
     "bep20_bnb_usdt": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
     "arbitrum_one_stones": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
     "ton_main_binance": "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT",
+    "solana_main_binance": "2EKCkj6RSgMHomtTPigoVfaLa5x4RaXq9qrxv2roi5Fu",
+    "btc_taproot_main_binance": "bc1peg8n6rv7lnzpdwgqqktcyxvrw7we60c780l2yh48pvqvgpj2p7gsvecjdg",
     "ton_workers_count": 12,
     "ton_workers_file": "fleet_ton_wallets.json"
   },
@@ -63,15 +66,15 @@
     }
   ],
   "active_mining_bots": [
-    { "name": "Stones Miners", "bot": "stoneswithestand_bot", "policy": "Mining, treasure hunt, captcha OCR solver, 500 STONES auto-withdrawal to Arbitrum One" },
+    { "name": "Stones Miners", "bot": "stoneswithestand_bot", "policy": "Master account accumulation only (0 withdrawals); worker accounts 500 STONES auto-withdrawal with CF error 1033 cooldown" },
     { "name": "MRG Miner", "bot": "mrgminerbot", "policy": "Mining claims, task reaction claims, hash rate upgrades" },
     { "name": "ART Airdrop", "bot": "ART_AIRDROP_BOT", "policy": "8h mining renewal, task claims, level priority up to Lvl 8" },
-    { "name": "AI Lab Robot", "bot": "AiLab_robot", "policy": "Hash exchange, 20 task claims, USDT conversion" },
+    { "name": "AI Lab Robot", "bot": "AiLab_robot", "policy": "Master account accumulation only (0 withdrawals); worker accounts >= $0.02 USD auto-withdrawal to BEP-20" },
     { "name": "UltraWallet", "bot": "UltrawalletTrade_Bot", "policy": "Daily streak claim, 10/h mining cycle" },
     { "name": "Apex Miner", "bot": "ApxMinerBot", "policy": "Mined points collection" },
     { "name": "ATF Miner", "bot": "ATF_AIRDROP_bot", "policy": "FARMING AND ACCUMULATION ONLY - NO WITHDRAWALS" },
-    { "name": "Ainovum", "bot": "ainovum_bot", "policy": "Mining collection, USDT auto-withdrawal >= 0.1 to BEP-20" },
-    { "name": "MiningGRAM", "bot": "MiningGRAM_Bot", "policy": "Trickle claims and miner state verification" }
+    { "name": "Ainovum", "bot": "ainovum_bot", "policy": "Mining collection, USDT auto-withdrawal >= 0.1 to BEP-20 (isolated worker wallets)" },
+    { "name": "MiningGRAM", "bot": "MiningGRAM_Bot", "policy": "Referral onboarding only (code 339JU9K) + 2-task qualification ($2.00 USDT Promo); background farming loop removed" }
   ],
   "side_project_ai_agent": {
     "name": "Ari",

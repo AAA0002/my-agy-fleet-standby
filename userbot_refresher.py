@@ -382,7 +382,7 @@ def load_accounts():
         "name": "Arif Hossain",
         "username": "Arif2743aaa",
         "user_id": int(REPORT_CHAT_ID),
-        "phone": "+8801700000000",
+        "phone": "+8801317342850",
         "session_string": STRING_SESSION,
         "added_at": "2026-09-17T00:00:00Z",
         "status": "active"
