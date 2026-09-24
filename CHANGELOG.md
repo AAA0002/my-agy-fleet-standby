@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **Multi-Cloud Architecture & Zero-Local Dependency Hardening**:
+  - **Cloudflare Edge Mesh (`deploy_both_cf_workers.py`)**: Added dedicated Stones Miners command center (`btn_stones` and `/stones`) with Arbitrum One vault diagnostics; converted `/bnb` into an anti-scam warning card; updated all status cards, `/help` docs, and system prompts to the 8 verified bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum); synchronized and redeployed all 3 Cloudflare Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`).
+  - **Render Cloud Copilot Mesh (`autonomous_cloud_agent.py`)**: Enforced user rules forbidding ATF Miner withdrawals (100% farming/accumulation mode) and protecting the main account (no withdrawals from AI Lab Robot or Stones Miners); replaced obsolete actions with worker-only `sweep_ailab` and `sweep_stones`.
+  - **GitHub Actions Cloud MTProto Token Refresher (`.github/workflows/cloud_token_refresher.yml`) & `refresh_cloud_tokens.py`**: Added unified support for `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` and `API_ID` / `API_HASH` credentials with verified fallbacks, running every 12 hours on cloud runners to push 24h WebApp tokens to Cloudflare Edge KV without local VPS dependencies.
+  - **Render Standby Health**: Audited and verified all 3 Render cloud nodes: Node 1 Singapore (`my-agy-fleet-standby`), Node 2 Frankfurt (`my-agy-fleet-standby-node2`), and Node 3 Singapore (`hermes-grok-cloud-agent` Ari Copilot), confirming 100% healthy uptime.
+
 - **Fleet Resiliency, Circuit Breakers & Reporting Upgrades**:
   - Implemented 30-minute circuit breaker (`STONES_CIRCUIT_BREAKER_UNTIL`, `STONES_CONSECUTIVE_FAILS`) and fast-fail checks in `automate_stones_cycle`, eliminating multi-account thread stalls and preventing cascading timeouts when `app.stoneswithestand.my.id` experiences origin outages or Cloudflare tunnel latency.
   - Hardened Stones error logging so empty standard library `TimeoutError` strings display informative diagnostic tags (`TimeoutError: Request timed out / server unreachable`) rather than blank entries.

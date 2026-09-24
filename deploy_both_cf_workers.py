@@ -1423,8 +1423,8 @@ fi
               { text: "🚀 Open Visual Mini App", web_app: { url: dashUrl } }
             ],
             [
-              { text: "🪙 BNB Galaxy", callback_data: "btn_bnb" },
-              { text: "💎 ATF Miner", callback_data: "btn_atf" }
+              { text: "💎 Stones Miners", callback_data: "btn_stones" },
+              { text: "🪙 ATF Miner", callback_data: "btn_atf" }
             ],
             [
               { text: "➕ Add Account", callback_data: "btn_add_account" },
@@ -1507,67 +1507,28 @@ fi
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: statusInlineKeyboard })
               }).catch(() => {});
-            } else if (cbData === "btn_bnb") {
-              let bnbInfo = await upstashGet("fleet:bnb:status");
-              if (!bnbInfo || typeof bnbInfo !== "object") {
-                bnbInfo = { cooldown_seconds: 26000, total_completed: 130 };
-              }
-              const cd = bnbInfo.cooldown_seconds || 0;
-              const h = String(Math.floor(cd / 3600)).padStart(2, "0");
-              const m = String(Math.floor((cd % 3600) / 60)).padStart(2, "0");
-              const s = String(cd % 60).padStart(2, "0");
-
-              const bnbInlineKeyboard = {
-                inline_keyboard: [
-                  [
-                    { text: "⚡ Claim 10 Tasks Now", callback_data: "btn_bnb_claim" },
-                    { text: "💰 Check & Withdraw", callback_data: "btn_bnb_withdraw" }
-                  ],
-                  [
-                    { text: "🚀 Open Visual Mini App", web_app: { url: dashUrl } }
-                  ],
-                  [
-                    { text: "🔄 Refresh Status", callback_data: "btn_status" }
-                  ]
-                ]
-              };
-
-              const bnbMsg = `🪙 *BNB GALAXY CLOUD COMMAND CENTER*\n` +
+            } else if (cbData === "btn_stones") {
+              const rep = `💎 *STONES MINERS CLOUD COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `⏱ **Next 12h Batch in:** \`${h}:${m}:${s}\`\n` +
-                `📋 **Completed Tasks:** \`${bnbInfo.total_completed || 130}/130 Tasks\`\n` +
-                `🛡️ **Anti-Bot Status:** \`5/5 Tasks Passed\` ✅\n` +
-                `💰 **Withdrawal Threshold:** \`>= 0.000055 BNB\`\n` +
-                `💼 **Vault Wallet:** \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `⚡ _Tap the buttons below to claim or withdraw immediately:_`;
-
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: bnbMsg, parse_mode: "Markdown", reply_markup: bnbInlineKeyboard })
-              }).catch(() => {});
-            } else if (cbData === "btn_bnb_claim") {
-              const res = await fetch(`https://restore-agy.${CURRENT_SUBDOMAIN}.workers.dev/api/farm/bnb?all=true`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ all: true }) }).then(r => r.json()).catch(e => ({ ok: false, error: e.message }));
-              const rep = `⚡ *BNB Galaxy Cloud Claim Results*\n\n` +
-                `• **Status:** ${res.ok ? "Success ✅" : "Error ❌"}\n` +
-                `• **Ready Tasks Claimed:** \`${res.ready_total || 0}\`\n` +
-                `• **Accounts Processed:** \`${res.results ? res.results.length : 13}/13\`\n` +
-                `• **Anti-Bot Verification:** \`5/5 Passed\` across all accounts\n\n` +
-                `_Next 12-hour batch timer is ticking in Cloudflare Edge._`;
+                `• **Status:** Active & Mining (Arbitrum One)\n` +
+                `• **Arbitrum Vault:** \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+                `• **Holding Target:** \`500+ STONES\`\n` +
+                `• **Master Account Policy:** Compounding (0 withdrawals)\n` +
+                `• **Worker Accounts Policy:** Auto-Withdraw when balance >= 500 STONES\n` +
+                `• **Resiliency:** 30m Origin Circuit Breaker & Cloudflare Tunnel Watchdog Active ✅\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: statusInlineKeyboard })
               }).catch(() => {});
-            } else if (cbData === "btn_bnb_withdraw") {
-              const res = await fetch(`https://restore-agy.${CURRENT_SUBDOMAIN}.workers.dev/api/bnb/withdraw`, { method: "POST" }).then(r => r.json()).catch(e => ({ ok: false, error: e.message }));
-              const rep = `💰 *BNB Galaxy Cloud Auto-Withdraw Results*\n\n` +
-                `• **Status:** ${res.ok ? "Completed ✅" : "Processed"}\n` +
-                `• **Accounts Checked:** \`${res.checked || 13}\`\n` +
-                `• **Withdrawals Executed:** \`${res.withdrawn || 0}\`\n` +
-                `• **Threshold:** \`>= 0.000055 BNB\`\n\n` +
-                `_Broadcast to Verified Payouts Channel._`;
+            } else if (cbData === "btn_bnb" || cbData === "btn_bnb_claim" || cbData === "btn_bnb_withdraw") {
+              const rep = `🚫 *BNB GALAXY PERMANENTLY DISABLED*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `• **Notice:** @CryptoProUpRobot was audited and confirmed to withhold payouts.\n` +
+                `• **Action Taken:** Fleet accounts blocked the bot, wiped scam channels, and reported it to Telegram Anti-Scam.\n` +
+                `• **Fleet Direction:** 100% of automation is focused on our 8 legitimate mining bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum).\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1649,7 +1610,7 @@ fi
               const liveBnb = mcData.bsc_bnb_balance !== undefined ? mcData.bsc_bnb_balance : 0.000812;
               const rep = `⚡ *MY AGY AI — Private Admin Console*\n\n` +
                 `🟢 **Fleet Health:** 13/13 Accounts Active & Mining\n` +
-                `🤖 **Active Bots (8/8):** BNB Galaxy • Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner\n` +
+                `🤖 **Active Bots (8/8):** Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
                 `💰 **On-Chain Vault:** \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 13 TON Wallets\n` +
                 `🛡️ **Security:** 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
                 `📱 *Tap below to open your real-time visual Mini App dashboard:*`;
@@ -1670,7 +1631,7 @@ fi
               } catch (_) {}
               const rep = `⚡ *MY AGY AI — Fleet Operations*\n\n` +
                 `🟢 **Fleet Health:** 13/13 Accounts Active & Mining\n` +
-                `🤖 **Active Bots (8/8):** BNB Galaxy • Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner\n` +
+                `🤖 **Active Bots (8/8):** Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
                 `💰 **On-Chain Vault:** \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 13 TON Wallets\n` +
                 `🛡️ **Security:** 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
                 `📱 *Tap below to open your real-time visual Mini App dashboard:*`;
@@ -1735,7 +1696,7 @@ fi
           const welcome = `👋 *Welcome to MY AGY AI — Private Admin Console*\n\n` +
             `Your autonomous **24/7 Cloud Operations Hub** is active across 3 Cloudflare Edge nodes.\n\n` +
             `🟢 **Fleet Health:** 13/13 Accounts Online & Mining\n` +
-            `🤖 **Active Bots (8/8):** BNB Galaxy • Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner\n` +
+            `🤖 **Active Bots (8/8):** Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
             `💰 **On-Chain Vaults:** BEP-20 (BNB) • Arbitrum (STONES) • 13 TON Wallets\n` +
             `🛡️ **Security:** 5/5 Anti-Bot Verified • Dual-Edge Cloud Sync\n\n` +
             `📱 *Tap '🚀 Open Visual Mini App' below to launch your real-time graphical dashboard:*`;
@@ -1757,44 +1718,33 @@ fi
           return new Response("OK");
         }
 
-        // 1.4 Dedicated BNB Galaxy Cloud Command (/bnb)
+        // 1.4 Dedicated Stones Miners Cloud Command (/stones)
+        if (text === "/stones" || text.startsWith("/stones")) {
+          ctx.waitUntil((async () => {
+            const stonesMsg = `💎 *STONES MINERS CLOUD COMMAND CENTER*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• **Status:** Active & Mining (Arbitrum One)\n` +
+              `• **Arbitrum Vault:** \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+              `• **Holding Target:** \`500+ STONES\`\n` +
+              `• **Master Account Policy:** Compounding (0 withdrawals)\n` +
+              `• **Worker Accounts Policy:** Auto-Withdraw when balance >= 500 STONES\n` +
+              `• **Resiliency:** 30m Origin Circuit Breaker & Cloudflare Tunnel Watchdog Active ✅\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━`;
+            await sendReply(stonesMsg, statusInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 1.41 Legacy BNB Command (/bnb)
         if (text === "/bnb" || text.startsWith("/bnb")) {
           ctx.waitUntil((async () => {
-            let bnbInfo = await upstashGet("fleet:bnb:status");
-            if (!bnbInfo || typeof bnbInfo !== "object") {
-              bnbInfo = { cooldown_seconds: 26000, total_completed: 130 };
-            }
-            const cd = bnbInfo.cooldown_seconds || 0;
-            const h = String(Math.floor(cd / 3600)).padStart(2, "0");
-            const m = String(Math.floor((cd % 3600) / 60)).padStart(2, "0");
-            const s = String(cd % 60).padStart(2, "0");
-
-            const bnbInlineKeyboard = {
-              inline_keyboard: [
-                [
-                  { text: "⚡ Claim 10 Tasks Now", callback_data: "btn_bnb_claim" },
-                  { text: "💰 Check & Withdraw", callback_data: "btn_bnb_withdraw" }
-                ],
-                [
-                  { text: "🚀 Open Visual Mini App", web_app: { url: dashUrl } }
-                ],
-                [
-                  { text: "🔄 Refresh Status", callback_data: "btn_status" }
-                ]
-              ]
-            };
-
-            const bnbMsg = `🪙 *BNB GALAXY CLOUD COMMAND CENTER*\n` +
+            const bnbMsg = `🚫 *BNB GALAXY PERMANENTLY DISABLED*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `⏱ **Next 12h Batch in:** \`${h}:${m}:${s}\`\n` +
-              `📋 **Completed Tasks:** \`${bnbInfo.total_completed || 130}/130 Tasks\`\n` +
-              `🛡️ **Anti-Bot Status:** \`5/5 Tasks Passed\` ✅\n` +
-              `💰 **Withdrawal Threshold:** \`>= 0.000055 BNB\`\n` +
-              `💼 **Vault Wallet:** \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `⚡ _Tap the buttons below to claim or withdraw immediately:_`;
-
-            await sendReply(bnbMsg, bnbInlineKeyboard);
+              `• **Notice:** @CryptoProUpRobot was audited and confirmed to withhold payouts.\n` +
+              `• **Action Taken:** Fleet accounts blocked the bot, wiped scam channels, and reported it to Telegram Anti-Scam.\n` +
+              `• **Active Bots:** Focus is 100% placed on our 8 legitimate mining bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum).\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━`;
+            await sendReply(bnbMsg, statusInlineKeyboard);
           })());
           return new Response("OK");
         }
@@ -2171,7 +2121,8 @@ fi
           const helpText = `ℹ️ *MY AGY AI — Operations Commands*\n\n` +
             `• \`/start\` or \`/menu\` — Main operations dashboard & bottom toolbar\n` +
             `• \`/app\` or \`/dashboard\` — Real-time visual Mini App\n` +
-            `• \`/bnb\` — Dedicated BNB Galaxy Command Center (claim & withdraw)\n` +
+            `• \`/stones\` — Stones Miners Command Center (Arbitrum One vault)\n` +
+            `• \`/atf\` — ATF Miner Command Center (100% farming mode)\n` +
             `• \`/withdraw\` — Multi-chain balance check & instant auto-sweep\n` +
             `• \`/wallet\` — Binance BEP-20 & TON vaults\n` +
             `• \`/accounts\` — View all 13 fleet accounts & anti-bot status\n` +
@@ -2342,7 +2293,7 @@ Reply to Arif naturally:`;
       } catch (_) {}
     })());
 
-    // 3. Mini-App Automated Edge Claims (All 7 Bots: Stones, MRG, ART, BNB Galaxy, AI Lab, UltraWallet, Apex Miner)
+    // 3. Mini-App Automated Edge Claims (All 8 Active Bots: Stones, MRG, ART, AI Lab, UltraWallet, Apex Miner, ATF Miner, Ainovum)
     ctx.waitUntil((async () => {
       try {
         const rawTokens = await env.BACKUP_KV.get("miniapp_tokens");

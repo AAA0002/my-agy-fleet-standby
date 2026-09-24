@@ -159,15 +159,16 @@ Current Live State:
 
 Past Lessons & Rules (DO NOT REPEAT THESE MISTAKES):
 {lessons_text}
-- Never withdraw Stones when on 3-minute cooldown.
-- Stones withdrawals must route to Arbitrum One: {ARBITRUM_WALLET}
-- BNB withdrawals must route to BEP-20: {BEP20_WALLET}
-- ATF withdrawals require min 500 ATF and dedicated TON wallet.
+- ATF Miner is strictly in 100% FARMING & ACCUMULATION MODE (NO withdrawals; let balance grow).
+- Main account (6727787768) must NEVER withdraw from AI Lab Robot or Stones Miners (preserves balance/compounds hash).
+- Worker accounts auto-withdraw AI Lab Robot when balance >= $0.02 USD to BEP-20 vault {BEP20_WALLET}.
+- Worker accounts auto-withdraw Stones Miners when balance >= 500 STONES to Arbitrum One {ARBITRUM_WALLET} (never when on cooldown).
+- BNB Galaxy is permanently blocked and disabled (scam protection).
 
 Decide the best next operational step. Output JSON:
 {{
   "thought": "Your tactical reasoning",
-  "action": "harvest" | "sweep_stones" | "sweep_atf" | "sweep_bnb" | "rest" | "synthesize_skill",
+  "action": "harvest" | "sweep_stones" | "sweep_ailab" | "rest" | "synthesize_skill",
   "target_account": "all" or specific account ID,
   "confidence": 0.0 to 1.0,
   "skill_spec": null or {{"name": "...", "purpose": "..."}}
@@ -327,13 +328,10 @@ class AutonomousHermesAgent:
             await self.send_telegram_alert(session, f"⚡ *[Hermes AI Council]* Triggered fleet harvest across 8 platforms.\n_Reason:_ {thought}")
         elif act == "sweep_stones":
             await self.dispatch_fleet_action(session, "sweep_stones")
-            await self.send_telegram_alert(session, f"💎 *[Hermes AI Council]* Dispatched Stones 500-withdrawal sweep to Arbitrum `{ARBITRUM_WALLET}`.\n_Reason:_ {thought}")
-        elif act == "sweep_atf":
-            await self.dispatch_fleet_action(session, "sweep_atf")
-            await self.send_telegram_alert(session, f"🪙 *[Hermes AI Council]* Dispatched ATF 500-withdrawal sweep to TON Wallets.\n_Reason:_ {thought}")
-        elif act == "sweep_bnb":
-            await self.dispatch_fleet_action(session, "withdraw")
-            await self.send_telegram_alert(session, f"💰 *[Hermes AI Council]* Dispatched BNB payout sweep.\n_Reason:_ {thought}")
+            await self.send_telegram_alert(session, f"💎 *[Hermes AI Council]* Dispatched Stones 500-withdrawal sweep to Arbitrum `{ARBITRUM_WALLET}` (Worker accounts only).\n_Reason:_ {thought}")
+        elif act == "sweep_ailab":
+            await self.dispatch_fleet_action(session, "sweep_ailab")
+            await self.send_telegram_alert(session, f"🧪 *[Hermes AI Council]* Dispatched AI Lab auto-withdrawal sweep to BEP-20 `{BEP20_WALLET}` (Worker accounts only).\n_Reason:_ {thought}")
         elif act == "rest":
             logger.info("😴 [Agent Pacing] Council decided fleet is optimal and on active cooldown timers. Resting...")
 

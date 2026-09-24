@@ -35,8 +35,8 @@ from telethon.tl.types import InputBotAppShortName
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-API_ID = int(os.getenv("API_ID", "27845347"))
-API_HASH = os.getenv("API_HASH", "21e25e9e2467d3d3ef0c74f5146c8209")
+API_ID = int(os.getenv("TELEGRAM_API_ID") or os.getenv("API_ID", "37321306"))
+API_HASH = os.getenv("TELEGRAM_API_HASH") or os.getenv("API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")
 REPORT_CHAT_ID = int(os.getenv("REPORT_CHAT_ID", "6727787768"))
 CF_SECRET_KEY = os.getenv("CF_SECRET_KEY", "agy_cf_secret_7d36994e_2026")
 
