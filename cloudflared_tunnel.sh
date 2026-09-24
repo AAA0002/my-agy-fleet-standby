@@ -6,9 +6,17 @@ BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PATH="$HOME/.local/bin:$PATH"
 
 if ! command -v cloudflared &>/dev/null; then
-    echo "Installing cloudflared into ~/.local/bin..."
+    echo "Detecting architecture for cloudflared..."
+    ARCH="$(uname -m)"
+    case "$ARCH" in
+        aarch64|arm64) CF_ARCH="arm64" ;;
+        x86_64) CF_ARCH="amd64" ;;
+        armv7l|armhf) CF_ARCH="arm" ;;
+        *) CF_ARCH="arm64" ;;
+    esac
+    echo "Installing cloudflared ($CF_ARCH) into ~/.local/bin..."
     mkdir -p "$HOME/.local/bin"
-    curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o "$HOME/.local/bin/cloudflared"
+    curl -fsSL "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${CF_ARCH}" -o "$HOME/.local/bin/cloudflared"
     chmod +x "$HOME/.local/bin/cloudflared"
 fi
 

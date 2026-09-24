@@ -23,7 +23,8 @@ mobile-first, fintech-grade compact UI:
 import re
 import os
 
-CF_FILE = "/home/arif2743/deploy_both_cf_workers.py"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CF_FILE = os.path.join(BASE_DIR, "deploy_both_cf_workers.py")
 
 with open(CF_FILE, "r", encoding="utf-8") as f:
     content = f.read()

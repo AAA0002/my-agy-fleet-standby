@@ -57,7 +57,9 @@ CORE_BOT_FILES = [
     "batch_atf_miner.py",
     "atf_fleet_state.json",
     "refresh_fleet_tokens.py",
-    "update_dashboard_compact.py"
+    "update_dashboard_compact.py",
+    "stones_captcha_solver.py",
+    "payout_balances.json"
 ]
 
 

@@ -5,10 +5,10 @@ Wants=network-online.target
 
 [Service]
 Type=forking
-User=arif2743
-WorkingDirectory=/home/arif2743
-ExecStart=/home/arif2743/start_userbot.sh
-ExecStop=/home/arif2743/stop_userbot.sh
+User=root
+WorkingDirectory=/root/projects/AAA_AUTO
+ExecStart=/root/projects/AAA_AUTO/start_userbot.sh
+ExecStop=/root/projects/AAA_AUTO/stop_userbot.sh
 Restart=always
 RestartSec=10
 LimitNOFILE=65535

@@ -7,6 +7,7 @@ accounts.json
 fleet_*.json
 payouts.json
 payout_ledger.json
+payout_balances.json
 *_state.json
 .onchain_state.json
 antigravity_session/
@@ -19,13 +20,17 @@ venv/
 
 # Logs and runtime data
 *.log
+*.pid
+__pycache__/
+*.pyc
 npm-debug.log*
 yarn-debug.log*
 .cooldowns.json
 *.sqlite
 *.db
 
-# Build outputs
+# Build outputs & archives
+*.zip
 dist/
 build/
 .cache/

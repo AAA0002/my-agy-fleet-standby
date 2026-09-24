@@ -12,6 +12,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Monitoring & metrics engines (`bep20_onchain_watcher.py`, `multichain_onchain_watcher.py`, `daily_profit_reporter.py`, `batch_atf_miner.py`, `refresh_fleet_tokens.py`, `update_dashboard_compact.py`).
   - Tunnel and deployment helpers (`cloudflared_tunnel.sh`, `deploy_both_cf_workers.py`, `my_agy_bot.service`).
   - Python dependency definitions (`requirements.txt`).
+- Rebuilt and verified `stones_captcha_solver.py` with PIL image enhancement and Gemini Vision OCR to resolve Stones withdrawal captchas.
+- Added `stones_captcha_solver.py` and `payout_balances.json` to `CORE_BOT_FILES` in `backup_manager.py` to prevent data loss in future disaster recoveries.
+- Restored `~/.cloudflared` configuration and updated `config.yml` paths.
+- Made `cloudflared_tunnel.sh` architecture-aware for ARM64/Termux execution.
+- Fixed stale VPS directory references in `my_agy_bot.service` to point to `/root/projects/AAA_AUTO`.
 - Added Rule 5 ("Zero-Trust Ephemeral Infrastructure") to `AGENTS.md`, cementing the core principle to never rely on volatile VPS or local storage.
 - Fully installed all Python dependencies from `requirements.txt` (`Telethon`, `phonenumbers`, `pyaes`, `sentry-sdk`, `aiohttp`, etc.).
 - Launched 24/7 immortal supervisor daemon (`bot_supervisor.sh`) inside persistent `tmux` session `telegram_bot`.
