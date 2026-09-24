@@ -566,41 +566,7 @@ fi
             body: JSON.stringify({ chat_id: env.OWNER_ID, text: alertMsg, parse_mode: "Markdown" })
           }).catch(() => {}));
         } else if (act === "verify") {
-          // Immediately advance 5/5 Anti-Bot verification across all fleet accounts
-          ctx.waitUntil((async () => {
-            const uids = [
-              "6727787768", "8826375659", "8450010161", "8782429452", "7734849205",
-              "8025472383", "8851426148", "8203342513", "8881914294", "7648254021",
-              "8190649727", "7306260278", "7490632948"
-            ];
-            const vHeaders = {
-              "Content-Type": "application/json",
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-              "Referer": "https://justtool.site/withdraw-adsgram",
-              "Origin": "https://justtool.site"
-            };
-            for (const uid of uids) {
-              try {
-                let vCount = 0;
-                const vResp = await fetch(`https://justtool.site/api/adsgram-task3?tgId=${uid}`, { headers: vHeaders });
-                if (vResp.ok) {
-                  const vD = await vResp.json();
-                  vCount = vD.count || 0;
-                }
-                while (vCount < 5) {
-                  const sResp = await fetch("https://justtool.site/api/adsgram-task3", {
-                    method: "POST",
-                    headers: vHeaders,
-                    body: JSON.stringify({ tgId: parseInt(uid), name: "Member " + uid })
-                  });
-                  if (sResp.ok) {
-                    const sD = await sResp.json();
-                    vCount = sD.count !== undefined ? sD.count : vCount + 1;
-                  } else break;
-                }
-              } catch (_) {}
-            }
-          })());
+          // Scammer Protection: BNB Galaxy justtool.site ad verification loop permanently removed
         } else if (act === "backup") {
           if (env.ALERT_BOT_TOKEN && env.OWNER_ID) {
             const bMsg = `📦 *[Cloudflare Edge Disaster Recovery]*\n\n` +
@@ -1056,39 +1022,10 @@ fi
         }
       } catch (_) {}
 
-      const testUid = "6727787768";
-      const bHeaders = {
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Referer": "https://justtool.site/tasks-adsgram/",
-        "Origin": "https://justtool.site"
-      };
-      let cooldownSec = 0;
-      try {
-        const resp = await fetchWithRetry(`https://justtool.site/api/adsgram-tasks?tgId=${testUid}`, { headers: bHeaders }, 2, 800).catch(() => null);
-        if (resp && resp.ok) {
-          const d = await resp.json().catch(() => ({}));
-          const states = d.states || {};
-          const nowMs = Date.now();
-          let minAvail = null;
-          for (const [_, avail] of Object.entries(states)) {
-            if (avail > nowMs && (minAvail === null || avail < minAvail)) {
-              minAvail = avail;
-            }
-          }
-          if (minAvail) {
-            cooldownSec = Math.max(0, Math.round((minAvail - nowMs) / 1000));
-          }
-        }
-      } catch (_) {}
-
       const bnbStatusPayload = {
-        ok: true,
-        cooldown_seconds: cooldownSec,
-        next_batch_in_seconds: cooldownSec,
-        total_completed: 130,
-        total_accounts: 13,
-        threshold_bnb: 0.000055,
+        ok: false,
+        status: "DISABLED",
+        message: "BNB Galaxy permanently disabled due to scammer bot policy.",
         timestamp: Date.now()
       };
       ctx.waitUntil(upstashSet("fleet:bnb:status", bnbStatusPayload));
@@ -1169,83 +1106,13 @@ fi
         const isSync = url.searchParams.get("sync") === "true";
         const runBnbGalaxy = async () => {
           for (const uid of targetUids) {
-            try {
-              // 0. Ensure unique BNB webhook is registered on justtool.site so rewards are credited
-            const accWh = staticWebhooks[String(uid)];
-            if (accWh) {
-              await fetchWithRetry("https://justtool.site/api/adsgram-register", {
-                method: "POST",
-                headers,
-                body: JSON.stringify({ tgId: parseInt(uid), wh: accWh })
-              }, 2, 800).catch(() => {});
-            }
-
-            // 1. BNB Galaxy Tasks & 5/5 Anti-Bot Verification Unlock
-            const stResp = await fetchWithRetry(`https://justtool.site/api/adsgram-tasks?tgId=${uid}`, { headers }, 2, 1000).catch(() => null);
-            if (stResp && stResp.ok) {
-              const stData = await stResp.json().catch(() => ({}));
-              const states = stData.states || {};
-              const nowMs = Date.now();
-              const ready = [];
-              for (const [tid, avail] of Object.entries(states)) {
-                if (avail === 0 || avail <= nowMs) {
-                  ready.push(parseInt(tid));
-                }
-              }
-
-              const completedTasks = [];
-              for (const tid of ready) {
-                const cResp = await fetchWithRetry("https://justtool.site/api/adsgram-tasks/complete", {
-                  method: "POST",
-                  headers,
-                  body: JSON.stringify({ tgId: parseInt(uid), taskId: tid })
-                }, 3, 1000).catch(() => null);
-                if (cResp && cResp.ok) {
-                  const cData = await cResp.json().catch(() => ({}));
-                  completedTasks.push({ taskId: tid, ok: cData.ok });
-                }
-                if (ready.length > 1) {
-                  await new Promise(r => setTimeout(r, 1200));
-                }
-              }
-
-              let verifyCount = 0;
-              try {
-                const vResp = await fetchWithRetry(`https://justtool.site/api/adsgram-task3?tgId=${uid}`, { headers }, 2, 1000).catch(() => null);
-                if (vResp && vResp.ok) {
-                  const vData = await vResp.json().catch(() => ({}));
-                  verifyCount = vData.count || 0;
-                  while (verifyCount < 5) {
-                    const stepResp = await fetchWithRetry("https://justtool.site/api/adsgram-task3", {
-                      method: "POST",
-                      headers,
-                      body: JSON.stringify({ tgId: parseInt(uid), name: "Member " + uid })
-                    }, 3, 1000).catch(() => null);
-                    if (stepResp && stepResp.ok) {
-                      const sData = await stepResp.json().catch(() => ({}));
-                      verifyCount = sData.count !== undefined ? sData.count : verifyCount + 1;
-                    } else {
-                      break;
-                    }
-                    if (verifyCount < 5) {
-                      await new Promise(r => setTimeout(r, 1500));
-                    }
-                  }
-                }
-              } catch (_) {}
-
-              farmResults.push({
-                user_id: uid,
-                ready_tasks: ready.length,
-                completed_tasks: completedTasks.length,
-                verification_count: verifyCount,
-                ok: true
-              });
-            }
-          } catch (accErr) {
-            farmResults.push({ user_id: uid, ok: false, error: accErr.message });
+            farmResults.push({
+              user_id: uid,
+              ok: true,
+              status: "DISABLED",
+              message: "BNB Galaxy permanently disabled due to scammer bot policy"
+            });
           }
-        }
         };
 
         if (isSync) {
@@ -2795,76 +2662,7 @@ Reply to Arif naturally:`;
             } catch (_) {}
           }
 
-          // D. BNB Galaxy Edge Farming & 5/5 Verification Unlock (100% in Cloudflare Cloud)
-          try {
-            const bnbHeaders = {
-              "Content-Type": "application/json",
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-              "Referer": "https://justtool.site/tasks-adsgram/",
-              "Origin": "https://justtool.site"
-            };
-
-            const staticWebhooks = {
-              "6727787768": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=3d1ed3e6a9bb948436a55057c6e87b59&user_id=46893407",
-              "8881914294": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=72c47501683e2e70dfaccd8d3ed5c285&user_id=60713750",
-              "7648254021": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=10dc29f743913f3a2e4d835b2b676e9e&user_id=59905120",
-              "8826375659": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=2267f8d65e4a2b276e16b2e5ca0e0983&user_id=60678854",
-              "8450010161": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=25f6e7e8e1ef0d6e0a3518a377491e76&user_id=60720095",
-              "8782429452": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=52ac3840bdd35d27bb83c8a4f1a2872f&user_id=60720152",
-              "7734849205": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=9293b429f91c8ab1ffa302f51a3cd5b1&user_id=60720188",
-              "8025472383": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=8dc8684f2a5f84807178ec2733dc41e7&user_id=60720204",
-              "8851426148": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=8f26c5ef29029c66e44f2bbcac81db73&user_id=60720231",
-              "8203342513": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=4a4b7ef9df10b7493cdbd05355918e11&user_id=60720252",
-              "8190649727": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=fe448dcd830cf9d48bc41bb65ff5f930&user_id=60721024",
-              "7487048946": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=5b51557d381ad544453d5fce49a710f3&user_id=44610998",
-              "8741547543": "https://api.bots.business/v1/bots/2985029/new-webhook?&command=/onWebhook&public_user_token=587bfc8580acce34971106b176e27223&user_id=60740828"
-            };
-
-            const accWh = staticWebhooks[String(uid)];
-            if (accWh) {
-              await fetchWithRetry("https://justtool.site/api/adsgram-register", {
-                method: "POST",
-                headers: bnbHeaders,
-                body: JSON.stringify({ tgId: parseInt(uid), wh: accWh })
-              }, 2, 800).catch(() => {});
-            }
-
-            const bResp = await fetchWithRetry(`https://justtool.site/api/adsgram-tasks?tgId=${uid}`, { headers: bnbHeaders }, 2, 1000).catch(() => null);
-            if (bResp && bResp.ok) {
-              const bData = await bResp.json().catch(() => ({}));
-              const states = bData.states || {};
-              const now = Date.now();
-              for (const [tid, avail] of Object.entries(states)) {
-                if (avail === 0 || avail <= now) {
-                  await fetchWithRetry("https://justtool.site/api/adsgram-tasks/complete", {
-                    method: "POST",
-                    headers: bnbHeaders,
-                    body: JSON.stringify({ tgId: parseInt(uid), taskId: parseInt(tid) })
-                  }, 3, 1000).catch(() => {});
-                }
-              }
-            }
-
-            // Auto-advance 5/5 verification if pending
-            const vResp = await fetchWithRetry(`https://justtool.site/api/adsgram-task3?tgId=${uid}`, { headers: bnbHeaders }, 2, 1000).catch(() => null);
-            if (vResp && vResp.ok) {
-              const vData = await vResp.json().catch(() => ({}));
-              let vCount = vData.count || 0;
-              while (vCount < 5) {
-                const sResp = await fetchWithRetry("https://justtool.site/api/adsgram-task3", {
-                  method: "POST",
-                  headers: bnbHeaders,
-                  body: JSON.stringify({ tgId: parseInt(uid), name: "Member " + uid })
-                }, 3, 1000).catch(() => null);
-                if (sResp && sResp.ok) {
-                  const sD = await sResp.json().catch(() => ({}));
-                  vCount = sD.count !== undefined ? sD.count : vCount + 1;
-                } else {
-                  break;
-                }
-              }
-            }
-          } catch (_) {}
+          // D. BNB Galaxy Edge Farming permanently removed (Scammer Bot)
 
 
           // E. AI Lab Robot Edge Claim & Hashes Exchange & Miner Start

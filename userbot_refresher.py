@@ -1861,8 +1861,15 @@ async def build_morning_briefing(user_id: int):
 
 
 async def build_bnb_details_report(user_id: int):
-
     """Detailed BNB Galaxy report with exact task countdowns."""
+    if not ENABLE_BNB_GALAXY:
+        return (
+            "🚫 *BNB Galaxy (@CryptoProUpRobot) is Permanently Disabled*\n\n"
+            "⚠️ **Scammer Protection Active**:\n"
+            "• On-chain blockchain audit confirmed that after the 1st initial payout, 100% of subsequent payouts are withheld indefinitely while leeching 195 daily ads.\n"
+            "• All 13 fleet accounts have reported the bot to Telegram Anti-Scam as fraudulent, blocked it, deleted chat history, and left all 4 mandatory scam channels.\n"
+            "• System resources (CPU, RAM, and proxy bandwidth) are fully preserved for the 8 legitimate mining bots."
+        )
     now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     now_ms = int(time.time() * 1000)
     
@@ -7579,6 +7586,9 @@ async def task_worker_247(user_id: int, user_name: str):
 
 async def autonomous_withdrawal_unlocker_loop():
     """Smart timer-aware background worker that ensures pending withdrawal verifications are completed without spamming the network."""
+    if not ENABLE_BNB_GALAXY:
+        logger.info("[Withdrawal Watchdog] BNB Galaxy is disabled (scammer protection). Watchdog worker inactive.")
+        return
     logger.info("[Withdrawal Watchdog] Autonomous smart withdrawal verifier active (10m idle, 3m active).")
     await asyncio.sleep(60)
     while True:

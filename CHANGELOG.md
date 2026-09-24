@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Dispatched `report_and_purge_bnb_galaxy.py` across all 13 fleet accounts: Reported `@CryptoProUpRobot` to Telegram Anti-Scam (`InputReportReasonFake`), blocked the bot, wiped chat histories, and left all mandatory scam channels (`@Rewards_Lab`, `@TensorCoinNews`, `@AirdropFindTeam`, `@EarnCraftNews`).
   - Purged BNB Galaxy from `login_account.py` (updated onboarding to 8 legitimate bots) and `refresh_cloud_tokens.py`.
   - Hardened `userbot_refresher.py` self-healing bot & channel guards to prevent unblocking `@CryptoProUpRobot` and prevent rejoining scam channels.
+  - Removed lingering `justtool.site` adsgram routines from `deploy_both_cf_workers.py` (both API routes and scheduled cron handler) and redeployed all 3 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`).
+  - Disabled `autonomous_withdrawal_unlocker_loop` and `build_bnb_details_report` in `userbot_refresher.py` when `ENABLE_BNB_GALAXY=false`, stopping background polling of `justtool.site`.
+  - Deleted obsolete standalone ad script `complete_withdrawal_tasks.py`.
+  - Updated `dashboard.html` and `public/index.html` queue notices to clearly document that `@CryptoProUpRobot` is permanently blocked and disabled.
   - Removed BNB Galaxy from `FLEET_MASTER_REGISTRY.json` and updated `clean_all_accounts_channels.py`.
 - Disabled BNB Galaxy (`@CryptoProUpRobot`) across the fleet (`ENABLE_BNB_GALAXY=false` in `.env`, `userbot_refresher.py`, and `FLEET_MASTER_REGISTRY.json`): Confirmed via on-chain blockchain audit (BscScan RPC) that after the initial 1st payment on Sept 17-18, the bot withholds 100% of payouts while leeching 195 daily ads through `justtool.site`. Bypassed all ad loops, saving substantial CPU, network bandwidth, and eliminating account ban risk.
 - Integrated automated 3-stage rewarded video ad boarding (`/api/wd/ad/challenge` -> 16s heartbeat -> `/api/wd/ad/confirm`) into `stones_captcha_solver.py` for Stones Miners auto-withdrawals.
