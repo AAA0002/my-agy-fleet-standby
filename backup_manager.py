@@ -141,27 +141,10 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
     bst_time = now_utc + timedelta(hours=6)
     date_str = bst_time.strftime("%A, %d %B %Y • %I:%M %p BST")
 
-    caption = (
-        f"📦 <b>MY AGY AI — Disaster Recovery Backup Archive</b>\n"
-        f"📅 <i>{date_str}</i>\n\n"
-        f"• <b>Archive:</b> <code>{zip_filename}</code> ({zip_size_kb} KB)\n"
-        f"• <b>Fleet Accounts:</b> <code>{accounts_count} Preserved</code>\n"
-        f"• <b>Antigravity Session:</b> <code>Preserved & Auto-Authenticated</code> ✅\n"
-        f"• <b>Vault Channel:</b> <code>https://t.me/myagyai</code>\n\n"
-        f"🛡️ <b>VPS Disconnect & Termux Protection:</b>\n"
-        f"If your server is ever disconnected or deleted, you can restore your complete bot fleet and Antigravity in 1 click."
-    )
-
     url_doc = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendDocument"
     url_msg = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"
 
     try:
-        data = aiohttp.FormData()
-        data.add_field("chat_id", BACKUP_CHANNEL)
-        data.add_field("caption", caption)
-        data.add_field("parse_mode", "HTML")
-        data.add_field("document", open(zip_path, "rb"), filename=zip_filename)
-
         async with aiohttp.ClientSession() as session:
             # 0. Sync backup archive to triple Cloudflare Edge KV stores
             cf_endpoints = [
@@ -202,6 +185,26 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
                 except Exception as pe:
                     logging.warning(f"[Pinata IPFS] Pinning error: {pe}")
 
+            ipfs_line = f"• <b>IPFS Decentralized Gateway:</b> <code>https://gateway.pinata.cloud/ipfs/{ipfs_cid}</code>\n" if ipfs_cid else ""
+
+            caption = (
+                f"📦 <b>MY AGY AI — Disaster Recovery Backup Archive</b>\n"
+                f"📅 <i>{date_str}</i>\n\n"
+                f"• <b>Archive:</b> <code>{zip_filename}</code> ({zip_size_kb} KB)\n"
+                f"• <b>Fleet Accounts:</b> <code>{accounts_count} Preserved</code>\n"
+                f"• <b>Antigravity Session:</b> <code>Preserved & Auto-Authenticated</code> ✅\n"
+                f"{ipfs_line}"
+                f"• <b>Vault Channel:</b> <code>https://t.me/myagyai</code>\n\n"
+                f"🛡️ <b>VPS Disconnect & Termux Protection:</b>\n"
+                f"If your server is ever disconnected or deleted, you can restore your complete bot fleet and Antigravity in 1 click."
+            )
+
+            data = aiohttp.FormData()
+            data.add_field("chat_id", BACKUP_CHANNEL)
+            data.add_field("caption", caption)
+            data.add_field("parse_mode", "HTML")
+            data.add_field("document", open(zip_path, "rb"), filename=zip_filename)
+
             # 1. Upload backup archive directly to @myagyai Telegram channel (Unlimited, bypasses Cloudflare KV)
             async with session.post(url_doc, data=data) as resp:
                 result = await resp.json()
@@ -227,13 +230,16 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
             )
             tg_one_liner = f"{bootstrap} && {py_fetch}"
 
+            ipfs_restore = f"\n\n🌐 <b>Decentralized IPFS Direct Restore:</b>\n<code>curl -sL https://gateway.pinata.cloud/ipfs/{ipfs_cid} -o b.zip && python3 -c \"import zipfile; zipfile.ZipFile('b.zip').extractall('.'); print('✅ Restored from IPFS!')\"</code>" if ipfs_cid else ""
+
             instructions = (
                 f"⚡ <b>MY AGY AI — 1-CLICK DISASTER RECOVERY</b>\n\n"
                 f"📦 <b>Archive:</b> <code>{zip_filename}</code>\n"
                 f"🕒 <b>Saved:</b> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}\n\n"
                 f"🛡️ <b>1-Line Restore Command (Termux / Linux VPS):</b>\n"
-                f"<code>{tg_one_liner}</code>\n\n"
-                f"<i>Restores all accounts, MTProto sessions, Antigravity CLI, and supervisor in under 45 seconds directly from Telegram CDN!</i>"
+                f"<code>{tg_one_liner}</code>"
+                f"{ipfs_restore}\n\n"
+                f"<i>Restores all accounts, MTProto sessions, Antigravity CLI, and supervisor in under 45 seconds directly from Telegram CDN or IPFS!</i>"
             )
 
             # 3. Post instructions to @myagyai and pin it permanently
@@ -252,10 +258,12 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
                         acc_count = len(json.load(af))
                 except Exception:
                     pass
+                ipfs_user_line = f"🌐 <b>IPFS Decentralized Gateway:</b>\n<code>https://gateway.pinata.cloud/ipfs/{ipfs_cid}</code>\n\n" if ipfs_cid else ""
                 user_msg = (
-                    f"✅ <b>Backup uploaded directly to Telegram @myagyai vault!</b>\n\n"
+                    f"✅ <b>Backup uploaded directly to Telegram @myagyai vault & Pinata IPFS!</b>\n\n"
                     f"📦 <b>Archive:</b> <code>{zip_filename}</code>\n"
-                    f"🔑 <b>All {acc_count} Accounts & Sessions:</b> Preserved\n\n"
+                    f"🔑 <b>All {acc_count} Accounts & Sessions:</b> Preserved\n"
+                    f"{ipfs_user_line}"
                     f"⚡ <b>1-Line Restore Command:</b>\n"
                     f"<code>{tg_one_liner}</code>"
                 )

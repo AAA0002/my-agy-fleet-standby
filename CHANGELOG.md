@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **Observability, Decentralized IPFS Storage & Anti-Stupid Safeguards**:
+  - **Better Stack Uptime Heartbeat Integration**: Added Better Stack heartbeat ping (`BETTERSTACK_HEARTBEAT_URL`) to `cloudflare_edge_bridge_loop` in `userbot_refresher.py`, transmitting live pulse every 5 minutes to trigger the external Dead Man's Switch if the daemon ever stalls.
+  - **Decentralized Pinata IPFS Backup Dispatch**: Updated `backup_manager.py` to prioritize Pinata IPFS pinning and directly embed the immutable IPFS gateway URL and 1-line curl restore command into Telegram vault (`@myagyai`) pinned announcements and user delivery cards.
+  - **Main Account Sweep Protection**: Added explicit user directives guardrail to `_run_stones_sweep` and `_run_ailab_sweep` in `userbot_refresher.py`, ensuring interactive or AI-triggered sweeps skip the primary account (`6727787768`, `+8801317342850`) so its hash rate and token balances continuously compound.
+  - **Cloud AI Council Sanitation**: Refined `autonomous_cloud_agent.py` to exclude obsolete actions (`sweep_atf`, `sweep_bnb`) and added native `sweep_ailab` execution pipeline.
+  - **GitHub Actions Cloud Sentinel & Refresher**: Added Render Node 3 (Hermes-Grok Ari AI Copilot) to the automated sentinel audit in `.github/workflows/fleet_sentinel.yml` and synchronized the active 8-bot count across notifications in `.github/workflows/cloud_token_refresher.yml`.
+  - **Sanitized On-Chain Receipts**: Standardized BEP-20 deposit notifications in `check_onchain_deposit_alert` to official settlement receipts.
+
 - **Multi-Cloud Architecture & Zero-Local Dependency Hardening**:
   - **Cloudflare Edge Mesh (`deploy_both_cf_workers.py`)**: Added dedicated Stones Miners command center (`btn_stones` and `/stones`) with Arbitrum One vault diagnostics; converted `/bnb` into an anti-scam warning card; updated all status cards, `/help` docs, and system prompts to the 8 verified bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum); synchronized and redeployed all 3 Cloudflare Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`).
   - **Render Cloud Copilot Mesh (`autonomous_cloud_agent.py`)**: Enforced user rules forbidding ATF Miner withdrawals (100% farming/accumulation mode) and protecting the main account (no withdrawals from AI Lab Robot or Stones Miners); replaced obsolete actions with worker-only `sweep_ailab` and `sweep_stones`.

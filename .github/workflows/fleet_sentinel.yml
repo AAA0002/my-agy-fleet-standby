@@ -52,7 +52,8 @@ jobs:
           ]
           RENDER_NODES = [
               ("Render Singapore (Node 1)", "https://my-agy-fleet-standby.onrender.com/health"),
-              ("Render Frankfurt (Node 2)", "https://my-agy-fleet-standby-node2.onrender.com/health")
+              ("Render Frankfurt (Node 2)", "https://my-agy-fleet-standby-node2.onrender.com/health"),
+              ("Render Singapore (Node 3 Ari AI)", "https://hermes-grok-cloud-agent.onrender.com/health")
           ]
           DENO_NODES = [
               ("Deno Deploy Edge 1 (aaa222)", "https://my-agy-fleet-deno.aaa222.deno.net/health"),
@@ -317,7 +318,7 @@ jobs:
               f"• 🌐 **Cloudflare Mesh:** *{cf_ok}/3 Shards Online*\n"
               f"• ⚡ **Deno Deploy Edge:** *{deno_ok}/2 Nodes Online*\n"
               f"• ▲ **Vercel Serverless:** {'✅ Online' if vercel_ok else '⚠️ Error'}\n"
-              f"• 🖥️ **Render Standby:** *{render_ok}/2 Nodes Responding*\n"
+              f"• 🖥️ **Render Cloud Mesh:** *{render_ok}/3 Nodes Responding (2x Standby + Ari Copilot)*\n"
               f"• 🗄️ **Supabase Postgres:** {'✅ Healthy (13/13 Accs)' if supabase_ok else '⚠️ Error'}\n"
               f"• ⚡ **Upstash Redis:** {'✅ Connected' if upstash_ok else '⚠️ Error'}\n"
               f"• 🚀 **Turso LibSQL:** {'✅ Ultra Low Latency' if turso_ok else '⚠️ Error'}\n"

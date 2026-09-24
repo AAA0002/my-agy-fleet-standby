@@ -834,7 +834,7 @@ async def check_onchain_deposit_alert():
             )
 
             conf_msg_2 = (
-                f"📜 <b>OFFICIAL BNB GALAXY SETTLEMENT RECEIPT</b>\n"
+                f"📜 <b>OFFICIAL BEP-20 SETTLEMENT RECEIPT</b>\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
                 f"✅ <b>Settlement Status:</b> Confirmed On-Chain (Block Validated)\n"
                 f"💰 <b>Delivered Amount:</b> <code>{delta_bnb:.6f} BNB</code>\n"
@@ -3643,6 +3643,17 @@ async def cloudflare_edge_bridge_loop():
                                 except Exception:
                                     pass
                             sync_tasks.append(push_turso())
+
+                        # 5. Ping Better Stack Uptime Heartbeat
+                        betterstack_url = os.getenv("BETTERSTACK_HEARTBEAT_URL", "https://uptime.betterstack.com/api/v1/heartbeat/bABS7gYDXgHp6H35XGcU7S6p")
+                        if betterstack_url:
+                            async def push_betterstack():
+                                try:
+                                    async with session.get(betterstack_url, timeout=aiohttp.ClientTimeout(total=5)):
+                                        pass
+                                except Exception:
+                                    pass
+                            sync_tasks.append(push_betterstack())
 
                         await asyncio.gather(*sync_tasks, return_exceptions=True)
                     except Exception as sync_e:
@@ -7777,9 +7788,13 @@ async def miniapp_command_listener_loop():
                                     accounts = load_accounts()
                                     target_wallet = ARBITRUM_WALLET  # 0xfda4182001672b9f0f09e2118242e543e35ed5ce
                                     for acc in accounts:
-                                        coins = float(acc.get("stones_coins", 0) or 0)
                                         uid = str(acc.get("user_id"))
                                         name = acc.get("name", "User")
+                                        is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
+                                        if is_pri:
+                                            logger.info(f"[Stones Sweep] Skipping main account {name} ({uid}) per user directive.")
+                                            continue
+                                        coins = float(acc.get("stones_coins", 0) or 0)
                                         if coins >= 500:
                                             logger.info(f"[Stones Sweep] {name} ({uid}) eligible ({coins} STONES). Submitting 500 withdrawal...")
                                             init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("stones_init_data")
@@ -7801,6 +7816,44 @@ async def miniapp_command_listener_loop():
                                                 except Exception as swe:
                                                     logger.debug(f"[Stones Sweep] Error for {name}: {swe}")
                                 asyncio.create_task(_run_stones_sweep())
+                            elif act == "sweep_ailab":
+                                async def _run_ailab_sweep():
+                                    logger.info("[MiniApp Listener] 🧪 AI Lab Auto-Withdrawal Sweep triggered...")
+                                    accounts = load_accounts()
+                                    target_wallet = EVM_VAULT_ADDRESS
+                                    for acc in accounts:
+                                        uid = str(acc.get("user_id"))
+                                        name = acc.get("name", "User")
+                                        is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
+                                        if is_pri:
+                                            logger.info(f"[AI Lab Sweep] Skipping main account {name} ({uid}) per user directive.")
+                                            continue
+                                        # Use worker specific EVM wallet if available, otherwise EVM_VAULT_ADDRESS
+                                        worker_evm = target_wallet
+                                        fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
+                                        if os.path.exists(fleet_evm_file):
+                                            try:
+                                                with open(fleet_evm_file, "r", encoding="utf-8") as fef:
+                                                    worker_evm = json.load(fef).get(uid, {}).get("address") or target_wallet
+                                            except Exception:
+                                                pass
+                                        init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("ailab_init_data")
+                                        if init_data:
+                                            try:
+                                                async with aiohttp.ClientSession() as ai_sess:
+                                                    ai_headers = {"User-Agent": get_account_user_agent(uid), "authorization": f"Bearer {init_data}"}
+                                                    async with ai_sess.get("https://ailab.app/api/cashout", headers=ai_headers, timeout=aiohttp.ClientTimeout(total=8)) as cr:
+                                                        if cr.status == 200:
+                                                            cdata = await cr.json()
+                                                            ubal = float(cdata.get("user_info", {}).get("balance", 0) or 0)
+                                                            if ubal >= 0.02:
+                                                                wpayload = {"amount": ubal, "address": worker_evm}
+                                                                async with ai_sess.post("https://ailab.app/api/withdraw", json=wpayload, headers=ai_headers, timeout=aiohttp.ClientTimeout(total=8)) as wr:
+                                                                    if wr.status == 200:
+                                                                        await send_report_message(f"🎉 *AI Lab Sweep:* `{name}` withdrew ${ubal:.4f} USD to BEP-20 `{worker_evm}`!", chat_id=REPORT_CHAT_ID)
+                                            except Exception as aie:
+                                                logger.debug(f"[AI Lab Sweep] Error for {name}: {aie}")
+                                asyncio.create_task(_run_ailab_sweep())
                             elif act == "sweep_atf":
                                 async def _run_atf_sweep():
                                     logger.info("[MiniApp Listener] 🪙 ATF is set to Farming & Accumulation Mode (Withdrawals disabled per policy).")

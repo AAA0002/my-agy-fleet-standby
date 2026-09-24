@@ -198,7 +198,7 @@ Return JSON:
 {{
   "approved": true or false,
   "reason": "Detailed critique",
-  "sanitized_action": "harvest" | "sweep_stones" | "sweep_atf" | "sweep_bnb" | "rest"
+  "sanitized_action": "harvest" | "sweep_stones" | "sweep_ailab" | "rest"
 }}
 """
         judge_str = await self.query_groq_judge(session, judge_prompt)
