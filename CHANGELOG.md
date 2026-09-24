@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **Disaster Recovery Vault Archive Expansion & Cloudflare On-Demand Token Refresh (`backup_manager.py` & `deploy_both_cf_workers.py`)**:
+  - **Vault Archive Completeness**: Added `autonomous_cloud_agent.py`, `render_failover_manager.py`, and `stones_captcha_templates.json` to `CORE_BOT_FILES` in `backup_manager.py`, ensuring all autonomous AI council and captcha intelligence assets are preserved in automated disaster recovery archives dispatched to `@myagyai` and Pinata IPFS.
+  - **On-Demand 1-Click Token Refresh Endpoint**: Exposed `/api/tokens/refresh` across all 3 Cloudflare Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`), allowing instant token collection triggers from the WebApp Dashboard directly to the Render Standby Mesh.
+
 - **Hermes-Grok Autonomous Decision-Making & Cognitive Upgrade (`autonomous_cloud_agent.py`)**:
   - **Zero-Cost Anti-Stupid Safety Judge**: Integrated Cloudflare Workers AI (`@cf/meta/llama-3.2-3b-instruct` across all 3 Edge Nodes: `aaaai2`, `aaa-bot`, `aaa222`) to replace obsolete Groq keys with 100% free, zero-rate-limit autonomous proposal validation.
   - **Enhanced Model Council**: Upgraded Gemini proposer to active models (`gemini-flash-latest`, `gemini-flash-lite-latest`, `gemini-3.5-flash-lite`) with automated seamless fallback to Cloudflare Workers AI.

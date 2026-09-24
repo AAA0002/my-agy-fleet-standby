@@ -803,6 +803,35 @@ fi
       }
     }
 
+    // 9.5 On-Demand Token Refresh Trigger (Dispatches to Render Standby Mesh)
+    if (path === "/api/tokens/refresh" || path === "/api/miniapp/tokens/refresh") {
+      try {
+        ctx.waitUntil((async () => {
+          const r1 = await fetch("https://my-agy-fleet-standby.onrender.com/collect-tokens", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${env.SECRET_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ source: "api_tokens_refresh_trigger" })
+          }).catch(() => null);
+          if (!r1 || !r1.ok) {
+            await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${env.SECRET_KEY}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ source: "api_tokens_refresh_fallback" })
+            }).catch(() => {});
+          }
+        })());
+        return new Response(JSON.stringify({
+          ok: true,
+          status: "DISPATCHED",
+          message: "MTProto session token collection dispatched to Render Standby Mesh (Node 1 -> Node 2)!"
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
     // 10. Edge Crypto Price Oracle (Binance Public API with 60s Cache & KV Persistence)
     if (path === "/api/rates") {
       try {

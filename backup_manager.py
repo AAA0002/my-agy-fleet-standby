@@ -64,7 +64,10 @@ CORE_BOT_FILES = [
     "FLEET_MASTER_REGISTRY.json",
     "commercial_user_isolation.py",
     "refresh_cloud_tokens.py",
-    "cloud_wallet_sweeper.py"
+    "cloud_wallet_sweeper.py",
+    "autonomous_cloud_agent.py",
+    "render_failover_manager.py",
+    "stones_captcha_templates.json"
 ]
 
 
