@@ -6265,7 +6265,7 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
                         co_data = await cor.json()
                         usd_bal = float(co_data.get("user_info", {}).get("balance", 0) or 0)
                         if usd_bal >= 0.02:
-                            wd_usd = round(usd_bal, 4)
+                            wd_usd = round(int(usd_bal * 100) / 100.0, 2)
                             target_evm = EVM_VAULT_ADDRESS  # Direct to Binance Web3 Master (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
                             logger.info(f"[{acc_name}] 🧪 [AI Lab] Worker balance ${usd_bal:.4f} >= $0.02 threshold! Submitting auto-withdrawal to BEP-20 {target_evm}...")
                             pay_payload = {
@@ -7839,7 +7839,7 @@ async def miniapp_command_listener_loop():
                                                         cdata = await cr.json()
                                                         ubal = float(cdata.get("user_info", {}).get("balance", 0) or 0)
                                                         if ubal >= 0.02:
-                                                            wd_usd = round(ubal, 4)
+                                                            wd_usd = round(int(ubal * 100) / 100.0, 2)
                                                             pay_payload = {
                                                                 "ps_id": 5,  # USDT (BEP20)
                                                                 "amount_usd": wd_usd,

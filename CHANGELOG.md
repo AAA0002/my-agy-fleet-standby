@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **AI Lab Robot Cashout Execution & Decimal Precision Hardening (`userbot_refresher.py`, `deploy_both_cf_workers.py`, `execute_ailab_ainovum_withdrawals.py`)**:
+  - **Live Cashout Execution**: Successfully executed and confirmed in-flight cashout for account `6727787768` (Payment ID `6097`, `$0.02 USD` BEP-20 USDT) routed directly to Binance Web3 Master Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`), leaving $0.0188 USD active to maintain maximum hashing power.
+  - **Decimal Precision Fix**: Fixed an API schema incompatibility where AI Lab rejected fractional amounts exceeding 2 decimal places (`500007 Not enough balance`). Updated both local daemon and Cloudflare Edge cron to enforce clean `0.02` step sizes (`round(int(ubal * 100) / 100.0, 2)`).
+  - **Edge Synchronizer Deployment**: Re-uploaded and synchronized the hardened cashout logic across all 3 Cloudflare Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`).
+  - **Ainovum Fleet Threshold Audit**: Audited all 13 accounts on Ainovum (`ainovum.biz`); top 5 accounts (`6727787768`, `8881914294`, `7648254021`, `8826375659`, `8450010161`) are at `0.0826 USDT`, approaching the `0.10 USDT` auto-withdrawal threshold with dedicated isolated EVM routing armed.
 - **Disaster Recovery Vault Archive Expansion & Cloudflare On-Demand Token Refresh (`backup_manager.py` & `deploy_both_cf_workers.py`)**:
   - **Vault Archive Completeness**: Added `autonomous_cloud_agent.py`, `render_failover_manager.py`, and `stones_captcha_templates.json` to `CORE_BOT_FILES` in `backup_manager.py`, ensuring all autonomous AI council and captcha intelligence assets are preserved in automated disaster recovery archives dispatched to `@myagyai` and Pinata IPFS.
   - **On-Demand 1-Click Token Refresh Endpoint**: Exposed `/api/tokens/refresh` across all 3 Cloudflare Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`), allowing instant token collection triggers from the WebApp Dashboard directly to the Render Standby Mesh.

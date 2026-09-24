@@ -2710,7 +2710,7 @@ Reply to Arif naturally:`;
                             headers: aiAuth,
                             body: JSON.stringify({
                               ps_id: 5,
-                              amount_usd: Math.round(usdBal * 10000) / 10000,
+                              amount_usd: Math.floor(usdBal * 100) / 100,
                               wallet: targetEvm,
                               dest_tag: ""
                             })
