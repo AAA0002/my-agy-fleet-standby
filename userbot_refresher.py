@@ -7746,12 +7746,79 @@ async def miniapp_command_listener_loop():
                             await session.get(f"{upstash_url}/del/fleet:pending_action", headers=headers)
 
                             logger.info(f"[MiniApp Listener] ⚡ Executing interactive command from Mini App: '{act}'")
+                            async def _run_stones_sweep():
+                                logger.info("[MiniApp Listener] 💎 Stones 500-Withdrawal Sweep triggered...")
+                                accounts = load_accounts()
+                                target_wallet = ARBITRUM_WALLET  # 0xfda4182001672b9f0f09e2118242e543e35ed5ce
+                                for acc in accounts:
+                                    uid = str(acc.get("user_id"))
+                                    name = acc.get("name", "User")
+                                    is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
+                                    if is_pri:
+                                        logger.info(f"[Stones Sweep] Skipping main account {name} ({uid}) per user directive.")
+                                        continue
+                                    coins = float(acc.get("stones_coins", 0) or 0)
+                                    if coins >= 500:
+                                        logger.info(f"[Stones Sweep] {name} ({uid}) eligible ({coins} STONES). Submitting 500 withdrawal...")
+                                        init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("stones_init_data")
+                                        if init_data:
+                                            try:
+                                                from stones_captcha_solver import execute_stones_withdrawal_with_captcha
+                                                async with aiohttp.ClientSession() as sw_sess:
+                                                    headers = {"Content-Type": "application/json", "User-Agent": get_account_user_agent(uid)}
+                                                    ok_w, res_w = await execute_stones_withdrawal_with_captcha(
+                                                        session=sw_sess,
+                                                        base_url="https://app.stoneswithestand.my.id",
+                                                        headers=headers,
+                                                        init_data=init_data,
+                                                        amount=500,
+                                                        wallet=target_wallet
+                                                    )
+                                                    if ok_w:
+                                                        await send_report_message(f"🎉 *Stones Sweep:* `{name}` withdrew 500 STONES to Arbitrum `{target_wallet}`! Result: {res_w}", chat_id=REPORT_CHAT_ID)
+                                            except Exception as swe:
+                                                logger.debug(f"[Stones Sweep] Error for {name}: {swe}")
+
+                            async def _run_ailab_sweep():
+                                logger.info("[MiniApp Listener] 🧪 AI Lab Auto-Withdrawal Sweep triggered...")
+                                accounts = load_accounts()
+                                target_wallet = EVM_VAULT_ADDRESS
+                                for acc in accounts:
+                                    uid = str(acc.get("user_id"))
+                                    name = acc.get("name", "User")
+                                    is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
+                                    if is_pri:
+                                        logger.info(f"[AI Lab Sweep] Skipping main account {name} ({uid}) per user directive.")
+                                        continue
+                                    # Directly route to Binance Web3 Master (EVM_VAULT_ADDRESS) so zero gas is lost in worker wallets
+                                    worker_evm = target_wallet
+                                    init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("ailab_init_data")
+                                    if init_data:
+                                        try:
+                                            async with aiohttp.ClientSession() as ai_sess:
+                                                ai_headers = {"User-Agent": get_account_user_agent(uid), "authorization": f"Bearer {init_data}"}
+                                                async with ai_sess.get("https://ailab.app/api/cashout", headers=ai_headers, timeout=aiohttp.ClientTimeout(total=8)) as cr:
+                                                    if cr.status == 200:
+                                                        cdata = await cr.json()
+                                                        ubal = float(cdata.get("user_info", {}).get("balance", 0) or 0)
+                                                        if ubal >= 0.02:
+                                                            wpayload = {"amount": ubal, "address": worker_evm}
+                                                            async with ai_sess.post("https://ailab.app/api/withdraw", json=wpayload, headers=ai_headers, timeout=aiohttp.ClientTimeout(total=8)) as wr:
+                                                                if wr.status == 200:
+                                                                    await send_report_message(f"🎉 *AI Lab Sweep:* `{name}` withdrew ${ubal:.4f} USD to BEP-20 `{worker_evm}`!", chat_id=REPORT_CHAT_ID)
+                                        except Exception as aie:
+                                            logger.debug(f"[AI Lab Sweep] Error for {name}: {aie}")
+
                             if act in ("withdraw", "sweep"):
                                 async def _run_sweep():
                                     logger.info("[MiniApp Listener] Dispatched universal fleet sweep (AI Lab + Stones)...")
                                     await _run_stones_sweep()
                                     await _run_ailab_sweep()
                                 asyncio.create_task(_run_sweep())
+                            elif act == "sweep_stones":
+                                asyncio.create_task(_run_stones_sweep())
+                            elif act == "sweep_ailab":
+                                asyncio.create_task(_run_ailab_sweep())
                             elif act == "verify":
                                 async def _run_verify():
                                     accounts = load_accounts()
@@ -7791,71 +7858,6 @@ async def miniapp_command_listener_loop():
                                     logger.info("[MiniApp Listener] ⚡ Instant Fleet Harvest triggered by Mini App / AI...")
                                     wake_worker_event.set()
                                     await send_report_message("⚡ *Instant Fleet Harvest Dispatched!* All bots triggered across all accounts.", reply_markup=MAIN_TAB_KEYBOARD, chat_id=REPORT_CHAT_ID)
-                            elif act == "sweep_stones":
-                                async def _run_stones_sweep():
-                                    logger.info("[MiniApp Listener] 💎 Stones 500-Withdrawal Sweep triggered...")
-                                    accounts = load_accounts()
-                                    target_wallet = ARBITRUM_WALLET  # 0xfda4182001672b9f0f09e2118242e543e35ed5ce
-                                    for acc in accounts:
-                                        uid = str(acc.get("user_id"))
-                                        name = acc.get("name", "User")
-                                        is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
-                                        if is_pri:
-                                            logger.info(f"[Stones Sweep] Skipping main account {name} ({uid}) per user directive.")
-                                            continue
-                                        coins = float(acc.get("stones_coins", 0) or 0)
-                                        if coins >= 500:
-                                            logger.info(f"[Stones Sweep] {name} ({uid}) eligible ({coins} STONES). Submitting 500 withdrawal...")
-                                            init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("stones_init_data")
-                                            if init_data:
-                                                try:
-                                                    from stones_captcha_solver import execute_stones_withdrawal_with_captcha
-                                                    async with aiohttp.ClientSession() as sw_sess:
-                                                        headers = {"Content-Type": "application/json", "User-Agent": get_account_user_agent(uid)}
-                                                        ok_w, res_w = await execute_stones_withdrawal_with_captcha(
-                                                            session=sw_sess,
-                                                            base_url="https://app.stoneswithestand.my.id",
-                                                            headers=headers,
-                                                            init_data=init_data,
-                                                            amount=500,
-                                                            wallet=target_wallet
-                                                        )
-                                                        if ok_w:
-                                                            await send_report_message(f"🎉 *Stones Sweep:* `{name}` withdrew 500 STONES to Arbitrum `{target_wallet}`! Result: {res_w}", chat_id=REPORT_CHAT_ID)
-                                                except Exception as swe:
-                                                    logger.debug(f"[Stones Sweep] Error for {name}: {swe}")
-                                asyncio.create_task(_run_stones_sweep())
-                            elif act == "sweep_ailab":
-                                async def _run_ailab_sweep():
-                                    logger.info("[MiniApp Listener] 🧪 AI Lab Auto-Withdrawal Sweep triggered...")
-                                    accounts = load_accounts()
-                                    target_wallet = EVM_VAULT_ADDRESS
-                                    for acc in accounts:
-                                        uid = str(acc.get("user_id"))
-                                        name = acc.get("name", "User")
-                                        is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
-                                        if is_pri:
-                                            logger.info(f"[AI Lab Sweep] Skipping main account {name} ({uid}) per user directive.")
-                                            continue
-                                        # Directly route to Binance Web3 Master (EVM_VAULT_ADDRESS) so zero gas is lost in worker wallets
-                                        worker_evm = target_wallet
-                                        init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("ailab_init_data")
-                                        if init_data:
-                                            try:
-                                                async with aiohttp.ClientSession() as ai_sess:
-                                                    ai_headers = {"User-Agent": get_account_user_agent(uid), "authorization": f"Bearer {init_data}"}
-                                                    async with ai_sess.get("https://ailab.app/api/cashout", headers=ai_headers, timeout=aiohttp.ClientTimeout(total=8)) as cr:
-                                                        if cr.status == 200:
-                                                            cdata = await cr.json()
-                                                            ubal = float(cdata.get("user_info", {}).get("balance", 0) or 0)
-                                                            if ubal >= 0.02:
-                                                                wpayload = {"amount": ubal, "address": worker_evm}
-                                                                async with ai_sess.post("https://ailab.app/api/withdraw", json=wpayload, headers=ai_headers, timeout=aiohttp.ClientTimeout(total=8)) as wr:
-                                                                    if wr.status == 200:
-                                                                        await send_report_message(f"🎉 *AI Lab Sweep:* `{name}` withdrew ${ubal:.4f} USD to BEP-20 `{worker_evm}`!", chat_id=REPORT_CHAT_ID)
-                                            except Exception as aie:
-                                                logger.debug(f"[AI Lab Sweep] Error for {name}: {aie}")
-                                asyncio.create_task(_run_ailab_sweep())
                             elif act == "sweep_atf":
                                 async def _run_atf_sweep():
                                     logger.info("[MiniApp Listener] 🪙 ATF is set to Farming & Accumulation Mode (Withdrawals disabled per policy).")

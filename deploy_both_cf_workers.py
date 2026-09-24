@@ -1034,15 +1034,23 @@ fi
       });
     }
 
-    // 12.46 On-Demand Trigger to Render Cloud Standby for MTProto Balance Check & Auto-Withdrawal
-    if (path === "/api/bnb/withdraw" || path === "/api/bnb/cloud-cycle") {
+    // 12.46 Autonomous Cloud Wallet Sweeper & Consolidation Trigger
+    if (path === "/api/sweep/wallets" || path === "/api/sweep/execute" || path === "/api/bnb/withdraw" || path === "/api/bnb/cloud-cycle") {
       try {
-        const [r1, r2] = await Promise.all([
-          fetch("https://my-agy-fleet-standby.onrender.com/bnb/cloud-cycle", { method: "POST", headers: { "Content-Type": "application/json" } }).then(r => r.json()).catch(e => ({ ok: false, error: e.message })),
-          fetch("https://my-agy-fleet-standby-node2.onrender.com/bnb/cloud-cycle", { method: "POST", headers: { "Content-Type": "application/json" } }).then(r => r.json()).catch(e => ({ ok: false, error: e.message }))
-        ]);
-        const finalResp = (r1 && r1.ok) ? r1 : ((r2 && r2.ok) ? r2 : { ok: false, r1, r2 });
-        return new Response(JSON.stringify(finalResp), {
+        const sweepPayload = {
+          id: `cf_sweep_${Date.now()}`,
+          action: "sweep",
+          origin: "CloudflareEdgeMesh",
+          timestamp: Date.now() / 1000
+        };
+        ctx.waitUntil(upstashSet("fleet:pending_action", sweepPayload));
+        return new Response(JSON.stringify({
+          ok: true,
+          status: "QUEUED",
+          message: "Universal fleet sweep queued (AI Lab + Stones auto-withdrawals to Binance Web3 Master)",
+          target_vault_evm: "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
+          target_vault_ton: "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
+        }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       } catch (e) {
@@ -2980,17 +2988,9 @@ Reply to Arif naturally:`;
         }
 
 
-        // 3.4 Ping Render Cloud Standby (Singapore & Frankfurt) to check live MTProto balances & auto-withdraw
-        fetch("https://my-agy-fleet-standby.onrender.com/bnb/cloud-cycle", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({})
-        }).catch(() => {});
-        fetch("https://my-agy-fleet-standby-node2.onrender.com/bnb/cloud-cycle", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({})
-        }).catch(() => {});
+        // 3.4 Ping Render Cloud Standby (Singapore & Frankfurt) health check
+        fetch("https://my-agy-fleet-standby.onrender.com/health", { method: "GET" }).catch(() => {});
+        fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => {});
 
         // 3.5 Token Expiry Watcher: If tokens have <= 4 hours remaining (age >= 20h), wake up Render to collect batch
         const nowMs = Date.now();
