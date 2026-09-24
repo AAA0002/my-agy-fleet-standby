@@ -59,7 +59,10 @@ CORE_BOT_FILES = [
     "refresh_fleet_tokens.py",
     "update_dashboard_compact.py",
     "stones_captcha_solver.py",
-    "payout_balances.json"
+    "payout_balances.json",
+    "FLEET_MASTER_REGISTRY.json",
+    "commercial_user_isolation.py",
+    "refresh_cloud_tokens.py"
 ]
 
 

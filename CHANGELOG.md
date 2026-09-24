@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **Fleet Resiliency, Circuit Breakers & Reporting Upgrades**:
+  - Implemented 30-minute circuit breaker (`STONES_CIRCUIT_BREAKER_UNTIL`, `STONES_CONSECUTIVE_FAILS`) and fast-fail checks in `automate_stones_cycle`, eliminating multi-account thread stalls and preventing cascading timeouts when `app.stoneswithestand.my.id` experiences origin outages or Cloudflare tunnel latency.
+  - Hardened Stones error logging so empty standard library `TimeoutError` strings display informative diagnostic tags (`TimeoutError: Request timed out / server unreachable`) rather than blank entries.
+  - Prevented transient server timeouts from wiping local cached STONES coins balances to `0`.
+  - Upgraded fleet accounts report (`build_accounts_report`) to display live isolated TON v4r2 wallet binding status per account instead of obsolete scammer referral tags.
+  - Refined account onboarding and 2FA login confirmation alerts to eliminate obsolete scammer notices and emphasize full 8-bot mining activation.
+  - Synchronized daemon startup announcements and daily executive briefings to reflect the complete 8-bot lineup (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum).
+  - Expanded `CORE_BOT_FILES` in `backup_manager.py` to include `FLEET_MASTER_REGISTRY.json`, `commercial_user_isolation.py`, and `refresh_cloud_tokens.py` for comprehensive off-machine disaster recovery.
+
 - **Complete Purge and Removal of MiningGRAM (`@MiningGRAM_Bot`)**:
   - Fully removed MiningGRAM from fleet automations and background worker cycles per user directive (user manages their personal $28.00 USDT Promo balance independently).
   - Deleted standalone scripts: `claim_mininggram_promo.py` and `qualify_fleet_mininggram.py`.

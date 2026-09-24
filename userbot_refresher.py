@@ -1465,8 +1465,8 @@ def build_accounts_report():
         role = "👑 Primary Host (Master)" if is_host else ("⚡ Mining Worker & Admin" if is_admin else "⚡ Mining Worker")
         proxy = acc.get("proxy")
         loc = f"🛡️ Proxy: `{proxy.split('@')[-1]}`" if proxy else "🌍 Cloud Direct"
-        bnb_ref = "Host 👑" if is_host else ("Linked (`Bot46893407`) ✅" if acc.get("bnb_referral_bound") else "Auto-Binding...")
-        atf_ref = "Host 👑" if is_host else ("Linked (`ref_6727787768`) ✅" if acc.get("atf_referral_bound") else "Auto-Binding...")
+        ton_bound = "Binance TON 👑" if is_host else ("Isolated TON v4r2 ✅" if str(uid) in load_fleet_ton_wallets() or acc.get("ton_wallet") else "Pending")
+        atf_ref = "Host 👑" if is_host else ("Linked (`6727787768`) ✅" if acc.get("atf_referral_bound") else "Active ✅")
         admin_tag = "Authorized Admin 🛡️" if is_admin else "Worker Node 📱"
 
         lines.append(
@@ -1474,7 +1474,7 @@ def build_accounts_report():
             f"   • Role: `{role}`\n"
             f"   • ID: `{uid}` | Phone: `{phone}`\n"
             f"   • Permissions: `{admin_tag}`\n"
-            f"   • BNB Referral: {bnb_ref}\n"
+            f"   • TON Wallet: `{ton_bound}`\n"
             f"   • ATF Referral: {atf_ref}\n"
             f"   • Geo-Profile: `{loc}`\n"
             f"   • Daemon Status: `🟢 {status}`"
@@ -1765,7 +1765,7 @@ async def build_full_status_report(user_id: int):
         f"🕒 `{now_str}`\n\n"
         f"🟢 **Fleet Health:** `{len(accounts)}/{len(accounts)} Accounts Active & Mining`\n"
         f"🏃 **Worker Status:** `{active_str}`\n"
-        f"🤖 **Active Bots (7/7):** BNB Galaxy • Stones • ART • MRG • AI Lab • UltraWallet • Apex\n"
+        f"🤖 **Active Bots (8/8):** ATF • Stones • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum\n"
         f"💰 **On-Chain Vaults:** `{user_bal:.6f} BNB` (Fleet: `{fleet_bal:.6f} BNB`) • `500 STONES`\n"
         f"🛡️ **Security:** 5/5 Anti-Bot Verified • Triple Cloudflare Edge Shards\n\n"
         f"📱 *Tap below to open your real-time visual Mini App dashboard:*"
@@ -2680,10 +2680,9 @@ async def handle_single_update(update: dict):
                         f"• **Username:** @{uname}\n"
                         f"• **User ID:** `{me.id}`\n"
                         f"• **Phone:** `{phone}`\n"
-                        f"• **BNB Referral:** `Linked to Bot46893407` ✅\n"
-                        f"• **Stones Referral:** `Linked to r6727787768` ✅\n• **MRG Referral:** `Linked to ref_IRN1G3XD` ✅\n"
+                        f"• **Referrals:** `Bound to Master Fleet` ✅\n"
                         f"• **Total Active Accounts:** `{len(accs)}`\n\n"
-                        f"✅ Automatically registered under your BNB Galaxy referral link! Daily farming is now active on this account."
+                        f"✅ Automatically registered under your master referral links! 8-bot mining & farming is now active on this account."
                     )
                     await broadcast_admin_message(succ, reply_markup=MAIN_TAB_KEYBOARD)
                     # Auto-backup fleet and sessions to Telegram
@@ -2758,10 +2757,9 @@ async def handle_single_update(update: dict):
                         f"• **Username:** @{uname}\n"
                         f"• **User ID:** `{me.id}`\n"
                         f"• **Phone:** `{phone}`\n"
-                        f"• **BNB Referral:** `Linked to Bot46893407` ✅\n"
-                        f"• **Stones Referral:** `Linked to r6727787768` ✅\n• **MRG Referral:** `Linked to ref_IRN1G3XD` ✅\n"
+                        f"• **Referrals:** `Bound to Master Fleet` ✅\n"
                         f"• **Total Active Accounts:** `{len(accs)}`\n\n"
-                        f"✅ Automatically registered under your BNB Galaxy referral link! Daily farming is now active on this account."
+                        f"✅ Automatically registered under your master referral links! 8-bot mining & farming is now active on this account."
                     )
                     await broadcast_admin_message(succ, reply_markup=MAIN_TAB_KEYBOARD)
                     # Auto-backup fleet and sessions to Telegram
@@ -5242,6 +5240,9 @@ async def delegate_farm_to_cloudflare(acc_uid: int, cf_node_url: str):
     return None
 
 
+STONES_CIRCUIT_BREAKER_UNTIL = 0
+STONES_CONSECUTIVE_FAILS = 0
+
 async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc: dict):
     """
     Automates Stones Miners (@stoneswithestand_bot):
@@ -5253,9 +5254,16 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
     - Starts/renews mining session if inactive
     - Auto-withdraws to Arbitrum One (0xfda4182001672b9f0f09e2118242e543e35ed5ce) if balance >= 500 STONES (Primary ID).
     """
+    global STONES_CIRCUIT_BREAKER_UNTIL, STONES_CONSECUTIVE_FAILS
     acc_name = acc.get("name", "User")
     acc_uid = str(acc.get("user_id"))
     is_primary = (acc_uid == str(REPORT_CHAT_ID))
+
+    now = time.time()
+    if now < STONES_CIRCUIT_BREAKER_UNTIL:
+        rem_mins = max(1, int((STONES_CIRCUIT_BREAKER_UNTIL - now) / 60))
+        logger.debug(f"[{acc_name}] 💎 [Stones] API server offline cooldown active (~{rem_mins}m remaining). Skipping.")
+        return
 
     try:
         init_data = None
@@ -5292,16 +5300,28 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
         if not is_primary:
             init_payload["start_param"] = STONES_REFERRAL_CODE
         try:
-            async with session.post(f"{base_url}/api/init", json=init_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as r:
+            async with session.post(f"{base_url}/api/init", json=init_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as r:
                 pass
         except Exception:
             pass
 
         # 2. Query state & mining status
         state = {}
-        async with session.post(f"{base_url}/api/state", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as r:
-            if r.status == 200:
-                state = await r.json()
+        try:
+            async with session.post(f"{base_url}/api/state", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                if r.status == 200:
+                    state = await r.json()
+                    STONES_CONSECUTIVE_FAILS = 0
+                else:
+                    STONES_CONSECUTIVE_FAILS += 1
+        except Exception:
+            STONES_CONSECUTIVE_FAILS += 1
+
+        if not state or not state.get("user"):
+            if STONES_CONSECUTIVE_FAILS >= 2:
+                STONES_CIRCUIT_BREAKER_UNTIL = now + 1800  # 30 mins
+                logger.warning("💎 [Stones Miners] API server unreachable (timeout/502/1033). 30-minute circuit breaker activated to save resources.")
+            return
 
         user_info = state.get("user", {})
         tasks = state.get("tasks", {})
@@ -5522,7 +5542,8 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
         logger.info(f"[{acc_name}] 💎 [Stones] Cycle finished | Balance: {bal} STONES (Coins: {coins}) | Mining Active: {mining_active}")
 
     except Exception as e:
-        logger.warning(f"[{acc_name}] Stones automation note: {e}")
+        err_msg = f"{type(e).__name__}: {e}" if str(e) else f"{type(e).__name__} (Request timed out / server unreachable)"
+        logger.warning(f"[{acc_name}] Stones automation note: {err_msg}")
 
 
 # =======================================================
@@ -7261,12 +7282,15 @@ async def task_worker_247(user_id: int, user_name: str):
     # Send startup notification with persistent Tab Menu keyboard
     startup_text = (
         "🚀 *MY AGY AI Hub Online*\n\n"
-        "Autonomous multi-crypto fleet daemon running 24/7 in the cloud.\n\n"
-        "• **🪙 BNB Galaxy:** 10 Daily Tasks & Auto-Withdraw (BEP-20)\n"
-        "• **💎 Stones Miners:** Daily Mining (+500 STONES to Arbitrum One)\n"
-        "• **⛏️ MRG Miner:** Mining Harvest & 10% Squad Sweeps to Main ID\n"
-        "• **🚀 ART Airdrop:** Continuous 8h Mining & Task Claims\n\n"
-        "Tap any tab button below to view live fleet metrics or withdraw!"
+        "Autonomous multi-crypto fleet daemon running 24/7 in the cloud across 8 active bots:\n\n"
+        "• **🪙 ATF Miner:** 100% Farming & Accumulation Mode (TON)\n"
+        "• **💎 Stones Miners:** Daily Mining (+500 STONES Arbitrum One Vault)\n"
+        "• **⛏️ MRG Miner:** 3h Mining Harvest & 10% Squad Sweeps\n"
+        "• **🚀 ART Airdrop:** Continuous 8h Mining & Auto-Leveling\n"
+        "• **🧪 AI Lab Robot:** Hashing & Daily Task Execution\n"
+        "• **🤖 Ainovum:** Automated $0.10 Threshold Withdrawals\n"
+        "• **💳 UltraWallet & ⚡ Apex:** Daily Streaks & Cloud Point Mining\n\n"
+        "Tap any tab button below to view live fleet metrics or manage accounts!"
     )
 
     await send_report_message(startup_text, reply_markup=MAIN_TAB_KEYBOARD)
@@ -7591,7 +7615,7 @@ async def generate_daily_executive_briefing(notify: bool = True) -> str:
             f"- Total Unclaimed Bot BNB Balance: {tot_bnb:.6f} BNB\n"
             f"- Accounts Eligible for Instant Auto-Withdrawal (>={MIN_WITHDRAWAL} BNB): {eligible_count}/13\n"
             f"- Total On-Chain Received BNB: {total_onchain:.6f} BNB (Wallet 1: {onchain_w1:.6f}, Wallet 2: {onchain_w2:.6f})\n"
-            f"- Active Mining Platforms: 7/7 (BNB Galaxy, Stones, MRG, ART, AI Lab, UltraWallet, Apex Miner)\n"
+            f"- Active Mining Platforms: 8/8 (ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex Miner, Ainovum)\n"
             f"- Cloud Infrastructure: 14/14 systems online (3x Cloudflare Edge, 2x Render Standby, 1x Vercel Edge, Upstash Redis, D1 SQL, Turso LibSQL, Supabase Postgres, Pinata IPFS, Better Stack)\n\n"
             f"Generate a crisp, professional daily executive briefing for the owner in Telegram Markdown format with emojis. "
             f"Include: 1. Daily Earnings & Balance Summary. 2. Mining & Airdrop Highlights. 3. Security & Cloud Infrastructure Status. 4. One high-value operational recommendation."
