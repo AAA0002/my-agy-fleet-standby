@@ -10,6 +10,8 @@ payout_ledger.json
 payout_balances.json
 *_state.json
 .onchain_state.json
+FLEET_*.txt
+*SECRETS*
 antigravity_session/
 cloudflared_config/
 
