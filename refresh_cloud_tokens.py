@@ -48,7 +48,6 @@ CF_NODES = [
 ]
 
 # Bot Usernames & Referral Codes
-BNB_BOT = "CryptoProUpRobot"
 STONES_BOT = "stoneswithestand_bot"
 MRG_BOT = "mrgminerbot"
 ART_BOT = "ART_AIRDROP_BOT"
@@ -66,8 +65,6 @@ ULTRAWALLET_REF = "6727787768"
 APX_REF = "6727787768"
 AINOVUM_REF = "ref_6727787768"
 MININGGRAM_REF = "339JU9K"
-
-BNB_WEBHOOK_FALLBACK = "https://api.bots.business/v1/bots/2985029/new-webhook?&command=%2FonWebhook&public_user_token=3d1ed3e6a9bb948436a55057c6e87b59&user_id=46893407"
 
 
 def load_accounts():
@@ -179,21 +176,7 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
         except Exception as e:
             print(f"  ⚠️ ART error: {e}")
 
-        # 4. BNB Galaxy Webhook
-        try:
-            b_bnb = await cl.get_entity(BNB_BOT)
-            r_bnb = await cl(RequestWebViewRequest(
-                peer=b_bnb, bot=b_bnb, platform="android",
-                url="https://justtool.site/tasks-adsgram/"
-            ))
-            qs = urllib.parse.parse_qs(urllib.parse.urlparse(r_bnb.url).query)
-            wh = qs.get("wh", [None])[0] or BNB_WEBHOOK_FALLBACK
-            tokens["bnb_wh_url"] = wh
-            print(f"  🟡 BNB Galaxy: Webhook Linked")
-        except Exception as e:
-            tokens["bnb_wh_url"] = BNB_WEBHOOK_FALLBACK
-
-        # 5. AI Lab Robot
+        # 4. AI Lab Robot
         try:
             b_ai = await cl.get_entity(AILAB_BOT)
             r_ai = await cl(RequestWebViewRequest(

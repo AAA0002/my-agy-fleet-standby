@@ -3682,8 +3682,8 @@ async def ensure_referral_bound(acc_client, acc: dict):
     if str(acc_uid) == str(REPORT_CHAT_ID) or acc.get("is_referral_host"):
         return
 
-    # 1. BNB Galaxy Referral Binding
-    if not acc.get("bnb_referral_bound"):
+    # 1. BNB Galaxy Referral Binding (DISABLED - Scammer Bot)
+    if ENABLE_BNB_GALAXY and not acc.get("bnb_referral_bound"):
         try:
             logger.info(f"[{acc_name}] Onboarding BNB Galaxy with referral {BNB_REFERRAL_CODE}...")
             # Proactively unblock if previously blocked
@@ -4072,15 +4072,15 @@ async def self_heal_account_channels_and_bots(acc_client, acc: dict):
         return
 
     logger.info(f"[{acc_name}] 🛡️ Running Self-Healing Channel & Bot Guard...")
-    # 1. Ensure target bots are unblocked
-    for b in [BNB_BOT, STONES_BOT, MRG_BOT, ART_BOT, AILAB_BOT, ULTRAWALLET_BOT, APX_BOT, AINOVUM_BOT, MININGGRAM_BOT]:
+    # 1. Ensure target legitimate bots are unblocked (BNB_BOT excluded - scammer bot blocked)
+    for b in [STONES_BOT, MRG_BOT, ART_BOT, AILAB_BOT, ULTRAWALLET_BOT, APX_BOT, AINOVUM_BOT, MININGGRAM_BOT]:
         try:
             await acc_client(UnblockRequest(id=b))
         except Exception:
             pass
 
     # 2. Verify and re-join mandatory channels if left (skipping any excluded channels)
-    all_chans = list(dict.fromkeys(MANDATORY_BNB_CHANNELS + MANDATORY_OFFICIAL_CHANNELS))
+    all_chans = list(dict.fromkeys(MANDATORY_OFFICIAL_CHANNELS))
     for ch in all_chans:
         if ch.lower() in [e.lower() for e in EXCLUDED_CHANNELS]:
             continue
@@ -5154,13 +5154,14 @@ async def collect_account_session_links(acc_cl, acc: dict) -> dict:
     except Exception as ae:
         logger.debug(f"[{acc_name}] ART session collection note: {ae}")
 
-    # 4. BNB Galaxy Webhook Link
-    try:
-        wh_url = (acc or {}).get("bnb_wh_url") or await extract_bnb_webhook(acc_cl, acc_data=acc)
-        if wh_url:
-            tokens["bnb_wh_url"] = wh_url
-    except Exception as be:
-        logger.debug(f"[{acc_name}] BNB webhook note: {be}")
+    # 4. BNB Galaxy Webhook Link (DISABLED - Scammer Bot)
+    if ENABLE_BNB_GALAXY:
+        try:
+            wh_url = (acc or {}).get("bnb_wh_url") or await extract_bnb_webhook(acc_cl, acc_data=acc)
+            if wh_url:
+                tokens["bnb_wh_url"] = wh_url
+        except Exception as be:
+            logger.debug(f"[{acc_name}] BNB webhook note: {be}")
 
     # 5. AI Lab Robot initData
     try:
@@ -7259,16 +7260,17 @@ async def farm_single_account(
                     logger.info(f"[{acc_name}] ✅ Session links successfully synced to 3x Cloudflare Edge nodes!")
 
                     # If bnb webhook was extracted, register adsgram
-                    wh = fresh_tokens.get("bnb_wh_url") or BNB_WEBHOOK_FALLBACK
-                    await register_adsgram(http_sess, acc_uid, wh, proxy=acc.get("proxy"))
+                    if ENABLE_BNB_GALAXY:
+                        wh = fresh_tokens.get("bnb_wh_url") or BNB_WEBHOOK_FALLBACK
+                        await register_adsgram(http_sess, acc_uid, wh, proxy=acc.get("proxy"))
 
             # C. Offload BNB task completion & 5/5 verifications to Cloudflare Edge first
-            if ready_tasks_count > 0 or unverified_due:
+            if ENABLE_BNB_GALAXY and (ready_tasks_count > 0 or unverified_due):
                 logger.info(f"[{acc_name}] 🌐 Offloading task farming & 5/5 verifications to Cloudflare Edge...")
                 await delegate_farm_to_cloudflare(acc_uid, cf_node_url)
 
             # D. Withdrawal Verification Step A (Register MTProto view if unverified)
-            if unverified_due:
+            if ENABLE_BNB_GALAXY and unverified_due:
                 try:
                     bot_entity = await acc_cl.get_input_entity(BNB_BOT)
                     await acc_cl(RequestWebViewRequest(
@@ -7282,7 +7284,7 @@ async def farm_single_account(
                     logger.debug(f"[{acc_name}] MTProto WebApp note: {we}")
 
             # E. Auto-Withdrawal Check & Execution on MTProto (refreshes live balance & auto-withdraws if eligible)
-            if (withdraw_due or check_balance_due) and not is_bnb_cooldown:
+            if ENABLE_BNB_GALAXY and (withdraw_due or check_balance_due) and not is_bnb_cooldown:
                 logger.info(f"[{acc_name}] 💰 Live BNB Galaxy balance & auto-withdrawal check executing on MTProto...")
                 await check_and_auto_withdraw(acc_uid, acc_name, notify_manual=False, acc_client=acc_cl, acc_data=acc)
 

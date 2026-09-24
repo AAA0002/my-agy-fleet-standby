@@ -63,7 +63,6 @@
     }
   ],
   "active_mining_bots": [
-    { "name": "BNB Galaxy", "bot": "CryptoProUpRobot", "status": "DISABLED", "policy": "DISABLED (SCAMMER PROTECTION) - Only pays 1st withdrawal then withholds all subsequent payouts. Disabled to protect CPU, RAM, and proxy bandwidth." },
     { "name": "Stones Miners", "bot": "stoneswithestand_bot", "policy": "Mining, treasure hunt, captcha OCR solver, 500 STONES auto-withdrawal to Arbitrum One" },
     { "name": "MRG Miner", "bot": "mrgminerbot", "policy": "Mining claims, task reaction claims, hash rate upgrades" },
     { "name": "ART Airdrop", "bot": "ART_AIRDROP_BOT", "policy": "8h mining renewal, task claims, level priority up to Lvl 8" },

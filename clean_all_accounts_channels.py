@@ -41,7 +41,11 @@ EXPLICIT_UNWANTED_USERNAMES = {
     "zyntrixmining",
     "revolvedao",
     "airdropbulider",
-    "tontraderai_official"
+    "tontraderai_official",
+    "rewards_lab",
+    "tensorcoinnews",
+    "earncraftnews",
+    "airdropfindteam"
 }
 
 # Whitelist: Channels that must NEVER be left under any circumstance
@@ -56,10 +60,6 @@ PROTECTED_USERNAMES = {
     "ailabrobotpayouts",
     "ultrawallet",
     "ultrawalletofficial",
-    "rewards_lab",
-    "tensorcoinnews",
-    "earncraftnews",
-    "airdropfindteam",
     "mininggram_channel",
     "novum_en",
     "gramworkers"

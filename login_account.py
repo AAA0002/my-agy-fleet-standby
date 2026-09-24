@@ -38,9 +38,6 @@ API_ID = os.getenv("TELEGRAM_API_ID")
 API_HASH = os.getenv("TELEGRAM_API_HASH")
 
 # Primary User Referral Links & Codes
-BNB_BOT = "CryptoProUpRobot"
-BNB_REFERRAL_CODE = "Bot46893407"
-
 AILAB_BOT = "AiLab_robot"
 AILAB_REFERRAL_CODE = "296852"
 
@@ -85,14 +82,6 @@ OFFICIAL_EMAIL = os.getenv("FLEET_EMAIL", "aaa.support.a@gmail.com")
 
 def generate_random_email():
     return OFFICIAL_EMAIL
-
-
-MANDATORY_BNB_CHANNELS = [
-    "Rewards_Lab",
-    "TensorCoinNews",
-    "AirdropFindTeam",
-    "EarnCraftNews"
-]
 
 
 def ensure_account_ton_wallet(acc: dict) -> str:
@@ -202,88 +191,10 @@ async def bind_referrals(client, me, acc_entry):
         acc_entry["is_referral_host"] = True
         return
 
-    print(f"\n🔗 Automatically binding account to all 9 user referral links with wallet isolation...")
+    print(f"\n🔗 Automatically binding account to all 8 user referral links with wallet isolation...")
 
-    # 1. BNB Galaxy (@CryptoProUpRobot) - Referral: Bot46893407
-    print(f"  • [1/9] Connecting to @{BNB_BOT} with referral: {BNB_REFERRAL_CODE}...")
-    try:
-        try:
-            await client(UnblockRequest(id=BNB_BOT))
-        except Exception:
-            pass
-        await client.send_message(BNB_BOT, f"/start {BNB_REFERRAL_CODE}")
-        await asyncio.sleep(2.5)
-
-        for ch in MANDATORY_BNB_CHANNELS:
-            try:
-                print(f"    - Joining mandatory channel: @{ch}...")
-                await client(JoinChannelRequest(ch))
-                await asyncio.sleep(1.5)
-            except Exception:
-                pass
-
-        msgs = await client.get_messages(BNB_BOT, limit=3)
-        for m in msgs:
-            if m.buttons:
-                for row in m.buttons:
-                    for btn in row:
-                        if "continue" in (btn.text or "").lower():
-                            try:
-                                await btn.click()
-                                await asyncio.sleep(2.5)
-                                break
-                            except Exception:
-                                pass
-
-        msgs = await client.get_messages(BNB_BOT, limit=3)
-        for m in msgs:
-            if m.buttons:
-                for row in m.buttons:
-                    for btn in row:
-                        if "submit details" in (btn.text or "").lower() or "details" in (btn.text or "").lower():
-                            try:
-                                await btn.click()
-                                await asyncio.sleep(2.5)
-                                break
-                            except Exception:
-                                pass
-
-        # Step 4: Wait for email prompt and submit official email
-        email_submitted = False
-        for _ in range(8):
-            await asyncio.sleep(1.5)
-            msgs = await client.get_messages(BNB_BOT, limit=3)
-            for m in msgs:
-                if not m.out and any(w in (m.raw_text or "").lower() for w in ["email", "youtube"]):
-                    print(f"    - Submitting official email: {OFFICIAL_EMAIL}")
-                    await client.send_message(BNB_BOT, OFFICIAL_EMAIL)
-                    email_submitted = True
-                    break
-            if email_submitted:
-                break
-
-        # Step 5: Wait for BEP-20 wallet prompt and submit Binance wallet
-        wallet_submitted = False
-        for _ in range(8):
-            await asyncio.sleep(1.5)
-            msgs = await client.get_messages(BNB_BOT, limit=3)
-            for m in msgs:
-                if not m.out and any(w in (m.raw_text or "").lower() for w in ["wallet", "bep-20"]):
-                    print(f"    - Submitting Binance BEP-20 wallet: {PRIMARY_EVM_WALLET}")
-                    await client.send_message(BNB_BOT, PRIMARY_EVM_WALLET)
-                    wallet_submitted = True
-                    break
-            if wallet_submitted:
-                break
-
-        acc_entry["bnb_wallet"] = PRIMARY_EVM_WALLET
-        acc_entry["bnb_referral_bound"] = True
-        print(f"  ✅ [1/9] Successfully bound to BNB Galaxy ({BNB_REFERRAL_CODE}) with Binance wallet!")
-    except Exception as e:
-        print(f"  ❌ Warning binding BNB Galaxy referral: {e}")
-
-    # 2. AI Lab Robot (@AiLab_robot) - Referral: 296852
-    print(f"  • [2/9] Connecting to @{AILAB_BOT} with referral: {AILAB_REFERRAL_CODE}...")
+    # 1. AI Lab Robot (@AiLab_robot) - Referral: 296852
+    print(f"  • [1/8] Connecting to @{AILAB_BOT} with referral: {AILAB_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=AILAB_BOT))
@@ -312,12 +223,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["ailab_referral_bound"] = True
-        print(f"  ✅ [2/9] Successfully bound to AI Lab Robot ({AILAB_REFERRAL_CODE})!")
+        print(f"  ✅ [1/8] Successfully bound to AI Lab Robot ({AILAB_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding AI Lab referral: {e}")
 
-    # 3. ART Airdrop (@ART_AIRDROP_BOT) - Referral: 6727787768
-    print(f"  • [3/9] Connecting to @{ART_BOT} with referral: {ART_REFERRAL_CODE}...")
+    # 2. ART Airdrop (@ART_AIRDROP_BOT) - Referral: 6727787768
+    print(f"  • [2/8] Connecting to @{ART_BOT} with referral: {ART_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=ART_BOT))
@@ -330,12 +241,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["art_referral_bound"] = True
-        print(f"  ✅ [3/9] Successfully bound to ART Airdrop ({ART_REFERRAL_CODE})!")
+        print(f"  ✅ [2/8] Successfully bound to ART Airdrop ({ART_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding ART Airdrop referral: {e}")
 
-    # 4. Ainovum Bot (@ainovum_bot) - Referral: ref_6727787768
-    print(f"  • [4/9] Connecting to @{AINOVUM_BOT} with referral: {AINOVUM_REFERRAL_CODE}...")
+    # 3. Ainovum Bot (@ainovum_bot) - Referral: ref_6727787768
+    print(f"  • [3/8] Connecting to @{AINOVUM_BOT} with referral: {AINOVUM_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=AINOVUM_BOT))
@@ -371,12 +282,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["ainovum_referral_bound"] = True
-        print(f"  ✅ [4/9] Successfully bound to Ainovum Bot ({AINOVUM_REFERRAL_CODE})!")
+        print(f"  ✅ [3/8] Successfully bound to Ainovum Bot ({AINOVUM_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding Ainovum referral: {e}")
 
-    # 5. MiningGRAM Bot (@MiningGRAM_Bot) - Referral: 339JU9K
-    print(f"  • [5/9] Connecting to @{MININGGRAM_BOT} with referral: {MININGGRAM_REFERRAL_CODE}...")
+    # 4. MiningGRAM Bot (@MiningGRAM_Bot) - Referral: 339JU9K
+    print(f"  • [4/8] Connecting to @{MININGGRAM_BOT} with referral: {MININGGRAM_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=MININGGRAM_BOT))
@@ -409,12 +320,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["mininggram_referral_bound"] = True
-        print(f"  ✅ [5/9] Successfully bound to MiningGRAM Bot ({MININGGRAM_REFERRAL_CODE})!")
+        print(f"  ✅ [4/8] Successfully bound to MiningGRAM Bot ({MININGGRAM_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding MiningGRAM referral: {e}")
 
-    # 6. Stones Miners (@stoneswithestand_bot) - Referral: r6727787768
-    print(f"  • [6/9] Connecting to @{STONES_BOT} with referral: {STONES_REFERRAL_CODE}...")
+    # 5. Stones Miners (@stoneswithestand_bot) - Referral: r6727787768
+    print(f"  • [5/8] Connecting to @{STONES_BOT} with referral: {STONES_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=STONES_BOT))
@@ -427,12 +338,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["stones_referral_bound"] = True
-        print(f"  ✅ [6/9] Successfully bound to Stones Miners ({STONES_REFERRAL_CODE})!")
+        print(f"  ✅ [5/8] Successfully bound to Stones Miners ({STONES_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding Stones Miners referral: {e}")
 
-    # 7. Ultra Wallet (@UltrawalletTrade_Bot) - Referral: 6727787768
-    print(f"  • [7/9] Connecting to @{ULTRAWALLET_BOT} with referral: {ULTRAWALLET_REFERRAL_CODE}...")
+    # 6. Ultra Wallet (@UltrawalletTrade_Bot) - Referral: 6727787768
+    print(f"  • [6/8] Connecting to @{ULTRAWALLET_BOT} with referral: {ULTRAWALLET_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=ULTRAWALLET_BOT))
@@ -456,12 +367,12 @@ async def bind_referrals(client, me, acc_entry):
                     timeout=aiohttp.ClientTimeout(total=8)
                 )
         acc_entry["ultrawallet_referral_bound"] = True
-        print(f"  ✅ [7/9] Successfully bound to Ultra Wallet ({ULTRAWALLET_REFERRAL_CODE})!")
+        print(f"  ✅ [6/8] Successfully bound to Ultra Wallet ({ULTRAWALLET_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding Ultra Wallet referral: {e}")
 
-    # 8. MRG Miner (@mrgminerbot) - Referral: ref_IRN1G3XD (Strict Isolated TON Wallet)
-    print(f"  • [8/9] Connecting to @{MRG_BOT} with referral: {MRG_REFERRAL_CODE}...")
+    # 7. MRG Miner (@mrgminerbot) - Referral: ref_IRN1G3XD (Strict Isolated TON Wallet)
+    print(f"  • [7/8] Connecting to @{MRG_BOT} with referral: {MRG_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=MRG_BOT))
@@ -489,12 +400,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["mrg_referral_bound"] = True
-        print(f"  ✅ [8/9] Successfully bound to MRG Miner ({MRG_REFERRAL_CODE}) with isolated TON wallet!")
+        print(f"  ✅ [7/8] Successfully bound to MRG Miner ({MRG_REFERRAL_CODE}) with isolated TON wallet!")
     except Exception as e:
         print(f"  ❌ Warning binding MRG Miner referral: {e}")
 
-    # 9. Apex Miner (@ApxMinerBot) - Referral: 6727787768
-    print(f"  • [9/9] Connecting to @{APX_BOT} with referral: {APX_REFERRAL_CODE}...")
+    # 8. Apex Miner (@ApxMinerBot) - Referral: 6727787768
+    print(f"  • [8/8] Connecting to @{APX_BOT} with referral: {APX_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=APX_BOT))
@@ -519,7 +430,7 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["apx_referral_bound"] = True
-        print(f"  ✅ [9/9] Successfully bound to Apex Miner ({APX_REFERRAL_CODE})!")
+        print(f"  ✅ [8/8] Successfully bound to Apex Miner ({APX_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding Apex Miner referral: {e}")
 
