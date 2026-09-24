@@ -62,7 +62,7 @@ while true; do
     LIVE_PIDS=$(pgrep -f "$BOT_SCRIPT" 2>/dev/null || true)
     for P in $LIVE_PIDS; do
         P_STAT=$(ps -p "$P" -o stat= 2>/dev/null | tr -d ' ')
-        if [ -n "$P_STAT" ] && [[ "$P_STAT" != *"Z"* ]]; then
+        if [ -n "$P_STAT" ] && [[ "$P_STAT" != *"Z"* && "$P_STAT" != *"T"* && "$P_STAT" != *"t"* ]]; then
             IS_RUNNING=1
             echo "$P" > "$PID_FILE"
             break
