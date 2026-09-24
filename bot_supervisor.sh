@@ -73,7 +73,7 @@ while true; do
         echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [HEAL] Userbot is down! Reviving process..." >> "$SUPERVISOR_LOG"
         
         # Launch userbot
-        "$PYTHON_BIN" "$BOT_SCRIPT" >> "$BOT_LOG" 2>&1 &
+        nohup "$PYTHON_BIN" "$BOT_SCRIPT" < /dev/null >> "$BOT_LOG" 2>&1 &
         BOT_PID=$!
         echo "$BOT_PID" > "$PID_FILE"
         echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [OK] Userbot launched with PID $BOT_PID" >> "$SUPERVISOR_LOG"

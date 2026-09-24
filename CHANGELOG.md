@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **Apex Miner Cloudflare Workers API Migration (`userbot_refresher.py` & `deploy_both_cf_workers.py`)**:
+  - **Backend URL Migration**: Updated Apex Miner WebApp API endpoint from obsolete Vercel deployment (`https://apex-miner.vercel.app` returning HTTP 404 DEPLOYMENT_NOT_FOUND) to the live Cloudflare Workers backend (`https://apxn-miner-live.apxn-network.workers.dev/api`).
+  - **Task Pipeline Streamlining**: Removed deprecated `/start` step on daily/social tasks (which returned 404 on the new API) and updated directly to atomic POST `/api/tasks/daily` and `/api/tasks/social` requests.
+
+- **MRG Miner Telegram Channel Auto-Join & Task Claiming (`userbot_refresher.py` & `clean_all_accounts_channels.py`)**:
+  - **Autonomous Chat Membership Verification**: Added MTProto `JoinChannelRequest` auto-join prior to claiming tasks with Telegram requirements (e.g. `@mrgfun` for "Join MRG Discussion"), plus dynamic on-demand channel joining and retry if the server responds with a Telegram membership prerequisite error.
+  - **Whitelist Protection**: Added `"mrgfun"` to `PROTECTED_USERNAMES` whitelist in `clean_all_accounts_channels.py` to prevent fleet accounts from leaving discussion groups during automated channel sweeps.
+  - **Pruned Defunct Endpoints**: Excised obsolete `/api/user/start-task` calls (HTTP 404) and streamlined to direct `/claim-task`.
+
+- **AI Lab Milestone Task Verification Filter (`userbot_refresher.py` & `deploy_both_cf_workers.py`)**:
+  - **Milestone Filter**: Filtered out incomplete referral and miner upgrade milestone tasks (`progress_finish` > `progress_current`), eliminating false positive claim logs and redundant polling on error code 400004.
+  - **Strict Error Validation**: Enforced verification that `not res_obj.get("error")` before flagging task completion.
+
+- **Immortal Supervisor Background Launch Hardening (`bot_supervisor.sh`)**:
+  - Added `nohup` and redirected stdin from `/dev/null` (`< /dev/null`) to guarantee that daemon instances launched by the supervisor never receive `SIGTTIN` or pause in background terminal environments.
+
 - **Resilient Stones Captcha Offline Solver & AI Vision Hybrid (`stones_captcha_solver.py`)**:
   - **Offline Template Matching Fallback**: Added normalized cosine similarity matching against character vector templates (`stones_captcha_templates.json`), guaranteeing 100% offline captcha resolution capability for Stones Miner withdrawals even during Google Gemini API outages (HTTP 503, 429 rate limits, or network timeouts).
   - **Color Segmentation & Vector Extraction**: Character extraction isolates the 5 distinct solid colors from the 210x68 PNG, normalizes each character to a 20x25 canvas (500-dimensional vector), and computes cosine similarity against all 30 alphanumeric template classes.

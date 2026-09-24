@@ -54,6 +54,7 @@ PROTECTED_USERNAMES = {
     "myagyai",
     "stoneswithestand",
     "mrgminer",
+    "mrgfun",
     "art_airdrop",
     "apexminer_official",
     "apexminergroup",

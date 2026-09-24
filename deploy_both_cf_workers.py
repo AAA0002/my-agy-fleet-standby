@@ -2464,11 +2464,6 @@ Reply to Arif naturally:`;
                 const completed = new Set(meD.completedTaskIds || []);
                 for (const t of tasks) {
                   if (t.taskId && !completed.has(t.taskId)) {
-                    await fetchWithRetry("https://mrg.up.railway.app/api/user/start-task", {
-                      method: "POST",
-                      headers,
-                      body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
-                    }, 1, 500).catch(() => {});
                     const mrgWait = (t.verificationType === "link_visit" || t.url || String(t.taskType).includes("social")) ? 15000 : 3000;
                     await new Promise(r => setTimeout(r, mrgWait));
                     await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
@@ -2642,7 +2637,7 @@ Reply to Arif naturally:`;
                       const tData = await tResp.json();
                       const tasks = [...(tData.result?.referral || []), ...(tData.result?.follow || []), ...(tData.result?.social || [])];
                       for (const t of tasks) {
-                        if (t.id && t.status !== "completed") {
+                        if (t.id && t.status !== "completed" && !(t.progress_finish && (t.progress_current || 0) < t.progress_finish)) {
                           await fetch(`${aiBase}/task-check`, {
                             method: "POST",
                             headers: aiAuth,
@@ -2812,7 +2807,7 @@ Reply to Arif naturally:`;
           // G. Apex Miner Daily Check-in, Mining Claim/Restart, Tasks, Ad Boost & Ad Reward
           if (accData.apx_init_data) {
             try {
-              const apxBase = "https://apex-miner.vercel.app/api";
+              const apxBase = "https://apxn-miner-live.apxn-network.workers.dev/api";
               await fetch(`${apxBase}/auth/telegram`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
               const bResp = await fetch(`${apxBase}/bootstrap`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => null);
               if (bResp && bResp.ok) {
@@ -2825,13 +2820,9 @@ Reply to Arif naturally:`;
               await fetch(`${apxBase}/mining/claim`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
               await fetch(`${apxBase}/mining/restart`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
               for (const t of ["telegram", "twitter"]) {
-                await fetch(`${apxBase}/tasks/daily/start`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, task: t }) }).catch(() => {});
-                await new Promise(r => setTimeout(r, 10000));
                 await fetch(`${apxBase}/tasks/daily`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, task: t }) }).catch(() => {});
               }
               for (const s of ["channel", "group", "twitter"]) {
-                await fetch(`${apxBase}/tasks/social/start`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, task: s }) }).catch(() => {});
-                await new Promise(r => setTimeout(r, 15000));
                 await fetch(`${apxBase}/tasks/social`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, task: s }) }).catch(() => {});
               }
               await fetch(`${apxBase}/ads/boost`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});

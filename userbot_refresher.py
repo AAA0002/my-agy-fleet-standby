@@ -3869,6 +3869,10 @@ async def ensure_referral_bound(acc_client, acc: dict):
                 await acc_client(JoinChannelRequest("mrgminer"))
             except Exception:
                 pass
+            try:
+                await acc_client(JoinChannelRequest("mrgfun"))
+            except Exception:
+                pass
             acc["mrg_referral_bound"] = True
             await update_account_safely(acc_uid, {"mrg_referral_bound": True})
             logger.info(f"[{acc_name}] ✅ MRG Miner successfully onboarded with referral {MRG_REFERRAL_CODE}!")
@@ -5754,12 +5758,21 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             if tid in completed_task_ids and "recurring" not in ttype:
                 continue
 
+            # If task requires Telegram group/channel, auto-join before claiming
+            if acc_client and (vtype in ("telegram_channel", "telegram_group") or "t.me/" in str(tsk.get("url", ""))):
+                t_url = tsk.get("url", "")
+                target_ch = None
+                if "t.me/" in t_url:
+                    target_ch = t_url.split("t.me/")[-1].split("/")[0].split("?")[0].replace("@", "").strip()
+                if target_ch:
+                    try:
+                        await acc_client(JoinChannelRequest(target_ch))
+                        logger.debug(f"[{acc_name}] ⛏️ [MRG Miner] Auto-joined @{target_ch} for task '{title}'")
+                    except Exception as je:
+                        logger.debug(f"[{acc_name}] ⛏️ [MRG Miner] Join channel note for @{target_ch}: {je}")
+
             # Dynamic wait: 15s for link visits / social / channel tasks, 3s for native
             task_wait = 15.0 if (vtype == "link_visit" or tsk.get("url") or "social" in ttype.lower() or "channel" in title.lower()) else 3.0
-            try:
-                await session.post(f"{base_url}/api/user/start-task", json={"initData": init_data, "taskId": tid}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
-            except Exception:
-                pass
             logger.debug(f"[{acc_name}] ⛏️ [MRG Miner] Waiting {task_wait}s for '{title}'...")
             await asyncio.sleep(task_wait)
 
@@ -5770,6 +5783,23 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                         rew = float(tsk.get("reward", 5))
                         in_app_bal += rew
                         logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Task '{title}' claimed: +{rew} MRG!")
+                    elif "join the telegram" in str(td).lower() and acc_client:
+                        # Extract channel name from error message (e.g. '@mrgfun')
+                        match_ch = re.search(r"@([a-zA-Z0-9_]+)", str(td))
+                        if match_ch:
+                            ch_name = match_ch.group(1)
+                            try:
+                                await acc_client(JoinChannelRequest(ch_name))
+                                logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Joined @{ch_name} on-demand for task '{title}'. Retrying claim...")
+                                await asyncio.sleep(3.0)
+                                async with session.post(f"{base_url}/api/user/claim-task", json={"initData": init_data, "taskId": tid}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as tr_retry:
+                                    td_retry = await tr_retry.json()
+                                    if td_retry.get("success"):
+                                        rew = float(tsk.get("reward", 5))
+                                        in_app_bal += rew
+                                        logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Task '{title}' claimed after joining @{ch_name}: +{rew} MRG!")
+                            except Exception as c_err:
+                                logger.debug(f"[{acc_name}] MRG on-demand join note: {c_err}")
                     elif "wait" in str(td).lower() or "second" in str(td).lower():
                         await asyncio.sleep(12.0)
                         async with session.post(f"{base_url}/api/user/claim-task", json={"initData": init_data, "taskId": tid}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as tr2:
@@ -6195,6 +6225,11 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
                         # If already completed, skip
                         if tsk.get("status") == "completed" or tsk.get("is_claimed"):
                             continue
+                        # Skip incomplete milestone tasks (referral count, miner level upgrade)
+                        p_finish = tsk.get("progress_finish")
+                        if p_finish is not None and tsk.get("progress_current", 0) < p_finish:
+                            continue
+
                         ttitle = tsk.get("title") or tsk.get("name") or f"Task #{tid}"
                         # Step 1: Tap task
                         try:
@@ -6210,7 +6245,8 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
                             async with session.post(f"{base_url}/task-check", json={"task_id": tid, "action": "check"}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as tc:
                                 if tc.status == 200:
                                     tcd = await tc.json()
-                                    if tcd.get("status") == "ok" or tcd.get("result"):
+                                    res_obj = tcd.get("result", {})
+                                    if (tcd.get("status") == "ok" or res_obj) and not res_obj.get("error"):
                                         logger.info(f"[{acc_name}] 🧪 [AI Lab] Task '{ttitle}' claimed!")
                         except Exception:
                             pass
@@ -6512,7 +6548,7 @@ async def automate_apx_cycle(session: aiohttp.ClientSession, acc_client, acc: di
 
         acc_ua = get_account_user_agent(acc_uid)
         headers = {"Content-Type": "application/json", "User-Agent": acc_ua}
-        base_url = "https://apex-miner.vercel.app/api"
+        base_url = "https://apxn-miner-live.apxn-network.workers.dev/api"
 
         # 1. Auth & Bootstrap
         try:
@@ -6580,12 +6616,7 @@ async def automate_apx_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         # 5. Tasks Discovery & Auto-Claim (Dynamic wait: 10s for daily, 15s for social tasks)
         for dt in ["telegram", "twitter"]:
             try:
-                # Step 1: Tap task
-                await session.post(f"{base_url}/tasks/daily/start", json={"initData": init_data, "task": dt}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
-            except Exception:
-                pass
-            await asyncio.sleep(10.0)
-            try:
+                await asyncio.sleep(2.0)
                 async with session.post(f"{base_url}/tasks/daily", json={"initData": init_data, "task": dt}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as dtr:
                     if dtr.status == 200:
                         dtd = await dtr.json()
@@ -6596,12 +6627,7 @@ async def automate_apx_cycle(session: aiohttp.ClientSession, acc_client, acc: di
 
         for st in ["channel", "group", "twitter"]:
             try:
-                # Step 1: Tap task
-                await session.post(f"{base_url}/tasks/social/start", json={"initData": init_data, "task": st}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
-            except Exception:
-                pass
-            await asyncio.sleep(15.0)
-            try:
+                await asyncio.sleep(2.0)
                 async with session.post(f"{base_url}/tasks/social", json={"initData": init_data, "task": st}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as str_req:
                     if str_req.status == 200:
                         std = await str_req.json()
