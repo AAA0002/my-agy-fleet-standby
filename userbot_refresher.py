@@ -6194,8 +6194,8 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
             except Exception:
                 pass
 
-        # 3. Exchange accumulated hashes to balance
-        if hashes_bal >= 1.0:
+        # 3. Exchange accumulated hashes to balance (API requires >= 3.0 hashes)
+        if hashes_bal >= 3.0:
             try:
                 async with session.post(f"{base_url}/miner-exchange_hashes", json={"exchange": True}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as eh:
                     if eh.status == 200:

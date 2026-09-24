@@ -1262,8 +1262,23 @@ fi
                     const tok = lData.result?.bearer || lData.user_info?.session_id;
                     if (tok) {
                       const aiAuth = { ...mHeaders, "Authorization": `Bearer ${tok}` };
-                      await fetch(`${aiBase}/miner-start_mining`, { method: "POST", headers: aiAuth, body: JSON.stringify({ start_mining: true }) }).catch(() => {});
-                      await fetch(`${aiBase}/miner-exchange_hashes`, { method: "POST", headers: aiAuth, body: JSON.stringify({ exchange: true }) }).catch(() => {});
+                      let isRunning = false;
+                      let hashesBal = 0;
+                      try {
+                        const mResp = await fetch(`${aiBase}/miner`, { headers: aiAuth }).catch(() => null);
+                        if (mResp && mResp.ok) {
+                          const mData = await mResp.json().catch(() => ({}));
+                          const curM = mData.result?.miner?.current_miner || {};
+                          isRunning = curM.is_running && (curM.time_left > 0);
+                          hashesBal = parseFloat(mData.result?.miner?.hashes_balance || 0);
+                        }
+                      } catch (_) {}
+                      if (!isRunning) {
+                        await fetch(`${aiBase}/miner-start_mining`, { method: "POST", headers: aiAuth, body: JSON.stringify({ start_mining: true }) }).catch(() => {});
+                      }
+                      if (hashesBal >= 3.0) {
+                        await fetch(`${aiBase}/miner-exchange_hashes`, { method: "POST", headers: aiAuth, body: JSON.stringify({ exchange: true }) }).catch(() => {});
+                      }
                     }
                   }
                 }
@@ -2664,7 +2679,7 @@ Reply to Arif naturally:`;
                     }).catch(() => {});
                   }
 
-                  if (hashesBal >= 1.0) {
+                  if (hashesBal >= 3.0) {
                     await fetch(`${aiBase}/miner-exchange_hashes`, {
                       method: "POST",
                       headers: aiAuth,
