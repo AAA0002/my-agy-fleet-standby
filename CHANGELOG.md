@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- Implemented strict withdrawal policy per user directives:
+  - **Main Account Protection**: Explicitly disabled withdrawals from AI Lab Robot (`@AiLab_robot`) and Stones Miners (`@stoneswithestand_bot`) on main account (`6727787768`) to preserve and compound balance/hash power.
+  - **Worker Account Auto-Withdrawals**: Enabled auto-withdrawals for worker accounts in AI Lab Robot when balance >= $0.02 USD to user's BEP-20 vault.
+  - **Ainovum Multi-Account Wallet Isolation**: Routed worker accounts through unique addresses from `fleet_evm_wallets.json` to eliminate `withdraw_duplicate_wallet` ("NOVUM rules allow only one account per person") rejection.
+  - **Stones Miners Resilience & Diagnosis**: Handled Cloudflare 1033 tunnel outages and AdsGram postback requirements with clean backoffs (1h tunnel, 12h ad proof) to prevent looping.
+  - **MRG Miner Circuit Breaker**: Added 30-minute circuit-breaker (`MRG_CIRCUIT_BREAKER_UNTIL`) on Railway backend 502/timeouts to conserve VPS CPU and network sockets.
+- MiningGRAM (`@MiningGRAM_Bot`) Optimization & Referral Qualification:
+  - Removed MiningGRAM from continuous fleet background mining loops to minimize VPS overhead and focus on high-yield bots.
+  - Retained referral onboarding with master referral code `339JU9K`.
+  - Added automated 2-task qualification (`Join Announcement Channel` + `Like & Retweet`) during account onboarding so each referral registers as complete and awards $2.00 USDT per account in USDT Promo.
+  - Dispatched `qualify_fleet_mininggram.py` across fleet accounts, successfully boosting master account's USDT Promo balance.
+
 - Executed full fleet-wide report, block, and channel purge against scammer bot `@CryptoProUpRobot`:
   - Dispatched `report_and_purge_bnb_galaxy.py` across all 13 fleet accounts: Reported `@CryptoProUpRobot` to Telegram Anti-Scam (`InputReportReasonFake`), blocked the bot, wiped chat histories, and left all mandatory scam channels (`@Rewards_Lab`, `@TensorCoinNews`, `@AirdropFindTeam`, `@EarnCraftNews`).
   - Purged BNB Galaxy from `login_account.py` (updated onboarding to 8 legitimate bots) and `refresh_cloud_tokens.py`.

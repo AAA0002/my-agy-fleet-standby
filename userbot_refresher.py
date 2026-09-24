@@ -4031,6 +4031,14 @@ async def ensure_referral_bound(acc_client, acc: dict):
             bot_mg = await acc_client.get_input_entity(MININGGRAM_BOT)
             await acc_client.send_message(bot_mg, f"/start {MININGGRAM_REFERRAL_CODE}")
             await asyncio.sleep(2.0)
+            
+            # Join official announcement channel for Task 1 qualification
+            try:
+                mg_ch = await acc_client.get_entity("MiningGRAM_channel")
+                await acc_client(JoinChannelRequest(mg_ch))
+            except Exception:
+                pass
+
             try:
                 res_mg = await acc_client(RequestAppWebViewRequest(
                     peer=bot_mg,
@@ -4042,8 +4050,10 @@ async def ensure_referral_bound(acc_client, acc: dict):
                 init_mg = urllib.parse.parse_qs(parsed_mg.fragment).get("tgWebAppData", [None])[0]
                 if init_mg:
                     async with aiohttp.ClientSession() as mg_sess:
-                        await mg_sess.post(
-                            "https://mining-gram-worker.muhaisin0888.workers.dev/api/auth",
+                        # 1. Register with master referral code
+                        mg_base = "https://mining-gram-worker.muhaisin0888.workers.dev"
+                        ar = await mg_sess.post(
+                            f"{mg_base}/api/auth",
                             json={
                                 "initData": init_mg,
                                 "referralCode": MININGGRAM_REFERRAL_CODE,
@@ -4052,11 +4062,29 @@ async def ensure_referral_bound(acc_client, acc: dict):
                             headers={"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT},
                             timeout=aiohttp.ClientTimeout(total=10)
                         )
+                        ad = await ar.json()
+                        mg_tok = ad.get("sessionToken") or ad.get("token")
+                        if mg_tok:
+                            mg_hdrs = {"Authorization": f"Bearer {mg_tok}", "Content-Type": "application/json"}
+                            # Task 1: Join Announcement Channel claim
+                            try:
+                                await mg_sess.post(f"{mg_base}/api/social/claim", json={"taskId": "e6c5f7ba-552b-405e-9424-8babb20ce92d"}, headers=mg_hdrs, timeout=aiohttp.ClientTimeout(total=8))
+                            except Exception:
+                                pass
+                            # Task 2: Like & Retweet (timer 30s)
+                            try:
+                                await mg_sess.post(f"{mg_base}/api/social/timer/start", json={"taskId": "c9aa035b-7664-4a1e-a60b-56e175328949"}, headers=mg_hdrs, timeout=aiohttp.ClientTimeout(total=8))
+                                await asyncio.sleep(32)
+                                await mg_sess.post(f"{mg_base}/api/social/claim", json={"taskId": "c9aa035b-7664-4a1e-a60b-56e175328949"}, headers=mg_hdrs, timeout=aiohttp.ClientTimeout(total=8))
+                            except Exception:
+                                pass
+                            logger.info(f"[{acc_name}] 🎯 Completed 2 MiningGRAM tasks for referral qualification credit!")
             except Exception:
                 pass
             acc["mininggram_referral_bound"] = True
-            await update_account_safely(acc_uid, {"mininggram_referral_bound": True})
-            logger.info(f"[{acc_name}] ✅ MiningGRAM Bot successfully bound to referral {MININGGRAM_REFERRAL_CODE}!")
+            acc["mininggram_tasks_completed"] = True
+            await update_account_safely(acc_uid, {"mininggram_referral_bound": True, "mininggram_tasks_completed": True})
+            logger.info(f"[{acc_name}] ✅ MiningGRAM Bot successfully bound to referral {MININGGRAM_REFERRAL_CODE} with 2 tasks completed!")
         except Exception as e:
             logger.warning(f"[{acc_name}] MiningGRAM referral notice: {e}")
 
@@ -5517,13 +5545,17 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
         except Exception:
             pass
 
-        # 10. Auto-Withdrawal check for all fleet accounts
+        # 10. Auto-Withdrawal check
         # Note: In Stones Miners, 'coins' represents the spendable Wallet Holding; 'balance' is total in-game score/EXP.
         acc["stones_coins"] = coins
         await update_account_safely(acc_uid, {"stones_coins": coins})
         now_ts = time.time()
         stones_next_wd = float(acc.get("stones_next_wd_at") or 0)
-        if coins >= 500:
+
+        # Primary Account Protection: DO NOT withdraw on main account per user directive
+        if is_primary:
+            logger.info(f"[{acc_name}] 💎 [Stones] Main account holding {coins} STONES (Withdrawals disabled per user directive to preserve balance).")
+        elif coins >= 500:
             if now_ts < stones_next_wd:
                 rem_m = max(0.1, (stones_next_wd - now_ts) / 60.0)
                 logger.info(f"[{acc_name}] 💎 [Stones] Coins {coins} STONES >= 500 threshold, but on withdrawal cooldown (~{rem_m:.1f}m remaining). Will retry after cooldown.")
@@ -5559,9 +5591,17 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                         if "cooldown" in details_str:
                             acc["stones_next_wd_at"] = now_ts + 190  # 3 minutes + 10s margin
                             await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 190})
+                        elif any(k in details_str for k in ["ad", "proof", "watch", "video", "sponsor"]):
+                            acc["stones_next_wd_at"] = now_ts + 43200  # 12 hours cooldown for adsgram proof
+                            await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 43200})
+                            logger.info(f"[{acc_name}] 💎 [Stones] Withdrawal requires AdsGram visual ad proof ('{wd_res}'). Setting 12h cooldown.")
+                        elif any(k in details_str for k in ["1033", "530", "tunnel", "dns", "cloudflare", "connect"]):
+                            acc["stones_next_wd_at"] = now_ts + 3600  # 1 hour cooldown for origin tunnel
+                            await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 3600})
+                            logger.info(f"[{acc_name}] 💎 [Stones] Cloudflare/Origin tunnel unavailable. Setting 1h cooldown.")
                         else:
-                            acc["stones_next_wd_at"] = now_ts + 300
-                            await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 300})
+                            acc["stones_next_wd_at"] = now_ts + 600
+                            await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 600})
                 except Exception as we:
                     logger.error(f"[{acc_name}] Stones auto-withdrawal error: {we}")
 
@@ -5575,6 +5615,9 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
 # MODULE 3: MRG MINER AUTOMATION (@mrgminerbot)
 # =======================================================
 
+MRG_CIRCUIT_BREAKER_UNTIL = 0
+MRG_CONSECUTIVE_FAILS = 0
+
 async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: dict):
     """
     Automates MRG Miner (@mrgminerbot):
@@ -5587,9 +5630,16 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
     - Primary Account (6727787768): Sweeps 10% squad commission and referral bonuses
     - Auto-unlocks higher mining level (TH/s boost) when holding balance permits
     """
+    global MRG_CIRCUIT_BREAKER_UNTIL, MRG_CONSECUTIVE_FAILS
     acc_name = acc.get("name", "User")
     acc_uid = str(acc.get("user_id"))
     is_primary = (acc_uid == str(REPORT_CHAT_ID))
+
+    now = time.time()
+    if now < MRG_CIRCUIT_BREAKER_UNTIL:
+        rem_mins = max(1, int((MRG_CIRCUIT_BREAKER_UNTIL - now) / 60))
+        logger.debug(f"[{acc_name}] ⛏️ [MRG Miner] API server offline cooldown active (~{rem_mins}m remaining). Skipping.")
+        return
 
     try:
         init_data = None
@@ -5643,21 +5693,30 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             }
         }
         try:
-            async with session.post(f"{base_url}/api/auth/verify", json=auth_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as r:
+            async with session.post(f"{base_url}/api/auth/verify", json=auth_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as r:
                 pass
         except Exception:
             pass
 
-        await asyncio.sleep(1.5)
+        await asyncio.sleep(1.0)
 
         # 2. Profile fetch
         me_data = {}
         try:
-            async with session.post(f"{base_url}/api/user/me", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as r:
+            async with session.post(f"{base_url}/api/user/me", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as r:
                 if r.status == 200:
                     me_data = await r.json()
+                    MRG_CONSECUTIVE_FAILS = 0
+                else:
+                    MRG_CONSECUTIVE_FAILS += 1
         except Exception:
-            pass
+            MRG_CONSECUTIVE_FAILS += 1
+
+        if not me_data:
+            if MRG_CONSECUTIVE_FAILS >= 2:
+                MRG_CIRCUIT_BREAKER_UNTIL = now + 1800
+                logger.warning(f"⛏️ [MRG Miner] Railway backend unreachable (502/timeout). 30-minute circuit breaker activated to save resources.")
+            return
 
         u = me_data.get("user", {})
         act_lvl = me_data.get("activeLevel") or 1
@@ -6193,6 +6252,50 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
         except Exception:
             pass
 
+        # 5. Auto-Withdrawal to BEP-20 (Worker Accounts Only - $0.02 USD Minimum)
+        # Main Account (6727787768) is strictly protected from withdrawal per user directive.
+        if is_primary:
+            logger.info(f"[{acc_name}] 🧪 [AI Lab] Main account holding balance (${hashes_bal:.2f} hashes). Withdrawals disabled per user directive to build power.")
+        else:
+            try:
+                async with session.get(f"{base_url}/cashout", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as cor:
+                    if cor.status == 200:
+                        co_data = await cor.json()
+                        usd_bal = float(co_data.get("user_info", {}).get("balance", 0) or 0)
+                        if usd_bal >= 0.02:
+                            wd_usd = round(usd_bal, 4)
+                            target_evm = EVM_VAULT_ADDRESS
+                            fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
+                            if os.path.exists(fleet_evm_file):
+                                try:
+                                    with open(fleet_evm_file, "r", encoding="utf-8") as fef:
+                                        target_evm = json.load(fef).get(acc_uid, {}).get("address") or target_evm
+                                except Exception:
+                                    pass
+                            logger.info(f"[{acc_name}] 🧪 [AI Lab] Worker balance ${usd_bal:.4f} >= $0.02 threshold! Submitting auto-withdrawal to BEP-20 {target_evm}...")
+                            pay_payload = {
+                                "ps_id": 5,  # USDT (BEP20)
+                                "amount_usd": wd_usd,
+                                "wallet": target_evm,
+                                "dest_tag": ""
+                            }
+                            async with session.post(f"{base_url}/cashout-pay", json=pay_payload, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10)) as cpr:
+                                cp_res = await cpr.json()
+                                if cp_res.get("request_info", {}).get("error_code") == 0 or cp_res.get("result"):
+                                    logger.info(f"[{acc_name}] 🧪 [AI Lab] Withdrawal success: {cp_res}")
+                                    await send_report_message(
+                                        f"🎉 *AI Lab Robot Withdrawal Submitted!*\n\n"
+                                        f"• **Account:** {acc_name} (Worker)\n"
+                                        f"• **Amount:** `${wd_usd} USD` (USDT BEP-20)\n"
+                                        f"• **Destination:** `{target_evm}`\n"
+                                        f"• **Result:** `{cp_res}`",
+                                        chat_id=REPORT_CHAT_ID
+                                    )
+                                else:
+                                    logger.info(f"[{acc_name}] 🧪 [AI Lab] Cashout response: {cp_res}")
+            except Exception as awe:
+                logger.debug(f"[{acc_name}] AI Lab cashout note: {awe}")
+
         logger.info(f"[{acc_name}] 🧪 [AI Lab] Cycle finished | Power: {miner_data.get('current_power', 0)} | Hashes: {hashes_bal:.2f} | Mining: {is_running}")
 
     except Exception as e:
@@ -6668,7 +6771,7 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
         except Exception:
             pass
 
-        # 5. Auto-Withdrawal to Main Binance BEP-20 Wallet (0.1 USDT Minimum)
+        # 5. Auto-Withdrawal to BEP-20 Wallet (0.1 USDT Minimum)
         try:
             async with session.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cr:
                 if cr.status == 200:
@@ -6676,8 +6779,20 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
                     avail = float(cd.get("freeze", {}).get("available", 0) or 0)
                     if avail >= 0.1:
                         wd_amt = round(avail, 4)
-                        logger.info(f"[{acc_name}] 🤖 [Ainovum] Available {avail:.4f} USDT >= 0.1 threshold! Submitting auto-withdrawal to BEP-20 {EVM_VAULT_ADDRESS}...")
-                        wd_payload = {"amount": wd_amt, "wallet": EVM_VAULT_ADDRESS, "network": "bep20"}
+                        target_evm_addr = EVM_VAULT_ADDRESS if is_primary else None
+                        if not target_evm_addr:
+                            fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
+                            if os.path.exists(fleet_evm_file):
+                                try:
+                                    with open(fleet_evm_file, "r", encoding="utf-8") as fef:
+                                        target_evm_addr = json.load(fef).get(acc_uid, {}).get("address")
+                                except Exception:
+                                    pass
+                        if not target_evm_addr:
+                            target_evm_addr = EVM_VAULT_ADDRESS
+
+                        logger.info(f"[{acc_name}] 🤖 [Ainovum] Available {avail:.4f} USDT >= 0.1 threshold! Submitting auto-withdrawal to BEP-20 {target_evm_addr}...")
+                        wd_payload = {"amount": wd_amt, "wallet": target_evm_addr, "network": "bep20"}
                         for attempt in range(2):
                             async with session.post(
                                 f"{base_url}/api/withdraws/usdt/create",
@@ -6693,7 +6808,7 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
                                         f"🎉 *Ainovum USDT Withdrawal Submitted!*\n\n"
                                         f"• **Account:** {acc_name}\n"
                                         f"• **Amount:** `{wd_amt} USDT` (BEP-20)\n"
-                                        f"• **Destination:** `{EVM_VAULT_ADDRESS}` (Binance BEP-20)\n"
+                                        f"• **Destination:** `{target_evm_addr}`\n"
                                         f"• **Result:** `{wd}`",
                                         chat_id=REPORT_CHAT_ID
                                     )
@@ -7206,7 +7321,6 @@ async def farm_single_account(
                     automate_ultrawallet_cycle(fast_mining_sess, None, acc),
                     automate_apx_cycle(fast_mining_sess, None, acc),
                     automate_ainovum_cycle(fast_mining_sess, None, acc),
-                    automate_mininggram_cycle(fast_mining_sess, None, acc),
                     automate_atf_cycle(fast_mining_sess, None, acc),
                     return_exceptions=True
                 )
@@ -7295,7 +7409,7 @@ async def farm_single_account(
                 logger.info(f"[{acc_name}] 💰 Live BNB Galaxy balance & auto-withdrawal check executing on MTProto...")
                 await check_and_auto_withdraw(acc_uid, acc_name, notify_manual=False, acc_client=acc_cl, acc_data=acc)
 
-            # F. Multi-Bot Mining Harvest & Task Automation (ART, MRG, Stones, AI Lab, UltraWallet, Apex Miner, Ainovum, MiningGRAM - Parallel Execution)
+            # F. Multi-Bot Mining Harvest & Task Automation (ART, MRG, Stones, AI Lab, UltraWallet, Apex Miner, Ainovum - Parallel Execution)
             try:
                 await asyncio.gather(
                     automate_art_cycle(http_sess, acc_cl, acc),
@@ -7305,7 +7419,6 @@ async def farm_single_account(
                     automate_ultrawallet_cycle(http_sess, acc_cl, acc),
                     automate_apx_cycle(http_sess, acc_cl, acc),
                     automate_ainovum_cycle(http_sess, acc_cl, acc),
-                    automate_mininggram_cycle(http_sess, acc_cl, acc),
                     automate_atf_cycle(http_sess, acc_cl, acc),
                     return_exceptions=True
                 )

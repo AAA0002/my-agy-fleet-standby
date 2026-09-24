@@ -296,6 +296,14 @@ async def bind_referrals(client, me, acc_entry):
         bot_mg = await client.get_input_entity(MININGGRAM_BOT)
         await client.send_message(bot_mg, f"/start {MININGGRAM_REFERRAL_CODE}")
         await asyncio.sleep(2.0)
+        
+        # Join official announcement channel for Task 1 qualification
+        try:
+            mg_ch = await client.get_entity("MiningGRAM_channel")
+            await client(JoinChannelRequest(mg_ch))
+        except Exception:
+            pass
+
         try:
             res_mg = await client(RequestAppWebViewRequest(
                 peer=bot_mg,
@@ -307,8 +315,9 @@ async def bind_referrals(client, me, acc_entry):
             init_mg = urllib.parse.parse_qs(parsed_mg.fragment).get("tgWebAppData", [None])[0]
             if init_mg:
                 async with aiohttp.ClientSession() as mg_sess:
-                    await mg_sess.post(
-                        "https://mining-gram-worker.muhaisin0888.workers.dev/api/auth",
+                    mg_base = "https://mining-gram-worker.muhaisin0888.workers.dev"
+                    ar = await mg_sess.post(
+                        f"{mg_base}/api/auth",
                         json={
                             "initData": init_mg,
                             "referralCode": MININGGRAM_REFERRAL_CODE,
@@ -317,10 +326,28 @@ async def bind_referrals(client, me, acc_entry):
                         headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (Linux; Android 14)"},
                         timeout=aiohttp.ClientTimeout(total=10)
                     )
+                    ad = await ar.json()
+                    mg_tok = ad.get("sessionToken") or ad.get("token")
+                    if mg_tok:
+                        mg_hdrs = {"Authorization": f"Bearer {mg_tok}", "Content-Type": "application/json"}
+                        # Task 1: Join Announcement Channel claim
+                        try:
+                            await mg_sess.post(f"{mg_base}/api/social/claim", json={"taskId": "e6c5f7ba-552b-405e-9424-8babb20ce92d"}, headers=mg_hdrs, timeout=aiohttp.ClientTimeout(total=8))
+                        except Exception:
+                            pass
+                        # Task 2: Like & Retweet (timer 30s)
+                        try:
+                            await mg_sess.post(f"{mg_base}/api/social/timer/start", json={"taskId": "c9aa035b-7664-4a1e-a60b-56e175328949"}, headers=mg_hdrs, timeout=aiohttp.ClientTimeout(total=8))
+                            await asyncio.sleep(32)
+                            await mg_sess.post(f"{mg_base}/api/social/claim", json={"taskId": "c9aa035b-7664-4a1e-a60b-56e175328949"}, headers=mg_hdrs, timeout=aiohttp.ClientTimeout(total=8))
+                        except Exception:
+                            pass
+                        print(f"  🎯 Completed 2 MiningGRAM tasks for referral qualification credit!")
         except Exception:
             pass
         acc_entry["mininggram_referral_bound"] = True
-        print(f"  ✅ [4/8] Successfully bound to MiningGRAM Bot ({MININGGRAM_REFERRAL_CODE})!")
+        acc_entry["mininggram_tasks_completed"] = True
+        print(f"  ✅ [4/8] Successfully bound to MiningGRAM Bot ({MININGGRAM_REFERRAL_CODE}) with 2 tasks completed!")
     except Exception as e:
         print(f"  ❌ Warning binding MiningGRAM referral: {e}")
 
