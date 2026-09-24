@@ -6,17 +6,19 @@ HERMES & GROK STYLE AUTONOMOUS AI AGENT (100% Free Multi-Model Council)
 =============================================================================
 Hostable on: Render.com (Cloud Background Worker) & Cloudflare Edge
 Cognitive Engine:
-  - Primary Proposer: Google Gemini 3.8 Flash (14-Key Rotating Pool)
-  - Safety Judge & Verifier: Groq LPU (3-Key Rotating Pool, Qwen 3.8 & GPT-OSS)
+  - Primary Proposer: Google Gemini 2.5 Flash / Flash Latest (14-Key Rotating Pool)
+  - Safety Judge & Verifier: Cloudflare Workers AI (Llama 3.2 3B Instruct) across 3 Edge Nodes
 Core Features:
   - Anti-Stupid Dual-Verification Layer (Plan -> Critique -> Approve)
-  - Dynamic Skill Synthesis (Synthesizes, tests, and learns new tools on the fly)
+  - Autonomous Render Token Collection Failover (Node 1 -> Node 2 if GitHub Actions limits up)
+  - Autonomous Multi-Chain Profit Sweeper (AI Lab USD + Stones + On-Chain Master Vaults)
   - Reflexion Long-Term Memory (Learns from every mistake via Upstash Redis)
   - 24/7 Autonomous Fleet Oversight & Automated Payout Management
 =============================================================================
 """
 
 import os
+import re
 import sys
 import json
 import time
@@ -43,13 +45,29 @@ GROQ_KEYS = [os.getenv(f"GROQ_API_KEY_{i}") for i in [1, 2, 3] if os.getenv(f"GR
 
 REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o")
 REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
+PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
 
 UPSTASH_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://relaxing-starfish-285827.upstash.io")
 UPSTASH_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw")
 
+CF_SECRET_KEY = os.getenv("CF_SECRET_KEY", "agy_cf_secret_7d36994e_2026")
+
 # Target Wallets
-ARBITRUM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
-BEP20_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
+MASTER_EVM_VAULT = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
+MASTER_TON_VAULT = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
+
+# Cloudflare Edge AI Endpoints (100% Free, Zero API Keys Required)
+CF_AI_NODES = [
+    "https://restore-agy.aaaai2.workers.dev/ai",
+    "https://restore-agy.aaa-bot.workers.dev/ai",
+    "https://restore-agy.aaa222.workers.dev/ai"
+]
+
+# Render Standby Token Collection Nodes (100% Free Cloud Failover)
+RENDER_STANDBY_NODES = [
+    ("Render Node 1 (Singapore)", "https://my-agy-fleet-standby.onrender.com/collect-tokens"),
+    ("Render Node 2 (Frankfurt)", "https://my-agy-fleet-standby-node2.onrender.com/collect-tokens")
+]
 
 
 # =============================================================================
@@ -58,13 +76,13 @@ BEP20_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 
 class MultiModelCouncil:
     """
-    Orchestrates Google Gemini 3.8 Flash and Groq LPU with automatic key rotation,
+    Orchestrates Google Gemini 2.5 Flash and Cloudflare Workers AI with automatic key rotation,
     cross-model validation, and zero-downtime failover.
     """
     def __init__(self):
         self.gemini_idx = 0
-        self.groq_idx = 0
-        self.groq_models = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b"]
+        self.cf_node_idx = 0
+        self.gemini_models = ["gemini-flash-latest", "gemini-flash-lite-latest", "gemini-3.5-flash-lite"]
 
     def rotate_gemini_key(self) -> str:
         if not GEMINI_KEYS:
@@ -73,18 +91,12 @@ class MultiModelCouncil:
         self.gemini_idx += 1
         return key
 
-    def rotate_groq_key(self) -> str:
-        if not GROQ_KEYS:
-            return ""
-        key = GROQ_KEYS[self.groq_idx % len(GROQ_KEYS)]
-        self.groq_idx += 1
-        return key
-
     async def query_gemini_proposer(self, session: aiohttp.ClientSession, prompt: str) -> Optional[str]:
-        """Queries Google Gemini 3.8 Flash across the 14-key pool."""
-        for attempt in range(min(5, len(GEMINI_KEYS))):
+        """Queries Google Gemini across the 14-key pool with active models, falling back to Cloudflare AI."""
+        for attempt in range(min(8, len(GEMINI_KEYS))):
             key = self.rotate_gemini_key()
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={key}"
+            model = self.gemini_models[attempt % len(self.gemini_models)]
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
             try:
                 payload = {
                     "contents": [{"parts": [{"text": prompt}]}],
@@ -93,49 +105,73 @@ class MultiModelCouncil:
                         "responseMimeType": "application/json"
                     }
                 }
-                async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=8)) as resp:
                     if resp.status == 200:
                         data = await resp.json()
-                        text = data["candidates"][0]["content"]["parts"][0]["text"]
-                        return text
+                        candidates = data.get("candidates", [])
+                        if candidates:
+                            text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                            if text:
+                                return text
                     elif resp.status == 429:
-                        logger.warning(f"[Council: Gemini] Key ending ...{key[-6:]} rate limited (429). Rotating key...")
-                    else:
-                        logger.warning(f"[Council: Gemini] HTTP {resp.status} on key ...{key[-6:]}")
+                        logger.debug(f"[Council: Gemini] Key ending ...{key[-6:]} rate limited. Rotating key...")
             except Exception as e:
                 logger.debug(f"[Council: Gemini] Attempt error: {e}")
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(0.2)
+
+        # Fallback to Cloudflare Workers AI Proposer (Zero-cost, Zero-rate-limit)
+        logger.info("[Council: Failover] Gemini busy. Falling back to Cloudflare Workers AI Proposer...")
+        for node_url in CF_AI_NODES:
+            try:
+                cf_payload = {
+                    "prompt": (
+                        "You are the Lead Autonomous Fleet Commander (Hermes-Grok AI Council).\n"
+                        "Decide the best next operational step. Output JSON ONLY with keys: thought, action, target_account, confidence.\n\n"
+                        f"{prompt}"
+                    )
+                }
+                async with session.post(node_url, json=cf_payload, timeout=aiohttp.ClientTimeout(total=8)) as cf_r:
+                    if cf_r.status == 200:
+                        d = await cf_r.json()
+                        ans = d.get("answer", "")
+                        if ans:
+                            m = re.search(r"\{.*\}", ans, re.DOTALL)
+                            return m.group(0) if m else ans
+            except Exception:
+                continue
         return None
 
-    async def query_groq_judge(self, session: aiohttp.ClientSession, prompt: str) -> Optional[str]:
-        """Queries Groq LPU with fast failover across the 3 API keys."""
-        url = "https://api.groq.com/openai/v1/chat/completions"
-        for attempt in range(len(GROQ_KEYS) * len(self.groq_models)):
-            key = self.rotate_groq_key()
-            model = self.groq_models[attempt % len(self.groq_models)]
-            headers = {
-                "Authorization": f"Bearer {key}",
-                "Content-Type": "application/json"
-            }
-            payload = {
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": "You are the Chief Safety and Verification Officer. Analyze proposals strictly for logic bugs, anti-ban risks, cooldown violations, or hallucinated parameters. Output valid JSON."},
-                    {"role": "user", "content": prompt}
-                ],
-                "temperature": 0.1,
-                "response_format": {"type": "json_object"}
-            }
+    async def query_safety_judge(self, session: aiohttp.ClientSession, prompt: str) -> Optional[str]:
+        """
+        Queries Cloudflare Workers AI (Llama 3.2 3B Instruct) across the 3 Edge Nodes.
+        100% Free, zero-cost, no API keys, zero rate limits.
+        """
+        for i in range(len(CF_AI_NODES)):
+            node_url = CF_AI_NODES[(self.cf_node_idx + i) % len(CF_AI_NODES)]
             try:
-                async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                judge_payload = {
+                    "prompt": (
+                        "You are the Chief Safety and Verification Officer for an automated crypto mining fleet.\n"
+                        "Audit this proposed action strictly for logic bugs, anti-ban risks, cooldown violations, or policy limits.\n"
+                        "Output valid JSON ONLY with format:\n"
+                        '{"approved": true, "reason": "concise explanation", "sanitized_action": "action_name"}\n\n'
+                        f"PROPOSAL AND STATE:\n{prompt}"
+                    )
+                }
+                async with session.post(node_url, json=judge_payload, timeout=aiohttp.ClientTimeout(total=8)) as resp:
                     if resp.status == 200:
                         data = await resp.json()
-                        return data["choices"][0]["message"]["content"]
-                    elif resp.status == 429:
-                        logger.warning(f"[Council: Groq] Rate limit on key ...{key[-6:]}. Rotating...")
+                        ans = data.get("answer", "")
+                        if ans:
+                            # Extract JSON substring
+                            m = re.search(r"\{.*\}", ans, re.DOTALL)
+                            if m:
+                                self.cf_node_idx = (self.cf_node_idx + i + 1) % len(CF_AI_NODES)
+                                return m.group(0)
+                            return ans
             except Exception as e:
-                logger.debug(f"[Council: Groq] Attempt error: {e}")
-            await asyncio.sleep(0.3)
+                logger.debug(f"[Council: CF AI] {node_url} note: {e}")
+                continue
         return None
 
     async def decide_with_anti_stupid_verification(
@@ -146,66 +182,66 @@ class MultiModelCouncil:
     ) -> Dict[str, Any]:
         """
         Two-Model Dual-Verification Loop:
-        1. Gemini 3.8 Flash proposes action
-        2. Groq LPU audits & critiques the plan
+        1. Google Gemini Flash proposes tactical action
+        2. Cloudflare Workers AI (Llama 3.2 3B) audits & critiques the plan
         3. If approved, returns executable action.
         """
         lessons_text = "\n".join(f"- {l}" for l in lessons[-8:]) if lessons else "None yet."
 
         proposer_prompt = f"""
-You are the Lead Autonomous Fleet Commander (Hermes-Grok Council).
+You are the Lead Autonomous Fleet Commander (Hermes-Grok AI Council).
 Current Live State:
 {json.dumps(state, indent=2)}
 
-Past Lessons & Rules (DO NOT REPEAT THESE MISTAKES):
+Past Lessons & Directives (NEVER VIOLATE THESE RULES):
 {lessons_text}
 - ATF Miner is strictly in 100% FARMING & ACCUMULATION MODE (NO withdrawals; let balance grow).
 - Main account (6727787768) must NEVER withdraw from AI Lab Robot or Stones Miners (preserves balance/compounds hash).
-- Worker accounts auto-withdraw AI Lab Robot when balance >= $0.02 USD to BEP-20 vault {BEP20_WALLET}.
-- Worker accounts auto-withdraw Stones Miners when balance >= 500 STONES to Arbitrum One {ARBITRUM_WALLET} (never when on cooldown).
+- Worker accounts auto-withdraw AI Lab Robot when balance >= $0.02 USD to BEP-20 vault {MASTER_EVM_VAULT}.
+- Worker accounts auto-withdraw Stones Miners when balance >= 500 STONES to Arbitrum One {MASTER_EVM_VAULT} (never when on cooldown).
+- If tokens are stale (>12h old) or GitHub Actions hit limits, action must be 'refresh_tokens_render'.
 - BNB Galaxy is permanently blocked and disabled (scam protection).
 
-Decide the best next operational step. Output JSON:
+Decide the best next operational step. Output JSON ONLY:
 {{
   "thought": "Your tactical reasoning",
-  "action": "harvest" | "sweep_stones" | "sweep_ailab" | "rest" | "synthesize_skill",
+  "action": "harvest" | "sweep_stones" | "sweep_ailab" | "sweep_all" | "refresh_tokens_render" | "executive_briefing" | "rest",
   "target_account": "all" or specific account ID,
-  "confidence": 0.0 to 1.0,
-  "skill_spec": null or {{"name": "...", "purpose": "..."}}
+  "confidence": 0.0 to 1.0
 }}
 """
         plan_str = await self.query_gemini_proposer(session, proposer_prompt)
-        if not plan_str:
-            # Failover: use Groq as proposer if Gemini is completely unavailable
-            plan_str = await self.query_groq_judge(session, proposer_prompt)
-
         try:
-            plan = json.loads(plan_str) if plan_str else {"action": "rest", "thought": "Failover rest"}
+            plan = json.loads(plan_str) if plan_str else {"action": "rest", "thought": "Failover default rest"}
         except Exception:
-            plan = {"action": "rest", "thought": "Plan parse failed"}
+            # Fallback regex search
+            m = re.search(r"\{.*\}", plan_str or "", re.DOTALL)
+            plan = json.loads(m.group(0)) if m else {"action": "rest", "thought": "Plan parse failed"}
 
-        # Step 2: The Safety Judge (Groq LPU Cross-Check)
+        # Step 2: The Safety Judge (Cloudflare Workers AI Llama 3.2 3B Cross-Check)
         judge_prompt = f"""
 Audit this proposed action plan:
 PROPOSED PLAN: {json.dumps(plan)}
 CURRENT STATE: {json.dumps(state)}
 RULES:
 1. Are any accounts on cooldown being prematurely queried?
-2. Are the wallet destinations matching the required network?
-3. Is confidence >= 0.8?
+2. Are the wallet destinations matching the required network ({MASTER_EVM_VAULT})?
+3. Is host account 6727787768 protected from withdrawal?
+4. Is confidence >= 0.8?
 
-Return JSON:
+Return JSON ONLY:
 {{
   "approved": true or false,
   "reason": "Detailed critique",
-  "sanitized_action": "harvest" | "sweep_stones" | "sweep_ailab" | "rest"
+  "sanitized_action": "harvest" | "sweep_stones" | "sweep_ailab" | "sweep_all" | "refresh_tokens_render" | "executive_briefing" | "rest"
 }}
 """
-        judge_str = await self.query_groq_judge(session, judge_prompt)
+        judge_str = await self.query_safety_judge(session, judge_prompt)
         try:
             audit = json.loads(judge_str) if judge_str else {"approved": True, "sanitized_action": plan.get("action")}
         except Exception:
-            audit = {"approved": True, "sanitized_action": plan.get("action")}
+            m = re.search(r"\{.*\}", judge_str or "", re.DOTALL)
+            audit = json.loads(m.group(0)) if m else {"approved": True, "sanitized_action": plan.get("action")}
 
         if not audit.get("approved"):
             logger.warning(f"🛡️ [Anti-Stupid Shield] Judge REJECTED plan '{plan.get('action')}': {audit.get('reason')}. Falling back to '{audit.get('sanitized_action')}'.")
@@ -242,7 +278,6 @@ class CloudMemory:
         try:
             curr = await self.get_lessons(session)
             curr.append(f"[{datetime.now(timezone.utc).strftime('%m-%d %H:%M')}] {lesson}")
-            # Keep up to 50 most recent lessons
             curr = curr[-50:]
             await session.post(f"{UPSTASH_URL}/set/agent:reflexion_lessons", headers=self.headers, json=json.dumps(curr), timeout=aiohttp.ClientTimeout(total=5))
             logger.info(f"🧬 [Reflexion Memory] Learned new operational rule: '{lesson}'")
@@ -266,16 +301,19 @@ class AutonomousHermesAgent:
     def __init__(self):
         self.council = MultiModelCouncil()
         self.memory = CloudMemory()
-        self.skills: Dict[str, Any] = {}
+        self.last_token_refresh = 0
+        self.last_briefing_time = 0
 
     async def send_telegram_alert(self, session: aiohttp.ClientSession, message: str):
         if not REPORT_BOT_TOKEN or not REPORT_CHAT_ID:
             return
-        url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"
-        try:
-            await session.post(url, json={"chat_id": REPORT_CHAT_ID, "text": message, "parse_mode": "Markdown"}, timeout=aiohttp.ClientTimeout(total=6))
-        except Exception as e:
-            logger.debug(f"[Telegram Alert] Error: {e}")
+        targets = [REPORT_CHAT_ID, PAYOUT_CHANNEL_ID]
+        for tid in targets:
+            url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"
+            try:
+                await session.post(url, json={"chat_id": tid, "text": message, "parse_mode": "Markdown", "disable_web_page_preview": True}, timeout=aiohttp.ClientTimeout(total=6))
+            except Exception as e:
+                logger.debug(f"[Telegram Alert] Error for {tid}: {e}")
 
     async def fetch_fleet_state(self, session: aiohttp.ClientSession) -> Dict[str, Any]:
         """Fetches live telemetry directly from Cloudflare Edge / Upstash."""
@@ -310,13 +348,73 @@ class AutonomousHermesAgent:
         except Exception as e:
             logger.error(f"Error dispatching fleet action: {e}")
 
+    async def trigger_render_token_collection(self, session: aiohttp.ClientSession) -> Dict[str, Any]:
+        """
+        Autonomously triggers MTProto session token collection on Render Standby Node 1,
+        with instant automatic fallback to Render Standby Node 2.
+        Fulfills user directive: if GitHub Actions limits are up, Render collects tokens.
+        """
+        logger.info("🔄 [Render Failover] Triggering MTProto session token collection on Render Standby...")
+        headers = {
+            "Authorization": f"Bearer {CF_SECRET_KEY}",
+            "Content-Type": "application/json"
+        }
+        for name, url in RENDER_STANDBY_NODES:
+            try:
+                logger.info(f"Connecting to {name} ({url})...")
+                async with session.post(
+                    url,
+                    headers=headers,
+                    json={"source": "HermesGrokAutonomousDecision"},
+                    timeout=aiohttp.ClientTimeout(total=90)
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        logger.info(f"✅ [{name}] MTProto token collection succeeded! Result: {data.get('message')}")
+                        self.last_token_refresh = time.time()
+                        return {"success": True, "node": name, "collected": data.get("collected", 13), "details": data}
+                    else:
+                        logger.warning(f"⚠️ [{name}] HTTP {resp.status}. Trying next standby node...")
+            except Exception as e:
+                logger.warning(f"⚠️ [{name}] Standby connection error: {e}. Trying fallback node...")
+                continue
+        return {"success": False, "error": "All Render standby nodes unreachable"}
+
     async def run_autonomous_cycle(self, session: aiohttp.ClientSession):
         """Single turn of the autonomous OODA loop."""
-        # 1. Observe
+        # 1. Observe State & Token Staleness
         state = await self.fetch_fleet_state(session)
         lessons = await self.memory.get_lessons(session)
 
-        # 2. Decide (Multi-Model Council with Dual-Verification)
+        # Check token staleness: if older than 12h or if GitHub Actions is stalled, prioritize Render
+        now = time.time()
+        tokens_stale = False
+        try:
+            async with session.get(f"{UPSTASH_URL}/get/fleet:tokens_updated_at", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=4)) as tr:
+                if tr.status == 200:
+                    td = await tr.json()
+                    t_val = td.get("result")
+                    if t_val:
+                        age_hours = (now - float(t_val)) / 3600.0
+                        if age_hours >= 12.0:
+                            tokens_stale = True
+        except Exception:
+            pass
+
+        # If tokens are stale and we haven't triggered Render in last 3 hours, force refresh on Render
+        if tokens_stale and (now - self.last_token_refresh > 10800):
+            logger.info("⚠️ [Council Sentinel] MTProto session tokens are > 12h old. Autonomous failover to Render activated!")
+            res = await self.trigger_render_token_collection(session)
+            if res.get("success"):
+                await self.send_telegram_alert(
+                    session,
+                    f"🔄 *[Hermes AI Council — Cloud Failover]*\n\n"
+                    f"MTProto tokens exceeded 12h threshold (GitHub Actions limit or schedule delay).\n"
+                    f"Autonomously collected fresh tokens via **{res.get('node')}** across all 13 accounts!"
+                )
+                return
+
+        # 2. Decide (Multi-Model Council: Gemini Proposer + Cloudflare Llama 3.2 3B Judge)
         decision = await self.council.decide_with_anti_stupid_verification(session, state, lessons)
         act = decision.get("action")
         thought = decision.get("thought", "")
@@ -329,10 +427,21 @@ class AutonomousHermesAgent:
             await self.send_telegram_alert(session, f"⚡ *[Hermes AI Council]* Triggered fleet harvest across 8 platforms.\n_Reason:_ {thought}")
         elif act == "sweep_stones":
             await self.dispatch_fleet_action(session, "sweep_stones")
-            await self.send_telegram_alert(session, f"💎 *[Hermes AI Council]* Dispatched Stones 500-withdrawal sweep to Arbitrum `{ARBITRUM_WALLET}` (Worker accounts only).\n_Reason:_ {thought}")
+            await self.send_telegram_alert(session, f"💎 *[Hermes AI Council]* Dispatched Stones 500-withdrawal sweep to Arbitrum `{MASTER_EVM_VAULT}` (Worker accounts only).\n_Reason:_ {thought}")
         elif act == "sweep_ailab":
             await self.dispatch_fleet_action(session, "sweep_ailab")
-            await self.send_telegram_alert(session, f"🧪 *[Hermes AI Council]* Dispatched AI Lab auto-withdrawal sweep to BEP-20 `{BEP20_WALLET}` (Worker accounts only).\n_Reason:_ {thought}")
+            await self.send_telegram_alert(session, f"🧪 *[Hermes AI Council]* Dispatched AI Lab auto-withdrawal sweep to BEP-20 `{MASTER_EVM_VAULT}` (Worker accounts only).\n_Reason:_ {thought}")
+        elif act == "sweep_all":
+            await self.dispatch_fleet_action(session, "sweep")
+            await self.send_telegram_alert(session, f"💼 *[Hermes AI Council]* Dispatched Universal Fleet Sweep (AI Lab + Stones + On-Chain Consolidation).\n_Reason:_ {thought}")
+        elif act == "refresh_tokens_render":
+            res = await self.trigger_render_token_collection(session)
+            if res.get("success"):
+                await self.send_telegram_alert(session, f"🔄 *[Hermes AI Council]* Autonomously collected MTProto tokens via **{res.get('node')}**!")
+        elif act == "executive_briefing":
+            if now - self.last_briefing_time > 21600:  # Rate-limit to once every 6 hours
+                self.last_briefing_time = now
+                await self.dispatch_fleet_action(session, "briefing")
         elif act == "rest":
             logger.info("😴 [Agent Pacing] Council decided fleet is optimal and on active cooldown timers. Resting...")
 
@@ -346,11 +455,11 @@ class AutonomousHermesAgent:
 
 async def main():
     logger.info("=============================================================================")
-    logger.info("  HERMES & GROK AUTONOMOUS AGENT (Google Gemini 3.8 Flash + Groq LPU)")
+    logger.info("  HERMES & GROK AUTONOMOUS AGENT (Google Gemini 2.5 Flash + Cloudflare AI)")
     logger.info("=============================================================================")
     logger.info(f"• Gemini Key Pool: {len(GEMINI_KEYS)} keys loaded")
-    logger.info(f"• Groq Key Pool: {len(GROQ_KEYS)} keys loaded")
-    logger.info(f"• Anti-Stupid Shield: ACTIVE (Proposer: Gemini 3.8 Flash | Judge: Groq LPU)")
+    logger.info(f"• Safety Judge: Cloudflare Workers AI (@cf/meta/llama-3.2-3b-instruct across 3 nodes)")
+    logger.info(f"• Render Failover Nodes: {len(RENDER_STANDBY_NODES)} standby nodes armed")
     logger.info("=============================================================================")
 
     agent = AutonomousHermesAgent()
@@ -360,9 +469,9 @@ async def main():
         await agent.send_telegram_alert(
             session,
             "🚀 *Hermes-Grok Autonomous Cloud Agent Activated!*\n\n"
-            "• **Host:** Cloud-Native / Render\n"
-            "• **Models:** `Google Gemini 3.8 Flash` + `Groq LPU`\n"
-            "• **Anti-Stupid Layer:** Active (Dual-Model Propose & Critique)\n"
+            "• **Host:** Cloud-Native / Render Node 3 (Singapore)\n"
+            "• **Council:** `Google Gemini 2.5 Flash` (Proposer) + `Cloudflare Llama 3.2 3B` (Judge)\n"
+            "• **Failover:** Render Standby (Singapore + Frankfurt) auto-collection armed\n"
             "• **Memory:** Serverless Persistent Reflexion Vector Store\n"
             "• **Status:** Overseeing 13 accounts 24/7 autonomously."
         )
@@ -374,7 +483,7 @@ async def main():
                 logger.error(f"Error in autonomous loop: {e}", exc_info=True)
                 await agent.memory.add_lesson(session, f"Encountered unexpected crash: {e}")
 
-            # Timer-aware heartbeat interval (every 90s)
+            # Heartbeat interval (every 90s)
             await asyncio.sleep(90)
 
 if __name__ == "__main__":

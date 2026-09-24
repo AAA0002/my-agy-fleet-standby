@@ -97,6 +97,39 @@ jobs:
         run: |
           python refresh_cloud_tokens.py
 
+      - name: Failover to Render Standby Mesh if GitHub Actions Fails
+        if: failure()
+        run: |
+          python - << 'EOF'
+          import urllib.request
+          import json
+
+          render_nodes = [
+              ("Render Node 1 (Singapore)", "https://my-agy-fleet-standby.onrender.com/collect-tokens"),
+              ("Render Node 2 (Frankfurt)", "https://my-agy-fleet-standby-node2.onrender.com/collect-tokens")
+          ]
+
+          print("⚠️ GitHub Actions token extraction failed. Triggering Render Standby failover...")
+          for name, url in render_nodes:
+              try:
+                  print(f"Connecting to {name}...")
+                  req = urllib.request.Request(
+                      url,
+                      data=json.dumps({"source": "github_actions_failure_failover"}).encode(),
+                      headers={
+                          "Authorization": "Bearer agy_cf_secret_7d36994e_2026",
+                          "Content-Type": "application/json"
+                      }
+                  )
+                  with urllib.request.urlopen(req, timeout=90) as resp:
+                      if resp.status == 200:
+                          data = json.loads(resp.read().decode())
+                          print(f"✅ Failover succeeded via {name}! Result: {data.get('message', 'Tokens synced')}")
+                          break
+              except Exception as e:
+                  print(f"Note on {name}: {e}")
+          EOF
+
       - name: Dispatch Telegram Completion Notification
         if: always()
         env:

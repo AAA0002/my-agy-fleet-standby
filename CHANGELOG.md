@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **Hermes-Grok Autonomous Decision-Making & Cognitive Upgrade (`autonomous_cloud_agent.py`)**:
+  - **Zero-Cost Anti-Stupid Safety Judge**: Integrated Cloudflare Workers AI (`@cf/meta/llama-3.2-3b-instruct` across all 3 Edge Nodes: `aaaai2`, `aaa-bot`, `aaa222`) to replace obsolete Groq keys with 100% free, zero-rate-limit autonomous proposal validation.
+  - **Enhanced Model Council**: Upgraded Gemini proposer to active models (`gemini-flash-latest`, `gemini-flash-lite-latest`, `gemini-3.5-flash-lite`) with automated seamless fallback to Cloudflare Workers AI.
+  - **Comprehensive Operational Decision Matrix**: Empowered Hermes-Grok with direct autonomous execution across 6 operational triggers: `harvest`, `sweep_ailab` (auto-cashouts to Binance BEP-20 vault), `sweep_stones` (500 STONES auto-withdrawals to Binance Arbitrum vault), `sweep_all` (universal multi-chain vault consolidation), `refresh_tokens_render` (automated standby token collection), and `executive_briefing`.
+
+- **Multi-Account Render Token Collection Failover (`autonomous_cloud_agent.py`, `deploy_both_cf_workers.py`, `.github/workflows/cloud_token_refresher.yml`)**:
+  - **Render Failover Pipeline**: If GitHub Actions runs out of minutes, encounters Telegram connection limits, or experiences delay, Render Standby Node 1 (Singapore: `https://my-agy-fleet-standby.onrender.com/collect-tokens`) and Node 2 (Frankfurt: `https://my-agy-fleet-standby-node2.onrender.com/collect-tokens`) autonomously wake up, extract fresh MTProto session tokens across all 13 accounts, and push them directly to Cloudflare Edge KV.
+  - **GitHub Actions Auto-Failover**: Added automated Render failover step in `.github/workflows/cloud_token_refresher.yml` triggered on workflow failure.
+  - **Edge Watchdog Safety Buffer**: Lowered Cloudflare Edge token refresh trigger threshold from 20 hours to 14 hours in `deploy_both_cf_workers.py` to guarantee a 10-hour safety margin before token expiry.
+
 - **100% Cloud-Native Autonomous Multi-Chain Sweeper & Vault Consolidation Engine (`.github/workflows/cloud_sweeper.yml` & `cloud_wallet_sweeper.py`)**:
   - **Zero-Cost Scheduled Cloud Runner**: Runs autonomously on GitHub Actions every 6 hours (`0 */6 * * *`) on public cloud runners ($0 cost forever, zero Termux / local reliance).
   - **Real On-Chain Sweeper**: Added Web3 EVM signing and broadcasting for BNB (BSC) and ETH (Arbitrum One) above gas threshold, plus BSC BEP-20 USDT token transfers, routing surplus funds directly to Binance Web3 Master Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`).

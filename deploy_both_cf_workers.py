@@ -3027,7 +3027,7 @@ Reply to Arif naturally:`;
         for (const [_, tData] of Object.entries(tokens)) {
           const syncedAt = new Date(tData.synced_at || 0).getTime();
           const ageHours = (nowMs - syncedAt) / 3600000;
-          if (ageHours >= 20) { // 24h - 20h = 4 hours remaining
+          if (ageHours >= 14) { // 24h - 14h = 10 hours safety buffer before expiry
             needBatchRefresh = true;
             break;
           }
