@@ -58,7 +58,6 @@ class AdminFleetVault:
         "ultrawallet": "6727787768",
         "apex_miner": "6727787768",
         "ainovum": "ref_6727787768",
-        "mininggram": "339JU9K",
         "atf_miner": "6727787768"
     }
 

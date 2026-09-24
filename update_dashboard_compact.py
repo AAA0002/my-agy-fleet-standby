@@ -646,8 +646,7 @@ function App() {
         { name: "AI Lab", token: "HASH" },
         { name: "UltraWallet", token: "USDT" },
         { name: "Apex", token: "APX" },
-        { name: "Ainovum", token: "USDT" },
-        { name: "MiningGRAM", token: "GRAM" }
+        { name: "Ainovum", token: "USDT" }
       ].map((b, i) => React.createElement("div", {
         key: i,
         className: "flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-white/5 shrink-0"
@@ -1027,8 +1026,7 @@ function App() {
               { name: "AI Lab", status: "Tasks #1-#20 Active" },
               { name: "UltraWallet", status: "Daily Streak OK" },
               { name: "Apex Miner", status: "Mining Active" },
-              { name: "Ainovum (USDT)", status: selectedAccount.ainovum_balance >= 0.1 ? `🤖 $${parseFloat(selectedAccount.ainovum_balance).toFixed(2)} (Auto-WD)` : "Active (0.1 Threshold)" },
-              { name: "MiningGRAM", status: "Trickle Active" }
+              { name: "Ainovum (USDT)", status: selectedAccount.ainovum_balance >= 0.1 ? `🤖 $${parseFloat(selectedAccount.ainovum_balance).toFixed(2)} (Auto-WD)` : "Active (0.1 Threshold)" }
             ].map((b, idx) => React.createElement("div", {
               key: idx,
               className: "bg-slate-50 dark:bg-slate-900/60 rounded-lg p-2 border border-slate-100 dark:border-white/5"

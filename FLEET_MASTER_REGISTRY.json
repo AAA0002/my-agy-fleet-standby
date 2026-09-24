@@ -73,8 +73,7 @@
     { "name": "UltraWallet", "bot": "UltrawalletTrade_Bot", "policy": "Daily streak claim, 10/h mining cycle" },
     { "name": "Apex Miner", "bot": "ApxMinerBot", "policy": "Mined points collection" },
     { "name": "ATF Miner", "bot": "ATF_AIRDROP_bot", "policy": "FARMING AND ACCUMULATION ONLY - NO WITHDRAWALS" },
-    { "name": "Ainovum", "bot": "ainovum_bot", "policy": "Mining collection, USDT auto-withdrawal >= 0.1 to BEP-20 (isolated worker wallets)" },
-    { "name": "MiningGRAM", "bot": "MiningGRAM_Bot", "policy": "Referral onboarding only (code 339JU9K) + 2-task qualification ($2.00 USDT Promo); background farming loop removed" }
+    { "name": "Ainovum", "bot": "ainovum_bot", "policy": "Mining collection, USDT auto-withdrawal >= 0.1 to BEP-20 (isolated worker wallets)" }
   ],
   "side_project_ai_agent": {
     "name": "Ari",

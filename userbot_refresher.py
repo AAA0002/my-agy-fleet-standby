@@ -118,7 +118,6 @@ AILAB_BOT = "AiLab_robot"
 ULTRAWALLET_BOT = "UltrawalletTrade_Bot"
 APX_BOT = "ApxMinerBot"
 AINOVUM_BOT = "ainovum_bot"
-MININGGRAM_BOT = "MiningGRAM_Bot"
 
 BNB_REFERRAL_CODE = "Bot46893407"
 BNB_REFERRAL_URL = "https://t.me/CryptoProUpRobot?start=Bot46893407"
@@ -129,7 +128,6 @@ AILAB_REFERRAL_CODE = "296852"
 ULTRAWALLET_REFERRAL_CODE = "6727787768"
 APX_REFERRAL_CODE = "6727787768"
 AINOVUM_REFERRAL_CODE = "ref_6727787768"
-MININGGRAM_REFERRAL_CODE = "339JU9K"
 
 BNB_WEBHOOK_FALLBACK = "https://api.bots.business/v1/bots/2985029/new-webhook?&command=%2FonWebhook&public_user_token=3d1ed3e6a9bb948436a55057c6e87b59&user_id=46893407"
 WALLET_ADDRESS = os.getenv("WALLET_ADDRESS", "0xfda4182001672b9f0f09e2118242e543e35ed5ce")
@@ -959,7 +957,7 @@ async def check_onchain_deposit_alert():
         if current_stones > 0:
             state["last_stones_balance"] = current_stones
 
-        # 4. TON Network Deposit Watchdog (ART Airdrop & MiningGRAM)
+        # 4. TON Network Deposit Watchdog (ART Airdrop & MRG Miner)
         current_ton = await get_onchain_ton_balance(TON_PRIMARY_WALLET)
         last_ton = float(state.get("last_ton_balance", 0.0))
 
@@ -2784,7 +2782,7 @@ async def handle_single_update(update: dict):
                 "Your autonomous **24/7 Cloud Operations Hub** is active across 3 Cloudflare Edge nodes.\n\n"
                 "✨ *Fleet Telemetry:*\n"
                 "• **13 Connected Accounts:** 100% cloud serverless execution\n"
-                "• **9 Mining Automations:** BNB Galaxy, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, MiningGRAM\n"
+                "• **8 Mining Automations:** Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, ATF\n"
                 "• **3x Cloudflare Edge Mesh:** Distributed multi-node parallel cloud processing\n"
                 "• **Visual Mini App:** Real-time graphs, on-chain balances, and payouts ledger\n\n"
                 "⚡ *Tap '🚀 Open Visual Mini App' below to view your real-time graphical dashboard!*"
@@ -4020,74 +4018,6 @@ async def ensure_referral_bound(acc_client, acc: dict):
         except Exception as e:
             logger.warning(f"[{acc_name}] Ainovum referral notice: {e}")
 
-    # 9. MiningGRAM Bot Referral Binding (https://t.me/MiningGRAM_Bot/mine?startapp=339JU9K)
-    if not acc.get("mininggram_referral_bound") and str(acc_uid) != str(REPORT_CHAT_ID):
-        try:
-            logger.info(f"[{acc_name}] Onboarding MiningGRAM Bot with referral {MININGGRAM_REFERRAL_CODE}...")
-            try:
-                await acc_client(UnblockRequest(id=MININGGRAM_BOT))
-            except Exception:
-                pass
-            bot_mg = await acc_client.get_input_entity(MININGGRAM_BOT)
-            await acc_client.send_message(bot_mg, f"/start {MININGGRAM_REFERRAL_CODE}")
-            await asyncio.sleep(2.0)
-            
-            # Join official announcement channel for Task 1 qualification
-            try:
-                mg_ch = await acc_client.get_entity("MiningGRAM_channel")
-                await acc_client(JoinChannelRequest(mg_ch))
-            except Exception:
-                pass
-
-            try:
-                res_mg = await acc_client(RequestAppWebViewRequest(
-                    peer=bot_mg,
-                    app=InputBotAppShortName(bot_id=bot_mg, short_name="mine"),
-                    platform="android",
-                    start_param=MININGGRAM_REFERRAL_CODE
-                ))
-                parsed_mg = urllib.parse.urlparse(res_mg.url)
-                init_mg = urllib.parse.parse_qs(parsed_mg.fragment).get("tgWebAppData", [None])[0]
-                if init_mg:
-                    async with aiohttp.ClientSession() as mg_sess:
-                        # 1. Register with master referral code
-                        mg_base = "https://mining-gram-worker.muhaisin0888.workers.dev"
-                        ar = await mg_sess.post(
-                            f"{mg_base}/api/auth",
-                            json={
-                                "initData": init_mg,
-                                "referralCode": MININGGRAM_REFERRAL_CODE,
-                                "deviceFingerprint": f"fp_{acc_uid}"
-                            },
-                            headers={"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT},
-                            timeout=aiohttp.ClientTimeout(total=10)
-                        )
-                        ad = await ar.json()
-                        mg_tok = ad.get("sessionToken") or ad.get("token")
-                        if mg_tok:
-                            mg_hdrs = {"Authorization": f"Bearer {mg_tok}", "Content-Type": "application/json"}
-                            # Task 1: Join Announcement Channel claim
-                            try:
-                                await mg_sess.post(f"{mg_base}/api/social/claim", json={"taskId": "e6c5f7ba-552b-405e-9424-8babb20ce92d"}, headers=mg_hdrs, timeout=aiohttp.ClientTimeout(total=8))
-                            except Exception:
-                                pass
-                            # Task 2: Like & Retweet (timer 30s)
-                            try:
-                                await mg_sess.post(f"{mg_base}/api/social/timer/start", json={"taskId": "c9aa035b-7664-4a1e-a60b-56e175328949"}, headers=mg_hdrs, timeout=aiohttp.ClientTimeout(total=8))
-                                await asyncio.sleep(32)
-                                await mg_sess.post(f"{mg_base}/api/social/claim", json={"taskId": "c9aa035b-7664-4a1e-a60b-56e175328949"}, headers=mg_hdrs, timeout=aiohttp.ClientTimeout(total=8))
-                            except Exception:
-                                pass
-                            logger.info(f"[{acc_name}] 🎯 Completed 2 MiningGRAM tasks for referral qualification credit!")
-            except Exception:
-                pass
-            acc["mininggram_referral_bound"] = True
-            acc["mininggram_tasks_completed"] = True
-            await update_account_safely(acc_uid, {"mininggram_referral_bound": True, "mininggram_tasks_completed": True})
-            logger.info(f"[{acc_name}] ✅ MiningGRAM Bot successfully bound to referral {MININGGRAM_REFERRAL_CODE} with 2 tasks completed!")
-        except Exception as e:
-            logger.warning(f"[{acc_name}] MiningGRAM referral notice: {e}")
-
 
 async def self_heal_account_channels_and_bots(acc_client, acc: dict):
     """
@@ -4108,7 +4038,7 @@ async def self_heal_account_channels_and_bots(acc_client, acc: dict):
 
     logger.info(f"[{acc_name}] 🛡️ Running Self-Healing Channel & Bot Guard...")
     # 1. Ensure target legitimate bots are unblocked (BNB_BOT excluded - scammer bot blocked)
-    for b in [STONES_BOT, MRG_BOT, ART_BOT, AILAB_BOT, ULTRAWALLET_BOT, APX_BOT, AINOVUM_BOT, MININGGRAM_BOT]:
+    for b in [STONES_BOT, MRG_BOT, ART_BOT, AILAB_BOT, ULTRAWALLET_BOT, APX_BOT, AINOVUM_BOT]:
         try:
             await acc_client(UnblockRequest(id=b))
         except Exception:
@@ -5262,23 +5192,7 @@ async def collect_account_session_links(acc_cl, acc: dict) -> dict:
     except Exception as ane:
         logger.debug(f"[{acc_name}] Ainovum session collection note: {ane}")
 
-    # 9. MiningGRAM Bot initData (@MiningGRAM_Bot)
-    try:
-        bot_mg = await acc_cl.get_input_entity(MININGGRAM_BOT)
-        res_mg = await acc_cl(RequestAppWebViewRequest(
-            peer=bot_mg,
-            app=InputBotAppShortName(bot_id=bot_mg, short_name="mine"),
-            platform="android",
-            start_param=MININGGRAM_REFERRAL_CODE
-        ))
-        parsed_mg = urllib.parse.urlparse(res_mg.url)
-        mg_init = urllib.parse.parse_qs(parsed_mg.fragment).get("tgWebAppData", [None])[0]
-        if mg_init:
-            tokens["mininggram_init_data"] = mg_init
-    except Exception as mge:
-        logger.debug(f"[{acc_name}] MiningGRAM session collection note: {mge}")
-
-    # 10. ATF Miner initData (@ATF_AIRDROP_bot)
+    # 9. ATF Miner initData (@ATF_AIRDROP_bot)
     try:
         bot_atf = await acc_cl.get_entity("ATF_AIRDROP_bot")
         res_atf = await acc_cl(RequestWebViewRequest(
@@ -6826,194 +6740,6 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
         logger.debug(f"[{acc_name}] Ainovum automation note: {e}")
 
 
-# =======================================================
-# MODULE 9: MININGGRAM BOT AUTOMATION (@MiningGRAM_Bot)
-# =======================================================
-
-async def automate_mininggram_cycle(session: aiohttp.ClientSession, acc_client, acc: dict):
-    """
-    Automates MiningGRAM Bot (@MiningGRAM_Bot):
-    - Obtains fresh initData or uses cached
-    - Authenticates via /api/auth with referralCode 339JU9K
-    - Daily streak check-in (/api/checkin)
-    - Claims trickle mining earnings (/api/mine/trickle-claim)
-    - Claims finished miners (/api/miners/claim)
-    - Activates idle miners (/api/miners/activate)
-    - Tracks live balance (/api/balance)
-    """
-    acc_name = acc.get("name", "User")
-    acc_uid = str(acc.get("user_id"))
-
-    try:
-        init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("mininggram_init_data")
-        if not init_data and acc_client:
-            try:
-                bot_mg = await acc_client.get_input_entity(MININGGRAM_BOT)
-                res_mg = await acc_client(RequestAppWebViewRequest(
-                    peer=bot_mg,
-                    app=InputBotAppShortName(bot_id=bot_mg, short_name="mine"),
-                    platform="android",
-                    start_param=MININGGRAM_REFERRAL_CODE
-                ))
-                parsed_mg = urllib.parse.urlparse(res_mg.url)
-                init_data = urllib.parse.parse_qs(parsed_mg.fragment).get("tgWebAppData", [None])[0]
-                if init_data:
-                    await sync_account_tokens_to_edge(session, acc_uid, acc_name, mininggram_init_data=init_data)
-            except Exception:
-                pass
-
-        if not init_data:
-            return
-
-        base_url = "https://mining-gram-worker.muhaisin0888.workers.dev"
-        acc_ua = get_account_user_agent(acc_uid)
-        headers = {"Content-Type": "application/json", "User-Agent": acc_ua}
-
-        # 1. Auth verify
-        token = None
-        try:
-            auth_payload = {
-                "initData": init_data,
-                "referralCode": MININGGRAM_REFERRAL_CODE,
-                "deviceFingerprint": f"fp_{acc_uid}"
-            }
-            async with session.post(f"{base_url}/api/auth", json=auth_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as ar:
-                if ar.status == 200:
-                    ad = await ar.json()
-                    token = ad.get("sessionToken") or ad.get("token") or ad.get("session") or ad.get("accessToken")
-        except Exception as ae:
-            logger.debug(f"[{acc_name}] MiningGRAM auth note: {ae}")
-
-        auth_headers = dict(headers)
-        if token:
-            auth_headers["Authorization"] = f"Bearer {token}"
-        else:
-            return
-
-        await asyncio.sleep(1.0)
-
-        # 2. Trickle mining claim
-        try:
-            async with session.get(f"{base_url}/api/mine/trickle-status", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as tsr:
-                if tsr.status == 200:
-                    tsd = await tsr.json()
-                    trickles = tsd.get("trickles", [])
-                    if isinstance(trickles, list):
-                        for tr in trickles:
-                            tr_id = tr.get("id") or tr.get("trickleId")
-                            if tr_id:
-                                await session.post(f"{base_url}/api/mine/trickle-claim", json={"trickleId": tr_id}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8))
-                                logger.info(f"[{acc_name}] ⛏️ [MiningGRAM] Trickle #{tr_id} claimed!")
-                    trickle_id = tsd.get("trickleId") or tsd.get("id")
-                    if trickle_id:
-                        async with session.post(f"{base_url}/api/mine/trickle-claim", json={"trickleId": trickle_id}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as tcr:
-                            if tcr.status == 200:
-                                logger.info(f"[{acc_name}] ⛏️ [MiningGRAM] Trickle claim successful!")
-        except Exception:
-            pass
-
-        # 3. Miners check & claim
-        active_miners = 0
-        try:
-            async with session.get(f"{base_url}/api/miners", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as mr:
-                if mr.status == 200:
-                    miners_data = await mr.json()
-                    owned = miners_data.get("owned", []) if isinstance(miners_data, dict) else (miners_data if isinstance(miners_data, list) else [])
-                    now_iso = time.time()
-                    for m in owned:
-                        mid = m.get("id") or m.get("minerId")
-                        m_status = m.get("status")
-                        finishes_at = m.get("finishes_at")
-                        fin_ts = 0
-                        if finishes_at:
-                            try:
-                                fin_ts = datetime.datetime.fromisoformat(finishes_at.replace("Z", "+00:00")).timestamp()
-                            except Exception:
-                                pass
-
-                        if m.get("canClaim") or m_status in ("ready_to_claim", "completed") or (m_status == "active" and fin_ts > 0 and now_iso >= fin_ts):
-                            async with session.post(f"{base_url}/api/miners/claim", json={"minerId": mid}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as clr:
-                                if clr.status == 200:
-                                    logger.info(f"[{acc_name}] ⛏️ [MiningGRAM] Miner #{mid} claimed!")
-                        elif m_status in ("inactive", "idle") or m.get("canActivate"):
-                            async with session.post(f"{base_url}/api/miners/activate", json={"minerId": mid}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as acr:
-                                if acr.status == 200:
-                                    logger.info(f"[{acc_name}] ⛏️ [MiningGRAM] Miner #{mid} activated!")
-                                    active_miners += 1
-                        elif m_status == "active":
-                            active_miners += 1
-
-                    logger.info(f"[{acc_name}] ⛏️ [MiningGRAM] Cycle finished | Active Miners: {active_miners} (Owned: {len(owned)})")
-        except Exception as me:
-            logger.debug(f"[{acc_name}] MiningGRAM miners note: {me}")
-
-    except Exception as e:
-        logger.debug(f"[{acc_name}] MiningGRAM automation note: {e}")
-
-
-async def check_and_claim_mininggram_promo(session: aiohttp.ClientSession = None) -> bool:
-    """
-    Checks if MiningGRAM USDT Promo is unlocked (at or after 19:30 UTC)
-    and submits auto-withdrawal of $28.00 USDT to the personal Binance BEP-20 vault.
-    """
-    try:
-        now_u = datetime.now(timezone.utc)
-        if now_u.hour < 19 or (now_u.hour == 19 and now_u.minute < 30):
-            return False
-
-        mg_init = FLEET_MINIAPP_TOKENS.get(str(REPORT_CHAT_ID), {}).get("mininggram_init_data")
-        if not mg_init:
-            return False
-
-        close_sess = False
-        if session is None:
-            session = aiohttp.ClientSession()
-            close_sess = True
-
-        try:
-            auth_r = await session.post(
-                "https://mining-gram-worker.muhaisin0888.workers.dev/api/auth",
-                json={"initData": mg_init, "referralCode": "339JU9K", "deviceFingerprint": f"fp_{REPORT_CHAT_ID}"},
-                timeout=aiohttp.ClientTimeout(total=10)
-            )
-            if auth_r.status != 200:
-                return False
-            s_tok = (await auth_r.json()).get("sessionToken")
-            if not s_tok:
-                return False
-
-            wd_r = await session.post(
-                "https://mining-gram-worker.muhaisin0888.workers.dev/api/usdt/withdraw",
-                headers={"Authorization": f"Bearer {s_tok}"},
-                json={"bep20Address": EVM_VAULT_ADDRESS},
-                timeout=aiohttp.ClientTimeout(total=10)
-            )
-            wd_d = await wd_r.json()
-            if wd_r.status == 200:
-                logger.info(f"🎉 [MiningGRAM Promo] Auto-withdrawal successful! Details: {wd_d}")
-                msg = (
-                    f"🎉 *MININGGRAM USDT PROMO WITHDRAWAL SUCCESSFUL!*\n\n"
-                    f"• **Amount:** `$28.00 USDT`\n"
-                    f"• **Destination:** `{EVM_VAULT_ADDRESS}` (Personal Binance BEP-20)\n"
-                    f"• **Status:** Submitted & Confirmed ✅\n"
-                    f"• **Server Response:**\n`{json.dumps(wd_d, indent=2)}`"
-                )
-                await broadcast_admin_message(msg)
-                return True
-            elif wd_d.get("error") == "usdt_pending_exists":
-                logger.info("✅ [MiningGRAM Promo] Pending withdrawal already registered.")
-                return True
-            else:
-                logger.debug(f"[MiningGRAM Promo] Unlock check: {wd_d}")
-                return False
-        finally:
-            if close_sess:
-                await session.close()
-    except Exception as e:
-        logger.debug(f"[MiningGRAM Promo] Auto-claim notice: {e}")
-        return False
-
-
 async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: dict):
     """
     Automates ATF Miner (@ATF_AIRDROP_bot):
@@ -7310,7 +7036,6 @@ async def farm_single_account(
         or not curr_tokens.get("ultrawallet_init_data")
         or not curr_tokens.get("apx_init_data")
         or not curr_tokens.get("ainovum_init_data")
-        or not curr_tokens.get("mininggram_init_data")
     )
     tokens_due = (tokens_age_hours >= 18.0) or not acc.get("miniapp_tokens_synced") or (str(acc_uid) not in FLEET_MINIAPP_TOKENS) or missing_tokens
 
@@ -7324,7 +7049,6 @@ async def farm_single_account(
         or not acc.get("ultrawallet_referral_bound")
         or not acc.get("apx_referral_bound")
         or not acc.get("ainovum_referral_bound")
-        or not acc.get("mininggram_referral_bound")
     )
     heal_due = (time.time() - last_heal) > (12 * 3600) or missing_referrals
 
@@ -7434,7 +7158,7 @@ async def farm_single_account(
         async with aiohttp.ClientSession() as http_sess:
             # B. Collect & Sync Session Links to Cloudflare Edge
             if tokens_due:
-                logger.info(f"[{acc_name}] 🔗 Collecting fresh 24h WebApp session links (Stones, MRG, ART, BNB webhook, Ainovum, MiningGRAM)...")
+                logger.info(f"[{acc_name}] 🔗 Collecting fresh 24h WebApp session links (Stones, MRG, ART, BNB webhook, Ainovum, ATF)...")
                 fresh_tokens = await collect_account_session_links(acc_cl, acc)
                 if fresh_tokens:
                     await sync_account_tokens_to_edge(http_sess, str(acc_uid), acc_name, **fresh_tokens)
@@ -7550,7 +7274,6 @@ async def task_worker_247(user_id: int, user_name: str):
     last_daily_report_day = -1
     last_morning_briefing_date = None
     last_midnight_backup_date = None
-    last_mininggram_promo_claimed = False
 
     while True:
         try:
@@ -7652,10 +7375,6 @@ async def task_worker_247(user_id: int, user_name: str):
                 except Exception as b_ex:
                     logger.error(f"[Scheduled Backup] Error in midnight backup: {b_ex}")
 
-            # Check for MiningGRAM USDT Promo Auto-Withdrawal (19:30 UTC)
-            if not last_mininggram_promo_claimed:
-                last_mininggram_promo_claimed = await check_and_claim_mininggram_promo()
-
             # Check on-chain wallet for newly confirmed incoming deposits
             asyncio.create_task(check_onchain_deposit_alert())
 
@@ -7751,10 +7470,6 @@ async def task_worker_247(user_id: int, user_name: str):
                             await broadcast_admin_message(pnl_card, reply_markup=STATUS_INLINE_KEYBOARD)
                     except Exception as b_ex:
                         logger.error(f"[Scheduled Backup] Error during rest break backup: {b_ex}")
-
-                # Check for MiningGRAM USDT Promo Auto-Withdrawal (19:30 UTC) during rest break
-                if not last_mininggram_promo_claimed:
-                    last_mininggram_promo_claimed = await check_and_claim_mininggram_promo()
 
         except asyncio.CancelledError:
             logger.info("24/7 Task worker cancelled.")

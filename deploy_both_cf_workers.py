@@ -1292,37 +1292,6 @@ fi
                   await fetch(`${anBase}/channel-bonus/claim`, { method: "POST", headers: mHeaders, body: JSON.stringify({}) }).catch(() => {});
                   await fetch(`${anBase}/gift-box/open`, { method: "POST", headers: mHeaders, body: JSON.stringify({}) }).catch(() => {});
                 }
-                // MiningGRAM Bot
-                if (accData.mininggram_init_data) {
-                  const mgBase = "https://mining-gram-worker.muhaisin0888.workers.dev/api";
-                  const mgAuth = await fetch(`${mgBase}/auth`, {
-                    method: "POST", headers: mHeaders, body: JSON.stringify({
-                      initData: accData.mininggram_init_data, referralCode: "339JU9K", deviceFingerprint: `fp_${uid}`
-                    })
-                  }).then(r => r.json()).catch(() => ({}));
-                  const mgToken = mgAuth.token || mgAuth.session || mgAuth.accessToken;
-                  const mgH = mgToken ? { ...mHeaders, "Authorization": `Bearer ${mgToken}` } : mHeaders;
-                  await fetch(`${mgBase}/checkin`, { method: "POST", headers: mgH, body: JSON.stringify({}) }).catch(() => {});
-                  try {
-                    const tsr = await fetch(`${mgBase}/mine/trickle-status`, { headers: mgH }).then(r => r.json()).catch(() => ({}));
-                    if (tsr.trickleId || tsr.id) {
-                      await fetch(`${mgBase}/mine/trickle-claim`, { method: "POST", headers: mgH, body: JSON.stringify({ trickleId: tsr.trickleId || tsr.id }) }).catch(() => {});
-                    }
-                  } catch (_) {}
-                  try {
-                    const mr = await fetch(`${mgBase}/miners`, { headers: mgH }).then(r => r.json()).catch(() => ([]));
-                    if (Array.isArray(mr)) {
-                      for (const m of mr) {
-                        const mid = m.id || m.minerId;
-                        if (m.canClaim || m.status === "ready_to_claim") {
-                          await fetch(`${mgBase}/miners/claim`, { method: "POST", headers: mgH, body: JSON.stringify({ minerId: mid }) }).catch(() => {});
-                        } else if (m.status === "inactive" || m.canActivate) {
-                          await fetch(`${mgBase}/miners/activate`, { method: "POST", headers: mgH, body: JSON.stringify({ minerId: mid }) }).catch(() => {});
-                        }
-                      }
-                    }
-                  } catch (_) {}
-                }
                 // ATF Miner
                 if (accData.atf_init_data) {
                   try {
@@ -2268,7 +2237,7 @@ fi
 
             const systemPrompt = `You are Ari, the personal cloud AI assistant for Arif's 13-account automated crypto and mining fleet (MY AGY AI).
 Live Fleet Context:
-- 13 active accounts mining 24/7 across all 10 bots: BNB Galaxy, Stones Miners, ATF Miner, MRG Miner, ART Airdrop, AI Lab Robot, UltraWallet, Apex Miner, Ainovum, MiningGRAM.
+- 13 active accounts mining 24/7 across all 9 bots: BNB Galaxy, Stones Miners, ATF Miner, MRG Miner, ART Airdrop, AI Lab Robot, UltraWallet, Apex Miner, Ainovum.
 - Policy: ATF Miner is in 100% farming & accumulation mode (NO withdrawals; let balance grow).
 - Vault BEP-20 (BNB, USDT): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Live Balance: ${liveBnb.toFixed(6)} BNB).
 - Stones Vault (Arbitrum One): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Balance: 500+ STONES).
@@ -3054,80 +3023,6 @@ Reply to Arif naturally:`;
                     }
                   }
                 } catch (_) {}
-              }
-            } catch (_) {}
-          }
-
-          // J. MiningGRAM Edge Claim & Auto-Miner (Binance TON UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT)
-          if (accData.mininggram_init_data) {
-            try {
-              const mgBase = "https://mining-gram-worker.muhaisin0888.workers.dev";
-              const mgHeaders = {
-                "Content-Type": "application/json",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36"
-              };
-              const authResp = await fetchWithRetry(`${mgBase}/api/auth`, {
-                method: "POST",
-                headers: mgHeaders,
-                body: JSON.stringify({
-                  initData: accData.mininggram_init_data,
-                  referralCode: "339JU9K",
-                  deviceFingerprint: "fp_" + uid
-                })
-              }, 2, 800).catch(() => null);
-
-              if (authResp && authResp.ok) {
-                const authData = await authResp.json().catch(() => ({}));
-                const sessionTok = authData.sessionToken || authData.token;
-                if (sessionTok) {
-                  const authH = { ...mgHeaders, "Authorization": `Bearer ${sessionTok}` };
-
-                  // Trickle mining status & claim
-                  try {
-                    const tsResp = await fetch(`${mgBase}/api/mine/trickle-status`, { headers: authH }).catch(() => null);
-                    if (tsResp && tsResp.ok) {
-                      const tsData = await tsResp.json().catch(() => ({}));
-                      const trickles = tsData.trickles || [];
-                      for (const tr of trickles) {
-                        const trId = tr.id || tr.trickleId;
-                        if (trId) {
-                          await fetch(`${mgBase}/api/mine/trickle-claim`, {
-                            method: "POST",
-                            headers: authH,
-                            body: JSON.stringify({ trickleId: trId })
-                          }).catch(() => {});
-                        }
-                      }
-                    }
-                  } catch (_) {}
-
-                  // Miners claim & activate
-                  try {
-                    const mResp = await fetch(`${mgBase}/api/miners`, { headers: authH }).catch(() => null);
-                    if (mResp && mResp.ok) {
-                      const mData = await mResp.json().catch(() => ({}));
-                      const owned = mData.owned || [];
-                      const now = Date.now();
-                      for (const m of owned) {
-                        const mid = m.id;
-                        const finishesAt = m.finishes_at ? new Date(m.finishes_at).getTime() : 0;
-                        if (m.status === "ready_to_claim" || (m.status === "active" && finishesAt > 0 && now >= finishesAt)) {
-                          await fetch(`${mgBase}/api/miners/claim`, {
-                            method: "POST",
-                            headers: authH,
-                            body: JSON.stringify({ minerId: mid })
-                          }).catch(() => {});
-                        } else if (m.status === "inactive" || m.status === "idle") {
-                          await fetch(`${mgBase}/api/miners/activate`, {
-                            method: "POST",
-                            headers: authH,
-                            body: JSON.stringify({ minerId: mid })
-                          }).catch(() => {});
-                        }
-                      }
-                    }
-                  } catch (_) {}
-                }
               }
             } catch (_) {}
           }

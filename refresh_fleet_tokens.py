@@ -3,7 +3,7 @@
 refresh_fleet_tokens.py
 Automated Multi-Account Telegram MiniApp Token Refresher
 - Connects to all 13 Fleet Accounts via Telethon (MTProto)
-- Acquires fresh tgWebAppData (initData) for all 9 fleet MiniApps:
+- Acquires fresh tgWebAppData (initData) for all 8 fleet MiniApps:
   1. Stones Miners (@stoneswithestand_bot)
   2. MRG Miner (@mrgminerbot)
   3. ART Airdrop (@ART_AIRDROP_BOT)
@@ -12,7 +12,6 @@ Automated Multi-Account Telegram MiniApp Token Refresher
   6. Apex Miner (@ApxMinerBot)
   7. ATF Miner (@ATF_AIRDROP_bot)
   8. Ainovum Bot (@ainovum_bot)
-  9. MiningGRAM Bot (@MiningGRAM_Bot)
 - Preserves BNB Galaxy static webhooks
 - Saves refreshed tokens to fleet_miniapp_tokens.json
 - Syncs tokens to all 3 Cloudflare Edge Workers via /api/miniapp/tokens/sync
@@ -52,8 +51,7 @@ REFERRALS = {
     "ultrawallet": PRIMARY_ID,
     "apx": PRIMARY_ID,
     "atf": PRIMARY_ID,
-    "ainovum": f"ref_{PRIMARY_ID}",
-    "mininggram": "339JU9K"
+    "ainovum": f"ref_{PRIMARY_ID}"
 }
 
 STATIC_BNB_WEBHOOKS = {
@@ -241,22 +239,6 @@ async def fetch_tokens_for_account(acc: dict, index: int, total: int) -> dict:
                 print("    ✅ Ainovum token OK")
         except Exception as e:
             print(f"    ⚠️ Ainovum note: {e}")
-
-        # 9. MiningGRAM Bot (@MiningGRAM_Bot)
-        try:
-            bot_mg = await client.get_input_entity("MiningGRAM_Bot")
-            res_mg = await client(functions.messages.RequestAppWebViewRequest(
-                peer=bot_mg,
-                app=InputBotAppShortName(bot_id=bot_mg, short_name="mine"),
-                platform="android",
-                start_param=REFERRALS["mininggram"]
-            ))
-            mg_init = extract_web_app_data(res_mg.url)
-            if mg_init:
-                account_tokens["mininggram_init_data"] = mg_init
-                print("    ✅ MiningGRAM token OK")
-        except Exception as e:
-            print(f"    ⚠️ MiningGRAM note: {e}")
 
     finally:
         try:

@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **Complete Purge and Removal of MiningGRAM (`@MiningGRAM_Bot`)**:
+  - Fully removed MiningGRAM from fleet automations and background worker cycles per user directive (user manages their personal $28.00 USDT Promo balance independently).
+  - Deleted standalone scripts: `claim_mininggram_promo.py` and `qualify_fleet_mininggram.py`.
+  - Removed all MiningGRAM constants (`MININGGRAM_BOT`, `MININGGRAM_REFERRAL_CODE`), cycles (`automate_mininggram_cycle`, `check_and_claim_mininggram_promo`), session collections, and referral onboarding from `userbot_refresher.py` and `login_account.py` (renumbered onboarding to 7 bots).
+  - Excised MiningGRAM token extraction blocks from `refresh_fleet_tokens.py` and `refresh_cloud_tokens.py`.
+  - Purged MiningGRAM background API calls, check-in, trickle-claim, and edge auto-miners from `deploy_both_cf_workers.py` (Worker 1 & 2) and updated AI assistant system prompts.
+  - Removed MiningGRAM from `FLEET_MASTER_REGISTRY.json`, `commercial_user_isolation.py`, `dashboard.html`, `public/index.html`, and `update_dashboard_compact.py`.
+  - Cleaned `fleet_miniapp_tokens.json` (removed `mininggram_init_data`) and `accounts.json` (removed `mininggram_referral_bound`).
+  - Gracefully restarted the immortal supervisor daemon and userbot refresher, running clean 8-bot cycles.
+
 - **Verified Master Account Credentials & Binance Deposit Addresses**:
   - Updated primary master account (`6727787768`) phone number across `accounts.json`, `userbot_refresher.py`, and `FLEET_MASTER_REGISTRY.json` to verified user number: `+8801317342850` (`01317342850`).
   - Added verified personal Binance Web3 & Exchange deposit addresses confirmed from mobile app:

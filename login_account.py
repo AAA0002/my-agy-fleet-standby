@@ -47,9 +47,6 @@ ART_REFERRAL_CODE = "6727787768"
 AINOVUM_BOT = "ainovum_bot"
 AINOVUM_REFERRAL_CODE = "ref_6727787768"
 
-MININGGRAM_BOT = "MiningGRAM_Bot"
-MININGGRAM_REFERRAL_CODE = "339JU9K"
-
 STONES_BOT = "stoneswithestand_bot"
 STONES_REFERRAL_CODE = "r6727787768"
 
@@ -282,77 +279,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["ainovum_referral_bound"] = True
-        print(f"  ✅ [3/8] Successfully bound to Ainovum Bot ({AINOVUM_REFERRAL_CODE})!")
+        print(f"  ✅ [3/7] Successfully bound to Ainovum Bot ({AINOVUM_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding Ainovum referral: {e}")
 
-    # 4. MiningGRAM Bot (@MiningGRAM_Bot) - Referral: 339JU9K
-    print(f"  • [4/8] Connecting to @{MININGGRAM_BOT} with referral: {MININGGRAM_REFERRAL_CODE}...")
-    try:
-        try:
-            await client(UnblockRequest(id=MININGGRAM_BOT))
-        except Exception:
-            pass
-        bot_mg = await client.get_input_entity(MININGGRAM_BOT)
-        await client.send_message(bot_mg, f"/start {MININGGRAM_REFERRAL_CODE}")
-        await asyncio.sleep(2.0)
-        
-        # Join official announcement channel for Task 1 qualification
-        try:
-            mg_ch = await client.get_entity("MiningGRAM_channel")
-            await client(JoinChannelRequest(mg_ch))
-        except Exception:
-            pass
-
-        try:
-            res_mg = await client(RequestAppWebViewRequest(
-                peer=bot_mg,
-                app=InputBotAppShortName(bot_id=bot_mg, short_name="mine"),
-                platform="android",
-                start_param=MININGGRAM_REFERRAL_CODE
-            ))
-            parsed_mg = urllib.parse.urlparse(res_mg.url)
-            init_mg = urllib.parse.parse_qs(parsed_mg.fragment).get("tgWebAppData", [None])[0]
-            if init_mg:
-                async with aiohttp.ClientSession() as mg_sess:
-                    mg_base = "https://mining-gram-worker.muhaisin0888.workers.dev"
-                    ar = await mg_sess.post(
-                        f"{mg_base}/api/auth",
-                        json={
-                            "initData": init_mg,
-                            "referralCode": MININGGRAM_REFERRAL_CODE,
-                            "deviceFingerprint": f"fp_{acc_uid}"
-                        },
-                        headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (Linux; Android 14)"},
-                        timeout=aiohttp.ClientTimeout(total=10)
-                    )
-                    ad = await ar.json()
-                    mg_tok = ad.get("sessionToken") or ad.get("token")
-                    if mg_tok:
-                        mg_hdrs = {"Authorization": f"Bearer {mg_tok}", "Content-Type": "application/json"}
-                        # Task 1: Join Announcement Channel claim
-                        try:
-                            await mg_sess.post(f"{mg_base}/api/social/claim", json={"taskId": "e6c5f7ba-552b-405e-9424-8babb20ce92d"}, headers=mg_hdrs, timeout=aiohttp.ClientTimeout(total=8))
-                        except Exception:
-                            pass
-                        # Task 2: Like & Retweet (timer 30s)
-                        try:
-                            await mg_sess.post(f"{mg_base}/api/social/timer/start", json={"taskId": "c9aa035b-7664-4a1e-a60b-56e175328949"}, headers=mg_hdrs, timeout=aiohttp.ClientTimeout(total=8))
-                            await asyncio.sleep(32)
-                            await mg_sess.post(f"{mg_base}/api/social/claim", json={"taskId": "c9aa035b-7664-4a1e-a60b-56e175328949"}, headers=mg_hdrs, timeout=aiohttp.ClientTimeout(total=8))
-                        except Exception:
-                            pass
-                        print(f"  🎯 Completed 2 MiningGRAM tasks for referral qualification credit!")
-        except Exception:
-            pass
-        acc_entry["mininggram_referral_bound"] = True
-        acc_entry["mininggram_tasks_completed"] = True
-        print(f"  ✅ [4/8] Successfully bound to MiningGRAM Bot ({MININGGRAM_REFERRAL_CODE}) with 2 tasks completed!")
-    except Exception as e:
-        print(f"  ❌ Warning binding MiningGRAM referral: {e}")
-
-    # 5. Stones Miners (@stoneswithestand_bot) - Referral: r6727787768
-    print(f"  • [5/8] Connecting to @{STONES_BOT} with referral: {STONES_REFERRAL_CODE}...")
+    # 4. Stones Miners (@stoneswithestand_bot) - Referral: r6727787768
+    print(f"  • [4/7] Connecting to @{STONES_BOT} with referral: {STONES_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=STONES_BOT))
@@ -365,12 +297,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["stones_referral_bound"] = True
-        print(f"  ✅ [5/8] Successfully bound to Stones Miners ({STONES_REFERRAL_CODE})!")
+        print(f"  ✅ [4/7] Successfully bound to Stones Miners ({STONES_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding Stones Miners referral: {e}")
 
-    # 6. Ultra Wallet (@UltrawalletTrade_Bot) - Referral: 6727787768
-    print(f"  • [6/8] Connecting to @{ULTRAWALLET_BOT} with referral: {ULTRAWALLET_REFERRAL_CODE}...")
+    # 5. Ultra Wallet (@UltrawalletTrade_Bot) - Referral: 6727787768
+    print(f"  • [5/7] Connecting to @{ULTRAWALLET_BOT} with referral: {ULTRAWALLET_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=ULTRAWALLET_BOT))
@@ -394,12 +326,12 @@ async def bind_referrals(client, me, acc_entry):
                     timeout=aiohttp.ClientTimeout(total=8)
                 )
         acc_entry["ultrawallet_referral_bound"] = True
-        print(f"  ✅ [6/8] Successfully bound to Ultra Wallet ({ULTRAWALLET_REFERRAL_CODE})!")
+        print(f"  ✅ [5/7] Successfully bound to Ultra Wallet ({ULTRAWALLET_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding Ultra Wallet referral: {e}")
 
-    # 7. MRG Miner (@mrgminerbot) - Referral: ref_IRN1G3XD (Strict Isolated TON Wallet)
-    print(f"  • [7/8] Connecting to @{MRG_BOT} with referral: {MRG_REFERRAL_CODE}...")
+    # 6. MRG Miner (@mrgminerbot) - Referral: ref_IRN1G3XD (Strict Isolated TON Wallet)
+    print(f"  • [6/7] Connecting to @{MRG_BOT} with referral: {MRG_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=MRG_BOT))
@@ -427,12 +359,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["mrg_referral_bound"] = True
-        print(f"  ✅ [7/8] Successfully bound to MRG Miner ({MRG_REFERRAL_CODE}) with isolated TON wallet!")
+        print(f"  ✅ [6/7] Successfully bound to MRG Miner ({MRG_REFERRAL_CODE}) with isolated TON wallet!")
     except Exception as e:
         print(f"  ❌ Warning binding MRG Miner referral: {e}")
 
-    # 8. Apex Miner (@ApxMinerBot) - Referral: 6727787768
-    print(f"  • [8/8] Connecting to @{APX_BOT} with referral: {APX_REFERRAL_CODE}...")
+    # 7. Apex Miner (@ApxMinerBot) - Referral: 6727787768
+    print(f"  • [7/7] Connecting to @{APX_BOT} with referral: {APX_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=APX_BOT))
@@ -457,7 +389,7 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["apx_referral_bound"] = True
-        print(f"  ✅ [8/8] Successfully bound to Apex Miner ({APX_REFERRAL_CODE})!")
+        print(f"  ✅ [7/7] Successfully bound to Apex Miner ({APX_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding Apex Miner referral: {e}")
 

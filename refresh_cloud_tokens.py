@@ -6,7 +6,7 @@ refresh_cloud_tokens.py
 =============================================================================
 Runs on GitHub Actions, Render, Deno, or ephemeral cloud runners.
 Connects briefly (3-5s per account) via MTProto to extract fresh 24h WebApp
-initData session tokens for all 10 bots:
+initData session tokens for all 9 bots:
   1. Stones Miners (@stoneswithestand_bot)
   2. MRG Miner (@mrgminerbot)
   3. ART Airdrop (@ART_AIRDROP_BOT)
@@ -16,7 +16,6 @@ initData session tokens for all 10 bots:
   7. Apex Miner (@ApxMinerBot)
   8. ATF Miner (@ATF_AIRDROP_bot)
   9. Ainovum (@ainovum_bot)
- 10. MiningGRAM (@MiningGRAM_Bot)
 
 Pushes the extracted tokens directly to 3x Cloudflare Edge Workers & KV.
 Eliminates ALL dependence on local VPS uptime!
@@ -55,7 +54,6 @@ AILAB_BOT = "AiLab_robot"
 ULTRAWALLET_BOT = "UltrawalletTrade_Bot"
 APX_BOT = "ApxMinerBot"
 AINOVUM_BOT = "ainovum_bot"
-MININGGRAM_BOT = "MiningGRAM_Bot"
 
 STONES_REF = "r6727787768"
 MRG_REF = "ref_IRN1G3XD"
@@ -64,7 +62,6 @@ AILAB_REF = "296852"
 ULTRAWALLET_REF = "6727787768"
 APX_REF = "6727787768"
 AINOVUM_REF = "ref_6727787768"
-MININGGRAM_REF = "339JU9K"
 
 
 def load_accounts():
@@ -250,22 +247,6 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
                 print(f"  🤖 Ainovum: Collected")
         except Exception as e:
             print(f"  ⚠️ Ainovum error: {e}")
-
-        # 10. MiningGRAM
-        try:
-            b_mg = await cl.get_input_entity(MININGGRAM_BOT)
-            r_mg = await cl(RequestAppWebViewRequest(
-                peer=b_mg,
-                app=InputBotAppShortName(bot_id=b_mg, short_name="mine"),
-                platform="android",
-                start_param=MININGGRAM_REF
-            ))
-            init_mg = urllib.parse.parse_qs(urllib.parse.urlparse(r_mg.url).fragment).get("tgWebAppData", [None])[0]
-            if init_mg:
-                tokens["mininggram_init_data"] = init_mg
-                print(f"  ⛏️ MiningGRAM: Collected")
-        except Exception as e:
-            print(f"  ⚠️ MiningGRAM error: {e}")
 
         # Sync to Cloudflare Edge KV
         await sync_tokens_to_edge(session, acc_uid, acc_name, tokens)
