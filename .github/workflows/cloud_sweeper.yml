@@ -1,0 +1,142 @@
+name: "MY AGY AI — 100% Cloud Autonomous Multi-Chain Sweeper & Vault Consolidation"
+
+on:
+  schedule:
+    # Runs autonomously every 6 hours (00:00, 06:00, 12:00, 18:00 UTC)
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      execute_sweep:
+        description: 'Execute real on-chain transaction sweeping (true/false)'
+        required: true
+        default: 'true'
+        type: boolean
+      notify_telegram:
+        description: 'Send Telegram notification card even if wallets are clean'
+        required: true
+        default: 'true'
+        type: boolean
+
+jobs:
+  cloud_sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Dependencies (Web3 + AioHTTP)
+        run: |
+          pip install --upgrade pip
+          pip install aiohttp web3 python-dotenv
+
+      - name: Fetch Encrypted Fleet Wallets from Cloudflare Edge & IPFS
+        env:
+          CF_SECRET_KEY: "agy_cf_secret_7d36994e_2026"
+        run: |
+          python - << 'EOF'
+          import os
+          import urllib.request
+          import zipfile
+          import io
+
+          cf_urls = [
+              "https://restore-agy.aaaai2.workers.dev/backup.zip",
+              "https://restore-agy.aaa-bot.workers.dev/backup.zip",
+              "https://restore-agy.aaa222.workers.dev/backup.zip"
+          ]
+
+          downloaded = False
+          target_files = ["fleet_evm_wallets.json", "fleet_ton_wallets.json", "accounts.json"]
+
+          for url in cf_urls:
+              try:
+                  print(f"Attempting backup download from {url}...")
+                  req = urllib.request.Request(url, headers={"User-Agent": "GitHubActions-CloudSweeper/1.0"})
+                  with urllib.request.urlopen(req, timeout=15) as r:
+                      if r.status == 200:
+                          data = r.read()
+                          with zipfile.ZipFile(io.BytesIO(data)) as z:
+                              for tf in target_files:
+                                  if tf in z.namelist():
+                                      z.extract(tf, ".")
+                                      print(f"✅ Extracted {tf} from Cloudflare R2/KV!")
+                              downloaded = True
+                              break
+              except Exception as e:
+                  print(f"Download note for {url}: {e}")
+
+          if not downloaded:
+              try:
+                  print("Checking Upstash Redis & Pinata IPFS fallback...")
+                  import json
+                  up_url = "https://relaxing-starfish-285827.upstash.io/get/fleet:latest_ipfs_cid"
+                  up_req = urllib.request.Request(up_url, headers={"Authorization": "Bearer gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw"})
+                  with urllib.request.urlopen(up_req, timeout=8) as up_r:
+                      if up_r.status == 200:
+                          cid = json.loads(up_r.read().decode()).get("result")
+                          if cid:
+                              ipfs_url = f"https://gateway.pinata.cloud/ipfs/{cid}"
+                              print(f"Downloading from Pinata IPFS Gateway: {ipfs_url}...")
+                              req = urllib.request.Request(ipfs_url, headers={"User-Agent": "Mozilla/5.0"})
+                              with urllib.request.urlopen(req, timeout=20) as r:
+                                  if r.status == 200:
+                                      with zipfile.ZipFile(io.BytesIO(r.read())) as z:
+                                          for tf in target_files:
+                                              if tf in z.namelist():
+                                                  z.extract(tf, ".")
+                                                  print(f"✅ Extracted {tf} from Pinata IPFS!")
+                                          downloaded = True
+              except Exception as e:
+                  print(f"IPFS fallback note: {e}")
+
+          if not os.path.exists("fleet_evm_wallets.json"):
+              print("⚠️ Warning: fleet_evm_wallets.json could not be restored. Audit may be incomplete.")
+          EOF
+
+      - name: Trigger Cloudflare Edge Autonomous Cashouts (AI Lab & Stones)
+        env:
+          CF_SECRET_KEY: "agy_cf_secret_7d36994e_2026"
+        run: |
+          python - << 'EOF'
+          import urllib.request
+          import json
+
+          cf_nodes = [
+              "https://restore-agy.aaaai2.workers.dev",
+              "https://restore-agy.aaa-bot.workers.dev",
+              "https://restore-agy.aaa222.workers.dev"
+          ]
+
+          print("Triggering Cloudflare Edge autonomous cashouts & sweeps...")
+          for node in cf_nodes:
+              try:
+                  req = urllib.request.Request(
+                      f"{node}/api/sweep/wallets",
+                      headers={"User-Agent": "GitHubActions-CloudSweeper/1.0"},
+                      method="POST"
+                  )
+                  with urllib.request.urlopen(req, timeout=10) as resp:
+                      if resp.status == 200:
+                          data = json.loads(resp.read().decode())
+                          print(f"✅ {node.split('//')[1].split('.')[0]}: {data.get('message', 'Queued')}")
+              except Exception as e:
+                  print(f"Note for {node}: {e}")
+          EOF
+
+      - name: Execute On-Chain Multi-Chain Sweep & Audit
+        env:
+          REPORT_BOT_TOKEN: "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o"
+          REPORT_CHAT_ID: "6727787768"
+          PAYOUT_CHANNEL_ID: "-1004402765950"
+          DRPC_API_KEY: "Aj3ei0uTXUwutp4cQUkyTyjgB8oqtDAR8YBVEl_NDNxu"
+          TONAPI_KEY: "AGCD63WTWLGKKWYAAAAKRKZU45HTYMDI3PV7UBKKL6QDVIHG54NQDVNSQF7W3LQJ3X77QKY"
+        run: |
+          python cloud_wallet_sweeper.py --notify --sweep

@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **100% Cloud-Native Autonomous Multi-Chain Sweeper & Vault Consolidation Engine (`.github/workflows/cloud_sweeper.yml` & `cloud_wallet_sweeper.py`)**:
+  - **Zero-Cost Scheduled Cloud Runner**: Runs autonomously on GitHub Actions every 6 hours (`0 */6 * * *`) on public cloud runners ($0 cost forever, zero Termux / local reliance).
+  - **Real On-Chain Sweeper**: Added Web3 EVM signing and broadcasting for BNB (BSC) and ETH (Arbitrum One) above gas threshold, plus BSC BEP-20 USDT token transfers, routing surplus funds directly to Binance Web3 Master Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`).
+  - **Cross-Cloud Cashout Orchestration**: Automatically triggers Cloudflare Edge `/api/sweep/wallets` across all 3 nodes (`aaaai2`, `aaa-bot`, `aaa222`) to execute in-bot AI Lab USD auto-cashouts and Stones 500 withdrawals into Binance.
+  - **Telegram Verified Receipts**: Dispatches verified transaction links and multi-chain audit cards to the Payout Channel (`-1004402765950`) and Admin DM (`6727787768`).
+
 - **Apex Miner Cloudflare Workers API Migration & Comprehensive Codebase Purge (`userbot_refresher.py`, `deploy_both_cf_workers.py`, `refresh_cloud_tokens.py`, `login_account.py`)**:
   - **Backend URL Migration**: Updated Apex Miner WebApp API endpoint from obsolete Vercel deployment (`https://apex-miner.vercel.app` returning HTTP 404 DEPLOYMENT_NOT_FOUND) to the live Cloudflare Workers backend (`https://apxn-miner-live.apxn-network.workers.dev/api`) across all fleet automation, including account inspection (`get_apx_account_details`), referral onboarding (`ensure_referral_bound`), edge fast-farming (`fastFarmAccount`), and new account onboarding (`login_account.py`).
   - **GitHub Actions Token Refresher Modernization (`refresh_cloud_tokens.py`)**: Updated MTProto WebApp token extraction to use `RequestAppWebViewRequest` with `InputBotAppShortName`, automatically fetching live Bot App URLs directly from Telegram and eliminating hardcoded legacy endpoints.
