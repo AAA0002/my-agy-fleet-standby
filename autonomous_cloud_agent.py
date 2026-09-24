@@ -199,13 +199,14 @@ Past Lessons & Directives (NEVER VIOLATE THESE RULES):
 - Main account (6727787768) must NEVER withdraw from AI Lab Robot or Stones Miners (preserves balance/compounds hash).
 - Worker accounts auto-withdraw AI Lab Robot when balance >= $0.02 USD to BEP-20 vault {MASTER_EVM_VAULT}.
 - Worker accounts auto-withdraw Stones Miners when balance >= 500 STONES to Arbitrum One {MASTER_EVM_VAULT} (never when on cooldown).
+- Worker accounts auto-withdraw Ainovum when balance >= 0.10 USDT to dedicated isolated EVM addresses.
 - If tokens are stale (>12h old) or GitHub Actions hit limits, action must be 'refresh_tokens_render'.
 - BNB Galaxy is permanently blocked and disabled (scam protection).
 
 Decide the best next operational step. Output JSON ONLY:
 {{
   "thought": "Your tactical reasoning",
-  "action": "harvest" | "sweep_stones" | "sweep_ailab" | "sweep_all" | "refresh_tokens_render" | "executive_briefing" | "rest",
+  "action": "harvest" | "sweep_stones" | "sweep_ailab" | "sweep_ainovum" | "sweep_all" | "refresh_tokens_render" | "executive_briefing" | "rest",
   "target_account": "all" or specific account ID,
   "confidence": 0.0 to 1.0
 }}
@@ -431,9 +432,12 @@ class AutonomousAriAgent:
         elif act == "sweep_ailab":
             await self.dispatch_fleet_action(session, "sweep_ailab")
             await self.send_telegram_alert(session, f"🧪 *[Ari AI Council]* Dispatched AI Lab auto-withdrawal sweep to BEP-20 `{MASTER_EVM_VAULT}` (Worker accounts only).\n_Reason:_ {thought}")
+        elif act == "sweep_ainovum":
+            await self.dispatch_fleet_action(session, "sweep_ainovum")
+            await self.send_telegram_alert(session, f"🤖 *[Ari AI Council]* Dispatched Ainovum auto-withdrawal sweep (0.10 USDT threshold).\n_Reason:_ {thought}")
         elif act == "sweep_all":
             await self.dispatch_fleet_action(session, "sweep")
-            await self.send_telegram_alert(session, f"💼 *[Ari AI Council]* Dispatched Universal Fleet Sweep (AI Lab + Stones + On-Chain Consolidation).\n_Reason:_ {thought}")
+            await self.send_telegram_alert(session, f"💼 *[Ari AI Council]* Dispatched Universal Fleet Sweep (AI Lab + Stones + Ainovum + On-Chain Consolidation).\n_Reason:_ {thought}")
         elif act == "refresh_tokens_render":
             res = await self.trigger_render_token_collection(session)
             if res.get("success"):

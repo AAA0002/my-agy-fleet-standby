@@ -7853,11 +7853,56 @@ async def miniapp_command_listener_loop():
                                         except Exception as aie:
                                             logger.debug(f"[AI Lab Sweep] Error for {name}: {aie}")
 
+                            async def _run_ainovum_sweep():
+                                logger.info("[MiniApp Listener] 🤖 Ainovum 0.10 USDT Auto-Withdrawal Sweep triggered...")
+                                accounts = load_accounts()
+                                fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
+                                isolated_map = {}
+                                if os.path.exists(fleet_evm_file):
+                                    try:
+                                        with open(fleet_evm_file, "r", encoding="utf-8") as fef:
+                                            isolated_map = json.load(fef)
+                                    except Exception:
+                                        pass
+                                base_url = "https://ainovum.biz"
+                                async with aiohttp.ClientSession() as an_sess:
+                                    for acc in accounts:
+                                        uid = str(acc.get("user_id"))
+                                        name = acc.get("name", "User")
+                                        is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
+                                        init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("ainovum_init_data")
+                                        if not init_data:
+                                            continue
+                                        proxy = acc.get("proxy")
+                                        acc_ua = get_account_user_agent(uid)
+                                        an_h = {"Content-Type": "application/json", "User-Agent": acc_ua}
+                                        try:
+                                            boot_resp = await an_sess.post(f"{base_url}/api/bootstrap", json={"initData": init_data, "platform": "android", "referrer": AINOVUM_REFERRAL_CODE, "timezone_offset_minutes": 0, "language_code": "en", "registration_duration_ms": 1500}, headers=an_h, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy)
+                                            if boot_resp.status != 200:
+                                                continue
+                                            raw_cookies = boot_resp.headers.getall("Set-Cookie", [])
+                                            cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
+                                            auth_an_h = {**an_h, "Cookie": cookie_hdr}
+                                            async with an_sess.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_an_h, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cfg_r:
+                                                if cfg_r.status == 200:
+                                                    cfg_d = await cfg_r.json()
+                                                    avail = float(cfg_d.get("freeze", {}).get("available", 0) or 0)
+                                                    if avail >= 0.10:
+                                                        target_addr = EVM_VAULT_ADDRESS if is_pri else isolated_map.get(uid, {}).get("address", EVM_VAULT_ADDRESS)
+                                                        wd_amt = round(avail, 4)
+                                                        async with an_sess.post(f"{base_url}/api/withdraws/usdt/create", json={"amount": wd_amt, "wallet": target_addr, "network": "bep20"}, headers=auth_an_h, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as wdr:
+                                                            wd_res = await wdr.json()
+                                                            if wdr.status == 200 and not wd_res.get("access_denied") and not wd_res.get("error"):
+                                                                await send_report_message(f"🎉 *Ainovum Sweep:* `{name}` withdrew `{wd_amt} USDT` to `{target_addr}`! Result: {wd_res}", chat_id=REPORT_CHAT_ID)
+                                        except Exception as ane:
+                                            logger.debug(f"[Ainovum Sweep] Error for {name}: {ane}")
+
                             if act in ("withdraw", "sweep"):
                                 async def _run_sweep():
-                                    logger.info("[MiniApp Listener] Dispatched universal fleet sweep (AI Lab + Stones + On-Chain)...")
+                                    logger.info("[MiniApp Listener] Dispatched universal fleet sweep (AI Lab + Stones + Ainovum + On-Chain)...")
                                     await _run_stones_sweep()
                                     await _run_ailab_sweep()
+                                    await _run_ainovum_sweep()
                                     try:
                                         from cloud_wallet_sweeper import run_full_sweep_audit
                                         await run_full_sweep_audit(notify_if_empty=True)
@@ -7868,6 +7913,8 @@ async def miniapp_command_listener_loop():
                                 asyncio.create_task(_run_stones_sweep())
                             elif act == "sweep_ailab":
                                 asyncio.create_task(_run_ailab_sweep())
+                            elif act == "sweep_ainovum":
+                                asyncio.create_task(_run_ainovum_sweep())
                             elif act == "verify":
                                 async def _run_verify():
                                     accounts = load_accounts()

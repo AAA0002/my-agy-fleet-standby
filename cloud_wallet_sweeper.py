@@ -277,7 +277,7 @@ def sweep_bep20_token_balance(
     from_addr: str,
     to_addr: str,
     token_balance: float,
-    min_tokens: float = 0.5
+    min_tokens: float = 0.08
 ) -> Optional[str]:
     """Sweeps standard BEP-20 / ERC-20 token using Web3."""
     if not HAS_WEB3 or not private_key:
@@ -350,7 +350,7 @@ async def run_full_sweep_audit(notify_if_empty: bool = False, execute_sweep: boo
         evm_audit = await audit_evm_worker_wallets(session)
         ton_audit = await audit_ton_worker_wallets(session)
 
-        funded_evm = [w for w in evm_audit if w.get("bnb_balance", 0) > 0.0005 or w.get("eth_balance", 0) > 0.0002 or w.get("usdt_balance", 0) > 0.50]
+        funded_evm = [w for w in evm_audit if w.get("bnb_balance", 0) > 0.0005 or w.get("eth_balance", 0) > 0.0002 or w.get("usdt_balance", 0) > 0.08]
         funded_ton = [w for w in ton_audit if w.get("ton_balance", 0) > 0.01]
 
         total_bnb = sum(w.get("bnb_balance", 0) for w in evm_audit)
@@ -381,8 +381,8 @@ async def run_full_sweep_audit(notify_if_empty: bool = False, execute_sweep: boo
                         swept_txs.append({"chain": "Arbitrum One", "coin": "ETH", "amount": w["eth_balance"], "name": name, "tx": tx_eth, "url": f"https://arbiscan.io/tx/{tx_eth}"})
 
                 # Sweep USDT on BSC
-                if w.get("usdt_balance", 0) > 0.50:
-                    tx_usdt = sweep_bep20_token_balance(BSC_RPCS, 56, pk, BSC_USDT_CONTRACT, addr, MASTER_EVM_VAULT, w["usdt_balance"])
+                if w.get("usdt_balance", 0) > 0.08:
+                    tx_usdt = sweep_bep20_token_balance(BSC_RPCS, 56, pk, BSC_USDT_CONTRACT, addr, MASTER_EVM_VAULT, w["usdt_balance"], min_tokens=0.08)
                     if tx_usdt:
                         swept_txs.append({"chain": "BSC", "coin": "USDT", "amount": w["usdt_balance"], "name": name, "tx": tx_usdt, "url": f"https://bscscan.com/tx/{tx_usdt}"})
 

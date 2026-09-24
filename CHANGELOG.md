@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **Full Ainovum Universal Fleet Sweep Integration & Cloudflare Edge Isolation (`userbot_refresher.py`, `deploy_both_cf_workers.py`, `cloud_wallet_sweeper.py`, `autonomous_cloud_agent.py`)**:
+  - **Universal Sweep Pipeline (`userbot_refresher.py`)**: Added `_run_ainovum_sweep()` to the fleet sweep dispatcher (`_run_sweep()`), seamlessly executing AI Lab Robot ($0.02 USD), Stones Miners (500 STONES), and Ainovum (0.10 USDT) in a single unified command, plus handling targeted `sweep_ainovum` directives.
+  - **Edge-Native EVM Isolation (`deploy_both_cf_workers.py`)**: Embedded `isolatedEvmMap` across all 3 Cloudflare Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`). Worker account auto-withdrawals on Ainovum now route to their dedicated isolated EVM addresses, eliminating Novum's `withdraw_duplicate_wallet` ("one account per person") rejection on edge cron cycles.
+  - **On-Chain Sweeper Threshold Realignment (`cloud_wallet_sweeper.py`)**: Lowered the on-chain BEP-20 USDT sweep threshold from `0.50 USDT` to `0.08 USDT`, ensuring that 0.10 USDT arrivals from Ainovum are immediately recognized as funded and swept directly to Binance Web3 Master Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`).
+  - **Ari Cognitive Matrix Upgrade (`autonomous_cloud_agent.py`)**: Armed Ari Autonomous AI Council with live knowledge of Ainovum withdrawal thresholds and added `sweep_ainovum` to its operational tactical decision matrix.
 - **AI Lab Robot Cashout Execution & Decimal Precision Hardening (`userbot_refresher.py`, `deploy_both_cf_workers.py`, `execute_ailab_ainovum_withdrawals.py`)**:
   - **Live Cashout Execution**: Successfully executed and confirmed in-flight cashout for account `6727787768` (Payment ID `6097`, `$0.02 USD` BEP-20 USDT) routed directly to Binance Web3 Master Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`), leaving $0.0188 USD active to maintain maximum hashing power.
   - **Decimal Precision Fix**: Fixed an API schema incompatibility where AI Lab rejected fractional amounts exceeding 2 decimal places (`500007 Not enough balance`). Updated both local daemon and Cloudflare Edge cron to enforce clean `0.02` step sizes (`round(int(ubal * 100) / 100.0, 2)`).
