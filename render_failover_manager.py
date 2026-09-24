@@ -41,7 +41,7 @@ RENDER_ACCOUNTS = [
         "region": "frankfurt"
     },
     {
-        "name": "Render Node 3 (Hermes-Grok AI Council)",
+        "name": "Render Node 3 (Ari AI Council)",
         "email": "koramshah2@gmail.com",
         "api_key": os.getenv("RENDER_API_KEY", "rnd_PqsurfX5D9blSaEEuEDDAUcl393y"),
         "owner_id": "tea-daoj9nid0e5s738gqp0g",

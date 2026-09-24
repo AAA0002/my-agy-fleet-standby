@@ -1,6 +1,6 @@
 # =============================================================================
 # Render.com Infrastructure-as-Code Blueprint
-# Deploy Hermes-Grok Autonomous AI Agent as a 24/7 Cloud Background Worker
+# Deploy Ari Autonomous AI Agent as a 24/7 Cloud Background Worker
 # =============================================================================
 
 services:

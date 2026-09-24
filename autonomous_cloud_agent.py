@@ -2,7 +2,7 @@
 """
 autonomous_cloud_agent.py
 =============================================================================
-HERMES & GROK STYLE AUTONOMOUS AI AGENT (100% Free Multi-Model Council)
+ARI AUTONOMOUS AI AGENT (100% Free Multi-Model Council)
 =============================================================================
 Hostable on: Render.com (Cloud Background Worker) & Cloudflare Edge
 Cognitive Engine:
@@ -37,7 +37,7 @@ logging.basicConfig(
     format="[%(asctime)s UTC] [%(levelname)s] [%(name)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
-logger = logging.getLogger("HermesGrokAgent")
+logger = logging.getLogger("AriAgent")
 
 # Credentials & Key Pools
 GEMINI_KEYS = [k.strip() for k in os.getenv("GEMINI_API_KEYS", "").split(",") if k.strip()]
@@ -125,7 +125,7 @@ class MultiModelCouncil:
             try:
                 cf_payload = {
                     "prompt": (
-                        "You are the Lead Autonomous Fleet Commander (Hermes-Grok AI Council).\n"
+                        "You are the Lead Autonomous Fleet Commander (Ari AI Council).\n"
                         "Decide the best next operational step. Output JSON ONLY with keys: thought, action, target_account, confidence.\n\n"
                         f"{prompt}"
                     )
@@ -189,7 +189,7 @@ class MultiModelCouncil:
         lessons_text = "\n".join(f"- {l}" for l in lessons[-8:]) if lessons else "None yet."
 
         proposer_prompt = f"""
-You are the Lead Autonomous Fleet Commander (Hermes-Grok AI Council).
+You are the Lead Autonomous Fleet Commander (Ari AI Council).
 Current Live State:
 {json.dumps(state, indent=2)}
 
@@ -297,7 +297,7 @@ class CloudMemory:
 # AUTONOMOUS AGENT ORCHESTRATOR
 # =============================================================================
 
-class AutonomousHermesAgent:
+class AutonomousAriAgent:
     def __init__(self):
         self.council = MultiModelCouncil()
         self.memory = CloudMemory()
@@ -332,9 +332,9 @@ class AutonomousHermesAgent:
     async def dispatch_fleet_action(self, session: aiohttp.ClientSession, action: str):
         """Pushes command to Upstash Redis queue for instantaneous daemon/edge execution."""
         payload = {
-            "id": f"hermes_{int(time.time()*1000)}",
+            "id": f"ari_{int(time.time()*1000)}",
             "action": action,
-            "origin": "HermesGrokCouncil",
+            "origin": "AriCouncil",
             "timestamp": time.time()
         }
         try:
@@ -365,7 +365,7 @@ class AutonomousHermesAgent:
                 async with session.post(
                     url,
                     headers=headers,
-                    json={"source": "HermesGrokAutonomousDecision"},
+                    json={"source": "AriAutonomousDecision"},
                     timeout=aiohttp.ClientTimeout(total=90)
                 ) as resp:
                     if resp.status == 200:
@@ -408,7 +408,7 @@ class AutonomousHermesAgent:
             if res.get("success"):
                 await self.send_telegram_alert(
                     session,
-                    f"🔄 *[Hermes AI Council — Cloud Failover]*\n\n"
+                    f"🔄 *[Ari AI Council — Cloud Failover]*\n\n"
                     f"MTProto tokens exceeded 12h threshold (GitHub Actions limit or schedule delay).\n"
                     f"Autonomously collected fresh tokens via **{res.get('node')}** across all 13 accounts!"
                 )
@@ -424,20 +424,20 @@ class AutonomousHermesAgent:
         # 3. Act
         if act == "harvest":
             await self.dispatch_fleet_action(session, "harvest")
-            await self.send_telegram_alert(session, f"⚡ *[Hermes AI Council]* Triggered fleet harvest across 8 platforms.\n_Reason:_ {thought}")
+            await self.send_telegram_alert(session, f"⚡ *[Ari AI Council]* Triggered fleet harvest across 8 platforms.\n_Reason:_ {thought}")
         elif act == "sweep_stones":
             await self.dispatch_fleet_action(session, "sweep_stones")
-            await self.send_telegram_alert(session, f"💎 *[Hermes AI Council]* Dispatched Stones 500-withdrawal sweep to Arbitrum `{MASTER_EVM_VAULT}` (Worker accounts only).\n_Reason:_ {thought}")
+            await self.send_telegram_alert(session, f"💎 *[Ari AI Council]* Dispatched Stones 500-withdrawal sweep to Arbitrum `{MASTER_EVM_VAULT}` (Worker accounts only).\n_Reason:_ {thought}")
         elif act == "sweep_ailab":
             await self.dispatch_fleet_action(session, "sweep_ailab")
-            await self.send_telegram_alert(session, f"🧪 *[Hermes AI Council]* Dispatched AI Lab auto-withdrawal sweep to BEP-20 `{MASTER_EVM_VAULT}` (Worker accounts only).\n_Reason:_ {thought}")
+            await self.send_telegram_alert(session, f"🧪 *[Ari AI Council]* Dispatched AI Lab auto-withdrawal sweep to BEP-20 `{MASTER_EVM_VAULT}` (Worker accounts only).\n_Reason:_ {thought}")
         elif act == "sweep_all":
             await self.dispatch_fleet_action(session, "sweep")
-            await self.send_telegram_alert(session, f"💼 *[Hermes AI Council]* Dispatched Universal Fleet Sweep (AI Lab + Stones + On-Chain Consolidation).\n_Reason:_ {thought}")
+            await self.send_telegram_alert(session, f"💼 *[Ari AI Council]* Dispatched Universal Fleet Sweep (AI Lab + Stones + On-Chain Consolidation).\n_Reason:_ {thought}")
         elif act == "refresh_tokens_render":
             res = await self.trigger_render_token_collection(session)
             if res.get("success"):
-                await self.send_telegram_alert(session, f"🔄 *[Hermes AI Council]* Autonomously collected MTProto tokens via **{res.get('node')}**!")
+                await self.send_telegram_alert(session, f"🔄 *[Ari AI Council]* Autonomously collected MTProto tokens via **{res.get('node')}**!")
         elif act == "executive_briefing":
             if now - self.last_briefing_time > 21600:  # Rate-limit to once every 6 hours
                 self.last_briefing_time = now
@@ -455,20 +455,20 @@ class AutonomousHermesAgent:
 
 async def main():
     logger.info("=============================================================================")
-    logger.info("  HERMES & GROK AUTONOMOUS AGENT (Google Gemini 2.5 Flash + Cloudflare AI)")
+    logger.info("  ARI AUTONOMOUS AGENT (Google Gemini 2.5 Flash + Cloudflare AI)")
     logger.info("=============================================================================")
     logger.info(f"• Gemini Key Pool: {len(GEMINI_KEYS)} keys loaded")
     logger.info(f"• Safety Judge: Cloudflare Workers AI (@cf/meta/llama-3.2-3b-instruct across 3 nodes)")
     logger.info(f"• Render Failover Nodes: {len(RENDER_STANDBY_NODES)} standby nodes armed")
     logger.info("=============================================================================")
 
-    agent = AutonomousHermesAgent()
+    agent = AutonomousAriAgent()
 
     async with aiohttp.ClientSession() as session:
         # Startup notification
         await agent.send_telegram_alert(
             session,
-            "🚀 *Hermes-Grok Autonomous Cloud Agent Activated!*\n\n"
+            "🚀 *Ari Autonomous Cloud Agent Activated!*\n\n"
             "• **Host:** Cloud-Native / Render Node 3 (Singapore)\n"
             "• **Council:** `Google Gemini 2.5 Flash` (Proposer) + `Cloudflare Llama 3.2 3B` (Judge)\n"
             "• **Failover:** Render Standby (Singapore + Frankfurt) auto-collection armed\n"
