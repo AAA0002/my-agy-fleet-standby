@@ -45,7 +45,8 @@ EXPLICIT_UNWANTED_USERNAMES = {
     "rewards_lab",
     "tensorcoinnews",
     "earncraftnews",
-    "airdropfindteam"
+    "airdropfindteam",
+    "mininggram_channel"
 }
 
 # Whitelist: Channels that must NEVER be left under any circumstance
@@ -60,7 +61,6 @@ PROTECTED_USERNAMES = {
     "ailabrobotpayouts",
     "ultrawallet",
     "ultrawalletofficial",
-    "mininggram_channel",
     "novum_en",
     "gramworkers"
 }

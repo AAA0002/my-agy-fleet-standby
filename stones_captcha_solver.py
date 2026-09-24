@@ -232,7 +232,11 @@ async def execute_stones_withdrawal_with_captcha(
                             logger.warning(f"[Stones Captcha] Verification rejected: {vres.get('info', 'Unknown')}")
                             await asyncio.sleep(1.5)
         except Exception as e:
-            logger.error(f"[Stones Captcha] Exception during captcha cycle: {e}")
+            err_desc = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
+            logger.error(f"[Stones Captcha] Exception during captcha cycle: {err_desc}")
+            if isinstance(e, (asyncio.TimeoutError, aiohttp.ClientConnectorError, aiohttp.ServerTimeoutError)):
+                logger.warning(f"[Stones Captcha] Network/Origin timeout detected. Aborting captcha attempts.")
+                break
             await asyncio.sleep(1.5)
 
     # Step 4: Submit the actual withdrawal
@@ -265,4 +269,5 @@ async def execute_stones_withdrawal_with_captcha(
                 err_msg = wres.get("info") or wres.get("error") or f"HTTP {wr.status}: {wres}"
                 return False, err_msg
     except Exception as e:
-        return False, str(e)
+        err_desc = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
+        return False, err_desc

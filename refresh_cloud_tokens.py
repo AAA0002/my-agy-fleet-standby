@@ -6,16 +6,15 @@ refresh_cloud_tokens.py
 =============================================================================
 Runs on GitHub Actions, Render, Deno, or ephemeral cloud runners.
 Connects briefly (3-5s per account) via MTProto to extract fresh 24h WebApp
-initData session tokens for all 9 bots:
+initData session tokens for all 8 active bots:
   1. Stones Miners (@stoneswithestand_bot)
   2. MRG Miner (@mrgminerbot)
   3. ART Airdrop (@ART_AIRDROP_BOT)
-  4. BNB Galaxy Webhook (@CryptoProUpRobot)
-  5. AI Lab Robot (@AiLab_robot)
-  6. UltraWallet (@UltrawalletTrade_Bot)
-  7. Apex Miner (@ApxMinerBot)
-  8. ATF Miner (@ATF_AIRDROP_bot)
-  9. Ainovum (@ainovum_bot)
+  4. AI Lab Robot (@AiLab_robot)
+  5. UltraWallet (@UltrawalletTrade_Bot)
+  6. Apex Miner (@ApxMinerBot)
+  7. ATF Miner (@ATF_AIRDROP_bot)
+  8. Ainovum (@ainovum_bot)
 
 Pushes the extracted tokens directly to 3x Cloudflare Edge Workers & KV.
 Eliminates ALL dependence on local VPS uptime!

@@ -537,7 +537,7 @@ function App() {
       const res = await fetch("/ai", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: `You are Ari, the personal cloud AI copilot for Arif's 13-account automated mining fleet (MY AGY AI). Fleet state: 13 active accounts across all 10 bots, ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Stones vault: 500+ STONES on Arbitrum One. Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
+          prompt: `You are Ari, the personal cloud AI copilot for Arif's 13-account automated mining fleet (MY AGY AI). Fleet state: 13 active accounts across all 8 active bots, ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Stones vault: 500+ STONES on Arbitrum One. Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
         })
       });
       const d = await res.json();
@@ -635,15 +635,14 @@ function App() {
       currencySymbol: currencyConfig[currency].symbol, currencyRate: currencyConfig[currency].rate
     }),
 
-    // 10-Bot Status Ticker (1 Compact Line)
+    // 8-Bot Status Ticker (1 Compact Line)
     React.createElement("div", { className: "flex items-center gap-2 overflow-x-auto py-1 px-1 mb-3 text-[10px] font-semibold text-slate-600 dark:text-slate-300 no-scrollbar" },
       [
-        { name: "BNB Galaxy", token: "BNB" },
         { name: "ATF Miner", token: totalAtfMined > 0 ? `${totalAtfMined.toFixed(0)} ATF (Farming)` : "ATF (Farming)" },
-        { name: "Stones", token: "STONES" },
-        { name: "MRG Miner", token: "MRG" },
-        { name: "ART Airdrop", token: "ART" },
-        { name: "AI Lab", token: "HASH" },
+        { name: "Stones", token: "Arbitrum" },
+        { name: "MRG Miner", token: "TON" },
+        { name: "ART Airdrop", token: "TON" },
+        { name: "AI Lab", token: "BEP-20" },
         { name: "UltraWallet", token: "USDT" },
         { name: "Apex", token: "APX" },
         { name: "Ainovum", token: "USDT" }
@@ -725,21 +724,21 @@ function App() {
           React.createElement("div", { className: "flex items-center gap-1.5 shrink-0" },
             // Live Countdown Timer Badge
             (() => {
-              const resetMs = acc.bnb_next_reset_at ? acc.bnb_next_reset_at * 1000 : 0;
+              const resetMs = acc.stones_next_wd_at ? acc.stones_next_wd_at * 1000 : 0;
               const now = Date.now();
               if (resetMs > now) {
                 const diffMin = Math.round((resetMs - now) / 60000);
                 const h = Math.floor(diffMin / 60);
                 const m = diffMin % 60;
                 return React.createElement("span", {
-                  title: "BNB Galaxy task reset cooldown",
+                  title: "Stones withdrawal cooldown",
                   className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 flex items-center gap-1"
                 },
                   React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" }),
                   `${h}h ${m}m`
                 );
               }
-              return React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" }, "Ready");
+              return React.createElement("span", { className: "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" }, "Active ✅");
             })(),
             // Stones 500 STONES Ready indicator
             acc.stones_coins >= 500 ? React.createElement("span", {
@@ -843,7 +842,7 @@ function App() {
             action: async () => {
               showToast("AI: Dispatched harvest across all bots!", "info");
               await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "harvest" }) });
-              setAiMessages(prev => [...prev, { sender: "user", text: "⚡ Trigger fleet harvest" }, { sender: "ai", text: "✅ Dispatched instant harvest across all 8 mining platforms (BNB Galaxy, Stones, MRG, ART, AI Lab, UltraWallet, Apex, ATF). WebApp tokens and sessions are active." }]);
+              setAiMessages(prev => [...prev, { sender: "user", text: "⚡ Trigger fleet harvest" }, { sender: "ai", text: "✅ Dispatched instant harvest across all 8 mining platforms (Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, ATF). WebApp tokens and sessions are active." }]);
             }
           },
           {
@@ -852,7 +851,7 @@ function App() {
             action: async () => {
               showToast("AI: Sweeping Stones >= 500...", "info");
               await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sweep_stones" }) });
-              setAiMessages(prev => [...prev, { sender: "user", text: "💎 Sweep Stones >= 500" }, { sender: "ai", text: "💎 Stones 500-Withdrawal Sweep triggered! Scanning all accounts with >= 500 STONES coins. Destination: Arbitrum One (0xfda4182001672b9f0f09e2118242e543e35ed5ce). Captcha solver & 4-ad video verifier active." }]);
+              setAiMessages(prev => [...prev, { sender: "user", text: "💎 Sweep Stones >= 500" }, { sender: "ai", text: "💎 Stones 500-Withdrawal Sweep triggered! Scanning worker accounts with >= 500 STONES coins (main account protected). Destination: Arbitrum One (0xfda4182001672b9f0f09e2118242e543e35ed5ce). Captcha solver active." }]);
             }
           },
           {
@@ -864,12 +863,12 @@ function App() {
             }
           },
           {
-            title: "💰 BNB Payout Sweep",
-            desc: "Sweep >=0.00005 BNB",
+            title: "🧪 AI Lab Sweep",
+            desc: "Sweep >=$0.02 to BEP-20",
             action: async () => {
-              showToast("AI: Evaluating balances for withdrawal...", "info");
-              await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "withdraw" }) });
-              setAiMessages(prev => [...prev, { sender: "user", text: "💰 Sweep eligible BNB withdrawals" }, { sender: "ai", text: "✅ BNB sweep triggered! Evaluating all accounts >= 0.00005 BNB. Auto-completes 5/5 Adsgram tasks and requests on-chain payout." }]);
+              showToast("AI: Evaluating AI Lab balances for withdrawal...", "info");
+              await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sweep_ailab" }) });
+              setAiMessages(prev => [...prev, { sender: "user", text: "🧪 Sweep eligible AI Lab balances" }, { sender: "ai", text: "✅ AI Lab auto-withdrawal sweep dispatched across worker accounts >= $0.02 USD to BEP-20 vault! Main account is strictly protected to compound power." }]);
             }
           },
           {
@@ -879,8 +878,8 @@ function App() {
               const now = Date.now();
               const nl = String.fromCharCode(10);
               const timerLines = fleet.map(a => {
-                const resetMs = a.bnb_next_reset_at ? a.bnb_next_reset_at * 1000 : 0;
-                const rem = resetMs > now ? `${Math.round((resetMs - now) / 60000)}m remaining` : "Ready to claim ✅";
+                const resetMs = a.stones_next_wd_at ? a.stones_next_wd_at * 1000 : 0;
+                const rem = resetMs > now ? `${Math.round((resetMs - now) / 60000)}m cooldown` : "Ready ✅";
                 return `• ${a.name || "Account"}: ${rem} (Stones: ${a.stones_coins || 0}, ATF: ${Math.floor(a.atf_balance || 0)})`;
               }).slice(0, 7).join(nl);
               setAiMessages(prev => [...prev, { sender: "user", text: "⏱️ Inspect task reset countdowns" }, { sender: "ai", text: "⏱️ Fleet Timer Telemetry:" + nl + timerLines + nl + nl + "• Smart pacing ensures 0 VPS/Telegram spam while accounts are on countdown cooldown." }]);
@@ -892,7 +891,7 @@ function App() {
             action: async () => {
               const nl = String.fromCharCode(10);
               showToast("AI: Running security diagnostic...", "info");
-              setAiMessages(prev => [...prev, { sender: "user", text: "🛡️ Run Anti-Ban Security Audit" }, { sender: "ai", text: ["🛡️ Anti-Ban Security Report:", "• Device Profiles: 100% Unique hardware-matched User-Agents active across all accounts.", "• Countdown Pacing: BNB Galaxy timer-aware precheck enabled (0 MTProto spam during reset cooldowns).", "• Proxy Isolation: Residential proxies mapped per worker.", "• Captcha Solvers: Template-matching & Tesseract ready for Stones & ATF 500 withdrawals."].join(nl) }]);
+              setAiMessages(prev => [...prev, { sender: "user", text: "🛡️ Run Anti-Ban Security Audit" }, { sender: "ai", text: ["🛡️ Anti-Ban Security Report:", "• Device Profiles: 100% Unique hardware-matched User-Agents active across all accounts.", "• Countdown Pacing: Multi-bot timer-aware prechecks active across all 8 mining platforms.", "• Proxy Isolation: Residential proxies mapped per worker.", "• Captcha Solvers: Template-matching & AI solver ready for Stones & ATF."].join(nl) }]);
             }
           }
         ].map((btn, idx) => React.createElement("button", {
@@ -908,7 +907,7 @@ function App() {
       // Suggested AI Prompts Chips
       React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]" },
         [
-          "Check BNB Reset Timer",
+          "Check Stones Cooldown",
           "Stones 500 Withdrawal Status",
           "ATF TON Proof Status",
           "Daily Yield Projection",
@@ -1015,15 +1014,14 @@ function App() {
             )
           ),
 
-          // 10-Bot Mining Matrix in Drawer
+          // 8-Bot Mining Matrix in Drawer
           React.createElement("div", { className: "grid grid-cols-2 gap-1.5" },
             [
               { name: "Stones (Arbitrum)", status: selectedAccount.stones_coins >= 500 ? `💎 ${selectedAccount.stones_coins} (Ready)` : `💎 ${selectedAccount.stones_coins || 0} STONES` },
               { name: "ATF Miner (TON)", status: `🪙 ${parseFloat(selectedAccount.atf_balance || 0).toFixed(1)} ATF (Accumulating)` },
-              { name: "BNB Galaxy (BEP-20)", status: selectedAccount.bnb_next_reset_at && selectedAccount.bnb_next_reset_at * 1000 > Date.now() ? `Reset: ${Math.round((selectedAccount.bnb_next_reset_at * 1000 - Date.now()) / 60000)}m` : "Ready to Claim ✅" },
-              { name: "MRG Miner", status: "Level 1 (3h Mining)" },
-              { name: "ART Airdrop", status: "8h Active (21.3/h)" },
-              { name: "AI Lab", status: "Tasks #1-#20 Active" },
+              { name: "MRG Miner (TON)", status: "Level 1 (3h Mining)" },
+              { name: "ART Airdrop (TON)", status: "8h Active (21.3/h)" },
+              { name: "AI Lab (BEP-20)", status: "Tasks #1-#20 Active" },
               { name: "UltraWallet", status: "Daily Streak OK" },
               { name: "Apex Miner", status: "Mining Active" },
               { name: "Ainovum (USDT)", status: selectedAccount.ainovum_balance >= 0.1 ? `🤖 $${parseFloat(selectedAccount.ainovum_balance).toFixed(2)} (Auto-WD)` : "Active (0.1 Threshold)" }
@@ -1129,5 +1127,15 @@ new_content = content[:start_pos] + replacement + content[end_pos:]
 with open(CF_FILE, "w", encoding="utf-8") as f:
     f.write(new_content)
 
+# Also write to local dashboard.html and public/index.html
+standalone_html = html_raw.replace("__SERVER_DATA_JSON__", "{}")
+dash_path = os.path.join(BASE_DIR, "dashboard.html")
+pub_path = os.path.join(BASE_DIR, "public", "index.html")
+with open(dash_path, "w", encoding="utf-8") as f:
+    f.write(standalone_html)
+with open(pub_path, "w", encoding="utf-8") as f:
+    f.write(standalone_html)
+
 print(f"✅ Successfully updated DASHBOARD_HTML in {CF_FILE}!")
+print(f"✅ Synced {dash_path} and {pub_path}!")
 print(f"   Old length: {len(content)} -> New length: {len(new_content)}")

@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **Bug Fixes & Dashboard Alignment**:
+  - **Stones Captcha Exception & Timeout Handling (`stones_captcha_solver.py`)**: Fixed empty error string logging when `TimeoutError` or network exceptions occur (`err_desc = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__`). Added an immediate fast-fail break on origin network timeouts to prevent 36-second cascading thread blocking across worker loops.
+  - **Dashboard WebApp Purge & Alignment (`update_dashboard_compact.py`, `deploy_both_cf_workers.py`, `dashboard.html`, `public/index.html`)**:
+    - Excised lingering BNB Galaxy entries from the client-side WebApp dashboard.
+    - Converted the Drawer matrix and status ticker to the clean 8-Bot Mining Matrix (Stones, ATF, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum).
+    - Replaced the obsolete BNB payout sweep AI action button with `🧪 AI Lab Sweep` (worker accounts auto-withdraw >= $0.02 USD to BEP-20 vault, main account strictly protected).
+    - Updated countdown timer badge to display active Stones withdrawal cooldown instead of obsolete reset timers.
+    - Updated Ari AI prompt chips and telemetry to the verified 8-bot lineup and redeployed all 3 Cloudflare Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`).
+  - **Channel Whitelist Hardening (`clean_all_accounts_channels.py`)**: Moved `mininggram_channel` from the protected whitelist to the explicit unwanted removal set.
+  - **MiniApp Tokens Storage (`fleet_miniapp_tokens.json`)**: Purged leftover `mininggram_init_data` fields across all 13 fleet accounts.
+  - **Token Refresher Documentation (`refresh_cloud_tokens.py`)**: Synchronized docstring to reflect the 8 active bots.
+
 - **Observability, Decentralized IPFS Storage & Anti-Stupid Safeguards**:
   - **Better Stack Uptime Heartbeat Integration**: Added Better Stack heartbeat ping (`BETTERSTACK_HEARTBEAT_URL`) to `cloudflare_edge_bridge_loop` in `userbot_refresher.py`, transmitting live pulse every 5 minutes to trigger the external Dead Man's Switch if the daemon ever stalls.
   - **Decentralized Pinata IPFS Backup Dispatch**: Updated `backup_manager.py` to prioritize Pinata IPFS pinning and directly embed the immutable IPFS gateway URL and 1-line curl restore command into Telegram vault (`@myagyai`) pinned announcements and user delivery cards.
