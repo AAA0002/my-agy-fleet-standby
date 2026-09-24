@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- Disabled BNB Galaxy (`@CryptoProUpRobot`) across the fleet (`ENABLE_BNB_GALAXY=false` in `.env`, `userbot_refresher.py`, and `FLEET_MASTER_REGISTRY.json`): Confirmed via on-chain blockchain audit (BscScan RPC) that after the initial 1st payment on Sept 17-18, the bot withholds 100% of payouts while leeching 195 daily ads through `justtool.site`. Bypassed all ad loops, saving substantial CPU, network bandwidth, and eliminating account ban risk.
+- Integrated automated 3-stage rewarded video ad boarding (`/api/wd/ad/challenge` -> 16s heartbeat -> `/api/wd/ad/confirm`) into `stones_captcha_solver.py` for Stones Miners auto-withdrawals.
 - Hardened crypto dependency imports (`eth-account`, `tonsdk`, `pynacl`) across CLI tools (`login_account.py`, `batch_atf_miner.py`, `setup_fleet_mrg_wallets.py`) with dynamic imports and feature guards (`HAS_TON_PROOF_LIBS`, `HAS_TON_SDK`), ensuring 100% crash-free execution on ARM64 / Termux environments without Rust compiler.
 - Fixed legacy VPS path (`/home/arif2743`) in `upgrade_dashboard_chat_and_receipts.py` to use dynamic project directory resolution.
 - Completed comprehensive syntax and importability verification across all 37 Python automation scripts.

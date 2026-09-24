@@ -110,6 +110,7 @@ BROADCAST_CHAT_IDS = [
 
 # Target Automation Bots
 BNB_BOT = "CryptoProUpRobot"
+ENABLE_BNB_GALAXY = os.getenv("ENABLE_BNB_GALAXY", "false").lower() == "true"
 STONES_BOT = "stoneswithestand_bot"
 MRG_BOT = "mrgminerbot"
 ART_BOT = "ART_AIRDROP_BOT"
@@ -4097,6 +4098,8 @@ async def self_heal_account_channels_and_bots(acc_client, acc: dict):
 
 
 async def extract_bnb_webhook(acc_client=None, acc_data: dict = None):
+    if not ENABLE_BNB_GALAXY:
+        return None
     global current_bnb_webhook
     if acc_data and acc_data.get("bnb_wh_url"):
         current_bnb_webhook = acc_data["bnb_wh_url"]
@@ -4208,6 +4211,8 @@ async def complete_bnb_task(session: aiohttp.ClientSession, tg_id: int, task_id:
 
 
 async def process_bnb_galaxy_tasks(session: aiohttp.ClientSession, user_id: int, acc_client=None, acc_data=None):
+    if not ENABLE_BNB_GALAXY:
+        return 0, 0, None
     proxy = (acc_data or {}).get("proxy")
     wh_url = (acc_data or {}).get("bnb_wh_url") or await extract_bnb_webhook(acc_client, acc_data=acc_data)
     await register_adsgram(session, user_id, wh_url, proxy=proxy)
@@ -4247,6 +4252,8 @@ async def process_bnb_galaxy_tasks(session: aiohttp.ClientSession, user_id: int,
 VERIFICATION_IN_PROGRESS_IDS = set()
 
 async def complete_withdrawal_verification_steps(user_id: int, user_name: str, acc_client=None, acc_data=None):
+    if not ENABLE_BNB_GALAXY:
+        return False
     if str(user_id) in VERIFICATION_IN_PROGRESS_IDS:
         logger.info(f"[BNB Verifier] Verification already active in another thread for {user_name} ({user_id}). Skipping duplicate call.")
         return False
@@ -4372,6 +4379,9 @@ async def _complete_withdrawal_verification_steps_impl(user_id: int, user_name: 
 
 async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: bool = False, acc_client=None, caller_chat_id: str = None, acc_data: dict = None):
     """Executes robust, interactive multi-step BNB withdrawal for ANY fleet account."""
+    if not ENABLE_BNB_GALAXY:
+        logger.debug(f"[BNB Auto-Withdraw] BNB Galaxy disabled (scam protection). Skipping {user_name}.")
+        return False
     logger.info(f"[BNB Auto-Withdraw] Checking account balance on bot for {user_name} ({user_id})...")
     target_chat = str(caller_chat_id) if caller_chat_id else str(REPORT_CHAT_ID)
     accounts = load_accounts()
@@ -7066,40 +7076,41 @@ async def farm_single_account(
     now_sec = time.time()
     now_ms = int(now_sec * 1000)
 
-    # Pre-seed cooldown from stored account record if still active
-    if stored_reset_sec > now_sec:
-        next_bnb_avail_ms = int(stored_reset_sec * 1000)
-
-    try:
-        async with aiohttp.ClientSession() as http_check_session:
-            # Direct REST API call first (justtool.site doesn't block server IPs and responds in <100ms)
-            states = await get_bnb_tasks_status(http_check_session, acc_uid, proxy=None)
-            if not states and acc.get("proxy"):
-                states = await get_bnb_tasks_status(http_check_session, acc_uid, proxy=acc.get("proxy"))
-    except Exception:
-        states = {}
-
-    if states:
-        ready_tasks = [int(tid) for tid, avail in states.items() if int(avail) == 0 or int(avail) <= now_ms]
-        ready_tasks_count = len(ready_tasks)
-        for avail in states.values():
-            avail_int = int(avail)
-            if avail_int > 0 and (next_bnb_avail_ms is None or avail_int < next_bnb_avail_ms):
-                next_bnb_avail_ms = avail_int
-    else:
-        # If network error but stored reset is in the future, honor the active countdown!
+    if ENABLE_BNB_GALAXY:
+        # Pre-seed cooldown from stored account record if still active
         if stored_reset_sec > now_sec:
-            ready_tasks_count = 0
             next_bnb_avail_ms = int(stored_reset_sec * 1000)
+
+        try:
+            async with aiohttp.ClientSession() as http_check_session:
+                states = await get_bnb_tasks_status(http_check_session, acc_uid, proxy=None)
+                if not states and acc.get("proxy"):
+                    states = await get_bnb_tasks_status(http_check_session, acc_uid, proxy=acc.get("proxy"))
+        except Exception:
+            states = {}
+
+        if states:
+            ready_tasks = [int(tid) for tid, avail in states.items() if int(avail) == 0 or int(avail) <= now_ms]
+            ready_tasks_count = len(ready_tasks)
+            for avail in states.values():
+                avail_int = int(avail)
+                if avail_int > 0 and (next_bnb_avail_ms is None or avail_int < next_bnb_avail_ms):
+                    next_bnb_avail_ms = avail_int
         else:
-            ready_tasks_count = 0
+            if stored_reset_sec > now_sec:
+                ready_tasks_count = 0
+                next_bnb_avail_ms = int(stored_reset_sec * 1000)
+            else:
+                ready_tasks_count = 0
 
-    if next_bnb_avail_ms:
-        fleet_next_resets.append(next_bnb_avail_ms)
-        acc["bnb_next_reset_at"] = next_bnb_avail_ms / 1000.0
-        await update_account_safely(acc_uid, {"bnb_next_reset_at": next_bnb_avail_ms / 1000.0})
+        if next_bnb_avail_ms:
+            fleet_next_resets.append(next_bnb_avail_ms)
+            acc["bnb_next_reset_at"] = next_bnb_avail_ms / 1000.0
+            await update_account_safely(acc_uid, {"bnb_next_reset_at": next_bnb_avail_ms / 1000.0})
 
-    fleet_ready_counts.append(ready_tasks_count)
+        fleet_ready_counts.append(ready_tasks_count)
+    else:
+        fleet_ready_counts.append(0)
 
     # 2. Check if session links collection is due (every 18 hours or if missing)
     tokens_synced_at = float(acc.get("miniapp_tokens_synced_at") or 0)
@@ -7133,29 +7144,24 @@ async def farm_single_account(
 
     # 4. Check if withdrawal is already eligible or if balance check is due (Timer-Aware)
     known_balance = ACCOUNT_BALANCES.get(str(acc_uid), {}).get("balance", 0.0)
-    withdraw_due = known_balance >= MIN_WITHDRAWAL
+    withdraw_due = (known_balance >= MIN_WITHDRAWAL) if ENABLE_BNB_GALAXY else False
     last_bal_time = float(ACCOUNT_BALANCES.get(str(acc_uid), {}).get("timestamp", 0))
 
-    # Smart Timer-Aware Check:
-    # If 10/10 tasks are claimed and countdown timer is active (next_bnb_avail_ms > now_ms),
-    # do NOT query balance on Telegram - tasks cannot generate rewards until the timer expires!
     is_bnb_cooldown = bool(next_bnb_avail_ms and next_bnb_avail_ms > now_ms and ready_tasks_count == 0)
     has_pending_payout = bool(acc.get("pending_withdraw") or (known_balance == 0.0 and (time.time() - float(acc.get("last_withdrawal_at") or 0)) < 28800))
 
-    if is_bnb_cooldown:
-        # All 10 tasks are on countdown cooldown (~6-8h). Balance from tasks cannot increase.
+    if not ENABLE_BNB_GALAXY:
+        check_balance_due = False
+    elif is_bnb_cooldown:
         check_balance_due = False
     elif has_pending_payout:
-        # Payout is already submitted and pending admin approval/transfer (~8h). Do not spam bot.
         check_balance_due = False
     else:
-        # Balance check is only due if never checked before, or if ready tasks are available to be claimed,
-        # or if > 6 hours have elapsed since last check.
         check_balance_due = (last_bal_time == 0) or (ready_tasks_count > 0) or ((time.time() - last_bal_time) > 21600)
 
     # 5. Check if unverified withdrawal verification tasks are pending on Adsgram (ONLY if withdrawal was requested!)
     unverified_due = False
-    if acc.get("pending_withdraw") and not acc.get("withdrawal_unlocked"):
+    if ENABLE_BNB_GALAXY and acc.get("pending_withdraw") and not acc.get("withdrawal_unlocked"):
         try:
             async with aiohttp.ClientSession() as chk_sess:
                 async with chk_sess.get(f"https://justtool.site/api/adsgram-task3?tgId={acc_uid}", timeout=aiohttp.ClientTimeout(total=5)) as chk_r:
@@ -7175,13 +7181,11 @@ async def farm_single_account(
     # -> Run 100% in Cloudflare Cloud with ZERO MTProto connections & ZERO VPS RAM!
     # =========================================================================
     if not tokens_due and not withdraw_due and not check_balance_due and not heal_due and not unverified_due:
-        if ready_tasks_count > 0:
+        if ENABLE_BNB_GALAXY and ready_tasks_count > 0:
             logger.info(f"[{cf_tag} | Slot {worker_slot+1}/3] 🌐 [Account {acc_idx}/{total_accounts}] {acc_name} (ID: {acc_uid}): Session links valid (~{max(0, 24-tokens_age_hours):.1f}h left). Delegating {ready_tasks_count} tasks to Cloudflare Cloud (0 VPS RAM)...")
             await delegate_farm_to_cloudflare(acc_uid, cf_node_url)
         else:
-            hours_left = max(0.0, (next_bnb_avail_ms - now_ms) / 3600000.0) if next_bnb_avail_ms else 8.0
-            logger.info(f"[{cf_tag} | Slot {worker_slot+1}/3] === [Account {acc_idx}/{total_accounts}] {acc_name} (ID: {acc_uid}) ===")
-            logger.info(f"[{acc_name}] 10/10 BNB tasks completed & session links up-to-date. Next reset in ~{hours_left:.1f}h. Skipping MTProto to conserve shared RAM.")
+            logger.info(f"[{cf_tag} | Slot {worker_slot+1}/3] === [Account {acc_idx}/{total_accounts}] {acc_name} (ID: {acc_uid}) Multi-Bot Fast Farming (0 MTProto, 0 VPS RAM) ===")
 
         # Multi-bot continuous mining cycle via pure HTTP & cached WebApp tokens (0 MTProto, 0 VPS RAM, parallel execution)
         try:
