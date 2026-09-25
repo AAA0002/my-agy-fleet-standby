@@ -1906,7 +1906,7 @@ async def broadcast_payout_channel_receipt(text: str, parse_mode: str = "HTML"):
     try:
         tg_url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"
         async with aiohttp.ClientSession() as session:
-            await session.post(
+            async with session.post(
                 tg_url,
                 json={
                     "chat_id": PAYOUT_CHANNEL_ID,
@@ -1914,8 +1914,13 @@ async def broadcast_payout_channel_receipt(text: str, parse_mode: str = "HTML"):
                     "parse_mode": parse_mode,
                     "disable_web_page_preview": True
                 },
-                timeout=aiohttp.ClientTimeout(total=8)
-            )
+                timeout=aiohttp.ClientTimeout(total=10)
+            ) as r:
+                if r.status != 200:
+                    err_txt = await r.text()
+                    logger.warning(f"[Payout Channel] Broadcast HTTP {r.status}: {err_txt[:120]}")
+                else:
+                    logger.info(f"[Payout Channel] ✅ Receipt broadcast successfully to {PAYOUT_CHANNEL_ID}")
     except Exception as pe:
         logger.debug(f"[Payout Channel] Broadcast note: {pe}")
 
@@ -5917,10 +5922,10 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                         if "cooldown" in details_str:
                             acc["stones_next_wd_at"] = now_ts + 190  # 3 minutes + 10s margin
                             await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 190})
-                        elif any(k in details_str for k in ["ad", "proof", "watch", "video", "sponsor"]):
-                            acc["stones_next_wd_at"] = now_ts + 1800  # 30 minutes retry cooldown for adsgram proof
-                            await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 1800})
-                            logger.info(f"[{acc_name}] 💎 [Stones] Withdrawal requires AdsGram proof ('{wd_res}'). Setting 30m retry cooldown.")
+                        elif any(k in details_str for k in ["ad", "proof", "watch", "video", "sponsor", "captcha", "verification code", "incomplete"]):
+                            acc["stones_next_wd_at"] = now_ts + 120  # 2 minutes retry cooldown (preserves boarded ads within 15m server TTL)
+                            await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 120})
+                            logger.info(f"[{acc_name}] 💎 [Stones] Partial AdsGram proof/captcha recorded ('{wd_res}'). Setting 2m retry cooldown to preserve 15m TTL.")
                         elif any(k in details_str for k in ["1033", "530", "tunnel", "dns", "cloudflare", "connect"]):
                             acc["stones_next_wd_at"] = now_ts + 3600  # 1 hour cooldown for origin tunnel
                             await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 3600})

@@ -5,7 +5,15 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
-### Added & Improved
+- **Resilient Ad-Retry Architecture & 15-Minute TTL Preservation (`stones_captcha_solver.py`, `userbot_refresher.py`)**:
+  - **Enhanced Character Vector Extraction & Horizontal Tone Merging**: Lowered pixel frequency threshold to `>= 60` and average brightness `< 118` to reliably capture thin glyphs ('1', 'I', 'T'). Implemented horizontal bounding box clustering to consolidate multi-shaded anti-aliasing into unified character components.
+  - **Increased Captcha Attempts & Ticket Guard**: Raised maximum captcha attempts from 3 to 5. Added strict validation preventing `/api/withdraw` from firing without a valid verified server ticket, eliminating premature unverified rejection loops.
+  - **Unified 2-Minute Retry Cooldown for Captcha & Partial Proofs**: Expanded 120s retry cooldown trigger in `userbot_refresher.py` to cover `"captcha"`, `"verification code"`, and `"incomplete"` results, ensuring accounts preserve the 15-minute server ad window without waiting 10 minutes.
+  - **Enhanced Payout Channel Broadcast Telemetry**: Added HTTP status code and response body audit logging to `broadcast_payout_channel_receipt` for real-time delivery confirmation.
+  - **Extended Proof Polling (90s Server Window)**: Increased proof polling from 15 tries to 35 tries (matching the Stones server's 90-second webhook ingestion window), preventing premature timeouts when AdsGram postbacks experience network transit delays.
+  - **Per-Ad Retry Resilience**: If an individual ad challenge fails verification, the solver retries that specific ad index up to 3 times rather than aborting the entire withdrawal session.
+  - **Preserved 15-Minute Precheck TTL**: Reduced Stones withdrawal retry cooldown from 30 minutes (1800s) down to 2 minutes (120s) in `userbot_refresher.py`. This ensures any partially boarded ads (e.g. 2/4 or 3/4) remain valid under the server's 15-minute (`ttl_sec: 900`) session timer instead of expiring.
+  - **Hardened Captcha Issue & Verify Timeouts**: Increased HTTP timeouts on `/api/wd/captcha/issue` and `/api/wd/captcha/verify` from 12s to 20s with automatic attempt retry, eliminating `TimeoutError` aborts on mobile network connections.
 - **Full AdsGram Rewarded Video & Server-to-Server Postback Solver for Stones Miners (`stones_captcha_solver.py`, `accounts.json`)**:
   - **Complete AdsGram Protocol Emulation**: Reverse-engineered `sad.min.js` and implemented `generate_adsgram_dcs()` to calculate base64url-encoded sorted query fields without hash/signature, authenticating natively with AdsGram's backend API.
   - **Multi-Block Rewarded Ad Resolution**: Solves all 4 mandatory withdrawal ad challenges across blocks `46341`, `46889`, `47336`, and `48105` with valid browser headers and WebApp origin.

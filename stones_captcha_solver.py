@@ -65,8 +65,8 @@ def extract_character_vectors(img: Image.Image) -> List[Tuple[List[float], Image
     """
     w, h = img.size
     colors = Counter([img.getpixel((x, y)) for x in range(w) for y in range(h)])
-    # Character colors: dark and frequent (> 120 pixels, average brightness < 110)
-    char_colors = [c for c, cnt in colors.most_common(15) if cnt > 120 and (c[0] + c[1] + c[2]) / 3 < 110]
+    # Character colors: dark and frequent (>= 60 pixels, average brightness < 118)
+    char_colors = [c for c, cnt in colors.most_common(25) if cnt >= 60 and (c[0] + c[1] + c[2]) / 3 < 118]
 
     chars = []
     for col in char_colors:
@@ -81,14 +81,34 @@ def extract_character_vectors(img: Image.Image) -> List[Tuple[List[float], Image
     # Sort left to right
     chars.sort(key=lambda t: t[0])
 
+    # Merge overlapping boxes that belong to the same character (anti-aliased tones)
+    merged_chars = []
+    for ch_box in chars:
+        if not merged_chars:
+            merged_chars.append(ch_box)
+            continue
+        prev_min_x, prev_max_x, prev_min_y, prev_max_y, prev_col = merged_chars[-1]
+        cur_min_x, cur_max_x, cur_min_y, cur_max_y, cur_col = ch_box
+        if cur_min_x <= prev_max_x or (cur_min_x - prev_max_x) < 6:
+            merged_chars[-1] = (
+                min(prev_min_x, cur_min_x),
+                max(prev_max_x, cur_max_x),
+                min(prev_min_y, cur_min_y),
+                max(prev_max_y, cur_max_y),
+                prev_col
+            )
+        else:
+            merged_chars.append(ch_box)
+
     char_data = []
-    for min_x, max_x, min_y, max_y, col in chars[:5]:
+    for min_x, max_x, min_y, max_y, col in merged_chars[:5]:
         cw = max_x - min_x + 1
         ch = max_y - min_y + 1
         c_img = Image.new("L", (cw, ch), 0)
         for x in range(min_x, max_x + 1):
             for y in range(min_y, max_y + 1):
-                if img.getpixel((x, y)) == col:
+                p = img.getpixel((x, y))
+                if p == col or (min_x <= x <= max_x and min_y <= y <= max_y and (p[0] + p[1] + p[2]) / 3 < 118):
                     c_img.putpixel((x - min_x, y - min_y), 255)
 
         norm_img = c_img.resize((20, 25), Image.Resampling.BILINEAR)
@@ -281,9 +301,12 @@ async def execute_stones_withdrawal_with_captcha(
                     uid_str = str(u_obj.get("id", ""))
                     dcs_val = generate_adsgram_dcs(init_data)
 
-                    while cur_boarded < req_ads:
+                    max_total_attempts = req_ads * 3
+                    total_attempts = 0
+                    while cur_boarded < req_ads and total_attempts < max_total_attempts:
+                        total_attempts += 1
                         target_block = blocks[min(cur_boarded, len(blocks)-1)]
-                        logger.info(f"[Stones Withdrawal] Onboarding withdrawal ad ({cur_boarded + 1}/{req_ads}) [Block: {target_block}]...")
+                        logger.info(f"[Stones Withdrawal] Onboarding withdrawal ad ({cur_boarded + 1}/{req_ads}) [Block: {target_block}] (Attempt {total_attempts}/{max_total_attempts})...")
 
                         # 1. Challenge
                         async with session.post(
@@ -294,11 +317,13 @@ async def execute_stones_withdrawal_with_captcha(
                             timeout=aiohttp.ClientTimeout(total=10)
                         ) as chr:
                             if chr.status != 200:
-                                break
+                                await asyncio.sleep(2.0)
+                                continue
                             ch_data = await chr.json()
                             cid = ch_data.get("challenge", {}).get("challenge_id")
                         if not cid:
-                            break
+                            await asyncio.sleep(2.0)
+                            continue
 
                         # 2. Stones Heartbeat 1 (Start)
                         await session.post(
@@ -391,13 +416,15 @@ async def execute_stones_withdrawal_with_captcha(
                                 cf_d = await cfr.json()
                                 if not cf_d.get("ok"):
                                     logger.warning(f"[Stones Withdrawal] Ad confirm note: {cf_d.get('info')}")
-                                    break
+                                    await asyncio.sleep(2.0)
+                                    continue
                             else:
-                                break
+                                await asyncio.sleep(2.0)
+                                continue
 
-                        # 8. Poll Proof (server-to-server webhook confirmation)
+                        # 8. Poll Proof (server-to-server webhook confirmation, up to 35 tries ~87s matching server window)
                         proof_ok = False
-                        for p_try in range(15):
+                        for p_try in range(35):
                             await asyncio.sleep(2.5)
                             async with session.post(
                                 f"{base_url}/api/wd/ad/proof",
@@ -409,7 +436,7 @@ async def execute_stones_withdrawal_with_captcha(
                                 if pfr.status == 200:
                                     pfd = await pfr.json()
                                     if pfd.get("state") == "ok":
-                                        cur_boarded = pfd.get("boarded", cur_boarded + 1)
+                                        cur_boarded = pfd.get("boarded") or (cur_boarded + 1)
                                         proof_ok = True
                                         logger.info(f"[Stones Withdrawal] Ad {cur_boarded}/{req_ads} verified via AdsGram postback!")
                                         break
@@ -417,10 +444,11 @@ async def execute_stones_withdrawal_with_captcha(
                                         logger.warning("[Stones Withdrawal] AdsGram service unavailable/outage.")
                                         break
                                     elif pfd.get("state") == "failed":
-                                        logger.warning("[Stones Withdrawal] AdsGram postback failed for this ad.")
+                                        logger.warning("[Stones Withdrawal] AdsGram postback failed for this ad. Retrying...")
                                         break
                         if not proof_ok:
-                            break
+                            await asyncio.sleep(3.0)
+                            continue
                         await asyncio.sleep(1.0)
                     if cur_boarded < req_ads:
                         return False, f"🎬 Watch all {req_ads} ads fully to submit this withdrawal (confirmed: {cur_boarded}/{req_ads})"
@@ -429,7 +457,7 @@ async def execute_stones_withdrawal_with_captcha(
 
     # Step 1: Issue captcha or check if enabled
     ticket = None
-    max_attempts = 3
+    max_attempts = 5
 
     for attempt in range(1, max_attempts + 1):
         try:
@@ -438,16 +466,18 @@ async def execute_stones_withdrawal_with_captcha(
                 json={"initData": init_data},
                 headers=req_headers,
                 proxy=proxy,
-                timeout=aiohttp.ClientTimeout(total=12)
+                timeout=aiohttp.ClientTimeout(total=20)
             ) as ir:
                 if ir.status != 200:
                     logger.warning(f"[Stones Captcha] Issue returned status {ir.status}")
-                    break
+                    await asyncio.sleep(1.5)
+                    continue
 
                 ires = await ir.json()
                 if not ires.get("ok"):
                     logger.warning(f"[Stones Captcha] Issue failed: {ires}")
-                    break
+                    await asyncio.sleep(1.5)
+                    continue
 
                 # If captcha is disabled server-side, proceed immediately
                 if ires.get("enabled") is False:
@@ -460,7 +490,8 @@ async def execute_stones_withdrawal_with_captcha(
 
                 if not img_raw or not cid:
                     logger.warning(f"[Stones Captcha] Incomplete captcha payload: {ires}")
-                    break
+                    await asyncio.sleep(1.5)
+                    continue
 
                 # Step 2: Solve with AI Vision, fallback to offline template matching
                 proc_b64 = preprocess_captcha_image(img_raw)
@@ -473,7 +504,7 @@ async def execute_stones_withdrawal_with_captcha(
 
                 if not ans:
                     logger.warning(f"[Stones Captcha] All solvers failed to resolve image on attempt {attempt}")
-                    await asyncio.sleep(1.0)
+                    await asyncio.sleep(1.5)
                     continue
 
                 logger.info(f"[Stones Captcha] Solved code: '{ans}' (attempt {attempt}/{max_attempts})")
@@ -484,7 +515,7 @@ async def execute_stones_withdrawal_with_captcha(
                     json={"initData": init_data, "captcha_id": cid, "answer": ans},
                     headers=req_headers,
                     proxy=proxy,
-                    timeout=aiohttp.ClientTimeout(total=12)
+                    timeout=aiohttp.ClientTimeout(total=20)
                 ) as vr:
                     if vr.status == 200:
                         vres = await vr.json()
@@ -501,11 +532,12 @@ async def execute_stones_withdrawal_with_captcha(
                             await asyncio.sleep(1.5)
         except Exception as e:
             err_desc = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
-            logger.error(f"[Stones Captcha] Exception during captcha cycle: {err_desc}")
-            if isinstance(e, (asyncio.TimeoutError, aiohttp.ClientConnectorError, aiohttp.ServerTimeoutError)):
-                logger.warning(f"[Stones Captcha] Network/Origin timeout detected. Aborting captcha attempts.")
-                break
-            await asyncio.sleep(1.5)
+            logger.warning(f"[Stones Captcha] Captcha attempt {attempt}/{max_attempts} note: {err_desc}")
+            await asyncio.sleep(2.0)
+            continue
+
+    if not ticket:
+        return False, "Verification incomplete after maximum captcha attempts. Retrying next cycle."
 
     # Step 4: Submit the actual withdrawal
     withdraw_payload = {
