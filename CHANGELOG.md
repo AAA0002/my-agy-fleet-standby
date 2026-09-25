@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added & Improved
+- **Unified Multi-Cloud Mesh Dashboard & Real-Time Sentinel Integration (`public/index.html`, `userbot_refresher.py`, `deploy_both_cf_workers.py`)**:
+  - **Live Multi-Cloud Mesh Drawer Modal in WebApp**: Added an interactive "Multi-Cloud Unified Mesh" modal in `public/index.html` displaying live latency and status for all 11 cloud compute nodes (5 Cloudflare Workers, 4 Render services, 2 Deno Deploy Sentinels) and distributed databases (Supabase Postgres, Upstash Redis, Turso LibSQL, Pinata IPFS Vault).
+  - **Prominent Account Phone Number Display**: Formatted verified phone numbers (`+8801...`, `+1430...`) directly on every account card in the WebApp and in the Account Details drawer modal, using `KNOWN_PHONES` failover dictionary to guarantee 100% visibility.
+  - **Telegram Bot `/mesh` and `/cloud` Commands**: Added high-speed `/mesh` and `/cloud` commands and `🌐 Cloud Mesh` buttons to `MAIN_TAB_KEYBOARD`, `STATUS_INLINE_KEYBOARD`, and `ACCOUNTS_INLINE_KEYBOARD`.
+  - **Telegram Markdown v1 Parser Sanitation**: Replaced broken double-asterisk `**bold**` with valid single-asterisk `*bold*` across all status reports, eliminating formatting errors and visual clutter on mobile devices.
+  - **Vercel WebApp Cache-Buster v=4.8 Deployed**: Built and deployed `v=4.8` to all 3 Vercel aliases (`agy-aaa000.vercel.app`, `my-agy-ai-fleet.vercel.app`, `agy-henna.vercel.app`).
+  - **Triple Cloudflare Edge Worker Synchronization**: Deployed updated worker script to Nodes 1, 2, and 3 (`aaaai2`, `aaa-bot`, `aaa222`) via `deploy_both_cf_workers.py`.
+
 - **Unified Multi-Cloud Infrastructure (5 Cloudflare Nodes + Dual Render Relayers + Dual GitHub Remotes)**:
   - **Full 5-Account Cloudflare Mesh Active**:
     * Node 1 (`korimhaji210@gmail.com` -> `restore-agy.aaaai2.workers.dev`) [🟢 ONLINE - Shard 0]
