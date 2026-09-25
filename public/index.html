@@ -255,6 +255,7 @@ function ProfitChart({ payouts = [], bnbPrice = 765, currencySymbol = "$", curre
 // --- Main Dashboard Component ---
 function App() {
   const initData = window.__INITIAL_DATA__ || {};
+  const API_BASE = (window.location.hostname.includes("vercel.app") || window.location.hostname.includes("workers.dev")) ? "" : "https://restore-agy.aaaai2.workers.dev";
 
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem("agy_theme") || "light"; } catch (_) { return "light"; }
@@ -358,18 +359,18 @@ function App() {
   const refreshTelemetry = useCallback(async () => {
     setSyncing(true);
     try {
-      const res = await fetch("/api/rates");
+      const res = await fetch(API_BASE + "/api/rates");
       if (res.ok) {
         const data = await res.json();
         if (data.rates) setRates(prev => ({ ...prev, ...data.rates }));
         if (data.mcState && data.mcState.bsc_bnb_balance !== undefined) setBnbBalance(data.mcState.bsc_bnb_balance);
       }
-      const pRes = await fetch("/api/payouts");
+      const pRes = await fetch(API_BASE + "/api/payouts");
       if (pRes.ok) {
         const pData = await pRes.json();
         if (pData.payouts) setPayouts(pData.payouts);
       }
-      const fRes = await fetch("/api/fleet/live");
+      const fRes = await fetch(API_BASE + "/api/fleet/live");
       if (fRes.ok) {
         const fData = await fRes.json();
         if (fData.accounts) setFleet(fData.accounts);
@@ -408,7 +409,7 @@ function App() {
     haptic("medium");
     showToast("Triggering edge harvest across 3 Cloudflare workers...", "info");
     try {
-      await fetch("/api/farm/all", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bot: "all" }) });
+      await fetch(API_BASE + "/api/farm/all", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bot: "all" }) });
       showToast("All 13 accounts successfully harvested!");
       refreshTelemetry();
     } catch (_) {
@@ -420,7 +421,7 @@ function App() {
     haptic("medium");
     showToast("Dispatching instant auto-withdraw sweep...", "info");
     try {
-      const res = await fetch("/api/bnb/withdraw", { method: "POST" });
+      const res = await fetch(API_BASE + "/api/bnb/withdraw", { method: "POST" });
       const d = await res.json();
       showToast(d.ok ? `Swept ${d.withdrawn || 0} withdrawals to Binance!` : "Sweep dispatched!");
       refreshTelemetry();
@@ -435,7 +436,7 @@ function App() {
     setModalLoading(true);
     setModalMsg(null);
     try {
-      const res = await fetch("/api/fleet/add", {
+      const res = await fetch(API_BASE + "/api/fleet/add", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: phoneInput.trim() })
       });
@@ -461,7 +462,7 @@ function App() {
     haptic("medium");
     showToast(`Removing ${userName}...`, "info");
     try {
-      const res = await fetch("/api/fleet/account/remove", {
+      const res = await fetch(API_BASE + "/api/fleet/account/remove", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId })
@@ -490,7 +491,7 @@ function App() {
     setAiInput("");
     setAiLoading(true);
     try {
-      const res = await fetch("/ai", {
+      const res = await fetch(API_BASE + "/ai", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: `You are Ari, the personal cloud AI copilot for Arif's 13-account automated mining fleet (MY AGY AI). Fleet state: 13 active accounts across all 8 active bots, ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Stones vault: 500+ STONES on Arbitrum One. Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
@@ -797,7 +798,7 @@ function App() {
             desc: "Trigger 8-bot harvest",
             action: async () => {
               showToast("AI: Dispatched harvest across all bots!", "info");
-              await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "harvest" }) });
+              await fetch(API_BASE + "/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "harvest" }) });
               setAiMessages(prev => [...prev, { sender: "user", text: "⚡ Trigger fleet harvest" }, { sender: "ai", text: "✅ Dispatched instant harvest across all 8 mining platforms (Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, ATF). WebApp tokens and sessions are active." }]);
             }
           },
@@ -806,7 +807,7 @@ function App() {
             desc: "Arbitrum One (0xfda4...d5ce)",
             action: async () => {
               showToast("AI: Sweeping Stones >= 500...", "info");
-              await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sweep_stones" }) });
+              await fetch(API_BASE + "/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sweep_stones" }) });
               setAiMessages(prev => [...prev, { sender: "user", text: "💎 Sweep Stones >= 500" }, { sender: "ai", text: "💎 Stones 500-Withdrawal Sweep triggered! Scanning worker accounts with >= 500 STONES coins (main account protected). Destination: Arbitrum One (0xfda4182001672b9f0f09e2118242e543e35ed5ce). Captcha solver active." }]);
             }
           },
@@ -823,7 +824,7 @@ function App() {
             desc: "Sweep >=$0.02 to BEP-20",
             action: async () => {
               showToast("AI: Evaluating AI Lab balances for withdrawal...", "info");
-              await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sweep_ailab" }) });
+              await fetch(API_BASE + "/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sweep_ailab" }) });
               setAiMessages(prev => [...prev, { sender: "user", text: "🧪 Sweep eligible AI Lab balances" }, { sender: "ai", text: "✅ AI Lab auto-withdrawal sweep dispatched across worker accounts >= $0.02 USD to BEP-20 vault! Main account is strictly protected to compound power." }]);
             }
           },

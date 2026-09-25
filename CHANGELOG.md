@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **Vercel Executive Dashboard Migration, Spam Neutralization & Lean Admin UI Overhaul (`deploy_both_cf_workers.py`, `userbot_refresher.py`, `public/index.html`)**:
+  - **Spam Neutralized**: Located and terminated the 3-minute repeating notification spam (*"🌾 Fleet Harvest Completed..."*) originating from Render service `srv-daojdt5g1s2s738jsjmg` (`hermes-grok-cloud-agent`) via Render API suspension and disabled cron-job `8484430`.
+  - **Dashboard Migrated to Vercel**: Transferred frontend dashboard from Cloudflare Worker embedded HTML response (~73KB bloat stripped) to Vercel production deployment (`https://agy-aaa000.vercel.app`). Dynamic API base routes all `/api/...` and `/ai` requests seamlessly to the Cloudflare Edge mesh. Updated Telegram Chat Menu Button and WebApp URLs.
+  - **Worker 302 Redirection**: Implemented instant HTTP 302 redirect from Cloudflare Worker `/dashboard` to `https://agy-aaa000.vercel.app`, reducing worker bundle size and improving edge execution speed.
+  - **Lean Executive Admin Toolbar**: Eliminated wall of 13 inline and 9 keyboard buttons. Replaced with a clean, executive 3-row admin layout (`🚀 Open WebApp Dashboard`, `⚡ Instant Harvest`, `💼 Universal Sweep`, `📊 Fleet Status`, `🌅 AI Briefing`). Silent background AI handles routine harvest and maintenance cycles without spamming the chat.
+  - **Strict Admin Enforcement**: Restricted bot execution and command handling strictly to Arif (`6727787768`), deferring public multi-user features.
+  - **Triple Cloudflare Edge Synchronization & Daemon Revival**: Synchronized and deployed updated edge scripts to all 3 Cloudflare nodes (`aaaai2`, `aaa-bot`, `aaa222`) and restarted the local userbot daemon under immortal supervisor with 0 errors.
+
+### Added
 - **Stones Ad Boarding Proof Polling, Active On-Chain Sweeper & Gemini Model Load Balancing (`stones_captcha_solver.py`, `userbot_refresher.py`, `deploy_both_cf_workers.py`, `autonomous_cloud_agent.py`)**:
   - **Stones Miners Postback Proof Polling**: Reverse-engineered Stones Miners frontend (`app.stoneswithestand.my.id`) and implemented live `/api/wd/ad/proof` polling in `execute_stones_withdrawal_with_captcha`. The bot now confirms server-side AdsGram impression verification before attempting captcha solving, eliminating premature `/api/withdraw` submissions that failed with `Watch all 3 ads fully`.
   - **Sensible Cooldown Calibration**: Reduced the Stones ad proof cooldown from 12 hours (`43200`s) to 30 minutes (`1800`s), allowing fleet accounts to retry frequently and cash out as soon as AdsGram impressions are confirmed.

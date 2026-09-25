@@ -108,9 +108,6 @@ CF_WORKER_URLS = [
 ADMIN_IDS = [
     str(REPORT_CHAT_ID),
     "6727787768",
-    "8826375659",
-    "8190649727",
-    "7648254021",
     "-1003973231307"
 ]
 ADMIN_IDS = list(dict.fromkeys(ADMIN_IDS))
@@ -358,23 +355,15 @@ PRIORITY_ACCOUNT_IDS = set()
 MAIN_TAB_KEYBOARD = {
     "keyboard": [
         [
-            {"text": "🚀 Open WebApp Dashboard", "web_app": {"url": "https://restore-agy.aaa-bot.workers.dev/dashboard"}}
+            {"text": "🚀 Open WebApp Dashboard", "web_app": {"url": "https://agy-aaa000.vercel.app"}}
         ],
         [
-            {"text": "📊 Live Status"},
-            {"text": "⚡ Instant Harvest"}
+            {"text": "⚡ Instant Harvest"},
+            {"text": "💼 Universal Sweep"}
         ],
         [
-            {"text": "⚡ Universal Sweep"},
-            {"text": "💼 Treasury & Wallets"}
-        ],
-        [
-            {"text": "👥 My Accounts (13)"},
-            {"text": "➕ Add Account"}
-        ],
-        [
-            {"text": "🌅 AI Briefing"},
-            {"text": "💾 Cloud Backup"}
+            {"text": "📊 Fleet Status"},
+            {"text": "🌅 AI Briefing"}
         ]
     ],
     "resize_keyboard": True,
@@ -1513,31 +1502,16 @@ STATUS_INLINE_KEYBOARD = {
     "inline_keyboard": [
         [
             {
-                "text": "🚀 Open WebApp Dashboard",
-                "web_app": {"url": "https://restore-agy.aaa-bot.workers.dev/dashboard"}
+                "text": "🚀 Open Executive Dashboard",
+                "web_app": {"url": "https://agy-aaa000.vercel.app"}
             }
         ],
         [
             {"text": "⚡ Instant Harvest", "callback_data": "btn_harvest"},
-            {"text": "⚡ Universal Sweep", "callback_data": "btn_withdraw_all"}
+            {"text": "💼 Universal Sweep", "callback_data": "btn_withdraw_all"}
         ],
         [
-            {"text": "💎 Stones (500)", "callback_data": "btn_stones"},
-            {"text": "🧪 AI Lab", "callback_data": "btn_ailab"},
-            {"text": "🤖 Ainovum", "callback_data": "btn_ainovum"}
-        ],
-        [
-            {"text": "🚀 ART Airdrop", "callback_data": "btn_art"},
-            {"text": "⛏️ MRG Miner", "callback_data": "btn_mrg"},
-            {"text": "💳 UltraWallet", "callback_data": "btn_ultra"}
-        ],
-        [
-            {"text": "⚡ Apex Miner", "callback_data": "btn_apx"},
-            {"text": "🪙 ATF Farming", "callback_data": "btn_atf"}
-        ],
-        [
-            {"text": "🔄 Refresh Status", "callback_data": "btn_status"},
-            {"text": "➕ Add Account", "callback_data": "btn_add_account"}
+            {"text": "🔄 Refresh Status", "callback_data": "btn_status"}
         ]
     ]
 }
@@ -1546,23 +1520,13 @@ WALLET_INLINE_KEYBOARD = {
     "inline_keyboard": [
         [
             {"text": "🔄 Refresh Balances", "callback_data": "btn_wallet"},
-            {"text": "⚡ Universal Sweep", "callback_data": "btn_withdraw_all"}
+            {"text": "💼 Universal Sweep", "callback_data": "btn_withdraw_all"}
         ],
         [
-            {"text": "💎 Stones Payouts", "callback_data": "btn_stones"},
-            {"text": "🧪 AI Lab Payouts", "callback_data": "btn_ailab"},
-            {"text": "🤖 Ainovum Payouts", "callback_data": "btn_ainovum"}
-        ],
-        [
-            {"text": "📜 Payout History", "callback_data": "btn_payouts"},
-            {"text": "📈 Yield Analytics", "callback_data": "btn_earnings"}
-        ],
-        [
-            {"text": "🔗 Binance Web3 (BSC)", "url": f"https://bscscan.com/address/{WALLET_ADDRESS}"},
-            {"text": "🔗 Binance Web3 (ARB)", "url": f"https://arbiscan.io/address/{WALLET_ADDRESS}"}
-        ],
-        [
-            {"text": "🔗 Binance Web3 (TON)", "url": f"https://tonviewer.com/{TON_PRIMARY_WALLET}"}
+            {
+                "text": "🚀 Open Executive Dashboard",
+                "web_app": {"url": "https://agy-aaa000.vercel.app"}
+            }
         ]
     ]
 }
@@ -1645,7 +1609,7 @@ async def setup_bot_tab_menu():
                     "type": "web_app",
                     "text": "🚀 Mini App",
                     "web_app": {
-                        "url": "https://restore-agy.aaaai2.workers.dev/dashboard"
+                        "url": "https://agy-aaa000.vercel.app"
                     }
                 }
             }
@@ -2878,19 +2842,20 @@ async def handle_single_update(update: dict):
         caller_uid = int(chat_id) if str(chat_id) in [str(a.get("user_id")) for a in load_accounts()] else int(REPORT_CHAT_ID)
 
         if text.startswith("/start") or text == "📱 Show Menu" or text.startswith("/menu"):
+            await send_report_message("⚡ *Executive toolbar synchronized:*", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
             welcome = (
-                "👋 *Welcome to MY AGY AI!*\n\n"
+                "👋 *Welcome to MY AGY AI — Executive Admin Hub*\n\n"
                 "Your autonomous **24/7 Cloud Operations Hub** is active across 3 Cloudflare Edge nodes.\n\n"
                 "✨ *Fleet Telemetry:*\n"
                 "• **13 Connected Accounts:** 100% cloud serverless execution\n"
-                "• **8 Mining Automations:** Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, ATF\n"
+                "• **8 Mining Automations:** Silent autonomous background cycles\n"
                 "• **3x Cloudflare Edge Mesh:** Distributed multi-node parallel cloud processing\n"
-                "• **Visual Mini App:** Real-time graphs, on-chain balances, and payouts ledger\n\n"
-                "⚡ *Tap '🚀 Open Visual Mini App' below to view your real-time graphical dashboard!*"
+                "• **Executive WebApp:** Real-time graphs, on-chain balances, and payouts ledger\n\n"
+                "⚡ *Tap '🚀 Open Executive Dashboard' below to view your real-time visual control room!*"
             )
             await send_report_message(welcome, reply_markup=STATUS_INLINE_KEYBOARD, chat_id=chat_id)
 
-        elif text.startswith("/status") or text.startswith("/dashboard") or text.startswith("/app") or text in ["📊 Status", "📊 Live Status", "🔄 Refresh Status", "🚀 Open Mini App", "🚀 Mini App"]:
+        elif text.startswith("/status") or text.startswith("/dashboard") or text.startswith("/app") or text in ["📊 Status", "📊 Live Status", "📊 Fleet Status", "🔄 Refresh Status", "🚀 Open Mini App", "🚀 Mini App", "🚀 Open WebApp Dashboard"]:
             rep = await build_full_status_report(caller_uid)
             await send_report_message(rep, reply_markup=STATUS_INLINE_KEYBOARD, chat_id=chat_id)
 
@@ -2946,24 +2911,24 @@ async def handle_single_update(update: dict):
         elif text.startswith("/harvest") or text in ["⚡ Harvest", "⚡ Instant Harvest"]:
             safe_create_task(execute_fleet_harvest(caller_chat_id=chat_id), name="tg_harvest")
 
-        elif text in ["/withdraw_all", "/batch_withdraw", "⚡ Withdraw All", "⚡ Withdraw All Eligible", "/sweep", "/sweep_all", "⚡ Sweep", "⚡ Fleet Sweep", "⚡ Universal Sweep"]:
+        elif text in ["/withdraw_all", "/batch_withdraw", "⚡ Withdraw All", "⚡ Withdraw All Eligible", "/sweep", "/sweep_all", "⚡ Sweep", "⚡ Fleet Sweep", "⚡ Universal Sweep", "💼 Universal Sweep"]:
             safe_create_task(execute_universal_fleet_sweep(caller_chat_id=chat_id), name="tg_universal_sweep")
 
-        elif text in ["/dashboard", "/miniapp", "/app", "🚀 Open Mini App", "🚀 Dashboard"]:
-            dash_url = "https://restore-agy.aaa-bot.workers.dev/dashboard"
+        elif text in ["/dashboard", "/miniapp", "/app", "🚀 Open Mini App", "🚀 Dashboard", "🚀 Open WebApp Dashboard"]:
+            dash_url = "https://agy-aaa000.vercel.app"
             reply_markup = {
                 "inline_keyboard": [
-                    [{"text": "🚀 Open WebApp Dashboard", "web_app": {"url": dash_url}}],
+                    [{"text": "🚀 Open Executive Dashboard", "web_app": {"url": dash_url}}],
                     [{"text": "🌐 Open in Browser", "url": dash_url}],
-                    [{"text": "⚡ Withdraw All Eligible", "callback_data": "btn_withdraw_all"}]
+                    [{"text": "💼 Universal Sweep", "callback_data": "btn_withdraw_all"}]
                 ]
             }
             dash_msg = (
-                f"🚀 *MY AGY AI — Autonomous Fleet Control Center*\n\n"
+                f"🚀 *MY AGY AI — Executive Fleet Control Center*\n\n"
                 f"• **Live WebApp:** `{dash_url}`\n"
                 f"• **Features:** 13 Accounts Real-time Balances, Mining Status, TH/s, Multi-Chain Treasury\n"
                 f"• **Auto-Withdraw:** Routed strictly to Binance BEP-20 (`0xfda41820...`)\n\n"
-                f"Tap below to open your full visual dashboard or trigger actions:"
+                f"Tap below to open your executive dashboard or trigger actions:"
             )
             await send_report_message(dash_msg, reply_markup=reply_markup, chat_id=chat_id)
 
