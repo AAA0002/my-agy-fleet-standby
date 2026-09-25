@@ -3787,6 +3787,67 @@ async def cloudflare_edge_bridge_loop():
                                     pass
                             sync_tasks.append(push_betterstack())
 
+                        # 6. Replicate Fleet Accounts to Cloudflare D1 SQL (Node 4 - Singapore)
+                        cf_acc_id_4 = os.getenv("CF_ACCOUNT_ID_USERBOT", "abbe3cc008ebb9dd029ded333fef6e9f")
+                        cf_d1_id_4 = os.getenv("CF_D1_DATABASE_ID_USERBOT", "2659c73b-8144-4f2a-9a06-ef2368a1ce7f")
+                        cf_key_4 = os.getenv("CF_GLOBAL_API_KEY_USERBOT", "cfk_a3KGc7NbioJlm6oy2vE7F2qzPiluqdx6T64rGVaX3f8eb8d5")
+                        cf_email_4 = os.getenv("CF_EMAIL_USERBOT", "aaafreeai@gmail.com")
+                        if cf_acc_id_4 and cf_d1_id_4 and cf_key_4:
+                            async def push_cloudflare_d1():
+                                try:
+                                    d1_url = f"https://api.cloudflare.com/client/v4/accounts/{cf_acc_id_4}/d1/database/{cf_d1_id_4}/query"
+                                    d1_headers = {
+                                        "X-Auth-Email": cf_email_4,
+                                        "X-Auth-Key": cf_key_4,
+                                        "Content-Type": "application/json"
+                                    }
+                                    now_ts = int(time.time())
+                                    for idx, a in enumerate(accs, 1):
+                                        u_id = a.get("user_id")
+                                        u_name = a.get("name", f"Account #{idx}").replace("'", "''")
+                                        u_phone = a.get("phone", "")
+                                        u_label = f"#{idx} {u_name} ({u_phone})".replace("'", "''")
+                                        u_bal = float(a.get("atf_balance", 0.0))
+                                        stmt = f"INSERT INTO accounts (user_id, label, init_data, user_agent, balance, holding_balance, total_balance, status, account_tg_id, account_tg_name, last_updated_at) VALUES ({u_id}, '{u_label}', '', 'Mozilla/5.0', {u_bal}, {u_bal}, {u_bal}, 'active', {u_id}, '{u_name}', {now_ts}) ON CONFLICT(user_id, label) DO UPDATE SET account_tg_name=excluded.account_tg_name, holding_balance=excluded.holding_balance, total_balance=excluded.total_balance, last_updated_at=excluded.last_updated_at;"
+                                        async with session.post(d1_url, json={"sql": stmt}, headers=d1_headers, timeout=aiohttp.ClientTimeout(total=5)):
+                                            pass
+                                except Exception:
+                                    pass
+                            sync_tasks.append(push_cloudflare_d1())
+
+                        # 7. Keep-Alive for Dual Render MTProto Relayers & Standby Nodes
+                        render_keepalives = [
+                            "https://atf-mtproto-relayer.onrender.com/wake",
+                            "https://atf-mtproto-relayer-backup.onrender.com/wake",
+                            "https://my-agy-fleet-standby.onrender.com/health",
+                            "https://my-agy-fleet-standby-node2.onrender.com/health",
+                            "https://hermes-grok-cloud-agent.onrender.com/health"
+                        ]
+                        async def push_render_keepalives():
+                            for r_url in render_keepalives:
+                                try:
+                                    async with session.get(r_url, timeout=aiohttp.ClientTimeout(total=6)):
+                                        pass
+                                except Exception:
+                                    pass
+                        sync_tasks.append(push_render_keepalives())
+
+                        # 8. Keep-Alive for Deno Deploy Sentinels & Secondary Cloudflare Mining Engine
+                        edge_keepalives = [
+                            "https://my-agy-fleet-deno.aaa222.deno.net/health",
+                            "https://my-agy-fleet-deno2.aaasupporta.deno.net/health",
+                            "https://atf-miner-worker.agorameet.workers.dev/",
+                            "https://atf-mining-engine.aaaai.workers.dev/"
+                        ]
+                        async def push_edge_keepalives():
+                            for e_url in edge_keepalives:
+                                try:
+                                    async with session.get(e_url, timeout=aiohttp.ClientTimeout(total=6)):
+                                        pass
+                                except Exception:
+                                    pass
+                        sync_tasks.append(push_edge_keepalives())
+
                         await asyncio.gather(*sync_tasks, return_exceptions=True)
                     except Exception as sync_e:
                         logger.warning(f"[CF-Bridge] Telemetry sync error: {sync_e}")

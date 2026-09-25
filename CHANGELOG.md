@@ -18,6 +18,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     * Backup Relayer: `https://atf-mtproto-relayer-backup.onrender.com/wake` (🟢 ONLINE & AUTHENTICATED)
   - **Dual-GitHub Automated Remote Synchronization**:
     * Codebase automatically mirrored and kept 100% in sync between primary remote `origin` (`AAA2743/my-agy-ai-fleet`) and platform remote `platform_aaa0002` (`AAA0002/ATL`).
+  - **Continuous Cloudflare D1 SQL Replication (`userbot_refresher.py`)**:
+    * Integrated automated batch replication of all 13 fleet accounts and holding balances into Cloudflare Node 4 D1 SQL database (`atf-miner-db` in Singapore, `2659c73b-8144-4f2a-9a06-ef2368a1ce7f`).
+  - **Automated Render Relayers & Standby Keep-Alive Sentinel (`userbot_refresher.py`)**:
+    * Added automated 5-minute background probe of both MTProto Relayers (`atf-mtproto-relayer.onrender.com/wake` and backup) and standby nodes to ensure 0-spin-down availability on Render free tier.
+  - **Deno Deploy Multi-Cloud Sentinel Expansion (`deno_worker/main.ts`)**:
+    * Expanded autonomous Deno Deploy sentinel monitor (`Deno.cron`) to probe and track latencies for all 11 endpoints across Cloudflare (5 nodes), Render (3 standby + 2 relayers), and Vercel, writing health telemetry directly to Supabase Postgres and Upstash Redis.
   - **Multi-Cloud System & Mesh Health Dashboard (`userbot_refresher.py`)**:
     * Updated `/ping` and server health reports to display live status of the 5x Cloudflare mesh, dual Render relayers, dual GitHub remotes, and Telegram disaster vault.
 
