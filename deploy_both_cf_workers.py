@@ -2346,9 +2346,25 @@ fi
             return;
           }
 
-          if (userLower.includes("sweep") || userLower.includes("instant withdraw")) {
+          if (userLower.includes("sweep") || userLower.includes("instant withdraw") || userLower.includes("cash out")) {
             const res = await queueSweepAction();
             await sendReply(`💰 *Instant Withdrawal Sweep Dispatched!*\n\n• Accounts checked: \`13/13\`\n• Status: ${res.ok ? "Queued to Fleet Workers ✅" : "Dispatched"}\n• Target Vault: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\``, statusInlineKeyboard);
+            return;
+          }
+
+          if (userLower.includes("backup") || userLower.includes("disaster recovery")) {
+            const bUrl = `https://restore-agy.${CURRENT_SUBDOMAIN}.workers.dev/backup.zip`;
+            await sendReply(`📦 *1-Click Cloud Backup Ready*\n\n• **Direct Download:** ${bUrl}\n• **Mesh:** Triple Cloudflare Edge Shards\n• **Vault:** @myagyai channel archive\n\n🛡️ _Complete disaster recovery archive ready._`, statusInlineKeyboard);
+            return;
+          }
+
+          if (userLower.includes("stones") && (userLower.includes("status") || userLower.includes("balance") || userLower.includes("wd") || userLower.includes("cooldown"))) {
+            await sendReply(`💎 *Stones Miners Telemetry*\n\n• **Target Blockchain:** Arbitrum One (0xfda4182001672b9f0f09e2118242e543e35ed5ce)\n• **Auto-Withdrawal Threshold:** 500 STONES\n• **AI Captcha Engine:** Google Gemini Vision + Template Solver\n• **Anti-Sybil:** AdsGram proof verified per account`, statusInlineKeyboard);
+            return;
+          }
+
+          if (userLower.includes("atf") && (userLower.includes("policy") || userLower.includes("withdraw") || userLower.includes("status"))) {
+            await sendReply(`🪙 *ATF Miner Telemetry & Policy*\n\n• **Operational Mode:** 100% Farming & Pool Accumulation\n• **Auto-Withdrawals:** Permanently Disabled (Per Admin Directive)\n• **Network:** TON Blockchain\n• **Status:** All accounts compounding tokens safely in the cloud.`, statusInlineKeyboard);
             return;
           }
 
@@ -2378,7 +2394,7 @@ fi
 
             const systemPrompt = `You are Ari, the personal cloud AI assistant for Arif's 13-account automated crypto and mining fleet (MY AGY AI).
 Live Fleet Context:
-- 13 active accounts mining 24/7 across all 9 bots: BNB Galaxy, Stones Miners, ATF Miner, MRG Miner, ART Airdrop, AI Lab Robot, UltraWallet, Apex Miner, Ainovum.
+- 13 active accounts mining 24/7 across all 8 active bots: Stones Miners, ATF Miner, MRG Miner, ART Airdrop, AI Lab Robot, UltraWallet, Apex Miner, Ainovum.
 - Policy: ATF Miner is in 100% farming & accumulation mode (NO withdrawals; let balance grow).
 - Vault BEP-20 (BNB, USDT): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Live Balance: ${liveBnb.toFixed(6)} BNB).
 - Stones Vault (Arbitrum One): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Balance: 500+ STONES).

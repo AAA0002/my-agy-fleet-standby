@@ -71,6 +71,7 @@ CORE_BOT_FILES = [
     "execute_ailab_ainovum_withdrawals.py",
     "batch_stones_withdraw.py",
     "vercel.json",
+    "deploy_vercel.py",
     "public/index.html"
 ]
 

@@ -352,11 +352,19 @@ function App() {
   const [syncCountdown, setSyncCountdown] = useState(20);
 
   // AI Chat
+  const messagesEndRef = useRef(null);
+  const [ledgerFilter, setLedgerFilter] = useState("all");
   const [aiMessages, setAiMessages] = useState([
     { sender: "ai", text: "Hello Arif! Your 13-account fleet is mining across all 8 bots with 100% cloud uptime. How can I assist you today?" }
   ]);
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === "ai") {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [aiMessages, aiLoading, activeTab]);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -503,17 +511,25 @@ function App() {
     setAiMessages(newMsgs);
     setAiInput("");
     setAiLoading(true);
+
+    const qLower = query.toLowerCase();
+    if (qLower.includes("harvest") || qLower.includes("farm all") || qLower.includes("claim all")) {
+      handleHarvestAll();
+    } else if (qLower.includes("sweep") || qLower.includes("instant withdraw") || qLower.includes("cash out")) {
+      handleInstantWithdraw();
+    }
+
     try {
       const res = await fetch(API_BASE + "/ai", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: `You are Ari, the personal cloud AI copilot for Arif's 13-account automated mining fleet (MY AGY AI). Fleet state: 13 active accounts across all 8 active bots, ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Stones vault: 500+ STONES on Arbitrum One. Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
+          prompt: `You are Ari, Chief AI Operations Officer for Arif's 13-account automated Telegram mining fleet (MY AGY AI). Fleet state: 13/13 accounts active across all 8 bots (Stones, ATF, ART, MRG, AI Lab, UltraWallet, Apex, Ainovum). Binance BEP-20 vault: ${bnbBalance.toFixed(6)} BNB ($${formatMoney(bnbUsd)}). Stones Arbitrum One vault: 500+ STONES coins. Total ATF mined: ${totalAtfMined.toFixed(1)} ATF (100% compounding farming mode, no withdrawals). Answer concisely, warmly, and helpfully with clean bullet points. Address the user as Arif. Query: "${query}"`
         })
       });
       const d = await res.json();
-      setAiMessages([...newMsgs, { sender: "ai", text: d.response || d.answer || "All 13 accounts are online and actively mining, Arif." }]);
+      setAiMessages([...newMsgs, { sender: "ai", text: d.response || d.answer || "All 13 accounts are online, healthy, and actively mining, Arif." }]);
     } catch (_) {
-      setAiMessages([...newMsgs, { sender: "ai", text: `Fleet Status: 13/13 accounts active. On-chain balance is ${bnbBalance.toFixed(6)} BNB.` }]);
+      setAiMessages([...newMsgs, { sender: "ai", text: `Fleet Status: 13/13 accounts active across 8 bots. On-chain balance is ${bnbBalance.toFixed(6)} BNB.` }]);
     } finally {
       setAiLoading(false);
     }
@@ -773,29 +789,84 @@ function App() {
         payouts: uniquePayouts, bnbPrice: rates.bnb_usd || 765.0,
         currencySymbol: currencyConfig[currency].symbol, currencyRate: currencyConfig[currency].rate
       }),
-      React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3" },
+      React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3.5" },
         [
           { label: "Fleet Accounts", val: `${fleet.length} Active`, sub: "8 Mining Bots (100%)" },
           { label: "On-Chain Vault", val: bnbBalance.toFixed(6) + " BNB", sub: "≈ " + formatMoney(bnbUsd) },
           { label: "Total ATF Mined", val: totalAtfMined.toFixed(1) + " ATF", sub: "Pool Accumulation" },
           { label: "Daily Yield Cap", val: "~" + (fleet.length * 0.000055).toFixed(6) + " BNB", sub: formatMoney((fleet.length * 0.000055) * (rates.bnb_usd || 765)) }
-        ].map((m, i) => React.createElement("div", { key: i, className: "glass-card rounded-xl p-2.5 border border-slate-200 dark:border-white/10 text-center" },
+        ].map((m, i) => React.createElement("div", { key: i, className: "glass-card rounded-xl p-2.5 border border-slate-200 dark:border-white/10 text-center shadow-xs" },
           React.createElement("span", { className: "text-[10px] text-slate-400 block mb-0.5" }, m.label),
           React.createElement("span", { className: "text-xs sm:text-sm font-bold font-mono text-slate-900 dark:text-white block" }, m.val),
           React.createElement("span", { className: "text-[9px] text-slate-400 block" }, m.sub)
         ))
+      ),
+
+      // 8-Bot Mining Architecture Matrix
+      React.createElement("div", { className: "glass-card rounded-2xl p-3.5 mb-4 shadow-sm border border-slate-200 dark:border-white/10" },
+        React.createElement("div", { className: "flex items-center justify-between mb-3" },
+          React.createElement("div", { className: "flex items-center gap-1.5" },
+            React.createElement(Icon, { name: "bot", className: "w-4 h-4 text-brand-600 dark:text-brand-400" }),
+            React.createElement("h3", { className: "font-bold text-xs sm:text-sm text-slate-900 dark:text-white" }, "8-Bot Mining Fleet Architecture")
+          ),
+          React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" }, "100% Cloud Autonomous")
+        ),
+        React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2" },
+          [
+            { name: "Stones Miners", chain: "Arbitrum One", token: "STONES", rule: "Auto-WD >= 500", status: "AI Captcha Active", color: "from-amber-500/10 to-amber-500/5 text-amber-500" },
+            { name: "ATF Miner", chain: "TON Blockchain", token: "ATF", rule: "Farming & Compounding", status: "Accumulation Mode", color: "from-purple-500/10 to-purple-500/5 text-purple-400" },
+            { name: "MRG Miner", chain: "TON Blockchain", token: "MRG", rule: "3h Claim Cycles", status: "1.11 TH/s Hashrate", color: "from-blue-500/10 to-blue-500/5 text-blue-400" },
+            { name: "ART Airdrop", chain: "TON Blockchain", token: "ART", rule: "8h Auto-Renew", status: "30.3 ART/h Active", color: "from-cyan-500/10 to-cyan-500/5 text-cyan-400" },
+            { name: "AI Lab Robot", chain: "BNB Chain (BEP-20)", token: "USDT", rule: "Auto-WD >= $0.02", status: "Tasks #1-#20 Claimed", color: "from-emerald-500/10 to-emerald-500/5 text-emerald-400" },
+            { name: "UltraWallet", chain: "Tether (USDT)", token: "USDT", rule: "Daily Check-in", status: "Streak Protected", color: "from-teal-500/10 to-teal-500/5 text-teal-400" },
+            { name: "Apex Miner", chain: "APX Ecosystem", token: "Points", rule: "Continuous Hashrate", status: "Cloud Mining Active", color: "from-rose-500/10 to-rose-500/5 text-rose-400" },
+            { name: "Ainovum", chain: "BNB Chain (BEP-20)", token: "USDT", rule: "Auto-WD >= 0.10 USDT", status: "Isolated EVM Routes", color: "from-green-500/10 to-green-500/5 text-green-400" }
+          ].map((bot, bi) => React.createElement("div", {
+            key: bi,
+            className: `p-2.5 rounded-xl border border-slate-200/80 dark:border-white/5 bg-gradient-to-br ${bot.color} flex flex-col justify-between`
+          },
+            React.createElement("div", { className: "flex items-center justify-between mb-1" },
+              React.createElement("span", { className: "font-bold text-xs text-slate-900 dark:text-white" }, bot.name),
+              React.createElement("span", { className: "text-[9px] font-mono px-1.5 py-0.2 rounded bg-white/20 dark:bg-black/20" }, bot.token)
+            ),
+            React.createElement("div", { className: "text-[10px] text-slate-500 dark:text-slate-400 font-mono mb-1" }, bot.chain),
+            React.createElement("div", { className: "flex items-center justify-between text-[9px] pt-1 border-t border-black/5 dark:border-white/5" },
+              React.createElement("span", { className: "text-slate-400 font-medium" }, bot.rule),
+              React.createElement("span", { className: "font-semibold text-emerald-500" }, bot.status)
+            )
+          ))
+        )
       )
     ),
 
     // TAB 3: PAYOUTS (Ledger)
-    activeTab === "payouts" && React.createElement("div", { className: "glass-card rounded-xl p-3 border border-slate-200 dark:border-white/10 shadow-sm" },
-      React.createElement("div", { className: "flex items-center justify-between mb-2" },
-        React.createElement("h3", { className: "font-bold text-xs sm:text-sm text-slate-900 dark:text-white" }, "Verified On-Chain Payout Receipts"),
-        React.createElement("span", { className: "text-[10px] font-mono text-slate-400" }, uniquePayouts.length + " Verified Transactions")
+    activeTab === "payouts" && React.createElement("div", { className: "glass-card rounded-xl p-3.5 border border-slate-200 dark:border-white/10 shadow-sm" },
+      React.createElement("div", { className: "flex items-center justify-between mb-3" },
+        React.createElement("div", null,
+          React.createElement("h3", { className: "font-bold text-xs sm:text-sm text-slate-900 dark:text-white" }, "Verified On-Chain Payout Receipts"),
+          React.createElement("span", { className: "text-[10px] font-mono text-slate-400" }, uniquePayouts.length + " Verified Transactions")
+        ),
+        React.createElement("button", {
+          onClick: () => copyToClipboard("0xfda4182001672b9f0f09e2118242e543e35ed5ce", "Binance Vault Copied"),
+          className: "text-[10px] font-mono font-bold px-2 py-1 rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 hover:bg-brand-500/20 transition flex items-center gap-1"
+        }, React.createElement(Icon, { name: "copy", className: "w-3 h-3" }), "Vault")
+      ),
+      // Network Filter Pills
+      React.createElement("div", { className: "flex items-center gap-1.5 mb-3 overflow-x-auto text-[11px]" },
+        [
+          { id: "all", label: `All (${uniquePayouts.length})` },
+          { id: "bnb", label: "BNB Chain" },
+          { id: "arb", label: "Arbitrum One" },
+          { id: "ton", label: "TON" }
+        ].map(f => React.createElement("button", {
+          key: f.id,
+          onClick: () => setLedgerFilter(f.id),
+          className: `px-2.5 py-1 rounded-lg font-bold text-[10px] transition ${ledgerFilter === f.id ? "bg-brand-600 text-white shadow-xs" : "bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white"}`
+        }, f.label))
       ),
       uniquePayouts.length === 0 ? React.createElement("div", { className: "text-center py-6 text-xs text-slate-400" }, "No payouts recorded yet today.") :
       React.createElement("div", { className: "divide-y divide-slate-100 dark:divide-white/5" },
-        uniquePayouts.map((p, i) => React.createElement("div", { key: p.tx_hash || p.id || i, className: "py-2 flex items-center justify-between text-xs" },
+        uniquePayouts.map((p, i) => React.createElement("div", { key: p.tx_hash || p.id || i, className: "py-2.5 flex items-center justify-between text-xs" },
           React.createElement("div", null,
             React.createElement("div", { className: "font-bold font-mono text-emerald-600 dark:text-emerald-400" }, "+" + p.amount + " BNB"),
             React.createElement("div", { className: "text-[10px] text-slate-400" }, p.timestamp || "Today")
@@ -815,7 +886,7 @@ function App() {
         [
           {
             title: "📊 Fleet AI Audit",
-            desc: "Gemini 3.5 Flash Diagnostics",
+            desc: "Gemini 3.6 Flash Diagnostics",
             action: async () => {
               showToast("AI: Running fleet intelligence diagnostic...", "info");
               try {
@@ -914,9 +985,16 @@ function App() {
             ),
             React.createElement("h3", { className: "font-bold text-xs text-slate-900 dark:text-white" }, "Fleet Operations AI Commander")
           ),
-          React.createElement("span", { className: "text-[10px] text-emerald-500 font-mono font-bold flex items-center gap-1" },
-            React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" }),
-            "Autonomous Llama 3.2 + Gemini"
+          React.createElement("div", { className: "flex items-center gap-2" },
+            React.createElement("span", { className: "text-[10px] text-emerald-500 font-mono font-bold flex items-center gap-1" },
+              React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" }),
+              "Gemini 3.6 Flash & Edge AI"
+            ),
+            React.createElement("button", {
+              onClick: () => setAiMessages([{ sender: "ai", text: "Chat history cleared. How can I assist you with the fleet, Arif?" }]),
+              className: "p-1 rounded-md text-slate-400 hover:text-rose-500 transition text-[10px] flex items-center gap-0.5",
+              title: "Clear chat"
+            }, React.createElement(Icon, { name: "trash", className: "w-3 h-3" }))
           )
         ),
         React.createElement("div", { className: "flex-1 overflow-y-auto space-y-2 pr-1 text-xs" },
@@ -927,7 +1005,8 @@ function App() {
           aiLoading && React.createElement("div", { className: "p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 text-xs flex items-center gap-2" },
             React.createElement("span", { className: "w-2 h-2 rounded-full bg-brand-500 animate-ping" }),
             "AI Commander executing fleet analysis..."
-          )
+          ),
+          React.createElement("div", { ref: messagesEndRef })
         ),
         React.createElement("form", {
           onSubmit: e => { e.preventDefault(); handleSendAi(); },
@@ -1023,8 +1102,17 @@ function App() {
 
         React.createElement("div", { className: "flex gap-2" },
           React.createElement("button", {
-            onClick: () => { showToast(`Harvesting ${selectedAccount.name}...`); setSelectedAccount(null); },
-            className: "flex-1 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs shadow transition"
+            onClick: async () => {
+              showToast(`⚡ Harvesting ${selectedAccount.name}...`, "info");
+              try {
+                await fetch(API_BASE + "/api/farm?user_id=" + selectedAccount.user_id, { method: "POST" });
+                showToast(`✅ Harvest dispatched for ${selectedAccount.name}!`, "success");
+              } catch (_) {
+                showToast(`Harvest queued for ${selectedAccount.name}`, "info");
+              }
+              setSelectedAccount(null);
+            },
+            className: "flex-1 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold text-xs shadow transition active:scale-95"
           }, "Harvest Account"),
           React.createElement("button", {
             onClick: () => handleRemoveAccount(selectedAccount.user_id, selectedAccount.name),

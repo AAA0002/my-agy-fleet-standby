@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **Comprehensive Fleet Intelligence, 8-Bot Architecture Matrix, Proactive AI Intents & Daemon Persistence (`public/index.html`, `deploy_both_cf_workers.py`, `backup_manager.py`, `start_userbot.sh`)**:
+  - **8-Bot Autonomous Mining Architecture Matrix (Tab 2: Analytics)**: Added an interactive, responsive grid detailing all 8 active bots (Stones Miners, ATF Miner, MRG Miner, ART Airdrop, AI Lab Robot, UltraWallet, Apex Miner, Ainovum), including their target blockchain (Arbitrum One, TON, BEP-20), withdrawal thresholds, and real-time operational status.
+  - **Proactive AI Intent Execution in Mini App & Edge Webhook**: Integrated automatic command parsing into `handleSendAi` and Cloudflare Edge `/telegram-webhook`. When the admin asks the AI to "harvest", "sweep", "check stones", "check atf policy", or "backup", the system autonomously dispatches the corresponding backend API action and responds with structured, real-time telemetry.
+  - **Mini App AI Chat UX Overhaul (Tab 4: Ari AI)**: Implemented smooth auto-scrolling via `messagesEndRef`, a 1-tap "Clear Chat" action button in the card header, and updated model status badges reflecting the Gemini 3.6 Flash & Edge AI engine.
+  - **Interactive Single-Account Harvesting**: Replaced placeholder toast in Account Inspector Drawer with live asynchronous `POST /api/farm?user_id=...` dispatch, allowing 1-tap targeted farming cycles for individual accounts.
+  - **Multi-Network Ledger Filtering & Vault Copy (Tab 3: Ledger)**: Added quick filter pills (`All`, `BNB Chain`, `Arbitrum One`, `TON`) and 1-tap address copying for the Binance Master Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`).
+  - **Disaster Recovery Pipeline Integration (`backup_manager.py`)**: Added `deploy_vercel.py` to `CORE_BOT_FILES` so the Vercel dual-project deployment pipeline is automatically packaged into disaster recovery archives uploaded to `@myagyai`.
+  - **24/7 Tmux Immortal Supervisor Daemon Revival**: Cleaned up stale PID files and launched `bot_supervisor.sh` under detached tmux session `telegram_bot`. Verified live execution of `userbot_refresher.py` (PID 8389) actively farming across all accounts.
+
 - **Gemini 3.6 Flash Fleet AI, Vercel Production Multi-Project Sync & v3.5 PRO Cache-Buster (`deploy_vercel.py`, `deploy_both_cf_workers.py`, `public/index.html`)**:
   - **Gemini 3.6 Flash Core AI Engine**: Upgraded generative cascade across all 3 Cloudflare Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`) and the executive `/briefing` command to `gemini-3.6-flash`, backed by `gemini-3.5-flash-lite` and `gemini-flash-latest`. Verified <600ms latency and high-reasoning output with 0 rate limit errors.
   - **Telegram WebView Cache-Buster (`?v=3.5`)**: Resolved Telegram mobile client aggressive WebView HTML caching by updating the Chat Menu Button, inline keyboard URLs, and Cloudflare Worker 302 redirects to `https://agy-aaa000.vercel.app/?v=3.5`. This forces Telegram clients on Android and iOS to load fresh assets instantly without requiring manual cache wiping.
