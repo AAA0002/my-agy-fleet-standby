@@ -227,6 +227,16 @@ async def solve_captcha_with_ai(proc_b64: str, length: int = 5) -> str:
     return ""
 
 
+def generate_adsgram_dcs(init_data: str) -> str:
+    """Generates AdsGram data_check_string (base64url of sorted query fields without hash/signature)."""
+    import urllib.parse
+    params = urllib.parse.parse_qsl(init_data)
+    filtered = [f'{k}={v}' for k, v in params if k not in ('hash', 'signature')]
+    filtered.sort()
+    joined = '\n'.join(filtered)
+    return base64.urlsafe_b64encode(joined.encode('utf-8')).decode('utf-8').rstrip('=')
+
+
 async def execute_stones_withdrawal_with_captcha(
     session: aiohttp.ClientSession,
     base_url: str,
@@ -257,10 +267,25 @@ async def execute_stones_withdrawal_with_captcha(
             if pcr.status == 200:
                 pcd = await pcr.json()
                 if pcd.get("need_ad"):
-                    req_ads = pcd.get("required", 3)
+                    req_ads = pcd.get("required", 4)
                     cur_boarded = pcd.get("boarded", 0)
+                    block1 = pcd.get("blockId") or "46341"
+                    block2 = pcd.get("blockId2") or block1
+                    block3 = pcd.get("blockId3") or "47336"
+                    block4 = pcd.get("blockId4") or "48105"
+                    blocks = [block1, block2, block3, block4]
+
+                    import urllib.parse
+                    p_map = dict(urllib.parse.parse_qsl(init_data))
+                    u_obj = json.loads(p_map.get("user", "{}"))
+                    uid_str = str(u_obj.get("id", ""))
+                    dcs_val = generate_adsgram_dcs(init_data)
+
                     while cur_boarded < req_ads:
-                        logger.info(f"[Stones Withdrawal] Onboarding withdrawal ad ({cur_boarded + 1}/{req_ads})...")
+                        target_block = blocks[min(cur_boarded, len(blocks)-1)]
+                        logger.info(f"[Stones Withdrawal] Onboarding withdrawal ad ({cur_boarded + 1}/{req_ads}) [Block: {target_block}]...")
+
+                        # 1. Challenge
                         async with session.post(
                             f"{base_url}/api/wd/ad/challenge",
                             json={"initData": init_data},
@@ -274,7 +299,8 @@ async def execute_stones_withdrawal_with_captcha(
                             cid = ch_data.get("challenge", {}).get("challenge_id")
                         if not cid:
                             break
-                        # Heartbeat 1
+
+                        # 2. Stones Heartbeat 1 (Start)
                         await session.post(
                             f"{base_url}/api/ad/beat",
                             json={"initData": init_data, "scope": "wd", "challenge_id": cid},
@@ -282,9 +308,59 @@ async def execute_stones_withdrawal_with_captcha(
                             proxy=proxy,
                             timeout=aiohttp.ClientTimeout(total=8)
                         )
-                        # Simulate rewarded video duration
+
+                        # 3. Request AdsGram Ad & Ping Impression
+                        tracking_urls = {}
+                        try:
+                            adv_query = {
+                                "blockId": target_block,
+                                "tg_id": uid_str,
+                                "tg_platform": "android",
+                                "platform": "Linux aarch64",
+                                "language": "en",
+                                "top_domain": "app.stoneswithestand.my.id",
+                                "sdk_version": "1.0.0",
+                                "data_check_string": dcs_val
+                            }
+                            if "signature" in p_map:
+                                adv_query["signature"] = p_map["signature"]
+
+                            adv_url = "https://api.adsgram.ai/adv?" + urllib.parse.urlencode(adv_query)
+                            adv_headers = {
+                                "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36",
+                                "Referer": "https://app.stoneswithestand.my.id/",
+                                "Origin": "https://app.stoneswithestand.my.id"
+                            }
+                            async with session.get(adv_url, headers=adv_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as ar:
+                                if ar.status == 200:
+                                    adv_data = await ar.json()
+                                    banners = adv_data.get("banners", [])
+                                    if banners:
+                                        for t in banners[0].get("banner", {}).get("trackings", []):
+                                            tracking_urls[t.get("name")] = t.get("value")
+
+                            # Ping render & show trackings
+                            if "render" in tracking_urls:
+                                async with session.get(tracking_urls["render"], headers=adv_headers, timeout=aiohttp.ClientTimeout(total=6), proxy=proxy) as _:
+                                    pass
+                            if "show" in tracking_urls:
+                                async with session.get(tracking_urls["show"], headers=adv_headers, timeout=aiohttp.ClientTimeout(total=6), proxy=proxy) as _:
+                                    pass
+                        except Exception as ad_err:
+                            logger.debug(f"[Stones Withdrawal] Adsgram adv request note: {ad_err}")
+
+                        # 4. Wait 15s -> Heartbeat 2
+                        await asyncio.sleep(15.0)
+                        await session.post(
+                            f"{base_url}/api/ad/beat",
+                            json={"initData": init_data, "scope": "wd", "challenge_id": cid},
+                            headers=req_headers,
+                            proxy=proxy,
+                            timeout=aiohttp.ClientTimeout(total=8)
+                        )
+
+                        # 5. Wait 16s (31s total rewarded video duration) -> Heartbeat 3 (endAd)
                         await asyncio.sleep(16.0)
-                        # Heartbeat 2
                         await session.post(
                             f"{base_url}/api/ad/beat",
                             json={"initData": init_data, "scope": "wd", "challenge_id": cid},
@@ -292,8 +368,18 @@ async def execute_stones_withdrawal_with_captcha(
                             proxy=proxy,
                             timeout=aiohttp.ClientTimeout(total=8)
                         )
+
+                        # 6. Ping AdsGram Reward Tracking (triggers postback from AdsGram server!)
+                        if "reward" in tracking_urls:
+                            try:
+                                async with session.get(tracking_urls["reward"], headers=adv_headers, timeout=aiohttp.ClientTimeout(total=6), proxy=proxy) as _:
+                                    pass
+                            except Exception:
+                                pass
+
                         await asyncio.sleep(0.5)
-                        # Confirm ad view
+
+                        # 7. Confirm ad view on Stones
                         async with session.post(
                             f"{base_url}/api/wd/ad/confirm",
                             json={"initData": init_data, "challenge_id": cid},
@@ -308,23 +394,33 @@ async def execute_stones_withdrawal_with_captcha(
                                     break
                             else:
                                 break
-                        # Poll proof status
-                        async with session.post(
-                            f"{base_url}/api/wd/ad/proof",
-                            json={"initData": init_data, "challenge_id": cid},
-                            headers=req_headers,
-                            proxy=proxy,
-                            timeout=aiohttp.ClientTimeout(total=8)
-                        ) as pfr:
-                            if pfr.status == 200:
-                                pfd = await pfr.json()
-                                if pfd.get("state") == "ok":
-                                    cur_boarded = pfd.get("boarded", cur_boarded + 1)
-                                else:
-                                    cur_boarded = pfd.get("boarded", cur_boarded)
-                                    break
-                            else:
-                                break
+
+                        # 8. Poll Proof (server-to-server webhook confirmation)
+                        proof_ok = False
+                        for p_try in range(15):
+                            await asyncio.sleep(2.5)
+                            async with session.post(
+                                f"{base_url}/api/wd/ad/proof",
+                                json={"initData": init_data, "challenge_id": cid},
+                                headers=req_headers,
+                                proxy=proxy,
+                                timeout=aiohttp.ClientTimeout(total=8)
+                            ) as pfr:
+                                if pfr.status == 200:
+                                    pfd = await pfr.json()
+                                    if pfd.get("state") == "ok":
+                                        cur_boarded = pfd.get("boarded", cur_boarded + 1)
+                                        proof_ok = True
+                                        logger.info(f"[Stones Withdrawal] Ad {cur_boarded}/{req_ads} verified via AdsGram postback!")
+                                        break
+                                    elif pfd.get("state") == "unavailable":
+                                        logger.warning("[Stones Withdrawal] AdsGram service unavailable/outage.")
+                                        break
+                                    elif pfd.get("state") == "failed":
+                                        logger.warning("[Stones Withdrawal] AdsGram postback failed for this ad.")
+                                        break
+                        if not proof_ok:
+                            break
                         await asyncio.sleep(1.0)
                     if cur_boarded < req_ads:
                         return False, f"🎬 Watch all {req_ads} ads fully to submit this withdrawal (confirmed: {cur_boarded}/{req_ads})"

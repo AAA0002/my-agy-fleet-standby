@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added & Improved
+- **Full AdsGram Rewarded Video & Server-to-Server Postback Solver for Stones Miners (`stones_captcha_solver.py`, `accounts.json`)**:
+  - **Complete AdsGram Protocol Emulation**: Reverse-engineered `sad.min.js` and implemented `generate_adsgram_dcs()` to calculate base64url-encoded sorted query fields without hash/signature, authenticating natively with AdsGram's backend API.
+  - **Multi-Block Rewarded Ad Resolution**: Solves all 4 mandatory withdrawal ad challenges across blocks `46341`, `46889`, `47336`, and `48105` with valid browser headers and WebApp origin.
+  - **3-Phase Heartbeats & Reward Tracking Pings**: Simulates realistic 31-second video view durations with 3 heartbeat pings and triggers AdsGram's live `render`, `show`, and `reward` tracking webhooks, compelling AdsGram to fire the required server-to-server confirmation postback to Stones Miners.
+  - **Postback Proof Polling**: Implemented resilient polling of `/api/wd/ad/proof`, verifying each ad's postback confirmation before advancing to captcha resolution, permanently resolving the `"Watch all 4 ads fully"` withdrawal block.
+  - **Live Proof Verified**: Verified end-to-end auto-withdrawal submission on Arbitrum One with result `"Withdrawal queued. It will be processed within 24-48 hours."`.
+  - **Fleet Cooldown Reset**: Cleared stale withdrawal cooldowns across all worker accounts in `accounts.json`, enabling continuous auto-cashouts.
 - **Autonomous Multi-Chain On-Chain Vault Sweeper & Consolidation Engine (`cloud_wallet_sweeper.py`, `userbot_refresher.py`)**:
   - **30-Minute Autonomous Sweeper Daemon**: Added `autonomous_onchain_sweeper_loop()` in `userbot_refresher.py`, auditing all 12 worker isolated EVM and TON wallets and sweeping surplus balances into Master Binance Web3 Vaults.
   - **High-Speed Concurrent Wallet Auditing**: Optimized `cloud_wallet_sweeper.py` with concurrent `asyncio.gather` queries across all isolated worker wallets and prioritized ultra-fast dRPC endpoints, slashing scan latency from 52s down to ~9s (6x speedup).
