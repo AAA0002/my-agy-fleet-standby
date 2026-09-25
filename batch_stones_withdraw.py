@@ -22,7 +22,7 @@ ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
 FLEET_EVM_FILE = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
 
 # Accounts already successfully queued in this session
-ALREADY_QUEUED = {"8025472383", "8851426148", "8190649727", "7487048946", "8826375659"}
+ALREADY_QUEUED = set()
 
 async def run_batch():
     if not os.path.exists(TOKENS_FILE) or not os.path.exists(FLEET_EVM_FILE):

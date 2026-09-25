@@ -11,6 +11,7 @@ import io
 import re
 import math
 import json
+import random
 import base64
 import asyncio
 import logging
@@ -199,17 +200,18 @@ async def solve_captcha_with_ai(proc_b64: str, length: int = 5) -> str:
         }]
     }
 
-    # Rotate through active Gemini Vision models
-    models = ["gemini-flash-latest", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-lite-latest"]
+    # Rotate through active Gemini Vision models (Gemini 3.6 Flash primary)
+    models = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"]
     keys = list(GEMINI_API_KEYS)
+    random.shuffle(keys)
 
-    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as ai_session:
+    async with aiohttp.ClientSession() as ai_session:
         for model in models:
-            for k in keys[:8]:
+            for k in keys[:6]:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
                 headers = {"Content-Type": "application/json", "X-goog-api-key": k}
                 try:
-                    async with ai_session.post(url, json=payload, headers=headers) as gr:
+                    async with ai_session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=4, connect=2)) as gr:
                         if gr.status == 200:
                             gdata = await gr.json()
                             candidates = gdata.get("candidates", [])

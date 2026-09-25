@@ -125,7 +125,7 @@ async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, token
                         f"🎉 *AI Lab Auto-Cashout Submitted!*\n\n"
                         f"• **Account:** {name} (`{uid}`)\n"
                         f"• **Amount:** `${wd_usd} USD`\n"
-                        f"• **Destination:** `{MASTER_EVM_VAULT}` (Binance BEP-20)\n"
+                        f"• **Destination:** `{target_wallet}` (BEP-20)\n"
                         f"• **Status:** Approved / In Flight"
                     )
                     return {"uid": uid, "name": name, "status": "withdrawn", "balance": ubal, "amount": wd_usd, "details": pres}

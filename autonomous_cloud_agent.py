@@ -82,7 +82,7 @@ class MultiModelCouncil:
     def __init__(self):
         self.gemini_idx = 0
         self.cf_node_idx = 0
-        self.gemini_models = ["gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-flash-latest"]
+        self.gemini_models = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"]
 
     def rotate_gemini_key(self) -> str:
         if not GEMINI_KEYS:

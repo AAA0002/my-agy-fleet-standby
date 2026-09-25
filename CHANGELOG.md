@@ -5,7 +5,13 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
-### Added
+### Fixed
+- **System-Wide Bug Hunting & AI Engine Calibration (`stones_captcha_solver.py`, `batch_stones_withdraw.py`, `autonomous_cloud_agent.py`, `userbot_refresher.py`, `execute_ailab_ainovum_withdrawals.py`, `deploy_both_cf_workers.py`)**:
+  - **Stones Captcha AI Solver Bottleneck & Timeout Bug Fixed**: In `stones_captcha_solver.py`, `solve_captcha_with_ai` previously enforced a single outer session timeout of 10s across up to 32 attempts (4 models x 8 keys), causing premature `asyncio.TimeoutError` failures. Refactored with randomized key shuffling, per-request 4-second timeouts, and added `gemini-3.6-flash` as primary vision model.
+  - **Stones Batch Permanent Account Skipping Bug Neutralized**: In `batch_stones_withdraw.py`, discovered a hardcoded `ALREADY_QUEUED = {"8025472383", "8851426148", "8190649727", "7487048946", "8826375659"}` set from a prior manual test run that permanently locked out and skipped those 5 accounts. Reset to an empty set so all eligible accounts (>500 STONES) are processed dynamically.
+  - **AI Lab Cashout Alert Destination Mismatch Fixed**: In `execute_ailab_ainovum_withdrawals.py`, line 128 hardcoded the master Binance EVM address in the Telegram notification text regardless of which isolated account wallet was actually used. Updated to dynamically display `target_wallet`.
+  - **Fleet-Wide Model Synchronization**: Promoted `gemini-3.6-flash` as the primary AI model across `userbot_refresher.py` (`query_gemini_ai`), `autonomous_cloud_agent.py` (`MultiModelCouncil`), and `stones_captcha_solver.py`. Fixed all lingering references to deprecated `gemini-3.8-flash` in `deploy_both_cf_workers.py` and `userbot_refresher.py`.
+
 - **Comprehensive Fleet Intelligence, 8-Bot Architecture Matrix, Proactive AI Intents & Daemon Persistence (`public/index.html`, `deploy_both_cf_workers.py`, `backup_manager.py`, `start_userbot.sh`)**:
   - **8-Bot Autonomous Mining Architecture Matrix (Tab 2: Analytics)**: Added an interactive, responsive grid detailing all 8 active bots (Stones Miners, ATF Miner, MRG Miner, ART Airdrop, AI Lab Robot, UltraWallet, Apex Miner, Ainovum), including their target blockchain (Arbitrum One, TON, BEP-20), withdrawal thresholds, and real-time operational status.
   - **Proactive AI Intent Execution in Mini App & Edge Webhook**: Integrated automatic command parsing into `handleSendAi` and Cloudflare Edge `/telegram-webhook`. When the admin asks the AI to "harvest", "sweep", "check stones", "check atf policy", or "backup", the system autonomously dispatches the corresponding backend API action and responds with structured, real-time telemetry.

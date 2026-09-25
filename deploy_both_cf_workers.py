@@ -1923,7 +1923,7 @@ fi
           const aiQuery = parts.slice(1).join(" ").trim();
           if (!aiQuery) {
             const helpAi = `🧠 *Multi-Cloud AI Assistant*\n\n` +
-              `Powered by **Google Gemini 3.8 Flash**, **GroqCloud LPU**, and **Cloudflare Workers AI**!\n\n` +
+              `Powered by **Google Gemini 3.6 Flash**, **GroqCloud LPU**, and **Cloudflare Workers AI**!\n\n` +
               `Ask anything by sending:\n` +
               `• \`/ai <your question>\`\n` +
               `• \`/ask <your question>\`\n\n` +
@@ -2321,7 +2321,7 @@ fi
             `• \`/wallet\` — Binance BEP-20 & TON vaults\n` +
             `• \`/accounts\` — View all 13 fleet accounts & anti-bot status\n` +
             `• \`/add_account <phone>\` — Connect a new Telegram account\n` +
-            `• \`/briefing\` — Daily AI financial briefing (Gemini 3.8 Flash)\n` +
+            `• \`/briefing\` — Daily AI financial briefing (Gemini 3.6 Flash)\n` +
             `• \`/ai <question>\` — Ask the multi-cloud AI assistant\n` +
             `• \`/sync\` — Force multi-cloud fleet sync\n` +
             `• \`/backup\` — Instant 1-click cloud backup download\n\n` +

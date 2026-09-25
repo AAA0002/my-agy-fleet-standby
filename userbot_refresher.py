@@ -242,9 +242,9 @@ if not GEMINI_API_KEYS:
 
 async def query_gemini_ai(prompt: str) -> Optional[Tuple[str, str]]:
     """Queries Google Gemini API with 14-key rotation pool and intelligent fallback.
-    Primary: gemini-flash-lite-latest -> Fallback: gemini-3.5-flash-lite / gemini-flash-latest
+    Primary: gemini-3.6-flash -> Fallback: gemini-3.5-flash-lite / gemini-flash-latest
     """
-    models = ["gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-flash-latest"]
+    models = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"]
     payload = {
         "contents": [{"parts": [{"text": prompt}]}]
     }
@@ -7759,7 +7759,7 @@ async def generate_daily_executive_briefing(notify: bool = True) -> str:
                 f"• Total on-chain BNB: {total_onchain:.6f} BNB.\n"
                 f"• 14/14 cloud systems operating at 100% uptime."
             )
-            ai_model = "Google Gemini 3.8 Flash (Rotated)"
+            ai_model = "Google Gemini 3.6 Flash (Rotated)"
 
         full_report = (
             f"📊 *MY AGY AI — Daily Executive Briefing*\n"
