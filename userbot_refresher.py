@@ -1899,6 +1899,27 @@ async def broadcast_admin_message(text: str, reply_markup=None):
             pass
 
 
+async def broadcast_payout_channel_receipt(text: str, parse_mode: str = "HTML"):
+    """Broadcasts official in-flight and settlement receipts to PAYOUT_CHANNEL_ID."""
+    if not PAYOUT_CHANNEL_ID:
+        return
+    try:
+        tg_url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"
+        async with aiohttp.ClientSession() as session:
+            await session.post(
+                tg_url,
+                json={
+                    "chat_id": PAYOUT_CHANNEL_ID,
+                    "text": text,
+                    "parse_mode": parse_mode,
+                    "disable_web_page_preview": True
+                },
+                timeout=aiohttp.ClientTimeout(total=8)
+            )
+    except Exception as pe:
+        logger.debug(f"[Payout Channel] Broadcast note: {pe}")
+
+
 # =======================================================
 # REPORT BUILDERS
 # =======================================================
@@ -5876,6 +5897,21 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                             f"• *Result:* `{wd_res}`",
                             chat_id=REPORT_CHAT_ID
                         )
+                        now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+                        ch_sub = (
+                            f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
+                            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                            f"💎 <b>Platform:</b> Stones Miners (@stoneswithestand_bot)\n"
+                            f"👤 <b>Account:</b> {acc_name}\n"
+                            f"💰 <b>Amount:</b> <code>{withdraw_stones} STONES</code>\n"
+                            f"🌐 <b>Destination Network:</b> Arbitrum One (EVM)\n"
+                            f"💼 <b>Target Vault:</b> <code>{target_evm_wallet}</code>\n"
+                            f"🛡️ <b>Anti-Bot Verification:</b> <code>Passed & Solved</code> ✅\n"
+                            f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
+                            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                            f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
+                        )
+                        safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_stones_wd")
                     else:
                         details_str = str(wd_res).lower()
                         if "cooldown" in details_str:
@@ -6421,6 +6457,22 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                             f"• *Withdrawal ID:* `{w_info.get('id', 'N/A')}`",
                             chat_id=REPORT_CHAT_ID
                         )
+                        now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+                        ch_sub = (
+                            f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
+                            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                            f"💎 <b>Platform:</b> ART Airdrop (@art_airdrop_bot)\n"
+                            f"👤 <b>Account:</b> {acc_name}\n"
+                            f"🚀 <b>Tier:</b> Level 8 (Max Yield Boost)\n"
+                            f"💰 <b>Amount:</b> <code>{withdraw_art} ART</code> (~${w_info.get('amountUsd', 0)} USD)\n"
+                            f"🌐 <b>Destination Network:</b> The Open Network (TON)\n"
+                            f"💼 <b>Target Vault:</b> <code>{TON_PRIMARY_WALLET}</code>\n"
+                            f"🆔 <b>Withdrawal ID:</b> <code>{w_info.get('id', 'N/A')}</code>\n"
+                            f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
+                            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                            f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
+                        )
+                        safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_art_wd")
             except Exception as we:
                 logger.error(f"[{acc_name}] ART auto-withdrawal error: {we}")
         elif not has_level_8:
@@ -6607,6 +6659,20 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
                                         f"• *Result:* `{cp_res}`",
                                         chat_id=REPORT_CHAT_ID
                                     )
+                                    now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+                                    ch_sub = (
+                                        f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
+                                        f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                                        f"💎 <b>Platform:</b> AI Lab Robot (@ailab_robot)\n"
+                                        f"👤 <b>Account:</b> {acc_name} (Worker)\n"
+                                        f"💰 <b>Amount:</b> <code>${wd_usd} USD</code> (USDT BEP-20)\n"
+                                        f"🌐 <b>Destination Network:</b> BNB Smart Chain (BSC BEP-20)\n"
+                                        f"💼 <b>Target Vault:</b> <code>{target_evm}</code>\n"
+                                        f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
+                                        f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                                        f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
+                                    )
+                                    safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_ailab_wd")
                                 else:
                                     logger.info(f"[{acc_name}] 🧪 [AI Lab] Cashout response: {cp_res}")
             except Exception as awe:
@@ -7118,6 +7184,20 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
                                         f"• *Result:* `{wd}`",
                                         chat_id=REPORT_CHAT_ID
                                     )
+                                    now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+                                    ch_sub = (
+                                        f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
+                                        f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                                        f"💎 <b>Platform:</b> Ainovum (@ainovumbot)\n"
+                                        f"👤 <b>Account:</b> {acc_name}\n"
+                                        f"💰 <b>Amount:</b> <code>{wd_amt} USDT</code> (BEP-20)\n"
+                                        f"🌐 <b>Destination Network:</b> BNB Smart Chain (BSC BEP-20)\n"
+                                        f"💼 <b>Target Vault:</b> <code>{target_evm_addr}</code>\n"
+                                        f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
+                                        f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                                        f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
+                                    )
+                                    safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_ainovum_wd")
                                     break
                                 elif wd.get("code") == "busy":
                                     logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal gateway busy (Server busy). Will retry next cycle.")
@@ -7767,6 +7847,14 @@ async def task_worker_247(user_id: int, user_name: str):
 
                         pnl_card = await build_midnight_summary()
                         await broadcast_admin_message(pnl_card, reply_markup=STATUS_INLINE_KEYBOARD)
+                        ch_pnl = (
+                            f"📊 <b>DAILY FLEET TREASURY SETTLEMENT REPORT</b>\n"
+                            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                            + pnl_card.replace("*", "").replace("`", "")
+                            + "\n━━━━━━━━━━━━━━━━━━━━━━\n"
+                            f"📡 <i>Official Daily Closing Treasury Snapshot</i>"
+                        )
+                        safe_create_task(broadcast_payout_channel_receipt(ch_pnl), name="ch_midnight_summary")
                 except Exception as b_ex:
                     logger.error(f"[Scheduled Backup] Error in midnight backup: {b_ex}")
 
@@ -7863,6 +7951,14 @@ async def task_worker_247(user_id: int, user_name: str):
 
                             pnl_card = await build_midnight_summary()
                             await broadcast_admin_message(pnl_card, reply_markup=STATUS_INLINE_KEYBOARD)
+                            ch_pnl = (
+                                f"📊 <b>DAILY FLEET TREASURY SETTLEMENT REPORT</b>\n"
+                                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                                + pnl_card.replace("*", "").replace("`", "")
+                                + "\n━━━━━━━━━━━━━━━━━━━━━━\n"
+                                f"📡 <i>Official Daily Closing Treasury Snapshot</i>"
+                            )
+                            safe_create_task(broadcast_payout_channel_receipt(ch_pnl), name="ch_midnight_summary")
                     except Exception as b_ex:
                         logger.error(f"[Scheduled Backup] Error during rest break backup: {b_ex}")
 
@@ -8063,6 +8159,27 @@ async def onchain_bnb_consolidator_loop():
         except Exception as e:
             logger.debug(f"[Consolidator] Note: {e}")
         await asyncio.sleep(1800)  # Check every 30 minutes
+
+
+async def autonomous_onchain_sweeper_loop():
+    """
+    Autonomous 30-minute background worker:
+    Audits isolated worker EVM & TON wallets, sweeps surplus balances
+    into Master Binance Web3 Vaults, and dispatches verified receipts.
+    """
+    logger.info("[Sweeper Engine] 30-Minute Autonomous Multi-Chain Vault Sweeper initialized.")
+    await asyncio.sleep(180)  # Initial 3-minute offset on startup
+    while True:
+        try:
+            from cloud_wallet_sweeper import run_full_sweep_audit
+            # Run audit & execute sweep for surplus balances
+            sweep_res = await run_full_sweep_audit(notify_if_empty=False, execute_sweep=True)
+            if sweep_res.get("swept_txs"):
+                logger.info(f"[Sweeper Engine] Sweep cycle executed: {len(sweep_res['swept_txs'])} tx(s) swept to Master Vault.")
+        except Exception as se:
+            logger.debug(f"[Sweeper Engine] Sweeper cycle note: {se}")
+        await asyncio.sleep(1800)  # Runs every 30 minutes
+
 
 async def execute_stones_fleet_sweep(caller_chat_id=None):
     """Executes Stones 500-withdrawal sweep across all eligible fleet accounts."""
@@ -8409,8 +8526,11 @@ async def main():
 
             # 9. Start On-Chain BNB Consolidator Watchdog
             consolidator_task = asyncio.create_task(onchain_bnb_consolidator_loop())
+
+            # 10. Start Autonomous Multi-Chain On-Chain Vault Sweeper (30m)
+            sweeper_task = asyncio.create_task(autonomous_onchain_sweeper_loop())
             
-            logger.info("Multi-Bot 24/7 Worker + Interactive Tab Menu + Tri-Chain Watchdog + 6h Session Auditor + Cloudflare Edge Bridge + Auto-Withdrawal Unlocker + MiniApp Listener + Daily Briefing + OnChain Consolidator active.")
+            logger.info("Multi-Bot 24/7 Worker + Interactive Tab Menu + Tri-Chain Watchdog + 6h Session Auditor + Cloudflare Edge Bridge + Auto-Withdrawal Unlocker + MiniApp Listener + Daily Briefing + OnChain Consolidator + MultiChain Sweeper active.")
             try:
                 await client.run_until_disconnected()
             finally:
@@ -8423,6 +8543,7 @@ async def main():
                 miniapp_task.cancel()
                 briefing_task.cancel()
                 consolidator_task.cancel()
+                sweeper_task.cancel()
                 
             logger.warning("Telegram client disconnected. Attempting to reconnect in 10s...")
             await asyncio.sleep(10)

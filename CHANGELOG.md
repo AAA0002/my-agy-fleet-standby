@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added & Improved
+- **Autonomous Multi-Chain On-Chain Vault Sweeper & Consolidation Engine (`cloud_wallet_sweeper.py`, `userbot_refresher.py`)**:
+  - **30-Minute Autonomous Sweeper Daemon**: Added `autonomous_onchain_sweeper_loop()` in `userbot_refresher.py`, auditing all 12 worker isolated EVM and TON wallets and sweeping surplus balances into Master Binance Web3 Vaults.
+  - **High-Speed Concurrent Wallet Auditing**: Optimized `cloud_wallet_sweeper.py` with concurrent `asyncio.gather` queries across all isolated worker wallets and prioritized ultra-fast dRPC endpoints, slashing scan latency from 52s down to ~9s (6x speedup).
+  - **Multi-Chain Consolidation**: Automatically consolidates surplus BNB, Arbitrum ETH, and BSC BEP-20 USDT into Binance Web3 Master Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`) and TON into Master TON Vault (`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`).
+  - **Verified On-Chain Sweep Receipts**: Automatically broadcasts confirmed sweep receipts with explorer links to both Admin DM (`REPORT_CHAT_ID`) and Official Payouts Channel (`PAYOUT_CHANNEL_ID`).
+- **Comprehensive In-Flight Withdrawal Submission Receipts for Telegram Payout Channel (`userbot_refresher.py`)**:
+  - **Expanded Real-Time Channel Receipts**: Expanded `PAYOUT_CHANNEL_ID` (`-1004402765950`) receipts from only confirmed on-chain incoming deposits to full multi-stage visibility including in-flight submissions and periodic settlement cards.
+  - **Cross-Platform In-Flight Receipts**:
+    * **Stones Miners (@stoneswithestand_bot)**: In-flight Arbitrum EVM withdrawal submissions recorded and broadcast.
+    * **ART Airdrop (@art_airdrop_bot)**: In-flight Level 8 TON withdrawal submissions broadcast with USD estimation.
+    * **AI Lab Robot (@ailab_robot)**: In-flight USDT BEP-20 cashout submissions broadcast.
+    * **Ainovum (@ainovumbot)**: In-flight USDT BEP-20 auto-withdrawals broadcast.
+  - **Daily Midnight Treasury Settlement Card**: Daily closing P&L and confirmed on-chain treasury summaries broadcast automatically at 00:00 UTC.
 - **Dedicated `/acc <1-13>` Individual Account Inspector Across Cloudflare & Userbot (`userbot_refresher.py`, `deploy_both_cf_workers.py`)**:
   - Added dedicated `/acc <1-13>` command inspection on both Cloudflare Edge Workers and Userbot refresher, allowing instant detailed cards showing verified phone number, role, daemon status, mining policies, and active bots for any specific fleet member.
   - Formatted clean account names (`Nadim`, `Kaitlyn`, etc.) and integrated `KNOWN_PHONES_BY_INDEX` fallback.

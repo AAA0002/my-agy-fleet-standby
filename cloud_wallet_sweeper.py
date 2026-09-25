@@ -62,15 +62,15 @@ DRPC_KEY = os.getenv("DRPC_API_KEY", "AqfE-vxQsEgZrdrPasY_EsnLP3satOIR8YH4El_NDN
 
 # RPC Endpoints
 BSC_RPCS = [
+    f"https://bsc.drpc.org/ogrpc?dkey={DRPC_KEY}",
     "https://bsc-dataseed.binance.org",
     "https://bsc-dataseed1.defibit.io",
-    "https://bsc-dataseed1.binance.org",
-    f"https://bsc.drpc.org/ogrpc?dkey={DRPC_KEY}"
+    "https://bsc-dataseed1.binance.org"
 ]
 
 ARB_RPCS = [
-    "https://arb1.arbitrum.io/rpc",
-    f"https://arbitrum.drpc.org/ogrpc?dkey={DRPC_KEY}"
+    f"https://arbitrum.drpc.org/ogrpc?dkey={DRPC_KEY}",
+    "https://arb1.arbitrum.io/rpc"
 ]
 
 # File Paths
@@ -87,7 +87,7 @@ async def send_telegram_receipt(session: aiohttp.ClientSession, message: str):
             payload = {
                 "chat_id": target,
                 "text": message,
-                "parse_mode": "Markdown",
+                "parse_mode": "HTML" if "<" in message else "Markdown",
                 "disable_web_page_preview": True
             }
             async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=8)) as r:
@@ -106,7 +106,7 @@ async def query_evm_rpc(session: aiohttp.ClientSession, rpc_list: List[str], met
     }
     for rpc in rpc_list:
         try:
-            async with session.post(rpc, json=payload, timeout=aiohttp.ClientTimeout(total=6)) as resp:
+            async with session.post(rpc, json=payload, timeout=aiohttp.ClientTimeout(total=5)) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                     if "result" in data:
@@ -116,8 +116,39 @@ async def query_evm_rpc(session: aiohttp.ClientSession, rpc_list: List[str], met
     return None
 
 
+async def audit_single_evm(session: aiohttp.ClientSession, uid: str, info: dict) -> Optional[Dict[str, Any]]:
+    """Audits a single EVM wallet across BSC (BNB + USDT) and Arbitrum (ETH)."""
+    if not isinstance(info, dict) or "address" not in info:
+        return None
+    addr = info["address"]
+    name = info.get("name", f"Worker {uid}")
+
+    clean_addr = addr.lower().replace("0x", "").zfill(64)
+    usdt_call_data = "0x70a08231" + clean_addr
+
+    raw_bnb_t = query_evm_rpc(session, BSC_RPCS, "eth_getBalance", [addr, "latest"])
+    raw_eth_t = query_evm_rpc(session, ARB_RPCS, "eth_getBalance", [addr, "latest"])
+    raw_usdt_t = query_evm_rpc(session, BSC_RPCS, "eth_call", [{"to": BSC_USDT_CONTRACT, "data": usdt_call_data}, "latest"])
+
+    raw_bnb, raw_eth, raw_usdt = await asyncio.gather(raw_bnb_t, raw_eth_t, raw_usdt_t, return_exceptions=True)
+
+    bnb_bal = int(raw_bnb, 16) / 1e18 if isinstance(raw_bnb, str) and raw_bnb else 0.0
+    eth_bal = int(raw_eth, 16) / 1e18 if isinstance(raw_eth, str) and raw_eth else 0.0
+    usdt_bal = int(raw_usdt, 16) / 1e18 if isinstance(raw_usdt, str) and raw_usdt not in ("0x", "0x0") else 0.0
+
+    return {
+        "uid": uid,
+        "name": name,
+        "address": addr,
+        "private_key": info.get("private_key"),
+        "bnb_balance": bnb_bal,
+        "eth_balance": eth_bal,
+        "usdt_balance": usdt_bal
+    }
+
+
 async def audit_evm_worker_wallets(session: aiohttp.ClientSession) -> List[Dict[str, Any]]:
-    """Audits all worker EVM wallets on BSC and Arbitrum One."""
+    """Audits all worker EVM wallets concurrently on BSC and Arbitrum One."""
     if not os.path.exists(FLEET_EVM_FILE):
         return []
     try:
@@ -127,41 +158,39 @@ async def audit_evm_worker_wallets(session: aiohttp.ClientSession) -> List[Dict[
         logger.error(f"Error loading {FLEET_EVM_FILE}: {e}")
         return []
 
-    results = []
-    for uid, info in wallets.items():
-        if not isinstance(info, dict) or "address" not in info:
-            continue
-        addr = info["address"]
-        name = info.get("name", f"Worker {uid}")
+    tasks = [audit_single_evm(session, uid, info) for uid, info in wallets.items()]
+    completed = await asyncio.gather(*tasks, return_exceptions=True)
+    return [r for r in completed if isinstance(r, dict)]
 
-        # 1. BSC Native BNB Balance
-        raw_bnb = await query_evm_rpc(session, BSC_RPCS, "eth_getBalance", [addr, "latest"])
-        bnb_bal = int(raw_bnb, 16) / 1e18 if raw_bnb else 0.0
 
-        # 2. Arbitrum Native ETH Balance
-        raw_eth = await query_evm_rpc(session, ARB_RPCS, "eth_getBalance", [addr, "latest"])
-        eth_bal = int(raw_eth, 16) / 1e18 if raw_eth else 0.0
+async def audit_single_ton(session: aiohttp.ClientSession, uid: str, info: dict, headers: dict) -> Optional[Dict[str, Any]]:
+    """Audits a single TON wallet via TonAPI."""
+    if not isinstance(info, dict) or "address" not in info:
+        return None
+    addr = info["address"]
+    name = info.get("name", f"Worker {uid}")
+    ton_bal = 0.0
 
-        # 3. BSC BEP-20 USDT Balance
-        clean_addr = addr.lower().replace("0x", "").zfill(64)
-        usdt_call_data = "0x70a08231" + clean_addr
-        raw_usdt = await query_evm_rpc(session, BSC_RPCS, "eth_call", [{"to": BSC_USDT_CONTRACT, "data": usdt_call_data}, "latest"])
-        usdt_bal = int(raw_usdt, 16) / 1e18 if raw_usdt and raw_usdt not in ("0x", "0x0") else 0.0
+    try:
+        url = f"https://tonapi.io/v2/accounts/{addr}"
+        async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+            if resp.status == 200:
+                d = await resp.json()
+                ton_bal = int(d.get("balance", 0)) / 1e9
+    except Exception:
+        pass
 
-        results.append({
-            "uid": uid,
-            "name": name,
-            "address": addr,
-            "private_key": info.get("private_key"),
-            "bnb_balance": bnb_bal,
-            "eth_balance": eth_bal,
-            "usdt_balance": usdt_bal
-        })
-    return results
+    return {
+        "uid": uid,
+        "name": name,
+        "address": addr,
+        "mnemonic": info.get("mnemonic"),
+        "ton_balance": ton_bal
+    }
 
 
 async def audit_ton_worker_wallets(session: aiohttp.ClientSession) -> List[Dict[str, Any]]:
-    """Audits all worker TON wallets via TonAPI / Toncenter."""
+    """Audits all worker TON wallets concurrently via TonAPI / Toncenter."""
     if not os.path.exists(FLEET_TON_FILE):
         return []
     try:
@@ -175,32 +204,9 @@ async def audit_ton_worker_wallets(session: aiohttp.ClientSession) -> List[Dict[
     if TONAPI_KEY:
         headers["Authorization"] = f"Bearer {TONAPI_KEY}"
 
-    results = []
-    for uid, info in wallets.items():
-        if not isinstance(info, dict) or "address" not in info:
-            continue
-        addr = info["address"]
-        name = info.get("name", f"Worker {uid}")
-        ton_bal = 0.0
-
-        try:
-            url = f"https://tonapi.io/v2/accounts/{addr}"
-            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as resp:
-                if resp.status == 200:
-                    d = await resp.json()
-                    ton_bal = int(d.get("balance", 0)) / 1e9
-        except Exception:
-            pass
-
-        results.append({
-            "uid": uid,
-            "name": name,
-            "address": addr,
-            "mnemonic": info.get("mnemonic"),
-            "ton_balance": ton_bal
-        })
-        await asyncio.sleep(0.15)  # Pace to prevent rate limiting
-    return results
+    tasks = [audit_single_ton(session, uid, info, headers) for uid, info in wallets.items()]
+    completed = await asyncio.gather(*tasks, return_exceptions=True)
+    return [r for r in completed if isinstance(r, dict)]
 
 
 def sweep_evm_native_balance(
@@ -407,25 +413,30 @@ async def run_full_sweep_audit(notify_if_empty: bool = False, execute_sweep: boo
         if swept_txs:
             lines = []
             for s in swept_txs:
-                lines.append(f"• *{s['name']} ({s['chain']}):* Swept `{s['amount']:.4f} {s['coin']}` → [View Tx]({s['url']})")
+                lines.append(f"• <b>{s['name']} ({s['chain']}):</b> Swept <code>{s['amount']:.4f} {s['coin']}</code> → <a href=\"{s['url']}\">View Tx</a>")
             receipt_msg = (
-                f"🎉 *MY AGY AI — Automated On-Chain Vault Sweep Complete!*\n\n"
+                f"⚡ <b>ON-CHAIN VAULT CONSOLIDATION SWEEP EXECUTED</b>\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
                 + "\n".join(lines) +
-                f"\n\n🎯 *Destination Vault:* `{MASTER_EVM_VAULT}` (Binance Web3 Master)"
+                f"\n━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"🎯 <b>Master Vault (Binance Web3):</b> <code>{MASTER_EVM_VAULT}</code>\n"
+                f"📡 <i>Status: CONFIRMED ON-CHAIN • Automated Sweeper</i>"
             )
             await send_telegram_receipt(session, receipt_msg)
         elif funded_evm or funded_ton or notify_if_empty:
             msg = (
-                f"💼 *MY AGY AI — Multi-Chain Vault Sweep Audit*\n\n"
-                f"• 👥 *Worker Wallets Audited:* `{len(evm_audit)} EVM / {len(ton_audit)} TON`\n"
-                f"• 🪙 *BSC Worker Holding:* `{total_bnb:.6f} BNB`\n"
-                f"• 💵 *BSC Worker USDT:* `${total_usdt:.2f} USDT`\n"
-                f"• 💎 *Arbitrum Worker Holding:* `{total_eth:.6f} ETH`\n"
-                f"• 💎 *TON Worker Holding:* `{total_ton:.4f} TON`\n\n"
-                f"🎯 *Master Destination Vaults (Binance Web3):*\n"
-                f"• `EVM:` `{MASTER_EVM_VAULT}`\n"
-                f"• `TON:` `{MASTER_TON_VAULT}`\n\n"
-                f"🛡️ _Direct in-bot routing sends 100% of mining profits directly to your Binance Web3 Vault._"
+                f"💼 <b>MY AGY AI — Multi-Chain Vault Sweep Audit</b>\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"• 👥 <b>Worker Wallets Audited:</b> <code>{len(evm_audit)} EVM / {len(ton_audit)} TON</code>\n"
+                f"• 🪙 <b>BSC Worker Holding:</b> <code>{total_bnb:.6f} BNB</code>\n"
+                f"• 💵 <b>BSC Worker USDT:</b> <code>${total_usdt:.2f} USDT</code>\n"
+                f"• 💎 <b>Arbitrum Worker Holding:</b> <code>{total_eth:.6f} ETH</code>\n"
+                f"• 💎 <b>TON Worker Holding:</b> <code>{total_ton:.4f} TON</code>\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"🎯 <b>Master Destination Vaults (Binance Web3):</b>\n"
+                f"• <code>EVM:</code> <code>{MASTER_EVM_VAULT}</code>\n"
+                f"• <code>TON:</code> <code>{MASTER_TON_VAULT}</code>\n\n"
+                f"🛡️ <i>Direct in-bot routing sends 100% of mining profits directly to your Binance Web3 Vault.</i>"
             )
             await send_telegram_receipt(session, msg)
 
