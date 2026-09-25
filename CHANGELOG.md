@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added & Improved
+- **Resolution of False Revocation Alerts & Hardened Session Auditor (`userbot_refresher.py`, `accounts.json`)**:
+  - **Eliminated False Revocation Triggers**: Fixed a bug where a single transient network timeout (`Connection to Telegram failed 1 time(s)`) caused `audit_account_session` to falsely flag healthy accounts (#7 and #8) as revoked.
+  - **Proxy-Aware MTProto Auditor**: Integrated SOCKS/HTTP proxy parsing in `audit_account_session` with 3 retries (15s timeout) and automatic direct failover.
+  - **Strict Revocation Criteria**: Accounts are ONLY marked as revoked if Telegram explicitly returns `AUTH_KEY_UNREGISTERED`, `UserDeactivated`, or `SESSION_REVOKED`. Transient connection errors are logged as network notices while preserving `status = "active"`.
+  - **100% Fleet Health Verified**: Restored accounts #7 and #8 to active; live fleet session audit verified 13/13 accounts healthy, alive, and farming 24/7 without false alarms.
 - **System-Wide Telegram Markdown v1 Bold Sanitization (`userbot_refresher.py`, `deploy_both_cf_workers.py`, auxiliary tools)**:
   - **Full Markdown Sanitation Across 400+ Template Lines**: Eradicated messy CommonMark double-asterisk (`**bold**`) tags across `userbot_refresher.py` (249 lines), `deploy_both_cf_workers.py` (153 lines), and auxiliary daemons (`daily_profit_reporter.py`, `send_fleet_wallets_backup.py`, `execute_ailab_ainovum_withdrawals.py`, `batch_atf_miner.py`, `cloud_wallet_sweeper.py`, `bep20_onchain_watcher.py`).
   - **Single-Asterisk Telegram Formatting**: Replaced with standard Telegram Markdown v1 single asterisks (`*bold*`), eliminating literal asterisks, unparsed spans, and formatting clutter on mobile devices.

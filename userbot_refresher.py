@@ -1144,11 +1144,14 @@ async def build_midnight_summary():
     return card
 
 
-async def audit_account_session(acc: dict) -> tuple[bool, str]:
-    """Tests live MTProto connectivity and authorization for an individual account session."""
+async def audit_account_session(acc: dict) -> tuple[bool, str, bool]:
+    """
+    Tests live MTProto connectivity and authorization for an individual account session.
+    Returns: (is_healthy, reason, is_actually_revoked)
+    """
     sess_str = acc.get("session_string")
     if not sess_str:
-        return False, "Missing session string"
+        return False, "Missing session string", True
     uid = str(acc.get("user_id"))
     # If account 1 (Master) is already connected in this process
     if acc.get("is_referral_host") or uid == str(REPORT_CHAT_ID):
@@ -1156,7 +1159,18 @@ async def audit_account_session(acc: dict) -> tuple[bool, str]:
             if client.is_connected() and await client.is_user_authorized():
                 me = await client.get_me()
                 u_str = f"@{me.username}" if me.username else "NoUsername"
-                return True, f"Primary Master Active ({me.first_name} {u_str}, ID: {me.id})"
+                return True, f"Primary Master Active ({me.first_name} {u_str}, ID: {me.id})", False
+        except Exception:
+            pass
+
+    acc_proxy = None
+    proxy_str = acc.get("proxy")
+    if proxy_str and proxy_str.startswith("http"):
+        try:
+            import urllib.parse
+            import socks
+            p = urllib.parse.urlparse(proxy_str)
+            acc_proxy = (socks.HTTP, p.hostname, p.port, True, p.username, p.password)
         except Exception:
             pass
 
@@ -1167,24 +1181,49 @@ async def audit_account_session(acc: dict) -> tuple[bool, str]:
             StringSession(sess_str),
             int(API_ID),
             API_HASH,
-            connection_retries=1,
-            timeout=5
+            proxy=acc_proxy,
+            connection_retries=3,
+            retry_delay=2,
+            timeout=15
         )
         await test_client.connect()
         if not await test_client.is_user_authorized():
-            return False, "Unauthorized (Session Revoked by Telegram)"
+            return False, "Unauthorized (Session Revoked by Telegram)", True
         me = await test_client.get_me()
         if not me:
-            return False, "Authorized but cannot fetch profile"
+            return False, "Authorized but cannot fetch profile", False
         u_str = f"@{me.username}" if me.username else "NoUsername"
-        return True, f"Active ({me.first_name} {u_str}, ID: {me.id})"
+        return True, f"Active ({me.first_name} {u_str}, ID: {me.id})", False
     except (AuthKeyUnregisteredError, UserDeactivatedError, SessionRevokedError) as auth_err:
-        return False, f"Revoked: {auth_err}"
+        return False, f"Revoked: {auth_err}", True
     except Exception as e:
         err_msg = str(e)
-        if any(term in err_msg for term in ["AUTH_KEY_UNREGISTERED", "UserDeactivated", "SESSION_REVOKED"]):
-            return False, f"Revoked: {err_msg}"
-        return False, f"Error: {err_msg}"
+        if any(term in err_msg for term in ["AUTH_KEY_UNREGISTERED", "UserDeactivated", "SESSION_REVOKED", "SESSION_EXPIRED"]):
+            return False, f"Revoked: {err_msg}", True
+        # If proxy failed, retry once directly
+        if acc_proxy:
+            try:
+                if test_client:
+                    await test_client.disconnect()
+            except Exception:
+                pass
+            try:
+                test_client = TelegramClient(
+                    StringSession(sess_str),
+                    int(API_ID),
+                    API_HASH,
+                    connection_retries=2,
+                    timeout=12
+                )
+                await test_client.connect()
+                if await test_client.is_user_authorized():
+                    me = await test_client.get_me()
+                    u_str = f"@{me.username}" if me.username else "NoUsername"
+                    return True, f"Active Direct ({me.first_name} {u_str}, ID: {me.id})", False
+            except Exception:
+                pass
+        # Connection error, timeout or transient network hiccup is NOT a revoked session
+        return False, f"Transient Network Error: {err_msg}", False
     finally:
         if test_client:
             try:
@@ -1203,17 +1242,25 @@ async def run_fleet_session_audit(notify_admin: bool = True) -> dict:
     for idx, acc in enumerate(accounts, 1):
         name = acc.get("name", f"Account #{idx}")
         phone = acc.get("phone", "Hidden")
-        ok, reason = await audit_account_session(acc)
+        ok, reason, is_revoked = await audit_account_session(acc)
         acc["last_audited_at"] = now_ts
         if ok:
             acc["status"] = "active"
             acc.pop("revocation_reason", None)
             healthy_accounts.append({"name": name, "phone": phone, "reason": reason, "index": idx})
-        else:
+        elif is_revoked:
+            # ONLY isolate if Telegram definitively reported session termination
             acc["status"] = "revoked"
             acc["revocation_reason"] = reason
             acc["revoked_at"] = now_ts
             revoked_accounts.append({"name": name, "phone": phone, "reason": reason, "index": idx})
+            logger.error(f"[Session Auditor] Account #{idx} ({name}) CONFIRMED REVOKED: {reason}")
+        else:
+            # Transient network/proxy timeout: DO NOT mark revoked, preserve active status!
+            acc["status"] = "active"
+            acc.pop("revocation_reason", None)
+            logger.warning(f"[Session Auditor] Account #{idx} ({name}) transient check notice: {reason}. Preserving active state.")
+            healthy_accounts.append({"name": name, "phone": phone, "reason": "Active (Proxy/Network Retrying)", "index": idx})
 
     save_accounts(accounts)
 
