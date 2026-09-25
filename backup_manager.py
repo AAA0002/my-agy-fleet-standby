@@ -67,7 +67,11 @@ CORE_BOT_FILES = [
     "cloud_wallet_sweeper.py",
     "autonomous_cloud_agent.py",
     "render_failover_manager.py",
-    "stones_captcha_templates.json"
+    "stones_captcha_templates.json",
+    "execute_ailab_ainovum_withdrawals.py",
+    "batch_stones_withdraw.py",
+    "vercel.json",
+    "public/index.html"
 ]
 
 

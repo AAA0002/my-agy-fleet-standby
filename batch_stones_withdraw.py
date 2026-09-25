@@ -60,7 +60,7 @@ async def run_batch():
             acc = accounts_map.get(str(uid), {})
             name = acc.get("name", uid)
             proxy = acc.get("proxy")
-            evm_wallet = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
+            evm_wallet = fleet_evm.get(str(uid), {}).get("address", "0xfda4182001672b9f0f09e2118242e543e35ed5ce")
 
             logger.info(f"--- Checking {name} (UID: {uid}) ---")
 

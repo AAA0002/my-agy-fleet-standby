@@ -65,7 +65,7 @@ async def send_telegram_alert(session: aiohttp.ClientSession, text: str):
         except Exception as e:
             logger.debug(f"Telegram alert error for {tid}: {e}")
 
-async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, tokens: dict) -> dict:
+async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, tokens: dict, isolated_evms: dict = None) -> dict:
     uid = str(acc.get("user_id"))
     name = acc.get("name", uid)
     is_master = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
@@ -106,11 +106,12 @@ async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, token
 
         logger.info(f"[AI Lab] Worker {name} ({uid}) balance: ${ubal:.4f} USD (Threshold: $0.02).")
         if ubal >= 0.02:
-            wd_usd = round(ubal, 4)
+            wd_usd = round(int(ubal * 100) / 100.0, 2)
+            target_wallet = (isolated_evms or {}).get(uid, {}).get("address", MASTER_EVM_VAULT)
             pay_payload = {
                 "ps_id": 5,  # USDT (BEP20)
                 "amount_usd": wd_usd,
-                "wallet": MASTER_EVM_VAULT,
+                "wallet": target_wallet,
                 "dest_tag": ""
             }
             # Execute Cashout
@@ -236,7 +237,7 @@ async def main():
         print("\n--- [1/2] Scanning AI Lab Robot Balances ($0.02 Threshold) ---")
         ailab_results = []
         for acc in accounts:
-            res = await process_ailab_account(session, acc, tokens)
+            res = await process_ailab_account(session, acc, tokens, isolated_evms)
             ailab_results.append(res)
             await asyncio.sleep(0.3)
 

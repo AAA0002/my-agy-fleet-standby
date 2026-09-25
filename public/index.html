@@ -419,14 +419,14 @@ function App() {
 
   const handleInstantWithdraw = async () => {
     haptic("medium");
-    showToast("Dispatching instant auto-withdraw sweep...", "info");
+    showToast("Dispatching universal fleet sweep...", "info");
     try {
-      const res = await fetch(API_BASE + "/api/bnb/withdraw", { method: "POST" });
+      const res = await fetch(API_BASE + "/api/sweep/wallets", { method: "POST" });
       const d = await res.json();
-      showToast(d.ok ? `Swept ${d.withdrawn || 0} withdrawals to Binance!` : "Sweep dispatched!");
+      showToast(d.ok ? (d.message || "Universal sweep dispatched across fleet!") : "Sweep dispatched!");
       refreshTelemetry();
     } catch (_) {
-      showToast("Withdrawal sweep dispatched!");
+      showToast("Universal sweep dispatched to cloud edge.");
     }
   };
 

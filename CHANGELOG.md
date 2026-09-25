@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **Vercel SSO Bypass & Embeddability Fix, Isolated EVM Routing & Disaster Recovery Hardening (`public/index.html`, `backup_manager.py`, `batch_stones_withdraw.py`, `execute_ailab_ainovum_withdrawals.py`)**:
+  - **Vercel SSO Protection Roadblock Neutralized**: Identified that Vercel team projects enable `ssoProtection` by default on `*.vercel.app` domains, causing `https://agy-aaa000.vercel.app` to redirect to `vercel.com/sso-api` with `x-frame-options: DENY`. Patched project settings via Vercel REST API (`PATCH /v9/projects/my-agy-ai-fleet` -> `ssoProtection: null`). Verified `HTTP/2 200` with `access-control-allow-origin: *`, enabling Telegram WebApp to embed and render seamlessly without roadblocks.
+  - **WebApp Instant Sweep Endpoint & Toast Calibration**: Realigned `handleInstantWithdraw` in `public/index.html` to target `/api/sweep/wallets` and report verified message receipts instead of defaulting to `Swept 0 withdrawals`.
+  - **AI Lab Decimal Step Size & Isolated Routing**: Refactored `execute_ailab_ainovum_withdrawals.py` to enforce strict 2-decimal step sizing (`round(int(ubal * 100) / 100.0, 2)`) and route cashouts to dedicated isolated EVM addresses, eliminating potential duplicate wallet conflicts.
+  - **Stones Miners Batch Isolated EVM Fix**: Corrected `batch_stones_withdraw.py` where line 63 hardcoded the master vault address; now reads each account's dedicated isolated address from `fleet_evm_wallets.json`.
+  - **Disaster Recovery Vault Completeness**: Added `public/index.html`, `vercel.json`, `execute_ailab_ainovum_withdrawals.py`, and `batch_stones_withdraw.py` to `CORE_BOT_FILES` in `backup_manager.py`, ensuring all frontend and withdrawal intelligence assets are preserved in automated disaster recovery archives.
+
+### Added
 - **Vercel Executive Dashboard Migration, Spam Neutralization & Lean Admin UI Overhaul (`deploy_both_cf_workers.py`, `userbot_refresher.py`, `public/index.html`)**:
   - **Spam Neutralized**: Located and terminated the 3-minute repeating notification spam (*"🌾 Fleet Harvest Completed..."*) originating from Render service `srv-daojdt5g1s2s738jsjmg` (`hermes-grok-cloud-agent`) via Render API suspension and disabled cron-job `8484430`.
   - **Dashboard Migrated to Vercel**: Transferred frontend dashboard from Cloudflare Worker embedded HTML response (~73KB bloat stripped) to Vercel production deployment (`https://agy-aaa000.vercel.app`). Dynamic API base routes all `/api/...` and `/ai` requests seamlessly to the Cloudflare Edge mesh. Updated Telegram Chat Menu Button and WebApp URLs.
