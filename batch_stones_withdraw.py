@@ -49,6 +49,9 @@ async def run_batch():
         for uid, tok_info in tokens_cache.items():
             if str(uid).startswith("_"):
                 continue
+            if str(uid) == "6727787768":
+                logger.info(f"UID {uid} is Master Host account. Compounding mode active (0 withdrawals). Skipping.")
+                continue
             if str(uid) in ALREADY_QUEUED:
                 logger.info(f"UID {uid} already queued in previous run. Skipping.")
                 results.append({"uid": uid, "name": accounts_map.get(str(uid), {}).get("name", uid), "status": "already_queued"})

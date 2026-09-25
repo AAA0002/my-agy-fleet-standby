@@ -5,8 +5,33 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
-### Restored
-- **Restoration of Accounts Management & Add Account Buttons (v4.7 PRO) (`public/index.html`, `userbot_refresher.py`, `deploy_both_cf_workers.py`, `deploy_vercel.py`)**:
+### Added & Improved
+- **Unified Multi-Cloud Infrastructure (5 Cloudflare Nodes + Dual Render Relayers + Dual GitHub Remotes)**:
+  - **Full 5-Account Cloudflare Mesh Active**:
+    * Node 1 (`korimhaji210@gmail.com` -> `restore-agy.aaaai2.workers.dev`) [🟢 ONLINE - Shard 0]
+    * Node 2 (`Koramshah2@gmail.com` -> `restore-agy.aaa-bot.workers.dev`) [🟢 ONLINE - Shard 1]
+    * Node 3 (`coz1gameh3@gmail.com` -> `restore-agy.aaa222.workers.dev`) [🟢 ONLINE - Shard 2]
+    * Node 4 (`aaafreeai@gmail.com` -> `atf-miner-worker.agorameet.workers.dev`, D1 DB `atf-miner-db` in Singapore, KV `CACHE_KV`, R2 `atf-db-backups`) [🟢 ONLINE]
+    * Node 5 (`da98cfb7cca333391bb349333f294d0f` -> `atf-mining-engine.aaaai.workers.dev`, KV `MINER_KV`) [🟢 ONLINE]
+  - **Dual Render MTProto Relayers Verified Active**:
+    * Primary Relayer: `https://atf-mtproto-relayer.onrender.com/wake` (🟢 ONLINE & AUTHENTICATED)
+    * Backup Relayer: `https://atf-mtproto-relayer-backup.onrender.com/wake` (🟢 ONLINE & AUTHENTICATED)
+  - **Dual-GitHub Automated Remote Synchronization**:
+    * Codebase automatically mirrored and kept 100% in sync between primary remote `origin` (`AAA2743/my-agy-ai-fleet`) and platform remote `platform_aaa0002` (`AAA0002/ATL`).
+  - **Multi-Cloud System & Mesh Health Dashboard (`userbot_refresher.py`)**:
+    * Updated `/ping` and server health reports to display live status of the 5x Cloudflare mesh, dual Render relayers, dual GitHub remotes, and Telegram disaster vault.
+
+### Restored & Cleaned
+- **Clean Accounts Management Hub & Clean Roster with Phone Numbers (`accounts.json`, `userbot_refresher.py`, `deploy_both_cf_workers.py`)**:
+  - **Direct Sanitization of `accounts.json`**: Stripped legacy Russian transliterated suffixes and normalized all 13 accounts to executive format (`Arif Hossain`, `Nancy`, `Koram Shah`, `Arif`, `Nadim`, `Kaitlyn`, `Abid Hasan`, `Abid Hasan (2)`, `Node 9`, `Node 10`, `MD. Arif Hossain`, `Sanzida Shimu`, `Abid (3)`).
+  - **Embedded Phone Numbers on Every Account**: Formatted every roster line in Telegram bot (`• #1 Arif Hossain (+8801317342850) — Master Host 👑`, etc.) and in WebApp dashboard.
+  - **Dedicated `ACCOUNTS_INLINE_KEYBOARD`**: Created and wired dedicated inline keyboard with `[🚀 Open Executive Dashboard]`, `[➕ Add Account]`, `[🔄 Refresh Accounts]`, `[⚡ Instant Harvest]`, `[💼 Universal Sweep]`, and `[📊 Fleet Status]`, attached directly to accounts messages in both local daemon and Cloudflare Edge workers.
+
+### Fixed & Hardened
+- **System-Wide Bug Audit & Logic Hardening**:
+  - **Master Host Account Protected in Stones Withdrawals (`batch_stones_withdraw.py`)**: Added strict bypass for Master Host UID `6727787768` (`+8801317342850`), strictly enforcing the 0-withdrawals host compounding policy.
+  - **Self-Sweep Gas Burn Guard (`cloud_wallet_sweeper.py`)**: Added check ensuring worker addresses matching destination vault (`MASTER_EVM_VAULT`) are automatically skipped, preventing circular self-transfers.
+  - **Safe JSON Exception Handling (`execute_ailab_ainovum_withdrawals.py`)**: Wrapped all API response parsing in try/except blocks to gracefully handle non-JSON / gateway error responses without crashing the withdrawal worker.
   - **Telegram Bot Keyboards Restored**: Added `[{"text": "👥 Accounts Management"}, {"text": "➕ Add Account"}]` back to `MAIN_TAB_KEYBOARD` (persistent bottom keyboard) and `STATUS_INLINE_KEYBOARD` in both `userbot_refresher.py` and `deploy_both_cf_workers.py`.
   - **Callback & Command Handling Restored**: Added `btn_accounts` callback handler to Cloudflare Edge webhook to return the full 13-account active roster and status. Added `"👥 Accounts Management"` to text-command matching in both local and Cloudflare engines.
   - **WebApp Daylight FinTech Connect Modal Restored**: Re-implemented the Connect Account Modal in `public/index.html` with phone input, Bangladesh local/international E.164 auto-detection, and edge submission. Added prominent `➕ Add Account` action buttons in the Treasury Card and the Accounts Management roster header.

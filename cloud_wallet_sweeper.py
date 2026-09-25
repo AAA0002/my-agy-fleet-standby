@@ -235,6 +235,9 @@ def sweep_evm_native_balance(
 
         cs_from = Web3.to_checksum_address(from_addr)
         cs_to = Web3.to_checksum_address(to_addr)
+        if cs_from.lower() == cs_to.lower():
+            logger.info(f"[{chain_name}] from_addr is equal to destination vault ({to_addr}). Skipping self-sweep.")
+            return None
         nonce = w3.eth.get_transaction_count(cs_from)
         gas_price = w3.eth.gas_price
 
@@ -309,6 +312,9 @@ def sweep_bep20_token_balance(
 
         cs_from = Web3.to_checksum_address(from_addr)
         cs_to = Web3.to_checksum_address(to_addr)
+        if cs_from.lower() == cs_to.lower():
+            logger.info(f"[BEP-20 Sweep] from_addr is equal to destination vault ({to_addr}). Skipping self-sweep.")
+            return None
         cs_token = Web3.to_checksum_address(token_addr)
 
         # Check BNB balance for gas
@@ -374,7 +380,7 @@ async def run_full_sweep_audit(notify_if_empty: bool = False, execute_sweep: boo
                 pk = w.get("private_key")
                 addr = w.get("address")
                 name = w.get("name")
-                if not pk or not addr:
+                if not pk or not addr or addr.lower() == MASTER_EVM_VAULT.lower():
                     continue
 
                 # Sweep BNB on BSC

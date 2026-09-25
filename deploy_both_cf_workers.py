@@ -1453,6 +1453,25 @@ fi
           ]
         };
 
+        const accountsInlineKeyboard = {
+          inline_keyboard: [
+            [
+              { text: "🚀 Open Executive Dashboard", web_app: { url: dashUrl } }
+            ],
+            [
+              { text: "➕ Add Account", callback_data: "btn_add_account" },
+              { text: "🔄 Refresh Accounts", callback_data: "btn_accounts" }
+            ],
+            [
+              { text: "⚡ Instant Harvest", callback_data: "btn_harvest" },
+              { text: "💼 Universal Sweep", callback_data: "btn_withdraw_all" }
+            ],
+            [
+              { text: "📊 Fleet Status", callback_data: "btn_status" }
+            ]
+          ]
+        };
+
         const mainKeyboard = {
           keyboard: [
             [
@@ -1560,7 +1579,7 @@ fi
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: statusInlineKeyboard })
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: accountsInlineKeyboard })
               }).catch(() => {});
             } else if (cbData === "btn_add_account" || cbData === "btn_addaccount") {
               const rep = `➕ *Connect New Telegram Account to Fleet*\n\n` +
@@ -2378,7 +2397,7 @@ fi
               `• Tap **➕ Add Account** below to connect a new number\n` +
               `• Tap **🚀 Open Executive Dashboard** to view live cards & balances\n` +
               `• Send \`/acc <1-13>\` (e.g. \`/acc 1\`) to inspect any account in detail`;
-            await sendReply(rep, statusInlineKeyboard);
+            await sendReply(rep, accountsInlineKeyboard);
           })());
           return new Response("OK");
         }

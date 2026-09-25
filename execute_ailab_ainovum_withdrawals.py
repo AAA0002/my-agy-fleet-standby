@@ -87,7 +87,10 @@ async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, token
         async with session.post(f"{base_url}/users/auth/login", json={"user": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as lr:
             if lr.status != 200:
                 return {"uid": uid, "name": name, "status": f"login_http_{lr.status}", "balance": 0.0}
-            ld = await lr.json()
+            try:
+                ld = await lr.json()
+            except Exception:
+                return {"uid": uid, "name": name, "status": "invalid_login_json", "balance": 0.0}
             tok = ld.get("result", {}).get("bearer") or ld.get("user_info", {}).get("session_id")
             if not tok:
                 return {"uid": uid, "name": name, "status": "no_bearer_token", "balance": 0.0}
@@ -98,7 +101,10 @@ async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, token
         async with session.get(f"{base_url}/cashout", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cr:
             if cr.status != 200:
                 return {"uid": uid, "name": name, "status": f"cashout_http_{cr.status}", "balance": 0.0}
-            cd = await cr.json()
+            try:
+                cd = await cr.json()
+            except Exception:
+                return {"uid": uid, "name": name, "status": "invalid_cashout_json", "balance": 0.0}
             ubal = float(cd.get("user_info", {}).get("balance", 0) or 0)
 
         # Host account is strictly protected
@@ -118,7 +124,10 @@ async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, token
             }
             # Execute Cashout
             async with session.post(f"{base_url}/cashout-pay", json=pay_payload, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as pr:
-                pres = await pr.json()
+                try:
+                    pres = await pr.json()
+                except Exception:
+                    pres = {"error": "non_json_cashout_response"}
                 logger.info(f"[AI Lab] Worker {name} cashout response: {pres}")
                 err_code = pres.get("request_info", {}).get("error_code")
                 if err_code == 0 or pres.get("result"):
@@ -180,7 +189,10 @@ async def process_ainovum_account(session: aiohttp.ClientSession, acc: dict, tok
         async with session.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cr:
             if cr.status != 200:
                 return {"uid": uid, "name": name, "status": f"config_http_{cr.status}", "available": 0.0}
-            cd = await cr.json()
+            try:
+                cd = await cr.json()
+            except Exception:
+                return {"uid": uid, "name": name, "status": "invalid_config_json", "available": 0.0}
             avail = float(cd.get("freeze", {}).get("available", 0) or 0)
 
         # Route target wallet: master gets master vault, worker gets dedicated isolated EVM
@@ -202,7 +214,10 @@ async def process_ainovum_account(session: aiohttp.ClientSession, acc: dict, tok
                 timeout=aiohttp.ClientTimeout(total=12),
                 proxy=proxy
             ) as wr:
-                wd = await wr.json()
+                try:
+                    wd = await wr.json()
+                except Exception:
+                    wd = {"error": f"non_json_withdraw_response_http_{wr.status}"}
                 logger.info(f"[Ainovum] Withdrawal result for {name}: {wd}")
                 if wr.status == 200 and not wd.get("access_denied") and not wd.get("error"):
                     await send_telegram_alert(
