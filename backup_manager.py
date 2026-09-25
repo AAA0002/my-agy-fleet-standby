@@ -72,7 +72,10 @@ CORE_BOT_FILES = [
     "batch_stones_withdraw.py",
     "vercel.json",
     "deploy_vercel.py",
-    "public/index.html"
+    "public/index.html",
+    "CHANGELOG.md",
+    "AGENTS.md",
+    "FLEET_WALLETS_SECRETS_MASTER_VAULT.txt"
 ]
 
 

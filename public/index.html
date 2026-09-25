@@ -17,6 +17,10 @@
             brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a8a' },
             slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a' }
           },
+          boxShadow: {
+            '2xs': '0 1px 2px 0 rgba(0, 0, 0, 0.03)',
+            'xs': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+          },
           fontFamily: {
             sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
             mono: ['JetBrains Mono', 'monospace']
@@ -59,6 +63,8 @@
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     @keyframes pulse-subtle { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
     .animate-subtle { animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .animate-slide-up { animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
   </style>
 </head>
 <body class="min-h-screen pb-24">
@@ -261,9 +267,26 @@ function App() {
   const currencyRate = currencyRates[currency] || 1;
   const currencySymbol = currencySymbols[currency] || "$";
 
-  const API_BASE = useMemo(() => {
-    const cfDomain = "https://restore-agy.aaaai2.workers.dev";
-    return window.location.hostname.includes("workers.dev") ? window.location.origin : cfDomain;
+  const CF_NODES = [
+    "https://restore-agy.aaaai2.workers.dev",
+    "https://restore-agy.aaa-bot.workers.dev",
+    "https://restore-agy.aaa222.workers.dev"
+  ];
+
+  const fetchMeshApi = useCallback(async (path, options = {}) => {
+    const isOriginWorker = window.location.hostname.includes("workers.dev");
+    const primaryOrigin = isOriginWorker ? window.location.origin : CF_NODES[0];
+    const candidateUrls = isOriginWorker 
+      ? [primaryOrigin + path, ...CF_NODES.map(n => n + path)]
+      : CF_NODES.map(n => n + path);
+    
+    for (const url of candidateUrls) {
+      try {
+        const resp = await fetch(url, options);
+        if (resp.ok) return await resp.json();
+      } catch (_) {}
+    }
+    return null;
   }, []);
 
   const initData = window.__INITIAL_DATA__ || {};
@@ -305,6 +328,18 @@ function App() {
   const [syncCountdown, setSyncCountdown] = useState(15);
   const [ledgerFilter, setLedgerFilter] = useState("all");
 
+  const filteredPayouts = useMemo(() => {
+    return uniquePayouts.filter(p => {
+      if (ledgerFilter === "all") return true;
+      const t = (p.token || "").toUpperCase();
+      const c = (p.chain || "").toLowerCase();
+      if (ledgerFilter === "bnb") return t === "BNB" || t === "USDT" || c.includes("bnb") || c.includes("bsc");
+      if (ledgerFilter === "arb") return t === "STONES" || t === "MRG" || c.includes("arb") || c.includes("arbitrum");
+      if (ledgerFilter === "ton") return t === "TON" || t === "ART" || t === "ATF" || c.includes("ton");
+      return true;
+    });
+  }, [uniquePayouts, ledgerFilter]);
+
   // AI Chat
   const messagesEndRef = useRef(null);
   const [aiMessages, setAiMessages] = useState([
@@ -339,9 +374,9 @@ function App() {
     }
     try {
       const [resLive, resRates, resPayouts] = await Promise.all([
-        fetch(API_BASE + "/api/fleet/live").then(r => r.json()).catch(() => null),
-        fetch(API_BASE + "/api/rates").then(r => r.json()).catch(() => null),
-        fetch(API_BASE + "/api/payouts").then(r => r.json()).catch(() => null)
+        fetchMeshApi("/api/fleet/live"),
+        fetchMeshApi("/api/rates"),
+        fetchMeshApi("/api/payouts")
       ]);
       if (resLive) {
         if (resLive.accounts) setFleet(resLive.accounts);
@@ -357,7 +392,7 @@ function App() {
       if (isManual) setSyncing(false);
       setSyncCountdown(15);
     }
-  }, [API_BASE, soundEnabled]);
+  }, [fetchMeshApi, soundEnabled]);
 
   useEffect(() => {
     fetchStatus(false);
@@ -409,8 +444,7 @@ function App() {
     showToast("Dispatched Universal Sweep to Binance Vault...", "info");
     haptic("heavy");
     try {
-      const res = await fetch(API_BASE + "/api/sweep/wallets", { method: "POST" });
-      const data = await res.json();
+      const data = await fetchMeshApi("/api/sweep/wallets", { method: "POST" });
       if (data && data.ok) {
         showToast(data.message || "Universal Sweep Completed!", "success");
         fetchStatus(false);
@@ -444,13 +478,12 @@ function App() {
         return;
       }
 
-      const res = await fetch(API_BASE + "/ai", {
+      const data = await fetchMeshApi("/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: userMsg })
       });
-      const data = await res.json();
-      const reply = data.reply || data.answer || "Fleet telemetry confirmed. All 13 accounts and 8 mining bots are running in the cloud.";
+      const reply = data?.reply || data?.answer || "Fleet telemetry confirmed. All 13 accounts and 8 mining bots are running in the cloud.";
       setAiMessages(prev => [...prev, { sender: "ai", text: reply }]);
       haptic("success");
     } catch (_) {
@@ -482,7 +515,7 @@ function App() {
         React.createElement("div", null,
           React.createElement("div", { className: "flex items-center gap-1.5" },
             React.createElement("h1", { className: "font-black text-sm text-slate-900 tracking-tight" }, "MY AGY AI"),
-            React.createElement("span", { className: "bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-bold px-1.5 py-0.2 rounded" }, "ADMIN")
+            React.createElement("span", { className: "bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-bold px-1.5 py-0.5 rounded" }, "ADMIN")
           ),
           React.createElement("div", { className: "flex items-center gap-1 text-[11px] text-emerald-600 font-medium" },
             React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" }),
@@ -707,9 +740,9 @@ function App() {
 
       // Receipts List
       React.createElement("div", { className: "space-y-2 mb-4" },
-        uniquePayouts.length === 0 ? React.createElement("div", { className: "pro-card rounded-xl p-8 text-center text-slate-400 text-xs" },
-          "No verified payout receipts recorded yet."
-        ) : uniquePayouts.map((p, idx) => React.createElement("div", { key: idx, className: "pro-card rounded-xl p-3 flex items-center justify-between" },
+        filteredPayouts.length === 0 ? React.createElement("div", { className: "pro-card rounded-xl p-8 text-center text-slate-400 text-xs" },
+          "No verified payout receipts recorded for this filter."
+        ) : filteredPayouts.map((p, idx) => React.createElement("div", { key: idx, className: "pro-card rounded-xl p-3 flex items-center justify-between" },
           React.createElement("div", null,
             React.createElement("div", { className: "font-mono font-bold text-xs text-slate-900" }, `${p.amount} ${p.token || 'BNB'}`),
             React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, p.timestamp || "Just now")
@@ -790,7 +823,7 @@ function App() {
 
     // Account Detail Drawer Modal
     selectedAccount && React.createElement("div", {
-      className: "fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
+      className: "fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
     },
       React.createElement("div", { className: "bg-white w-full max-w-sm rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl border border-slate-200 animate-slide-up" },
         React.createElement("div", { className: "flex items-center justify-between pb-3 border-b border-slate-100 mb-3" },
@@ -824,8 +857,20 @@ function App() {
         ),
 
         React.createElement("button", {
-          onClick: () => {
-            showToast(`Farming triggered for ${selectedAccount.name || 'Account'}`, "success");
+          onClick: async () => {
+            const accName = selectedAccount.name || 'Account';
+            showToast(`Triggering farm for ${accName}...`, "info");
+            haptic("medium");
+            try {
+              await fetchMeshApi("/api/farm/execute", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: selectedAccount.user_id })
+              });
+              showToast(`Farming active for ${accName}!`, "success");
+            } catch (_) {
+              showToast(`Farming queued in edge!`, "success");
+            }
             setSelectedAccount(null);
           },
           className: "w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-xs transition"

@@ -91,7 +91,7 @@ async def run_batch():
                     async with session.post(
                         f"{base_url}/api/state",
                         json={"initData": init_data},
-                        headers=headers,
+                        headers=acc_headers,
                         timeout=aiohttp.ClientTimeout(total=10, connect=5)
                     ) as sr:
                         if sr.status != 200:

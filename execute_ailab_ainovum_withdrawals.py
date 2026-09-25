@@ -70,6 +70,7 @@ async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, token
     uid = str(acc.get("user_id"))
     name = acc.get("name", uid)
     is_master = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
+    proxy = acc.get("proxy")
     
     init_data = tokens.get(uid, {}).get("ailab_init_data")
     if not init_data:
@@ -83,7 +84,7 @@ async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, token
 
     try:
         # Step 1: Login
-        async with session.post(f"{base_url}/users/auth/login", json={"user": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as lr:
+        async with session.post(f"{base_url}/users/auth/login", json={"user": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as lr:
             if lr.status != 200:
                 return {"uid": uid, "name": name, "status": f"login_http_{lr.status}", "balance": 0.0}
             ld = await lr.json()
@@ -94,7 +95,7 @@ async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, token
         auth_headers = {**headers, "Authorization": f"Bearer {tok}"}
 
         # Step 2: Check cashout balance
-        async with session.get(f"{base_url}/cashout", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as cr:
+        async with session.get(f"{base_url}/cashout", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cr:
             if cr.status != 200:
                 return {"uid": uid, "name": name, "status": f"cashout_http_{cr.status}", "balance": 0.0}
             cd = await cr.json()
@@ -116,7 +117,7 @@ async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, token
                 "dest_tag": ""
             }
             # Execute Cashout
-            async with session.post(f"{base_url}/cashout-pay", json=pay_payload, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10)) as pr:
+            async with session.post(f"{base_url}/cashout-pay", json=pay_payload, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as pr:
                 pres = await pr.json()
                 logger.info(f"[AI Lab] Worker {name} cashout response: {pres}")
                 err_code = pres.get("request_info", {}).get("error_code")

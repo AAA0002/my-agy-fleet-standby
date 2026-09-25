@@ -108,9 +108,9 @@ def deploy():
 
     # Verify primary alias
     test_urls = [
-        "https://agy-aaa000.vercel.app/?v=4.5",
-        "https://my-agy-ai-fleet.vercel.app/?v=4.5",
-        "https://agy-henna.vercel.app/?v=4.5"
+        "https://agy-aaa000.vercel.app/?v=4.6",
+        "https://my-agy-ai-fleet.vercel.app/?v=4.6",
+        "https://agy-henna.vercel.app/?v=4.6"
     ]
     for test_url in test_urls:
         print(f"\nVerifying live alias {test_url}...")

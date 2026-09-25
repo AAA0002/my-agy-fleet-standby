@@ -237,7 +237,16 @@ def sweep_evm_native_balance(
         cs_to = Web3.to_checksum_address(to_addr)
         nonce = w3.eth.get_transaction_count(cs_from)
         gas_price = w3.eth.gas_price
-        gas_limit = 21000
+
+        # Dynamic gas limit with Arbitrum L1 calldata overhead support
+        if chain_id == 42161:
+            try:
+                gas_limit = w3.eth.estimate_gas({"from": cs_from, "to": cs_to, "value": 1000})
+            except Exception:
+                gas_limit = 50000
+        else:
+            gas_limit = 21000
+
         gas_cost = gas_price * gas_limit
         balance_wei = w3.eth.get_balance(cs_from)
         amount_to_send = balance_wei - gas_cost
