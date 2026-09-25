@@ -75,6 +75,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger("MultiBotWorker")
 
+
+def safe_create_task(coro, name=None):
+    """Creates a background asyncio Task with comprehensive unhandled exception logging."""
+    task = asyncio.create_task(coro, name=name)
+    def _done_cb(t: asyncio.Task):
+        try:
+            if not t.cancelled() and t.exception():
+                logger.error(f"[Task Error] Unhandled exception in background task '{t.get_name()}': {t.exception()}", exc_info=t.exception())
+        except Exception:
+            pass
+    task.add_done_callback(_done_cb)
+    return task
+
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 API_ID = os.getenv("TELEGRAM_API_ID")
@@ -2519,7 +2532,7 @@ async def handle_single_update(update: dict):
                 await send_report_message(f"🚀 Triggering withdrawal for **{t_name}** (`{t_uid}`)...", chat_id=from_id)
                 asyncio.create_task(check_and_auto_withdraw(t_uid, t_name, notify_manual=True, caller_chat_id=from_id, acc_data=t_acc))
             elif cb_data == "btn_withdraw_all":
-                asyncio.create_task(batch_withdraw_eligible(caller_chat_id=from_id))
+                safe_create_task(execute_universal_fleet_sweep(caller_chat_id=from_id), name="cb_universal_sweep")
             elif cb_data == "btn_accounts":
                 rep = build_accounts_report()
                 await send_message_chunks(rep, reply_markup=MAIN_TAB_KEYBOARD, chat_id=from_id)
@@ -2837,8 +2850,20 @@ async def handle_single_update(update: dict):
             rep = await build_apx_details_report(caller_uid)
             await send_report_message(rep, reply_markup=STATUS_INLINE_KEYBOARD, chat_id=chat_id)
 
-        elif text in ["/withdraw_all", "/batch_withdraw", "⚡ Withdraw All", "⚡ Withdraw All Eligible"]:
-            asyncio.create_task(batch_withdraw_eligible(caller_chat_id=chat_id))
+        elif text.startswith("/sweep_stones"):
+            safe_create_task(execute_stones_fleet_sweep(caller_chat_id=chat_id), name="tg_stones_sweep")
+
+        elif text.startswith("/sweep_ailab"):
+            safe_create_task(execute_ailab_fleet_sweep(caller_chat_id=chat_id), name="tg_ailab_sweep")
+
+        elif text.startswith("/sweep_ainovum"):
+            safe_create_task(execute_ainovum_fleet_sweep(caller_chat_id=chat_id), name="tg_ainovum_sweep")
+
+        elif text.startswith("/harvest") or text in ["⚡ Harvest", "⚡ Instant Harvest"]:
+            safe_create_task(execute_fleet_harvest(caller_chat_id=chat_id), name="tg_harvest")
+
+        elif text in ["/withdraw_all", "/batch_withdraw", "⚡ Withdraw All", "⚡ Withdraw All Eligible", "/sweep", "/sweep_all", "⚡ Sweep", "⚡ Fleet Sweep"]:
+            safe_create_task(execute_universal_fleet_sweep(caller_chat_id=chat_id), name="tg_universal_sweep")
 
         elif text in ["/dashboard", "/miniapp", "/app", "🚀 Open Mini App", "🚀 Dashboard"]:
             dash_url = "https://restore-agy.aaa-bot.workers.dev/dashboard"
@@ -7743,6 +7768,178 @@ async def onchain_bnb_consolidator_loop():
             logger.debug(f"[Consolidator] Note: {e}")
         await asyncio.sleep(1800)  # Check every 30 minutes
 
+async def execute_stones_fleet_sweep(caller_chat_id=None):
+    """Executes Stones 500-withdrawal sweep across all eligible fleet accounts."""
+    target_chat = caller_chat_id or REPORT_CHAT_ID
+    logger.info("[Stones Sweep] 💎 Stones 500-Withdrawal Sweep triggered...")
+    accounts = load_accounts()
+    target_wallet = ARBITRUM_WALLET  # 0xfda4182001672b9f0f09e2118242e543e35ed5ce
+    swept_count = 0
+    for acc in accounts:
+        uid = str(acc.get("user_id"))
+        name = acc.get("name", "User")
+        is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
+        if is_pri:
+            continue
+        coins = float(acc.get("stones_coins", 0) or 0)
+        if coins >= 500:
+            logger.info(f"[Stones Sweep] {name} ({uid}) eligible ({coins} STONES). Submitting 500 withdrawal...")
+            init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("stones_init_data")
+            if init_data:
+                try:
+                    from stones_captcha_solver import execute_stones_withdrawal_with_captcha
+                    async with aiohttp.ClientSession() as sw_sess:
+                        headers = {"Content-Type": "application/json", "User-Agent": get_account_user_agent(uid)}
+                        ok_w, res_w = await execute_stones_withdrawal_with_captcha(
+                            session=sw_sess,
+                            base_url="https://app.stoneswithestand.my.id",
+                            headers=headers,
+                            init_data=init_data,
+                            amount=500,
+                            wallet=target_wallet
+                        )
+                        if ok_w:
+                            swept_count += 1
+                            await send_report_message(f"🎉 *Stones Sweep:* `{name}` withdrew 500 STONES to Arbitrum `{target_wallet}`! Result: {res_w}", chat_id=target_chat)
+                except Exception as swe:
+                    logger.debug(f"[Stones Sweep] Error for {name}: {swe}")
+    if swept_count == 0 and caller_chat_id:
+        await send_report_message("💎 *Stones Sweep:* No accounts currently meet the 500 STONES threshold or are off cooldown.", chat_id=target_chat)
+
+
+async def execute_ailab_fleet_sweep(caller_chat_id=None):
+    """Executes AI Lab auto-cashout sweep (USDT BEP-20) across all eligible fleet accounts."""
+    target_chat = caller_chat_id or REPORT_CHAT_ID
+    logger.info("[AI Lab Sweep] 🧪 AI Lab Auto-Withdrawal Sweep triggered...")
+    accounts = load_accounts()
+    target_wallet = EVM_VAULT_ADDRESS
+    swept_count = 0
+    for acc in accounts:
+        uid = str(acc.get("user_id"))
+        name = acc.get("name", "User")
+        is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
+        if is_pri:
+            continue
+        worker_evm = target_wallet
+        init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("ailab_init_data")
+        if init_data:
+            try:
+                base_url = "https://api.ailab-agent.online/api/v1"
+                async with aiohttp.ClientSession() as ai_sess:
+                    ai_headers = {"Content-Type": "application/json", "User-Agent": get_account_user_agent(uid)}
+                    async with ai_sess.post(f"{base_url}/users/auth/login", json={"user": init_data}, headers=ai_headers, timeout=aiohttp.ClientTimeout(total=8)) as lr:
+                        if lr.status != 200:
+                            continue
+                        ld = await lr.json()
+                        tok = ld.get("result", {}).get("bearer") or ld.get("user_info", {}).get("session_id")
+                        if not tok:
+                            continue
+                    auth_h = {**ai_headers, "Authorization": f"Bearer {tok}"}
+                    async with ai_sess.get(f"{base_url}/cashout", headers=auth_h, timeout=aiohttp.ClientTimeout(total=8)) as cr:
+                        if cr.status == 200:
+                            cdata = await cr.json()
+                            ubal = float(cdata.get("user_info", {}).get("balance", 0) or 0)
+                            if ubal >= 0.02:
+                                wd_usd = round(int(ubal * 100) / 100.0, 2)
+                                pay_payload = {
+                                    "ps_id": 5,  # USDT (BEP20)
+                                    "amount_usd": wd_usd,
+                                    "wallet": worker_evm,
+                                    "dest_tag": ""
+                                }
+                                async with ai_sess.post(f"{base_url}/cashout-pay", json=pay_payload, headers=auth_h, timeout=aiohttp.ClientTimeout(total=10)) as wr:
+                                    wres = await wr.json()
+                                    if wres.get("request_info", {}).get("error_code") == 0 or wres.get("result"):
+                                        swept_count += 1
+                                        await send_report_message(f"🎉 *AI Lab Sweep:* `{name}` withdrew `${wd_usd} USD` to BEP-20 `{worker_evm}`!", chat_id=target_chat)
+            except Exception as aie:
+                logger.debug(f"[AI Lab Sweep] Error for {name}: {aie}")
+    if swept_count == 0 and caller_chat_id:
+        await send_report_message("🧪 *AI Lab Sweep:* No accounts currently meet the $0.02 USD minimum cashout threshold.", chat_id=target_chat)
+
+
+async def execute_ainovum_fleet_sweep(caller_chat_id=None):
+    """Executes Ainovum 0.10 USDT sweep with isolated EVM routing across all eligible fleet accounts."""
+    target_chat = caller_chat_id or REPORT_CHAT_ID
+    logger.info("[Ainovum Sweep] 🤖 Ainovum 0.10 USDT Auto-Withdrawal Sweep triggered...")
+    accounts = load_accounts()
+    fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
+    isolated_map = {}
+    if os.path.exists(fleet_evm_file):
+        try:
+            with open(fleet_evm_file, "r", encoding="utf-8") as fef:
+                isolated_map = json.load(fef)
+        except Exception:
+            pass
+    base_url = "https://ainovum.biz"
+    swept_count = 0
+    async with aiohttp.ClientSession() as an_sess:
+        for acc in accounts:
+            uid = str(acc.get("user_id"))
+            name = acc.get("name", "User")
+            is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
+            init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("ainovum_init_data")
+            if not init_data:
+                continue
+            proxy = acc.get("proxy")
+            acc_ua = get_account_user_agent(uid)
+            an_h = {"Content-Type": "application/json", "User-Agent": acc_ua}
+            try:
+                boot_resp = await an_sess.post(f"{base_url}/api/bootstrap", json={"initData": init_data, "platform": "android", "referrer": AINOVUM_REFERRAL_CODE, "timezone_offset_minutes": 0, "language_code": "en", "registration_duration_ms": 1500}, headers=an_h, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy)
+                if boot_resp.status != 200:
+                    continue
+                raw_cookies = boot_resp.headers.getall("Set-Cookie", [])
+                cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
+                auth_an_h = {**an_h, "Cookie": cookie_hdr}
+                async with an_sess.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_an_h, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cfg_r:
+                    if cfg_r.status == 200:
+                        cfg_d = await cfg_r.json()
+                        avail = float(cfg_d.get("freeze", {}).get("available", 0) or 0)
+                        if avail >= 0.10:
+                            target_addr = EVM_VAULT_ADDRESS if is_pri else isolated_map.get(uid, {}).get("address", EVM_VAULT_ADDRESS)
+                            wd_amt = round(avail, 4)
+                            async with an_sess.post(f"{base_url}/api/withdraws/usdt/create", json={"amount": wd_amt, "wallet": target_addr, "network": "bep20"}, headers=auth_an_h, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as wdr:
+                                wd_res = await wdr.json()
+                                if wdr.status == 200 and not wd_res.get("access_denied") and not wd_res.get("error"):
+                                    swept_count += 1
+                                    await send_report_message(f"🎉 *Ainovum Sweep:* `{name}` withdrew `{wd_amt} USDT` to `{target_addr}`! Result: {wd_res}", chat_id=target_chat)
+            except Exception as ane:
+                logger.debug(f"[Ainovum Sweep] Error for {name}: {ane}")
+    if swept_count == 0 and caller_chat_id:
+        await send_report_message("🤖 *Ainovum Sweep:* No accounts currently meet the 0.10 USDT minimum threshold.", chat_id=target_chat)
+
+
+async def execute_universal_fleet_sweep(caller_chat_id=None):
+    """Executes a unified multi-bot sweep across AI Lab, Stones, Ainovum, and on-chain consolidation."""
+    target_chat = caller_chat_id or REPORT_CHAT_ID
+    logger.info("[Universal Sweep] ⚡ Dispatched universal fleet sweep (AI Lab + Stones + Ainovum + On-Chain)...")
+    await send_report_message(
+        "⚡ *Universal Fleet Sweep Dispatched!*\n\n"
+        "Executing sequential withdrawals across AI Lab, Stones Miners, Ainovum, and On-Chain Wallets...",
+        chat_id=target_chat
+    )
+    await execute_stones_fleet_sweep(caller_chat_id=target_chat)
+    await execute_ailab_fleet_sweep(caller_chat_id=target_chat)
+    await execute_ainovum_fleet_sweep(caller_chat_id=target_chat)
+    try:
+        from cloud_wallet_sweeper import run_full_sweep_audit
+        await run_full_sweep_audit(notify_if_empty=False)
+    except Exception as cse:
+        logger.debug(f"[Universal Sweep] On-chain audit note: {cse}")
+
+
+async def execute_fleet_harvest(caller_chat_id=None):
+    """Wakes all parallel worker slots to execute an instant mining harvest across all 13 accounts."""
+    target_chat = caller_chat_id or REPORT_CHAT_ID
+    logger.info("[Fleet Harvest] ⚡ Instant Fleet Harvest triggered...")
+    wake_worker_event.set()
+    await send_report_message(
+        "⚡ *Instant Fleet Harvest Dispatched!*\n\n"
+        "Triggered immediate mining harvest across all 13 accounts (ART, MRG, Stones, AI Lab, UltraWallet, Apex, Ainovum, ATF).",
+        reply_markup=MAIN_TAB_KEYBOARD,
+        chat_id=target_chat
+    )
+
 
 async def miniapp_command_listener_loop():
     """
@@ -7771,150 +7968,14 @@ async def miniapp_command_listener_loop():
                             # Delete the action immediately so it's not processed twice
                             await session.get(f"{upstash_url}/del/fleet:pending_action", headers=headers)
 
-                            logger.info(f"[MiniApp Listener] ⚡ Executing interactive command from Mini App: '{act}'")
-                            async def _run_stones_sweep():
-                                logger.info("[MiniApp Listener] 💎 Stones 500-Withdrawal Sweep triggered...")
-                                accounts = load_accounts()
-                                target_wallet = ARBITRUM_WALLET  # 0xfda4182001672b9f0f09e2118242e543e35ed5ce
-                                for acc in accounts:
-                                    uid = str(acc.get("user_id"))
-                                    name = acc.get("name", "User")
-                                    is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
-                                    if is_pri:
-                                        logger.info(f"[Stones Sweep] Skipping main account {name} ({uid}) per user directive.")
-                                        continue
-                                    coins = float(acc.get("stones_coins", 0) or 0)
-                                    if coins >= 500:
-                                        logger.info(f"[Stones Sweep] {name} ({uid}) eligible ({coins} STONES). Submitting 500 withdrawal...")
-                                        init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("stones_init_data")
-                                        if init_data:
-                                            try:
-                                                from stones_captcha_solver import execute_stones_withdrawal_with_captcha
-                                                async with aiohttp.ClientSession() as sw_sess:
-                                                    headers = {"Content-Type": "application/json", "User-Agent": get_account_user_agent(uid)}
-                                                    ok_w, res_w = await execute_stones_withdrawal_with_captcha(
-                                                        session=sw_sess,
-                                                        base_url="https://app.stoneswithestand.my.id",
-                                                        headers=headers,
-                                                        init_data=init_data,
-                                                        amount=500,
-                                                        wallet=target_wallet
-                                                    )
-                                                    if ok_w:
-                                                        await send_report_message(f"🎉 *Stones Sweep:* `{name}` withdrew 500 STONES to Arbitrum `{target_wallet}`! Result: {res_w}", chat_id=REPORT_CHAT_ID)
-                                            except Exception as swe:
-                                                logger.debug(f"[Stones Sweep] Error for {name}: {swe}")
-
-                            async def _run_ailab_sweep():
-                                logger.info("[MiniApp Listener] 🧪 AI Lab Auto-Withdrawal Sweep triggered...")
-                                accounts = load_accounts()
-                                target_wallet = EVM_VAULT_ADDRESS
-                                for acc in accounts:
-                                    uid = str(acc.get("user_id"))
-                                    name = acc.get("name", "User")
-                                    is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
-                                    if is_pri:
-                                        logger.info(f"[AI Lab Sweep] Skipping main account {name} ({uid}) per user directive.")
-                                        continue
-                                    # Directly route to Binance Web3 Master (EVM_VAULT_ADDRESS) so zero gas is lost in worker wallets
-                                    worker_evm = target_wallet
-                                    init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("ailab_init_data")
-                                    if init_data:
-                                        try:
-                                            base_url = "https://api.ailab-agent.online/api/v1"
-                                            async with aiohttp.ClientSession() as ai_sess:
-                                                ai_headers = {"Content-Type": "application/json", "User-Agent": get_account_user_agent(uid)}
-                                                # Step 1: Login to get bearer token
-                                                async with ai_sess.post(f"{base_url}/users/auth/login", json={"user": init_data}, headers=ai_headers, timeout=aiohttp.ClientTimeout(total=8)) as lr:
-                                                    if lr.status != 200:
-                                                        continue
-                                                    ld = await lr.json()
-                                                    tok = ld.get("result", {}).get("bearer") or ld.get("user_info", {}).get("session_id")
-                                                    if not tok:
-                                                        continue
-                                                auth_h = {**ai_headers, "Authorization": f"Bearer {tok}"}
-                                                # Step 2: Check balance
-                                                async with ai_sess.get(f"{base_url}/cashout", headers=auth_h, timeout=aiohttp.ClientTimeout(total=8)) as cr:
-                                                    if cr.status == 200:
-                                                        cdata = await cr.json()
-                                                        ubal = float(cdata.get("user_info", {}).get("balance", 0) or 0)
-                                                        if ubal >= 0.02:
-                                                            wd_usd = round(int(ubal * 100) / 100.0, 2)
-                                                            pay_payload = {
-                                                                "ps_id": 5,  # USDT (BEP20)
-                                                                "amount_usd": wd_usd,
-                                                                "wallet": worker_evm,
-                                                                "dest_tag": ""
-                                                            }
-                                                            async with ai_sess.post(f"{base_url}/cashout-pay", json=pay_payload, headers=auth_h, timeout=aiohttp.ClientTimeout(total=10)) as wr:
-                                                                wres = await wr.json()
-                                                                if wres.get("request_info", {}).get("error_code") == 0 or wres.get("result"):
-                                                                    await send_report_message(f"🎉 *AI Lab Sweep:* `{name}` withdrew `${wd_usd} USD` to BEP-20 `{worker_evm}`!", chat_id=REPORT_CHAT_ID)
-                                        except Exception as aie:
-                                            logger.debug(f"[AI Lab Sweep] Error for {name}: {aie}")
-
-                            async def _run_ainovum_sweep():
-                                logger.info("[MiniApp Listener] 🤖 Ainovum 0.10 USDT Auto-Withdrawal Sweep triggered...")
-                                accounts = load_accounts()
-                                fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
-                                isolated_map = {}
-                                if os.path.exists(fleet_evm_file):
-                                    try:
-                                        with open(fleet_evm_file, "r", encoding="utf-8") as fef:
-                                            isolated_map = json.load(fef)
-                                    except Exception:
-                                        pass
-                                base_url = "https://ainovum.biz"
-                                async with aiohttp.ClientSession() as an_sess:
-                                    for acc in accounts:
-                                        uid = str(acc.get("user_id"))
-                                        name = acc.get("name", "User")
-                                        is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
-                                        init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("ainovum_init_data")
-                                        if not init_data:
-                                            continue
-                                        proxy = acc.get("proxy")
-                                        acc_ua = get_account_user_agent(uid)
-                                        an_h = {"Content-Type": "application/json", "User-Agent": acc_ua}
-                                        try:
-                                            boot_resp = await an_sess.post(f"{base_url}/api/bootstrap", json={"initData": init_data, "platform": "android", "referrer": AINOVUM_REFERRAL_CODE, "timezone_offset_minutes": 0, "language_code": "en", "registration_duration_ms": 1500}, headers=an_h, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy)
-                                            if boot_resp.status != 200:
-                                                continue
-                                            raw_cookies = boot_resp.headers.getall("Set-Cookie", [])
-                                            cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
-                                            auth_an_h = {**an_h, "Cookie": cookie_hdr}
-                                            async with an_sess.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_an_h, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cfg_r:
-                                                if cfg_r.status == 200:
-                                                    cfg_d = await cfg_r.json()
-                                                    avail = float(cfg_d.get("freeze", {}).get("available", 0) or 0)
-                                                    if avail >= 0.10:
-                                                        target_addr = EVM_VAULT_ADDRESS if is_pri else isolated_map.get(uid, {}).get("address", EVM_VAULT_ADDRESS)
-                                                        wd_amt = round(avail, 4)
-                                                        async with an_sess.post(f"{base_url}/api/withdraws/usdt/create", json={"amount": wd_amt, "wallet": target_addr, "network": "bep20"}, headers=auth_an_h, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as wdr:
-                                                            wd_res = await wdr.json()
-                                                            if wdr.status == 200 and not wd_res.get("access_denied") and not wd_res.get("error"):
-                                                                await send_report_message(f"🎉 *Ainovum Sweep:* `{name}` withdrew `{wd_amt} USDT` to `{target_addr}`! Result: {wd_res}", chat_id=REPORT_CHAT_ID)
-                                        except Exception as ane:
-                                            logger.debug(f"[Ainovum Sweep] Error for {name}: {ane}")
-
                             if act in ("withdraw", "sweep"):
-                                async def _run_sweep():
-                                    logger.info("[MiniApp Listener] Dispatched universal fleet sweep (AI Lab + Stones + Ainovum + On-Chain)...")
-                                    await _run_stones_sweep()
-                                    await _run_ailab_sweep()
-                                    await _run_ainovum_sweep()
-                                    try:
-                                        from cloud_wallet_sweeper import run_full_sweep_audit
-                                        await run_full_sweep_audit(notify_if_empty=True)
-                                    except Exception as cse:
-                                        logger.debug(f"[Sweep] On-chain audit note: {cse}")
-                                asyncio.create_task(_run_sweep())
+                                safe_create_task(execute_universal_fleet_sweep(caller_chat_id=REPORT_CHAT_ID), name="universal_sweep")
                             elif act == "sweep_stones":
-                                asyncio.create_task(_run_stones_sweep())
+                                safe_create_task(execute_stones_fleet_sweep(caller_chat_id=REPORT_CHAT_ID), name="stones_sweep")
                             elif act == "sweep_ailab":
-                                asyncio.create_task(_run_ailab_sweep())
+                                safe_create_task(execute_ailab_fleet_sweep(caller_chat_id=REPORT_CHAT_ID), name="ailab_sweep")
                             elif act == "sweep_ainovum":
-                                asyncio.create_task(_run_ainovum_sweep())
+                                safe_create_task(execute_ainovum_fleet_sweep(caller_chat_id=REPORT_CHAT_ID), name="ainovum_sweep")
                             elif act == "verify":
                                 async def _run_verify():
                                     accounts = load_accounts()
@@ -7922,11 +7983,11 @@ async def miniapp_command_listener_loop():
                                         uid = acc.get("user_id")
                                         name = acc.get("name") or "Member"
                                         await complete_withdrawal_verification_steps(uid, name, acc_data=acc)
-                                asyncio.create_task(_run_verify())
+                                safe_create_task(_run_verify(), name="verify_task")
                             elif act == "backup":
-                                asyncio.create_task(send_backup_to_telegram())
+                                safe_create_task(send_backup_to_telegram(), name="backup_task")
                             elif act == "briefing":
-                                asyncio.create_task(generate_daily_executive_briefing(notify=True))
+                                safe_create_task(generate_daily_executive_briefing(notify=True), name="briefing_task")
                             elif act == "consolidate":
                                 async def _run_consolidate():
                                     w1 = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
@@ -7942,23 +8003,20 @@ async def miniapp_command_listener_loop():
                                         f"🎯 Minimum consolidation threshold: `0.005 BNB`"
                                     )
                                     await send_report_message(msg, reply_markup=MAIN_TAB_KEYBOARD, chat_id=REPORT_CHAT_ID)
-                                asyncio.create_task(_run_consolidate())
+                                safe_create_task(_run_consolidate(), name="consolidate_task")
                             elif act == "sync":
                                 async def _run_sync():
                                     logger.info("[MiniApp Listener] Manual fleet sync requested...")
                                     wake_worker_event.set()
                                     await send_report_message("🔄 *Manual Fleet Sync Dispatched!* Cycle triggered across all 13 accounts.", reply_markup=MAIN_TAB_KEYBOARD, chat_id=REPORT_CHAT_ID)
-                                asyncio.create_task(_run_sync())
+                                safe_create_task(_run_sync(), name="sync_task")
                             elif act == "harvest":
-                                async def _run_harvest():
-                                    logger.info("[MiniApp Listener] ⚡ Instant Fleet Harvest triggered by Mini App / AI...")
-                                    wake_worker_event.set()
-                                    await send_report_message("⚡ *Instant Fleet Harvest Dispatched!* All bots triggered across all accounts.", reply_markup=MAIN_TAB_KEYBOARD, chat_id=REPORT_CHAT_ID)
+                                safe_create_task(execute_fleet_harvest(caller_chat_id=REPORT_CHAT_ID), name="fleet_harvest")
                             elif act == "sweep_atf":
                                 async def _run_atf_sweep():
                                     logger.info("[MiniApp Listener] 🪙 ATF is set to Farming & Accumulation Mode (Withdrawals disabled per policy).")
                                     await send_report_message("🪙 *ATF Miner:* Farming & Accumulation Mode is active. Tokens are being continuously mined without withdrawals.", chat_id=REPORT_CHAT_ID)
-                                asyncio.create_task(_run_atf_sweep())
+                                safe_create_task(_run_atf_sweep(), name="atf_sweep_task")
                             elif act == "remove_account":
                                 rem_uid = str(act_obj.get("user_id") or "")
                                 rem_phone = str(act_obj.get("phone") or "")
