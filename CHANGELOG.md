@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added & Improved
+- **Dedicated `/acc <1-13>` Individual Account Inspector Across Cloudflare & Userbot (`userbot_refresher.py`, `deploy_both_cf_workers.py`)**:
+  - Added dedicated `/acc <1-13>` command inspection on both Cloudflare Edge Workers and Userbot refresher, allowing instant detailed cards showing verified phone number, role, daemon status, mining policies, and active bots for any specific fleet member.
+  - Formatted clean account names (`Nadim`, `Kaitlyn`, etc.) and integrated `KNOWN_PHONES_BY_INDEX` fallback.
 - **Resolution of False Revocation Alerts & Hardened Session Auditor (`userbot_refresher.py`, `accounts.json`)**:
   - **Eliminated False Revocation Triggers**: Fixed a bug where a single transient network timeout (`Connection to Telegram failed 1 time(s)`) caused `audit_account_session` to falsely flag healthy accounts (#7 and #8) as revoked.
   - **Proxy-Aware MTProto Auditor**: Integrated SOCKS/HTTP proxy parsing in `audit_account_session` with 3 retries (15s timeout) and automatic direct failover.

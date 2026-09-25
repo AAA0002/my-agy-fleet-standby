@@ -3335,8 +3335,8 @@ async def handle_single_update(update: dict):
                 accounts = load_accounts()
                 if 1 <= target_idx <= len(accounts):
                     acc = accounts[target_idx - 1]
-                    name = acc.get("name", f"Account #{target_idx}")
-                    phone = acc.get("phone", "N/A")
+                    name = format_clean_account_name(acc, target_idx)
+                    phone = acc.get("phone") or KNOWN_PHONES.get(str(acc.get("user_id")), "") or KNOWN_PHONES_BY_INDEX.get(target_idx, "N/A")
                     uid = acc.get("user_id")
                     proxy = acc.get("proxy") or "Direct VPS IP"
                     status = acc.get("status", "active")

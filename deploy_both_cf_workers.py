@@ -2495,6 +2495,30 @@ fi
               13: "+8801838268380"
             };
 
+            const accParts = text.trim().split(/\s+/);
+            if (accParts.length >= 2 && /^\d+$/.test(accParts[1])) {
+              const targetIdx = parseInt(accParts[1], 10);
+              if (targetIdx >= 1 && targetIdx <= accounts.length) {
+                const a = accounts[targetIdx - 1];
+                const isHost = String(a.user_id) === "6727787768";
+                const ph = (a.phone && a.phone !== "N/A" && a.phone !== "Hidden") ? a.phone : (KNOWN_PHONES[String(a.user_id)] || KNOWN_PHONES_BY_INDEX[targetIdx] || "N/A");
+                const cName = cleanName(a, targetIdx - 1);
+                const detailRep = `📱 *Account #${targetIdx} Inspection*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `• *Name:* ${cName}\n` +
+                  `• *Phone:* \`${ph}\`\n` +
+                  `• *User ID:* \`${a.user_id || "N/A"}\`\n` +
+                  `• *Role:* ${isHost ? "Master Host 👑" : "Worker Account 🟢"}\n` +
+                  `• *Daemon Status:* 🟢 Active & Mining\n` +
+                  `• *Stones Policy:* ${isHost ? "Compound / Hash Growth (Main ID)" : "Auto-Withdraw >= 500 STONES (Arbitrum)"}\n` +
+                  `• *AI Lab Policy:* ${isHost ? "Compound / Reinvest (Main ID)" : "Auto-Withdraw >= $0.02 (BEP-20)"}\n` +
+                  `• *Active Lineup:* 8 Mining Bots Active 24/7\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `💡 _Send \`/acc <1-13>\` to inspect any account or \`/accounts\` for full fleet roster._`;
+                await sendReply(detailRep, accountsInlineKeyboard);
+                return;
+              }
+            }
 
             const lines = accounts.slice(0, 13).map((a, i) => {
               const isHost = String(a.user_id) === "6727787768";
