@@ -392,7 +392,7 @@ async def run_full_sweep_audit(notify_if_empty: bool = False, execute_sweep: boo
         if swept_txs:
             lines = []
             for s in swept_txs:
-                lines.append(f"• **{s['name']} ({s['chain']}):** Swept `{s['amount']:.4f} {s['coin']}` $\\to$ [View Tx]({s['url']})")
+                lines.append(f"• **{s['name']} ({s['chain']}):** Swept `{s['amount']:.4f} {s['coin']}` → [View Tx]({s['url']})")
             receipt_msg = (
                 f"🎉 *MY AGY AI — Automated On-Chain Vault Sweep Complete!*\n\n"
                 + "\n".join(lines) +

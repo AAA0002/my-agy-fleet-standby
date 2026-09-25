@@ -7855,6 +7855,7 @@ async def execute_stones_fleet_sweep(caller_chat_id=None):
             if init_data:
                 try:
                     from stones_captcha_solver import execute_stones_withdrawal_with_captcha
+                    proxy = acc.get("proxy")
                     async with aiohttp.ClientSession() as sw_sess:
                         headers = {"Content-Type": "application/json", "User-Agent": get_account_user_agent(uid)}
                         ok_w, res_w = await execute_stones_withdrawal_with_captcha(
@@ -7863,7 +7864,8 @@ async def execute_stones_fleet_sweep(caller_chat_id=None):
                             headers=headers,
                             init_data=init_data,
                             amount=500,
-                            wallet=target_wallet
+                            wallet=target_wallet,
+                            proxy=proxy
                         )
                         if ok_w:
                             swept_count += 1
@@ -7896,12 +7898,13 @@ async def execute_ailab_fleet_sweep(caller_chat_id=None):
             continue
         worker_evm = isolated_map.get(uid, {}).get("address") or EVM_VAULT_ADDRESS
         init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("ailab_init_data")
+        proxy = acc.get("proxy")
         if init_data:
             try:
                 base_url = "https://api.ailab-agent.online/api/v1"
                 async with aiohttp.ClientSession() as ai_sess:
                     ai_headers = {"Content-Type": "application/json", "User-Agent": get_account_user_agent(uid)}
-                    async with ai_sess.post(f"{base_url}/users/auth/login", json={"user": init_data}, headers=ai_headers, timeout=aiohttp.ClientTimeout(total=8)) as lr:
+                    async with ai_sess.post(f"{base_url}/users/auth/login", json={"user": init_data}, headers=ai_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as lr:
                         if lr.status != 200:
                             continue
                         ld = await lr.json()
@@ -7909,7 +7912,7 @@ async def execute_ailab_fleet_sweep(caller_chat_id=None):
                         if not tok:
                             continue
                     auth_h = {**ai_headers, "Authorization": f"Bearer {tok}"}
-                    async with ai_sess.get(f"{base_url}/cashout", headers=auth_h, timeout=aiohttp.ClientTimeout(total=8)) as cr:
+                    async with ai_sess.get(f"{base_url}/cashout", headers=auth_h, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cr:
                         if cr.status == 200:
                             cdata = await cr.json()
                             ubal = float(cdata.get("user_info", {}).get("balance", 0) or 0)
@@ -7921,7 +7924,7 @@ async def execute_ailab_fleet_sweep(caller_chat_id=None):
                                     "wallet": worker_evm,
                                     "dest_tag": ""
                                 }
-                                async with ai_sess.post(f"{base_url}/cashout-pay", json=pay_payload, headers=auth_h, timeout=aiohttp.ClientTimeout(total=10)) as wr:
+                                async with ai_sess.post(f"{base_url}/cashout-pay", json=pay_payload, headers=auth_h, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as wr:
                                     wres = await wr.json()
                                     if wres.get("request_info", {}).get("error_code") == 0 or wres.get("result"):
                                         swept_count += 1
