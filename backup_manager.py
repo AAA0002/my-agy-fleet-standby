@@ -166,15 +166,16 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
             try:
                 with open(zip_path, "rb") as zf:
                     z_bytes = zf.read()
-                async def upload_cf(ep):
+                cf_synced = False
+                for ep in cf_endpoints:
                     try:
-                        async with session.post(ep, headers=cf_headers, data=z_bytes, timeout=aiohttp.ClientTimeout(total=15)) as cf_r:
+                        async with session.post(ep, headers=cf_headers, data=z_bytes, timeout=aiohttp.ClientTimeout(total=20)) as cf_r:
                             if cf_r.status == 200:
-                                logging.info(f"[Cloudflare Edge] Backup synced to {ep}")
+                                logging.info(f"[Cloudflare Edge] Backup synced to {ep} (auto-replicating to mesh)")
+                                cf_synced = True
+                                break
                     except Exception as cfe:
-                        logging.warning(f"[Cloudflare Edge] Error uploading to {ep}: {cfe}")
-
-                await asyncio.gather(*(upload_cf(ep) for ep in cf_endpoints), return_exceptions=True)
+                        logging.debug(f"[Cloudflare Edge] Upload attempt to {ep} failed: {cfe}")
             except Exception:
                 pass
 

@@ -7823,7 +7823,14 @@ async def execute_stones_fleet_sweep(caller_chat_id=None):
     target_chat = caller_chat_id or REPORT_CHAT_ID
     logger.info("[Stones Sweep] 💎 Stones 500-Withdrawal Sweep triggered...")
     accounts = load_accounts()
-    target_wallet = ARBITRUM_WALLET  # 0xfda4182001672b9f0f09e2118242e543e35ed5ce
+    fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
+    isolated_map = {}
+    if os.path.exists(fleet_evm_file):
+        try:
+            with open(fleet_evm_file, "r", encoding="utf-8") as fef:
+                isolated_map = json.load(fef)
+        except Exception:
+            pass
     swept_count = 0
     for acc in accounts:
         uid = str(acc.get("user_id"))
@@ -7832,8 +7839,9 @@ async def execute_stones_fleet_sweep(caller_chat_id=None):
         if is_pri:
             continue
         coins = float(acc.get("stones_coins", 0) or 0)
+        target_wallet = isolated_map.get(uid, {}).get("address") or ARBITRUM_WALLET
         if coins >= 500:
-            logger.info(f"[Stones Sweep] {name} ({uid}) eligible ({coins} STONES). Submitting 500 withdrawal...")
+            logger.info(f"[Stones Sweep] {name} ({uid}) eligible ({coins} STONES). Submitting 500 withdrawal to {target_wallet}...")
             init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("stones_init_data")
             if init_data:
                 try:
@@ -7862,7 +7870,14 @@ async def execute_ailab_fleet_sweep(caller_chat_id=None):
     target_chat = caller_chat_id or REPORT_CHAT_ID
     logger.info("[AI Lab Sweep] 🧪 AI Lab Auto-Withdrawal Sweep triggered...")
     accounts = load_accounts()
-    target_wallet = EVM_VAULT_ADDRESS
+    fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
+    isolated_map = {}
+    if os.path.exists(fleet_evm_file):
+        try:
+            with open(fleet_evm_file, "r", encoding="utf-8") as fef:
+                isolated_map = json.load(fef)
+        except Exception:
+            pass
     swept_count = 0
     for acc in accounts:
         uid = str(acc.get("user_id"))
@@ -7870,7 +7885,7 @@ async def execute_ailab_fleet_sweep(caller_chat_id=None):
         is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
         if is_pri:
             continue
-        worker_evm = target_wallet
+        worker_evm = isolated_map.get(uid, {}).get("address") or EVM_VAULT_ADDRESS
         init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("ailab_init_data")
         if init_data:
             try:

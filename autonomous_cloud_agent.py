@@ -6,7 +6,7 @@ ARI AUTONOMOUS AI AGENT (100% Free Multi-Model Council)
 =============================================================================
 Hostable on: Render.com (Cloud Background Worker) & Cloudflare Edge
 Cognitive Engine:
-  - Primary Proposer: Google Gemini 2.5 Flash / Flash Latest (14-Key Rotating Pool)
+  - Primary Proposer: Google Gemini 3.6 Flash / 3.5 Flash Lite (14-Key Rotating Pool)
   - Safety Judge & Verifier: Cloudflare Workers AI (Llama 3.2 3B Instruct) across 3 Edge Nodes
 Core Features:
   - Anti-Stupid Dual-Verification Layer (Plan -> Critique -> Approve)
