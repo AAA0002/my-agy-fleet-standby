@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - **Callback & Command Handling Restored**: Added `btn_accounts` callback handler to Cloudflare Edge webhook to return the full 13-account active roster and status. Added `"👥 Accounts Management"` to text-command matching in both local and Cloudflare engines.
   - **WebApp Daylight FinTech Connect Modal Restored**: Re-implemented the Connect Account Modal in `public/index.html` with phone input, Bangladesh local/international E.164 auto-detection, and edge submission. Added prominent `➕ Add Account` action buttons in the Treasury Card and the Accounts Management roster header.
   - **Cache Busted to v4.7**: Bumped cache-buster across Telegram menu button, Cloudflare 302 redirects, and Vercel CDN deployments, guaranteeing fresh delivery on mobile devices.
+  - **Telegram Bot Message Modernization & Clutter Eradication**: Eradicated the robotic, repetitive wall of text (`— 10/10 Tasks • 5/5 Anti-Bot ✅` repeated 13 times with raw Telegram user IDs and Russian transliteration artifacts). Replaced with a clean, modern `Accounts Management Hub` summary displaying fleet health, active bots, clean names, and intuitive action guides. Deployed across all 3 Cloudflare Edge nodes and local supervisor.
 
 ### Added
 - **Complete Multi-Cloud Infrastructure & Full Fleet Control (5 Cloudflare Accounts + Dual Relayers)**:
