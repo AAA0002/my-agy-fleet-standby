@@ -709,7 +709,7 @@ fi
 
     // 7.5 High-Speed Vercel Global Edge Dashboard (Vercel CDN)
     if (path === "/" || path === "/dashboard" || path === "/status-ui" || path === "/miniapp" || path === "/app") {
-      return Response.redirect("https://agy-aaa000.vercel.app/?v=4.0", 302);
+      return Response.redirect("https://agy-aaa000.vercel.app/?v=4.5", 302);
     }
 
     // 8. Payout Receipts Record (VPS -> Edge with In-Memory + Safe KV)
@@ -1432,7 +1432,7 @@ fi
         if (!update) return new Response("OK");
 
         const botToken = env.ALERT_BOT_TOKEN;
-        const dashUrl = "https://agy-aaa000.vercel.app/?v=4.0";
+        const dashUrl = "https://agy-aaa000.vercel.app/?v=4.5";
 
         const statusInlineKeyboard = {
           inline_keyboard: [
