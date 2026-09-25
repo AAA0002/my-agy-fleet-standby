@@ -1493,7 +1493,9 @@ def build_accounts_report():
         c_name = format_clean_account_name(acc, idx)
         is_host = acc.get("is_referral_host") or str(acc.get("user_id")) == str(REPORT_CHAT_ID)
         tag = "Master Host 👑" if is_host else "🟢 Active"
-        lines.append(f"• #{idx} **{c_name}** — {tag}")
+        phone = acc.get("phone") or ""
+        phone_str = f" (`{phone}`)" if phone and phone != "Hidden" else ""
+        lines.append(f"• #{idx} **{c_name}**{phone_str} — {tag}")
 
     lines.append("━━━━━━━━━━━━━━━━━━━━━━")
     lines.append("💡 **Quick Actions:**")
@@ -3602,7 +3604,7 @@ async def cloudflare_edge_bridge_loop():
                                 {
                                     "index": idx + 1,
                                     "user_id": a.get("user_id"),
-                                    "name": a.get("name", f"Account #{idx+1}"),
+                                    "name": format_clean_account_name(a, idx + 1),
                                     "phone": a.get("phone", "N/A"),
                                     "status": a.get("status", "active"),
                                     "cycle_done": bool(a.get("last_fleet_cycle_at")),

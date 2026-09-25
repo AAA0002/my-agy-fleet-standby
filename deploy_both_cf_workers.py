@@ -1513,19 +1513,19 @@ fi
               } catch (_) {}
               if (accounts.length === 0) {
                 accounts = [
-                  { index: 1, name: "Arif Hossain", user_id: 6727787768 },
-                  { index: 2, name: "Nancy", user_id: 8881914294 },
-                  { index: 3, name: "Koram Shah", user_id: 7648254021 },
-                  { index: 4, name: "Arif", user_id: 8826375659 },
-                  { index: 5, name: "Nadim", user_id: 8450010161 },
-                  { index: 6, name: "Kaitlyn", user_id: 8782429452 },
-                  { index: 7, name: "Abid Hasan", user_id: 7734849205 },
-                  { index: 8, name: "Abid Hasan (2)", user_id: 8025472383 },
-                  { index: 9, name: "Node 9", user_id: 8851426148 },
-                  { index: 10, name: "Node 10", user_id: 8203342513 },
-                  { index: 11, name: "MD. Arif Hossain", user_id: 8190649727 },
-                  { index: 12, name: "Sanzida Shimu", user_id: 7487048946 },
-                  { index: 13, name: "Abid (3)", user_id: 8741547543 }
+                  { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
+                  { index: 2, name: "Nancy", user_id: 8881914294, phone: "+8801943805617" },
+                  { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
+                  { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
+                  { index: 5, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
+                  { index: 6, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837" },
+                  { index: 7, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423" },
+                  { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
+                  { index: 9, name: "Node 9", user_id: 8851426148, phone: "+8801727651288" },
+                  { index: 10, name: "Node 10", user_id: 8203342513, phone: "+8801729892810" },
+                  { index: 11, name: "MD. Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
+                  { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
+                  { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" }
                 ];
               }
 
@@ -1541,7 +1541,8 @@ fi
               const lines = accounts.slice(0, 13).map((a, i) => {
                 const isHost = String(a.user_id) === "6727787768";
                 const tag = isHost ? "Master Host 👑" : "🟢 Active";
-                return `• #${a.index || (i+1)} **${cleanName(a, i)}** — ${tag}`;
+                const phoneStr = a.phone ? ` (\`${a.phone}\`)` : "";
+                return `• #${a.index || (i+1)} **${cleanName(a, i)}**${phoneStr} — ${tag}`;
               }).join("\n");
 
               const rep = `👥 *Accounts Management Hub*\n` +
@@ -2333,19 +2334,19 @@ fi
             } catch (_) {}
             if (accounts.length === 0) {
               accounts = [
-                { index: 1, name: "Arif Hossain", user_id: 6727787768 },
-                { index: 2, name: "Nancy", user_id: 8881914294 },
-                { index: 3, name: "Koram Shah", user_id: 7648254021 },
-                { index: 4, name: "Arif", user_id: 8826375659 },
-                { index: 5, name: "Nadim", user_id: 8450010161 },
-                { index: 6, name: "Kaitlyn", user_id: 8782429452 },
-                { index: 7, name: "Abid Hasan", user_id: 7734849205 },
-                { index: 8, name: "Abid Hasan (2)", user_id: 8025472383 },
-                { index: 9, name: "Node 9", user_id: 8851426148 },
-                { index: 10, name: "Node 10", user_id: 8203342513 },
-                { index: 11, name: "MD. Arif Hossain", user_id: 8190649727 },
-                { index: 12, name: "Sanzida Shimu", user_id: 7487048946 },
-                { index: 13, name: "Abid (3)", user_id: 8741547543 }
+                { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
+                { index: 2, name: "Nancy", user_id: 8881914294, phone: "+8801943805617" },
+                { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
+                { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
+                { index: 5, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
+                { index: 6, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837" },
+                { index: 7, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423" },
+                { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
+                { index: 9, name: "Node 9", user_id: 8851426148, phone: "+8801727651288" },
+                { index: 10, name: "Node 10", user_id: 8203342513, phone: "+8801729892810" },
+                { index: 11, name: "MD. Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
+                { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
+                { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" }
               ];
             }
 
@@ -2361,7 +2362,8 @@ fi
             const lines = accounts.slice(0, 13).map((a, i) => {
               const isHost = String(a.user_id) === "6727787768";
               const tag = isHost ? "Master Host 👑" : "🟢 Active";
-              return `• #${a.index || (i+1)} **${cleanName(a, i)}** — ${tag}`;
+              const phoneStr = a.phone ? ` (\`${a.phone}\`)` : "";
+              return `• #${a.index || (i+1)} **${cleanName(a, i)}**${phoneStr} — ${tag}`;
             }).join("\n");
 
             const rep = `👥 *Accounts Management Hub*\n` +
