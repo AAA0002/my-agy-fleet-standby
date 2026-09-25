@@ -245,9 +245,9 @@ if not GEMINI_API_KEYS:
 
 async def query_gemini_ai(prompt: str) -> Optional[Tuple[str, str]]:
     """Queries Google Gemini API with 14-key rotation pool and intelligent fallback.
-    Primary: gemini-3.8-flash -> Fallback: gemini-3.6-flash
+    Primary: gemini-flash-lite-latest -> Fallback: gemini-3.5-flash-lite / gemini-flash-latest
     """
-    models = ["gemini-3.8-flash", "gemini-3.6-flash"]
+    models = ["gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-flash-latest"]
     payload = {
         "contents": [{"parts": [{"text": prompt}]}]
     }
@@ -5671,9 +5671,9 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                             acc["stones_next_wd_at"] = now_ts + 190  # 3 minutes + 10s margin
                             await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 190})
                         elif any(k in details_str for k in ["ad", "proof", "watch", "video", "sponsor"]):
-                            acc["stones_next_wd_at"] = now_ts + 43200  # 12 hours cooldown for adsgram proof
-                            await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 43200})
-                            logger.info(f"[{acc_name}] 💎 [Stones] Withdrawal requires AdsGram visual ad proof ('{wd_res}'). Setting 12h cooldown.")
+                            acc["stones_next_wd_at"] = now_ts + 1800  # 30 minutes retry cooldown for adsgram proof
+                            await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 1800})
+                            logger.info(f"[{acc_name}] 💎 [Stones] Withdrawal requires AdsGram proof ('{wd_res}'). Setting 30m retry cooldown.")
                         elif any(k in details_str for k in ["1033", "530", "tunnel", "dns", "cloudflare", "connect"]):
                             acc["stones_next_wd_at"] = now_ts + 3600  # 1 hour cooldown for origin tunnel
                             await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 3600})
@@ -8008,7 +8008,7 @@ async def execute_universal_fleet_sweep(caller_chat_id=None):
     await execute_ainovum_fleet_sweep(caller_chat_id=target_chat)
     try:
         from cloud_wallet_sweeper import run_full_sweep_audit
-        await run_full_sweep_audit(notify_if_empty=False)
+        await run_full_sweep_audit(notify_if_empty=False, execute_sweep=True)
     except Exception as cse:
         logger.debug(f"[Universal Sweep] On-chain audit note: {cse}")
 

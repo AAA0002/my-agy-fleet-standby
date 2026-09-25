@@ -301,14 +301,31 @@ async def execute_stones_withdrawal_with_captcha(
                         ) as cfr:
                             if cfr.status == 200:
                                 cf_d = await cfr.json()
-                                if cf_d.get("ok"):
-                                    cur_boarded += 1
-                                else:
+                                if not cf_d.get("ok"):
                                     logger.warning(f"[Stones Withdrawal] Ad confirm note: {cf_d.get('info')}")
                                     break
                             else:
                                 break
+                        # Poll proof status
+                        async with session.post(
+                            f"{base_url}/api/wd/ad/proof",
+                            json={"initData": init_data, "challenge_id": cid},
+                            headers=req_headers,
+                            proxy=proxy,
+                            timeout=aiohttp.ClientTimeout(total=8)
+                        ) as pfr:
+                            if pfr.status == 200:
+                                pfd = await pfr.json()
+                                if pfd.get("state") == "ok":
+                                    cur_boarded = pfd.get("boarded", cur_boarded + 1)
+                                else:
+                                    cur_boarded = pfd.get("boarded", cur_boarded)
+                                    break
+                            else:
+                                break
                         await asyncio.sleep(1.0)
+                    if cur_boarded < req_ads:
+                        return False, f"🎬 Watch all {req_ads} ads fully to submit this withdrawal (confirmed: {cur_boarded}/{req_ads})"
     except Exception as ade:
         logger.debug(f"[Stones Withdrawal] Precheck/ad onboarding exception: {ade}")
 

@@ -912,19 +912,21 @@ fi
       ];
       // 1. Google Gemini Flash (Fast parallel attempt with 3-key rotation)
       const shuffledGemini = [...geminiKeys].sort(() => Math.random() - 0.5);
-      const gemCandidates = shuffledGemini.slice(0, 3).map(async gKey => {
-        const gUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${gKey}`;
+      const gemModels = ["gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-flash-latest"];
+      const gemCandidates = shuffledGemini.slice(0, 3).map(async (gKey, idx) => {
+        const mod = gemModels[idx % gemModels.length];
+        const gUrl = `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${gKey}`;
         const gResp = await fetch(gUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-          signal: AbortSignal.timeout(2200)
+          signal: AbortSignal.timeout(2800)
         });
         if (!gResp.ok) throw new Error("Gemini HTTP " + gResp.status);
         const gData = await gResp.json();
         const gText = gData?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!gText) throw new Error("No Gemini text");
-        return { provider: "Google Gemini", model: "gemini-3.8-flash", answer: gText.trim() };
+        return { provider: "Google Gemini", model: mod, answer: gText.trim() };
       });
 
       try {
