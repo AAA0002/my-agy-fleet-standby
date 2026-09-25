@@ -5,6 +5,13 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+### Restored
+- **Restoration of Accounts Management & Add Account Buttons (v4.7 PRO) (`public/index.html`, `userbot_refresher.py`, `deploy_both_cf_workers.py`, `deploy_vercel.py`)**:
+  - **Telegram Bot Keyboards Restored**: Added `[{"text": "👥 Accounts Management"}, {"text": "➕ Add Account"}]` back to `MAIN_TAB_KEYBOARD` (persistent bottom keyboard) and `STATUS_INLINE_KEYBOARD` in both `userbot_refresher.py` and `deploy_both_cf_workers.py`.
+  - **Callback & Command Handling Restored**: Added `btn_accounts` callback handler to Cloudflare Edge webhook to return the full 13-account active roster and status. Added `"👥 Accounts Management"` to text-command matching in both local and Cloudflare engines.
+  - **WebApp Daylight FinTech Connect Modal Restored**: Re-implemented the Connect Account Modal in `public/index.html` with phone input, Bangladesh local/international E.164 auto-detection, and edge submission. Added prominent `➕ Add Account` action buttons in the Treasury Card and the Accounts Management roster header.
+  - **Cache Busted to v4.7**: Bumped cache-buster across Telegram menu button, Cloudflare 302 redirects, and Vercel CDN deployments, guaranteeing fresh delivery on mobile devices.
+
 ### Added
 - **Complete Multi-Cloud Infrastructure & Full Fleet Control (5 Cloudflare Accounts + Dual Relayers)**:
   - **5-Account Cloudflare Mesh Consolidated (`.cloudflare_credentials`, `FLEET_MASTER_REGISTRY.json`, `.env`)**:

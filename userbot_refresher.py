@@ -355,7 +355,11 @@ PRIORITY_ACCOUNT_IDS = set()
 MAIN_TAB_KEYBOARD = {
     "keyboard": [
         [
-            {"text": "🚀 Open WebApp Dashboard", "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.6"}}
+            {"text": "🚀 Open WebApp Dashboard", "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.7"}}
+        ],
+        [
+            {"text": "👥 Accounts Management"},
+            {"text": "➕ Add Account"}
         ],
         [
             {"text": "⚡ Instant Harvest"},
@@ -1503,8 +1507,12 @@ STATUS_INLINE_KEYBOARD = {
         [
             {
                 "text": "🚀 Open Executive Dashboard",
-                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.6"}
+                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.7"}
             }
+        ],
+        [
+            {"text": "👥 Accounts Management", "callback_data": "btn_accounts"},
+            {"text": "➕ Add Account", "callback_data": "btn_add_account"}
         ],
         [
             {"text": "⚡ Instant Harvest", "callback_data": "btn_harvest"},
@@ -1525,7 +1533,7 @@ WALLET_INLINE_KEYBOARD = {
         [
             {
                 "text": "🚀 Open Executive Dashboard",
-                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.6"}
+                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.7"}
             }
         ]
     ]
@@ -1609,7 +1617,7 @@ async def setup_bot_tab_menu():
                     "type": "web_app",
                     "text": "🚀 Mini App",
                     "web_app": {
-                        "url": "https://agy-aaa000.vercel.app/?v=4.6"
+                        "url": "https://agy-aaa000.vercel.app/?v=4.7"
                     }
                 }
             }
@@ -2915,7 +2923,7 @@ async def handle_single_update(update: dict):
             safe_create_task(execute_universal_fleet_sweep(caller_chat_id=chat_id), name="tg_universal_sweep")
 
         elif text in ["/dashboard", "/miniapp", "/app", "🚀 Open Mini App", "🚀 Dashboard", "🚀 Open WebApp Dashboard"]:
-            dash_url = "https://agy-aaa000.vercel.app/?v=4.6"
+            dash_url = "https://agy-aaa000.vercel.app/?v=4.7"
             reply_markup = {
                 "inline_keyboard": [
                     [{"text": "🚀 Open Executive Dashboard", "web_app": {"url": dash_url}}],
@@ -3152,7 +3160,7 @@ async def handle_single_update(update: dict):
                 )
                 await send_report_message(usage, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
 
-        elif text.startswith("/acc") or text.startswith("/account") or text in ["👥 Accounts", "👥 My Accounts", "👥 My Accounts (13)"]:
+        elif text.startswith("/acc") or text.startswith("/account") or text in ["👥 Accounts Management", "👥 Accounts", "👥 My Accounts", "👥 My Accounts (13)"]:
             parts = text.split()
             if len(parts) >= 2 and parts[1].isdigit():
                 target_idx = int(parts[1])
