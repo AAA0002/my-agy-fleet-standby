@@ -167,8 +167,8 @@
     }
   ],
   "github_ecosystem": {
-    "organization": "AAA2743",
-    "repositories": [
+    "admin_organization": "AAA2743",
+    "admin_repositories": [
       {
         "name": "my-agy-ai-fleet",
         "url": "https://github.com/AAA2743/my-agy-ai-fleet",
@@ -187,7 +187,24 @@
         "visibility": "public",
         "role": "Hermes-Grok AI Cloud Agent Service"
       }
-    ]
+    ],
+    "user_platform_github": {
+      "account": "AAA0002",
+      "repositories": [
+        {
+          "name": "ATL",
+          "url": "https://github.com/AAA0002/ATL",
+          "visibility": "private",
+          "role": "ATF Legacy Core & Cloudflare Worker/Pages Source"
+        },
+        {
+          "name": "atf-mtproto-relayer",
+          "url": "https://github.com/AAA0002/atf-mtproto-relayer",
+          "visibility": "public",
+          "role": "Render MTProto Relayer Microservice Source"
+        }
+      ]
+    }
   },
   "active_mining_bots": [
     { "name": "Stones Miners", "bot": "stoneswithestand_bot", "policy": "Master account accumulation only (0 withdrawals); worker accounts 500 STONES auto-withdrawal with CF error 1033 cooldown" },
