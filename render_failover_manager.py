@@ -6,7 +6,8 @@ High Availability Architecture:
   Node 1: coz1gameh1@gmail.com (Singapore) -> https://my-agy-fleet-standby.onrender.com
   Node 2: abidhasanch2001@gmail.com (Frankfurt) -> https://my-agy-fleet-standby-node2.onrender.com
   Node 3: koramshah2@gmail.com (Singapore) -> https://hermes-grok-cloud-agent.onrender.com
-  Relayer Microservice: https://atf-mtproto-relayer-backup.onrender.com (Stateless Telethon Relayer)
+  Relayer Primary: https://atf-mtproto-relayer.onrender.com (Stateless Telethon Relayer)
+  Relayer Backup:  https://atf-mtproto-relayer-backup.onrender.com (Stateless Telethon Relayer Failover)
 
 Strict Rules & Protections:
 1. 100% Free Plan Only (plan: "free", $0 cost forever).
@@ -57,11 +58,18 @@ RENDER_ACCOUNTS = [
     }
 ]
 
-MTPROTO_RELAYER = {
-    "name": "ATF MTProto Relayer Microservice",
-    "url": os.getenv("RENDER_RELAYER_URL", "https://atf-mtproto-relayer-backup.onrender.com"),
-    "secret": os.getenv("RENDER_RELAYER_SECRET", "relayer_sec_1cb45b0967c9fd762d7d7c210afedfe9"),
-}
+RELAYER_SERVICES = [
+    {
+        "name": "ATF MTProto Relayer (Primary)",
+        "url": os.getenv("RENDER_RELAYER_PRIMARY_URL", "https://atf-mtproto-relayer.onrender.com"),
+        "secret": os.getenv("RENDER_RELAYER_SECRET", "relayer_sec_1cb45b0967c9fd762d7d7c210afedfe9"),
+    },
+    {
+        "name": "ATF MTProto Relayer (Backup Failover)",
+        "url": os.getenv("RENDER_RELAYER_BACKUP_URL", "https://atf-mtproto-relayer-backup.onrender.com"),
+        "secret": os.getenv("RENDER_RELAYER_SECRET", "relayer_sec_1cb45b0967c9fd762d7d7c210afedfe9"),
+    }
+]
 
 BASE_URL = "https://api.render.com/v1"
 
@@ -103,20 +111,24 @@ async def check_account_health(session: aiohttp.ClientSession, account: dict) ->
 
     return svc_info
 
-async def check_relayer_health(session: aiohttp.ClientSession) -> dict:
+async def check_relayer_health(session: aiohttp.ClientSession, relayer: dict) -> dict:
     """Verifies MTProto Relayer responsiveness and authentication."""
-    url = MTPROTO_RELAYER["url"]
-    secret = MTPROTO_RELAYER["secret"]
-    info = {"name": MTPROTO_RELAYER["name"], "url": url, "endpoint_alive": False, "authenticated": False}
+    url = relayer["url"]
+    secret = relayer["secret"]
+    info = {"name": relayer["name"], "url": url, "endpoint_alive": False, "authenticated": False}
 
-    try:
-        async with session.get(f"{url}/health", timeout=aiohttp.ClientTimeout(total=10)) as hr:
-            if hr.status == 200:
-                data = await hr.json()
-                info["endpoint_alive"] = True
-                info["relayer_response"] = data
-    except Exception as e:
-        info["error"] = str(e)
+    # Probing /wake endpoint (primary liveness probe for both relayers)
+    for probe_path in ["/wake", "/healthz", "/health", "/"]:
+        try:
+            async with session.get(f"{url}{probe_path}", timeout=aiohttp.ClientTimeout(total=10)) as hr:
+                if hr.status == 200:
+                    data = await hr.json()
+                    info["endpoint_alive"] = True
+                    info["probe_path"] = probe_path
+                    info["relayer_response"] = data
+                    break
+        except Exception as e:
+            info["error"] = str(e)
 
     # Test authenticated endpoint
     try:
@@ -152,7 +164,7 @@ async def trigger_batch_collection(session: aiohttp.ClientSession, secret_key: s
 async def main():
     async with aiohttp.ClientSession() as session:
         print("=" * 70)
-        print("RENDER MULTI-NODE FAILOVER MESH & RELAYER CONTROLLER")
+        print("RENDER MULTI-NODE FAILOVER MESH & DUAL RELAYER CONTROLLER")
         print("=" * 70)
         for acc in RENDER_ACCOUNTS:
             health = await check_account_health(session, acc)
@@ -163,13 +175,16 @@ async def main():
             print(f"  Plan: {health.get('plan', 'free')} ($0/mo)")
             print("-" * 70)
 
-        # Check Relayer
-        relayer_health = await check_relayer_health(session)
-        relayer_symbol = "🟢 ONLINE" if relayer_health.get("endpoint_alive") else "🔴 OFFLINE"
-        auth_symbol = "🟢 AUTHENTICATED" if relayer_health.get("authenticated") else "🔴 AUTH FAILED"
-        print(f"• {relayer_health['name']}: {relayer_symbol} | {auth_symbol}")
-        print(f"  URL: {relayer_health['url']}")
-        print(f"  Auth Mode: X-Relayer-Secret")
+        # Check Dual Relayers
+        print("MTPROTO RELAYER CLUSTER:")
+        for relayer in RELAYER_SERVICES:
+            relayer_health = await check_relayer_health(session, relayer)
+            relayer_symbol = "🟢 ONLINE" if relayer_health.get("endpoint_alive") else "🔴 OFFLINE"
+            auth_symbol = "🟢 AUTHENTICATED" if relayer_health.get("authenticated") else "🔴 AUTH FAILED"
+            print(f"• {relayer_health['name']}: {relayer_symbol} | {auth_symbol}")
+            print(f"  URL: {relayer_health['url']} (Probe: {relayer_health.get('probe_path', 'N/A')})")
+            print(f"  Auth Header: X-Relayer-Secret")
+            print("-" * 70)
         print("=" * 70)
 
 if __name__ == "__main__":

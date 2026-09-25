@@ -111,13 +111,22 @@
       "role": "User Bot D1 Engine & WebApp Edge",
       "subdomain": "agorameet",
       "url": "https://atf-miner-worker.agorameet.workers.dev",
-      "account_email": "Aaafreeai@gmail.com",
+      "account_email": "aaafreeai@gmail.com",
       "account_id": "abbe3cc008ebb9dd029ded333fef6e9f",
       "kv_id": "c712104ed5744835add7e97384da8c82",
       "d1_uuid": "2659c73b-8144-4f2a-9a06-ef2368a1ce7f",
       "r2_bucket": "atf-db-backups",
       "pages_url": "https://atf-miner-app.pages.dev",
-      "cron": "*/15 * * * *"
+      "cron": "HALTED_BY_ADMIN"
+    },
+    {
+      "node": 5,
+      "role": "User Bot Distributed Mining Engine",
+      "subdomain": "aaaai",
+      "url": "https://atf-mining-engine.aaaai.workers.dev",
+      "account_id": "da98cfb7cca333391bb349333f294d0f",
+      "kv_id": "c5eadf91ae4543edab3943789e2d3ccb",
+      "cron": "HALTED_BY_ADMIN"
     }
   ],
   "render_cloud_infrastructure": [
@@ -143,9 +152,16 @@
       "plan": "free"
     },
     {
-      "name": "ATF MTProto Relayer Microservice",
+      "name": "ATF MTProto Relayer (Primary)",
+      "url": "https://atf-mtproto-relayer.onrender.com",
+      "role": "Primary Stateless MTProto Telethon Relayer",
+      "auth_mode": "X-Relayer-Secret",
+      "plan": "free"
+    },
+    {
+      "name": "ATF MTProto Relayer (Backup Failover)",
       "url": "https://atf-mtproto-relayer-backup.onrender.com",
-      "role": "Stateless MTProto Telethon Relayer & WebApp Token Refresh",
+      "role": "Failover Stateless MTProto Telethon Relayer",
       "auth_mode": "X-Relayer-Secret",
       "plan": "free"
     }
