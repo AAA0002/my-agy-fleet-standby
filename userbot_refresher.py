@@ -355,7 +355,7 @@ PRIORITY_ACCOUNT_IDS = set()
 MAIN_TAB_KEYBOARD = {
     "keyboard": [
         [
-            {"text": "🚀 Open WebApp Dashboard", "web_app": {"url": "https://agy-aaa000.vercel.app"}}
+            {"text": "🚀 Open WebApp Dashboard", "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.0"}}
         ],
         [
             {"text": "⚡ Instant Harvest"},
@@ -1503,7 +1503,7 @@ STATUS_INLINE_KEYBOARD = {
         [
             {
                 "text": "🚀 Open Executive Dashboard",
-                "web_app": {"url": "https://agy-aaa000.vercel.app"}
+                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.0"}
             }
         ],
         [
@@ -1525,7 +1525,7 @@ WALLET_INLINE_KEYBOARD = {
         [
             {
                 "text": "🚀 Open Executive Dashboard",
-                "web_app": {"url": "https://agy-aaa000.vercel.app"}
+                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.0"}
             }
         ]
     ]
@@ -1609,7 +1609,7 @@ async def setup_bot_tab_menu():
                     "type": "web_app",
                     "text": "🚀 Mini App",
                     "web_app": {
-                        "url": "https://agy-aaa000.vercel.app"
+                        "url": "https://agy-aaa000.vercel.app/?v=4.0"
                     }
                 }
             }
@@ -2915,7 +2915,7 @@ async def handle_single_update(update: dict):
             safe_create_task(execute_universal_fleet_sweep(caller_chat_id=chat_id), name="tg_universal_sweep")
 
         elif text in ["/dashboard", "/miniapp", "/app", "🚀 Open Mini App", "🚀 Dashboard", "🚀 Open WebApp Dashboard"]:
-            dash_url = "https://agy-aaa000.vercel.app"
+            dash_url = "https://agy-aaa000.vercel.app/?v=4.0"
             reply_markup = {
                 "inline_keyboard": [
                     [{"text": "🚀 Open Executive Dashboard", "web_app": {"url": dash_url}}],

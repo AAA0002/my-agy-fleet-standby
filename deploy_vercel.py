@@ -108,9 +108,9 @@ def deploy():
 
     # Verify primary alias
     test_urls = [
-        "https://agy-aaa000.vercel.app/?v=3.5",
-        "https://my-agy-ai-fleet.vercel.app/?v=3.5",
-        "https://agy-henna.vercel.app/?v=3.5"
+        "https://agy-aaa000.vercel.app/?v=4.0",
+        "https://my-agy-ai-fleet.vercel.app/?v=4.0",
+        "https://agy-henna.vercel.app/?v=4.0"
     ]
     for test_url in test_urls:
         print(f"\nVerifying live alias {test_url}...")
@@ -118,10 +118,10 @@ def deploy():
             req_verify = urllib.request.Request(test_url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req_verify, timeout=10) as resp:
                 body = resp.read().decode('utf-8')
-                if "v3.5 PRO" in body:
-                    print(f"✓ SUCCESS: 'v3.5 PRO' is active on {test_url}!")
+                if "ADMIN CORE v4.0" in body:
+                    print(f"✓ SUCCESS: 'ADMIN CORE v4.0' is active on {test_url}!")
                 else:
-                    print(f"! Warning: 'v3.5 PRO' not found yet on {test_url}.")
+                    print(f"! Warning: 'ADMIN CORE v4.0' not found yet on {test_url}.")
         except Exception as e:
             print(f"Verification error for {test_url}: {e}")
 

@@ -5,6 +5,19 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+### Added
+- **Master Class Admin Command Center v4.0 & Multi-Thing Control Corner (`public/index.html`, `deploy_vercel.py`, `deploy_both_cf_workers.py`, `userbot_refresher.py`)**:
+  - **Ground-Up Master Class Redesign**: Completely rebuilt `public/index.html` to eliminate all visual clutter, pale backgrounds, and duplicate navigation bars, establishing a clean, obsidian dark glassmorphism interface (`#070a13` background, `#0f172a` glass cards, high-contrast borders, neon mint `#10b981` / cyan `#06b6d4` glowing accents) optimized for the Samsung Galaxy A30 and desktop screens.
+  - **Multi-Thing Control Corner (Tab 1: Fleet)**: Designed an executive multi-control corner containing:
+    1. *Multi-Asset Vault Portfolio*: Real-time USD portfolio calculation aggregating BNB, TON, USDT, and STONES with 24h yield delta indicators and Binance Master Vault badge.
+    2. *6-Button Instant Action Matrix*: 1-tap buttons for `⚡ Harvest All`, `💼 Universal Sweep`, `🌅 AI Briefing`, `💾 1-Click Backup`, `🛡️ Anti-Ban Audit`, and `➕ Connect Account`, all wired directly to live Cloudflare Edge mesh endpoints.
+    3. *8-Bot Real-Time Mining Strip*: Interactive horizontal status cards for all 8 active bots (Stones, AI Lab, Ainovum, ART, MRG, UltraWallet, Apex, ATF) featuring live operational chips (`Active`, `Polling`, `Standby`) and 1-tap detail inspection modals.
+    4. *Mesh Telemetry & Sentinel State*: Real-time 3-node Cloudflare Edge latency, heartbeat uptime, and active memory allocation monitoring.
+  - **Single Bottom Navigation Dock**: Replaced redundant double navbars with a single, sleek floating glass bottom bar featuring 5 primary modules: `Fleet`, `Analytics`, `Ledger`, `Ari AI`, and `Mesh`.
+  - **Financial Yield Curve & Ledger**: Integrated a responsive SVG 7-day cumulative yield curve in Analytics, alongside an account inspector drawer and de-duplicated transaction ledger with multi-network filtering.
+  - **Production Multi-Project Edge Deployment**: Deployed v4.0 to Vercel production across both `my-agy-ai-fleet` (`prj_ogrrPM7nncstax8qNgDhmtZ4IgLE`) and `agy` (`prj_BWMgTGbwBc4KEQvyC1uvpL90DxCa`).
+  - **Telegram Mobile Cache-Busting (`?v=4.0`)**: Updated the Telegram Chat Menu Button, inline keyboards, worker 302 redirects, and WebApp trigger endpoints to `https://agy-aaa000.vercel.app/?v=4.0`, ensuring Telegram mobile clients immediately render v4.0 without caching lag.
+
 ### Fixed
 - **System-Wide Bug Hunting & AI Engine Calibration (`stones_captcha_solver.py`, `batch_stones_withdraw.py`, `autonomous_cloud_agent.py`, `userbot_refresher.py`, `execute_ailab_ainovum_withdrawals.py`, `deploy_both_cf_workers.py`)**:
   - **Stones Captcha AI Solver Bottleneck & Timeout Bug Fixed**: In `stones_captcha_solver.py`, `solve_captcha_with_ai` previously enforced a single outer session timeout of 10s across up to 32 attempts (4 models x 8 keys), causing premature `asyncio.TimeoutError` failures. Refactored with randomized key shuffling, per-request 4-second timeouts, and added `gemini-3.6-flash` as primary vision model.
