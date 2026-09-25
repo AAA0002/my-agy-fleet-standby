@@ -1,12 +1,13 @@
 {
-  "_version": "2.0.0",
-  "_updated_at": "2026-09-24T08:58:00Z",
+  "_version": "2.1.0",
+  "_updated_at": "2026-09-25T08:30:00Z",
   "project_directives": {
     "zero_vps_reliance": true,
     "cloud_first_architecture": true,
     "strictly_free_tier": true,
     "atf_miner_policy": "FARMING_AND_ACCUMULATION_ONLY_NO_WITHDRAWALS",
-    "dashboard_theme": "LIGHT_DEFAULT"
+    "dashboard_theme": "LIGHT_DEFAULT",
+    "zero_ads_mandate": true
   },
   "telegram_destinations": {
     "admin_direct_chat": {
@@ -32,6 +33,33 @@
       "purpose": "Community fleet alerts and broadcast announcements"
     }
   },
+  "user_platform_ecosystem": {
+    "bot_identity": {
+      "id": 8167732110,
+      "name": "AAA AUTO MINING",
+      "username": "AAAPREMIUMAPPSbot",
+      "current_webhook": "https://atf-miner-worker.agorameet.workers.dev/"
+    },
+    "community_channels": {
+      "auto_miner_supergroup": {
+        "id": -1003684868577,
+        "name": "AAA Auto Miner",
+        "url": "https://t.me/+8xTmE28Up9U5YWQ1"
+      },
+      "official_announcements": {
+        "id": -1004255751168,
+        "name": "Official Announcements",
+        "username": "@AAAATFAUTOMINING",
+        "url": "https://t.me/AAAATFAUTOMINING"
+      },
+      "live_activity_stream": {
+        "id": -1004332544939,
+        "name": "Live Miner Activity",
+        "username": "@AAAATF_ACTIVITY",
+        "url": "https://t.me/AAAATF_ACTIVITY"
+      }
+    }
+  },
   "vault_wallets": {
     "bep20_bnb_usdt": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
     "arbitrum_one_stones": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
@@ -44,27 +72,107 @@
   "cloud_edge_nodes": [
     {
       "node": 1,
+      "role": "Admin Edge Mesh & Disaster Recovery",
       "subdomain": "aaaai2",
       "url": "https://restore-agy.aaaai2.workers.dev",
       "account_email": "korimhaji210@gmail.com",
+      "account_id": "c9f92ab4a8b26b15f958ac25c22300bc",
+      "kv_id": "315ff9eee275466ba24c01dc2c3f9653",
+      "d1_uuid": "c29cc72d-3813-4aa2-859a-8cdfd929825c",
       "r2_bucket": "agy-fleet-backups",
       "cron": "*/15 * * * *"
     },
     {
       "node": 2,
+      "role": "Admin Edge Mesh & Failover Sentinel",
       "subdomain": "aaa-bot",
       "url": "https://restore-agy.aaa-bot.workers.dev",
       "account_email": "Koramshah2@gmail.com",
+      "account_id": "cf47efdd654cdb07ffe03d1361583f12",
+      "kv_id": "44d6b1accc8c4fc18ee6d500eb9f0b14",
+      "d1_uuid": "9456e01a-77f1-49fa-b22b-d8b930e19bf2",
+      "r2_bucket": "agy-fleet-backups",
       "cron": "*/15 * * * *"
     },
     {
       "node": 3,
+      "role": "Admin Edge Mesh & High-Availability Backup",
       "subdomain": "aaa222",
       "url": "https://restore-agy.aaa222.workers.dev",
       "account_email": "coz1gameh3@gmail.com",
+      "account_id": "e1bfe1206dd7195f89591a9200105f1c",
+      "kv_id": "f5c5b2dc2fc54f4d92bb789f9d70645f",
+      "d1_uuid": "6b0c8fc4-5ead-44fe-88c4-e660a4b95fef",
+      "r2_bucket": "agy-fleet-backups",
+      "cron": "*/15 * * * *"
+    },
+    {
+      "node": 4,
+      "role": "User Bot D1 Engine & WebApp Edge",
+      "subdomain": "agorameet",
+      "url": "https://atf-miner-worker.agorameet.workers.dev",
+      "account_email": "Aaafreeai@gmail.com",
+      "account_id": "abbe3cc008ebb9dd029ded333fef6e9f",
+      "kv_id": "c712104ed5744835add7e97384da8c82",
+      "d1_uuid": "2659c73b-8144-4f2a-9a06-ef2368a1ce7f",
+      "r2_bucket": "atf-db-backups",
+      "pages_url": "https://atf-miner-app.pages.dev",
       "cron": "*/15 * * * *"
     }
   ],
+  "render_cloud_infrastructure": [
+    {
+      "name": "Render Node 1 (Singapore)",
+      "url": "https://my-agy-fleet-standby.onrender.com",
+      "role": "Standby Cloud Token Refresher & Auto-Farming",
+      "region": "singapore",
+      "plan": "free"
+    },
+    {
+      "name": "Render Node 2 (Frankfurt)",
+      "url": "https://my-agy-fleet-standby-node2.onrender.com",
+      "role": "Standby Cloud Token Refresher (Secondary Failover)",
+      "region": "frankfurt",
+      "plan": "free"
+    },
+    {
+      "name": "Render Node 3 (Ari AI Council)",
+      "url": "https://hermes-grok-cloud-agent.onrender.com",
+      "role": "Hermes-Grok Autonomous Cloud Agent",
+      "region": "singapore",
+      "plan": "free"
+    },
+    {
+      "name": "ATF MTProto Relayer Microservice",
+      "url": "https://atf-mtproto-relayer-backup.onrender.com",
+      "role": "Stateless MTProto Telethon Relayer & WebApp Token Refresh",
+      "auth_mode": "X-Relayer-Secret",
+      "plan": "free"
+    }
+  ],
+  "github_ecosystem": {
+    "organization": "AAA2743",
+    "repositories": [
+      {
+        "name": "my-agy-ai-fleet",
+        "url": "https://github.com/AAA2743/my-agy-ai-fleet",
+        "visibility": "private",
+        "role": "Primary Autonomous Fleet & Admin System"
+      },
+      {
+        "name": "my-agy-fleet-standby",
+        "url": "https://github.com/AAA2743/my-agy-fleet-standby",
+        "visibility": "public",
+        "role": "Render Standby Cloud Refresher Engine"
+      },
+      {
+        "name": "hermes-grok-cloud-agent",
+        "url": "https://github.com/AAA2743/hermes-grok-cloud-agent",
+        "visibility": "public",
+        "role": "Hermes-Grok AI Cloud Agent Service"
+      }
+    ]
+  },
   "active_mining_bots": [
     { "name": "Stones Miners", "bot": "stoneswithestand_bot", "policy": "Master account accumulation only (0 withdrawals); worker accounts 500 STONES auto-withdrawal with CF error 1033 cooldown" },
     { "name": "MRG Miner", "bot": "mrgminerbot", "policy": "Mining claims, task reaction claims, hash rate upgrades" },
@@ -75,14 +183,6 @@
     { "name": "ATF Miner", "bot": "ATF_AIRDROP_bot", "policy": "FARMING AND ACCUMULATION ONLY - NO WITHDRAWALS" },
     { "name": "Ainovum", "bot": "ainovum_bot", "policy": "Mining collection, USDT auto-withdrawal >= 0.1 to BEP-20 (isolated worker wallets)" }
   ],
-  "side_project_ai_agent": {
-    "name": "Ari",
-    "host": "Render (Singapore)",
-    "url": "https://hermes-grok-cloud-agent.onrender.com",
-    "primary_llm": "Google Gemini 1.5/2.0 Flash (14 keys rotating)",
-    "fallback_llm": "Groq LPU (3 keys rotating)",
-    "keepalive": "Pings every 10 min via cron-job.org (Job #8484430) and CF Worker cron"
-  },
   "cron_job_org_jobs": [
     { "id": 8484430, "title": "Ari AI Agent Keep-Alive (Render)", "interval": "Every 10 min" },
     { "id": 8472437, "title": "Render Node 1 (Singapore) Keep-Alive", "interval": "Every 10 min" },

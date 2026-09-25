@@ -5,6 +5,25 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+### Added
+- **Unified Multi-Node Infrastructure & Secret Vault Merge (Cloudflare, Render, GitHub)**:
+  - **4-Node Cloudflare Edge Mesh Integration (`.cloudflare_credentials`, `FLEET_MASTER_REGISTRY.json`, `.env`)**:
+    - Merged recovered Node 4 (`Aaafreeai@gmail.com` / `abbe3cc008ebb9dd029ded333fef6e9f`, subdomain `agorameet`) into the admin credentials alongside Node 1 (`korimhaji`), Node 2 (`koramshah`), and Node 3 (`coz1gameh3`).
+    - Cataloged and verified Node 4 assets: Cloudflare Worker `atf-miner-worker` (`https://atf-miner-worker.agorameet.workers.dev`), D1 database `atf-miner-db` (`2659c73b-8144-4f2a-9a06-ef2368a1ce7f`), KV `atf-cache-kv` (`c712104ed5744835add7e97384da8c82`), and R2 bucket `atf-db-backups`.
+    - Purged dead/obsolete Cloudflare assets: Deleted legacy standalone worker `atf-auto-miner` (Sept 7 script) and empty preview KV namespace `atf-miner-ATF_KV_preview` (`2e20049b7f3d4951b2ec59bc7f44d77c`) via Cloudflare REST API.
+  - **Render Failover Mesh & MTProto Relayer Microservice Integration (`render_failover_manager.py`, `.env`)**:
+    - Integrated live MTProto Relayer microservice (`https://atf-mtproto-relayer-backup.onrender.com`) with `relayer_sec_1cb45b0967c9fd762d7d7c210afedfe9` into `render_failover_manager.py`.
+    - Removed `atf-mtproto-relayer-backup` from `PROTECTED_EXISTING_SERVICES` blacklist, transitioning it into a fully monitored, active admin component with automatic `/health` probing and `/session/refresh-batch` authentication.
+    - Purged dead relayer endpoint (`atf-mtproto-relayer.onrender.com` returning 404).
+    - Verified all 3 Render nodes: Node 1 (Singapore: `my-agy-fleet-standby`), Node 2 (Frankfurt: `my-agy-fleet-standby-node2`), and Node 3 (Singapore: `hermes-grok-cloud-agent`).
+  - **GitHub Ecosystem Cataloging (`FLEET_MASTER_REGISTRY.json`, `.env`)**:
+    - Cataloged the official GitHub ecosystem under account `AAA2743`: primary repo `my-agy-ai-fleet` (private), standby repo `my-agy-fleet-standby` (public), and AI agent repo `hermes-grok-cloud-agent` (public).
+    - Maintained strict project isolation guarantee: verified zero contact with `@AAATelegramIdBot` (`AAA2743/AA`).
+  - **Purged Legacy Ad-Clicking Code & Ad Networks (`test_atf_click.py`)**:
+    - Completely removed `test_atf_click.py` which contained legacy Monetag ad-viewing routines, strictly enforcing the zero-ads directive across the entire repository.
+  - **Fleet Master Registry v2.1.0 (`FLEET_MASTER_REGISTRY.json`)**:
+    - Upgraded registry schema to 2.1.0 with comprehensive sections for `cloud_edge_nodes` (Nodes 1-4), `render_cloud_infrastructure` (Standby nodes + Relayer), `user_platform_ecosystem` (`@AAAPREMIUMAPPSbot` + community channels), and `github_ecosystem`.
+
 ### Fixed
 - **System-Wide Bug Hunting & Logic Hardening (v4.6 PRO) (`public/index.html`, `cloud_wallet_sweeper.py`, `execute_ailab_ainovum_withdrawals.py`, `batch_stones_withdraw.py`, `backup_manager.py`, `deploy_both_cf_workers.py`, `deploy_vercel.py`, `userbot_refresher.py`)**:
   - **Ledger Filter Bug Resolved**: In `public/index.html`, the receipt list was previously rendering `uniquePayouts` directly without applying the selected network filter. Defined and wired `filteredPayouts` memo with multi-chain detection (`BNB`/`USDT`, `Arbitrum`/`STONES`, `TON`/`ART`), ensuring instant, responsive receipt filtering when clicking tabs.

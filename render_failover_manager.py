@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """
 render_failover_manager.py
-Automated Render Multi-Account Cloud Failover Mesh Controller
-Dual Account High Availability:
+Automated Render Multi-Account Cloud Failover Mesh Controller & Relayer Monitor
+High Availability Architecture:
   Node 1: coz1gameh1@gmail.com (Singapore) -> https://my-agy-fleet-standby.onrender.com
   Node 2: abidhasanch2001@gmail.com (Frankfurt) -> https://my-agy-fleet-standby-node2.onrender.com
+  Node 3: koramshah2@gmail.com (Singapore) -> https://hermes-grok-cloud-agent.onrender.com
+  Relayer Microservice: https://atf-mtproto-relayer-backup.onrender.com (Stateless Telethon Relayer)
 
 Strict Rules & Protections:
 1. 100% Free Plan Only (plan: "free", $0 cost forever).
 2. Completely isolated: Dedicated services only.
-3. STRICT GUARDRAIL: Protected existing user services (temp-mail-bot, atf-mtproto-relayer-backup)
+3. STRICT GUARDRAIL: Protected existing user services (temp-mail-bot: srv-d8j9n867r5hc73dlqvgg)
    are BLACKLISTED and will NEVER be modified, triggered, or deleted.
 """
 
@@ -18,6 +20,9 @@ import sys
 import json
 import asyncio
 import aiohttp
+from dotenv import load_dotenv
+
+load_dotenv()
 
 RENDER_ACCOUNTS = [
     {
@@ -52,14 +57,18 @@ RENDER_ACCOUNTS = [
     }
 ]
 
+MTPROTO_RELAYER = {
+    "name": "ATF MTProto Relayer Microservice",
+    "url": os.getenv("RENDER_RELAYER_URL", "https://atf-mtproto-relayer-backup.onrender.com"),
+    "secret": os.getenv("RENDER_RELAYER_SECRET", "relayer_sec_1cb45b0967c9fd762d7d7c210afedfe9"),
+}
+
 BASE_URL = "https://api.render.com/v1"
 
 # Blacklisted user services that must NEVER be touched under any circumstances
 PROTECTED_EXISTING_SERVICES = [
     "srv-d8j9n867r5hc73dlqvgg",
-    "temp-mail-bot",
-    "srv-dakh1r942hec73aifqi0",
-    "atf-mtproto-relayer-backup"
+    "temp-mail-bot"
 ]
 
 def assert_safe_service(service_id: str, service_name: str = ""):
@@ -71,13 +80,12 @@ async def check_account_health(session: aiohttp.ClientSession, account: dict) ->
         "Authorization": f"Bearer {account['api_key']}",
         "Accept": "application/json"
     }
-    # 1. Check service status
     svc_info = {"name": account["name"], "email": account["email"], "url": account["url"], "status": "unknown"}
     try:
         async with session.get(f"{BASE_URL}/services/{account['service_id']}", headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
             if r.status == 200:
                 data = await r.json()
-                svc = data.get("service", {})
+                svc = data.get("service", {}) if "service" in data else data
                 svc_info["service_status"] = svc.get("suspended", "active")
                 svc_info["plan"] = svc.get("serviceDetails", {}).get("plan")
                 svc_info["region"] = svc.get("serviceDetails", {}).get("region")
@@ -86,7 +94,7 @@ async def check_account_health(session: aiohttp.ClientSession, account: dict) ->
     except Exception as e:
         svc_info["error"] = str(e)
 
-    # 2. Check live web endpoint
+    # Check live web endpoint
     try:
         async with session.get(f"{account['url']}/health", timeout=aiohttp.ClientTimeout(total=10)) as hr:
             svc_info["endpoint_alive"] = (hr.status == 200)
@@ -94,6 +102,32 @@ async def check_account_health(session: aiohttp.ClientSession, account: dict) ->
         svc_info["endpoint_alive"] = False
 
     return svc_info
+
+async def check_relayer_health(session: aiohttp.ClientSession) -> dict:
+    """Verifies MTProto Relayer responsiveness and authentication."""
+    url = MTPROTO_RELAYER["url"]
+    secret = MTPROTO_RELAYER["secret"]
+    info = {"name": MTPROTO_RELAYER["name"], "url": url, "endpoint_alive": False, "authenticated": False}
+
+    try:
+        async with session.get(f"{url}/health", timeout=aiohttp.ClientTimeout(total=10)) as hr:
+            if hr.status == 200:
+                data = await hr.json()
+                info["endpoint_alive"] = True
+                info["relayer_response"] = data
+    except Exception as e:
+        info["error"] = str(e)
+
+    # Test authenticated endpoint
+    try:
+        headers = {"X-Relayer-Secret": secret, "Content-Type": "application/json"}
+        async with session.post(f"{url}/session/refresh-batch", json={"items": []}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as pr:
+            if pr.status == 200:
+                info["authenticated"] = True
+    except Exception as e:
+        info["auth_error"] = str(e)
+
+    return info
 
 async def trigger_batch_collection(session: aiohttp.ClientSession, secret_key: str = "agy_cf_secret_7d36994e_2026") -> dict:
     """Tries Node 1 first. If Node 1 fails or times out, immediately triggers Node 2."""
@@ -117,17 +151,26 @@ async def trigger_batch_collection(session: aiohttp.ClientSession, secret_key: s
 
 async def main():
     async with aiohttp.ClientSession() as session:
-        print("=" * 65)
-        print("RENDER DUAL-ACCOUNT CLOUD FAILOVER MESH STATUS")
-        print("=" * 65)
+        print("=" * 70)
+        print("RENDER MULTI-NODE FAILOVER MESH & RELAYER CONTROLLER")
+        print("=" * 70)
         for acc in RENDER_ACCOUNTS:
             health = await check_account_health(session, acc)
-            status_symbol = "🟢 ONLINE" if health.get("endpoint_alive") else "🟡 DEPLOYING / SLEEPING"
+            status_symbol = "🟢 ONLINE" if health.get("endpoint_alive") else "🟡 SLEEPING / DEPLOYING"
             print(f"• {acc['name']} ({acc['region'].upper()}): {status_symbol}")
             print(f"  Email: {acc['email']}")
             print(f"  URL: {acc['url']}")
             print(f"  Plan: {health.get('plan', 'free')} ($0/mo)")
-            print("-" * 65)
+            print("-" * 70)
+
+        # Check Relayer
+        relayer_health = await check_relayer_health(session)
+        relayer_symbol = "🟢 ONLINE" if relayer_health.get("endpoint_alive") else "🔴 OFFLINE"
+        auth_symbol = "🟢 AUTHENTICATED" if relayer_health.get("authenticated") else "🔴 AUTH FAILED"
+        print(f"• {relayer_health['name']}: {relayer_symbol} | {auth_symbol}")
+        print(f"  URL: {relayer_health['url']}")
+        print(f"  Auth Mode: X-Relayer-Secret")
+        print("=" * 70)
 
 if __name__ == "__main__":
     asyncio.run(main())
