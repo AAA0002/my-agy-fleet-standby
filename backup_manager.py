@@ -75,7 +75,8 @@ CORE_BOT_FILES = [
     "public/index.html",
     "CHANGELOG.md",
     "AGENTS.md",
-    "FLEET_WALLETS_SECRETS_MASTER_VAULT.txt"
+    "FLEET_WALLETS_SECRETS_MASTER_VAULT.txt",
+    "USER_BOT_FLEET_SECRETS_VAULT.json"
 ]
 
 
