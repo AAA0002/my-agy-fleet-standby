@@ -18,6 +18,7 @@ import asyncio
 import logging
 import aiohttp
 from dotenv import load_dotenv
+from proxy_manager import get_account_user_agent
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
@@ -77,7 +78,7 @@ async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, token
     base_url = "https://api.ailab-agent.online/api/v1"
     headers = {
         "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"
+        "User-Agent": get_account_user_agent(uid)
     }
 
     try:
@@ -151,7 +152,7 @@ async def process_ainovum_account(session: aiohttp.ClientSession, acc: dict, tok
     base_url = "https://ainovum.biz"
     headers = {
         "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"
+        "User-Agent": get_account_user_agent(uid)
     }
 
     try:

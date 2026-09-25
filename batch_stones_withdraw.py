@@ -12,6 +12,7 @@ import asyncio
 import aiohttp
 import logging
 from stones_captcha_solver import execute_stones_withdrawal_with_captcha
+from proxy_manager import get_account_user_agent
 
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s - %(levelname)s] %(message)s")
 logger = logging.getLogger("BatchStonesWithdraw")
@@ -63,13 +64,17 @@ async def run_batch():
             evm_wallet = fleet_evm.get(str(uid), {}).get("address", "0xfda4182001672b9f0f09e2118242e543e35ed5ce")
 
             logger.info(f"--- Checking {name} (UID: {uid}) ---")
+            acc_headers = {
+                "Content-Type": "application/json",
+                "User-Agent": get_account_user_agent(uid)
+            }
 
             # 1. Check current coins holding
             try:
                 async with session.post(
                     f"{base_url}/api/state",
                     json={"initData": init_data},
-                    headers=headers,
+                    headers=acc_headers,
                     proxy=proxy,
                     timeout=aiohttp.ClientTimeout(total=10, connect=5)
                 ) as sr:
@@ -114,7 +119,7 @@ async def run_batch():
                     async with session.post(
                         f"{base_url}/api/wallet",
                         json={"initData": init_data, "wallet": evm_wallet},
-                        headers=headers,
+                        headers=acc_headers,
                         proxy=proxy,
                         timeout=aiohttp.ClientTimeout(total=8, connect=5)
                     ) as bwr:
@@ -129,7 +134,7 @@ async def run_batch():
                 ok, res = await execute_stones_withdrawal_with_captcha(
                     session=session,
                     base_url=base_url,
-                    headers=headers,
+                    headers=acc_headers,
                     init_data=init_data,
                     amount=500,
                     wallet=evm_wallet,

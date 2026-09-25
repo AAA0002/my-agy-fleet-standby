@@ -3574,12 +3574,21 @@ async def cloudflare_edge_bridge_loop():
                     try:
                         accs = load_accounts()
                         ton_wallets = load_fleet_ton_wallets()
+                        onchain_st = load_onchain_state()
+                        bnb_bal = float(onchain_st.get("last_bnb_balance") or onchain_st.get("last_balance", 0.000812))
+                        ton_bal = float(onchain_st.get("last_ton_balance", 0.0))
+                        usdt_bal = float(onchain_st.get("last_usdt_balance", 0.0))
+                        stones_bal = float(onchain_st.get("last_stones_balance", 500.0))
                         telemetry_payload = {
                             "node": "vps-main",
                             "timestamp": now,
                             "active_worker_id": CURRENTLY_ACTIVE_ACCOUNT_ID,
                             "active_worker_ids": list(CURRENTLY_ACTIVE_ACCOUNT_IDS),
                             "accounts_total": len(accs),
+                            "bnb_balance": bnb_bal,
+                            "ton_balance": ton_bal,
+                            "usdt_balance": usdt_bal,
+                            "stones_balance": stones_bal,
                             "accounts": [
                                 {
                                     "index": idx + 1,
