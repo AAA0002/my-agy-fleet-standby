@@ -134,10 +134,10 @@ async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, token
                     await send_telegram_alert(
                         session,
                         f"🎉 *AI Lab Auto-Cashout Submitted!*\n\n"
-                        f"• **Account:** {name} (`{uid}`)\n"
-                        f"• **Amount:** `${wd_usd} USD`\n"
-                        f"• **Destination:** `{target_wallet}` (BEP-20)\n"
-                        f"• **Status:** Approved / In Flight"
+                        f"• *Account:* {name} (`{uid}`)\n"
+                        f"• *Amount:* `${wd_usd} USD`\n"
+                        f"• *Destination:* `{target_wallet}` (BEP-20)\n"
+                        f"• *Status:* Approved / In Flight"
                     )
                     return {"uid": uid, "name": name, "status": "withdrawn", "balance": ubal, "amount": wd_usd, "details": pres}
                 else:
@@ -186,14 +186,27 @@ async def process_ainovum_account(session: aiohttp.ClientSession, acc: dict, tok
             auth_headers["Cookie"] = cookie_hdr
 
         # Step 2: Check withdraw config and available balance
+        avail = 0.0
         async with session.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cr:
-            if cr.status != 200:
+            if cr.status == 429:
+                await asyncio.sleep(2.5)
+                async with session.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cr2:
+                    if cr2.status == 200:
+                        try:
+                            cd = await cr2.json()
+                            avail = float(cd.get("freeze", {}).get("available", 0) or 0)
+                        except Exception:
+                            return {"uid": uid, "name": name, "status": "invalid_config_json", "available": 0.0}
+                    else:
+                        return {"uid": uid, "name": name, "status": f"config_http_{cr2.status}", "available": 0.0}
+            elif cr.status != 200:
                 return {"uid": uid, "name": name, "status": f"config_http_{cr.status}", "available": 0.0}
-            try:
-                cd = await cr.json()
-            except Exception:
-                return {"uid": uid, "name": name, "status": "invalid_config_json", "available": 0.0}
-            avail = float(cd.get("freeze", {}).get("available", 0) or 0)
+            else:
+                try:
+                    cd = await cr.json()
+                    avail = float(cd.get("freeze", {}).get("available", 0) or 0)
+                except Exception:
+                    return {"uid": uid, "name": name, "status": "invalid_config_json", "available": 0.0}
 
         # Route target wallet: master gets master vault, worker gets dedicated isolated EVM
         target_wallet = MASTER_EVM_VAULT if is_master else isolated_evms.get(uid, {}).get("address", MASTER_EVM_VAULT)
@@ -223,10 +236,10 @@ async def process_ainovum_account(session: aiohttp.ClientSession, acc: dict, tok
                     await send_telegram_alert(
                         session,
                         f"🎉 *Ainovum USDT Withdrawal Submitted!*\n\n"
-                        f"• **Account:** {name} (`{uid}`)\n"
-                        f"• **Amount:** `{wd_amt} USDT` (BEP-20)\n"
-                        f"• **Destination:** `{target_wallet}`\n"
-                        f"• **Result:** `{wd}`"
+                        f"• *Account:* {name} (`{uid}`)\n"
+                        f"• *Amount:* `{wd_amt} USDT` (BEP-20)\n"
+                        f"• *Destination:* `{target_wallet}`\n"
+                        f"• *Result:* `{wd}`"
                     )
                     return {"uid": uid, "name": name, "status": "withdrawn", "available": avail, "amount": wd_amt, "details": wd}
                 elif wd.get("code") == "busy":
@@ -263,7 +276,7 @@ async def main():
         for acc in accounts:
             res = await process_ainovum_account(session, acc, tokens, isolated_evms)
             ainovum_results.append(res)
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(1.2)
 
         print("\n=============================================================================")
         print("                        WITHDRAWAL AUDIT SUMMARY")

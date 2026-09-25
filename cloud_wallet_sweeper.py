@@ -407,22 +407,22 @@ async def run_full_sweep_audit(notify_if_empty: bool = False, execute_sweep: boo
         if swept_txs:
             lines = []
             for s in swept_txs:
-                lines.append(f"• **{s['name']} ({s['chain']}):** Swept `{s['amount']:.4f} {s['coin']}` → [View Tx]({s['url']})")
+                lines.append(f"• *{s['name']} ({s['chain']}):* Swept `{s['amount']:.4f} {s['coin']}` → [View Tx]({s['url']})")
             receipt_msg = (
                 f"🎉 *MY AGY AI — Automated On-Chain Vault Sweep Complete!*\n\n"
                 + "\n".join(lines) +
-                f"\n\n🎯 **Destination Vault:** `{MASTER_EVM_VAULT}` (Binance Web3 Master)"
+                f"\n\n🎯 *Destination Vault:* `{MASTER_EVM_VAULT}` (Binance Web3 Master)"
             )
             await send_telegram_receipt(session, receipt_msg)
         elif funded_evm or funded_ton or notify_if_empty:
             msg = (
                 f"💼 *MY AGY AI — Multi-Chain Vault Sweep Audit*\n\n"
-                f"• 👥 **Worker Wallets Audited:** `{len(evm_audit)} EVM / {len(ton_audit)} TON`\n"
-                f"• 🪙 **BSC Worker Holding:** `{total_bnb:.6f} BNB`\n"
-                f"• 💵 **BSC Worker USDT:** `${total_usdt:.2f} USDT`\n"
-                f"• 💎 **Arbitrum Worker Holding:** `{total_eth:.6f} ETH`\n"
-                f"• 💎 **TON Worker Holding:** `{total_ton:.4f} TON`\n\n"
-                f"🎯 **Master Destination Vaults (Binance Web3):**\n"
+                f"• 👥 *Worker Wallets Audited:* `{len(evm_audit)} EVM / {len(ton_audit)} TON`\n"
+                f"• 🪙 *BSC Worker Holding:* `{total_bnb:.6f} BNB`\n"
+                f"• 💵 *BSC Worker USDT:* `${total_usdt:.2f} USDT`\n"
+                f"• 💎 *Arbitrum Worker Holding:* `{total_eth:.6f} ETH`\n"
+                f"• 💎 *TON Worker Holding:* `{total_ton:.4f} TON`\n\n"
+                f"🎯 *Master Destination Vaults (Binance Web3):*\n"
                 f"• `EVM:` `{MASTER_EVM_VAULT}`\n"
                 f"• `TON:` `{MASTER_TON_VAULT}`\n\n"
                 f"🛡️ _Direct in-bot routing sends 100% of mining profits directly to your Binance Web3 Vault._"

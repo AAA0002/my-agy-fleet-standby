@@ -211,7 +211,7 @@ async def solve_captcha_with_ai(proc_b64: str, length: int = 5) -> str:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
                 headers = {"Content-Type": "application/json", "X-goog-api-key": k}
                 try:
-                    async with ai_session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=4, connect=2)) as gr:
+                    async with ai_session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10, connect=5)) as gr:
                         if gr.status == 200:
                             gdata = await gr.json()
                             candidates = gdata.get("candidates", [])

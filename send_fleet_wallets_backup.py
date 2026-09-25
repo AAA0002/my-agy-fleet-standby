@@ -150,17 +150,17 @@ def generate_vault_document(accounts, fleet_ton, fleet_evm):
     # Master Account Telegram Card
     master_card_md = (
         "👑 *PRIMARY MASTER ACCOUNT (Arif Hossain)*\n"
-        "• **Telegram User ID:** `6727787768`\n"
-        "• **Username:** `@Arif2743aaa`\n"
-        f"• **Phone Number:** `{MASTER_PHONE}` (`{MASTER_PHONE_NATIONAL}`)\n"
-        "• **Custody Policy:** Personal Binance Deposit Accounts (Zero Key Exposure)\n\n"
-        "🌐 **Binance EVM (BEP-20 / Arbitrum / ETH / AVAX):**\n"
+        "• *Telegram User ID:* `6727787768`\n"
+        "• *Username:* `@Arif2743aaa`\n"
+        f"• *Phone Number:* `{MASTER_PHONE}` (`{MASTER_PHONE_NATIONAL}`)\n"
+        "• *Custody Policy:* Personal Binance Deposit Accounts (Zero Key Exposure)\n\n"
+        "🌐 *Binance EVM (BEP-20 / Arbitrum / ETH / AVAX):*\n"
         f"`{MASTER_EVM_WALLET}`\n\n"
-        "💎 **Binance TON Network:**\n"
+        "💎 *Binance TON Network:*\n"
         f"`{MASTER_TON_WALLET}`\n\n"
-        "🟣 **Binance Solana (SPL):**\n"
+        "🟣 *Binance Solana (SPL):*\n"
         f"`{MASTER_SOLANA_WALLET}`\n\n"
-        "🟧 **Binance Bitcoin (Taproot):**\n"
+        "🟧 *Binance Bitcoin (Taproot):*\n"
         f"`{MASTER_BTC_WALLET}`\n\n"
         "ℹ️ *All personal mining payouts, referral rewards, and USDT promo credits route directly to your personal Binance account.*"
     )
@@ -199,16 +199,16 @@ def generate_vault_document(accounts, fleet_ton, fleet_evm):
 
         card_md = (
             f"💼 *Account #{worker_idx}: {name}*\n"
-            f"• **Telegram ID:** `{uid}`\n"
-            f"• **Phone Number:** `{phone}`\n"
-            f"• **Username:** {uname}\n\n"
-            f"🌐 **EVM Wallet (BEP-20 / Arbitrum):**\n"
+            f"• *Telegram ID:* `{uid}`\n"
+            f"• *Phone Number:* `{phone}`\n"
+            f"• *Username:* {uname}\n\n"
+            f"🌐 *EVM Wallet (BEP-20 / Arbitrum):*\n"
             f"`{e_addr}`\n"
-            f"🔑 **EVM Private Key (Hex):**\n"
+            f"🔑 *EVM Private Key (Hex):*\n"
             f"`{e_priv}`\n\n"
-            f"💎 **TON Wallet (v4r2):**\n"
+            f"💎 *TON Wallet (v4r2):*\n"
             f"`{t_addr}`\n"
-            f"🗝️ **TON 24-Word Recovery Seed:**\n"
+            f"🗝️ *TON 24-Word Recovery Seed:*\n"
             f"```text\n{mnemonic}\n```"
         )
         worker_cards.append(card_md)
@@ -240,10 +240,10 @@ def main():
 
     intro_header = (
         "🔐 *MY AGY AI — OFFICIAL FLEET WALLETS & SECRET KEYS MASTER VAULT (UPDATED)*\n\n"
-        "Here is the complete, verified directory of all fleet accounts with **Account Names, Verified Phone Numbers, Binance Deposit Addresses, EVM Private Keys, and TON 24-word Seed Phrases**.\n\n"
-        f"• **👑 Main Account (`6727787768`):** Phone `{MASTER_PHONE}` (`{MASTER_PHONE_NATIONAL}`) — Direct routes to personal Binance deposits (EVM, TON, Solana, Bitcoin Taproot).\n"
-        "• **👥 Worker Accounts:** Dedicated isolated wallets on EVM (BEP-20) & TON to prevent multi-account deduplication bans.\n"
-        "• **📲 Guidance:** Below each account is its 64-char EVM private key (import via MetaMask/Trust Wallet) and 24-word TON seed (import via Tonkeeper).\n\n"
+        "Here is the complete, verified directory of all fleet accounts with *Account Names, Verified Phone Numbers, Binance Deposit Addresses, EVM Private Keys, and TON 24-word Seed Phrases*.\n\n"
+        f"• *👑 Main Account (`6727787768`):* Phone `{MASTER_PHONE}` (`{MASTER_PHONE_NATIONAL}`) — Direct routes to personal Binance deposits (EVM, TON, Solana, Bitcoin Taproot).\n"
+        "• *👥 Worker Accounts:* Dedicated isolated wallets on EVM (BEP-20) & TON to prevent multi-account deduplication bans.\n"
+        "• *📲 Guidance:* Below each account is its 64-char EVM private key (import via MetaMask/Trust Wallet) and 24-word TON seed (import via Tonkeeper).\n\n"
         "👇 *Master Account & Individual Worker Cards Listed Below:* 👇"
     )
 

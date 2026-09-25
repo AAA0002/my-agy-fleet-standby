@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added & Improved
+- **System-Wide Telegram Markdown v1 Bold Sanitization (`userbot_refresher.py`, `deploy_both_cf_workers.py`, auxiliary tools)**:
+  - **Full Markdown Sanitation Across 400+ Template Lines**: Eradicated messy CommonMark double-asterisk (`**bold**`) tags across `userbot_refresher.py` (249 lines), `deploy_both_cf_workers.py` (153 lines), and auxiliary daemons (`daily_profit_reporter.py`, `send_fleet_wallets_backup.py`, `execute_ailab_ainovum_withdrawals.py`, `batch_atf_miner.py`, `cloud_wallet_sweeper.py`, `bep20_onchain_watcher.py`).
+  - **Single-Asterisk Telegram Formatting**: Replaced with standard Telegram Markdown v1 single asterisks (`*bold*`), eliminating literal asterisks, unparsed spans, and formatting clutter on mobile devices.
+  - **Guaranteed Phone Numbers in Connected Accounts Hub**: Integrated `KNOWN_PHONES_BY_INDEX` secondary index failover in both Userbot and Cloudflare Edge Workers, ensuring `• #{idx} *{name}* ({phone}) — {status}` displays verified phone numbers (`+8801...`, `+1430...`) on all 13 accounts in Telegram bot roster, callback menus, and commands.
+  - **WebApp v4.9 Deployed Globally via Vercel CDN**: Updated `public/index.html` with `KNOWN_PHONES_BY_INDEX` fallback on both account cards and the Account Details drawer modal; successfully deployed to all 3 Vercel production domains (`agy-aaa000.vercel.app`, `my-agy-ai-fleet.vercel.app`, `agy-henna.vercel.app`).
+  - **Triple Cloudflare Edge Nodes Synchronized**: Deployed updated worker script with clean markdown and index-based phone failover to Nodes 1, 2, and 3 (`aaaai2`, `aaa-bot`, `aaa222`).
+  - **Zero-Downtime Supervisor Reload**: Relaunched `userbot_refresher.py` (PID: 5967) under `bot_supervisor.sh` (PID: 28857), running all 8 bots 24/7.
 - **Unified Multi-Cloud Mesh Dashboard & Real-Time Sentinel Integration (`public/index.html`, `userbot_refresher.py`, `deploy_both_cf_workers.py`)**:
   - **Live Multi-Cloud Mesh Drawer Modal in WebApp**: Added an interactive "Multi-Cloud Unified Mesh" modal in `public/index.html` displaying live latency and status for all 11 cloud compute nodes (5 Cloudflare Workers, 4 Render services, 2 Deno Deploy Sentinels) and distributed databases (Supabase Postgres, Upstash Redis, Turso LibSQL, Pinata IPFS Vault).
   - **Prominent Account Phone Number Display**: Formatted verified phone numbers (`+8801...`, `+1430...`) directly on every account card in the WebApp and in the Account Details drawer modal, using `KNOWN_PHONES` failover dictionary to guarantee 100% visibility.

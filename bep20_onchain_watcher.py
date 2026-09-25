@@ -102,12 +102,12 @@ async def broadcast_deposit(session: aiohttp.ClientSession, diff: float, total_b
     msg = (
         f"🎉 *[On-Chain BEP-20 Payout Confirmed!]*\n\n"
         f"The batch payout has been broadcasted and verified on the Binance Smart Chain!\n\n"
-        f"• **Deposit Received:** `+{diff:.6f} BNB`\n"
-        f"• **Fiat Value:** `~${usd_val:.4f} USD` (`~৳{bdt_val:.2f} BDT`)\n"
-        f"• **Live BNB Price:** `${bnb_price:.2f} USD`\n"
-        f"• **Target Wallet Balance:** `{total_bal:.6f} BNB` (`~${total_usd:.2f} USD`)\n"
-        f"• **Target Wallet:** `{wallet}`\n"
-        f"• **Network:** Binance Smart Chain (BEP-20) 🟡\n\n"
+        f"• *Deposit Received:* `+{diff:.6f} BNB`\n"
+        f"• *Fiat Value:* `~${usd_val:.4f} USD` (`~৳{bdt_val:.2f} BDT`)\n"
+        f"• *Live BNB Price:* `${bnb_price:.2f} USD`\n"
+        f"• *Target Wallet Balance:* `{total_bal:.6f} BNB` (`~${total_usd:.2f} USD`)\n"
+        f"• *Target Wallet:* `{wallet}`\n"
+        f"• *Network:* Binance Smart Chain (BEP-20) 🟡\n\n"
         f"🔗 [View Live on BscScan Explorer]({explorer_url})"
     )
     

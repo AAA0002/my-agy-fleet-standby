@@ -351,6 +351,22 @@ function App() {
     "8741547543": "+8801838268380"
   };
 
+  const KNOWN_PHONES_BY_INDEX = {
+    1: "+8801317342850",
+    2: "+8801943805617",
+    3: "+8801790208077",
+    4: "+8801575842094",
+    5: "+14302084365",
+    6: "+8801867539837",
+    7: "+8801718056423",
+    8: "+8801797795624",
+    9: "+8801727651288",
+    10: "+8801729892810",
+    11: "+8801571089931",
+    12: "+8801774578536",
+    13: "+8801838268380"
+  };
+
   const testMeshNodes = async () => {
     setTestingMesh(true);
     const results = {};
@@ -749,7 +765,7 @@ function App() {
                   isMaster && React.createElement("span", { className: "bg-amber-100 text-amber-800 text-[9px] font-black px-1 rounded font-mono" }, "HOST")
                 ),
                 React.createElement("div", { className: "text-[11px] font-mono flex items-center gap-1.5" },
-                  React.createElement("span", { className: "text-blue-600 font-semibold" }, (acc.phone && acc.phone !== "N/A") ? acc.phone : (KNOWN_PHONES[String(acc.user_id)] || `ID: ${acc.user_id}`)),
+                  React.createElement("span", { className: "text-blue-600 font-semibold" }, (acc.phone && acc.phone !== "N/A" && acc.phone !== "Hidden") ? acc.phone : (KNOWN_PHONES[String(acc.user_id)] || KNOWN_PHONES_BY_INDEX[idx + 1] || `ID: ${acc.user_id}`)),
                   React.createElement("span", { className: "text-slate-300" }, "•"),
                   React.createElement("span", { className: "text-slate-400 text-[10px]" }, `ID: ${acc.user_id}`)
                 )
@@ -952,7 +968,7 @@ function App() {
         React.createElement("div", { className: "space-y-2 text-xs mb-4" },
           React.createElement("div", { className: "flex justify-between py-1 border-b border-slate-50" },
             React.createElement("span", { className: "text-slate-500" }, "Phone Number:"),
-            React.createElement("span", { className: "font-mono font-bold text-blue-600" }, (selectedAccount.phone && selectedAccount.phone !== "N/A") ? selectedAccount.phone : (KNOWN_PHONES[String(selectedAccount.user_id)] || "N/A"))
+            React.createElement("span", { className: "font-mono font-bold text-blue-600" }, (selectedAccount.phone && selectedAccount.phone !== "N/A" && selectedAccount.phone !== "Hidden") ? selectedAccount.phone : (KNOWN_PHONES[String(selectedAccount.user_id)] || KNOWN_PHONES_BY_INDEX[selectedAccount.index] || "N/A"))
           ),
           React.createElement("div", { className: "flex justify-between py-1 border-b border-slate-50" },
             React.createElement("span", { className: "text-slate-500" }, "Telegram User ID:"),

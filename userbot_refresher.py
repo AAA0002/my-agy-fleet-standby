@@ -355,7 +355,7 @@ PRIORITY_ACCOUNT_IDS = set()
 MAIN_TAB_KEYBOARD = {
     "keyboard": [
         [
-            {"text": "🚀 Open WebApp Dashboard", "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.8"}}
+            {"text": "🚀 Open WebApp Dashboard", "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.9"}}
         ],
         [
             {"text": "👥 Accounts Management"},
@@ -1045,19 +1045,19 @@ async def build_payouts_report():
     lines = []
     for p in reversed(payouts[-12:]):
         ts = p.get("timestamp", "")[:19].replace("T", " ")
-        lines.append(f"• **{p.get('account', 'User')}**: `{p.get('amount')} BNB` ({ts} UTC) — *{p.get('status', 'Submitted')}*")
+        lines.append(f"• *{p.get('account', 'User')}*: `{p.get('amount')} BNB` ({ts} UTC) — _{p.get('status', 'Submitted')}_")
 
     history_str = "\n".join(lines) if lines else "_No withdrawals recorded yet. Auto-withdraw triggers automatically when any account reaches ≥ 0.000050 BNB._"
 
     rep = (
         f"📜 *BNB Galaxy Payout Ledger*\n"
         f"🕒 _{now_str}_\n\n"
-        f"• **Total Fleet Withdrawn:** `{total_withdrawn:.6f} BNB` (~${tot_usd:.2f} USD / ৳{tot_bdt:.2f} BDT)\n"
-        f"• **Confirmed On-Chain Wallet:** `{onchain_bal:.6f} BNB` (~${onchain_usd:.2f} USD / ৳{onchain_bdt:.2f} BDT)\n"
-        f"• **Total Transactions:** `{len(payouts)} Completed`\n"
-        f"• **Recipient Wallet:** `{WALLET_ADDRESS}`\n"
-        f"• **Network:** Binance Smart Chain (BEP-20)\n"
-        f"• **BNB Market Price:** `${bnb_price:.2f} USD` (৳{bnb_price*usd_bdt:,.0f} BDT)\n\n"
+        f"• *Total Fleet Withdrawn:* `{total_withdrawn:.6f} BNB` (~${tot_usd:.2f} USD / ৳{tot_bdt:.2f} BDT)\n"
+        f"• *Confirmed On-Chain Wallet:* `{onchain_bal:.6f} BNB` (~${onchain_usd:.2f} USD / ৳{onchain_bdt:.2f} BDT)\n"
+        f"• *Total Transactions:* `{len(payouts)} Completed`\n"
+        f"• *Recipient Wallet:* `{WALLET_ADDRESS}`\n"
+        f"• *Network:* Binance Smart Chain (BEP-20)\n"
+        f"• *BNB Market Price:* `${bnb_price:.2f} USD` (৳{bnb_price*usd_bdt:,.0f} BDT)\n\n"
         f"📋 *Recent Transactions:*\n"
         f"{history_str}\n\n"
         f"🔗 [Verify on BscScan](https://bscscan.com/address/{WALLET_ADDRESS})\n"
@@ -1098,18 +1098,18 @@ async def build_earnings_report():
         f"📈 *MY AGY AI — Fleet Yield & Analytics*\n"
         f"🕒 _{now_str}_\n\n"
         f"🏦 *On-Chain Wallet Status:*\n"
-        f"• **Wallet:** `{WALLET_ADDRESS}`\n"
-        f"• **Confirmed Balance:** `{onchain_bal:.6f} BNB` (~${onchain_usd:.2f} USD / ৳{onchain_bdt:.2f} BDT)\n"
-        f"• **BNB Market Rate:** `${bnb_price:.2f} USD` (৳{usd_bdt:.1f} BDT/USD)\n\n"
+        f"• *Wallet:* `{WALLET_ADDRESS}`\n"
+        f"• *Confirmed Balance:* `{onchain_bal:.6f} BNB` (~${onchain_usd:.2f} USD / ৳{onchain_bdt:.2f} BDT)\n"
+        f"• *BNB Market Rate:* `${bnb_price:.2f} USD` (৳{usd_bdt:.1f} BDT/USD)\n\n"
         f"📊 *Lifetime Realized Withdrawals:*\n"
-        f"• **Total Payouts:** `{payout_count} transactions`\n"
-        f"• **Total Delivered:** `{total_withdrawn:.6f} BNB` (~${withdrawn_usd:.2f} USD / ৳{withdrawn_bdt:.2f} BDT)\n"
-        f"• **Auto-Threshold:** `0.000050 BNB` (Instant auto-withdraw)\n\n"
+        f"• *Total Payouts:* `{payout_count} transactions`\n"
+        f"• *Total Delivered:* `{total_withdrawn:.6f} BNB` (~${withdrawn_usd:.2f} USD / ৳{withdrawn_bdt:.2f} BDT)\n"
+        f"• *Auto-Threshold:* `0.000050 BNB` (Instant auto-withdraw)\n\n"
         f"🚀 *Projected Earning Capacity ({len(accounts)} Accounts):*\n"
-        f"• **Daily Fleet Yield:** `~{daily_est_bnb:.6f} BNB` (~${daily_usd:.2f} USD / ৳{daily_bdt:.2f} BDT)\n"
-        f"• **Monthly Projected:** `~{monthly_est_bnb:.6f} BNB` (~${monthly_usd:.2f} USD / ৳{monthly_bdt:.2f} BDT)\n"
-        f"• **Active Fleet Size:** `{len(accounts)} Telegram Accounts`\n"
-        f"• **Daily Task Volume:** `{len(accounts) * 10} Tasks/Day`\n\n"
+        f"• *Daily Fleet Yield:* `~{daily_est_bnb:.6f} BNB` (~${daily_usd:.2f} USD / ৳{daily_bdt:.2f} BDT)\n"
+        f"• *Monthly Projected:* `~{monthly_est_bnb:.6f} BNB` (~${monthly_usd:.2f} USD / ৳{monthly_bdt:.2f} BDT)\n"
+        f"• *Active Fleet Size:* `{len(accounts)} Telegram Accounts`\n"
+        f"• *Daily Task Volume:* `{len(accounts) * 10} Tasks/Day`\n\n"
         f"💡 _Tip: Adding more accounts via `➕ Add Account` scales your daily yield linearly!_"
     )
     return rep
@@ -1135,11 +1135,11 @@ async def build_midnight_summary():
     card = (
         f"🌙 *MY AGY AI — Daily Closing Summary*\n"
         f"📅 `{date_str} • 00:00 UTC`\n\n"
-        f"⚡ **Fleet Health:** `{len(accounts)}/{len(accounts)} Accounts Active (100%)`\n"
-        f"🪙 **Daily Tasks:** `{len(accounts) * 10}/{len(accounts) * 10} Completed`\n"
-        f"💰 **Confirmed On-Chain:** `{onchain_bal:.6f} BNB` (~${onchain_usd:.2f} USD / ৳{onchain_bdt:.2f} BDT)\n"
-        f"🏆 **Lifetime Withdrawals:** `{total_withdrawn:.6f} BNB` ({len(payouts)} payouts processed)\n"
-        f"🛡️ **System:** 🟢 Immortal Supervisor 24/7"
+        f"⚡ *Fleet Health:* `{len(accounts)}/{len(accounts)} Accounts Active (100%)`\n"
+        f"🪙 *Daily Tasks:* `{len(accounts) * 10}/{len(accounts) * 10} Completed`\n"
+        f"💰 *Confirmed On-Chain:* `{onchain_bal:.6f} BNB` (~${onchain_usd:.2f} USD / ৳{onchain_bdt:.2f} BDT)\n"
+        f"🏆 *Lifetime Withdrawals:* `{total_withdrawn:.6f} BNB` ({len(payouts)} payouts processed)\n"
+        f"🛡️ *System:* 🟢 Immortal Supervisor 24/7"
     )
     return card
 
@@ -1229,7 +1229,7 @@ async def run_fleet_session_audit(notify_admin: bool = True) -> dict:
     # Proactive Alert to Admin private chat if any accounts are revoked
     if revoked_accounts and notify_admin:
         revoked_lines = [
-            f"• ❌ **{r['name']}** (`{r['phone']}`): `{r['reason']}`"
+            f"• ❌ *{r['name']}* (`{r['phone']}`): `{r['reason']}`"
             for r in revoked_accounts
         ]
         alert_msg = (
@@ -1265,18 +1265,18 @@ async def build_health_audit_report():
     ]
 
     for h in audit_res["healthy"]:
-        lines.append(f"{h['index']}️⃣ **{h['name']}** (`{h['phone']}`) — 🟢 Active ({h['reason']})")
+        lines.append(f"{h['index']}️⃣ *{h['name']}* (`{h['phone']}`) — 🟢 Active ({h['reason']})")
 
     for r in audit_res["revoked"]:
-        lines.append(f"{r['index']}️⃣ **{r['name']}** (`{r['phone']}`) — 🔴 Revoked: `{r['reason']}`")
+        lines.append(f"{r['index']}️⃣ *{r['name']}* (`{r['phone']}`) — 🔴 Revoked: `{r['reason']}`")
 
     lines.append(
         f"\n━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"• **Fleet Health Score:** `{health_pct}%` ({healthy_cnt}/{total} Operational)\n"
-        f"• **Active Sessions:** `{healthy_cnt}` Accounts Running 24/7\n"
-        f"• **Isolated / Revoked:** `{revoked_cnt}` Accounts\n"
-        f"• **Audit Frequency:** Every 6 Hours (Autonomous Self-Healing)\n"
-        f"• **Cloud VPS Host:** `🟢 Online (192.46.208.170)`\n\n"
+        f"• *Fleet Health Score:* `{health_pct}%` ({healthy_cnt}/{total} Operational)\n"
+        f"• *Active Sessions:* `{healthy_cnt}` Accounts Running 24/7\n"
+        f"• *Isolated / Revoked:* `{revoked_cnt}` Accounts\n"
+        f"• *Audit Frequency:* Every 6 Hours (Autonomous Self-Healing)\n"
+        f"• *Cloud VPS Host:* `🟢 Online (192.46.208.170)`\n\n"
         f"💡 _If any account is revoked, the remaining accounts continue mining uninterrupted._"
     )
     return "\n".join(lines)
@@ -1451,7 +1451,7 @@ def build_mining_bots_report():
         status_dot = "🟢" if b.get("status") == "active" else "⚪"
         ref_str = f" | Ref: `{b.get('ref_code')}`" if b.get("ref_code") else ""
         lines.append(
-            f"{idx}️⃣ {status_dot} **{b.get('name')}** (`{b.get('bot')}`{ref_str})\n"
+            f"{idx}️⃣ {status_dot} *{b.get('name')}* (`{b.get('bot')}`{ref_str})\n"
             f"   • Reward: `{b.get('reward')}` | Cycle: `Every {b.get('interval_hours')}h`\n"
             f"   • Detail: _{b.get('description')}_"
         )
@@ -1494,6 +1494,22 @@ KNOWN_PHONES = {
     "8741547543": "+8801838268380",
 }
 
+KNOWN_PHONES_BY_INDEX = {
+    1: "+8801317342850",
+    2: "+8801943805617",
+    3: "+8801790208077",
+    4: "+8801575842094",
+    5: "+14302084365",
+    6: "+8801867539837",
+    7: "+8801718056423",
+    8: "+8801797795624",
+    9: "+8801727651288",
+    10: "+8801729892810",
+    11: "+8801571089931",
+    12: "+8801774578536",
+    13: "+8801838268380",
+}
+
 
 def build_accounts_report():
     """Generates a clean, executive summary of all connected Telegram accounts."""
@@ -1510,7 +1526,7 @@ def build_accounts_report():
         c_name = format_clean_account_name(acc, idx)
         is_host = acc.get("is_referral_host") or str(acc.get("user_id")) == str(REPORT_CHAT_ID)
         tag = "Master Host 👑" if is_host else "🟢 Active"
-        phone = acc.get("phone") or KNOWN_PHONES.get(str(acc.get("user_id")), "")
+        phone = acc.get("phone") or KNOWN_PHONES.get(str(acc.get("user_id")), "") or KNOWN_PHONES_BY_INDEX.get(idx, "")
         phone_str = f" ({phone})" if phone and phone != "Hidden" else ""
         lines.append(f"• #{idx} *{c_name}*{phone_str} — {tag}")
 
@@ -1561,7 +1577,7 @@ STATUS_INLINE_KEYBOARD = {
         [
             {
                 "text": "🚀 Open Executive Dashboard",
-                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.8"}
+                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.9"}
             }
         ],
         [
@@ -1588,7 +1604,7 @@ WALLET_INLINE_KEYBOARD = {
         [
             {
                 "text": "🚀 Open Executive Dashboard",
-                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.8"}
+                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.9"}
             }
         ]
     ]
@@ -1599,7 +1615,7 @@ ACCOUNTS_INLINE_KEYBOARD = {
         [
             {
                 "text": "🚀 Open Executive Dashboard",
-                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.8"}
+                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.9"}
             }
         ],
         [
@@ -1622,7 +1638,7 @@ MESH_INLINE_KEYBOARD = {
         [
             {
                 "text": "🚀 Open Executive Dashboard",
-                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.8"}
+                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.9"}
             }
         ],
         [
@@ -1714,7 +1730,7 @@ async def setup_bot_tab_menu():
                     "type": "web_app",
                     "text": "🚀 Mini App",
                     "web_app": {
-                        "url": "https://agy-aaa000.vercel.app/?v=4.7"
+                        "url": "https://agy-aaa000.vercel.app/?v=4.9"
                     }
                 }
             }
@@ -1906,23 +1922,23 @@ async def build_daily_summary_report(user_id: int):
                     pass
         total_bnb_daily_est = total_bnb_done * 0.0000055
 
-    bnb_section = f"🪙 **BNB Galaxy:** `{total_bnb_done}/{total_bnb_tasks} tasks` (+{total_bnb_daily_est:.6f} BNB) | 5/5 Anti-Bot ✅\n" if ENABLE_BNB_GALAXY else ""
+    bnb_section = f"🪙 *BNB Galaxy:* `{total_bnb_done}/{total_bnb_tasks} tasks` (+{total_bnb_daily_est:.6f} BNB) | 5/5 Anti-Bot ✅\n" if ENABLE_BNB_GALAXY else ""
 
     report = (
         f"📑 *MY AGY AI — Fleet 24h Summary*\n"
         f"🕒 `{now_str}`\n\n"
-        f"👥 **Fleet:** `{len(accounts)} Accounts Active (Host: Arif Hossain)`\n\n"
+        f"👥 *Fleet:* `{len(accounts)} Accounts Active (Host: Arif Hossain)`\n\n"
         f"{bnb_section}"
-        f"💎 **Stones Miners:** Mining & daily check-ins active (Arbitrum Payout)\n"
-        f"⛏️ **MRG Miner:** Continuous mining + 10% Squad commissions to Main ID\n"
-        f"🚀 **ART Airdrop:** 8-hour continuous cycles running 24/7\n"
-        f"🧪 **AI Lab Robot:** 24/7 Cloud Miner Active | USD Auto-Exchange\n"
-        f"💳 **UltraWallet:** Passive Mining & Daily Streaks Active\n"
-        f"⚡ **Apex Miner:** Continuous 8h Mining, Daily Streaks & Ad Boost Active\n"
-        f"🌐 **Ainovum:** Cloud node mining & network telemetry active\n"
-        f"🌾 **ATF Miner:** 100% farming & token accumulation mode active\n\n"
-        f"💼 **Wallets:** Isolated worker TON wallets + Binance Web3 Master\n"
-        f"🛡️ **System:** 🟢 Immortal Supervisor 24/7"
+        f"💎 *Stones Miners:* Mining & daily check-ins active (Arbitrum Payout)\n"
+        f"⛏️ *MRG Miner:* Continuous mining + 10% Squad commissions to Main ID\n"
+        f"🚀 *ART Airdrop:* 8-hour continuous cycles running 24/7\n"
+        f"🧪 *AI Lab Robot:* 24/7 Cloud Miner Active | USD Auto-Exchange\n"
+        f"💳 *UltraWallet:* Passive Mining & Daily Streaks Active\n"
+        f"⚡ *Apex Miner:* Continuous 8h Mining, Daily Streaks & Ad Boost Active\n"
+        f"🌐 *Ainovum:* Cloud node mining & network telemetry active\n"
+        f"🌾 *ATF Miner:* 100% farming & token accumulation mode active\n\n"
+        f"💼 *Wallets:* Isolated worker TON wallets + Binance Web3 Master\n"
+        f"🛡️ *System:* 🟢 Immortal Supervisor 24/7"
     )
     return report
 
@@ -1954,24 +1970,24 @@ async def build_morning_briefing(user_id: int):
                     pass
         total_bnb_daily_est = total_bnb_done * 0.0000055
 
-    bnb_section = f"🪙 **BNB Galaxy:** `{total_bnb_done}/{total_bnb_tasks} tasks` (+{total_bnb_daily_est:.6f} BNB) | 5/5 Anti-Bot ✅\n" if ENABLE_BNB_GALAXY else ""
+    bnb_section = f"🪙 *BNB Galaxy:* `{total_bnb_done}/{total_bnb_tasks} tasks` (+{total_bnb_daily_est:.6f} BNB) | 5/5 Anti-Bot ✅\n" if ENABLE_BNB_GALAXY else ""
 
     report = (
         f"🌅 *MY AGY AI — Morning Fleet Briefing*\n"
         f"📅 `{date_str} • {time_str}`\n\n"
         f"☀️ *Good morning Arif! Here is your overnight fleet summary:*\n\n"
-        f"⚡ **Fleet Status:** `{len(accounts)} Accounts Active & 100% Autonomous`\n\n"
+        f"⚡ *Fleet Status:* `{len(accounts)} Accounts Active & 100% Autonomous`\n\n"
         f"{bnb_section}"
-        f"💎 **Stones Miners:** Mining active | Auto-withdraw >= 500 STONES (Arbitrum)\n"
-        f"⛏️ **MRG Miner:** Harvest & 10% Squad Sweeps Active (TON Wallets Bound)\n"
-        f"🚀 **ART Airdrop:** Continuous 8h Cycles & Task Auto-Claims Active\n"
-        f"🧪 **AI Lab Robot:** 24/7 Cloud Miner Active | USD Auto-Exchange\n"
-        f"💳 **UltraWallet:** Passive Mining & Daily Streaks Active\n"
-        f"⚡ **Apex Miner:** Continuous 8h Mining & Ad Boost Active\n"
-        f"🌐 **Ainovum:** Cloud node mining & network telemetry active\n"
-        f"🌾 **ATF Miner:** 100% farming & token accumulation mode active\n\n"
-        f"💰 **Payouts:** Auto-routing to your Binance Web3 & Arbitrum wallets\n"
-        f"🛡️ **System:** 🟢 Immortal Supervisor 24/7"
+        f"💎 *Stones Miners:* Mining active | Auto-withdraw >= 500 STONES (Arbitrum)\n"
+        f"⛏️ *MRG Miner:* Harvest & 10% Squad Sweeps Active (TON Wallets Bound)\n"
+        f"🚀 *ART Airdrop:* Continuous 8h Cycles & Task Auto-Claims Active\n"
+        f"🧪 *AI Lab Robot:* 24/7 Cloud Miner Active | USD Auto-Exchange\n"
+        f"💳 *UltraWallet:* Passive Mining & Daily Streaks Active\n"
+        f"⚡ *Apex Miner:* Continuous 8h Mining & Ad Boost Active\n"
+        f"🌐 *Ainovum:* Cloud node mining & network telemetry active\n"
+        f"🌾 *ATF Miner:* 100% farming & token accumulation mode active\n\n"
+        f"💰 *Payouts:* Auto-routing to your Binance Web3 & Arbitrum wallets\n"
+        f"🛡️ *System:* 🟢 Immortal Supervisor 24/7"
     )
     return report
 
@@ -1981,7 +1997,7 @@ async def build_bnb_details_report(user_id: int):
     if not ENABLE_BNB_GALAXY:
         return (
             "🚫 *BNB Galaxy (@CryptoProUpRobot) is Permanently Disabled*\n\n"
-            "⚠️ **Scammer Protection Active**:\n"
+            "⚠️ *Scammer Protection Active*:\n"
             "• On-chain blockchain audit confirmed that after the 1st initial payout, 100% of subsequent payouts are withheld indefinitely while leeching 195 daily ads.\n"
             "• All 13 fleet accounts have reported the bot to Telegram Anti-Scam as fraudulent, blocked it, deleted chat history, and left all 4 mandatory scam channels.\n"
             "• System resources (CPU, RAM, and proxy bandwidth) are fully preserved for the 8 legitimate mining bots."
@@ -2028,11 +2044,11 @@ async def build_bnb_details_report(user_id: int):
     return (
         f"🪙 *BNB Galaxy Deep Details (@CryptoProUpRobot)*\n"
         f"🕒 _{now_str}_\n\n"
-        f"• **Daily Tasks Progress:** `{done_count}/10 Completed` ({ready_count} Ready)\n"
-        f"• **Next 10-Task Reset In:** `{reset_str}`\n"
-        f"• **Daily Reward:** `+0.000055 BNB` (10 tasks)\n"
-        f"• **Auto-Withdraw Minimum:** `{MIN_WITHDRAWAL} BNB`\n"
-        f"• **Withdrawal Verification:** `{verify_count}/5 Unlocked` {'✅' if verify_count >= 5 else '⏳ (Auto-Verified on Payout)'}\n\n"
+        f"• *Daily Tasks Progress:* `{done_count}/10 Completed` ({ready_count} Ready)\n"
+        f"• *Next 10-Task Reset In:* `{reset_str}`\n"
+        f"• *Daily Reward:* `+0.000055 BNB` (10 tasks)\n"
+        f"• *Auto-Withdraw Minimum:* `{MIN_WITHDRAWAL} BNB`\n"
+        f"• *Withdrawal Verification:* `{verify_count}/5 Unlocked` {'✅' if verify_count >= 5 else '⏳ (Auto-Verified on Payout)'}\n\n"
         f"📋 *Task Timers:*\n"
         f"{tasks_summary}\n\n"
         f"💡 _When balance reaches >= {MIN_WITHDRAWAL} BNB, the cloud worker automatically submits withdrawal, watches all 5 verification ads in the background, and unlocks your payout._"
@@ -2058,11 +2074,11 @@ async def build_art_details_report(user_id: int):
                     return (
                         f"🚀 *ART Airdrop Cloud Mining (@ART_AIRDROP_BOT)*\n"
                         f"🕒 _{now_str}_\n\n"
-                        f"• **Miner Level:** `Level {lvl}` (+{rate} ART/hr 24/7)\n"
-                        f"• **Compounding Pool:** `{bal:.2f} ART` (Reinvesting to Next Level)\n"
-                        f"• **Destination TON Wallet:** `{wallet}`\n"
-                        f"• **Active Referrals:** `{refs} Verified Fleet Members`\n"
-                        f"• **Official Channel:** `@ART_AIRDROP` ✅ (Joined)\n\n"
+                        f"• *Miner Level:* `Level {lvl}` (+{rate} ART/hr 24/7)\n"
+                        f"• *Compounding Pool:* `{bal:.2f} ART` (Reinvesting to Next Level)\n"
+                        f"• *Destination TON Wallet:* `{wallet}`\n"
+                        f"• *Active Referrals:* `{refs} Verified Fleet Members`\n"
+                        f"• *Official Channel:* `@ART_AIRDROP` ✅ (Joined)\n\n"
                         f"💡 _Auto-leveling engine reinvests 100% of mining rewards into upgrades._"
                     )
     except Exception:
@@ -2070,13 +2086,13 @@ async def build_art_details_report(user_id: int):
     return (
         f"🚀 *ART Airdrop Cloud Mining (@ART_AIRDROP_BOT)*\n"
         f"🕒 _{now_str}_\n\n"
-        f"• **Mining Speed:** `+21.3 ART/hr` (Active 24/7)\n"
-        f"• **Available Pool:** `90.4 ART`\n"
-        f"• **Pending Withdrawal:** `800 ART` ($2.56 USD / ~৳312 BDT) ⏳\n"
-        f"• **Ticket ID:** `w-1789742197512-xibbn` (Status: PENDING queue)\n"
-        f"• **Destination TON Wallet:** `UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`\n"
-        f"• **Active Referrals:** `10 Verified Fleet Members`\n"
-        f"• **Official Channel:** `@ART_AIRDROP` ✅ (Joined)\n\n"
+        f"• *Mining Speed:* `+21.3 ART/hr` (Active 24/7)\n"
+        f"• *Available Pool:* `90.4 ART`\n"
+        f"• *Pending Withdrawal:* `800 ART` ($2.56 USD / ~৳312 BDT) ⏳\n"
+        f"• *Ticket ID:* `w-1789742197512-xibbn` (Status: PENDING queue)\n"
+        f"• *Destination TON Wallet:* `UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`\n"
+        f"• *Active Referrals:* `10 Verified Fleet Members`\n"
+        f"• *Official Channel:* `@ART_AIRDROP` ✅ (Joined)\n\n"
         f"💡 _Passive mining runs 24/7 on the VPS cloud worker._"
     )
 
@@ -2120,12 +2136,12 @@ async def build_atf_details_report(user_id: int):
     return (
         f"🪙 *ATF Miner Cloud Automation (@ATF_AIRDROP_bot)*\n"
         f"🕒 _{now_str}_\n\n"
-        f"• **Miner Level:** `Level {lvl}`\n"
-        f"• **Mined Balance:** `{mined:,.4f} ATF` 💎\n"
-        f"• **Pending Harvest:** `{pending:,.4f} ATF`\n"
-        f"• **Destination TON Wallet:** `{wallet}`\n"
-        f"• **On-Chain Verification:** `{'Verified ✅' if verified else 'Unverified ⏳'}`\n"
-        f"• **Auto-Mining & Tasks:** `Active 24/7 (Math Challenges Solved Automatically)`\n\n"
+        f"• *Miner Level:* `Level {lvl}`\n"
+        f"• *Mined Balance:* `{mined:,.4f} ATF` 💎\n"
+        f"• *Pending Harvest:* `{pending:,.4f} ATF`\n"
+        f"• *Destination TON Wallet:* `{wallet}`\n"
+        f"• *On-Chain Verification:* `{'Verified ✅' if verified else 'Unverified ⏳'}`\n"
+        f"• *Auto-Mining & Tasks:* `Active 24/7 (Math Challenges Solved Automatically)`\n\n"
         f"💡 _Passive mining runs 24/7 on the VPS daemon with automatic arithmetic challenge solving._"
     )
 
@@ -2151,12 +2167,12 @@ async def build_stones_details_report(user_id: int):
     return (
         f"💎 *Stones Miners Deep Details (@stoneswithestand_bot)*\n"
         f"🕒 _{now_str}_\n\n"
-        f"• **Wallet Holding:** `{coins} STONES` (Eligible for 500 Withdrawal)\n"
-        f"• **Mining Score:** `{bal} STONES` (Active Mining 24/7)\n"
-        f"• **Referrals:** `10/10 Valid` (All Fleet Members Bound) 🏆\n"
-        f"• **Arbitrum Payout Address:** `{ARBITRUM_WALLET}`\n"
-        f"• **Minimum Withdrawal:** `500 STONES`\n"
-        f"• **Required Channel:** `@stoneswithestand` ✅ (Verified & Active)\n\n"
+        f"• *Wallet Holding:* `{coins} STONES` (Eligible for 500 Withdrawal)\n"
+        f"• *Mining Score:* `{bal} STONES` (Active Mining 24/7)\n"
+        f"• *Referrals:* `10/10 Valid` (All Fleet Members Bound) 🏆\n"
+        f"• *Arbitrum Payout Address:* `{ARBITRUM_WALLET}`\n"
+        f"• *Minimum Withdrawal:* `500 STONES`\n"
+        f"• *Required Channel:* `@stoneswithestand` ✅ (Verified & Active)\n\n"
         f"💡 _Passive mining runs 24/7. Auto-withdrawal triggers when holding reaches 500 STONES._"
     )
 
@@ -2217,14 +2233,14 @@ async def build_mrg_details_report(user_id: int):
     return (
         f"⛏️ *MRG Miner Hub (@mrgminerbot)*\n"
         f"🕒 _{now_str}_\n\n"
-        f"• **Primary Balance:** `{bal:.2f} MRG` (Peak Miner Level: {peak_lvl} · {speed_ths:.2f} TH/s)\n"
-        f"• **Lifetime Mined:** `{lifetime_mined:.2f} MRG` (+`{unclaimed:.2f} MRG` pending sync)\n"
-        f"• **Main TON Wallet:** `{ton_wallet}`\n"
-        f"• **Active Squad:** {direct_refs} Direct Referrals (Nancy, Tg, Girtt, Sanzida)\n"
-        f"• **Squad Mining Commission:** `10% Lifetime Daily Cut` (~2.5+ MRG/day)\n"
-        f"• **Fleet TON Wallets:** `{len(fleet_ton)} Unique Wallets Connected` (Accounts 2 to 13)\n"
-        f"• **Anti-Sybil Guard:** 100% Isolated Keys & Hardware Profiles\n"
-        f"• **Official Channel:** `@mrgminer` ✅ (Joined)\n\n"
+        f"• *Primary Balance:* `{bal:.2f} MRG` (Peak Miner Level: {peak_lvl} · {speed_ths:.2f} TH/s)\n"
+        f"• *Lifetime Mined:* `{lifetime_mined:.2f} MRG` (+`{unclaimed:.2f} MRG` pending sync)\n"
+        f"• *Main TON Wallet:* `{ton_wallet}`\n"
+        f"• *Active Squad:* {direct_refs} Direct Referrals (Nancy, Tg, Girtt, Sanzida)\n"
+        f"• *Squad Mining Commission:* `10% Lifetime Daily Cut` (~2.5+ MRG/day)\n"
+        f"• *Fleet TON Wallets:* `{len(fleet_ton)} Unique Wallets Connected` (Accounts 2 to 13)\n"
+        f"• *Anti-Sybil Guard:* 100% Isolated Keys & Hardware Profiles\n"
+        f"• *Official Channel:* `@mrgminer` ✅ (Joined)\n\n"
         f"💡 _All squad mining commissions compound directly into your primary account {user_id}._"
     )
 
@@ -2269,12 +2285,12 @@ async def build_ailab_details_report(user_id: int):
     return (
         f"🧪 *AI Lab Agent Hub (@AiLab_robot)*\n"
         f"🕒 _{now_str}_\n\n"
-        f"• **Current Mining Power:** `{power:,} H/s` ({profit_day} Hashes/day)\n"
-        f"• **Unexchanged Hashes:** `{hashes:.2f} Hashes`\n"
-        f"• **Available Balance:** `${usd_bal:.4f} USD` (Auto-Exchanged)\n"
-        f"• **Active Referrals:** `{refs}/15 Bound` (Fleet Verified) 🏆\n"
-        f"• **Miner Status:** `{'🟢 Mining 24/7' if is_running else '⏳ Cycle Renewing'}`\n"
-        f"• **Referral Code:** `296852`\n\n"
+        f"• *Current Mining Power:* `{power:,} H/s` ({profit_day} Hashes/day)\n"
+        f"• *Unexchanged Hashes:* `{hashes:.2f} Hashes`\n"
+        f"• *Available Balance:* `${usd_bal:.4f} USD` (Auto-Exchanged)\n"
+        f"• *Active Referrals:* `{refs}/15 Bound` (Fleet Verified) 🏆\n"
+        f"• *Miner Status:* `{'🟢 Mining 24/7' if is_running else '⏳ Cycle Renewing'}`\n"
+        f"• *Referral Code:* `296852`\n\n"
         f"💡 _All 12 fleet worker accounts mine continuously and compound referral power directly into your primary account._"
     )
 
@@ -2319,11 +2335,11 @@ async def build_ainovum_details_report(user_id: int):
     return (
         f"🤖 *Ainovum Cloud Computing Node (@ainovumbot)*\n"
         f"🕒 _{now_str}_\n\n"
-        f"• **Node Telemetry:** `{'🟢 Operational (Low Latency)' if node_online else '⏳ Syncing'}`\n"
-        f"• **Available for Cashout:** `{avail:.4f} USDT`\n"
-        f"• **Auto-Withdraw Threshold:** `0.10 USDT` (BEP-20)\n"
-        f"• **Routing EVM Address:** `{evm_addr[:8]}...{evm_addr[-6:]}` (Anti-Sybil Isolated ✅)\n"
-        f"• **Referral Network:** Linked to Primary Fleet Host 👑\n\n"
+        f"• *Node Telemetry:* `{'🟢 Operational (Low Latency)' if node_online else '⏳ Syncing'}`\n"
+        f"• *Available for Cashout:* `{avail:.4f} USDT`\n"
+        f"• *Auto-Withdraw Threshold:* `0.10 USDT` (BEP-20)\n"
+        f"• *Routing EVM Address:* `{evm_addr[:8]}...{evm_addr[-6:]}` (Anti-Sybil Isolated ✅)\n"
+        f"• *Referral Network:* Linked to Primary Fleet Host 👑\n\n"
         f"💡 _Worker account payouts route through dedicated isolated EVM addresses to comply with Novum network policy._"
     )
 
@@ -2372,12 +2388,12 @@ async def build_ultrawallet_details_report(user_id: int):
     return (
         f"💳 *UltraWallet Hub (@UltrawalletTrade_Bot)*\n"
         f"🕒 _{now_str}_\n\n"
-        f"• **Reward Points:** `{bal:,} Points` (Daily Check-in Active)\n"
-        f"• **Mining Rate:** `+{rate} Points/hr` (24h Auto-Renew Cycle)\n"
-        f"• **Mining Status:** `{'🟢 Active' if m_active else '⏳ Renewing'}`\n"
-        f"• **Direct Referrals:** `{refs} Fleet Members Bound`\n"
-        f"• **USDT Commissions Earned:** `${usdt_earned:.4f} USDT`\n"
-        f"• **Referral Link Code:** `{ULTRAWALLET_REFERRAL_CODE}`\n\n"
+        f"• *Reward Points:* `{bal:,} Points` (Daily Check-in Active)\n"
+        f"• *Mining Rate:* `+{rate} Points/hr` (24h Auto-Renew Cycle)\n"
+        f"• *Mining Status:* `{'🟢 Active' if m_active else '⏳ Renewing'}`\n"
+        f"• *Direct Referrals:* `{refs} Fleet Members Bound`\n"
+        f"• *USDT Commissions Earned:* `${usdt_earned:.4f} USDT`\n"
+        f"• *Referral Link Code:* `{ULTRAWALLET_REFERRAL_CODE}`\n\n"
         f"💡 _Passive mining and daily streak check-ins are fully automated across your fleet._"
     )
 
@@ -2423,12 +2439,12 @@ async def build_apx_details_report(user_id: int):
     return (
         f"⚡ *Apex Miner Hub (@ApxMinerBot)*\n"
         f"🕒 _{now_str}_\n\n"
-        f"• **Available Balance:** `{bal:,.4f} Points`\n"
-        f"• **Mining Rate:** `{m_rate * 3600:.2f} Points/hr` (Active 24/7)\n"
-        f"• **Mining Status:** `{'🟢 Mining Active' if m_active else '⏳ Cycle Renewing'}`\n"
-        f"• **Daily Streak:** `{streak} Days` (Check-in Verified)\n"
-        f"• **Fleet Referrals:** `{refs} Bound` ({active_refs} Active Miners) 🏆\n"
-        f"• **Referral Code:** `{APX_REFERRAL_CODE}`\n\n"
+        f"• *Available Balance:* `{bal:,.4f} Points`\n"
+        f"• *Mining Rate:* `{m_rate * 3600:.2f} Points/hr` (Active 24/7)\n"
+        f"• *Mining Status:* `{'🟢 Mining Active' if m_active else '⏳ Cycle Renewing'}`\n"
+        f"• *Daily Streak:* `{streak} Days` (Check-in Verified)\n"
+        f"• *Fleet Referrals:* `{refs} Bound` ({active_refs} Active Miners) 🏆\n"
+        f"• *Referral Code:* `{APX_REFERRAL_CODE}`\n\n"
         f"💡 _All 12 fleet worker accounts mine continuously, activate ad speed boosts, and auto-compound referral rewards to your primary account._"
     )
 
@@ -2492,47 +2508,47 @@ async def build_wallet_hub_report():
         f"💼 *MY AGY AI — Multi-Chain Portfolio & Earnings Hub*\n"
         f"🕒 _{now_str}_\n\n"
         f"👑 *1. Consolidated Multi-Chain Portfolio Valuation:*\n"
-        f"• **Total Estimated Value:** `~${portfolio_total_usd:.2f} USD` (৳{portfolio_total_bdt:,.2f} BDT)\n"
-        f"• **Live Rates:** 1 BNB = `${bnb_price:.2f}` | 1 TON = `${ton_price:.2f}` | 1 USD = `৳{usd_bdt:.1f}`\n\n"
+        f"• *Total Estimated Value:* `~${portfolio_total_usd:.2f} USD` (৳{portfolio_total_bdt:,.2f} BDT)\n"
+        f"• *Live Rates:* 1 BNB = `${bnb_price:.2f}` | 1 TON = `${ton_price:.2f}` | 1 USD = `৳{usd_bdt:.1f}`\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
         f"🌐 *2. Binance Web3 Self-Custody Wallets (Main ID: `6727787768`):*\n\n"
-        f"• **BNB Smart Chain (BEP-20):**\n"
+        f"• *BNB Smart Chain (BEP-20):*\n"
         f"  `{WALLET_ADDRESS}`\n"
         f"  └ Confirmed Balance: `{bnb_bal:.6f} BNB` (~${bnb_usd:.2f} USD / ৳{bnb_bdt:.2f} BDT)\n"
         f"  └ Live Rate: `${bnb_price:.2f} USD`\n"
-        f"  └ Used by: **BNB Galaxy**, **Ultra Wallet**\n"
+        f"  └ Used by: *BNB Galaxy*, *Ultra Wallet*\n"
         f"  └ [View on BscScan](https://bscscan.com/address/{WALLET_ADDRESS})\n\n"
-        f"• **The Open Network (TON Ecosystem):**\n"
+        f"• *The Open Network (TON Ecosystem):*\n"
         f"  `{TON_PRIMARY_WALLET}`\n"
         f"  └ Confirmed Balance: `{ton_bal:.4f} TON` (~${ton_usd:.2f} USD / ৳{ton_bdt:.2f} BDT)\n"
         f"  └ Live Rate: `${ton_price:.2f} USD`\n"
         f"  └ Pending ART Payout: `800 ART` ($2.56) ticket `w-1789742197512-xibbn` ⏳\n"
         f"  └ MRG Miner Balance: `254.38 MRG` (Compounding 10% daily cut)\n"
         f"  └ [View on Tonviewer](https://tonviewer.com/{TON_PRIMARY_WALLET})\n\n"
-        f"• **Arbitrum One (EVM):**\n"
+        f"• *Arbitrum One (EVM):*\n"
         f"  `{WALLET_ADDRESS}`\n"
-        f"  └ Status: Configured for **Stones Miners** withdrawals (10/10 referrals valid, 101 STONES)\n"
+        f"  └ Status: Configured for *Stones Miners* withdrawals (10/10 referrals valid, 101 STONES)\n"
         f"  └ Live ARB Rate: `${arb_price:.4f} USD`\n"
         f"  └ [View on Arbiscan](https://arbiscan.io/address/{WALLET_ADDRESS})\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
         f"📜 *3. Realized Payouts Ledger:*\n"
-        f"• **Total Fleet Withdrawn:** `{total_withdrawn:.6f} BNB` (~${withdrawn_usd:.2f} USD / ৳{withdrawn_bdt:.2f} BDT)\n"
-        f"• **Total Payouts:** `{len(payouts)} Transactions Completed` 🏆\n"
+        f"• *Total Fleet Withdrawn:* `{total_withdrawn:.6f} BNB` (~${withdrawn_usd:.2f} USD / ৳{withdrawn_bdt:.2f} BDT)\n"
+        f"• *Total Payouts:* `{len(payouts)} Transactions Completed` 🏆\n"
         f"{payouts_snippet}\n"
-        f"• **ART Airdrop:** `800 ART` submitted directly to TON payout queue\n\n"
+        f"• *ART Airdrop:* `800 ART` submitted directly to TON payout queue\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
         f"📈 *4. Fleet Yield & Analytics ({len(accounts)} Accounts):*\n"
-        f"• **Daily BNB Fleet Yield:** `~{daily_est_bnb:.6f} BNB` (~${daily_usd:.2f} USD / ৳{daily_bdt:.2f} BDT)\n"
-        f"• **Monthly Projected BNB:** `~{monthly_est_bnb:.6f} BNB` (~${monthly_usd:.2f} USD / ৳{monthly_bdt:.2f} BDT)\n"
-        f"• **Apex Miner Pool:** `~{len(accounts) * 12950:,} Points` (12,950 pts/account + Continuous 8h Boost)\n"
-        f"• **ART Cloud Mining:** `+21.3 ART/hr` (~511 ART/day)\n"
-        f"• **MRG Squad Cut:** `~2.0 MRG/day` (10% lifetime team cut)\n"
-        f"• **UltraWallet Yield:** `Active Mining` (USDT Commissions & Auto Energy Refill)\n\n"
+        f"• *Daily BNB Fleet Yield:* `~{daily_est_bnb:.6f} BNB` (~${daily_usd:.2f} USD / ৳{daily_bdt:.2f} BDT)\n"
+        f"• *Monthly Projected BNB:* `~{monthly_est_bnb:.6f} BNB` (~${monthly_usd:.2f} USD / ৳{monthly_bdt:.2f} BDT)\n"
+        f"• *Apex Miner Pool:* `~{len(accounts) * 12950:,} Points` (12,950 pts/account + Continuous 8h Boost)\n"
+        f"• *ART Cloud Mining:* `+21.3 ART/hr` (~511 ART/day)\n"
+        f"• *MRG Squad Cut:* `~2.0 MRG/day` (10% lifetime team cut)\n"
+        f"• *UltraWallet Yield:* `Active Mining` (USDT Commissions & Auto Energy Refill)\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
         f"🛡️ *5. Dedicated Anti-Sybil TON Wallets (Accounts 2 to 13):*\n"
-        f"• **Count:** `{len([k for k in fleet_ton if not str(k).startswith('_')])} Unique Dedicated Wallets` (0 duplicates across fleet)\n"
-        f"• **Status:** All connected to **MRG Miner** squad mining\n"
-        f"• **Security:** 24-word secret recovery phrases encrypted & saved in `fleet_ton_wallets.json`\n\n"
+        f"• *Count:* `{len([k for k in fleet_ton if not str(k).startswith('_')])} Unique Dedicated Wallets` (0 duplicates across fleet)\n"
+        f"• *Status:* All connected to *MRG Miner* squad mining\n"
+        f"• *Security:* 24-word secret recovery phrases encrypted & saved in `fleet_ton_wallets.json`\n\n"
         f"💡 _Tap `💰 Withdraw` to check live balances or trigger an instant payout._"
     )
 
@@ -2569,15 +2585,15 @@ def build_server_health_report():
 
     return (
         f"🏓 *MY AGY AI — Multi-Cloud System & Mesh Health*\n\n"
-        f"• **Fleet Accounts:** `{acc_count} Connected & Verified`\n"
-        f"• **Immortal Daemon:** `🟢 Active 24/7 (PID: {os.getpid()})`\n"
-        f"• **Process Uptime:** `{uptime_str}`\n"
-        f"• **RAM Usage:** `{mem_str}`\n"
-        f"• **CPU Load Avg:** `{load_str}`\n"
-        f"• **5x Cloudflare Mesh:** `🟢 Online (3 Edge Nodes + 1 D1 SQL Node + 1 Mining Engine)`\n"
-        f"• **Dual MTProto Relayers:** `🟢 Primary & Backup Synchronized (Render)`\n"
-        f"• **Dual GitHub Remotes:** `🟢 Synced (AAA2743 & AAA0002)`\n"
-        f"• **Telegram Disaster Vault:** `🟢 Replicating to @myagyai`\n\n"
+        f"• *Fleet Accounts:* `{acc_count} Connected & Verified`\n"
+        f"• *Immortal Daemon:* `🟢 Active 24/7 (PID: {os.getpid()})`\n"
+        f"• *Process Uptime:* `{uptime_str}`\n"
+        f"• *RAM Usage:* `{mem_str}`\n"
+        f"• *CPU Load Avg:* `{load_str}`\n"
+        f"• *5x Cloudflare Mesh:* `🟢 Online (3 Edge Nodes + 1 D1 SQL Node + 1 Mining Engine)`\n"
+        f"• *Dual MTProto Relayers:* `🟢 Primary & Backup Synchronized (Render)`\n"
+        f"• *Dual GitHub Remotes:* `🟢 Synced (AAA2743 & AAA0002)`\n"
+        f"• *Telegram Disaster Vault:* `🟢 Replicating to @myagyai`\n\n"
         f"💡 _Zero-trust serverless architecture active across all cloud providers._"
     )
 
@@ -2682,7 +2698,7 @@ async def handle_single_update(update: dict):
                 accs = load_accounts()
                 t_acc = next((a for a in accs if str(a.get("user_id")) == str(t_uid)), None)
                 t_name = t_acc.get("name", f"User {t_uid}") if t_acc else f"User {t_uid}"
-                await send_report_message(f"🚀 Triggering withdrawal for **{t_name}** (`{t_uid}`)...", chat_id=from_id)
+                await send_report_message(f"🚀 Triggering withdrawal for *{t_name}* (`{t_uid}`)...", chat_id=from_id)
                 asyncio.create_task(check_and_auto_withdraw(t_uid, t_name, notify_manual=True, caller_chat_id=from_id, acc_data=t_acc))
             elif cb_data == "btn_withdraw_all":
                 safe_create_task(execute_universal_fleet_sweep(caller_chat_id=from_id), name="cb_universal_sweep")
@@ -2737,8 +2753,8 @@ async def handle_single_update(update: dict):
             await send_report_message(
                 "⛔ *Access Denied*\n\n"
                 "This administrative bot is private and restricted to authorized admins only.\n\n"
-                f"• **Your Telegram ID:** `{chat_id}`\n"
-                f"• **Status:** Access Not Authorized",
+                f"• *Your Telegram ID:* `{chat_id}`\n"
+                f"• *Status:* Access Not Authorized",
                 chat_id=chat_id
             )
             return
@@ -2852,12 +2868,12 @@ async def handle_single_update(update: dict):
 
                     succ = (
                         f"🎉 *Account Connected Successfully!*\n\n"
-                        f"• **Name:** {acc_name}\n"
-                        f"• **Username:** @{uname}\n"
-                        f"• **User ID:** `{me.id}`\n"
-                        f"• **Phone:** `{phone}`\n"
-                        f"• **Referrals:** `Bound to Master Fleet` ✅\n"
-                        f"• **Total Active Accounts:** `{len(accs)}`\n\n"
+                        f"• *Name:* {acc_name}\n"
+                        f"• *Username:* @{uname}\n"
+                        f"• *User ID:* `{me.id}`\n"
+                        f"• *Phone:* `{phone}`\n"
+                        f"• *Referrals:* `Bound to Master Fleet` ✅\n"
+                        f"• *Total Active Accounts:* `{len(accs)}`\n\n"
                         f"✅ Automatically registered under your master referral links! 8-bot mining & farming is now active on this account."
                     )
                     await broadcast_admin_message(succ, reply_markup=MAIN_TAB_KEYBOARD)
@@ -2929,12 +2945,12 @@ async def handle_single_update(update: dict):
 
                     succ = (
                         f"🎉 *Account Connected Successfully with 2FA!*\n\n"
-                        f"• **Name:** {acc_name}\n"
-                        f"• **Username:** @{uname}\n"
-                        f"• **User ID:** `{me.id}`\n"
-                        f"• **Phone:** `{phone}`\n"
-                        f"• **Referrals:** `Bound to Master Fleet` ✅\n"
-                        f"• **Total Active Accounts:** `{len(accs)}`\n\n"
+                        f"• *Name:* {acc_name}\n"
+                        f"• *Username:* @{uname}\n"
+                        f"• *User ID:* `{me.id}`\n"
+                        f"• *Phone:* `{phone}`\n"
+                        f"• *Referrals:* `Bound to Master Fleet` ✅\n"
+                        f"• *Total Active Accounts:* `{len(accs)}`\n\n"
                         f"✅ Automatically registered under your master referral links! 8-bot mining & farming is now active on this account."
                     )
                     await broadcast_admin_message(succ, reply_markup=MAIN_TAB_KEYBOARD)
@@ -2954,12 +2970,12 @@ async def handle_single_update(update: dict):
             await send_report_message("⚡ *Executive toolbar synchronized:*", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
             welcome = (
                 "👋 *Welcome to MY AGY AI — Executive Admin Hub*\n\n"
-                "Your autonomous **24/7 Cloud Operations Hub** is active across 3 Cloudflare Edge nodes.\n\n"
+                "Your autonomous *24/7 Cloud Operations Hub* is active across 3 Cloudflare Edge nodes.\n\n"
                 "✨ *Fleet Telemetry:*\n"
-                "• **13 Connected Accounts:** 100% cloud serverless execution\n"
-                "• **8 Mining Automations:** Silent autonomous background cycles\n"
-                "• **3x Cloudflare Edge Mesh:** Distributed multi-node parallel cloud processing\n"
-                "• **Executive WebApp:** Real-time graphs, on-chain balances, and payouts ledger\n\n"
+                "• *13 Connected Accounts:* 100% cloud serverless execution\n"
+                "• *8 Mining Automations:* Silent autonomous background cycles\n"
+                "• *3x Cloudflare Edge Mesh:* Distributed multi-node parallel cloud processing\n"
+                "• *Executive WebApp:* Real-time graphs, on-chain balances, and payouts ledger\n\n"
                 "⚡ *Tap '🚀 Open Executive Dashboard' below to view your real-time visual control room!*"
             )
             await send_report_message(welcome, reply_markup=STATUS_INLINE_KEYBOARD, chat_id=chat_id)
@@ -3028,7 +3044,7 @@ async def handle_single_update(update: dict):
             safe_create_task(execute_universal_fleet_sweep(caller_chat_id=chat_id), name="tg_universal_sweep")
 
         elif text in ["/dashboard", "/miniapp", "/app", "🚀 Open Mini App", "🚀 Dashboard", "🚀 Open WebApp Dashboard"]:
-            dash_url = "https://agy-aaa000.vercel.app/?v=4.7"
+            dash_url = "https://agy-aaa000.vercel.app/?v=4.9"
             reply_markup = {
                 "inline_keyboard": [
                     [{"text": "🚀 Open Executive Dashboard", "web_app": {"url": dash_url}}],
@@ -3038,9 +3054,9 @@ async def handle_single_update(update: dict):
             }
             dash_msg = (
                 f"🚀 *MY AGY AI — Executive Fleet Control Center*\n\n"
-                f"• **Live WebApp:** `{dash_url}`\n"
-                f"• **Features:** 13 Accounts Real-time Balances, Mining Status, TH/s, Multi-Chain Treasury\n"
-                f"• **Auto-Withdraw:** Routed strictly to Binance BEP-20 (`0xfda41820...`)\n\n"
+                f"• *Live WebApp:* `{dash_url}`\n"
+                f"• *Features:* 13 Accounts Real-time Balances, Mining Status, TH/s, Multi-Chain Treasury\n"
+                f"• *Auto-Withdraw:* Routed strictly to Binance BEP-20 (`0xfda41820...`)\n\n"
                 f"Tap below to open your executive dashboard or trigger actions:"
             )
             await send_report_message(dash_msg, reply_markup=reply_markup, chat_id=chat_id)
@@ -3087,9 +3103,9 @@ async def handle_single_update(update: dict):
             bdt_val = usd_val * usd_bdt
             msg = (
                 f"💱 *Live BNB Crypto & Fiat Converter*\n\n"
-                f"• **BNB Amount:** `{amount:.6f} BNB`\n"
-                f"• **USD Value:** `${usd_val:.4f} USD`\n"
-                f"• **Bangladeshi Taka:** `৳{bdt_val:.2f} BDT`\n\n"
+                f"• *BNB Amount:* `{amount:.6f} BNB`\n"
+                f"• *USD Value:* `${usd_val:.4f} USD`\n"
+                f"• *Bangladeshi Taka:* `৳{bdt_val:.2f} BDT`\n\n"
                 f"📊 *Current Market Rates:*\n"
                 f"• 1 BNB = `${bnb_price:.2f} USD`\n"
                 f"• 1 USD = `৳{usd_bdt:.1f} BDT`\n"
@@ -3119,10 +3135,10 @@ async def handle_single_update(update: dict):
                 status_txt = "Registered & Activated" if res["created"] else "Updated"
                 succ_msg = (
                     f"✅ *Mining Bot {status_txt}!*\n\n"
-                    f"• **Bot:** `{b.get('bot')}`\n"
-                    f"• **Referral Code:** `{b.get('ref_code') or 'None'}`\n"
-                    f"• **Cycle:** `Every {b.get('interval_hours')} hours`\n"
-                    f"• **Fleet Auto-Binding:** Scheduled across all 13 accounts in next rotation!\n\n"
+                    f"• *Bot:* `{b.get('bot')}`\n"
+                    f"• *Referral Code:* `{b.get('ref_code') or 'None'}`\n"
+                    f"• *Cycle:* `Every {b.get('interval_hours')} hours`\n"
+                    f"• *Fleet Auto-Binding:* Scheduled across all 13 accounts in next rotation!\n\n"
                     f"Use `/miningbots` to view all active mining engines."
                 )
                 await send_report_message(succ_msg, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
@@ -3200,8 +3216,8 @@ async def handle_single_update(update: dict):
                 desc = "Muted 24/7" if curr == "ON" else ("Audible 24/7" if curr == "OFF" else "Auto Night Quiet (11PM-7AM BST)")
                 status_msg = (
                     f"🌙 *Smart Quiet Mode Settings*\n\n"
-                    f"• **Current Setting:** `{curr}` ({desc})\n"
-                    f"• **Auto-Protection:** Payout receipts & 2FA always play loud\n\n"
+                    f"• *Current Setting:* `{curr}` ({desc})\n"
+                    f"• *Auto-Protection:* Payout receipts & 2FA always play loud\n\n"
                     f"*Commands:*\n"
                     f"• `/silent auto` — Night Quiet (11:00 PM – 07:00 AM BST) [Recommended]\n"
                     f"• `/silent on` — Always silent for routine messages\n"
@@ -3246,9 +3262,9 @@ async def handle_single_update(update: dict):
                     wake_worker_event.set()
                     msg = (
                         f"⚡ *Account Fast-Tracked to Top Priority!*\n\n"
-                        f"• **Target:** {t_name} (`{t_uid}`)\n"
-                        f"• **Queue Position:** **#1 (Next to execute!)**\n"
-                        f"• **Scheduled:** BNB Galaxy 10 tasks, referral binds, Stones daily check-in, MRG mining & ART airdrop.\n\n"
+                        f"• *Target:* {t_name} (`{t_uid}`)\n"
+                        f"• *Queue Position:* *#1 (Next to execute!)*\n"
+                        f"• *Scheduled:* BNB Galaxy 10 tasks, referral binds, Stones daily check-in, MRG mining & ART airdrop.\n\n"
                         f"💡 _The background worker will start this account immediately after the active task finishes._"
                     )
                     await send_report_message(msg, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
@@ -3288,17 +3304,17 @@ async def handle_single_update(update: dict):
                     rep = (
                         f"📱 *Account #{target_idx} Inspection*\n"
                         f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                        f"• **Name:** {name}\n"
-                        f"• **Phone:** `{phone}`\n"
-                        f"• **User ID:** `{uid}`\n"
-                        f"• **Daemon Status:** {status_icon}\n"
-                        f"• **Network Proxy:** `{proxy}`\n"
-                        f"• **Stones WD Cooldown:** `{stones_cd_str}`\n"
-                        f"• **Stones Policy:** `{stones_mode}`\n"
-                        f"• **AI Lab Policy:** `{ai_lab_mode}`\n"
-                        f"• **ATF Mode:** `100% Farming / Accumulation`\n"
-                        f"• **MRG Squad:** `10% Auto-Commissions -> Main ID`\n"
-                        f"• **Active Lineup:** 8 Mining Bots Active 24/7\n"
+                        f"• *Name:* {name}\n"
+                        f"• *Phone:* `{phone}`\n"
+                        f"• *User ID:* `{uid}`\n"
+                        f"• *Daemon Status:* {status_icon}\n"
+                        f"• *Network Proxy:* `{proxy}`\n"
+                        f"• *Stones WD Cooldown:* `{stones_cd_str}`\n"
+                        f"• *Stones Policy:* `{stones_mode}`\n"
+                        f"• *AI Lab Policy:* `{ai_lab_mode}`\n"
+                        f"• *ATF Mode:* `100% Farming / Accumulation`\n"
+                        f"• *MRG Squad:* `10% Auto-Commissions -> Main ID`\n"
+                        f"• *Active Lineup:* 8 Mining Bots Active 24/7\n"
                         f"━━━━━━━━━━━━━━━━━━━━━━\n"
                         f"💡 _Tip: Use `/acc <1-{len(accounts)}>` to inspect any connected account._"
                     )
@@ -3473,9 +3489,9 @@ async def handle_single_update(update: dict):
                     asyncio.create_task(send_backup_to_telegram(str(chat_id)))
                     await send_report_message(
                         f"✅ *BEP-20 Payout Wallet Updated!*\n\n"
-                        f"• **New Address:** `{new_wallet}`\n"
-                        f"• **Auto-Withdrawal:** Active (`>= {MIN_WITHDRAWAL} BNB`)\n"
-                        f"• **Cloud Backup:** Synced to Cloudflare KV & @myagyai",
+                        f"• *New Address:* `{new_wallet}`\n"
+                        f"• *Auto-Withdrawal:* Active (`>= {MIN_WITHDRAWAL} BNB`)\n"
+                        f"• *Cloud Backup:* Synced to Cloudflare KV & @myagyai",
                         reply_markup=MAIN_TAB_KEYBOARD,
                         chat_id=chat_id
                     )
@@ -3501,7 +3517,7 @@ async def handle_single_update(update: dict):
             if not prompt:
                 await send_report_message(
                     "🧠 *MY AGY AI — Dual-Engine Assistant*\n\n"
-                    "Powered by **GroqCloud LPU** (`qwen/qwen3.8-27b` @ ~100ms) with **Cloudflare Edge AI** failover!\n\n"
+                    "Powered by *GroqCloud LPU* (`qwen/qwen3.8-27b` @ ~100ms) with *Cloudflare Edge AI* failover!\n\n"
                     "Ask anything by sending:\n"
                     "`/ai <your question>`\n\n"
                     "*Examples:*\n"
@@ -3575,12 +3591,12 @@ async def handle_single_update(update: dict):
             tot = b1 + b2
             rep = (
                 f"🪙 *On-Chain BNB Consolidator & Wallet Tracker*\n\n"
-                f"• **Vault 1 (Accounts 1–7):** `{b1:.6f} BNB`\n"
+                f"• *Vault 1 (Accounts 1–7):* `{b1:.6f} BNB`\n"
                 f"  `0xfda4182001672b9f0f09e2118242e543e35ed5ce`\n"
-                f"• **Vault 2 (Accounts 8–13):** `{b2:.6f} BNB`\n"
+                f"• *Vault 2 (Accounts 8–13):* `{b2:.6f} BNB`\n"
                 f"  `0x017841f26d5b79cc8c5eb20c65367bb645cc2610`\n"
-                f"• **Total On-Chain BNB:** `{tot:.6f} BNB`\n"
-                f"• **Consolidation Target:** `0.005000 BNB` ({(tot / 0.005 * 100):.1f}%)\n\n"
+                f"• *Total On-Chain BNB:* `{tot:.6f} BNB`\n"
+                f"• *Consolidation Target:* `0.005000 BNB` ({(tot / 0.005 * 100):.1f}%)\n\n"
                 f"🎯 _Tracking live BSC blockchain state via Binance Dataseed RPC._"
             )
             await send_report_message(rep, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
@@ -3707,7 +3723,7 @@ async def cloudflare_edge_bridge_loop():
                                     "index": idx + 1,
                                     "user_id": a.get("user_id"),
                                     "name": format_clean_account_name(a, idx + 1),
-                                    "phone": a.get("phone", "N/A"),
+                                    "phone": a.get("phone") or KNOWN_PHONES.get(str(a.get("user_id")), "") or KNOWN_PHONES_BY_INDEX.get(idx + 1, "N/A"),
                                     "status": a.get("status", "active"),
                                     "cycle_done": bool(a.get("last_fleet_cycle_at")),
                                     "ton_wallet": a.get("ton_wallet") or ton_wallets.get(str(a.get("user_id")), "N/A"),
@@ -4623,10 +4639,10 @@ async def _complete_withdrawal_verification_steps_impl(user_id: int, user_name: 
         target_wallet = (acc_data or {}).get("bnb_wallet") or WALLET_ADDRESS
         alert_msg = (
             f"🎉 *BNB Withdrawal 5/5 Tasks Completed!* 🔓\n\n"
-            f"• **Account:** {user_name} (`{user_id}`)\n"
-            f"• **Verification Status:** `5/5 Tasks Unlocked` ✅\n"
-            f"• **Payout Wallet:** `{target_wallet}`\n"
-            f"• **Estimated Arrival:** Within ~8 hours\n\n"
+            f"• *Account:* {user_name} (`{user_id}`)\n"
+            f"• *Verification Status:* `5/5 Tasks Unlocked` ✅\n"
+            f"• *Payout Wallet:* `{target_wallet}`\n"
+            f"• *Estimated Arrival:* Within ~8 hours\n\n"
             f"✅ All 5 verification ads have been watched and verified to unlock your BNB payout."
         )
         await send_report_message(alert_msg, reply_markup=MAIN_TAB_KEYBOARD)
@@ -4649,7 +4665,7 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
         logger.info(f"[BNB Auto-Withdraw] {user_name} is currently busy in 24/7 worker. Deferring to active worker.")
         if notify_manual:
             await send_report_message(
-                f"⏳ **{user_name}** is currently processing automated tasks in the background worker.\n\n"
+                f"⏳ *{user_name}* is currently processing automated tasks in the background worker.\n\n"
                 f"Withdrawal will automatically trigger immediately when its current tasks complete!",
                 reply_markup=MAIN_TAB_KEYBOARD,
                 chat_id=target_chat
@@ -4795,9 +4811,9 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
             if notify_manual:
                 await send_report_message(
                     f"🚀 *Initiating BNB Withdrawal for {user_name}*\n\n"
-                    f"• **Amount:** `{amount_str} BNB`\n"
-                    f"• **Recipient Wallet:** `{target_wallet}`\n"
-                    f"• **Network:** BEP-20 (Binance Smart Chain)\n"
+                    f"• *Amount:* `{amount_str} BNB`\n"
+                    f"• *Recipient Wallet:* `{target_wallet}`\n"
+                    f"• *Network:* BEP-20 (Binance Smart Chain)\n"
                     f"⏳ Interacting with @{BNB_BOT} and preparing anti-bot verification...",
                     chat_id=target_chat
                 )
@@ -4953,12 +4969,12 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
             # Step 6: Post receipts to dedicated Payout Verification channel (-1004402765950)
             alert_msg = (
                 f"🎉 *BNB Auto-Withdrawal Submitted & Verified!*\n\n"
-                f"• **Account:** {user_name} (`{user_id}`)\n"
-                f"• **Amount:** `{amount_str} BNB`\n"
-                f"• **Recipient Wallet:** `{target_wallet}`\n"
-                f"• **Network:** Binance Smart Chain (BEP-20)\n"
-                f"• **Anti-Bot Verification:** `5/5 Tasks Passed` ✅\n"
-                f"• **Status:** Processing (Estimated within ~8 hours)"
+                f"• *Account:* {user_name} (`{user_id}`)\n"
+                f"• *Amount:* `{amount_str} BNB`\n"
+                f"• *Recipient Wallet:* `{target_wallet}`\n"
+                f"• *Network:* Binance Smart Chain (BEP-20)\n"
+                f"• *Anti-Bot Verification:* `5/5 Tasks Passed` ✅\n"
+                f"• *Status:* Processing (Estimated within ~8 hours)"
             )
             await send_report_message(alert_msg, reply_markup=WALLET_INLINE_KEYBOARD, chat_id=REPORT_CHAT_ID)
 
@@ -5046,12 +5062,12 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
             if notify_manual:
                 info_msg = (
                     f"ℹ️ *BNB Galaxy Account Status*\n\n"
-                    f"• **Account:** {user_name}\n"
-                    f"• **Current Balance:** `{balance:.6f} BNB`\n"
-                    f"• **Minimum Required:** `{MIN_WITHDRAWAL:.6f} BNB`\n"
-                    f"• **Remaining Needed:** `{needed:.6f} BNB`\n"
-                    f"• **Withdrawal Verification:** `{v_cnt}/5 Unlocked` {'✅' if v_cnt >= 5 else '⏳'}\n"
-                    f"• **Destination Wallet:** `{WALLET_ADDRESS}`\n\n"
+                    f"• *Account:* {user_name}\n"
+                    f"• *Current Balance:* `{balance:.6f} BNB`\n"
+                    f"• *Minimum Required:* `{MIN_WITHDRAWAL:.6f} BNB`\n"
+                    f"• *Remaining Needed:* `{needed:.6f} BNB`\n"
+                    f"• *Withdrawal Verification:* `{v_cnt}/5 Unlocked` {'✅' if v_cnt >= 5 else '⏳'}\n"
+                    f"• *Destination Wallet:* `{WALLET_ADDRESS}`\n\n"
                     f"💡 _Auto-withdrawal triggers immediately when balance reaches {MIN_WITHDRAWAL} BNB._"
                 )
                 await send_report_message(info_msg, reply_markup=MAIN_TAB_KEYBOARD, chat_id=target_chat)
@@ -5092,7 +5108,7 @@ async def batch_withdraw_eligible(caller_chat_id=None):
 
     await send_report_message(
         f"🚀 *Batch Withdrawal Started*\n\n"
-        f"Found **{len(eligible)}** eligible account(s). Processing payouts sequentially to preserve system resources...",
+        f"Found *{len(eligible)}* eligible account(s). Processing payouts sequentially to preserve system resources...",
         reply_markup=MAIN_TAB_KEYBOARD,
         chat_id=target_chat
     )
@@ -5106,9 +5122,9 @@ async def batch_withdraw_eligible(caller_chat_id=None):
 
     summary = (
         f"✅ *Batch Withdrawal Completed*\n\n"
-        f"• **Successfully Processed:** `{success_count}/{len(eligible)}`\n"
-        f"• **Destination Wallet:** `{WALLET_ADDRESS}`\n"
-        f"• **Network:** Binance Smart Chain (BEP-20)\n\n"
+        f"• *Successfully Processed:* `{success_count}/{len(eligible)}`\n"
+        f"• *Destination Wallet:* `{WALLET_ADDRESS}`\n"
+        f"• *Network:* Binance Smart Chain (BEP-20)\n\n"
         f"💡 _All submitted withdrawals will confirm on-chain within ~8 hours._"
     )
     await send_report_message(summary, reply_markup=WALLET_INLINE_KEYBOARD, chat_id=target_chat)
@@ -5208,17 +5224,17 @@ async def scan_fleet_balances(caller_chat_id=None):
             needed = max(0.0, round(MIN_WITHDRAWAL - balance, 6))
             status_str = f"`{balance:.6f} BNB` ({needed:.6f} needed)"
 
-        lines.append(f"{idx}️⃣ **{name}** (`{phone}`)\n   • Balance: {status_str}")
+        lines.append(f"{idx}️⃣ *{name}* (`{phone}`)\n   • Balance: {status_str}")
 
     report = (
         f"💰 *Fleet BNB Balance Scanner ({len(accounts)} Accounts)*\n"
         f"🕒 _{now_str}_\n\n"
         + "\n\n".join(lines) + "\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🪙 **Total Fleet Balance:** `{total_fleet_bnb:.6f} BNB`\n"
-        f"🎯 **Auto-Withdraw Minimum:** `{MIN_WITHDRAWAL:.6f} BNB`\n"
-        f"💼 **Payout Wallet:** `{WALLET_ADDRESS}`\n"
-        f"🚀 **Eligible Accounts:** `{len(ready_accounts)} Ready`\n\n"
+        f"🪙 *Total Fleet Balance:* `{total_fleet_bnb:.6f} BNB`\n"
+        f"🎯 *Auto-Withdraw Minimum:* `{MIN_WITHDRAWAL:.6f} BNB`\n"
+        f"💼 *Payout Wallet:* `{WALLET_ADDRESS}`\n"
+        f"🚀 *Eligible Accounts:* `{len(ready_accounts)} Ready`\n\n"
         f"💡 _Any account meeting the {MIN_WITHDRAWAL} BNB threshold is automatically withdrawn to your BEP-20 wallet._"
     )
 
@@ -5806,11 +5822,11 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                         await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 7200})
                         await send_report_message(
                             f"🎉 *Stones Miners Withdrawal Submitted!*\n\n"
-                            f"• **Account:** {acc_name}\n"
-                            f"• **Amount:** `{withdraw_stones} STONES`\n"
-                            f"• **Destination:** `{target_evm_wallet}` (Arbitrum One)\n"
-                            f"• **Verification:** `Passed & Verified` ✅\n"
-                            f"• **Result:** `{wd_res}`",
+                            f"• *Account:* {acc_name}\n"
+                            f"• *Amount:* `{withdraw_stones} STONES`\n"
+                            f"• *Destination:* `{target_evm_wallet}` (Arbitrum One)\n"
+                            f"• *Verification:* `Passed & Verified` ✅\n"
+                            f"• *Result:* `{wd_res}`",
                             chat_id=REPORT_CHAT_ID
                         )
                     else:
@@ -6350,12 +6366,12 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                         w_info = wd.get("withdrawal", {})
                         await send_report_message(
                             f"🎉 *ART Airdrop Level 8 Withdrawal Submitted!*\n\n"
-                            f"• **Account:** {acc_name}\n"
-                            f"• **Level:** `Level 8 (Max Boost)` 🚀\n"
-                            f"• **Amount:** `{withdraw_art} ART` (~${w_info.get('amountUsd', 0)} USD)\n"
-                            f"• **Destination:** `{TON_PRIMARY_WALLET}` (Binance TON Deposit)\n"
-                            f"• **Status:** `{w_info.get('status', 'PENDING')}`\n"
-                            f"• **Withdrawal ID:** `{w_info.get('id', 'N/A')}`",
+                            f"• *Account:* {acc_name}\n"
+                            f"• *Level:* `Level 8 (Max Boost)` 🚀\n"
+                            f"• *Amount:* `{withdraw_art} ART` (~${w_info.get('amountUsd', 0)} USD)\n"
+                            f"• *Destination:* `{TON_PRIMARY_WALLET}` (Binance TON Deposit)\n"
+                            f"• *Status:* `{w_info.get('status', 'PENDING')}`\n"
+                            f"• *Withdrawal ID:* `{w_info.get('id', 'N/A')}`",
                             chat_id=REPORT_CHAT_ID
                         )
             except Exception as we:
@@ -6538,10 +6554,10 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
                                     logger.info(f"[{acc_name}] 🧪 [AI Lab] Withdrawal success: {cp_res}")
                                     await send_report_message(
                                         f"🎉 *AI Lab Robot Withdrawal Submitted!*\n\n"
-                                        f"• **Account:** {acc_name} (Worker)\n"
-                                        f"• **Amount:** `${wd_usd} USD` (USDT BEP-20)\n"
-                                        f"• **Destination:** `{target_evm}`\n"
-                                        f"• **Result:** `{cp_res}`",
+                                        f"• *Account:* {acc_name} (Worker)\n"
+                                        f"• *Amount:* `${wd_usd} USD` (USDT BEP-20)\n"
+                                        f"• *Destination:* `{target_evm}`\n"
+                                        f"• *Result:* `{cp_res}`",
                                         chat_id=REPORT_CHAT_ID
                                     )
                                 else:
@@ -7049,10 +7065,10 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
                                     logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal success: {wd}")
                                     await send_report_message(
                                         f"🎉 *Ainovum USDT Withdrawal Submitted!*\n\n"
-                                        f"• **Account:** {acc_name}\n"
-                                        f"• **Amount:** `{wd_amt} USDT` (BEP-20)\n"
-                                        f"• **Destination:** `{target_evm_addr}`\n"
-                                        f"• **Result:** `{wd}`",
+                                        f"• *Account:* {acc_name}\n"
+                                        f"• *Amount:* `{wd_amt} USDT` (BEP-20)\n"
+                                        f"• *Destination:* `{target_evm_addr}`\n"
+                                        f"• *Result:* `{wd}`",
                                         chat_id=REPORT_CHAT_ID
                                     )
                                     break
@@ -7552,9 +7568,9 @@ async def farm_single_account(
         await update_account_safely(acc_uid, {"status": "revoked", "revoked_reason": str(auth_err)})
         alert_msg = (
             f"⚠️ *Account Session Revoked!*\n\n"
-            f"• **Account:** {acc_name}\n"
-            f"• **Phone:** `{acc.get('phone', 'N/A')}`\n"
-            f"• **Reason:** `{auth_err}`\n\n"
+            f"• *Account:* {acc_name}\n"
+            f"• *Phone:* `{acc.get('phone', 'N/A')}`\n"
+            f"• *Reason:* `{auth_err}`\n\n"
             f"❌ This account was disconnected on mobile or revoked by Telegram.\n"
             f"💡 Send `➕ Add Account` to reconnect it whenever you are ready."
         )
@@ -7591,13 +7607,13 @@ async def task_worker_247(user_id: int, user_name: str):
     startup_text = (
         "🚀 *MY AGY AI Hub Online*\n\n"
         "Autonomous multi-crypto fleet daemon running 24/7 in the cloud across 8 active bots:\n\n"
-        "• **🪙 ATF Miner:** 100% Farming & Accumulation Mode (TON)\n"
-        "• **💎 Stones Miners:** Daily Mining (+500 STONES Arbitrum One Vault)\n"
-        "• **⛏️ MRG Miner:** 3h Mining Harvest & 10% Squad Sweeps\n"
-        "• **🚀 ART Airdrop:** Continuous 8h Mining & Auto-Leveling\n"
-        "• **🧪 AI Lab Robot:** Hashing & Daily Task Execution\n"
-        "• **🤖 Ainovum:** Automated $0.10 Threshold Withdrawals\n"
-        "• **💳 UltraWallet & ⚡ Apex:** Daily Streaks & Cloud Point Mining\n\n"
+        "• *🪙 ATF Miner:* 100% Farming & Accumulation Mode (TON)\n"
+        "• *💎 Stones Miners:* Daily Mining (+500 STONES Arbitrum One Vault)\n"
+        "• *⛏️ MRG Miner:* 3h Mining Harvest & 10% Squad Sweeps\n"
+        "• *🚀 ART Airdrop:* Continuous 8h Mining & Auto-Leveling\n"
+        "• *🧪 AI Lab Robot:* Hashing & Daily Task Execution\n"
+        "• *🤖 Ainovum:* Automated $0.10 Threshold Withdrawals\n"
+        "• *💳 UltraWallet & ⚡ Apex:* Daily Streaks & Cloud Point Mining\n\n"
         "Tap any tab button below to view live fleet metrics or manage accounts!"
     )
 
@@ -7696,9 +7712,9 @@ async def task_worker_247(user_id: int, user_name: str):
                         alert = (
                             f"📦 *Automated Midnight Cloud Backup*\n"
                             f"📅 _{today_utc_date} 00:00 UTC_\n\n"
-                            f"• **Status:** Synced to @myagyai vault ✅\n"
-                            f"• **Protection:** All accounts, MTProto sessions & Antigravity preserved\n"
-                            f"• **1-Line Restore:** Available in pinned message at https://t.me/myagyai"
+                            f"• *Status:* Synced to @myagyai vault ✅\n"
+                            f"• *Protection:* All accounts, MTProto sessions & Antigravity preserved\n"
+                            f"• *1-Line Restore:* Available in pinned message at https://t.me/myagyai"
                         )
                         await broadcast_admin_message(alert, reply_markup=STATUS_INLINE_KEYBOARD)
 
@@ -7792,9 +7808,9 @@ async def task_worker_247(user_id: int, user_name: str):
                             alert = (
                                 f"📦 *Automated Midnight Cloud Backup*\n"
                                 f"📅 _{today_utc_date} 00:00 UTC_\n\n"
-                                f"• **Status:** Synced to @myagyai vault ✅\n"
-                                f"• **Protection:** All accounts, MTProto sessions & Antigravity preserved\n"
-                                f"• **1-Line Restore:** Available in pinned message at https://t.me/myagyai"
+                                f"• *Status:* Synced to @myagyai vault ✅\n"
+                                f"• *Protection:* All accounts, MTProto sessions & Antigravity preserved\n"
+                                f"• *1-Line Restore:* Available in pinned message at https://t.me/myagyai"
                             )
                             await broadcast_admin_message(alert, reply_markup=STATUS_INLINE_KEYBOARD)
 
@@ -7991,9 +8007,9 @@ async def onchain_bnb_consolidator_loop():
                 logger.info(f"[Consolidator] Total on-chain BNB ({total:.6f}) >= threshold ({threshold:.6f}). Alerting owner...")
                 msg = (
                     f"💼 *On-Chain BNB Balance Notification*\n\n"
-                    f"• **Wallet 1 (Accounts 1–7):** `{bal1:.6f} BNB`\n"
-                    f"• **Wallet 2 (Accounts 8–13):** `{bal2:.6f} BNB`\n"
-                    f"• **Total Accumulated:** `{total:.6f} BNB`\n\n"
+                    f"• *Wallet 1 (Accounts 1–7):* `{bal1:.6f} BNB`\n"
+                    f"• *Wallet 2 (Accounts 8–13):* `{bal2:.6f} BNB`\n"
+                    f"• *Total Accumulated:* `{total:.6f} BNB`\n\n"
                     f"🎯 Target threshold of `{threshold} BNB` reached. Ready for cold wallet consolidation or CEX sweep."
                 )
                 await send_report_message(msg, reply_markup=MAIN_TAB_KEYBOARD, chat_id=REPORT_CHAT_ID)
@@ -8248,9 +8264,9 @@ async def miniapp_command_listener_loop():
                                     total = bal1 + bal2
                                     msg = (
                                         f"💼 *On-Chain BNB Balance Check*\n\n"
-                                        f"• **Wallet 1 (W1):** `{bal1:.6f} BNB`\n"
-                                        f"• **Wallet 2 (W2):** `{bal2:.6f} BNB`\n"
-                                        f"• **Total On-Chain:** `{total:.6f} BNB`\n\n"
+                                        f"• *Wallet 1 (W1):* `{bal1:.6f} BNB`\n"
+                                        f"• *Wallet 2 (W2):* `{bal2:.6f} BNB`\n"
+                                        f"• *Total On-Chain:* `{total:.6f} BNB`\n\n"
                                         f"🎯 Minimum consolidation threshold: `0.005 BNB`"
                                     )
                                     await send_report_message(msg, reply_markup=MAIN_TAB_KEYBOARD, chat_id=REPORT_CHAT_ID)
@@ -8289,9 +8305,9 @@ async def miniapp_command_listener_loop():
                                         logger.info(f"[Account Manager] 🗑️ Removed account {acc_name} ({acc_id}) from fleet.")
                                         await send_report_message(
                                             f"🗑️ *Account Removed from Fleet*\n\n"
-                                            f"• **Name:** {acc_name}\n"
-                                            f"• **User ID:** `{acc_id}`\n"
-                                            f"• **Phone:** `{target_acc.get('phone', 'N/A')}`\n\n"
+                                            f"• *Name:* {acc_name}\n"
+                                            f"• *User ID:* `{acc_id}`\n"
+                                            f"• *Phone:* `{target_acc.get('phone', 'N/A')}`\n\n"
                                             f"✅ Account session disconnected and removed from 24/7 automation.",
                                             reply_markup=MAIN_TAB_KEYBOARD,
                                             chat_id=REPORT_CHAT_ID

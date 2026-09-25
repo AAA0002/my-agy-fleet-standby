@@ -656,9 +656,9 @@ fi
             } catch (_) {}
             // Send Telegram alert
             const alertMsg = `🗑️ *Account Removed from Fleet via Mini App!*\n\n` +
-              `• **User ID:** \`${userId || "N/A"}\`\n` +
-              `• **Phone:** \`${phone || "N/A"}\`\n` +
-              `• **Cluster Gateway:** \`__SUBDOMAIN__.workers.dev\`\n\n` +
+              `• *User ID:* \`${userId || "N/A"}\`\n` +
+              `• *Phone:* \`${phone || "N/A"}\`\n` +
+              `• *Cluster Gateway:* \`__SUBDOMAIN__.workers.dev\`\n\n` +
               `✅ Account disconnected and removed from 24/7 automation.`;
             await fetch(`https://api.telegram.org/bot${env.ALERT_BOT_TOKEN}/sendMessage`, {
               method: "POST",
@@ -673,8 +673,8 @@ fi
 
         if (act === "add_account" && phone) {
           const alertMsg = `📱 *Account Onboarding Initiated from Mini App!*\n\n` +
-            `• **Phone Number:** \`${phone}\`\n` +
-            `• **Cluster Gateway:** \`__SUBDOMAIN__.workers.dev\`\n\n` +
+            `• *Phone Number:* \`${phone}\`\n` +
+            `• *Cluster Gateway:* \`__SUBDOMAIN__.workers.dev\`\n\n` +
             `💡 Please send \`/add_account ${phone}\` here to receive and submit the 5-digit Telegram login code!`;
           ctx.waitUntil(fetch(`https://api.telegram.org/bot${env.ALERT_BOT_TOKEN}/sendMessage`, {
             method: "POST",
@@ -687,9 +687,9 @@ fi
           if (env.ALERT_BOT_TOKEN && env.OWNER_ID) {
             const bMsg = `📦 *[Cloudflare Edge Disaster Recovery]*\n\n` +
               `✅ Instant backup download ready:\n` +
-              `• **Edge Node:** \`__SUBDOMAIN__.workers.dev\`\n` +
-              `• **Download:** https://restore-agy.__SUBDOMAIN__.workers.dev/backup.zip\n` +
-              `• **Pinata IPFS:** Active & Synchronized\n\n` +
+              `• *Edge Node:* \`__SUBDOMAIN__.workers.dev\`\n` +
+              `• *Download:* https://restore-agy.__SUBDOMAIN__.workers.dev/backup.zip\n` +
+              `• *Pinata IPFS:* Active & Synchronized\n\n` +
               `🛡️ 100% Cloud Protection Active.`;
             ctx.waitUntil(fetch(`https://api.telegram.org/bot${env.ALERT_BOT_TOKEN}/sendMessage`, {
               method: "POST",
@@ -709,7 +709,7 @@ fi
 
     // 7.5 High-Speed Vercel Global Edge Dashboard (Vercel CDN)
     if (path === "/" || path === "/dashboard" || path === "/status-ui" || path === "/miniapp" || path === "/app") {
-      return Response.redirect("https://agy-aaa000.vercel.app/?v=4.7", 302);
+      return Response.redirect("https://agy-aaa000.vercel.app/?v=4.9", 302);
     }
 
     // 8. Payout Receipts Record (VPS -> Edge with In-Memory + Safe KV)
@@ -989,7 +989,7 @@ fi
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               chat_id: env.OWNER_ID,
-              text: `⚠️ *[Cloudflare Edge Alert]* VPS Heartbeat Missing!\n\n• **Last Seen:** ${diffMinutes} minutes ago\n• **Node:** __SUBDOMAIN__.workers.dev\n• **Action:** Check VPS daemon status immediately.`,
+              text: `⚠️ *[Cloudflare Edge Alert]* VPS Heartbeat Missing!\n\n• *Last Seen:* ${diffMinutes} minutes ago\n• *Node:* __SUBDOMAIN__.workers.dev\n• *Action:* Check VPS daemon status immediately.`,
               parse_mode: "Markdown"
             })
           }).catch(() => {});
@@ -1432,7 +1432,7 @@ fi
         if (!update) return new Response("OK");
 
         const botToken = env.ALERT_BOT_TOKEN;
-        const dashUrl = "https://agy-aaa000.vercel.app/?v=4.8";
+        const dashUrl = "https://agy-aaa000.vercel.app/?v=4.9";
 
         const statusInlineKeyboard = {
           inline_keyboard: [
@@ -1591,10 +1591,27 @@ fi
                 "8741547543": "+8801838268380"
               };
 
+              const KNOWN_PHONES_BY_INDEX = {
+                1: "+8801317342850",
+                2: "+8801943805617",
+                3: "+8801790208077",
+                4: "+8801575842094",
+                5: "+14302084365",
+                6: "+8801867539837",
+                7: "+8801718056423",
+                8: "+8801797795624",
+                9: "+8801727651288",
+                10: "+8801729892810",
+                11: "+8801571089931",
+                12: "+8801774578536",
+                13: "+8801838268380"
+              };
+
+
               const lines = accounts.slice(0, 13).map((a, i) => {
                 const isHost = String(a.user_id) === "6727787768";
                 const tag = isHost ? "Master Host 👑" : "🟢 Active";
-                const ph = (a.phone && a.phone !== "N/A") ? a.phone : (KNOWN_PHONES[String(a.user_id)] || "");
+                const ph = (a.phone && a.phone !== "N/A" && a.phone !== "Hidden") ? a.phone : (KNOWN_PHONES[String(a.user_id)] || KNOWN_PHONES_BY_INDEX[i + 1] || "");
                 const phoneStr = ph ? ` (${ph})` : "";
                 return `• #${a.index || (i+1)} *${cleanName(a, i)}*${phoneStr} — ${tag}`;
               }).join("\n");
@@ -1652,9 +1669,9 @@ fi
             } else if (cbData === "btn_add_account" || cbData === "btn_addaccount") {
               const rep = `➕ *Connect New Telegram Account to Fleet*\n\n` +
                 `Scale your 24/7 autonomous mining cluster with another account:\n\n` +
-                `1️⃣ **Fast Command:** Send \`/add_account <phone_number>\` in this chat (e.g. \`/add_account +8801700000000\`).\n` +
-                `2️⃣ **Via Mini App:** Open **🚀 Open Mini App**, go to the **Fleet** tab and tap **➕ Connect New Account**.\n` +
-                `3️⃣ **Auto-Propagation:** Once connected, your account is immediately provisioned across all 3 Cloudflare Edge nodes and farms all 8 bots automatically!`;
+                `1️⃣ *Fast Command:* Send \`/add_account <phone_number>\` in this chat (e.g. \`/add_account +8801700000000\`).\n` +
+                `2️⃣ *Via Mini App:* Open *🚀 Open Mini App*, go to the *Fleet* tab and tap *➕ Connect New Account*.\n` +
+                `3️⃣ *Auto-Propagation:* Once connected, your account is immediately provisioned across all 3 Cloudflare Edge nodes and farms all 8 bots automatically!`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1663,9 +1680,9 @@ fi
             } else if (cbData === "btn_withdraw" || cbData === "btn_withdraw_all") {
               const res = await queueSweepAction();
               const rep = `⚡ *Universal Fleet Sweep Dispatched!*\n\n` +
-                `• **Status:** ${res.ok ? "Queued to Fleet Workers ✅" : "Dispatched"}\n` +
-                `• **Networks:** BEP-20 (USDT/BNB) • Arbitrum One (STONES) • TON Network\n` +
-                `• **Payout Master:** \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n\n` +
+                `• *Status:* ${res.ok ? "Queued to Fleet Workers ✅" : "Dispatched"}\n` +
+                `• *Networks:* BEP-20 (USDT/BNB) • Arbitrum One (STONES) • TON Network\n` +
+                `• *Payout Master:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n\n` +
                 `_Sequential multi-bot auto-withdrawals triggered across AI Lab, Stones Miners, Ainovum, and On-Chain Wallets._`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -1675,8 +1692,8 @@ fi
             } else if (cbData === "btn_harvest") {
               const res = await queueHarvestAction();
               const rep = `⚡ *Instant Fleet Harvest Dispatched!*\n\n` +
-                `• **Status:** ${res.ok ? "Executing across 13 Accounts ✅" : "Processed"}\n` +
-                `• **Active Lineup:** Stones • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum • ATF\n\n` +
+                `• *Status:* ${res.ok ? "Executing across 13 Accounts ✅" : "Processed"}\n` +
+                `• *Active Lineup:* Stones • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum • ATF\n\n` +
                 `_Farming cycle and task claims active across all 3 parallel Cloudflare edge slots._`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -1686,11 +1703,11 @@ fi
             } else if (cbData === "btn_ainovum") {
               const rep = `🤖 *AINOVUM CLOUD NODE COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• **Platform:** Ainovum Network (@ainovumbot)\n` +
-                `• **Status:** Active & Mining (Distributed Edge Nodes)\n` +
-                `• **Auto-Withdraw:** Threshold \`0.10 USDT\` (BEP-20)\n` +
-                `• **Routing Architecture:** Dedicated Isolated EVM Wallets\n` +
-                `• **Anti-Sybil Defense:** Distinct Exit IPs + Unique User-Agents ✅\n` +
+                `• *Platform:* Ainovum Network (@ainovumbot)\n` +
+                `• *Status:* Active & Mining (Distributed Edge Nodes)\n` +
+                `• *Auto-Withdraw:* Threshold \`0.10 USDT\` (BEP-20)\n` +
+                `• *Routing Architecture:* Dedicated Isolated EVM Wallets\n` +
+                `• *Anti-Sybil Defense:* Distinct Exit IPs + Unique User-Agents ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -1700,11 +1717,11 @@ fi
             } else if (cbData === "btn_ailab") {
               const rep = `🧪 *AI LAB ROBOT COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• **Platform:** AI Lab Agent (@AiLab_robot)\n` +
-                `• **Status:** Continuous 8h Mining Active\n` +
-                `• **Exchange Policy:** Auto-Exchange when hashes >= 3.00\n` +
-                `• **Auto-Cashout:** Step-size \`$0.02 USD\` (USDT BEP-20)\n` +
-                `• **Payout Vault:** \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+                `• *Platform:* AI Lab Agent (@AiLab_robot)\n` +
+                `• *Status:* Continuous 8h Mining Active\n` +
+                `• *Exchange Policy:* Auto-Exchange when hashes >= 3.00\n` +
+                `• *Auto-Cashout:* Step-size \`$0.02 USD\` (USDT BEP-20)\n` +
+                `• *Payout Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -1714,12 +1731,12 @@ fi
             } else if (cbData === "btn_stones") {
               const rep = `💎 *STONES MINERS CLOUD COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• **Status:** Active & Mining (Arbitrum One)\n` +
-                `• **Arbitrum Vault:** \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
-                `• **Holding Target:** \`500+ STONES\`\n` +
-                `• **Master Account Policy:** Compounding (0 withdrawals)\n` +
-                `• **Worker Accounts Policy:** Auto-Withdraw when balance >= 500 STONES\n` +
-                `• **Resiliency:** 30m Origin Circuit Breaker & Cloudflare Tunnel Watchdog Active ✅\n` +
+                `• *Status:* Active & Mining (Arbitrum One)\n` +
+                `• *Arbitrum Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+                `• *Holding Target:* \`500+ STONES\`\n` +
+                `• *Master Account Policy:* Compounding (0 withdrawals)\n` +
+                `• *Worker Accounts Policy:* Auto-Withdraw when balance >= 500 STONES\n` +
+                `• *Resiliency:* 30m Origin Circuit Breaker & Cloudflare Tunnel Watchdog Active ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -1729,11 +1746,11 @@ fi
             } else if (cbData === "btn_art") {
               const rep = `🚀 *ART AIRDROP COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• **Platform:** ART Airdrop Mining (@art_airdrop_bot)\n` +
-                `• **Status:** Active & Auto-Claiming (8h Cycles)\n` +
-                `• **Hashrate:** 30.3 ART/h per Account\n` +
-                `• **Sponsor Tasks:** V8–V14 Automated Claims (+10.0 ART/task) ✅\n` +
-                `• **Payout Network:** TON Blockchain (The Open Network)\n` +
+                `• *Platform:* ART Airdrop Mining (@art_airdrop_bot)\n` +
+                `• *Status:* Active & Auto-Claiming (8h Cycles)\n` +
+                `• *Hashrate:* 30.3 ART/h per Account\n` +
+                `• *Sponsor Tasks:* V8–V14 Automated Claims (+10.0 ART/task) ✅\n` +
+                `• *Payout Network:* TON Blockchain (The Open Network)\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -1743,11 +1760,11 @@ fi
             } else if (cbData === "btn_mrg") {
               const rep = `⛏️ *MRG MINER COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• **Platform:** MRG Cloud Miner (@MRG_miner_bot)\n` +
-                `• **Status:** Active & Auto-Mining\n` +
-                `• **Yield:** ~0.06 MRG per claim cycle per account\n` +
-                `• **Payout Network:** TON Blockchain (The Open Network)\n` +
-                `• **Anti-Bot Defense:** Cryptographic User-Agent Isolation ✅\n` +
+                `• *Platform:* MRG Cloud Miner (@MRG_miner_bot)\n` +
+                `• *Status:* Active & Auto-Mining\n` +
+                `• *Yield:* ~0.06 MRG per claim cycle per account\n` +
+                `• *Payout Network:* TON Blockchain (The Open Network)\n` +
+                `• *Anti-Bot Defense:* Cryptographic User-Agent Isolation ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -1757,11 +1774,11 @@ fi
             } else if (cbData === "btn_ultra") {
               const rep = `💳 *ULTRAWALLET COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• **Platform:** UltraWallet Mining (@UltraWalletBot)\n` +
-                `• **Status:** Active & Mining (10 Hash/h)\n` +
-                `• **Streak:** Daily Check-in Claimed (Continuous Streak) ✅\n` +
-                `• **Auto-Compound:** Active\n` +
-                `• **Payout Vault:** \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+                `• *Platform:* UltraWallet Mining (@UltraWalletBot)\n` +
+                `• *Status:* Active & Mining (10 Hash/h)\n` +
+                `• *Streak:* Daily Check-in Claimed (Continuous Streak) ✅\n` +
+                `• *Auto-Compound:* Active\n` +
+                `• *Payout Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -1771,10 +1788,10 @@ fi
             } else if (cbData === "btn_apx") {
               const rep = `⚡ *APEX MINER COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• **Platform:** Apex Miner Platform (@apexminer_bot)\n` +
-                `• **Status:** Active & Continuous Mining\n` +
-                `• **Rewards:** Auto-Harvested each cycle\n` +
-                `• **Payout Vault:** \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+                `• *Platform:* Apex Miner Platform (@apexminer_bot)\n` +
+                `• *Status:* Active & Continuous Mining\n` +
+                `• *Rewards:* Auto-Harvested each cycle\n` +
+                `• *Payout Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -1784,9 +1801,9 @@ fi
             } else if (cbData === "btn_bnb" || cbData === "btn_bnb_claim" || cbData === "btn_bnb_withdraw") {
               const rep = `🚫 *BNB GALAXY PERMANENTLY DISABLED*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• **Notice:** @CryptoProUpRobot was audited and confirmed to withhold payouts.\n` +
-                `• **Action Taken:** Fleet accounts blocked the bot, wiped scam channels, and reported it to Telegram Anti-Scam.\n` +
-                `• **Fleet Direction:** 100% of automation is focused on our 8 legitimate mining bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum).\n` +
+                `• *Notice:* @CryptoProUpRobot was audited and confirmed to withhold payouts.\n` +
+                `• *Action Taken:* Fleet accounts blocked the bot, wiped scam channels, and reported it to Telegram Anti-Scam.\n` +
+                `• *Fleet Direction:* 100% of automation is focused on our 8 legitimate mining bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum).\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -1824,11 +1841,11 @@ fi
 
               const atfMsg = `🪙 *ATF MINER CLOUD COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `⛏️ **Total Fleet ATF Mined:** \`${totalMined.toFixed(2)} ATF\`\n` +
-                `👥 **Active Mining Accounts:** \`${activeAccs}/13 Accounts\`\n` +
-                `💎 **TON Wallets:** \`13/13 Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
-                `🧮 **Anti-Bot Math Verification:** \`100% Solved\` ✅\n` +
-                `🛡️ **TON Connect 2.0 Proofs:** \`Cryptographically Verified\`\n` +
+                `⛏️ *Total Fleet ATF Mined:* \`${totalMined.toFixed(2)} ATF\`\n` +
+                `👥 *Active Mining Accounts:* \`${activeAccs}/13 Accounts\`\n` +
+                `💎 *TON Wallets:* \`13/13 Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
+                `🧮 *Anti-Bot Math Verification:* \`100% Solved\` ✅\n` +
+                `🛡️ *TON Connect 2.0 Proofs:* \`Cryptographically Verified\`\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⚡ _Tap the buttons below to trigger cloud claim or view wallets:_`;
 
@@ -1840,10 +1857,10 @@ fi
             } else if (cbData === "btn_atf_claim") {
               const res = await queueHarvestAction();
               const rep = `⚡ *ATF Miner Cloud Claim Results*\n\n` +
-                `• **Status:** ${res.ok ? "Success ✅" : "Processed"}\n` +
-                `• **Accounts Processed:** \`13/13\`\n` +
-                `• **Tasks & Mining:** \`Harvested & Active\`\n` +
-                `• **Math Verification:** \`100% Passed\`\n\n` +
+                `• *Status:* ${res.ok ? "Success ✅" : "Processed"}\n` +
+                `• *Accounts Processed:* \`13/13\`\n` +
+                `• *Tasks & Mining:* \`Harvested & Active\`\n` +
+                `• *Math Verification:* \`100% Passed\`\n\n` +
                 `_Next auto-harvest cycle running on Cloudflare Edge cron._`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -1852,8 +1869,8 @@ fi
               }).catch(() => {});
             } else if (cbData === "btn_atf_wallets") {
               const rep = `💎 *ATF Miner Dedicated TON Wallets*\n\n` +
-                `• **Account #1 (Host):** \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\` (Binance TON Deposit)\n` +
-                `• **Accounts #2–13 (Workers):** 12 Isolated TON v4r2 Wallets with TON Connect 2.0 Cryptographic Proofs.\n\n` +
+                `• *Account #1 (Host):* \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\` (Binance TON Deposit)\n` +
+                `• *Accounts #2–13 (Workers):* 12 Isolated TON v4r2 Wallets with TON Connect 2.0 Cryptographic Proofs.\n\n` +
                 `_All wallets isolated to prevent multi-account Sybil flags._`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -1868,10 +1885,10 @@ fi
               } catch (_) {}
               const liveBnb = mcData.bsc_bnb_balance !== undefined ? mcData.bsc_bnb_balance : 0.000812;
               const rep = `⚡ *MY AGY AI — Private Admin Console*\n\n` +
-                `🟢 **Fleet Health:** 13/13 Accounts Active & Mining\n` +
-                `🤖 **Active Bots (8/8):** Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
-                `💰 **On-Chain Vault:** \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 13 TON Wallets\n` +
-                `🛡️ **Security:** 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
+                `🟢 *Fleet Health:* 13/13 Accounts Active & Mining\n` +
+                `🤖 *Active Bots (8/8):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
+                `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 13 TON Wallets\n` +
+                `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
                 `📱 *Tap below to open your real-time visual Mini App dashboard:*`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -1889,10 +1906,10 @@ fi
                 }
               } catch (_) {}
               const rep = `⚡ *MY AGY AI — Fleet Operations*\n\n` +
-                `🟢 **Fleet Health:** 13/13 Accounts Active & Mining\n` +
-                `🤖 **Active Bots (8/8):** Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
-                `💰 **On-Chain Vault:** \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 13 TON Wallets\n` +
-                `🛡️ **Security:** 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
+                `🟢 *Fleet Health:* 13/13 Accounts Active & Mining\n` +
+                `🤖 *Active Bots (8/8):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
+                `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 13 TON Wallets\n` +
+                `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
                 `📱 *Tap below to open your real-time visual Mini App dashboard:*`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -1953,11 +1970,11 @@ fi
         // 1. Start & Menu Command
         if (text === "/start" || text === "/menu" || text.startsWith("/start")) {
           const welcome = `👋 *Welcome to MY AGY AI — Private Admin Console*\n\n` +
-            `Your autonomous **24/7 Cloud Operations Hub** is active across 3 Cloudflare Edge nodes.\n\n` +
-            `🟢 **Fleet Health:** 13/13 Accounts Online & Mining\n` +
-            `🤖 **Active Bots (8/8):** Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
-            `💰 **On-Chain Vaults:** BEP-20 (BNB) • Arbitrum (STONES) • 13 TON Wallets\n` +
-            `🛡️ **Security:** 5/5 Anti-Bot Verified • Dual-Edge Cloud Sync\n\n` +
+            `Your autonomous *24/7 Cloud Operations Hub* is active across 3 Cloudflare Edge nodes.\n\n` +
+            `🟢 *Fleet Health:* 13/13 Accounts Online & Mining\n` +
+            `🤖 *Active Bots (8/8):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
+            `💰 *On-Chain Vaults:* BEP-20 (BNB) • Arbitrum (STONES) • 13 TON Wallets\n` +
+            `🛡️ *Security:* 5/5 Anti-Bot Verified • Dual-Edge Cloud Sync\n\n` +
             `📱 *Tap '🚀 Open Executive Dashboard' below to launch your visual dashboard on Vercel or use quick controls:*`;
           
           await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -1981,12 +1998,12 @@ fi
           ctx.waitUntil((async () => {
             const stonesMsg = `💎 *STONES MINERS CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• **Status:** Active & Mining (Arbitrum One)\n` +
-              `• **Arbitrum Vault:** \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
-              `• **Holding Target:** \`500+ STONES\`\n` +
-              `• **Master Account Policy:** Compounding (0 withdrawals)\n` +
-              `• **Worker Accounts Policy:** Auto-Withdraw when balance >= 500 STONES\n` +
-              `• **Resiliency:** 30m Origin Circuit Breaker & Cloudflare Tunnel Watchdog Active ✅\n` +
+              `• *Status:* Active & Mining (Arbitrum One)\n` +
+              `• *Arbitrum Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+              `• *Holding Target:* \`500+ STONES\`\n` +
+              `• *Master Account Policy:* Compounding (0 withdrawals)\n` +
+              `• *Worker Accounts Policy:* Auto-Withdraw when balance >= 500 STONES\n` +
+              `• *Resiliency:* 30m Origin Circuit Breaker & Cloudflare Tunnel Watchdog Active ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(stonesMsg, statusInlineKeyboard);
           })());
@@ -1998,9 +2015,9 @@ fi
           ctx.waitUntil((async () => {
             const bnbMsg = `🚫 *BNB GALAXY PERMANENTLY DISABLED*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• **Notice:** @CryptoProUpRobot was audited and confirmed to withhold payouts.\n` +
-              `• **Action Taken:** Fleet accounts blocked the bot, wiped scam channels, and reported it to Telegram Anti-Scam.\n` +
-              `• **Active Bots:** Focus is 100% placed on our 8 legitimate mining bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum).\n` +
+              `• *Notice:* @CryptoProUpRobot was audited and confirmed to withhold payouts.\n` +
+              `• *Action Taken:* Fleet accounts blocked the bot, wiped scam channels, and reported it to Telegram Anti-Scam.\n` +
+              `• *Active Bots:* Focus is 100% placed on our 8 legitimate mining bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum).\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(bnbMsg, statusInlineKeyboard);
           })());
@@ -2040,11 +2057,11 @@ fi
 
             const atfMsg = `🪙 *ATF MINER CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `⛏️ **Total Fleet ATF Mined:** \`${totalMined.toFixed(2)} ATF\`\n` +
-              `👥 **Active Mining Accounts:** \`${activeAccs}/13 Accounts\`\n` +
-              `💎 **TON Wallets:** \`13/13 Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
-              `🧮 **Anti-Bot Math Verification:** \`100% Solved\` ✅\n` +
-              `🛡️ **TON Connect 2.0 Proofs:** \`Cryptographically Verified\`\n` +
+              `⛏️ *Total Fleet ATF Mined:* \`${totalMined.toFixed(2)} ATF\`\n` +
+              `👥 *Active Mining Accounts:* \`${activeAccs}/13 Accounts\`\n` +
+              `💎 *TON Wallets:* \`13/13 Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
+              `🧮 *Anti-Bot Math Verification:* \`100% Solved\` ✅\n` +
+              `🛡️ *TON Connect 2.0 Proofs:* \`Cryptographically Verified\`\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⚡ _Tap the buttons below to trigger cloud claim or view wallets:_`;
 
@@ -2078,7 +2095,7 @@ fi
           const aiQuery = parts.slice(1).join(" ").trim();
           if (!aiQuery) {
             const helpAi = `🧠 *Multi-Cloud AI Assistant*\n\n` +
-              `Powered by **Google Gemini 3.6 Flash**, **GroqCloud LPU**, and **Cloudflare Workers AI**!\n\n` +
+              `Powered by *Google Gemini 3.6 Flash*, *GroqCloud LPU*, and *Cloudflare Workers AI*!\n\n` +
               `Ask anything by sending:\n` +
               `• \`/ai <your question>\`\n` +
               `• \`/ask <your question>\`\n\n` +
@@ -2123,11 +2140,11 @@ fi
             }
             const b1 = await getBscBal(w1);
             const rep = `🪙 *On-Chain BNB Vault & Wallet Tracker*\n\n` +
-              `• **Binance BEP-20 Vault (All 13 Accounts):** \`${b1.toFixed(6)} BNB\`\n` +
+              `• *Binance BEP-20 Vault (All 13 Accounts):* \`${b1.toFixed(6)} BNB\`\n` +
               `  \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
-              `• **Binance TON Vault (Main Account):**\n` +
+              `• *Binance TON Vault (Main Account):*\n` +
               `  \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
-              `• **Consolidation Target:** \`0.005000 BNB\` (${((b1 / 0.005) * 100).toFixed(1)}%)\n\n` +
+              `• *Consolidation Target:* \`0.005000 BNB\` (${((b1 / 0.005) * 100).toFixed(1)}%)\n\n` +
               `_Tracking live BSC blockchain state via Binance Dataseed RPC._`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -2176,8 +2193,8 @@ fi
           ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
           ctx.waitUntil(env.BACKUP_KV.put("pending_fleet_action", JSON.stringify(recorded), { expirationTtl: 600 }));
           const rep = `🗑️ *Account Removal Dispatched!*\n\n` +
-            `• **Target:** \`${targetId}\`\n` +
-            `• **Action:** Session will be disconnected and removed from 24/7 automation.\n\n` +
+            `• *Target:* \`${targetId}\`\n` +
+            `• *Action:* Session will be disconnected and removed from 24/7 automation.\n\n` +
             `✅ Telemetry and accounts database updated.`;
           ctx.waitUntil(sendReply(rep, statusInlineKeyboard));
           return new Response("OK");
@@ -2206,7 +2223,7 @@ fi
               normalized = "+" + normalized;
             }
 
-            const opAlert = `➕ *New Telegram Account Submission*\n\n📱 **Phone:** \`${normalized}\`\n👤 **Chat ID:** \`${chatId}\`\n🌐 **Source:** Cloudflare Edge (${CURRENT_SUBDOMAIN})\n\n_Dispatched to VPS Userbot Refresher for MTProto session code generation._`;
+            const opAlert = `➕ *New Telegram Account Submission*\n\n📱 *Phone:* \`${normalized}\`\n👤 *Chat ID:* \`${chatId}\`\n🌐 *Source:* Cloudflare Edge (${CURRENT_SUBDOMAIN})\n\n_Dispatched to VPS Userbot Refresher for MTProto session code generation._`;
             await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -2214,7 +2231,7 @@ fi
             }).catch(() => {});
 
             const userConfirm = `✅ *Phone Number Received:* \`${normalized}\`\n\n` +
-              `📡 **Status:** Connecting to Telegram MTProto Gateway...\n` +
+              `📡 *Status:* Connecting to Telegram MTProto Gateway...\n` +
               `⏳ Verification code request is being dispatched.\n\n` +
               `💡 _Tip: You can also manage all fleet members directly inside the Mini App below:_`;
             ctx.waitUntil(sendReply(userConfirm, statusInlineKeyboard));
@@ -2245,10 +2262,10 @@ fi
           } catch (_) {}
 
           const rep = `⚡ *MY AGY AI — Fleet Operations*\n\n` +
-            `🟢 **Fleet Health:** 13/13 Accounts Active & Mining\n` +
-            `🤖 **Active Bots (8/8):** Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
-            `💰 **On-Chain Vault:** \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 13 TON Wallets\n` +
-            `🛡️ **Security:** 5/5 Anti-Bot Verified • Triple Cloudflare Edge Shards\n\n` +
+            `🟢 *Fleet Health:* 13/13 Accounts Active & Mining\n` +
+            `🤖 *Active Bots (8/8):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
+            `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 13 TON Wallets\n` +
+            `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Edge Shards\n\n` +
             `📱 *Tap below to open your real-time visual Executive Dashboard:*`;
           ctx.waitUntil(sendReply(rep, statusInlineKeyboard));
           return new Response("OK");
@@ -2259,8 +2276,8 @@ fi
           ctx.waitUntil((async () => {
             const res = await queueHarvestAction();
             const rep = `⚡ *Instant Fleet Harvest Dispatched!*\n\n` +
-              `• **Status:** ${res.ok ? "Executing across 13 Accounts ✅" : "Processed"}\n` +
-              `• **Active Lineup:** Stones • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum • ATF\n\n` +
+              `• *Status:* ${res.ok ? "Executing across 13 Accounts ✅" : "Processed"}\n` +
+              `• *Active Lineup:* Stones • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum • ATF\n\n` +
               `_Farming cycle and task claims active across all 3 parallel Cloudflare edge slots._`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -2280,11 +2297,11 @@ fi
             } catch (_) {}
             const res = await queueSweepAction();
             const rep = `⚡ *Universal Fleet Sweep Dispatched!*\n\n` +
-              `• **Status:** ${res.ok ? "Queued to Fleet Workers ✅" : "Dispatched"}\n` +
-              `• **Live Binance BEP-20:** \`${liveBnb.toFixed(6)} BNB\`\n` +
-              `• **Networks:** BEP-20 (USDT/BNB) • Arbitrum One (STONES) • TON Network\n` +
-              `• **Auto-Thresholds:** AI Lab >= $0.02 • Ainovum >= 0.10 USDT • Stones >= 500 STONES\n` +
-              `• **Payout Address:** \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n\n` +
+              `• *Status:* ${res.ok ? "Queued to Fleet Workers ✅" : "Dispatched"}\n` +
+              `• *Live Binance BEP-20:* \`${liveBnb.toFixed(6)} BNB\`\n` +
+              `• *Networks:* BEP-20 (USDT/BNB) • Arbitrum One (STONES) • TON Network\n` +
+              `• *Auto-Thresholds:* AI Lab >= $0.02 • Ainovum >= 0.10 USDT • Stones >= 500 STONES\n` +
+              `• *Payout Address:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n\n` +
               `⏳ _Sequential auto-withdrawals triggered across AI Lab, Stones Miners, Ainovum, and On-Chain Wallets._`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -2296,11 +2313,11 @@ fi
           ctx.waitUntil((async () => {
             const rep = `🤖 *AINOVUM CLOUD NODE COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• **Platform:** Ainovum Network (@ainovumbot)\n` +
-              `• **Status:** Active & Mining (Distributed Edge Nodes)\n` +
-              `• **Auto-Withdraw:** Threshold \`0.10 USDT\` (BEP-20)\n` +
-              `• **Routing Architecture:** Dedicated Isolated EVM Wallets\n` +
-              `• **Anti-Sybil Defense:** Distinct Exit IPs + Unique User-Agents ✅\n` +
+              `• *Platform:* Ainovum Network (@ainovumbot)\n` +
+              `• *Status:* Active & Mining (Distributed Edge Nodes)\n` +
+              `• *Auto-Withdraw:* Threshold \`0.10 USDT\` (BEP-20)\n` +
+              `• *Routing Architecture:* Dedicated Isolated EVM Wallets\n` +
+              `• *Anti-Sybil Defense:* Distinct Exit IPs + Unique User-Agents ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -2311,11 +2328,11 @@ fi
           ctx.waitUntil((async () => {
             const rep = `🧪 *AI LAB ROBOT COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• **Platform:** AI Lab Agent (@AiLab_robot)\n` +
-              `• **Status:** Continuous 8h Mining Active\n` +
-              `• **Exchange Policy:** Auto-Exchange when hashes >= 3.00\n` +
-              `• **Auto-Cashout:** Step-size \`$0.02 USD\` (USDT BEP-20)\n` +
-              `• **Payout Vault:** \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+              `• *Platform:* AI Lab Agent (@AiLab_robot)\n` +
+              `• *Status:* Continuous 8h Mining Active\n` +
+              `• *Exchange Policy:* Auto-Exchange when hashes >= 3.00\n` +
+              `• *Auto-Cashout:* Step-size \`$0.02 USD\` (USDT BEP-20)\n` +
+              `• *Payout Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -2326,11 +2343,11 @@ fi
           ctx.waitUntil((async () => {
             const rep = `🚀 *ART AIRDROP COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• **Platform:** ART Airdrop Mining (@art_airdrop_bot)\n` +
-              `• **Status:** Active & Auto-Claiming (8h Cycles)\n` +
-              `• **Hashrate:** 30.3 ART/h per Account\n` +
-              `• **Sponsor Tasks:** V8–V14 Automated Claims (+10.0 ART/task) ✅\n` +
-              `• **Payout Network:** TON Blockchain (The Open Network)\n` +
+              `• *Platform:* ART Airdrop Mining (@art_airdrop_bot)\n` +
+              `• *Status:* Active & Auto-Claiming (8h Cycles)\n` +
+              `• *Hashrate:* 30.3 ART/h per Account\n` +
+              `• *Sponsor Tasks:* V8–V14 Automated Claims (+10.0 ART/task) ✅\n` +
+              `• *Payout Network:* TON Blockchain (The Open Network)\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -2341,11 +2358,11 @@ fi
           ctx.waitUntil((async () => {
             const rep = `⛏️ *MRG MINER COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• **Platform:** MRG Cloud Miner (@MRG_miner_bot)\n` +
-              `• **Status:** Active & Auto-Mining\n` +
-              `• **Yield:** ~0.06 MRG per claim cycle per account\n` +
-              `• **Payout Network:** TON Blockchain (The Open Network)\n` +
-              `• **Anti-Bot Defense:** Cryptographic User-Agent Isolation ✅\n` +
+              `• *Platform:* MRG Cloud Miner (@MRG_miner_bot)\n` +
+              `• *Status:* Active & Auto-Mining\n` +
+              `• *Yield:* ~0.06 MRG per claim cycle per account\n` +
+              `• *Payout Network:* TON Blockchain (The Open Network)\n` +
+              `• *Anti-Bot Defense:* Cryptographic User-Agent Isolation ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -2356,11 +2373,11 @@ fi
           ctx.waitUntil((async () => {
             const rep = `💳 *ULTRAWALLET COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• **Platform:** UltraWallet Mining (@UltraWalletBot)\n` +
-              `• **Status:** Active & Mining (10 Hash/h)\n` +
-              `• **Streak:** Daily Check-in Claimed (Continuous Streak) ✅\n` +
-              `• **Auto-Compound:** Active\n` +
-              `• **Payout Vault:** \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+              `• *Platform:* UltraWallet Mining (@UltraWalletBot)\n` +
+              `• *Status:* Active & Mining (10 Hash/h)\n` +
+              `• *Streak:* Daily Check-in Claimed (Continuous Streak) ✅\n` +
+              `• *Auto-Compound:* Active\n` +
+              `• *Payout Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -2371,10 +2388,10 @@ fi
           ctx.waitUntil((async () => {
             const rep = `⚡ *APEX MINER COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• **Platform:** Apex Miner Platform (@apexminer_bot)\n` +
-              `• **Status:** Active & Continuous Mining\n` +
-              `• **Rewards:** Auto-Harvested each cycle\n` +
-              `• **Payout Vault:** \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+              `• *Platform:* Apex Miner Platform (@apexminer_bot)\n` +
+              `• *Status:* Active & Continuous Mining\n` +
+              `• *Rewards:* Auto-Harvested each cycle\n` +
+              `• *Payout Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -2393,13 +2410,13 @@ fi
               }
             } catch (_) {}
             const rep = `💼 *Multi-Chain Portfolio & Vaults*\n\n` +
-              `🟡 **Binance BEP-20 (All 13 Fleet Accounts):**\n` +
+              `🟡 *Binance BEP-20 (All 13 Fleet Accounts):*\n` +
               `• Address: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
               `• Balance: \`${liveBnb.toFixed(6)} BNB\` (~$${(liveBnb * 764.5).toFixed(2)} USD)\n\n` +
-              `💎 **Binance TON (Main Account #1):**\n` +
+              `💎 *Binance TON (Main Account #1):*\n` +
               `• Address: \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
               `• Network: TON Blockchain (The Open Network)\n\n` +
-              `🛡️ **Worker TON Wallets (Accounts 2–13):**\n` +
+              `🛡️ *Worker TON Wallets (Accounts 2–13):*\n` +
               `• 12 Isolated TON v4r2 Wallets configured in \`fleet_ton_wallets.json\`\n` +
               `• Dedicated anti-Sybil protection for MRG, ART, and Stones bots.\n\n` +
               `📱 _Tap '🚀 Open Visual Mini App' below for interactive wallet explorer._`;
@@ -2462,10 +2479,27 @@ fi
               "8741547543": "+8801838268380"
             };
 
+            const KNOWN_PHONES_BY_INDEX = {
+              1: "+8801317342850",
+              2: "+8801943805617",
+              3: "+8801790208077",
+              4: "+8801575842094",
+              5: "+14302084365",
+              6: "+8801867539837",
+              7: "+8801718056423",
+              8: "+8801797795624",
+              9: "+8801727651288",
+              10: "+8801729892810",
+              11: "+8801571089931",
+              12: "+8801774578536",
+              13: "+8801838268380"
+            };
+
+
             const lines = accounts.slice(0, 13).map((a, i) => {
               const isHost = String(a.user_id) === "6727787768";
               const tag = isHost ? "Master Host 👑" : "🟢 Active";
-              const ph = (a.phone && a.phone !== "N/A") ? a.phone : (KNOWN_PHONES[String(a.user_id)] || "");
+              const ph = (a.phone && a.phone !== "N/A" && a.phone !== "Hidden") ? a.phone : (KNOWN_PHONES[String(a.user_id)] || KNOWN_PHONES_BY_INDEX[i + 1] || "");
               const phoneStr = ph ? ` (${ph})` : "";
               return `• #${a.index || (i+1)} *${cleanName(a, i)}*${phoneStr} — ${tag}`;
             }).join("\n");
@@ -2527,11 +2561,11 @@ fi
           ctx.waitUntil((async () => {
             const bUrl = `https://restore-agy.${CURRENT_SUBDOMAIN}.workers.dev/backup.zip`;
             const rep = `📦 *[Cloudflare Edge Disaster Recovery]*\n\n` +
-              `✅ **Instant Cloud Backup Ready:**\n` +
-              `• **Download ZIP:** ${bUrl}\n` +
-              `• **Triple Cloudflare Mesh:** Synchronized\n` +
-              `• **Pinata IPFS Pinning:** Active & Verifiable\n` +
-              `• **Telegram Vault:** Backed up to @myagyai\n\n` +
+              `✅ *Instant Cloud Backup Ready:*\n` +
+              `• *Download ZIP:* ${bUrl}\n` +
+              `• *Triple Cloudflare Mesh:* Synchronized\n` +
+              `• *Pinata IPFS Pinning:* Active & Verifiable\n` +
+              `• *Telegram Vault:* Backed up to @myagyai\n\n` +
               `🛡️ _100% cloud disaster resilience active._`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -2582,17 +2616,17 @@ fi
 
           if (userLower.includes("backup") || userLower.includes("disaster recovery")) {
             const bUrl = `https://restore-agy.${CURRENT_SUBDOMAIN}.workers.dev/backup.zip`;
-            await sendReply(`📦 *1-Click Cloud Backup Ready*\n\n• **Direct Download:** ${bUrl}\n• **Mesh:** Triple Cloudflare Edge Shards\n• **Vault:** @myagyai channel archive\n\n🛡️ _Complete disaster recovery archive ready._`, statusInlineKeyboard);
+            await sendReply(`📦 *1-Click Cloud Backup Ready*\n\n• *Direct Download:* ${bUrl}\n• *Mesh:* Triple Cloudflare Edge Shards\n• *Vault:* @myagyai channel archive\n\n🛡️ _Complete disaster recovery archive ready._`, statusInlineKeyboard);
             return;
           }
 
           if (userLower.includes("stones") && (userLower.includes("status") || userLower.includes("balance") || userLower.includes("wd") || userLower.includes("cooldown"))) {
-            await sendReply(`💎 *Stones Miners Telemetry*\n\n• **Target Blockchain:** Arbitrum One (0xfda4182001672b9f0f09e2118242e543e35ed5ce)\n• **Auto-Withdrawal Threshold:** 500 STONES\n• **AI Captcha Engine:** Google Gemini Vision + Template Solver\n• **Anti-Sybil:** AdsGram proof verified per account`, statusInlineKeyboard);
+            await sendReply(`💎 *Stones Miners Telemetry*\n\n• *Target Blockchain:* Arbitrum One (0xfda4182001672b9f0f09e2118242e543e35ed5ce)\n• *Auto-Withdrawal Threshold:* 500 STONES\n• *AI Captcha Engine:* Google Gemini Vision + Template Solver\n• *Anti-Sybil:* AdsGram proof verified per account`, statusInlineKeyboard);
             return;
           }
 
           if (userLower.includes("atf") && (userLower.includes("policy") || userLower.includes("withdraw") || userLower.includes("status"))) {
-            await sendReply(`🪙 *ATF Miner Telemetry & Policy*\n\n• **Operational Mode:** 100% Farming & Pool Accumulation\n• **Auto-Withdrawals:** Permanently Disabled (Per Admin Directive)\n• **Network:** TON Blockchain\n• **Status:** All accounts compounding tokens safely in the cloud.`, statusInlineKeyboard);
+            await sendReply(`🪙 *ATF Miner Telemetry & Policy*\n\n• *Operational Mode:* 100% Farming & Pool Accumulation\n• *Auto-Withdrawals:* Permanently Disabled (Per Admin Directive)\n• *Network:* TON Blockchain\n• *Status:* All accounts compounding tokens safely in the cloud.`, statusInlineKeyboard);
             return;
           }
 
@@ -2650,7 +2684,7 @@ Reply to Arif naturally:`;
 
           const defaultRep = `⚡ *MY AGY AI Operations Hub*\n\n` +
             `• 13 Accounts Online & Mining across 8 Platforms\n` +
-            `• Tap **🚀 Mini App** below to view your full dashboard or use the toolbar buttons:`;
+            `• Tap *🚀 Mini App* below to view your full dashboard or use the toolbar buttons:`;
           await sendReply(defaultRep, statusInlineKeyboard);
         })());
         return new Response("OK");
