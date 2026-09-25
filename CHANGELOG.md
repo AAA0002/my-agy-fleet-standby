@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 ### Added
+- **Premium Telegram UI/UX & Universal Automation Architecture (`userbot_refresher.py`, `deploy_both_cf_workers.py`, `bot_supervisor.sh`)**:
+  - **Premium 5-Row Main Menu & 6-Row Inline Keyboards**: Upgraded both `MAIN_TAB_KEYBOARD` and `STATUS_INLINE_KEYBOARD` across local userbot and Cloudflare Edge Webhook to provide instant 1-tap visual command centers for all 8 active bots (Stones, AI Lab, Ainovum, ART, MRG, UltraWallet, Apex, ATF), live WebApp dashboard, instant harvest, universal sweep, treasury inspection, accounts roster, AI briefing, and cloud backup.
+  - **Comprehensive Telegram Command Dispatcher**: Implemented rich, visual command cards and callback handlers for `/ainovum`, `/ailab`, `/art`, `/mrg`, `/ultra`, `/apx`, `/stones`, `/atf`, `/harvest`, `/sweep`, `/sweep_all`, `/sweep_stones`, `/sweep_ailab`, and `/sweep_ainovum`.
+  - **Withdrawal Routing Realignment**: Re-routed `btn_withdraw`, `btn_withdraw_all`, `/withdraw`, and `💰 Withdraw` directly to `execute_universal_fleet_sweep`, ensuring real-time multi-bot cashouts across AI Lab, Stones, Ainovum, and on-chain wallets with zero references to defunct BNB Galaxy code.
+  - **Supervisor PRoot Hardening (`bot_supervisor.sh`)**: Added `set +m` to disable PRoot shell job control signals, process unpausing (`kill -CONT`), and background detachment (`disown`) to guarantee immortal 24/7 uptime on Android Termux PRoot aarch64.
+  - **Triple Cloudflare Edge Synchronization**: Successfully synchronized and live-deployed the hardened Webhook and WebApp dashboard across all 3 Cloudflare Edge Nodes (`aaaai2.workers.dev`, `aaa-bot.workers.dev`, `aaa222.workers.dev`) with 24/7 cron triggers (`*/15 * * * *`).
 - **Async Task Safety Layer & Modular Universal Fleet Sweep Refactoring (`userbot_refresher.py`)**:
   - **`safe_create_task` Exception Guard**: Implemented a global task supervisor wrapper with automatic `done_callback` error catching, eliminating unretrieved asyncio exceptions (`Task exception was never retrieved`) across all fleet background loops.
   - **Modular Fleet Sweep Pipeline**: Replaced fragile inline closures in `miniapp_command_listener_loop` with first-class top-level async functions (`execute_stones_fleet_sweep`, `execute_ailab_fleet_sweep`, `execute_ainovum_fleet_sweep`, `execute_universal_fleet_sweep`, and `execute_fleet_harvest`), completely eliminating scope/closure `NameError` bugs.

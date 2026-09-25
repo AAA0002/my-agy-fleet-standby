@@ -33,6 +33,7 @@ echo "$$" > "$SUPERVISOR_PID_FILE"
 
 # Ignore HUP, TERM, and INT so closing SSH/terminal or subshell exit never affects this supervisor
 trap '' HUP TERM INT
+set +m # Disable job control to prevent SIGTTIN/SIGTTOU on child processes
 
 echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] === Immortal Supervisor started (PID: $$) ===" >> "$SUPERVISOR_LOG"
 
@@ -62,19 +63,29 @@ while true; do
     LIVE_PIDS=$(pgrep -f "$BOT_SCRIPT" 2>/dev/null || true)
     for P in $LIVE_PIDS; do
         P_STAT=$(ps -p "$P" -o stat= 2>/dev/null | tr -d ' ')
-        if [ -n "$P_STAT" ] && [[ "$P_STAT" != *"Z"* && "$P_STAT" != *"T"* && "$P_STAT" != *"t"* ]]; then
-            IS_RUNNING=1
-            echo "$P" > "$PID_FILE"
-            break
+        if [ -n "$P_STAT" ]; then
+            if [[ "$P_STAT" == *"T"* || "$P_STAT" == *"t"* ]]; then
+                # Unpause process immediately with SIGCONT if stopped by PRoot job control
+                kill -CONT "$P" 2>/dev/null || true
+                echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [UNPAUSE] Sent SIGCONT to unpause userbot (PID: $P)" >> "$SUPERVISOR_LOG"
+                IS_RUNNING=1
+                echo "$P" > "$PID_FILE"
+                break
+            elif [[ "$P_STAT" != *"Z"* ]]; then
+                IS_RUNNING=1
+                echo "$P" > "$PID_FILE"
+                break
+            fi
         fi
     done
 
     if [ "$IS_RUNNING" -eq 0 ]; then
         echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [HEAL] Userbot is down! Reviving process..." >> "$SUPERVISOR_LOG"
         
-        # Launch userbot
+        # Launch userbot detached from job control
         nohup "$PYTHON_BIN" "$BOT_SCRIPT" < /dev/null >> "$BOT_LOG" 2>&1 &
         BOT_PID=$!
+        disown "$BOT_PID" 2>/dev/null || true
         echo "$BOT_PID" > "$PID_FILE"
         echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [OK] Userbot launched with PID $BOT_PID" >> "$SUPERVISOR_LOG"
         
