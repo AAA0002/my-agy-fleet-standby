@@ -1062,11 +1062,10 @@ fi
           } else {
             targetUids = [6727787768, 8826375659, 8450010161, 8782429452, 7734849205, 8025472383, 8851426148, 8203342513, 8881914294, 7648254021, 8190649727, 7306260278, 7490632948];
           }
-          const doAll = body.all === true || url.searchParams.get("all") === "true";
+          const doAll = body.all !== false && url.searchParams.get("all") !== "false";
           const shardParam = body.shard !== undefined ? parseInt(body.shard) : (url.searchParams.has("shard") ? parseInt(url.searchParams.get("shard")) : null);
-          if (!doAll) {
-            const targetShard = shardParam !== null ? shardParam : NODE_SHARD_INDEX;
-            targetUids = targetUids.filter((_, idx) => idx % 3 === targetShard);
+          if (!doAll && shardParam !== null) {
+            targetUids = targetUids.filter((_, idx) => idx % 3 === shardParam);
           }
         }
 
@@ -2790,7 +2789,6 @@ Reply to Arif naturally:`;
 
         const tokenEntries = Object.entries(tokens);
         for (let idx = 0; idx < tokenEntries.length; idx++) {
-          if (idx % 3 !== NODE_SHARD_INDEX) continue;
           const [uid, accData] = tokenEntries[idx];
 
           // A. Stones Miners Edge Claim (Tap -> wait 2.5s -> complete/verify without joining channels or opening links)

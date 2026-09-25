@@ -5,6 +5,18 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+- **100% Cloud-First Autonomous Architecture & Fast-Path Farming for All 13 Accounts (`deploy_both_cf_workers.py`, `userbot_refresher.py`, `bot_supervisor.sh`)**:
+  - **Eliminated Cloudflare Sharding Restrictions**: Removed `if (idx % 3 !== NODE_SHARD_INDEX) continue;` from the scheduled 15-minute cron loop in `deploy_both_cf_workers.py` and defaulted `doAll` to true in `/api/farm/all`. All 3 Cloudflare Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`) now autonomously farm 100% of all 13 accounts in the fleet 24/7, completely independent of local execution or phone connectivity.
+  - **Verified 13-Account Cloudflare KV Tokens**: Verified and confirmed that valid WebApp tokens for all 13 accounts are synchronized in Cloudflare KV, ensuring 24/7 cloud mining without needing MTProto sessions.
+  - **Accelerated Local Fast-Path Execution (<20s Total Fleet Cycle)**:
+    * Replaced artificial 10-25s `human_delay` between worker slots with a smooth 0.5s stagger (`min((acc_idx - 1) * 0.5, 2.5)`).
+    * Scaled parallel worker slots to 4 concurrent runners.
+    * Added `MTPROTO_CONCURRENCY_SEMAPHORE = asyncio.Semaphore(2)` so that on-demand MTProto logins never congest or trigger FloodWait, while 100% of Fast-Path accounts execute concurrently via asynchronous HTTP.
+  - **Non-Blocking Background Stones Video Ads & Withdrawal Dispatch**:
+    * Offloaded 5-minute mining boost ad beat waiting (`_bg_stones_boost`) and 3-minute Stones withdrawal ad boarding + captcha solving (`_run_stones_withdrawal_background`) to detached background tasks via `safe_create_task`.
+    * Accounts with `>= 500` STONES complete their mining cycle in <3 seconds without blocking slot queues, while background tasks watch rewarded ads, solve captchas via Gemini AI vision / offline templates, submit Arbitrum withdrawals, and post broadcast receipts to the Telegram channel.
+  - **Unbuffered Supervisor Self-Healing (`bot_supervisor.sh`)**: Configured `PYTHONUNBUFFERED=1` and `-u` flag for userbot execution under supervisor, ensuring instantaneous stdout logging and rapid process recovery.
+
 - **Resilient Ad-Retry Architecture & 15-Minute TTL Preservation (`stones_captcha_solver.py`, `userbot_refresher.py`)**:
   - **Enhanced Character Vector Extraction & Horizontal Tone Merging**: Lowered pixel frequency threshold to `>= 60` and average brightness `< 118` to reliably capture thin glyphs ('1', 'I', 'T'). Implemented horizontal bounding box clustering to consolidate multi-shaded anti-aliasing into unified character components.
   - **Increased Captcha Attempts & Ticket Guard**: Raised maximum captcha attempts from 3 to 5. Added strict validation preventing `/api/withdraw` from firing without a valid verified server ticket, eliminating premature unverified rejection loops.

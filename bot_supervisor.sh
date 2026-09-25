@@ -82,8 +82,8 @@ while true; do
     if [ "$IS_RUNNING" -eq 0 ]; then
         echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] [HEAL] Userbot is down! Reviving process..." >> "$SUPERVISOR_LOG"
         
-        # Launch userbot detached from job control
-        nohup "$PYTHON_BIN" "$BOT_SCRIPT" < /dev/null >> "$BOT_LOG" 2>&1 &
+        # Launch userbot detached from job control with unbuffered output
+        PYTHONUNBUFFERED=1 nohup "$PYTHON_BIN" -u "$BOT_SCRIPT" < /dev/null >> "$BOT_LOG" 2>&1 &
         BOT_PID=$!
         disown "$BOT_PID" 2>/dev/null || true
         echo "$BOT_PID" > "$PID_FILE"

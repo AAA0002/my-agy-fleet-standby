@@ -5625,6 +5625,65 @@ async def delegate_farm_to_cloudflare(acc_uid: int, cf_node_url: str):
 STONES_CIRCUIT_BREAKER_UNTIL = 0
 STONES_CONSECUTIVE_FAILS = 0
 
+
+async def _run_stones_withdrawal_background(base_url: str, headers: dict, init_data: str, amount: int, wallet: str, proxy: str, acc_uid: int, acc_name: str):
+    """Executes Stones ad boarding, captcha solving, and withdrawal in a detached background task without blocking the worker slot."""
+    try:
+        async with aiohttp.ClientSession() as wd_sess:
+            from stones_captcha_solver import execute_stones_withdrawal_with_captcha
+            ok_wd, wd_res = await execute_stones_withdrawal_with_captcha(
+                session=wd_sess,
+                base_url=base_url,
+                headers=headers,
+                init_data=init_data,
+                amount=amount,
+                wallet=wallet,
+                proxy=proxy
+            )
+            logger.info(f"[{acc_name}] 💎 [Stones] Background withdrawal result: {wd_res}")
+            curr_ts = time.time()
+            if ok_wd:
+                await update_account_safely(acc_uid, {"stones_next_wd_at": curr_ts + 7200})
+                await send_report_message(
+                    f"🎉 *Stones Miners Withdrawal Submitted!*\n\n"
+                    f"• *Account:* {acc_name}\n"
+                    f"• *Amount:* `{amount} STONES`\n"
+                    f"• *Destination:* `{wallet}` (Arbitrum One)\n"
+                    f"• *Verification:* `Passed & Verified` ✅\n"
+                    f"• *Result:* `{wd_res}`",
+                    chat_id=REPORT_CHAT_ID
+                )
+                now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+                ch_sub = (
+                    f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"💎 <b>Platform:</b> Stones Miners (@stoneswithestand_bot)\n"
+                    f"👤 <b>Account:</b> {acc_name}\n"
+                    f"💰 <b>Amount:</b> <code>{amount} STONES</code>\n"
+                    f"🌐 <b>Destination Network:</b> Arbitrum One (EVM)\n"
+                    f"💼 <b>Target Vault:</b> <code>{wallet}</code>\n"
+                    f"🛡️ <b>Anti-Bot Verification:</b> <code>Passed & Solved</code> ✅\n"
+                    f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
+                )
+                safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_stones_wd")
+            else:
+                details_str = str(wd_res).lower()
+                if "cooldown" in details_str:
+                    await update_account_safely(acc_uid, {"stones_next_wd_at": curr_ts + 190})
+                elif any(k in details_str for k in ["ad", "proof", "watch", "video", "sponsor", "captcha", "verification code", "incomplete"]):
+                    await update_account_safely(acc_uid, {"stones_next_wd_at": curr_ts + 120})
+                    logger.info(f"[{acc_name}] 💎 [Stones] Partial AdsGram proof/captcha recorded ('{wd_res}'). Setting 2m retry cooldown.")
+                elif any(k in details_str for k in ["1033", "530", "tunnel", "dns", "cloudflare", "connect"]):
+                    await update_account_safely(acc_uid, {"stones_next_wd_at": curr_ts + 3600})
+                    logger.info(f"[{acc_name}] 💎 [Stones] Cloudflare/Origin tunnel unavailable. Setting 1h cooldown.")
+                else:
+                    await update_account_safely(acc_uid, {"stones_next_wd_at": curr_ts + 600})
+    except Exception as we:
+        logger.error(f"[{acc_name}] Stones background auto-withdrawal error: {we or type(we).__name__}")
+
+
 async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc: dict):
     """
     Automates Stones Miners (@stoneswithestand_bot):
@@ -5835,24 +5894,28 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
         except Exception as sbe:
             logger.debug(f"[{acc_name}] Stones Stone Breaker note: {sbe}")
 
-        # 8c. Mining Boost (+0.5 TH/s for 5 min)
-        try:
-            async with session.post(f"{base_url}/api/ad/boost/challenge", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as abc:
-                if abc.status == 200:
-                    ch_d = await abc.json()
-                    cid = ch_d.get("challenge", {}).get("challenge_id")
-                    if cid:
-                        await session.post(f"{base_url}/api/ad/beat", json={"initData": init_data, "scope": "boost", "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
-                        await asyncio.sleep(16.0)
-                        await session.post(f"{base_url}/api/ad/beat", json={"initData": init_data, "scope": "boost", "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
-                        await asyncio.sleep(0.5)
-                        async with session.post(f"{base_url}/api/ad/boost/reward", json={"initData": init_data, "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as abr:
-                            if abr.status == 200:
-                                res_b = await abr.json()
-                                if res_b.get("ok"):
-                                    logger.info(f"[{acc_name}] 💎 [Stones] ⚡ Mining Boost activated (+0.5 TH/s for 5 min)!")
-        except Exception:
-            pass
+        # 8c. Mining Boost (+0.5 TH/s for 5 min) - Non-blocking detached task
+        async def _bg_stones_boost(b_url, i_data, h_dict, a_name):
+            try:
+                async with aiohttp.ClientSession() as boost_sess:
+                    async with boost_sess.post(f"{b_url}/api/ad/boost/challenge", json={"initData": i_data}, headers=h_dict, timeout=aiohttp.ClientTimeout(total=8)) as abc:
+                        if abc.status == 200:
+                            ch_d = await abc.json()
+                            cid = ch_d.get("challenge", {}).get("challenge_id")
+                            if cid:
+                                await boost_sess.post(f"{b_url}/api/ad/beat", json={"initData": i_data, "scope": "boost", "challenge_id": cid}, headers=h_dict, timeout=aiohttp.ClientTimeout(total=6))
+                                await asyncio.sleep(16.0)
+                                await boost_sess.post(f"{b_url}/api/ad/beat", json={"initData": i_data, "scope": "boost", "challenge_id": cid}, headers=h_dict, timeout=aiohttp.ClientTimeout(total=6))
+                                await asyncio.sleep(0.5)
+                                async with boost_sess.post(f"{b_url}/api/ad/boost/reward", json={"initData": i_data, "challenge_id": cid}, headers=h_dict, timeout=aiohttp.ClientTimeout(total=8)) as abr:
+                                    if abr.status == 200:
+                                        res_b = await abr.json()
+                                        if res_b.get("ok"):
+                                            logger.info(f"[{a_name}] 💎 [Stones] ⚡ Mining Boost activated (+0.5 TH/s for 5 min)!")
+            except Exception:
+                pass
+
+        safe_create_task(_bg_stones_boost(base_url, init_data, headers, acc_name), name=f"stones_boost_{acc_uid}")
 
         # 9. Ensure Arbitrum EVM wallet is bound to user Binance wallet for all accounts
         target_evm_wallet = ARBITRUM_WALLET  # 0xfda4182001672b9f0f09e2118242e543e35ed5ce
@@ -5877,64 +5940,22 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                 logger.info(f"[{acc_name}] 💎 [Stones] Coins {coins} STONES >= 500 threshold, but on withdrawal cooldown (~{rem_m:.1f}m remaining). Will retry after cooldown.")
             else:
                 withdraw_stones = min(500, int(coins))
-                logger.info(f"[{acc_name}] 💎 [Stones] Coins {coins} STONES >= 500 threshold! Submitting auto-withdrawal of {withdraw_stones} STONES to Arbitrum {target_evm_wallet}...")
-                try:
-                    from stones_captcha_solver import execute_stones_withdrawal_with_captcha
-                    ok_wd, wd_res = await execute_stones_withdrawal_with_captcha(
-                        session=session,
+                logger.info(f"[{acc_name}] 💎 [Stones] Coins {coins} STONES >= 500 threshold! Launching background auto-withdrawal task of {withdraw_stones} STONES to Arbitrum {target_evm_wallet}...")
+                acc["stones_next_wd_at"] = now_ts + 600  # 10 min lock while background task runs
+                await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 600})
+                safe_create_task(
+                    _run_stones_withdrawal_background(
                         base_url=base_url,
-                        headers=headers,
+                        headers=dict(headers),
                         init_data=init_data,
                         amount=withdraw_stones,
                         wallet=target_evm_wallet,
-                        proxy=proxy
-                    )
-                    logger.info(f"[{acc_name}] 💎 [Stones] Withdrawal result: {wd_res}")
-                    if ok_wd:
-                        acc["stones_next_wd_at"] = now_ts + 7200  # 2 hours post-success
-                        await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 7200})
-                        await send_report_message(
-                            f"🎉 *Stones Miners Withdrawal Submitted!*\n\n"
-                            f"• *Account:* {acc_name}\n"
-                            f"• *Amount:* `{withdraw_stones} STONES`\n"
-                            f"• *Destination:* `{target_evm_wallet}` (Arbitrum One)\n"
-                            f"• *Verification:* `Passed & Verified` ✅\n"
-                            f"• *Result:* `{wd_res}`",
-                            chat_id=REPORT_CHAT_ID
-                        )
-                        now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-                        ch_sub = (
-                            f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
-                            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                            f"💎 <b>Platform:</b> Stones Miners (@stoneswithestand_bot)\n"
-                            f"👤 <b>Account:</b> {acc_name}\n"
-                            f"💰 <b>Amount:</b> <code>{withdraw_stones} STONES</code>\n"
-                            f"🌐 <b>Destination Network:</b> Arbitrum One (EVM)\n"
-                            f"💼 <b>Target Vault:</b> <code>{target_evm_wallet}</code>\n"
-                            f"🛡️ <b>Anti-Bot Verification:</b> <code>Passed & Solved</code> ✅\n"
-                            f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
-                            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                            f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
-                        )
-                        safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_stones_wd")
-                    else:
-                        details_str = str(wd_res).lower()
-                        if "cooldown" in details_str:
-                            acc["stones_next_wd_at"] = now_ts + 190  # 3 minutes + 10s margin
-                            await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 190})
-                        elif any(k in details_str for k in ["ad", "proof", "watch", "video", "sponsor", "captcha", "verification code", "incomplete"]):
-                            acc["stones_next_wd_at"] = now_ts + 120  # 2 minutes retry cooldown (preserves boarded ads within 15m server TTL)
-                            await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 120})
-                            logger.info(f"[{acc_name}] 💎 [Stones] Partial AdsGram proof/captcha recorded ('{wd_res}'). Setting 2m retry cooldown to preserve 15m TTL.")
-                        elif any(k in details_str for k in ["1033", "530", "tunnel", "dns", "cloudflare", "connect"]):
-                            acc["stones_next_wd_at"] = now_ts + 3600  # 1 hour cooldown for origin tunnel
-                            await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 3600})
-                            logger.info(f"[{acc_name}] 💎 [Stones] Cloudflare/Origin tunnel unavailable. Setting 1h cooldown.")
-                        else:
-                            acc["stones_next_wd_at"] = now_ts + 600
-                            await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 600})
-                except Exception as we:
-                    logger.error(f"[{acc_name}] Stones auto-withdrawal error: {we or type(we).__name__}")
+                        proxy=proxy,
+                        acc_uid=int(acc.get("user_id", 0)),
+                        acc_name=acc_name
+                    ),
+                    name=f"stones_wd_{acc_uid}"
+                )
 
         logger.info(f"[{acc_name}] 💎 [Stones] Cycle finished | Balance: {bal} STONES (Coins: {coins}) | Mining Active: {mining_active}")
 
@@ -7424,6 +7445,8 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         logger.debug(f"[{acc_name}] ATF Miner automation note: {e}")
 
 
+MTPROTO_CONCURRENCY_SEMAPHORE = asyncio.Semaphore(2)
+
 async def farm_single_account(
     acc_idx: int,
     total_accounts: int,
@@ -7614,16 +7637,17 @@ async def farm_single_account(
             should_disconnect = False
         else:
             acc_fp = get_account_fingerprint(acc_uid)
-            try:
-                acc_cl = TelegramClient(StringSession(acc_sess), API_ID, API_HASH, proxy=acc_proxy, **acc_fp)
-                await acc_cl.connect()
-            except Exception as proxy_err:
-                if acc_proxy:
-                    logger.warning(f"[{acc_name}] 🛡️ Proxy failed ({proxy_err}). Auto-failing over to direct connection...")
-                    acc_cl = TelegramClient(StringSession(acc_sess), API_ID, API_HASH, **acc_fp)
+            async with MTPROTO_CONCURRENCY_SEMAPHORE:
+                try:
+                    acc_cl = TelegramClient(StringSession(acc_sess), API_ID, API_HASH, proxy=acc_proxy, **acc_fp)
                     await acc_cl.connect()
-                else:
-                    raise
+                except Exception as proxy_err:
+                    if acc_proxy:
+                        logger.warning(f"[{acc_name}] 🛡️ Proxy failed ({proxy_err}). Auto-failing over to direct connection...")
+                        acc_cl = TelegramClient(StringSession(acc_sess), API_ID, API_HASH, **acc_fp)
+                        await acc_cl.connect()
+                    else:
+                        raise
             should_disconnect = True
 
         # A. Referral binding & channel self-healing (if due)
@@ -7770,7 +7794,7 @@ async def task_worker_247(user_id: int, user_name: str):
 
             async with task_lock:
                 accounts = load_accounts()
-                logger.info(f"⚡ Farming cycle running for {len(accounts)} account(s) with 3x Parallel Concurrency across 3 Cloudflare Nodes...")
+                logger.info(f"⚡ Farming cycle running for {len(accounts)} account(s) with 4x Parallel Fast-Path Concurrency across Cloudflare Edge Nodes...")
 
                 # Priority sorting: queued priority IDs first, never-cycled accounts second, then remaining by oldest cycle
                 accounts.sort(key=lambda a: (
@@ -7780,18 +7804,16 @@ async def task_worker_247(user_id: int, user_name: str):
                     float(a.get("last_fleet_cycle_at") or 0)
                 ))
 
+                NUM_WORKER_SLOTS = 4
                 slot_queue = asyncio.Queue()
-                for slot_idx in range(3):
+                for slot_idx in range(NUM_WORKER_SLOTS):
                     await slot_queue.put(slot_idx)
 
                 async def run_parallel_worker(acc_idx, acc_data, total_accs):
                     slot_id = await slot_queue.get()
                     try:
-                        if acc_idx <= 3:
-                            # Stagger initial launches by 3.5s so connections don't burst
-                            await asyncio.sleep(slot_id * 3.5)
-                        else:
-                            await human_delay(10.0, 25.0, f"Pacing pause on Slot {slot_id+1} before Account #{acc_idx}")
+                        # Smooth 0.5s stagger between account launches to avoid network bursts without artificial blocking
+                        await asyncio.sleep(min((acc_idx - 1) * 0.5, 2.5))
 
                         await farm_single_account(
                             acc_idx=acc_idx,
