@@ -1,8 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" class="light">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>MY AGY AI — Operations Dashboard</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -258,7 +261,7 @@ function App() {
   const API_BASE = (window.location.hostname.includes("vercel.app") || window.location.hostname.includes("workers.dev")) ? "" : "https://restore-agy.aaaai2.workers.dev";
 
   const [theme, setTheme] = useState(() => {
-    try { return localStorage.getItem("agy_theme") || "light"; } catch (_) { return "light"; }
+    try { return localStorage.getItem("agy_theme") || "dark"; } catch (_) { return "dark"; }
   });
   useEffect(() => {
     const root = document.documentElement;
@@ -519,114 +522,131 @@ function App() {
   return React.createElement("div", { className: "min-h-screen max-w-4xl mx-auto px-3 sm:px-5 pt-3 pb-20 md:pb-8 text-slate-900 dark:text-slate-100 antialiased font-sans" },
 
     // Top Navigation & Actions Bar
-    React.createElement("header", { className: "flex items-center justify-between py-2 mb-3 border-b border-slate-200/80 dark:border-white/10" },
-      React.createElement("div", { className: "flex items-center gap-2" },
-        React.createElement("div", { className: "w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white font-bold shadow-sm" },
-          React.createElement(Icon, { name: "bot", className: "w-4 h-4" })
+    React.createElement("header", { className: "flex items-center justify-between py-2.5 mb-3.5 border-b border-slate-200/80 dark:border-white/10" },
+      React.createElement("div", { className: "flex items-center gap-2.5" },
+        React.createElement("div", { className: "w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold shadow-md shadow-brand-500/20 ring-1 ring-white/20" },
+          React.createElement(Icon, { name: "bot", className: "w-5 h-5 text-white" })
         ),
         React.createElement("div", null,
           React.createElement("div", { className: "flex items-center gap-1.5" },
-            React.createElement("h1", { className: "font-extrabold text-sm sm:text-base tracking-tight" }, "MY AGY AI"),
-            React.createElement("span", { className: "px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" }, "13 ACCOUNTS • 10 BOTS ACTIVE")
+            React.createElement("h1", { className: "font-black text-sm sm:text-base tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent" }, "MY AGY AI"),
+            React.createElement("span", { className: "px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-mono shadow-xs" }, "v3.5 PRO")
+          ),
+          React.createElement("div", { className: "flex items-center gap-1.5 text-[10px] text-slate-400 font-medium" },
+            React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }),
+            React.createElement("span", { className: "text-emerald-600 dark:text-emerald-400 font-semibold font-mono" }, "13/13 ONLINE"),
+            React.createElement("span", null, "•"),
+            React.createElement("span", { className: "text-slate-400 font-mono" }, "8 BOTS"),
+            React.createElement("span", null, "•"),
+            React.createElement("span", { className: "text-brand-500 dark:text-brand-400 font-mono font-bold" }, "Gemini 3.6")
           )
         )
       ),
       React.createElement("div", { className: "flex items-center gap-1.5" },
         React.createElement("select", {
           value: currency, onChange: e => setCurrencyPref(e.target.value),
-          className: "py-1 px-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 cursor-pointer"
+          className: "py-1.5 px-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 text-[11px] font-bold text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/10 cursor-pointer shadow-xs focus:outline-none"
         },
           Object.entries(currencyConfig).map(([k, v]) => React.createElement("option", { key: k, value: k }, v.symbol + " " + v.label))
         ),
         React.createElement("button", {
           onClick: toggleTheme,
-          className: "p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/5 active:scale-95"
-        }, React.createElement(Icon, { name: theme === "light" ? "moon" : "sun", className: "w-3.5 h-3.5 text-amber-500" })),
+          className: "p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-white/10 active:scale-95 shadow-xs transition"
+        }, React.createElement(Icon, { name: theme === "light" ? "moon" : "sun", className: "w-4 h-4 text-amber-500" })),
         React.createElement("button", {
           onClick: () => { refreshTelemetry(); haptic("light"); },
-          className: `p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/5 active:scale-95 ${syncing ? "animate-spin text-brand-500" : ""}`
-        }, React.createElement(Icon, { name: "refresh", className: "w-3.5 h-3.5" }))
+          className: `p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-white/10 active:scale-95 shadow-xs transition ${syncing ? "animate-spin text-brand-500" : ""}`
+        }, React.createElement(Icon, { name: "refresh", className: "w-4 h-4" }))
       )
     ),
 
-    // High-Density Executive Hero Bar (Takes only ~90px!)
-    React.createElement("div", { className: "glass-card rounded-2xl p-3 mb-3 shadow-sm" },
-      React.createElement("div", { className: "flex items-center justify-between gap-3 mb-2" },
+    // High-Density Executive Hero Bar
+    React.createElement("div", { className: "glass-card rounded-2xl p-4 mb-3.5 shadow-md relative overflow-hidden border border-slate-200/80 dark:border-white/10" },
+      React.createElement("div", { className: "absolute -top-12 -right-12 w-36 h-36 bg-brand-500/10 rounded-full blur-2xl pointer-events-none" }),
+      React.createElement("div", { className: "flex items-center justify-between gap-3 mb-2.5 relative z-10" },
         React.createElement("div", null,
-          React.createElement("div", { className: "flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium" },
-            React.createElement("span", null, "Vault Balance (BSC)"),
-            React.createElement("span", { className: "text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono" }, "BEP-20")
+          React.createElement("div", { className: "flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-medium" },
+            React.createElement("span", { className: "font-semibold" }, "Master Vault"),
+            React.createElement("span", { className: "text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-mono" }, "Binance BEP-20"),
+            React.createElement("button", {
+              onClick: () => copyToClipboard("0xfda4182001672b9f0f09e2118242e543e35ed5ce", "Vault Address Copied!"),
+              className: "text-[10px] font-mono text-slate-400 hover:text-brand-500 transition flex items-center gap-0.5"
+            }, "0xfda4...d5ce", React.createElement(Icon, { name: "copy", className: "w-2.5 h-2.5" }))
           ),
-          React.createElement("div", { className: "flex items-baseline gap-1.5 mt-0.5" },
-            React.createElement("span", { className: "text-xl sm:text-2xl font-extrabold font-mono text-slate-900 dark:text-white" }, bnbBalance.toFixed(6)),
-            React.createElement("span", { className: "text-xs font-bold text-amber-500" }, "BNB"),
-            React.createElement("span", { className: "text-xs font-semibold text-slate-500 dark:text-slate-400 ml-1" }, "≈ " + formatMoney(bnbUsd))
+          React.createElement("div", { className: "flex items-baseline gap-2 mt-1" },
+            React.createElement("span", { className: "text-2xl sm:text-3xl font-black font-mono text-slate-900 dark:text-white tracking-tight" }, bnbBalance.toFixed(6)),
+            React.createElement("span", { className: "text-xs font-black text-amber-500 tracking-wider" }, "BNB"),
+            React.createElement("span", { className: "text-xs font-bold text-slate-500 dark:text-slate-400 ml-1 font-mono" }, "≈ " + formatMoney(bnbUsd))
           )
         ),
         React.createElement("div", { className: "text-right" },
           React.createElement("div", { className: "text-[11px] font-mono font-bold text-brand-600 dark:text-brand-400" }, consolidationPct + "% to 0.005"),
-          React.createElement("div", { className: "w-24 sm:w-28 bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1" },
-            React.createElement("div", { className: "bg-brand-600 h-full rounded-full transition-all duration-300", style: { width: `${consolidationPct}%` } })
+          React.createElement("div", { className: "w-24 sm:w-28 bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1 ml-auto" },
+            React.createElement("div", { className: "bg-gradient-to-r from-brand-600 to-indigo-500 h-full rounded-full transition-all duration-300", style: { width: `${consolidationPct}%` } })
           ),
-          React.createElement("span", { className: "text-[10px] text-slate-500 dark:text-slate-400 mt-1 block font-mono" }, "BNB: $" + (rates.bnb_usd ? rates.bnb_usd.toFixed(0) : "749") + " • TON: $" + (rates.ton_usd ? rates.ton_usd.toFixed(2) : "1.60") + " • ARB: $" + (rates.arb_usd ? rates.arb_usd.toFixed(2) : "0.21"))
+          React.createElement("div", { className: "text-[10px] text-slate-500 dark:text-slate-400 mt-1 block font-mono" }, "BNB: $" + (rates.bnb_usd ? rates.bnb_usd.toFixed(0) : "749") + " • TON: $" + (rates.ton_usd ? rates.ton_usd.toFixed(2) : "1.60"))
         )
       ),
 
-      // 1-Line Quick Action Pills
-      React.createElement("div", { className: "flex items-center justify-between gap-1.5 pt-2 border-t border-slate-100 dark:border-white/5 overflow-x-auto text-[11px]" },
-        React.createElement("div", { className: "flex items-center gap-1.5" },
+      // Quick Actions: 3 Clean, Prominent Buttons
+      React.createElement("div", { className: "flex items-center justify-between gap-1.5 pt-2.5 border-t border-slate-100 dark:border-white/5 text-[11px]" },
+        React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" },
           React.createElement("button", {
             onClick: handleHarvestAll,
-            className: "flex items-center gap-1 py-1 px-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-bold active:scale-95 shadow-sm"
-          }, React.createElement(Icon, { name: "zap", className: "w-3 h-3" }), "Harvest All"),
+            className: "flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold active:scale-95 shadow-sm shadow-brand-500/20 transition"
+          }, React.createElement(Icon, { name: "zap", className: "w-3.5 h-3.5 text-yellow-300" }), "Harvest All"),
           React.createElement("button", {
             onClick: handleInstantWithdraw,
-            className: "flex items-center gap-1 py-1 px-2.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold active:scale-95"
-          }, React.createElement(Icon, { name: "wallet", className: "w-3 h-3" }), "Withdraw"),
+            className: "flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold active:scale-95 transition"
+          }, React.createElement(Icon, { name: "wallet", className: "w-3.5 h-3.5" }), "Universal Sweep"),
           React.createElement("button", {
             onClick: () => setIsAddModalOpen(true),
-            className: "flex items-center gap-1 py-1 px-2.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold active:scale-95"
-          }, React.createElement(Icon, { name: "plus", className: "w-3 h-3" }), "Connect")
+            className: "flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold active:scale-95 transition"
+          }, React.createElement(Icon, { name: "plus", className: "w-3.5 h-3.5" }), "Connect Account")
         ),
-        React.createElement("span", { className: "text-[10px] text-slate-400 font-mono shrink-0" }, "Sync: " + syncCountdown + "s")
+        React.createElement("div", { className: "flex items-center gap-1 text-[10px] text-slate-400 font-mono shrink-0" },
+          React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" }),
+          "Sync: " + syncCountdown + "s"
+        )
       )
     ),
 
-    // 8-Bot Status Ticker (1 Compact Line)
-    React.createElement("div", { className: "flex items-center gap-2 overflow-x-auto py-1 px-1 mb-3 text-[10px] font-semibold text-slate-600 dark:text-slate-300 no-scrollbar" },
+    // 8-Bot Status Ticker (1 Sleek, High-Density Line)
+    React.createElement("div", { className: "flex items-center gap-2 overflow-x-auto py-1 px-0.5 mb-3.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300 no-scrollbar" },
       [
-        { name: "ATF Miner", token: totalAtfMined > 0 ? `${totalAtfMined.toFixed(0)} ATF (Farming)` : "ATF (Farming)" },
-        { name: "Stones", token: "Arbitrum" },
-        { name: "MRG Miner", token: "TON" },
-        { name: "ART Airdrop", token: "TON" },
-        { name: "AI Lab", token: "BEP-20" },
-        { name: "UltraWallet", token: "USDT" },
-        { name: "Apex", token: "APX" },
-        { name: "Ainovum", token: "USDT" }
+        { name: "ATF Miner", token: totalAtfMined > 0 ? `${totalAtfMined.toFixed(0)} ATF (Farming)` : "ATF (Farming)", color: "text-purple-400" },
+        { name: "Stones", token: "Arbitrum One", color: "text-amber-400" },
+        { name: "MRG Miner", token: "TON", color: "text-blue-400" },
+        { name: "ART Airdrop", token: "TON", color: "text-cyan-400" },
+        { name: "AI Lab", token: "BEP-20", color: "text-emerald-400" },
+        { name: "UltraWallet", token: "USDT", color: "text-teal-400" },
+        { name: "Apex", token: "APX", color: "text-rose-400" },
+        { name: "Ainovum", token: "USDT", color: "text-green-400" }
       ].map((b, i) => React.createElement("div", {
         key: i,
-        className: "flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-white/5 shrink-0"
+        className: "flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-900/90 border border-slate-200/80 dark:border-white/10 shrink-0 shadow-xs"
       },
         React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" }),
-        React.createElement("span", null, b.name),
-        React.createElement("span", { className: "text-[9px] text-brand-600 dark:text-brand-400 font-mono" }, "(" + b.token + ")")
+        React.createElement("span", { className: "font-bold text-slate-800 dark:text-slate-200" }, b.name),
+        React.createElement("span", { className: `text-[9px] font-mono ${b.color}` }, "(" + b.token + ")")
       ))
     ),
 
     // Tab Navigation Bar
-    React.createElement("div", { className: "flex items-center justify-between bg-slate-100 dark:bg-slate-900/90 rounded-xl p-1 mb-3 border border-slate-200 dark:border-white/10" },
+    React.createElement("div", { className: "flex items-center justify-between bg-slate-100 dark:bg-slate-900/90 rounded-xl p-1 mb-3.5 border border-slate-200/80 dark:border-white/10 shadow-xs" },
       [
         { id: "overview", label: `Fleet (${fleet.length})`, icon: "users" },
         { id: "analytics", label: "Analytics", icon: "trendingUp" },
         { id: "payouts", label: "Ledger", icon: "receipt" },
-        { id: "ai", label: "AI Commander", icon: "sparkles" }
+        { id: "ai", label: "Ari AI", icon: "sparkles", badge: "3.6 Flash" }
       ].map(t => React.createElement("button", {
         key: t.id,
         onClick: () => { setActiveTab(t.id); haptic("light"); },
-        className: `flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-bold text-xs transition ${activeTab === t.id ? "bg-white dark:bg-brand-600 text-brand-600 dark:text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"}`
+        className: `flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg font-bold text-xs transition duration-150 ${activeTab === t.id ? "bg-white dark:bg-brand-600 text-brand-600 dark:text-white shadow-sm ring-1 ring-slate-200 dark:ring-white/20" : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"}`
       },
         React.createElement(Icon, { name: t.icon, className: "w-3.5 h-3.5" }),
-        React.createElement("span", null, t.label)
+        React.createElement("span", null, t.label),
+        t.badge && React.createElement("span", { className: "hidden sm:inline text-[8px] px-1 py-0.2 rounded bg-amber-400/20 text-amber-500 font-mono font-bold" }, t.badge)
       ))
     ),
 
