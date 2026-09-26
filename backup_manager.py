@@ -164,7 +164,9 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
             cf_endpoints = [
                 "https://restore-agy.aaaai2.workers.dev/upload",
                 "https://restore-agy.aaa-bot.workers.dev/upload",
-                "https://restore-agy.aaa222.workers.dev/upload"
+                "https://restore-agy.aaa222.workers.dev/upload",
+                "https://restore-agy.agorameet.workers.dev/upload",
+                "https://restore-agy.aaaai.workers.dev/upload"
             ]
             cf_headers = {"Authorization": "Bearer agy_cf_secret_7d36994e_2026", "Content-Type": "application/zip"}
             try:

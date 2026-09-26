@@ -2676,6 +2676,8 @@ build_earnings_report = build_wallet_hub_report
 
 def build_server_health_report():
     """Compiles cloud VPS performance and worker health report."""
+    accs = load_accounts()
+    acc_count = len(accs)
     uptime_sec = int(time.time() - START_TIME)
     uptime_h = uptime_sec // 3600
     uptime_m = (uptime_sec % 3600) // 60
@@ -2691,7 +2693,8 @@ def build_server_health_report():
                 elif line.startswith("MemAvailable:"):
                     mem_avail = int(line.split()[1]) // 1024
         mem_used = mem_total - mem_avail
-        mem_str = f"{mem_used}MB / {mem_total}MB ({int(mem_used/mem_total*100)}%)"
+        mem_pct = int(mem_used / mem_total * 100) if mem_total > 0 else 0
+        mem_str = f"{mem_used}MB / {mem_total}MB ({mem_pct}%)"
     except Exception:
         mem_str = "N/A"
 
@@ -3236,7 +3239,7 @@ async def handle_single_update(update: dict):
             await send_report_message(rep, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
 
         elif text.startswith("/app") or text.startswith("/miniapp") or text.startswith("/dashboard"):
-            rep = await build_full_status_report(user_id)
+            rep = await build_full_status_report(caller_uid)
             await send_message_chunks(rep, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
 
         elif text.startswith("/miningbots") or text.startswith("/bots") or text in ["⛏️ Mining Bots", "⛏️ Bots"]:
@@ -6638,6 +6641,8 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
     """
     acc_name = acc.get("name", "User")
     acc_uid = str(acc.get("user_id"))
+    is_primary = (acc_uid == str(REPORT_CHAT_ID) or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
+    hashes_bal = 0.0
 
     try:
         init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("ailab_init_data")

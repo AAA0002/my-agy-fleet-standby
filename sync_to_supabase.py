@@ -12,8 +12,10 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://znbbaozpevurvbfkxakz.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_ANON_KEY")
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in locals() else os.getcwd()
+
 def sync_accounts():
-    accounts_file = os.path.join(os.path.dirname(__file__), "accounts.json")
+    accounts_file = os.path.join(BASE_DIR, "accounts.json")
     if not os.path.exists(accounts_file):
         print("No accounts.json found.")
         return

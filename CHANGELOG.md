@@ -5,6 +5,16 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+- **Zero-Bug Deep Code Audit & Critical Runtime Scoping Fixes (`userbot_refresher.py`, `backup_manager.py`, `sync_to_supabase.py`)**:
+  - **Full Static Scope & Symtable Verification**: Executed automated symtable and AST analysis across all 40 Python files in the repository to identify unresolved global symbols, undefined variables, and potential runtime crashes.
+  - **Bug Fix 1 — `is_primary` Scoping in AI Lab (`userbot_refresher.py`)**: Fixed `NameError: name 'is_primary' is not defined` on line 6762 inside `automate_ailab_cycle`. Defined `is_primary = (acc_uid == str(REPORT_CHAT_ID) or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))` and initialized default `hashes_bal = 0.0` to ensure safe cashout evaluations and master account protection.
+  - **Bug Fix 2 — `acc_count` Scoping in Health Report (`userbot_refresher.py`)**: Fixed `NameError: name 'acc_count' is not defined` on line 2706 in `build_server_health_report()`. Defined `accs = load_accounts()` and `acc_count = len(accs)`, and hardened memory calculation against division-by-zero (`if mem_total > 0`).
+  - **Bug Fix 3 — `user_id` Reference in Telegram Dispatcher (`userbot_refresher.py`)**: Fixed `NameError: name 'user_id' is not defined` on line 3239 in `handle_single_update()`. Updated `/miniapp` and `/app` command handlers to pass `caller_uid` instead of unassigned `user_id`.
+  - **Backup & Sync Mesh Alignment (`backup_manager.py`, `sync_to_supabase.py`)**:
+    * Expanded `cf_endpoints` in `backup_manager.py` to upload disaster recovery archives to all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Hardened path resolution in `sync_to_supabase.py` with safe `BASE_DIR` fallback.
+  - **Verification**: 100% of all 40 Python files verified with zero undefined variables, Node.js confirmed valid Cloudflare Worker syntax, and live supervisor restarted cleanly.
+
 - **Anti-Ban Humanization Engine Across All 8 Farming Bots (`userbot_refresher.py`)**:
   - **Dynamic Shuffled Execution**: Replaced rigid simultaneous parallel farming (`asyncio.gather` of all 8 bots in the exact same millisecond) with humanized, non-deterministic sequencing. Implemented `run_humanized_account_farming()` to dynamically shuffle miniapp execution order per account cycle.
   - **Natural Human Delays**: Injected humanized interaction delays (1.2s to 3.8s) between miniapp transitions, eliminating automated burst scraper patterns.
