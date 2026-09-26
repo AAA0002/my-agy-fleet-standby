@@ -211,15 +211,22 @@ export default {
           });
           if (res.ok) {
             const data = await res.json();
-            return data;
+            if (data.ok) {
+              data.node_url = baseUrl;
+              return data;
+            }
+            if (data.error && !data.error.includes("unreachable")) {
+              return data;
+            }
           }
         } catch (_) {}
       }
       return { ok: false, error: "Cloud login servers unreachable. Please retry in a few moments." };
     };
 
-    const cloudLoginVerify = async (targetChatId, { code, password, phone }) => {
-      for (const baseUrl of RENDER_LOGIN_URLS) {
+    const cloudLoginVerify = async (targetChatId, { code, password, phone, node_url }) => {
+      const urls = node_url ? [node_url, ...RENDER_LOGIN_URLS.filter(u => u !== node_url)] : RENDER_LOGIN_URLS;
+      for (const baseUrl of urls) {
         try {
           const res = await fetch(`${baseUrl}/api/account/login/verify-code`, {
             method: "POST",
@@ -237,11 +244,16 @@ export default {
           });
           if (res.ok) {
             const data = await res.json();
-            return data;
+            if (data.ok || data.need_2fa) {
+              return data;
+            }
+            if (data.error && !data.error.includes("No active login session found")) {
+              return data;
+            }
           }
         } catch (_) {}
       }
-      return { ok: false, error: "Cloud login servers unreachable. Please retry in a few moments." };
+      return { ok: false, error: "No active login session found on cloud servers. Please tap Add Account to start over." };
     };
 
     const cloudLoginCancel = async (targetChatId) => {
@@ -378,7 +390,7 @@ export default {
       }
     };
 
-    // In-memory Fleet Harvest Queue (No self-fetch HTTP subrequests)
+    // In-memory Fleet Harvest Queue & Multi-Cloud Standby Dispatch
     const queueHarvestAction = async () => {
       try {
         ctx.waitUntil(upstashSet("fleet:pending_action", {
@@ -387,7 +399,25 @@ export default {
           origin: "CloudflareEdgeMesh",
           timestamp: Date.now() / 1000
         }));
-        return { ok: true, status: "QUEUED", message: "Fleet harvest queued" };
+
+        const renderNodes = [
+          "https://my-agy-fleet-standby.onrender.com",
+          "https://my-agy-fleet-standby-node2.onrender.com"
+        ];
+        for (const rNode of renderNodes) {
+          ctx.waitUntil(
+            fetch(`${rNode}/api/farm/cloud-all`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${env.SECRET_KEY}`,
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+              },
+              body: JSON.stringify({ origin: "cf_harvest_action" })
+            }).catch(() => null)
+          );
+        }
+        return { ok: true, status: "QUEUED", message: "Fleet harvest dispatched to cloud mesh" };
       } catch (e) {
         return { ok: false, error: e.message };
       }
@@ -627,6 +657,34 @@ fi
           } catch (_) {}
         }
         return new Response(JSON.stringify({ ok: true, synced: true, upstash: true, kv_written: kvWritten }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
+    // 6.5 Fleet Add / Sync Single Account to Cloudflare KV & Edge State
+    if (path === "/api/fleet/sync_account" && request.method === "POST") {
+      const auth = request.headers.get("Authorization");
+      if (auth !== `Bearer ${env.SECRET_KEY}`) {
+        return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+      }
+      try {
+        const acc = await request.json();
+        const uid = String(acc.user_id || acc.account_id);
+        if (uid && env.BACKUP_KV) {
+          await env.BACKUP_KV.put("account:" + uid, JSON.stringify(acc)).catch(() => {});
+          if (memFleetState && Array.isArray(memFleetState.accounts)) {
+            const existingIdx = memFleetState.accounts.findIndex(a => String(a.user_id) === uid);
+            if (existingIdx >= 0) {
+              memFleetState.accounts[existingIdx] = { ...memFleetState.accounts[existingIdx], ...acc };
+            } else {
+              memFleetState.accounts.push(acc);
+            }
+          }
+          ctx.waitUntil(upstashSet("account:" + uid, acc));
+          ctx.waitUntil(upstashSet("fleet:live_state", memFleetState));
+        }
+        return new Response(JSON.stringify({ ok: true, synced: true, user_id: uid }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
         return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
       }
@@ -1179,6 +1237,19 @@ fi
           } else {
             targetUids = [6727787768, 8826375659, 8450010161, 8782429452, 7734849205, 8025472383, 8851426148, 8203342513, 8881914294, 7648254021, 8190649727, 7487048946, 8741547543];
           }
+          // Dynamically merge all account IDs present in miniapp_tokens so newly onboarded accounts are always farmed
+          try {
+            let rawTok = (memTokens && Object.keys(memTokens).length > 0) ? JSON.stringify(memTokens) : await env.BACKUP_KV.get("miniapp_tokens");
+            if (rawTok) {
+              const parsedTok = JSON.parse(rawTok);
+              for (const k of Object.keys(parsedTok)) {
+                const numK = parseInt(k);
+                if (numK && !targetUids.includes(numK)) {
+                  targetUids.push(numK);
+                }
+              }
+            }
+          } catch (_) {}
           const doAll = body.all !== false && url.searchParams.get("all") !== "false";
           const shardParam = body.shard !== undefined ? parseInt(body.shard) : (url.searchParams.has("shard") ? parseInt(url.searchParams.get("shard")) : null);
           if (!doAll && shardParam !== null) {
@@ -2439,7 +2510,7 @@ fi
               const res = await cloudLoginSendCode(normalized, chatId);
               if (res && res.ok) {
                 if (env.BACKUP_KV) {
-                  await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_code", phone: normalized }), { expirationTtl: 600 }).catch(() => {});
+                  await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_code", phone: normalized, node_url: res.node_url || "" }), { expirationTtl: 600 }).catch(() => {});
                 }
                 const msg = `📨 *Verification Code Sent!*\n\n` +
                   `Telegram sent a 5-digit verification code to \`${normalized}\`.\n\n` +
@@ -2501,10 +2572,11 @@ fi
             await sendChatAction(chatId, "typing");
             const step = loginFlowState.step;
             const phone = loginFlowState.phone || "";
+            const node_url = loginFlowState.node_url || "";
 
             // A. Waiting for 2FA Password
             if (step === "waiting_2fa") {
-              const res = await cloudLoginVerify(chatId, { password: trimmed, phone });
+              const res = await cloudLoginVerify(chatId, { password: trimmed, phone, node_url });
               if (res && res.ok) {
                 if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
                 const succMsg = `🎉 *Account Connected Successfully with 2FA!*\n\n` +
@@ -2539,7 +2611,7 @@ fi
               const res = await cloudLoginSendCode(normalized, chatId);
               if (res && res.ok) {
                 if (env.BACKUP_KV) {
-                  await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_code", phone: normalized }), { expirationTtl: 600 }).catch(() => {});
+                  await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_code", phone: normalized, node_url: res.node_url || "" }), { expirationTtl: 600 }).catch(() => {});
                 }
                 const msg = `📨 *Verification Code Sent!*\n\n` +
                   `Telegram sent a 5-digit verification code to \`${normalized}\`.\n\n` +
@@ -2558,10 +2630,10 @@ fi
             }
 
             // C. Waiting for Verification Code
-            const res = await cloudLoginVerify(chatId, { code: trimmed, phone });
+            const res = await cloudLoginVerify(chatId, { code: trimmed, phone, node_url });
             if (res && res.need_2fa) {
               if (env.BACKUP_KV) {
-                await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_2fa", phone: res.phone || phone }), { expirationTtl: 600 }).catch(() => {});
+                await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_2fa", phone: res.phone || phone, node_url }), { expirationTtl: 600 }).catch(() => {});
               }
               const twoFaMsg = `🔒 *Two-Factor Authentication (2FA) Required*\n\n` +
                 `This account has a Two-Factor Cloud Password enabled.\n` +
@@ -2651,7 +2723,7 @@ fi
         }
 
         // 3.5 Instant Fleet Harvest
-        if (text === "⚡ Instant Harvest" || text === "⚡ Harvest" || text.startsWith("/harvest")) {
+        if (text === "⚡ Instant Harvest" || text === "⚡ Harvest" || text.startsWith("/harvest") || text === "/farm" || text.startsWith("/farm")) {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
             const rep = `⚡ *Instant Fleet Harvest Dispatched!*\n\n` +
@@ -3186,9 +3258,39 @@ Reply to Arif naturally:`;
     // 3. Mini-App Automated Edge Claims (All 8 Active Bots: Stones, MRG, ART, AI Lab, UltraWallet, Apex Miner, ATF Miner, Ainovum)
     ctx.waitUntil((async () => {
       try {
-        const rawTokens = await env.BACKUP_KV.get("miniapp_tokens");
+        let rawTokens = await env.BACKUP_KV.get("miniapp_tokens");
+        if (!rawTokens) {
+          for (const sUrl of SIBLING_URLS) {
+            try {
+              const sResp = await fetch(`${sUrl}/api/miniapp/tokens`, {
+                headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+              }).catch(() => null);
+              if (sResp && sResp.ok) {
+                const sText = await sResp.text();
+                if (sText && sText.length > 50) {
+                  rawTokens = sText;
+                  await env.BACKUP_KV.put("miniapp_tokens", sText).catch(() => {});
+                  break;
+                }
+              }
+            } catch (_) {}
+          }
+        }
         if (!rawTokens) return;
         const tokens = JSON.parse(rawTokens);
+
+        // Periodically trigger full 8-bot cloud farming run on Render Standby
+        if (CURRENT_SUBDOMAIN === "aaaai2") {
+          fetch("https://my-agy-fleet-standby.onrender.com/api/farm/cloud-all", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${env.SECRET_KEY}`,
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            },
+            body: JSON.stringify({ origin: "cf_scheduled_cron" })
+          }).catch(() => null);
+        }
         const headers = {
           "Content-Type": "application/json",
           "User-Agent": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36"

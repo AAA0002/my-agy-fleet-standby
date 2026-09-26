@@ -4,6 +4,24 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Multi-Cloud Account Onboarding, Dynamic Fleet Roster Merger, Sticky MTProto Routing & 8-Bot Farming Hardening (`render_standby_app.py`, `render_app_latest.py`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Dynamic Multi-Cloud Account Merger (`fetch_accounts_from_cloud`)**:
+    * **Root Cause Fixed**: Previously, `fetch_accounts_from_cloud()` strictly read `accounts.json` from `backup.zip`. When new accounts were added via Telegram `/add_account` or the MiniApp UI, they were persisted to Upstash Redis (`account:*`) and Supabase (`/rest/v1/accounts`), but never merged into subsequent cloud farming cycles.
+    * **Triple-Cloud Federation**: Upgraded `fetch_accounts_from_cloud()` to read base accounts from `backup.zip`, query Upstash Redis (`account:*`) and Supabase (`/rest/v1/accounts`), and merge all accounts by `user_id`. New accounts are now permanently and continuously included in all 8-bot cloud farming cycles.
+    * **In-Memory Fleet Cache**: Maintained `FLEET_ACCOUNTS_CACHE` and local `accounts.json` synchronization on disk.
+  - **Immediate 8-Bot Mining & Task Execution on Onboarding (`bind_account_master_referrals`)**:
+    * Now, immediately upon linking master referrals (`6727787768`), the system extracts WebApp tokens, syncs them to 5x Cloudflare KV + Upstash, bootstraps initial mining, and executes a full `farm_single_account_bots()` cycle (completing all checkins, tasks, lucky spins, ads boosts, and claims) so accounts never just "join bot" without immediate mining activity.
+  - **Sticky Multi-Node MTProto Session Pinning (`deploy_both_cf_workers.py`)**:
+    * **Pinning Root Cause Resolved**: Render Standby Node 1 (Singapore) and Node 2 (Frankfurt) maintain in-memory Telethon login client sessions. When requesting OTP codes, the answering node is now recorded (`node_url`). Subsequent code verification and 2FA password requests route directly to the specific node maintaining the session, eliminating premature "No active login session found" errors.
+    * **Cloudflare Worker Single-Account Sync (`/api/fleet/sync_account`)**: Implemented endpoint on Cloudflare Edge to ingest single-account additions into KV (`account:{uid}`) and memory immediately.
+  - **Scam Bot Deprecation & Token Health Watchdog (`token_health_and_refresh_watchdog`)**:
+    * Permanently deprecated legacy `bnb_cloud_watchdog` interactions with blocked scam bot (`@CryptoProUpRobot`), stopping wasteful Telegram rate limits.
+    * Integrated BetterStack Heartbeat keepalive alongside proactive token freshness monitoring: if any account's tokens are missing or >18 hours old, fresh tokens are autonomously extracted via Telethon in the cloud and synced to all edge nodes.
+  - **ATF Mathematical Challenge Solver (`solve_atf_math`)**:
+    * Created dedicated regex and operator-evaluating helper solving arithmetic challenges with verbal operators ("plus", "minus", "times") and integer division.
+  - **WAF Header Hardening**:
+    * Embedded `BROWSER_HEADERS` on all internal HTTP calls from Render to Cloudflare Workers (`/backup.zip`, `/api/miniapp/tokens`), eliminating 403 Forbidden errors.
+
 - **Autonomous 8-Bot Cloud Farming Engine & Instant New Account WebApp Mining Bootstrap (`render_standby_app.py`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Auto-Token Extraction & Instant WebApp Mining Bootstrap (`render_standby_app.py`, `app.py`)**:
     * **Root Cause Fixed**: Previously, `bind_account_master_referrals` only sent `/start <ref>` messages inside Telegram chat and immediately disconnected the client. It never extracted WebApp session tokens (`initData`), never synchronized tokens to Cloudflare KV or Upstash Redis, and never triggered initial mining starts. New accounts thus joined bots but had no active WebApp mining sessions.
