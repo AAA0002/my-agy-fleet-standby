@@ -177,14 +177,35 @@ async def process_ainovum_account(session: aiohttp.ClientSession, acc: dict, tok
             "registration_duration_ms": 1500
         }
         cookie_hdr = ""
+        boot_user = {}
         async with session.post(f"{base_url}/api/bootstrap", json=boot_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as br:
             if br.status == 200:
+                boot_d = await br.json()
+                boot_user = boot_d.get("user", {})
                 raw_cookies = br.headers.getall("Set-Cookie", [])
                 cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
 
         auth_headers = dict(headers)
         if cookie_hdr:
             auth_headers["Cookie"] = cookie_hdr
+
+        # Check & open any available gift boxes
+        try:
+            async with session.get(f"{base_url}/api/gift-box/state", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6), proxy=proxy) as gsr:
+                if gsr.status == 200:
+                    gsd = await gsr.json()
+                    boxes_left = int(gsd.get("box", {}).get("boxes_left", 0) or 0)
+                    while boxes_left > 0:
+                        async with session.post(f"{base_url}/api/gift-box/open", json={}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as gbr:
+                            if gbr.status == 200:
+                                gbd = await gbr.json()
+                                p = gbd.get("prize", {})
+                                logger.info(f"[Ainovum] {name} opened Gift Box! Won: {p.get('title', p)}")
+                                boxes_left = int(gbd.get("box", {}).get("boxes_left", 0) or 0)
+                            else:
+                                break
+        except Exception:
+            pass
 
         # Step 2: Check withdraw config and available balance
         avail = 0.0
@@ -218,6 +239,12 @@ async def process_ainovum_account(session: aiohttp.ClientSession, acc: dict, tok
             target_wallet = isolated_evms.get(uid, {}).get("address", MASTER_EVM_VAULT)
 
         logger.info(f"[Ainovum] {name} ({uid}) available: {avail:.4f} USDT (Threshold: 0.10 USDT).")
+
+        is_locked = boot_user.get("is_withdraw_locked")
+        if is_locked == 1:
+            logger.info(f"[Ainovum] {name} ({uid}) requires deposit / free quota used (is_withdraw_locked: 1). Skipping withdrawal.")
+            return {"uid": uid, "name": name, "status": "deposit_required_or_locked", "available": avail}
+
         if avail >= 0.10:
             wd_amt = round(avail, 4)
             wd_payload = {

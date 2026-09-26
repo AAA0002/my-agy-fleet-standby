@@ -2417,51 +2417,91 @@ async def build_ailab_details_report(user_id: int):
 
 
 async def build_ainovum_details_report(user_id: int):
-    """Detailed Ainovum Cloud Node report."""
+    """Detailed Ainovum Cloud Node report with Gift Boxes, Mining, and Free Cashout telemetry."""
     now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     avail = 0.0826
     total_earned = 0.1250
+    coins = 0
+    boxes_left = 0
+    is_locked = None
     node_online = True
-    evm_addr = EVM_VAULT_ADDRESS
+    is_pri = (str(user_id) == str(REPORT_CHAT_ID))
+
+    if str(user_id) == "6727787768":
+        evm_addr = BINANCE_WALLET_2_EVM
+    elif str(user_id) == "8203342513":
+        evm_addr = EVM_VAULT_ADDRESS
+    else:
+        evm_addr = EVM_VAULT_ADDRESS
+        fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
+        if os.path.exists(fleet_evm_file):
+            try:
+                with open(fleet_evm_file, "r", encoding="utf-8") as fef:
+                    isolated_map = json.load(fef)
+                    if str(user_id) in isolated_map:
+                        evm_addr = isolated_map[str(user_id)].get("address", evm_addr)
+            except Exception:
+                pass
 
     try:
         init_data = FLEET_MINIAPP_TOKENS.get(str(user_id), {}).get("ainovum_init_data")
         if init_data:
             base_url = "https://ainovum.biz"
             headers = {"Content-Type": "application/json", "User-Agent": get_account_user_agent(user_id)}
+            ref_code = "" if is_pri else AINOVUM_REFERRAL_CODE
             async with aiohttp.ClientSession() as s:
-                boot_r = await s.post(f"{base_url}/api/bootstrap", json={"initData": init_data, "platform": "android", "referrer": AINOVUM_REFERRAL_CODE, "timezone_offset_minutes": 0, "language_code": "en", "registration_duration_ms": 1500}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
+                boot_r = await s.post(
+                    f"{base_url}/api/bootstrap",
+                    json={"initData": init_data, "platform": "android", "referrer": ref_code, "timezone_offset_minutes": 0, "language_code": "en", "registration_duration_ms": 1500},
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=6)
+                )
                 if boot_r.status == 200:
+                    boot_d = await boot_r.json()
+                    u_info = boot_d.get("user", {})
+                    coins = u_info.get("coins_balance", 0)
+                    is_locked = u_info.get("is_withdraw_locked")
                     raw_cookies = boot_r.headers.getall("Set-Cookie", [])
                     cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
                     auth_h = {**headers, "Cookie": cookie_hdr}
+
+                    # Fetch withdrawal config
                     async with s.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_h, timeout=aiohttp.ClientTimeout(total=6)) as cfg_r:
                         if cfg_r.status == 200:
                             cfg_d = await cfg_r.json()
                             avail = float(cfg_d.get("freeze", {}).get("available", avail) or avail)
                             total_earned = float(cfg_d.get("freeze", {}).get("total_freeze", total_earned) or total_earned)
+
+                    # Fetch gift boxes state
+                    async with s.get(f"{base_url}/api/gift-box/state", headers=auth_h, timeout=aiohttp.ClientTimeout(total=6)) as gsr:
+                        if gsr.status == 200:
+                            gsd = await gsr.json()
+                            boxes_left = int(gsd.get("box", {}).get("boxes_left", 0) or 0)
     except Exception:
         pass
 
-    fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
-    if os.path.exists(fleet_evm_file):
-        try:
-            with open(fleet_evm_file, "r", encoding="utf-8") as fef:
-                isolated_map = json.load(fef)
-                if str(user_id) in isolated_map:
-                    evm_addr = isolated_map[str(user_id)].get("address", evm_addr)
-        except Exception:
-            pass
+    if is_locked == 1:
+        payout_tier_str = "🔒 `Free Tier Used (Deposit Required per Novum Policy)`"
+    elif is_locked == 0:
+        payout_tier_str = "🟢 `1-2 Free Cashouts Active (Zero Deposit Required)`"
+    else:
+        payout_tier_str = "🟢 `Active (Threshold 0.10 USDT)`"
+
+    gifts_str = f"🎁 `{boxes_left} Box(es) Ready to Open`" if boxes_left > 0 else "✅ `Opened Today (1 Free/Day + Referrals)`"
 
     return (
-        f"🤖 *Ainovum Cloud Computing Node (@ainovumbot)*\n"
+        f"🤖 *Novum AI Agent Computing Node (@ainovum_bot)*\n"
         f"🕒 _{now_str}_\n\n"
         f"• *Node Telemetry:* `{'🟢 Operational (Low Latency)' if node_online else '⏳ Syncing'}`\n"
+        f"• *Daily Mining Income:* `+$0.01 USDT / day (Automatic ⚡)`\n"
+        f"• *Daily Gift Boxes:* {gifts_str}\n"
         f"• *Available for Cashout:* `{avail:.4f} USDT`\n"
-        f"• *Auto-Withdraw Threshold:* `0.10 USDT` (BEP-20)\n"
-        f"• *Routing EVM Address:* `{evm_addr[:8]}...{evm_addr[-6:]}` (Anti-Sybil Isolated ✅)\n"
-        f"• *Referral Network:* Linked to Primary Fleet Host 👑\n\n"
-        f"💡 _Worker account payouts route through dedicated isolated EVM addresses to comply with Novum network policy._"
+        f"• *Coins Balance:* `{coins} COINS`\n"
+        f"• *Minimum Withdrawal:* `0.10 USDT` (BEP-20)\n"
+        f"• *Withdrawal Tier:* {payout_tier_str}\n"
+        f"• *Routing Vault Address:* `{evm_addr[:8]}...{evm_addr[-6:]}`\n"
+        f"• *Anti-Sybil Isolation:* Dedicated Wallet Assigned ✅\n\n"
+        f"💡 _Novum grants 1-2 free cashouts before requiring a deposit. Free worker accounts withdraw directly to their dedicated isolated EVMs._"
     )
 
 
@@ -7595,9 +7635,12 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
             "registration_duration_ms": 1500
         }
         cookie_hdr = ""
+        boot_user = {}
         try:
             async with session.post(f"{base_url}/api/bootstrap", json=boot_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as br:
                 if br.status == 200:
+                    boot_d = await br.json()
+                    boot_user = boot_d.get("user", {})
                     raw_cookies = br.headers.getall("Set-Cookie", [])
                     cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
                 elif br.status in (401, 403):
@@ -7612,6 +7655,8 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
                         boot_payload["initData"] = fresh_init
                         async with session.post(f"{base_url}/api/bootstrap", json=boot_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as br_retry:
                             if br_retry.status == 200:
+                                boot_d = await br_retry.json()
+                                boot_user = boot_d.get("user", {})
                                 raw_cookies = br_retry.headers.getall("Set-Cookie", [])
                                 cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
                             else:
@@ -7625,9 +7670,11 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
         if cookie_hdr:
             auth_headers["Cookie"] = cookie_hdr
 
+        is_withdraw_locked = boot_user.get("is_withdraw_locked")
+
         await asyncio.sleep(round(random.uniform(1.2, 2.4), 2))
 
-        # 2. Claim Mining Profit
+        # 2. Claim Daily Mining Profit ($0.01/day)
         try:
             async with session.post(f"{base_url}/api/mining/claim", json={"action": "claim_cycle"}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as mr:
                 if mr.status == 200:
@@ -7640,76 +7687,110 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
         except Exception as me:
             logger.debug(f"[{acc_name}] Ainovum claim mining note: {me}")
 
-        # 3. Claim Channel Bonus
+        # 3. Check & Claim Channel Bonus
         try:
-            async with session.post(f"{base_url}/api/channel-bonus/claim", json={}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cbr:
-                if cbr.status == 200:
-                    logger.info(f"[{acc_name}] 🤖 [Ainovum] Channel bonus claimed!")
+            async with session.get(f"{base_url}/api/channel-bonus/status", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cbsr:
+                if cbsr.status == 200:
+                    cbsd = await cbsr.json()
+                    if cbsd.get("available") and not cbsd.get("claimed"):
+                        async with session.post(f"{base_url}/api/channel-bonus/claim", json={}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cbr:
+                            if cbr.status == 200:
+                                cbd = await cbr.json()
+                                logger.info(f"[{acc_name}] 🤖 [Ainovum] Channel bonus claimed: {cbd}")
         except Exception:
             pass
 
-        # 4. Open Gift Box
+        # 4. Check & Open Available Gift Boxes (Gifts Tab: Coins & USDT Prizes)
         try:
-            async with session.post(f"{base_url}/api/gift-box/open", json={}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as gbr:
-                if gbr.status == 200:
-                    gbd = await gbr.json()
-                    logger.info(f"[{acc_name}] 🤖 [Ainovum] Gift box opened: {gbd}")
-        except Exception:
-            pass
+            async with session.get(f"{base_url}/api/gift-box/state", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as gsr:
+                if gsr.status == 200:
+                    gsd = await gsr.json()
+                    boxes_left = int(gsd.get("box", {}).get("boxes_left", 0) or 0)
+                    if boxes_left > 0:
+                        logger.info(f"[{acc_name}] 🎁 [Ainovum] Found {boxes_left} gift box(es) ready to open! Opening now...")
+                        while boxes_left > 0:
+                            async with session.post(f"{base_url}/api/gift-box/open", json={}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as gbr:
+                                if gbr.status == 200:
+                                    gbd = await gbr.json()
+                                    prize = gbd.get("prize", {})
+                                    p_amt = prize.get("amount", 0)
+                                    p_typ = prize.get("type", "coins")
+                                    p_title = prize.get("title", f"{p_amt} {p_typ}")
+                                    logger.info(f"[{acc_name}] 🎁 [Ainovum] Gift box opened! Won: {p_title}!")
+                                    if p_typ == "usdt" and float(p_amt) > 0:
+                                        await send_report_message(
+                                            f"🎁 *Ainovum Gift Box USDT Reward!*\n\n"
+                                            f"• *Account:* {acc_name}\n"
+                                            f"• *Reward:* `+{p_amt} USDT`\n"
+                                            f"• *Prize:* {p_title}\n"
+                                            f"• *Boxes Left:* `{gbd.get('box', {}).get('boxes_left', 0)}`",
+                                            chat_id=REPORT_CHAT_ID
+                                        )
+                                    boxes_left = int(gbd.get("box", {}).get("boxes_left", 0) or 0)
+                                else:
+                                    break
+                            await asyncio.sleep(1.0)
+        except Exception as ge:
+            logger.debug(f"[{acc_name}] Ainovum gift box note: {ge}")
 
-        # 5. Auto-Withdrawal to BEP-20 Wallet (0.1 USDT Minimum)
+        # 5. Auto-Withdrawal to BEP-20 Wallet (0.10 USDT Minimum)
+        # Novum grants 1-2 free cashouts before requiring a deposit.
+        # Accounts with is_withdraw_locked == 1 require deposit per Novum anti-sybil policy.
         try:
-            async with session.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cr:
-                if cr.status == 200:
-                    cd = await cr.json()
-                    avail = float(cd.get("freeze", {}).get("available", 0) or 0)
-                    if avail >= 0.1:
-                        wd_amt = round(avail, 4)
-                        if acc_uid == "6727787768":
-                            target_evm_addr = BINANCE_WALLET_2_EVM  # Binance Web3 Wallet 2 (0x017841f26d5b79cc8c5eb20c65367bb645cc2610)
-                        elif acc_uid == "8203342513":
-                            target_evm_addr = EVM_VAULT_ADDRESS     # Node 10 (@AAlllAA2) holds Primary Binance Web3 (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
-                        else:
-                            target_evm_addr = FLEET_EVM_WALLETS.get(acc_uid) or EVM_VAULT_ADDRESS
-                        logger.info(f"[{acc_name}] 🤖 [Ainovum] Available {avail:.4f} USDT >= 0.1 threshold! Submitting auto-withdrawal to BEP-20 {target_evm_addr}...")
-                        wd_payload = {"amount": wd_amt, "wallet": target_evm_addr, "network": "bep20"}
-                        for attempt in range(2):
-                            async with session.post(
-                                f"{base_url}/api/withdraws/usdt/create",
-                                json=wd_payload,
-                                headers=auth_headers,
-                                timeout=aiohttp.ClientTimeout(total=10),
-                                proxy=proxy
-                            ) as wr:
-                                wd = await wr.json()
-                                if wr.status == 200 and not wd.get("access_denied") and not wd.get("error"):
-                                    logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal success: {wd}")
-                                    await send_report_message(
-                                        f"🎉 *Ainovum USDT Withdrawal Submitted!*\n\n"
-                                        f"• *Account:* {acc_name}\n"
-                                        f"• *Amount:* `{wd_amt} USDT` (BEP-20)\n"
-                                        f"• *Destination:* `{target_evm_addr}`\n"
-                                        f"• *Result:* `{wd}`",
-                                        chat_id=REPORT_CHAT_ID
-                                    )
-                                    now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-                                    ch_sub = (
-                                        f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
-                                        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                                        f"💎 <b>Platform:</b> Ainovum (@ainovumbot)\n"
-                                        f"👤 <b>Account:</b> {acc_name}\n"
-                                        f"💰 <b>Amount:</b> <code>{wd_amt} USDT</code> (BEP-20)\n"
-                                        f"🌐 <b>Destination Network:</b> BNB Smart Chain (BSC BEP-20)\n"
-                                        f"💼 <b>Target Vault:</b> <code>{target_evm_addr}</code>\n"
-                                        f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
-                                        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                                        f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
-                                    )
-                                    safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_ainovum_wd")
-                                    break
-                                elif wd.get("code") == "busy":
-                                    logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal gateway busy (Server busy). Will retry next cycle.")
-                                    break
+            if is_withdraw_locked == 1:
+                logger.debug(f"[{acc_name}] 🤖 [Ainovum] Account requires deposit / free quota used (is_withdraw_locked: 1). Skipping auto-withdrawal.")
+            else:
+                async with session.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cr:
+                    if cr.status == 200:
+                        cd = await cr.json()
+                        avail = float(cd.get("freeze", {}).get("available", 0) or 0)
+                        if avail >= 0.10:
+                            wd_amt = round(avail, 4)
+                            if acc_uid == "6727787768":
+                                target_evm_addr = BINANCE_WALLET_2_EVM  # Binance Web3 Wallet 2 (0x017841f26d5b79cc8c5eb20c65367bb645cc2610)
+                            elif acc_uid == "8203342513":
+                                target_evm_addr = EVM_VAULT_ADDRESS     # Node 10 (@AAlllAA2) holds Primary Binance Web3 (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
+                            else:
+                                target_evm_addr = FLEET_EVM_WALLETS.get(acc_uid) or EVM_VAULT_ADDRESS
+                            logger.info(f"[{acc_name}] 🤖 [Ainovum] Eligible for FREE withdrawal! Available {avail:.4f} USDT >= 0.10 threshold. Submitting auto-withdrawal to BEP-20 {target_evm_addr}...")
+                            wd_payload = {"amount": wd_amt, "wallet": target_evm_addr, "network": "bep20"}
+                            for attempt in range(2):
+                                async with session.post(
+                                    f"{base_url}/api/withdraws/usdt/create",
+                                    json=wd_payload,
+                                    headers=auth_headers,
+                                    timeout=aiohttp.ClientTimeout(total=10),
+                                    proxy=proxy
+                                ) as wr:
+                                    wd = await wr.json()
+                                    if wr.status == 200 and not wd.get("access_denied") and not wd.get("error"):
+                                        logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal success: {wd}")
+                                        await send_report_message(
+                                            f"🎉 *Ainovum USDT Withdrawal Submitted!*\n\n"
+                                            f"• *Account:* {acc_name}\n"
+                                            f"• *Amount:* `{wd_amt} USDT` (BEP-20)\n"
+                                            f"• *Destination:* `{target_evm_addr}`\n"
+                                            f"• *Result:* `{wd}`",
+                                            chat_id=REPORT_CHAT_ID
+                                        )
+                                        now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+                                        ch_sub = (
+                                            f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
+                                            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                                            f"💎 <b>Platform:</b> Ainovum (@ainovumbot)\n"
+                                            f"👤 <b>Account:</b> {acc_name}\n"
+                                            f"💰 <b>Amount:</b> <code>{wd_amt} USDT</code> (BEP-20)\n"
+                                            f"🌐 <b>Destination Network:</b> BNB Smart Chain (BSC BEP-20)\n"
+                                            f"💼 <b>Target Vault:</b> <code>{target_evm_addr}</code>\n"
+                                            f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
+                                            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                                            f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
+                                        )
+                                        safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_ainovum_wd")
+                                        break
+                                    elif wd.get("code") == "busy":
+                                        logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal gateway busy (Server busy). Will retry next cycle.")
+                                        break
         except Exception as we:
             logger.debug(f"[{acc_name}] Ainovum withdrawal check note: {we}")
 
@@ -9038,6 +9119,11 @@ async def execute_ainovum_fleet_sweep(caller_chat_id=None):
                 boot_resp = await an_sess.post(f"{base_url}/api/bootstrap", json={"initData": init_data, "platform": "android", "referrer": ref_code, "timezone_offset_minutes": 0, "language_code": "en", "registration_duration_ms": 1500}, headers=an_h, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy)
                 if boot_resp.status != 200:
                     continue
+                boot_d = await boot_resp.json()
+                u_locked = boot_d.get("user", {}).get("is_withdraw_locked")
+                if u_locked == 1:
+                    logger.debug(f"[Ainovum Sweep] {name} is locked/requires deposit (is_withdraw_locked: 1). Skipping.")
+                    continue
                 raw_cookies = boot_resp.headers.getall("Set-Cookie", [])
                 cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
                 auth_an_h = {**an_h, "Cookie": cookie_hdr}
@@ -9061,7 +9147,7 @@ async def execute_ainovum_fleet_sweep(caller_chat_id=None):
             except Exception as ane:
                 logger.debug(f"[Ainovum Sweep] Error for {name}: {ane}")
     if swept_count == 0 and caller_chat_id:
-        await send_report_message("🤖 *Ainovum Sweep:* No accounts currently meet the 0.10 USDT minimum threshold.", chat_id=target_chat)
+        await send_report_message("🤖 *Ainovum Sweep:* No accounts currently meet the 0.10 USDT free withdrawal criteria.", chat_id=target_chat)
 
 
 async def execute_universal_fleet_sweep(caller_chat_id=None):
