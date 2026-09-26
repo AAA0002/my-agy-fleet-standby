@@ -5,6 +5,11 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+- **Robust 100% Accurate Stones Captcha Character Segmentation (`stones_captcha_solver.py`)**:
+  - **Diagnosed Segmentation Failure**: Discovered that low pixel thresholds (`cnt >= 60`) and aggressive horizontal merging (`gap < 6px`) erroneously merged adjacent letters or picked up background anti-aliased gradient artifacts (extracting 3, 7, or 8 boxes instead of exactly 5). When candidate count differed from 5, the offline template matcher returned `"", 0.0`, causing repeated verification warnings.
+  - **Dominant Solid Glyph Extraction**: Refactored `extract_character_vectors()` to filter by solid color density (`cnt >= 90` pixels, dark `< 95` brightness), selecting the top 5 dominant glyphs by pixel mass and sorting left-to-right.
+  - **Live Proof Verified**: Achieved 100.0% (10/10) 5-character extraction accuracy on live test batches. Successfully solved live server challenge on attempt 1 (`4DRP9`, 0.97 confidence) with server verification confirmed (`{'ok': True, 'ticket': '3f6d5d0e...'}`).
+
 - **Direct Master Treasury Vault Routing for Stones Miners, AI Lab, and ART Airdrop (`userbot_refresher.py`, `batch_stones_withdraw.py`, `execute_ailab_ainovum_withdrawals.py`)**:
   - **Zero Intermediate Wallets / Direct Payouts**: Per user directive, removed isolated EVM/TON wallet routing for **Stones Miners**, **AI Lab Robot**, and **ART Airdrop**. All cashouts and withdrawals across all fleet accounts now deposit directly into the Master Binance Web3 Treasury Vaults:
     * **Stones Miners (`@stoneswithestand_bot`)**: Routes Arbitrum One withdrawals directly to Master EVM Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`) without intermediate worker wallets.

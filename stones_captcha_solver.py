@@ -60,13 +60,16 @@ def cosine_sim(v1: List[float], v2: List[float]) -> float:
 
 def extract_character_vectors(img: Image.Image) -> List[Tuple[List[float], Image.Image]]:
     """
-    Extracts the 5 characters by unique solid color,
+    Extracts the 5 characters by solid color density and dominant glyph detection,
     normalizes them to 20x25, and returns (vector, cropped_canvas) tuples.
     """
     w, h = img.size
     colors = Counter([img.getpixel((x, y)) for x in range(w) for y in range(h)])
-    # Character colors: dark and frequent (>= 60 pixels, average brightness < 118)
-    char_colors = [c for c, cnt in colors.most_common(25) if cnt >= 60 and (c[0] + c[1] + c[2]) / 3 < 118]
+
+    # Dominant character glyphs: dark (< 95 avg brightness) and prominent (>= 90 pixels)
+    char_colors = [c for c, cnt in colors.most_common(30) if cnt >= 90 and (c[0] + c[1] + c[2]) / 3 < 95]
+    if len(char_colors) < 5:
+        char_colors = [c for c, cnt in colors.most_common(35) if cnt >= 55 and (c[0] + c[1] + c[2]) / 3 < 112]
 
     chars = []
     for col in char_colors:
@@ -74,41 +77,23 @@ def extract_character_vectors(img: Image.Image) -> List[Tuple[List[float], Image
         ys = [y for x in range(w) for y in range(h) if img.getpixel((x, y)) == col]
         if not xs or not ys:
             continue
-        min_x, max_x = min(xs), max(xs)
-        min_y, max_y = min(ys), max(ys)
-        chars.append((min_x, max_x, min_y, max_y, col))
+        chars.append((min(xs), max(xs), min(ys), max(ys), col, len(xs)))
 
-    # Sort left to right
-    chars.sort(key=lambda t: t[0])
-
-    # Merge overlapping boxes that belong to the same character (anti-aliased tones)
-    merged_chars = []
-    for ch_box in chars:
-        if not merged_chars:
-            merged_chars.append(ch_box)
-            continue
-        prev_min_x, prev_max_x, prev_min_y, prev_max_y, prev_col = merged_chars[-1]
-        cur_min_x, cur_max_x, cur_min_y, cur_max_y, cur_col = ch_box
-        if cur_min_x <= prev_max_x or (cur_min_x - prev_max_x) < 6:
-            merged_chars[-1] = (
-                min(prev_min_x, cur_min_x),
-                max(prev_max_x, cur_max_x),
-                min(prev_min_y, cur_min_y),
-                max(prev_max_y, cur_max_y),
-                prev_col
-            )
-        else:
-            merged_chars.append(ch_box)
+    # Select top 5 glyphs by solid pixel density
+    chars.sort(key=lambda t: t[5], reverse=True)
+    top_5 = chars[:5]
+    # Re-sort left to right
+    top_5.sort(key=lambda t: t[0])
 
     char_data = []
-    for min_x, max_x, min_y, max_y, col in merged_chars[:5]:
+    for min_x, max_x, min_y, max_y, col, _ in top_5:
         cw = max_x - min_x + 1
         ch = max_y - min_y + 1
         c_img = Image.new("L", (cw, ch), 0)
         for x in range(min_x, max_x + 1):
             for y in range(min_y, max_y + 1):
                 p = img.getpixel((x, y))
-                if p == col or (min_x <= x <= max_x and min_y <= y <= max_y and (p[0] + p[1] + p[2]) / 3 < 118):
+                if p == col or (min_x <= x <= max_x and min_y <= y <= max_y and (p[0] + p[1] + p[2]) / 3 < 100):
                     c_img.putpixel((x - min_x, y - min_y), 255)
 
         norm_img = c_img.resize((20, 25), Image.Resampling.BILINEAR)
