@@ -4,6 +4,27 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **MRG Miner Automated Withdrawal Engine & Main Account Stones Miners Live Cashout (`userbot_refresher.py`, `test_stones_main.py`, `CHANGELOG.md`)**:
+  - **Live Main Account Stones Miners Cashout**:
+    * Successfully submitted live withdrawal of **500 STONES** for Main Account (`6727787768` - Arif Hossain) to Binance Arbitrum One Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`).
+    * Completed 4/4 AdsGram sponsor ad validations with verified postbacks.
+    * Solved dynamic OCR captcha on attempt 1/5 (`UAZEW`), acquired anti-bot verification ticket (`edbacd87...`), and queued withdrawal for settlement (`Withdrawal queued. It will be processed within 24-48 hours`).
+    * Instant payout receipt dispatched to userbot chat (`6727787768`) and broadcast to official payout channel (`-1004402765950`).
+  - **MRG Miner Reverse-Engineered Autonomous Withdrawal Engine**:
+    * Reverse-engineered MRG Miner WebApp (`https://app.mrgtoken.xyz/assets/WalletPage-VSODVZhy.js` & `index-DKvN_wBT.js`).
+    * **Automated Slider Captcha Solver**: Discovered and implemented automated puzzle solving via `/api/captcha/create` (extracting `captchaId` and `targetX`) followed by `/api/captcha/verify` (`sliderX = targetX`) returning valid verified `captchaToken` on 100% of calls.
+    * **Full Fleet KYC & Balance Audit**: Audited all 13 fleet accounts against `/api/user/me`. Confirmed **3 accounts are verified by Face ID KYC**:
+      1. `Arif Hossain` (`6727787768` - Main): 410.78 MRG, `isVerified: True`, `kycStatus: "verified"`.
+      2. `Node 10` (`8203342513` - `@AAlllAA2`): 552.13 MRG, `isVerified: True`, `kycStatus: "verified"`.
+      3. `Abid (3)` (`8741547543`): 547.12 MRG, `isVerified: True`, `kycStatus: "verified"`.
+      4. `Arif` (`8826375659`): 980.10 MRG (approaching 1,000 MRG threshold).
+    * **Server-Side Validation Discovery**: Tested live withdrawal endpoint (`POST /api/user/withdraw`) and confirmed backend rules:
+      - Enforces minimum withdrawal of **1,000 MRG**.
+      - Enforces **24-hour cooldown** after last approved withdrawal.
+    * **Userbot Integration**: Implemented `execute_mrg_withdrawal()`, added step 9 auto-withdrawal to `automate_mrg_cycle()`, created `execute_mrg_fleet_sweep()`, added Telegram slash command `/sweep_mrg`, and integrated MRG into `execute_universal_fleet_sweep()`.
+  - **Main Account Universal Cashout Policy Enabled**:
+    * Enabled Stones Miners and AI Lab cashouts for the Main Account so it withdraws all eligible balances directly to Binance Web3 vaults, while maintaining the **`$1.00 USD / USDT`** threshold for worker accounts to compound earnings.
+
 - **Main Account Test Withdrawal Execution & Worker $1.00 Payout Threshold Policy (`userbot_refresher.py`, `execute_ailab_ainovum_withdrawals.py`, `CHANGELOG.md`)**:
   - **Main Account Withdrawal Execution Across Bots**:
     * **AI Lab Robot (`@AiLab_robot`)**: Enabled auto-cashouts for Main Host Account (`6727787768`). Successfully executed live test cashout of `$0.03 USD` (Payment ID `7116`, settled amount `0.020005` USDT BEP-20) delivered directly to Primary Binance Web3 Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`).

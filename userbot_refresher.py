@@ -3272,6 +3272,9 @@ async def handle_single_update(update: dict):
         elif text.startswith("/sweep_ainovum"):
             safe_create_task(execute_ainovum_fleet_sweep(caller_chat_id=chat_id), name="tg_ainovum_sweep")
 
+        elif text.startswith("/sweep_mrg"):
+            safe_create_task(execute_mrg_fleet_sweep(caller_chat_id=chat_id), name="tg_mrg_sweep")
+
         elif text.startswith("/harvest") or text in ["⚡ Harvest", "⚡ Instant Harvest"]:
             safe_create_task(execute_fleet_harvest(caller_chat_id=chat_id), name="tg_harvest")
 
@@ -6333,10 +6336,8 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
         now_ts = time.time()
         stones_next_wd = float(acc.get("stones_next_wd_at") or 0)
 
-        # Primary Account Protection: DO NOT withdraw on main account per user directive
-        if is_primary:
-            logger.info(f"[{acc_name}] 💎 [Stones] Main account holding {coins} STONES (Withdrawals disabled per user directive to preserve balance).")
-        elif coins >= 500:
+        # Stones Miners Withdrawal (Threshold: 500 STONES, 500 per cashout)
+        if coins >= 500:
             if now_ts < stones_next_wd:
                 rem_m = max(0.1, (stones_next_wd - now_ts) / 60.0)
                 logger.info(f"[{acc_name}] 💎 [Stones] Coins {coins} STONES >= 500 threshold, but on withdrawal cooldown (~{rem_m:.1f}m remaining). Will retry after cooldown.")
@@ -6370,8 +6371,109 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
 # MODULE 3: MRG MINER AUTOMATION (@mrgminerbot)
 # =======================================================
 
-MRG_CIRCUIT_BREAKER_UNTIL = 0
-MRG_CONSECUTIVE_FAILS = 0
+async def execute_mrg_withdrawal(
+    session: aiohttp.ClientSession,
+    base_url: str,
+    headers: dict,
+    init_data: str,
+    amount: float,
+    target_wallet: str,
+    acc_name: str,
+    acc_uid: str,
+    is_primary: bool = False
+):
+    """
+    Executes automated slider captcha solving and withdrawal for MRG Miner:
+    1. Calls /api/captcha/create to receive captchaId and targetX
+    2. Simulates realistic slider puzzle completion
+    3. Calls /api/captcha/verify with sliderX = targetX to obtain captchaToken
+    4. Calls /api/user/withdraw with amount, destinationAddress, and captchaToken
+    5. Dispatches Telegram receipts on settlement
+    """
+    try:
+        # Step 1: Create Captcha
+        c_payload = {"initData": init_data}
+        async with session.post(f"{base_url}/api/captcha/create", json=c_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as cr:
+            if cr.status != 200:
+                logger.warning(f"[{acc_name}] ⛏️ [MRG Miner] Captcha create failed (HTTP {cr.status})")
+                return False, f"captcha_create_http_{cr.status}"
+            cd = await cr.json()
+            cid = cd.get("captchaId")
+            tx = cd.get("targetX")
+
+        if not cid or tx is None:
+            logger.warning(f"[{acc_name}] ⛏️ [MRG Miner] Captcha create missing captchaId or targetX")
+            return False, "missing_captcha_params"
+
+        # Realistic human jitter
+        await asyncio.sleep(round(random.uniform(1.2, 2.4), 2))
+
+        # Step 2: Verify Captcha
+        v_payload = {"initData": init_data, "captchaId": cid, "sliderX": tx}
+        async with session.post(f"{base_url}/api/captcha/verify", json=v_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as vr:
+            if vr.status != 200:
+                logger.warning(f"[{acc_name}] ⛏️ [MRG Miner] Captcha verify failed (HTTP {vr.status})")
+                return False, f"captcha_verify_http_{vr.status}"
+            vd = await vr.json()
+            ctoken = vd.get("captchaToken")
+
+        if not ctoken:
+            logger.warning(f"[{acc_name}] ⛏️ [MRG Miner] Captcha verification did not return token: {vd.get('error')}")
+            return False, vd.get("error", "no_captcha_token")
+
+        logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Captcha verified successfully! (Token: {ctoken[:16]}...)")
+        await asyncio.sleep(round(random.uniform(0.8, 1.6), 2))
+
+        # Step 3: Execute Withdrawal
+        wd_payload = {
+            "initData": init_data,
+            "amount": amount,
+            "destinationAddress": target_wallet,
+            "captchaToken": ctoken
+        }
+        async with session.post(f"{base_url}/api/user/withdraw", json=wd_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=15)) as wr:
+            res_txt = await wr.text()
+            try:
+                wd_res = json.loads(res_txt)
+            except Exception:
+                wd_res = {"error": res_txt}
+
+            if wr.status == 200 and wd_res.get("success"):
+                logger.info(f"[{acc_name}] 🎉 [MRG Miner] Withdrawal of {amount} MRG submitted successfully to {target_wallet}!")
+                role_str = "Main Host" if is_primary else "Worker"
+                await send_report_message(
+                    f"🎉 *MRG Miner Withdrawal Submitted!*\n\n"
+                    f"• *Account:* {acc_name} ({role_str} - `{acc_uid}`)\n"
+                    f"• *Amount:* `{amount} MRG`\n"
+                    f"• *Destination:* `{target_wallet}` (TON)\n"
+                    f"• *Status:* Approved / In-Flight\n"
+                    f"• *Verification:* Face ID Verified ✅",
+                    chat_id=REPORT_CHAT_ID
+                )
+                now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+                ch_sub = (
+                    f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"⛏️ <b>Platform:</b> MRG Miner (@mrgminerbot)\n"
+                    f"👤 <b>Account:</b> {acc_name}\n"
+                    f"💰 <b>Amount:</b> <code>{amount} MRG</code>\n"
+                    f"🌐 <b>Destination Network:</b> TON (The Open Network)\n"
+                    f"💼 <b>Target Vault:</b> <code>{target_wallet}</code>\n"
+                    f"🛡️ <b>Anti-Bot & KYC:</b> <code>Verified & Passed</code> ✅\n"
+                    f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
+                )
+                safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_mrg_wd")
+                return True, wd_res
+            else:
+                err_msg = wd_res.get("error", f"HTTP {wr.status}")
+                logger.warning(f"[{acc_name}] ⛏️ [MRG Miner] Withdrawal note: {err_msg}")
+                return False, err_msg
+    except Exception as e:
+        logger.error(f"[{acc_name}] MRG withdrawal error: {e}")
+        return False, str(e)
+
 
 async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: dict):
     """
@@ -6666,6 +6768,44 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                         logger.info(f"[{acc_name}] 🚀 [MRG Miner] Auto-upgraded to Level 5 (1.00 TH/s)!")
         except Exception as ue:
             logger.debug(f"[{acc_name}] MRG level upgrade note: {ue}")
+
+        # 9. Automated Withdrawal Check (Threshold: 1000 MRG, KYC Verified)
+        is_verified = (u.get("isVerified") is True or u.get("kycStatus") == "verified")
+        mrg_next_wd = float(acc.get("mrg_next_wd_at") or 0)
+        if is_verified:
+            if in_app_bal >= 1000.0:
+                if now < mrg_next_wd:
+                    rem_h = max(0.1, (mrg_next_wd - now) / 3600.0)
+                    logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Verified & holding {in_app_bal:.2f} MRG >= 1000 threshold, but 24h withdrawal cooldown is active (~{rem_h:.1f}h remaining).")
+                elif target_wallet:
+                    withdraw_amt = 1000.0
+                    logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Verified & holding {in_app_bal:.2f} MRG >= 1000! Executing automated withdrawal to {target_wallet}...")
+                    acc["mrg_next_wd_at"] = now + 86400  # 24h cooldown
+                    await update_account_safely(acc_uid, {"mrg_next_wd_at": now + 86400})
+                    ok_wd, res_wd = await execute_mrg_withdrawal(
+                        session=session,
+                        base_url=base_url,
+                        headers=headers,
+                        init_data=init_data,
+                        amount=withdraw_amt,
+                        target_wallet=target_wallet,
+                        acc_name=acc_name,
+                        acc_uid=acc_uid,
+                        is_primary=is_primary
+                    )
+                    if ok_wd:
+                        in_app_bal = max(0.0, in_app_bal - withdraw_amt)
+                    else:
+                        err_str = str(res_wd).lower()
+                        if "cooldown" in err_str:
+                            acc["mrg_next_wd_at"] = now + 86400
+                            await update_account_safely(acc_uid, {"mrg_next_wd_at": now + 86400})
+                            logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Cooldown confirmed by server. Next check in 24h.")
+                        else:
+                            acc["mrg_next_wd_at"] = now + 1800
+                            await update_account_safely(acc_uid, {"mrg_next_wd_at": now + 1800})
+            else:
+                logger.info(f"[{acc_name}] ⛏️ [MRG Miner] KYC Verified! Accumulating balance: {in_app_bal:.2f} / 1000.0 MRG towards withdrawal.")
 
         logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Cycle finished | Balance: {in_app_bal:.2f} MRG (Lvl: {act_lvl}, {spd_ths} TH/s)")
 
@@ -8998,9 +9138,6 @@ async def execute_stones_fleet_sweep(caller_chat_id=None):
     for acc in accounts:
         uid = str(acc.get("user_id"))
         name = acc.get("name", "User")
-        is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
-        if is_pri:
-            continue
         coins = float(acc.get("stones_coins", 0) or 0)
         target_wallet = ARBITRUM_WALLET  # Direct to Binance Web3 Master (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
         if coins >= 500:
@@ -9048,8 +9185,6 @@ async def execute_ailab_fleet_sweep(caller_chat_id=None):
         uid = str(acc.get("user_id"))
         name = acc.get("name", "User")
         is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
-        if is_pri:
-            continue
         worker_evm = EVM_VAULT_ADDRESS  # Direct to Binance Web3 Master (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
         init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("ailab_init_data")
         proxy = acc.get("proxy")
@@ -9156,18 +9291,81 @@ async def execute_ainovum_fleet_sweep(caller_chat_id=None):
         await send_report_message("🤖 *Ainovum Sweep:* No accounts currently meet the free withdrawal criteria (0.10 USDT for Main, 1.00 USDT for Workers).", chat_id=target_chat)
 
 
+async def execute_mrg_fleet_sweep(caller_chat_id=None):
+    """Executes MRG Miner automated withdrawal sweep across all verified fleet accounts with balance >= 1000 MRG."""
+    target_chat = caller_chat_id or REPORT_CHAT_ID
+    logger.info("[MRG Sweep] ⛏️ MRG Miner Auto-Withdrawal Sweep triggered...")
+    accounts = load_accounts()
+    fleet_ton_file = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
+    fwallets = {}
+    if os.path.exists(fleet_ton_file):
+        try:
+            with open(fleet_ton_file, "r", encoding="utf-8") as ftf:
+                fwallets = json.load(ftf)
+        except Exception:
+            pass
+    swept_count = 0
+    base_url = "https://mrg.up.railway.app"
+    async with aiohttp.ClientSession() as mrg_sess:
+        for acc in accounts:
+            uid = str(acc.get("user_id"))
+            name = acc.get("name", "User")
+            is_pri = (uid == str(REPORT_CHAT_ID))
+            init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("mrg_init_data")
+            if not init_data:
+                continue
+            acc_ua = get_account_user_agent(uid)
+            headers = {
+                "Content-Type": "application/json",
+                "Origin": "https://app.mrgtoken.xyz",
+                "Referer": "https://app.mrgtoken.xyz/",
+                "User-Agent": acc_ua
+            }
+            try:
+                async with mrg_sess.post(f"{base_url}/api/user/me", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    if r.status != 200:
+                        continue
+                    d = await r.json()
+                u = d.get("user", {})
+                bal = float(u.get("inAppBalance", 0) or 0)
+                is_v = (u.get("isVerified") is True or u.get("kycStatus") == "verified")
+                if is_v and bal >= 1000.0:
+                    target_w = TON_PRIMARY_WALLET if is_pri else fwallets.get(uid, {}).get("address")
+                    if target_w:
+                        logger.info(f"[MRG Sweep] {name} ({uid}) eligible ({bal:.2f} MRG). Executing withdrawal of 1000 MRG to {target_w}...")
+                        ok_w, res_w = await execute_mrg_withdrawal(
+                            session=mrg_sess,
+                            base_url=base_url,
+                            headers=headers,
+                            init_data=init_data,
+                            amount=1000.0,
+                            target_wallet=target_w,
+                            acc_name=name,
+                            acc_uid=uid,
+                            is_primary=is_pri
+                        )
+                        if ok_w:
+                            swept_count += 1
+                            await send_report_message(f"🎉 *MRG Sweep:* `{name}` withdrew `1000 MRG` to `{target_w}`!", chat_id=target_chat)
+            except Exception as me:
+                logger.debug(f"[MRG Sweep] Error for {name}: {me}")
+    if swept_count == 0 and caller_chat_id:
+        await send_report_message("⛏️ *MRG Sweep:* No verified accounts currently meet the 1000 MRG threshold or are off 24h cooldown.", chat_id=target_chat)
+
+
 async def execute_universal_fleet_sweep(caller_chat_id=None):
     """Executes a unified multi-bot sweep across AI Lab, Stones, Ainovum, and on-chain consolidation."""
     target_chat = caller_chat_id or REPORT_CHAT_ID
-    logger.info("[Universal Sweep] ⚡ Dispatched universal fleet sweep (AI Lab + Stones + Ainovum + On-Chain)...")
+    logger.info("[Universal Sweep] ⚡ Dispatched universal fleet sweep (AI Lab + Stones + Ainovum + MRG + On-Chain)...")
     await send_report_message(
         "⚡ *Universal Fleet Sweep Dispatched!*\n\n"
-        "Executing sequential withdrawals across AI Lab, Stones Miners, Ainovum, and On-Chain Wallets...",
+        "Executing sequential withdrawals across AI Lab, Stones Miners, Ainovum, MRG Miner, and On-Chain Wallets...",
         chat_id=target_chat
     )
     await execute_stones_fleet_sweep(caller_chat_id=target_chat)
     await execute_ailab_fleet_sweep(caller_chat_id=target_chat)
     await execute_ainovum_fleet_sweep(caller_chat_id=target_chat)
+    await execute_mrg_fleet_sweep(caller_chat_id=target_chat)
     try:
         from cloud_wallet_sweeper import run_full_sweep_audit
         await run_full_sweep_audit(notify_if_empty=False, execute_sweep=False)
