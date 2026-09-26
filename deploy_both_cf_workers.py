@@ -335,7 +335,7 @@ export default {
       };
     };
 
-    // In-memory Universal Fleet Sweep Queue (No self-fetch HTTP subrequests)
+    // In-memory Universal Fleet Sweep Queue (Direct Parallel Cloud Dispatch)
     const queueSweepAction = async () => {
       try {
         const sweepPayload = {
@@ -345,10 +345,31 @@ export default {
           timestamp: Date.now() / 1000
         };
         ctx.waitUntil(upstashSet("fleet:pending_action", sweepPayload));
+
+        // Directly trigger Cloud Wealth Automation Engine on Render Standby Node 1 & Node 2 in parallel
+        const renderNodes = [
+          "https://my-agy-fleet-standby.onrender.com",
+          "https://my-agy-fleet-standby-node2.onrender.com"
+        ];
+        for (const rNode of renderNodes) {
+          ctx.waitUntil(
+            fetch(`${rNode}/api/withdraw/auto-cycle`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" }
+            }).catch(() => null)
+          );
+          ctx.waitUntil(
+            fetch(`${rNode}/api/sweep/execute`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" }
+            }).catch(() => null)
+          );
+        }
+
         return {
           ok: true,
-          status: "QUEUED",
-          message: "Universal fleet sweep queued (AI Lab + Stones auto-withdrawals to Binance Web3 Master)",
+          status: "DISPATCHED_TO_CLOUD",
+          message: "Universal fleet sweep & auto-withdrawals dispatched directly to Render Node 1 (Singapore) & Node 2 (Frankfurt)",
           target_vault_evm: "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
           target_vault_ton: "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
         };
@@ -924,7 +945,7 @@ fi
     }
 
     // 9.6 MiniApp Tokens Status (In-Memory First)
-    if (path === "/api/miniapp/tokens") {
+    if (path === "/api/miniapp/tokens" || path === "/api/fleet/tokens") {
       try {
         if (memTokens && Object.keys(memTokens).length > 0) {
           return new Response(JSON.stringify(memTokens), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
@@ -3111,6 +3132,14 @@ Reply to Arif naturally:`;
     // 1. Keepalive for Ari Cloud Agent on Render (100% free - keeps agent active with 0 cold starts)
     ctx.waitUntil(
       fetch("https://hermes-grok-cloud-agent.onrender.com/health", { method: "GET" }).catch(() => null)
+    );
+
+    // 1.5 Autonomous Cloud Wealth Automation & Multi-Chain Sweeper (Render Node 1 & Node 2)
+    ctx.waitUntil(
+      fetch("https://my-agy-fleet-standby.onrender.com/api/withdraw/auto-cycle", { method: "POST", headers: { "Content-Type": "application/json" } }).catch(() => null)
+    );
+    ctx.waitUntil(
+      fetch("https://my-agy-fleet-standby.onrender.com/api/sweep/execute", { method: "POST", headers: { "Content-Type": "application/json" } }).catch(() => null)
     );
 
     // 2. Intelligent Cloud-Aware Sentinel Check

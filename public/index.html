@@ -591,24 +591,27 @@ function App() {
     if (e && e.preventDefault) e.preventDefault();
     if (!phoneInput.trim() || modalLoading) return;
     setModalLoading(true);
-    setModalMsg("Requesting verification code from Telegram...");
+    setModalMsg("Requesting verification code from Telegram MTProto in Cloud...");
     haptic("medium");
     try {
-      await fetchMeshApi("/api/fleet/add", {
+      const data = await fetchMeshApi("/api/fleet/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: phoneInput.trim() })
       });
       setModalLoading(false);
-      setAddStep("code");
-      setModalMsg(null);
-      showToast("Code requested! Check your Telegram app.", "info");
-      haptic("light");
-    } catch (_) {
+      if (data && data.ok === false) {
+        setModalMsg("❌ " + (data.error || "Failed to request code. Check phone format."));
+        showToast(data.error || "Phone error", "error");
+      } else {
+        setAddStep("code");
+        setModalMsg(null);
+        showToast("Code requested! Check your Telegram app.", "info");
+        haptic("light");
+      }
+    } catch (err) {
       setModalLoading(false);
-      setAddStep("code");
-      setModalMsg(null);
-      showToast("Code requested! Enter the 5 digits below.", "info");
+      setModalMsg("❌ " + (err.message || "Failed to contact gateway"));
     }
   };
 
@@ -617,16 +620,20 @@ function App() {
     const cleanCode = codeInput.trim().replace(/[^0-9]/g, '');
     if (!cleanCode || modalLoading) return;
     setModalLoading(true);
-    setModalMsg("Verifying code & connecting session...");
+    setModalMsg("Verifying code & authenticating MTProto...");
     haptic("heavy");
     try {
-      await fetchMeshApi("/api/action", {
+      const data = await fetchMeshApi("/api/fleet/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "login_input", text: cleanCode })
+        body: JSON.stringify({ code: cleanCode, phone: phoneInput.trim() })
       });
-      setTimeout(() => {
-        setModalLoading(false);
+      setModalLoading(false);
+      if (data && data.need_2fa) {
+        setAddStep("2fa");
+        setModalMsg("🔒 Two-Factor Cloud Password required. Enter it below:");
+        showToast("2FA Password Required", "info");
+      } else if (data && data.ok) {
         setAddStep("success");
         showToast("🎉 Account Connected Successfully!", "success");
         haptic("heavy");
@@ -634,10 +641,20 @@ function App() {
           setIsAddModalOpen(false);
           fetchStatus(true);
         }, 2200);
-      }, 3000);
-    } catch (_) {
+      } else if (data && data.error) {
+        setModalMsg("❌ " + data.error);
+        showToast(data.error, "error");
+      } else {
+        setAddStep("success");
+        showToast("🎉 Account Connected!", "success");
+        setTimeout(() => {
+          setIsAddModalOpen(false);
+          fetchStatus(true);
+        }, 2000);
+      }
+    } catch (err) {
       setModalLoading(false);
-      setModalMsg("Code submitted. Finalizing connection...");
+      setModalMsg("❌ Verification error: " + (err.message || "Failed to reach server"));
     }
   };
 
@@ -645,26 +662,31 @@ function App() {
     if (e && e.preventDefault) e.preventDefault();
     if (!twoFaInput.trim() || modalLoading) return;
     setModalLoading(true);
-    setModalMsg("Verifying 2FA password...");
+    setModalMsg("Verifying Two-Factor Cloud Password...");
     haptic("heavy");
     try {
-      await fetchMeshApi("/api/action", {
+      const data = await fetchMeshApi("/api/fleet/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "login_input", text: twoFaInput.trim() })
+        body: JSON.stringify({ password: twoFaInput.trim(), phone: phoneInput.trim() })
       });
-      setTimeout(() => {
-        setModalLoading(false);
+      setModalLoading(false);
+      if (data && data.ok) {
         setAddStep("success");
-        showToast("🎉 Account Connected!", "success");
+        showToast("🎉 Account Connected with 2FA!", "success");
+        haptic("heavy");
         setTimeout(() => {
           setIsAddModalOpen(false);
           fetchStatus(true);
         }, 2000);
-      }, 2500);
-    } catch (_) {
+      } else {
+        const err = (data && data.error) ? data.error : "Invalid 2FA password";
+        setModalMsg("❌ " + err);
+        showToast(err, "error");
+      }
+    } catch (err) {
       setModalLoading(false);
-      setModalMsg("Password submitted. Connecting...");
+      setModalMsg("❌ 2FA error: " + (err.message || "Failed to authenticate"));
     }
   };
 

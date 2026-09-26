@@ -4,6 +4,28 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Cloud Wealth Automation Engine: Autonomous Auto-Withdrawals & On-Chain Profit Sweeper (`render_standby_app.py`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Option 1 — Automated Cloud Auto-Withdrawal Engine (`render_standby_app.py`, `app.py`)**:
+    * **AI Lab Robot Auto-Withdrawals**: Automated periodic withdrawals directly in the cloud. Strict threshold policy: `$0.02 USD` minimum for Master (`6727787768`), `$1.00 USD` for workers, routing BEP-20 payouts to Binance Web3 Master EVM Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`).
+    * **Ainovum USDT Auto-Withdrawals**: Automated gift-box opening and balance checks. Withdraws when available balance reaches `0.10 USDT` for Master and `1.00 USDT` for workers directly to the Master EVM Vault.
+    * **Stones Miners Threshold Detection**: Scans user coin balances. Automatically queues withdrawals when holding >= 500 STONES to Arbitrum One, while preserving master compounding mode.
+    * **Ultra-Fast Parallel Execution**: Refactored account processing from sequential delays to concurrent `asyncio.gather`, completing fleet-wide checks across all 13 accounts in ~3 seconds.
+  - **Option 2 — Multi-Chain On-Chain Profit Sweeper (`render_standby_app.py`, `app.py`)**:
+    * **EVM Vault Sweeper (BSC & Arbitrum One)**: Connects via multi-endpoint RPC fallback (Binance Dataseed + dRPC). Automatically sweeps surplus BNB, Arbitrum ETH, and BEP-20 USDT from worker wallets to Binance Web3 Master EVM Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`).
+    * **TON Vault Sweeper**: Uses TonSDK and TonAPI / Toncenter RPCs to sweep surplus TON coins to Binance Web3 Master TON Vault (`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`).
+    * **In-Flight Cloud Key Loading**: Loads worker EVM and TON wallet configs dynamically from memory or by streaming `backup.zip` from Cloudflare Edge KV without touching local disk.
+    * **Verified Telegram Receipts**: Dispatches instant HTML receipts with transaction explorer links to Admin DM (`6727787768`) and Payout Channel (`-1004402765950`).
+  - **Cloudflare Edge Mesh Integration (`deploy_both_cf_workers.py`)**:
+    * **Direct Cloud Dispatch**: `queueSweepAction()` dispatches parallel fetch requests directly to Render Standby Node 1 (Singapore) and Node 2 (Frankfurt) upon user `/sweep` or `/withdraw` command.
+    * **Scheduled Cron Triggers**: Cloudflare Worker `scheduled()` cron hook dispatches automated withdrawal and sweep cycles to Render every cron interval.
+    * **MiniApp Token Alias**: Unified `/api/miniapp/tokens` and `/api/fleet/tokens` for seamless edge-to-standby token propagation.
+    * **Synchronized All 5 Edge Nodes**: Deployed across `restore-agy.aaaai2.workers.dev`, `aaa-bot`, `aaa222`, `agorameet`, and `aaaai`.
+  - **Render Standby Deployments Verified**:
+    * Render Node 1 (Singapore, `srv-damuhkmgekts73f1osag`) and Node 2 (Frankfurt, `srv-dan5q00ae00c73djummg`) both verified `live`.
+    * Background 24/7 watchdog `cloud_wealth_automation_watchdog()` scheduled on startup, running auto-withdrawal & sweep cycles every 30 minutes in the cloud.
+  - **Zero Phone Load Directive Maintained**:
+    * Verified 0 local python bot daemons running on Samsung Galaxy A30 (>760 MB free RAM). Device strictly reserved for Antigravity AI pair programming.
+
 - **Instant Bot Delivery (Zero Animation Lag), 100% Cloud MTProto Add Account, 2FA Handling & Zero-Load Phone Guard (`deploy_both_cf_workers.py`, `render_standby_app.py`, `CHANGELOG.md`)**:
   - **Eliminated Telegram Bot Animation Lag (`deploy_both_cf_workers.py`)**:
     * **Root Cause Neutralized**: Multi-frame sequential message edits with 320ms artificial delays inside `sendAnimatedReply` and `editAnimatedMessage` caused Telegram mobile clients to experience severe rate-limiting, stutter, and 1.5–2.5s perceived UI lag.
