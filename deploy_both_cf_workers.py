@@ -716,7 +716,7 @@ fi
         } else if (act === "verify") {
           // Scammer Protection: BNB Galaxy justtool.site ad verification loop permanently removed
         } else if (act === "backup") {
-          if (env.ALERT_BOT_TOKEN && env.OWNER_ID) {
+          if (env.ALERT_BOT_TOKEN) {
             const bMsg = `📦 *[Cloudflare Edge Disaster Recovery]*\n\n` +
               `✅ Instant backup download ready:\n` +
               `• *Edge Node:* \`__SUBDOMAIN__.workers.dev\`\n` +
@@ -726,7 +726,7 @@ fi
             ctx.waitUntil(fetch(`https://api.telegram.org/bot${env.ALERT_BOT_TOKEN}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ chat_id: env.OWNER_ID, text: bMsg, parse_mode: "Markdown" })
+              body: JSON.stringify({ chat_id: "@myagyai", text: bMsg, parse_mode: "Markdown" })
             }).catch(() => {}));
           }
         }
@@ -1469,56 +1469,21 @@ fi
           inline_keyboard: [
             [
               { text: "🚀 Open Executive Dashboard", web_app: { url: dashUrl } }
-            ],
-            [
-              { text: "👥 Accounts Management", callback_data: "btn_accounts" },
-              { text: "➕ Add Account", callback_data: "btn_add_account" }
-            ],
-            [
-              { text: "🌐 Cloud Mesh", callback_data: "btn_mesh" },
-              { text: "⚡ Instant Harvest", callback_data: "btn_harvest" }
-            ],
-            [
-              { text: "💼 Universal Sweep", callback_data: "btn_withdraw_all" },
-              { text: "🔄 Refresh Status", callback_data: "btn_status" }
             ]
           ]
         };
 
-        const accountsInlineKeyboard = {
-          inline_keyboard: [
-            [
-              { text: "🚀 Open Executive Dashboard", web_app: { url: dashUrl } }
-            ],
-            [
-              { text: "➕ Add Account", callback_data: "btn_add_account" },
-              { text: "🔄 Refresh Accounts", callback_data: "btn_accounts" }
-            ],
-            [
-              { text: "🌐 Cloud Mesh", callback_data: "btn_mesh" },
-              { text: "⚡ Instant Harvest", callback_data: "btn_harvest" }
-            ],
-            [
-              { text: "💼 Universal Sweep", callback_data: "btn_withdraw_all"},
-              { text: "📊 Fleet Status", callback_data: "btn_status" }
-            ]
-          ]
-        };
+        const accountsInlineKeyboard = statusInlineKeyboard;
+        const meshInlineKeyboard = statusInlineKeyboard;
 
-        const meshInlineKeyboard = {
-          inline_keyboard: [
+        const cancelKeyboard = {
+          keyboard: [
             [
-              { text: "🚀 Open Executive Dashboard", web_app: { url: dashUrl } }
-            ],
-            [
-              { text: "🔄 Refresh Mesh", callback_data: "btn_mesh" },
-              { text: "👥 Accounts", callback_data: "btn_accounts" }
-            ],
-            [
-              { text: "📊 Fleet Status", callback_data: "btn_status" },
-              { text: "💼 Universal Sweep", callback_data: "btn_withdraw_all" }
+              { text: "❌ Cancel Login" }
             ]
-          ]
+          ],
+          resize_keyboard: true,
+          is_persistent: true
         };
 
         const mainKeyboard = {
@@ -1698,15 +1663,24 @@ fi
                 body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: meshInlineKeyboard })
               }).catch(() => {});
             } else if (cbData === "btn_add_account" || cbData === "btn_addaccount") {
-              const rep = `➕ *Connect New Telegram Account to Fleet*\n\n` +
-                `Scale your 24/7 autonomous mining cluster with another account:\n\n` +
-                `1️⃣ *Fast Command:* Send \`/add_account <phone_number>\` in this chat (e.g. \`/add_account +8801700000000\`).\n` +
-                `2️⃣ *Via Mini App:* Open *🚀 Open Mini App*, go to the *Fleet* tab and tap *➕ Connect New Account*.\n` +
-                `3️⃣ *Auto-Propagation:* Once connected, your account is immediately provisioned across all 3 Cloudflare Edge nodes and farms all 8 bots automatically!`;
+              const rep = `📱 *Add New Telegram Account*\n\n` +
+                `Please send the phone number of the Telegram account you want to connect:\n\n` +
+                `• *Bangladesh:* \`019XXXXXXXX\` or \`19XXXXXXXX\`\n` +
+                `• *Standard:* \`+88017XXXXXXXX\`\n` +
+                `• *International:* \`+1...\`, \`+44...\`, \`+91...\`\n\n` +
+                `_(Tap ❌ Cancel Login below to abort)_`;
+              const recorded = {
+                id: "act_" + Date.now(),
+                action: "start_add_account",
+                chat_id: String(chatId),
+                timestamp: Date.now(),
+                node: CURRENT_SUBDOMAIN
+              };
+              ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: statusInlineKeyboard })
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: cancelKeyboard })
               }).catch(() => {});
             } else if (cbData === "btn_withdraw" || cbData === "btn_withdraw_all") {
               const res = await queueSweepAction();
@@ -1718,7 +1692,7 @@ fi
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: statusInlineKeyboard })
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
               }).catch(() => {});
             } else if (cbData === "btn_harvest") {
               const res = await queueHarvestAction();
@@ -1729,7 +1703,7 @@ fi
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: statusInlineKeyboard })
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
               }).catch(() => {});
             } else if (cbData === "btn_ainovum") {
               const rep = `🤖 *AINOVUM CLOUD NODE COMMAND CENTER*\n` +
@@ -1743,7 +1717,7 @@ fi
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: statusInlineKeyboard })
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
               }).catch(() => {});
             } else if (cbData === "btn_ailab") {
               const rep = `🧪 *AI LAB ROBOT COMMAND CENTER*\n` +
@@ -1757,7 +1731,7 @@ fi
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: statusInlineKeyboard })
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
               }).catch(() => {});
             } else if (cbData === "btn_stones") {
               const rep = `💎 *STONES MINERS CLOUD COMMAND CENTER*\n` +
@@ -1772,7 +1746,7 @@ fi
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: statusInlineKeyboard })
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
               }).catch(() => {});
             } else if (cbData === "btn_art") {
               const rep = `🚀 *ART AIRDROP COMMAND CENTER*\n` +
@@ -1786,7 +1760,7 @@ fi
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: statusInlineKeyboard })
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
               }).catch(() => {});
             } else if (cbData === "btn_mrg") {
               const rep = `⛏️ *MRG MINER COMMAND CENTER*\n` +
@@ -1800,7 +1774,7 @@ fi
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: statusInlineKeyboard })
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
               }).catch(() => {});
             } else if (cbData === "btn_ultra") {
               const rep = `💳 *ULTRAWALLET COMMAND CENTER*\n` +
@@ -1814,7 +1788,7 @@ fi
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: statusInlineKeyboard })
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
               }).catch(() => {});
             } else if (cbData === "btn_apx") {
               const rep = `⚡ *APEX MINER COMMAND CENTER*\n` +
@@ -1827,7 +1801,7 @@ fi
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: statusInlineKeyboard })
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
               }).catch(() => {});
             } else if (cbData === "btn_bnb" || cbData === "btn_bnb_claim" || cbData === "btn_bnb_withdraw") {
               const rep = `🚫 *BNB GALAXY PERMANENTLY DISABLED*\n` +
@@ -1839,7 +1813,7 @@ fi
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: statusInlineKeyboard })
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
               }).catch(() => {});
             } else if (cbData === "btn_atf") {
               let atfData = {};
@@ -1862,10 +1836,7 @@ fi
                     { text: "💎 Verified Wallets", callback_data: "btn_atf_wallets" }
                   ],
                   [
-                    { text: "🚀 Open Visual Mini App", web_app: { url: dashUrl } }
-                  ],
-                  [
-                    { text: "🔄 Refresh Status", callback_data: "btn_status" }
+                    { text: "🚀 Open Executive Dashboard", web_app: { url: dashUrl } }
                   ]
                 ]
               };
@@ -1896,7 +1867,7 @@ fi
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: statusInlineKeyboard })
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
               }).catch(() => {});
             } else if (cbData === "btn_atf_wallets") {
               const rep = `💎 *ATF Miner Dedicated TON Wallets*\n\n` +
@@ -1906,7 +1877,7 @@ fi
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: statusInlineKeyboard })
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
               }).catch(() => {});
             } else if (cbData === "btn_status") {
               let mcData = {};
@@ -1973,13 +1944,13 @@ fi
           return new Response("OK");
         }
 
-        const sendReply = async (replyText, markup = statusInlineKeyboard, parseMode = "Markdown") => {
+        const sendReply = async (replyText, markup = null, parseMode = "Markdown") => {
           const payload = {
             chat_id: chatId,
             text: replyText,
-            reply_markup: markup,
             disable_web_page_preview: true
           };
+          if (markup) payload.reply_markup = markup;
           if (parseMode) payload.parse_mode = parseMode;
           try {
             const resp = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -2006,21 +1977,19 @@ fi
             `🤖 *Active Bots (8/8):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
             `💰 *On-Chain Vaults:* BEP-20 (BNB) • Arbitrum (STONES) • 13 TON Wallets\n` +
             `🛡️ *Security:* 5/5 Anti-Bot Verified • Dual-Edge Cloud Sync\n\n` +
-            `📱 *Tap '🚀 Open Executive Dashboard' below to launch your visual dashboard on Vercel or use quick controls:*`;
+            `📱 *Tap '🚀 Open WebApp Dashboard' below or use quick controls:*`;
           
           await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               chat_id: chatId,
-              text: "⚡ *Executive toolbar synchronized:*",
+              text: welcome,
               parse_mode: "Markdown",
               reply_markup: mainKeyboard
             })
           }).catch(() => {});
 
-          // Then send the executive card with the primary WebApp inline button
-          ctx.waitUntil(sendReply(welcome, statusInlineKeyboard));
           return new Response("OK");
         }
 
@@ -2266,14 +2235,25 @@ fi
             ctx.waitUntil(env.BACKUP_KV.put("pending_fleet_action", JSON.stringify(recorded), { expirationTtl: 600 }));
 
             const userConfirm = `⏳ Requesting verification code for \`${normalized}\`...`;
-            ctx.waitUntil(sendReply(userConfirm, statusInlineKeyboard));
+            ctx.waitUntil(sendReply(userConfirm, cancelKeyboard));
             return new Response("OK");
           }
 
-          const rep = `📱 *Add Telegram Account*\n\n` +
-            `Please send the phone number you want to connect (e.g. \`+918930504750\` or \`019XXXXXXXX\`):\n\n` +
-            `_(Or tap '🚀 Open Mini App' -> Fleet -> 'Add Account')_`;
-          ctx.waitUntil(sendReply(rep, statusInlineKeyboard));
+          const rep = `📱 *Add New Telegram Account*\n\n` +
+            `Please send the phone number of the Telegram account you want to connect:\n\n` +
+            `• *Bangladesh:* \`019XXXXXXXX\` or \`19XXXXXXXX\`\n` +
+            `• *Standard:* \`+88017XXXXXXXX\`\n` +
+            `• *International:* \`+1...\`, \`+44...\`, \`+91...\`\n\n` +
+            `_(Tap ❌ Cancel Login below to abort)_`;
+          const recorded = {
+            id: "act_" + Date.now(),
+            action: "start_add_account",
+            chat_id: String(chatId),
+            timestamp: Date.now(),
+            node: CURRENT_SUBDOMAIN
+          };
+          ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
+          ctx.waitUntil(sendReply(rep, cancelKeyboard));
           return new Response("OK");
         }
 
@@ -2281,7 +2261,19 @@ fi
         const trimmed = text.trim();
         const isOtpCode = /^(\d{5}|\d{3}[-\s]\d{2}|\d{6})$/.test(trimmed);
         const isCancelLogin = (trimmed === "/cancel" || trimmed === "❌ Cancel Login" || trimmed === "❌ Cancel");
-        if (isOtpCode || isCancelLogin) {
+        if (isCancelLogin) {
+          const recorded = {
+            id: "act_" + Date.now(),
+            action: "cancel_login",
+            chat_id: String(chatId),
+            timestamp: Date.now(),
+            node: CURRENT_SUBDOMAIN
+          };
+          ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
+          ctx.waitUntil(sendReply("❌ Account connection cancelled.", mainKeyboard));
+          return new Response("OK");
+        }
+        if (isOtpCode) {
           const recorded = {
             id: "act_" + Date.now(),
             action: "login_input",
@@ -2291,10 +2283,7 @@ fi
             node: CURRENT_SUBDOMAIN
           };
           ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
-          const repMsg = isCancelLogin 
-            ? "❌ Account connection cancelled." 
-            : `⏳ Verifying code \`${trimmed}\`...`;
-          ctx.waitUntil(sendReply(repMsg, statusInlineKeyboard));
+          ctx.waitUntil(sendReply(`⏳ Verifying code \`${trimmed}\`...`, cancelKeyboard));
           return new Response("OK");
         }
 
@@ -2794,15 +2783,14 @@ Reply to Arif naturally:`;
         }
 
         // Only investigate if local machine has been silent for > 60 minutes
-          // Check if Render Cloud Standby, Ari AI Agent, or Dual MTProto Relayers are standing guard
-          const [r1, r2, rAri, rRelay1, rRelay2] = await Promise.all([
+          // Check if 4 Render 24/7 nodes (Standby Singapore, Standby Frankfurt, Ari AI, Primary Relayer) are standing guard
+          const [r1, r2, rAri, rRelay1] = await Promise.all([
             fetch("https://my-agy-fleet-standby.onrender.com/health", { method: "GET" }).catch(() => null),
             fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => null),
             fetch("https://hermes-grok-cloud-agent.onrender.com/health", { method: "GET" }).catch(() => null),
-            fetch("https://atf-mtproto-relayer.onrender.com/wake", { method: "GET" }).catch(() => null),
-            fetch("https://atf-mtproto-relayer-backup.onrender.com/wake", { method: "GET" }).catch(() => null)
+            fetch("https://atf-mtproto-relayer.onrender.com/wake", { method: "GET" }).catch(() => null)
           ]);
-          const cloudStandbyAlive = (r1 && r1.ok) || (r2 && r2.ok) || (rAri && rAri.ok) || (rRelay1 && rRelay1.ok) || (rRelay2 && rRelay2.ok);
+          const cloudStandbyAlive = (r1 && r1.ok) || (r2 && r2.ok) || (rAri && rAri.ok) || (rRelay1 && rRelay1.ok);
 
           // If Render is alive in the cloud, the fleet is 100% operational - DO NOT send false alarms!
           if (cloudStandbyAlive) {
@@ -3604,8 +3592,8 @@ Reply to Arif naturally:`;
       "https://my-agy-fleet-deno2.aaasupporta.deno.net/health",
       "https://my-agy-fleet-standby.onrender.com/health",
       "https://my-agy-fleet-standby-node2.onrender.com/health",
-      "https://atf-mtproto-relayer.onrender.com/wake",
-      "https://atf-mtproto-relayer-backup.onrender.com/wake"
+      "https://hermes-grok-cloud-agent.onrender.com/health",
+      "https://atf-mtproto-relayer.onrender.com/wake"
     ];
     for (const edgeUrl of MULTI_CLOUD_EDGES) {
       ctx.waitUntil(fetch(edgeUrl).catch(() => {}));

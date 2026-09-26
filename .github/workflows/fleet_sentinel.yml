@@ -56,8 +56,7 @@ jobs:
               ("Render Singapore (Node 1)", "https://my-agy-fleet-standby.onrender.com/health"),
               ("Render Frankfurt (Node 2)", "https://my-agy-fleet-standby-node2.onrender.com/health"),
               ("Render Singapore (Node 3 Ari AI)", "https://hermes-grok-cloud-agent.onrender.com/health"),
-              ("Render MTProto Relayer Primary", "https://atf-mtproto-relayer.onrender.com/wake"),
-              ("Render MTProto Relayer Backup", "https://atf-mtproto-relayer-backup.onrender.com/wake")
+              ("Render MTProto Relayer Primary", "https://atf-mtproto-relayer.onrender.com/wake")
           ]
           DENO_NODES = [
               ("Deno Deploy Edge 1 (aaa222)", "https://my-agy-fleet-deno.aaa222.deno.net/health"),

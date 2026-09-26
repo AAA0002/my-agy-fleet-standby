@@ -4,6 +4,42 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Instant 8-Bot Master Referral Binding, Strict Telegram Channel Isolation & Render 4-Active + 1-Cold-Failback Architecture (`userbot_refresher.py`, `deploy_both_cf_workers.py`, `backup_manager.py`, `public/index.html`, `deno_worker/main.ts`, `.github/workflows/fleet_sentinel.yml`)**:
+  - **100% Guaranteed 8-Bot Master Referral Binding (Admin & User Side)**:
+    * **Non-Blocking Login Flow (`userbot_refresher.py`)**: Completely decoupled `ensure_referral_bound` from the blocking OTP/2FA verification response. As soon as Telethon verifies the session, the account is atomically saved into `accounts.json`, dedicated TON & EVM wallets are registered, and immediate confirmation is dispatched to the user.
+    * **Asynchronous Master Referral Binding (`run_background_referral_binding`)**: Spawns an asynchronous background task upon account connection that joins and registers all 8 bots under the Master Account's referral links (`6727787768` / `r6727787768` / `ref_IRN1G3XD` / `296852`):
+      1. Stones Miners (`@stoneswithestand_bot` with `r6727787768`)
+      2. MRG Miner (`@mrgminerbot` with `ref_IRN1G3XD`)
+      3. ART Airdrop (`@ART_AIRDROP_BOT` with `6727787768`)
+      4. AI Lab Robot (`@AiLab_robot` with `296852`)
+      5. UltraWallet (`@UltrawalletTrade_Bot` with `6727787768`)
+      6. Apex Miner (`@ApxMinerBot` with `6727787768`)
+      7. Ainovum Bot (`@ainovumbot` with `ref_6727787768`)
+      8. ATF Miner (`@ATF_AIRDROP_bot` with `6727787768`)
+    * **Immediate Worker Self-Healing (0 Delay)**: Fixed line 8400 where missing referrals previously waited 24 hours to self-heal. Changed to `heal_due = missing_referrals or ((time.time() - last_heal) > (12 * 3600))` so any unbound bot referral is immediately repaired on the very next farming cycle.
+    * **Detailed Referral Receipt**: Sends a comprehensive report card to the admin chat upon completion confirming all 8 bots are bound and crediting hash rate to the master account.
+  - **Strict Telegram Channel Isolation & Spam Elimination**:
+    * **Backup Archives Exclusively to `@myagyai` (`backup_manager.py`)**: Removed user chat notification fallback from `send_backup_to_telegram()`. Automated backups, `/backup` triggers, and recovery archives now flow strictly and exclusively to the `@myagyai` vault channel, never dropping large zip files into the bot chat.
+    * **Withdrawal & Settlement Receipts Exclusively to `PAYOUT_CHANNEL_ID` (`userbot_refresher.py`)**: Removed all `send_report_message` calls for withdrawals across BNB, Stones, MRG, ART, AI Lab, and Ainovum. All in-flight submission cards and on-chain settlement receipts broadcast exclusively to `PAYOUT_CHANNEL_ID` (`-1004402765950`).
+    * **Eliminated Midnight Bot Chat Spam**: Excised `broadcast_admin_message` calls for midnight disaster recovery alerts and P&L cards in both primary and rest-break loops.
+  - **Double Button Removal & Clean Keyboard Architecture**:
+    * **Streamlined Inline Keyboards**: Replaced 7-button inline keyboards (`statusInlineKeyboard`, `accountsInlineKeyboard`, `meshInlineKeyboard`) that stacked awkwardly on top of the bottom docked `MAIN_TAB_KEYBOARD` with a single high-contrast `[🚀 Open Executive Dashboard]` button.
+    * **Clean `/start` Welcome Card**: Reduced `/start` and `/menu` to a single clean executive message paired with the docked bottom toolbar, eliminating redundant duplicate messages.
+    * **Seamless Add Account & Cancel Flow**: When "➕ Add Account" is pressed, a single clean prompt with `CANCEL_KEYBOARD` is displayed. Cancel triggers cleanly remove pending sessions without duplicate messages.
+  - **Render Fleet Quota Optimization: 4 Nodes Active 24/7 + 1 Cold Failback**:
+    * **4 24/7 Active Services**: Maintained 24/7 uptime via keepalives and UptimeRobot for:
+      1. `https://atf-mtproto-relayer.onrender.com` (Primary MTProto Relayer)
+      2. `https://my-agy-fleet-standby.onrender.com` (Standby Node 1 - Singapore)
+      3. `https://my-agy-fleet-standby-node2.onrender.com` (Standby Node 2 - Frankfurt)
+      4. `https://hermes-grok-cloud-agent.onrender.com` (Ari AI Cloud Agent)
+    * **1 Cold Failback Standby (`atf-mtproto-relayer-backup.onrender.com`)**:
+      - Completely removed from all 24/7 keepalive pings in `userbot_refresher.py`, `deploy_both_cf_workers.py`, `public/index.html`, `deno_worker/main.ts`, and `.github/workflows/fleet_sentinel.yml`.
+      - Preserves 100% of its 750 free monthly Render hours for true disaster recovery when primary limits are reached.
+      - Configured with an extended 65-second timeout in `userbot_refresher.py` so if the primary relayer fails, the failback container has sufficient time to spin up from cold sleep and handle requests seamlessly.
+  - **Production Deployment & Verification**:
+    * Deployed updated workers across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with 100% success.
+    * Supervisor reloaded `userbot_refresher.py` with zero downtime; farming cycles active and healthy across all 13 accounts.
+
 - **Radical Account Onboarding Simplification, 2-Step In-Modal Flow & Bot Notification Spam Elimination (`deploy_both_cf_workers.py`, `public/index.html`, `userbot_refresher.py`, `CHANGELOG.md`)**:
   - **Radical Simplification of Account Onboarding UX**:
     * **2-Step In-Modal Experience in Mini App (`public/index.html`)**: Transformed the previously one-way phone submission into an interactive 4-stage in-modal wizard:

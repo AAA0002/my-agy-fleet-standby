@@ -391,9 +391,9 @@ function App() {
       { id: "cf4", url: "https://restore-agy.agorameet.workers.dev/api/health" },
       { id: "cf5", url: "https://restore-agy.aaaai.workers.dev/api/health" },
       { id: "rnd1", url: "https://atf-mtproto-relayer.onrender.com/wake" },
-      { id: "rnd2", url: "https://atf-mtproto-relayer-backup.onrender.com/wake" },
       { id: "rnd3", url: "https://my-agy-fleet-standby.onrender.com/health" },
       { id: "rnd4", url: "https://my-agy-fleet-standby-node2.onrender.com/health" },
+      { id: "rnd5", url: "https://hermes-grok-cloud-agent.onrender.com/health" },
       { id: "deno1", url: "https://my-agy-fleet-deno.aaa222.deno.net/health" },
       { id: "deno2", url: "https://my-agy-fleet-deno2.aaasupporta.deno.net/health" }
     ];
@@ -1281,19 +1281,20 @@ function App() {
 
         // Render Section
         React.createElement("div", { className: "mb-3" },
-          React.createElement("div", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5" }, "🚀 Render Compute & Relayers (4 Nodes)"),
+          React.createElement("div", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5" }, "🚀 Render Compute & Relayers (4 Active + 1 Failback)"),
           React.createElement("div", { className: "space-y-1.5 text-xs" },
             [
-              { id: "rnd1", name: "MTProto Relayer (Primary)", host: "atf-mtproto-relayer", defLat: "Warm & Auth" },
-              { id: "rnd2", name: "MTProto Relayer (Backup)", host: "atf-mtproto-relayer-backup", defLat: "Warm & Auth" },
-              { id: "rnd3", name: "Failover Node #1 (Singapore)", host: "my-agy-fleet-standby", defLat: "Active" },
-              { id: "rnd4", name: "Failover Node #2 (Frankfurt)", host: "my-agy-fleet-standby-node2", defLat: "Active" }
+              { id: "rnd1", name: "MTProto Relayer (Primary 24/7)", host: "atf-mtproto-relayer", defLat: "24/7 Active" },
+              { id: "rnd3", name: "Failover Node #1 (Singapore 24/7)", host: "my-agy-fleet-standby", defLat: "24/7 Active" },
+              { id: "rnd4", name: "Failover Node #2 (Frankfurt 24/7)", host: "my-agy-fleet-standby-node2", defLat: "24/7 Active" },
+              { id: "rnd5", name: "Ari AI Cloud Agent (Node 3 24/7)", host: "hermes-grok-cloud-agent", defLat: "24/7 Active" },
+              { id: "rnd2", name: "MTProto Relayer (Cold Failback)", host: "atf-mtproto-relayer-backup", defLat: "Cold Standby" }
             ].map(n => React.createElement("div", { key: n.id, className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
               React.createElement("div", null,
                 React.createElement("div", { className: "font-bold text-slate-800 text-[11px]" }, n.name),
                 React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, n.host)
               ),
-              React.createElement("span", { className: "bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full" },
+              React.createElement("span", { className: `text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${n.id === "rnd2" ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-blue-50 text-blue-700 border border-blue-200"}` },
                 meshPings[n.id] ? `${meshPings[n.id].latency}ms` : n.defLat
               )
             ))

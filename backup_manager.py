@@ -297,26 +297,6 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
                     pin_url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/pinChatMessage"
                     await session.post(pin_url, json={"chat_id": BACKUP_CHANNEL, "message_id": cmd_msg_id, "disable_notification": True})
 
-            # 4. If triggered by a user in chat, notify them with the command as well
-            if chat_id and str(chat_id) != BACKUP_CHANNEL:
-                acc_count = 11
-                try:
-                    with open(os.path.join(BASE_DIR, "accounts.json"), "r", encoding="utf-8") as af:
-                        acc_count = len(json.load(af))
-                except Exception:
-                    pass
-                ipfs_user_line = f"🌐 <b>IPFS Decentralized Gateway:</b>\n<code>https://gateway.pinata.cloud/ipfs/{ipfs_cid}</code>\n\n" if ipfs_cid else ""
-                user_msg = (
-                    f"✅ <b>Backup uploaded directly to Telegram @myagyai vault & Pinata IPFS!</b>\n\n"
-                    f"📦 <b>Archive:</b> <code>{zip_filename}</code>\n"
-                    f"🔑 <b>All {acc_count} Accounts & Sessions:</b> Preserved\n"
-                    f"{ipfs_user_line}"
-                    f"⚡ <b>1-Line Restore Command:</b>\n"
-                    f"<code>{tg_one_liner}</code>"
-                )
-                async with session.post(url_msg, json={"chat_id": str(chat_id), "text": user_msg, "parse_mode": "HTML"}) as resp3:
-                    pass
-
             # Note: Local backup archive is preserved (up to 2 newest copies) via create_backup_zip pruning
             return True, f"✅ Backup uploaded to https://t.me/myagyai and saved locally!"
 
@@ -326,5 +306,5 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
 
 if __name__ == "__main__":
     print("Uploading disaster recovery backup to https://t.me/myagyai...")
-    ok, message = asyncio.run(send_backup_to_telegram(REPORT_CHAT_ID))
+    ok, message = asyncio.run(send_backup_to_telegram())
     print(message)

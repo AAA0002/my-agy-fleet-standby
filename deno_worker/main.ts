@@ -18,7 +18,6 @@ const NODES = [
   { name: "Render Frankfurt (Node 2)", url: "https://my-agy-fleet-standby-node2.onrender.com/health", type: "render" },
   { name: "Render Ari AI Council (Node 3)", url: "https://hermes-grok-cloud-agent.onrender.com/health", type: "render" },
   { name: "Render MTProto Relayer Primary", url: "https://atf-mtproto-relayer.onrender.com/wake", type: "render" },
-  { name: "Render MTProto Relayer Backup", url: "https://atf-mtproto-relayer-backup.onrender.com/wake", type: "render" },
   { name: "Cloudflare Shard 0 (aaaai2)", url: "https://restore-agy.aaaai2.workers.dev/health", type: "cloudflare" },
   { name: "Cloudflare Shard 1 (aaa-bot)", url: "https://restore-agy.aaa-bot.workers.dev/health", type: "cloudflare" },
   { name: "Cloudflare Shard 2 (aaa222)", url: "https://restore-agy.aaa222.workers.dev/health", type: "cloudflare" },

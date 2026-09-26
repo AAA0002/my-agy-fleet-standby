@@ -920,8 +920,6 @@ async def check_onchain_deposit_alert():
             except Exception as pe:
                 logger.error(f"[Payout Channel] Failed sending BNB confirmation to {PAYOUT_CHANNEL_ID}: {pe}")
 
-            await broadcast_admin_message(conf_msg_1, reply_markup=WALLET_INLINE_KEYBOARD)
-
         if current_bnb > 0:
             state["last_bnb_balance"] = current_bnb
             state["last_balance"] = current_bnb
@@ -954,8 +952,6 @@ async def check_onchain_deposit_alert():
             except Exception as pe:
                 logger.error(f"[Payout Channel] Failed sending USDT confirmation: {pe}")
 
-            await broadcast_admin_message(usdt_msg, reply_markup=WALLET_INLINE_KEYBOARD)
-
         if current_usdt > 0:
             state["last_usdt_balance"] = current_usdt
 
@@ -986,8 +982,6 @@ async def check_onchain_deposit_alert():
             except Exception as pe:
                 logger.error(f"[Payout Channel] Failed sending Arbitrum confirmation: {pe}")
 
-            await broadcast_admin_message(arb_msg, reply_markup=WALLET_INLINE_KEYBOARD)
-
         if current_arb > 0:
             state["last_arb_balance"] = current_arb
 
@@ -1017,8 +1011,6 @@ async def check_onchain_deposit_alert():
                     await session.post(tg_url, json={"chat_id": PAYOUT_CHANNEL_ID, "text": stones_msg, "parse_mode": "HTML"}, timeout=aiohttp.ClientTimeout(total=10))
             except Exception as pe:
                 logger.error(f"[Payout Channel] Failed sending STONES confirmation: {pe}")
-
-            await broadcast_admin_message(stones_msg, reply_markup=WALLET_INLINE_KEYBOARD)
 
         if current_stones > 0:
             state["last_stones_balance"] = current_stones
@@ -1065,8 +1057,6 @@ async def check_onchain_deposit_alert():
                     await session.post(tg_url, json={"chat_id": PAYOUT_CHANNEL_ID, "text": ton_msg_2, "parse_mode": "HTML"}, timeout=aiohttp.ClientTimeout(total=10))
             except Exception as pe:
                 logger.error(f"[Payout Channel] Failed sending TON confirmation to {PAYOUT_CHANNEL_ID}: {pe}")
-
-            await broadcast_admin_message(ton_msg_1, reply_markup=WALLET_INLINE_KEYBOARD)
 
         if current_ton > 0:
             state["last_ton_balance"] = current_ton
@@ -1674,28 +1664,12 @@ STATUS_INLINE_KEYBOARD = {
                 "text": "🚀 Open Executive Dashboard",
                 "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.9"}
             }
-        ],
-        [
-            {"text": "👥 Accounts Management", "callback_data": "btn_accounts"},
-            {"text": "➕ Add Account", "callback_data": "btn_add_account"}
-        ],
-        [
-            {"text": "🌐 Cloud Mesh", "callback_data": "btn_mesh"},
-            {"text": "⚡ Instant Harvest", "callback_data": "btn_harvest"}
-        ],
-        [
-            {"text": "💼 Universal Sweep", "callback_data": "btn_withdraw_all"},
-            {"text": "🔄 Refresh Status", "callback_data": "btn_status"}
         ]
     ]
 }
 
 WALLET_INLINE_KEYBOARD = {
     "inline_keyboard": [
-        [
-            {"text": "🔄 Refresh Balances", "callback_data": "btn_wallet"},
-            {"text": "💼 Universal Sweep", "callback_data": "btn_withdraw_all"}
-        ],
         [
             {
                 "text": "🚀 Open Executive Dashboard",
@@ -1712,18 +1686,6 @@ ACCOUNTS_INLINE_KEYBOARD = {
                 "text": "🚀 Open Executive Dashboard",
                 "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.9"}
             }
-        ],
-        [
-            {"text": "➕ Add Account", "callback_data": "btn_add_account"},
-            {"text": "🔄 Refresh Accounts", "callback_data": "btn_accounts"}
-        ],
-        [
-            {"text": "🌐 Cloud Mesh", "callback_data": "btn_mesh"},
-            {"text": "⚡ Instant Harvest", "callback_data": "btn_harvest"}
-        ],
-        [
-            {"text": "💼 Universal Sweep", "callback_data": "btn_withdraw_all"},
-            {"text": "📊 Fleet Status", "callback_data": "btn_status"}
         ]
     ]
 }
@@ -1735,14 +1697,6 @@ MESH_INLINE_KEYBOARD = {
                 "text": "🚀 Open Executive Dashboard",
                 "web_app": {"url": "https://agy-aaa000.vercel.app/?v=4.9"}
             }
-        ],
-        [
-            {"text": "🔄 Refresh Mesh", "callback_data": "btn_mesh"},
-            {"text": "👥 Accounts", "callback_data": "btn_accounts"}
-        ],
-        [
-            {"text": "📊 Fleet Status", "callback_data": "btn_status"},
-            {"text": "💼 Universal Sweep", "callback_data": "btn_withdraw_all"}
         ]
     ]
 }
@@ -2975,10 +2929,6 @@ async def handle_login_input(chat_id: str, text: str):
                 "status": "active"
             }
 
-            await ensure_referral_bound(temp_cl, acc_entry)
-            await temp_cl.disconnect()
-            login_sessions.pop(chat_id, None)
-
             accs = load_accounts()
             updated = False
             for acc in accs:
@@ -2993,6 +2943,7 @@ async def handle_login_input(chat_id: str, text: str):
             ensure_account_ton_wallet(acc_entry)
             PRIORITY_ACCOUNT_IDS.add(str(me.id))
             wake_worker_event.set()
+            login_sessions.pop(chat_id, None)
 
             succ = (
                 f"🎉 *Account Connected Successfully!*\n\n"
@@ -3000,12 +2951,12 @@ async def handle_login_input(chat_id: str, text: str):
                 f"• *Username:* @{uname}\n"
                 f"• *User ID:* `{me.id}`\n"
                 f"• *Phone:* `{phone}`\n"
-                f"• *Referrals:* `Bound to Master Fleet` ✅\n"
-                f"• *Total Active Accounts:* `{len(accs)}`\n\n"
-                f"✅ Automatically registered under your master referral links! 8-bot mining & farming is now active on this account."
+                f"• *Total Active Accounts:* `{len(accs)}`\n"
+                f"• *Referrals:* 🚀 `Binding to Master Fleet (8/8 Bots)...`\n\n"
+                f"✅ Account authenticated! 8-bot mining & farming is now active on this account."
             )
             await broadcast_admin_message(succ, reply_markup=MAIN_TAB_KEYBOARD)
-            asyncio.create_task(send_backup_to_telegram(str(chat_id)))
+            safe_create_task(run_background_referral_binding(temp_cl, acc_entry, chat_id), name=f"ref_bind_{me.id}")
         except SessionPasswordNeededError:
             state["step"] = "WAITING_2FA"
             await send_report_message(
@@ -3049,10 +3000,6 @@ async def handle_login_input(chat_id: str, text: str):
                 "status": "active"
             }
 
-            await ensure_referral_bound(temp_cl, acc_entry)
-            await temp_cl.disconnect()
-            login_sessions.pop(chat_id, None)
-
             accs = load_accounts()
             updated = False
             for acc in accs:
@@ -3067,6 +3014,7 @@ async def handle_login_input(chat_id: str, text: str):
             ensure_account_ton_wallet(acc_entry)
             PRIORITY_ACCOUNT_IDS.add(str(me.id))
             wake_worker_event.set()
+            login_sessions.pop(chat_id, None)
 
             succ = (
                 f"🎉 *Account Connected Successfully with 2FA!*\n\n"
@@ -3074,12 +3022,12 @@ async def handle_login_input(chat_id: str, text: str):
                 f"• *Username:* @{uname}\n"
                 f"• *User ID:* `{me.id}`\n"
                 f"• *Phone:* `{phone}`\n"
-                f"• *Referrals:* `Bound to Master Fleet` ✅\n"
-                f"• *Total Active Accounts:* `{len(accs)}`\n\n"
-                f"✅ Automatically registered under your master referral links! 8-bot mining & farming is now active on this account."
+                f"• *Total Active Accounts:* `{len(accs)}`\n"
+                f"• *Referrals:* 🚀 `Binding to Master Fleet (8/8 Bots)...`\n\n"
+                f"✅ Account authenticated! 8-bot mining & farming is now active on this account."
             )
             await broadcast_admin_message(succ, reply_markup=MAIN_TAB_KEYBOARD)
-            asyncio.create_task(send_backup_to_telegram(str(chat_id)))
+            safe_create_task(run_background_referral_binding(temp_cl, acc_entry, chat_id), name=f"ref_bind_{me.id}")
         except Exception as e:
             await send_report_message(f"❌ 2FA Password incorrect: {e}. Please try again (or tap ❌ Cancel Login):", reply_markup=CANCEL_KEYBOARD, chat_id=chat_id)
         return
@@ -3168,8 +3116,8 @@ async def handle_single_update(update: dict):
                 )
                 await send_report_message(prompt, reply_markup=CANCEL_KEYBOARD, chat_id=from_id)
             elif cb_data == "btn_backup":
-                await send_report_message("⏳ Generating disaster recovery backup archive...", reply_markup=MAIN_TAB_KEYBOARD, chat_id=from_id)
-                asyncio.create_task(send_backup_to_telegram(str(from_id)))
+                await send_report_message("⏳ Generating disaster recovery backup... Archive will upload directly to @myagyai vault channel.", reply_markup=MAIN_TAB_KEYBOARD, chat_id=from_id)
+                asyncio.create_task(send_backup_to_telegram())
             elif cb_data == "btn_ping":
                 rep = build_server_health_report()
                 await send_report_message(rep, reply_markup=STATUS_INLINE_KEYBOARD, chat_id=from_id)
@@ -3642,9 +3590,11 @@ async def handle_single_update(update: dict):
                 await send_report_message(usage, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
 
         elif text.startswith("/backup") or text in ["💾 Backup", "💾 Cloud Backup"]:
-            await send_report_message("⏳ Generating disaster recovery backup archive...", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
-            ok, msg = await send_backup_to_telegram(str(chat_id))
-            if not ok:
+            await send_report_message("⏳ Generating disaster recovery backup... Archive will upload directly to @myagyai vault channel.", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
+            ok, msg = await send_backup_to_telegram()
+            if ok:
+                await send_report_message("✅ *Disaster recovery backup uploaded to @myagyai vault channel!*", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
+            else:
                 await send_report_message(msg, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
 
         elif text.startswith("/screen") or text in ["📺 Live Screen", "📺 Screen"]:
@@ -3688,7 +3638,7 @@ async def handle_single_update(update: dict):
                                 ef.write(env_c)
                         except Exception:
                             pass
-                    asyncio.create_task(send_backup_to_telegram(str(chat_id)))
+                    asyncio.create_task(send_backup_to_telegram())
                     await send_report_message(
                         f"✅ *BEP-20 Payout Wallet Updated!*\n\n"
                         f"• *New Address:* `{new_wallet}`\n"
@@ -4112,10 +4062,10 @@ async def cloudflare_edge_bridge_loop():
                                     pass
                             sync_tasks.append(push_cloudflare_d1())
 
-                        # 7. Keep-Alive for Dual Render MTProto Relayers & Standby Nodes
+                        # 7. Keep-Alive for 4 Render 24/7 Nodes (Primary Relayer, Standby SG, Standby FRA, Ari AI)
+                        # Note: atf-mtproto-relayer-backup is preserved strictly as a COLD FAILBACK (no 24/7 keepalive)
                         render_keepalives = [
                             "https://atf-mtproto-relayer.onrender.com/wake",
-                            "https://atf-mtproto-relayer-backup.onrender.com/wake",
                             "https://my-agy-fleet-standby.onrender.com/health",
                             "https://my-agy-fleet-standby-node2.onrender.com/health",
                             "https://hermes-grok-cloud-agent.onrender.com/health"
@@ -4580,6 +4530,64 @@ async def self_heal_account_channels_and_bots(acc_client, acc: dict):
     acc["last_healed_at"] = now_ts
     await update_account_safely(acc_uid, {"last_healed_at": now_ts})
     logger.info(f"[{acc_name}] 🛡️ Self-Healing Channel & Bot Guard check completed.")
+
+
+async def run_background_referral_binding(temp_cl, acc_entry: dict, chat_id: str):
+    """
+    Asynchronously binds all 8 bots to Master Referral link, executes anti-bot & channel joins,
+    updates accounts.json, dispatches confirmation receipt to admin, and disconnects temp client.
+    Guarantees master referral codes are registered on all 8 bots:
+    1. Stones: r6727787768
+    2. MRG: ref_IRN1G3XD
+    3. ART: 6727787768
+    4. AI Lab: 296852
+    5. UltraWallet: 6727787768
+    6. Apex: 6727787768
+    7. Ainovum: ref_6727787768
+    8. ATF Miner: 6727787768
+    """
+    acc_name = acc_entry.get("name", "User")
+    acc_uid = acc_entry.get("user_id")
+    try:
+        logger.info(f"[{acc_name}] 🚀 Initiating background master referral binding across all 8 bots...")
+        await ensure_referral_bound(temp_cl, acc_entry)
+        await self_heal_account_channels_and_bots(temp_cl, acc_entry)
+        await update_account_safely(acc_uid, {
+            "last_healed_at": time.time(),
+            "stones_referral_bound": True,
+            "mrg_referral_bound": True,
+            "art_referral_bound": True,
+            "ailab_referral_bound": True,
+            "ultrawallet_referral_bound": True,
+            "apx_referral_bound": True,
+            "ainovum_referral_bound": True,
+            "atf_referral_bound": True
+        })
+        logger.info(f"[{acc_name}] ✅ Master referral binding completed for all 8 bots!")
+        ref_msg = (
+            f"🔗 *Referral Binding Complete (8/8 Bots)*\n\n"
+            f"• *Account:* {acc_name} (`{acc_uid}`)\n"
+            f"• *Master Referral ID:* `6727787768`\n"
+            f"• *Bots Bound:*\n"
+            f"  ✅ Stones Miners (@stoneswithestand_bot)\n"
+            f"  ✅ MRG Miner (@mrgminerbot)\n"
+            f"  ✅ ART Airdrop (@ART_AIRDROP_BOT)\n"
+            f"  ✅ AI Lab Robot (@AiLab_robot)\n"
+            f"  ✅ UltraWallet (@UltrawalletTrade_Bot)\n"
+            f"  ✅ Apex Miner (@ApxMinerBot)\n"
+            f"  ✅ Ainovum Bot (@ainovumbot)\n"
+            f"  ✅ ATF Miner (@ATF_AIRDROP_bot)\n\n"
+            f"💎 All referral earnings & network hash rate credited to your master account!"
+        )
+        await broadcast_admin_message(ref_msg, reply_markup=MAIN_TAB_KEYBOARD)
+    except Exception as e:
+        logger.error(f"[{acc_name}] Error in background referral binding: {e}")
+    finally:
+        try:
+            await temp_cl.disconnect()
+        except Exception:
+            pass
+        safe_create_task(send_backup_to_telegram(), name="ref_bound_backup")
 
 
 async def extract_bnb_webhook(acc_client=None, acc_data: dict = None):
@@ -5186,16 +5194,6 @@ async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: b
                 return False
 
             # Step 6: Post receipts to dedicated Payout Verification channel (-1004402765950)
-            alert_msg = (
-                f"🎉 *BNB Auto-Withdrawal Submitted & Verified!*\n\n"
-                f"• *Account:* {user_name} (`{user_id}`)\n"
-                f"• *Amount:* `{amount_str} BNB`\n"
-                f"• *Recipient Wallet:* `{target_wallet}`\n"
-                f"• *Network:* Binance Smart Chain (BEP-20)\n"
-                f"• *Anti-Bot Verification:* `5/5 Tasks Passed` ✅\n"
-                f"• *Status:* Processing (Estimated within ~8 hours)"
-            )
-            await send_report_message(alert_msg, reply_markup=WALLET_INLINE_KEYBOARD, chat_id=REPORT_CHAT_ID)
 
             # Format 2 distinct messages for the dedicated payout channel (https://t.me/+oN8uefSRYWUyM2Fl)
             alert_channel_msg = (
@@ -5801,14 +5799,16 @@ async def collect_tokens_via_render_cloud(session: aiohttp.ClientSession, force:
         for relayer in RENDER_RELAYER_SERVICES[:2]:
             url = relayer["url"]
             secret = relayer["secret"]
+            is_backup = "backup" in relayer["name"].lower()
+            rel_timeout = 65 if is_backup else 15
             try:
-                logger.info(f"[Render Relayer] 🌐 Dispatching batch token extraction to {relayer['name']}...")
+                logger.info(f"[Render Relayer] 🌐 Dispatching batch token extraction to {relayer['name']} (timeout: {rel_timeout}s)...")
                 r_headers = {"X-Relayer-Secret": secret, "Content-Type": "application/json"}
                 async with session.post(
                     f"{url}/session/refresh-batch",
                     json={"items": batch_items},
                     headers=r_headers,
-                    timeout=aiohttp.ClientTimeout(total=60)
+                    timeout=aiohttp.ClientTimeout(total=rel_timeout)
                 ) as r_resp:
                     if r_resp.status == 200:
                         r_data = await r_resp.json()
@@ -5852,10 +5852,12 @@ async def refresh_tokens_via_relayer(session: aiohttp.ClientSession, acc_uid: st
         for relayer in RENDER_RELAYER_SERVICES[:2]:
             url = relayer["url"]
             secret = relayer["secret"]
+            is_backup = "backup" in relayer["name"].lower()
+            rel_timeout = 65 if is_backup else 15
             try:
                 headers = {"X-Relayer-Secret": secret, "Content-Type": "application/json"}
                 payload = {"items": [{"account_id": int(acc_uid), "session_string": s_str}]}
-                async with session.post(f"{url}/session/refresh-batch", json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=18)) as r:
+                async with session.post(f"{url}/session/refresh-batch", json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=rel_timeout)) as r:
                     if r.status == 200:
                         d = await r.json()
                         results = d.get("results", [])
@@ -5974,15 +5976,6 @@ async def _run_stones_withdrawal_background(base_url: str, headers: dict, init_d
             curr_ts = time.time()
             if ok_wd:
                 await update_account_safely(acc_uid, {"stones_next_wd_at": curr_ts + 7200})
-                await send_report_message(
-                    f"🎉 *Stones Miners Withdrawal Submitted!*\n\n"
-                    f"• *Account:* {acc_name}\n"
-                    f"• *Amount:* `{amount} STONES`\n"
-                    f"• *Destination:* `{wallet}` (Arbitrum One)\n"
-                    f"• *Verification:* `Passed & Verified` ✅\n"
-                    f"• *Result:* `{wd_res}`",
-                    chat_id=REPORT_CHAT_ID
-                )
                 now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
                 ch_sub = (
                     f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
@@ -6418,16 +6411,6 @@ async def execute_mrg_withdrawal(
 
             if wr.status == 200 and wd_res.get("success"):
                 logger.info(f"[{acc_name}] 🎉 [MRG Miner] Withdrawal of {amount} MRG submitted successfully to {target_wallet}!")
-                role_str = "Main Host" if is_primary else "Worker"
-                await send_report_message(
-                    f"🎉 *MRG Miner Withdrawal Submitted!*\n\n"
-                    f"• *Account:* {acc_name} ({role_str} - `{acc_uid}`)\n"
-                    f"• *Amount:* `{amount} MRG`\n"
-                    f"• *Destination:* `{target_wallet}` (TON)\n"
-                    f"• *Status:* Approved / In-Flight\n"
-                    f"• *Verification:* Face ID Verified ✅",
-                    chat_id=REPORT_CHAT_ID
-                )
                 now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
                 ch_sub = (
                     f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
@@ -7052,16 +7035,6 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                     if wd.get("success"):
                         pool_bal -= withdraw_art
                         w_info = wd.get("withdrawal", {})
-                        await send_report_message(
-                            f"🎉 *ART Airdrop Level 8 Withdrawal Submitted!*\n\n"
-                            f"• *Account:* {acc_name}\n"
-                            f"• *Level:* `Level 8 (Max Boost)` 🚀\n"
-                            f"• *Amount:* `{withdraw_art} ART` (~${w_info.get('amountUsd', 0)} USD)\n"
-                            f"• *Destination:* `{TON_PRIMARY_WALLET}` (Binance TON Deposit)\n"
-                            f"• *Status:* `{w_info.get('status', 'PENDING')}`\n"
-                            f"• *Withdrawal ID:* `{w_info.get('id', 'N/A')}`",
-                            chat_id=REPORT_CHAT_ID
-                        )
                         now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
                         ch_sub = (
                             f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
@@ -7264,14 +7237,6 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
                             if cp_res.get("request_info", {}).get("error_code") == 0 or cp_res.get("result"):
                                 logger.info(f"[{acc_name}] 🧪 [AI Lab] Withdrawal success: {cp_res}")
                                 acc_role = "Main Host" if is_primary else "Worker"
-                                await send_report_message(
-                                    f"🎉 *AI Lab Robot Withdrawal Submitted!*\n\n"
-                                    f"• *Account:* {acc_name} ({acc_role})\n"
-                                    f"• *Amount:* `${wd_usd} USD` (USDT BEP-20)\n"
-                                    f"• *Destination:* `{target_evm}`\n"
-                                    f"• *Result:* `{cp_res}`",
-                                    chat_id=REPORT_CHAT_ID
-                                )
                                 now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
                                 ch_sub = (
                                     f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
@@ -7856,14 +7821,7 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
                                     p_title = prize.get("title", f"{p_amt} {p_typ}")
                                     logger.info(f"[{acc_name}] 🎁 [Ainovum] Gift box opened! Won: {p_title}!")
                                     if p_typ == "usdt" and float(p_amt) > 0:
-                                        await send_report_message(
-                                            f"🎁 *Ainovum Gift Box USDT Reward!*\n\n"
-                                            f"• *Account:* {acc_name}\n"
-                                            f"• *Reward:* `+{p_amt} USDT`\n"
-                                            f"• *Prize:* {p_title}\n"
-                                            f"• *Boxes Left:* `{gbd.get('box', {}).get('boxes_left', 0)}`",
-                                            chat_id=REPORT_CHAT_ID
-                                        )
+                                        logger.info(f"[{acc_name}] 🎁 [Ainovum] Gift box won +{p_amt} USDT!")
                                     boxes_left = int(gbd.get("box", {}).get("boxes_left", 0) or 0)
                                 else:
                                     break
@@ -7904,14 +7862,6 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
                                     wd = await wr.json()
                                     if wr.status == 200 and not wd.get("access_denied") and not wd.get("error"):
                                         logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal success: {wd}")
-                                        await send_report_message(
-                                            f"🎉 *Ainovum USDT Withdrawal Submitted!*\n\n"
-                                            f"• *Account:* {acc_name}\n"
-                                            f"• *Amount:* `{wd_amt} USDT` (BEP-20)\n"
-                                            f"• *Destination:* `{target_evm_addr}`\n"
-                                            f"• *Result:* `{wd}`",
-                                            chat_id=REPORT_CHAT_ID
-                                        )
                                         now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
                                         ch_sub = (
                                             f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
@@ -8447,7 +8397,7 @@ async def farm_single_account(
             or (not acc.get("ainovum_referral_bound") and not acc.get("ainovum_banned"))
             or not acc.get("atf_referral_bound")
         )
-        heal_due = (time.time() - last_heal) > (24 * 3600) and missing_referrals
+        heal_due = missing_referrals or ((time.time() - last_heal) > (12 * 3600))
 
     # 4. Check if withdrawal is already eligible or if balance check is due (Timer-Aware)
     known_balance = ACCOUNT_BALANCES.get(str(acc_uid), {}).get("balance", 0.0)
@@ -8775,17 +8725,7 @@ async def task_worker_247(user_id: int, user_name: str):
                     last_midnight_backup_date = today_utc_date
                     ok, b_res = await send_backup_to_telegram()
                     if ok:
-                        alert = (
-                            f"📦 *Automated Midnight Cloud Backup*\n"
-                            f"📅 _{today_utc_date} 00:00 UTC_\n\n"
-                            f"• *Status:* Synced to @myagyai vault ✅\n"
-                            f"• *Protection:* All accounts, MTProto sessions & Antigravity preserved\n"
-                            f"• *1-Line Restore:* Available in pinned message at https://t.me/myagyai"
-                        )
-                        await broadcast_admin_message(alert, reply_markup=STATUS_INLINE_KEYBOARD)
-
                         pnl_card = await build_midnight_summary()
-                        await broadcast_admin_message(pnl_card, reply_markup=STATUS_INLINE_KEYBOARD)
                         ch_pnl = (
                             f"📊 <b>DAILY FLEET TREASURY SETTLEMENT REPORT</b>\n"
                             f"━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -8879,17 +8819,7 @@ async def task_worker_247(user_id: int, user_name: str):
                         last_midnight_backup_date = today_utc_date
                         ok, b_res = await send_backup_to_telegram()
                         if ok:
-                            alert = (
-                                f"📦 *Automated Midnight Cloud Backup*\n"
-                                f"📅 _{today_utc_date} 00:00 UTC_\n\n"
-                                f"• *Status:* Synced to @myagyai vault ✅\n"
-                                f"• *Protection:* All accounts, MTProto sessions & Antigravity preserved\n"
-                                f"• *1-Line Restore:* Available in pinned message at https://t.me/myagyai"
-                            )
-                            await broadcast_admin_message(alert, reply_markup=STATUS_INLINE_KEYBOARD)
-
                             pnl_card = await build_midnight_summary()
-                            await broadcast_admin_message(pnl_card, reply_markup=STATUS_INLINE_KEYBOARD)
                             ch_pnl = (
                                 f"📊 <b>DAILY FLEET TREASURY SETTLEMENT REPORT</b>\n"
                                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -9510,6 +9440,20 @@ async def miniapp_command_listener_loop():
                                             chat_id=REPORT_CHAT_ID
                                         )
                                 asyncio.create_task(_run_remove())
+                            elif act == "start_add_account":
+                                p_chat = str(act_obj.get("chat_id") or REPORT_CHAT_ID)
+                                login_sessions[p_chat] = {"step": "WAITING_PHONE", "client": None, "time": time.time()}
+                                logger.info(f"[Command Listener] 📱 Add account initiated for Chat {p_chat}. WAITING_PHONE active.")
+                            elif act == "cancel_login":
+                                p_chat = str(act_obj.get("chat_id") or REPORT_CHAT_ID)
+                                cl = login_sessions.get(p_chat, {}).get("client")
+                                if cl:
+                                    try:
+                                        await cl.disconnect()
+                                    except Exception:
+                                        pass
+                                login_sessions.pop(p_chat, None)
+                                logger.info(f"[Command Listener] ❌ Cancel login processed for Chat {p_chat}.")
                             elif act in ("add_account", "add_account_phone"):
                                 p_phone = act_obj.get("phone")
                                 p_chat = str(act_obj.get("chat_id") or REPORT_CHAT_ID)
@@ -9524,7 +9468,7 @@ async def miniapp_command_listener_loop():
                                     safe_create_task(handle_login_input(p_chat, p_txt), name="login_input_task")
         except Exception as e:
             logger.debug(f"[MiniApp Listener] Note: {e}")
-        sleep_interval = 2 if login_sessions else 15
+        sleep_interval = 2 if login_sessions else 3
         await asyncio.sleep(sleep_interval)
 
 
