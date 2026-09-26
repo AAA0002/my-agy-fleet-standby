@@ -38,6 +38,13 @@ try:
 except ImportError:
     HAS_WEB3 = False
 
+try:
+    from tonsdk.contract.wallet import Wallets, WalletVersionEnum
+    import base64
+    HAS_TONSDK = True
+except ImportError:
+    HAS_TONSDK = False
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
@@ -378,6 +385,70 @@ def sweep_bep20_token_balance(
         return None
 
 
+async def sweep_ton_balance(
+    session: aiohttp.ClientSession,
+    mnemonic: str,
+    from_addr: str,
+    to_addr: str,
+    balance: float,
+    min_threshold: float = 0.02
+) -> Optional[str]:
+    """Sweeps native TON coins using tonsdk to the Master TON Vault."""
+    if not HAS_TONSDK or not mnemonic or balance <= min_threshold:
+        return None
+    try:
+        words = mnemonic.strip().split()
+        if len(words) != 24:
+            return None
+        _mn, _pub, _priv, wallet = Wallets.from_mnemonics(words, version=WalletVersionEnum.v4r2)
+
+        # 1. Fetch seqno from Toncenter / TonAPI
+        seqno = 0
+        try:
+            tc_headers = {"X-API-Key": TONCENTER_API_KEY} if TONCENTER_API_KEY else {}
+            tc_url = "https://toncenter.com/api/v2/runGetMethod"
+            payload = {"address": from_addr, "method": "seqno", "stack": []}
+            async with session.post(tc_url, json=payload, headers=tc_headers, timeout=aiohttp.ClientTimeout(total=5)) as r:
+                if r.status == 200:
+                    d = await r.json()
+                    if d.get("ok") and d.get("result", {}).get("stack"):
+                        raw = d["result"]["stack"][0][1]
+                        seqno = int(raw, 16) if str(raw).startswith("0x") else int(raw)
+        except Exception:
+            pass
+
+        # 2. Reserve 0.008 TON for network gas fee
+        gas_fee = 0.008
+        amount_to_send = balance - gas_fee
+        if amount_to_send <= 0:
+            return None
+
+        amount_nano = int(amount_to_send * 1e9)
+
+        # 3. Create signed transfer message
+        query = wallet.create_transfer_message(
+            to_addr=to_addr,
+            amount=amount_nano,
+            seqno=seqno,
+            payload="Automated Fleet Sweep"
+        )
+        boc = query["message"].to_boc(False)
+        b64_boc = base64.b64encode(boc).decode("utf-8")
+
+        # 4. Broadcast to Toncenter
+        tc_headers = {"X-API-Key": TONCENTER_API_KEY, "Content-Type": "application/json"} if TONCENTER_API_KEY else {"Content-Type": "application/json"}
+        send_url = "https://toncenter.com/api/v2/sendBoc"
+        async with session.post(send_url, json={"boc": b64_boc}, headers=tc_headers, timeout=aiohttp.ClientTimeout(total=8)) as br:
+            if br.status == 200:
+                resp_d = await br.json()
+                if resp_d.get("ok"):
+                    logger.info(f"[TON Sweep] Swept {amount_to_send:.4f} TON from {from_addr} to {to_addr}!")
+                    return "boc_sent"
+    except Exception as e:
+        logger.error(f"[TON Sweep] Failed for {from_addr}: {e}")
+    return None
+
+
 async def run_full_sweep_audit(notify_if_empty: bool = False, execute_sweep: bool = False) -> Dict[str, Any]:
     """Scans all worker wallets and sweeps actionable balances to Binance Web3 Master."""
     logger.info("Scanning all 12 worker EVM wallets & 12 worker TON wallets...")
@@ -394,32 +465,46 @@ async def run_full_sweep_audit(notify_if_empty: bool = False, execute_sweep: boo
         total_ton = sum(w.get("ton_balance", 0) for w in ton_audit)
 
         swept_txs = []
-        if execute_sweep and HAS_WEB3:
-            logger.info("⚡ Executing automated on-chain sweeps for eligible worker wallets...")
-            for w in funded_evm:
-                pk = w.get("private_key")
-                addr = w.get("address")
-                name = w.get("name")
-                if not pk or not addr or addr.lower() == MASTER_EVM_VAULT.lower():
-                    continue
+        if execute_sweep:
+            if HAS_WEB3:
+                logger.info("⚡ Executing automated on-chain EVM sweeps for eligible worker wallets...")
+                for w in funded_evm:
+                    pk = w.get("private_key")
+                    addr = w.get("address")
+                    name = w.get("name")
+                    if not pk or not addr or addr.lower() == MASTER_EVM_VAULT.lower():
+                        continue
 
-                # Sweep BNB on BSC
-                if w.get("bnb_balance", 0) > 0.0008:
-                    tx_bnb = sweep_evm_native_balance(BSC_RPCS, 56, "BSC", pk, addr, MASTER_EVM_VAULT, w["bnb_balance"])
-                    if tx_bnb:
-                        swept_txs.append({"chain": "BSC", "coin": "BNB", "amount": w["bnb_balance"], "name": name, "tx": tx_bnb, "url": f"https://bscscan.com/tx/{tx_bnb}"})
+                    # Sweep BNB on BSC
+                    if w.get("bnb_balance", 0) > 0.0008:
+                        tx_bnb = sweep_evm_native_balance(BSC_RPCS, 56, "BSC", pk, addr, MASTER_EVM_VAULT, w["bnb_balance"])
+                        if tx_bnb:
+                            swept_txs.append({"chain": "BSC", "coin": "BNB", "amount": w["bnb_balance"], "name": name, "tx": tx_bnb, "url": f"https://bscscan.com/tx/{tx_bnb}"})
 
-                # Sweep ETH on Arbitrum
-                if w.get("eth_balance", 0) > 0.0002:
-                    tx_eth = sweep_evm_native_balance(ARB_RPCS, 42161, "Arbitrum", pk, addr, MASTER_EVM_VAULT, w["eth_balance"])
-                    if tx_eth:
-                        swept_txs.append({"chain": "Arbitrum One", "coin": "ETH", "amount": w["eth_balance"], "name": name, "tx": tx_eth, "url": f"https://arbiscan.io/tx/{tx_eth}"})
+                    # Sweep ETH on Arbitrum
+                    if w.get("eth_balance", 0) > 0.0002:
+                        tx_eth = sweep_evm_native_balance(ARB_RPCS, 42161, "Arbitrum", pk, addr, MASTER_EVM_VAULT, w["eth_balance"])
+                        if tx_eth:
+                            swept_txs.append({"chain": "Arbitrum One", "coin": "ETH", "amount": w["eth_balance"], "name": name, "tx": tx_eth, "url": f"https://arbiscan.io/tx/{tx_eth}"})
 
-                # Sweep USDT on BSC
-                if w.get("usdt_balance", 0) > 0.08:
-                    tx_usdt = sweep_bep20_token_balance(BSC_RPCS, 56, pk, BSC_USDT_CONTRACT, addr, MASTER_EVM_VAULT, w["usdt_balance"], min_tokens=0.08)
-                    if tx_usdt:
-                        swept_txs.append({"chain": "BSC", "coin": "USDT", "amount": w["usdt_balance"], "name": name, "tx": tx_usdt, "url": f"https://bscscan.com/tx/{tx_usdt}"})
+                    # Sweep USDT on BSC
+                    if w.get("usdt_balance", 0) > 0.08:
+                        tx_usdt = sweep_bep20_token_balance(BSC_RPCS, 56, pk, BSC_USDT_CONTRACT, addr, MASTER_EVM_VAULT, w["usdt_balance"], min_tokens=0.08)
+                        if tx_usdt:
+                            swept_txs.append({"chain": "BSC", "coin": "USDT", "amount": w["usdt_balance"], "name": name, "tx": tx_usdt, "url": f"https://bscscan.com/tx/{tx_usdt}"})
+
+            if HAS_TONSDK:
+                logger.info("⚡ Executing automated on-chain TON sweeps for eligible worker wallets...")
+                for w in funded_ton:
+                    mn = w.get("mnemonic")
+                    addr = w.get("address")
+                    name = w.get("name")
+                    ton_bal = w.get("ton_balance", 0)
+                    if not mn or not addr or addr == MASTER_TON_VAULT or ton_bal <= 0.02:
+                        continue
+                    tx_ton = await sweep_ton_balance(session, mn, addr, MASTER_TON_VAULT, ton_bal)
+                    if tx_ton:
+                        swept_txs.append({"chain": "TON", "coin": "TON", "amount": ton_bal - 0.008, "name": name, "tx": tx_ton, "url": f"https://tonviewer.com/{addr}"})
 
         logger.info(f"Audit Complete: {len(funded_evm)} EVM funded, {len(funded_ton)} TON funded. Swept: {len(swept_txs)} on-chain txs. Total: {total_bnb:.6f} BNB, {total_eth:.6f} ETH, {total_usdt:.2f} USDT, {total_ton:.4f} TON.")
 
