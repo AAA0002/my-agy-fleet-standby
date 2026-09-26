@@ -5753,20 +5753,21 @@ async def collect_account_session_links(acc_cl, acc: dict) -> dict:
         logger.debug(f"[{acc_name}] Apex Miner session collection note: {apx_e}")
 
     # 8. Ainovum Bot initData (@ainovum_bot)
-    try:
-        bot_an = await acc_cl.get_entity(AINOVUM_BOT)
-        res_an = await acc_cl(RequestWebViewRequest(
-            peer=bot_an,
-            bot=bot_an,
-            platform="android",
-            url=f"https://ainovum.biz/?startapp={AINOVUM_REFERRAL_CODE}&ref={AINOVUM_REFERRAL_CODE}"
-        ))
-        parsed_an = urllib.parse.urlparse(res_an.url)
-        an_init = urllib.parse.parse_qs(parsed_an.fragment).get("tgWebAppData", [None])[0]
-        if an_init:
-            tokens["ainovum_init_data"] = an_init
-    except Exception as ane:
-        logger.debug(f"[{acc_name}] Ainovum session collection note: {ane}")
+    if not acc.get("ainovum_banned"):
+        try:
+            bot_an = await acc_cl.get_entity(AINOVUM_BOT)
+            res_an = await acc_cl(RequestWebViewRequest(
+                peer=bot_an,
+                bot=bot_an,
+                platform="android",
+                url=f"https://ainovum.biz/?startapp={AINOVUM_REFERRAL_CODE}&ref={AINOVUM_REFERRAL_CODE}"
+            ))
+            parsed_an = urllib.parse.urlparse(res_an.url)
+            an_init = urllib.parse.parse_qs(parsed_an.fragment).get("tgWebAppData", [None])[0]
+            if an_init:
+                tokens["ainovum_init_data"] = an_init
+        except Exception as ane:
+            logger.debug(f"[{acc_name}] Ainovum session collection note: {ane}")
 
     # 9. ATF Miner initData (@ATF_AIRDROP_bot)
     try:
@@ -7775,6 +7776,9 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
     acc_uid = str(acc.get("user_id"))
     is_primary = (acc_uid == str(REPORT_CHAT_ID))
 
+    if acc.get("ainovum_banned"):
+        return
+
     try:
         init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("ainovum_init_data")
 
@@ -7809,6 +7813,16 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
                     raw_cookies = br.headers.getall("Set-Cookie", [])
                     cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
                 elif br.status in (401, 403):
+                    try:
+                        err_d = await br.json()
+                    except Exception:
+                        err_d = {}
+                    if err_d.get("is_banned") or err_d.get("code") == "is_banned" or "restricted" in str(err_d).lower():
+                        logger.warning(f"[{acc_name}] 🤖 [Ainovum] Account permanently restricted/banned: {err_d.get('message', err_d)}. Marking ainovum_banned=True.")
+                        acc["ainovum_banned"] = True
+                        await update_account_safely(acc_uid, {"ainovum_banned": True})
+                        return
+
                     logger.warning(f"[{acc_name}] 🤖 [Ainovum] Token expired (HTTP {br.status}). Requesting fresh token from Render Cloud...")
                     if str(acc_uid) in FLEET_MINIAPP_TOKENS:
                         FLEET_MINIAPP_TOKENS[str(acc_uid)]["ainovum_init_data"] = None
@@ -7825,6 +7839,13 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
                                 raw_cookies = br_retry.headers.getall("Set-Cookie", [])
                                 cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
                             else:
+                                try:
+                                    r_err = await br_retry.json()
+                                    if r_err.get("is_banned") or r_err.get("code") == "is_banned" or "restricted" in str(r_err).lower():
+                                        acc["ainovum_banned"] = True
+                                        await update_account_safely(acc_uid, {"ainovum_banned": True})
+                                except Exception:
+                                    pass
                                 return
                     else:
                         return
@@ -8402,7 +8423,7 @@ async def farm_single_account(
         or not curr_tokens.get("ailab_init_data")
         or not curr_tokens.get("ultrawallet_init_data")
         or not curr_tokens.get("apx_init_data")
-        or not curr_tokens.get("ainovum_init_data")
+        or (not curr_tokens.get("ainovum_init_data") and not acc.get("ainovum_banned"))
         or not curr_tokens.get("atf_init_data")
     )
     tokens_auth_date_expired = False
@@ -8435,7 +8456,7 @@ async def farm_single_account(
                         or not curr_tokens.get("ailab_init_data")
                         or not curr_tokens.get("ultrawallet_init_data")
                         or not curr_tokens.get("apx_init_data")
-                        or not curr_tokens.get("ainovum_init_data")
+                        or (not curr_tokens.get("ainovum_init_data") and not acc.get("ainovum_banned"))
                         or not curr_tokens.get("atf_init_data")
                     )
                     if not missing_tokens:
@@ -8471,7 +8492,7 @@ async def farm_single_account(
             or not acc.get("ailab_referral_bound")
             or not acc.get("ultrawallet_referral_bound")
             or not acc.get("apx_referral_bound")
-            or not acc.get("ainovum_referral_bound")
+            or (not acc.get("ainovum_referral_bound") and not acc.get("ainovum_banned"))
             or not acc.get("atf_referral_bound")
         )
         heal_due = (time.time() - last_heal) > (24 * 3600) and missing_referrals
@@ -9278,6 +9299,8 @@ async def execute_ainovum_fleet_sweep(caller_chat_id=None):
     swept_count = 0
     async with aiohttp.ClientSession() as an_sess:
         for acc in accounts:
+            if acc.get("ainovum_banned"):
+                continue
             uid = str(acc.get("user_id"))
             name = acc.get("name", "User")
             is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))

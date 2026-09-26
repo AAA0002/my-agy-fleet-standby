@@ -4,6 +4,26 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Stones Captcha Offline Solver & Atomic Resilience, Ainovum Ban Loop Elimination & Fleet Wallet Connectivity Audit (`stones_captcha_solver.py`, `stones_captcha_templates.json`, `userbot_refresher.py`, `execute_ailab_ainovum_withdrawals.py`, `accounts.json`, `CHANGELOG.md`)**:
+  - **Stones Captcha Template Recovery & Atomic Safety**:
+    * Restored and merged template library from truncated 40 vectors up to 31 distinct characters (2,010 templates total).
+    * Patched `load_templates()` in `stones_captcha_solver.py` to preserve in-memory cache upon read exceptions rather than resetting to an empty dictionary.
+    * Upgraded `learn_new_captcha()`: implemented atomic replacement via temporary file (`.tmp` + `os.replace`) and added safety guard preventing overwrite if template library in memory/disk has fewer than 5 characters, completely eliminating race-condition file corruption.
+  - **Ainovum Restricted/Banned Account Loop Elimination**:
+    * Identified infinite Render Cloud token extraction loop for accounts flagged by Ainovum anti-sybil rules (`Abid (3)` - `8741547543`).
+    * Added proactive ban detection on HTTP 401/403: detects `is_banned: true`, marks `ainovum_banned: True` in `accounts.json`, and completely bypasses Ainovum cycles and token requests in `automate_ainovum_cycle()`, `refresh_miniapp_tokens_for_account()`, `execute_ainovum_fleet_sweep()`, and `execute_ailab_ainovum_withdrawals.py`.
+    * Excluded banned accounts from triggering `missing_tokens` or `missing_referrals` checks, reducing unnecessary cloud token requests.
+  - **Fleet-Wide Wallet Connectivity Audit (MRG Miner & ATF Miner)**:
+    * Executed live connectivity audit for all 13 accounts across MRG Miner and ATF Miner.
+    * Confirmed 13/13 accounts are `Connected=True` with isolated TON wallets on MRG Miner.
+    * Confirmed 13/13 accounts are `Verified=1` with full cryptographic TON Connect proofs on ATF Miner.
+    * Validated MRG Miner withdrawal backend API: slider captcha automatically solved in <1.5s with verified tokens; confirmed server-side minimum withdrawal threshold of 1,000 MRG.
+    * Top verified account `Arif (8826375659)` is at **985.65 MRG** (98.6% of threshold), poised for automated withdrawal upon hitting 1,000 MRG.
+  - **Ainovum Auto-Withdrawal Verification**:
+    * Account `Arif (8826375659)` achieved $1.0486 USDT on Novum AI; the system autonomously executed withdrawal of 1.0486 USDT to its dedicated BEP-20 vault (`0x24718F037a...`).
+  - **Server Reboot Auto-Recovery**:
+    * Detected container restart, immediately revived `bot_supervisor.sh` (PID `3373`) and `userbot_refresher.py` (PID `3396`) inside detached tmux session `telegram_bot`.
+
 - **Server Reboot Auto-Recovery, Fleet Sweep Hardening & Operational Intelligence Upgrades (`userbot_refresher.py`, `bot_supervisor.sh`, `CHANGELOG.md`)**:
   - **Server Reboot Auto-Recovery**:
     * Cleanly handled container/system restart, re-spawned detached `telegram_bot` tmux session running `bot_supervisor.sh` (PID `5544`) and worker daemon (PID `7212`).

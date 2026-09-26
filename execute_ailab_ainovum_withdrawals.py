@@ -152,6 +152,9 @@ async def process_ainovum_account(session: aiohttp.ClientSession, acc: dict, tok
     name = acc.get("name", uid)
     is_master = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
 
+    if acc.get("ainovum_banned"):
+        return {"uid": uid, "name": name, "status": "banned_skipped", "available": 0.0}
+
     init_data = tokens.get(uid, {}).get("ainovum_init_data")
     if not init_data:
         return {"uid": uid, "name": name, "status": "no_init_data", "available": 0.0}
@@ -181,6 +184,15 @@ async def process_ainovum_account(session: aiohttp.ClientSession, acc: dict, tok
                 boot_user = boot_d.get("user", {})
                 raw_cookies = br.headers.getall("Set-Cookie", [])
                 cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
+            elif br.status in (401, 403):
+                try:
+                    err_j = await br.json()
+                    if err_j.get("is_banned") or err_j.get("code") == "is_banned" or "restricted" in str(err_j).lower():
+                        logger.warning(f"[Ainovum] {name} ({uid}) is restricted/banned: {err_j.get('message', err_j)}. Skipping.")
+                        return {"uid": uid, "name": name, "status": "banned", "available": 0.0}
+                except Exception:
+                    pass
+                return {"uid": uid, "name": name, "status": f"bootstrap_http_{br.status}", "available": 0.0}
 
         auth_headers = dict(headers)
         if cookie_hdr:
@@ -233,7 +245,10 @@ async def process_ainovum_account(session: aiohttp.ClientSession, acc: dict, tok
         elif uid == "8203342513":
             target_wallet = MASTER_EVM_VAULT
         else:
-            target_wallet = isolated_evms.get(uid, {}).get("address", MASTER_EVM_VAULT)
+            target_wallet = isolated_evms.get(uid, {}).get("address")
+            if not target_wallet:
+                logger.warning(f"[Ainovum] No isolated EVM found for {name} ({uid}). Skipping to prevent wallet collision.")
+                return {"uid": uid, "name": name, "status": "no_isolated_evm", "available": avail}
 
         ainovum_thresh = 0.10 if uid == "6727787768" else 1.00
         logger.info(f"[Ainovum] {name} ({uid}) available: {avail:.4f} USDT (Threshold: {ainovum_thresh:.2f} USDT).")

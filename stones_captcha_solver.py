@@ -33,16 +33,19 @@ _TEMPLATES_CACHE: Optional[Dict[str, List[List[float]]]] = None
 
 def load_templates() -> Dict[str, List[List[float]]]:
     global _TEMPLATES_CACHE
-    if _TEMPLATES_CACHE is not None:
+    if _TEMPLATES_CACHE is not None and len(_TEMPLATES_CACHE) > 0:
         return _TEMPLATES_CACHE
     if os.path.exists(TEMPLATES_FILE):
         try:
             with open(TEMPLATES_FILE, "r", encoding="utf-8") as f:
-                _TEMPLATES_CACHE = json.load(f)
-                return _TEMPLATES_CACHE
+                loaded = json.load(f)
+                if isinstance(loaded, dict) and len(loaded) > 0:
+                    _TEMPLATES_CACHE = loaded
+                    return _TEMPLATES_CACHE
         except Exception as e:
             logger.error(f"Error loading captcha templates: {e}")
-    _TEMPLATES_CACHE = {}
+    if _TEMPLATES_CACHE is None:
+        _TEMPLATES_CACHE = {}
     return _TEMPLATES_CACHE
 
 
@@ -145,7 +148,7 @@ def solve_stones_captcha_templates(raw_b64: str) -> Tuple[str, float]:
 
 
 def learn_new_captcha(raw_b64: str, verified_code: str):
-    """Adds newly verified character vectors to the template library."""
+    """Adds newly verified character vectors to the template library atomically."""
     if len(verified_code) != 5:
         return
     try:
@@ -156,6 +159,11 @@ def learn_new_captcha(raw_b64: str, verified_code: str):
         char_data = extract_character_vectors(img)
         if len(char_data) == 5:
             templates = load_templates()
+            # Safety check: if templates in memory or file on disk had more data, do not clobber
+            if os.path.exists(TEMPLATES_FILE) and os.path.getsize(TEMPLATES_FILE) > 1000 and len(templates) < 5:
+                logger.warning("[Stones Captcha] Refusing to overwrite template library with empty/sparse data")
+                return
+
             updated = False
             for ch, (vec, _) in zip(verified_code, char_data):
                 t_list = templates.setdefault(ch, [])
@@ -167,9 +175,11 @@ def learn_new_captcha(raw_b64: str, verified_code: str):
                     if min_sim < 0.92:
                         t_list.append(vec)
                         updated = True
-            if updated:
-                with open(TEMPLATES_FILE, "w", encoding="utf-8") as f:
+            if updated and len(templates) >= 5:
+                tmp_file = f"{TEMPLATES_FILE}.tmp"
+                with open(tmp_file, "w", encoding="utf-8") as f:
                     json.dump(templates, f)
+                os.replace(tmp_file, TEMPLATES_FILE)
                 logger.info(f"[Stones Captcha] Dynamically learned new character templates for: {verified_code}")
     except Exception as e:
         logger.debug(f"[Stones Captcha] Error learning captcha: {e}")
