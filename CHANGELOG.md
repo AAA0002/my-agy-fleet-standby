@@ -4,6 +4,33 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Cybernetic Dynamic Telegram Bot Animations, Mini App UI Polish & Core Async Daemon Hardening (`deploy_both_cf_workers.py`, `public/index.html`, `userbot_refresher.py`, `CHANGELOG.md`)**:
+  - **Dynamic Multi-Frame Animations on Telegram Bot (`deploy_both_cf_workers.py` & `userbot_refresher.py`)**:
+    * **Progress Loading Engine (`sendAnimatedReply` & `editAnimatedMessage`)**: Implemented dynamic multi-frame loading animations (`[▰▰▱▱▱] 25%` -> `[▰▰▰▰▰▰▱] 65%` -> `[▰▰▰▰▰▰▰▰▰▰] 100% ✅`) using native Telegram message edits and `sendChatAction("typing")`.
+    * **Animated Commands & Inline Buttons**:
+      - `⚡ Instant Harvest` / `/harvest` / `btn_harvest`: Displays live 3-frame synchronization of 5 edge nodes and multi-bot claim dispatch across all 13 accounts.
+      - `💼 Universal Sweep` / `/withdraw` / `btn_withdraw`: Animates on-chain vault querying, cashout threshold calculations, and multi-network sweep execution.
+      - `📊 Fleet Status` / `/status` / `btn_status`: Smoothly scans 13 accounts and 5 edge nodes before displaying verified proof-of-work status.
+      - `🌐 Cloud Mesh` / `/mesh` / `btn_mesh`: Dynamically probes the 5 Cloudflare edge shards and distributed databases.
+      - `🪙 ATF Miner Claim` / `btn_atf_claim`: Animates math puzzle verification and TON Connect 2.0 cryptographic proof generation.
+      - `➕ Add Account` & Phone Number Input: Renders real-time phone validation and MTProto gateway connection frames.
+      - `🔑 OTP Code Verification`: Displays cryptographic code encryption and session authorization frames.
+    * **Zero-Delay Webhook & Rate-Limit Compliance**: Wrapped all animations in `ctx.waitUntil(...)` so Cloudflare Workers return HTTP 200 "OK" instantly without Telegram webhook timeouts or re-delivery, with 300-320ms frame delays safely within private chat edit limits.
+  - **Modern Open-Source UI Animations in WebApp Mini App (`public/index.html`)**:
+    * **Tailwind & CSS Keyframe Suite**:
+      - `@keyframes radarPing` (`.animate-radar`): Radar ping ripple effect for live network status.
+      - `@keyframes borderGlow` (`.animate-glow`): Subtle cybernetic glowing border shimmer for the Treasury Vault card.
+      - `@keyframes shimmerMove` (`.animate-shimmer-bar`): Continuous animated gradient shimmer bar for withdrawal progress.
+      - `@keyframes cardEntrance` (`.animate-entrance`): Smooth cubic-bezier slide-up and fade-in on tab transitions (Fleet, Analytics, Ledger, Ari AI).
+      - `@keyframes modalPop` (`.animate-modal`): Spring bounce pop-in for the Connect Account modal.
+      - `@keyframes spinSlow` (`.animate-spin-slow`): Rotating active bot mining indicators.
+    * **Live Deployment Across 3 Production Domains**: Uploaded directly to Vercel production with verified status on `https://agy-aaa000.vercel.app`, `https://my-agy-ai-fleet.vercel.app`, and `https://agy-henna.vercel.app`.
+  - **Python Garbage Collection Task Retention & Session Recovery (`userbot_refresher.py`)**:
+    * **Strong Reference Retention (`_BACKGROUND_TASKS = set()`)**: Fixed Python GC collecting pending background tasks, eliminating `Task was destroyed but it is pending!` errors.
+    * **Connection Auto-Recovery**: Hardened MTProto client login flow with `if not temp_cl.is_connected(): await temp_cl.connect()` and empty code validation guards.
+    * **Animated Progress Reports**: Integrated `send_animated_report_message` into `execute_universal_fleet_sweep` and `execute_fleet_harvest`.
+    * **Daemon Active & Supervised**: `bot_supervisor.sh` running in tmux session `telegram_bot` with `userbot_refresher.py` actively processing mining cycles.
+
 - **Instant 8-Bot Master Referral Binding, Strict Telegram Channel Isolation & Render 4-Active + 1-Cold-Failback Architecture (`userbot_refresher.py`, `deploy_both_cf_workers.py`, `backup_manager.py`, `public/index.html`, `deno_worker/main.ts`, `.github/workflows/fleet_sentinel.yml`)**:
   - **100% Guaranteed 8-Bot Master Referral Binding (Admin & User Side)**:
     * **Non-Blocking Login Flow (`userbot_refresher.py`)**: Completely decoupled `ensure_referral_bound` from the blocking OTP/2FA verification response. As soon as Telethon verifies the session, the account is atomically saved into `accounts.json`, dedicated TON & EVM wallets are registered, and immediate confirmation is dispatched to the user.

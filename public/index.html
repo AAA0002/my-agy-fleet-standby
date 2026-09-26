@@ -65,6 +65,53 @@
     .animate-subtle { animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .animate-slide-up { animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    @keyframes radarPing {
+      0% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5); }
+      70% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 8px rgba(37, 99, 235, 0); }
+      100% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+    }
+    .animate-radar { animation: radarPing 2.5s infinite; }
+
+    @keyframes liveDotPulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.35); opacity: 0.75; }
+    }
+    .animate-live-dot { animation: liveDotPulse 1.8s ease-in-out infinite; }
+
+    @keyframes borderGlow {
+      0%, 100% { border-color: rgba(37, 99, 235, 0.25); box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08); }
+      50% { border-color: rgba(37, 99, 235, 0.6); box-shadow: 0 4px 14px rgba(37, 99, 235, 0.16); }
+    }
+    .animate-glow { animation: borderGlow 3s ease-in-out infinite; }
+
+    @keyframes shimmerMove {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .animate-shimmer-bar {
+      background: linear-gradient(90deg, #2563eb 0%, #60a5fa 50%, #2563eb 100%);
+      background-size: 200% 100%;
+      animation: shimmerMove 2.2s linear infinite;
+    }
+
+    @keyframes cardEntrance {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-entrance { animation: cardEntrance 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+    @keyframes modalPop {
+      0% { opacity: 0; transform: scale(0.94) translateY(12px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .animate-modal { animation: modalPop 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+    @keyframes spinSlow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin-slow { animation: spinSlow 8s linear infinite; }
   </style>
 </head>
 <body class="min-h-screen pb-24">
@@ -684,9 +731,12 @@ function App() {
           ),
           React.createElement("div", {
             onClick: () => { setIsMeshModalOpen(true); haptic("light"); if (Object.keys(meshPings).length === 0) testMeshNodes(); },
-            className: "flex items-center gap-1 text-[11px] text-emerald-600 font-medium cursor-pointer hover:underline"
+            className: "flex items-center gap-1.5 text-[11px] text-emerald-600 font-medium cursor-pointer hover:underline"
           },
-            React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" }),
+            React.createElement("span", { className: "relative flex h-2 w-2" },
+              React.createElement("span", { className: "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" }),
+              React.createElement("span", { className: "relative inline-flex rounded-full h-2 w-2 bg-emerald-500" })
+            ),
             React.createElement("span", null, "13 Accounts • 🌐 Cloud Mesh")
           )
         )
@@ -722,9 +772,9 @@ function App() {
     ),
 
     // TAB 1: FLEET
-    activeTab === "fleet" && React.createElement(React.Fragment, null,
+    activeTab === "fleet" && React.createElement("div", { className: "animate-entrance" },
       // Executive Treasury Card
-      React.createElement("div", { className: "pro-card rounded-2xl p-5 mb-4" },
+      React.createElement("div", { className: "pro-card rounded-2xl p-5 mb-4 animate-glow" },
         React.createElement("div", { className: "flex items-center justify-between mb-2" },
           React.createElement("span", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400" }, "Treasury Vault"),
           React.createElement("span", { className: "bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-md font-mono" }, "Binance BEP-20")
@@ -741,7 +791,7 @@ function App() {
         // Progress Bar
         React.createElement("div", { className: "w-full bg-slate-100 rounded-full h-2 mb-4 overflow-hidden" },
           React.createElement("div", {
-            className: "bg-blue-600 h-2 rounded-full transition-all duration-500",
+            className: "h-2 rounded-full transition-all duration-500 animate-shimmer-bar",
             style: { width: `${progressPercent}%` }
           })
         ),
@@ -859,7 +909,7 @@ function App() {
     ),
 
     // TAB 2: ANALYTICS
-    activeTab === "analytics" && React.createElement(React.Fragment, null,
+    activeTab === "analytics" && React.createElement("div", { className: "animate-entrance" },
       React.createElement(ProfitChart, { payouts: uniquePayouts, bnbPrice: rates.bnb_usd || 765 }),
 
       // 4 Metric Tiles
@@ -906,7 +956,7 @@ function App() {
     ),
 
     // TAB 3: LEDGER
-    activeTab === "ledger" && React.createElement(React.Fragment, null,
+    activeTab === "ledger" && React.createElement("div", { className: "animate-entrance" },
       React.createElement("div", { className: "pro-card rounded-2xl p-4 mb-4" },
         React.createElement("div", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1" }, "Consolidation Vault"),
         React.createElement("div", { className: "flex items-center justify-between" },
@@ -954,7 +1004,7 @@ function App() {
     ),
 
     // TAB 4: ARI AI
-    activeTab === "ai" && React.createElement(React.Fragment, null,
+    activeTab === "ai" && React.createElement("div", { className: "animate-entrance" },
       React.createElement("div", { className: "pro-card rounded-2xl p-4 mb-4 flex flex-col h-[65vh]" },
         React.createElement("div", { className: "flex items-center justify-between pb-3 border-b border-slate-100 mb-3" },
           React.createElement("div", { className: "flex items-center gap-2" },
@@ -1091,7 +1141,7 @@ function App() {
       onClick: () => setIsAddModalOpen(false)
     },
       React.createElement("div", {
-        className: "bg-white rounded-2xl p-5 w-full max-w-sm border border-slate-200 shadow-2xl relative animate-slide-up",
+        className: "bg-white rounded-2xl p-5 w-full max-w-sm border border-slate-200 shadow-2xl relative animate-modal",
         onClick: e => e.stopPropagation()
       },
         React.createElement("div", { className: "flex items-center justify-between pb-3 mb-3 border-b border-slate-100" },

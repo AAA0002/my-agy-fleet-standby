@@ -76,10 +76,14 @@ logging.basicConfig(
 logger = logging.getLogger("MultiBotWorker")
 
 
+_BACKGROUND_TASKS = set()
+
 def safe_create_task(coro, name=None):
-    """Creates a background asyncio Task with comprehensive unhandled exception logging."""
+    """Creates a background asyncio Task with strong reference retention and comprehensive exception logging."""
     task = asyncio.create_task(coro, name=name)
+    _BACKGROUND_TASKS.add(task)
     def _done_cb(t: asyncio.Task):
+        _BACKGROUND_TASKS.discard(t)
         try:
             if not t.cancelled() and t.exception():
                 logger.error(f"[Task Error] Unhandled exception in background task '{t.get_name()}': {t.exception()}", exc_info=t.exception())
@@ -1859,6 +1863,65 @@ async def send_report_message(text: str, reply_markup=None, chat_id=None, force_
     return False
 
 
+async def send_animated_report_message(frames: list, reply_markup=None, chat_id=None, frame_delay: float = 0.32):
+    """Sends a multi-frame animated report with smooth progress edits via MyRouterAIBot."""
+    if not frames:
+        return False
+    target_chat_id = str(chat_id) if chat_id else str(REPORT_CHAT_ID)
+    send_url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"
+    edit_url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/editMessageText"
+
+    initial_payload = {
+        "chat_id": target_chat_id,
+        "text": frames[0],
+        "parse_mode": "Markdown",
+        "disable_web_page_preview": True
+    }
+    if len(frames) == 1 and reply_markup is not None:
+        initial_payload["reply_markup"] = reply_markup
+
+    msg_id = None
+    try:
+        req_timeout = aiohttp.ClientTimeout(total=12, connect=6)
+        async with aiohttp.ClientSession(timeout=req_timeout) as session:
+            async with session.post(send_url, json=initial_payload) as resp:
+                data = await resp.json()
+                if data.get("ok"):
+                    msg_id = data.get("result", {}).get("message_id")
+    except Exception as e:
+        logger.warning(f"[ReportBot] Animated message initial send failed: {e}")
+        return False
+
+    if not msg_id:
+        return False
+
+    for i in range(1, len(frames)):
+        await asyncio.sleep(frame_delay)
+        is_last = (i == len(frames) - 1)
+        edit_payload = {
+            "chat_id": target_chat_id,
+            "message_id": msg_id,
+            "text": frames[i],
+            "parse_mode": "Markdown",
+            "disable_web_page_preview": True
+        }
+        if is_last and reply_markup is not None:
+            edit_payload["reply_markup"] = reply_markup
+        try:
+            req_timeout = aiohttp.ClientTimeout(total=10, connect=5)
+            async with aiohttp.ClientSession(timeout=req_timeout) as session:
+                async with session.post(edit_url, json=edit_payload) as resp:
+                    d = await resp.json()
+                    if not d.get("ok"):
+                        edit_payload.pop("parse_mode", None)
+                        async with session.post(edit_url, json=edit_payload) as resp2:
+                            pass
+        except Exception:
+            pass
+
+    return True
+
+
 async def send_message_chunks(text: str, reply_markup=None, chat_id=None):
     """Sends long messages in chunks to prevent Telegram length limit errors."""
     if len(text) <= 3800:
@@ -2848,8 +2911,9 @@ async def initiate_account_login(chat_id: str, raw_phone: str):
     logger.info(f"[Account Onboarding] Requesting MTProto verification code for {cleaned_phone} ({country_label}) for Chat {chat_id}")
     temp_fp = get_account_fingerprint(chat_id)
     temp_cl = TelegramClient(StringSession(), API_ID, API_HASH, timeout=25, connection_retries=5, **temp_fp)
-    await temp_cl.connect()
     try:
+        if not temp_cl.is_connected():
+            await temp_cl.connect()
         sent_code = await asyncio.wait_for(temp_cl.send_code_request(cleaned_phone), timeout=30)
         logger.info(f"[Account Onboarding] ✅ Verification code dispatched successfully to {cleaned_phone} (phone_code_hash: {sent_code.phone_code_hash[:8]}...)")
         login_sessions[chat_id] = {
@@ -2868,7 +2932,10 @@ async def initiate_account_login(chat_id: str, raw_phone: str):
             chat_id=chat_id
         )
     except PhoneNumberInvalidError:
-        await temp_cl.disconnect()
+        try:
+            await temp_cl.disconnect()
+        except Exception:
+            pass
         login_sessions.pop(chat_id, None)
         await send_report_message(
             f"❌ Could not verify `{cleaned_phone}` ({country_label}).\n"
@@ -2877,7 +2944,10 @@ async def initiate_account_login(chat_id: str, raw_phone: str):
             chat_id=chat_id
         )
     except Exception as e:
-        await temp_cl.disconnect()
+        try:
+            await temp_cl.disconnect()
+        except Exception:
+            pass
         login_sessions.pop(chat_id, None)
         logger.error(f"[Account Onboarding] Error requesting code for {cleaned_phone}: {e}")
         await send_report_message(f"❌ Error requesting login code: {e}", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
@@ -2909,10 +2979,15 @@ async def handle_login_input(chat_id: str, text: str):
 
     elif step == "WAITING_CODE":
         code = re.sub(r'[^0-9]', '', text)
+        if not code or len(code) < 3:
+            await send_report_message("❌ Please reply with the 5-digit verification code sent to your phone (or tap ❌ Cancel Login):", reply_markup=CANCEL_KEYBOARD, chat_id=chat_id)
+            return
         temp_cl = state["client"]
         phone = state["phone"]
         pch = state["phone_code_hash"]
         try:
+            if not temp_cl.is_connected():
+                await temp_cl.connect()
             await asyncio.wait_for(temp_cl.sign_in(phone=phone, code=code, phone_code_hash=pch), timeout=30)
             me = await temp_cl.get_me()
             acc_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or "User"
@@ -2984,6 +3059,8 @@ async def handle_login_input(chat_id: str, text: str):
         phone = state["phone"]
         pwd = text.strip()
         try:
+            if not temp_cl.is_connected():
+                await temp_cl.connect()
             await asyncio.wait_for(temp_cl.sign_in(password=pwd), timeout=30)
             me = await temp_cl.get_me()
             acc_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or "User"
@@ -9300,11 +9377,12 @@ async def execute_universal_fleet_sweep(caller_chat_id=None):
     """Executes a unified multi-bot sweep across AI Lab, Stones, Ainovum, and on-chain consolidation."""
     target_chat = caller_chat_id or REPORT_CHAT_ID
     logger.info("[Universal Sweep] ⚡ Dispatched universal fleet sweep (AI Lab + Stones + Ainovum + MRG + On-Chain)...")
-    await send_report_message(
-        "⚡ *Universal Fleet Sweep Dispatched!*\n\n"
-        "Executing sequential withdrawals across AI Lab, Stones Miners, Ainovum, MRG Miner, and On-Chain Wallets...",
-        chat_id=target_chat
-    )
+    frames = [
+        "💼 *Initiating Universal Fleet Sweep...*\n`[▰▰▱▱▱▱▱▱▱▱] 25%` • Querying On-Chain Vaults & Balances",
+        "💼 *Calculating Cashout Thresholds...*\n`[▰▰▰▰▰▰▰▱▱▱] 70%` • Checking BEP-20, Arbitrum & TON Nodes",
+        "⚡ *Universal Fleet Sweep Dispatched!*\n`[▰▰▰▰▰▰▰▰▰▰] 100% Dispatched ✅`\n\nExecuting sequential withdrawals across AI Lab, Stones Miners, Ainovum, MRG Miner, and On-Chain Wallets..."
+    ]
+    await send_animated_report_message(frames, chat_id=target_chat, frame_delay=0.35)
     await execute_stones_fleet_sweep(caller_chat_id=target_chat)
     await execute_ailab_fleet_sweep(caller_chat_id=target_chat)
     await execute_ainovum_fleet_sweep(caller_chat_id=target_chat)
@@ -9327,12 +9405,12 @@ async def execute_fleet_harvest(caller_chat_id=None, notify=True):
     now = time.time()
     if notify and (now - LAST_HARVEST_NOTIFY_TIME) >= 300:
         LAST_HARVEST_NOTIFY_TIME = now
-        await send_report_message(
-            "⚡ *Instant Fleet Harvest Dispatched!*\n\n"
-            "Triggered immediate mining harvest across all 13 accounts (ART, MRG, Stones, AI Lab, UltraWallet, Apex, Ainovum, ATF).",
-            reply_markup=MAIN_TAB_KEYBOARD,
-            chat_id=target_chat
-        )
+        frames = [
+            "⚡ *Initiating Instant Harvest across Fleet...*\n`[▰▰▱▱▱▱▱▱▱▱] 20%` • Syncing Edge Nodes & Relayers",
+            "⚡ *Harvesting Multi-Bot Rewards...*\n`[▰▰▰▰▰▰▱▱▱▱] 65%` • Dispatched 13 Accounts (Stones, ATF, MRG, ART...)",
+            "⚡ *Instant Fleet Harvest Dispatched!*\n`[▰▰▰▰▰▰▰▰▰▰] 100% Executing ✅`\n\nTriggered immediate mining harvest across all 13 accounts (ART, MRG, Stones, AI Lab, UltraWallet, Apex, Ainovum, ATF)."
+        ]
+        await send_animated_report_message(frames, reply_markup=MAIN_TAB_KEYBOARD, chat_id=target_chat, frame_delay=0.35)
 
 
 async def miniapp_command_listener_loop():
