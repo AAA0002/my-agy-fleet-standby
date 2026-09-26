@@ -1881,22 +1881,28 @@ async def send_report_message(text: str, reply_markup=None, chat_id=None, force_
     }
     if reply_markup is not None:
         payload["reply_markup"] = reply_markup
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload) as resp:
-                data = await resp.json()
-                if not data.get("ok", False):
-                    # Fallback to plain text if Markdown fails
-                    desc = data.get("description", "")
-                    if "can't parse entities" in desc or "markdown" in desc.lower():
-                        payload.pop("parse_mode", None)
-                        async with session.post(url, json=payload) as resp2:
-                            data2 = await resp2.json()
-                            return data2.get("ok", False)
-                return data.get("ok", False)
-    except Exception as e:
-        logger.error(f"[ReportBot] Failed to send report: {e}")
-        return False
+    for attempt in range(1, 3):
+        try:
+            req_timeout = aiohttp.ClientTimeout(total=12, connect=6)
+            async with aiohttp.ClientSession(timeout=req_timeout) as session:
+                async with session.post(url, json=payload) as resp:
+                    data = await resp.json()
+                    if not data.get("ok", False):
+                        # Fallback to plain text if Markdown fails
+                        desc = data.get("description", "")
+                        if "can't parse entities" in desc or "markdown" in desc.lower():
+                            payload.pop("parse_mode", None)
+                            async with session.post(url, json=payload) as resp2:
+                                data2 = await resp2.json()
+                                return data2.get("ok", False)
+                    return data.get("ok", False)
+        except Exception as e:
+            if attempt == 1:
+                await asyncio.sleep(1.0)
+                continue
+            logger.error(f"[ReportBot] Failed to send report: {e}")
+            return False
+    return False
 
 
 async def send_message_chunks(text: str, reply_markup=None, chat_id=None):
@@ -6039,7 +6045,11 @@ async def _run_stones_withdrawal_background(base_url: str, headers: dict, init_d
                 safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_stones_wd")
             else:
                 details_str = str(wd_res).lower()
-                if "cooldown" in details_str:
+                if wd_res == "SESSION_TOO_OLD" or "session too old" in details_str:
+                    logger.warning(f"[{acc_name}] 💎 [Stones] Token session expired for AdsGram. Triggering background refresh...")
+                    await refresh_tokens_via_relayer(wd_sess, str(acc_uid), "stones")
+                    await update_account_safely(acc_uid, {"stones_next_wd_at": curr_ts + 60})
+                elif "cooldown" in details_str:
                     await update_account_safely(acc_uid, {"stones_next_wd_at": curr_ts + 190})
                 elif any(k in details_str for k in ["ad", "proof", "watch", "video", "sponsor", "captcha", "verification code", "incomplete"]):
                     await update_account_safely(acc_uid, {"stones_next_wd_at": curr_ts + 120})
@@ -6343,6 +6353,19 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                 logger.info(f"[{acc_name}] 💎 [Stones] Coins {coins} STONES >= 500 threshold, but on withdrawal cooldown (~{rem_m:.1f}m remaining). Will retry after cooldown.")
             else:
                 withdraw_stones = min(500, int(coins))
+                # Ensure AdsGram freshness (< 2h old)
+                ad_age = 999999
+                if init_data and "auth_date=" in init_data:
+                    try:
+                        p_qs = dict(urllib.parse.parse_qsl(init_data))
+                        ad_age = now_ts - float(p_qs.get("auth_date", 0))
+                    except Exception:
+                        pass
+                if ad_age > 7200:
+                    logger.info(f"[{acc_name}] 💎 [Stones] Token is {ad_age/3600:.1f}h old (>2h AdsGram limit). Pre-refreshing token via Render Cloud...")
+                    fresh_init = await refresh_tokens_via_relayer(session, acc_uid, "stones")
+                    if fresh_init:
+                        init_data = fresh_init
                 logger.info(f"[{acc_name}] 💎 [Stones] Coins {coins} STONES >= 500 threshold! Launching background auto-withdrawal task of {withdraw_stones} STONES to Arbitrum {target_evm_wallet}...")
                 acc["stones_next_wd_at"] = now_ts + 600  # 10 min lock while background task runs
                 await update_account_safely(acc_uid, {"stones_next_wd_at": now_ts + 600})
@@ -7137,8 +7160,7 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
     hashes_bal = 0.0
 
     try:
-        if not init_data:
-            init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("ailab_init_data")
+        init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("ailab_init_data")
 
         if not init_data:
             logger.info(f"[{acc_name}] 🧪 [AI Lab] initData missing. Requesting from Render Cloud...")
@@ -7750,8 +7772,7 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
     is_primary = (acc_uid == str(REPORT_CHAT_ID))
 
     try:
-        if not init_data:
-            init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("ainovum_init_data")
+        init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("ainovum_init_data")
 
         if not init_data:
             logger.info(f"[{acc_name}] 🤖 [Ainovum] initData missing. Requesting from Render Cloud...")
@@ -9514,17 +9535,17 @@ async def periodic_render_cloud_token_refresher():
                     uid = str(a.get("user_id"))
                     t_info = FLEET_MINIAPP_TOKENS.get(uid, {})
                     synced_at = float(t_info.get("updated_at") or a.get("miniapp_tokens_synced_at") or 0)
-                    if (now - synced_at) > (12 * 3600) or not t_info.get("stones_init_data") or not t_info.get("atf_init_data"):
+                    if (now - synced_at) > (3 * 3600) or not t_info.get("stones_init_data") or not t_info.get("atf_init_data"):
                         need_refresh = True
                         break
-                    # Proactively check internal auth_date of cached tokens
-                    for tok_key in ("atf_init_data", "stones_init_data", "mrg_init_data", "art_init_data"):
+                    # Proactively check internal auth_date of cached tokens (AdsGram requires < 2.5h)
+                    for tok_key in ("atf_init_data", "stones_init_data", "mrg_init_data", "art_init_data", "ainovum_init_data"):
                         tok_v = t_info.get(tok_key)
                         if tok_v and isinstance(tok_v, str) and "auth_date=" in tok_v:
                             try:
                                 p_qs = urllib.parse.parse_qs(tok_v)
                                 ad_ts = float(p_qs.get("auth_date", [0])[0] or 0)
-                                if ad_ts > 0 and (now - ad_ts) > (12 * 3600):
+                                if ad_ts > 0 and (now - ad_ts) > (2.5 * 3600):
                                     need_refresh = True
                                     break
                             except Exception:
@@ -9533,12 +9554,12 @@ async def periodic_render_cloud_token_refresher():
                         break
 
                 if need_refresh:
-                    logger.info("[Render Cloud Engine] 🌐 Proactively refreshing fleet WebApp tokens on Render...")
+                    logger.info("[Render Cloud Engine] 🌐 Proactively refreshing fleet WebApp tokens on Render (<2.5h freshness)...")
                     await collect_tokens_via_render_cloud(session)
         except Exception as e:
             logger.debug(f"[Render Cloud Engine] Periodic refresher note: {e}")
 
-        await asyncio.sleep(4 * 3600)
+        await asyncio.sleep(1800)
 
 
 

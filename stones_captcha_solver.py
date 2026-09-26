@@ -348,6 +348,11 @@ async def execute_stones_withdrawal_with_captcha(
                                     if banners:
                                         for t in banners[0].get("banner", {}).get("trackings", []):
                                             tracking_urls[t.get("name")] = t.get("value")
+                                elif ar.status == 400:
+                                    err_txt = await ar.text()
+                                    if "Session too old" in err_txt:
+                                        logger.warning("[Stones Withdrawal] AdsGram returned 'Session too old'. Token auth_date has expired.")
+                                        return False, "SESSION_TOO_OLD"
 
                             # Ping render & show trackings
                             if "render" in tracking_urls:
@@ -358,6 +363,12 @@ async def execute_stones_withdrawal_with_captcha(
                                     pass
                         except Exception as ad_err:
                             logger.debug(f"[Stones Withdrawal] Adsgram adv request note: {ad_err}")
+
+                        # If AdsGram didn't serve a banner or reward tracking URL, rotate block immediately
+                        if not tracking_urls.get("reward"):
+                            logger.warning(f"[Stones Withdrawal] AdsGram served no banner/reward tracking for block {target_block}. Rotating block without delay...")
+                            await asyncio.sleep(1.0)
+                            continue
 
                         # 4. Wait 15s -> Heartbeat 2
                         await asyncio.sleep(15.0)
@@ -407,10 +418,10 @@ async def execute_stones_withdrawal_with_captcha(
                                 await asyncio.sleep(2.0)
                                 continue
 
-                        # 8. Poll Proof (server-to-server webhook confirmation, up to 35 tries ~87s matching server window)
+                        # 8. Poll Proof (server-to-server webhook confirmation, up to 16 tries ~32s)
                         proof_ok = False
-                        for p_try in range(35):
-                            await asyncio.sleep(2.5)
+                        for p_try in range(16):
+                            await asyncio.sleep(2.0)
                             async with session.post(
                                 f"{base_url}/api/wd/ad/proof",
                                 json={"initData": init_data, "challenge_id": cid},
@@ -429,10 +440,10 @@ async def execute_stones_withdrawal_with_captcha(
                                         logger.warning("[Stones Withdrawal] AdsGram service unavailable/outage.")
                                         break
                                     elif pfd.get("state") == "failed":
-                                        logger.warning("[Stones Withdrawal] AdsGram postback failed for this ad. Retrying...")
+                                        logger.warning(f"[Stones Withdrawal] AdsGram postback failed for block {target_block}. Rotating block...")
                                         break
                         if not proof_ok:
-                            await asyncio.sleep(3.0)
+                            await asyncio.sleep(2.0)
                             continue
                         await asyncio.sleep(1.0)
                     if cur_boarded < req_ads:
