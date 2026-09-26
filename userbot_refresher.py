@@ -103,6 +103,30 @@ CF_WORKER_URLS = [
     os.getenv("CF_WORKER_URL_2", "https://restore-agy.aaa-bot.workers.dev"),
     os.getenv("CF_WORKER_URL_3", "https://restore-agy.aaa222.workers.dev")
 ]
+FLEET_FALLBACK_PROXY = os.getenv("FLEET_FALLBACK_PROXY", "http://Arif2743:Arif2743@31.59.20.176:6754")
+
+def solve_math_question(question_text: str) -> str:
+    """Robust parser and solver for arithmetic verification questions like '9+2=?', '45 - 12', '12 * 4'"""
+    cleaned = re.sub(r"[^\d\+\-\*\/\(\)\s]", " ", str(question_text))
+    match = re.search(r"(\d+\s*[\+\-\*\/]\s*\d+(?:\s*[\+\-\*\/]\s*\d+)?)", cleaned)
+    if match:
+        expr = match.group(1)
+        try:
+            return str(int(eval(expr)))
+        except Exception:
+            pass
+    nums = [int(n) for n in re.findall(r"\d+", str(question_text))]
+    if len(nums) >= 2:
+        if "+" in question_text or "plus" in question_text.lower():
+            return str(nums[0] + nums[1])
+        elif "-" in question_text or "minus" in question_text.lower():
+            return str(nums[0] - nums[1])
+        elif "*" in question_text or "x" in question_text.lower() or "multiply" in question_text.lower():
+            return str(nums[0] * nums[1])
+        else:
+            return str(nums[0] + nums[1])
+    return "0"
+
 
 # Authorized Administrators Whitelist (Only these IDs can access and command the bot)
 ADMIN_IDS = [
@@ -4392,6 +4416,23 @@ async def ensure_referral_bound(acc_client, acc: dict):
         except Exception as e:
             logger.warning(f"[{acc_name}] Ainovum referral notice: {e}")
 
+    # 9. ATF Miner Referral Binding (@ATF_AIRDROP_bot)
+    if not acc.get("atf_referral_bound") and str(acc_uid) != str(REPORT_CHAT_ID):
+        try:
+            logger.info(f"[{acc_name}] Onboarding ATF Miner with referral {REPORT_CHAT_ID}...")
+            try:
+                await acc_client(UnblockRequest(id="ATF_AIRDROP_bot"))
+            except Exception:
+                pass
+            bot_atf = await acc_client.get_entity("ATF_AIRDROP_bot")
+            await acc_client.send_message(bot_atf, f"/start {REPORT_CHAT_ID}")
+            await asyncio.sleep(1.5)
+            acc["atf_referral_bound"] = True
+            await update_account_safely(acc_uid, {"atf_referral_bound": True})
+            logger.info(f"[{acc_name}] ✅ ATF Miner successfully bound to referral {REPORT_CHAT_ID}!")
+        except Exception as e:
+            logger.warning(f"[{acc_name}] ATF referral notice: {e}")
+
 
 async def self_heal_account_channels_and_bots(acc_client, acc: dict):
     """
@@ -4412,7 +4453,7 @@ async def self_heal_account_channels_and_bots(acc_client, acc: dict):
 
     logger.info(f"[{acc_name}] 🛡️ Running Self-Healing Channel & Bot Guard...")
     # 1. Ensure target legitimate bots are unblocked (BNB_BOT excluded - scammer bot blocked)
-    for b in [STONES_BOT, MRG_BOT, ART_BOT, AILAB_BOT, ULTRAWALLET_BOT, APX_BOT, AINOVUM_BOT]:
+    for b in [STONES_BOT, MRG_BOT, ART_BOT, AILAB_BOT, ULTRAWALLET_BOT, APX_BOT, AINOVUM_BOT, "ATF_AIRDROP_bot"]:
         try:
             await acc_client(UnblockRequest(id=b))
         except Exception:
@@ -7285,6 +7326,7 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             "Origin": "https://atfminers.asloni.online"
         }
         device_id = f"dev-{acc_uid}"
+        proxy = acc.get("proxy") or FLEET_FALLBACK_PROXY
 
         def atf_p(obj):
             p = {"initData": init_data, "request_id": f"rq-{int(time.time()*1000)}-{uuid.uuid4().hex[:8]}", "device_id": device_id}
@@ -7292,11 +7334,13 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             return p
 
         # 1. Login
-        async with session.post(f"{base_url}?action=login&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "username": acc.get("username", "")}), headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as lr:
+        async with session.post(f"{base_url}?action=login&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "username": acc.get("username", "")}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=10)) as lr:
             if lr.status != 200:
+                logger.warning(f"[{acc_name}] 🪙 [ATF Miner] Login failed with HTTP {lr.status}")
                 return
             ld = await lr.json()
             if ld.get("status") != "success":
+                logger.warning(f"[{acc_name}] 🪙 [ATF Miner] Login rejected: {ld.get('message', ld)}")
                 return
             u = ld.get("user", {})
 
@@ -7332,7 +7376,7 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                     t_addr = Address(target_ton_wallet)
                     raw_addr = f"{t_addr.wc}:{t_addr.hash_part.hex()}"
 
-                    async with session.post(f"{base_url}?action=get_wallet_proof_payload&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "force": 1}), headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as pr_resp:
+                    async with session.post(f"{base_url}?action=get_wallet_proof_payload&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "force": 1}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=8)) as pr_resp:
                         pr_data = await pr_resp.json()
                         proof_nonce = pr_data.get("payload")
 
@@ -7374,7 +7418,7 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                             "proof": proof_obj,
                             "refresh_holding": 1
                         })
-                        async with session.post(f"{base_url}?action=sync_wallet&t={int(time.time()*1000)}", json=sync_p, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as wr:
+                        async with session.post(f"{base_url}?action=sync_wallet&t={int(time.time()*1000)}", json=sync_p, headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=8)) as wr:
                             w_data = await wr.json()
                             if w_data.get("status") == "success":
                                 logger.info(f"[{acc_name}] 🪙 [ATF Miner] 💎 Cryptographic TON Proof Verified: {target_ton_wallet[:12]}... (Status: Verified ✅)")
@@ -7384,38 +7428,33 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                 try:
                     await asyncio.sleep(0.8)
                     sync_p = atf_p({"tg_id": int(acc_uid), "wallet": target_ton_wallet})
-                    async with session.post(f"{base_url}?action=sync_wallet&t={int(time.time()*1000)}", json=sync_p, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as wr:
+                    async with session.post(f"{base_url}?action=sync_wallet&t={int(time.time()*1000)}", json=sync_p, headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=8)) as wr:
                         pass
                 except Exception:
                     pass
 
         # 2. Claim mining, referrals, team pool
-        await session.post(f"{base_url}?action=claim&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "claim_preview": float(u.get("pending_reward", 0) or 0)}), headers=headers, timeout=aiohttp.ClientTimeout(total=8))
-        await session.post(f"{base_url}?action=claim_referrals&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid)}), headers=headers, timeout=aiohttp.ClientTimeout(total=8))
-        await session.post(f"{base_url}?action=claim_team_wallet&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid)}), headers=headers, timeout=aiohttp.ClientTimeout(total=8))
+        await session.post(f"{base_url}?action=claim&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "claim_preview": float(u.get("pending_reward", 0) or 0)}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=8))
+        await session.post(f"{base_url}?action=claim_referrals&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid)}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=8))
+        await session.post(f"{base_url}?action=claim_team_wallet&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid)}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=8))
 
-        # 3. Math Challenge & Start Mining
-        async with session.post(f"{base_url}?action=get_math_challenge&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "scope": "start_mine"}), headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as mr:
-            if mr.status == 200:
-                md = await mr.json()
-                if md.get("status") == "success" and md.get("question") and md.get("challenge_id"):
-                    q = md.get("question")
-                    cleaned = q.replace("?", "").replace("=", "").strip()
-                    nums = [int(n) for n in re.findall(r"\d+", cleaned)]
-                    ans = "0"
-                    if len(nums) >= 2:
-                        if "+" in q:
-                            ans = str(nums[0] + nums[1])
-                        elif "-" in q:
-                            ans = str(nums[0] - nums[1])
-                        elif "*" in q or "x" in q.lower():
-                            ans = str(nums[0] * nums[1])
-                    await session.post(f"{base_url}?action=start_mine&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "math_challenge_id": md.get("challenge_id"), "math_answer": ans}), headers=headers, timeout=aiohttp.ClientTimeout(total=8))
+        # 3. Math Challenge & Start Mining (Solve if frozen or timer expired)
+        if int(u.get("mining_frozen", 0)) == 1 or float(u.get("mining_freezes_at", 0) or 0) <= time.time():
+            async with session.post(f"{base_url}?action=get_math_challenge&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "scope": "start_mine"}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=8)) as mr:
+                if mr.status == 200:
+                    md = await mr.json()
+                    if md.get("status") == "success" and md.get("question") and md.get("challenge_id"):
+                        ans = solve_math_question(md.get("question"))
+                        async with session.post(f"{base_url}?action=start_mine&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "math_challenge_id": md.get("challenge_id"), "math_answer": ans}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=8)) as sm_r:
+                            sm_d = await sm_r.json()
+                            if sm_d.get("status") == "success":
+                                u["mining_frozen"] = 0
+                                logger.info(f"[{acc_name}] 🪙 [ATF Miner] ⚡ 24h Mining started successfully (Answer: {ans})!")
 
         # 3b. Activate Mining Speed Boost & Daily Interaction
         try:
-            await session.post(f"{base_url}?action=activate_boost&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "display_preview": float(u.get("pending_reward", 0) or 0)}), headers=headers, timeout=aiohttp.ClientTimeout(total=5))
-            await session.post(f"{base_url}?action=record_daily_interaction&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid)}), headers=headers, timeout=aiohttp.ClientTimeout(total=5))
+            await session.post(f"{base_url}?action=activate_boost&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "display_preview": float(u.get("pending_reward", 0) or 0)}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=5))
+            await session.post(f"{base_url}?action=record_daily_interaction&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid)}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=5))
         except Exception:
             pass
 
@@ -7432,15 +7471,17 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             tid = task["id"]
             if now_s >= int(cooldowns.get(tid, 0) or 0):
                 s_at = now_s - task["minSeconds"] - 5
-                await session.post(f"{base_url}?action=start_task&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "task_id": tid, "client_started_at": s_at}), headers=headers, timeout=aiohttp.ClientTimeout(total=5))
+                await session.post(f"{base_url}?action=start_task&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "task_id": tid, "client_started_at": s_at}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=5))
                 await asyncio.sleep(1.0)
-                await session.post(f"{base_url}?action=claim_task&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "task_id": tid, "client_started_at": s_at}), headers=headers, timeout=aiohttp.ClientTimeout(total=5))
+                await session.post(f"{base_url}?action=claim_task&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "task_id": tid, "client_started_at": s_at}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=5))
 
         # 5. ATF Accumulation & Farming (Withdrawal disabled per user directive: farming only)
         mined_bal = float(u.get("mined_balance", 0) or 0)
         acc["atf_balance"] = mined_bal
         await update_account_safely(acc_uid, {"atf_balance": mined_bal})
-        logger.info(f"[{acc_name}] 🪙 [ATF Miner] Harvested & farming cycle active | Total Pool: {mined_bal:.2f} ATF (Accumulating)")
+        is_frozen = int(u.get("mining_frozen", 0)) == 1
+        m_state = "Frozen (Unfreeze Queued)" if is_frozen else "Mining Active"
+        logger.info(f"[{acc_name}] 🪙 [ATF Miner] Harvested & farming cycle active | Total Pool: {mined_bal:.2f} ATF (Accumulating) | Status: {m_state}")
     except Exception as e:
         logger.debug(f"[{acc_name}] ATF Miner automation note: {e}")
 
@@ -7536,6 +7577,7 @@ async def farm_single_account(
         or not curr_tokens.get("ultrawallet_init_data")
         or not curr_tokens.get("apx_init_data")
         or not curr_tokens.get("ainovum_init_data")
+        or not curr_tokens.get("atf_init_data")
     )
     tokens_due = (tokens_age_hours >= 18.0) or not acc.get("miniapp_tokens_synced") or (str(acc_uid) not in FLEET_MINIAPP_TOKENS) or missing_tokens
 
@@ -7549,6 +7591,7 @@ async def farm_single_account(
         or not acc.get("ultrawallet_referral_bound")
         or not acc.get("apx_referral_bound")
         or not acc.get("ainovum_referral_bound")
+        or not acc.get("atf_referral_bound")
     )
     heal_due = (time.time() - last_heal) > (12 * 3600) or missing_referrals
 

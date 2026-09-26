@@ -1060,7 +1060,7 @@ fi
           if (state && state.accounts) {
             targetUids = state.accounts.map(a => a.user_id).filter(Boolean);
           } else {
-            targetUids = [6727787768, 8826375659, 8450010161, 8782429452, 7734849205, 8025472383, 8851426148, 8203342513, 8881914294, 7648254021, 8190649727, 7306260278, 7490632948];
+            targetUids = [6727787768, 8826375659, 8450010161, 8782429452, 7734849205, 8025472383, 8851426148, 8203342513, 8881914294, 7648254021, 8190649727, 7487048946, 8741547543];
           }
           const doAll = body.all !== false && url.searchParams.get("all") !== "false";
           const shardParam = body.shard !== undefined ? parseInt(body.shard) : (url.searchParams.has("shard") ? parseInt(url.searchParams.get("shard")) : null);
@@ -1325,6 +1325,9 @@ fi
                       device_id: "dev-" + (accData.device_id || "edge-" + uid),
                       ...obj
                     });
+                    await fetchWithRetry(`${atfBase}?action=login&t=${Date.now()}`, {
+                      method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid), username: accData.username || "" }))
+                    }, 2, 800).catch(() => {});
                     await fetchWithRetry(`${atfBase}?action=claim&t=${Date.now()}`, {
                       method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
                     }, 2, 800).catch(() => {});
@@ -3320,6 +3323,9 @@ Reply to Arif naturally:`;
                 device_id: "dev-" + (accData.device_id || "edge-" + uid),
                 ...obj
               });
+              await fetchWithRetry(`${atfBase}?action=login&t=${Date.now()}`, {
+                method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid), username: accData.username || "" }))
+              }, 2, 800).catch(() => {});
               await fetchWithRetry(`${atfBase}?action=claim&t=${Date.now()}`, {
                 method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
               }, 2, 800).catch(() => {});

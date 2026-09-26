@@ -5,6 +5,16 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+- **ATF Miner Fleet-Wide Unfreeze, Math Challenge Solver & Proxy Routing Across All 13 Accounts (`userbot_refresher.py`, `deploy_both_cf_workers.py`)**:
+  - **Fleet-Wide Unfreeze & Active Mining**: Resolved the issue where ATF Miner (@ATF_AIRDROP_bot) only accumulated on the main account while all 12 worker accounts were frozen (`mining_frozen: 1`). Successfully unfroze and activated 24h mining cycles across all 13 accounts in the fleet.
+  - **Local Proxy Routing (`userbot_refresher.py`)**: Routed all requests to `https://atfminers.asloni.online` through account proxies with `FLEET_FALLBACK_PROXY` fallback, eliminating Cloudflare IP blocking/timeouts on direct VPS network connections.
+  - **Automated Arithmetic Challenge Solver**: Implemented `solve_math_question()` in `userbot_refresher.py` to automatically parse arithmetic equations (addition, subtraction, multiplication) from `get_math_challenge`, solving verification prompts and dispatching `start_mine` to keep 24h mining active without manual intervention.
+  - **Referral Binding & Self-Healing**: Added `@ATF_AIRDROP_bot` to `ensure_referral_bound` (routing `/start 6727787768` for all workers), added to unblock list in `self_heal_account_channels_and_bots`, and tracked `atf_init_data` and `atf_referral_bound` in missing tokens / referrals auditing.
+  - **Cloudflare Edge Session Initialization & Fallback UIDs (`deploy_both_cf_workers.py`)**:
+    * Replaced stale fallback UIDs (`7306260278`, `7490632948`) with active fleet members (`7487048946`, `8741547543`).
+    * Added `action=login` session initialization prior to `action=claim` in both `/api/farm/all` and the 15-minute cron handler on Cloudflare Edge.
+    * Synchronized all 13 fleet miniapp tokens to KV stores across all 3 Cloudflare Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`).
+
 - **100% Cloud-First Autonomous Architecture & Fast-Path Farming for All 13 Accounts (`deploy_both_cf_workers.py`, `userbot_refresher.py`, `bot_supervisor.sh`)**:
   - **Eliminated Cloudflare Sharding Restrictions**: Removed `if (idx % 3 !== NODE_SHARD_INDEX) continue;` from the scheduled 15-minute cron loop in `deploy_both_cf_workers.py` and defaulted `doAll` to true in `/api/farm/all`. All 3 Cloudflare Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`) now autonomously farm 100% of all 13 accounts in the fleet 24/7, completely independent of local execution or phone connectivity.
   - **Verified 13-Account Cloudflare KV Tokens**: Verified and confirmed that valid WebApp tokens for all 13 accounts are synchronized in Cloudflare KV, ensuring 24/7 cloud mining without needing MTProto sessions.
