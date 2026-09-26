@@ -26,8 +26,11 @@
 
 ---
 
-## 4. 📱 Mobile Performance Guardrails (Samsung Galaxy A30)
-- **Lean Footprint**: Keep memory usage low. Avoid heavy memory-hungry dev servers or massive node_modules bloat.
+## 4. 📱 Zero Phone Load Directive (Samsung Galaxy A30)
+- **Phone Exclusivity**: The Samsung Galaxy A30 is STRICTLY dedicated to running the Antigravity AI CLI for pair programming.
+- **ZERO Bots on Phone**: NEVER run bots, daemon loops, supervisor loops, scrapers, queue pollers, or MTProto relay listeners on the phone under ANY circumstances.
+- **100% Cloud-First**: All bot listeners, farming cycles, token refreshers, and MTProto logins MUST run 100% in the cloud (Cloudflare Workers, Render, Deno, Vercel).
+- **Hard Resource Guardrail**: Terminate and prevent any background Python bot processes from running locally. Keep RAM and CPU entirely free for the AI coding session.
 - **Git Checkpoints**: Always keep Git history clean and run checkpoints regularly so no progress is lost if the mobile session drops.
 
 ---
