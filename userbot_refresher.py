@@ -2703,9 +2703,9 @@ async def build_worker_wallets_report():
         f"🕒 _{now_str}_\n",
         f"📋 *Wallet Architecture Policy:*",
         f"• *Host Account (`6727787768`):* Accumulation & power building only (0 withdrawals across all platforms).",
-        f"• *MRG Miner & ATF Miner:* Each worker uses an isolated TON v4r2 non-bounceable wallet (`fleet_ton_wallets.json`) to prevent multi-account bans.",
-        f"• *Ainovum:* Each worker uses an isolated EVM wallet (`fleet_evm_wallets.json`) for BEP-20 USDT withdrawals.",
-        f"• *Stones, AI Lab, ART:* Payouts and claims route directly to Master Binance Vaults (`{WALLET_ADDRESS[:10]}...` & `{TON_PRIMARY_WALLET[:10]}...`).\n",
+        f"• *Direct Binance Routing (Zero Sweeping Cost):* All bot payouts route directly to Binance (TON → `{TON_PRIMARY_WALLET[:10]}...`, BEP-20/EVM → `{WALLET_ADDRESS[:10]}...`), eliminating double gas fees.",
+        f"• *MRG Miner & ATF Miner:* Each worker binds a unique isolated TON v4r2 wallet (`fleet_ton_wallets.json`) to prevent multi-account bans, while referral cuts compound to Host.",
+        f"• *Ainovum, Stones, AI Lab, BNB Galaxy:* Payouts transfer directly to Master Binance BEP-20/Arbitrum Vault (`{WALLET_ADDRESS}`).\n",
         f"━━━━━━━━━━━━━━━━━━━━━━",
         f"👥 *Fleet Worker Wallet Roster ({len(accounts)} Accounts):*\n"
     ]
@@ -7666,8 +7666,8 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
                         avail = float(cd.get("freeze", {}).get("available", 0) or 0)
                         if avail >= 0.1:
                             wd_amt = round(avail, 4)
-                            target_evm_addr = FLEET_EVM_WALLETS.get(acc_uid) or EVM_VAULT_ADDRESS
-                            logger.info(f"[{acc_name}] 🤖 [Ainovum] Available {avail:.4f} USDT >= 0.1 threshold! Submitting auto-withdrawal to BEP-20 {target_evm_addr}...")
+                            target_evm_addr = EVM_VAULT_ADDRESS  # Direct to Binance Web3 Master (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
+                            logger.info(f"[{acc_name}] 🤖 [Ainovum] Available {avail:.4f} USDT >= 0.1 threshold! Submitting auto-withdrawal directly to Binance BEP-20 {target_evm_addr}...")
                             wd_payload = {"amount": wd_amt, "wallet": target_evm_addr, "network": "bep20"}
                             for attempt in range(2):
                                 async with session.post(
@@ -8889,8 +8889,8 @@ async def autonomous_onchain_sweeper_loop():
     while True:
         try:
             from cloud_wallet_sweeper import run_full_sweep_audit
-            # Run audit & execute sweep for surplus balances
-            sweep_res = await run_full_sweep_audit(notify_if_empty=False, execute_sweep=True)
+            # Run audit in passive monitoring mode (gas-free, 0 on-chain sweep txs)
+            sweep_res = await run_full_sweep_audit(notify_if_empty=False, execute_sweep=False)
             if sweep_res.get("swept_txs"):
                 logger.info(f"[Sweeper Engine] Sweep cycle executed: {len(sweep_res['swept_txs'])} tx(s) swept to Master Vault.")
         except Exception as se:
@@ -9044,7 +9044,7 @@ async def execute_ainovum_fleet_sweep(caller_chat_id=None):
                         cfg_d = await cfg_r.json()
                         avail = float(cfg_d.get("freeze", {}).get("available", 0) or 0)
                         if avail >= 0.10:
-                            target_addr = EVM_VAULT_ADDRESS if is_pri else isolated_map.get(uid, {}).get("address", EVM_VAULT_ADDRESS)
+                            target_addr = EVM_VAULT_ADDRESS  # Direct to Binance Web3 Master (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
                             wd_amt = round(avail, 4)
                             async with an_sess.post(f"{base_url}/api/withdraws/usdt/create", json={"amount": wd_amt, "wallet": target_addr, "network": "bep20"}, headers=auth_an_h, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as wdr:
                                 wd_res = await wdr.json()
@@ -9071,7 +9071,7 @@ async def execute_universal_fleet_sweep(caller_chat_id=None):
     await execute_ainovum_fleet_sweep(caller_chat_id=target_chat)
     try:
         from cloud_wallet_sweeper import run_full_sweep_audit
-        await run_full_sweep_audit(notify_if_empty=False, execute_sweep=True)
+        await run_full_sweep_audit(notify_if_empty=False, execute_sweep=False)
     except Exception as cse:
         logger.debug(f"[Universal Sweep] On-chain audit note: {cse}")
 

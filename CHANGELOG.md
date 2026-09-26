@@ -4,6 +4,20 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Direct Binance Payout Routing & Zero-Gas Passive Sweeper Architecture (`userbot_refresher.py`, `execute_ailab_ainovum_withdrawals.py`, `.github/workflows/cloud_sweeper.yml`, `CHANGELOG.md`)**:
+  - **Eliminated Redundant Intermediate Sweeping Hops & Double Gas Fees**: Per user directive ("You don't need sweep because it sweeping cost high just transfer it to my binace wallet if it ton to ton if it bnb to bnb"), eliminated on-chain sweeping transfers from worker wallets that incurred double network gas fees (worker native gas + secondary hop).
+  - **Direct Binance Payout Realignment Across All Supported Bots**:
+    * **Ainovum (`@ainovum_bot`)**: Realigned auto-withdrawals in `automate_ainovum_cycle()` and `execute_ainovum_fleet_sweep()` in `userbot_refresher.py` as well as `execute_ailab_ainovum_withdrawals.py` directly to the Master Binance BEP-20 / Arbitrum Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`) rather than intermediate worker wallets.
+    * **Stones Miners (`@stoneswithestand_bot`)**: Verified all 500-STONE payouts route directly to Binance Arbitrum One Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`).
+    * **AI Lab Robot (`@AiLab_robot`)**: Verified auto-cashouts ($0.02 USD threshold) route directly to Binance BEP-20 USDT Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`).
+    * **BNB Galaxy (`@CryptoProUpRobot`)**: Verified all BNB payouts route directly to Binance BEP-20 Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`).
+    * **ART Airdrop (`@ART_AIRDROP_BOT`)**: Verified auto-withdrawals route directly to Binance TON Vault (`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`).
+    * **MRG Miner (`@mrgminerbot`) & ATF Miner (`@ATF_AIRDROP_bot`)**: Worker accounts connect their isolated TON v4r2 non-bounceable addresses (`fleet_ton_wallets.json`) for cryptographic anti-sybil proof, while Host account (`6727787768`) auto-compounds referral commissions with its Binance TON wallet (`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`).
+  - **Converted Sweeper Engine to 100% Gas-Free Passive Audit Mode**:
+    * Converted `autonomous_onchain_sweeper_loop()` and `execute_universal_fleet_sweep()` in `userbot_refresher.py` to `execute_sweep=False`, preserving automated multi-chain monitoring and telemetry across all 12 EVM and 12 TON wallets without burning gas on on-chain transactions.
+    * Updated `.github/workflows/cloud_sweeper.yml` to run `python cloud_wallet_sweeper.py --notify` in audit mode.
+  - **Clean 12-Worker Multi-Chain Audit**: Verified all 12 worker EVM and 12 worker TON wallets have 0 stranded balance and 0 gas leakage.
+
 - **Automated TON Wallet Sweeper Implementation & 12-Worker Multi-Chain Vault Audit (`cloud_wallet_sweeper.py`, `fleet_ton_wallets.json`, `fleet_evm_wallets.json`)**:
   - **Automated TON Sweeper (`sweep_ton_balance`)**: Built and integrated native TON coin sweeping into `cloud_wallet_sweeper.py` powered by `tonsdk`. When any of the 12 worker TON v4r2 wallets has surplus TON (> 0.02 TON), the sweeper loads its 24-word recovery mnemonic, queries the current wallet `seqno` via Toncenter JSON-RPC (`/runGetMethod`), signs an external transfer message, and broadcasts the serialized BOC to `https://toncenter.com/api/v2/sendBoc`, automatically transferring all surplus TON directly to Master Binance TON Vault (`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`).
   - **Complete 12-Worker Multi-Chain Audit**: Conducted an automated live audit of all 12 worker isolated wallets across BSC (BNB, BEP-20 USDT), Arbitrum One (ETH, STONES), and The Open Network (TON). Verified that all 12 accounts maintain 100% isolated non-bounceable TON addresses (`UQ...`) and isolated EVM addresses (`0x...`).

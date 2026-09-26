@@ -141,4 +141,4 @@ jobs:
           DRPC_API_KEY: "Aj3ei0uTXUwutp4cQUkyTyjgB8oqtDAR8YBVEl_NDNxu"
           TONAPI_KEY: "AGCD63WTWLGKKWYAAAAKRKZU45HTYMDI3PV7UBKKL6QDVIHG54NQDVNSQF7W3LQJ3X77QKY"
         run: |
-          python cloud_wallet_sweeper.py --notify --sweep
+          python cloud_wallet_sweeper.py --notify

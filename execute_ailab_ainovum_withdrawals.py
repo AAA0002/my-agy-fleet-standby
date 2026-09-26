@@ -208,8 +208,8 @@ async def process_ainovum_account(session: aiohttp.ClientSession, acc: dict, tok
                 except Exception:
                     return {"uid": uid, "name": name, "status": "invalid_config_json", "available": 0.0}
 
-        # Route target wallet: master gets master vault, worker gets dedicated isolated EVM
-        target_wallet = MASTER_EVM_VAULT if is_master else isolated_evms.get(uid, {}).get("address", MASTER_EVM_VAULT)
+        # Route target wallet: Direct to Binance Web3 Master (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
+        target_wallet = MASTER_EVM_VAULT
 
         logger.info(f"[Ainovum] {name} ({uid}) available: {avail:.4f} USDT (Threshold: 0.10 USDT).")
         if avail >= 0.10:
