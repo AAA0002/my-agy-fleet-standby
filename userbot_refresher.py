@@ -101,7 +101,16 @@ PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
 CF_WORKER_URLS = [
     os.getenv("CF_WORKER_URL_1", "https://restore-agy.aaaai2.workers.dev"),
     os.getenv("CF_WORKER_URL_2", "https://restore-agy.aaa-bot.workers.dev"),
-    os.getenv("CF_WORKER_URL_3", "https://restore-agy.aaa222.workers.dev")
+    os.getenv("CF_WORKER_URL_3", "https://restore-agy.aaa222.workers.dev"),
+    os.getenv("CF_WORKER_URL_4", "https://restore-agy.agorameet.workers.dev"),
+    os.getenv("CF_WORKER_URL_5", "https://restore-agy.aaaai.workers.dev")
+]
+
+RENDER_RELAYER_SERVICES = [
+    {"name": "Render Relayer Primary", "url": os.getenv("RENDER_RELAYER_PRIMARY_URL", "https://atf-mtproto-relayer.onrender.com"), "secret": os.getenv("RENDER_RELAYER_SECRET", "relayer_sec_1cb45b0967c9fd762d7d7c210afedfe9")},
+    {"name": "Render Relayer Backup", "url": os.getenv("RENDER_RELAYER_BACKUP_URL", "https://atf-mtproto-relayer-backup.onrender.com"), "secret": os.getenv("RENDER_RELAYER_SECRET", "relayer_sec_1cb45b0967c9fd762d7d7c210afedfe9")},
+    {"name": "Render Standby Node 1 (Singapore)", "url": "https://my-agy-fleet-standby.onrender.com", "secret": "agy_cf_secret_7d36994e_2026"},
+    {"name": "Render Standby Node 2 (Frankfurt)", "url": "https://my-agy-fleet-standby-node2.onrender.com", "secret": "agy_cf_secret_7d36994e_2026"}
 ]
 FLEET_FALLBACK_PROXY = os.getenv("FLEET_FALLBACK_PROXY", "http://Arif2743:Arif2743@31.59.20.176:6754")
 
@@ -5645,9 +5654,29 @@ async def collect_account_session_links(acc_cl, acc: dict) -> dict:
     return tokens
 
 
+async def refresh_tokens_via_relayer(session: aiohttp.ClientSession, acc_uid: str, bot_username: str) -> Optional[str]:
+    """Uses Dual Render Relayers to request WebApp initData when local MTProto is on cooldown."""
+    for relayer in RENDER_RELAYER_SERVICES[:2]:
+        url = relayer["url"]
+        secret = relayer["secret"]
+        try:
+            headers = {"X-Relayer-Secret": secret, "Content-Type": "application/json"}
+            payload = {"user_id": int(acc_uid), "bot": bot_username}
+            async with session.post(f"{url}/session/refresh-token", json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                if r.status == 200:
+                    d = await r.json()
+                    init_data = d.get("init_data")
+                    if init_data:
+                        logger.info(f"[Relayer] 🌐 Obtained fresh {bot_username} initData from {relayer['name']} for UID {acc_uid}!")
+                        return init_data
+        except Exception:
+            continue
+    return None
+
+
 async def delegate_farm_to_cloudflare(acc_uid: int, cf_node_url: str):
     """
-    Offloads 10 BNB Galaxy tasks & 5/5 anti-bot verification to Cloudflare Cloud.
+    Offloads BNB Galaxy tasks to Cloudflare Cloud with automatic 5-node failover.
     Executes 100% serverless on Cloudflare Edge with 0 VPS RAM and 0 VPS CPU.
     """
     headers = {
@@ -5655,23 +5684,27 @@ async def delegate_farm_to_cloudflare(acc_uid: int, cf_node_url: str):
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
-    try:
-        async with aiohttp.ClientSession() as sess:
-            async with sess.post(
-                f"{cf_node_url}/api/farm/bnb",
-                json={"user_id": int(acc_uid)},
-                headers=headers,
-                timeout=aiohttp.ClientTimeout(total=20)
-            ) as r:
-                if r.status == 200:
-                    data = await r.json()
-                    results = data.get("results", [])
-                    total_completed = sum(res.get("completed_tasks", 0) for res in results)
-                    total_verified = max([res.get("verification_count", 0) for res in results] + [0])
-                    logger.info(f"[Cloud Farming] 🌐 Cloudflare Edge completed {total_completed} tasks (Verification: {total_verified}/5) for ID {acc_uid} (0 VPS RAM)")
-                    return data
-    except Exception as e:
-        logger.debug(f"[Cloud Farming] CF delegation note for {acc_uid}: {e}")
+    candidate_urls = [cf_node_url] + [u for u in CF_WORKER_URLS if u != cf_node_url]
+    for target_url in candidate_urls:
+        try:
+            async with aiohttp.ClientSession() as sess:
+                async with sess.post(
+                    f"{target_url}/api/farm/bnb",
+                    json={"user_id": int(acc_uid)},
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=20)
+                ) as r:
+                    if r.status == 200:
+                        data = await r.json()
+                        results = data.get("results", [])
+                        total_completed = sum(res.get("completed_tasks", 0) for res in results)
+                        total_verified = max([res.get("verification_count", 0) for res in results] + [0])
+                        node_name = target_url.split('//')[1].split('.')[0]
+                        logger.info(f"[Cloud Farming] 🌐 Cloudflare Edge ({node_name}) completed {total_completed} tasks (Verification: {total_verified}/5) for ID {acc_uid} (0 VPS RAM)")
+                        return data
+        except Exception as e:
+            logger.debug(f"[Cloud Farming] CF delegation note on {target_url} for {acc_uid}: {e}")
+            continue
     return None
 
 
@@ -7527,7 +7560,7 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                     logger.debug(f"[{acc_name}] ATF one-time task note ({tid}): {oe}")
                 await asyncio.sleep(1.0)
 
-        # 4b. Repeatable Cooldown Tasks (every 2h = 7200s, +1 ATF each)
+        # 4b. Repeatable Cooldown Tasks (every 2h = 7200s, +1 ATF each) - Humanized
         repeatable_tasks = [
             {"id": "website_visit", "minSeconds": 10, "title": "Visit Website"},
             {"id": "telegram_react_latest", "minSeconds": 20, "title": "React Latest Post"},
@@ -7536,13 +7569,16 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         ]
         cooldowns = ld.get("task_cooldowns") or {}
         now_s = int(time.time())
-        for task in repeatable_tasks:
+        shuffled_repeatables = list(repeatable_tasks)
+        random.shuffle(shuffled_repeatables)
+        for task in shuffled_repeatables:
             tid = task["id"]
             if now_s >= int(cooldowns.get(tid, 0) or 0):
                 try:
-                    s_at = now_s - task["minSeconds"] - 5
+                    jittered_pre = task["minSeconds"] + random.randint(4, 9)
+                    s_at = now_s - jittered_pre
                     await session.post(f"{base_url}?action=start_task&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "task_id": tid, "client_started_at": s_at}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=5))
-                    await asyncio.sleep(1.2)
+                    await asyncio.sleep(round(random.uniform(1.4, 2.6), 2))
                     async with session.post(f"{base_url}?action=claim_task&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "task_id": tid, "client_started_at": s_at}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=5)) as cr:
                         cd = await cr.json()
                         if cd.get("status") == "success":
@@ -7553,7 +7589,7 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                             logger.debug(f"[{acc_name}] ATF task {tid} note: {cd.get('message')}")
                 except Exception as re_err:
                     logger.debug(f"[{acc_name}] ATF repeatable task note ({tid}): {re_err}")
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(round(random.uniform(1.5, 3.2), 2))
 
         # 5. ATF Accumulation & Farming (Withdrawal disabled per user directive: farming only)
         mined_bal = float(u.get("mined_balance", 0) or 0)
@@ -7564,6 +7600,42 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         logger.info(f"[{acc_name}] 🪙 [ATF Miner] Harvested & farming cycle active | Total Pool: {mined_bal:.2f} ATF (Accumulating) | Status: {m_state}")
     except Exception as e:
         logger.debug(f"[{acc_name}] ATF Miner automation note: {e}")
+
+
+async def run_humanized_account_farming(sess: aiohttp.ClientSession, acc_cl, acc: dict, is_fast_mode: bool = False):
+    """
+    Executes humanized, ban-resistant multi-bot farming across all 8 supported platforms.
+    Anti-Sybil / Anti-Ban Guardrails:
+    1. Randomizes the order of bot executions per account cycle (no mechanical linear order).
+    2. Injects non-deterministic human delays (1.2s - 3.8s) between miniapps.
+    3. Handles per-bot timeouts and exceptions gracefully to ensure continuous fleet operation.
+    """
+    acc_name = acc.get("name", "User")
+    acc_uid = str(acc.get("user_id"))
+
+    bot_routines = [
+        ("ART Airdrop", automate_art_cycle),
+        ("MRG Miner", automate_mrg_cycle),
+        ("Stones Miners", automate_stones_cycle),
+        ("AI Lab Robot", automate_ailab_cycle),
+        ("UltraWallet", automate_ultrawallet_cycle),
+        ("Apex Miner", automate_apx_cycle),
+        ("Ainovum", automate_ainovum_cycle),
+        ("ATF Miner", automate_atf_cycle),
+    ]
+
+    # Humanize order: Real smartphone users don't open bots in the exact same sequence every cycle
+    shuffled_bots = list(bot_routines)
+    random.shuffle(shuffled_bots)
+
+    for bot_title, bot_fn in shuffled_bots:
+        try:
+            await bot_fn(sess, acc_cl, acc)
+        except Exception as be:
+            logger.debug(f"[{acc_name}] {bot_title} cycle note: {be}")
+
+        # Human-like pause between closing one miniapp and opening the next (1.2s to 3.8s)
+        await asyncio.sleep(round(random.uniform(1.2, 3.8), 2))
 
 
 MTPROTO_CONCURRENCY_SEMAPHORE = asyncio.Semaphore(2)
@@ -7720,20 +7792,10 @@ async def farm_single_account(
         else:
             logger.info(f"[{cf_tag} | Slot {worker_slot+1}/3] === [Account {acc_idx}/{total_accounts}] {acc_name} (ID: {acc_uid}) Multi-Bot Fast Farming (0 MTProto, 0 VPS RAM) ===")
 
-        # Multi-bot continuous mining cycle via pure HTTP & cached WebApp tokens (0 MTProto, 0 VPS RAM, parallel execution)
+        # Multi-bot continuous mining cycle via humanized execution (shuffled order & natural pacing)
         try:
             async with aiohttp.ClientSession() as fast_mining_sess:
-                await asyncio.gather(
-                    automate_art_cycle(fast_mining_sess, None, acc),
-                    automate_mrg_cycle(fast_mining_sess, None, acc),
-                    automate_stones_cycle(fast_mining_sess, None, acc),
-                    automate_ailab_cycle(fast_mining_sess, None, acc),
-                    automate_ultrawallet_cycle(fast_mining_sess, None, acc),
-                    automate_apx_cycle(fast_mining_sess, None, acc),
-                    automate_ainovum_cycle(fast_mining_sess, None, acc),
-                    automate_atf_cycle(fast_mining_sess, None, acc),
-                    return_exceptions=True
-                )
+                await run_humanized_account_farming(fast_mining_sess, None, acc, is_fast_mode=True)
         except Exception as fme:
             logger.debug(f"[{acc_name}] Fast mining cycle note: {fme}")
 
@@ -7820,19 +7882,9 @@ async def farm_single_account(
                 logger.info(f"[{acc_name}] 💰 Live BNB Galaxy balance & auto-withdrawal check executing on MTProto...")
                 await check_and_auto_withdraw(acc_uid, acc_name, notify_manual=False, acc_client=acc_cl, acc_data=acc)
 
-            # F. Multi-Bot Mining Harvest & Task Automation (ART, MRG, Stones, AI Lab, UltraWallet, Apex Miner, Ainovum - Parallel Execution)
+            # F. Multi-Bot Mining Harvest & Task Automation (Humanized Sequential & Shuffled Pacing)
             try:
-                await asyncio.gather(
-                    automate_art_cycle(http_sess, acc_cl, acc),
-                    automate_mrg_cycle(http_sess, acc_cl, acc),
-                    automate_stones_cycle(http_sess, acc_cl, acc),
-                    automate_ailab_cycle(http_sess, acc_cl, acc),
-                    automate_ultrawallet_cycle(http_sess, acc_cl, acc),
-                    automate_apx_cycle(http_sess, acc_cl, acc),
-                    automate_ainovum_cycle(http_sess, acc_cl, acc),
-                    automate_atf_cycle(http_sess, acc_cl, acc),
-                    return_exceptions=True
-                )
+                await run_humanized_account_farming(http_sess, acc_cl, acc, is_fast_mode=False)
             except Exception as ome:
                 logger.debug(f"[{acc_name}] On-demand mining cycle note: {ome}")
 

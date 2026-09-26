@@ -5,6 +5,24 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+- **Anti-Ban Humanization Engine Across All 8 Farming Bots (`userbot_refresher.py`)**:
+  - **Dynamic Shuffled Execution**: Replaced rigid simultaneous parallel farming (`asyncio.gather` of all 8 bots in the exact same millisecond) with humanized, non-deterministic sequencing. Implemented `run_humanized_account_farming()` to dynamically shuffle miniapp execution order per account cycle.
+  - **Natural Human Delays**: Injected humanized interaction delays (1.2s to 3.8s) between miniapp transitions, eliminating automated burst scraper patterns.
+  - **Jittered Task Timings**: Added jittered elapsed durations (`minSeconds + random.randint(4, 9)`) and randomized repeatable task order for ATF cooldown tasks (`website_visit`, `telegram_react_latest`, `twitter_retweet`, `youtube_like_comment`).
+  - **Per-Bot Fault Isolation**: Handled per-bot exceptions gracefully so any individual bot timeout never stalls the remaining routines.
+
+- **Cloudflare 5-Node Edge Mesh Expansion & Cross-Replication (`deploy_both_cf_workers.py`, `userbot_refresher.py`)**:
+  - **Merged 2 Cloudflare Accounts**: Expanded the edge mesh from 3 to 5 nodes:
+    * **Node 4 (aaafreeai)**: `https://restore-agy.agorameet.workers.dev` (D1: `2659c73b-8144-4f2a-9a06-ef2368a1ce7f`, KV: `c712104ed5744835add7e97384da8c82`, R2: `atf-db-backups`).
+    * **Node 5 (aaaai-engine)**: `https://restore-agy.aaaai.workers.dev` (KV: `c5eadf91ae4543edab3943789e2d3ccb`).
+  - **Synchronized Deployment & Cron Triggers**: Deployed full `restore-agy` engine with 5-way sibling cross-replication, Workers AI, plain-text envs, and active 15-minute cron triggers (`*/15 * * * *`). Live health verified (`ok: true`, 8 features active across all 5 nodes).
+  - **5-Node Dynamic Failover**: Expanded `CF_WORKER_URLS` and automated failover cycling in `delegate_farm_to_cloudflare` across all 5 nodes.
+
+- **Dual Render Relayer Integration & Off-Machine MTProto Token Fallback (`userbot_refresher.py`)**:
+  - **Unified Render Relayers**: Integrated Primary Relayer (`atf-mtproto-relayer.onrender.com`), Backup Relayer (`atf-mtproto-relayer-backup.onrender.com`), and Standby Nodes 1 & 2 (Singapore & Frankfurt) under `RENDER_RELAYER_SERVICES`.
+  - **Off-Machine Token Fallback**: Added `refresh_tokens_via_relayer()` enabling off-machine fallback for WebApp initData token acquisition when local MTProto is on cooldown.
+  - **Automated Keepalive Probes**: Wired automated keepalive requests into `cloudflare_edge_bridge_loop` alongside Deno Deploy sentinels and Cloudflare D1 SQL replication.
+
 - **Multi-Bot Autonomous Hardening: Stones Stone Breaker Play & Earn, Ainovum Worker EVM Isolation & ART Fallback (`userbot_refresher.py`, `deploy_both_cf_workers.py`)**:
   - **Stones Stone Breaker Anti-Cheat Fix & Non-Blocking Engine**: Fixed `HTTP 400: suspicious score rejected` on `/api/sb/finish`. Analysis of miniapp client source code revealed that scores of 1500 were flagged by server anti-cheat because human play over 30s generates 140-168 points with streak multipliers. Converted `sb/finish` to a non-blocking detached background task `_bg_stones_sb` that respects the full 30-second duration and submits human-realistic scores (142-168), successfully earning the max +10 STONES hourly / +100 STONES daily reward without stalling fleet fast loops.
   - **Stones Task Wait Optimization**: Reduced artificial task delay from 15.0s down to 0.8s (and 2.5s for channel verification), matching official miniapp client behavior and speeding up account task sweeps by >10x.

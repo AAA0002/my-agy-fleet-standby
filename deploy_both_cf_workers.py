@@ -35,7 +35,9 @@ ACCOUNTS = [
         "r2_bucket": "agy-fleet-backups",
         "sibling_urls": [
             "https://restore-agy.aaa-bot.workers.dev",
-            "https://restore-agy.aaa222.workers.dev"
+            "https://restore-agy.aaa222.workers.dev",
+            "https://restore-agy.agorameet.workers.dev",
+            "https://restore-agy.aaaai.workers.dev"
         ]
     },
     {
@@ -49,7 +51,9 @@ ACCOUNTS = [
         "r2_bucket": "agy-fleet-backups",
         "sibling_urls": [
             "https://restore-agy.aaaai2.workers.dev",
-            "https://restore-agy.aaa222.workers.dev"
+            "https://restore-agy.aaa222.workers.dev",
+            "https://restore-agy.agorameet.workers.dev",
+            "https://restore-agy.aaaai.workers.dev"
         ]
     },
     {
@@ -63,7 +67,40 @@ ACCOUNTS = [
         "r2_bucket": "agy-fleet-backups",
         "sibling_urls": [
             "https://restore-agy.aaaai2.workers.dev",
-            "https://restore-agy.aaa-bot.workers.dev"
+            "https://restore-agy.aaa-bot.workers.dev",
+            "https://restore-agy.agorameet.workers.dev",
+            "https://restore-agy.aaaai.workers.dev"
+        ]
+    },
+    {
+        "name": "Node 4 (aaafreeai)",
+        "email": "aaafreeai@gmail.com",
+        "api_key": "cfk_a3KGc7NbioJlm6oy2vE7F2qzPiluqdx6T64rGVaX3f8eb8d5",
+        "account_id": "abbe3cc008ebb9dd029ded333fef6e9f",
+        "subdomain": "agorameet",
+        "kv_id": "c712104ed5744835add7e97384da8c82",
+        "d1_uuid": "2659c73b-8144-4f2a-9a06-ef2368a1ce7f",
+        "r2_bucket": "atf-db-backups",
+        "sibling_urls": [
+            "https://restore-agy.aaaai2.workers.dev",
+            "https://restore-agy.aaa-bot.workers.dev",
+            "https://restore-agy.aaa222.workers.dev",
+            "https://restore-agy.aaaai.workers.dev"
+        ]
+    },
+    {
+        "name": "Node 5 (aaaai-engine)",
+        "api_token": "cfat_o447c1qlRZp5Lr0rHR4JjyMoLNKMkksaqnaZBDYF06cb8be4",
+        "account_id": "da98cfb7cca333391bb349333f294d0f",
+        "subdomain": "aaaai",
+        "kv_id": "c5eadf91ae4543edab3943789e2d3ccb",
+        "d1_uuid": None,
+        "r2_bucket": None,
+        "sibling_urls": [
+            "https://restore-agy.aaaai2.workers.dev",
+            "https://restore-agy.aaa-bot.workers.dev",
+            "https://restore-agy.aaa222.workers.dev",
+            "https://restore-agy.agorameet.workers.dev"
         ]
     }
 ]
@@ -3588,49 +3625,58 @@ async def deploy_account(acc):
         .replace("__SIBLING_URLS_JSON__", json.dumps(acc["sibling_urls"]))
     )
 
-    headers = {
-        "X-Auth-Email": acc["email"],
-        "X-Auth-Key": acc["api_key"],
-    }
+    if acc.get("api_token"):
+        headers = {"Authorization": f"Bearer {acc['api_token']}"}
+    else:
+        headers = {
+            "X-Auth-Email": acc["email"],
+            "X-Auth-Key": acc["api_key"],
+        }
+
+    bindings = [
+        {
+            "name": "BACKUP_KV",
+            "type": "kv_namespace",
+            "namespace_id": acc["kv_id"],
+        },
+        {
+            "name": "AI",
+            "type": "ai",
+        },
+        {
+            "name": "SECRET_KEY",
+            "type": "plain_text",
+            "text": SECRET_KEY,
+        },
+        {
+            "name": "OWNER_ID",
+            "type": "plain_text",
+            "text": OWNER_ID,
+        },
+        {
+            "name": "ALERT_BOT_TOKEN",
+            "type": "plain_text",
+            "text": ALERT_BOT_TOKEN,
+        },
+    ]
+
+    if acc.get("r2_bucket"):
+        bindings.append({
+            "name": "FLEET_R2",
+            "type": "r2_bucket",
+            "bucket_name": acc["r2_bucket"],
+        })
+
+    if acc.get("d1_uuid"):
+        bindings.append({
+            "name": "DB",
+            "type": "d1",
+            "database_id": acc["d1_uuid"],
+        })
 
     metadata = {
         "main_module": "index.js",
-        "bindings": [
-            {
-                "name": "BACKUP_KV",
-                "type": "kv_namespace",
-                "namespace_id": acc["kv_id"],
-            },
-            {
-                "name": "FLEET_R2",
-                "type": "r2_bucket",
-                "bucket_name": acc["r2_bucket"],
-            },
-            {
-                "name": "DB",
-                "type": "d1",
-                "database_id": acc["d1_uuid"],
-            },
-            {
-                "name": "AI",
-                "type": "ai",
-            },
-            {
-                "name": "SECRET_KEY",
-                "type": "plain_text",
-                "text": SECRET_KEY,
-            },
-            {
-                "name": "OWNER_ID",
-                "type": "plain_text",
-                "text": OWNER_ID,
-            },
-            {
-                "name": "ALERT_BOT_TOKEN",
-                "type": "plain_text",
-                "text": ALERT_BOT_TOKEN,
-            },
-        ],
+        "bindings": bindings,
         "compatibility_date": "2024-09-01",
     }
 
