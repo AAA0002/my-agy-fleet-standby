@@ -4,6 +4,40 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Autonomous 8-Bot Cloud Farming Engine & Instant New Account WebApp Mining Bootstrap (`render_standby_app.py`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Auto-Token Extraction & Instant WebApp Mining Bootstrap (`render_standby_app.py`, `app.py`)**:
+    * **Root Cause Fixed**: Previously, `bind_account_master_referrals` only sent `/start <ref>` messages inside Telegram chat and immediately disconnected the client. It never extracted WebApp session tokens (`initData`), never synchronized tokens to Cloudflare KV or Upstash Redis, and never triggered initial mining starts. New accounts thus joined bots but had no active WebApp mining sessions.
+    * **Integrated WebApp Extraction**: Upgraded `bind_account_master_referrals` to immediately call `extract_tokens_with_client` before disconnection, capturing `initData` tokens across all 10 mini-apps (Stones, MRG, ART, AI Lab, UltraWallet, Apex Miner, ATF Miner, Ainovum, MiningGRAM, BNB).
+    * **Instant WebApp Mining Bootstrap (`bootstrap_account_mining`)**: Automatically issues initial mining renewal and claim API calls across all 8 bots immediately upon onboarding:
+      - Stones Miners: `/api/mining/start`, `/api/claim`, and `/api/task/complete` (daily checkin).
+      - MRG Miner: `/api/user/claim-mining`.
+      - ART Airdrop: `/api/user/start-mining` and `/api/user/claim-mining`.
+      - AI Lab Robot: `/users/auth/login` and `/miner-start_mining`.
+      - UltraWallet: `/telegramLogin` -> Firebase exchange -> `/mining/start`, `/checkin/claim`, `/energy/claim`.
+      - Apex Miner: `/register`, `/bootstrap`, `/checkin`, `/mining/restart`.
+      - ATF Miner: `/miner/index.php` login -> solves math challenge -> `start_mine`.
+      - Ainovum Bot: `/api/bootstrap` -> session cookie extraction -> `/api/mining/claim`.
+    * **Multi-Cloud Token Sync (`sync_account_tokens_to_clouds`)**: Atomically writes extracted tokens to all 5 Cloudflare Edge Worker nodes (`/api/miniapp/tokens/sync`), Upstash Redis (`fleet:tokens:{uid}`), and Supabase.
+  - **Full 8-Bot Cloud Fleet Farming Engine (`render_standby_app.py`, `app.py`)**:
+    * **Deep Cloud Farming (`run_cloud_fleet_farming_cycle` & `farm_single_account_bots`)**: Implemented a complete 8-bot cloud farming and task execution engine on Render Standby with zero execution time limits. Farms:
+      - Stones Miners (checkin, channel verify, claim, restart mining, Stone Breaker, boost challenge beat & reward).
+      - MRG Miner (claim mining, task claims, host commission).
+      - ART Airdrop (claim mining, start mining, tasks claim, ads claim, host squad bonus).
+      - AI Lab Robot (login, start miner, exchange hashes >= 3.0, task checks).
+      - UltraWallet (telegramLogin, Firebase auth, checkin, mining claim/start, energy, lucky spins, tasks, rewardsCenter ads, gift box).
+      - Apex Miner (auth, register, checkin, claim, restart mining, tasks, ads boost).
+      - ATF Miner (login, claim, referrals claim, solve math & start mine, speed boost, daily interaction, tasks).
+      - Ainovum (bootstrap, cookie, claim mining, channel bonus, gift box).
+    * **Watchdog Integration**: Integrated into `cloud_wealth_automation_watchdog()`, automatically executing full 8-bot fleet farming every 30 minutes alongside auto-withdrawals and on-chain sweeps.
+    * **On-Demand Farming Endpoint**: Exposed `POST /api/farm/cloud-all` for manual or webhook triggering across all 13 accounts in the fleet.
+  - **Cloudflare Edge Worker Non-Blocking Overhaul (`deploy_both_cf_workers.py`)**:
+    * **Eliminated Blocking 15s Delays**: Replaced synchronous `await new Promise(r => setTimeout(r, 15000))` in Stones, MRG, ART, AI Lab, and UltraWallet with non-blocking `ctx.waitUntil(...)` background handlers, keeping execution within worker wall-clock limits.
+    * **5-Node Parallel Edge Sharding**: Implemented edge sharding (`idx % 5 === nodeIndex`) across 5 Cloudflare nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`), reducing per-node processing time to <1.5 seconds.
+    * **WAF Header Hardening**: Added browser `User-Agent` and `Authorization` headers to all inter-node API calls, eliminating 403 Forbidden errors between Render and Cloudflare Workers.
+  - **Render Standby High-Availability Deployments Verified**:
+    * Pushed updated code to `AAA2743/my-agy-fleet-standby` (`f815fa7e`).
+    * Both Render Node 1 (Singapore, `srv-damuhkmgekts73f1osag`) and Node 2 (Frankfurt, `srv-dan5q00ae00c73djummg`) deployed to `live`.
+
 - **Cloud Wealth Automation Engine: Autonomous Auto-Withdrawals & On-Chain Profit Sweeper (`render_standby_app.py`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Option 1 — Automated Cloud Auto-Withdrawal Engine (`render_standby_app.py`, `app.py`)**:
     * **AI Lab Robot Auto-Withdrawals**: Automated periodic withdrawals directly in the cloud. Strict threshold policy: `$0.02 USD` minimum for Master (`6727787768`), `$1.00 USD` for workers, routing BEP-20 payouts to Binance Web3 Master EVM Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`).

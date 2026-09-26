@@ -3195,42 +3195,45 @@ Reply to Arif naturally:`;
         };
 
         const tokenEntries = Object.entries(tokens);
-        for (let idx = 0; idx < tokenEntries.length; idx++) {
-          const [uid, accData] = tokenEntries[idx];
+        // Distribute accounts across 5 Cloudflare Edge nodes so each node farms 2-3 accounts simultaneously
+        const nodeIndex = CURRENT_SUBDOMAIN === "aaaai2" ? 0 : (CURRENT_SUBDOMAIN === "aaa-bot" ? 1 : (CURRENT_SUBDOMAIN === "aaa222" ? 2 : (CURRENT_SUBDOMAIN === "agorameet" ? 3 : 4)));
+        const myTokenEntries = tokenEntries.filter((_, idx) => idx % 5 === nodeIndex);
+        for (let idx = 0; idx < myTokenEntries.length; idx++) {
+          const [uid, accData] = myTokenEntries[idx];
 
           // A. Stones Miners Edge Claim (Tap -> wait 2.5s -> complete/verify without joining channels or opening links)
           if (accData.stones_init_data) {
             try {
               // Daily check-in
-              await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/start", {
-                method: "POST",
-                headers,
-                body: JSON.stringify({ initData: accData.stones_init_data, slug: "daily_checkin" })
-              }, 2, 800).catch(() => {});
-              await new Promise(r => setTimeout(r, 2500));
               await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
                 method: "POST",
                 headers,
                 body: JSON.stringify({ initData: accData.stones_init_data, slug: "daily_checkin" })
-              }).catch(() => {});
+              }, 2, 800).catch(() => {});
 
-              // Channel and social tasks: tap -> wait 15s -> complete/verify
+              // Channel and social tasks: Non-blocking background verification in ctx.waitUntil
               await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/start", {
                 method: "POST",
                 headers,
                 body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
               }, 2, 800).catch(() => {});
-              await new Promise(r => setTimeout(r, 15000));
-              await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
-                method: "POST",
-                headers,
-                body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
-              }).catch(() => {});
-              await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
-                method: "POST",
-                headers,
-                body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
-              }).catch(() => {});
+              ctx.waitUntil(new Promise(resolve => {
+                setTimeout(async () => {
+                  try {
+                    await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
+                      method: "POST",
+                      headers,
+                      body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
+                    }, 2, 800);
+                    await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
+                      method: "POST",
+                      headers,
+                      body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
+                    }, 2, 800);
+                  } catch (_) {}
+                  resolve();
+                }, 15000);
+              }));
 
               // Harvest accumulated pool into holding wallet
               await fetchWithRetry("https://app.stoneswithestand.my.id/api/claim", {
@@ -3276,7 +3279,7 @@ Reply to Arif naturally:`;
                 }
               } catch (_) {}
 
-              // Mining Boost (+0.5 TH/s for 5 min)
+              // Mining Boost (+0.5 TH/s for 5 min): Non-blocking background challenge
               try {
                 const abc = await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/boost/challenge", {
                   method: "POST",
@@ -3290,18 +3293,23 @@ Reply to Arif naturally:`;
                     headers,
                     body: JSON.stringify({ initData: accData.stones_init_data, scope: "boost", challenge_id: cid })
                   }, 1, 500).catch(() => {});
-                  await new Promise(r => setTimeout(r, 16000));
-                  await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/beat", {
-                    method: "POST",
-                    headers,
-                    body: JSON.stringify({ initData: accData.stones_init_data, scope: "boost", challenge_id: cid })
-                  }, 1, 500).catch(() => {});
-                  await new Promise(r => setTimeout(r, 500));
-                  await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/boost/reward", {
-                    method: "POST",
-                    headers,
-                    body: JSON.stringify({ initData: accData.stones_init_data, challenge_id: cid })
-                  }).catch(() => {});
+                  ctx.waitUntil(new Promise(resolve => {
+                    setTimeout(async () => {
+                      try {
+                        await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/beat", {
+                          method: "POST",
+                          headers,
+                          body: JSON.stringify({ initData: accData.stones_init_data, scope: "boost", challenge_id: cid })
+                        }, 1, 500);
+                        await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/boost/reward", {
+                          method: "POST",
+                          headers,
+                          body: JSON.stringify({ initData: accData.stones_init_data, challenge_id: cid })
+                        });
+                      } catch (_) {}
+                      resolve();
+                    }, 16000);
+                  }));
                 }
               } catch (_) {}
 
@@ -3339,7 +3347,7 @@ Reply to Arif naturally:`;
                 body: JSON.stringify({ initData: accData.mrg_init_data })
               }).catch(() => {});
 
-              // Discover and claim tasks (tap -> wait 15s -> claim)
+              // Discover and claim tasks (tap -> wait 15s in background -> claim)
               const meResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/me", {
                 method: "POST",
                 headers,
@@ -3351,13 +3359,19 @@ Reply to Arif naturally:`;
                 const completed = new Set(meD.completedTaskIds || []);
                 for (const t of tasks) {
                   if (t.taskId && !completed.has(t.taskId)) {
-                    const mrgWait = (t.verificationType === "link_visit" || t.url || String(t.taskType).includes("social")) ? 15000 : 3000;
-                    await new Promise(r => setTimeout(r, mrgWait));
-                    await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
-                      method: "POST",
-                      headers,
-                      body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
-                    }, 2, 800).catch(() => {});
+                    const mrgWait = (t.verificationType === "link_visit" || t.url || String(t.taskType).includes("social")) ? 15000 : 2000;
+                    ctx.waitUntil(new Promise(resolve => {
+                      setTimeout(async () => {
+                        try {
+                          await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
+                            method: "POST",
+                            headers,
+                            body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
+                          }, 2, 800);
+                        } catch (_) {}
+                        resolve();
+                      }, mrgWait);
+                    }));
                   }
                 }
               }
@@ -3372,7 +3386,7 @@ Reply to Arif naturally:`;
             } catch (_) {}
           }
 
-          // C. ART Airdrop Edge Claim (Tap -> wait 15s for sponsors -> claim without joining channels)
+          // C. ART Airdrop Edge Claim (Tap -> wait 15s in background -> claim without joining channels)
           if (accData.art_init_data) {
             try {
               const artHeaders = { ...headers, "X-Telegram-Init-Data": accData.art_init_data };
@@ -3387,7 +3401,7 @@ Reply to Arif naturally:`;
                 body: JSON.stringify({ userId: uid })
               }).catch(() => {});
 
-              // Discover and claim tasks (tap -> wait 15s for sponsor links -> claim)
+              // Discover and claim tasks (tap -> non-blocking background verification -> claim)
               const tr = await fetchWithRetry(`https://art.tamimdev.dev/api/tasks/${uid}`, { headers: artHeaders }, 2, 1000).catch(() => null);
               if (tr && tr.ok) {
                 const td = await tr.json().catch(() => ({}));
@@ -3398,13 +3412,19 @@ Reply to Arif naturally:`;
                       headers: artHeaders,
                       body: JSON.stringify({ userId: uid, taskId: t.id })
                     }, 1, 500).catch(() => {});
-                    const artWait = (t.actionUrl || String(t.title).toLowerCase().includes("sponsor")) ? 15000 : 3000;
-                    await new Promise(r => setTimeout(r, artWait));
-                    await fetchWithRetry("https://art.tamimdev.dev/api/tasks/claim", {
-                      method: "POST",
-                      headers: artHeaders,
-                      body: JSON.stringify({ userId: uid, taskId: t.id })
-                    }, 2, 800).catch(() => {});
+                    const artWait = (t.actionUrl || String(t.title).toLowerCase().includes("sponsor")) ? 15000 : 2000;
+                    ctx.waitUntil(new Promise(resolve => {
+                      setTimeout(async () => {
+                        try {
+                          await fetchWithRetry("https://art.tamimdev.dev/api/tasks/claim", {
+                            method: "POST",
+                            headers: artHeaders,
+                            body: JSON.stringify({ userId: uid, taskId: t.id })
+                          }, 2, 800);
+                        } catch (_) {}
+                        resolve();
+                      }, artWait);
+                    }));
                   }
                 }
               }
@@ -3530,12 +3550,18 @@ Reply to Arif naturally:`;
                             headers: aiAuth,
                             body: JSON.stringify({ task_id: t.id, action: "start" })
                           }).catch(() => {});
-                          await new Promise(r => setTimeout(r, 15000));
-                          await fetch(`${aiBase}/task-check`, {
-                            method: "POST",
-                            headers: aiAuth,
-                            body: JSON.stringify({ task_id: t.id, action: "check" })
-                          }).catch(() => {});
+                          ctx.waitUntil(new Promise(resolve => {
+                            setTimeout(async () => {
+                              try {
+                                await fetch(`${aiBase}/task-check`, {
+                                  method: "POST",
+                                  headers: aiAuth,
+                                  body: JSON.stringify({ task_id: t.id, action: "check" })
+                                });
+                              } catch (_) {}
+                              resolve();
+                            }, 15000);
+                          }));
                         }
                       }
                     }
@@ -3633,13 +3659,19 @@ Reply to Arif naturally:`;
                                 headers: uwHeaders,
                                 body: JSON.stringify({ taskId: t.id })
                               }).catch(() => {});
-                              const uwWait = (t.type === "website" || t.category === "hot" || t.category === "partner") ? 15000 : 3000;
-                              await new Promise(r => setTimeout(r, uwWait));
-                              await fetch(`${uwBase}/tasks/complete`, {
-                                method: "POST",
-                                headers: uwHeaders,
-                                body: JSON.stringify({ taskId: t.id })
-                              }).catch(() => {});
+                              const uwWait = (t.type === "website" || t.category === "hot" || t.category === "partner") ? 15000 : 2000;
+                              ctx.waitUntil(new Promise(resolve => {
+                                setTimeout(async () => {
+                                  try {
+                                    await fetch(`${uwBase}/tasks/complete`, {
+                                      method: "POST",
+                                      headers: uwHeaders,
+                                      body: JSON.stringify({ taskId: t.id })
+                                    });
+                                  } catch (_) {}
+                                  resolve();
+                                }, uwWait);
+                              }));
                             }
                           }
                         }
