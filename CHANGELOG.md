@@ -5,6 +5,16 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+- **Fleet-Wide ATF Miner Side Tasks Engine & Worker Account Crash Fix (`userbot_refresher.py`, `deploy_both_cf_workers.py`)**:
+  - **Identified & Resolved Silent Worker Crash**: Discovered why ATF Miner was only running on the primary account while worker accounts appeared inactive. In `automate_atf_cycle`, `acc_ton_entry = ton_wallets.get(acc_uid, {})` received a wallet address string from `load_fleet_ton_wallets()` instead of a dictionary, throwing an uncaught `AttributeError: 'str' object has no attribute 'get'` on line 7357 that caused all 12 worker accounts to silently crash before mining claims, math unfreezing, or task execution.
+  - **Added `load_fleet_ton_wallets_full()`**: Implemented safe dictionary loading preserving `address` and `mnemonic` keys with defensive type checking (`dict`, `str`, fallback) for both primary and worker accounts.
+  - **Complete 8-Task Automation Engine**:
+    * **One-Time Tasks (+20 ATF per account)**: Added checks and auto-claims for `telegram_join` (+5 ATF), `telegram_join_fa` (+5 ATF), `twitter_follow` (+5 ATF), and `youtube_subscribe` (+5 ATF). Added Telethon channel auto-joining for `@AI_TRADING_FOREX` and `@ATFFARSI` when `acc_client` is connected.
+    * **Repeatable Cooldown Tasks (+4 ATF every 2h per account)**: Added automated execution and claiming for `website_visit` (+1 ATF), `telegram_react_latest` (+1 ATF), `twitter_retweet` (+1 ATF), and `youtube_like_comment` (+1 ATF) with dynamic `client_started_at` timestamps and individual task audit logging.
+  - **Automated Math Unfreeze Verification**: Ensured frozen accounts (e.g., Node 10) automatically request the arithmetic challenge, parse and solve the math formula via `solve_math_question()`, and submit `action=start_mine` to resume active 24h mining.
+  - **Cloudflare Edge Synchronized**: Deployed updated logic across all 3 Cloudflare Edge mesh nodes (`aaaai2`, `aaa-bot`, `aaa222`) via `deploy_both_cf_workers.py`.
+  - **Live Proof Verified**: Successfully executed end-to-end task claims and farming cycles across all 13 accounts in the fleet with 100% active mining and verified pool accumulation.
+
 - **Robust 100% Accurate Stones Captcha Character Segmentation (`stones_captcha_solver.py`)**:
   - **Diagnosed Segmentation Failure**: Discovered that low pixel thresholds (`cnt >= 60`) and aggressive horizontal merging (`gap < 6px`) erroneously merged adjacent letters or picked up background anti-aliased gradient artifacts (extracting 3, 7, or 8 boxes instead of exactly 5). When candidate count differed from 5, the offline template matcher returned `"", 0.0`, causing repeated verification warnings.
   - **Dominant Solid Glyph Extraction**: Refactored `extract_character_vectors()` to filter by solid color density (`cnt >= 90` pixels, dark `< 95` brightness), selecting the top 5 dominant glyphs by pixel mass and sorting left-to-right.

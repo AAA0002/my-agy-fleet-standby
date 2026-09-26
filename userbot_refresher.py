@@ -212,6 +212,18 @@ def load_fleet_ton_wallets() -> dict:
                 }
         except Exception:
             pass
+def load_fleet_ton_wallets_full() -> dict:
+    if os.path.exists(FLEET_TON_WALLETS_FILE):
+        try:
+            with open(FLEET_TON_WALLETS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return {
+                    str(uid): info
+                    for uid, info in data.items()
+                    if not str(uid).startswith("_")
+                }
+        except Exception:
+            pass
     return {}
 
 def load_fleet_evm_wallets() -> dict:
@@ -7348,13 +7360,23 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         current_wallet = u.get("wallet_address") or u.get("wallet")
         is_wallet_verified = str(u.get("wallet_verified", "0")) == "1" or (acc_uid == str(REPORT_CHAT_ID) and bool(current_wallet))
 
+        ton_wallets_full = load_fleet_ton_wallets_full()
         ton_wallets = load_fleet_ton_wallets()
+        mnemonic_str = None
         if acc_uid == str(REPORT_CHAT_ID):
             target_ton_wallet = TON_PRIMARY_WALLET
             acc_ton_entry = {}
         else:
-            acc_ton_entry = ton_wallets.get(acc_uid, {})
-            target_ton_wallet = acc_ton_entry.get("address")
+            acc_ton_entry = ton_wallets_full.get(acc_uid) or ton_wallets.get(acc_uid) or {}
+            if isinstance(acc_ton_entry, dict):
+                target_ton_wallet = acc_ton_entry.get("address")
+                mnemonic_str = acc_ton_entry.get("mnemonic")
+            elif isinstance(acc_ton_entry, str):
+                target_ton_wallet = acc_ton_entry
+                mnemonic_str = None
+            else:
+                target_ton_wallet = None
+
             if not target_ton_wallet:
                 tw = acc.get("ton_wallet")
                 if isinstance(tw, dict):
@@ -7365,7 +7387,8 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                     target_ton_wallet = TON_PRIMARY_WALLET
 
         if not is_wallet_verified and target_ton_wallet:
-            mnemonic_str = acc_ton_entry.get("mnemonic")
+            if not mnemonic_str and isinstance(acc_ton_entry, dict):
+                mnemonic_str = acc_ton_entry.get("mnemonic")
             if mnemonic_str and HAS_TON_PROOF_LIBS:
                 try:
                     words = mnemonic_str.split()
@@ -7458,22 +7481,67 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         except Exception:
             pass
 
-        # 4. Tasks claim (repeatable)
+        # 4. Tasks Automation Engine (One-time and Repeatable Cooldown Tasks)
+        completed_tasks = set(u.get("completed_tasks") or ld.get("completed_tasks") or [])
+
+        # 4a. One-time High-Reward Tasks (5 ATF each)
+        one_time_tasks = [
+            {"id": "telegram_join", "channel": "AI_TRADING_FOREX", "title": "Join Channel (EN)"},
+            {"id": "telegram_join_fa", "channel": "ATFFARSI", "title": "Join Channel (FA)"},
+            {"id": "twitter_follow", "channel": None, "title": "Follow X"},
+            {"id": "youtube_subscribe", "channel": None, "title": "Subscribe YouTube"}
+        ]
+        for ot in one_time_tasks:
+            tid = ot["id"]
+            if tid not in completed_tasks:
+                if ot.get("channel") and acc_client:
+                    try:
+                        await acc_client(JoinChannelRequest(ot["channel"]))
+                        logger.info(f"[{acc_name}] 🪙 [ATF Miner] Auto-joined @{ot['channel']} for task '{ot['title']}'")
+                    except Exception as je:
+                        logger.debug(f"[{acc_name}] ATF join note @{ot['channel']}: {je}")
+                try:
+                    s_at = int(time.time()) - 10
+                    await session.post(f"{base_url}?action=start_task&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "task_id": tid, "client_started_at": s_at}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=5))
+                    await asyncio.sleep(1.2)
+                    async with session.post(f"{base_url}?action=claim_task&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "task_id": tid, "client_started_at": s_at}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=5)) as cr:
+                        cd = await cr.json()
+                        if cd.get("status") == "success":
+                            rew = cd.get("reward", 5)
+                            u["mined_balance"] = cd.get("new_balance", u.get("mined_balance", 0))
+                            completed_tasks.add(tid)
+                            logger.info(f"[{acc_name}] 🪙 [ATF Miner] One-time task '{ot['title']}' claimed (+{rew} ATF)!")
+                except Exception as oe:
+                    logger.debug(f"[{acc_name}] ATF one-time task note ({tid}): {oe}")
+                await asyncio.sleep(1.0)
+
+        # 4b. Repeatable Cooldown Tasks (every 2h = 7200s, +1 ATF each)
         repeatable_tasks = [
-            {"id": "website_visit", "minSeconds": 10},
-            {"id": "telegram_react_latest", "minSeconds": 20},
-            {"id": "twitter_retweet", "minSeconds": 30},
-            {"id": "youtube_like_comment", "minSeconds": 30}
+            {"id": "website_visit", "minSeconds": 10, "title": "Visit Website"},
+            {"id": "telegram_react_latest", "minSeconds": 20, "title": "React Latest Post"},
+            {"id": "twitter_retweet", "minSeconds": 30, "title": "X Retweet"},
+            {"id": "youtube_like_comment", "minSeconds": 30, "title": "YouTube Like & Comment"}
         ]
         cooldowns = ld.get("task_cooldowns") or {}
         now_s = int(time.time())
         for task in repeatable_tasks:
             tid = task["id"]
             if now_s >= int(cooldowns.get(tid, 0) or 0):
-                s_at = now_s - task["minSeconds"] - 5
-                await session.post(f"{base_url}?action=start_task&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "task_id": tid, "client_started_at": s_at}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=5))
+                try:
+                    s_at = now_s - task["minSeconds"] - 5
+                    await session.post(f"{base_url}?action=start_task&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "task_id": tid, "client_started_at": s_at}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=5))
+                    await asyncio.sleep(1.2)
+                    async with session.post(f"{base_url}?action=claim_task&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "task_id": tid, "client_started_at": s_at}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=5)) as cr:
+                        cd = await cr.json()
+                        if cd.get("status") == "success":
+                            rew = cd.get("reward", 1)
+                            u["mined_balance"] = cd.get("new_balance", u.get("mined_balance", 0))
+                            logger.info(f"[{acc_name}] 🪙 [ATF Miner] Repeatable task '{task['title']}' claimed (+{rew} ATF)!")
+                        elif cd.get("status") == "error":
+                            logger.debug(f"[{acc_name}] ATF task {tid} note: {cd.get('message')}")
+                except Exception as re_err:
+                    logger.debug(f"[{acc_name}] ATF repeatable task note ({tid}): {re_err}")
                 await asyncio.sleep(1.0)
-                await session.post(f"{base_url}?action=claim_task&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "task_id": tid, "client_started_at": s_at}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=5))
 
         # 5. ATF Accumulation & Farming (Withdrawal disabled per user directive: farming only)
         mined_bal = float(u.get("mined_balance", 0) or 0)
