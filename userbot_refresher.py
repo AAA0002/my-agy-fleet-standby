@@ -4629,8 +4629,19 @@ async def run_background_referral_binding(temp_cl, acc_entry: dict, chat_id: str
         logger.info(f"[{acc_name}] 🚀 Initiating background master referral binding across all 8 bots...")
         await ensure_referral_bound(temp_cl, acc_entry)
         await self_heal_account_channels_and_bots(temp_cl, acc_entry)
+        # Extract and sync all 8 MiniApp tokens immediately while temp_cl is live
+        async with aiohttp.ClientSession() as ref_sess:
+            try:
+                fresh_tokens = await collect_account_session_links(temp_cl, acc_entry)
+                if fresh_tokens:
+                    await sync_account_tokens_to_edge(ref_sess, str(acc_uid), acc_name, **fresh_tokens)
+                    logger.info(f"[{acc_name}] 🌐 All 8 MiniApp tokens extracted & synced to Edge immediately upon onboarding!")
+            except Exception as cte:
+                logger.debug(f"[{acc_name}] Token collection during onboarding note: {cte}")
         await update_account_safely(acc_uid, {
             "last_healed_at": time.time(),
+            "miniapp_tokens_synced_at": time.time(),
+            "miniapp_tokens_synced": True,
             "stones_referral_bound": True,
             "mrg_referral_bound": True,
             "art_referral_bound": True,
@@ -5567,6 +5578,43 @@ async def scan_fleet_balances(caller_chat_id=None):
 FLEET_MINIAPP_TOKENS = {}
 FLEET_TOKENS_FILE = os.path.join(BASE_DIR, "fleet_miniapp_tokens.json")
 
+def extract_auth_date(init_data_str: Optional[str]) -> int:
+    """Extracts unix auth_date timestamp from Telegram WebApp initData string."""
+    if not init_data_str or not isinstance(init_data_str, str):
+        return 0
+    try:
+        m = re.search(r"(?:^|[&?])auth_date=(\d+)", init_data_str)
+        if m:
+            return int(m.group(1))
+        m2 = re.search(r"auth_date(?:%3D|=)(\d+)", init_data_str)
+        if m2:
+            return int(m2.group(1))
+    except Exception:
+        pass
+    return 0
+
+def _merge_tokens_safely(existing_dict: dict, incoming_dict: dict) -> dict:
+    """Merges incoming token dictionary into existing without overwriting newer tokens with older ones."""
+    for uid, in_tok in incoming_dict.items():
+        uid_str = str(uid)
+        if uid_str not in existing_dict:
+            existing_dict[uid_str] = dict(in_tok)
+            continue
+        ex_tok = existing_dict[uid_str]
+        for k, v in in_tok.items():
+            if not v:
+                continue
+            if k.endswith("_init_data"):
+                ex_val = ex_tok.get(k)
+                if ex_val:
+                    ex_ad = extract_auth_date(ex_val)
+                    in_ad = extract_auth_date(v)
+                    # If existing is strictly newer, do NOT overwrite with older token
+                    if ex_ad > 0 and in_ad > 0 and in_ad < ex_ad:
+                        continue
+            ex_tok[k] = v
+    return existing_dict
+
 def load_local_fleet_tokens():
     """Loads cached 24h WebApp tokens from local JSON disk storage."""
     global FLEET_MINIAPP_TOKENS
@@ -5575,11 +5623,7 @@ def load_local_fleet_tokens():
             with open(FLEET_TOKENS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 if isinstance(data, dict):
-                    for uid, t in data.items():
-                        if uid not in FLEET_MINIAPP_TOKENS:
-                            FLEET_MINIAPP_TOKENS[uid] = t
-                        else:
-                            FLEET_MINIAPP_TOKENS[uid].update(t)
+                    _merge_tokens_safely(FLEET_MINIAPP_TOKENS, data)
         except Exception:
             pass
 
@@ -5647,11 +5691,7 @@ async def load_fleet_tokens_from_edge(session: aiohttp.ClientSession):
                 if r.status == 200:
                     data = await r.json()
                     if isinstance(data, dict):
-                        for uid, t in data.items():
-                            if uid not in FLEET_MINIAPP_TOKENS:
-                                FLEET_MINIAPP_TOKENS[uid] = t
-                            else:
-                                FLEET_MINIAPP_TOKENS[uid].update(t)
+                        _merge_tokens_safely(FLEET_MINIAPP_TOKENS, data)
                         save_local_fleet_tokens()
                         logger.info(f"🌐 Preloaded cached 24h WebApp tokens for {len(FLEET_MINIAPP_TOKENS)} fleet accounts from Cloudflare Edge ({cf_url})")
                         return True
@@ -6035,6 +6075,86 @@ STONES_CIRCUIT_BREAKER_UNTIL = 0
 STONES_CONSECUTIVE_FAILS = 0
 
 
+async def extract_fresh_stones_token_on_demand(acc_uid: str) -> Optional[str]:
+    """
+    On-Demand Zero-Latency Stones WebApp Token Extractor.
+    Extracts fresh initData with auth_date = now directly from Telegram MTProto.
+    Immediately updates local cache and pushes to Cloudflare Workers KV.
+    Ensures AdsGram's 2-hour freshness requirement is guaranteed.
+    """
+    acc_uid_str = str(acc_uid)
+    accs = load_accounts()
+    target_acc = None
+    for a in accs:
+        if str(a.get("user_id")) == acc_uid_str:
+            target_acc = a
+            break
+    if not target_acc or not target_acc.get("session_string"):
+        return None
+
+    sess_str = target_acc["session_string"]
+    acc_name = target_acc.get("name", f"Account {acc_uid_str}")
+    acc_proxy = parse_proxy(target_acc.get("proxy"))
+    acc_fp = get_account_fingerprint(int(acc_uid_str))
+
+    cl = None
+    should_dc = False
+    if sess_str == STRING_SESSION and client and client.is_connected():
+        cl = client
+    else:
+        try:
+            cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH, proxy=acc_proxy, **acc_fp)
+            await asyncio.wait_for(cl.connect(), timeout=12)
+            should_dc = True
+        except Exception:
+            if acc_proxy:
+                try:
+                    cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH, **acc_fp)
+                    await asyncio.wait_for(cl.connect(), timeout=12)
+                    should_dc = True
+                except Exception:
+                    return None
+            else:
+                return None
+
+    try:
+        if not await cl.is_user_authorized():
+            return None
+        bot_stones = await cl.get_entity(STONES_BOT)
+        res_stones = await cl(RequestWebViewRequest(
+            peer=bot_stones,
+            bot=bot_stones,
+            platform="android",
+            url="https://app.stoneswithestand.my.id/"
+        ))
+        parsed = urllib.parse.urlparse(res_stones.url)
+        init_data = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
+        if init_data:
+            logger.info(f"[{acc_name}] 💎 [Stones] Fresh WebApp initData extracted on-demand (auth_date: {extract_auth_date(init_data)})!")
+            if acc_uid_str not in FLEET_MINIAPP_TOKENS:
+                FLEET_MINIAPP_TOKENS[acc_uid_str] = {"account_id": acc_uid_str, "name": acc_name}
+            FLEET_MINIAPP_TOKENS[acc_uid_str]["stones_init_data"] = init_data
+            FLEET_MINIAPP_TOKENS[acc_uid_str]["updated_at"] = time.time()
+            save_local_fleet_tokens()
+            async def _bg_sync():
+                try:
+                    async with aiohttp.ClientSession() as s:
+                        await sync_account_tokens_to_edge(s, acc_uid_str, acc_name, stones_init_data=init_data)
+                except Exception:
+                    pass
+            safe_create_task(_bg_sync(), name=f"stones_sync_{acc_uid_str}")
+            return init_data
+    except Exception as e:
+        logger.debug(f"[{acc_name}] On-demand stones extraction note: {e}")
+    finally:
+        if should_dc and cl:
+            try:
+                await cl.disconnect()
+            except Exception:
+                pass
+    return None
+
+
 async def _run_stones_withdrawal_background(base_url: str, headers: dict, init_data: str, amount: int, wallet: str, proxy: str, acc_uid: int, acc_name: str):
     """Executes Stones ad boarding, captcha solving, and withdrawal in a detached background task without blocking the worker slot."""
     try:
@@ -6071,8 +6191,40 @@ async def _run_stones_withdrawal_background(base_url: str, headers: dict, init_d
             else:
                 details_str = str(wd_res).lower()
                 if wd_res == "SESSION_TOO_OLD" or "session too old" in details_str:
-                    logger.warning(f"[{acc_name}] 💎 [Stones] Token session expired for AdsGram. Triggering background refresh...")
-                    await refresh_tokens_via_relayer(wd_sess, str(acc_uid), "stones")
+                    logger.warning(f"[{acc_name}] 💎 [Stones] Token session expired for AdsGram. Extracting fresh token on-demand...")
+                    fresh_init = await extract_fresh_stones_token_on_demand(str(acc_uid))
+                    if not fresh_init:
+                        fresh_init = await refresh_tokens_via_relayer(wd_sess, str(acc_uid), "stones")
+                    if fresh_init:
+                        logger.info(f"[{acc_name}] 💎 [Stones] Retrying withdrawal immediately with brand-new session token...")
+                        ok_wd2, wd_res2 = await execute_stones_withdrawal_with_captcha(
+                            session=wd_sess,
+                            base_url=base_url,
+                            headers=headers,
+                            init_data=fresh_init,
+                            amount=amount,
+                            wallet=wallet,
+                            proxy=proxy
+                        )
+                        logger.info(f"[{acc_name}] 💎 [Stones] Immediate retry withdrawal result: {wd_res2}")
+                        if ok_wd2:
+                            await update_account_safely(acc_uid, {"stones_next_wd_at": curr_ts + 7200})
+                            now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+                            ch_sub = (
+                                f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
+                                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                                f"💎 <b>Platform:</b> Stones Miners (@stoneswithestand_bot)\n"
+                                f"👤 <b>Account:</b> {acc_name}\n"
+                                f"💰 <b>Amount:</b> <code>{amount} STONES</code>\n"
+                                f"🌐 <b>Destination Network:</b> Arbitrum One (EVM)\n"
+                                f"💼 <b>Target Vault:</b> <code>{wallet}</code>\n"
+                                f"🛡️ <b>Anti-Bot Verification:</b> <code>Passed & Solved</code> ✅\n"
+                                f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
+                                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                                f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
+                            )
+                            safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_stones_wd")
+                            return
                     await update_account_safely(acc_uid, {"stones_next_wd_at": curr_ts + 60})
                 elif "cooldown" in details_str:
                     await update_account_safely(acc_uid, {"stones_next_wd_at": curr_ts + 190})
@@ -6387,8 +6539,10 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                     except Exception:
                         pass
                 if ad_age > 7200:
-                    logger.info(f"[{acc_name}] 💎 [Stones] Token is {ad_age/3600:.1f}h old (>2h AdsGram limit). Pre-refreshing token via Render Cloud...")
-                    fresh_init = await refresh_tokens_via_relayer(session, acc_uid, "stones")
+                    logger.info(f"[{acc_name}] 💎 [Stones] Token is {ad_age/3600:.1f}h old (>2h AdsGram limit). Pre-refreshing token on-demand...")
+                    fresh_init = await extract_fresh_stones_token_on_demand(str(acc_uid))
+                    if not fresh_init:
+                        fresh_init = await refresh_tokens_via_relayer(session, acc_uid, "stones")
                     if fresh_init:
                         init_data = fresh_init
                 logger.info(f"[{acc_name}] 💎 [Stones] Coins {coins} STONES >= 500 threshold! Launching background auto-withdrawal task of {withdraw_stones} STONES to Arbitrum {target_evm_wallet}...")

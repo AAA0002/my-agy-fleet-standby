@@ -2373,6 +2373,9 @@ fi
             };
             ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
             ctx.waitUntil(env.BACKUP_KV.put("pending_fleet_action", JSON.stringify(recorded), { expirationTtl: 600 }));
+            if (env.BACKUP_KV) {
+              ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, "1", { expirationTtl: 300 }).catch(() => {}));
+            }
 
             const frames = [
               `📱 *Validating Phone Number...*\n\`[▰▰▰▱▱▱▱▱▱▱] 30%\` • Checking format: \`${normalized}\``,
@@ -2397,15 +2400,20 @@ fi
             node: CURRENT_SUBDOMAIN
           };
           ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
+          if (env.BACKUP_KV) {
+            ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, "1", { expirationTtl: 300 }).catch(() => {}));
+          }
           ctx.waitUntil(sendReply(rep, cancelKeyboard));
           return new Response("OK");
         }
 
-        // 2.1 OTP Code / Login Input Relay
+        // 2.1 OTP Code / 2FA Password Relay
         const trimmed = text.trim();
-        const isOtpCode = /^(\d{5}|\d{3}[-\s]\d{2}|\d{6})$/.test(trimmed);
         const isCancelLogin = (trimmed === "/cancel" || trimmed === "❌ Cancel Login" || trimmed === "❌ Cancel");
         if (isCancelLogin) {
+          if (env.BACKUP_KV) {
+            ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
+          }
           const recorded = {
             id: "act_" + Date.now(),
             action: "cancel_login",
@@ -2417,7 +2425,19 @@ fi
           ctx.waitUntil(sendReply("❌ Account connection cancelled.", mainKeyboard));
           return new Response("OK");
         }
-        if (isOtpCode) {
+
+        let isLoginWaiting = false;
+        if (env.BACKUP_KV) {
+          try {
+            const rawFlow = await env.BACKUP_KV.get("login_flow:" + chatId);
+            if (rawFlow) isLoginWaiting = true;
+          } catch (_) {}
+        }
+
+        const isOtpCode = /^(\d{5}|\d{3}[-\s]\d{2}|\d{6})$/.test(trimmed);
+        const isCommandOrMenu = text.startsWith("/") || text.includes("📊") || text.includes("⚡") || text.includes("💎") || text.includes("🧹") || text.includes("🌐") || text.includes("➕");
+
+        if (isOtpCode || (isLoginWaiting && !isCommandOrMenu && trimmed.length >= 2)) {
           const recorded = {
             id: "act_" + Date.now(),
             action: "login_input",
@@ -2427,10 +2447,11 @@ fi
             node: CURRENT_SUBDOMAIN
           };
           ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
+          const isNumericOtp = /^\d+$/.test(trimmed.replace(/[-\s]/g, ''));
           const frames = [
-            `🔑 *Encrypting Verification Code...*\n\`[▰▰▰▰▱▱▱▱▱▱] 40%\` • MTProto Session Security`,
+            `🔑 *Encrypting ${isNumericOtp ? "Verification Code" : "2FA Password"}...*\n\`[▰▰▰▰▱▱▱▱▱▱] 40%\` • MTProto Session Security`,
             `🔑 *Verifying with Telegram Core...*\n\`[▰▰▰▰▰▰▰▰▱▱] 80%\` • Checking Authorization Hash`,
-            `⏳ *Verifying Code \`${trimmed}\`...*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Submitted ✅\`\n\nYour account is being authenticated by the fleet relayer.\nYou will receive a confirmation message once completed!`
+            `⏳ *Submitting ${isNumericOtp ? "Code" : "Password"} to Fleet Gateway...*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Submitted ✅\`\n\nYour account is being authenticated by the fleet relayer.\nYou will receive a confirmation message once completed!`
           ];
           ctx.waitUntil(sendAnimatedReply(chatId, frames, cancelKeyboard, 320));
           return new Response("OK");

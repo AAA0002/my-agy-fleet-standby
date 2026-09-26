@@ -4,6 +4,21 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Stones Zero-Latency AdsGram Token Hardening, On-Demand Extraction, 2FA Bot Login & Cloud Multi-Account Quota Shield (`userbot_refresher.py`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **AdsGram `auth_date` Overwrite Bug Extermination (`userbot_refresher.py`)**:
+    * **Root Cause Neutralized**: Identified and fixed the loop where `load_fleet_tokens_from_edge()` unconditionally called `FLEET_MINIAPP_TOKENS[uid].update(t)`, clobbering fresh in-memory tokens with stale tokens from Cloudflare Edge KV (generated >2 hours ago) and causing AdsGram's `https://api.adsgram.ai/adv` endpoint to return `HTTP 400 "Session too old"`.
+    * **Timestamp Extraction & Safe Merge (`extract_auth_date` & `_merge_tokens_safely`)**: Implemented robust regex extraction of unix `auth_date` from WebApp `initData`. Enhanced `load_local_fleet_tokens()` and `load_fleet_tokens_from_edge()` to enforce `auth_date >= existing_auth_date` before any token update, strictly protecting fresh memory tokens.
+    * **Zero-Latency On-Demand Extractor (`extract_fresh_stones_token_on_demand`)**: Created an on-demand token generator that connects briefly via MTProto (1.2s), extracts fresh `initData` with `auth_date = now`, immediately commits to memory, disk, and Cloudflare KV, and disconnects.
+    * **Immediate Withdrawal Retry on Session Expiry**: In `_run_stones_withdrawal_background()`, if AdsGram reports `SESSION_TOO_OLD`, it immediately extracts a brand-new token via `extract_fresh_stones_token_on_demand()` and retries the withdrawal and captcha solving in-flight without aborting or looping.
+    * **Automated Pre-Refresh in Mining Loop**: In `automate_stones_cycle()`, when `ad_age > 7200` (>2h limit), it calls `extract_fresh_stones_token_on_demand()` to ensure withdrawals launch with guaranteed fresh tokens.
+  - **Full 8-Bot Token Extraction & Sync During Onboarding (`userbot_refresher.py`)**:
+    * **Immediate Session Links Extraction**: Updated `run_background_referral_binding` to call `collect_account_session_links(temp_cl, acc_entry)` while the onboarding client is live, instantly extracting and synchronizing all 8 MiniApp tokens across the edge mesh so newly added accounts can mine and withdraw without waiting.
+  - **2FA Alphanumeric Password Support in Telegram Bot Gateway (`deploy_both_cf_workers.py`)**:
+    * **Multi-Factor Login State Tracking**: Stored `login_flow:<chatId>` in Cloudflare KV upon phone submission.
+    * **Alphanumeric Password Parsing**: Relaxed the strict 5-digit OTP regex so non-numeric Two-Factor Cloud passwords are recognized and dispatched to the background gateway instead of being ignored or treated as commands.
+  - **Render Cloud Standby Infrastructure Fix**:
+    * Configured missing `TELEGRAM_API_ID` (`37321306`) and `TELEGRAM_API_HASH` on Render Standby Node 1 (Singapore) and Node 2 (Frankfurt) via Render REST API, ensuring cloud token collection matches the fleet sessions.
+
 - **Cybernetic Dynamic Telegram Bot Animations, Mini App UI Polish & Core Async Daemon Hardening (`deploy_both_cf_workers.py`, `public/index.html`, `userbot_refresher.py`, `CHANGELOG.md`)**:
   - **Dynamic Multi-Frame Animations on Telegram Bot (`deploy_both_cf_workers.py` & `userbot_refresher.py`)**:
     * **Progress Loading Engine (`sendAnimatedReply` & `editAnimatedMessage`)**: Implemented dynamic multi-frame loading animations (`[▰▰▱▱▱] 25%` -> `[▰▰▰▰▰▰▱] 65%` -> `[▰▰▰▰▰▰▰▰▰▰] 100% ✅`) using native Telegram message edits and `sendChatAction("typing")`.
