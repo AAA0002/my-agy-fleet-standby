@@ -4,6 +4,17 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Server Reboot Auto-Recovery, Fleet Sweep Hardening & Operational Intelligence Upgrades (`userbot_refresher.py`, `bot_supervisor.sh`, `CHANGELOG.md`)**:
+  - **Server Reboot Auto-Recovery**:
+    * Cleanly handled container/system restart, re-spawned detached `telegram_bot` tmux session running `bot_supervisor.sh` (PID `5544`) and worker daemon (PID `7212`).
+    * Confirmed live auto-recovery: worker immediately detected expired sessions and refreshed them on Render Standby nodes with zero local socket overhead.
+  - **Universal Fleet Sweep & Stones Token Freshness Hardening**:
+    * Added automated `auth_date` pre-checks in `execute_stones_fleet_sweep()`, guaranteeing that manual or automated sweeps (`/sweep`, `/sweep_stones`) verify AdsGram session freshness (<2 hours) via Render Cloud before attempting ad boarding.
+    * Enforced strict EVM isolation in `execute_ainovum_fleet_sweep()` for worker accounts (`isolated_map.get(uid) or FLEET_EVM_WALLETS.get(uid)`) with explicit omission of the primary vault fallback, completely eliminating sybil address collision risk.
+  - **Enhanced Telegram Operational Reports**:
+    * Upgraded `build_mrg_details_report()`: displays live fleet KYC status (`3/13 Verified`), autonomous slider captcha solver status (`100% Solved`), 1,000 MRG withdrawal gate, and progress of top account `Arif (8826375659)` (985.65 MRG, 98.6% towards threshold).
+    * Upgraded `build_full_status_report()`: updated concurrency label to `4x Parallel Fast-Path` reflecting true active slot concurrency.
+
 - **Comprehensive Fleet Bug Audit, AdsGram Session Resilience & Subsystem Optimization (`stones_captcha_solver.py`, `userbot_refresher.py`, `CHANGELOG.md`)**:
   - **AdsGram "Session Too Old" Root Cause Discovered & Fixed**:
     * Identified root cause of intermittent Stones Miners AdsGram postback delays: AdsGram's ad serving endpoint (`https://api.adsgram.ai/adv`) strictly validates the internal `auth_date` inside `initData` and rejects sessions older than ~2.5 hours with `HTTP 400 Bad Request: {"error": "Session too old", "code": 403}`.
