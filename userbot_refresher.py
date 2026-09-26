@@ -2892,17 +2892,11 @@ async def initiate_account_login(chat_id: str, raw_phone: str):
 
     cleaned_phone, country_label = detect_and_normalize_phone(raw_phone)
     logger.info(f"[Account Onboarding] Requesting MTProto verification code for {cleaned_phone} ({country_label}) for Chat {chat_id}")
-    await send_report_message(
-        f"📡 *Auto-Detected Country:* {country_label}\n"
-        f"📱 *Normalized Number:* `{cleaned_phone}`\n\n"
-        f"⏳ Requesting verification code from Telegram...",
-        reply_markup=CANCEL_KEYBOARD,
-        chat_id=chat_id
-    )
-    temp_cl = TelegramClient(StringSession(), API_ID, API_HASH)
+    temp_fp = get_account_fingerprint(chat_id)
+    temp_cl = TelegramClient(StringSession(), API_ID, API_HASH, timeout=25, connection_retries=5, **temp_fp)
     await temp_cl.connect()
     try:
-        sent_code = await temp_cl.send_code_request(cleaned_phone)
+        sent_code = await asyncio.wait_for(temp_cl.send_code_request(cleaned_phone), timeout=30)
         logger.info(f"[Account Onboarding] ✅ Verification code dispatched successfully to {cleaned_phone} (phone_code_hash: {sent_code.phone_code_hash[:8]}...)")
         login_sessions[chat_id] = {
             "step": "WAITING_CODE",
@@ -2914,11 +2908,8 @@ async def initiate_account_login(chat_id: str, raw_phone: str):
         }
         await send_report_message(
             f"📨 *Verification Code Sent!*\n\n"
-            f"🌍 Region: {country_label}\n"
-            f"📱 Number: `{cleaned_phone}`\n\n"
-            f"Telegram has sent a 5-digit verification code to your app or SMS.\n\n"
-            f"Please reply with the code (e.g. `12345` or `1-2-3-4-5`):\n\n"
-            f"_(Or send `/cancel` to abort)_",
+            f"Telegram sent a 5-digit verification code to `{cleaned_phone}`.\n\n"
+            f"Please reply with the code (e.g. `12345`):",
             reply_markup=CANCEL_KEYBOARD,
             chat_id=chat_id
         )
@@ -2968,7 +2959,7 @@ async def handle_login_input(chat_id: str, text: str):
         phone = state["phone"]
         pch = state["phone_code_hash"]
         try:
-            await temp_cl.sign_in(phone=phone, code=code, phone_code_hash=pch)
+            await asyncio.wait_for(temp_cl.sign_in(phone=phone, code=code, phone_code_hash=pch), timeout=30)
             me = await temp_cl.get_me()
             acc_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or "User"
             uname = me.username or "None"
@@ -3042,7 +3033,7 @@ async def handle_login_input(chat_id: str, text: str):
         phone = state["phone"]
         pwd = text.strip()
         try:
-            await temp_cl.sign_in(password=pwd)
+            await asyncio.wait_for(temp_cl.sign_in(password=pwd), timeout=30)
             me = await temp_cl.get_me()
             acc_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or "User"
             uname = me.username or "None"
@@ -8693,11 +8684,12 @@ async def task_worker_247(user_id: int, user_name: str):
         "Tap any tab button below to view live fleet metrics or manage accounts!"
     )
 
-    await send_report_message(startup_text, reply_markup=MAIN_TAB_KEYBOARD)
+    logger.info("Fleet worker engine initialized and running 24/7.")
 
-    last_daily_report_day = -1
-    last_morning_briefing_date = None
-    last_midnight_backup_date = None
+    now_init = datetime.now(timezone.utc)
+    last_daily_report_day = now_init.day
+    last_morning_briefing_date = (now_init + timedelta(hours=6)).strftime("%Y-%m-%d")
+    last_midnight_backup_date = now_init.strftime("%Y-%m-%d")
 
     while True:
         try:
