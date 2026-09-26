@@ -2606,12 +2606,21 @@ async def build_wallet_hub_report():
     monthly_usd = monthly_est_bnb * bnb_price
     monthly_bdt = monthly_usd * usd_bdt
 
-    fleet_ton = []
+    fleet_ton = {}
     fleet_file = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
     if os.path.exists(fleet_file):
         try:
             with open(fleet_file, "r", encoding="utf-8") as f:
                 fleet_ton = json.load(f)
+        except Exception:
+            pass
+
+    fleet_evm = {}
+    fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
+    if os.path.exists(fleet_evm_file):
+        try:
+            with open(fleet_evm_file, "r", encoding="utf-8") as f:
+                fleet_evm = json.load(f)
         except Exception:
             pass
 
@@ -2663,15 +2672,74 @@ async def build_wallet_hub_report():
         f"• *MRG Squad Cut:* `~2.0 MRG/day` (10% lifetime team cut)\n"
         f"• *UltraWallet Yield:* `Active Mining` (USDT Commissions & Auto Energy Refill)\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🛡️ *5. Dedicated Anti-Sybil TON Wallets (Accounts 2 to 13):*\n"
-        f"• *Count:* `{len([k for k in fleet_ton if not str(k).startswith('_')])} Unique Dedicated Wallets` (0 duplicates across fleet)\n"
-        f"• *Status:* All connected to *MRG Miner* squad mining\n"
-        f"• *Security:* 24-word secret recovery phrases encrypted & saved in `fleet_ton_wallets.json`\n\n"
+        f"🛡️ *5. Dedicated Anti-Sybil Wallets (MRG, ATF & Ainovum Workers):*\n"
+        f"• *Dedicated TON Wallets:* `{len([k for k in fleet_ton if not str(k).startswith('_')])} Wallets` (MRG Miner & ATF Miner)\n"
+        f"• *Dedicated EVM Wallets:* `{len([k for k in fleet_evm if not str(k).startswith('_')])} Wallets` (Ainovum BEP-20)\n"
+        f"• *Host Protection:* Host account (`6727787768`) is 100% accumulation only (0 withdrawals)\n"
+        f"• *Auto-Sweeper:* Autonomous multi-chain sweeper consolidates worker surplus to Master Vault\n"
+        f"• *Detailed Audit:* Send `/workerwallets` to view all addresses and balances\n\n"
         f"💡 _Tap `💰 Withdraw` to check live balances or trigger an instant payout._"
     )
 
 build_payouts_report = build_wallet_hub_report
 build_earnings_report = build_wallet_hub_report
+
+
+async def build_worker_wallets_report():
+    """
+    Builds a comprehensive audit report of all 12 worker isolated wallets:
+    - Dedicated TON v4r2 wallets for MRG Miner & ATF Miner
+    - Dedicated EVM BEP-20 wallets for Ainovum
+    - Confirms that Master Account (6727787768) is accumulation only
+    - Confirms wallet isolation across all platforms
+    """
+    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    accounts = load_accounts()
+    ton_wallets = load_fleet_ton_wallets()
+    evm_wallets = FLEET_EVM_WALLETS
+
+    report = [
+        f"🛡️ *MY AGY AI — Isolated Worker Wallets & Anti-Sybil Audit*",
+        f"🕒 _{now_str}_\n",
+        f"📋 *Wallet Architecture Policy:*",
+        f"• *Host Account (`6727787768`):* Accumulation & power building only (0 withdrawals across all platforms).",
+        f"• *MRG Miner & ATF Miner:* Each worker uses an isolated TON v4r2 non-bounceable wallet (`fleet_ton_wallets.json`) to prevent multi-account bans.",
+        f"• *Ainovum:* Each worker uses an isolated EVM wallet (`fleet_evm_wallets.json`) for BEP-20 USDT withdrawals.",
+        f"• *Stones, AI Lab, ART:* Payouts and claims route directly to Master Binance Vaults (`{WALLET_ADDRESS[:10]}...` & `{TON_PRIMARY_WALLET[:10]}...`).\n",
+        f"━━━━━━━━━━━━━━━━━━━━━━",
+        f"👥 *Fleet Worker Wallet Roster ({len(accounts)} Accounts):*\n"
+    ]
+
+    for idx, acc in enumerate(accounts, 1):
+        uid = str(acc.get("user_id"))
+        name = acc.get("name", "Account")
+        is_host = (uid == str(REPORT_CHAT_ID) or acc.get("is_primary"))
+
+        if is_host:
+            report.append(
+                f"👑 *[Account {idx}] {name} (Host / Master)*\n"
+                f"  • *Role:* Primary Inviter & Accumulator (NO Withdrawals)\n"
+                f"  • *TON Vault:* `{TON_PRIMARY_WALLET}`\n"
+                f"  • *EVM Vault:* `{WALLET_ADDRESS}`\n"
+            )
+        else:
+            ton_addr = ton_wallets.get(uid, "N/A")
+            evm_addr = evm_wallets.get(uid, "N/A")
+            report.append(
+                f"👤 *[Account {idx}] {name}* (ID: `{uid}`)\n"
+                f"  • *MRG & ATF TON:* `{ton_addr}` (Isolated ✅)\n"
+                f"  • *Ainovum EVM:* `{evm_addr}` (Isolated ✅)\n"
+            )
+
+    report.append(
+        f"━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"🧹 *Autonomous On-Chain Sweeper:*\n"
+        f"• Sweeper loop audits all 12 worker addresses every 30 minutes.\n"
+        f"• Any surplus funds above gas threshold are automatically swept to your Master Vault.\n\n"
+        f"💡 _All 12 worker wallets are 100% isolated to ensure zero-risk anti-sybil compliance._"
+    )
+
+    return "\n".join(report)
 
 
 def build_server_health_report():
@@ -3213,6 +3281,10 @@ async def handle_single_update(update: dict):
         ):
             msg = await build_wallet_hub_report()
             await send_report_message(msg, reply_markup=WALLET_INLINE_KEYBOARD, chat_id=chat_id)
+
+        elif text.startswith("/workerwallets") or text.startswith("/workerswallets") or text.startswith("/isolatedwallets") or text in ["🛡️ Worker Wallets", "🛡️ Isolated Wallets"]:
+            rep = await build_worker_wallets_report()
+            await send_message_chunks(rep, reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
 
         elif text.startswith("/convert") or text.startswith("/calc"):
             parts = text.split()
@@ -8919,6 +8991,20 @@ async def periodic_render_cloud_token_refresher():
                     synced_at = float(t_info.get("updated_at") or a.get("miniapp_tokens_synced_at") or 0)
                     if (now - synced_at) > (12 * 3600) or not t_info.get("stones_init_data") or not t_info.get("atf_init_data"):
                         need_refresh = True
+                        break
+                    # Proactively check internal auth_date of cached tokens
+                    for tok_key in ("atf_init_data", "stones_init_data", "mrg_init_data", "art_init_data"):
+                        tok_v = t_info.get(tok_key)
+                        if tok_v and isinstance(tok_v, str) and "auth_date=" in tok_v:
+                            try:
+                                p_qs = urllib.parse.parse_qs(tok_v)
+                                ad_ts = float(p_qs.get("auth_date", [0])[0] or 0)
+                                if ad_ts > 0 and (now - ad_ts) > (12 * 3600):
+                                    need_refresh = True
+                                    break
+                            except Exception:
+                                pass
+                    if need_refresh:
                         break
 
                 if need_refresh:

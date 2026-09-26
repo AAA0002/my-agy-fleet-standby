@@ -58,6 +58,7 @@ REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
 PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
 
 TONAPI_KEY = os.getenv("TONAPI_KEY", "")
+TONCENTER_API_KEY = os.getenv("TONCENTER_API_KEY", "")
 DRPC_KEY = os.getenv("DRPC_API_KEY", "AqfE-vxQsEgZrdrPasY_EsnLP3satOIR8YH4El_NDNxu")
 
 # RPC Endpoints
@@ -179,6 +180,19 @@ async def audit_single_ton(session: aiohttp.ClientSession, uid: str, info: dict,
                 ton_bal = int(d.get("balance", 0)) / 1e9
     except Exception:
         pass
+
+    if ton_bal == 0.0:
+        try:
+            tc_headers = {"X-API-Key": TONCENTER_API_KEY} if TONCENTER_API_KEY else {}
+            tc_url = f"https://toncenter.com/api/v2/getAddressBalance?address={addr}"
+            async with session.get(tc_url, headers=tc_headers, timeout=aiohttp.ClientTimeout(total=5)) as tc_resp:
+                if tc_resp.status == 200:
+                    tc_d = await tc_resp.json()
+                    res = tc_d.get("result", 0)
+                    if isinstance(res, (int, float, str)) and str(res).isdigit():
+                        ton_bal = int(res) / 1e9
+        except Exception:
+            pass
 
     return {
         "uid": uid,

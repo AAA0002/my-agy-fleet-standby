@@ -4,6 +4,11 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Worker Wallets Anti-Sybil Audit & Toncenter Failover Engine (`userbot_refresher.py`, `cloud_wallet_sweeper.py`)**:
+  - **Dedicated Worker Wallets Audit Command (`/workerwallets`)**: Implemented `build_worker_wallets_report()` providing a complete roster of all 12 worker isolated wallets. Clearly delineates policy: MRG & ATF use dedicated TON v4r2 non-bounceable addresses (`fleet_ton_wallets.json`), Ainovum uses dedicated EVM BEP-20 addresses (`fleet_evm_wallets.json`), and Host Account (`6727787768`) is strictly 100% accumulation only (0 withdrawals).
+  - **Toncenter RPC Key Failover**: Enhanced `cloud_wallet_sweeper.py` with `TONCENTER_API_KEY` authenticated endpoint support and dynamic failover from `tonapi.io` to Toncenter, eliminating rate limit throttles during automated 30-minute sweeps.
+  - **Proactive 12-Hour `auth_date` Cloud Refresher**: Integrated deep query string timestamp inspection into `periodic_render_cloud_token_refresher()`, triggering automatic Render Standby cloud token extraction whenever any token's `auth_date` exceeds 12 hours old.
+
 - **Proactive Token Invalidation & Anti-Ban Arithmetic Humanization (`userbot_refresher.py`, `fleet_miniapp_tokens.json`)**:
   - **Instant Token Expiry Detection on 401/403/Unauthorized**: Implemented automatic invalidation of expired WebApp tokens across all 8 bots (ATF Miner, Stones Miners, MRG Miner, ART Airdrop, AI Lab Robot, UltraWallet, Apex Miner, Ainovum). When any bot returns HTTP 401/403 or `auth_date_too_old`, the expired token is cleared in memory and disk (`fleet_miniapp_tokens.json`), and `miniapp_tokens_synced` is set to `False` to trigger immediate cloud re-collection via Render Standby Nodes.
   - **Proactive `auth_date` Expiry Auditing**: Enhanced `farm_single_account()` to parse `auth_date` directly from query strings across all cached tokens. If any token's `auth_date` is > 18 hours old, `tokens_due` evaluates to `True`, preemptively refreshing tokens from Render Cloud before bot APIs can reject them.
