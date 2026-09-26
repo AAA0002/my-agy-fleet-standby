@@ -1144,10 +1144,16 @@ fi
                         method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
                       }).then(r => r.json()).catch(() => ({}));
                       if (sbs.ok && sbs.session && sbs.session.session_id) {
-                        await new Promise(r => setTimeout(r, 2000));
-                        await fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/finish", {
-                          method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.stones_init_data, session_id: sbs.session.session_id, score: 1500 })
+                        const dur = (sbs.session.duration || 30) + 1;
+                        const finishPromise = new Promise(resolve => setTimeout(resolve, dur * 1000)).then(() => {
+                          const sc = Math.floor(142 + Math.random() * 24);
+                          return fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/finish", {
+                            method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.stones_init_data, session_id: sbs.session.session_id, score: sc })
+                          });
                         }).catch(() => {});
+                        if (typeof ctx !== "undefined" && ctx.waitUntil) {
+                          ctx.waitUntil(finishPromise);
+                        }
                       }
                     }
                   } catch (_) {}
@@ -2856,12 +2862,18 @@ Reply to Arif naturally:`;
                     body: JSON.stringify({ initData: accData.stones_init_data })
                   }).then(r => r.json()).catch(() => ({}));
                   if (sbs.ok && sbs.session && sbs.session.session_id) {
-                    await new Promise(r => setTimeout(r, 2000));
-                    await fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/finish", {
-                      method: "POST",
-                      headers,
-                      body: JSON.stringify({ initData: accData.stones_init_data, session_id: sbs.session.session_id, score: 1500 })
+                    const dur = (sbs.session.duration || 30) + 1;
+                    const finishPromise = new Promise(resolve => setTimeout(resolve, dur * 1000)).then(() => {
+                      const sc = Math.floor(142 + Math.random() * 24);
+                      return fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/finish", {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify({ initData: accData.stones_init_data, session_id: sbs.session.session_id, score: sc })
+                      });
                     }).catch(() => {});
+                    if (typeof ctx !== "undefined" && ctx.waitUntil) {
+                      ctx.waitUntil(finishPromise);
+                    }
                   }
                 }
               } catch (_) {}

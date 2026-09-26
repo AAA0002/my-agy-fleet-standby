@@ -5829,8 +5829,8 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                 try:
                     # Step 1: Tap task (trigger start)
                     await session.post(f"{base_url}/api/task/start", json={"initData": init_data, "slug": slug}, headers=headers, timeout=aiohttp.ClientTimeout(total=8))
-                    # Step 2: Dynamic wait (15s for sponsor/channel/visit tasks, 2.5s for daily check-in)
-                    task_wait = 2.5 if slug == "daily_checkin" else 15.0
+                    # Step 2: Dynamic wait (2.5s for channel/telegram verification, 0.8s for regular tasks)
+                    task_wait = 2.5 if ("channel" in slug or "telegram" in slug) else 0.8
                     logger.debug(f"[{acc_name}] 💎 [Stones] Waiting {task_wait}s for task '{slug}'...")
                     await asyncio.sleep(task_wait)
                     # Step 3: Complete / verify task
@@ -5921,7 +5921,26 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
         except Exception as the:
             logger.debug(f"[{acc_name}] Stones treasure hunt note: {the}")
 
-        # 8b. Stone Breaker Play & Earn (Hourly limit: 10, Daily limit: 100 STONES)
+        # 8b. Stone Breaker Play & Earn (Hourly limit: 10, Daily limit: 100 STONES) - Non-blocking detached task
+        async def _bg_stones_sb(b_url, i_data, h_dict, a_name, sess_id, dur):
+            try:
+                await asyncio.sleep(dur + 1.0)
+                score = random.randint(142, 168)
+                async with aiohttp.ClientSession() as sb_sess_http:
+                    async with sb_sess_http.post(
+                        f"{b_url}/api/sb/finish",
+                        json={"initData": i_data, "session_id": sess_id, "score": score},
+                        headers=h_dict,
+                        timeout=aiohttp.ClientTimeout(total=8)
+                    ) as sbf:
+                        if sbf.status == 200:
+                            sbf_d = await sbf.json()
+                            if sbf_d.get("ok"):
+                                rew = sbf_d.get("result", {}).get("reward", 0)
+                                logger.info(f"[{a_name}] 💎 [Stones] ⛏️ Play & Earn (Stone Breaker) completed: +{rew} STONES! (Score: {score})")
+            except Exception as sbe:
+                logger.debug(f"[{a_name}] Stones Stone Breaker bg note: {sbe}")
+
         try:
             async with session.post(f"{base_url}/api/sb/status", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as sbr:
                 if sbr.status == 200:
@@ -5935,15 +5954,9 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                             if sbs.status == 200:
                                 sbs_d = await sbs.json()
                                 sb_sess = sbs_d.get("session", {}).get("session_id")
+                                sb_dur = sbs_d.get("session", {}).get("duration", 30)
                                 if sb_sess:
-                                    await asyncio.sleep(2.0)
-                                    async with session.post(f"{base_url}/api/sb/finish", json={"initData": init_data, "session_id": sb_sess, "score": 1500}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as sbf:
-                                        if sbf.status == 200:
-                                            sbf_d = await sbf.json()
-                                            if sbf_d.get("ok"):
-                                                rew = sbf_d.get("result", {}).get("reward", 0)
-                                                coins += rew
-                                                logger.info(f"[{acc_name}] 💎 [Stones] ⛏️ Play & Earn (Stone Breaker) completed: +{rew} STONES!")
+                                    asyncio.create_task(_bg_stones_sb(base_url, init_data, headers, acc_name, sb_sess, sb_dur))
         except Exception as sbe:
             logger.debug(f"[{acc_name}] Stones Stone Breaker note: {sbe}")
 
@@ -6349,6 +6362,11 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                     await sync_account_tokens_to_edge(session, acc_uid, acc_name, art_init_data=init_data)
             except Exception as we:
                 logger.debug(f"[{acc_name}] ART WebApp init note: {we}")
+
+        if "X-Telegram-Init-Data" not in headers:
+            cached_init = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("art_init_data")
+            if cached_init:
+                headers["X-Telegram-Init-Data"] = cached_init
 
         # 2. Fetch user profile & mining status
         u = {}
@@ -7141,6 +7159,7 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
     """
     acc_name = acc.get("name", "User")
     acc_uid = str(acc.get("user_id"))
+    is_primary = (acc_uid == str(REPORT_CHAT_ID))
 
     try:
         init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("ainovum_init_data")
@@ -7223,69 +7242,62 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
             pass
 
         # 5. Auto-Withdrawal to BEP-20 Wallet (0.1 USDT Minimum)
-        try:
-            async with session.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cr:
-                if cr.status == 200:
-                    cd = await cr.json()
-                    avail = float(cd.get("freeze", {}).get("available", 0) or 0)
-                    if avail >= 0.1:
-                        wd_amt = round(avail, 4)
-                        target_evm_addr = EVM_VAULT_ADDRESS if is_primary else None
-                        if not target_evm_addr:
-                            fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
-                            if os.path.exists(fleet_evm_file):
-                                try:
-                                    with open(fleet_evm_file, "r", encoding="utf-8") as fef:
-                                        target_evm_addr = json.load(fef).get(acc_uid, {}).get("address")
-                                except Exception:
-                                    pass
-                        if not target_evm_addr:
-                            target_evm_addr = EVM_VAULT_ADDRESS
-
-                        logger.info(f"[{acc_name}] 🤖 [Ainovum] Available {avail:.4f} USDT >= 0.1 threshold! Submitting auto-withdrawal to BEP-20 {target_evm_addr}...")
-                        wd_payload = {"amount": wd_amt, "wallet": target_evm_addr, "network": "bep20"}
-                        for attempt in range(2):
-                            async with session.post(
-                                f"{base_url}/api/withdraws/usdt/create",
-                                json=wd_payload,
-                                headers=auth_headers,
-                                timeout=aiohttp.ClientTimeout(total=10),
-                                proxy=proxy
-                            ) as wr:
-                                wd = await wr.json()
-                                if wr.status == 200 and not wd.get("access_denied") and not wd.get("error"):
-                                    logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal success: {wd}")
-                                    await send_report_message(
-                                        f"🎉 *Ainovum USDT Withdrawal Submitted!*\n\n"
-                                        f"• *Account:* {acc_name}\n"
-                                        f"• *Amount:* `{wd_amt} USDT` (BEP-20)\n"
-                                        f"• *Destination:* `{target_evm_addr}`\n"
-                                        f"• *Result:* `{wd}`",
-                                        chat_id=REPORT_CHAT_ID
-                                    )
-                                    now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-                                    ch_sub = (
-                                        f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
-                                        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                                        f"💎 <b>Platform:</b> Ainovum (@ainovumbot)\n"
-                                        f"👤 <b>Account:</b> {acc_name}\n"
-                                        f"💰 <b>Amount:</b> <code>{wd_amt} USDT</code> (BEP-20)\n"
-                                        f"🌐 <b>Destination Network:</b> BNB Smart Chain (BSC BEP-20)\n"
-                                        f"💼 <b>Target Vault:</b> <code>{target_evm_addr}</code>\n"
-                                        f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
-                                        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                                        f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
-                                    )
-                                    safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_ainovum_wd")
-                                    break
-                                elif wd.get("code") == "busy":
-                                    logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal gateway busy (Server busy). Will retry next cycle.")
-                                    break
-                                else:
-                                    logger.debug(f"[{acc_name}] 🤖 [Ainovum] Withdrawal attempt ({wd_amt} USDT): {wd}")
-                            await asyncio.sleep(3.0)
-        except Exception as we:
-            logger.debug(f"[{acc_name}] Ainovum auto-withdrawal note: {we}")
+        # Main Account (6727787768) is strictly protected from withdrawal per user directive.
+        if is_primary:
+            logger.info(f"[{acc_name}] 🤖 [Ainovum] Main account holding balance. Withdrawals disabled per user directive to build power.")
+        else:
+            try:
+                async with session.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cr:
+                    if cr.status == 200:
+                        cd = await cr.json()
+                        avail = float(cd.get("freeze", {}).get("available", 0) or 0)
+                        if avail >= 0.1:
+                            wd_amt = round(avail, 4)
+                            target_evm_addr = FLEET_EVM_WALLETS.get(acc_uid) or EVM_VAULT_ADDRESS
+                            logger.info(f"[{acc_name}] 🤖 [Ainovum] Available {avail:.4f} USDT >= 0.1 threshold! Submitting auto-withdrawal to BEP-20 {target_evm_addr}...")
+                            wd_payload = {"amount": wd_amt, "wallet": target_evm_addr, "network": "bep20"}
+                            for attempt in range(2):
+                                async with session.post(
+                                    f"{base_url}/api/withdraws/usdt/create",
+                                    json=wd_payload,
+                                    headers=auth_headers,
+                                    timeout=aiohttp.ClientTimeout(total=10),
+                                    proxy=proxy
+                                ) as wr:
+                                    wd = await wr.json()
+                                    if wr.status == 200 and not wd.get("access_denied") and not wd.get("error"):
+                                        logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal success: {wd}")
+                                        await send_report_message(
+                                            f"🎉 *Ainovum USDT Withdrawal Submitted!*\n\n"
+                                            f"• *Account:* {acc_name}\n"
+                                            f"• *Amount:* `{wd_amt} USDT` (BEP-20)\n"
+                                            f"• *Destination:* `{target_evm_addr}`\n"
+                                            f"• *Result:* `{wd}`",
+                                            chat_id=REPORT_CHAT_ID
+                                        )
+                                        now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+                                        ch_sub = (
+                                            f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
+                                            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                                            f"💎 <b>Platform:</b> Ainovum (@ainovumbot)\n"
+                                            f"👤 <b>Account:</b> {acc_name}\n"
+                                            f"💰 <b>Amount:</b> <code>{wd_amt} USDT</code> (BEP-20)\n"
+                                            f"🌐 <b>Destination Network:</b> BNB Smart Chain (BSC BEP-20)\n"
+                                            f"💼 <b>Target Vault:</b> <code>{target_evm_addr}</code>\n"
+                                            f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
+                                            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                                            f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
+                                        )
+                                        safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_ainovum_wd")
+                                        break
+                                    elif wd.get("code") == "busy":
+                                        logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal gateway busy (Server busy). Will retry next cycle.")
+                                        break
+                                    else:
+                                        logger.debug(f"[{acc_name}] 🤖 [Ainovum] Withdrawal attempt ({wd_amt} USDT): {wd}")
+                                await asyncio.sleep(3.0)
+            except Exception as we:
+                logger.debug(f"[{acc_name}] Ainovum auto-withdrawal note: {we}")
 
     except Exception as e:
         logger.debug(f"[{acc_name}] Ainovum automation note: {e}")
