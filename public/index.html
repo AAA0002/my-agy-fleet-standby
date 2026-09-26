@@ -371,17 +371,17 @@ function App() {
     setTestingMesh(true);
     const results = {};
     const testList = [
-      { id: "cf1", url: "https://restore-agy.aaaai2.workers.dev/health" },
-      { id: "cf2", url: "https://restore-agy.aaa-bot.workers.dev/health" },
-      { id: "cf3", url: "https://restore-agy.aaa222.workers.dev/health" },
-      { id: "cf4", url: "https://atf-miner-worker.agorameet.workers.dev/health" },
-      { id: "cf5", url: "https://atf-mining-engine.aaaai.workers.dev/health" },
+      { id: "cf1", url: "https://restore-agy.aaaai2.workers.dev/api/health" },
+      { id: "cf2", url: "https://restore-agy.aaa-bot.workers.dev/api/health" },
+      { id: "cf3", url: "https://restore-agy.aaa222.workers.dev/api/health" },
+      { id: "cf4", url: "https://restore-agy.agorameet.workers.dev/api/health" },
+      { id: "cf5", url: "https://restore-agy.aaaai.workers.dev/api/health" },
       { id: "rnd1", url: "https://atf-mtproto-relayer.onrender.com/wake" },
       { id: "rnd2", url: "https://atf-mtproto-relayer-backup.onrender.com/wake" },
       { id: "rnd3", url: "https://my-agy-fleet-standby.onrender.com/health" },
       { id: "rnd4", url: "https://my-agy-fleet-standby-node2.onrender.com/health" },
-      { id: "deno1", url: "https://my-agy-fleet-deno.aaa222.deno.net/ping" },
-      { id: "deno2", url: "https://my-agy-fleet-deno2.aaasupporta.deno.net/ping" }
+      { id: "deno1", url: "https://my-agy-fleet-deno.aaa222.deno.net/health" },
+      { id: "deno2", url: "https://my-agy-fleet-deno2.aaasupporta.deno.net/health" }
     ];
     await Promise.all(testList.map(async (n) => {
       const start = Date.now();
@@ -1097,8 +1097,8 @@ function App() {
               { id: "cf1", name: "Node 1: US-East Edge", host: "restore-agy.aaaai2", defLat: "42ms" },
               { id: "cf2", name: "Node 2: EU-Central Edge", host: "restore-agy.aaa-bot", defLat: "38ms" },
               { id: "cf3", name: "Node 3: Global Shard", host: "restore-agy.aaa222", defLat: "45ms" },
-              { id: "cf4", name: "Node 4: APAC D1 SQL (14 Accs)", host: "atf-miner-worker", defLat: "65ms" },
-              { id: "cf5", name: "Node 5: Mining Engine", host: "atf-mining-engine", defLat: "52ms" }
+              { id: "cf4", name: "Node 4: APAC D1 SQL", host: "restore-agy.agorameet", defLat: "65ms" },
+              { id: "cf5", name: "Node 5: Cloud Mining Engine", host: "restore-agy.aaaai", defLat: "52ms" }
             ].map(n => React.createElement("div", { key: n.id, className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
               React.createElement("div", null,
                 React.createElement("div", { className: "font-bold text-slate-800 text-[11px]" }, n.name),

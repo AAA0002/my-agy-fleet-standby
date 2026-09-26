@@ -5,6 +5,11 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+- **Multi-Cloud Unified Mesh Dashboard & Health Telemetry Synchronization (`public/index.html`, `userbot_refresher.py`, `deploy_vercel.py`)**:
+  - **Executive Dashboard Real-Time Pings**: Updated `public/index.html` to ping live `/api/health` endpoints across all 5 Cloudflare Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`, `restore-agy.agorameet`, `restore-agy.aaaai`), Render Relayers, Render Standby nodes, and Deno Sentinels (`/health` in Amsterdam).
+  - **Vercel Production Deployment**: Deployed updated static assets across both Vercel projects (`my-agy-ai-fleet` and `agy`), verifying live availability on `https://agy-aaa000.vercel.app/?v=4.8` and mirrors.
+  - **Enhanced Telegram Mesh & Health Telemetry**: Refined `/health` and `/mesh` command outputs to report live statuses of all 5 Cloudflare nodes, Render cloud engines, Deno sentinels, distributed databases (D1, Upstash, Supabase, Turso), and Vercel WebApp.
+
 - **100% Cloud-First Architecture: Render Cloud Token Refresher & Zero Local MTProto Overhead (`userbot_refresher.py`, `accounts.json`)**:
   - **Direct Render Cloud Token Collection**: Per user directive ("why rely on local, I gave Render for collecting those... make our all systems fully cloud"), integrated Render Standby Nodes (`https://my-agy-fleet-standby.onrender.com/collect-tokens` in Singapore and `https://my-agy-fleet-standby-node2.onrender.com/collect-tokens` in Frankfurt) as the primary cloud extraction engine.
   - **Eliminated Routine Local MTProto Scraping**: Replaced heavy local Telethon MTProto scraping sessions with cloud-first dispatch. Render collects tokens for all 13 accounts in the cloud, pushes them to Cloudflare Edge KV across all 5 nodes, and local loads them via HTTP.
