@@ -169,7 +169,12 @@ async def main():
         print("=" * 70)
         for acc in RENDER_ACCOUNTS:
             health = await check_account_health(session, acc)
-            status_symbol = "🟢 ONLINE" if health.get("endpoint_alive") else "🟡 SLEEPING / DEPLOYING"
+            if health.get("endpoint_alive"):
+                status_symbol = "🟢 ONLINE"
+            elif health.get("service_status") == "suspended":
+                status_symbol = "⏸️ SUSPENDED (SPAM NEUTRALIZED)"
+            else:
+                status_symbol = "🟡 SLEEPING / DEPLOYING"
             print(f"• {acc['name']} ({acc['region'].upper()}): {status_symbol}")
             print(f"  Email: {acc['email']}")
             print(f"  URL: {acc['url']}")
