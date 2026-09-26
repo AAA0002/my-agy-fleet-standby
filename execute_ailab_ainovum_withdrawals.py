@@ -108,13 +108,9 @@ async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, token
                 return {"uid": uid, "name": name, "status": "invalid_cashout_json", "balance": 0.0}
             ubal = float(cd.get("user_info", {}).get("balance", 0) or 0)
 
-        # Host account is strictly protected
-        if is_master:
-            logger.info(f"[AI Lab] Host account {name} ({uid}) balance: ${ubal:.4f} USD (PROTECTED — 0 withdrawals).")
-            return {"uid": uid, "name": name, "status": "master_protected", "balance": ubal}
-
-        logger.info(f"[AI Lab] Worker {name} ({uid}) balance: ${ubal:.4f} USD (Threshold: $0.02).")
-        if ubal >= 0.02:
+        ailab_thresh = 0.02 if is_master else 1.00
+        logger.info(f"[AI Lab] {name} ({uid}) balance: ${ubal:.4f} USD (Threshold: ${ailab_thresh:.2f}).")
+        if ubal >= ailab_thresh:
             wd_usd = round(int(ubal * 100) / 100.0, 2)
             target_wallet = MASTER_EVM_VAULT  # Direct to Binance Web3 Master (no separate wallet needed)
             pay_payload = {
@@ -129,13 +125,14 @@ async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, token
                     pres = await pr.json()
                 except Exception:
                     pres = {"error": "non_json_cashout_response"}
-                logger.info(f"[AI Lab] Worker {name} cashout response: {pres}")
+                logger.info(f"[AI Lab] {name} cashout response: {pres}")
                 err_code = pres.get("request_info", {}).get("error_code")
                 if err_code == 0 or pres.get("result"):
+                    role_str = "Main Host" if is_master else "Worker"
                     await send_telegram_alert(
                         session,
                         f"🎉 *AI Lab Auto-Cashout Submitted!*\n\n"
-                        f"• *Account:* {name} (`{uid}`)\n"
+                        f"• *Account:* {name} ({role_str} - `{uid}`)\n"
                         f"• *Amount:* `${wd_usd} USD`\n"
                         f"• *Destination:* `{target_wallet}` (BEP-20)\n"
                         f"• *Status:* Approved / In Flight"
@@ -238,14 +235,15 @@ async def process_ainovum_account(session: aiohttp.ClientSession, acc: dict, tok
         else:
             target_wallet = isolated_evms.get(uid, {}).get("address", MASTER_EVM_VAULT)
 
-        logger.info(f"[Ainovum] {name} ({uid}) available: {avail:.4f} USDT (Threshold: 0.10 USDT).")
+        ainovum_thresh = 0.10 if uid == "6727787768" else 1.00
+        logger.info(f"[Ainovum] {name} ({uid}) available: {avail:.4f} USDT (Threshold: {ainovum_thresh:.2f} USDT).")
 
         is_locked = boot_user.get("is_withdraw_locked")
         if is_locked == 1:
             logger.info(f"[Ainovum] {name} ({uid}) requires deposit / free quota used (is_withdraw_locked: 1). Skipping withdrawal.")
             return {"uid": uid, "name": name, "status": "deposit_required_or_locked", "available": avail}
 
-        if avail >= 0.10:
+        if avail >= ainovum_thresh:
             wd_amt = round(avail, 4)
             wd_payload = {
                 "amount": wd_amt,

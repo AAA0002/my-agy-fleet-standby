@@ -7121,56 +7121,56 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
         except Exception:
             pass
 
-        # 5. Auto-Withdrawal to BEP-20 (Worker Accounts Only - $0.02 USD Minimum)
-        # Main Account (6727787768) is strictly protected from withdrawal per user directive.
-        if is_primary:
-            logger.info(f"[{acc_name}] 🧪 [AI Lab] Main account holding balance (${hashes_bal:.2f} hashes). Withdrawals disabled per user directive to build power.")
-        else:
-            try:
-                async with session.get(f"{base_url}/cashout", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as cor:
-                    if cor.status == 200:
-                        co_data = await cor.json()
-                        usd_bal = float(co_data.get("user_info", {}).get("balance", 0) or 0)
-                        if usd_bal >= 0.02:
-                            wd_usd = round(int(usd_bal * 100) / 100.0, 2)
-                            target_evm = EVM_VAULT_ADDRESS  # Direct to Binance Web3 Master (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
-                            logger.info(f"[{acc_name}] 🧪 [AI Lab] Worker balance ${usd_bal:.4f} >= $0.02 threshold! Submitting auto-withdrawal to BEP-20 {target_evm}...")
-                            pay_payload = {
-                                "ps_id": 5,  # USDT (BEP20)
-                                "amount_usd": wd_usd,
-                                "wallet": target_evm,
-                                "dest_tag": ""
-                            }
-                            async with session.post(f"{base_url}/cashout-pay", json=pay_payload, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10)) as cpr:
-                                cp_res = await cpr.json()
-                                if cp_res.get("request_info", {}).get("error_code") == 0 or cp_res.get("result"):
-                                    logger.info(f"[{acc_name}] 🧪 [AI Lab] Withdrawal success: {cp_res}")
-                                    await send_report_message(
-                                        f"🎉 *AI Lab Robot Withdrawal Submitted!*\n\n"
-                                        f"• *Account:* {acc_name} (Worker)\n"
-                                        f"• *Amount:* `${wd_usd} USD` (USDT BEP-20)\n"
-                                        f"• *Destination:* `{target_evm}`\n"
-                                        f"• *Result:* `{cp_res}`",
-                                        chat_id=REPORT_CHAT_ID
-                                    )
-                                    now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-                                    ch_sub = (
-                                        f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
-                                        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                                        f"💎 <b>Platform:</b> AI Lab Robot (@ailab_robot)\n"
-                                        f"👤 <b>Account:</b> {acc_name} (Worker)\n"
-                                        f"💰 <b>Amount:</b> <code>${wd_usd} USD</code> (USDT BEP-20)\n"
-                                        f"🌐 <b>Destination Network:</b> BNB Smart Chain (BSC BEP-20)\n"
-                                        f"💼 <b>Target Vault:</b> <code>{target_evm}</code>\n"
-                                        f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
-                                        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                                        f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
-                                    )
-                                    safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_ailab_wd")
-                                else:
-                                    logger.info(f"[{acc_name}] 🧪 [AI Lab] Cashout response: {cp_res}")
-            except Exception as awe:
-                logger.debug(f"[{acc_name}] AI Lab cashout note: {awe}")
+        # 5. Auto-Withdrawal to BEP-20
+        # Main Account (6727787768): Auto-withdraws at $0.02 USD min to Primary Binance Web3 Vault (0xfda4182001672b9f0f09e2118242e543e35ed5ce).
+        # Worker Accounts: Auto-withdraw ONLY if they reach $1.00 USD per user directive.
+        try:
+            min_ailab_thresh = 0.02 if is_primary else 1.00
+            async with session.get(f"{base_url}/cashout", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as cor:
+                if cor.status == 200:
+                    co_data = await cor.json()
+                    usd_bal = float(co_data.get("user_info", {}).get("balance", 0) or 0)
+                    if usd_bal >= min_ailab_thresh:
+                        wd_usd = round(int(usd_bal * 100) / 100.0, 2)
+                        target_evm = EVM_VAULT_ADDRESS  # Direct to Binance Web3 Master (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
+                        logger.info(f"[{acc_name}] 🧪 [AI Lab] Balance ${usd_bal:.4f} >= ${min_ailab_thresh:.2f} threshold! Submitting auto-withdrawal to BEP-20 {target_evm}...")
+                        pay_payload = {
+                            "ps_id": 5,  # USDT (BEP20)
+                            "amount_usd": wd_usd,
+                            "wallet": target_evm,
+                            "dest_tag": ""
+                        }
+                        async with session.post(f"{base_url}/cashout-pay", json=pay_payload, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10)) as cpr:
+                            cp_res = await cpr.json()
+                            if cp_res.get("request_info", {}).get("error_code") == 0 or cp_res.get("result"):
+                                logger.info(f"[{acc_name}] 🧪 [AI Lab] Withdrawal success: {cp_res}")
+                                acc_role = "Main Host" if is_primary else "Worker"
+                                await send_report_message(
+                                    f"🎉 *AI Lab Robot Withdrawal Submitted!*\n\n"
+                                    f"• *Account:* {acc_name} ({acc_role})\n"
+                                    f"• *Amount:* `${wd_usd} USD` (USDT BEP-20)\n"
+                                    f"• *Destination:* `{target_evm}`\n"
+                                    f"• *Result:* `{cp_res}`",
+                                    chat_id=REPORT_CHAT_ID
+                                )
+                                now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+                                ch_sub = (
+                                    f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
+                                    f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                                    f"💎 <b>Platform:</b> AI Lab Robot (@ailab_robot)\n"
+                                    f"👤 <b>Account:</b> {acc_name} ({acc_role})\n"
+                                    f"💰 <b>Amount:</b> <code>${wd_usd} USD</code> (USDT BEP-20)\n"
+                                    f"🌐 <b>Destination Network:</b> BNB Smart Chain (BSC BEP-20)\n"
+                                    f"💼 <b>Target Vault:</b> <code>{target_evm}</code>\n"
+                                    f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
+                                    f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                                    f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
+                                )
+                                safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_ailab_wd")
+                            else:
+                                logger.info(f"[{acc_name}] 🧪 [AI Lab] Cashout response: {cp_res}")
+        except Exception as awe:
+            logger.debug(f"[{acc_name}] AI Lab cashout note: {awe}")
 
         logger.info(f"[{acc_name}] 🧪 [AI Lab] Cycle finished | Power: {miner_data.get('current_power', 0)} | Hashes: {hashes_bal:.2f} | Mining: {is_running}")
 
@@ -7744,7 +7744,8 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
                     if cr.status == 200:
                         cd = await cr.json()
                         avail = float(cd.get("freeze", {}).get("available", 0) or 0)
-                        if avail >= 0.10:
+                        min_ainovum_thresh = 0.10 if is_primary else 1.00
+                        if avail >= min_ainovum_thresh:
                             wd_amt = round(avail, 4)
                             if acc_uid == "6727787768":
                                 target_evm_addr = BINANCE_WALLET_2_EVM  # Binance Web3 Wallet 2 (0x017841f26d5b79cc8c5eb20c65367bb645cc2610)
@@ -7752,7 +7753,7 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
                                 target_evm_addr = EVM_VAULT_ADDRESS     # Node 10 (@AAlllAA2) holds Primary Binance Web3 (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
                             else:
                                 target_evm_addr = FLEET_EVM_WALLETS.get(acc_uid) or EVM_VAULT_ADDRESS
-                            logger.info(f"[{acc_name}] 🤖 [Ainovum] Eligible for FREE withdrawal! Available {avail:.4f} USDT >= 0.10 threshold. Submitting auto-withdrawal to BEP-20 {target_evm_addr}...")
+                            logger.info(f"[{acc_name}] 🤖 [Ainovum] Eligible for FREE withdrawal! Available {avail:.4f} USDT >= {min_ainovum_thresh:.2f} threshold. Submitting auto-withdrawal to BEP-20 {target_evm_addr}...")
                             wd_payload = {"amount": wd_amt, "wallet": target_evm_addr, "network": "bep20"}
                             for attempt in range(2):
                                 async with session.post(
@@ -9069,23 +9070,26 @@ async def execute_ailab_fleet_sweep(caller_chat_id=None):
                         if cr.status == 200:
                             cdata = await cr.json()
                             ubal = float(cdata.get("user_info", {}).get("balance", 0) or 0)
-                            if ubal >= 0.02:
+                            ailab_thresh = 0.02 if is_pri else 1.00
+                            if ubal >= ailab_thresh:
                                 wd_usd = round(int(ubal * 100) / 100.0, 2)
+                                target_dest = EVM_VAULT_ADDRESS if is_pri else worker_evm
                                 pay_payload = {
                                     "ps_id": 5,  # USDT (BEP20)
                                     "amount_usd": wd_usd,
-                                    "wallet": worker_evm,
+                                    "wallet": target_dest,
                                     "dest_tag": ""
                                 }
                                 async with ai_sess.post(f"{base_url}/cashout-pay", json=pay_payload, headers=auth_h, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as wr:
                                     wres = await wr.json()
                                     if wres.get("request_info", {}).get("error_code") == 0 or wres.get("result"):
                                         swept_count += 1
-                                        await send_report_message(f"🎉 *AI Lab Sweep:* `{name}` withdrew `${wd_usd} USD` to BEP-20 `{worker_evm}`!", chat_id=target_chat)
+                                        acc_role = "Main Host" if is_pri else "Worker"
+                                        await send_report_message(f"🎉 *AI Lab Sweep:* `{name}` ({acc_role}) withdrew `${wd_usd} USD` to BEP-20 `{target_dest}`!", chat_id=target_chat)
             except Exception as aie:
                 logger.debug(f"[AI Lab Sweep] Error for {name}: {aie}")
     if swept_count == 0 and caller_chat_id:
-        await send_report_message("🧪 *AI Lab Sweep:* No accounts currently meet the $0.02 USD minimum cashout threshold.", chat_id=target_chat)
+        await send_report_message("🧪 *AI Lab Sweep:* No accounts currently meet the cashout threshold ($0.02 for Main, $1.00 for Workers).", chat_id=target_chat)
 
 
 async def execute_ainovum_fleet_sweep(caller_chat_id=None):
@@ -9131,7 +9135,8 @@ async def execute_ainovum_fleet_sweep(caller_chat_id=None):
                     if cfg_r.status == 200:
                         cfg_d = await cfg_r.json()
                         avail = float(cfg_d.get("freeze", {}).get("available", 0) or 0)
-                        if avail >= 0.10:
+                        min_an_thresh = 0.10 if is_pri else 1.00
+                        if avail >= min_an_thresh:
                             if uid == "6727787768":
                                 target_addr = BINANCE_WALLET_2_EVM
                             elif uid == "8203342513":
@@ -9143,11 +9148,12 @@ async def execute_ainovum_fleet_sweep(caller_chat_id=None):
                                 wd_res = await wdr.json()
                                 if wdr.status == 200 and not wd_res.get("access_denied") and not wd_res.get("error"):
                                     swept_count += 1
-                                    await send_report_message(f"🎉 *Ainovum Sweep:* `{name}` withdrew `{wd_amt} USDT` to `{target_addr}`! Result: {wd_res}", chat_id=target_chat)
+                                    acc_role = "Main Host" if is_pri else "Worker"
+                                    await send_report_message(f"🎉 *Ainovum Sweep:* `{name}` ({acc_role}) withdrew `{wd_amt} USDT` to `{target_addr}`! Result: {wd_res}", chat_id=target_chat)
             except Exception as ane:
                 logger.debug(f"[Ainovum Sweep] Error for {name}: {ane}")
     if swept_count == 0 and caller_chat_id:
-        await send_report_message("🤖 *Ainovum Sweep:* No accounts currently meet the 0.10 USDT free withdrawal criteria.", chat_id=target_chat)
+        await send_report_message("🤖 *Ainovum Sweep:* No accounts currently meet the free withdrawal criteria (0.10 USDT for Main, 1.00 USDT for Workers).", chat_id=target_chat)
 
 
 async def execute_universal_fleet_sweep(caller_chat_id=None):

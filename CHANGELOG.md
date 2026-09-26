@@ -4,6 +4,16 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Main Account Test Withdrawal Execution & Worker $1.00 Payout Threshold Policy (`userbot_refresher.py`, `execute_ailab_ainovum_withdrawals.py`, `CHANGELOG.md`)**:
+  - **Main Account Withdrawal Execution Across Bots**:
+    * **AI Lab Robot (`@AiLab_robot`)**: Enabled auto-cashouts for Main Host Account (`6727787768`). Successfully executed live test cashout of `$0.03 USD` (Payment ID `7116`, settled amount `0.020005` USDT BEP-20) delivered directly to Primary Binance Web3 Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`).
+    * **Stones Miners (`@stoneswithestand_bot`)**: Verified Main Account holds **2,996 STONES** (well above 500 threshold). Dispatched automated ad-boarding and OCR captcha engine with AdsGram confirmations to Binance Arbitrum One Vault.
+    * **Ainovum (`@ainovum_bot`)**: Verified dedicated withdrawal routing to Binance Web3 Wallet 2 (`0x017841f26d5b79cc8c5eb20c65367bb645cc2610`).
+  - **Worker Accounts $1.00 Withdrawal Threshold Policy**:
+    * Per user directive ("And you withdrawal other if they reach 1 dollar"), reconfigured all worker accounts across `userbot_refresher.py` and `execute_ailab_ainovum_withdrawals.py`:
+    * **AI Lab Robot**: Worker cashouts trigger ONLY when worker balance reaches **`$1.00 USD`** (`usd_bal >= 1.00`), while Main Account cashouts trigger at standard min `$0.02`.
+    * **Ainovum**: Worker cashouts trigger ONLY when worker available balance reaches **`1.00 USDT`** (`avail >= 1.00`), while Main Account cashouts trigger at `0.10 USDT`. This allows worker accounts to compound balance and maximize payout per free cashout tier.
+
 - **Novum AI Agent (`@ainovum_bot`) Intelligence Integration & Daily Gift Box Auto-Opener Engine (`userbot_refresher.py`, `execute_ailab_ainovum_withdrawals.py`, `CHANGELOG.md`)**:
   - **Full Daily Gift Box Automation Loop**: Reverse engineered and integrated Novum AI Agent's "Gifts" tab mechanics. The platform awards daily crypto gift boxes (1 free box daily + 1 extra box per referral invite) granting coins (1-7 coins) and direct USDT rewards (0.01 - 0.09 USDT per box). Implemented `/api/gift-box/state` polling and a multi-box loop opener (`POST /api/gift-box/open`) across all 13 accounts in `automate_ainovum_cycle()` and `execute_ailab_ainovum_withdrawals.py`.
   - **Automated Telegram Reward Alerts for Gift Box USDT**: Integrated real-time alerts sent to `REPORT_CHAT_ID` and payout channel whenever any fleet account unpacks a USDT cash prize from a gift box.
