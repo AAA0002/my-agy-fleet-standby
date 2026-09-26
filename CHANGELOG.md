@@ -4,6 +4,21 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Bidirectional Account Onboarding Bridge, MRG Miner Hardening & 1,000 MRG Threshold Hit (`deploy_both_cf_workers.py`, `userbot_refresher.py`, `CHANGELOG.md`)**:
+  - **Bidirectional Telegram & Mini App Onboarding Bridge**:
+    * **Identified Onboarding Disconnect**: Users submitting phone numbers (e.g. `918930504750`) via `/add_account`, direct bot chat messages, or the Mini App modal ("Connect Telegram Account") received edge confirmation notices, but the request was never forwarded to the local MTProto daemon. In addition, when users replied with 5-digit verification codes or 2FA passwords in the bot chat, the Cloudflare Edge webhook had no relay handler.
+    * **Cloudflare Edge Webhook Upgrades**: Added automated detection for phone numbers and OTP verification codes (`^\d{5}$`, `^\d{3}[-\s]\d{2}$`, `/cancel`). Edge worker immediately queues `{ action: "add_account_phone", phone, chat_id }` and `{ action: "login_input", text, chat_id }` into Upstash Redis and backup KV.
+    * **Daemon MTProto Bridge**: Added top-level `initiate_account_login()` and `handle_login_input()` in `userbot_refresher.py`. `miniapp_command_listener_loop` receives the actions from Upstash Redis, requests the verification code via Telethon `send_code_request()`, notifies the user, and adapts polling to 2 seconds during active sessions so codes and passwords authenticate instantly.
+    * **Redeployed Mesh & Tested**: Synchronized updated worker across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with 100% success.
+  - **MRG Miner Railway Timeout & Circuit Breaker Optimization**:
+    * Increased MRG API timeouts from 6s to 12s to accommodate Railway backend cold-starts and peak load.
+    * Optimized circuit breaker: changed from 30-minute lockout on 2 fails to a 3-minute backoff requiring 4 consecutive fails.
+  - **MRG 1,000 Threshold Crossed & Fleet Wallet Audit**:
+    * Audited all 13 accounts across MRG Miner and ATF Miner; confirmed 13/13 accounts have dedicated isolated TON wallets bound.
+    * Claimed accumulated mining rewards for top account `Arif (8826375659)`: balance reached **1,001.23 MRG** (surpassing the 1,000 MRG withdrawal threshold).
+  - **Disaster Recovery**:
+    * Generated and uploaded a fresh disaster recovery archive to Telegram vault `@myagyai` via `backup_manager.py`.
+
 - **Telegram Bot Notification Spamming Root Cause Eliminated (`userbot_refresher.py`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Identified Infinite Feedback Loop**:
     * Discovered that each account's automated farming cycle in `userbot_refresher.py` was delegating BNB tasks to `/api/farm/bnb` on Cloudflare Edge.

@@ -2881,6 +2881,219 @@ def build_help_guide():
 # TELEGRAM BOT COMMAND & TAB MENU LISTENER LOOP
 # =======================================================
 
+async def initiate_account_login(chat_id: str, raw_phone: str):
+    """Initiates Telegram MTProto verification code request for onboarding a new account."""
+    chat_id = str(chat_id)
+    if chat_id in login_sessions and login_sessions[chat_id].get("client"):
+        try:
+            await login_sessions[chat_id]["client"].disconnect()
+        except Exception:
+            pass
+
+    cleaned_phone, country_label = detect_and_normalize_phone(raw_phone)
+    logger.info(f"[Account Onboarding] Requesting MTProto verification code for {cleaned_phone} ({country_label}) for Chat {chat_id}")
+    await send_report_message(
+        f"📡 *Auto-Detected Country:* {country_label}\n"
+        f"📱 *Normalized Number:* `{cleaned_phone}`\n\n"
+        f"⏳ Requesting verification code from Telegram...",
+        reply_markup=CANCEL_KEYBOARD,
+        chat_id=chat_id
+    )
+    temp_cl = TelegramClient(StringSession(), API_ID, API_HASH)
+    await temp_cl.connect()
+    try:
+        sent_code = await temp_cl.send_code_request(cleaned_phone)
+        logger.info(f"[Account Onboarding] ✅ Verification code dispatched successfully to {cleaned_phone} (phone_code_hash: {sent_code.phone_code_hash[:8]}...)")
+        login_sessions[chat_id] = {
+            "step": "WAITING_CODE",
+            "phone": cleaned_phone,
+            "country": country_label,
+            "phone_code_hash": sent_code.phone_code_hash,
+            "client": temp_cl,
+            "time": time.time()
+        }
+        await send_report_message(
+            f"📨 *Verification Code Sent!*\n\n"
+            f"🌍 Region: {country_label}\n"
+            f"📱 Number: `{cleaned_phone}`\n\n"
+            f"Telegram has sent a 5-digit verification code to your app or SMS.\n\n"
+            f"Please reply with the code (e.g. `12345` or `1-2-3-4-5`):\n\n"
+            f"_(Or send `/cancel` to abort)_",
+            reply_markup=CANCEL_KEYBOARD,
+            chat_id=chat_id
+        )
+    except PhoneNumberInvalidError:
+        await temp_cl.disconnect()
+        login_sessions.pop(chat_id, None)
+        await send_report_message(
+            f"❌ Could not verify `{cleaned_phone}` ({country_label}).\n"
+            f"Please check the number or include your exact country code (e.g. `+880...`, `+1...`, `+91...`):",
+            reply_markup=CANCEL_KEYBOARD,
+            chat_id=chat_id
+        )
+    except Exception as e:
+        await temp_cl.disconnect()
+        login_sessions.pop(chat_id, None)
+        logger.error(f"[Account Onboarding] Error requesting code for {cleaned_phone}: {e}")
+        await send_report_message(f"❌ Error requesting login code: {e}", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
+
+
+async def handle_login_input(chat_id: str, text: str):
+    """Processes verification code, 2FA password, or cancellation during account login."""
+    chat_id = str(chat_id)
+    if chat_id not in login_sessions:
+        return
+
+    state = login_sessions[chat_id]
+    step = state.get("step")
+
+    if text.startswith("/cancel") or text in ["❌ Cancel Login", "❌ Cancel"]:
+        cl = state.get("client")
+        if cl:
+            try:
+                await cl.disconnect()
+            except Exception:
+                pass
+        login_sessions.pop(chat_id, None)
+        await send_report_message("❌ Account login cancelled.", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
+        return
+
+    if step == "WAITING_PHONE":
+        await initiate_account_login(chat_id, text)
+        return
+
+    elif step == "WAITING_CODE":
+        code = re.sub(r'[^0-9]', '', text)
+        temp_cl = state["client"]
+        phone = state["phone"]
+        pch = state["phone_code_hash"]
+        try:
+            await temp_cl.sign_in(phone=phone, code=code, phone_code_hash=pch)
+            me = await temp_cl.get_me()
+            acc_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or "User"
+            uname = me.username or "None"
+            sess_str = temp_cl.session.save()
+
+            acc_entry = {
+                "name": acc_name,
+                "username": uname,
+                "user_id": me.id,
+                "phone": phone,
+                "session_string": sess_str,
+                "added_at": datetime.now(timezone.utc).isoformat(),
+                "status": "active"
+            }
+
+            await ensure_referral_bound(temp_cl, acc_entry)
+            await temp_cl.disconnect()
+            login_sessions.pop(chat_id, None)
+
+            accs = load_accounts()
+            updated = False
+            for acc in accs:
+                if acc.get("phone") == phone or acc.get("user_id") == me.id:
+                    acc.update(acc_entry)
+                    acc["updated_at"] = datetime.now(timezone.utc).isoformat()
+                    updated = True
+                    break
+            if not updated:
+                accs.append(acc_entry)
+            save_accounts(accs)
+            ensure_account_ton_wallet(acc_entry)
+            PRIORITY_ACCOUNT_IDS.add(str(me.id))
+            wake_worker_event.set()
+
+            succ = (
+                f"🎉 *Account Connected Successfully!*\n\n"
+                f"• *Name:* {acc_name}\n"
+                f"• *Username:* @{uname}\n"
+                f"• *User ID:* `{me.id}`\n"
+                f"• *Phone:* `{phone}`\n"
+                f"• *Referrals:* `Bound to Master Fleet` ✅\n"
+                f"• *Total Active Accounts:* `{len(accs)}`\n\n"
+                f"✅ Automatically registered under your master referral links! 8-bot mining & farming is now active on this account."
+            )
+            await broadcast_admin_message(succ, reply_markup=MAIN_TAB_KEYBOARD)
+            asyncio.create_task(send_backup_to_telegram(str(chat_id)))
+        except SessionPasswordNeededError:
+            state["step"] = "WAITING_2FA"
+            await send_report_message(
+                "🔒 *Two-Factor Authentication (2FA) Required*\n\n"
+                "This account has a Two-Factor Cloud Password enabled.\n"
+                "Please reply with your 2FA password:\n\n"
+                "_(Or send `/cancel` to abort)_",
+                reply_markup=CANCEL_KEYBOARD,
+                chat_id=chat_id
+            )
+        except PhoneCodeInvalidError:
+            await send_report_message("❌ The verification code is invalid. Please send the 5-digit code again (or send /cancel):", reply_markup=CANCEL_KEYBOARD, chat_id=chat_id)
+        except PhoneCodeExpiredError:
+            await temp_cl.disconnect()
+            login_sessions.pop(chat_id, None)
+            await send_report_message("❌ The verification code has expired. Please tap `➕ Add Account` to start over.", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
+        except Exception as e:
+            await temp_cl.disconnect()
+            login_sessions.pop(chat_id, None)
+            await send_report_message(f"❌ Login failed: {e}", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
+        return
+
+    elif step == "WAITING_2FA":
+        temp_cl = state["client"]
+        phone = state["phone"]
+        pwd = text.strip()
+        try:
+            await temp_cl.sign_in(password=pwd)
+            me = await temp_cl.get_me()
+            acc_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or "User"
+            uname = me.username or "None"
+            sess_str = temp_cl.session.save()
+
+            acc_entry = {
+                "name": acc_name,
+                "username": uname,
+                "user_id": me.id,
+                "phone": phone,
+                "session_string": sess_str,
+                "added_at": datetime.now(timezone.utc).isoformat(),
+                "status": "active"
+            }
+
+            await ensure_referral_bound(temp_cl, acc_entry)
+            await temp_cl.disconnect()
+            login_sessions.pop(chat_id, None)
+
+            accs = load_accounts()
+            updated = False
+            for acc in accs:
+                if acc.get("phone") == phone or acc.get("user_id") == me.id:
+                    acc.update(acc_entry)
+                    acc["updated_at"] = datetime.now(timezone.utc).isoformat()
+                    updated = True
+                    break
+            if not updated:
+                accs.append(acc_entry)
+            save_accounts(accs)
+            ensure_account_ton_wallet(acc_entry)
+            PRIORITY_ACCOUNT_IDS.add(str(me.id))
+            wake_worker_event.set()
+
+            succ = (
+                f"🎉 *Account Connected Successfully with 2FA!*\n\n"
+                f"• *Name:* {acc_name}\n"
+                f"• *Username:* @{uname}\n"
+                f"• *User ID:* `{me.id}`\n"
+                f"• *Phone:* `{phone}`\n"
+                f"• *Referrals:* `Bound to Master Fleet` ✅\n"
+                f"• *Total Active Accounts:* `{len(accs)}`\n\n"
+                f"✅ Automatically registered under your master referral links! 8-bot mining & farming is now active on this account."
+            )
+            await broadcast_admin_message(succ, reply_markup=MAIN_TAB_KEYBOARD)
+            asyncio.create_task(send_backup_to_telegram(str(chat_id)))
+        except Exception as e:
+            await send_report_message(f"❌ 2FA Password incorrect: {e}. Please try again (or tap ❌ Cancel Login):", reply_markup=CANCEL_KEYBOARD, chat_id=chat_id)
+        return
+
+
 async def handle_single_update(update: dict):
     """Processes an individual Telegram update concurrently without blocking getUpdates polling."""
     global WALLET_ADDRESS, SILENT_MODE
@@ -3004,206 +3217,13 @@ async def handle_single_update(update: dict):
             )
             return
 
+
         # ----------------------------------------------------
         # A. ACTIVE MULTI-ACCOUNT LOGIN FLOW
         # ----------------------------------------------------
         if str(chat_id) in login_sessions:
-            state = login_sessions[str(chat_id)]
-            step = state.get("step")
-
-            if text.startswith("/cancel") or text == "❌ Cancel Login":
-                cl = state.get("client")
-                if cl:
-                    try:
-                        await cl.disconnect()
-                    except Exception:
-                        pass
-                del login_sessions[str(chat_id)]
-                await send_report_message("❌ Account login cancelled.", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
-                return
-
-            if step == "WAITING_PHONE":
-                cleaned_phone, country_label = detect_and_normalize_phone(text)
-
-                await send_report_message(
-                    f"📡 *Auto-Detected Country:* {country_label}\n"
-                    f"📱 *Normalized Number:* `{cleaned_phone}`\n\n"
-                    f"⏳ Requesting verification code from Telegram...",
-                    reply_markup=CANCEL_KEYBOARD,
-                    chat_id=chat_id
-                )
-                temp_cl = TelegramClient(StringSession(), API_ID, API_HASH)
-                await temp_cl.connect()
-                try:
-                    sent_code = await temp_cl.send_code_request(cleaned_phone)
-                    login_sessions[str(chat_id)] = {
-                        "step": "WAITING_CODE",
-                        "phone": cleaned_phone,
-                        "country": country_label,
-                        "phone_code_hash": sent_code.phone_code_hash,
-                        "client": temp_cl,
-                        "time": time.time()
-                    }
-                    await send_report_message(
-                        f"📨 *Verification Code Sent!*\n\n"
-                        f"🌍 Region: {country_label}\n"
-                        f"📱 Number: `{cleaned_phone}`\n\n"
-                        f"Telegram has sent a 5-digit verification code to your app or SMS.\n\n"
-                        f"Please reply with the code (e.g. `12345` or `1-2-3-4-5`):\n\n"
-                        f"_(Or tap ❌ Cancel Login below to abort)_",
-                        reply_markup=CANCEL_KEYBOARD,
-                        chat_id=chat_id
-                    )
-                except PhoneNumberInvalidError:
-                    await temp_cl.disconnect()
-                    await send_report_message(
-                        f"❌ Could not verify `{cleaned_phone}` ({country_label}).\n"
-                        f"Please check the number or include your exact country code (e.g. `+880...`, `+1...`):",
-                        reply_markup=CANCEL_KEYBOARD,
-                        chat_id=chat_id
-                    )
-                except Exception as e:
-                    await temp_cl.disconnect()
-                    del login_sessions[str(chat_id)]
-                    await send_report_message(f"❌ Error requesting login code: {e}", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
-                return
-
-            elif step == "WAITING_CODE":
-                code = re.sub(r'[^0-9]', '', text)
-                temp_cl = state["client"]
-                phone = state["phone"]
-                pch = state["phone_code_hash"]
-                try:
-                    await temp_cl.sign_in(phone=phone, code=code, phone_code_hash=pch)
-                    me = await temp_cl.get_me()
-                    acc_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or "User"
-                    uname = me.username or "None"
-                    sess_str = temp_cl.session.save()
-
-                    acc_entry = {
-                        "name": acc_name,
-                        "username": uname,
-                        "user_id": me.id,
-                        "phone": phone,
-                        "session_string": sess_str,
-                        "added_at": datetime.now(timezone.utc).isoformat(),
-                        "status": "active"
-                    }
-
-                    # Automatically register account under user's BNB Galaxy & ATF referrals
-                    await ensure_referral_bound(temp_cl, acc_entry)
-
-                    await temp_cl.disconnect()
-                    del login_sessions[str(chat_id)]
-
-                    accs = load_accounts()
-                    updated = False
-                    for acc in accs:
-                        if acc.get("phone") == phone or acc.get("user_id") == me.id:
-                            acc.update(acc_entry)
-                            acc["updated_at"] = datetime.now(timezone.utc).isoformat()
-                            updated = True
-                            break
-                    if not updated:
-                        accs.append(acc_entry)
-                    save_accounts(accs)
-                    ensure_account_ton_wallet(acc_entry)
-                    PRIORITY_ACCOUNT_IDS.add(str(me.id))
-                    wake_worker_event.set()
-
-                    succ = (
-                        f"🎉 *Account Connected Successfully!*\n\n"
-                        f"• *Name:* {acc_name}\n"
-                        f"• *Username:* @{uname}\n"
-                        f"• *User ID:* `{me.id}`\n"
-                        f"• *Phone:* `{phone}`\n"
-                        f"• *Referrals:* `Bound to Master Fleet` ✅\n"
-                        f"• *Total Active Accounts:* `{len(accs)}`\n\n"
-                        f"✅ Automatically registered under your master referral links! 8-bot mining & farming is now active on this account."
-                    )
-                    await broadcast_admin_message(succ, reply_markup=MAIN_TAB_KEYBOARD)
-                    # Auto-backup fleet and sessions to Telegram
-                    asyncio.create_task(send_backup_to_telegram(str(chat_id)))
-                except SessionPasswordNeededError:
-                    state["step"] = "WAITING_2FA"
-                    await send_report_message(
-                        "🔒 *Two-Factor Authentication (2FA) Required*\n\n"
-                        "This account has a Two-Factor Cloud Password enabled.\n"
-                        "Please reply with your 2FA password:\n\n"
-                        "_(Or tap ❌ Cancel Login below)_",
-                        reply_markup=CANCEL_KEYBOARD,
-                        chat_id=chat_id
-                    )
-                except PhoneCodeInvalidError:
-                    await send_report_message("❌ The verification code is invalid. Please send the 5-digit code again (or send /cancel):", reply_markup=CANCEL_KEYBOARD, chat_id=chat_id)
-                except PhoneCodeExpiredError:
-                    await temp_cl.disconnect()
-                    del login_sessions[str(chat_id)]
-                    await send_report_message("❌ The verification code has expired. Please tap `➕ Add Account` to start over.", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
-                except Exception as e:
-                    await temp_cl.disconnect()
-                    del login_sessions[str(chat_id)]
-                    await send_report_message(f"❌ Login failed: {e}", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
-                return
-
-            elif step == "WAITING_2FA":
-                temp_cl = state["client"]
-                phone = state["phone"]
-                pwd = text.strip()
-                try:
-                    await temp_cl.sign_in(password=pwd)
-                    me = await temp_cl.get_me()
-                    acc_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or "User"
-                    uname = me.username or "None"
-                    sess_str = temp_cl.session.save()
-
-                    acc_entry = {
-                        "name": acc_name,
-                        "username": uname,
-                        "user_id": me.id,
-                        "phone": phone,
-                        "session_string": sess_str,
-                        "added_at": datetime.now(timezone.utc).isoformat(),
-                        "status": "active"
-                    }
-
-                    # Automatically register account under user's BNB Galaxy & ATF referrals
-                    await ensure_referral_bound(temp_cl, acc_entry)
-
-                    await temp_cl.disconnect()
-                    del login_sessions[str(chat_id)]
-
-                    accs = load_accounts()
-                    updated = False
-                    for acc in accs:
-                        if acc.get("phone") == phone or acc.get("user_id") == me.id:
-                            acc.update(acc_entry)
-                            acc["updated_at"] = datetime.now(timezone.utc).isoformat()
-                            updated = True
-                            break
-                    if not updated:
-                        accs.append(acc_entry)
-                    save_accounts(accs)
-                    ensure_account_ton_wallet(acc_entry)
-                    PRIORITY_ACCOUNT_IDS.add(str(me.id))
-                    wake_worker_event.set()
-
-                    succ = (
-                        f"🎉 *Account Connected Successfully with 2FA!*\n\n"
-                        f"• *Name:* {acc_name}\n"
-                        f"• *Username:* @{uname}\n"
-                        f"• *User ID:* `{me.id}`\n"
-                        f"• *Phone:* `{phone}`\n"
-                        f"• *Referrals:* `Bound to Master Fleet` ✅\n"
-                        f"• *Total Active Accounts:* `{len(accs)}`\n\n"
-                        f"✅ Automatically registered under your master referral links! 8-bot mining & farming is now active on this account."
-                    )
-                    await broadcast_admin_message(succ, reply_markup=MAIN_TAB_KEYBOARD)
-                    # Auto-backup fleet and sessions to Telegram
-                    asyncio.create_task(send_backup_to_telegram(str(chat_id)))
-                except Exception as e:
-                    await send_report_message(f"❌ 2FA Password incorrect: {e}. Please try again (or tap ❌ Cancel Login):", reply_markup=CANCEL_KEYBOARD, chat_id=chat_id)
-                return
+            await handle_login_input(str(chat_id), text)
+            return
 
 
         # ----------------------------------------------------
@@ -3581,38 +3601,7 @@ async def handle_single_update(update: dict):
             parts = text.split(maxsplit=1)
             raw_phone = parts[1].strip() if len(parts) > 1 else None
             if raw_phone and any(c.isdigit() for c in raw_phone):
-                cleaned_phone, country_label = detect_and_normalize_phone(raw_phone)
-                await send_report_message(
-                    f"📡 *Auto-Detected Country:* {country_label}\n"
-                    f"📱 *Normalized Number:* `{cleaned_phone}`\n\n"
-                    f"⏳ Requesting verification code from Telegram...",
-                    reply_markup=CANCEL_KEYBOARD,
-                    chat_id=chat_id
-                )
-                temp_cl = TelegramClient(StringSession(), API_ID, API_HASH)
-                await temp_cl.connect()
-                try:
-                    sent_code = await temp_cl.send_code_request(cleaned_phone)
-                    login_sessions[str(chat_id)] = {
-                        "step": "WAITING_CODE",
-                        "phone": cleaned_phone,
-                        "country": country_label,
-                        "phone_code_hash": sent_code.phone_code_hash,
-                        "client": temp_cl,
-                        "time": time.time()
-                    }
-                    await send_report_message(
-                        f"✉️ Telegram has sent a login code to `{cleaned_phone}`.\n\n"
-                        f"Please send the login code here (e.g. `12345`).",
-                        reply_markup=CANCEL_KEYBOARD,
-                        chat_id=chat_id
-                    )
-                except Exception as e:
-                    await send_report_message(f"❌ Failed to send code to `{cleaned_phone}`: {e}", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
-                    try:
-                        await temp_cl.disconnect()
-                    except Exception:
-                        pass
+                await initiate_account_login(str(chat_id), raw_phone)
             else:
                 login_sessions[str(chat_id)] = {"step": "WAITING_PHONE", "client": None, "time": time.time()}
                 prompt = (
@@ -3622,8 +3611,8 @@ async def handle_single_update(update: dict):
                     "You can enter:\n"
                     "• `019XXXXXXXX` or `19XXXXXXXX` (Bangladesh 🇧🇩)\n"
                     "• `+88017XXXXXXXX` (Standard E.164)\n"
-                    "• Any international number (e.g. `+1...`, `+44...`, `+92...`)\n\n"
-                    "_(Tap ❌ Cancel Login below to abort at any time)_"
+                    "• Any international number (e.g. `+1...`, `+44...`, `+91...`, `+92...`)\n\n"
+                    "_(Or send `/cancel` to abort)_"
                 )
                 await send_report_message(prompt, reply_markup=CANCEL_KEYBOARD, chat_id=chat_id)
 
@@ -3631,39 +3620,9 @@ async def handle_single_update(update: dict):
             (text.startswith("+") and sum(1 for c in text if c.isdigit()) >= 8)
             or (text.startswith("01") and len(text.replace(" ", "").replace("-", "")) == 11 and text.replace(" ", "").replace("-", "").isdigit())
             or (text.startswith("1") and len(text.replace(" ", "").replace("-", "")) == 10 and text.replace(" ", "").replace("-", "").isdigit() and text[1] in "3456789")
+            or (re.sub(r'[\s\-]', '', text).isdigit() and len(re.sub(r'[\s\-]', '', text)) in (10, 11, 12, 13))
         ):
-            cleaned_phone, country_label = detect_and_normalize_phone(text)
-            await send_report_message(
-                f"📡 *Auto-Detected Country:* {country_label}\n"
-                f"📱 *Normalized Number:* `{cleaned_phone}`\n\n"
-                f"⏳ Requesting verification code from Telegram...",
-                reply_markup=CANCEL_KEYBOARD,
-                chat_id=chat_id
-            )
-            temp_cl = TelegramClient(StringSession(), API_ID, API_HASH)
-            await temp_cl.connect()
-            try:
-                sent_code = await temp_cl.send_code_request(cleaned_phone)
-                login_sessions[str(chat_id)] = {
-                    "step": "WAITING_CODE",
-                    "phone": cleaned_phone,
-                    "country": country_label,
-                    "phone_code_hash": sent_code.phone_code_hash,
-                    "client": temp_cl,
-                    "time": time.time()
-                }
-                await send_report_message(
-                    f"✉️ Telegram has sent a login code to `{cleaned_phone}`.\n\n"
-                    f"Please send the login code here (e.g. `12345`).",
-                    reply_markup=CANCEL_KEYBOARD,
-                    chat_id=chat_id
-                )
-            except Exception as e:
-                await send_report_message(f"❌ Failed to send code to `{cleaned_phone}`: {e}", reply_markup=MAIN_TAB_KEYBOARD, chat_id=chat_id)
-                try:
-                    await temp_cl.disconnect()
-                except Exception:
-                    pass
+            await initiate_account_login(str(chat_id), text)
 
         elif text.startswith("/briefing") or text.startswith("/morning") or text in ["🌅 Morning Briefing", "🌅 Briefing", "🌅 AI Briefing"]:
             rep = await build_morning_briefing(caller_uid)
@@ -6582,7 +6541,7 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             }
         }
         try:
-            async with session.post(f"{base_url}/api/auth/verify", json=auth_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as r:
+            async with session.post(f"{base_url}/api/auth/verify", json=auth_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=12)) as r:
                 pass
         except Exception:
             pass
@@ -6592,10 +6551,11 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         # 2. Profile fetch
         me_data = {}
         try:
-            async with session.post(f"{base_url}/api/user/me", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as r:
+            async with session.post(f"{base_url}/api/user/me", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=12)) as r:
                 if r.status == 200:
                     me_data = await r.json()
                     MRG_CONSECUTIVE_FAILS = 0
+                    MRG_CIRCUIT_BREAKER_UNTIL = 0
                 elif r.status in (401, 403):
                     logger.warning(f"[{acc_name}] ⛏️ [MRG Miner] Token expired (HTTP {r.status}). Invalidating token for automatic cloud refresh.")
                     if str(acc_uid) in FLEET_MINIAPP_TOKENS:
@@ -6605,10 +6565,11 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                     fresh_init = await refresh_tokens_via_relayer(session, acc_uid, "mrg")
                     if fresh_init:
                         init_data = fresh_init
-                        async with session.post(f"{base_url}/api/user/me", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as r_retry:
+                        async with session.post(f"{base_url}/api/user/me", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=12)) as r_retry:
                             if r_retry.status == 200:
                                 me_data = await r_retry.json()
                                 MRG_CONSECUTIVE_FAILS = 0
+                                MRG_CIRCUIT_BREAKER_UNTIL = 0
                             else:
                                 return
                     else:
@@ -6619,9 +6580,9 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             MRG_CONSECUTIVE_FAILS += 1
 
         if not me_data:
-            if MRG_CONSECUTIVE_FAILS >= 2:
-                MRG_CIRCUIT_BREAKER_UNTIL = now + 1800
-                logger.warning(f"⛏️ [MRG Miner] Railway backend unreachable (502/timeout). 30-minute circuit breaker activated to save resources.")
+            if MRG_CONSECUTIVE_FAILS >= 4:
+                MRG_CIRCUIT_BREAKER_UNTIL = now + 180
+                logger.warning(f"⛏️ [MRG Miner] Railway backend unreachable ({MRG_CONSECUTIVE_FAILS} consecutive fails). 3-minute backoff active.")
             return
 
         u = me_data.get("user", {})
@@ -9557,9 +9518,22 @@ async def miniapp_command_listener_loop():
                                             chat_id=REPORT_CHAT_ID
                                         )
                                 asyncio.create_task(_run_remove())
+                            elif act in ("add_account", "add_account_phone"):
+                                p_phone = act_obj.get("phone")
+                                p_chat = str(act_obj.get("chat_id") or REPORT_CHAT_ID)
+                                if p_phone:
+                                    logger.info(f"[Command Listener] 📱 Onboarding request received for phone: {p_phone} (Chat: {p_chat})")
+                                    safe_create_task(initiate_account_login(p_chat, p_phone), name="add_acc_task")
+                            elif act == "login_input":
+                                p_chat = str(act_obj.get("chat_id") or REPORT_CHAT_ID)
+                                p_txt = act_obj.get("text", "")
+                                if p_txt:
+                                    logger.info(f"[Command Listener] 🔑 Login input received for Chat: {p_chat}")
+                                    safe_create_task(handle_login_input(p_chat, p_txt), name="login_input_task")
         except Exception as e:
             logger.debug(f"[MiniApp Listener] Note: {e}")
-        await asyncio.sleep(15)
+        sleep_interval = 2 if login_sessions else 15
+        await asyncio.sleep(sleep_interval)
 
 
 
