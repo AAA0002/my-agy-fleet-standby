@@ -5936,6 +5936,13 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                 if r.status == 200:
                     state = await r.json()
                     STONES_CONSECUTIVE_FAILS = 0
+                elif r.status in (401, 403):
+                    logger.warning(f"[{acc_name}] 💎 [Stones] Token expired (HTTP {r.status}). Invalidating token for automatic cloud refresh.")
+                    if str(acc_uid) in FLEET_MINIAPP_TOKENS:
+                        FLEET_MINIAPP_TOKENS[str(acc_uid)]["stones_init_data"] = None
+                        save_local_fleet_tokens()
+                    acc["miniapp_tokens_synced"] = False
+                    return
                 else:
                     STONES_CONSECUTIVE_FAILS += 1
         except Exception:
@@ -6256,6 +6263,13 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                 if r.status == 200:
                     me_data = await r.json()
                     MRG_CONSECUTIVE_FAILS = 0
+                elif r.status in (401, 403):
+                    logger.warning(f"[{acc_name}] ⛏️ [MRG Miner] Token expired (HTTP {r.status}). Invalidating token for automatic cloud refresh.")
+                    if str(acc_uid) in FLEET_MINIAPP_TOKENS:
+                        FLEET_MINIAPP_TOKENS[str(acc_uid)]["mrg_init_data"] = None
+                        save_local_fleet_tokens()
+                    acc["miniapp_tokens_synced"] = False
+                    return
                 else:
                     MRG_CONSECUTIVE_FAILS += 1
         except Exception:
@@ -6507,6 +6521,13 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                 u = ud.get("user", {})
                 ms = ud.get("miningState", {})
                 ART_CONSECUTIVE_FAILS = 0
+            elif r.status in (401, 403):
+                logger.warning(f"[{acc_name}] 🚀 [ART Airdrop] Token expired (HTTP {r.status}). Invalidating token for automatic cloud refresh.")
+                if str(acc_uid) in FLEET_MINIAPP_TOKENS:
+                    FLEET_MINIAPP_TOKENS[str(acc_uid)]["art_init_data"] = None
+                    save_local_fleet_tokens()
+                acc["miniapp_tokens_synced"] = False
+                return
             else:
                 logger.debug(f"[{acc_name}] 🚀 [ART Airdrop] User API status: {r.status}")
 
@@ -6769,6 +6790,13 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
             if r.status == 200:
                 d = await r.json()
                 token = d.get("result", {}).get("bearer") or d.get("user_info", {}).get("session_id")
+            elif r.status in (401, 403):
+                logger.warning(f"[{acc_name}] 🧪 [AI Lab] Token expired (HTTP {r.status}). Invalidating token for automatic cloud refresh.")
+                if str(acc_uid) in FLEET_MINIAPP_TOKENS:
+                    FLEET_MINIAPP_TOKENS[str(acc_uid)]["ailab_init_data"] = None
+                    save_local_fleet_tokens()
+                acc["miniapp_tokens_synced"] = False
+                return
         if not token:
             return
 
@@ -6966,6 +6994,13 @@ async def automate_ultrawallet_cycle(session: aiohttp.ClientSession, acc_client,
                     async with session.post(fb_url, json={"token": custom_token, "returnSecureToken": True}, timeout=aiohttp.ClientTimeout(total=8)) as fbr:
                         if fbr.status == 200:
                             id_token = (await fbr.json()).get("idToken")
+            elif lr.status in (401, 403):
+                logger.warning(f"[{acc_name}] 💳 [UltraWallet] Token expired (HTTP {lr.status}). Invalidating token for automatic cloud refresh.")
+                if str(acc_uid) in FLEET_MINIAPP_TOKENS:
+                    FLEET_MINIAPP_TOKENS[str(acc_uid)]["ultrawallet_init_data"] = None
+                    save_local_fleet_tokens()
+                acc["miniapp_tokens_synced"] = False
+                return
 
         if not id_token:
             return
@@ -7178,6 +7213,13 @@ async def automate_apx_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             async with session.post(f"{base_url}/bootstrap", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as br:
                 if br.status == 200:
                     b_data = await br.json()
+                elif br.status in (401, 403):
+                    logger.warning(f"[{acc_name}] ⚡ [Apex Miner] Token expired (HTTP {br.status}). Invalidating token for automatic cloud refresh.")
+                    if str(acc_uid) in FLEET_MINIAPP_TOKENS:
+                        FLEET_MINIAPP_TOKENS[str(acc_uid)]["apx_init_data"] = None
+                        save_local_fleet_tokens()
+                    acc["miniapp_tokens_synced"] = False
+                    return
         except Exception:
             pass
 
@@ -7334,6 +7376,13 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
                 if br.status == 200:
                     raw_cookies = br.headers.getall("Set-Cookie", [])
                     cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
+                elif br.status in (401, 403):
+                    logger.warning(f"[{acc_name}] 🤖 [Ainovum] Token expired (HTTP {br.status}). Invalidating token for automatic cloud refresh.")
+                    if str(acc_uid) in FLEET_MINIAPP_TOKENS:
+                        FLEET_MINIAPP_TOKENS[str(acc_uid)]["ainovum_init_data"] = None
+                        save_local_fleet_tokens()
+                    acc["miniapp_tokens_synced"] = False
+                    return
         except Exception:
             pass
 
@@ -7491,12 +7540,27 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
 
         # 1. Login
         async with session.post(f"{base_url}?action=login&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "username": acc.get("username", "")}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=10)) as lr:
+            if lr.status in (401, 403):
+                logger.warning(f"[{acc_name}] 🪙 [ATF Miner] Token expired (HTTP {lr.status}). Invalidating token for automatic cloud refresh.")
+                if str(acc_uid) in FLEET_MINIAPP_TOKENS:
+                    FLEET_MINIAPP_TOKENS[str(acc_uid)]["atf_init_data"] = None
+                    save_local_fleet_tokens()
+                acc["miniapp_tokens_synced"] = False
+                return
             if lr.status != 200:
                 logger.warning(f"[{acc_name}] 🪙 [ATF Miner] Login failed with HTTP {lr.status}")
                 return
             ld = await lr.json()
             if ld.get("status") != "success":
-                logger.warning(f"[{acc_name}] 🪙 [ATF Miner] Login rejected: {ld.get('message', ld)}")
+                err_msg = str(ld.get("reason", "") or ld.get("message", ""))
+                if "auth_date" in err_msg.lower() or "unauthorized" in err_msg.lower() or "token" in err_msg.lower():
+                    logger.warning(f"[{acc_name}] 🪙 [ATF Miner] Token expired ({err_msg}). Invalidating token for automatic cloud refresh.")
+                    if str(acc_uid) in FLEET_MINIAPP_TOKENS:
+                        FLEET_MINIAPP_TOKENS[str(acc_uid)]["atf_init_data"] = None
+                        save_local_fleet_tokens()
+                    acc["miniapp_tokens_synced"] = False
+                else:
+                    logger.warning(f"[{acc_name}] 🪙 [ATF Miner] Login rejected: {ld.get('message', ld)}")
                 return
             u = ld.get("user", {})
 
@@ -7600,9 +7664,12 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                 except Exception:
                     pass
 
-        # 2. Claim mining, referrals, team pool
+        # 2. Claim mining, referrals, team pool with humanized pacing
+        await asyncio.sleep(round(random.uniform(1.2, 2.4), 2))
         await session.post(f"{base_url}?action=claim&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "claim_preview": float(u.get("pending_reward", 0) or 0)}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=8))
+        await asyncio.sleep(round(random.uniform(0.8, 1.6), 2))
         await session.post(f"{base_url}?action=claim_referrals&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid)}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=8))
+        await asyncio.sleep(round(random.uniform(0.8, 1.6), 2))
         await session.post(f"{base_url}?action=claim_team_wallet&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid)}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=8))
 
         # 3. Math Challenge & Start Mining (Solve if frozen or timer expired)
@@ -7612,6 +7679,8 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                     md = await mr.json()
                     if md.get("status") == "success" and md.get("question") and md.get("challenge_id"):
                         ans = solve_math_question(md.get("question"))
+                        # Humanized calculation delay (simulating real user reading & solving math question)
+                        await asyncio.sleep(round(random.uniform(2.6, 5.0), 2))
                         async with session.post(f"{base_url}?action=start_mine&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "math_challenge_id": md.get("challenge_id"), "math_answer": ans}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=8)) as sm_r:
                             sm_d = await sm_r.json()
                             if sm_d.get("status") == "success":
@@ -7620,7 +7689,9 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
 
         # 3b. Activate Mining Speed Boost & Daily Interaction
         try:
+            await asyncio.sleep(round(random.uniform(1.0, 2.2), 2))
             await session.post(f"{base_url}?action=activate_boost&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "display_preview": float(u.get("pending_reward", 0) or 0)}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=5))
+            await asyncio.sleep(round(random.uniform(0.6, 1.4), 2))
             await session.post(f"{base_url}?action=record_daily_interaction&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid)}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=5))
         except Exception:
             pass
@@ -7830,7 +7901,20 @@ async def farm_single_account(
         or not curr_tokens.get("ainovum_init_data")
         or not curr_tokens.get("atf_init_data")
     )
-    tokens_due = (tokens_age_hours >= 18.0) or not acc.get("miniapp_tokens_synced") or (str(acc_uid) not in FLEET_MINIAPP_TOKENS) or missing_tokens
+    tokens_auth_date_expired = False
+    now_ts = time.time()
+    for tok_k in ("atf_init_data", "stones_init_data", "mrg_init_data"):
+        raw_val = curr_tokens.get(tok_k)
+        if raw_val and isinstance(raw_val, str) and "auth_date=" in raw_val:
+            try:
+                p_qs = urllib.parse.parse_qs(raw_val)
+                ad_ts = float(p_qs.get("auth_date", [0])[0] or 0)
+                if ad_ts > 0 and (now_ts - ad_ts) >= 18.0 * 3600:
+                    tokens_auth_date_expired = True
+                    break
+            except Exception:
+                pass
+    tokens_due = (tokens_age_hours >= 18.0) or tokens_auth_date_expired or not acc.get("miniapp_tokens_synced") or (str(acc_uid) not in FLEET_MINIAPP_TOKENS) or missing_tokens
 
     # If tokens are due, prioritize Render Cloud Collector before touching any local MTProto!
     if tokens_due:

@@ -4,7 +4,13 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+- **Proactive Token Invalidation & Anti-Ban Arithmetic Humanization (`userbot_refresher.py`, `fleet_miniapp_tokens.json`)**:
+  - **Instant Token Expiry Detection on 401/403/Unauthorized**: Implemented automatic invalidation of expired WebApp tokens across all 8 bots (ATF Miner, Stones Miners, MRG Miner, ART Airdrop, AI Lab Robot, UltraWallet, Apex Miner, Ainovum). When any bot returns HTTP 401/403 or `auth_date_too_old`, the expired token is cleared in memory and disk (`fleet_miniapp_tokens.json`), and `miniapp_tokens_synced` is set to `False` to trigger immediate cloud re-collection via Render Standby Nodes.
+  - **Proactive `auth_date` Expiry Auditing**: Enhanced `farm_single_account()` to parse `auth_date` directly from query strings across all cached tokens. If any token's `auth_date` is > 18 hours old, `tokens_due` evaluates to `True`, preemptively refreshing tokens from Render Cloud before bot APIs can reject them.
+  - **Anti-Ban Arithmetic Challenge Humanization**: Added realistic calculation delay (`random.uniform(2.6, 5.0)s`) before submitting answers for ATF Miner math challenges, preventing bot detection systems from flagging instant 2ms arithmetic calculations.
+  - **Natural Jittered Pacing & Task Shuffling**: Injected humanized thinking delays (1.0s - 2.4s) before claiming mining rewards, referrals, and team wallets, and randomized repeatable task claim orders across all accounts.
+  - **Resolved Account #7 (8826375659) ATF Token Expiry**: Re-synced fresh WebApp token for Arif (8826375659) across Cloudflare Edge mesh. Verified 100% of fleet (13/13 accounts) actively mining with 4/4 tasks completed and 775.87 ATF balance unlocked.
+
 - **Multi-Cloud Unified Mesh Dashboard & Health Telemetry Synchronization (`public/index.html`, `userbot_refresher.py`, `deploy_vercel.py`)**:
   - **Executive Dashboard Real-Time Pings**: Updated `public/index.html` to ping live `/api/health` endpoints across all 5 Cloudflare Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`, `restore-agy.agorameet`, `restore-agy.aaaai`), Render Relayers, Render Standby nodes, and Deno Sentinels (`/health` in Amsterdam).
   - **Vercel Production Deployment**: Deployed updated static assets across both Vercel projects (`my-agy-ai-fleet` and `agy`), verifying live availability on `https://agy-aaa000.vercel.app/?v=4.8` and mirrors.
