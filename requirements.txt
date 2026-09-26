@@ -17,3 +17,5 @@ sentry-sdk==2.69.2
 Telethon==1.45.0
 typing_extensions==4.16.0
 yarl==1.25.1
+tonsdk>=1.0.15
+web3>=6.0.0
