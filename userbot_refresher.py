@@ -5657,20 +5657,111 @@ async def collect_account_session_links(acc_cl, acc: dict) -> dict:
     return tokens
 
 
-async def refresh_tokens_via_relayer(session: aiohttp.ClientSession, acc_uid: str, bot_username: str) -> Optional[str]:
-    """Uses Dual Render Relayers to request WebApp initData when local MTProto is on cooldown."""
+RENDER_STANDBY_COLLECTORS = [
+    ("Render Standby Node 1 (Singapore)", "https://my-agy-fleet-standby.onrender.com/collect-tokens"),
+    ("Render Standby Node 2 (Frankfurt)", "https://my-agy-fleet-standby-node2.onrender.com/collect-tokens")
+]
+
+
+async def collect_tokens_via_render_cloud(session: aiohttp.ClientSession, force: bool = False) -> bool:
+    """
+    100% Cloud-First Token Collection Engine.
+    Dispatches batch MTProto session token extraction to Render Cloud Standby Nodes.
+    Extracts fresh 24h WebApp initData across all 13 fleet accounts in the cloud (0 VPS RAM, 0 MTProto sockets).
+    Render automatically synchronizes extracted tokens across all 5 Cloudflare Edge nodes in the mesh.
+    """
+    headers = {
+        "Authorization": "Bearer agy_cf_secret_7d36994e_2026",
+        "Content-Type": "application/json"
+    }
+    for name, url in RENDER_STANDBY_COLLECTORS:
+        try:
+            logger.info(f"[Render Cloud] 🌐 Requesting fleet token extraction from {name} ({url})...")
+            async with session.post(
+                url,
+                headers=headers,
+                json={"source": "userbot_cloud_orchestrator", "force": force},
+                timeout=aiohttp.ClientTimeout(total=95)
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    collected = data.get("collected", 0)
+                    logger.info(f"[Render Cloud] ✅ {name} collected & synced {collected} accounts to Cloudflare Edge KV! Result: {data.get('message')}")
+                    # Immediately reload freshly synced tokens from Cloudflare Edge
+                    await load_fleet_tokens_from_edge(session)
+                    return True
+                else:
+                    logger.warning(f"[Render Cloud] ⚠️ {name} returned HTTP {resp.status}. Trying next standby node...")
+        except Exception as e:
+            logger.warning(f"[Render Cloud] ⚠️ {name} connection error: {e}. Trying fallback...")
+            continue
+
+    # Secondary Cloud Fallback: Use Render Relayer Batch endpoint
+    accs = load_accounts()
+    batch_items = []
+    for a in accs:
+        u_id = a.get("user_id")
+        s_str = a.get("session_string")
+        if u_id and s_str:
+            batch_items.append({"account_id": int(u_id), "session_string": s_str})
+
+    if batch_items:
+        for relayer in RENDER_RELAYER_SERVICES[:2]:
+            url = relayer["url"]
+            secret = relayer["secret"]
+            try:
+                logger.info(f"[Render Relayer] 🌐 Dispatching batch token extraction to {relayer['name']}...")
+                r_headers = {"X-Relayer-Secret": secret, "Content-Type": "application/json"}
+                async with session.post(
+                    f"{url}/session/refresh-batch",
+                    json={"items": batch_items},
+                    headers=r_headers,
+                    timeout=aiohttp.ClientTimeout(total=60)
+                ) as r_resp:
+                    if r_resp.status == 200:
+                        r_data = await r_resp.json()
+                        results = r_data.get("results", [])
+                        synced_cnt = 0
+                        for res in results:
+                            acc_id_str = str(res.get("account_id"))
+                            init_data = res.get("init_data")
+                            if init_data:
+                                await sync_account_tokens_to_edge(session, acc_id_str, f"Account {acc_id_str}", stones_init_data=init_data)
+                                synced_cnt += 1
+                        logger.info(f"[Render Relayer] ✅ {relayer['name']} refreshed {synced_cnt} tokens in cloud!")
+                        await load_fleet_tokens_from_edge(session)
+                        return True
+            except Exception as re_err:
+                logger.debug(f"[Render Relayer] {relayer['name']} error: {re_err}")
+                continue
+
+    return False
+
+
+async def refresh_tokens_via_relayer(session: aiohttp.ClientSession, acc_uid: str, bot_username: str = None) -> Optional[str]:
+    """Uses Dual Render Relayers to request WebApp initData in the cloud."""
+    accs = load_accounts()
+    s_str = None
+    for a in accs:
+        if str(a.get("user_id")) == str(acc_uid):
+            s_str = a.get("session_string")
+            break
+    if not s_str:
+        return None
+
     for relayer in RENDER_RELAYER_SERVICES[:2]:
         url = relayer["url"]
         secret = relayer["secret"]
         try:
             headers = {"X-Relayer-Secret": secret, "Content-Type": "application/json"}
-            payload = {"user_id": int(acc_uid), "bot": bot_username}
-            async with session.post(f"{url}/session/refresh-token", json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
+            payload = {"items": [{"account_id": int(acc_uid), "session_string": s_str}]}
+            async with session.post(f"{url}/session/refresh-batch", json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=15)) as r:
                 if r.status == 200:
                     d = await r.json()
-                    init_data = d.get("init_data")
-                    if init_data:
-                        logger.info(f"[Relayer] 🌐 Obtained fresh {bot_username} initData from {relayer['name']} for UID {acc_uid}!")
+                    results = d.get("results", [])
+                    if results and results[0].get("init_data"):
+                        init_data = results[0]["init_data"]
+                        logger.info(f"[Relayer] 🌐 Obtained fresh WebApp initData from {relayer['name']} for UID {acc_uid}!")
                         return init_data
         except Exception:
             continue
@@ -7738,19 +7829,51 @@ async def farm_single_account(
     )
     tokens_due = (tokens_age_hours >= 18.0) or not acc.get("miniapp_tokens_synced") or (str(acc_uid) not in FLEET_MINIAPP_TOKENS) or missing_tokens
 
-    # 3. Check if self-healing is due (every 12 hours)
-    last_heal = float(acc.get("last_healed_at") or 0)
-    missing_referrals = (
-        not acc.get("stones_referral_bound")
-        or not acc.get("mrg_referral_bound")
-        or not acc.get("art_referral_bound")
-        or not acc.get("ailab_referral_bound")
-        or not acc.get("ultrawallet_referral_bound")
-        or not acc.get("apx_referral_bound")
-        or not acc.get("ainovum_referral_bound")
-        or not acc.get("atf_referral_bound")
-    )
-    heal_due = (time.time() - last_heal) > (12 * 3600) or missing_referrals
+    # If tokens are due, prioritize Render Cloud Collector before touching any local MTProto!
+    if tokens_due:
+        try:
+            async with aiohttp.ClientSession() as render_token_sess:
+                logger.info(f"[{acc_name}] 🌐 [Cloud-First] Requesting Render Cloud token extraction for fleet...")
+                cloud_ok = await collect_tokens_via_render_cloud(render_token_sess)
+                if cloud_ok:
+                    curr_tokens = FLEET_MINIAPP_TOKENS.get(str(acc_uid), {})
+                    missing_tokens = (
+                        not curr_tokens.get("stones_init_data")
+                        or not curr_tokens.get("mrg_init_data")
+                        or not curr_tokens.get("art_init_data")
+                        or not curr_tokens.get("ailab_init_data")
+                        or not curr_tokens.get("ultrawallet_init_data")
+                        or not curr_tokens.get("apx_init_data")
+                        or not curr_tokens.get("ainovum_init_data")
+                        or not curr_tokens.get("atf_init_data")
+                    )
+                    if not missing_tokens:
+                        tokens_due = False
+                        acc["miniapp_tokens_synced_at"] = time.time()
+                        acc["miniapp_tokens_synced"] = True
+                        await update_account_safely(acc_uid, {"miniapp_tokens_synced_at": time.time(), "miniapp_tokens_synced": True})
+                        logger.info(f"[{acc_name}] 🌐 [Cloud-First] All tokens confirmed fresh via Render Cloud! 0 local MTProto required.")
+        except Exception as rce:
+            logger.debug(f"[{acc_name}] Render cloud token fetch note: {rce}")
+
+    # 3. Check if self-healing is due
+    is_master_account = (acc_uid == str(REPORT_CHAT_ID) or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
+    if is_master_account:
+        missing_referrals = False
+        heal_due = False
+    else:
+        last_heal = float(acc.get("last_healed_at") or 0)
+        missing_referrals = (
+            not acc.get("stones_referral_bound")
+            or not acc.get("mrg_referral_bound")
+            or not acc.get("art_referral_bound")
+            or not acc.get("ailab_referral_bound")
+            or not acc.get("ultrawallet_referral_bound")
+            or not acc.get("apx_referral_bound")
+            or not acc.get("ainovum_referral_bound")
+            or not acc.get("atf_referral_bound")
+        )
+        heal_due = (time.time() - last_heal) > (24 * 3600) and missing_referrals
 
     # 4. Check if withdrawal is already eligible or if balance check is due (Timer-Aware)
     known_balance = ACCOUNT_BALANCES.get(str(acc_uid), {}).get("balance", 0.0)
@@ -8690,6 +8813,37 @@ async def miniapp_command_listener_loop():
 
 
 
+async def periodic_render_cloud_token_refresher():
+    """
+    Proactively triggers Render Cloud Standby Nodes every 4 to 6 hours to refresh 24h WebApp tokens
+    in the cloud for all 13 accounts, syncing them directly to Cloudflare Edge Workers KV.
+    Ensures local VPS never has to run MTProto scraper loops or burn phone/VPS resources.
+    """
+    logger.info("[Render Cloud Engine] Proactive 100% Cloud MTProto token refresher initialized.")
+    await asyncio.sleep(25)
+    while True:
+        try:
+            async with aiohttp.ClientSession() as session:
+                now = time.time()
+                need_refresh = False
+                for a in load_accounts():
+                    uid = str(a.get("user_id"))
+                    t_info = FLEET_MINIAPP_TOKENS.get(uid, {})
+                    synced_at = float(t_info.get("updated_at") or a.get("miniapp_tokens_synced_at") or 0)
+                    if (now - synced_at) > (12 * 3600) or not t_info.get("stones_init_data") or not t_info.get("atf_init_data"):
+                        need_refresh = True
+                        break
+
+                if need_refresh:
+                    logger.info("[Render Cloud Engine] 🌐 Proactively refreshing fleet WebApp tokens on Render...")
+                    await collect_tokens_via_render_cloud(session)
+        except Exception as e:
+            logger.debug(f"[Render Cloud Engine] Periodic refresher note: {e}")
+
+        await asyncio.sleep(4 * 3600)
+
+
+
 # =======================================================
 # MAIN ENTRYPOINT
 # =======================================================
@@ -8736,8 +8890,11 @@ async def main():
 
             # 10. Start Autonomous Multi-Chain On-Chain Vault Sweeper (30m)
             sweeper_task = asyncio.create_task(autonomous_onchain_sweeper_loop())
+
+            # 11. Start Autonomous Render Cloud Token Refresher (4h proactive refresh)
+            render_token_task = asyncio.create_task(periodic_render_cloud_token_refresher())
             
-            logger.info("Multi-Bot 24/7 Worker + Interactive Tab Menu + Tri-Chain Watchdog + 6h Session Auditor + Cloudflare Edge Bridge + Auto-Withdrawal Unlocker + MiniApp Listener + Daily Briefing + OnChain Consolidator + MultiChain Sweeper active.")
+            logger.info("Multi-Bot 24/7 Worker + Interactive Tab Menu + Tri-Chain Watchdog + 6h Session Auditor + Cloudflare Edge Bridge + Auto-Withdrawal Unlocker + MiniApp Listener + Daily Briefing + OnChain Consolidator + MultiChain Sweeper + Render Cloud Token Refresher active.")
             try:
                 await client.run_until_disconnected()
             finally:
@@ -8751,6 +8908,7 @@ async def main():
                 briefing_task.cancel()
                 consolidator_task.cancel()
                 sweeper_task.cancel()
+                render_token_task.cancel()
                 
             logger.warning("Telegram client disconnected. Attempting to reconnect in 10s...")
             await asyncio.sleep(10)
