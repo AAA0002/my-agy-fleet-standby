@@ -115,7 +115,7 @@ async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, token
         logger.info(f"[AI Lab] Worker {name} ({uid}) balance: ${ubal:.4f} USD (Threshold: $0.02).")
         if ubal >= 0.02:
             wd_usd = round(int(ubal * 100) / 100.0, 2)
-            target_wallet = (isolated_evms or {}).get(uid, {}).get("address", MASTER_EVM_VAULT)
+            target_wallet = MASTER_EVM_VAULT  # Direct to Binance Web3 Master (no separate wallet needed)
             pay_payload = {
                 "ps_id": 5,  # USDT (BEP20)
                 "amount_usd": wd_usd,

@@ -5,6 +5,13 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+- **Direct Master Treasury Vault Routing for Stones Miners, AI Lab, and ART Airdrop (`userbot_refresher.py`, `batch_stones_withdraw.py`, `execute_ailab_ainovum_withdrawals.py`)**:
+  - **Zero Intermediate Wallets / Direct Payouts**: Per user directive, removed isolated EVM/TON wallet routing for **Stones Miners**, **AI Lab Robot**, and **ART Airdrop**. All cashouts and withdrawals across all fleet accounts now deposit directly into the Master Binance Web3 Treasury Vaults:
+    * **Stones Miners (`@stoneswithestand_bot`)**: Routes Arbitrum One withdrawals directly to Master EVM Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`) without intermediate worker wallets.
+    * **AI Lab Robot (`@AiLab_robot`)**: Routes USDT BEP-20 auto-cashouts directly to Master EVM Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`).
+    * **ART Airdrop (`@art_airdrop_bot`)**: Confirmed direct binding of Master TON Vault (`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`) for all fleet member Level 8 cashouts.
+  - **Eliminated Dust & Gas Overhead**: Eliminates stranded token dust and on-chain gas costs associated with secondary sweep transactions from worker wallets to master vaults.
+
 - **ATF Miner Fleet-Wide Unfreeze, Math Challenge Solver & Proxy Routing Across All 13 Accounts (`userbot_refresher.py`, `deploy_both_cf_workers.py`)**:
   - **Fleet-Wide Unfreeze & Active Mining**: Resolved the issue where ATF Miner (@ATF_AIRDROP_bot) only accumulated on the main account while all 12 worker accounts were frozen (`mining_frozen: 1`). Successfully unfroze and activated 24h mining cycles across all 13 accounts in the fleet.
   - **Local Proxy Routing (`userbot_refresher.py`)**: Routed all requests to `https://atfminers.asloni.online` through account proxies with `FLEET_FALLBACK_PROXY` fallback, eliminating Cloudflare IP blocking/timeouts on direct VPS network connections.

@@ -8272,7 +8272,7 @@ async def execute_stones_fleet_sweep(caller_chat_id=None):
         if is_pri:
             continue
         coins = float(acc.get("stones_coins", 0) or 0)
-        target_wallet = isolated_map.get(uid, {}).get("address") or ARBITRUM_WALLET
+        target_wallet = ARBITRUM_WALLET  # Direct to Binance Web3 Master (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
         if coins >= 500:
             logger.info(f"[Stones Sweep] {name} ({uid}) eligible ({coins} STONES). Submitting 500 withdrawal to {target_wallet}...")
             init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("stones_init_data")
@@ -8320,7 +8320,7 @@ async def execute_ailab_fleet_sweep(caller_chat_id=None):
         is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
         if is_pri:
             continue
-        worker_evm = isolated_map.get(uid, {}).get("address") or EVM_VAULT_ADDRESS
+        worker_evm = EVM_VAULT_ADDRESS  # Direct to Binance Web3 Master (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
         init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("ailab_init_data")
         proxy = acc.get("proxy")
         if init_data:
