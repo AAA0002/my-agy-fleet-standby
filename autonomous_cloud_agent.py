@@ -56,11 +56,13 @@ CF_SECRET_KEY = os.getenv("CF_SECRET_KEY", "agy_cf_secret_7d36994e_2026")
 MASTER_EVM_VAULT = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 MASTER_TON_VAULT = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
 
-# Cloudflare Edge AI Endpoints (100% Free, Zero API Keys Required)
+# Cloudflare Edge AI Endpoints (100% Free, Zero API Keys Required across 5 Edge Nodes)
 CF_AI_NODES = [
     "https://restore-agy.aaaai2.workers.dev/ai",
     "https://restore-agy.aaa-bot.workers.dev/ai",
-    "https://restore-agy.aaa222.workers.dev/ai"
+    "https://restore-agy.aaa222.workers.dev/ai",
+    "https://restore-agy.agorameet.workers.dev/ai",
+    "https://restore-agy.aaaai.workers.dev/ai"
 ]
 
 # Render Standby Token Collection Nodes (100% Free Cloud Failover)
@@ -360,14 +362,27 @@ class AutonomousAriAgent:
             "Authorization": f"Bearer {CF_SECRET_KEY}",
             "Content-Type": "application/json"
         }
+        acc_payload = []
+        try:
+            acc_path = os.path.join(BASE_DIR, "accounts.json")
+            if os.path.exists(acc_path):
+                with open(acc_path, "r", encoding="utf-8") as af:
+                    acc_payload = json.load(af)
+        except Exception:
+            pass
+
+        req_body = {"source": "AriAutonomousDecision"}
+        if acc_payload:
+            req_body["accounts"] = acc_payload
+
         for name, url in RENDER_STANDBY_NODES:
             try:
                 logger.info(f"Connecting to {name} ({url})...")
                 async with session.post(
                     url,
                     headers=headers,
-                    json={"source": "AriAutonomousDecision"},
-                    timeout=aiohttp.ClientTimeout(total=90)
+                    json=req_body,
+                    timeout=aiohttp.ClientTimeout(total=45)
                 ) as resp:
                     if resp.status == 200:
                         data = await resp.json()

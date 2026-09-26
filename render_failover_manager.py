@@ -136,6 +136,7 @@ async def check_relayer_health(session: aiohttp.ClientSession, relayer: dict) ->
         async with session.post(f"{url}/session/refresh-batch", json={"items": []}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as pr:
             if pr.status == 200:
                 info["authenticated"] = True
+                info["endpoint_alive"] = True
     except Exception as e:
         info["auth_error"] = str(e)
 

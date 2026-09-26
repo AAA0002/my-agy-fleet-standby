@@ -2791,14 +2791,15 @@ Reply to Arif naturally:`;
         }
 
         // Only investigate if local machine has been silent for > 60 minutes
-        if (localMissingMinutes >= 60) {
-          // Check if Render Cloud Standby or Ari AI Agent is standing guard
-          const [r1, r2, rAri] = await Promise.all([
+          // Check if Render Cloud Standby, Ari AI Agent, or Dual MTProto Relayers are standing guard
+          const [r1, r2, rAri, rRelay1, rRelay2] = await Promise.all([
             fetch("https://my-agy-fleet-standby.onrender.com/health", { method: "GET" }).catch(() => null),
             fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => null),
-            fetch("https://hermes-grok-cloud-agent.onrender.com/health", { method: "GET" }).catch(() => null)
+            fetch("https://hermes-grok-cloud-agent.onrender.com/health", { method: "GET" }).catch(() => null),
+            fetch("https://atf-mtproto-relayer.onrender.com/wake", { method: "GET" }).catch(() => null),
+            fetch("https://atf-mtproto-relayer-backup.onrender.com/wake", { method: "GET" }).catch(() => null)
           ]);
-          const cloudStandbyAlive = (r1 && r1.ok) || (r2 && r2.ok) || (rAri && rAri.ok);
+          const cloudStandbyAlive = (r1 && r1.ok) || (r2 && r2.ok) || (rAri && rAri.ok) || (rRelay1 && rRelay1.ok) || (rRelay2 && rRelay2.ok);
 
           // If Render is alive in the cloud, the fleet is 100% operational - DO NOT send false alarms!
           if (cloudStandbyAlive) {
@@ -3600,7 +3601,9 @@ Reply to Arif naturally:`;
       "https://my-agy-fleet-deno.aaa222.deno.net/health",
       "https://my-agy-fleet-deno2.aaasupporta.deno.net/health",
       "https://my-agy-fleet-standby.onrender.com/health",
-      "https://my-agy-fleet-standby-node2.onrender.com/health"
+      "https://my-agy-fleet-standby-node2.onrender.com/health",
+      "https://atf-mtproto-relayer.onrender.com/wake",
+      "https://atf-mtproto-relayer-backup.onrender.com/wake"
     ];
     for (const edgeUrl of MULTI_CLOUD_EDGES) {
       ctx.waitUntil(fetch(edgeUrl).catch(() => {}));

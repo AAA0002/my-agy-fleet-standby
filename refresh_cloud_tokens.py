@@ -42,7 +42,9 @@ CF_SECRET_KEY = os.getenv("CF_SECRET_KEY", "agy_cf_secret_7d36994e_2026")
 CF_NODES = [
     "https://restore-agy.aaaai2.workers.dev",
     "https://restore-agy.aaa-bot.workers.dev",
-    "https://restore-agy.aaa222.workers.dev"
+    "https://restore-agy.aaa222.workers.dev",
+    "https://restore-agy.agorameet.workers.dev",
+    "https://restore-agy.aaaai.workers.dev"
 ]
 
 # Bot Usernames & Referral Codes

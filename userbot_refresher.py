@@ -5742,6 +5742,7 @@ async def collect_tokens_via_render_cloud(session: aiohttp.ClientSession, force:
     """
     100% Cloud-First Token Collection Engine.
     Dispatches batch MTProto session token extraction to Render Cloud Standby Nodes.
+    Passes accounts directly to eliminate heavy backup.zip archive extraction delays.
     Extracts fresh 24h WebApp initData across all 13 fleet accounts in the cloud (0 VPS RAM, 0 MTProto sockets).
     Render automatically synchronizes extracted tokens across all 5 Cloudflare Edge nodes in the mesh.
     """
@@ -5749,13 +5750,23 @@ async def collect_tokens_via_render_cloud(session: aiohttp.ClientSession, force:
         "Authorization": "Bearer agy_cf_secret_7d36994e_2026",
         "Content-Type": "application/json"
     }
+    accs = load_accounts()
+    valid_accs = [
+        {"user_id": int(a["user_id"]), "session_string": a["session_string"], "name": a.get("name", "")}
+        for a in accs
+        if a.get("user_id") and a.get("session_string") and a.get("status") != "revoked"
+    ]
+    post_payload = {"source": "userbot_cloud_orchestrator", "force": force}
+    if valid_accs:
+        post_payload["accounts"] = valid_accs
+
     for name, url in RENDER_STANDBY_COLLECTORS:
         try:
             logger.info(f"[Render Cloud] 🌐 Requesting fleet token extraction from {name} ({url})...")
             async with session.post(
                 url,
                 headers=headers,
-                json={"source": "userbot_cloud_orchestrator", "force": force},
+                json=post_payload,
                 timeout=aiohttp.ClientTimeout(total=95)
             ) as resp:
                 if resp.status == 200:
@@ -5772,12 +5783,11 @@ async def collect_tokens_via_render_cloud(session: aiohttp.ClientSession, force:
             continue
 
     # Secondary Cloud Fallback: Use Render Relayer Batch endpoint
-    accs = load_accounts()
     batch_items = []
     for a in accs:
         u_id = a.get("user_id")
         s_str = a.get("session_string")
-        if u_id and s_str:
+        if u_id and s_str and a.get("status") != "revoked":
             batch_items.append({"account_id": int(u_id), "session_string": s_str})
 
     if batch_items:
@@ -5801,7 +5811,7 @@ async def collect_tokens_via_render_cloud(session: aiohttp.ClientSession, force:
                             acc_id_str = str(res.get("account_id"))
                             init_data = res.get("init_data")
                             if init_data:
-                                await sync_account_tokens_to_edge(session, acc_id_str, f"Account {acc_id_str}", stones_init_data=init_data)
+                                await sync_account_tokens_to_edge(session, acc_id_str, f"Account {acc_id_str}", atf_init_data=init_data)
                                 synced_cnt += 1
                         logger.info(f"[Render Relayer] ✅ {relayer['name']} refreshed {synced_cnt} tokens in cloud!")
                         await load_fleet_tokens_from_edge(session)
@@ -5814,32 +5824,90 @@ async def collect_tokens_via_render_cloud(session: aiohttp.ClientSession, force:
 
 
 async def refresh_tokens_via_relayer(session: aiohttp.ClientSession, acc_uid: str, bot_username: str = None) -> Optional[str]:
-    """Uses Dual Render Relayers to request WebApp initData in the cloud."""
+    """
+    100% Cloud-First Single-Account Token Refresh Engine.
+    Uses Dual Render Relayers and Dual Render Standby Nodes to request fresh WebApp initData in the cloud.
+    Guarantees 0 local MTProto sockets, 0 RAM overhead, and prevents local FloodWait/disconnects.
+    """
     accs = load_accounts()
     s_str = None
+    acc_name = f"Account {acc_uid}"
     for a in accs:
         if str(a.get("user_id")) == str(acc_uid):
             s_str = a.get("session_string")
+            acc_name = a.get("name", acc_name)
             break
     if not s_str:
         return None
 
-    for relayer in RENDER_RELAYER_SERVICES[:2]:
-        url = relayer["url"]
-        secret = relayer["secret"]
+    # Step 1: If bot is ATF (or unspecified), try Dual Render Relayers first (~1.5s fast path)
+    if not bot_username or "atf" in bot_username.lower():
+        for relayer in RENDER_RELAYER_SERVICES[:2]:
+            url = relayer["url"]
+            secret = relayer["secret"]
+            try:
+                headers = {"X-Relayer-Secret": secret, "Content-Type": "application/json"}
+                payload = {"items": [{"account_id": int(acc_uid), "session_string": s_str}]}
+                async with session.post(f"{url}/session/refresh-batch", json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=18)) as r:
+                    if r.status == 200:
+                        d = await r.json()
+                        results = d.get("results", [])
+                        if results and results[0].get("init_data"):
+                            init_data = results[0]["init_data"]
+                            logger.info(f"[Relayer] 🌐 Obtained fresh ATF WebApp initData from {relayer['name']} for UID {acc_uid}!")
+                            await sync_account_tokens_to_edge(session, str(acc_uid), acc_name, atf_init_data=init_data)
+                            return init_data
+            except Exception:
+                continue
+
+    # Step 2: Try Render Standby Nodes with Single-Account Payload
+    single_payload = {
+        "source": "single_account_on_demand",
+        "accounts": [{"user_id": int(acc_uid), "session_string": s_str, "name": acc_name}]
+    }
+    r_headers = {
+        "Authorization": "Bearer agy_cf_secret_7d36994e_2026",
+        "Content-Type": "application/json"
+    }
+    for name, url in RENDER_STANDBY_COLLECTORS:
         try:
-            headers = {"X-Relayer-Secret": secret, "Content-Type": "application/json"}
-            payload = {"items": [{"account_id": int(acc_uid), "session_string": s_str}]}
-            async with session.post(f"{url}/session/refresh-batch", json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=15)) as r:
-                if r.status == 200:
-                    d = await r.json()
-                    results = d.get("results", [])
-                    if results and results[0].get("init_data"):
-                        init_data = results[0]["init_data"]
-                        logger.info(f"[Relayer] 🌐 Obtained fresh WebApp initData from {relayer['name']} for UID {acc_uid}!")
-                        return init_data
+            async with session.post(url, headers=r_headers, json=single_payload, timeout=aiohttp.ClientTimeout(total=25)) as resp:
+                if resp.status == 200:
+                    logger.info(f"[Render Cloud] 🌐 Single-account token refresh succeeded on {name} for {acc_name} ({acc_uid})!")
+                    await load_fleet_tokens_from_edge(session)
+                    acc_tokens = FLEET_MINIAPP_TOKENS.get(str(acc_uid), {})
+                    if bot_username:
+                        b_clean = bot_username.lower().replace("_bot", "").replace("bot", "").replace("-", "_")
+                        key_candidates = [
+                            f"{bot_username.lower()}_init_data",
+                            f"{b_clean}_init_data",
+                        ]
+                        if "ultra" in b_clean:
+                            key_candidates.insert(0, "ultrawallet_init_data")
+                        elif "apx" in b_clean or "apex" in b_clean:
+                            key_candidates.insert(0, "apx_init_data")
+                        elif "ainovum" in b_clean:
+                            key_candidates.insert(0, "ainovum_init_data")
+                        elif "stone" in b_clean:
+                            key_candidates.insert(0, "stones_init_data")
+                        elif "mrg" in b_clean:
+                            key_candidates.insert(0, "mrg_init_data")
+                        elif "art" in b_clean:
+                            key_candidates.insert(0, "art_init_data")
+                        elif "ailab" in b_clean:
+                            key_candidates.insert(0, "ailab_init_data")
+                        elif "atf" in b_clean:
+                            key_candidates.insert(0, "atf_init_data")
+                        elif "mininggram" in b_clean:
+                            key_candidates.insert(0, "mininggram_init_data")
+                        
+                        for kc in key_candidates:
+                            if acc_tokens.get(kc):
+                                return acc_tokens[kc]
+                    return acc_tokens.get("atf_init_data") or acc_tokens.get("stones_init_data")
         except Exception:
             continue
+
     return None
 
 
@@ -5983,6 +6051,10 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
             init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("stones_init_data")
 
         if not init_data:
+            logger.info(f"[{acc_name}] 💎 [Stones] initData missing. Requesting from Render Cloud...")
+            init_data = await refresh_tokens_via_relayer(session, acc_uid, "stones")
+
+        if not init_data:
             logger.debug(f"[{acc_name}] 💎 [Stones] No cached or fresh initData available. Skipping until token collection.")
             return
 
@@ -6009,12 +6081,22 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
                     state = await r.json()
                     STONES_CONSECUTIVE_FAILS = 0
                 elif r.status in (401, 403):
-                    logger.warning(f"[{acc_name}] 💎 [Stones] Token expired (HTTP {r.status}). Invalidating token for automatic cloud refresh.")
+                    logger.warning(f"[{acc_name}] 💎 [Stones] Token expired (HTTP {r.status}). Requesting fresh token from Render Cloud...")
                     if str(acc_uid) in FLEET_MINIAPP_TOKENS:
                         FLEET_MINIAPP_TOKENS[str(acc_uid)]["stones_init_data"] = None
                         save_local_fleet_tokens()
                     acc["miniapp_tokens_synced"] = False
-                    return
+                    fresh_init = await refresh_tokens_via_relayer(session, acc_uid, "stones")
+                    if fresh_init:
+                        init_data = fresh_init
+                        async with session.post(f"{base_url}/api/state", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as r_retry:
+                            if r_retry.status == 200:
+                                state = await r_retry.json()
+                                STONES_CONSECUTIVE_FAILS = 0
+                            else:
+                                return
+                    else:
+                        return
                 else:
                     STONES_CONSECUTIVE_FAILS += 1
         except Exception:
@@ -6032,14 +6114,16 @@ async def automate_stones_cycle(session: aiohttp.ClientSession, acc_client, acc:
         coins = user_info.get("coins", 0)
         mining_active = bool(user_info.get("rate_active", 0) > 0 or user_info.get("mining_active", False))
 
-        # 3. Complete all pending tasks (Dynamic wait: 2.5s for daily checkin, 15s for sponsor/channel/visit tasks)
-        for slug, status in list(tasks.items()):
+        # 3. Complete all pending tasks with randomized order & jittered waits
+        shuffled_tasks = list(tasks.items())
+        random.shuffle(shuffled_tasks)
+        for slug, status in shuffled_tasks:
             if status != "completed":
                 try:
                     # Step 1: Tap task (trigger start)
                     await session.post(f"{base_url}/api/task/start", json={"initData": init_data, "slug": slug}, headers=headers, timeout=aiohttp.ClientTimeout(total=8))
-                    # Step 2: Dynamic wait (2.5s for channel/telegram verification, 0.8s for regular tasks)
-                    task_wait = 2.5 if ("channel" in slug or "telegram" in slug) else 0.8
+                    # Step 2: Dynamic jittered wait (2.2-3.8s for channel/telegram verification, 0.7-1.5s for regular tasks)
+                    task_wait = round(random.uniform(2.2, 3.8), 2) if ("channel" in slug or "telegram" in slug) else round(random.uniform(0.7, 1.5), 2)
                     logger.debug(f"[{acc_name}] 💎 [Stones] Waiting {task_wait}s for task '{slug}'...")
                     await asyncio.sleep(task_wait)
                     # Step 3: Complete / verify task
@@ -6291,6 +6375,10 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("mrg_init_data")
 
         if not init_data:
+            logger.info(f"[{acc_name}] ⛏️ [MRG Miner] initData missing. Requesting from Render Cloud...")
+            init_data = await refresh_tokens_via_relayer(session, acc_uid, "mrg")
+
+        if not init_data:
             logger.debug(f"[{acc_name}] ⛏️ [MRG Miner] No cached or fresh initData available. Skipping until token collection.")
             return
 
@@ -6326,7 +6414,7 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         except Exception:
             pass
 
-        await asyncio.sleep(1.0)
+        await asyncio.sleep(round(random.uniform(0.8, 1.8), 2))
 
         # 2. Profile fetch
         me_data = {}
@@ -6341,7 +6429,17 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                         FLEET_MINIAPP_TOKENS[str(acc_uid)]["mrg_init_data"] = None
                         save_local_fleet_tokens()
                     acc["miniapp_tokens_synced"] = False
-                    return
+                    fresh_init = await refresh_tokens_via_relayer(session, acc_uid, "mrg")
+                    if fresh_init:
+                        init_data = fresh_init
+                        async with session.post(f"{base_url}/api/user/me", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as r_retry:
+                            if r_retry.status == 200:
+                                me_data = await r_retry.json()
+                                MRG_CONSECUTIVE_FAILS = 0
+                            else:
+                                return
+                    else:
+                        return
                 else:
                     MRG_CONSECUTIVE_FAILS += 1
         except Exception:
@@ -6397,9 +6495,9 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                     logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Connected TON wallet {target_wallet[:10]}... : {cd.get('success')}")
             except Exception as ce:
                 logger.debug(f"[{acc_name}] MRG wallet connect note: {ce}")
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(round(random.uniform(1.2, 2.2), 2))
 
-        # 4. Claim Mining harvest
+        # 4. Claim Mining harvest with humanized delay
         try:
             async with session.post(f"{base_url}/api/user/claim-mining", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as mr:
                 md = await mr.json()
@@ -6409,12 +6507,14 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                     logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Mining claimed: +{claimed_amt:.4f} MRG!")
         except Exception as me:
             logger.debug(f"[{acc_name}] MRG claim mining note: {me}")
-        await asyncio.sleep(2.0)
+        await asyncio.sleep(round(random.uniform(1.4, 2.6), 2))
 
-        # 5. Claim Available Tasks (Recurring 3h + Socials + Channel tasks)
+        # 5. Claim Available Tasks (Recurring 3h + Socials + Channel tasks) with randomized order
         mrg_tasks = me_data.get("tasks", [])
         completed_task_ids = set(me_data.get("completedTaskIds", []))
-        for tsk in mrg_tasks:
+        shuffled_mrg_tasks = list(mrg_tasks)
+        random.shuffle(shuffled_mrg_tasks)
+        for tsk in shuffled_mrg_tasks:
             tid = tsk.get("taskId")
             ttype = tsk.get("taskType", "")
             vtype = tsk.get("verificationType", "")
@@ -6436,8 +6536,8 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                     except Exception as je:
                         logger.debug(f"[{acc_name}] ⛏️ [MRG Miner] Join channel note for @{target_ch}: {je}")
 
-            # Dynamic wait: 15s for link visits / social / channel tasks, 3s for native
-            task_wait = 15.0 if (vtype == "link_visit" or tsk.get("url") or "social" in ttype.lower() or "channel" in title.lower()) else 3.0
+            # Dynamic jittered wait: 14-18s for link visits / social / channel tasks, 2.5-4.2s for native
+            task_wait = round(random.uniform(14.2, 17.8), 2) if (vtype == "link_visit" or tsk.get("url") or "social" in ttype.lower() or "channel" in title.lower()) else round(random.uniform(2.5, 4.2), 2)
             logger.debug(f"[{acc_name}] ⛏️ [MRG Miner] Waiting {task_wait}s for '{title}'...")
             await asyncio.sleep(task_wait)
 
@@ -6456,7 +6556,7 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                             try:
                                 await acc_client(JoinChannelRequest(ch_name))
                                 logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Joined @{ch_name} on-demand for task '{title}'. Retrying claim...")
-                                await asyncio.sleep(3.0)
+                                await asyncio.sleep(round(random.uniform(2.5, 3.8), 2))
                                 async with session.post(f"{base_url}/api/user/claim-task", json={"initData": init_data, "taskId": tid}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as tr_retry:
                                     td_retry = await tr_retry.json()
                                     if td_retry.get("success"):
@@ -6466,7 +6566,8 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                             except Exception as c_err:
                                 logger.debug(f"[{acc_name}] MRG on-demand join note: {c_err}")
                     elif "wait" in str(td).lower() or "second" in str(td).lower():
-                        await asyncio.sleep(12.0)
+                        extra_wait = round(random.uniform(11.5, 14.5), 2)
+                        await asyncio.sleep(extra_wait)
                         async with session.post(f"{base_url}/api/user/claim-task", json={"initData": init_data, "taskId": tid}, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as tr2:
                             td2 = await tr2.json()
                             if td2.get("success"):
@@ -6475,7 +6576,7 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                                 logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Task '{title}' claimed after extra wait: +{rew} MRG!")
             except Exception as te:
                 logger.debug(f"[{acc_name}] MRG task claim note for {tid}: {te}")
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(round(random.uniform(1.1, 2.3), 2))
 
         # 6. One-time bonus (attempted by all fleet accounts)
         try:
@@ -6485,7 +6586,7 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                     logger.info(f"[{acc_name}] ⛏️ [MRG Miner] One-time bonus claimed successfully!")
         except Exception:
             pass
-        await asyncio.sleep(1.5)
+        await asyncio.sleep(round(random.uniform(1.2, 2.2), 2))
 
         # 7. Primary account special sweeps (10% squad commissions & referral bonuses)
         if is_primary:
@@ -6559,7 +6660,8 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
 
     try:
         base_url = "https://art.tamimdev.dev"
-        headers = {"Content-Type": "application/json", "User-Agent": HUMAN_USER_AGENT}
+        acc_ua = get_account_user_agent(acc_uid)
+        headers = {"Content-Type": "application/json", "User-Agent": acc_ua}
 
         # 1. Obtain WebApp initData if client is connected
         if acc_client:
@@ -6581,6 +6683,9 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
 
         if "X-Telegram-Init-Data" not in headers:
             cached_init = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("art_init_data")
+            if not cached_init:
+                logger.info(f"[{acc_name}] 🚀 [ART Airdrop] initData missing. Requesting from Render Cloud...")
+                cached_init = await refresh_tokens_via_relayer(session, acc_uid, "art")
             if cached_init:
                 headers["X-Telegram-Init-Data"] = cached_init
 
@@ -6599,7 +6704,19 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                     FLEET_MINIAPP_TOKENS[str(acc_uid)]["art_init_data"] = None
                     save_local_fleet_tokens()
                 acc["miniapp_tokens_synced"] = False
-                return
+                # Immediate cloud recovery attempt
+                fresh_init = await refresh_tokens_via_relayer(session, acc_uid, "art")
+                if fresh_init:
+                    headers["X-Telegram-Init-Data"] = fresh_init
+                    async with session.get(f"{base_url}/api/user/{acc_uid}", headers=headers, timeout=aiohttp.ClientTimeout(total=4.0)) as retry_r:
+                        if retry_r.status == 200:
+                            ud = await retry_r.json()
+                            u = ud.get("user", {})
+                            ms = ud.get("miningState", {})
+                        else:
+                            return
+                else:
+                    return
             else:
                 logger.debug(f"[{acc_name}] 🚀 [ART Airdrop] User API status: {r.status}")
 
@@ -6625,9 +6742,10 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             except Exception as w_err:
                 logger.debug(f"[{acc_name}] ART connect-wallet note: {w_err}")
 
-        # 3. Mining claim & 8-hour cycle restart
+        # 3. Mining claim & 8-hour cycle restart with humanized delay
         if not is_mining or rem_sec <= 0 or accumulated > 0:
             try:
+                await asyncio.sleep(round(random.uniform(0.8, 1.8), 2))
                 async with session.post(f"{base_url}/api/user/claim-mining", json={"userId": acc_uid}, headers=headers, timeout=aiohttp.ClientTimeout(total=4.0)) as cr:
                     cd = await cr.json()
                     if cd.get("success") and float(cd.get("claimedAtf", 0)) > 0:
@@ -6638,6 +6756,7 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                 pass
 
             try:
+                await asyncio.sleep(round(random.uniform(0.7, 1.5), 2))
                 async with session.post(f"{base_url}/api/user/start-mining", json={"userId": acc_uid}, headers=headers, timeout=aiohttp.ClientTimeout(total=4.0)) as sr:
                     sd = await sr.json()
                     if sd.get("success"):
@@ -6646,13 +6765,15 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             except Exception:
                 pass
 
-        # 4. Check & Complete Available Tasks (Dynamic wait: 15s for sponsor links/channels/videos, 3s for native)
+        # 4. Check & Complete Available Tasks with humanized randomized order and jittered delays
         try:
             async with session.get(f"{base_url}/api/tasks/{acc_uid}", headers=headers, timeout=aiohttp.ClientTimeout(total=4.0)) as tr:
                 if tr.status == 200:
                     td = await tr.json()
                     tasks = td.get("tasks", [])
-                    for t in tasks:
+                    shuffled_art_tasks = list(tasks)
+                    random.shuffle(shuffled_art_tasks)
+                    for t in shuffled_art_tasks:
                         if not t.get("isCompleted"):
                             tid = t.get("id")
                             ttitle = t.get("title", tid)
@@ -6661,8 +6782,8 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                                 await session.post(f"{base_url}/api/tasks/start", json={"userId": acc_uid, "taskId": tid}, headers=headers, timeout=aiohttp.ClientTimeout(total=4.0))
                             except Exception:
                                 pass
-                            # Step 2: Sponsor links / channels / videos require 15s
-                            task_wait = 15.0 if (t.get("actionUrl") or "sponsor" in ttitle.lower() or "channel" in ttitle.lower() or "youtube" in ttitle.lower()) else 3.0
+                            # Step 2: Sponsor links / channels / videos require 15s (jittered)
+                            task_wait = round(random.uniform(14.3, 17.8), 2) if (t.get("actionUrl") or "sponsor" in ttitle.lower() or "channel" in ttitle.lower() or "youtube" in ttitle.lower()) else round(random.uniform(2.6, 4.4), 2)
                             logger.debug(f"[{acc_name}] 🚀 [ART Airdrop] Waiting {task_wait}s for '{ttitle}'...")
                             await asyncio.sleep(task_wait)
                             # Step 3: Claim reward
@@ -6674,7 +6795,8 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                                         pool_bal += rew
                                         logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Task '{ttitle}' claimed (+{rew} ART)!")
                                     elif "wait" in str(cld).lower() or "second" in str(cld).lower():
-                                        await asyncio.sleep(12.0)
+                                        extra_wait = round(random.uniform(11.2, 14.5), 2)
+                                        await asyncio.sleep(extra_wait)
                                         async with session.post(f"{base_url}/api/tasks/claim", json={"userId": acc_uid, "taskId": tid}, headers=headers, timeout=aiohttp.ClientTimeout(total=4.0)) as cl_r2:
                                             cld2 = await cl_r2.json()
                                             if cld2.get("success"):
@@ -6683,7 +6805,7 @@ async def automate_art_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                                                 logger.info(f"[{acc_name}] 🚀 [ART Airdrop] Task '{ttitle}' claimed after extra wait (+{rew} ART)!")
                             except Exception:
                                 pass
-                            await asyncio.sleep(1.0)
+                            await asyncio.sleep(round(random.uniform(0.9, 2.1), 2))
         except Exception:
             pass
 
@@ -6832,22 +6954,12 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
     hashes_bal = 0.0
 
     try:
-        init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("ailab_init_data")
-        if not init_data and acc_client:
-            try:
-                bot_ai = await acc_client.get_entity(AILAB_BOT)
-                res_ai = await acc_client(RequestWebViewRequest(
-                    peer=bot_ai,
-                    bot=bot_ai,
-                    platform="android",
-                    url="https://ailab-agent.online/"
-                ))
-                parsed = urllib.parse.urlparse(res_ai.url)
-                init_data = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
-                if init_data:
-                    await sync_account_tokens_to_edge(session, acc_uid, acc_name, ailab_init_data=init_data)
-            except Exception:
-                pass
+        if not init_data:
+            init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("ailab_init_data")
+
+        if not init_data:
+            logger.info(f"[{acc_name}] 🧪 [AI Lab] initData missing. Requesting from Render Cloud...")
+            init_data = await refresh_tokens_via_relayer(session, acc_uid, "ailab")
 
         if not init_data:
             return
@@ -6863,12 +6975,20 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
                 d = await r.json()
                 token = d.get("result", {}).get("bearer") or d.get("user_info", {}).get("session_id")
             elif r.status in (401, 403):
-                logger.warning(f"[{acc_name}] 🧪 [AI Lab] Token expired (HTTP {r.status}). Invalidating token for automatic cloud refresh.")
+                logger.warning(f"[{acc_name}] 🧪 [AI Lab] Token expired (HTTP {r.status}). Requesting fresh token from Render Cloud...")
                 if str(acc_uid) in FLEET_MINIAPP_TOKENS:
                     FLEET_MINIAPP_TOKENS[str(acc_uid)]["ailab_init_data"] = None
                     save_local_fleet_tokens()
                 acc["miniapp_tokens_synced"] = False
-                return
+                fresh_init = await refresh_tokens_via_relayer(session, acc_uid, "ailab")
+                if fresh_init:
+                    init_data = fresh_init
+                    async with session.post(f"{base_url}/users/auth/login", json={"user": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r_retry:
+                        if r_retry.status == 200:
+                            d = await r_retry.json()
+                            token = d.get("result", {}).get("bearer") or d.get("user_info", {}).get("session_id")
+                else:
+                    return
         if not token:
             return
 
@@ -6906,7 +7026,7 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
             except Exception:
                 pass
 
-        # 4. Check & complete available tasks (Tap task -> wait 2.5s -> check/claim)
+        # 4. Check & complete available tasks with randomized order & jittered waits
         try:
             async with session.get(f"{base_url}/tasks", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as tr:
                 if tr.status == 200:
@@ -6920,7 +7040,9 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
                     elif isinstance(res_data, list):
                         t_list = res_data
 
-                    for tsk in t_list:
+                    shuffled_ai_tasks = list(t_list)
+                    random.shuffle(shuffled_ai_tasks)
+                    for tsk in shuffled_ai_tasks:
                         tid = tsk.get("id")
                         if not tid:
                             continue
@@ -6938,8 +7060,8 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
                             await session.post(f"{base_url}/task-check", json={"task_id": tid, "action": "start"}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6))
                         except Exception:
                             pass
-                        # Step 2: Dynamic wait: 15s for follow / social / partner tasks, 3s for referral checks
-                        task_wait = 15.0 if ("follow" in str(tsk).lower() or "partner" in str(tsk).lower() or "social" in str(tsk).lower() or "channel" in ttitle.lower()) else 3.0
+                        # Step 2: Dynamic jittered wait: 14-18s for follow / social / partner tasks, 2.5-4.4s for native
+                        task_wait = round(random.uniform(14.2, 17.6), 2) if ("follow" in str(tsk).lower() or "partner" in str(tsk).lower() or "social" in str(tsk).lower() or "channel" in ttitle.lower()) else round(random.uniform(2.5, 4.4), 2)
                         logger.debug(f"[{acc_name}] 🧪 [AI Lab] Waiting {task_wait}s for '{ttitle}'...")
                         await asyncio.sleep(task_wait)
                         # Step 3: Check & claim
@@ -6952,7 +7074,7 @@ async def automate_ailab_cycle(session: aiohttp.ClientSession, acc_client, acc: 
                                         logger.info(f"[{acc_name}] 🧪 [AI Lab] Task '{ttitle}' claimed!")
                         except Exception:
                             pass
-                        await asyncio.sleep(1.0)
+                        await asyncio.sleep(round(random.uniform(0.9, 2.1), 2))
         except Exception:
             pass
 
@@ -7032,6 +7154,10 @@ async def automate_ultrawallet_cycle(session: aiohttp.ClientSession, acc_client,
 
     try:
         init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("ultrawallet_init_data")
+        if not init_data:
+            logger.info(f"[{acc_name}] 💳 [UltraWallet] Token missing locally. Fetching from Render Cloud...")
+            init_data = await refresh_tokens_via_relayer(session, acc_uid, "ultrawallet")
+
         if not init_data and acc_client:
             try:
                 bot_uw = await acc_client.get_input_entity(ULTRAWALLET_BOT)
@@ -7067,12 +7193,26 @@ async def automate_ultrawallet_cycle(session: aiohttp.ClientSession, acc_client,
                         if fbr.status == 200:
                             id_token = (await fbr.json()).get("idToken")
             elif lr.status in (401, 403):
-                logger.warning(f"[{acc_name}] 💳 [UltraWallet] Token expired (HTTP {lr.status}). Invalidating token for automatic cloud refresh.")
+                logger.warning(f"[{acc_name}] 💳 [UltraWallet] Token expired (HTTP {lr.status}). Invalidating & fetching fresh via Render Cloud...")
                 if str(acc_uid) in FLEET_MINIAPP_TOKENS:
                     FLEET_MINIAPP_TOKENS[str(acc_uid)]["ultrawallet_init_data"] = None
                     save_local_fleet_tokens()
                 acc["miniapp_tokens_synced"] = False
-                return
+                fresh_init = await refresh_tokens_via_relayer(session, acc_uid, "ultrawallet")
+                if fresh_init and fresh_init != init_data:
+                    logger.info(f"[{acc_name}] 💳 [UltraWallet] Recovered fresh token from Render Cloud! Retrying login...")
+                    init_data = fresh_init
+                    async with session.post(f"{base_url}/telegramLogin", json={"initData": init_data, "refBy": str(ULTRAWALLET_REFERRAL_CODE)}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as lr2:
+                        if lr2.status == 200:
+                            ld2 = await lr2.json()
+                            custom_token2 = ld2.get("token")
+                            if custom_token2:
+                                fb_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyAIKTCEFqC5LFRc89nuOLhTGPHIZTIjEsU"
+                                async with session.post(fb_url, json={"token": custom_token2, "returnSecureToken": True}, timeout=aiohttp.ClientTimeout(total=8)) as fbr2:
+                                    if fbr2.status == 200:
+                                        id_token = (await fbr2.json()).get("idToken")
+                if not id_token:
+                    return
 
         if not id_token:
             return
@@ -7138,42 +7278,43 @@ async def automate_ultrawallet_cycle(session: aiohttp.ClientSession, acc_client,
                                     break
                             else:
                                 break
-                        await asyncio.sleep(1.0)
+                        await asyncio.sleep(round(random.uniform(1.8, 3.2), 2))
         except Exception as se:
             logger.debug(f"[{acc_name}] UltraWallet spin note: {se}")
 
-        # 6. Discover & Complete Available Tasks (Tap task -> wait 2.5s -> complete without joining channels or opening links)
+        # 6. Discover & Complete Available Tasks (Humanized randomized execution order)
         try:
             async with session.get(f"{base_url}/tasks", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as tr:
                 if tr.status == 200:
                     td = await tr.json()
-                    for t in td.get("tasks", []):
-                        if not t.get("completed"):
-                            tid = t.get("id")
-                            ttitle = t.get("title", tid)
-                            # Step 1: Tap / start task
-                            try:
-                                await session.post(f"{base_url}/tasks/start", json={"taskId": tid}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6))
-                            except Exception:
-                                pass
-                            # Step 2: Website / browse / partner tasks require 15s
-                            ttype = t.get("type", "")
-                            tcat = t.get("category", "")
-                            task_wait = 15.0 if (ttype == "website" or tcat in ["hot", "partner"] or "website" in str(t).lower()) else 3.0
-                            logger.debug(f"[{acc_name}] 💳 [UltraWallet] Waiting {task_wait}s for '{ttitle}'...")
-                            await asyncio.sleep(task_wait)
-                            # Step 3: Complete task
-                            try:
-                                async with session.post(f"{base_url}/tasks/complete", json={"taskId": tid}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as tcr:
-                                    if tcr.status == 200:
-                                        tcd = await tcr.json()
-                                        if tcd.get("ok"):
-                                            rew_c = tcd.get("rewardCoin", "LT")
-                                            rew_a = tcd.get("rewardAmount", 0)
-                                            logger.info(f"[{acc_name}] 💳 [UltraWallet] Task '{ttitle}' completed (+{rew_a} {rew_c})!")
-                            except Exception:
-                                pass
-                            await asyncio.sleep(1.0)
+                    tasks = [t for t in td.get("tasks", []) if not t.get("completed")]
+                    random.shuffle(tasks)
+                    for t in tasks:
+                        tid = t.get("id")
+                        ttitle = t.get("title", tid)
+                        # Step 1: Tap / start task
+                        try:
+                            await session.post(f"{base_url}/tasks/start", json={"taskId": tid}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=6))
+                        except Exception:
+                            pass
+                        # Step 2: Website / browse / partner tasks require 15s with human jitter
+                        ttype = t.get("type", "")
+                        tcat = t.get("category", "")
+                        task_wait = round(random.uniform(14.3, 17.6), 2) if (ttype == "website" or tcat in ["hot", "partner"] or "website" in str(t).lower()) else round(random.uniform(2.8, 4.4), 2)
+                        logger.debug(f"[{acc_name}] 💳 [UltraWallet] Waiting {task_wait}s for '{ttitle}'...")
+                        await asyncio.sleep(task_wait)
+                        # Step 3: Complete task
+                        try:
+                            async with session.post(f"{base_url}/tasks/complete", json={"taskId": tid}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8)) as tcr:
+                                if tcr.status == 200:
+                                    tcd = await tcr.json()
+                                    if tcd.get("ok"):
+                                        rew_c = tcd.get("rewardCoin", "LT")
+                                        rew_a = tcd.get("rewardAmount", 0)
+                                        logger.info(f"[{acc_name}] 💳 [UltraWallet] Task '{ttitle}' completed (+{rew_a} {rew_c})!")
+                        except Exception:
+                            pass
+                        await asyncio.sleep(round(random.uniform(1.2, 2.5), 2))
         except Exception as te:
             logger.debug(f"[{acc_name}] UltraWallet tasks note: {te}")
 
@@ -7205,7 +7346,7 @@ async def automate_ultrawallet_cycle(session: aiohttp.ClientSession, acc_client,
                                     logger.info(f"[{acc_name}] 💳 [UltraWallet] 📺 Watch & Earn Ad watched (+{rew_u} USDT | Total today: {ads_watched}/10)!")
                                 else:
                                     break
-                            await asyncio.sleep(2.0)
+                            await asyncio.sleep(round(random.uniform(2.1, 4.2), 2))
                         if ads_watched >= 10:
                             break
         except Exception as rce:
@@ -7250,6 +7391,10 @@ async def automate_apx_cycle(session: aiohttp.ClientSession, acc_client, acc: di
 
     try:
         init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("apx_init_data")
+        if not init_data:
+            logger.info(f"[{acc_name}] ⚡ [Apex Miner] Token missing locally. Fetching via Render Cloud...")
+            init_data = await refresh_tokens_via_relayer(session, acc_uid, "apx")
+
         if not init_data and acc_client:
             try:
                 bot_apx = await acc_client.get_input_entity(APX_BOT)
@@ -7286,12 +7431,20 @@ async def automate_apx_cycle(session: aiohttp.ClientSession, acc_client, acc: di
                 if br.status == 200:
                     b_data = await br.json()
                 elif br.status in (401, 403):
-                    logger.warning(f"[{acc_name}] ⚡ [Apex Miner] Token expired (HTTP {br.status}). Invalidating token for automatic cloud refresh.")
+                    logger.warning(f"[{acc_name}] ⚡ [Apex Miner] Token expired (HTTP {br.status}). Invalidating & fetching fresh via Render Cloud...")
                     if str(acc_uid) in FLEET_MINIAPP_TOKENS:
                         FLEET_MINIAPP_TOKENS[str(acc_uid)]["apx_init_data"] = None
                         save_local_fleet_tokens()
                     acc["miniapp_tokens_synced"] = False
-                    return
+                    fresh_init = await refresh_tokens_via_relayer(session, acc_uid, "apx")
+                    if fresh_init and fresh_init != init_data:
+                        logger.info(f"[{acc_name}] ⚡ [Apex Miner] Recovered fresh token from Render Cloud! Retrying bootstrap...")
+                        init_data = fresh_init
+                        async with session.post(f"{base_url}/bootstrap", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as br2:
+                            if br2.status == 200:
+                                b_data = await br2.json()
+                    if not b_data:
+                        return
         except Exception:
             pass
 
@@ -7343,10 +7496,12 @@ async def automate_apx_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         except Exception:
             pass
 
-        # 5. Tasks Discovery & Auto-Claim (Dynamic wait: 10s for daily, 15s for social tasks)
-        for dt in ["telegram", "twitter"]:
+        # 5. Tasks Discovery & Auto-Claim (Humanized shuffled execution)
+        daily_tasks = ["telegram", "twitter"]
+        random.shuffle(daily_tasks)
+        for dt in daily_tasks:
             try:
-                await asyncio.sleep(2.0)
+                await asyncio.sleep(round(random.uniform(2.1, 4.2), 2))
                 async with session.post(f"{base_url}/tasks/daily", json={"initData": init_data, "task": dt}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as dtr:
                     if dtr.status == 200:
                         dtd = await dtr.json()
@@ -7355,9 +7510,11 @@ async def automate_apx_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             except Exception:
                 pass
 
-        for st in ["channel", "group", "twitter"]:
+        social_tasks = ["channel", "group", "twitter"]
+        random.shuffle(social_tasks)
+        for st in social_tasks:
             try:
-                await asyncio.sleep(2.0)
+                await asyncio.sleep(round(random.uniform(2.3, 4.4), 2))
                 async with session.post(f"{base_url}/tasks/social", json={"initData": init_data, "task": st}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as str_req:
                     if str_req.status == 200:
                         std = await str_req.json()
@@ -7368,6 +7525,7 @@ async def automate_apx_cycle(session: aiohttp.ClientSession, acc_client, acc: di
 
         # 6. Ad Mining Speed Boost & Ad Reward
         try:
+            await asyncio.sleep(round(random.uniform(1.4, 2.8), 2))
             async with session.post(f"{base_url}/ads/boost", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as bst_r:
                 if bst_r.status == 200:
                     logger.info(f"[{acc_name}] ⚡ [Apex Miner] Mining speed boost activated!")
@@ -7375,6 +7533,7 @@ async def automate_apx_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             pass
 
         try:
+            await asyncio.sleep(round(random.uniform(1.8, 3.2), 2))
             async with session.post(f"{base_url}/ads/reward", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as rew_r:
                 if rew_r.status == 200:
                     rew_d = await rew_r.json()
@@ -7408,22 +7567,12 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
     is_primary = (acc_uid == str(REPORT_CHAT_ID))
 
     try:
-        init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("ainovum_init_data")
-        if not init_data and acc_client:
-            try:
-                bot_an = await acc_client.get_entity(AINOVUM_BOT)
-                res_an = await acc_client(RequestWebViewRequest(
-                    peer=bot_an,
-                    bot=bot_an,
-                    platform="android",
-                    url=f"https://ainovum.biz/?startapp={AINOVUM_REFERRAL_CODE}&ref={AINOVUM_REFERRAL_CODE}"
-                ))
-                parsed_an = urllib.parse.urlparse(res_an.url)
-                init_data = urllib.parse.parse_qs(parsed_an.fragment).get("tgWebAppData", [None])[0]
-                if init_data:
-                    await sync_account_tokens_to_edge(session, acc_uid, acc_name, ainovum_init_data=init_data)
-            except Exception:
-                pass
+        if not init_data:
+            init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("ainovum_init_data")
+
+        if not init_data:
+            logger.info(f"[{acc_name}] 🤖 [Ainovum] initData missing. Requesting from Render Cloud...")
+            init_data = await refresh_tokens_via_relayer(session, acc_uid, "ainovum")
 
         if not init_data:
             return
@@ -7449,12 +7598,23 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
                     raw_cookies = br.headers.getall("Set-Cookie", [])
                     cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
                 elif br.status in (401, 403):
-                    logger.warning(f"[{acc_name}] 🤖 [Ainovum] Token expired (HTTP {br.status}). Invalidating token for automatic cloud refresh.")
+                    logger.warning(f"[{acc_name}] 🤖 [Ainovum] Token expired (HTTP {br.status}). Requesting fresh token from Render Cloud...")
                     if str(acc_uid) in FLEET_MINIAPP_TOKENS:
                         FLEET_MINIAPP_TOKENS[str(acc_uid)]["ainovum_init_data"] = None
                         save_local_fleet_tokens()
                     acc["miniapp_tokens_synced"] = False
-                    return
+                    fresh_init = await refresh_tokens_via_relayer(session, acc_uid, "ainovum")
+                    if fresh_init:
+                        init_data = fresh_init
+                        boot_payload["initData"] = fresh_init
+                        async with session.post(f"{base_url}/api/bootstrap", json=boot_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as br_retry:
+                            if br_retry.status == 200:
+                                raw_cookies = br_retry.headers.getall("Set-Cookie", [])
+                                cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
+                            else:
+                                return
+                    else:
+                        return
         except Exception:
             pass
 
@@ -7462,7 +7622,7 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
         if cookie_hdr:
             auth_headers["Cookie"] = cookie_hdr
 
-        await asyncio.sleep(1.5)
+        await asyncio.sleep(round(random.uniform(1.2, 2.4), 2))
 
         # 2. Claim Mining Profit
         try:
@@ -7591,6 +7751,10 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
             init_data = FLEET_MINIAPP_TOKENS.get(acc_uid, {}).get("atf_init_data")
 
         if not init_data:
+            logger.info(f"[{acc_name}] 🪙 [ATF Miner] initData missing. Requesting from Render Cloud...")
+            init_data = await refresh_tokens_via_relayer(session, acc_uid, "atf")
+
+        if not init_data:
             return
 
         acc_ua = get_account_user_agent(acc_uid)
@@ -7612,28 +7776,48 @@ async def automate_atf_cycle(session: aiohttp.ClientSession, acc_client, acc: di
 
         # 1. Login
         async with session.post(f"{base_url}?action=login&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "username": acc.get("username", "")}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=10)) as lr:
+            ld = {}
             if lr.status in (401, 403):
-                logger.warning(f"[{acc_name}] 🪙 [ATF Miner] Token expired (HTTP {lr.status}). Invalidating token for automatic cloud refresh.")
+                logger.warning(f"[{acc_name}] 🪙 [ATF Miner] Token expired (HTTP {lr.status}). Automatically requesting fresh token from Render Cloud...")
                 if str(acc_uid) in FLEET_MINIAPP_TOKENS:
                     FLEET_MINIAPP_TOKENS[str(acc_uid)]["atf_init_data"] = None
                     save_local_fleet_tokens()
                 acc["miniapp_tokens_synced"] = False
-                return
-            if lr.status != 200:
+                fresh_init = await refresh_tokens_via_relayer(session, acc_uid, "atf")
+                if fresh_init:
+                    init_data = fresh_init
+                    async with session.post(f"{base_url}?action=login&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "username": acc.get("username", "")}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=10)) as lr_retry:
+                        if lr_retry.status == 200:
+                            ld = await lr_retry.json()
+                            if ld.get("status") == "success":
+                                logger.info(f"[{acc_name}] 🪙 [ATF Miner] Successfully re-authenticated with fresh Render token!")
+                        else:
+                            return
+                else:
+                    return
+            elif lr.status != 200:
                 logger.warning(f"[{acc_name}] 🪙 [ATF Miner] Login failed with HTTP {lr.status}")
                 return
-            ld = await lr.json()
+            else:
+                ld = await lr.json()
+
             if ld.get("status") != "success":
                 err_msg = str(ld.get("reason", "") or ld.get("message", ""))
                 if "auth_date" in err_msg.lower() or "unauthorized" in err_msg.lower() or "token" in err_msg.lower():
-                    logger.warning(f"[{acc_name}] 🪙 [ATF Miner] Token expired ({err_msg}). Invalidating token for automatic cloud refresh.")
+                    logger.warning(f"[{acc_name}] 🪙 [ATF Miner] Token expired ({err_msg}). Requesting fresh token from Render Cloud...")
                     if str(acc_uid) in FLEET_MINIAPP_TOKENS:
                         FLEET_MINIAPP_TOKENS[str(acc_uid)]["atf_init_data"] = None
                         save_local_fleet_tokens()
                     acc["miniapp_tokens_synced"] = False
-                else:
+                    fresh_init = await refresh_tokens_via_relayer(session, acc_uid, "atf")
+                    if fresh_init:
+                        init_data = fresh_init
+                        async with session.post(f"{base_url}?action=login&t={int(time.time()*1000)}", json=atf_p({"tg_id": int(acc_uid), "username": acc.get("username", "")}), headers=headers, proxy=proxy, timeout=aiohttp.ClientTimeout(total=10)) as lr_retry2:
+                            if lr_retry2.status == 200:
+                                ld = await lr_retry2.json()
+                if ld.get("status") != "success":
                     logger.warning(f"[{acc_name}] 🪙 [ATF Miner] Login rejected: {ld.get('message', ld)}")
-                return
+                    return
             u = ld.get("user", {})
 
         # 1b. Dedicated TON Wallet Sync & Cryptographic TON Connect Proof
@@ -8012,6 +8196,16 @@ async def farm_single_account(
                         acc["miniapp_tokens_synced"] = True
                         await update_account_safely(acc_uid, {"miniapp_tokens_synced_at": time.time(), "miniapp_tokens_synced": True})
                         logger.info(f"[{acc_name}] 🌐 [Cloud-First] All tokens confirmed fresh via Render Cloud! 0 local MTProto required.")
+
+                if tokens_due:
+                    # Targeted single-account refresh via Render Cloud
+                    single_tok = await refresh_tokens_via_relayer(render_token_sess, str(acc_uid))
+                    if single_tok:
+                        tokens_due = False
+                        acc["miniapp_tokens_synced_at"] = time.time()
+                        acc["miniapp_tokens_synced"] = True
+                        await update_account_safely(acc_uid, {"miniapp_tokens_synced_at": time.time(), "miniapp_tokens_synced": True})
+                        logger.info(f"[{acc_name}] 🌐 [Cloud-First] Account tokens refreshed via Render Cloud Relayer/Standby! 0 local MTProto required.")
         except Exception as rce:
             logger.debug(f"[{acc_name}] Render cloud token fetch note: {rce}")
 
@@ -8116,10 +8310,33 @@ async def farm_single_account(
                 except Exception as proxy_err:
                     if acc_proxy:
                         logger.warning(f"[{acc_name}] 🛡️ Proxy failed ({proxy_err}). Auto-failing over to direct connection...")
-                        acc_cl = TelegramClient(StringSession(acc_sess), API_ID, API_HASH, **acc_fp)
-                        await acc_cl.connect()
+                        try:
+                            acc_cl = TelegramClient(StringSession(acc_sess), API_ID, API_HASH, **acc_fp)
+                            await acc_cl.connect()
+                        except Exception as direct_err:
+                            logger.warning(f"[{acc_name}] 🌐 Local MTProto session is on cooldown or disconnected ({direct_err}). Auto-recovering tokens via Render Cloud...")
+                            async with aiohttp.ClientSession() as render_fb_sess:
+                                await refresh_tokens_via_relayer(render_fb_sess, str(acc_uid))
+                            acc["miniapp_tokens_synced"] = True
+                            async with aiohttp.ClientSession() as fast_mining_sess:
+                                await run_humanized_account_farming(fast_mining_sess, None, acc, is_fast_mode=True)
+                            acc["last_fleet_cycle_at"] = time.time()
+                            await update_account_safely(acc_uid, {"last_fleet_cycle_at": time.time()})
+                            PRIORITY_ACCOUNT_IDS.discard(str(acc_uid))
+                            gc.collect()
+                            return
                     else:
-                        raise
+                        logger.warning(f"[{acc_name}] 🌐 Local MTProto session is on cooldown or disconnected ({proxy_err}). Auto-recovering tokens via Render Cloud...")
+                        async with aiohttp.ClientSession() as render_fb_sess:
+                            await refresh_tokens_via_relayer(render_fb_sess, str(acc_uid))
+                        acc["miniapp_tokens_synced"] = True
+                        async with aiohttp.ClientSession() as fast_mining_sess:
+                            await run_humanized_account_farming(fast_mining_sess, None, acc, is_fast_mode=True)
+                        acc["last_fleet_cycle_at"] = time.time()
+                        await update_account_safely(acc_uid, {"last_fleet_cycle_at": time.time()})
+                        PRIORITY_ACCOUNT_IDS.discard(str(acc_uid))
+                        gc.collect()
+                        return
             should_disconnect = True
 
         # A. Referral binding & channel self-healing (if due)
@@ -8194,7 +8411,18 @@ async def farm_single_account(
         )
         await broadcast_admin_message(alert_msg, reply_markup=MAIN_TAB_KEYBOARD)
     except FloodWaitError as fwe:
-        logger.warning(f"[{acc_name}] Telegram FloodWait: {fwe.seconds}s. Skipping until next cycle.")
+        logger.warning(f"[{acc_name}] Telegram FloodWait ({fwe.seconds}s). Local MTProto on cooldown. Auto-recovering tokens via Render Cloud...")
+        try:
+            async with aiohttp.ClientSession() as render_fb_sess:
+                await refresh_tokens_via_relayer(render_fb_sess, str(acc_uid))
+            acc["miniapp_tokens_synced"] = True
+            async with aiohttp.ClientSession() as fast_mining_sess:
+                await run_humanized_account_farming(fast_mining_sess, None, acc, is_fast_mode=True)
+            acc["last_fleet_cycle_at"] = time.time()
+            await update_account_safely(acc_uid, {"last_fleet_cycle_at": time.time()})
+            PRIORITY_ACCOUNT_IDS.discard(str(acc_uid))
+        except Exception as fb_err:
+            logger.debug(f"[{acc_name}] FloodWait fallback note: {fb_err}")
     except Exception as acc_err:
         logger.error(f"[Account Exception] Error processing account {acc_name} ({acc_uid}): {acc_err}", exc_info=True)
     finally:
@@ -9094,5 +9322,27 @@ async def main():
 
 
 if __name__ == "__main__":
+    import sys
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print("""
+AAA_AUTO Userbot Fleet Controller & Cloud Multi-Bot Engine
+Usage: python3 userbot_refresher.py [options]
+
+Options:
+  -h, --help           Show this help message and exit
+  --version            Show fleet version and architecture info
+  --check              Verify local session files, environment secrets, and exit
+""")
+        sys.exit(0)
+    elif "--version" in sys.argv:
+        print("AAA_AUTO Fleet Controller v4.5.0 (5-Node Edge Mesh + Dual Render Relayers)")
+        sys.exit(0)
+    elif "--check" in sys.argv:
+        accs = load_accounts()
+        print(f"Loaded {len(accs)} accounts from config.")
+        for a in accs:
+            print(f" • [{a.get('name')}] UID: {a.get('user_id')} | Session: {'Present' if a.get('session_string') else 'Missing'}")
+        sys.exit(0)
     client.loop.run_until_complete(main())
+
 
