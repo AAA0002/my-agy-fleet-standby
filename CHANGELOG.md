@@ -4,6 +4,16 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Telegram Bot Notification Spamming Root Cause Eliminated (`userbot_refresher.py`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Identified Infinite Feedback Loop**:
+    * Discovered that each account's automated farming cycle in `userbot_refresher.py` was delegating BNB tasks to `/api/farm/bnb` on Cloudflare Edge.
+    * In `deploy_both_cf_workers.py`, `/api/farm/bnb` accidentally had an internal hook that queued `fleet:pending_action = { action: "harvest" }` into Upstash Redis.
+    * The serverless command listener polled Upstash every 15s, picked up the action, and invoked `execute_fleet_harvest()`, sending a Telegram broadcast to the user on every cycle (~every 15–30 seconds).
+  - **Eliminated Message Spam at Both Layers**:
+    * **Edge Worker Layer**: Removed accidental `fleet:pending_action` queue injection from `/api/farm/bnb` and `/api/farm/execute` in `deploy_both_cf_workers.py`. Fixed JS syntax and successfully synchronized all 5 Cloudflare Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * **Worker Daemon Layer**: Updated `miniapp_command_listener_loop` to invoke `execute_fleet_harvest(notify=False)` for background queue actions, ensuring background worker wakes are 100% silent.
+    * **Debounce Protection**: Added a strict 300-second (5-minute) notification rate limiter (`LAST_HARVEST_NOTIFY_TIME`) to `execute_fleet_harvest()`, completely preventing repetitive notifications even under rapid manual user button presses.
+
 - **Stones Captcha Offline Solver & Atomic Resilience, Ainovum Ban Loop Elimination & Fleet Wallet Connectivity Audit (`stones_captcha_solver.py`, `stones_captcha_templates.json`, `userbot_refresher.py`, `execute_ailab_ainovum_withdrawals.py`, `accounts.json`, `CHANGELOG.md`)**:
   - **Stones Captcha Template Recovery & Atomic Safety**:
     * Restored and merged template library from truncated 40 vectors up to 31 distinct characters (2,010 templates total).

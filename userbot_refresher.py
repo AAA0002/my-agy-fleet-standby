@@ -9433,17 +9433,23 @@ async def execute_universal_fleet_sweep(caller_chat_id=None):
         logger.debug(f"[Universal Sweep] On-chain audit note: {cse}")
 
 
-async def execute_fleet_harvest(caller_chat_id=None):
+LAST_HARVEST_NOTIFY_TIME = 0
+
+async def execute_fleet_harvest(caller_chat_id=None, notify=True):
     """Wakes all parallel worker slots to execute an instant mining harvest across all 13 accounts."""
+    global LAST_HARVEST_NOTIFY_TIME
     target_chat = caller_chat_id or REPORT_CHAT_ID
     logger.info("[Fleet Harvest] ⚡ Instant Fleet Harvest triggered...")
     wake_worker_event.set()
-    await send_report_message(
-        "⚡ *Instant Fleet Harvest Dispatched!*\n\n"
-        "Triggered immediate mining harvest across all 13 accounts (ART, MRG, Stones, AI Lab, UltraWallet, Apex, Ainovum, ATF).",
-        reply_markup=MAIN_TAB_KEYBOARD,
-        chat_id=target_chat
-    )
+    now = time.time()
+    if notify and (now - LAST_HARVEST_NOTIFY_TIME) >= 300:
+        LAST_HARVEST_NOTIFY_TIME = now
+        await send_report_message(
+            "⚡ *Instant Fleet Harvest Dispatched!*\n\n"
+            "Triggered immediate mining harvest across all 13 accounts (ART, MRG, Stones, AI Lab, UltraWallet, Apex, Ainovum, ATF).",
+            reply_markup=MAIN_TAB_KEYBOARD,
+            chat_id=target_chat
+        )
 
 
 async def miniapp_command_listener_loop():
@@ -9516,7 +9522,7 @@ async def miniapp_command_listener_loop():
                                     await send_report_message("🔄 *Manual Fleet Sync Dispatched!* Cycle triggered across all 13 accounts.", reply_markup=MAIN_TAB_KEYBOARD, chat_id=REPORT_CHAT_ID)
                                 safe_create_task(_run_sync(), name="sync_task")
                             elif act == "harvest":
-                                safe_create_task(execute_fleet_harvest(caller_chat_id=REPORT_CHAT_ID), name="fleet_harvest")
+                                safe_create_task(execute_fleet_harvest(caller_chat_id=REPORT_CHAT_ID, notify=False), name="fleet_harvest")
                             elif act == "sweep_atf":
                                 async def _run_atf_sweep():
                                     logger.info("[MiniApp Listener] 🪙 ATF is set to Farming & Accumulation Mode (Withdrawals disabled per policy).")

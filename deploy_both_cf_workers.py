@@ -1075,15 +1075,6 @@ fi
     // 12.5 Autonomous Cloud Farming Engine (Stones, MRG, ART, AI Lab, UltraWallet, Apex Miner, Ainovum, ATF)
     if (path === "/api/farm/all" || path === "/api/fleet/claim-all" || path === "/api/farm/bnb" || path === "/api/farm/execute") {
       try {
-        ctx.waitUntil(upstashSet("fleet:pending_action", {
-          id: `cf_harvest_${Date.now()}`,
-          action: "harvest",
-          origin: "CloudflareEdgeMesh",
-          timestamp: Date.now() / 1000
-        }));
-      } catch (_) {}
-
-      try {
         const body = await request.json().catch(() => ({}));
         let targetUids = [];
         if (body.tgId || body.user_id) {
@@ -2819,7 +2810,6 @@ Reply to Arif naturally:`;
               })
             }).catch(() => {});
           }
-        }
       } catch (_) {}
     })());
 
