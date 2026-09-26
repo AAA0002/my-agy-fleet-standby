@@ -66,6 +66,14 @@
     "ton_main_binance": "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT",
     "solana_main_binance": "2EKCkj6RSgMHomtTPigoVfaLa5x4RaXq9qrxv2roi5Fu",
     "btc_taproot_main_binance": "bc1peg8n6rv7lnzpdwgqqktcyxvrw7we60c780l2yh48pvqvgpj2p7gsvecjdg",
+    "binance_wallet_2": {
+      "name": "Binance Web3 Wallet 2 (AAA)",
+      "bep20_bnb_usdt": "0x017841f26d5b79cc8c5eb20c65367bb645cc2610",
+      "ton": "UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH",
+      "solana": "Bf4uGaYzpZc3aoW4HsABo4obPsk9ozDEUBfzHWTDeM5Q",
+      "btc_taproot": "bc1pq2kas8lk3w29v6eve9tevnr3sl2ef58zvg9k4krlpu5u7ph7u47s6whcw2",
+      "policy": "Dedicated destination for Main Account in @ainovum_bot to avoid duplicate wallet conflict with Node 10 (@AAlllAA2)"
+    },
     "ton_workers_count": 12,
     "ton_workers_file": "fleet_ton_wallets.json"
   },

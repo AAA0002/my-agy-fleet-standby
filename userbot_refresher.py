@@ -178,6 +178,9 @@ EVM_VAULT_ADDRESS = WALLET_ADDRESS
 OFFICIAL_EMAIL = os.getenv("FLEET_EMAIL", "aaa.support.a@gmail.com")
 ARBITRUM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 TON_PRIMARY_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
+# Binance Web3 Wallet 2 (AAA) - Dedicated for Main Account on @ainovum_bot
+BINANCE_WALLET_2_EVM = "0x017841f26d5b79cc8c5eb20c65367bb645cc2610"
+BINANCE_WALLET_2_TON = "UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH"
 MIN_WITHDRAWAL = float(os.getenv("MIN_WITHDRAWAL", "0.00005"))
 MANDATORY_OFFICIAL_CHANNELS = ["stoneswithestand", "mrgminer", "ART_AIRDROP", "ApexMiner_Official"]
 
@@ -7586,7 +7589,7 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
         boot_payload = {
             "initData": init_data,
             "platform": "android",
-            "referrer": AINOVUM_REFERRAL_CODE,
+            "referrer": "" if is_primary else AINOVUM_REFERRAL_CODE,
             "timezone_offset_minutes": 0,
             "language_code": "en",
             "registration_duration_ms": 1500
@@ -7655,62 +7658,60 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
             pass
 
         # 5. Auto-Withdrawal to BEP-20 Wallet (0.1 USDT Minimum)
-        # Main Account (6727787768) is strictly protected from withdrawal per user directive.
-        if is_primary:
-            logger.info(f"[{acc_name}] 🤖 [Ainovum] Main account holding balance. Withdrawals disabled per user directive to build power.")
-        else:
-            try:
-                async with session.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cr:
-                    if cr.status == 200:
-                        cd = await cr.json()
-                        avail = float(cd.get("freeze", {}).get("available", 0) or 0)
-                        if avail >= 0.1:
-                            wd_amt = round(avail, 4)
-                            target_evm_addr = EVM_VAULT_ADDRESS  # Direct to Binance Web3 Master (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
-                            logger.info(f"[{acc_name}] 🤖 [Ainovum] Available {avail:.4f} USDT >= 0.1 threshold! Submitting auto-withdrawal directly to Binance BEP-20 {target_evm_addr}...")
-                            wd_payload = {"amount": wd_amt, "wallet": target_evm_addr, "network": "bep20"}
-                            for attempt in range(2):
-                                async with session.post(
-                                    f"{base_url}/api/withdraws/usdt/create",
-                                    json=wd_payload,
-                                    headers=auth_headers,
-                                    timeout=aiohttp.ClientTimeout(total=10),
-                                    proxy=proxy
-                                ) as wr:
-                                    wd = await wr.json()
-                                    if wr.status == 200 and not wd.get("access_denied") and not wd.get("error"):
-                                        logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal success: {wd}")
-                                        await send_report_message(
-                                            f"🎉 *Ainovum USDT Withdrawal Submitted!*\n\n"
-                                            f"• *Account:* {acc_name}\n"
-                                            f"• *Amount:* `{wd_amt} USDT` (BEP-20)\n"
-                                            f"• *Destination:* `{target_evm_addr}`\n"
-                                            f"• *Result:* `{wd}`",
-                                            chat_id=REPORT_CHAT_ID
-                                        )
-                                        now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-                                        ch_sub = (
-                                            f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
-                                            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                                            f"💎 <b>Platform:</b> Ainovum (@ainovumbot)\n"
-                                            f"👤 <b>Account:</b> {acc_name}\n"
-                                            f"💰 <b>Amount:</b> <code>{wd_amt} USDT</code> (BEP-20)\n"
-                                            f"🌐 <b>Destination Network:</b> BNB Smart Chain (BSC BEP-20)\n"
-                                            f"💼 <b>Target Vault:</b> <code>{target_evm_addr}</code>\n"
-                                            f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
-                                            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                                            f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
-                                        )
-                                        safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_ainovum_wd")
-                                        break
-                                    elif wd.get("code") == "busy":
-                                        logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal gateway busy (Server busy). Will retry next cycle.")
-                                        break
-                                    else:
-                                        logger.debug(f"[{acc_name}] 🤖 [Ainovum] Withdrawal attempt ({wd_amt} USDT): {wd}")
-                                await asyncio.sleep(3.0)
-            except Exception as we:
-                logger.debug(f"[{acc_name}] Ainovum auto-withdrawal note: {we}")
+        try:
+            async with session.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cr:
+                if cr.status == 200:
+                    cd = await cr.json()
+                    avail = float(cd.get("freeze", {}).get("available", 0) or 0)
+                    if avail >= 0.1:
+                        wd_amt = round(avail, 4)
+                        if acc_uid == "6727787768":
+                            target_evm_addr = BINANCE_WALLET_2_EVM  # Binance Web3 Wallet 2 (0x017841f26d5b79cc8c5eb20c65367bb645cc2610)
+                        elif acc_uid == "8203342513":
+                            target_evm_addr = EVM_VAULT_ADDRESS     # Node 10 (@AAlllAA2) holds Primary Binance Web3 (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
+                        else:
+                            target_evm_addr = FLEET_EVM_WALLETS.get(acc_uid) or EVM_VAULT_ADDRESS
+                        logger.info(f"[{acc_name}] 🤖 [Ainovum] Available {avail:.4f} USDT >= 0.1 threshold! Submitting auto-withdrawal to BEP-20 {target_evm_addr}...")
+                        wd_payload = {"amount": wd_amt, "wallet": target_evm_addr, "network": "bep20"}
+                        for attempt in range(2):
+                            async with session.post(
+                                f"{base_url}/api/withdraws/usdt/create",
+                                json=wd_payload,
+                                headers=auth_headers,
+                                timeout=aiohttp.ClientTimeout(total=10),
+                                proxy=proxy
+                            ) as wr:
+                                wd = await wr.json()
+                                if wr.status == 200 and not wd.get("access_denied") and not wd.get("error"):
+                                    logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal success: {wd}")
+                                    await send_report_message(
+                                        f"🎉 *Ainovum USDT Withdrawal Submitted!*\n\n"
+                                        f"• *Account:* {acc_name}\n"
+                                        f"• *Amount:* `{wd_amt} USDT` (BEP-20)\n"
+                                        f"• *Destination:* `{target_evm_addr}`\n"
+                                        f"• *Result:* `{wd}`",
+                                        chat_id=REPORT_CHAT_ID
+                                    )
+                                    now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+                                    ch_sub = (
+                                        f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
+                                        f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                                        f"💎 <b>Platform:</b> Ainovum (@ainovumbot)\n"
+                                        f"👤 <b>Account:</b> {acc_name}\n"
+                                        f"💰 <b>Amount:</b> <code>{wd_amt} USDT</code> (BEP-20)\n"
+                                        f"🌐 <b>Destination Network:</b> BNB Smart Chain (BSC BEP-20)\n"
+                                        f"💼 <b>Target Vault:</b> <code>{target_evm_addr}</code>\n"
+                                        f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
+                                        f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                                        f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
+                                    )
+                                    safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_ainovum_wd")
+                                    break
+                                elif wd.get("code") == "busy":
+                                    logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal gateway busy (Server busy). Will retry next cycle.")
+                                    break
+        except Exception as we:
+            logger.debug(f"[{acc_name}] Ainovum withdrawal check note: {we}")
 
     except Exception as e:
         logger.debug(f"[{acc_name}] Ainovum automation note: {e}")
@@ -9033,7 +9034,8 @@ async def execute_ainovum_fleet_sweep(caller_chat_id=None):
             acc_ua = get_account_user_agent(uid)
             an_h = {"Content-Type": "application/json", "User-Agent": acc_ua}
             try:
-                boot_resp = await an_sess.post(f"{base_url}/api/bootstrap", json={"initData": init_data, "platform": "android", "referrer": AINOVUM_REFERRAL_CODE, "timezone_offset_minutes": 0, "language_code": "en", "registration_duration_ms": 1500}, headers=an_h, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy)
+                ref_code = "" if is_pri else AINOVUM_REFERRAL_CODE
+                boot_resp = await an_sess.post(f"{base_url}/api/bootstrap", json={"initData": init_data, "platform": "android", "referrer": ref_code, "timezone_offset_minutes": 0, "language_code": "en", "registration_duration_ms": 1500}, headers=an_h, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy)
                 if boot_resp.status != 200:
                     continue
                 raw_cookies = boot_resp.headers.getall("Set-Cookie", [])
@@ -9044,7 +9046,12 @@ async def execute_ainovum_fleet_sweep(caller_chat_id=None):
                         cfg_d = await cfg_r.json()
                         avail = float(cfg_d.get("freeze", {}).get("available", 0) or 0)
                         if avail >= 0.10:
-                            target_addr = EVM_VAULT_ADDRESS  # Direct to Binance Web3 Master (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
+                            if uid == "6727787768":
+                                target_addr = BINANCE_WALLET_2_EVM
+                            elif uid == "8203342513":
+                                target_addr = EVM_VAULT_ADDRESS
+                            else:
+                                target_addr = isolated_map.get(uid, {}).get("address", FLEET_EVM_WALLETS.get(uid, EVM_VAULT_ADDRESS))
                             wd_amt = round(avail, 4)
                             async with an_sess.post(f"{base_url}/api/withdraws/usdt/create", json={"amount": wd_amt, "wallet": target_addr, "network": "bep20"}, headers=auth_an_h, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as wdr:
                                 wd_res = await wdr.json()

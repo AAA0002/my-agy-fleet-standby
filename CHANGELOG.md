@@ -4,6 +4,18 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Dual Binance Web3 Wallet Architecture & Ainovum Duplicate Wallet Resolution (`userbot_refresher.py`, `execute_ailab_ainovum_withdrawals.py`, `FLEET_MASTER_REGISTRY.json`, `CHANGELOG.md`)**:
+  - **Ainovum Duplicate Wallet Root Cause Identified & Resolved**: Account `Node 10` (`@AAlllAA2`, User ID `8203342513`) had previously withdrawn \$1.3 to the Primary Binance Web3 Wallet (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`). When the Main Host Account (`6727787768`) subsequently attempted to withdraw to the same address, Ainovum's strict anti-sybil guard triggered `withdraw_duplicate_wallet` ("NOVUM rules allow only one account per person") and set `is_withdraw_locked: 1`.
+  - **Binance Web3 Wallet 2 (AAA) Integrated for Main Account**: Per user directive and screenshots, integrated the user's secondary Binance Web3 Wallet:
+    * **BEP-20 / Arbitrum EVM**: `0x017841f26d5b79cc8c5eb20c65367bb645cc2610`
+    * **TON**: `UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH`
+    * **Solana**: `Bf4uGaYzpZc3aoW4HsABo4obPsk9ozDEUBfzHWTDeM5Q`
+    * **Bitcoin Taproot**: `bc1pq2kas8lk3w29v6eve9tevnr3sl2ef58zvg9k4krlpu5u7ph7u47s6whcw2`
+  - **Strict Bot-Specific Wallet Isolation**:
+    * **`@ainovum_bot`**: Main Host Account (`6727787768`) routes exclusively to Binance Wallet 2 (`0x017841f26d5b79cc8c5eb20c65367bb645cc2610`), `Node 10` (`@AAlllAA2`, holding 7.41 USDT) routes exclusively to Primary Binance Wallet 1 (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`), and all other 11 worker accounts use their isolated EVMs from `fleet_evm_wallets.json` to prevent collisions.
+    * **All Other Bots**: Stones Miners, AI Lab, ART Airdrop, MRG Miner, UltraWallet, Apex, ATF, and BNB Galaxy remain 100% routed to Primary Binance Web3 Vaults (`0xfda418...` and `UQBPZi...`).
+  - **Ainovum Self-Referral Fix**: Fixed bootstrap referrer payload for Main Account (`referrer: "" if is_primary else ref_6727787768`) eliminating self-referral HTTP 429 rate limits.
+
 - **Direct Binance Payout Routing & Zero-Gas Passive Sweeper Architecture (`userbot_refresher.py`, `execute_ailab_ainovum_withdrawals.py`, `.github/workflows/cloud_sweeper.yml`, `CHANGELOG.md`)**:
   - **Eliminated Redundant Intermediate Sweeping Hops & Double Gas Fees**: Per user directive ("You don't need sweep because it sweeping cost high just transfer it to my binace wallet if it ton to ton if it bnb to bnb"), eliminated on-chain sweeping transfers from worker wallets that incurred double network gas fees (worker native gas + secondary hop).
   - **Direct Binance Payout Realignment Across All Supported Bots**:

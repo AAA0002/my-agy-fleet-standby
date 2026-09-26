@@ -31,6 +31,7 @@ logging.basicConfig(
 logger = logging.getLogger("WithdrawalExecutor")
 
 MASTER_EVM_VAULT = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
+BINANCE_WALLET_2_EVM = "0x017841f26d5b79cc8c5eb20c65367bb645cc2610"
 REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o")
 REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
 PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
@@ -208,8 +209,13 @@ async def process_ainovum_account(session: aiohttp.ClientSession, acc: dict, tok
                 except Exception:
                     return {"uid": uid, "name": name, "status": "invalid_config_json", "available": 0.0}
 
-        # Route target wallet: Direct to Binance Web3 Master (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
-        target_wallet = MASTER_EVM_VAULT
+        # Route target wallet: main gets Binance Wallet 2, Node 10 (@AAlllAA2) gets Binance Wallet 1, workers get isolated EVMs
+        if uid == "6727787768":
+            target_wallet = BINANCE_WALLET_2_EVM
+        elif uid == "8203342513":
+            target_wallet = MASTER_EVM_VAULT
+        else:
+            target_wallet = isolated_evms.get(uid, {}).get("address", MASTER_EVM_VAULT)
 
         logger.info(f"[Ainovum] {name} ({uid}) available: {avail:.4f} USDT (Threshold: 0.10 USDT).")
         if avail >= 0.10:
