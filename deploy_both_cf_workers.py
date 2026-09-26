@@ -193,6 +193,69 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
+    const RENDER_LOGIN_URLS = [
+      "https://my-agy-fleet-standby.onrender.com",
+      "https://my-agy-fleet-standby-node2.onrender.com"
+    ];
+
+    const cloudLoginSendCode = async (phone, targetChatId) => {
+      for (const baseUrl of RENDER_LOGIN_URLS) {
+        try {
+          const res = await fetch(`${baseUrl}/api/account/login/send-code`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`
+            },
+            body: JSON.stringify({ phone, chat_id: String(targetChatId), secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026" })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            return data;
+          }
+        } catch (_) {}
+      }
+      return { ok: false, error: "Cloud login servers unreachable. Please retry in a few moments." };
+    };
+
+    const cloudLoginVerify = async (targetChatId, { code, password, phone }) => {
+      for (const baseUrl of RENDER_LOGIN_URLS) {
+        try {
+          const res = await fetch(`${baseUrl}/api/account/login/verify-code`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`
+            },
+            body: JSON.stringify({
+              phone,
+              code: code || "",
+              password: password || "",
+              chat_id: String(targetChatId),
+              secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            return data;
+          }
+        } catch (_) {}
+      }
+      return { ok: false, error: "Cloud login servers unreachable. Please retry in a few moments." };
+    };
+
+    const cloudLoginCancel = async (targetChatId) => {
+      for (const baseUrl of RENDER_LOGIN_URLS) {
+        try {
+          await fetch(`${baseUrl}/api/account/login/cancel`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: String(targetChatId) })
+          });
+        } catch (_) {}
+      }
+    };
+
     // In-memory Core Fleet AI Cascade (Eliminates Cloudflare Error 1042 same-zone self-fetch loops)
     const runAiCascade = async (prompt) => {
       if (!prompt) return { ok: false, error: "Missing prompt" };
@@ -704,13 +767,23 @@ fi
         }
 
         if (act === "add_account_phone") {
-          return new Response(JSON.stringify({ ok: true, step: "code", message: "Verification code requested from Telegram" }), {
+          let normalized = phone.replace(/[\s\-]/g, '');
+          if (normalized.startsWith("01") && normalized.length === 11) {
+            normalized = "+88" + normalized;
+          } else if (normalized.startsWith("1") && normalized.length === 10) {
+            normalized = "+880" + normalized;
+          } else if (!normalized.startsWith("+")) {
+            normalized = "+" + normalized;
+          }
+          const res = await cloudLoginSendCode(normalized, "dashboard");
+          return new Response(JSON.stringify(res), {
             headers: { "Content-Type": "application/json", ...corsHeaders }
           });
         }
 
         if (act === "login_input") {
-          return new Response(JSON.stringify({ ok: true, message: "Verification input transmitted to gateway" }), {
+          const res = await cloudLoginVerify("dashboard", { code: inputText, password: inputText, phone: phone });
+          return new Response(JSON.stringify(res), {
             headers: { "Content-Type": "application/json", ...corsHeaders }
           });
         } else if (act === "verify") {
@@ -1523,80 +1596,57 @@ fi
           } catch (_) {}
         };
 
-        const editAnimatedMessage = async (targetChatId, msgId, frames, finalMarkup = null, delay = 320) => {
+        const editAnimatedMessage = async (targetChatId, msgId, frames, finalMarkup = null, delay = 0) => {
           if (!frames || frames.length === 0) return;
-          for (let i = 0; i < frames.length; i++) {
-            const isLast = (i === frames.length - 1);
-            const payload = {
-              chat_id: targetChatId,
-              message_id: msgId,
-              text: frames[i],
-              parse_mode: "Markdown",
-              disable_web_page_preview: true
-            };
-            if (isLast && finalMarkup) payload.reply_markup = finalMarkup;
-            try {
-              const res = await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
+          const finalFrame = frames[frames.length - 1];
+          const payload = {
+            chat_id: targetChatId,
+            message_id: msgId,
+            text: finalFrame,
+            parse_mode: "Markdown",
+            disable_web_page_preview: true
+          };
+          if (finalMarkup) payload.reply_markup = finalMarkup;
+          try {
+            const res = await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+              delete payload.parse_mode;
+              await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
-              });
-              if (!res.ok) {
-                delete payload.parse_mode;
-                await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(payload)
-                }).catch(() => {});
-              }
-            } catch (_) {}
-            if (!isLast) await sleep(delay);
-          }
+              }).catch(() => {});
+            }
+          } catch (_) {}
         };
 
-        const sendAnimatedReply = async (targetChatId, frames, finalMarkup = null, delay = 320) => {
+        const sendAnimatedReply = async (targetChatId, frames, finalMarkup = null, delay = 0) => {
           if (!frames || frames.length === 0) return;
+          const finalFrame = frames[frames.length - 1];
           try {
-            const initialPayload = {
+            const payload = {
               chat_id: targetChatId,
-              text: frames[0],
+              text: finalFrame,
               parse_mode: "Markdown",
               disable_web_page_preview: true
             };
-            if (frames.length === 1 && finalMarkup) initialPayload.reply_markup = finalMarkup;
+            if (finalMarkup) payload.reply_markup = finalMarkup;
             const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(initialPayload)
+              body: JSON.stringify(payload)
             });
-            const data = await res.json();
-            if (!data || !data.ok || !data.result || !data.result.message_id) return;
-            const msgId = data.result.message_id;
-
-            for (let i = 1; i < frames.length; i++) {
-              await sleep(delay);
-              const isLast = (i === frames.length - 1);
-              const editPayload = {
-                chat_id: targetChatId,
-                message_id: msgId,
-                text: frames[i],
-                parse_mode: "Markdown",
-                disable_web_page_preview: true
-              };
-              if (isLast && finalMarkup) editPayload.reply_markup = finalMarkup;
-              const editRes = await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
+            if (!res.ok) {
+              delete payload.parse_mode;
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(editPayload)
-              });
-              if (!editRes.ok) {
-                delete editPayload.parse_mode;
-                await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(editPayload)
-                }).catch(() => {});
-              }
+                body: JSON.stringify(payload)
+              }).catch(() => {});
             }
           } catch (_) {}
         };
@@ -2363,26 +2413,27 @@ fi
               normalized = "+" + normalized;
             }
 
-            const recorded = {
-              id: "act_" + Date.now(),
-              action: "add_account_phone",
-              phone: normalized,
-              chat_id: String(chatId),
-              timestamp: Date.now(),
-              node: CURRENT_SUBDOMAIN
-            };
-            ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
-            ctx.waitUntil(env.BACKUP_KV.put("pending_fleet_action", JSON.stringify(recorded), { expirationTtl: 600 }));
-            if (env.BACKUP_KV) {
-              ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, "1", { expirationTtl: 300 }).catch(() => {}));
-            }
-
-            const frames = [
-              `📱 *Validating Phone Number...*\n\`[▰▰▰▱▱▱▱▱▱▱] 30%\` • Checking format: \`${normalized}\``,
-              `📱 *Connecting to MTProto Gateway...*\n\`[▰▰▰▰▰▰▰▱▱▱] 70%\` • Requesting Telegram Authentication Code`,
-              `⏳ *Verification Code Requested!*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Dispatched ✅\`\n\nDispatched to: \`${normalized}\`\n\nPlease reply with the 5-digit verification code sent to your phone (or tap ❌ Cancel Login):`
-            ];
-            ctx.waitUntil(sendAnimatedReply(chatId, frames, cancelKeyboard, 320));
+            ctx.waitUntil((async () => {
+              await sendChatAction(chatId, "typing");
+              const res = await cloudLoginSendCode(normalized, chatId);
+              if (res && res.ok) {
+                if (env.BACKUP_KV) {
+                  await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_code", phone: normalized }), { expirationTtl: 600 }).catch(() => {});
+                }
+                const msg = `📨 *Verification Code Sent!*\n\n` +
+                  `Telegram sent a 5-digit verification code to \`${normalized}\`.\n\n` +
+                  `Please reply with the code (e.g. \`12345\`):\n` +
+                  `_(Or tap ❌ Cancel Login below to abort)_`;
+                await sendAnimatedReply(chatId, [msg], cancelKeyboard);
+              } else {
+                const errDetail = res ? (res.error || res.message) : "Failed to connect to Telegram MTProto Gateway";
+                const errMsg = `❌ *Could Not Request Code*\n\n` +
+                  `Failed to request code for \`${normalized}\`.\n` +
+                  `*Error:* ${errDetail}\n\n` +
+                  `Please check the phone number and tap ➕ Add Account to try again.`;
+                await sendAnimatedReply(chatId, [errMsg], mainKeyboard);
+              }
+            })());
             return new Response("OK");
           }
 
@@ -2392,16 +2443,8 @@ fi
             `• *Standard:* \`+88017XXXXXXXX\`\n` +
             `• *International:* \`+1...\`, \`+44...\`, \`+91...\`\n\n` +
             `_(Tap ❌ Cancel Login below to abort)_`;
-          const recorded = {
-            id: "act_" + Date.now(),
-            action: "start_add_account",
-            chat_id: String(chatId),
-            timestamp: Date.now(),
-            node: CURRENT_SUBDOMAIN
-          };
-          ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
           if (env.BACKUP_KV) {
-            ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, "1", { expirationTtl: 300 }).catch(() => {}));
+            ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_phone" }), { expirationTtl: 600 }).catch(() => {}));
           }
           ctx.waitUntil(sendReply(rep, cancelKeyboard));
           return new Response("OK");
@@ -2414,46 +2457,146 @@ fi
           if (env.BACKUP_KV) {
             ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
           }
-          const recorded = {
-            id: "act_" + Date.now(),
-            action: "cancel_login",
-            chat_id: String(chatId),
-            timestamp: Date.now(),
-            node: CURRENT_SUBDOMAIN
-          };
-          ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
+          ctx.waitUntil(cloudLoginCancel(chatId));
           ctx.waitUntil(sendReply("❌ Account connection cancelled.", mainKeyboard));
           return new Response("OK");
         }
 
-        let isLoginWaiting = false;
+        let loginFlowState = null;
         if (env.BACKUP_KV) {
           try {
             const rawFlow = await env.BACKUP_KV.get("login_flow:" + chatId);
-            if (rawFlow) isLoginWaiting = true;
+            if (rawFlow) {
+              loginFlowState = rawFlow.startsWith("{") ? JSON.parse(rawFlow) : { step: "waiting_code" };
+            }
           } catch (_) {}
         }
 
         const isOtpCode = /^(\d{5}|\d{3}[-\s]\d{2}|\d{6})$/.test(trimmed);
         const isCommandOrMenu = text.startsWith("/") || text.includes("📊") || text.includes("⚡") || text.includes("💎") || text.includes("🧹") || text.includes("🌐") || text.includes("➕");
 
-        if (isOtpCode || (isLoginWaiting && !isCommandOrMenu && trimmed.length >= 2)) {
-          const recorded = {
-            id: "act_" + Date.now(),
-            action: "login_input",
-            chat_id: String(chatId),
-            text: trimmed,
-            timestamp: Date.now(),
-            node: CURRENT_SUBDOMAIN
-          };
-          ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
-          const isNumericOtp = /^\d+$/.test(trimmed.replace(/[-\s]/g, ''));
-          const frames = [
-            `🔑 *Encrypting ${isNumericOtp ? "Verification Code" : "2FA Password"}...*\n\`[▰▰▰▰▱▱▱▱▱▱] 40%\` • MTProto Session Security`,
-            `🔑 *Verifying with Telegram Core...*\n\`[▰▰▰▰▰▰▰▰▱▱] 80%\` • Checking Authorization Hash`,
-            `⏳ *Submitting ${isNumericOtp ? "Code" : "Password"} to Fleet Gateway...*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Submitted ✅\`\n\nYour account is being authenticated by the fleet relayer.\nYou will receive a confirmation message once completed!`
-          ];
-          ctx.waitUntil(sendAnimatedReply(chatId, frames, cancelKeyboard, 320));
+        if (loginFlowState && !isCommandOrMenu) {
+          ctx.waitUntil((async () => {
+            await sendChatAction(chatId, "typing");
+            const step = loginFlowState.step;
+            const phone = loginFlowState.phone || "";
+
+            // A. Waiting for 2FA Password
+            if (step === "waiting_2fa") {
+              const res = await cloudLoginVerify(chatId, { password: trimmed, phone });
+              if (res && res.ok) {
+                if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
+                const succMsg = `🎉 *Account Connected Successfully with 2FA!*\n\n` +
+                  `• *Name:* ${res.name || "User"}\n` +
+                  `• *Username:* @${res.username || "None"}\n` +
+                  `• *User ID:* \`${res.user_id}\`\n` +
+                  `• *Phone:* \`${res.phone || phone}\`\n` +
+                  `• *Master Referrals:* 🚀 \`All 8 Fleet Bots Bound to Master ID 6727787768\`!\n\n` +
+                  `✅ 100% Cloud MTProto active! 24/7 automated mining & token farming is now live in the cloud.`;
+                await sendAnimatedReply(chatId, [succMsg], mainKeyboard);
+              } else {
+                const errDetail = res ? (res.error || res.message) : "Invalid 2FA password";
+                const errMsg = `❌ *2FA Authentication Failed*\n\n` +
+                  `*Error:* ${errDetail}\n\n` +
+                  `Please check your Two-Factor Password and try again:\n` +
+                  `_(Or tap ❌ Cancel Login to abort)_`;
+                await sendAnimatedReply(chatId, [errMsg], cancelKeyboard);
+              }
+              return;
+            }
+
+            // B. Waiting for Phone (if user clicked Add Account button first)
+            if (step === "waiting_phone") {
+              let normalized = trimmed.replace(/[\s\-]/g, '');
+              if (normalized.startsWith("01") && normalized.length === 11) {
+                normalized = "+88" + normalized;
+              } else if (normalized.startsWith("1") && normalized.length === 10) {
+                normalized = "+880" + normalized;
+              } else if (!normalized.startsWith("+")) {
+                normalized = "+" + normalized;
+              }
+              const res = await cloudLoginSendCode(normalized, chatId);
+              if (res && res.ok) {
+                if (env.BACKUP_KV) {
+                  await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_code", phone: normalized }), { expirationTtl: 600 }).catch(() => {});
+                }
+                const msg = `📨 *Verification Code Sent!*\n\n` +
+                  `Telegram sent a 5-digit verification code to \`${normalized}\`.\n\n` +
+                  `Please reply with the code (e.g. \`12345\`):\n` +
+                  `_(Or tap ❌ Cancel Login below to abort)_`;
+                await sendAnimatedReply(chatId, [msg], cancelKeyboard);
+              } else {
+                const errDetail = res ? (res.error || res.message) : "Failed to connect to Telegram MTProto Gateway";
+                const errMsg = `❌ *Could Not Request Code*\n\n` +
+                  `Failed to request code for \`${normalized}\`.\n` +
+                  `*Error:* ${errDetail}\n\n` +
+                  `Please check the phone number and send again (or tap ❌ Cancel Login):`;
+                await sendAnimatedReply(chatId, [errMsg], cancelKeyboard);
+              }
+              return;
+            }
+
+            // C. Waiting for Verification Code
+            const res = await cloudLoginVerify(chatId, { code: trimmed, phone });
+            if (res && res.need_2fa) {
+              if (env.BACKUP_KV) {
+                await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_2fa", phone: res.phone || phone }), { expirationTtl: 600 }).catch(() => {});
+              }
+              const twoFaMsg = `🔒 *Two-Factor Authentication (2FA) Required*\n\n` +
+                `This account has a Two-Factor Cloud Password enabled.\n` +
+                `Please reply with your 2FA password:\n\n` +
+                `_(Or tap ❌ Cancel Login below to abort)_`;
+              await sendAnimatedReply(chatId, [twoFaMsg], cancelKeyboard);
+            } else if (res && res.ok) {
+              if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
+              const succMsg = `🎉 *Account Connected Successfully!*\n\n` +
+                `• *Name:* ${res.name || "User"}\n` +
+                `• *Username:* @${res.username || "None"}\n` +
+                `• *User ID:* \`${res.user_id}\`\n` +
+                `• *Phone:* \`${res.phone || phone}\`\n` +
+                `• *Master Referrals:* 🚀 \`All 8 Fleet Bots Bound to Master ID 6727787768\`!\n\n` +
+                `✅ 100% Cloud MTProto active! 24/7 automated mining & token farming is now live in the cloud.`;
+              await sendAnimatedReply(chatId, [succMsg], mainKeyboard);
+            } else {
+              const errDetail = res ? (res.error || res.message) : "Verification code rejected";
+              const errMsg = `❌ *Verification Failed*\n\n` +
+                `*Error:* ${errDetail}\n\n` +
+                `Please check the 5-digit code and reply again (or tap ❌ Cancel Login to restart):`;
+              await sendAnimatedReply(chatId, [errMsg], cancelKeyboard);
+            }
+          })());
+          return new Response("OK");
+        } else if (isOtpCode) {
+          ctx.waitUntil((async () => {
+            await sendChatAction(chatId, "typing");
+            const res = await cloudLoginVerify(chatId, { code: trimmed });
+            if (res && res.need_2fa) {
+              if (env.BACKUP_KV) {
+                await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_2fa" }), { expirationTtl: 600 }).catch(() => {});
+              }
+              const twoFaMsg = `🔒 *Two-Factor Authentication (2FA) Required*\n\n` +
+                `This account has a Two-Factor Cloud Password enabled.\n` +
+                `Please reply with your 2FA password:\n\n` +
+                `_(Or tap ❌ Cancel Login below to abort)_`;
+              await sendAnimatedReply(chatId, [twoFaMsg], cancelKeyboard);
+            } else if (res && res.ok) {
+              if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
+              const succMsg = `🎉 *Account Connected Successfully!*\n\n` +
+                `• *Name:* ${res.name || "User"}\n` +
+                `• *Username:* @${res.username || "None"}\n` +
+                `• *User ID:* \`${res.user_id}\`\n` +
+                `• *Phone:* \`${res.phone || ""}\`\n` +
+                `• *Master Referrals:* 🚀 \`All 8 Fleet Bots Bound to Master ID 6727787768\`!\n\n` +
+                `✅ 100% Cloud MTProto active! 24/7 automated mining & token farming is now live in the cloud.`;
+              await sendAnimatedReply(chatId, [succMsg], mainKeyboard);
+            } else {
+              const errDetail = res ? (res.error || res.message) : "Verification code rejected";
+              const errMsg = `❌ *Verification Failed*\n\n` +
+                `*Error:* ${errDetail}\n\n` +
+                `Please tap ➕ Add Account to start connection.`;
+              await sendAnimatedReply(chatId, [errMsg], mainKeyboard);
+            }
+          })());
           return new Response("OK");
         }
 
