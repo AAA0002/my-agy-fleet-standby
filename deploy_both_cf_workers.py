@@ -5586,6 +5586,26 @@ Reply to Arif naturally:`;
               `👇 *Tap 🎬 Watch Video Ad or ➕ Connect Account below to start:*`;
             await sendUserReply("👋 *Welcome to AAA Auto Mining!* (Created by AAA)\nAccess all features below or choose from the interactive menu:", userMainKeyboard);
             await sendUserReply(welcomeText, userWelcomeInlineKeyboard);
+
+            // Ensure persistent Chat Menu Button is set to Watch Ads WebApp for this user
+            if (ctx && ctx.waitUntil) {
+              ctx.waitUntil(
+                fetch(`https://api.telegram.org/bot${userBotToken}/setChatMenuButton`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: chatId,
+                    menu_button: {
+                      type: "web_app",
+                      text: "🎬 Watch Ads",
+                      web_app: {
+                        url: "https://restore-agy.aaaai2.workers.dev/adsgram"
+                      }
+                    }
+                  })
+                }).catch(() => {})
+              );
+            }
             return;
           }
 
@@ -7132,7 +7152,74 @@ async def main():
             print(f"❌ Error deploying to {acc['name']}: {e}")
 
     print("\n" + "=" * 60)
-    print("  ✅ All Cloudflare Edge Nodes Synchronized!")
+    print("  🔧 Synchronizing Telegram Bot Menu Button & Commands...")
+    print("=" * 60)
+    async with aiohttp.ClientSession() as session:
+        # 1. Set global Chat Menu Button to Watch Ads WebApp
+        menu_payload = {
+            "menu_button": {
+                "type": "web_app",
+                "text": "🎬 Watch Ads",
+                "web_app": {
+                    "url": "https://restore-agy.aaaai2.workers.dev/adsgram"
+                }
+            }
+        }
+        try:
+            async with session.post(
+                f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setChatMenuButton",
+                json=menu_payload
+            ) as resp:
+                res = await resp.json()
+                print(f"🎬 Global Chat Menu Button: {res.get('ok')} ({res.get('description', 'OK')})")
+        except Exception as e:
+            print(f"⚠️ Error setting global menu button: {e}")
+
+        # 2. Set chat-specific Menu Button for Owner
+        if OWNER_ID:
+            try:
+                owner_menu = {
+                    "chat_id": int(OWNER_ID),
+                    "menu_button": {
+                        "type": "web_app",
+                        "text": "🎬 Watch Ads",
+                        "web_app": {
+                            "url": "https://restore-agy.aaaai2.workers.dev/adsgram"
+                        }
+                    }
+                }
+                async with session.post(
+                    f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setChatMenuButton",
+                    json=owner_menu
+                ) as resp:
+                    res = await resp.json()
+                    print(f"🎬 Owner Chat Menu Button: {res.get('ok')} ({res.get('description', 'OK')})")
+            except Exception as e:
+                print(f"⚠️ Error setting owner menu button: {e}")
+
+        # 3. Set Bot Commands
+        commands_payload = {
+            "commands": [
+                {"command": "start", "description": "🌟 Open Mining Dashboard & Fleet"},
+                {"command": "accounts", "description": "👥 Manage Connected Accounts"},
+                {"command": "ads", "description": "🎬 Watch Ads & Earn Points"},
+                {"command": "points", "description": "💎 Points Balance & VIP Passes"},
+                {"command": "withdraw", "description": "💳 8 Bots Payout & Cashout Guide"},
+                {"command": "help", "description": "💬 Ari AI Copilot & Live Support"}
+            ]
+        }
+        try:
+            async with session.post(
+                f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setMyCommands",
+                json=commands_payload
+            ) as resp:
+                res = await resp.json()
+                print(f"📋 Bot Commands: {res.get('ok')} ({res.get('description', 'OK')})")
+        except Exception as e:
+            print(f"⚠️ Error setting bot commands: {e}")
+
+    print("\n" + "=" * 60)
+    print("  ✅ All Cloudflare Edge Nodes & Telegram Config Synchronized!")
     print("=" * 60)
 
 

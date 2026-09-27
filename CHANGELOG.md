@@ -4,6 +4,16 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Native Chat Menu Button Mini App & Bot Commands Integration (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Native Telegram Chat Menu Button (`MenuButtonWebApp`)**:
+    * Configured Telegram Bot API `setChatMenuButton` globally and per-user with `type: "web_app"`, `text: "🎬 Watch Ads"`, and `url: "https://restore-agy.aaaai2.workers.dev/adsgram"`.
+    * Telegram mobile clients now render the `[ 🎬 Watch Ads ]` Mini App button directly beside the emoji button (`😊`) / input bar, enabling 1-tap ad viewing and points claiming from anywhere in the chat.
+    * Added automated `setChatMenuButton` synchronization inside the `/start` handler of `/user-bot-webhook` so incoming and existing users continuously have this menu button refreshed.
+  - **Telegram Bot Commands Registration (`setMyCommands`)**:
+    * Registered official bot commands (`/start`, `/accounts`, `/ads`, `/points`, `/withdraw`, `/help`) via Telegram Bot API so users can discover commands directly from Telegram's native command menu.
+  - **Mesh Deployment & Durability**:
+    * Successfully deployed across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with 100% Zero Phone Load.
+
 - **8 Bots Referral Showcase & Message-Side Watch Ads Mini App Button (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Full 8 Bots Showcase & Referral Links on Start Messages**:
     * Prominently highlighted that `@AAAPREMIUMAPPSbot` automatically farms all 8 crypto bots 24/7 in the cloud with 0% platform fees directly on `/start`, welcome messages, gate verification callbacks, and user guides.
