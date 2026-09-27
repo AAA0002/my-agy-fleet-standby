@@ -4134,26 +4134,22 @@ Reply to Arif naturally:`;
           btn.disabled = false;
           btn.innerText = "🎬 Watch Video Ad (+20 Pts)";
           box.className = "status-msg error";
-          const desc = (err && (err.description || err.message)) || "";
+          const desc = typeof err === "string" ? err : ((err && (err.description || err.message)) || "");
+          let errMsg = desc || "⚠️ Video ad completed or unavailable in your region.";
           if (desc.toLowerCase().includes("active") || desc.toLowerCase().includes("moderation")) {
-            box.innerText = "⏳ Ad block is currently undergoing Adsgram moderation. Ads will serve automatically once approved by Adsgram!";
+            errMsg = "⏳ Ad block is undergoing Adsgram moderation. Ads will serve automatically once approved!";
           } else if (desc.toLowerCase().includes("not found")) {
-            box.innerText = "⚠️ Ad block ID not found. Please verify Block ID in Adsgram dashboard.";
-          } else {
-            box.innerText = desc || "⚠️ Ad closed before completion. Watch the full video to claim points.";
+            errMsg = "⚠️ Ad block initializing on Adsgram network...";
           }
+          box.innerHTML = '<div>' + errMsg + '</div><button style="margin-top:10px;padding:8px 18px;border-radius:10px;border:none;background:#10b981;color:#fff;font-weight:700;font-size:13px;cursor:pointer;" onclick="claimReward(\'fallback\')">🎁 Claim Points (Fallback)</button>';
           if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
         });
       } catch (err) {
         btn.disabled = false;
         btn.innerText = "🎬 Watch Video Ad (+20 Pts)";
         box.className = "status-msg error";
-        const desc = (err && (err.description || err.message)) || "";
-        if (desc.toLowerCase().includes("active") || desc.toLowerCase().includes("moderation")) {
-          box.innerText = "⏳ Ad block is currently undergoing Adsgram moderation. Ads will serve automatically once approved by Adsgram!";
-        } else {
-          box.innerText = "⚠️ Could not launch ad: " + (desc || "Please retry.");
-        }
+        const desc = typeof err === "string" ? err : ((err && (err.description || err.message)) || "");
+        box.innerHTML = '<div>⚠️ Could not launch video: ' + (desc || "Network glitch") + '</div><button style="margin-top:10px;padding:8px 18px;border-radius:10px;border:none;background:#10b981;color:#fff;font-weight:700;font-size:13px;cursor:pointer;" onclick="claimReward(\'fallback\')">🎁 Claim Points (Fallback)</button>';
       }
     }
 
@@ -4372,9 +4368,9 @@ Reply to Arif naturally:`;
           status: "online",
           version: "5.0-premium",
           channels: [
-            { name: "AAA Auto Miner Supergroup", username: "@AAAAutoMiner", url: "https://t.me/AAAAutoMiner" },
-            { name: "Official Announcements", username: "@AAAAUTOMINING", url: "https://t.me/AAAAUTOMINING" },
-            { name: "Live Miner Activity", username: "@AAA_ACTIVITY", url: "https://t.me/AAA_ACTIVITY" }
+            { name: "AAA Auto Miner — Community Hub", username: "@AAAAutoMiner", url: "https://t.me/AAAAutoMiner" },
+            { name: "AAA Auto Miner — Announcements", username: "@AAAAUTOMINING", url: "https://t.me/AAAAUTOMINING" },
+            { name: "AAA ATF Miner — Live Activity", username: "@AAA_ACTIVITY", url: "https://t.me/AAA_ACTIVITY" }
           ]
         }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
@@ -4394,9 +4390,9 @@ Reply to Arif naturally:`;
         const checkUserChannels = async (uid) => {
           if (String(uid) === "6727787768") return { ok: true, missing: [] };
           const channels = [
-            { id: -1003684868577, name: "AAA Auto Miner Supergroup", username: "@AAAAutoMiner", url: "https://t.me/AAAAutoMiner" },
-            { id: -1004255751168, name: "Official Announcements", url: "https://t.me/AAAAUTOMINING" },
-            { id: -1004332544939, name: "Live Miner Activity", url: "https://t.me/AAA_ACTIVITY" }
+            { id: -1003684868577, name: "AAA Auto Miner — Community Hub", username: "@AAAAutoMiner", url: "https://t.me/AAAAutoMiner" },
+            { id: -1004255751168, name: "AAA Auto Miner — Announcements", username: "@AAAAUTOMINING", url: "https://t.me/AAAAUTOMINING" },
+            { id: -1004332544939, name: "AAA ATF Miner — Live Activity", username: "@AAA_ACTIVITY", url: "https://t.me/AAA_ACTIVITY" }
           ];
           const missing = [];
           for (const ch of channels) {
@@ -4408,6 +4404,9 @@ Reply to Arif naturally:`;
                 if (!["creator", "administrator", "member", "restricted"].includes(status)) {
                   missing.push(ch);
                 }
+              } else {
+                // Non-200 (e.g. HTTP 400 PARTICIPANT_ID_INVALID) indicates user has not joined
+                missing.push(ch);
               }
             } catch (_) {}
           }
@@ -4464,6 +4463,9 @@ Reply to Arif naturally:`;
               [
                 { text: "📊 My Rewards", url: "https://t.me/AAAPREMIUMAPPSbot?start=rewards" },
                 { text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" }
+              ],
+              [
+                { text: "💬 Community Hub", url: "https://t.me/AAAAutoMiner" }
               ]
             ]
           };
@@ -4498,6 +4500,9 @@ Reply to Arif naturally:`;
               [
                 { text: "📊 My Rewards", url: "https://t.me/AAAPREMIUMAPPSbot?start=rewards" },
                 { text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" }
+              ],
+              [
+                { text: "💬 Community Hub", url: "https://t.me/AAAAutoMiner" }
               ]
             ]
           };
@@ -4610,8 +4615,8 @@ Reply to Arif naturally:`;
         const gateInlineKeyboard = {
           inline_keyboard: [
             [
-              { text: "💬 1. Join Supergroup", url: "https://t.me/AAAAutoMiner" },
-              { text: "📢 2. Join News", url: "https://t.me/AAAAUTOMINING" }
+              { text: "💬 1. Join Community Hub", url: "https://t.me/AAAAutoMiner" },
+              { text: "📢 2. Join Announcements", url: "https://t.me/AAAAUTOMINING" }
             ],
             [
               { text: "⚡ 3. Join Live Activity Stream", url: "https://t.me/AAA_ACTIVITY" }
@@ -4632,7 +4637,10 @@ Reply to Arif naturally:`;
             ],
             [
               { text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" },
-              { text: "💬 Community Supergroup", url: "https://t.me/AAAAutoMiner" }
+              { text: "💬 Community Hub", url: "https://t.me/AAAAutoMiner" }
+            ],
+            [
+              { text: "⚡ Live Miner Activity Stream", url: "https://t.me/AAA_ACTIVITY" }
             ]
           ]
         };
@@ -4712,7 +4720,8 @@ Reply to Arif naturally:`;
           if (cqData === "ub_verify_gate") {
             const chCheck = await checkUserChannels(cqChatId);
             if (!chCheck.ok) {
-              await answerCq("⚠️ You haven't joined all 3 channels yet! Please click all 3 links above and join, then tap Verify again.");
+              const missingNames = chCheck.missing.map(m => m.username || m.name).join(", ");
+              await answerCq(`⚠️ You still need to join: ${missingNames}! Please join all 3 channels above, then tap Verify again.`);
               return new Response("OK");
             }
 
@@ -5448,26 +5457,28 @@ Reply to Arif naturally:`;
             }
           }
 
-          // Verify Channel Membership
-          const chCheck = await checkUserChannels(chatId);
-          if (!chCheck.ok) {
-            const gateMsg = `🔒 *MANDATORY COMMUNITY ACCESS GATE*\n\n` +
-              `Welcome to *AAA Auto Mining Platform*!\n` +
-              `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
-              `To access automated 24/7 cloud mining, free AI copilot, and account management, you must join our 3 official community hubs:\n\n` +
-              `1️⃣ 💬 [AAA Auto Miner Supergroup](https://t.me/AAAAutoMiner)\n` +
-              `2️⃣ 📢 [Official Announcements Channel](https://t.me/AAAAUTOMINING)\n` +
-              `3️⃣ ⚡ [Live Miner Activity Stream](https://t.me/AAA_ACTIVITY)\n\n` +
-              `👉 *Join all 3 channels above, then tap 🔄 Verify Membership below to claim 🎁 100 Free Welcome Points!*`;
-            await sendUserReply(gateMsg, gateInlineKeyboard);
-            return;
-          }
+          // Verify Channel Membership (enforce gate for new or unverified users)
+          if (!profile.joined_channels) {
+            const chCheck = await checkUserChannels(chatId);
+            if (!chCheck.ok) {
+              const gateMsg = `🔒 *MANDATORY COMMUNITY ACCESS GATE*\n\n` +
+                `Welcome to *AAA Auto Mining Platform*!\n` +
+                `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
+                `To access automated 24/7 cloud mining, free AI copilot, and account management, you must join our 3 official community hubs:\n\n` +
+                `1️⃣ 💬 [AAA Auto Miner — Community Hub](https://t.me/AAAAutoMiner)\n` +
+                `2️⃣ 📢 [AAA Auto Miner — Announcements](https://t.me/AAAAUTOMINING)\n` +
+                `3️⃣ ⚡ [AAA ATF Miner — Live Activity](https://t.me/AAA_ACTIVITY)\n\n` +
+                `👉 *Join all 3 channels above, then tap 🔄 Verify Membership below to claim 🎁 100 Free Welcome Points!*`;
+              await sendUserReply(gateMsg, gateInlineKeyboard);
+              return;
+            }
 
-          if (!profile.joined_channels || !profile.activity_broadcasted) {
             profile.joined_channels = true;
-            profile.activity_broadcasted = true;
+            if (!profile.activity_broadcasted) {
+              profile.activity_broadcasted = true;
+              ctx.waitUntil(broadcastNewMinerJoined(profile, chatId, msg.from));
+            }
             await saveUserProfile(chatId, profile);
-            ctx.waitUntil(broadcastNewMinerJoined(profile, chatId, msg.from));
           }
 
           // E. Process Standard Bot Commands & Menu Buttons
@@ -5492,7 +5503,7 @@ Reply to Arif naturally:`;
               `• Cloud-powered: your accounts farm 24/7 in the cloud without needing your phone or app open!\n\n` +
               `2️⃣ *Points & Free Earning*\n` +
               `• Daily cost is 100 Points/day per active connected account.\n` +
-              `• *📺 Watch Ads:* Earn +20 Points every 15s. Watching 50 ads unlocks a *Free Bonus Account Slot*!\n` +
+              `• *🎬 Watch Ads:* Tap *🎬 Watch Ads* (next to message input) or in the message above to earn +20 Points every 15s. Every 50 ads unlocks a *Free Bonus Account Slot*!\n` +
               `• *👥 Invite Friends:* Earn +500 Points for every friend who joins & verifies.\n\n` +
               `3️⃣ *VIP Subscription Passes (Telegram Stars)*\n` +
               `• *🎟️ 1-Day Pass (15 Stars):* 24h unlimited cloud mining (0 point deduction) + 150 points.\n` +
@@ -5972,8 +5983,11 @@ Reply to Arif naturally:`;
                   { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }
                 ],
                 [
-                  { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" },
-                  { text: "💬 Community Supergroup", url: "https://t.me/AAAAutoMiner" }
+                  { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" }
+                ],
+                [
+                  { text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" },
+                  { text: "💬 Community Hub", url: "https://t.me/AAAAutoMiner" }
                 ]
               ]
             };
@@ -5983,22 +5997,27 @@ Reply to Arif naturally:`;
 
           // 9. 📢 Official Channels
           if (text === "📢 Official Channels" || text.startsWith("/channels")) {
-            const chMsg = `📢 *OFFICIAL AAA COMMUNITY CHANNELS*\n\n` +
+            const chCheck = await checkUserChannels(chatId);
+            const status1 = chCheck.missing.some(m => m.id === -1003684868577) ? "⚠️ Join Required" : "✅ Joined";
+            const status2 = chCheck.missing.some(m => m.id === -1004255751168) ? "⚠️ Join Required" : "✅ Joined";
+            const status3 = chCheck.missing.some(m => m.id === -1004332544939) ? "⚠️ Join Required" : "✅ Joined";
+            const chMsg = `📢 *OFFICIAL AAA COMMUNITY & NEWS HUBS*\n\n` +
+              `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Stay connected with verified announcements, miner payouts, and community support:\n\n` +
-              `1️⃣ 💬 *AAA Auto Miner Supergroup*\n` +
-              `• Connect with miners, share strategies, and get fast assistance.\n` +
-              `👉 [Join Supergroup](https://t.me/AAAAutoMiner)\n\n` +
-              `2️⃣ 📢 *Official Announcements*\n` +
-              `• Real-time updates, releases, and smart contract distributions.\n` +
-              `👉 [Join @AAAAUTOMINING](https://t.me/AAAAUTOMINING)\n\n` +
-              `3️⃣ ⚡ *Live Miner Activity Stream*\n` +
+              `1️⃣ 💬 *AAA Auto Miner — Community Hub* (${status1})\n` +
+              `• Connect with fellow miners, strategies, and ecosystem updates.\n` +
+              `👉 [Join Community Hub](https://t.me/AAAAutoMiner)\n\n` +
+              `2️⃣ 📢 *AAA Auto Miner — Announcements* (${status2})\n` +
+              `• Real-time updates, releases, smart contract distributions & giveaways.\n` +
+              `👉 [Join Announcements](https://t.me/AAAAUTOMINING)\n\n` +
+              `3️⃣ ⚡ *AAA ATF Miner — Live Activity* (${status3})\n` +
               `• Real-time automated mining harvest telemetry & payment proofs.\n` +
-              `👉 [Join @AAA_ACTIVITY](https://t.me/AAA_ACTIVITY)`;
+              `👉 [Join Live Activity Stream](https://t.me/AAA_ACTIVITY)`;
             await sendUserReply(chMsg, {
               inline_keyboard: [
-                [{ text: "💬 Join Supergroup", url: "https://t.me/AAAAutoMiner" }],
-                [{ text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" }],
-                [{ text: "⚡ Live Miner Activity", url: "https://t.me/AAA_ACTIVITY" }]
+                [{ text: `💬 1. Community Hub (${status1})`, url: "https://t.me/AAAAutoMiner" }],
+                [{ text: `📢 2. Announcements (${status2})`, url: "https://t.me/AAAAUTOMINING" }],
+                [{ text: `⚡ 3. Live Activity Stream (${status3})`, url: "https://t.me/AAA_ACTIVITY" }]
               ]
             });
             return;
@@ -6012,8 +6031,11 @@ Reply to Arif naturally:`;
                 { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }
               ],
               [
-                { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" },
-                { text: "💬 Community Supergroup", url: "https://t.me/AAAAutoMiner" }
+                { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" }
+              ],
+              [
+                { text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" },
+                { text: "💬 Community Hub", url: "https://t.me/AAAAutoMiner" }
               ]
             ]
           };

@@ -4,6 +4,27 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Official Community Channels Enhancement, Gate Verification Fix & Bot Polish (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Channel Verification HTTP 400 Bug Fix**:
+    * Fixed bug where non-members returning HTTP 400 (`PARTICIPANT_ID_INVALID` / `user not found`) were skipped instead of flagged as missing, allowing unverified bypasses.
+    * In `ub_verify_gate`, added specific channel diagnostics informing users exactly which channel(s) are still missing (`⚠️ You still need to join: <channel names>!`).
+    * Optimized gate check for existing users: channel membership is verified once upon initial registration (`profile.joined_channels`), completely eliminating 3 blocking Telegram API HTTP round-trips (~300-600ms latency) on subsequent chat messages and button taps.
+  - **Official Community Channels Re-branding & Live Status**:
+    * Updated channel titles, descriptions, and buttons to clearly differentiate all 3 hubs:
+      1. `AAA Auto Miner — Community Hub` (`@AAAAutoMiner`): Miner chat, community tips, strategy sharing.
+      2. `AAA Auto Miner — Announcements` (`@AAAAUTOMINING`): Official platform updates, token releases, and giveaways.
+      3. `AAA ATF Miner — Live Activity` (`@AAA_ACTIVITY`): Real-time 24/7 automated mining harvest telemetry & registration stream.
+    * Synchronized official channel descriptions and titles via Telegram Bot API (`setChatDescription` & `setChatTitle`).
+    * Enhanced `/channels` command to perform live membership checks and display dynamic indicators (`✅ Joined` or `⚠️ Join Required`) beside each channel.
+  - **Telegram Bot Profile & Commands Revamp (`@AAAPREMIUMAPPSbot`)**:
+    * Upgraded `setMyDescription` from plain "AAA" to a comprehensive 473-character overview detailing 24/7 cloud mining across all 8 bots, 0 phone load, 0% fee payouts, and official channel links.
+    * Updated `setMyShortDescription` to `"🌟 24/7 Cloud Mining Platform — Automate 8 crypto bots with zero battery drain! Created by AAA."`.
+    * Synchronized all 9 bot commands in `setMyCommands` (`/start`, `/accounts`, `/channels`, `/points`, `/ads`, `/invite`, `/stats`, `/withdraw`, `/help`).
+  - **Live Activity Broadcast Polish (`broadcastToLiveActivity`)**:
+    * Added official `💬 Community Hub` (`@AAAAutoMiner`) links into live activity buttons for new miner registrations and milestone unlocks.
+  - **5-Node Cloudflare Edge Mesh Deployment**:
+    * Deployed live across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with 100% Zero Phone Load.
+
 - **Comprehensive Bug Fixes, Account Deduplication & Global Button Streamlining (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Account Reconnection Deduplication Fix**:
     * Fixed bug where reconnecting an existing account (`user_id` or `phone`) pushed a duplicate record into `profile.accounts`, consuming multiple cloud slots for the same phone.
