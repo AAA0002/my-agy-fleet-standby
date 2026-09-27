@@ -269,12 +269,8 @@ export default {
     };
 
     // In-memory Core Fleet AI Cascade (Eliminates Cloudflare Error 1042 same-zone self-fetch loops)
-    const runAiCascade = async (prompt, isUserMode = false, userName = "Friend") => {
+    const runAiCascade = async (prompt) => {
       if (!prompt) return { ok: false, error: "Missing prompt" };
-
-      const systemPromptText = isUserMode
-        ? `You are Ari, a friendly, warm, intelligent, and helpful crypto AI companion for the MY AGY AI community. Speak naturally, warmly, and helpfully like ChatGPT or Claude. Never sound like a robot. Never reveal internal admin fleet keys, private credentials, or internal infrastructure. Help users explore verified mining bots (/mining), bind their payout wallets (/wallet), and check their balance (/balance). Address the user by their name (${userName}) if appropriate. Keep responses concise and easy to read on mobile.`
-        : "You are Ari, the personal cloud AI copilot for Arif's 14-account automated mining fleet (MY AGY AI). Speak warmly, naturally, and intelligently like ChatGPT or Claude. Never sound like a robotic machine. Always address the user as Arif. Keep responses concise, clear, and direct.";
 
       // 1. Google Gemini Flash (Fast parallel attempt with 3-key rotation)
       const geminiKeys = [
@@ -301,14 +297,7 @@ export default {
         const gResp = await fetch(gUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: "user",
-                parts: [{ text: `${systemPromptText}\n\nUser Question/Message: ${prompt}` }]
-              }
-            ]
-          }),
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
           signal: AbortSignal.timeout(3500)
         });
         if (!gResp.ok) throw new Error("Gemini HTTP " + gResp.status);
@@ -329,7 +318,7 @@ export default {
             messages: [
               {
                 role: "system",
-                content: systemPromptText
+                content: "You are Ari, the personal cloud AI copilot for Arif's 14-account automated mining fleet (MY AGY AI). Speak warmly, naturally, and intelligently like ChatGPT or Claude. Never sound like a robotic machine. Always address the user as Arif. Keep responses concise, clear, and direct."
               },
               { role: "user", content: prompt }
             ],
@@ -354,9 +343,7 @@ export default {
         provider: "Ari Edge Sentinel",
         model: "edge-rule-based",
         node: CURRENT_SUBDOMAIN,
-        answer: isUserMode
-          ? `Hi ${userName}! I'm Ari, your crypto and automated rewards AI companion. Ask me anything about crypto mining, setting up your payout wallet with /wallet, or exploring top earning bots with /mining!`
-          : "Hi Arif! All 14 accounts across our 8 mining bots are online, healthy, and actively farming 24/7 in the cloud. ATF is accumulating safely in pool mode with zero withdrawals, and on-chain vaults are synchronized."
+        answer: "Hi Arif! All 14 accounts across our 8 mining bots are online, healthy, and actively farming 24/7 in the cloud. ATF is accumulating safely in pool mode with zero withdrawals, and on-chain vaults are synchronized."
       };
     };
 
@@ -1794,48 +1781,11 @@ fi
           const fromId = cb.from ? String(cb.from.id) : String(chatId);
 
           if (!ADMIN_IDS.has(fromId)) {
-            if (cbData === "user_chat") {
-              await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ callback_query_id: cbId, text: "💬 Just type any message in chat to talk with Ari AI!", show_alert: true })
-              }).catch(() => {});
-            } else if (cbData === "user_wallet") {
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: "💼 *Bind Your Payout Wallets*\n\n• BEP-20 (BNB/USDT): `/wallet 0xYourAddress`\n• TON: `/ton_wallet UQYourAddress`\n\n_Your payouts will route to your registered address with 0% hassle._", parse_mode: "Markdown" })
-              }).catch(() => {});
-              await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ callback_query_id: cbId }) }).catch(() => {});
-            } else if (cbData === "user_mining") {
-              const mText = "🪙 *Verified High-Yield Mining Bots:*\n\n" +
-                "1. 💎 [Stones Miners](https://t.me/stoneswithestand_bot?start=r6727787768)\n" +
-                "2. ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD)\n" +
-                "3. 🎨 [ART Airdrop](https://t.me/ART_AIRDROP_BOT?start=6727787768)\n" +
-                "4. 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852)\n" +
-                "5. 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768)\n" +
-                "6. 🚀 [Apex Miner](https://t.me/ApxMinerBot?start=6727787768)\n" +
-                "7. 💼 [UltraWallet](https://t.me/UltrawalletTrade_Bot?start=6727787768)\n" +
-                "8. 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768)\n\n" +
-                "_Tap any link above to start mining on Telegram!_";
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: mText, parse_mode: "Markdown", disable_web_page_preview: true })
-              }).catch(() => {});
-              await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ callback_query_id: cbId }) }).catch(() => {});
-            } else if (cbData === "user_balance") {
-              let uData = {};
-              try { const raw = await env.BACKUP_KV.get(`user:${fromId}`); if (raw) uData = JSON.parse(raw); } catch (_) {}
-              const bText = `📊 *My Balance & Wallets*\n\n• *Account ID:* \`${fromId}\`\n• *BEP-20 Wallet:* \`${uData.evm_wallet || "Not bound (use /wallet)"}\`\n• *TON Wallet:* \`${uData.ton_wallet || "Not bound (use /ton_wallet)"}\`\n• *Community Tier:* Standard (80% net yield)\n• *Status:* Active Member ✅`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: bText, parse_mode: "Markdown" })
-              }).catch(() => {});
-              await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ callback_query_id: cbId }) }).catch(() => {});
-            } else {
-              await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ callback_query_id: cbId, text: "Welcome to MY AGY AI! Type any message to chat with Ari." })
-              }).catch(() => {});
-            }
+            await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ callback_query_id: cb.id, text: "🔒 Access Restricted to Fleet Admin", show_alert: true })
+            }).catch(() => {});
             return new Response("OK");
           }
 
@@ -2299,153 +2249,15 @@ fi
         const senderId = msg.from ? String(msg.from.id) : String(chatId);
 
         if (!ADMIN_IDS.has(senderId)) {
-          // --- COMMERCIAL / REGULAR USER BOT MODE ---
-          ctx.waitUntil((async () => {
-            const userKeyboard = {
-              inline_keyboard: [
-                [
-                  { text: "💬 Chat with Ari AI", callback_data: "user_chat" },
-                  { text: "💼 My Wallets", callback_data: "user_wallet" }
-                ],
-                [
-                  { text: "🪙 Top Mining Bots", callback_data: "user_mining" },
-                  { text: "📊 My Balance", callback_data: "user_balance" }
-                ]
-              ]
-            };
-
-            const sendUserReply = async (repText, markup = userKeyboard) => {
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  chat_id: chatId,
-                  text: repText,
-                  parse_mode: "Markdown",
-                  reply_markup: markup,
-                  disable_web_page_preview: true
-                })
-              }).catch(() => {});
-            };
-
-            // 1. /start & /help command
-            if (text === "/start" || text === "/help" || text.startsWith("/start")) {
-              const uName = msg.from ? (msg.from.first_name || msg.from.username || "Friend") : "Friend";
-              const welcomeUser = `👋 *Hello ${uName}, welcome to MY AGY AI!*\n\n` +
-                `I am **Ari**, your personal AI companion & crypto assistant. Here is what we can do together:\n\n` +
-                `💬 *Chat with Me:* Just type any message or question, and I will reply naturally!\n` +
-                `🪙 *Top Mining Bots:* Discover verified crypto bots that earn real on-chain rewards.\n` +
-                `💼 *Payout Wallet:* Register your BEP-20 or TON wallet to receive community distributions.\n` +
-                `📊 *Balance Check:* Track your registered earnings and rewards.\n\n` +
-                `_Tap an option below, or just type a message to start chatting!_`;
-              await sendUserReply(welcomeUser);
-              return;
-            }
-
-            // 2. /wallet <address> (BEP-20)
-            if (text.startsWith("/wallet")) {
-              const parts = text.split(/\s+/);
-              if (parts.length > 1 && parts[1].startsWith("0x") && parts[1].length === 42) {
-                const wAddr = parts[1];
-                let uData = {};
-                try {
-                  const raw = await env.BACKUP_KV.get(`user:${senderId}`);
-                  if (raw) uData = JSON.parse(raw);
-                } catch (_) {}
-                uData.evm_wallet = wAddr;
-                uData.updated_at = Date.now();
-                await env.BACKUP_KV.put(`user:${senderId}`, JSON.stringify(uData));
-                await sendUserReply(`✅ *BEP-20 Wallet Bound Successfully!*\n\n• *Address:* \`${wAddr}\`\n• *Network:* BNB Smart Chain / Arbitrum\n\nYour future platform distributions will route to this wallet.`);
-              } else {
-                await sendUserReply(`💼 *Bind Your BEP-20 Payout Wallet*\n\nUsage: \`/wallet 0xYourBscAddress\`\n\nExample:\n\`/wallet 0x1234567890abcdef1234567890abcdef12345678\``);
-              }
-              return;
-            }
-
-            // 3. /ton_wallet <address>
-            if (text.startsWith("/ton_wallet") || text.startsWith("/ton")) {
-              const parts = text.split(/\s+/);
-              if (parts.length > 1 && (parts[1].startsWith("EQ") || parts[1].startsWith("UQ")) && parts[1].length >= 48) {
-                const tAddr = parts[1];
-                let uData = {};
-                try {
-                  const raw = await env.BACKUP_KV.get(`user:${senderId}`);
-                  if (raw) uData = JSON.parse(raw);
-                } catch (_) {}
-                uData.ton_wallet = tAddr;
-                uData.updated_at = Date.now();
-                await env.BACKUP_KV.put(`user:${senderId}`, JSON.stringify(uData));
-                await sendUserReply(`✅ *TON Wallet Bound Successfully!*\n\n• *Address:* \`${tAddr}\`\n• *Network:* TON Blockchain\n\nYour TON rewards will route to this wallet.`);
-              } else {
-                await sendUserReply(`💎 *Bind Your TON Payout Wallet*\n\nUsage: \`/ton_wallet UQYourTonAddress\`\n\nExample:\n\`/ton_wallet UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\``);
-              }
-              return;
-            }
-
-            // 4. /balance command
-            if (text === "/balance" || text === "📊 My Balance") {
-              let uData = {};
-              try {
-                const raw = await env.BACKUP_KV.get(`user:${senderId}`);
-                if (raw) uData = JSON.parse(raw);
-              } catch (_) {}
-              const rep = `📊 *Your Personal Rewards Summary*\n\n` +
-                `• *Account ID:* \`${senderId}\`\n` +
-                `• *BEP-20 Wallet:* \`${uData.evm_wallet || "Not bound (use /wallet)"}\`\n` +
-                `• *TON Wallet:* \`${uData.ton_wallet || "Not bound (use /ton_wallet)"}\`\n` +
-                `• *Status:* Active User ✅\n` +
-                `• *Community Tier:* Standard (80% net yield)\n\n` +
-                `_Keep interacting with verified mining bots to accumulate rewards!_`;
-              await sendUserReply(rep);
-              return;
-            }
-
-            // 5. /mining command
-            if (text === "/mining" || text === "🪙 Top Mining Bots") {
-              const mText = `🪙 *Verified High-Yield Mining Bots*\n\n` +
-                `1. 💎 [Stones Miners](https://t.me/stoneswithestand_bot?start=r6727787768) — Mine STONES tokens on Arbitrum\n` +
-                `2. ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — 24/7 cloud mining on TON\n` +
-                `3. 🎨 [ART Airdrop](https://t.me/ART_AIRDROP_BOT?start=6727787768) — Verified TON airdrop bot\n` +
-                `4. 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — Earn USD hash-power rewards\n` +
-                `5. 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — TON proof-of-work auto-miner\n` +
-                `6. 🚀 [Apex Miner](https://t.me/ApxMinerBot?start=6727787768) — Cloud mining with daily boosts\n` +
-                `7. 💼 [UltraWallet](https://t.me/UltrawalletTrade_Bot?start=6727787768) — Multi-token mining vault\n` +
-                `8. 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768) — High-yield USDT cloud mining\n\n` +
-                `_Start any bot above to begin accumulating crypto!_`;
-              await sendUserReply(mText);
-              return;
-            }
-
-            // 6. Security guardrail against admin commands
-            if (text.startsWith("/fleet") || text.startsWith("/harvest") || text.startsWith("/sweep") || text.startsWith("/backup") || text.startsWith("/accounts") || text.startsWith("/add_account")) {
-              await sendUserReply(`🔒 *Administrative Tool*\n\nThis management command is reserved for fleet administrators. For regular user commands, use \`/help\` or chat with Ari!`);
-              return;
-            }
-
-            // 7. Natural AI Chat with Ari! (Default fallback for any user message)
-            await sendChatAction(chatId, "typing");
-            const uName = msg.from ? (msg.from.first_name || "Friend") : "Friend";
-            const userPrompt = `You are Ari, a friendly, intelligent, and helpful AI assistant for the MY AGY AI crypto platform.
-You are talking directly with ${uName} on Telegram.
-Guidelines:
-- Talk like a normal, friendly, intelligent human companion (like ChatGPT or Claude).
-- Sound conversational, warm, and genuinely helpful.
-- If asked about crypto, mining, or blockchain, provide clear and accurate information.
-- If the user asks what you or this bot can do, explain that you are an AI assistant that can chat, answer questions, help them explore crypto mining bots, and bind their payout wallets.
-- Keep Telegram responses concise, clear, and easy to read on mobile.
-- Never use robotic jargon or refer to internal admin fleet details.
-
-${uName} says: "${text}"
-Reply to ${uName} naturally:`;
-
-            try {
-              const aiData = await runAiCascade(userPrompt, true, uName);
-              const reply = (aiData && aiData.answer) ? aiData.answer : `Hello ${uName}! I'm Ari, your AI companion. How can I help you today? Feel free to ask me anything!`;
-              await sendUserReply(reply);
-            } catch (e) {
-              await sendUserReply(`Hello ${uName}! I'm Ari. How can I help you today? Type any question or use /help to explore!`);
-            }
-          })());
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: "🔒 *Access Restricted: Private Admin Fleet Console*\n\nThis bot, channel network, and cluster operations are private and restricted exclusively to the system administrator.",
+              parse_mode: "Markdown"
+            })
+          }).catch(() => {});
           return new Response("OK");
         }
 
