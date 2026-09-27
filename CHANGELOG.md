@@ -4,6 +4,32 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Live Activity Broadcasts (`@AAAATF_ACTIVITY`), Ari AI Copilot Upgrade & Dedicated Help Guide (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Real-Time Live Activity Stream Announcements (`@AAAATF_ACTIVITY`)**:
+    * **New Miner Joined Broadcast**: Automatically announces new miners to `AAA ATF Miner — Live Activity` (`@AAAATF_ACTIVITY`) upon verifying all 3 community channels:
+      - Masked User ID (e.g. `7288****87`) for privacy protection.
+      - Full miner name and Telegram username.
+      - Referral attribution (`Direct Join` or `Invited by ID`).
+      - Account slots and +100 Free Welcome Points bonus.
+      - Personal referral link and interactive buttons (`⚡ Launch Cloud Miner`, `👥 Refer & Earn Slots`, `📢 Announcements Channel`).
+    * **Milestone Unlocked Broadcasts**: Automatically publishes milestone events to `@AAAATF_ACTIVITY` when:
+      - A miner activates a VIP Subscription Pass (Day, Weekly, or Monthly Pass).
+      - A new cloud MTProto node is connected and active across all 8 mining pools.
+  - **Ari AI Copilot Upgrade (`runUserAiCascade`)**:
+    * Upgraded AI Assistant system prompt for "Ari AI" with comprehensive knowledge of:
+      - Step-by-step account onboarding via serverless cloud MTProto (zero phone battery drain).
+      - The 8 cloud mining pools (*ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum*).
+      - Dual point economy (100 Pts/day cost, +20 Pts per ad view, +500 Pts per referral).
+      - Subscription Pass tiers and benefits (Day, Weekly, Monthly passes).
+      - Community channels and navigation.
+    * Integrated **Google Gemini 3.8 Flash** (`gemini-3.8-flash`) with parallel rotation and Cloudflare Workers AI (`@cf/meta/llama-3.2-3b-instruct`) fallback.
+    * Added **Intelligent Edge Guide Fallback**: Answers user questions instantly with formatted guide cards even during upstream API degradation.
+  - **Dedicated `/help` & `/guide` Commands**:
+    * Created dedicated, rich tutorial response breaking down account connection, 8 mining pools, free point opportunities, and VIP passes.
+  - **Zero Phone Load Guardrail (Samsung Galaxy A30)**:
+    * 0 local Python bot processes running. 100% deployed and synchronized across all 5 Cloudflare Edge nodes.
+
+
 - **Subscription Pass Tier System (Day/Week/Month), Manual Harvest Purge & 2x4 Symmetrical Mobile Layout (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Complete Removal of Manual Harvest**:
     * Purged `⚡ Manual Harvest` keyboard button, `/harvest` command, and `ub_manual_harvest` callback query handlers. Autonomous cloud mining runs 24/7 in the cloud across all 8 pools, rendering manual harvest redundant and streamlining the mobile UX.
