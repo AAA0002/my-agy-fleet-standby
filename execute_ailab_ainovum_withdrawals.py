@@ -52,20 +52,8 @@ def load_isolated_evm_wallets():
     return {}
 
 async def send_telegram_alert(session: aiohttp.ClientSession, text: str):
-    if not REPORT_BOT_TOKEN:
-        return
-    targets = [REPORT_CHAT_ID, PAYOUT_CHANNEL_ID]
-    for tid in targets:
-        try:
-            url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"
-            await session.post(url, json={
-                "chat_id": tid,
-                "text": text,
-                "parse_mode": "Markdown",
-                "disable_web_page_preview": True
-            }, timeout=aiohttp.ClientTimeout(total=6))
-        except Exception as e:
-            logger.debug(f"Telegram alert error for {tid}: {e}")
+    # Strictly muted: only real on-chain transaction hashes trigger Telegram alerts
+    return
 
 async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, tokens: dict, isolated_evms: dict = None) -> dict:
     uid = str(acc.get("user_id"))

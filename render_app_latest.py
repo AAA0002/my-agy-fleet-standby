@@ -56,6 +56,77 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e
 UPSTASH_URL = os.getenv("UPSTASH_URL", "https://relaxing-starfish-285827.upstash.io")
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN", "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw")
 
+CACHED_GEMINI_KEYS = []
+
+async def get_gemini_keys() -> list:
+    global CACHED_GEMINI_KEYS
+    if CACHED_GEMINI_KEYS:
+        return CACHED_GEMINI_KEYS
+    env_k = os.getenv("GEMINI_API_KEYS", "")
+    if env_k:
+        CACHED_GEMINI_KEYS = [k.strip() for k in env_k.split(",") if k.strip()]
+        return CACHED_GEMINI_KEYS
+    if UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            async with aiohttp.ClientSession() as s:
+                async with s.get(f"{UPSTASH_URL}/get/fleet:gemini_keys", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=4)) as r:
+                    if r.status == 200:
+                        data = await r.json()
+                        res = data.get("result")
+                        if res:
+                            CACHED_GEMINI_KEYS = [k.strip() for k in res.split(",") if k.strip()]
+        except Exception:
+            pass
+    return CACHED_GEMINI_KEYS
+
+async def solve_stones_captcha_ai(session: aiohttp.ClientSession, img_base64: str, length: int = 5) -> str:
+    """Solves Stones Miner captcha using rotating Gemini Vision models."""
+    if not img_base64:
+        return ""
+    if "," in img_base64:
+        img_base64 = img_base64.split(",")[-1]
+
+    keys = await get_gemini_keys()
+    if not keys:
+        return ""
+
+    prompt = (
+        f"Look at this captcha image carefully. It contains exactly {length} alphanumeric characters "
+        "(letters and numbers). Return ONLY the {length} characters in uppercase, strictly no spaces, no punctuation, no explanations."
+    )
+    payload = {
+        "contents": [{
+            "parts": [
+                {"text": prompt},
+                {"inline_data": {"mime_type": "image/png", "data": img_base64}}
+            ]
+        }]
+    }
+    models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"]
+    import random
+    shuffled_keys = list(keys)
+    random.shuffle(shuffled_keys)
+
+    for model in models:
+        for k in shuffled_keys[:4]:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+            headers = {"Content-Type": "application/json", "X-goog-api-key": k}
+            try:
+                async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as gr:
+                    if gr.status == 200:
+                        gdata = await gr.json()
+                        candidates = gdata.get("candidates", [])
+                        if candidates:
+                            parts = candidates[0].get("content", {}).get("parts", [])
+                            if parts:
+                                raw_text = parts[0].get("text", "")
+                                clean = re.sub(r"[^a-zA-Z0-9]", "", raw_text).upper().strip()
+                                if len(clean) == length:
+                                    return clean
+            except Exception:
+                continue
+    return ""
+
 BROWSER_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
 }
@@ -821,68 +892,7 @@ async def check_and_auto_withdraw_cloud(acc: dict) -> dict:
                 except Exception:
                     pass
 
-            # Send Official Telegram Payout Receipt with Bangladesh Time (BST)
-            import datetime
-            bot_token = os.getenv("ALERT_BOT_TOKEN", "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o")
-            bst_time = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=6)).strftime("%Y-%m-%d %I:%M:%S %p BST")
-            usd_val = withdraw_amount * 645.0
-            bdt_val = usd_val * 122.50
-
-            receipt_msg = (
-                f"🎉 <b>OFFICIAL BNB GALAXY PAYOUT RECEIPT</b>\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"👤 <b>Account:</b> {name} (<code>{uid}</code>)\n"
-                f"💰 <b>Amount:</b> <code>{amount_str} BNB</code> (~${usd_val:.4f} USD / ~৳{bdt_val:.2f} BDT)\n"
-                f"💼 <b>Recipient Wallet:</b> <a href=\"https://bscscan.com/address/{target_wallet}\"><code>{target_wallet}</code></a>\n"
-                f"🌐 <b>Network:</b> Binance Smart Chain (BEP-20)\n"
-                f"🛡️ <b>Verification:</b> <code>5/5 Anti-Bot Human Steps Completed</code> ✅\n"
-                f"🕒 <b>Submitted At:</b> <code>{bst_time}</code> (Bangladesh Time)\n"
-                f"⏳ <b>Status:</b> <b>Processing</b> (Estimated ~8 hours)\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"⚡ <b>Fleet Node:</b> Render Cloud Standby • Singapore & Frankfurt\n"
-                f"🛡️ <b>Autonomous Cloud Fleet Operations by MY AGY AI</b>"
-            )
-
-            receipt_markup = {
-                "inline_keyboard": [
-                    [{"text": "🔍 View on BscScan", "url": f"https://bscscan.com/address/{target_wallet}"}],
-                    [{"text": "🚀 Launch Mini App", "url": "https://restore-agy.aaaai2.workers.dev/dashboard"}],
-                    [{"text": "📢 Verified Payouts Channel", "url": "https://t.me/+oN8uefSRYWUyM2Fl"}]
-                ]
-            }
-
-            async with aiohttp.ClientSession() as http:
-                # Send to Admin Private DM
-                try:
-                    await http.post(
-                        f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                        json={
-                            "chat_id": REPORT_CHAT_ID,
-                            "text": receipt_msg,
-                            "parse_mode": "HTML",
-                            "disable_web_page_preview": True,
-                            "reply_markup": receipt_markup
-                        },
-                        timeout=aiohttp.ClientTimeout(total=5)
-                    )
-                except Exception as te:
-                    logger.warning(f"Telegram receipt note: {te}")
-
-                # Send to Payout Channel
-                try:
-                    await http.post(
-                        f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                        json={
-                            "chat_id": "-1004402765950",
-                            "text": receipt_msg,
-                            "parse_mode": "HTML",
-                            "disable_web_page_preview": True,
-                            "reply_markup": receipt_markup
-                        },
-                        timeout=aiohttp.ClientTimeout(total=5)
-                    )
-                except Exception as pe:
-                    logger.warning(f"Payout channel note: {pe}")
+            logger.info(f"[{name}] BNB withdrawal submitted ({amount_str} BNB -> {target_wallet}). Silent queue mode active: awaiting on-chain confirmation.")
 
 
     except Exception as e:
@@ -1323,6 +1333,8 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
     logger.info(f"[{name}] 🔑 Extracting WebApp initData tokens across all bots...")
     tokens = {}
     try:
+        if not client.is_connected():
+            await client.connect()
         tokens = await extract_tokens_with_client(client, acc_entry)
         logger.info(f"[{name}] ✅ Extracted {len([k for k in tokens if 'init_data' in k or 'wh_url' in k])} WebApp tokens")
     except Exception as te:
@@ -1332,6 +1344,17 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
         await client.disconnect()
     except Exception:
         pass
+
+    # Fallback: if tokens is missing required bot keys, re-extract with fresh standalone client
+    req_keys = ["stones_init_data", "mrg_init_data", "art_init_data", "ailab_init_data", "ultrawallet_init_data", "apx_init_data", "atf_init_data", "ainovum_init_data"]
+    if not tokens or any(not tokens.get(k) for k in req_keys):
+        logger.info(f"[{name}] Missing some bot tokens after direct extraction. Re-extracting with standalone client...")
+        try:
+            fresh = await extract_tokens_for_account(acc_entry)
+            if fresh:
+                tokens.update(fresh)
+        except Exception as fe:
+            logger.warning(f"[{name}] Standalone token extraction note: {fe}")
 
     # Synchronize tokens to 5x Cloudflare KV + Upstash Redis
     if tokens:
@@ -1747,7 +1770,7 @@ async def check_and_withdraw_ainovum(session: aiohttp.ClientSession, acc: dict, 
 
 
 async def check_and_withdraw_stones(session: aiohttp.ClientSession, acc: dict, tokens: dict) -> dict:
-    """Checks and executes auto-withdrawal for Stones Miners (Threshold: >= 500 STONES)."""
+    """Checks balance and executes automated withdrawal for Stones Miners (Threshold: >= 500 STONES)."""
     uid = str(acc.get("user_id"))
     name = acc.get("name", uid)
     if uid == "6727787768":
@@ -1761,14 +1784,61 @@ async def check_and_withdraw_stones(session: aiohttp.ClientSession, acc: dict, t
     headers = {"Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro)"}
     try:
         async with session.post(f"{base_url}/api/state", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as sr:
-            if sr.status == 200:
-                sd = await sr.json()
-                coins = float(sd.get("user", {}).get("coins", 0) or 0)
-                if coins >= 500:
-                    logger.info(f"[Cloud Stones] {name} ({uid}) threshold reached: {coins:.1f} >= 500")
-                    return {"uid": uid, "name": name, "status": "threshold_reached", "coins": coins}
+            if sr.status != 200:
+                return {"uid": uid, "name": name, "status": "state_check_failed"}
+            sd = await sr.json()
+            user_data = sd.get("user", {})
+            coins = float(user_data.get("coins", 0) or 0)
+            if coins < 500:
                 return {"uid": uid, "name": name, "status": "below_threshold", "coins": coins}
-        return {"uid": uid, "name": name, "status": "state_check_failed"}
+
+            logger.info(f"[Cloud Stones] {name} ({uid}) threshold reached: {coins:.1f} >= 500. Executing automated withdrawal...")
+
+            # 1. Bind target vault wallet if not bound
+            bound_wallet = user_data.get("wallet", "")
+            target_wallet = acc.get("evm_wallet", {}).get("address") or MASTER_EVM_VAULT
+            if bound_wallet.lower() != target_wallet.lower():
+                try:
+                    await session.post(f"{base_url}/api/wallet", json={"initData": init_data, "wallet": target_wallet}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
+                except Exception:
+                    pass
+
+            # 2. Issue captcha
+            ticket = None
+            async with session.post(f"{base_url}/api/wd/captcha/issue", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as ir:
+                if ir.status == 200:
+                    idat = await ir.json()
+                    if idat.get("enabled") is False:
+                        ticket = None
+                    else:
+                        cid = idat.get("captcha_id")
+                        img = idat.get("image", "")
+                        clen = int(idat.get("length", 5))
+                        if cid and img:
+                            ans = await solve_stones_captcha_ai(session, img, clen)
+                            if ans:
+                                async with session.post(f"{base_url}/api/wd/captcha/verify", json={"initData": init_data, "captcha_id": cid, "answer": ans}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as vr:
+                                    if vr.status == 200:
+                                        vrd = await vr.json()
+                                        if vrd.get("ok"):
+                                            ticket = vrd.get("ticket")
+
+            # 3. Submit withdrawal
+            wd_payload = {"initData": init_data, "amount": 500, "wallet": target_wallet, "currency": "stones"}
+            if ticket:
+                wd_payload["ticket"] = ticket
+                wd_payload["captcha_ticket"] = ticket
+
+            async with session.post(f"{base_url}/api/withdraw", json=wd_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as wr:
+                if wr.status == 200:
+                    wrd = await wr.json()
+                    if wrd.get("ok"):
+                        logger.info(f"[Cloud Stones] {name} ({uid}) auto-withdrawal submitted: 500 STONES -> {target_wallet}")
+                        return {"uid": uid, "name": name, "status": "withdrawn", "coins": coins, "wallet": target_wallet}
+                    else:
+                        logger.warning(f"[Cloud Stones] {name} withdraw rejected: {wrd.get('info')}")
+                        return {"uid": uid, "name": name, "status": "rejected", "info": wrd.get("info")}
+                return {"uid": uid, "name": name, "status": f"http_{wr.status}"}
     except Exception as e:
         logger.warning(f"[Cloud Stones] Error for {name}: {e}")
         return {"uid": uid, "name": name, "status": "error", "error": str(e)}
@@ -1848,7 +1918,7 @@ async def query_evm_rpc(session: aiohttp.ClientSession, rpc_list: list, method: 
 
 
 async def audit_single_evm(session: aiohttp.ClientSession, uid: str, info: dict):
-    if not isinstance(info, dict) or "address" not in info:
+    if not isinstance(info, dict) or "address" not in info or str(uid).startswith("_"):
         return None
     addr = info["address"]
     name = info.get("name", f"Worker {uid}")
@@ -1877,7 +1947,7 @@ async def audit_single_evm(session: aiohttp.ClientSession, uid: str, info: dict)
 
 
 async def audit_single_ton(session: aiohttp.ClientSession, uid: str, info: dict, headers: dict):
-    if not isinstance(info, dict) or "address" not in info:
+    if not isinstance(info, dict) or "address" not in info or str(uid).startswith("_"):
         return None
     addr = info["address"]
     name = info.get("name", f"Worker {uid}")
@@ -1889,8 +1959,24 @@ async def audit_single_ton(session: aiohttp.ClientSession, uid: str, info: dict,
                 data = await resp.json()
                 raw_bal = data.get("balance", 0)
                 ton_bal = int(raw_bal) / 1e9
+            else:
+                # Toncenter API fallback
+                tc_url = f"https://toncenter.com/api/v2/getAddressBalance?address={addr}"
+                async with session.get(tc_url, timeout=aiohttp.ClientTimeout(total=5)) as tc_resp:
+                    if tc_resp.status == 200:
+                        tc_data = await tc_resp.json()
+                        if tc_data.get("ok"):
+                            ton_bal = int(tc_data.get("result", 0)) / 1e9
     except Exception:
-        pass
+        try:
+            tc_url = f"https://toncenter.com/api/v2/getAddressBalance?address={addr}"
+            async with session.get(tc_url, timeout=aiohttp.ClientTimeout(total=5)) as tc_resp:
+                if tc_resp.status == 200:
+                    tc_data = await tc_resp.json()
+                    if tc_data.get("ok"):
+                        ton_bal = int(tc_data.get("result", 0)) / 1e9
+        except Exception:
+            pass
     return {
         "uid": uid,
         "name": name,
@@ -2235,11 +2321,24 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             await session.post("https://app.stoneswithestand.my.id/api/task/start", json={"initData": s_init, "slug": "join_channel"}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
             await session.post("https://app.stoneswithestand.my.id/api/task/complete", json={"initData": s_init, "slug": "join_channel"}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
             await session.post("https://app.stoneswithestand.my.id/api/task/verify", json={"initData": s_init, "slug": "join_channel"}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
+            # Dynamic task discovery & completion from user state
+            try:
+                async with session.post("https://app.stoneswithestand.my.id/api/state", json={"initData": s_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as st_r:
+                    if st_r.status == 200:
+                        st_data = await st_r.json()
+                        for t in st_data.get("tasks", []):
+                            slug = t.get("slug") or t.get("id")
+                            if slug and not t.get("completed") and not t.get("is_completed"):
+                                await session.post("https://app.stoneswithestand.my.id/api/task/start", json={"initData": s_init, "slug": slug}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
+                                await session.post("https://app.stoneswithestand.my.id/api/task/complete", json={"initData": s_init, "slug": slug}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
+                                await session.post("https://app.stoneswithestand.my.id/api/task/verify", json={"initData": s_init, "slug": slug}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
+            except Exception:
+                pass
             # Claim accumulated pool
             await session.post("https://app.stoneswithestand.my.id/api/claim", json={"initData": s_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
             # Mining start / renew
             await session.post("https://app.stoneswithestand.my.id/api/mining/start", json={"initData": s_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
-            # Stone Breaker
+            # Stone Breaker Play & Earn (+10 STONES/hr)
             try:
                 async with session.post("https://app.stoneswithestand.my.id/api/sb/status", json={"initData": s_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as sbr:
                     if sbr.status == 200:
@@ -2251,6 +2350,17 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                     sess_id = sbsd.get("session", {}).get("session_id")
                                     if sess_id:
                                         await session.post("https://app.stoneswithestand.my.id/api/sb/finish", json={"initData": s_init, "session_id": sess_id, "score": 150}, headers=headers, timeout=aiohttp.ClientTimeout(total=5))
+            except Exception:
+                pass
+            # Mining Boost (+0.5 TH/s)
+            try:
+                async with session.post("https://app.stoneswithestand.my.id/api/ad/boost/challenge", json={"initData": s_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as abc_r:
+                    if abc_r.status == 200:
+                        abcd = await abc_r.json()
+                        cid = abcd.get("challenge", {}).get("challenge_id")
+                        if cid:
+                            await session.post("https://app.stoneswithestand.my.id/api/ad/beat", json={"initData": s_init, "scope": "boost", "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
+                            await session.post("https://app.stoneswithestand.my.id/api/ad/boost/reward", json={"initData": s_init, "challenge_id": cid}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
             except Exception:
                 pass
             status["bots"]["stones"] = "farmed"
@@ -2412,9 +2522,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             await session.post(f"{apx_base}/checkin", json={"initData": apx_init, "clientV2": True}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
             await session.post(f"{apx_base}/mining/claim", json={"initData": apx_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
             await session.post(f"{apx_base}/mining/restart", json={"initData": apx_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
-            for t in ["telegram", "twitter"]:
+            for t in ["telegram", "twitter", "discord", "checkin"]:
                 await session.post(f"{apx_base}/tasks/daily", json={"initData": apx_init, "task": t}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
-            for s in ["channel", "group", "twitter"]:
+            for s in ["channel", "group", "twitter", "partner"]:
                 await session.post(f"{apx_base}/tasks/social", json={"initData": apx_init, "task": s}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
             await session.post(f"{apx_base}/ads/boost", json={"initData": apx_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
             status["bots"]["apx"] = "farmed"
@@ -2458,7 +2568,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             await session.post(f"{atf_base}?action=activate_boost&t={int(time.time()*1000)}", json=payload_base, headers=atf_h, timeout=aiohttp.ClientTimeout(total=5))
             await session.post(f"{atf_base}?action=record_daily_interaction&t={int(time.time()*1000)}", json=payload_base, headers=atf_h, timeout=aiohttp.ClientTimeout(total=5))
             # Auto complete ATF repeatable tasks
-            for tid in ["telegram_join", "twitter_follow", "youtube_subscribe", "website_visit"]:
+            for tid in ["telegram_join", "twitter_follow", "youtube_subscribe", "website_visit", "partner_channel"]:
                 st_at = int(time.time()) - 25
                 await session.post(f"{atf_base}?action=start_task&t={int(time.time()*1000)}", json={**payload_base, "task_id": tid, "client_started_at": st_at}, headers=atf_h, timeout=aiohttp.ClientTimeout(total=4))
                 await session.post(f"{atf_base}?action=claim_task&t={int(time.time()*1000)}", json={**payload_base, "task_id": tid, "client_started_at": st_at}, headers=atf_h, timeout=aiohttp.ClientTimeout(total=4))
@@ -2494,6 +2604,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     await session.post(f"{ain_base}/api/mining/claim", json={"action": "claim_cycle"}, headers=req_h, timeout=aiohttp.ClientTimeout(total=5))
                     await session.post(f"{ain_base}/api/channel-bonus/claim", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=5))
                     await session.post(f"{ain_base}/api/gift-box/open", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=5))
+                    await session.post(f"{ain_base}/api/daily-bonus/claim", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=5))
+                    await session.post(f"{ain_base}/api/mining/start", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=5))
             status["bots"]["ainovum"] = "farmed"
         except Exception as e:
             status["bots"]["ainovum"] = f"error: {e}"
@@ -2508,6 +2620,17 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
         session = aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
         created_session = True
 
+    REQUIRED_BOT_KEYS = [
+        "stones_init_data",
+        "mrg_init_data",
+        "art_init_data",
+        "ailab_init_data",
+        "ultrawallet_init_data",
+        "apx_init_data",
+        "atf_init_data",
+        "ainovum_init_data"
+    ]
+
     try:
         if accounts is None:
             accounts = await fetch_accounts_from_cloud()
@@ -2521,16 +2644,17 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
         for acc in accounts:
             uid = str(acc.get("user_id"))
             acc_tok = tokens_map.get(uid, {})
-            # If account has no active WebApp tokens, trigger on-the-fly extraction & bootstrap in the cloud
-            if not acc_tok or not any(k.endswith("_init_data") for k in acc_tok.keys()):
-                logger.info(f"[Farm Cycle] Account {uid} ({acc.get('name')}) has no active WebApp tokens. Triggering cloud extraction & bootstrap...")
+            # If account is missing any of the 8 active bot tokens, trigger cloud extraction & bootstrap
+            missing = [k for k in REQUIRED_BOT_KEYS if not acc_tok.get(k)]
+            if missing:
+                logger.info(f"[Farm Cycle] Account {uid} ({acc.get('name')}) missing {len(missing)} bot tokens ({missing}). Triggering cloud extraction & bootstrap...")
                 try:
                     fresh = await extract_tokens_for_account(acc)
                     if fresh:
-                        acc_tok = fresh
-                        tokens_map[uid] = fresh
-                        await sync_account_tokens_to_clouds(fresh)
-                        await bootstrap_account_mining(acc, fresh)
+                        acc_tok.update(fresh)
+                        tokens_map[uid] = acc_tok
+                        await sync_account_tokens_to_clouds(acc_tok)
+                        await bootstrap_account_mining(acc, acc_tok)
                 except Exception as ex_e:
                     logger.warning(f"[Farm Cycle] On-the-fly token extraction note for {uid}: {ex_e}")
 

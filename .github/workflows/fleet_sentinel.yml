@@ -337,18 +337,7 @@ jobs:
               f"🤖 *Cloud Execution: Microsoft GitHub Actions ($0 Free Tier)*"
           )
 
-          try:
-              tg_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-              payload = json.dumps({
-                  "chat_id": owner_id,
-                  "text": report_msg,
-                  "parse_mode": "Markdown"
-              }).encode("utf-8")
-              req = urllib.request.Request(tg_url, data=payload, headers={"Content-Type": "application/json"})
-              with urllib.request.urlopen(req, timeout=8) as r:
-                  print("Telegram notification dispatched successfully!")
-          except Exception as e:
-              print(f"Telegram dispatch error: {e}")
+          print("Audit complete. Zero-spam directive: Telegram notification suppressed.")
 
           print("=" * 65)
           print("Audit complete.")

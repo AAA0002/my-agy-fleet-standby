@@ -522,22 +522,10 @@ async def run_full_sweep_audit(notify_if_empty: bool = False, execute_sweep: boo
                 f"📡 <i>Status: CONFIRMED ON-CHAIN • Automated Sweeper</i>"
             )
             await send_telegram_receipt(session, receipt_msg)
-        elif funded_evm or funded_ton or notify_if_empty:
-            msg = (
-                f"💼 <b>MY AGY AI — Multi-Chain Vault Sweep Audit</b>\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"• 👥 <b>Worker Wallets Audited:</b> <code>{len(evm_audit)} EVM / {len(ton_audit)} TON</code>\n"
-                f"• 🪙 <b>BSC Worker Holding:</b> <code>{total_bnb:.6f} BNB</code>\n"
-                f"• 💵 <b>BSC Worker USDT:</b> <code>${total_usdt:.2f} USDT</code>\n"
-                f"• 💎 <b>Arbitrum Worker Holding:</b> <code>{total_eth:.6f} ETH</code>\n"
-                f"• 💎 <b>TON Worker Holding:</b> <code>{total_ton:.4f} TON</code>\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"🎯 <b>Master Destination Vaults (Binance Web3):</b>\n"
-                f"• <code>EVM:</code> <code>{MASTER_EVM_VAULT}</code>\n"
-                f"• <code>TON:</code> <code>{MASTER_TON_VAULT}</code>\n\n"
-                f"🛡️ <i>Direct in-bot routing sends 100% of mining profits directly to your Binance Web3 Vault.</i>"
-            )
-            await send_telegram_receipt(session, msg)
+        elif funded_evm or funded_ton:
+            logger.info(f"[Audit Summary] {len(funded_evm)} EVM and {len(funded_ton)} TON worker wallets have balance. Awaiting threshold sweep. Telegram notification suppressed per zero-spam directive.")
+        else:
+            logger.info("[Audit Summary] Zero worker funds to sweep. Silent mode active.")
 
         return {
             "evm_total_bnb": total_bnb,

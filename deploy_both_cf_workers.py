@@ -1219,6 +1219,35 @@ fi
       });
     }
 
+    // 12.48 Cloud Standby Farm Proxy (Status, Cloud-All, Single Account)
+    if (path === "/api/farm/status" || path === "/api/farm/cloud-all" || path.startsWith("/api/farm/account/")) {
+      const renderNodes = [
+        "https://my-agy-fleet-standby.onrender.com",
+        "https://my-agy-fleet-standby-node2.onrender.com"
+      ];
+      for (const rNode of renderNodes) {
+        try {
+          const resp = await fetch(`${rNode}${path}`, {
+            method: request.method,
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`,
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            },
+            body: (request.method !== "GET" && request.method !== "HEAD") ? await request.text().catch(() => null) : undefined
+          });
+          if (resp && (resp.ok || resp.status < 500)) {
+            const data = await resp.text();
+            return new Response(data, {
+              status: resp.status,
+              headers: { ...corsHeaders, "Content-Type": resp.headers.get("Content-Type") || "application/json" }
+            });
+          }
+        } catch (_) {}
+      }
+      return new Response(JSON.stringify({ ok: false, error: "Standby mesh unavailable" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // 12.5 Autonomous Cloud Farming Engine (Stones, MRG, ART, AI Lab, UltraWallet, Apex Miner, Ainovum, ATF)
     if (path === "/api/farm/all" || path === "/api/fleet/claim-all" || path === "/api/farm/bnb" || path === "/api/farm/execute") {
       try {

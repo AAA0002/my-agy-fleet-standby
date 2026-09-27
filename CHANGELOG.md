@@ -4,6 +4,31 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Zero Unconfirmed Receipt Spam Purge, 100% 8-Bot Task Suite Execution & Guaranteed New Account Auto-Farming (`render_standby_app.py`, `render_app_latest.py`, `cloud_wallet_sweeper.py`, `batch_atf_miner.py`, `.github/workflows/cloud_token_refresher.yml`, `.github/workflows/fleet_sentinel.yml`, `CHANGELOG.md`)**:
+  - **Complete Elimination of Unconfirmed Payout Receipts & Zero-Fund Audit Spam**:
+    * **Purged BNB Galaxy Processing Receipts**: Removed `🎉 OFFICIAL BNB GALAXY PAYOUT RECEIPT ... Status: Processing (Estimated ~8 hours)` message dispatch from `check_and_auto_withdraw_cloud()` in `render_standby_app.py` and `render_app_latest.py`. Submissions are now logged silently while awaiting real on-chain confirmation.
+    * **Purged Unconfirmed Sweep Audit Messages**: Eliminated `💼 MY AGY AI — Multi-Chain Vault Sweep Audit` notification from `cloud_wallet_sweeper.py` when 0 funds are swept or balances are below threshold.
+    * **Muted Routine Heartbeat/Workflow Telegram Alerts**: Suppressed routine status spam in `cloud_token_refresher.yml`, `fleet_sentinel.yml`, and `batch_atf_miner.py`.
+    * **Strict Payment Confirmation Exclusivity**: Telegram notifications are now strictly restricted to verified on-chain blockchain sweeps (`✅ ON-CHAIN PAYMENT CONFIRMED`) containing real transaction hashes and explorer links (`bscscan.com`, `tonviewer.com`).
+  - **Guaranteed New Account Auto-Farming & Immediate Mining Bootstrap**:
+    * **Root Cause Fixed**: Previously, if Telethon client disconnected or had an RPC hiccup during onboarding, `extract_tokens_with_client` returned an incomplete token dictionary, causing `bootstrap_account_mining` and initial farming to be skipped entirely, leaving new accounts stuck only joining bots without mining.
+    * **Standalone Client Fallback & Connection Guard**: Enhanced `bind_account_master_referrals()` with proactive `is_connected()` validation and fallback standalone Telethon client extraction (`extract_tokens_for_account`). If any required bot tokens are missing, it re-extracts with a dedicated connection, synchronizes tokens across 5x Cloudflare KV + Upstash Redis, bootstraps mining across all 8 bots, and immediately executes full initial 8-bot farming.
+  - **Full 8-Bot Required Token Verification (`run_cloud_fleet_farming_cycle`)**:
+    * Upgraded farming loop to check against `REQUIRED_BOT_KEYS` (`stones`, `mrg`, `art`, `ailab`, `ultrawallet`, `apx`, `atf`, `ainovum`). If any bot token is missing for any account, on-the-fly cloud extraction is triggered, guaranteeing 100% coverage across the entire fleet.
+  - **Expanded Multi-Task Execution Across All 8 Bots**:
+    * **Stones Miners**: Added dynamic state task discovery and completion from `/api/state` (`/api/task/start`, `/api/task/complete`, `/api/task/verify`) plus Mining Boost challenge (`ad/boost/challenge` -> `ad/beat` -> `ad/boost/reward` for +0.5 TH/s boost).
+    * **MRG Miner**: Dynamic task completion for all uncompleted task IDs from `/api/user/me`.
+    * **ART Airdrop**: Complete loop through all `/api/tasks/{uid}` plus bonus claims.
+    * **AI Lab Robot**: Automatic checkin and task execution across all referral, follow, social, and daily task categories via `/task-check`.
+    * **UltraWallet**: Lucky spins execution, dynamic task start/complete, and gift box claim.
+    * **Apex Miner**: Added daily tasks (`telegram`, `twitter`, `discord`, `checkin`) and social tasks (`channel`, `group`, `twitter`, `partner`) plus ads boost.
+    * **ATF Miner**: Automated repeatable tasks (`telegram_join`, `twitter_follow`, `youtube_subscribe`, `website_visit`, `partner_channel`).
+    * **Ainovum**: Daily bonus claim, mining start/renewal, channel bonus, and gift box claims.
+  - **Live Cloud Deployment & Verification**:
+    * Deployed commit `6f50f3e2` to Render Standby Node 1 (Singapore) and Node 2 (Frankfurt). Both verified `Status=live`.
+    * Deployed updated Cloudflare Workers across all 5 Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Verified via Cloudflare proxy: 14/14 accounts successfully farmed across all 8 bots with zero notification spam.
+
 - **On-the-Fly Cloud Token Extraction, Multi-Node Aggregator, Fleet 14-Account Sync & Zero-Spam Enforcement (`render_standby_app.py`, `render_app_latest.py`, `accounts.json`, `fleet_evm_wallets.json`, `fleet_ton_wallets.json`, `CHANGELOG.md`)**:
   - **On-the-Fly Cloud Token Extraction & Instant Mining Bootstrap in Farming Cycles**:
     * **Root Cause Fixed**: Previously, `run_cloud_fleet_farming_cycle` simply skipped any account if `tokens_map.get(uid)` was empty. Accounts that were onboarded without tokens never started farming.

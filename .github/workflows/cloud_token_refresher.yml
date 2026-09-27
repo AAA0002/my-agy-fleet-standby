@@ -142,26 +142,5 @@ jobs:
           import urllib.request
           import datetime
 
-          bot_token = os.getenv("ALERT_BOT_TOKEN")
-          owner_id = os.getenv("OWNER_ID")
-          now_str = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
-
-          msg = (
-              f"☁️ *[100% Cloud Token Refresher Completed]*\n\n"
-              f"• 🕒 **Execution Time:** `{now_str}`\n"
-              f"• 🌐 **Platform:** `Microsoft GitHub Actions ($0 Free Tier)`\n"
-              f"• ⚡ **Target:** `3x Cloudflare Edge Nodes & KV`\n"
-              f"• 🛡️ **Status:** `All 8 Active Bots Synced Successfully` ✅\n\n"
-              f"💎 _Zero VPS reliance guaranteed • 24/7 Cloud Autonomy_"
-          )
-
-          try:
-              req = urllib.request.Request(
-                  f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                  data=json.dumps({"chat_id": owner_id, "text": msg, "parse_mode": "Markdown"}).encode(),
-                  headers={"Content-Type": "application/json"}
-              )
-              urllib.request.urlopen(req, timeout=10)
-          except Exception:
-              pass
+          print(f"[{now_str}] Token refresher completed successfully. Silent cloud mode: Telegram notification suppressed.")
           EOF

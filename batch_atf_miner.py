@@ -495,16 +495,8 @@ async def main():
             f"• *Next Automatic Cycle:* `8 Hours` via crontab\n\n"
             f"_Cloudflare Edge Mesh synchronized across all 3 nodes._"
         )
-        try:
-            tg_url = f"https://api.telegram.org/bot{report_bot_token}/sendMessage"
-            async with session_pool.post(tg_url, json={
-                "chat_id": report_chat_id,
-                "text": tg_text,
-                "parse_mode": "Markdown"
-            }, timeout=aiohttp.ClientTimeout(total=8)) as tr:
-                print(f"  📢 Telegram Admin Alert: Status {tr.status}")
-        except Exception as te:
-            print(f"  ⚠️ Telegram Alert note: {te}")
+        # Telegram alert muted: only confirmed on-chain payments trigger Telegram messages
+        pass
 
     print("\n" + "=" * 65)
     print(f"  ✅ ATF Miner Cluster Cycle Completed!")
