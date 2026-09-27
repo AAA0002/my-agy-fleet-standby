@@ -4039,11 +4039,79 @@ Reply to Arif naturally:`;
           }
 
           if (cqData.startsWith("ub_disconnect_")) {
-            const targetUid = cqData.replace("ub_disconnect_", "");
+            const targetUid = cqData.replace("ub_disconnect_", "").trim();
             const profile = await getUserProfile(cqChatId, cq.from);
-            profile.accounts = (profile.accounts || []).filter(a => String(a.user_id) !== String(targetUid));
+            const targetStr = String(targetUid).replace("+", "");
+            const removedAcc = (profile.accounts || []).find(a => String(a.user_id) === targetStr || String(a.phone || "").replace("+", "") === targetStr);
+            profile.accounts = (profile.accounts || []).filter(a => String(a.user_id) !== targetStr && String(a.phone || "").replace("+", "") !== targetStr);
             await saveUserProfile(cqChatId, profile);
-            ctx.waitUntil(sendCqReply(`✅ *Account Disconnected!*\n\nAccount ID \`${targetUid}\` has been removed from your active cloud slots.`, userMainKeyboard));
+            const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+            const accDesc = removedAcc ? `${removedAcc.name || "Account"} (\`${removedAcc.phone || removedAcc.user_id}\`)` : `Account \`${targetUid}\``;
+            const repMsg = `✅ *Account Disconnected Successfully!* 🗑️\n\n` +
+              `• *Removed:* ${accDesc}\n` +
+              `• *Slots In Use:* ${profile.accounts.length} / ${totalSlots}\n` +
+              `• *Freed Capacity:* ⚡ 1 Cloud Slot is now available!\n\n` +
+              `You can now connect another account using *➕ Connect Account*.`;
+            ctx.waitUntil(sendCqReply(repMsg, userMainKeyboard));
+            return new Response("OK");
+          }
+
+          if (cqData === "ub_remove_menu") {
+            const profile = await getUserProfile(cqChatId, cq.from);
+            if (!profile.accounts || profile.accounts.length === 0) {
+              ctx.waitUntil(sendCqReply("ℹ️ *No Connected Accounts*\n\nYou do not have any active mining accounts connected to remove.\n\nTap *➕ Connect Account* to link an account!", userMainKeyboard));
+              return new Response("OK");
+            }
+            const promptTxt = `🗑️ *SELECT AN ACCOUNT TO DISCONNECT:*\n\n` +
+              `Choose the account you want to remove from 24/7 cloud mining:\n\n` +
+              `⚠️ _Disconnecting an account immediately frees up its cloud slot._`;
+            const buttons = profile.accounts.map(a => [
+              { text: `🗑️ Disconnect: ${a.name || a.phone} (${a.phone || a.user_id})`, callback_data: `ub_disconnect_${a.user_id || a.phone}` }
+            ]);
+            buttons.push([{ text: "🔙 Back to Accounts", callback_data: "ub_accounts_list" }]);
+            ctx.waitUntil(sendCqReply(promptTxt, { inline_keyboard: buttons }));
+            return new Response("OK");
+          }
+
+          if (cqData === "ub_accounts_list") {
+            const profile = await getUserProfile(cqChatId, cq.from);
+            const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+            const isCovered = profile.subscription_expiry && profile.subscription_expiry > Date.now();
+            let passBadge = "Free Tier (Pay-As-You-Go)";
+            if (isCovered) {
+              const remMs = profile.subscription_expiry - Date.now();
+              const dLeft = Math.floor(remMs / (86400 * 1000));
+              const hLeft = Math.floor((remMs % (86400 * 1000)) / (3600 * 1000));
+              const tName = profile.subscription_tier === "month" ? "💎 30-Day Monthly Pass" : (profile.subscription_tier === "week" ? "🎟️ 7-Day Weekly Pass" : "🎟️ 1-Day Pass");
+              passBadge = `${tName} (🟢 Active: ${dLeft > 0 ? `${dLeft}d ` : ""}${hLeft}h left)`;
+            }
+            const daysRemaining = isCovered ? "Covered by Pass" : (profile.accounts.length > 0 ? Math.floor(profile.points / (profile.accounts.length * 100)) : "Unlimited");
+            let accList = "• _No accounts connected yet. Tap ➕ Connect Account below!_";
+            if (profile.accounts && profile.accounts.length > 0) {
+              accList = profile.accounts.map((a, i) =>
+                `*${i + 1}.* \`${a.phone || a.user_id}\` (${a.name || "User"}) — 🟢 Active Cloud Farming`
+              ).join("\n");
+            }
+
+            const farmStatus = isCovered ? "🟢 Active 24/7 (Covered by VIP Pass)" : (profile.farming_active ? "🟢 Active 24/7" : "🔴 Paused (Insufficient Points)");
+            const accMsg = `👥 *MY CONNECTED ACCOUNTS* 📱\n\n` +
+              `• *Slots In Use:* ${profile.accounts.length} / ${totalSlots}\n` +
+              `• *Subscription Pass:* ${passBadge}\n` +
+              `• *Farming Status:* ${farmStatus}\n` +
+              `• *Daily Cost:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${profile.accounts.length * 100} Pts/day`}\n` +
+              `• *Points Balance:* ${profile.points} Pts (~${daysRemaining} days left)\n\n` +
+              `📱 *Active Accounts:*\n${accList}\n\n` +
+              `💡 _Every account automatically farms all 8 bots: ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, and Ainovum._`;
+
+            const inlineBtns = [
+              [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
+            ];
+            if (profile.accounts && profile.accounts.length > 0) {
+              for (const a of profile.accounts) {
+                inlineBtns.push([{ text: `🗑️ Remove ${a.name || a.phone} (${a.phone || a.user_id})`, callback_data: `ub_disconnect_${a.user_id || a.phone}` }]);
+              }
+            }
+            ctx.waitUntil(sendCqReply(accMsg, { inline_keyboard: inlineBtns }));
             return new Response("OK");
           }
 
@@ -4364,10 +4432,9 @@ Reply to Arif naturally:`;
           if (text.startsWith("/help") || text.startsWith("/guide")) {
             const helpMsg = `📖 *AAA AUTO MINING & ARI AI GUIDE* 🤖\n\n` +
               `Hello ${senderName}! Here is your complete guide to automated cloud mining:\n\n` +
-              `1️⃣ *How to Connect Accounts*\n` +
-              `• Tap *➕ Connect Account* in the menu.\n` +
-              `• Send your phone number in international format (\`+880...\` or \`+1...\`).\n` +
-              `• Enter the 5-digit verification code sent to your Telegram.\n` +
+              `1️⃣ *How to Connect & Remove Accounts*\n` +
+              `• *Connect:* Tap *➕ Connect Account*, send phone number & 5-digit Telegram code.\n` +
+              `• *Remove:* Tap *👥 My Accounts* in the menu and tap *🗑️ Remove* next to any account, or type \`/remove\` anytime!\n` +
               `• 100% cloud-hosted MTProto: your accounts farm 24/7 with zero battery load on your device!\n\n` +
               `2️⃣ *8 Automated Mining Pools*\n` +
               `• Automatically farms ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, and Ainovum.\n\n` +
@@ -4513,10 +4580,51 @@ Reply to Arif naturally:`;
               [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
             ];
             if (profile.accounts && profile.accounts.length > 0) {
-              const disBtns = profile.accounts.slice(0, 3).map(a => ({ text: `❌ Remove ${a.name || a.phone}`, callback_data: `ub_disconnect_${a.user_id}` }));
-              inlineBtns.push(disBtns);
+              inlineBtns.push([{ text: "🗑️ Remove / Disconnect Account", callback_data: "ub_remove_menu" }]);
+              for (const a of profile.accounts) {
+                inlineBtns.push([{ text: `🗑️ Remove ${a.name || a.phone} (${a.phone || a.user_id})`, callback_data: `ub_disconnect_${a.user_id || a.phone}` }]);
+              }
             }
             await sendUserReply(accMsg, { inline_keyboard: inlineBtns });
+            return;
+          }
+
+          // 2.1 🗑️ Remove / Disconnect Account Commands (/remove, /remove_account, /disconnect, /delaccount)
+          if (text.startsWith("/remove_account") || text.startsWith("/remove") || text.startsWith("/disconnect") || text.startsWith("/delaccount")) {
+            const parts = text.split(/\s+/);
+            if (parts.length > 1) {
+              const query = parts[1].trim().replace("+", "");
+              const removedAcc = (profile.accounts || []).find(a => String(a.user_id) === query || String(a.phone || "").replace("+", "") === query);
+              if (removedAcc) {
+                profile.accounts = profile.accounts.filter(a => String(a.user_id) !== String(removedAcc.user_id));
+                await saveUserProfile(chatId, profile);
+                const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+                const repMsg = `✅ *Account Disconnected Successfully!* 🗑️\n\n` +
+                  `• *Removed:* ${removedAcc.name || "Account"} (\`${removedAcc.phone || removedAcc.user_id}\`)\n` +
+                  `• *Slots In Use:* ${profile.accounts.length} / ${totalSlots}\n` +
+                  `• *Freed Capacity:* ⚡ 1 Cloud Slot is now available!\n\n` +
+                  `You can now connect another account using *➕ Connect Account*.`;
+                await sendUserReply(repMsg, userMainKeyboard);
+                return;
+              } else {
+                await sendUserReply(`⚠️ Account \`${query}\` not found in your connected list.\n\nType \`/accounts\` to see your active accounts.`, userMainKeyboard);
+                return;
+              }
+            }
+
+            if (!profile.accounts || profile.accounts.length === 0) {
+              await sendUserReply("ℹ️ *No Connected Accounts*\n\nYou do not have any active mining accounts connected to remove.\n\nTap *➕ Connect Account* to link an account!", userMainKeyboard);
+              return;
+            }
+
+            const promptTxt = `🗑️ *SELECT AN ACCOUNT TO DISCONNECT & REMOVE:*\n\n` +
+              `Choose which account you want to disconnect from automated 24/7 cloud mining:\n\n` +
+              `⚠️ _Disconnecting an account immediately frees up its cloud slot._`;
+            const buttons = profile.accounts.map(a => [
+              { text: `🗑️ Disconnect ${a.name || a.phone} (${a.phone || a.user_id})`, callback_data: `ub_disconnect_${a.user_id || a.phone}` }
+            ]);
+            buttons.push([{ text: "🔙 Back to Accounts", callback_data: "ub_accounts_list" }]);
+            await sendUserReply(promptTxt, { inline_keyboard: buttons });
             return;
           }
 

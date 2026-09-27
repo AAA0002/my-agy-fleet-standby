@@ -4,6 +4,24 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Interactive Account Removal & Disconnection System (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **First-Class Account Removal Workflow (`@AAAPREMIUMAPPSbot`)**:
+    * Resolved usability gap where users could connect accounts but had no clear, direct method to disconnect or remove them.
+    * Added dedicated text commands: `/remove`, `/remove_account`, `/disconnect`, and `/delaccount`:
+      - Argument support: typing `/remove +88017...` or `/remove <id>` instantly unlinks the specified account.
+      - Interactive picker: typing `/remove` without arguments renders a dedicated interactive picker listing every connected account with a 1-tap `🗑️ Disconnect` button.
+  - **Inline Disconnect Controls in `👥 My Accounts`**:
+    * Added dedicated `🗑️ Remove / Disconnect Account` shortcut button in the accounts view.
+    * Dynamically generates full-width `🗑️ Remove <Name> (<Phone/ID>)` inline action buttons for each active account.
+    * Added `ub_remove_menu` callback query handler that presents a clean disconnection menu with quick-return navigation.
+  - **Capacity & Cloud Slot Auto-Freeing**:
+    * Immediately unlinks the account, purges session tokens from the profile, and updates the database.
+    * Dynamically frees the occupied Cloud Slot and notifies the user with remaining capacity and next steps.
+  - **Updated `/help` & `/guide`**:
+    * Added explicit instructions on managing and removing connected accounts.
+  - **Edge Mesh Synchronization**:
+    * Deployed across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **Scan-Friendly UI Modernization & Strict Channel Exclusivity (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Live Activity Feed Format Exclusivity (`@AAAATF_ACTIVITY`)**:
     * `🚀 NEW MINER JOINED!` short format is strictly and exclusively routed to `AAA ATF Miner — Live Activity` (`@AAAATF_ACTIVITY`).
