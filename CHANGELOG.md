@@ -4,7 +4,34 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-- **Admin Bot Dashboard Overhaul & Global Cloudflare Pages Migration (`deploy_both_cf_workers.py`, `userbot_refresher.py`, `deno_worker/main.ts`, `CHANGELOG.md`)**:
+- **Strict Dashboard Separation & Admin Bot Fleet Console Fixes (`public/index.html`, `public/admin/index.html`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Complete Dashboard Unmixing**:
+    * Strictly decoupled the **User Bot Admin Console** and the **Admin Bot Fleet Operations Console** so they never share or mix state.
+  - **User Bot Admin Console (`public/index.html` at `https://atf-miner-app.pages.dev`)**:
+    * Exclusively dedicated to **Community Users & Miners** in `@AAAPREMIUMAPPSbot`.
+    * Displays ALL users, their Telegram user IDs, names, `@usernames`, points balance, and VIP pass status.
+    * Shows each user's linked Telegram mining accounts, phone numbers (with 1-tap copy), and Mining IDs.
+    * Real-time 8-pool mining matrix for each user: ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum.
+    * Instant search across phone numbers (`+880...`), user IDs, mining IDs, and names.
+    * User admin controls: `+100 Pts`, `+500 Pts`, `👑 30D VIP`, `Toggle Active/Pause`.
+    * Pure light theme (`#f8fafc`, pure white `#ffffff`, `#0f172a` text, 0 dark colors), phone-sized (`max-w-md mx-auto`).
+    * Zero fleet accounts or multichain sweep mixed into this console.
+  - **Admin Bot Fleet Operations Console (`public/admin/index.html` at `https://atf-miner-app.pages.dev/admin`)**:
+    * Exclusively dedicated to `@myagy_ai_bot` and Admin Arif for fleet operations.
+    * Fixed all previous issues:
+      - All 14 fleet accounts properly mapped and displayed with real phone numbers (including Account 14 `+918930504750`).
+      - Multichain Vault Treasury (BNB, TON, STONES) with threshold progress bar.
+      - Universal Sweep and Instant Harvest action triggers with real status toasts and haptic feedback.
+      - 5-Node Cloudflare Edge Mesh Monitor testing `/health` endpoints across all 5 nodes with live latency measurements.
+      - MTProto Add Account modal with clean step progression (phone -> OTP code -> 2FA password) and auto-reset.
+      - Deduplicated payout receipts ledger with safe null handling.
+      - Resolved Cloudflare Pages redirect loops by serving `public/admin/index.html` directly with HTTP 200.
+  - **Cloudflare Edge Mesh Synchronization**:
+    * Deployed live across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Route `/dashboard`, `/fleet`, `/admin` -> 302 redirect to `https://atf-miner-app.pages.dev/admin`.
+    * Route `/user-dash`, `/users` -> 302 redirect to `https://atf-miner-app.pages.dev`.
+    * Admin Bot (`@myagy_ai_bot`) Chat Menu Button and commands point to `https://atf-miner-app.pages.dev/admin`.
+    * User Bot (`@AAAPREMIUMAPPSbot`) admin reply keyboard button points to `https://atf-miner-app.pages.dev`.
   - **Admin Bot (`@myagy_ai_bot`) Dashboard Fix**:
     * Replaced all deprecated references to the old dark-theme Vercel dashboard (`https://agy-aaa000.vercel.app/?v=4.9`) with the new light-theme Cloudflare Pages Admin Console (`https://atf-miner-app.pages.dev`).
     * Updated `dashUrl` across all admin inline keyboards (`statusInlineKeyboard`, `accountsInlineKeyboard`, and status command responses) to launch `https://atf-miner-app.pages.dev`.

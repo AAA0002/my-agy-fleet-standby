@@ -1191,9 +1191,12 @@ fi
       }
     }
 
-    // 7.5 High-Speed Executive Admin Console (Cloudflare Pages)
-    if (path === "/" || path === "/dashboard" || path === "/status-ui" || path === "/miniapp" || path === "/app") {
+    // 7.5 High-Speed Dedicated Dashboards (Cloudflare Pages)
+    if (path === "/user-dash" || path === "/users-admin" || path === "/user-admin" || path === "/users") {
       return Response.redirect("https://atf-miner-app.pages.dev", 302);
+    }
+    if (path === "/" || path === "/dashboard" || path === "/status-ui" || path === "/miniapp" || path === "/app" || path === "/fleet" || path === "/admin") {
+      return Response.redirect("https://atf-miner-app.pages.dev/admin", 302);
     }
 
     // 8. Payout Receipts Record (VPS -> Edge with In-Memory + Safe KV)
@@ -2008,7 +2011,7 @@ fi
         if (!update) return new Response("OK");
 
         const botToken = env.ALERT_BOT_TOKEN;
-        const dashUrl = "https://atf-miner-app.pages.dev";
+        const dashUrl = "https://atf-miner-app.pages.dev/admin";
 
         const statusInlineKeyboard = {
           inline_keyboard: [
@@ -7423,7 +7426,7 @@ async def main():
                     "type": "web_app",
                     "text": "👑 Admin Console",
                     "web_app": {
-                        "url": "https://atf-miner-app.pages.dev"
+                        "url": "https://atf-miner-app.pages.dev/admin"
                     }
                 }
             }

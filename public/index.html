@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>AAA Auto Mining — Executive Admin Console</title>
+  <title>User Bot Admin Console — Miners & Community Accounts</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -68,20 +68,14 @@
     .animate-slide-up { animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
     @keyframes cardEntrance { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
     .animate-entrance { animation: cardEntrance 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    @keyframes shimmerMove { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-    .animate-shimmer-bar {
-      background: linear-gradient(90deg, #2563eb 0%, #60a5fa 50%, #2563eb 100%);
-      background-size: 200% 100%;
-      animation: shimmerMove 2.2s linear infinite;
-    }
   </style>
 </head>
-<body class="min-h-screen pb-24 bg-slate-50">
+<body class="min-h-screen pb-16 bg-slate-50">
   <div id="root">
     <div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; color: #0f172a; font-family: 'Inter', system-ui, sans-serif; text-align: center; padding: 20px;">
       <div style="width: 44px; height: 44px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px;"></div>
-      <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0;">AAA AUTO MINING — ADMIN CONSOLE</h2>
-      <p style="font-size: 12px; color: #64748b; font-family: 'JetBrains Mono', monospace; margin: 0;">Connecting to 5-Node Edge Mesh...</p>
+      <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0;">USER BOT ADMIN CONSOLE</h2>
+      <p style="font-size: 12px; color: #64748b; font-family: 'JetBrains Mono', monospace; margin: 0;">Connecting to Community Miners Telemetry...</p>
     </div>
   </div>
 
@@ -89,8 +83,8 @@
     window.onerror = function(msg, url, line, col, error) {
       console.error("Dashboard error:", msg, line, error);
       var el = document.getElementById("root");
-      if (el && (!el.children.length || el.innerHTML.includes("Connecting to 5-Node"))) {
-        el.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:sans-serif;background:#f8fafc;color:#0f172a;"><div style="font-size:36px;margin-bottom:12px;">👑</div><h2 style="font-size:17px;font-weight:bold;margin-bottom:8px;">Admin Console</h2><p style="font-size:12px;color:#64748b;max-width:320px;margin-bottom:16px;">Tap below to reload the admin console.</p><button onclick="localStorage.clear();location.reload();" style="padding:10px 20px;background:#2563eb;color:white;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;">Reload Console</button></div>';
+      if (el && (!el.children.length || el.innerHTML.includes("Connecting to Community"))) {
+        el.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:sans-serif;background:#f8fafc;color:#0f172a;"><div style="font-size:36px;margin-bottom:12px;">👑</div><h2 style="font-size:17px;font-weight:bold;margin-bottom:8px;">User Bot Admin Console</h2><p style="font-size:12px;color:#64748b;max-width:320px;margin-bottom:16px;">Tap below to reload the admin console.</p><button onclick="localStorage.clear();location.reload();" style="padding:10px 20px;background:#2563eb;color:white;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;">Reload Console</button></div>';
       }
     };
   </script>
@@ -114,16 +108,12 @@ const iconPaths = {
   trendingUp: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />',
   plus: '<line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />',
   x: '<line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />',
-  server: '<rect width="20" height="8" x="2" y="2" rx="2" ry="2" /><rect width="20" height="8" x="2" y="14" rx="2" ry="2" /><line x1="6" x2="6.01" y1="6" y2="6" /><line x1="6" x2="6.01" y1="18" y2="18" />',
   zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />',
-  receipt: '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z" /><line x1="14" x2="8" y1="8" y2="8" /><line x1="16" x2="8" y1="12" y2="12" /><line x1="12" x2="8" y1="16" y2="16" />',
   chevronRight: '<polyline points="9 18 15 12 9 6" />',
-  chevronDown: '<polyline points="6 9 12 15 18 9" />',
-  send: '<line x1="22" x2="11" y1="2" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />',
-  trash: '<polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" />',
   volume2: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M15.54 8.46a5 5 0 0 1 0 7.07" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14" />',
   volumeX: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><line x1="22" x2="16" y1="9" y2="15" /><line x1="16" x2="22" y1="9" y2="15" />',
-  crown: '<path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5v-2z" />'
+  crown: '<path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5v-2z" />',
+  filter: '<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />'
 };
 
 const Icon = ({ name, className = "w-4 h-4", ...props }) => React.createElement("svg", _extends({
@@ -171,11 +161,6 @@ function App() {
   }, []);
 
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [currency, setCurrency] = useState("USD");
-  const currencyRates = { USD: 1, EUR: 0.92, BDT: 118.5, INR: 83.2, GBP: 0.78 };
-  const currencySymbols = { USD: "$", EUR: "€", BDT: "৳", INR: "₹", GBP: "£" };
-  const currencyRate = currencyRates[currency] || 1;
-  const currencySymbol = currencySymbols[currency] || "$";
 
   const CF_NODES = [
     "https://restore-agy.aaaai2.workers.dev",
@@ -212,10 +197,7 @@ function App() {
     }
   };
 
-  // Main Navigation State: "users" is default primary tab
-  const [activeTab, setActiveTab] = useState("users"); // "users" | "fleet" | "ledger" | "ai"
-  
-  // Community Users State
+  // State: Community Miners & Users Only
   const [adminUsers, setAdminUsers] = useState([]);
   const [adminStats, setAdminStats] = useState({
     totalUsers: 0,
@@ -230,41 +212,16 @@ function App() {
   const [usersFilter, setUsersFilter] = useState("all"); // "all" | "accounts" | "vip" | "active" | "paused"
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [selectedUserDetail, setSelectedUserDetail] = useState(null);
 
-  // Fleet State
-  const [fleet, setFleet] = useState([]);
-  const [rates, setRates] = useState({ bnb_usd: 765.0, ton_usd: 1.60, arb_usd: 0.52 });
-  const [bnbBalance, setBnbBalance] = useState(0.000812);
-  const [payouts, setPayouts] = useState([]);
-  const [fleetFilter, setFleetFilter] = useState("all");
-  const [fleetSearchQuery, setFleetSearchQuery] = useState("");
-  const [selectedAccount, setSelectedAccount] = useState(null);
-
-  // Connection Modal
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [addStep, setAddStep] = useState("phone"); // "phone" | "code" | "2fa" | "success"
-  const [phoneInput, setPhoneInput] = useState("");
-  const [codeInput, setCodeInput] = useState("");
-  const [twoFaInput, setTwoFaInput] = useState("");
-  const [modalLoading, setModalLoading] = useState(false);
-  const [modalMsg, setModalMsg] = useState(null);
+  // Quick Point Grant Modal
+  const [grantModalUser, setGrantModalUser] = useState(null);
+  const [customPointsInput, setCustomPointsInput] = useState("100");
 
   // Toast & Sync
   const [toast, setToast] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [syncCountdown, setSyncCountdown] = useState(15);
-  const [ledgerFilter, setLedgerFilter] = useState("all");
-  const [isMeshModalOpen, setIsMeshModalOpen] = useState(false);
-  const [meshPings, setMeshPings] = useState({});
-  const [testingMesh, setTestingMesh] = useState(false);
-
-  // AI Chat
-  const messagesEndRef = useRef(null);
-  const [aiMessages, setAiMessages] = useState([
-    { sender: "ai", text: "Commander Arif, welcome to your Executive Console! All 8 Telegram mining pools (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum) and Cloudflare edge nodes are 100% active in the cloud. How can I assist you today?" }
-  ]);
-  const [aiInput, setAiInput] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -277,7 +234,7 @@ function App() {
     navigator.clipboard.writeText(text).then(() => showToast(label)).catch(() => showToast("Copy failed", "error"));
   };
 
-  // Primary Data Sync
+  // Primary Data Sync: Fetch Users & Stats Only
   const fetchStatus = useCallback(async (isManual = false) => {
     if (isManual) {
       setSyncing(true);
@@ -285,25 +242,16 @@ function App() {
       if (soundEnabled) playSound("click");
     }
     try {
-      const [resUsers, resLive, resRates, resPayouts] = await Promise.all([
-        fetchMeshApi("/api/admin/users"),
-        fetchMeshApi("/api/fleet/live"),
-        fetchMeshApi("/api/rates"),
-        fetchMeshApi("/api/payouts")
-      ]);
+      const resUsers = await fetchMeshApi("/api/admin/users");
       if (resUsers && resUsers.ok) {
         if (resUsers.users) setAdminUsers(resUsers.users);
         if (resUsers.stats) setAdminStats(resUsers.stats);
+        if (isManual) showToast("Miners Telemetry Synced!", "success");
+      } else {
+        if (isManual) showToast("Telemetry loaded from edge cache", "info");
       }
-      if (resLive) {
-        if (resLive.accounts) setFleet(resLive.accounts);
-        if (resLive.bnb_balance !== undefined) setBnbBalance(parseFloat(resLive.bnb_balance) || 0.000812);
-      }
-      if (resRates && resRates.rates) setRates(resRates.rates);
-      if (resPayouts && resPayouts.payouts) setPayouts(resPayouts.payouts);
-      if (isManual) showToast("Console Synchronized!", "success");
     } catch (_) {
-      if (isManual) showToast("Edge mesh online (cached)", "info");
+      if (isManual) showToast("Edge connection error", "error");
     } finally {
       if (isManual) setSyncing(false);
       setSyncCountdown(15);
@@ -337,12 +285,15 @@ function App() {
       });
       if (res && res.ok && res.user) {
         setAdminUsers(prev => prev.map(u => String(u.user_id) === String(uid) ? res.user : u));
-        showToast(action === "add_points" ? `+${payload.amount} Points Credited!` : (action === "set_vip" ? "30-Day VIP Pass Granted!" : "Status Toggled!"), "success");
+        if (selectedUserDetail && String(selectedUserDetail.user_id) === String(uid)) {
+          setSelectedUserDetail(res.user);
+        }
+        showToast(action === "add_points" ? `+${payload.amount} Points Credited!` : (action === "set_vip" ? "30-Day VIP Pass Granted!" : "Mining Status Toggled!"), "success");
       } else {
-        showToast("Action queued on edge", "info");
+        showToast("Action queued on edge mesh", "info");
       }
     } catch (_) {
-      showToast("Edge dispatch error", "error");
+      showToast("Edge action dispatch error", "error");
     } finally {
       setActionLoadingId(null);
     }
@@ -355,6 +306,7 @@ function App() {
       const accountsStr = (u.accounts || []).map(a => `${a.name || ''} ${a.phone || ''} ${a.user_id || ''}`).join(" ").toLowerCase();
       const matchSearch = !q ||
         (u.first_name || "").toLowerCase().includes(q) ||
+        (u.last_name || "").toLowerCase().includes(q) ||
         (u.username || "").toLowerCase().includes(q) ||
         String(u.user_id || "").includes(q) ||
         accountsStr.includes(q);
@@ -368,39 +320,18 @@ function App() {
     });
   }, [adminUsers, userSearchQuery, usersFilter]);
 
-  // Filtered Fleet Accounts
-  const filteredFleet = useMemo(() => {
-    return fleet.filter(acc => {
-      const q = fleetSearchQuery.toLowerCase().trim();
-      const matchSearch = !q ||
-        (acc.name || "").toLowerCase().includes(q) ||
-        String(acc.user_id || "").includes(q) ||
-        (acc.phone || "").includes(q);
-      if (!matchSearch) return false;
-      if (fleetFilter === "ready_wd") return (parseInt(acc.stones_coins) || 0) >= 500;
-      return true;
-    });
-  }, [fleet, fleetSearchQuery, fleetFilter]);
+  const POOLS_LIST = [
+    { name: "ATF Miner", key: "atf", icon: "🪙", cadence: "Auto-Claiming" },
+    { name: "Stones", key: "stones", icon: "💎", cadence: "Compounding STONES" },
+    { name: "MRG", key: "mrg", icon: "⚡", cadence: "Hashrate Active" },
+    { name: "ART Coin", key: "art", icon: "🎨", cadence: "Auto-Harvest" },
+    { name: "AI Lab", key: "ailab", icon: "🤖", cadence: "Compounding" },
+    { name: "UltraWallet", key: "ultrawallet", icon: "👛", cadence: "Syncing" },
+    { name: "Apex", key: "apex", icon: "🏔️", cadence: "Auto-Claim" },
+    { name: "Ainovum", key: "ainovum", icon: "🌐", cadence: "Active" }
+  ];
 
-  // Filtered Payouts
-  const filteredPayouts = useMemo(() => {
-    return (payouts || []).filter(p => {
-      if (ledgerFilter === "all") return true;
-      const t = (p.token || "").toUpperCase();
-      const c = (p.chain || "").toLowerCase();
-      if (ledgerFilter === "bnb") return t === "BNB" || t === "USDT" || c.includes("bnb") || c.includes("bsc");
-      if (ledgerFilter === "arb") return t === "STONES" || t === "MRG" || c.includes("arb") || c.includes("arbitrum");
-      if (ledgerFilter === "ton") return t === "TON" || t === "ART" || t === "ATF" || c.includes("ton");
-      return true;
-    });
-  }, [payouts, ledgerFilter]);
-
-  // Derived Values
-  const bnbUsd = bnbBalance * (rates.bnb_usd || 765);
-  const targetThreshold = 0.005000;
-  const progressPercent = Math.min(100, Math.max(5, (bnbBalance / targetThreshold) * 100));
-
-  return React.createElement("div", { className: "max-w-md mx-auto min-h-screen px-3.5 pt-3 pb-24" },
+  return React.createElement("div", { className: "max-w-md mx-auto min-h-screen px-3.5 pt-3 pb-8" },
     // Toast Notification Banner
     toast && React.createElement("div", {
       className: `fixed top-3 left-4 right-4 z-50 py-2.5 px-4 rounded-xl text-xs font-bold text-center shadow-lg transition-all animate-slide-up flex items-center justify-center gap-2 ${
@@ -413,22 +344,25 @@ function App() {
 
     // Header Bar (Light Theme Only)
     React.createElement("header", { className: "flex items-center justify-between py-2 mb-3.5 border-b border-slate-200" },
-      React.createElement("div", { className: "flex items-center gap-2" },
+      React.createElement("div", { className: "flex items-center gap-2.5" },
         React.createElement("div", { className: "w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow-xs" },
           "👑"
         ),
         React.createElement("div", null,
           React.createElement("div", { className: "flex items-center gap-1.5" },
-            React.createElement("h1", { className: "font-black text-sm text-slate-900 tracking-tight" }, "AAA ADMIN"),
-            React.createElement("span", { className: "bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold px-1.5 py-0.2 rounded font-mono" }, "CONSOLE")
+            React.createElement("h1", { className: "font-black text-sm text-slate-900 tracking-tight" }, "USER BOT ADMIN"),
+            React.createElement("span", { className: "bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold px-1.5 py-0.2 rounded font-mono" }, "USERS")
           ),
           React.createElement("div", { className: "flex items-center gap-1.5 text-[11px] text-emerald-600 font-medium" },
             React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }),
-            React.createElement("span", null, "5 Nodes Online • 24/7 Cloud")
+            React.createElement("span", null, `Live Community Telemetry (${adminUsers.length} Users)`)
           )
         )
       ),
       React.createElement("div", { className: "flex items-center gap-1.5" },
+        React.createElement("span", { className: "text-[10px] font-mono text-slate-400 bg-slate-100 border border-slate-200 px-1.5 py-1 rounded-lg" },
+          `${syncCountdown}s`
+        ),
         React.createElement("button", {
           onClick: () => setSoundEnabled(!soundEnabled),
           className: `p-1.5 rounded-lg border transition ${soundEnabled ? "bg-white border-slate-200 text-slate-700 shadow-2xs" : "bg-slate-100 border-transparent text-slate-400"}`
@@ -445,413 +379,300 @@ function App() {
     ),
 
     // ==========================================================
-    // TAB 1: 👥 USERS & MINERS HUB (PRIMARY REQUESTED VIEW)
+    // COMMUNITY OVERVIEW KPI CARDS (ALL USER METRICS)
     // ==========================================================
-    activeTab === "users" && React.createElement("div", { className: "animate-entrance" },
-      // Overview Metric Chips
-      React.createElement("div", { className: "grid grid-cols-2 gap-2 mb-3.5" },
-        [
-          { label: "Community Miners", val: adminStats.totalUsers || adminUsers.length, sub: "Registered Users", icon: "users", color: "text-blue-600" },
-          { label: "Connected Accounts", val: adminStats.totalAccounts || 0, sub: "Mining Telemetry Active", icon: "bot", color: "text-emerald-600" },
-          { label: "Farming 24/7", val: `${adminStats.activeMiners || 0} Active`, sub: `${adminStats.vipUsers || 0} VIP Miners`, icon: "activity", color: "text-indigo-600" },
-          { label: "Points Pool", val: `${(adminStats.totalPoints || 0).toLocaleString()} Pts`, sub: `${adminStats.totalAds || 0} Ads • ${adminStats.totalRefs || 0} Refs`, icon: "zap", color: "text-amber-600" }
-        ].map((m, idx) => React.createElement("div", { key: idx, className: "pro-card rounded-xl p-3" },
-          React.createElement("div", { className: "flex items-center justify-between mb-1" },
-            React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400" }, m.label),
-            React.createElement(Icon, { name: m.icon, className: `w-3.5 h-3.5 ${m.color}` })
-          ),
-          React.createElement("div", { className: "text-base font-black text-slate-900 leading-tight" }, m.val),
-          React.createElement("div", { className: "text-[10px] text-slate-500 font-medium mt-0.5" }, m.sub)
-        ))
-      ),
-
-      // Search & Filter Box
-      React.createElement("div", { className: "mb-3" },
-        React.createElement("div", { className: "relative mb-2" },
-          React.createElement("input", {
-            type: "text",
-            value: userSearchQuery,
-            onChange: (e) => setUserSearchQuery(e.target.value),
-            placeholder: "Search phone, Telegram ID, name, @username...",
-            className: "w-full pl-9 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-2xs font-medium"
-          }),
-          React.createElement("div", { className: "absolute left-3 top-3 text-slate-400" },
-            React.createElement(Icon, { name: "search", className: "w-3.5 h-3.5" })
-          ),
-          userSearchQuery && React.createElement("button", {
-            onClick: () => setUserSearchQuery(""),
-            className: "absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 p-1"
-          },
-            React.createElement(Icon, { name: "x", className: "w-3 h-3" })
-          )
+    React.createElement("div", { className: "grid grid-cols-2 gap-2 mb-3.5" },
+      [
+        { label: "Community Users", val: adminStats.totalUsers || adminUsers.length, sub: "Registered in Bot", icon: "users", color: "text-blue-600" },
+        { label: "Mining Accounts", val: adminStats.totalAccounts || 0, sub: "Phones Connected", icon: "bot", color: "text-emerald-600" },
+        { label: "Mining 24/7", val: `${adminStats.activeMiners || 0} Active`, sub: `${adminStats.vipUsers || 0} VIP Pass Holders`, icon: "activity", color: "text-indigo-600" },
+        { label: "Points Pool", val: `${(adminStats.totalPoints || 0).toLocaleString()} Pts`, sub: `${adminStats.totalAds || 0} Ads • ${adminStats.totalRefs || 0} Refs`, icon: "zap", color: "text-amber-600" }
+      ].map((m, idx) => React.createElement("div", { key: idx, className: "pro-card rounded-xl p-3" },
+        React.createElement("div", { className: "flex items-center justify-between mb-1" },
+          React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400" }, m.label),
+          React.createElement(Icon, { name: m.icon, className: `w-3.5 h-3.5 ${m.color}` })
         ),
-        React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto pb-1" },
-          [
-            { id: "all", label: `All Miners (${adminUsers.length})` },
-            { id: "accounts", label: `With Accounts (${adminUsers.filter(u => u.accounts?.length > 0).length})` },
-            { id: "vip", label: `VIP Passes (${adminUsers.filter(u => u.subscription_expiry > Date.now()).length})` },
-            { id: "active", label: `Active (${adminUsers.filter(u => u.farming_active).length})` },
-            { id: "paused", label: `Paused (${adminUsers.filter(u => !u.farming_active).length})` }
-          ].map(f => React.createElement("button", {
-            key: f.id,
-            onClick: () => { setUsersFilter(f.id); haptic("light"); },
-            className: `px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
-              usersFilter === f.id
-                ? "bg-slate-900 text-white shadow-2xs"
-                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
-            }`
-          }, f.label))
-        )
-      ),
-
-      // User Cards List
-      React.createElement("div", { className: "space-y-3" },
-        filteredUsers.length === 0 ? React.createElement("div", { className: "pro-card rounded-2xl p-6 text-center text-slate-400 text-xs" },
-          "No registered miners found matching criteria."
-        ) : filteredUsers.map((u, uIdx) => {
-          const isMaster = String(u.user_id) === "6727787768";
-          const hasVip = u.subscription_expiry && u.subscription_expiry > Date.now();
-          const accs = u.accounts || [];
-
-          return React.createElement("div", { key: u.user_id || uIdx, className: "pro-card rounded-2xl p-4 shadow-card hover:border-blue-300 transition" },
-            // Card Top Row
-            React.createElement("div", { className: "flex items-start justify-between mb-2.5" },
-              React.createElement("div", { className: "flex items-center gap-2.5" },
-                React.createElement("div", { className: "w-9 h-9 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center font-black text-sm" },
-                  (u.first_name || "M").charAt(0).toUpperCase()
-                ),
-                React.createElement("div", null,
-                  React.createElement("div", { className: "flex items-center gap-1.5" },
-                    React.createElement("span", { className: "font-black text-xs text-slate-900" }, u.first_name || "Community Miner"),
-                    isMaster && React.createElement("span", { className: "bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.2 rounded font-mono border border-amber-200" }, "ADMIN")
-                  ),
-                  React.createElement("div", { className: "flex items-center gap-1.5 text-[11px] font-mono text-slate-500" },
-                    React.createElement("span", null, u.username ? `@${u.username}` : "no_username"),
-                    React.createElement("span", { className: "text-slate-300" }, "•"),
-                    React.createElement("button", {
-                      onClick: () => copyToClipboard(String(u.user_id), `Copied User ID: ${u.user_id}`),
-                      className: "text-blue-600 hover:underline flex items-center gap-0.5"
-                    },
-                      React.createElement("span", null, `ID: ${u.user_id}`),
-                      React.createElement(Icon, { name: "copy", className: "w-2.5 h-2.5" })
-                    )
-                  )
-                )
-              ),
-              React.createElement("div", { className: "flex flex-col items-end gap-1" },
-                React.createElement("span", { className: `text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                  hasVip ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-slate-50 text-slate-600 border-slate-200"
-                }` },
-                  hasVip ? `👑 ${u.subscription_tier || "VIP"}` : "Free Tier"
-                ),
-                React.createElement("span", { className: `text-[10px] font-semibold flex items-center gap-1 ${
-                  u.farming_active ? "text-emerald-600" : "text-red-500"
-                }` },
-                  React.createElement("span", { className: `w-1.5 h-1.5 rounded-full ${u.farming_active ? "bg-emerald-500" : "bg-red-400"}` }),
-                  u.farming_active ? "Mining 24/7" : "Paused"
-                )
-              )
-            ),
-
-            // Metrics Strip in Card
-            React.createElement("div", { className: "grid grid-cols-3 gap-1.5 bg-slate-50 border border-slate-100 rounded-xl p-2 mb-3 text-center" },
-              React.createElement("div", null,
-                React.createElement("div", { className: "text-[9px] font-bold text-slate-400 uppercase" }, "Balance"),
-                React.createElement("div", { className: "text-xs font-black text-slate-900" }, `💎 ${u.points || 0}`)
-              ),
-              React.createElement("div", null,
-                React.createElement("div", { className: "text-[9px] font-bold text-slate-400 uppercase" }, "Ads Watched"),
-                React.createElement("div", { className: "text-xs font-bold text-slate-800" }, `📺 ${u.ads_watched || 0}/50`)
-              ),
-              React.createElement("div", null,
-                React.createElement("div", { className: "text-[9px] font-bold text-slate-400 uppercase" }, "Referrals"),
-                React.createElement("div", { className: "text-xs font-bold text-slate-800" }, `👥 ${u.referral_count || 0}`)
-              )
-            ),
-
-            // Connected Telegram Accounts & 8 Pools Grid
-            React.createElement("div", { className: "mb-3" },
-              React.createElement("div", { className: "flex items-center justify-between text-[11px] font-bold text-slate-700 mb-1.5" },
-                React.createElement("span", null, `📱 Connected Accounts (${accs.length}/${(u.slots || 1) + (u.temp_slots || 0)} Slots):`),
-                accs.length > 0 && React.createElement("span", { className: "text-[10px] text-emerald-600 font-mono" }, "8/8 Pools Active")
-              ),
-
-              accs.length === 0 ? React.createElement("div", { className: "p-2.5 rounded-xl border border-dashed border-slate-200 text-center text-[11px] text-slate-400 bg-slate-50" },
-                "No Telegram mining accounts connected yet. (1 Cloud Slot Available)"
-              ) : accs.map((acc, aIdx) => React.createElement("div", { key: acc.user_id || aIdx, className: "p-2.5 rounded-xl bg-slate-50 border border-slate-200 mb-2 last:mb-0" },
-                React.createElement("div", { className: "flex items-center justify-between mb-1.5" },
-                  React.createElement("div", null,
-                    React.createElement("div", { className: "font-black text-xs text-slate-900" }, acc.name || "Telegram Account"),
-                    React.createElement("div", { className: "text-[11px] font-mono text-slate-500 flex items-center gap-1.5" },
-                      React.createElement("span", { className: "text-blue-600 font-semibold" }, acc.phone || "No Phone"),
-                      React.createElement("button", {
-                        onClick: () => copyToClipboard(acc.phone || String(acc.user_id), "Copied account detail"),
-                        className: "text-slate-400 hover:text-slate-600"
-                      }, React.createElement(Icon, { name: "copy", className: "w-2.5 h-2.5" })),
-                      React.createElement("span", { className: "text-slate-300" }, "•"),
-                      React.createElement("span", null, `Mining ID: ${acc.user_id}`)
-                    )
-                  ),
-                  React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold px-1.5 py-0.5 rounded-md" },
-                    "🟢 Active"
-                  )
-                ),
-
-                // 8 Mining Pools Pills
-                React.createElement("div", { className: "grid grid-cols-4 gap-1 text-[9px] font-medium" },
-                  [
-                    "🪙 ATF", "💎 Stones", "⚡ MRG", "🎨 ART",
-                    "🤖 AI Lab", "👛 Ultra", "🏔️ Apex", "🌐 Ainovum"
-                  ].map((pName, pIdx) => React.createElement("div", { key: pIdx, className: "bg-white border border-slate-200 rounded px-1.5 py-0.5 text-center text-slate-700 flex items-center justify-center gap-1" },
-                    React.createElement("span", { className: "w-1 h-1 rounded-full bg-emerald-500" }),
-                    React.createElement("span", { className: "truncate" }, pName)
-                  ))
-                )
-              ))
-            ),
-
-            // Quick Admin Action Controls
-            React.createElement("div", { className: "flex items-center gap-1.5 pt-2 border-t border-slate-100" },
-              React.createElement("button", {
-                disabled: actionLoadingId === `${u.user_id}_add_points_100`,
-                onClick: () => handleUserAction(u.user_id, "add_points", { amount: 100 }),
-                className: "flex-1 py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
-              }, "+100 Pts"),
-              React.createElement("button", {
-                disabled: actionLoadingId === `${u.user_id}_add_points_500`,
-                onClick: () => handleUserAction(u.user_id, "add_points", { amount: 500 }),
-                className: "flex-1 py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
-              }, "+500 Pts"),
-              React.createElement("button", {
-                disabled: actionLoadingId === `${u.user_id}_set_vip`,
-                onClick: () => handleUserAction(u.user_id, "set_vip", { tier: "month", days: 30 }),
-                className: "flex-1 py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
-              }, "👑 30D VIP"),
-              React.createElement("button", {
-                disabled: actionLoadingId === `${u.user_id}_toggle_farming`,
-                onClick: () => handleUserAction(u.user_id, "toggle_farming"),
-                className: `py-1.5 px-2.5 rounded-lg text-[11px] font-bold border transition active:scale-95 cursor-pointer ${
-                  u.farming_active ? "bg-red-50 text-red-700 border-red-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                }`
-              }, u.farming_active ? "Pause" : "Resume")
-            )
-          );
-        })
-      )
+        React.createElement("div", { className: "text-base font-black text-slate-900 leading-tight" }, m.val),
+        React.createElement("div", { className: "text-[10px] text-slate-500 font-medium mt-0.5" }, m.sub)
+      ))
     ),
 
     // ==========================================================
-    // TAB 2: ⚡ FLEET & POOLS (PLATFORM FLEET VIEW)
+    // SEARCH & FILTER BAR
     // ==========================================================
-    activeTab === "fleet" && React.createElement("div", { className: "animate-entrance" },
-      // Treasury Card
-      React.createElement("div", { className: "pro-card rounded-2xl p-4 mb-3.5" },
-        React.createElement("div", { className: "flex items-center justify-between mb-1.5" },
-          React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400" }, "Binance Vault Treasury"),
-          React.createElement("span", { className: "bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-md font-mono" }, "BEP-20")
-        ),
-        React.createElement("div", { className: "flex items-baseline gap-2 mb-1" },
-          React.createElement("span", { className: "text-2xl font-black text-slate-900 tracking-tight" }, `${bnbBalance.toFixed(6)}`),
-          React.createElement("span", { className: "text-sm font-bold text-slate-500" }, "BNB")
-        ),
-        React.createElement("div", { className: "flex items-center justify-between text-xs mb-3" },
-          React.createElement("span", { className: "font-bold text-emerald-600" }, `≈ ${currencySymbol}${(bnbUsd * currencyRate).toFixed(2)} ${currency}`),
-          React.createElement("span", { className: "text-slate-400 font-mono text-[11px]" }, "Threshold: 0.005 BNB")
-        ),
-        React.createElement("div", { className: "w-full bg-slate-100 rounded-full h-2 mb-3.5 overflow-hidden" },
-          React.createElement("div", {
-            className: "h-2 rounded-full transition-all duration-500 animate-shimmer-bar",
-            style: { width: `${progressPercent}%` }
-          })
-        ),
-        React.createElement("div", { className: "grid grid-cols-2 gap-2" },
-          React.createElement("button", {
-            onClick: () => {
-              showToast("Dispatched Universal Sweep to Binance Vault...", "info");
-              fetchMeshApi("/api/sweep/wallets", { method: "POST" });
-            },
-            className: "py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs active:scale-95"
-          },
-            React.createElement(Icon, { name: "zap", className: "w-3.5 h-3.5" }),
-            "Universal Sweep"
-          ),
-          React.createElement("button", {
-            onClick: () => setIsAddModalOpen(true),
-            className: "py-2.5 px-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs active:scale-95"
-          },
-            React.createElement(Icon, { name: "plus", className: "w-3.5 h-3.5 text-blue-600" }),
-            "Add Account"
-          )
-        )
-      ),
-
-      // Fleet Accounts Search & List
-      React.createElement("div", { className: "mb-2.5" },
+    React.createElement("div", { className: "mb-3" },
+      React.createElement("div", { className: "relative mb-2" },
         React.createElement("input", {
           type: "text",
-          value: fleetSearchQuery,
-          onChange: (e) => setFleetSearchQuery(e.target.value),
-          placeholder: `Search ${fleet.length} fleet accounts...`,
-          className: "w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 outline-none shadow-2xs"
-        })
-      ),
-
-      React.createElement("div", { className: "space-y-2" },
-        filteredFleet.map((acc, idx) => React.createElement("div", {
-          key: acc.user_id || idx,
-          className: "pro-card rounded-xl p-3 flex items-center justify-between hover:border-blue-300 transition"
+          value: userSearchQuery,
+          onChange: (e) => setUserSearchQuery(e.target.value),
+          placeholder: "Search phone (+880..), Mining ID, User ID, name...",
+          className: "w-full pl-9 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-2xs font-medium"
+        }),
+        React.createElement("div", { className: "absolute left-3 top-3 text-slate-400" },
+          React.createElement(Icon, { name: "search", className: "w-3.5 h-3.5" })
+        ),
+        userSearchQuery && React.createElement("button", {
+          onClick: () => setUserSearchQuery(""),
+          className: "absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 p-1"
         },
-          React.createElement("div", { className: "flex items-center gap-2.5" },
-            React.createElement("span", { className: "w-6 h-6 rounded-lg bg-slate-100 text-slate-600 font-mono text-[11px] font-bold flex items-center justify-center" }, `#${idx + 1}`),
-            React.createElement("div", null,
-              React.createElement("div", { className: "font-bold text-xs text-slate-900" }, acc.name || "Member"),
-              React.createElement("div", { className: "text-[11px] font-mono text-slate-500" }, acc.phone || `ID: ${acc.user_id}`)
-            )
-          ),
-          React.createElement("div", { className: "flex items-center gap-2" },
-            React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full" }, "Active"),
-            React.createElement("span", { className: "text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded" }, `💎 ${acc.stones_coins || 0}`)
-          )
-        ))
-      )
-    ),
-
-    // ==========================================================
-    // TAB 3: 💳 PAYOUTS & LEDGER
-    // ==========================================================
-    activeTab === "ledger" && React.createElement("div", { className: "animate-entrance" },
-      React.createElement("div", { className: "flex items-center gap-1.5 mb-3 overflow-x-auto pb-1" },
+          React.createElement(Icon, { name: "x", className: "w-3 h-3" })
+        )
+      ),
+      React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto pb-1" },
         [
-          { id: "all", label: "All Payouts" },
-          { id: "bnb", label: "BNB / USDT" },
-          { id: "arb", label: "Arbitrum" },
-          { id: "ton", label: "TON / ART" }
+          { id: "all", label: `All Users (${adminUsers.length})` },
+          { id: "accounts", label: `With Accounts (${adminUsers.filter(u => u.accounts?.length > 0).length})` },
+          { id: "vip", label: `VIP Passes (${adminUsers.filter(u => u.subscription_expiry > Date.now()).length})` },
+          { id: "active", label: `Active (${adminUsers.filter(u => u.farming_active).length})` },
+          { id: "paused", label: `Paused (${adminUsers.filter(u => !u.farming_active).length})` }
         ].map(f => React.createElement("button", {
           key: f.id,
-          onClick: () => { setLedgerFilter(f.id); haptic("light"); },
-          className: `px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
-            ledgerFilter === f.id ? "bg-slate-900 text-white" : "bg-white text-slate-600 border border-slate-200"
+          onClick: () => { setUsersFilter(f.id); haptic("light"); },
+          className: `px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+            usersFilter === f.id
+              ? "bg-slate-900 text-white shadow-2xs"
+              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
           }`
         }, f.label))
-      ),
-      React.createElement("div", { className: "space-y-2" },
-        filteredPayouts.length === 0 ? React.createElement("div", { className: "pro-card rounded-xl p-6 text-center text-slate-400 text-xs" }, "No payout receipts recorded.") :
-        filteredPayouts.map((p, idx) => React.createElement("div", { key: p.tx_hash || idx, className: "pro-card rounded-xl p-3 flex items-center justify-between" },
-          React.createElement("div", null,
-            React.createElement("div", { className: "font-black text-xs text-slate-900" }, `${p.amount} ${p.token}`),
-            React.createElement("div", { className: "text-[10px] font-mono text-slate-400" }, p.timestamp ? new Date(p.timestamp).toLocaleString() : "Confirmed")
-          ),
-          React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full" }, "Success")
-        ))
       )
     ),
 
     // ==========================================================
-    // TAB 4: 🤖 ARI AI & SUPPORT
+    // USERS & MINERS LIST
     // ==========================================================
-    activeTab === "ai" && React.createElement("div", { className: "animate-entrance flex flex-col h-[75vh]" },
-      React.createElement("div", { className: "flex-1 overflow-y-auto space-y-2.5 p-2" },
-        aiMessages.map((m, idx) => React.createElement("div", {
-          key: idx,
-          className: `flex ${m.sender === "user" ? "justify-end" : "justify-start"}`
+    React.createElement("div", { className: "space-y-3" },
+      filteredUsers.length === 0 ? React.createElement("div", { className: "pro-card rounded-2xl p-8 text-center text-slate-400 text-xs" },
+        React.createElement("div", { className: "text-2xl mb-2" }, "🔍"),
+        React.createElement("div", { className: "font-bold text-slate-600 mb-1" }, "No Community Users Found"),
+        React.createElement("div", { className: "text-[11px]" }, "Try adjusting your search query or filter chips.")
+      ) : filteredUsers.map((u, uIdx) => {
+        const isMaster = String(u.user_id) === "6727787768";
+        const hasVip = u.subscription_expiry && u.subscription_expiry > Date.now();
+        const accs = u.accounts || [];
+        const dailyBurn = hasVip ? 0 : (accs.length || 1) * 20;
+
+        return React.createElement("div", {
+          key: u.user_id || uIdx,
+          className: "pro-card rounded-2xl p-4 shadow-card hover:border-blue-300 transition"
         },
-          React.createElement("div", {
-            className: `max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed ${
-              m.sender === "user"
-                ? "bg-blue-600 text-white rounded-br-none"
-                : "bg-white border border-slate-200 text-slate-800 rounded-bl-none shadow-card"
-            }`
-          }, m.text)
-        )),
-        aiLoading && React.createElement("div", { className: "flex justify-start" },
-          React.createElement("div", { className: "bg-white border border-slate-200 rounded-2xl p-3 text-xs text-slate-400 flex items-center gap-1.5" },
-            React.createElement("span", { className: "w-2 h-2 rounded-full bg-blue-600 animate-ping" }),
-            "Ari AI is analyzing platform..."
+          // Card Header: Profile Info
+          React.createElement("div", { className: "flex items-start justify-between mb-2.5" },
+            React.createElement("div", { className: "flex items-center gap-2.5 cursor-pointer", onClick: () => setSelectedUserDetail(u) },
+              React.createElement("div", { className: "w-10 h-10 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center font-black text-sm shadow-2xs" },
+                (u.first_name || "U").charAt(0).toUpperCase()
+              ),
+              React.createElement("div", null,
+                React.createElement("div", { className: "flex items-center gap-1.5" },
+                  React.createElement("span", { className: "font-black text-xs text-slate-900 hover:text-blue-600" }, `${u.first_name || "User"} ${u.last_name || ""}`.trim()),
+                  isMaster && React.createElement("span", { className: "bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.2 rounded font-mono border border-amber-200" }, "ADMIN")
+                ),
+                React.createElement("div", { className: "flex items-center gap-1.5 text-[11px] font-mono text-slate-500 mt-0.5" },
+                  React.createElement("span", null, u.username ? `@${u.username}` : "no_username"),
+                  React.createElement("span", { className: "text-slate-300" }, "•"),
+                  React.createElement("button", {
+                    onClick: (e) => { e.stopPropagation(); copyToClipboard(String(u.user_id), `Copied User ID: ${u.user_id}`); },
+                    className: "text-blue-600 hover:underline flex items-center gap-0.5"
+                  },
+                    React.createElement("span", null, `ID: ${u.user_id}`),
+                    React.createElement(Icon, { name: "copy", className: "w-2.5 h-2.5" })
+                  )
+                )
+              )
+            ),
+            React.createElement("div", { className: "flex flex-col items-end gap-1" },
+              React.createElement("span", { className: `text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                hasVip ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-slate-50 text-slate-600 border-slate-200"
+              }` },
+                hasVip ? `👑 ${u.subscription_tier ? u.subscription_tier.toUpperCase() : "VIP"}` : "Free Tier"
+              ),
+              React.createElement("span", { className: `text-[10px] font-semibold flex items-center gap-1 ${
+                u.farming_active ? "text-emerald-600" : "text-red-500"
+              }` },
+                React.createElement("span", { className: `w-1.5 h-1.5 rounded-full ${u.farming_active ? "bg-emerald-500" : "bg-red-400"}` }),
+                u.farming_active ? "Mining 24/7" : "Paused"
+              )
+            )
+          ),
+
+          // User Stats Strip
+          React.createElement("div", { className: "grid grid-cols-4 gap-1.5 bg-slate-50 border border-slate-100 rounded-xl p-2 mb-3 text-center" },
+            React.createElement("div", null,
+              React.createElement("div", { className: "text-[9px] font-bold text-slate-400 uppercase" }, "Balance"),
+              React.createElement("div", { className: "text-xs font-black text-slate-900" }, `💎 ${u.points || 0}`)
+            ),
+            React.createElement("div", null,
+              React.createElement("div", { className: "text-[9px] font-bold text-slate-400 uppercase" }, "Daily Cost"),
+              React.createElement("div", { className: "text-xs font-bold text-slate-700 font-mono" }, hasVip ? "0 Pts" : `-${dailyBurn}`)
+            ),
+            React.createElement("div", null,
+              React.createElement("div", { className: "text-[9px] font-bold text-slate-400 uppercase" }, "Ads Watched"),
+              React.createElement("div", { className: "text-xs font-bold text-slate-800 font-mono" }, `📺 ${u.ads_watched || 0}`)
+            ),
+            React.createElement("div", null,
+              React.createElement("div", { className: "text-[9px] font-bold text-slate-400 uppercase" }, "Referrals"),
+              React.createElement("div", { className: "text-xs font-bold text-slate-800 font-mono" }, `👥 ${u.referral_count || 0}`)
+            )
+          ),
+
+          // Connected Mining Accounts & Mining IDs
+          React.createElement("div", { className: "mb-3" },
+            React.createElement("div", { className: "flex items-center justify-between text-[11px] font-bold text-slate-700 mb-1.5" },
+              React.createElement("span", null, `📱 Linked Mining Accounts (${accs.length}/${(u.slots || 1) + (u.temp_slots || 0)} Cloud Slots):`),
+              accs.length > 0 && React.createElement("span", { className: "text-[10px] text-emerald-600 font-mono font-semibold" }, "8/8 Pools Automated")
+            ),
+
+            accs.length === 0 ? React.createElement("div", { className: "p-2.5 rounded-xl border border-dashed border-slate-200 text-center text-[11px] text-slate-400 bg-slate-50" },
+              "No Telegram accounts linked for mining yet."
+            ) : accs.map((acc, aIdx) => React.createElement("div", { key: acc.user_id || aIdx, className: "p-2.5 rounded-xl bg-slate-50 border border-slate-200 mb-2 last:mb-0" },
+              React.createElement("div", { className: "flex items-center justify-between mb-1.5" },
+                React.createElement("div", null,
+                  React.createElement("div", { className: "font-black text-xs text-slate-900" }, acc.name || `Mining Account #${aIdx + 1}`),
+                  React.createElement("div", { className: "text-[11px] font-mono text-slate-500 flex items-center gap-1.5 mt-0.5" },
+                    React.createElement("span", { className: "text-blue-600 font-bold" }, acc.phone || "No Phone"),
+                    acc.phone && React.createElement("button", {
+                      onClick: () => copyToClipboard(acc.phone, `Copied phone: ${acc.phone}`),
+                      className: "text-slate-400 hover:text-slate-600"
+                    }, React.createElement(Icon, { name: "copy", className: "w-2.5 h-2.5" })),
+                    React.createElement("span", { className: "text-slate-300" }, "•"),
+                    React.createElement("span", { className: "bg-slate-200 text-slate-800 text-[10px] px-1 py-0.2 rounded" }, `Mining ID: ${acc.user_id || u.user_id}`)
+                  )
+                ),
+                React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold px-1.5 py-0.5 rounded-md" },
+                  "🟢 Active"
+                )
+              ),
+
+              // 8 Mining Pools Status Matrix for this user's account
+              React.createElement("div", { className: "grid grid-cols-4 gap-1 text-[9px] font-medium" },
+                POOLS_LIST.map((p, pIdx) => React.createElement("div", {
+                  key: pIdx,
+                  className: "bg-white border border-slate-200 rounded px-1.5 py-1 text-center text-slate-700 flex items-center justify-center gap-1"
+                },
+                  React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-500" }),
+                  React.createElement("span", { className: "truncate" }, `${p.icon} ${p.name.split(" ")[0]}`)
+                ))
+              )
+            ))
+          ),
+
+          // Quick Admin Action Controls
+          React.createElement("div", { className: "flex items-center gap-1.5 pt-2 border-t border-slate-100" },
+            React.createElement("button", {
+              disabled: actionLoadingId === `${u.user_id}_add_points_100`,
+              onClick: () => handleUserAction(u.user_id, "add_points", { amount: 100 }),
+              className: "flex-1 py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
+            }, "+100 Pts"),
+            React.createElement("button", {
+              disabled: actionLoadingId === `${u.user_id}_add_points_500`,
+              onClick: () => handleUserAction(u.user_id, "add_points", { amount: 500 }),
+              className: "flex-1 py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
+            }, "+500 Pts"),
+            React.createElement("button", {
+              disabled: actionLoadingId === `${u.user_id}_set_vip`,
+              onClick: () => handleUserAction(u.user_id, "set_vip", { tier: "month", days: 30 }),
+              className: "flex-1 py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
+            }, "👑 30D VIP"),
+            React.createElement("button", {
+              disabled: actionLoadingId === `${u.user_id}_toggle_farming`,
+              onClick: () => handleUserAction(u.user_id, "toggle_farming"),
+              className: `py-1.5 px-2.5 rounded-lg text-[11px] font-bold border transition active:scale-95 cursor-pointer ${
+                u.farming_active ? "bg-red-50 text-red-700 border-red-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"
+              }`
+            }, u.farming_active ? "Pause" : "Resume")
           )
-        ),
-        React.createElement("div", { ref: messagesEndRef })
-      ),
-      React.createElement("div", { className: "pt-2 flex items-center gap-2" },
-        React.createElement("input", {
-          type: "text",
-          value: aiInput,
-          onChange: (e) => setAiInput(e.target.value),
-          onKeyDown: (e) => {
-            if (e.key === "Enter" && aiInput.trim() && !aiLoading) {
-              const uTxt = aiInput.trim();
-              setAiInput("");
-              setAiMessages(prev => [...prev, { sender: "user", text: uTxt }]);
-              setAiLoading(true);
-              fetchMeshApi("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: uTxt }) })
-                .then(r => {
-                  setAiLoading(false);
-                  setAiMessages(prev => [...prev, { sender: "ai", text: (r && r.response) || "I am monitoring all 8 mining bots in the cloud 24/7. Everything is optimal!" }]);
-                })
-                .catch(() => {
-                  setAiLoading(false);
-                  setAiMessages(prev => [...prev, { sender: "ai", text: "24/7 cloud mining active across all nodes." }]);
-                });
-            }
-          },
-          placeholder: "Ask Ari AI anything...",
-          className: "flex-1 px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 outline-none shadow-2xs"
-        }),
-        React.createElement("button", {
-          onClick: () => {
-            if (!aiInput.trim() || aiLoading) return;
-            const uTxt = aiInput.trim();
-            setAiInput("");
-            setAiMessages(prev => [...prev, { sender: "user", text: uTxt }]);
-            setAiLoading(true);
-            fetchMeshApi("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: uTxt }) })
-              .then(r => {
-                setAiLoading(false);
-                setAiMessages(prev => [...prev, { sender: "ai", text: (r && r.response) || "All 8 Telegram crypto bots are online and mining autonomously!" }]);
-              })
-              .catch(() => {
-                setAiLoading(false);
-                setAiMessages(prev => [...prev, { sender: "ai", text: "All systems nominal." }]);
-              });
-          },
-          className: "p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
-        },
-          React.createElement(Icon, { name: "send", className: "w-4 h-4" })
-        )
-      )
-    ),
-
-    // ==========================================================
-    // FLOATING MOBILE DOCK (PHONE SIZED, LIGHT THEME)
-    // ==========================================================
-    React.createElement("nav", { className: "fixed bottom-0 left-0 right-0 z-40 pro-dock py-2 px-3 flex items-center justify-around max-w-md mx-auto" },
-      [
-        { id: "users", label: "Miners Hub", icon: "users", badge: adminUsers.length },
-        { id: "fleet", label: "Fleet Pools", icon: "bot", badge: fleet.length },
-        { id: "ledger", label: "Ledger", icon: "receipt" },
-        { id: "ai", label: "Ari AI", icon: "sparkles", highlight: true }
-      ].map(tab => {
-        const isActive = activeTab === tab.id;
-        return React.createElement("button", {
-          key: tab.id,
-          onClick: () => { setActiveTab(tab.id); haptic("light"); if (soundEnabled) playSound("click"); },
-          className: `flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer ${
-            isActive ? "text-blue-600 font-bold" : "text-slate-500 hover:text-slate-800"
-          }`
-        },
-          React.createElement("div", { className: "relative" },
-            React.createElement(Icon, { name: tab.icon, className: `w-5 h-5 ${isActive ? "stroke-[2.5]" : "stroke-[1.75]"}` }),
-            tab.badge !== undefined && tab.badge > 0 && React.createElement("span", { className: "absolute -top-1 -right-2 text-[9px] bg-blue-50 text-blue-700 font-mono font-bold px-1 rounded-full border border-blue-200" }, tab.badge),
-            tab.highlight && !isActive && React.createElement("span", { className: "absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-blue-500" })
-          ),
-          React.createElement("span", { className: "text-[10px] mt-0.5" }, tab.label)
         );
       })
+    ),
+
+    // ==========================================================
+    // USER DETAIL DRAWER MODAL
+    // ==========================================================
+    selectedUserDetail && React.createElement("div", {
+      className: "fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-xs p-0 sm:p-4",
+      onClick: () => setSelectedUserDetail(null)
+    },
+      React.createElement("div", {
+        className: "bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl border border-slate-200 animate-slide-up max-h-[85vh] overflow-y-auto",
+        onClick: (e) => e.stopPropagation()
+      },
+        React.createElement("div", { className: "flex items-center justify-between pb-3 mb-3 border-b border-slate-100" },
+          React.createElement("div", { className: "flex items-center gap-2.5" },
+            React.createElement("div", { className: "w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm" },
+              (selectedUserDetail.first_name || "U").charAt(0).toUpperCase()
+            ),
+            React.createElement("div", null,
+              React.createElement("div", { className: "font-black text-sm text-slate-900" }, `${selectedUserDetail.first_name || "User"} ${selectedUserDetail.last_name || ""}`),
+              React.createElement("div", { className: "text-xs font-mono text-slate-500" }, `@${selectedUserDetail.username || "no_username"}`)
+            )
+          ),
+          React.createElement("button", {
+            onClick: () => setSelectedUserDetail(null),
+            className: "w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center"
+          },
+            React.createElement(Icon, { name: "x", className: "w-4 h-4" })
+          )
+        ),
+
+        // User Diagnostics Info
+        React.createElement("div", { className: "space-y-2 mb-4 text-xs font-mono" },
+          React.createElement("div", { className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
+            React.createElement("span", { className: "text-slate-500 font-sans font-bold" }, "Telegram User ID"),
+            React.createElement("span", { className: "font-bold text-slate-900" }, selectedUserDetail.user_id)
+          ),
+          React.createElement("div", { className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
+            React.createElement("span", { className: "text-slate-500 font-sans font-bold" }, "Total Points"),
+            React.createElement("span", { className: "font-bold text-blue-600" }, `💎 ${selectedUserDetail.points || 0} Pts`)
+          ),
+          React.createElement("div", { className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
+            React.createElement("span", { className: "text-slate-500 font-sans font-bold" }, "VIP Pass Expiry"),
+            React.createElement("span", { className: "font-bold text-slate-800" },
+              selectedUserDetail.subscription_expiry ? new Date(selectedUserDetail.subscription_expiry).toLocaleDateString() : "None (Free Tier)"
+            )
+          ),
+          React.createElement("div", { className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
+            React.createElement("span", { className: "text-slate-500 font-sans font-bold" }, "Cloud Slots"),
+            React.createElement("span", { className: "font-bold text-slate-800" },
+              `${(selectedUserDetail.accounts || []).length} / ${(selectedUserDetail.slots || 1) + (selectedUserDetail.temp_slots || 0)} Slots`
+            )
+          ),
+          React.createElement("div", { className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
+            React.createElement("span", { className: "text-slate-500 font-sans font-bold" }, "Referral Code"),
+            React.createElement("span", { className: "font-bold text-slate-800" }, selectedUserDetail.referral_code || `ref_${selectedUserDetail.user_id}`)
+          )
+        ),
+
+        // Action Trigger Grid
+        React.createElement("div", { className: "space-y-2" },
+          React.createElement("button", {
+            onClick: () => handleUserAction(selectedUserDetail.user_id, "add_points", { amount: 500 }),
+            className: "w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+          },
+            React.createElement(Icon, { name: "zap", className: "w-4 h-4" }),
+            "Credit +500 Points Instantly"
+          ),
+          React.createElement("button", {
+            onClick: () => handleUserAction(selectedUserDetail.user_id, "set_vip", { tier: "month", days: 30 }),
+            className: "w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+          },
+            React.createElement(Icon, { name: "crown", className: "w-4 h-4" }),
+            "Grant 30-Day VIP Pass (0 Cost Mining)"
+          ),
+          React.createElement("button", {
+            onClick: () => handleUserAction(selectedUserDetail.user_id, "toggle_farming"),
+            className: `w-full py-2.5 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 border cursor-pointer active:scale-95 ${
+              selectedUserDetail.farming_active ? "bg-red-50 text-red-700 border-red-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"
+            }`
+          },
+            selectedUserDetail.farming_active ? "Pause User Mining" : "Resume 24/7 Automated Mining"
+          )
+        )
+      )
     )
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(React.createElement(App));
+ReactDOM.render(React.createElement(App), document.getElementById("root"));
   </script>
 </body>
 </html>
