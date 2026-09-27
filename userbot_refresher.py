@@ -6963,43 +6963,12 @@ async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: di
         except Exception as ue:
             logger.debug(f"[{acc_name}] MRG level upgrade note: {ue}")
 
-        # 9. Automated Withdrawal Check (Threshold: 1000 MRG, KYC Verified)
-        is_verified = (u.get("isVerified") is True or u.get("kycStatus") == "verified")
-        mrg_next_wd = float(acc.get("mrg_next_wd_at") or 0)
-        if is_verified:
-            if in_app_bal >= 1000.0:
-                if now < mrg_next_wd:
-                    rem_h = max(0.1, (mrg_next_wd - now) / 3600.0)
-                    logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Verified & holding {in_app_bal:.2f} MRG >= 1000 threshold, but 24h withdrawal cooldown is active (~{rem_h:.1f}h remaining).")
-                elif target_wallet:
-                    withdraw_amt = 1000.0
-                    logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Verified & holding {in_app_bal:.2f} MRG >= 1000! Executing automated withdrawal to {target_wallet}...")
-                    acc["mrg_next_wd_at"] = now + 86400  # 24h cooldown
-                    await update_account_safely(acc_uid, {"mrg_next_wd_at": now + 86400})
-                    ok_wd, res_wd = await execute_mrg_withdrawal(
-                        session=session,
-                        base_url=base_url,
-                        headers=headers,
-                        init_data=init_data,
-                        amount=withdraw_amt,
-                        target_wallet=target_wallet,
-                        acc_name=acc_name,
-                        acc_uid=acc_uid,
-                        is_primary=is_primary
-                    )
-                    if ok_wd:
-                        in_app_bal = max(0.0, in_app_bal - withdraw_amt)
-                    else:
-                        err_str = str(res_wd).lower()
-                        if "cooldown" in err_str:
-                            acc["mrg_next_wd_at"] = now + 86400
-                            await update_account_safely(acc_uid, {"mrg_next_wd_at": now + 86400})
-                            logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Cooldown confirmed by server. Next check in 24h.")
-                        else:
-                            acc["mrg_next_wd_at"] = now + 1800
-                            await update_account_safely(acc_uid, {"mrg_next_wd_at": now + 1800})
-            else:
-                logger.info(f"[{acc_name}] ⛏️ [MRG Miner] KYC Verified! Accumulating balance: {in_app_bal:.2f} / 1000.0 MRG towards withdrawal.")
+        # 9. Automated Withdrawal Check — STRICTLY DISABLED FOR ADMIN FLEET ACCOUNTS
+        # Policy: Automated withdrawals for MRG remain strictly disabled by default
+        # for admin bot accounts to ensure accounts hold balance and preserve peak levels (Level 1..50),
+        # maximum hashrate (5.5 TH/s), and active squad referral qualifications.
+        # Admin accounts operate in 100% Holding & Compounding mode.
+        logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Holding mode active: Auto-withdrawals strictly disabled for admin fleet accounts to preserve peak level ({act_lvl}), hashrate ({spd_ths} TH/s), and squad referral qualification.")
 
         logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Cycle finished | Balance: {in_app_bal:.2f} MRG (Lvl: {act_lvl}, {spd_ths} TH/s)")
 
@@ -9465,10 +9434,17 @@ async def execute_ainovum_fleet_sweep(caller_chat_id=None):
         await send_report_message("🤖 *Ainovum Sweep:* No accounts currently meet the free withdrawal criteria (0.10 USDT for Main, 1.00 USDT for Workers).", chat_id=target_chat)
 
 
-async def execute_mrg_fleet_sweep(caller_chat_id=None):
-    """Executes MRG Miner automated withdrawal sweep across all verified fleet accounts with balance >= 1000 MRG."""
+async def execute_mrg_fleet_sweep(caller_chat_id=None, force=False):
+    """Executes MRG Miner automated withdrawal sweep across verified fleet accounts.
+    NOTE: Strictly disabled by default for admin fleet accounts to ensure balance holding,
+    preserving peak miner levels (Level 1..50), maximum hashrate (5.5 TH/s), and squad referral qualifications.
+    """
     target_chat = caller_chat_id or REPORT_CHAT_ID
-    logger.info("[MRG Sweep] ⛏️ MRG Miner Auto-Withdrawal Sweep triggered...")
+    if not force:
+        logger.info("[MRG Sweep] ⛏️ MRG auto-withdrawal sweep skipped: Admin fleet accounts are in 100% Holding Mode to preserve peak levels and referral qualifications.")
+        await send_report_message("⛏️ *MRG Miner Policy:* Auto-withdrawals strictly disabled for admin fleet accounts to preserve peak miner levels (Level 1..50), hashrate, and squad referral qualifications.", chat_id=target_chat)
+        return
+    logger.info("[MRG Sweep] ⛏️ Forced MRG Miner Auto-Withdrawal Sweep triggered...")
     accounts = load_accounts()
     fleet_ton_file = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
     fwallets = {}
@@ -9534,13 +9510,13 @@ async def execute_universal_fleet_sweep(caller_chat_id=None):
     frames = [
         "💼 *Initiating Universal Fleet Sweep...*\n`[▰▰▱▱▱▱▱▱▱▱] 25%` • Querying On-Chain Vaults & Balances",
         "💼 *Calculating Cashout Thresholds...*\n`[▰▰▰▰▰▰▰▱▱▱] 70%` • Checking BEP-20, Arbitrum & TON Nodes",
-        "⚡ *Universal Fleet Sweep Dispatched!*\n`[▰▰▰▰▰▰▰▰▰▰] 100% Dispatched ✅`\n\nExecuting sequential withdrawals across AI Lab, Stones Miners, Ainovum, MRG Miner, and On-Chain Wallets..."
+        "⚡ *Universal Fleet Sweep Dispatched!*\n`[▰▰▰▰▰▰▰▰▰▰] 100% Dispatched ✅`\n\nExecuting sequential withdrawals across AI Lab, Stones Miners, Ainovum, and On-Chain Wallets (MRG in 100% Admin Holding Mode)..."
     ]
     await send_animated_report_message(frames, chat_id=target_chat, frame_delay=0.35)
     await execute_stones_fleet_sweep(caller_chat_id=target_chat)
     await execute_ailab_fleet_sweep(caller_chat_id=target_chat)
     await execute_ainovum_fleet_sweep(caller_chat_id=target_chat)
-    await execute_mrg_fleet_sweep(caller_chat_id=target_chat)
+    await execute_mrg_fleet_sweep(caller_chat_id=target_chat, force=False)
     try:
         from cloud_wallet_sweeper import run_full_sweep_audit
         await run_full_sweep_audit(notify_if_empty=False, execute_sweep=False)

@@ -21,10 +21,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
       - `/set_block_id <id>`: Instantly updates Adsgram Block ID in Upstash Redis across all edge nodes without re-deployment.
       - `/get_block_id`: Displays current Block ID and WebApp test URL.
     * Updated `userMainKeyboard`, `starsUpgradeKeyboard`, `adClaimKeyboard`, and text command `/watch_ad` to launch the Adsgram WebApp modal directly.
-  - **Holding-Based Level Safeguard**:
-    * Documented and reinforced that holding balance in MRG Miner and tiered pools directly controls miner level (Level 1..50) and hashrate.
-    * Integrated prominent holding level warnings in the bot Payouts & Cashout Guide (`ub_withdraw`) to inform users that balance withdrawals can reduce miner tier and revoke referral status.
-    * Reinforced guardrails keeping auto-withdrawals disabled for holding-based pools.
+  - **Holding-Based Level Safeguard for Admin Bot Accounts (Not User Bot Accounts)**:
+    * Clarified the strict boundary between Admin Bot Accounts and User Bot Accounts:
+      - **Admin Bot Accounts (The 14 Fleet Accounts)**: Automated MRG withdrawals are strictly disabled across `userbot_refresher.py` (step 9 auto-withdrawal check completely bypassed, `execute_mrg_fleet_sweep` default-disabled with `force=False` guard, and universal sweep updated) and edge scripts. This guarantees that worker accounts hold their balance, permanently maintaining peak miner levels (Level 1..50), maximum hashrate (5.5 TH/s), and active squad referral qualification for master account `6727787768`.
+      - **User Bot Accounts (Public Users of @AAAPREMIUMAPPSbot)**: Public users have 100% full freedom to cash out directly inside each bot app whenever they choose, with 0 platform fees and 0 automated platform deductions. Updated the bot's Payouts Guide (`ub_withdraw`) to reassure public users that they can withdraw anytime without admin restrictions.
   - **Live Verification & 5-Node Edge Mesh Deployment**:
     * Validated JS template syntax with `node -c` (0 syntax errors).
     * Deployed live to all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).

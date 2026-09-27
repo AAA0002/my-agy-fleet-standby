@@ -3783,6 +3783,7 @@ fi
 Live Fleet Context:
 - 14 active accounts mining 24/7 across all 8 active bots: Stones Miners, ATF Miner, MRG Miner, ART Airdrop, AI Lab Robot, UltraWallet, Apex Miner, Ainovum.
 - Policy: ATF Miner is in 100% farming & accumulation mode (NO withdrawals; let balance grow).
+- Policy (Admin Fleet Accounts): MRG Miner is strictly in 100% Holding & Compounding mode (NO auto-withdrawals) to preserve peak levels (Level 1..50), maximum hashrate (5.5 TH/s), and squad referral qualifications.
 - Vault BEP-20 (BNB, USDT): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Live Balance: ${liveBnb.toFixed(6)} BNB).
 - Stones Vault (Arbitrum One): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Balance: 500+ STONES).
 - Main TON Vault: UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT.
@@ -4866,14 +4867,13 @@ Reply to Arif naturally:`;
               `Our automated cloud mining platform farms directly into each of your connected accounts with *0% Platform Fee*:\n\n` +
               `1️⃣ *TON Blockchain Pools (ATF, MRG, ART)*\n` +
               `• Tokens accumulate directly in each bot's internal balance.\n` +
-              `• ⚠️ *Holding Level Safeguard:* In MRG Miner and tiered bots, your miner level and mining hashrate are directly determined by your holding balance. Withdrawing reduces your holding balance and can decrease your miner level and rewards. Maintain the required balance holding to preserve peak level and referral rewards!\n` +
-              `• Withdraw to Tonkeeper, MyTonWallet, or OKX anytime.\n\n` +
+              `• Withdraw to Tonkeeper, MyTonWallet, or OKX anytime!\n\n` +
               `2️⃣ *BEP-20 / BNB Pools (AI Lab, Ainovum)*\n` +
               `• AI Lab: Auto-exchanges hashes for USDT and pays to BEP-20.\n` +
               `• Ainovum: Reaches 0.10 USDT threshold and sends directly to your BSC wallet.\n\n` +
               `3️⃣ *Arbitrum One Pool (Stones Miners)*\n` +
               `• Auto-withdraws when your balance reaches 500+ STONES directly to Arbitrum One.\n\n` +
-              `🛡️ *100% Direct Payouts:* No third-party lockups, no gas fees deducted by us.`;
+              `🛡️ *100% Direct Payouts:* No third-party lockups, no gas fees deducted by us. You have full freedom to cash out anytime!`;
             ctx.waitUntil(sendCqReply(withMsg, userMainKeyboard));
             return new Response("OK");
           }
