@@ -4,6 +4,23 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Unified All-In-One Edge System: Dedicated User Bot & Strict Admin Bot Separation (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **All-in-One Edge Architecture ("Only Admin Bot & User Bot Different")**:
+    * Integrated both the private Admin Bot and public User Bot into a single, unified Cloudflare Edge deployment (`deploy_both_cf_workers.py`) sharing the 5-node edge mesh, Upstash cache, and AI cascade.
+  - **Admin Bot (`@My_Router_AI_bot`)**:
+    * Retained strictly on `/telegram-webhook` for private Admin (`6727787768`) operations (14-account fleet telemetry, sweeps, harvests, account onboarding, diagnostics).
+    * Strict security shield intact: all non-admin access is instantly rejected with `🔒 Access Restricted: Private Admin Fleet Console`.
+  - **User Bot (`@AAAPREMIUMAPPSbot`)**:
+    * Provisioned 24/7 serverless webhook on `/user-bot-webhook` (`8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8`).
+    * Direct interactive connection to all **3 Official Community Channels**:
+      1. 💬 **AAA Auto Miner Supergroup** (`https://t.me/+8xTmE28Up9U5YWQ1` / `-1003684868577`)
+      2. 📢 **Official Announcements** (`https://t.me/AAAATFAUTOMINING` / `@AAAATFAUTOMINING` / `-1004255751168`)
+      3. ⚡ **Live Miner Activity Stream** (`https://t.me/AAAATF_ACTIVITY` / `@AAAATF_ACTIVITY` / `-1004332544939`)
+    * Interactive menus: `/start`, `/help`, `/menu`, `/channels`, `/mining`, `/webapp`.
+    * Integrated conversational AI cascade (`runUserAiCascade`) powered by Google Gemini Flash and Cloudflare Workers AI (Llama 3.2), enabling public users and Arif to converse naturally about crypto mining, Web3 apps, guides, and community events.
+  - **Zero Phone Load Guardrail (Samsung Galaxy A30)**:
+    * 100% serverless on Cloudflare Edge with 0 Python bots running locally. RAM and CPU remain completely free for AI pair programming.
+
 - **Purge Unrequested Commercial User Bot Logic & Restore Strict Admin-Only Security Shield (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Complete Removal of Commercial User Bot Layer**:
     * Purged unrequested non-admin interactive menu, user keyboard, and commands (`/wallet`, `/ton_wallet`, `/balance`, `/mining`).

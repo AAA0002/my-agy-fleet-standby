@@ -109,6 +109,7 @@ WORKER_NAME = "restore-agy"
 SECRET_KEY = "agy_cf_secret_7d36994e_2026"
 OWNER_ID = "6727787768"
 ALERT_BOT_TOKEN = "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o"
+USER_BOT_TOKEN = "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8"
 
 WORKER_JS_TEMPLATE = r"""
 async function fetchWithRetry(url, options, maxRetries = 3, initialDelayMs = 1200) {
@@ -268,27 +269,29 @@ export default {
       }
     };
 
-    // In-memory Core Fleet AI Cascade (Eliminates Cloudflare Error 1042 same-zone self-fetch loops)
+    // Shared Gemini API Keys for Edge AI Intelligence
+    const geminiKeys = [
+      "AQ.Ab8RN6KM84Fxx2_1qtQoOL0T3ZXaty0FEFX1-7Lc8XmR_rmMeg",
+      "AQ.Ab8RN6JlgBLNwrACewVxtg1RxH752VHEouYCAnzN73hOdoNFjA",
+      "AQ.Ab8RN6J6_g_Jr0AeLaUicMkjaPHxVKmoCslAcL1NTQcFSzSe1w",
+      "AQ.Ab8RN6KU9MO7yuDWVIh28uuUfp0MyXMknjo3arWWft8X4jbEtQ",
+      "AQ.Ab8RN6IxuzzZ1m9nWx8w0Ob3xC_zZ2p_7hdjaCRZtfPBYx5cog",
+      "AQ.Ab8RN6Kn0fQD8aYCfG_8KXg9qAKiAQUUSsYrZ10tqgqs1oQvYw",
+      "AQ.Ab8RN6I9tnLMJoWuPBQrmRw3WCvS3MWFcQFKB6_TQsabaI5-gg",
+      "AQ.Ab8RN6LZCvPuue6uZrGA9_xocFC27NHvPiAvGL1h4YGRC9CY7Q",
+      "AQ.Ab8RN6IWzo-mOBhSTwK79wlLILDyImhLCjgiCBp9DQRZ9VVRdQ",
+      "AQ.Ab8RN6IKx4lhqSZWPEFA6Uhu8Wf5iOZmfGEeYqrSx3D3IkQymw",
+      "AQ.Ab8RN6L78IMc1XSC39WY3bukDgGNVyMMZeJ1rdpKKrq3BW3YFQ",
+      "AQ.Ab8RN6IavD_owt-KIaBLLtTbVoGBt_J5R16syXTy3en_6LIDnw",
+      "AQ.Ab8RN6Ic1OPZNPytcdUMj6GJCpHMj3NzzZpV8pIZQO_SWL3pBA",
+      "AQ.Ab8RN6L_FApJMCEgGOi6XXeKRNrWpS3QugJ6pb5LYUyBmyNAJw"
+    ];
+
+    // In-memory Core Fleet AI Cascade (Admin Bot @My_Router_AI_bot)
     const runAiCascade = async (prompt) => {
       if (!prompt) return { ok: false, error: "Missing prompt" };
 
       // 1. Google Gemini Flash (Fast parallel attempt with 3-key rotation)
-      const geminiKeys = [
-        "AQ.Ab8RN6KM84Fxx2_1qtQoOL0T3ZXaty0FEFX1-7Lc8XmR_rmMeg",
-        "AQ.Ab8RN6JlgBLNwrACewVxtg1RxH752VHEouYCAnzN73hOdoNFjA",
-        "AQ.Ab8RN6J6_g_Jr0AeLaUicMkjaPHxVKmoCslAcL1NTQcFSzSe1w",
-        "AQ.Ab8RN6KU9MO7yuDWVIh28uuUfp0MyXMknjo3arWWft8X4jbEtQ",
-        "AQ.Ab8RN6IxuzzZ1m9nWx8w0Ob3xC_zZ2p_7hdjaCRZtfPBYx5cog",
-        "AQ.Ab8RN6Kn0fQD8aYCfG_8KXg9qAKiAQUUSsYrZ10tqgqs1oQvYw",
-        "AQ.Ab8RN6I9tnLMJoWuPBQrmRw3WCvS3MWFcQFKB6_TQsabaI5-gg",
-        "AQ.Ab8RN6LZCvPuue6uZrGA9_xocFC27NHvPiAvGL1h4YGRC9CY7Q",
-        "AQ.Ab8RN6IWzo-mOBhSTwK79wlLILDyImhLCjgiCBp9DQRZ9VVRdQ",
-        "AQ.Ab8RN6IKx4lhqSZWPEFA6Uhu8Wf5iOZmfGEeYqrSx3D3IkQymw",
-        "AQ.Ab8RN6L78IMc1XSC39WY3bukDgGNVyMMZeJ1rdpKKrq3BW3YFQ",
-        "AQ.Ab8RN6IavD_owt-KIaBLLtTbVoGBt_J5R16syXTy3en_6LIDnw",
-        "AQ.Ab8RN6Ic1OPZNPytcdUMj6GJCpHMj3NzzZpV8pIZQO_SWL3pBA",
-        "AQ.Ab8RN6L_FApJMCEgGOi6XXeKRNrWpS3QugJ6pb5LYUyBmyNAJw"
-      ];
       const shuffledGemini = [...geminiKeys].sort(() => Math.random() - 0.5);
       const gemModels = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"];
       const gemCandidates = shuffledGemini.slice(0, 3).map(async (gKey, idx) => {
@@ -344,6 +347,79 @@ export default {
         model: "edge-rule-based",
         node: CURRENT_SUBDOMAIN,
         answer: "Hi Arif! All 14 accounts across our 8 mining bots are online, healthy, and actively farming 24/7 in the cloud. ATF is accumulating safely in pool mode with zero withdrawals, and on-chain vaults are synchronized."
+      };
+    };
+
+    // In-memory User Bot AI Assistant Cascade (@AAAPREMIUMAPPSbot)
+    const runUserAiCascade = async (prompt, senderName = "Friend") => {
+      if (!prompt) return { ok: false, error: "Missing prompt" };
+
+      const userSystemPrompt = "You are the official AI Assistant for AAA Auto Mining Community & Apps (@AAAPREMIUMAPPSbot).\n" +
+        "You are warm, intelligent, helpful, and conversational like ChatGPT or Claude.\n" +
+        "You assist community members and users (address the user warmly by name: " + senderName + ").\n" +
+        "You help users explore Telegram crypto mining apps, Web3 earning opportunities, and our official community channels:\n" +
+        "1. AAA Auto Miner Supergroup (https://t.me/+8xTmE28Up9U5YWQ1) - friendly community discussion and support.\n" +
+        "2. Official Announcements (@AAAATFAUTOMINING / https://t.me/AAAATFAUTOMINING) - verified updates, project news, and giveaways.\n" +
+        "3. Live Miner Activity (@AAAATF_ACTIVITY / https://t.me/AAAATF_ACTIVITY) - real-time live miner telemetry and payout proof.\n" +
+        "Guide users on verified Telegram mining bots (ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum).\n" +
+        "Security rule: Never reveal internal administrative credentials, secret keys, or private fleet server architecture.\n" +
+        "Keep answers concise, clear, and formatted with clean Telegram Markdown.";
+
+      // 1. Google Gemini Flash (Fast parallel attempt with 3-key rotation)
+      const shuffledGemini = [...geminiKeys].sort(() => Math.random() - 0.5);
+      const gemModels = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"];
+      const gemCandidates = shuffledGemini.slice(0, 3).map(async (gKey, idx) => {
+        const mod = gemModels[idx % gemModels.length];
+        const gUrl = `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${gKey}`;
+        const gResp = await fetch(gUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              { parts: [{ text: userSystemPrompt + "\n\nUser Question: " + prompt }] }
+            ]
+          }),
+          signal: AbortSignal.timeout(3500)
+        });
+        if (!gResp.ok) throw new Error("Gemini HTTP " + gResp.status);
+        const gData = await gResp.json();
+        const gText = gData?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!gText) throw new Error("No Gemini text");
+        return { ok: true, provider: "Google Gemini", model: mod, answer: gText.trim() };
+      });
+
+      try {
+        return await Promise.any(gemCandidates);
+      } catch (_) {}
+
+      // 2. Cloudflare Workers AI with Conversational Chat Template (Instant ~200ms Edge Llama 3.2)
+      if (env.AI) {
+        try {
+          const aiRes = await env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
+            messages: [
+              { role: "system", content: userSystemPrompt },
+              { role: "user", content: prompt }
+            ],
+            max_tokens: 400
+          });
+          const ansText = aiRes.response || (aiRes.choices && aiRes.choices[0] ? aiRes.choices[0].text : "");
+          if (ansText && ansText.trim()) {
+            return {
+              ok: true,
+              provider: "Cloudflare Workers AI",
+              model: "@cf/meta/llama-3.2-3b-instruct",
+              answer: ansText.trim()
+            };
+          }
+        } catch (_) {}
+      }
+
+      // 3. Fallback Response
+      return {
+        ok: true,
+        provider: "AAA Community Edge AI",
+        model: "edge-rule-based",
+        answer: "Welcome to AAA Auto Mining! Explore our 3 official channels to stay updated on verified crypto mining apps and daily rewards."
       };
     };
 
@@ -3224,6 +3300,272 @@ Reply to Arif naturally:`;
       }
     }
 
+    // 14. 24/7 Telegram User Bot Webhook Endpoint (@AAAPREMIUMAPPSbot - Hosted 100% on Cloudflare Edge)
+    if (path === "/user-bot-webhook" || path === "/user-webhook") {
+      if (request.method === "GET") {
+        return new Response(JSON.stringify({
+          ok: true,
+          bot: "AAAPREMIUMAPPSbot",
+          role: "Public User & Community AI Bot",
+          status: "online",
+          channels: [
+            { name: "AAA Auto Miner Supergroup", url: "https://t.me/+8xTmE28Up9U5YWQ1" },
+            { name: "Official Announcements", username: "@AAAATFAUTOMINING", url: "https://t.me/AAAATFAUTOMINING" },
+            { name: "Live Miner Activity", username: "@AAAATF_ACTIVITY", url: "https://t.me/AAAATF_ACTIVITY" }
+          ]
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+      if (request.method !== "POST") {
+        return new Response("Method not allowed", { status: 405 });
+      }
+      try {
+        const update = await request.json().catch(() => null);
+        if (!update) return new Response("OK");
+
+        const userBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+
+        const userReplyKeyboard = {
+          keyboard: [
+            [
+              { text: "💬 Talk to AI Copilot" },
+              { text: "⛏️ Verified Mining Apps" }
+            ],
+            [
+              { text: "📢 Official Channels" },
+              { text: "🌐 Open Mini App", web_app: { url: "https://atf-miner-app.pages.dev" } }
+            ]
+          ],
+          resize_keyboard: true,
+          is_persistent: true
+        };
+
+        const channelsInlineKeyboard = {
+          inline_keyboard: [
+            [
+              { text: "💬 AAA Auto Miner Group", url: "https://t.me/+8xTmE28Up9U5YWQ1" }
+            ],
+            [
+              { text: "📢 Official Announcements", url: "https://t.me/AAAATFAUTOMINING" }
+            ],
+            [
+              { text: "⚡ Live Miner Activity Stream", url: "https://t.me/AAAATF_ACTIVITY" }
+            ],
+            [
+              { text: "🌐 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev" } }
+            ]
+          ]
+        };
+
+        const miningInlineKeyboard = {
+          inline_keyboard: [
+            [
+              { text: "💬 Join Community Supergroup", url: "https://t.me/+8xTmE28Up9U5YWQ1" }
+            ],
+            [
+              { text: "📢 Latest Bot Releases", url: "https://t.me/AAAATFAUTOMINING" }
+            ],
+            [
+              { text: "🚀 Open WebApp", web_app: { url: "https://atf-miner-app.pages.dev" } }
+            ]
+          ]
+        };
+
+        const startInlineKeyboard = {
+          inline_keyboard: [
+            [
+              { text: "📢 Official Channels (3)", callback_data: "ub_channels" },
+              { text: "⛏️ Mining Apps", callback_data: "ub_mining" }
+            ],
+            [
+              { text: "💬 Chat with AI Copilot", callback_data: "ub_chat" }
+            ],
+            [
+              { text: "🌐 Open Web App Portal", web_app: { url: "https://atf-miner-app.pages.dev" } }
+            ]
+          ]
+        };
+
+        // Handle Callback Queries
+        if (update.callback_query) {
+          const cq = update.callback_query;
+          const cqChatId = cq.message?.chat?.id || cq.from?.id;
+          const cqSenderName = cq.from?.first_name || cq.from?.username || "Friend";
+          const cqData = cq.data || "";
+
+          ctx.waitUntil(
+            fetch(`https://api.telegram.org/bot${userBotToken}/answerCallbackQuery`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ callback_query_id: cq.id })
+            }).catch(() => {})
+          );
+
+          const sendCqReply = async (txt, markup = null) => {
+            const payload = { chat_id: cqChatId, text: txt, parse_mode: "Markdown", disable_web_page_preview: true };
+            if (markup) payload.reply_markup = markup;
+            await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            }).catch(() => {});
+          };
+
+          if (cqData === "ub_channels") {
+            const chText = `📢 *Official AAA Community Channels*\n\n` +
+              `Stay connected with verified news, live payout proofs, and community support:\n\n` +
+              `1️⃣ 💬 *AAA Auto Miner Supergroup*\n` +
+              `• Connect with fellow miners, share tips, and get real-time assistance.\n` +
+              `👉 [Join Supergroup](https://t.me/+8xTmE28Up9U5YWQ1)\n\n` +
+              `2️⃣ 📢 *Official Announcements*\n` +
+              `• Project releases, verified smart contracts, and major news.\n` +
+              `👉 [Join @AAAATFAUTOMINING](https://t.me/AAAATFAUTOMINING)\n\n` +
+              `3️⃣ ⚡ *Live Miner Activity Stream*\n` +
+              `• Real-time broadcast of automated mining harvests and verified payouts.\n` +
+              `👉 [Join @AAAATF_ACTIVITY](https://t.me/AAAATF_ACTIVITY)`;
+            ctx.waitUntil(sendCqReply(chText, channelsInlineKeyboard));
+          } else if (cqData === "ub_mining") {
+            const mText = `⛏️ *Verified Telegram Mining Ecosystem*\n\n` +
+              `Here are the top vetted Telegram Web3 mining bots:\n\n` +
+              `1. *ATF Miner* — High-yield automated cloud mining pool.\n` +
+              `2. *Stones Mining* — Tap-to-earn & cloud staking.\n` +
+              `3. *MRG Farm* — Daily check-ins, tasks & mining cycles.\n` +
+              `4. *ART Collector* — Creative token rewards.\n` +
+              `5. *AI Lab* — AI compute task allocation & mining.\n` +
+              `6. *UltraWallet* — Multi-chain wallet with integrated rewards.\n` +
+              `7. *Apex Miner* — Daily boosts, speed multipliers & social bounties.\n` +
+              `8. *Ainovum* — Gift box claims & automated cycles.\n\n` +
+              `💡 _Tip: Join our Supergroup to get the latest guides and referral strategies!_`;
+            ctx.waitUntil(sendCqReply(mText, miningInlineKeyboard));
+          } else if (cqData === "ub_chat") {
+            ctx.waitUntil(sendCqReply(`💬 *AI Copilot Ready!*\n\nHi ${cqSenderName}! Send me any question or message here in this chat, and I'll give you instant insights!`, userReplyKeyboard));
+          }
+          return new Response("OK");
+        }
+
+        // Handle Messages
+        const msg = update.message;
+        if (!msg || !msg.chat) return new Response("OK");
+        const chatId = msg.chat.id;
+        const senderName = msg.from?.first_name || msg.from?.username || "Friend";
+        const text = (msg.text || "").trim();
+
+        const sendUserReply = async (txt, replyMarkup = null, parseMode = "Markdown") => {
+          const payload = {
+            chat_id: chatId,
+            text: txt,
+            disable_web_page_preview: true
+          };
+          if (parseMode) payload.parse_mode = parseMode;
+          if (replyMarkup) payload.reply_markup = replyMarkup;
+          try {
+            const resp = await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            if (!resp.ok && parseMode) {
+              delete payload.parse_mode;
+              await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+              }).catch(() => {});
+            }
+          } catch (_) {}
+        };
+
+        const sendUserChatAction = async (action = "typing") => {
+          try {
+            await fetch(`https://api.telegram.org/bot${userBotToken}/sendChatAction`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: chatId, action: action })
+            });
+          } catch (_) {}
+        };
+
+        ctx.waitUntil((async () => {
+          if (text.startsWith("/start") || text.startsWith("/help") || text === "/menu") {
+            const welcomeText = `🌟 *Welcome to AAA AUTO MINING AI Assistant!* 🚀\n\n` +
+              `Hello ${senderName}! I am your 24/7 AI companion for the AAA Auto Mining ecosystem.\n\n` +
+              `Here is what you can do:\n` +
+              `• 💬 *Chat with AI*: Ask me any questions about crypto, mining, or Telegram Web3 apps!\n` +
+              `• 📢 *Official Channels*: Join our 3 official community hubs for news, support & live payouts!\n` +
+              `• ⛏️ *Verified Mining Apps*: Discover vetted Telegram bots to earn rewards 24/7.\n` +
+              `• 🌐 *Web Portal*: Access our community portal directly.\n\n` +
+              `Tap an option below or simply send me a message to start chatting!`;
+            await sendUserReply(welcomeText, startInlineKeyboard);
+            await sendUserReply(`Use the quick menu below anytime:`, userReplyKeyboard);
+            return;
+          }
+
+          if (text === "📢 Official Channels" || text.startsWith("/channels") || text.startsWith("/community") || text.toLowerCase() === "channels" || text.toLowerCase() === "group") {
+            const chText = `📢 *Official AAA Community Channels*\n\n` +
+              `Stay connected with verified news, live payout proofs, and community support:\n\n` +
+              `1️⃣ 💬 *AAA Auto Miner Supergroup*\n` +
+              `• Connect with fellow miners, share tips, and get real-time assistance.\n` +
+              `👉 [Join Supergroup](https://t.me/+8xTmE28Up9U5YWQ1)\n\n` +
+              `2️⃣ 📢 *Official Announcements*\n` +
+              `• Project releases, verified smart contracts, and major news.\n` +
+              `👉 [Join @AAAATFAUTOMINING](https://t.me/AAAATFAUTOMINING)\n\n` +
+              `3️⃣ ⚡ *Live Miner Activity Stream*\n` +
+              `• Real-time broadcast of automated mining harvests and verified payouts.\n` +
+              `👉 [Join @AAAATF_ACTIVITY](https://t.me/AAAATF_ACTIVITY)`;
+            await sendUserReply(chText, channelsInlineKeyboard);
+            return;
+          }
+
+          if (text === "⛏️ Verified Mining Apps" || text.startsWith("/mining") || text.startsWith("/apps") || text.toLowerCase() === "mining") {
+            const mText = `⛏️ *Verified Telegram Mining Ecosystem*\n\n` +
+              `Here are the top vetted Telegram Web3 mining bots:\n\n` +
+              `1. *ATF Miner* — High-yield automated cloud mining pool.\n` +
+              `2. *Stones Mining* — Tap-to-earn & cloud staking.\n` +
+              `3. *MRG Farm* — Daily check-ins, tasks & mining cycles.\n` +
+              `4. *ART Collector* — Creative token rewards.\n` +
+              `5. *AI Lab* — AI compute task allocation & mining.\n` +
+              `6. *UltraWallet* — Multi-chain wallet with integrated rewards.\n` +
+              `7. *Apex Miner* — Daily boosts, speed multipliers & social bounties.\n` +
+              `8. *Ainovum* — Gift box claims & automated cycles.\n\n` +
+              `💡 _Tip: Join our Supergroup to get the latest guides and referral strategies!_`;
+            await sendUserReply(mText, miningInlineKeyboard);
+            return;
+          }
+
+          if (text === "🌐 Open Mini App" || text === "🌐 Web App Portal" || text.startsWith("/webapp") || text.startsWith("/app")) {
+            await sendUserReply(`🌐 *AAA Community Web Portal*\n\nTap below to open the Web App:`, {
+              inline_keyboard: [
+                [{ text: "🚀 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev" } }]
+              ]
+            });
+            return;
+          }
+
+          if (text === "💬 Talk to AI Copilot") {
+            await sendUserReply(`💬 *I'm all ears!* Ask me anything about crypto mining, Web3 apps, our 3 channels, or how to get started!`, userReplyKeyboard);
+            return;
+          }
+
+          // Natural Conversational AI response to ANY user message
+          await sendUserChatAction("typing");
+          try {
+            const aiRes = await runUserAiCascade(text, senderName);
+            if (aiRes && aiRes.answer) {
+              await sendUserReply(aiRes.answer, userReplyKeyboard, "Markdown");
+              return;
+            }
+          } catch (e) {
+            console.error("User bot AI error:", e);
+          }
+
+          await sendUserReply(`🤖 *AI Assistant:*\n\nI received your message: "${text}". How can I help you today? Feel free to ask any question or check our official channels below!`, userReplyKeyboard);
+        })());
+
+        return new Response("OK");
+      } catch (err) {
+        return new Response("OK");
+      }
+    }
+
     return new Response("Not Found", { status: 404, headers: corsHeaders });
   },
 
@@ -4182,6 +4524,11 @@ async def deploy_account(acc):
             "name": "ALERT_BOT_TOKEN",
             "type": "plain_text",
             "text": ALERT_BOT_TOKEN,
+        },
+        {
+            "name": "USER_BOT_TOKEN",
+            "type": "plain_text",
+            "text": USER_BOT_TOKEN,
         },
     ]
 
