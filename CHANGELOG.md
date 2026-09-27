@@ -4,6 +4,23 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Bug Fixes: Upstash MGET Subrequest Optimization, Missing `upstashSrem`, and `JoinChannelRequest` Import (`deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`)**:
+  - **🐛 Fixed Missing `upstashSrem` Implementation**:
+    * Identified that `/unban` command and `cb_unban_` inline button called `upstashSrem("ub_banned_users", ...)`, but the function was never defined in `deploy_both_cf_workers.py`, causing a runtime `ReferenceError`.
+    * Implemented `upstashSrem(key, member)` REST caller, fully restoring unban execution.
+  - **⚡ Fixed Subrequest Explosion via `upstashMget` (`/api/admin/users`, `/sybil`, `btn_sybil`)**:
+    * Replaced sequential individual `upstashGet` loops with `upstashMget(keys)` batch fetching.
+    * Reduced Cloudflare Edge subrequests from N round-trips down to a single HTTP request, completely eliminating subrequest quota exhaustion.
+  - **🛡️ Fixed `/api/admin/user-action` Moderation State Synchronization**:
+    * Added automatic `ub_banned_users` synchronization on `toggle_ban` / `ban_user` actions from web console.
+    * Added handlers for `deduct_points` and `grant_slots` / `add_slot`.
+  - **🔔 Added Missing User Notification in `cb_grantslot_`**:
+    * Granted account slots now dispatch an instant notification to the user via `@AAAPREMIUMAPPSbot`.
+  - **🐍 Fixed Missing Telethon Import in Render Standby Engine**:
+    * Added missing `from telethon.tl.functions.channels import JoinChannelRequest` in `render_standby_app.py` and `render_app_latest.py` preventing `NameError` during first-time Stones referral binding.
+  - **📡 Automated Webhook Synchronization & Self-Healing**:
+    * Added automatic `setWebhook` verification and registration for both `@myagy_ai_bot` and `@AAAPREMIUMAPPSbot` during edge deployment.
+
 - **Anti-Sybil Moderation Hub, First-Account Gift Protection, and Shuffled Multi-Bot Farming Engine (`deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`)**:
   - **🛡️ Anti-Sybil Moderation Hub in Telegram Admin Bot (`@myagy_ai_bot`)**:
     * Integrated `/sybil` and `/moderation` audit commands providing instant cross-account linking telemetry, Sybil risk audits, first-account gift claim counters, and banned user rosters.

@@ -29,6 +29,7 @@ from fastapi import FastAPI, HTTPException, Request
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest
+from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.types import InputBotAppShortName
 from telethon.errors import (
     SessionPasswordNeededError,

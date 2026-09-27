@@ -1244,6 +1244,38 @@ async function upstashSmembers(key) {
   return [];
 }
 
+async function upstashSrem(key, member) {
+  try {
+    await fetch(`${UPSTASH_URL}/srem/${key}/${encodeURIComponent(member)}`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
+    });
+  } catch (_) {}
+}
+
+async function upstashMget(keys) {
+  if (!keys || keys.length === 0) return [];
+  try {
+    const resp = await fetch(`${UPSTASH_URL}/mget/${keys.map(k => encodeURIComponent(k)).join("/")}`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      return (data.result || []).map(r => {
+        if (!r) return null;
+        try {
+          return typeof r === "string" ? JSON.parse(r) : r;
+        } catch (_) {
+          return r;
+        }
+      });
+    }
+  } catch (_) {}
+  return [];
+}
+
+
 export default {
   async fetch(request, env, ctx) {
     const SIBLING_URLS = __SIBLING_URLS_JSON__;
@@ -2067,20 +2099,18 @@ fi
         let totalAds = 0;
         let totalRefs = 0;
 
-        for (const uid of uids) {
-          try {
-            const rawU = await upstashGet(`ub_user:${uid}`);
-            if (rawU) {
-              const u = typeof rawU === "string" ? JSON.parse(rawU) : rawU;
-              users.push(u);
-              totalPoints += (u.points || 0);
-              totalAccounts += (u.accounts || []).length;
-              if (u.farming_active) activeMiners++;
-              if (u.subscription_expiry && u.subscription_expiry > Date.now()) vipUsers++;
-              totalAds += (u.ads_watched || 0);
-              totalRefs += (u.referral_count || 0);
-            }
-          } catch (_) {}
+        const userKeys = uids.map(uid => `ub_user:${uid}`);
+        const userProfiles = await upstashMget(userKeys);
+        for (const u of userProfiles) {
+          if (u) {
+            users.push(u);
+            totalPoints += (u.points || 0);
+            totalAccounts += (u.accounts || []).length;
+            if (u.farming_active) activeMiners++;
+            if (u.subscription_expiry && u.subscription_expiry > Date.now()) vipUsers++;
+            totalAds += (u.ads_watched || 0);
+            totalRefs += (u.referral_count || 0);
+          }
         }
 
         // Sort: users with accounts first, then highest points
@@ -2131,6 +2161,10 @@ fi
           user.points = (user.points || 0) + (parseInt(amount) || 100);
           const dailyCost = (user.accounts || []).length * 100;
           if (user.points >= dailyCost) user.farming_active = true;
+        } else if (action === "deduct_points") {
+          user.points = Math.max(0, (user.points || 0) - (parseInt(amount) || 100));
+        } else if (action === "grant_slots" || action === "add_slot") {
+          user.slots = (user.slots || 1) + (parseInt(body.slots) || 1);
         } else if (action === "set_vip") {
           const passDays = parseInt(days) || 30;
           user.subscription_tier = tier || "month";
@@ -2140,7 +2174,14 @@ fi
           user.farming_active = !user.farming_active;
         } else if (action === "toggle_ban" || action === "ban_user") {
           user.is_banned = !user.is_banned;
-          if (user.is_banned) user.farming_active = false;
+          if (user.is_banned) {
+            user.farming_active = false;
+            user.ban_reason = body.reason || "Suspended via Admin Console";
+            await upstashSadd("ub_banned_users", String(uid));
+          } else {
+            delete user.ban_reason;
+            await upstashSrem("ub_banned_users", String(uid));
+          }
         }
 
         await upstashSet(`ub_user:${uid}`, user);
@@ -3492,22 +3533,20 @@ fi
                 let duplicateAccountsFound = 0;
                 const seenAccountIds = new Map();
                 const sample = userList.slice(0, 40);
-
-                for (const uid of sample) {
-                  try {
-                    const raw = await upstashGet(`ub_user:${uid}`);
-                    if (raw) {
-                      const p = typeof raw === "string" ? JSON.parse(raw) : raw;
-                      for (const a of (p.accounts || [])) {
-                        const aid = String(a.user_id || a.phone);
-                        if (seenAccountIds.has(aid) && seenAccountIds.get(aid) !== uid) {
-                          duplicateAccountsFound++;
-                        } else {
-                          seenAccountIds.set(aid, uid);
-                        }
+                const sampleProfiles = await upstashMget(sample.map(u => `ub_user:${u}`));
+                for (let i = 0; i < sampleProfiles.length; i++) {
+                  const p = sampleProfiles[i];
+                  const uid = sample[i];
+                  if (p) {
+                    for (const a of (p.accounts || [])) {
+                      const aid = String(a.user_id || a.phone);
+                      if (seenAccountIds.has(aid) && seenAccountIds.get(aid) !== uid) {
+                        duplicateAccountsFound++;
+                      } else {
+                        seenAccountIds.set(aid, uid);
                       }
                     }
-                  } catch (_) {}
+                  }
                 }
 
                 const sybilRep = `🛡️ *ANTI-SYBIL & ACCOUNT MODERATION AUDIT*\n` +
@@ -3683,6 +3722,16 @@ fi
                   const prof = typeof raw === "string" ? JSON.parse(raw) : raw;
                   prof.slots = (prof.slots || 1) + 1;
                   await upstashSet(`ub_user:${targetUid}`, prof);
+                  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                  await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: targetUid,
+                      text: `🌟 *EXTRA CLOUD SLOT UNLOCKED!* 📦\n\nPlatform Admin has granted *+1 Permanent Account Slot* to your profile!\n• *Total Slots Available:* ${prof.slots}\n\nYou can now connect another Telegram account!`,
+                      parse_mode: "Markdown"
+                    })
+                  }).catch(() => {});
                   await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -4925,22 +4974,20 @@ fi
             let duplicateAccountsFound = 0;
             const seenAccountIds = new Map();
             const sample = userList.slice(0, 40);
-
-            for (const uid of sample) {
-              try {
-                const raw = await upstashGet(`ub_user:${uid}`);
-                if (raw) {
-                  const p = typeof raw === "string" ? JSON.parse(raw) : raw;
-                  for (const a of (p.accounts || [])) {
-                    const aid = String(a.user_id || a.phone);
-                    if (seenAccountIds.has(aid) && seenAccountIds.get(aid) !== uid) {
-                      duplicateAccountsFound++;
-                    } else {
-                      seenAccountIds.set(aid, uid);
-                    }
+            const sampleProfiles = await upstashMget(sample.map(u => `ub_user:${u}`));
+            for (let i = 0; i < sampleProfiles.length; i++) {
+              const p = sampleProfiles[i];
+              const uid = sample[i];
+              if (p) {
+                for (const a of (p.accounts || [])) {
+                  const aid = String(a.user_id || a.phone);
+                  if (seenAccountIds.has(aid) && seenAccountIds.get(aid) !== uid) {
+                    duplicateAccountsFound++;
+                  } else {
+                    seenAccountIds.set(aid, uid);
                   }
                 }
-              } catch (_) {}
+              }
             }
 
             const sybilRep = `🛡️ *ANTI-SYBIL & ACCOUNT MODERATION AUDIT*\n` +
@@ -7793,6 +7840,26 @@ async def main():
     print("  🔧 Synchronizing Telegram Bot Menu Button & Commands...")
     print("=" * 60)
     async with aiohttp.ClientSession() as session:
+        # 0. Ensure Webhooks are set and synchronized on Cloudflare Edge
+        try:
+            alert_webhook_url = "https://restore-agy.aaaai2.workers.dev/telegram-webhook"
+            async with session.post(
+                f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/setWebhook",
+                json={"url": alert_webhook_url, "allowed_updates": ["message", "callback_query"]}
+            ) as resp:
+                res_wh = await resp.json()
+                print(f"📡 Admin Bot Webhook: {res_wh.get('ok')} ({res_wh.get('description', 'OK')})")
+
+            user_webhook_url = "https://restore-agy.aaaai2.workers.dev/user-bot-webhook"
+            async with session.post(
+                f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setWebhook",
+                json={"url": user_webhook_url, "allowed_updates": ["message", "edited_message", "callback_query", "pre_checkout_query"]}
+            ) as resp:
+                res_uwh = await resp.json()
+                print(f"📡 User Bot Webhook: {res_uwh.get('ok')} ({res_uwh.get('description', 'OK')})")
+        except Exception as e:
+            print(f"⚠️ Error synchronizing webhooks: {e}")
+
         # 1. Set global Chat Menu Button to Watch Ads WebApp
         menu_payload = {
             "menu_button": {
