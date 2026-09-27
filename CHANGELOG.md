@@ -4,6 +4,25 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **8 Bots Referral Showcase & Message-Side Watch Ads Mini App Button (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Full 8 Bots Showcase & Referral Links on Start Messages**:
+    * Prominently highlighted that `@AAAPREMIUMAPPSbot` automatically farms all 8 crypto bots 24/7 in the cloud with 0% platform fees directly on `/start`, welcome messages, gate verification callbacks, and user guides.
+    * Added complete list of all 8 supported mining bots with direct referral links:
+      1. 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768)
+      2. 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768)
+      3. ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD)
+      4. 🎨 [ART Miner](https://t.me/ART_AIRDROP_BOT?start=6727787768)
+      5. 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852)
+      6. 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768)
+      7. 🏔️ [Apex Miner](https://t.me/ApxMinerBot/app?startapp=6727787768)
+      8. 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768)
+  - **Message-Side Mini App Watch Ads Button**:
+    * Added `🎬 Watch Video Ad (+20 Pts) ⚡` WebApp button directly to the top row of the message's inline keyboard (`userWelcomeInlineKeyboard`).
+    * Attached `🎬 Watch Video Ad (+20 Pts) ⚡` inline WebApp button to every AI assistant reply and the Ari AI menu handler, allowing users to launch the Adsgram Mini App with 1 tap right from the message.
+  - **Live Verification & 5-Node Edge Mesh Deployment**:
+    * Deployed live across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Maintained 100% Zero Phone Load (0 background bots on phone).
+
 - **Created by AAA Branding, Adsgram Block ID 50317 Live Activation & Consumer Experience Polish (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **"Created by AAA" Platform-Wide Branding**:
     * Integrated official branding ("Created by AAA") across all user-facing touchpoints in `@AAAPREMIUMAPPSbot`:

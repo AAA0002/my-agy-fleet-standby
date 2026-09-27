@@ -392,8 +392,17 @@ export default {
 
       const userSystemPrompt = "You are 'Ari AI', the friendly assistant for AAA Auto Mining (@AAAPREMIUMAPPSbot).\n" +
         "CRITICAL RULES:\n" +
-        "- KEEP RESPONSES SHORT, CLEAR, AND SIMPLE (1 to 2 short paragraphs or 3 quick bullet points maximum).\n" +
-        "- Do NOT write long essays, giant lists, or walls of text.\n" +
+        "- KEEP RESPONSES SHORT, CLEAR, AND SIMPLE.\n" +
+        "- When asked what this bot can do, how it works, or what bots are supported, ALWAYS showcase the 8 mining pools with their names and links:\n" +
+        "  1. 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & task claiming\n" +
+        "  2. 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Auto-farming & Arbitrum payouts\n" +
+        "  3. ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON rewards\n" +
+        "  4. 🎨 [ART Miner](https://t.me/ART_AIRDROP_BOT?start=6727787768) — Auto-farming & TON airdrop\n" +
+        "  5. 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — USDT auto-exchange & BEP-20 payouts\n" +
+        "  6. 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Multi-chain cloud mining\n" +
+        "  7. 🏔️ [Apex Miner](https://t.me/ApxMinerBot/app?startapp=6727787768) — APX token node farming\n" +
+        "  8. 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768) — Auto-mining & direct BSC withdrawals\n" +
+        "- Explain that the bot automatically mines all 8 bots 24/7 in the cloud with 0% platform fees. All rewards deposit directly into the user's Telegram bot wallets.\n" +
         "- BRANDING: This bot was created and engineered by 'AAA'. When asked who created or made this bot, state clearly that it was created and engineered by AAA.\n" +
         "- NEVER mention internal developer terms like 'Zero Phone Load', 'serverless MTProto', 'Samsung Galaxy', Termux, or system architecture.\n" +
         "- NEVER show personal admin names (like 'Arif'). Always refer to the team simply as 'Support' or 'Support Team'.\n" +
@@ -403,7 +412,7 @@ export default {
         "• What the bot does: Automatically mines 8 Telegram crypto bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum) 24/7 in the cloud with 0% platform fees. Mined rewards deposit directly into your bot wallets in Telegram.\n" +
         "• How to connect: Tap '➕ Connect Account' below, send your phone number (+...), and enter the Telegram login code.\n" +
         "• How to manage: Tap '👥 My Accounts' to view or tap '🗑️ Remove' to disconnect anytime.\n" +
-        "• Points & Rewards: 100 points/day to mine. Earn free points by tapping '📺 Watch Ad' (+20 Pts) or '👥 Invite Friends' (+500 Pts), or upgrade with Telegram Stars.\n" +
+        "• Points & Rewards: 100 points/day to mine. Earn free points by tapping '🎬 Watch Video Ad' (+20 Pts) or '👥 Invite Friends' (+500 Pts), or upgrade with Telegram Stars.\n" +
         "• Support: Send /support <your message> to reach Support.\n\n" +
         "Style: Friendly, concise, mobile-friendly Telegram Markdown. Direct answers only!";
 
@@ -471,14 +480,19 @@ export default {
           `• *Created by:* AAA\n` +
           `• *Ecosystem:* Autonomous 24/7 Cloud Mining for 8 Telegram crypto bots.\n` +
           `• *Direct Payouts:* Mined tokens deposit directly to your Telegram bot balances with 0% platform fees.`;
-      } else if (pLow.includes("what can this bot do") || pLow.includes("what can you do") || pLow.includes("what does this bot do") || pLow.includes("features")) {
+      } else if (pLow.includes("what can this bot do") || pLow.includes("what can you do") || pLow.includes("what does this bot do") || pLow.includes("features") || pLow.includes("bot list") || pLow.includes("which bots")) {
         fallbackAns = `🌟 *AAA AUTO MINING* (Created by AAA) 🚀\n\n` +
-          `Here is what this bot can do for you:\n\n` +
-          `• *24/7 Cloud Mining:* Automatically farms 8 crypto bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum) with 0 fees.\n` +
-          `• *Connect Effortlessly:* Tap *➕ Connect Account* below, send your phone number & Telegram login code.\n` +
-          `• *Manage & Disconnect:* Tap *👥 My Accounts* or *🗑️ Remove Account* anytime to manage or free slots.\n` +
-          `• *Earn Points:* 100 Pts/day cost. Earn free points by watching ads (+20 Pts) or inviting friends (+500 Pts).\n` +
-          `• *Direct Payouts:* Mined crypto is deposited directly into your Telegram bot balances.`;
+          `This bot **automatically mines 8 Telegram crypto bots 24/7 in the cloud** with 0% platform fees! All rewards deposit directly into your bot balances.\n\n` +
+          `🤖 *The 8 Automated Mining Pools & Links:*\n` +
+          `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & task claiming\n` +
+          `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Auto-farming & Arbitrum payouts\n` +
+          `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON rewards\n` +
+          `4️⃣ 🎨 [ART Miner](https://t.me/ART_AIRDROP_BOT?start=6727787768) — Auto-farming & TON airdrop\n` +
+          `5️⃣ 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — USDT auto-exchange & BEP-20 payouts\n` +
+          `6️⃣ 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Multi-chain cloud mining\n` +
+          `7️⃣ 🏔️ [Apex Miner](https://t.me/ApxMinerBot/app?startapp=6727787768) — APX token node farming\n` +
+          `8️⃣ 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768) — Auto-mining & direct BSC withdrawals\n\n` +
+          `📱 *How to Start:* Tap *➕ Connect Account*, send your phone number & Telegram login code. Your account will automatically farm all 8 pools 24/7 without needing your phone online!`;
       } else if (pLow.includes("connect") || pLow.includes("add account") || pLow.includes("login")) {
         fallbackAns = `📱 *How to Connect Your Account:*\n\n` +
           `1. Tap *➕ Connect Account* in the menu.\n` +
@@ -4607,7 +4621,14 @@ Reply to Arif naturally:`;
         const userWelcomeInlineKeyboard = {
           inline_keyboard: [
             [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }
+            ],
+            [
               { text: "🚀 Launch Cloud Miner", callback_data: "ub_start_mining" },
+              { text: "➕ Connect Account", callback_data: "ub_add_acc" }
+            ],
+            [
+              { text: "👥 My Accounts", callback_data: "ub_accounts_list" },
               { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }
             ],
             [
@@ -4715,6 +4736,16 @@ Reply to Arif naturally:`;
             const welcomeText = `🌟 *AAA AUTO MINING PLATFORM (PREMIUM)* 🚀\n` +
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Hello ${cqSenderName}! You have successfully verified all 3 community channels and claimed 🎁 *100 Free Welcome Points*!\n\n` +
+              `Connect your account once, and AAA Auto Mining will **automatically farm all 8 Telegram crypto bots 24/7 in the cloud** with 0% platform fees! All mined rewards deposit directly into your bot wallets.\n\n` +
+              `🤖 *8 Automated Mining Pools & Links:*\n` +
+              `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & task claiming\n` +
+              `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Auto-farming & Arbitrum payouts\n` +
+              `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON rewards\n` +
+              `4️⃣ 🎨 [ART Miner](https://t.me/ART_AIRDROP_BOT?start=6727787768) — Auto-farming & TON airdrop\n` +
+              `5️⃣ 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — USDT auto-exchange & BEP-20 payouts\n` +
+              `6️⃣ 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Multi-chain cloud mining\n` +
+              `7️⃣ 🏔️ [Apex Miner](https://t.me/ApxMinerBot/app?startapp=6727787768) — APX token node farming\n` +
+              `8️⃣ 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768) — Auto-mining & direct BSC withdrawals\n\n` +
               `💎 *Your Fleet Overview:*\n` +
               `• *Connected Accounts:* ${profile.accounts?.length || 0} / ${totalSlots} Slots\n` +
               `• *Points Balance:* ${profile.points || 100} Points\n` +
@@ -4723,7 +4754,7 @@ Reply to Arif naturally:`;
               `• *Daily Cost:* ${(profile.accounts?.length || 0) * 100} Pts/day\n\n` +
               `📺 *Earn Points:* Watch ads (+20 Pts) or invite friends (+500 Pts).\n` +
               `🌟 *Subscriptions:* Day, Weekly, and Monthly VIP Passes with Telegram Stars!\n\n` +
-              `Tap *➕ Connect Account* below to link your account and start 24/7 cloud mining across all 8 pools:`;
+              `👇 *Tap 🎬 Watch Video Ad or ➕ Connect Account below to start:*`;
 
             ctx.waitUntil((async () => {
               await sendCqReply("✅ *Membership verified! 100 Welcome Points awarded!*", userMainKeyboard);
@@ -5426,17 +5457,24 @@ Reply to Arif naturally:`;
             const helpMsg = `📖 *AAA AUTO MINING & ARI AI GUIDE* 🤖\n` +
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Hello ${senderName}! Here is your complete guide to automated cloud mining:\n\n` +
+              `🤖 *8 Automated Mining Pools & Links:*\n` +
+              `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & task claiming\n` +
+              `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Auto-farming & Arbitrum payouts\n` +
+              `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON rewards\n` +
+              `4️⃣ 🎨 [ART Miner](https://t.me/ART_AIRDROP_BOT?start=6727787768) — Auto-farming & TON airdrop\n` +
+              `5️⃣ 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — USDT auto-exchange & BEP-20 payouts\n` +
+              `6️⃣ 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Multi-chain cloud mining\n` +
+              `7️⃣ 🏔️ [Apex Miner](https://t.me/ApxMinerBot/app?startapp=6727787768) — APX token node farming\n` +
+              `8️⃣ 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768) — Auto-mining & direct BSC withdrawals\n\n` +
               `1️⃣ *How to Connect & Remove Accounts*\n` +
               `• *Connect:* Tap *➕ Connect Account*, send phone number & 5-digit Telegram code.\n` +
               `• *Remove:* Tap *👥 My Accounts* in the menu and tap *🗑️ Remove* next to any account, or type \`/remove\` anytime!\n` +
               `• Cloud-powered: your accounts farm 24/7 in the cloud without needing your phone or app open!\n\n` +
-              `2️⃣ *8 Automated Mining Pools*\n` +
-              `• Automatically farms ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, and Ainovum.\n\n` +
-              `3️⃣ *Points & Free Earning*\n` +
+              `2️⃣ *Points & Free Earning*\n` +
               `• Daily cost is 100 Points/day per active connected account.\n` +
               `• *📺 Watch Ads:* Earn +20 Points every 15s. Watching 50 ads unlocks a *Free Bonus Account Slot*!\n` +
               `• *👥 Invite Friends:* Earn +500 Points for every friend who joins & verifies.\n\n` +
-              `4️⃣ *VIP Subscription Passes (Telegram Stars)*\n` +
+              `3️⃣ *VIP Subscription Passes (Telegram Stars)*\n` +
               `• *🎟️ 1-Day Pass (15 Stars):* 24h unlimited cloud mining (0 point deduction) + 150 points.\n` +
               `• *🎟️ 7-Day Weekly Pass (45 Stars):* 7 days mining (0 fee) + 1,000 points + 1 extra account slot.\n` +
               `• *💎 30-Day Monthly Pass (120 Stars):* 30 days mining (0 fee) + 4,500 points + 1 permanent slot + 2x ad rewards (+40 Pts per ad)!\n` +
@@ -5527,16 +5565,25 @@ Reply to Arif naturally:`;
             const farmStatus = isCovered ? "🟢 Active 24/7 (Covered by VIP Pass)" : (profile.farming_active ? "🟢 Active & Mining 24/7" : "🔴 Paused (Needs Points)");
             const welcomeText = `🌟 *AAA AUTO MINING PLATFORM (PREMIUM)* 🚀\n` +
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
-              `Hello ${senderName}! Your 24/7 autonomous cloud mining assistant is ready.\n\n` +
+              `Hello ${senderName}! Connect your account once, and AAA Auto Mining will **automatically farm all 8 Telegram crypto bots 24/7 in the cloud** with 0% platform fees! All mined rewards deposit directly into your bot balances.\n\n` +
+              `🤖 *8 Automated Mining Pools & Links:*\n` +
+              `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & task claiming\n` +
+              `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Auto-farming & Arbitrum payouts\n` +
+              `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON rewards\n` +
+              `4️⃣ 🎨 [ART Miner](https://t.me/ART_AIRDROP_BOT?start=6727787768) — Auto-farming & TON airdrop\n` +
+              `5️⃣ 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — USDT auto-exchange & BEP-20 payouts\n` +
+              `6️⃣ 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Multi-chain cloud mining\n` +
+              `7️⃣ 🏔️ [Apex Miner](https://t.me/ApxMinerBot/app?startapp=6727787768) — APX token node farming\n` +
+              `8️⃣ 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768) — Auto-mining & direct BSC withdrawals\n\n` +
               `💎 *Your Fleet Overview:*\n` +
               `• *Connected Accounts:* ${profile.accounts.length} / ${totalSlots} Slots\n` +
               `• *Points Balance:* ${profile.points} Points\n` +
               `• *Subscription Pass:* ${passBadge}\n` +
               `• *Farming Status:* ${farmStatus}\n` +
               `• *Daily Cost:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${profile.accounts.length * 100} Pts/day (100 Pts per account)`}\n\n` +
-              `📺 *Earn Points:* Watch ads (+20 Pts) or invite friends (+500 Pts).\n` +
+              `📺 *Earn Points:* Tap *🎬 Watch Video Ad (+20 Pts)* below or invite friends (+500 Pts).\n` +
               `🌟 *Subscriptions:* Day, Weekly, and Monthly VIP Passes with Telegram Stars!\n\n` +
-              `Choose an option from the menu below:`;
+              `👇 *Tap 🎬 Watch Video Ad or ➕ Connect Account below to start:*`;
             await sendUserReply("👋 *Welcome to AAA Auto Mining!* (Created by AAA)\nAccess all features below or choose from the interactive menu:", userMainKeyboard);
             await sendUserReply(welcomeText, userWelcomeInlineKeyboard);
             return;
@@ -5866,13 +5913,34 @@ Reply to Arif naturally:`;
             const chatAiMsg = `💬 *AAA AI MINING COPILOT & SUPPORT* 🤖\n` +
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Hello ${senderName}! How can I help you today?\n\n` +
+              `🤖 *8 Automated Mining Pools Active (24/7):*\n` +
+              `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768)\n` +
+              `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768)\n` +
+              `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD)\n` +
+              `4️⃣ 🎨 [ART Miner](https://t.me/ART_AIRDROP_BOT?start=6727787768)\n` +
+              `5️⃣ 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852)\n` +
+              `6️⃣ 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768)\n` +
+              `7️⃣ 🏔️ [Apex Miner](https://t.me/ApxMinerBot/app?startapp=6727787768)\n` +
+              `8️⃣ 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768)\n\n` +
               `*Quick Actions:*\n` +
               `• *Ask Questions:* Simply type any question in this chat!\n` +
               `• *Manage Accounts:* Tap *👥 My Accounts* or *🗑️ Remove Account* anytime.\n` +
               `• *Withdrawals:* Send \`/withdraw\` for complete payout details.\n` +
               `• *Support Team:* Send \`/support <your message>\` to message Platform Support directly.\n\n` +
-              `👉 Ask me anything or choose an action from the menu below!`;
-            await sendUserReply(chatAiMsg, userMainKeyboard);
+              `👉 Ask me anything or tap the buttons below!`;
+            const chatAiKeyboard = {
+              inline_keyboard: [
+                [
+                  { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } },
+                  { text: "➕ Connect Account", callback_data: "ub_add_acc" }
+                ],
+                [
+                  { text: "👥 My Accounts", callback_data: "ub_accounts_list" },
+                  { text: "💳 Payouts Guide", callback_data: "ub_withdraw" }
+                ]
+              ]
+            };
+            await sendUserReply(chatAiMsg, chatAiKeyboard);
             return;
           }
 
@@ -5901,17 +5969,29 @@ Reply to Arif naturally:`;
 
           // 10. Natural Conversational AI Copilot for Any Other Message
           await sendUserChatAction("typing");
+          const aiInlineMarkup = {
+            inline_keyboard: [
+              [
+                { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } },
+                { text: "➕ Connect Account", callback_data: "ub_add_acc" }
+              ],
+              [
+                { text: "👥 My Accounts", callback_data: "ub_accounts_list" },
+                { text: "💳 Payouts Guide", callback_data: "ub_withdraw" }
+              ]
+            ]
+          };
           try {
             const aiRes = await runUserAiCascade(text, senderName);
             if (aiRes && aiRes.answer) {
-              await sendUserReply(aiRes.answer, userMainKeyboard, "Markdown");
+              await sendUserReply(aiRes.answer, aiInlineMarkup, "Markdown");
               return;
             }
           } catch (e) {
             console.error("User bot AI cascade error:", e);
           }
 
-          await sendUserReply(`🤖 *AI Assistant:*\n\nI received: "${text}". How can I help you today? Check your accounts, watch ads for points, or ask me any question!`, userMainKeyboard);
+          await sendUserReply(`🤖 *AI Assistant:*\n\nI received: "${text}". How can I help you today? Check your accounts, watch ads for points, or ask me any question!`, aiInlineMarkup);
         })());
 
         return new Response("OK");
