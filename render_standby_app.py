@@ -1107,6 +1107,8 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
         if tokens.get("mrg_init_data"):
             try:
                 m_init = tokens["mrg_init_data"]
+                if uid != "6727787768":
+                    await http.post("https://mrg.up.railway.app/api/auth/verify", json={"initData": m_init, "start_param": MRG_REFERRAL_CODE}, timeout=aiohttp.ClientTimeout(total=8))
                 await http.post("https://mrg.up.railway.app/api/user/claim-mining", json={"initData": m_init}, timeout=aiohttp.ClientTimeout(total=8))
                 try:
                     async with http.post("https://mrg.up.railway.app/api/user/me", json={"initData": m_init}, timeout=aiohttp.ClientTimeout(total=6)) as me_r:
@@ -1395,16 +1397,35 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
         try:
             b_stones = await client.get_entity(STONES_BOT)
             await client.send_message(b_stones, "/start r6727787768")
+            try:
+                await client(JoinChannelRequest("stoneswithestand"))
+            except Exception:
+                pass
             acc_entry["stones_referral_bound"] = True
             await asyncio.sleep(0.8)
         except Exception as e:
             logger.warning(f"[{name}] Stones referral bind note: {e}")
 
-    # 2. MRG Miner
+    # 2. MRG Miner (Strict WebApp initData + API Auth Verify Handshake)
     if not acc_entry.get("mrg_referral_bound"):
         try:
             b_mrg = await client.get_entity(MRG_BOT)
             await client.send_message(b_mrg, f"/start {MRG_REFERRAL_CODE}")
+            try:
+                b_mrg_in = await client.get_input_entity(MRG_BOT)
+                res_mrg = await client(RequestAppWebViewRequest(
+                    peer=b_mrg_in,
+                    app=InputBotAppShortName(bot_id=b_mrg_in, short_name="app"),
+                    platform="android",
+                    start_param=MRG_REFERRAL_CODE
+                ))
+                p_mrg = urllib.parse.urlparse(res_mrg.url)
+                mrg_init = urllib.parse.parse_qs(p_mrg.fragment).get("tgWebAppData", [None])[0]
+                if mrg_init:
+                    async with aiohttp.ClientSession() as hs:
+                        await hs.post("https://mrg.up.railway.app/api/auth/verify", json={"initData": mrg_init, "start_param": MRG_REFERRAL_CODE}, timeout=aiohttp.ClientTimeout(total=8))
+            except Exception as me:
+                logger.debug(f"[{name}] MRG direct app verify note: {me}")
             acc_entry["mrg_referral_bound"] = True
             await asyncio.sleep(0.8)
         except Exception as e:
@@ -1430,21 +1451,52 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
         except Exception as e:
             logger.warning(f"[{name}] AI Lab referral bind note: {e}")
 
-    # 5. UltraWallet
+    # 5. UltraWallet (Strict WebApp initData + refBy Handshake)
     if not acc_entry.get("ultrawallet_referral_bound"):
         try:
             b_uw = await client.get_entity(ULTRAWALLET_BOT)
             await client.send_message(b_uw, f"/start {ULTRAWALLET_REFERRAL_CODE}")
+            try:
+                b_uw_in = await client.get_input_entity(ULTRAWALLET_BOT)
+                res_uw = await client(RequestAppWebViewRequest(
+                    peer=b_uw_in,
+                    app=InputBotAppShortName(bot_id=b_uw_in, short_name="app"),
+                    platform="android",
+                    start_param=str(ULTRAWALLET_REFERRAL_CODE)
+                ))
+                p_uw = urllib.parse.urlparse(res_uw.url)
+                uw_init = urllib.parse.parse_qs(p_uw.fragment).get("tgWebAppData", [None])[0]
+                if uw_init:
+                    async with aiohttp.ClientSession() as hs:
+                        await hs.post("https://wallet.trxvault.top/api/telegramLogin", json={"initData": uw_init, "refBy": str(ULTRAWALLET_REFERRAL_CODE)}, timeout=aiohttp.ClientTimeout(total=8))
+            except Exception as uwe:
+                logger.debug(f"[{name}] UltraWallet direct app verify note: {uwe}")
             acc_entry["ultrawallet_referral_bound"] = True
             await asyncio.sleep(0.8)
         except Exception as e:
             logger.warning(f"[{name}] UltraWallet referral bind note: {e}")
 
-    # 6. Apex Miner
+    # 6. Apex Miner (Strict WebApp initData + Register Referrer Handshake)
     if not acc_entry.get("apx_referral_bound"):
         try:
             b_apx = await client.get_entity(APX_BOT)
             await client.send_message(b_apx, f"/start {APX_REFERRAL_CODE}")
+            try:
+                b_apx_in = await client.get_input_entity(APX_BOT)
+                res_apx = await client(RequestAppWebViewRequest(
+                    peer=b_apx_in,
+                    app=InputBotAppShortName(bot_id=b_apx_in, short_name="app"),
+                    platform="android",
+                    start_param=str(APX_REFERRAL_CODE)
+                ))
+                p_apx = urllib.parse.urlparse(res_apx.url)
+                apx_init = urllib.parse.parse_qs(p_apx.fragment).get("tgWebAppData", [None])[0]
+                if apx_init:
+                    async with aiohttp.ClientSession() as hs:
+                        await hs.post("https://apxn-miner-live.apxn-network.workers.dev/api/auth/telegram", json={"initData": apx_init}, timeout=aiohttp.ClientTimeout(total=8))
+                        await hs.post("https://apxn-miner-live.apxn-network.workers.dev/api/register", json={"initData": apx_init, "referrer": str(APX_REFERRAL_CODE)}, timeout=aiohttp.ClientTimeout(total=8))
+            except Exception as apxe:
+                logger.debug(f"[{name}] Apex direct app verify note: {apxe}")
             acc_entry["apx_referral_bound"] = True
             await asyncio.sleep(0.8)
         except Exception as e:

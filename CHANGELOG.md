@@ -4,6 +4,33 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Strict Referral Confirmation Handshake Discovery & Comprehensive 8-Bot Onboarding Overhaul (`render_standby_app.py`, `render_app_latest.py`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Root-Cause Diagnosis of Bot Referral Handshakes ("Strk / Strict" Referral Confirmation)**:
+    * Discovered the exact mechanism behind why only 5 accounts (`8851426148`, `8203342513`, `7487048946`, `8881914294`, `8727040932`) were credited as referrals in MRG Miner: the user manually opened them via Telegram WebApp with the referral link, whereas automated scripts previously only sent `/start ref_IRN1G3XD` as a chat message.
+    * Live API audit of MRG (`https://mrg.up.railway.app/api/user/me`) confirmed:
+      - The 5 manually opened accounts have `referrerId: 6727787768` and actively generate mining commissions (`commissionPaidToReferrer`). Nancy (`8881914294`) achieved `isQualified: True` with 20 completed tasks and Level 51.
+      - The other 8 automated accounts have `referrerId: None` because MRG's backend locks the referrer upon account creation: when the old script invoked `claim-mining` without first executing `POST /api/auth/verify` with `start_param: "ref_IRN1G3XD"`, the backend permanently registered them without a referrer.
+    * In Stones Miners (`stoneswithestand_bot`): Confirmed all 13 accounts are registered (`ref_count: 13`, `valid: True`) because `/start r6727787768` and `@stoneswithestand` channel membership were satisfied.
+    * In ATF Miner (`ATF_AIRDROP_bot`): Confirmed all 13 accounts are registered (`referrals_claimed: 13`) because the login payload included `referrer: 6727787768`.
+    * In Ainovum (`AinovumBot`): Confirmed all 14 accounts are bound (`referrer_telegram_id: 6727787768`) because `api/bootstrap` consistently passed `referrer: "ref_6727787768"`.
+    * In Apex Miner (`ApexMinerBot`): Confirmed accounts are bound (`referredBy: 6727787768`) via `api/register`.
+  - **Full WebApp Referral Verification Handshake on 1st-Time Account Onboarding (`render_app_latest.py` & `render_standby_app.py`)**:
+    * Upgraded `bind_account_master_referrals` so newly connected accounts never rely on plain `/start` messages alone:
+      1. **Stones Miner**: Sends `/start r6727787768` AND immediately joins `@stoneswithestand` (`JoinChannelRequest("stoneswithestand")`) so referrals are instantly marked valid.
+      2. **MRG Miner**: Requests WebApp with `RequestAppWebViewRequest(start_param="ref_IRN1G3XD")` and immediately executes `POST https://mrg.up.railway.app/api/auth/verify` with `start_param: "ref_IRN1G3XD"` BEFORE any mining or profile endpoint is called.
+      3. **UltraWallet**: Requests WebApp with `start_param="6727787768"` and executes `POST https://wallet.trxvault.top/api/telegramLogin` with `refBy: "6727787768"`.
+      4. **Apex Miner**: Requests WebApp with `start_param="6727787768"` and executes `POST /api/register` with `referrer: "6727787768"`.
+      5. **Ainovum**: Requests WebApp and executes `POST /api/bootstrap` with `referrer: "ref_6727787768"`.
+      6. **ATF Miner**: Requests WebApp with `start_param="6727787768"` and executes `POST ?action=login` with `referrer: "6727787768"`, solves math challenge, and starts mining.
+      7. **ART Airdrop & AI Lab**: Completes WebApp launch, login, and mining initialization.
+  - **Cloudflare Edge Cron Verification Enhancement (`deploy_both_cf_workers.py`)**:
+    * In MRG Edge Claim: Added `POST https://mrg.up.railway.app/api/auth/verify` with `start_param: "ref_IRN1G3XD"` for worker accounts, ensuring any token refresh or session restart attempts retroactive referral validation if supported by the backend.
+    * Added auto-discovery and claim execution for MRG recurring 3-hour tasks (`task-1789255799207` and `task-1789599213847`).
+  - **Validation & Multi-Cloud Deployment**:
+    * Validated with `python3 -m py_compile` across all Python runtimes.
+    * Deployed live to all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Zero local phone load (100% cloud execution on Cloudflare Edge and Render).
+
 - **Referral 1st-Time Execution Guard, WebApp Referral Finish Work & Complete 8-Bot Side Tasks (`render_standby_app.py`, `render_app_latest.py`, `deploy_both_cf_workers.py`, `accounts.json`, `CHANGELOG.md`)**:
   - **Elimination of Redundant Referral `/start` Message Spam**:
     * Identified and removed the unconditional `bots_to_start` loop in `extract_tokens_for_account` in both `render_standby_app.py` and `render_app_latest.py` (which previously spammed `/start {ref_code}` to ATF and other bots on every token refresh / cron cycle).

@@ -5663,9 +5663,16 @@ Reply to Arif naturally:`;
             } catch (_) {}
           }
 
-          // B. MRG Miner Edge Claim (Tap -> wait 15s for link_visit -> claim without joining channels)
+          // B. MRG Miner Edge Claim (Auth verify ref + claim-mining + recurring tasks)
           if (accData.mrg_init_data) {
             try {
+              if (String(uid) !== (env.OWNER_ID || "6727787768")) {
+                await fetchWithRetry("https://mrg.up.railway.app/api/auth/verify", {
+                  method: "POST",
+                  headers,
+                  body: JSON.stringify({ initData: accData.mrg_init_data, start_param: "ref_IRN1G3XD" })
+                }, 2, 800).catch(() => {});
+              }
               await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-mining", {
                 method: "POST",
                 headers,
