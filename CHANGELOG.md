@@ -4,6 +4,29 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **System Retirement of "Daily Bonus" & Omnipresent Account Removal Suite (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Complete Eradication of "📅 Daily Bonus"**:
+    * Purged `📅 Daily Bonus` from user persistent bottom menu keyboard, inline welcome cards, stats telemetry card, and AI knowledge base.
+    * Replaced all occurrences of daily bonus with permanent `🗑️ Remove Account` controls.
+    * Converted legacy `/daily`, `/checkin`, and `ub_daily_claim` callback/commands into helpful notices clarifying that daily bonus is retired in favor of ads and referral rewards, directing users to `👥 My Accounts` and `🗑️ Remove Account`.
+  - **Omnipresent Account Removal on User Bot (`@AAAPREMIUMAPPSbot`)**:
+    * Placed `[ 🗑️ Remove Account ]` directly on the persistent bottom menu keyboard side-by-side with `[ 💎 Points & Pass ]`.
+    * Tapping `👥 My Accounts` now ALWAYS displays `[ ➕ Connect Account ]` and `[ 🗑️ Remove Account ]` side-by-side as the primary top-row inline buttons (even when accounts count is 0).
+    * If 0 accounts are connected, tapping `🗑️ Remove Account` gives a friendly empty state message with a direct `[ ➕ Connect Account ]` button.
+    * If accounts are connected, provides 1-tap `[ 🗑️ Disconnect <Name> (<Phone/ID>) ]` buttons for instant slot freeing.
+  - **Admin Bot Fleet Account Removal Suite (`@My_Router_AI_bot`)**:
+    * Added `[ 🗑️ Remove Account ]` directly onto the Admin persistent bottom menu keyboard side-by-side with `[ ➕ Add Account ]`.
+    * Added `[ 🗑️ Remove Account ]` button to `statusInlineKeyboard` and `accountsInlineKeyboard` under `👥 Accounts Management`.
+    * Added interactive removal menu callback (`btn_admin_remove_menu`) presenting a list of all 14 fleet accounts with 1-tap removal buttons (`btn_admin_del_<user_id>`).
+    * Added `btn_admin_del_` handler that immediately unlinks the worker account from KV `fleet_live_state`, dispatches `remove_account` to Upstash Redis `fleet:pending_action`, and updates fleet telemetry.
+    * Updated text commands (`🗑️ Remove Account`, `/remove`, `/remove_account`, `/delaccount`):
+      - When tapped or executed without arguments: presents the full interactive account removal picker.
+      - When executed with arguments (e.g., `/remove 8826375659`): immediately removes that target account.
+  - **Edge Deployment & Zero Phone Load**:
+    * Validated JavaScript syntax using Node.js `--check` (0 errors).
+    * Successfully uploaded and deployed to all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Zero local Python bot processes running on Samsung Galaxy A30.
+
 - **Comprehensive Admin & User Platform Modernization (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Admin Fleet & Community Command Center Upgrades (`@My_Router_AI_bot`)**:
     * **Interactive Quick Action Grid**: Integrated 2x4 inline controls into `/start`, `/menu`, and status cards (`⚡ Instant Harvest`, `💼 Universal Sweep`, `👥 Fleet Accounts`, `🌐 Cloud Mesh`, `📊 Community & Users`, `🌅 AI Briefing`, `🚀 Open Dashboard`).

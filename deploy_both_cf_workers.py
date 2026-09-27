@@ -402,7 +402,6 @@ export default {
         "   - Direct Payouts & Withdrawals: 100% direct to the user's verified Telegram bot wallets (TON for ATF/MRG/ART, BEP-20 for AI Lab/Ainovum, Arbitrum for Stones) with 0% platform fee and 0 gas fee taken by us.\n" +
         "   - Point System: Costs 100 points/day per active connected account.\n" +
         "   - Free Points & Rewards:\n" +
-        "     * 📅 Daily Bonus: Check in daily to build a 7-day streak (+30 Pts up to +150 Pts + bonus 24h slot on Day 7)!\n" +
         "     * 📺 Watch Ads: Earn +20 Points each ad (15s cooldown). Watching 50 ads unlocks a free bonus slot!\n" +
         "     * 👥 Invite Friends: Earn +500 Points for every friend who joins & verifies!\n" +
         "   - VIP Subscription Passes (Telegram Stars):\n" +
@@ -476,7 +475,7 @@ export default {
       const pLow = prompt.toLowerCase();
       let fallbackAns = `Hello ${senderName}! I am Ari AI, your official copilot for AAA Auto Mining.\n\n` +
         `• *Connect Account:* Tap ➕ Connect Account to start cloud farming 8 bots.\n` +
-        `• *Daily Streak:* Check in daily for +30 up to +150 Points and bonus slots!\n` +
+        `• *Remove Account:* Tap 👥 My Accounts or 🗑️ Remove Account to disconnect.\n` +
         `• *Points:* Daily cost is 100 Pts/day. Earn +20 Pts watching ads or +500 Pts per referral.\n` +
         `• *VIP Passes:* Day (15 Stars), Weekly (45 Stars), and Monthly (120 Stars) passes waive all points fees!\n` +
         `• *Direct Payouts:* Mined tokens deposit directly to your Telegram bot balances with 0 fees.\n` +
@@ -493,28 +492,16 @@ export default {
           `Your session is encrypted in the cloud and automatically farms all 8 bots 24/7 with zero battery load on your phone!`;
       } else if (pLow.includes("remove") || pLow.includes("disconnect") || pLow.includes("delete account")) {
         fallbackAns = `🗑️ *How to Disconnect / Remove Accounts:*\n\n` +
-          `1. Tap *👥 My Accounts* in the menu.\n` +
+          `1. Tap *👥 My Accounts* or *🗑️ Remove Account* in the menu.\n` +
           `2. Tap the *🗑️ Remove <Account>* button next to the account.\n` +
           `3. Or simply send \`/remove\` to open the interactive removal menu, or \`/remove +880...\`.\n\n` +
           `Disconnecting an account immediately frees up your cloud slot!`;
       } else if (pLow.includes("point") || pLow.includes("earn") || pLow.includes("free")) {
         fallbackAns = `💎 *How to Earn Free Mining Points:*\n\n` +
-          `• *📅 Daily Bonus:* Tap *📅 Daily Bonus* to earn +30 up to +150 Points every day!\n` +
           `• *📺 Watch Ads:* Tap *Watch Ad* to get *+20 Points* (every 15s). Reach 50 ads for a free bonus slot!\n` +
           `• *👥 Invite Friends:* Share your referral link to earn *+500 Points* for every friend who joins & verifies!\n` +
           `• *🎁 Welcome Gift:* Every new verified user gets 100 free points.\n\n` +
           `Each connected account uses 100 points/day for continuous 24/7 cloud mining.`;
-      } else if (pLow.includes("daily") || pLow.includes("streak") || pLow.includes("checkin")) {
-        fallbackAns = `📅 *7-Day Daily Check-in Streak System:*\n\n` +
-          `Check in once every 24 hours to earn escalating rewards:\n` +
-          `• Day 1: +30 Points\n` +
-          `• Day 2: +45 Points\n` +
-          `• Day 3: +60 Points\n` +
-          `• Day 4: +80 Points\n` +
-          `• Day 5: +100 Points\n` +
-          `• Day 6: +125 Points\n` +
-          `• Day 7: +150 Points + 1 Extra 24h Cloud Slot!\n\n` +
-          `Tap *📅 Daily Bonus* in the menu or send \`/daily\` to claim!`;
       } else if (pLow.includes("withdraw") || pLow.includes("payout") || pLow.includes("cashout") || pLow.includes("balance")) {
         fallbackAns = `💳 *How Withdrawals & Payouts Work:*\n\n` +
           `• All 8 mining bots accumulate tokens directly inside their respective official Telegram bot balances:\n` +
@@ -1864,19 +1851,34 @@ fi
             ],
             [
               { text: "👥 Fleet Accounts (14)", callback_data: "btn_accounts" },
-              { text: "🌐 Cloud Mesh (5/5)", callback_data: "btn_mesh" }
+              { text: "🗑️ Remove Account", callback_data: "btn_admin_remove_menu" }
             ],
             [
-              { text: "📊 Community & Users", callback_data: "btn_community" },
-              { text: "🌅 AI Briefing", callback_data: "btn_briefing" }
+              { text: "🌐 Cloud Mesh (5/5)", callback_data: "btn_mesh" },
+              { text: "📊 Community & Users", callback_data: "btn_community" }
+            ],
+            [
+              { text: "🌅 AI Briefing", callback_data: "btn_briefing" },
+              { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }
+            ]
+          ]
+        };
+
+        const accountsInlineKeyboard = {
+          inline_keyboard: [
+            [
+              { text: "➕ Add Account", callback_data: "btn_add_account" },
+              { text: "🗑️ Remove Account", callback_data: "btn_admin_remove_menu" }
+            ],
+            [
+              { text: "🔄 Refresh Fleet Roster", callback_data: "btn_accounts" },
+              { text: "⚡ Instant Harvest", callback_data: "btn_harvest" }
             ],
             [
               { text: "🚀 Open Executive Dashboard", web_app: { url: dashUrl } }
             ]
           ]
         };
-
-        const accountsInlineKeyboard = statusInlineKeyboard;
         const meshInlineKeyboard = statusInlineKeyboard;
 
         const cancelKeyboard = {
@@ -1895,8 +1897,11 @@ fi
               { text: "🚀 Open WebApp Dashboard", web_app: { url: dashUrl } }
             ],
             [
-              { text: "👥 Accounts Management" },
-              { text: "➕ Add Account" }
+              { text: "👥 Accounts Management" }
+            ],
+            [
+              { text: "➕ Add Account" },
+              { text: "🗑️ Remove Account" }
             ],
             [
               { text: "⚡ Instant Harvest" },
@@ -1985,6 +1990,85 @@ fi
           } catch (_) {}
         };
 
+        const KNOWN_PHONES = {
+          "6727787768": "+8801317342850",
+          "8881914294": "+8801943805617",
+          "7648254021": "+8801790208077",
+          "8826375659": "+8801575842094",
+          "8450010161": "+14302084365",
+          "8782429452": "+8801867539837",
+          "7734849205": "+8801718056423",
+          "8025472383": "+8801797795624",
+          "8851426148": "+8801727651288",
+          "8203342513": "+8801729892810",
+          "8190649727": "+8801571089931",
+          "7487048946": "+8801774578536",
+          "8741547543": "+8801838268380",
+          "8727040932": "+918930504750"
+        };
+
+        const KNOWN_PHONES_BY_INDEX = {
+          1: "+8801317342850",
+          2: "+8801943805617",
+          3: "+8801790208077",
+          4: "+8801575842094",
+          5: "+14302084365",
+          6: "+8801867539837",
+          7: "+8801718056423",
+          8: "+8801797795624",
+          9: "+8801727651288",
+          10: "+8801729892810",
+          11: "+8801571089931",
+          12: "+8801774578536",
+          13: "+8801838268380",
+          14: "+918930504750"
+        };
+
+        const DEFAULT_FLEET_ACCOUNTS = [
+          { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
+          { index: 2, name: "Nancy", user_id: 8881914294, phone: "+8801943805617" },
+          { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
+          { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
+          { index: 5, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
+          { index: 6, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837" },
+          { index: 7, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423" },
+          { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
+          { index: 9, name: "Node 9", user_id: 8851426148, phone: "+8801727651288" },
+          { index: 10, name: "Node 10", user_id: 8203342513, phone: "+8801729892810" },
+          { index: 11, name: "MD. Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
+          { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
+          { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
+          { index: 14, name: "Node 14", user_id: 8727040932, phone: "+918930504750" }
+        ];
+
+        const cleanName = (acc, idx) => {
+          let n = (acc.name || "").trim();
+          if (n.includes("Никитин")) return "Nadim";
+          if (n.includes("Морозов")) return "Kaitlyn";
+          if (n.includes("Соколов") || n.startsWith("Tg")) return "Node 9";
+          if (n.includes("Кузнецов") || n.includes("Girtt")) return "Node 10";
+          return n || `Account #${idx + 1}`;
+        };
+
+        const getFleetAccounts = async () => {
+          let accounts = [];
+          try {
+            if (env.BACKUP_KV) {
+              const raw = await env.BACKUP_KV.get("fleet_live_state");
+              if (raw) {
+                const s = JSON.parse(raw);
+                if (s.accounts && Array.isArray(s.accounts) && s.accounts.length > 0) {
+                  accounts = s.accounts;
+                }
+              }
+            }
+          } catch (_) {}
+          if (!accounts || accounts.length === 0) {
+            accounts = DEFAULT_FLEET_ACCOUNTS.map(a => Object.assign({}, a));
+          }
+          return accounts;
+        };
+
         // A. Handle Inline Keyboard Callback Queries
         if (update.callback_query) {
           const cb = update.callback_query;
@@ -2010,77 +2094,7 @@ fi
 
           if (chatId) {
             if (cbData === "btn_accounts") {
-              let accounts = [];
-              try {
-                const raw = await env.BACKUP_KV.get("fleet_live_state");
-                if (raw) {
-                  const s = JSON.parse(raw);
-                  if (s.accounts) accounts = s.accounts;
-                }
-              } catch (_) {}
-              if (accounts.length === 0) {
-                accounts = [
-                  { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
-                  { index: 2, name: "Nancy", user_id: 8881914294, phone: "+8801943805617" },
-                  { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
-                  { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
-                  { index: 5, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
-                  { index: 6, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837" },
-                  { index: 7, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423" },
-                  { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
-                  { index: 9, name: "Node 9", user_id: 8851426148, phone: "+8801727651288" },
-                  { index: 10, name: "Node 10", user_id: 8203342513, phone: "+8801729892810" },
-                  { index: 11, name: "MD. Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
-                  { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
-                  { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
-                  { index: 14, name: "Node 14", user_id: 8727040932, phone: "+918930504750" }
-                ];
-              }
-
-              const cleanName = (acc, idx) => {
-                let n = (acc.name || "").trim();
-                if (n.includes("Никитин")) return "Nadim";
-                if (n.includes("Морозов")) return "Kaitlyn";
-                if (n.includes("Соколов") || n.startsWith("Tg")) return "Node 9";
-                if (n.includes("Кузнецов") || n.includes("Girtt")) return "Node 10";
-                return n || `Account #${idx + 1}`;
-              };
-
-              const KNOWN_PHONES = {
-                "6727787768": "+8801317342850",
-                "8881914294": "+8801943805617",
-                "7648254021": "+8801790208077",
-                "8826375659": "+8801575842094",
-                "8450010161": "+14302084365",
-                "8782429452": "+8801867539837",
-                "7734849205": "+8801718056423",
-                "8025472383": "+8801797795624",
-                "8851426148": "+8801727651288",
-                "8203342513": "+8801729892810",
-                "8190649727": "+8801571089931",
-                "7487048946": "+8801774578536",
-                "8741547543": "+8801838268380",
-                "8727040932": "+918930504750"
-              };
-
-              const KNOWN_PHONES_BY_INDEX = {
-                1: "+8801317342850",
-                2: "+8801943805617",
-                3: "+8801790208077",
-                4: "+8801575842094",
-                5: "+14302084365",
-                6: "+8801867539837",
-                7: "+8801718056423",
-                8: "+8801797795624",
-                9: "+8801727651288",
-                10: "+8801729892810",
-                11: "+8801571089931",
-                12: "+8801774578536",
-                13: "+8801838268380",
-                14: "+918930504750"
-              };
-
-
+              const accounts = await getFleetAccounts();
               const lines = accounts.slice(0, 14).map((a, i) => {
                 const isHost = String(a.user_id) === "6727787768";
                 const tag = isHost ? "Master Host 👑" : "🟢 Active";
@@ -2091,7 +2105,7 @@ fi
 
               const rep = `👥 *Accounts Management Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `🟢 *Fleet Status:* \`14/14 Accounts Online & Active\`\n` +
+                `🟢 *Fleet Status:* \`${accounts.length}/14 Accounts Online & Active\`\n` +
                 `🤖 *24/7 Farming:* All 8 Bots Active (Stones • ATF • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum)\n` +
                 `🛡️ *Security:* 100% Anti-Ban Verified • Isolated Wallets & Proxies\n\n` +
                 `📋 *Connected Accounts:*\n` +
@@ -2099,12 +2113,68 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `💡 *Quick Actions:*\n` +
                 `• Tap *➕ Add Account* below to connect a new number\n` +
+                `• Tap *🗑️ Remove Account* to disconnect any account\n` +
                 `• Tap *🚀 Open Executive Dashboard* to view live cards & balances\n` +
                 `• Send \`/acc <1-14>\` (e.g. \`/acc 1\`) to inspect any account in detail`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: accountsInlineKeyboard })
+              }).catch(() => {});
+            } else if (cbData === "btn_admin_remove_menu") {
+              const accounts = await getFleetAccounts();
+              const buttons = accounts.map((a, i) => [
+                { text: `🗑️ Remove #${a.index || (i+1)} ${cleanName(a, i)} (${a.phone || a.user_id})`, callback_data: `btn_admin_del_${a.user_id || a.phone}` }
+              ]);
+              buttons.push([{ text: "🔙 Back to Fleet Accounts", callback_data: "btn_accounts" }]);
+              const rep = `🗑️ *Fleet Account Removal Hub*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `Select an account below to disconnect and remove from 24/7 cloud automation:\n\n` +
+                `⚠️ _Removing an account stops all 8 mining bots on that session immediately._`;
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: { inline_keyboard: buttons } })
+              }).catch(() => {});
+            } else if (cbData.startsWith("btn_admin_del_")) {
+              const targetId = cbData.replace("btn_admin_del_", "").trim();
+              let accounts = await getFleetAccounts();
+              const removedAcc = accounts.find(a => String(a.user_id) === targetId || String(a.phone || "").replace("+", "") === targetId.replace("+", ""));
+              accounts = accounts.filter(a => String(a.user_id) !== targetId && String(a.phone || "").replace("+", "") !== targetId.replace("+", ""));
+              try {
+                if (env.BACKUP_KV) {
+                  await env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts, timestamp: Date.now() }));
+                }
+              } catch (_) {}
+
+              const recorded = {
+                id: "act_" + Date.now(),
+                action: "remove_account",
+                user_id: targetId,
+                phone: targetId.startsWith("+") ? targetId : (removedAcc ? removedAcc.phone : ""),
+                timestamp: Date.now(),
+                node: CURRENT_SUBDOMAIN
+              };
+              ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
+              if (env.BACKUP_KV) {
+                ctx.waitUntil(env.BACKUP_KV.put("pending_fleet_action", JSON.stringify(recorded), { expirationTtl: 600 }).catch(() => {}));
+              }
+              const accDesc = removedAcc ? `${removedAcc.name || "Account"} (\`${removedAcc.phone || removedAcc.user_id}\`)` : `\`${targetId}\``;
+              const rep = `✅ *Account Removed from Fleet Successfully!* 🗑️\n\n` +
+                `• *Removed:* ${accDesc}\n` +
+                `• *Remaining Active Accounts:* ${accounts.length}\n` +
+                `• *Action:* Disconnected from 24/7 cloud mining and queued for eviction.\n\n` +
+                `Tap *👥 Fleet Accounts* below to view updated fleet roster.`;
+              const repMarkup = {
+                inline_keyboard: [
+                  [{ text: "👥 Fleet Accounts", callback_data: "btn_accounts" }, { text: "🗑️ Remove Another", callback_data: "btn_admin_remove_menu" }],
+                  [{ text: "🚀 Open Dashboard", web_app: { url: dashUrl } }]
+                ]
+              };
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: repMarkup })
               }).catch(() => {});
             } else if (cbData === "btn_mesh") {
               const rep = `🌐 *MY AGY AI — Multi-Cloud Unified Mesh*\n` +
@@ -2752,33 +2822,54 @@ fi
           return new Response("OK");
         }
 
-        // 1.9 Remove Account Command (/remove_account or /delaccount)
-        if (text.startsWith("/remove_account") || text.startsWith("/removeaccount") || text.startsWith("/delaccount")) {
-          const parts = text.split(/\s+/);
-          const targetId = parts[1];
-          if (!targetId) {
-            const rep = `🗑️ *Remove Account from Fleet*\n\n` +
-              `Usage: \`/remove_account <user_id_or_phone>\`\n` +
-              `Example: \`/remove_account 8826375659\`\n\n` +
-              `💡 _You can also remove any account with 1 tap in the Mini App (Fleet -> Tap Account -> Remove)._`;
-            ctx.waitUntil(sendReply(rep, statusInlineKeyboard));
-            return new Response("OK");
-          }
-          const recorded = {
-            id: "act_" + Date.now(),
-            action: "remove_account",
-            user_id: targetId,
-            phone: targetId.startsWith("+") ? targetId : "",
-            timestamp: Date.now(),
-            node: "__SUBDOMAIN__"
-          };
-          ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
-          ctx.waitUntil(env.BACKUP_KV.put("pending_fleet_action", JSON.stringify(recorded), { expirationTtl: 600 }));
-          const rep = `🗑️ *Account Removal Dispatched!*\n\n` +
-            `• *Target:* \`${targetId}\`\n` +
-            `• *Action:* Session will be disconnected and removed from 24/7 automation.\n\n` +
-            `✅ Telemetry and accounts database updated.`;
-          ctx.waitUntil(sendReply(rep, statusInlineKeyboard));
+        // 1.9 Remove Account Command (/remove_account, /remove, /delaccount, or button "🗑️ Remove Account")
+        if (text === "🗑️ Remove Account" || text === "🗑️ Remove" || text.startsWith("/remove_account") || text.startsWith("/removeaccount") || text === "/remove" || text.startsWith("/remove ") || text.startsWith("/delaccount")) {
+          ctx.waitUntil((async () => {
+            const parts = text.split(/\s+/);
+            const targetId = (text.startsWith("/") && parts.length > 1) ? parts[1].trim().replace("+", "") : null;
+            let accounts = await getFleetAccounts();
+
+            if (!targetId) {
+              const buttons = accounts.map((a, i) => [
+                { text: `🗑️ Remove #${a.index || (i+1)} ${cleanName(a, i)} (${a.phone || a.user_id})`, callback_data: `btn_admin_del_${a.user_id || a.phone}` }
+              ]);
+              buttons.push([{ text: "🔙 Back to Fleet Accounts", callback_data: "btn_accounts" }]);
+              const rep = `🗑️ *Fleet Account Removal Hub*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `Select an account below to disconnect and remove from 24/7 cloud automation:\n\n` +
+                `⚠️ _Removing an account stops all 8 mining bots on that session immediately._`;
+              await sendReply(rep, { inline_keyboard: buttons });
+              return;
+            }
+
+            const removedAcc = accounts.find(a => String(a.user_id) === targetId || String(a.phone || "").replace("+", "") === targetId);
+            accounts = accounts.filter(a => String(a.user_id) !== targetId && String(a.phone || "").replace("+", "") !== targetId);
+            try {
+              if (env.BACKUP_KV) {
+                await env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts, timestamp: Date.now() }));
+              }
+            } catch (_) {}
+
+            const recorded = {
+              id: "act_" + Date.now(),
+              action: "remove_account",
+              user_id: targetId,
+              phone: targetId.startsWith("+") ? targetId : (removedAcc ? removedAcc.phone : ""),
+              timestamp: Date.now(),
+              node: CURRENT_SUBDOMAIN
+            };
+            ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
+            if (env.BACKUP_KV) {
+              ctx.waitUntil(env.BACKUP_KV.put("pending_fleet_action", JSON.stringify(recorded), { expirationTtl: 600 }).catch(() => {}));
+            }
+            const accDesc = removedAcc ? `${removedAcc.name || "Account"} (\`${removedAcc.phone || removedAcc.user_id}\`)` : `\`${targetId}\``;
+            const rep = `✅ *Account Removed from Fleet Successfully!* 🗑️\n\n` +
+              `• *Removed:* ${accDesc}\n` +
+              `• *Remaining Active Accounts:* ${accounts.length}\n` +
+              `• *Action:* Disconnected from 24/7 cloud mining and queued for eviction.\n\n` +
+              `Tap *👥 Fleet Accounts* below to view updated fleet roster.`;
+            await sendReply(rep, accountsInlineKeyboard);
+          })());
           return new Response("OK");
         }
 
@@ -3193,75 +3284,7 @@ fi
         // 6. Accounts Roster Command (/accounts)
         if (text === "👥 Accounts Management" || text === "👥 My Accounts (14)" || text === "👥 My Accounts (13)" || text === "👥 My Accounts" || text === "👥 Accounts" || text === "/accounts" || text.startsWith("/accounts") || text.startsWith("/acc")) {
           ctx.waitUntil((async () => {
-            let accounts = [];
-            try {
-              const raw = await env.BACKUP_KV.get("fleet_live_state");
-              if (raw) {
-                const s = JSON.parse(raw);
-                if (s.accounts) accounts = s.accounts;
-              }
-            } catch (_) {}
-            if (accounts.length === 0) {
-              accounts = [
-                { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
-                { index: 2, name: "Nancy", user_id: 8881914294, phone: "+8801943805617" },
-                { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
-                { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
-                { index: 5, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
-                { index: 6, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837" },
-                { index: 7, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423" },
-                { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
-                { index: 9, name: "Node 9", user_id: 8851426148, phone: "+8801727651288" },
-                { index: 10, name: "Node 10", user_id: 8203342513, phone: "+8801729892810" },
-                { index: 11, name: "MD. Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
-                { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
-                { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
-                { index: 14, name: "Node 14", user_id: 8727040932, phone: "+918930504750" }
-              ];
-            }
-
-            const cleanName = (acc, idx) => {
-              let n = (acc.name || "").trim();
-              if (n.includes("Никитин")) return "Nadim";
-              if (n.includes("Морозов")) return "Kaitlyn";
-              if (n.includes("Соколов") || n.startsWith("Tg")) return "Node 9";
-              if (n.includes("Кузнецов") || n.includes("Girtt")) return "Node 10";
-              return n || `Account #${idx + 1}`;
-            };
-
-            const KNOWN_PHONES = {
-              "6727787768": "+8801317342850",
-              "8881914294": "+8801943805617",
-              "7648254021": "+8801790208077",
-              "8826375659": "+8801575842094",
-              "8450010161": "+14302084365",
-              "8782429452": "+8801867539837",
-              "7734849205": "+8801718056423",
-              "8025472383": "+8801797795624",
-              "8851426148": "+8801727651288",
-              "8203342513": "+8801729892810",
-              "8190649727": "+8801571089931",
-              "7487048946": "+8801774578536",
-              "8741547543": "+8801838268380",
-              "8727040932": "+918930504750"
-            };
-
-            const KNOWN_PHONES_BY_INDEX = {
-              1: "+8801317342850",
-              2: "+8801943805617",
-              3: "+8801790208077",
-              4: "+8801575842094",
-              5: "+14302084365",
-              6: "+8801867539837",
-              7: "+8801718056423",
-              8: "+8801797795624",
-              9: "+8801727651288",
-              10: "+8801729892810",
-              11: "+8801571089931",
-              12: "+8801774578536",
-              13: "+8801838268380",
-              14: "+918930504750"
-            };
+            const accounts = await getFleetAccounts();
 
             const accParts = text.trim().split(/\s+/);
             if (accParts.length >= 2 && /^\d+$/.test(accParts[1])) {
@@ -3283,7 +3306,13 @@ fi
                   `• *Active Lineup:* 8 Mining Bots Active 24/7\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
                   `💡 _Send \`/acc <1-14>\` to inspect any account or \`/accounts\` for full fleet roster._`;
-                await sendReply(detailRep, accountsInlineKeyboard);
+                const singleAccBtns = {
+                  inline_keyboard: [
+                    [{ text: `🗑️ Remove #${targetIdx} ${cName}`, callback_data: `btn_admin_del_${a.user_id || a.phone}` }],
+                    [{ text: "🔙 Fleet Roster", callback_data: "btn_accounts" }]
+                  ]
+                };
+                await sendReply(detailRep, singleAccBtns);
                 return;
               }
             }
@@ -3298,7 +3327,7 @@ fi
 
             const rep = `👥 *Accounts Management Hub*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `🟢 *Fleet Status:* \`14/14 Accounts Online & Active\`\n` +
+              `🟢 *Fleet Status:* \`${accounts.length}/14 Accounts Online & Active\`\n` +
               `🤖 *24/7 Farming:* All 8 Bots Active (Stones • ATF • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum)\n` +
               `🛡️ *Security:* 100% Anti-Ban Verified • Isolated Wallets & Proxies\n\n` +
               `📋 *Connected Accounts:*\n` +
@@ -3306,6 +3335,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `💡 *Quick Actions:*\n` +
               `• Tap *➕ Add Account* below to connect a new number\n` +
+              `• Tap *🗑️ Remove Account* to disconnect any account\n` +
               `• Tap *🚀 Open Executive Dashboard* to view live cards & balances\n` +
               `• Send \`/acc <1-14>\` (e.g. \`/acc 1\`) to inspect any account in detail`;
             await sendReply(rep, accountsInlineKeyboard);
@@ -4028,7 +4058,7 @@ Reply to Arif naturally:`;
             ],
             [
               { text: "💎 Points & Pass" },
-              { text: "📅 Daily Bonus" }
+              { text: "🗑️ Remove Account" }
             ],
             [
               { text: "📺 Watch Ad (+20 Pts)" },
@@ -4041,18 +4071,6 @@ Reply to Arif naturally:`;
           ],
           resize_keyboard: true,
           is_persistent: true
-        };
-
-        const dailyBonusKeyboard = {
-          inline_keyboard: [
-            [
-              { text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }
-            ],
-            [
-              { text: "📺 Watch Ad (+20 Pts)", callback_data: "ub_watch_ad" },
-              { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }
-            ]
-          ]
         };
 
         const userCancelKeyboard = {
@@ -4084,7 +4102,7 @@ Reply to Arif naturally:`;
           inline_keyboard: [
             [
               { text: "🚀 Launch Cloud Miner", callback_data: "ub_start_mining" },
-              { text: "📅 Daily Bonus", callback_data: "ub_daily_claim" }
+              { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }
             ],
             [
               { text: "🎁 Invite & Earn", callback_data: "ub_referral" },
@@ -4348,47 +4366,9 @@ Reply to Arif naturally:`;
             return new Response("OK");
           }
 
-          // C2.5 Daily Check-In Bonus
+          // C2.5 Daily Check-In Bonus (Retired)
           if (cqData === "ub_daily_claim") {
-            const profile = await getUserProfile(cqChatId, cq.from);
-            const now = Date.now();
-            const elapsedHours = (now - (profile.last_daily_claim || 0)) / (3600 * 1000);
-            if (elapsedHours < 24 && profile.last_daily_claim > 0) {
-              const remHours = Math.floor(24 - elapsedHours);
-              const remMins = Math.floor(((24 - elapsedHours) % 1) * 60);
-              ctx.waitUntil(sendCqReply(`⏳ *Daily Bonus Already Claimed!*\n\nYour next check-in reward will unlock in *${remHours}h ${remMins}m*.\n\nKeep your streak alive! 🔥`, userMainKeyboard));
-              return new Response("OK");
-            }
-
-            let streak = profile.daily_streak || 0;
-            if (elapsedHours <= 48 && profile.last_daily_claim > 0) {
-              streak = (streak % 7) + 1;
-            } else {
-              streak = 1;
-            }
-
-            const rewardsByDay = [30, 45, 60, 80, 100, 125, 150];
-            const ptsEarned = rewardsByDay[streak - 1] || 50;
-            profile.daily_streak = streak;
-            profile.last_daily_claim = now;
-            profile.points = (profile.points || 0) + ptsEarned;
-
-            let extraRewardText = "";
-            if (streak === 7) {
-              profile.temp_slots = (profile.temp_slots || 0) + 1;
-              extraRewardText = "\n\n🔥 *7-DAY STREAK COMPLETE!* You unlocked *+1 FREE BONUS ACCOUNT SLOT* for 24 hours!";
-            }
-
-            await saveUserProfile(cqChatId, profile);
-
-            const repMsg = `📅 *DAILY CHECK-IN REWARD CLAIMED!* 🎁\n\n` +
-              `• *Streak Progress:* Day ${streak} / 7 Streak 🔥\n` +
-              `• *Reward Credited:* +${ptsEarned} Mining Points\n` +
-              `• *New Points Balance:* ${profile.points} Points\n` +
-              `• *Next Day Reward:* +${rewardsByDay[streak % 7]} Points${extraRewardText}\n\n` +
-              `💡 _Check in daily to build your mining reserve with zero cost!_`;
-
-            ctx.waitUntil(sendCqReply(repMsg, userMainKeyboard));
+            ctx.waitUntil(sendCqReply("ℹ️ *Daily Bonus Retired*\n\nPoints are earned via *📺 Watch Ad (+20 Pts)* and *👥 Invite Friends (+500 Pts)*!\n\nTo manage or disconnect accounts, tap *👥 My Accounts* or *🗑️ Remove Account*.", userMainKeyboard));
             return new Response("OK");
           }
 
@@ -4439,15 +4419,14 @@ Reply to Arif naturally:`;
               `• *Points Balance:* ${profile.points} Points (~${daysRemaining} days left)\n` +
               `• *Pass Status:* ${passBadge}\n` +
               `• *Daily Fee:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${(profile.accounts || []).length * 100} Pts/day`}\n` +
-              `• *Daily Streak:* Day ${profile.daily_streak || 0} / 7 🔥\n` +
               `• *Ads Watched:* ${profile.ads_watched || 0} / 50 (${(profile.ads_watched || 0) % 50}/50 towards bonus slot)\n` +
               `• *Referral Friends:* ${profile.referral_count || 0} (${(profile.referral_count || 0) * 500} Pts earned)\n` +
               `• *Active Pools (8/8):* ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
               `• *Cloud MTProto:* 🟢 24/7 Serverless Running`;
             const statsBtns = {
               inline_keyboard: [
-                [{ text: "📅 Daily Bonus", callback_data: "ub_daily_claim" }, { text: "💳 Payouts Guide", callback_data: "ub_withdraw" }],
-                [{ text: "👥 Manage Accounts", callback_data: "ub_start_mining" }, { text: "➕ Connect Account", callback_data: "ub_add_acc" }],
+                [{ text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }, { text: "💳 Payouts Guide", callback_data: "ub_withdraw" }],
+                [{ text: "👥 Manage Accounts", callback_data: "ub_accounts_list" }, { text: "➕ Connect Account", callback_data: "ub_add_acc" }],
                 [{ text: "🌟 Upgrade Slots & Passes", callback_data: "ub_buy_stars" }]
               ]
             };
@@ -4543,7 +4522,12 @@ Reply to Arif naturally:`;
           if (cqData === "ub_remove_menu") {
             const profile = await getUserProfile(cqChatId, cq.from);
             if (!profile.accounts || profile.accounts.length === 0) {
-              ctx.waitUntil(sendCqReply("ℹ️ *No Connected Accounts*\n\nYou do not have any active mining accounts connected to remove.\n\nTap *➕ Connect Account* to link an account!", userMainKeyboard));
+              ctx.waitUntil(sendCqReply("ℹ️ *No Connected Accounts*\n\nYou do not have any active mining accounts connected to remove.\n\nTap *➕ Connect Account* below to link your first account!", {
+                inline_keyboard: [
+                  [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }],
+                  [{ text: "🔙 Back to Accounts", callback_data: "ub_accounts_list" }]
+                ]
+              }));
               return new Response("OK");
             }
             const promptTxt = `🗑️ *SELECT AN ACCOUNT TO DISCONNECT:*\n\n` +
@@ -4588,7 +4572,8 @@ Reply to Arif naturally:`;
               `💡 _Every account automatically farms all 8 bots: ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, and Ainovum._`;
 
             const inlineBtns = [
-              [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
+              [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
+              [{ text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
             ];
             if (profile.accounts && profile.accounts.length > 0) {
               for (const a of profile.accounts) {
@@ -5061,10 +5046,10 @@ Reply to Arif naturally:`;
               `💡 _Every account automatically farms all 8 bots: ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, and Ainovum._`;
 
             const inlineBtns = [
-              [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
+              [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
+              [{ text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
             ];
             if (profile.accounts && profile.accounts.length > 0) {
-              inlineBtns.push([{ text: "🗑️ Remove / Disconnect Account", callback_data: "ub_remove_menu" }]);
               for (const a of profile.accounts) {
                 inlineBtns.push([{ text: `🗑️ Remove ${a.name || a.phone} (${a.phone || a.user_id})`, callback_data: `ub_disconnect_${a.user_id || a.phone}` }]);
               }
@@ -5073,14 +5058,14 @@ Reply to Arif naturally:`;
             return;
           }
 
-          // 2.1 🗑️ Remove / Disconnect Account Commands (/remove, /remove_account, /disconnect, /delaccount)
-          if (text.startsWith("/remove_account") || text.startsWith("/remove") || text.startsWith("/disconnect") || text.startsWith("/delaccount")) {
+          // 2.1 🗑️ Remove / Disconnect Account Commands (/remove, /remove_account, /disconnect, /delaccount, or button "🗑️ Remove Account")
+          if (text === "🗑️ Remove Account" || text === "🗑️ Remove" || text.startsWith("/remove_account") || text.startsWith("/remove") || text.startsWith("/disconnect") || text.startsWith("/delaccount")) {
             const parts = text.split(/\s+/);
-            if (parts.length > 1) {
+            if (parts.length > 1 && text.startsWith("/")) {
               const query = parts[1].trim().replace("+", "");
               const removedAcc = (profile.accounts || []).find(a => String(a.user_id) === query || String(a.phone || "").replace("+", "") === query);
               if (removedAcc) {
-                profile.accounts = profile.accounts.filter(a => String(a.user_id) !== String(removedAcc.user_id));
+                profile.accounts = profile.accounts.filter(a => String(a.user_id) !== String(removedAcc.user_id) && String(a.phone || "").replace("+", "") !== query);
                 await saveUserProfile(chatId, profile);
                 const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
                 const repMsg = `✅ *Account Disconnected Successfully!* 🗑️\n\n` +
@@ -5097,7 +5082,11 @@ Reply to Arif naturally:`;
             }
 
             if (!profile.accounts || profile.accounts.length === 0) {
-              await sendUserReply("ℹ️ *No Connected Accounts*\n\nYou do not have any active mining accounts connected to remove.\n\nTap *➕ Connect Account* to link an account!", userMainKeyboard);
+              await sendUserReply("ℹ️ *No Connected Accounts*\n\nYou do not have any active mining accounts connected to remove.\n\nTap *➕ Connect Account* below to link your first account!", {
+                inline_keyboard: [
+                  [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }]
+                ]
+              });
               return;
             }
 
@@ -5171,8 +5160,7 @@ Reply to Arif naturally:`;
               `• *Subscription Pass:* ${passBadge}\n` +
               `• *Farming Status:* ${farmStatus}\n` +
               `• *Daily Mining Cost:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${profile.accounts.length * 100} Pts/day (100 Pts/account)`}\n` +
-              `• *Days of Mining Remaining:* ~${daysRemaining} days\n` +
-              `• *Daily Streak:* Day ${profile.daily_streak || 0} / 7 Streak 🔥\n\n` +
+              `• *Days of Mining Remaining:* ~${daysRemaining} days\n\n` +
               `📊 *Account Slots Breakdown:*\n` +
               `• *Standard Slots:* ${profile.slots || 1}\n` +
               `• *Bonus Slots (from 50 Ads):* ${profile.temp_slots || 0}\n` +
@@ -5186,7 +5174,7 @@ Reply to Arif naturally:`;
 
             await sendUserReply(ptsMsg, {
               inline_keyboard: [
-                [{ text: "📅 Claim Daily Bonus", callback_data: "ub_daily_claim" }],
+                [{ text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }, { text: "➕ Connect Account", callback_data: "ub_add_acc" }],
                 [{ text: "📺 Watch Ad (+20 Pts)", callback_data: "ub_watch_ad" }, { text: "👥 Invite (+500 Pts)", callback_data: "ub_referral" }],
                 [{ text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
@@ -5194,46 +5182,9 @@ Reply to Arif naturally:`;
             return;
           }
 
-          // 4.1 📅 Daily Bonus / Check-in Streak Command (/daily, /checkin)
+          // 4.1 Daily Bonus Notice (System Retired)
           if (text === "📅 Daily Bonus" || text === "/daily" || text.startsWith("/daily") || text === "/checkin") {
-            const now = Date.now();
-            const elapsedHours = (now - (profile.last_daily_claim || 0)) / (3600 * 1000);
-            if (elapsedHours < 24 && profile.last_daily_claim > 0) {
-              const remHours = Math.floor(24 - elapsedHours);
-              const remMins = Math.floor(((24 - elapsedHours) % 1) * 60);
-              await sendUserReply(`⏳ *Daily Bonus Already Claimed!*\n\nYour next check-in reward will unlock in *${remHours}h ${remMins}m*.\n\n• Current Streak: Day ${profile.daily_streak || 1} / 7 🔥\n• Keep your streak alive tomorrow!`, userMainKeyboard);
-              return;
-            }
-
-            let streak = profile.daily_streak || 0;
-            if (elapsedHours <= 48 && profile.last_daily_claim > 0) {
-              streak = (streak % 7) + 1;
-            } else {
-              streak = 1;
-            }
-
-            const rewardsByDay = [30, 45, 60, 80, 100, 125, 150];
-            const ptsEarned = rewardsByDay[streak - 1] || 50;
-            profile.daily_streak = streak;
-            profile.last_daily_claim = now;
-            profile.points = (profile.points || 0) + ptsEarned;
-
-            let extraRewardText = "";
-            if (streak === 7) {
-              profile.temp_slots = (profile.temp_slots || 0) + 1;
-              extraRewardText = "\n\n🔥 *7-DAY STREAK COMPLETE!* You unlocked *+1 FREE BONUS ACCOUNT SLOT* for 24 hours!";
-            }
-
-            await saveUserProfile(chatId, profile);
-
-            const repMsg = `📅 *DAILY CHECK-IN REWARD CLAIMED!* 🎁\n\n` +
-              `• *Streak Progress:* Day ${streak} / 7 Streak 🔥\n` +
-              `• *Reward Credited:* +${ptsEarned} Mining Points\n` +
-              `• *New Points Balance:* ${profile.points} Points\n` +
-              `• *Next Day Reward:* +${rewardsByDay[streak % 7]} Points${extraRewardText}\n\n` +
-              `💡 _Check in daily to build your mining reserve with zero cost!_`;
-
-            await sendUserReply(repMsg, userMainKeyboard);
+            await sendUserReply("ℹ️ *Daily Bonus Retired*\n\nPoints are earned via *📺 Watch Ad (+20 Pts)* and *👥 Invite Friends (+500 Pts)*!\n\nTo manage or disconnect accounts, tap *👥 My Accounts* or *🗑️ Remove Account*.", userMainKeyboard);
             return;
           }
 
@@ -5352,7 +5303,7 @@ Reply to Arif naturally:`;
               `Hello ${senderName}! I am your autonomous AI copilot running 24/7 in the cloud.\n\n` +
               `*What I can do for you:*\n` +
               `• *Ask Questions:* Simply type any question or guide request in this chat!\n` +
-              `• *Daily Streak:* Check in daily using *📅 Daily Bonus* to earn free points & bonus slots.\n` +
+              `• *Manage & Disconnect:* Tap *👥 My Accounts* or *🗑️ Remove Account* anytime to manage slots.\n` +
               `• *Withdrawals:* Send \`/withdraw\` for complete payout details across all 8 mining bots.\n` +
               `• *Human Admin Support:* Send \`/support <your message>\` to message Platform Admin Arif directly.\n\n` +
               `👉 Ask me anything or choose an action from the menu below!`;
