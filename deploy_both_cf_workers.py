@@ -3493,32 +3493,32 @@ Reply to Arif naturally:`;
           const usernameStr = username ? `@${username}` : "_None_";
           const uidStr = String(uid);
           const maskedUid = uidStr.length > 5 ? `${uidStr.slice(0, 4)}****${uidStr.slice(-2)}` : uidStr;
-          const refStr = profile.referred_by ? `Invited by ID \`${profile.referred_by}\`` : "_Direct Join_";
-          const refLink = `https://t.me/AAAPREMIUMAPPSbot?start=ref_${uid}`;
 
-          const activityMsg = `*AAA ATF Miner — Live Activity*\n` +
-            `🚀 *New Miner Joined!*\n` +
-            `━━━━━━━━━━━━━━━━━━━━\n` +
-            `👤 *Miner:* ${fullName}\n` +
-            `🆔 *User ID:* \`${maskedUid}\`\n` +
-            `🔗 *Username:* ${usernameStr}\n` +
-            `👥 *Referred By:* ${refStr}\n` +
-            `⚡ *Slots:* 1 Base Cloud Slot (24/7 Mining)\n` +
-            `🎁 *Welcome Bonus:* 100 Free Mining Points Credited\n\n` +
-            `🎁 *Invite & Earn:* Get +500 Points & Bonus Slots for every friend you invite!\n` +
-            `🔗 *Invite Link:* \`${refLink}\`\n` +
-            `━━━━━━━━━━━━━━━━━━━━\n` +
-            `🤖 *Bot:* @AAAPREMIUMAPPSbot\n` +
-            `⚡ *Cloud Status:* 🟢 24/7 Autonomous Mining Ready`;
+          const activityMsg = `🚀 *NEW MINER JOINED!*\n\n` +
+            `👤 ${fullName}\n` +
+            `🔗 ${usernameStr}\n` +
+            `🆔 ID: \`${maskedUid}\`\n\n` +
+            `📦 Slot: 1× Base Cloud\n` +
+            `🎁 Welcome Bonus: +100 Points\n\n` +
+            `⚡ Status: 🟢 Mining Ready\n` +
+            `☁️ Cloud Mining: 24/7\n\n` +
+            `━━━━━━━━━━━━━━━━━━\n` +
+            `🎁 *INVITE & EARN*\n` +
+            `Get +500 Points + bonus slots\n` +
+            `for every friend you invite!\n\n` +
+            `🤖 @AAAPREMIUMAPPSbot\n` +
+            `━━━━━━━━━━━━━━━━━━\n\n` +
+            `👇 *Start your mining journey*`;
 
           const activityBtns = {
             inline_keyboard: [
               [
-                { text: "⚡ Launch Cloud Miner", url: "https://t.me/AAAPREMIUMAPPSbot" },
-                { text: "👥 Refer & Earn Slots", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }
+                { text: "🚀 Launch Cloud Miner", url: "https://t.me/AAAPREMIUMAPPSbot" },
+                { text: "🎁 Invite & Earn", url: "https://t.me/AAAPREMIUMAPPSbot?start=invite" }
               ],
               [
-                { text: "📢 Announcements Channel", url: "https://t.me/AAAATFAUTOMINING" }
+                { text: "📊 My Rewards", url: "https://t.me/AAAPREMIUMAPPSbot?start=rewards" },
+                { text: "📢 Announcements", url: "https://t.me/AAAATFAUTOMINING" }
               ]
             ]
           };
@@ -3529,19 +3529,31 @@ Reply to Arif naturally:`;
         const broadcastMilestoneUnlocked = async (title, minerName, uid, achievement, bonusText = "") => {
           const uidStr = String(uid);
           const maskedUid = uidStr.length > 5 ? `${uidStr.slice(0, 4)}****${uidStr.slice(-2)}` : uidStr;
-          const msgTxt = `*AAA ATF Miner — Live Activity*\n` +
-            `🎉 *Milestone Unlocked!*\n` +
-            `━━━━━━━━━━━━━━━━━━━━\n` +
-            `👤 *Miner:* ${minerName} (\`${maskedUid}\`)\n` +
-            `🏆 *Achievement:* ${achievement}\n` +
-            (bonusText ? `🎁 *Perk:* ${bonusText}\n` : "") +
-            `⚡ *Mining automated 24/7 with* @AAAPREMIUMAPPSbot\n` +
-            `━━━━━━━━━━━━━━━━━━━━\n` +
-            `🤖 *Bot:* @AAAPREMIUMAPPSbot`;
+          const msgTxt = `🎉 *MILESTONE UNLOCKED!*\n\n` +
+            `👤 ${minerName}\n` +
+            `🆔 ID: \`${maskedUid}\`\n\n` +
+            `🏆 Achievement: ${achievement}\n` +
+            (bonusText ? `🎁 Perk: ${bonusText}\n` : "") +
+            `\n⚡ Status: 🟢 VIP Cloud Miner\n` +
+            `☁️ Cloud Mining: 24/7\n\n` +
+            `━━━━━━━━━━━━━━━━━━\n` +
+            `🎁 *INVITE & EARN*\n` +
+            `Get +500 Points + bonus slots\n` +
+            `for every friend you invite!\n\n` +
+            `🤖 @AAAPREMIUMAPPSbot\n` +
+            `━━━━━━━━━━━━━━━━━━\n\n` +
+            `👇 *Start your mining journey*`;
 
           const btns = {
             inline_keyboard: [
-              [{ text: "⚡ Start Cloud Mining", url: "https://t.me/AAAPREMIUMAPPSbot" }]
+              [
+                { text: "🚀 Launch Cloud Miner", url: "https://t.me/AAAPREMIUMAPPSbot" },
+                { text: "🎁 Invite & Earn", url: "https://t.me/AAAPREMIUMAPPSbot?start=invite" }
+              ],
+              [
+                { text: "📊 My Rewards", url: "https://t.me/AAAPREMIUMAPPSbot?start=rewards" },
+                { text: "📢 Announcements", url: "https://t.me/AAAATFAUTOMINING" }
+              ]
             ]
           };
 
@@ -3665,6 +3677,22 @@ Reply to Arif naturally:`;
           ]
         };
 
+        const userWelcomeInlineKeyboard = {
+          inline_keyboard: [
+            [
+              { text: "🚀 Start Mining", callback_data: "ub_start_mining" },
+              { text: "👥 Invite Friends", callback_data: "ub_referral" }
+            ],
+            [
+              { text: "🎁 My Rewards", callback_data: "ub_rewards" },
+              { text: "📊 My Stats", callback_data: "ub_stats" }
+            ],
+            [
+              { text: "📢 Announcements", url: "https://t.me/AAAATFAUTOMINING" }
+            ]
+          ]
+        };
+
         const starsUpgradeKeyboard = {
           inline_keyboard: [
             [
@@ -3754,23 +3782,38 @@ Reply to Arif naturally:`;
               ctx.waitUntil(broadcastNewMinerJoined(profile, cqChatId, cq.from));
             }
 
-            const welcomeMsg = `🌟 *WELCOME TO AAA AUTO MINING PLATFORM!* 🚀\n` +
-              `━━━━━━━━━━━━━━━━━━━━\n` +
-              `👤 *Miner:* ${cqSenderName}\n` +
-              `🆔 *User ID:* \`${cqChatId}\`\n` +
-              `⚡ *Cloud Slots:* 1 Base Slot (24/7 Mining)\n` +
-              `🎁 *Welcome Bonus:* +100 Free Points Credited!\n` +
-              `🔗 *Your Invite Link:*\n\`https://t.me/AAAPREMIUMAPPSbot?start=ref_${cqChatId}\`\n` +
-              `━━━━━━━━━━━━━━━━━━━━\n\n` +
-              `💎 *How it works:*\n` +
-              `• *Connect Account:* Add your Telegram account to farm 8 mining bots automatically in the cloud.\n` +
-              `• *Point System:* Daily cost is 100 points/day per connected account (0 fee with VIP Pass).\n` +
-              `• *Watch Ads:* Earn +20 Points each ad (or +40 with Monthly Pass).\n` +
-              `• *Invite Friends:* Earn +500 Points for every friend who joins & verifies.\n` +
-              `• *VIP Subscriptions:* Day, Weekly, and Monthly Passes via Telegram Stars!\n` +
-              `• *Ari AI Copilot:* Ask normal questions like help or guides anytime in this chat.\n\n` +
-              `Use the quick menu below to get started:`;
-            ctx.waitUntil(sendCqReply(welcomeMsg, userMainKeyboard));
+            const maskedUid = String(cqChatId).length > 5 ? `${String(cqChatId).slice(0, 4)}****${String(cqChatId).slice(-2)}` : String(cqChatId);
+            const usernameStr = cq.from?.username ? `@${cq.from.username}` : "_None_";
+
+            const welcomeMsg = `🚀 *NEW MINER JOINED!*\n\n` +
+              `━━━━━━━━━━━━━━━━━━\n` +
+              `👤 *Miner*\n` +
+              `${cqSenderName}\n\n` +
+              `🆔 *User ID*\n` +
+              `\`${maskedUid}\`\n\n` +
+              `🔗 *Username*\n` +
+              `${usernameStr}\n\n` +
+              `📦 *Mining Slot*\n` +
+              `1× Base Cloud Slot\n\n` +
+              `🎁 *Welcome Bonus*\n` +
+              `+100 Mining Points\n` +
+              `━━━━━━━━━━━━━━━━━━\n\n` +
+              `⚡ *MINING STATUS*\n` +
+              `🟢 Active & Ready\n` +
+              `☁️ Cloud Mining: 24/7\n\n` +
+              `━━━━━━━━━━━━━━━━━━\n` +
+              `🎁 *INVITE & EARN*\n\n` +
+              `Invite friends and earn:\n\n` +
+              `➕ +500 Points\n` +
+              `🎟️ Bonus Mining Slot\n\n` +
+              `The more friends you invite,\n` +
+              `the more you can earn!\n` +
+              `━━━━━━━━━━━━━━━━━━\n\n` +
+              `🤖 *Bot:* @AAAPREMIUMAPPSbot\n\n` +
+              `👇 *Choose an option below:*`;
+
+            ctx.waitUntil(sendCqReply(welcomeMsg, userWelcomeInlineKeyboard));
+            ctx.waitUntil(sendCqReply("📱 *Main Navigation Menu Ready:*", userMainKeyboard));
             return new Response("OK");
           }
 
@@ -3837,6 +3880,115 @@ Reply to Arif naturally:`;
                 [{ text: "📤 Share to Telegram", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }]
               ]
             }));
+            return new Response("OK");
+          }
+
+          // C1. Quick Start Mining
+          if (cqData === "ub_start_mining") {
+            const profile = await getUserProfile(cqChatId, cq.from);
+            if (!profile.accounts || profile.accounts.length === 0) {
+              const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+              const hasPass = profile.subscription_expiry && profile.subscription_expiry > Date.now();
+              if (!hasPass && profile.points < 100) {
+                const lowPtsMsg = `⚠️ *Insufficient Points to Connect Account*\n\n` +
+                  `Connecting an account requires at least *100 Points* for Day 1 automated cloud farming (or an active VIP Pass).\n` +
+                  `Your balance: *${profile.points} Points*.\n\n` +
+                  `*Quickly get access:*\n` +
+                  `• 🎟️ *Get a Day Pass (15 Stars)* for unlimited 24h mining\n` +
+                  `• 📺 Watch an ad (+20 Pts)\n` +
+                  `• 👥 Invite a friend (+500 Pts)`;
+                ctx.waitUntil(sendCqReply(lowPtsMsg, userMainKeyboard));
+                return new Response("OK");
+              }
+
+              if (env.BACKUP_KV) {
+                await env.BACKUP_KV.put("login_flow:user_" + cqChatId, JSON.stringify({ step: "waiting_phone" }), { expirationTtl: 600 }).catch(() => {});
+              }
+              const promptPhone = `📱 *Connect Telegram Account for 24/7 Cloud Mining*\n\n` +
+                `Please send the phone number of the Telegram account you want to connect:\n\n` +
+                `• *Format:* \`+88017XXXXXXXX\` or \`017XXXXXXXX\`\n` +
+                `• *International:* \`+1...\`, \`+44...\`, \`+91...\`\n\n` +
+                `🔒 *100% Serverless & Encrypted:*\n` +
+                `Your session runs safely in the cloud and automatically binds to all 8 mining pools.\n\n` +
+                `_(Send phone number or tap ❌ Cancel Connection below)_`;
+              ctx.waitUntil(sendCqReply(promptPhone, userCancelKeyboard));
+              return new Response("OK");
+            } else {
+              const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+              const isCovered = profile.subscription_expiry && profile.subscription_expiry > Date.now();
+              let passBadge = "Free Tier";
+              if (isCovered) {
+                const remMs = profile.subscription_expiry - Date.now();
+                const dLeft = Math.floor(remMs / (86400 * 1000));
+                const hLeft = Math.floor((remMs % (86400 * 1000)) / (3600 * 1000));
+                const tName = profile.subscription_tier === "month" ? "💎 Monthly Pass" : (profile.subscription_tier === "week" ? "🎟️ Weekly Pass" : "🎟️ Day Pass");
+                passBadge = `${tName} (${dLeft > 0 ? `${dLeft}d ` : ""}${hLeft}h left)`;
+              }
+              const accList = profile.accounts.map((a, i) =>
+                `*${i + 1}.* \`${a.phone || a.user_id}\` (${a.name || "User"}) — 🟢 Active Cloud Farming`
+              ).join("\n");
+              const accMsg = `👥 *MY CONNECTED ACCOUNTS* 📱\n\n` +
+                `• *Slots In Use:* ${profile.accounts.length} / ${totalSlots}\n` +
+                `• *Pass Status:* ${passBadge}\n` +
+                `• *Points Balance:* ${profile.points} Pts\n\n` +
+                `📱 *Active Accounts:*\n${accList}\n\n` +
+                `💡 _Every account automatically farms all 8 pools 24/7 in the cloud._`;
+              const inlineBtns = [
+                [{ text: "➕ Connect Another Account", callback_data: "ub_add_acc" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
+              ];
+              ctx.waitUntil(sendCqReply(accMsg, { inline_keyboard: inlineBtns }));
+              return new Response("OK");
+            }
+          }
+
+          // C2. Rewards Hub
+          if (cqData === "ub_rewards") {
+            const profile = await getUserProfile(cqChatId, cq.from);
+            const isMonthlyPass = profile.subscription_tier === "month" && profile.subscription_expiry && profile.subscription_expiry > Date.now();
+            const adPts = isMonthlyPass ? 40 : 20;
+            const rewMsg = `🎁 *MY REWARDS & EARNING HUB* 💎\n\n` +
+              `• *Available Balance:* ${profile.points} Mining Points\n` +
+              `• *Ads Watched:* ${profile.ads_watched || 0}/50 (Earn +${adPts} Pts/view)\n` +
+              `• *Next Bonus Slot:* ${(profile.ads_watched || 0) % 50}/50 ads\n` +
+              `• *Referral Earnings:* ${(profile.referral_count || 0) * 500} Pts (${profile.referral_count || 0} friends)\n\n` +
+              `Earn free points below:`;
+            const rewBtns = {
+              inline_keyboard: [
+                [{ text: `📺 Watch Ad (+${adPts} Pts)`, callback_data: "ub_watch_ad" }, { text: "👥 Invite (+500 Pts)", callback_data: "ub_referral" }],
+                [{ text: "🌟 Buy Pass (Telegram Stars)", callback_data: "ub_buy_stars" }]
+              ]
+            };
+            ctx.waitUntil(sendCqReply(rewMsg, rewBtns));
+            return new Response("OK");
+          }
+
+          // C3. Mining Fleet Stats
+          if (cqData === "ub_stats") {
+            const profile = await getUserProfile(cqChatId, cq.from);
+            const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+            const isCovered = profile.subscription_expiry && profile.subscription_expiry > Date.now();
+            let passBadge = "Free Tier";
+            if (isCovered) {
+              const remMs = profile.subscription_expiry - Date.now();
+              const dLeft = Math.floor(remMs / (86400 * 1000));
+              const hLeft = Math.floor((remMs % (86400 * 1000)) / (3600 * 1000));
+              const tName = profile.subscription_tier === "month" ? "💎 Monthly Pass" : (profile.subscription_tier === "week" ? "🎟️ Weekly Pass" : "🎟️ Day Pass");
+              passBadge = `${tName} (${dLeft > 0 ? `${dLeft}d ` : ""}${hLeft}h left)`;
+            }
+            const statsMsg = `📊 *MY MINING FLEET STATS* ⚡\n\n` +
+              `• *Connected Accounts:* ${(profile.accounts || []).length} / ${totalSlots} Slots\n` +
+              `• *Points Balance:* ${profile.points} Points\n` +
+              `• *Pass Status:* ${passBadge}\n` +
+              `• *Daily Fee:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${(profile.accounts || []).length * 100} Pts/day`}\n` +
+              `• *Active Pools (8/8):* ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
+              `• *Cloud MTProto:* 🟢 24/7 Serverless Running`;
+            const statsBtns = {
+              inline_keyboard: [
+                [{ text: "👥 Manage Accounts", callback_data: "ub_start_mining" }, { text: "➕ Connect Account", callback_data: "ub_add_acc" }],
+                [{ text: "🌟 Upgrade Slots & Passes", callback_data: "ub_buy_stars" }]
+              ]
+            };
+            ctx.waitUntil(sendCqReply(statsMsg, statsBtns));
             return new Response("OK");
           }
 
@@ -4254,8 +4406,109 @@ Reply to Arif naturally:`;
             return;
           }
 
+          // Deep-link routing for /start
+          if (text.startsWith("/start invite") || text === "/invite") {
+            const refLink = `https://t.me/AAAPREMIUMAPPSbot?start=ref_${chatId}`;
+            const refMsg = `👥 *INVITE FRIENDS & EARN POINTS* 🚀\n\n` +
+              `Share your personal referral link with friends. For every friend who joins & verifies:\n` +
+              `🎁 *You earn +500 Points!* (5 full days of automated cloud mining!)\n` +
+              `🎁 *Your friend receives 100 Free Welcome Points!*\n\n` +
+              `🔗 *Your Referral Link:*\n\`${refLink}\`\n\n` +
+              `📊 *Your Referral Stats:*\n` +
+              `• *Invited Users:* ${profile.referral_count || 0}\n` +
+              `• *Points Earned:* ${(profile.referral_count || 0) * 500} Pts`;
+            await sendUserReply(refMsg, {
+              inline_keyboard: [
+                [{ text: "📤 Share to Telegram", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }]
+              ]
+            });
+            return;
+          }
+
+          if (text.startsWith("/start rewards") || text === "/rewards") {
+            const isMonthlyPass = profile.subscription_tier === "month" && profile.subscription_expiry && profile.subscription_expiry > Date.now();
+            const adPts = isMonthlyPass ? 40 : 20;
+            const rewMsg = `🎁 *MY REWARDS & EARNING HUB* 💎\n\n` +
+              `• *Available Balance:* ${profile.points} Mining Points\n` +
+              `• *Ads Watched:* ${profile.ads_watched || 0}/50 (Earn +${adPts} Pts/view)\n` +
+              `• *Next Bonus Slot:* ${(profile.ads_watched || 0) % 50}/50 ads\n` +
+              `• *Referral Earnings:* ${(profile.referral_count || 0) * 500} Pts (${profile.referral_count || 0} friends)\n\n` +
+              `Earn free points below:`;
+            const rewBtns = {
+              inline_keyboard: [
+                [{ text: `📺 Watch Ad (+${adPts} Pts)`, callback_data: "ub_watch_ad" }, { text: "👥 Invite (+500 Pts)", callback_data: "ub_referral" }],
+                [{ text: "🌟 Buy Pass (Telegram Stars)", callback_data: "ub_buy_stars" }]
+              ]
+            };
+            await sendUserReply(rewMsg, rewBtns);
+            return;
+          }
+
+          if (text.startsWith("/start stats") || text === "/stats") {
+            const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+            const isCovered = profile.subscription_expiry && profile.subscription_expiry > Date.now();
+            let passBadge = "Free Tier";
+            if (isCovered) {
+              const remMs = profile.subscription_expiry - Date.now();
+              const dLeft = Math.floor(remMs / (86400 * 1000));
+              const hLeft = Math.floor((remMs % (86400 * 1000)) / (3600 * 1000));
+              const tName = profile.subscription_tier === "month" ? "💎 Monthly Pass" : (profile.subscription_tier === "week" ? "🎟️ Weekly Pass" : "🎟️ Day Pass");
+              passBadge = `${tName} (${dLeft > 0 ? `${dLeft}d ` : ""}${hLeft}h left)`;
+            }
+            const statsMsg = `📊 *MY MINING FLEET STATS* ⚡\n\n` +
+              `• *Connected Accounts:* ${(profile.accounts || []).length} / ${totalSlots} Slots\n` +
+              `• *Points Balance:* ${profile.points} Points\n` +
+              `• *Pass Status:* ${passBadge}\n` +
+              `• *Daily Fee:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${(profile.accounts || []).length * 100} Pts/day`}\n` +
+              `• *Active Pools (8/8):* ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
+              `• *Cloud MTProto:* 🟢 24/7 Serverless Running`;
+            const statsBtns = {
+              inline_keyboard: [
+                [{ text: "👥 Manage Accounts", callback_data: "ub_start_mining" }, { text: "➕ Connect Account", callback_data: "ub_add_acc" }],
+                [{ text: "🌟 Upgrade Slots & Passes", callback_data: "ub_buy_stars" }]
+              ]
+            };
+            await sendUserReply(statsMsg, statsBtns);
+            return;
+          }
+
           // 1. /start, /menu
           if (text.startsWith("/start") || text === "/menu") {
+            if ((!profile.accounts || profile.accounts.length === 0) && !text.includes("menu")) {
+              const maskedUid = String(chatId).length > 5 ? `${String(chatId).slice(0, 4)}****${String(chatId).slice(-2)}` : String(chatId);
+              const usernameStr = msg.from?.username ? `@${msg.from.username}` : "_None_";
+
+              const welcomeMsg = `🚀 *NEW MINER JOINED!*\n\n` +
+                `━━━━━━━━━━━━━━━━━━\n` +
+                `👤 *Miner*\n` +
+                `${senderName}\n\n` +
+                `🆔 *User ID*\n` +
+                `\`${maskedUid}\`\n\n` +
+                `🔗 *Username*\n` +
+                `${usernameStr}\n\n` +
+                `📦 *Mining Slot*\n` +
+                `1× Base Cloud Slot\n\n` +
+                `🎁 *Welcome Bonus*\n` +
+                `+100 Mining Points\n` +
+                `━━━━━━━━━━━━━━━━━━\n\n` +
+                `⚡ *MINING STATUS*\n` +
+                `🟢 Active & Ready\n` +
+                `☁️ Cloud Mining: 24/7\n\n` +
+                `━━━━━━━━━━━━━━━━━━\n` +
+                `🎁 *INVITE & EARN*\n\n` +
+                `Invite friends and earn:\n\n` +
+                `➕ +500 Points\n` +
+                `🎟️ Bonus Mining Slot\n\n` +
+                `The more friends you invite,\n` +
+                `the more you can earn!\n` +
+                `━━━━━━━━━━━━━━━━━━\n\n` +
+                `🤖 *Bot:* @AAAPREMIUMAPPSbot\n\n` +
+                `👇 *Choose an option below:*`;
+
+              await sendUserReply(welcomeMsg, userWelcomeInlineKeyboard);
+              return;
+            }
+
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
             const isCovered = profile.subscription_expiry && profile.subscription_expiry > Date.now();
             let passBadge = "Free Tier (Pay-As-You-Go)";

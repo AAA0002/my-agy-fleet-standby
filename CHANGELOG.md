@@ -4,6 +4,33 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Scan-Friendly UI Modernization: Dedicated Live Activity Stream (`@AAAATF_ACTIVITY`) & Streamlined User Onboarding Card (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Live Activity Feed Format Optimization (`broadcastNewMinerJoined`)**:
+    * Re-engineered channel broadcasts for `AAA ATF Miner — Live Activity` (`@AAAATF_ACTIVITY`) into an ultra-clean, scan-friendly automated feed (3–5 second comprehension):
+      - Result-first header: `🚀 NEW MINER JOINED!`
+      - Compact identity summary: Full name, username link, and privacy-masked ID (`6727****68`).
+      - Compact package breakdown: `📦 Slot: 1× Base Cloud` | `🎁 Welcome Bonus: +100 Points`.
+      - Clean status lines: `⚡ Status: 🟢 Mining Ready` | `☁️ Cloud Mining: 24/7`.
+      - Condensed incentive block: `🎁 INVITE & EARN: Get +500 Points + bonus slots for every friend you invite!`.
+      - Removed noisy long raw URLs in favor of native Telegram inline button links.
+    * 2x2 Interactive Action Grid:
+      - `[🚀 Launch Cloud Miner]` ➡️ Direct bot deep-link (`https://t.me/AAAPREMIUMAPPSbot`).
+      - `[🎁 Invite & Earn]` ➡️ Direct referral & friend invite deep-link (`/start invite`).
+      - `[📊 My Rewards]` ➡️ Points balance, ad watching, and earning hub deep-link (`/start rewards`).
+      - `[📢 Announcements]` ➡️ Official broadcast channel (`https://t.me/AAAATFAUTOMINING`).
+  - **In-Bot New Miner Onboarding Card (`userWelcomeInlineKeyboard`)**:
+    * Implemented structured onboarding card upon channel gate verification and initial `/start`:
+      - User profile summary with slot allotment and +100 Welcome Points.
+      - 3-row interactive navigation buttons: `[🚀 Start Mining | 👥 Invite Friends]`, `[🎁 My Rewards | 📊 My Stats]`, `[📢 Announcements]`.
+      - Persistent 2x4 quick menu keyboard rendered seamlessly underneath.
+  - **New Callbacks & Deep-Link Handlers**:
+    * Added `ub_start_mining`, `ub_rewards`, and `ub_stats` callback query handlers.
+    * Added `/start invite`, `/start rewards`, and `/start stats` deep-link routing.
+  - **Synchronized Across 5 Edge Nodes**:
+    * Deployed and live across `aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, and `aaaai`.
+  - **Zero Phone Load Guardrail**:
+    * Verified 0 local Python bot processes on Samsung Galaxy A30.
+
 - **Security Hardening: Telegram Bot Token Rotation & 100% Repository Visibility Lockdown (`CHANGELOG.md`, `deploy_both_cf_workers.py`, `fleet_sentinel.yml`)**:
   - **Bot Token Revocation & Re-Issuance (`@My_Router_AI_bot`)**:
     * Identified unauthorized spam injection caused by crawler bots harvesting an exposed fallback token on a public standby repo (`AAA2743/my-agy-fleet-standby`).
