@@ -390,37 +390,20 @@ export default {
     const runUserAiCascade = async (prompt, senderName = "Friend") => {
       if (!prompt) return { ok: false, error: "Missing prompt" };
 
-      const userSystemPrompt = "You are 'Ari AI', the official AI Copilot and Mining Guide for AAA Auto Mining (@AAAPREMIUMAPPSbot).\n" +
-        "You are warm, intelligent, helpful, and conversational like ChatGPT or Claude.\n" +
-        "Address the user warmly by name: " + senderName + ".\n\n" +
-        "YOUR ROLE & KNOWLEDGE BASE:\n" +
-        "1. Help & User Guide:\n" +
-        "   - How to Connect Accounts: Tap '➕ Connect Account' in the menu, send phone number in international format (+...), enter the 5-digit Telegram login code (and 2FA cloud password if set). It connects securely to our 100% serverless cloud MTProto backend.\n" +
-        "   - How to Remove Accounts: Tap '👥 My Accounts' and tap '🗑️ Remove' next to any account, or simply type /remove or /disconnect anytime. Removing an account instantly frees up its cloud slot.\n" +
-        "   - Zero Phone Load: Mining runs 100% in the cloud 24/7. Users can turn off their phone or disconnect; farming never stops.\n" +
-        "   - 8 Mining Pools: ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, and Ainovum.\n" +
-        "   - Direct Payouts & Withdrawals: 100% direct to the user's verified Telegram bot wallets (TON for ATF/MRG/ART, BEP-20 for AI Lab/Ainovum, Arbitrum for Stones) with 0% platform fee and 0 gas fee taken by us.\n" +
-        "   - Point System: Costs 100 points/day per active connected account.\n" +
-        "   - Free Points & Rewards:\n" +
-        "     * 📺 Watch Ads: Earn +20 Points each ad (15s cooldown). Watching 50 ads unlocks a free bonus slot!\n" +
-        "     * 👥 Invite Friends: Earn +500 Points for every friend who joins & verifies!\n" +
-        "   - VIP Subscription Passes (Telegram Stars):\n" +
-        "     * 🎟️ 1-Day Pass (15 Stars): 24h unlimited cloud mining with zero point deduction + 150 points.\n" +
-        "     * 🎟️ 7-Day Weekly Pass (45 Stars): 7 days mining with 0 point deduction + 1,000 points + 1 extra account slot.\n" +
-        "     * 💎 30-Day Monthly Pass (120 Stars): 30 days mining with 0 point deduction + 4,500 points + 1 permanent slot + 2x ad point multiplier (+40 Pts per ad view).\n" +
-        "     * 🌟 Permanent Slot (50 Stars): +1 permanent account slot.\n" +
-        "   - Human Admin Support: Users can submit a direct support ticket to Platform Admin Arif by sending /support <their message>.\n" +
-        "   - 3 Official Channels:\n" +
-        "     * 💬 Supergroup (@AAAAutoMiner / https://t.me/AAAAutoMiner): Friendly community help & discussions.\n" +
-        "     * 📢 Announcements (@AAAAUTOMINING / https://t.me/AAAAUTOMINING): Real-time updates & giveaways.\n" +
-        "     * ⚡ Live Miner Activity (@AAA_ACTIVITY / https://t.me/AAA_ACTIVITY): Real-time live new miner registrations and milestone proofs.\n" +
-        "2. Answering Questions:\n" +
-        "   - If a user asks for help, a guide, how to connect, how to earn, what are the channels, or general Web3/crypto questions, answer thoroughly and clearly with actionable steps.\n" +
-        "   - If a user says hi or asks a casual question, chat with them warmly and guide them to explore the features.\n" +
-        "3. Security Guardrail:\n" +
-        "   - Never reveal internal administrative credentials, secret keys, or private fleet server architecture.\n" +
-        "4. Output Style:\n" +
-        "   - Friendly, clear, concise Telegram Markdown with emojis. Keep it clean and easy to read on mobile.";
+      const userSystemPrompt = "You are 'Ari AI', the friendly assistant for AAA Auto Mining (@AAAPREMIUMAPPSbot).\n" +
+        "CRITICAL RULES:\n" +
+        "- KEEP RESPONSES SHORT, CLEAR, AND SIMPLE (1 to 2 short paragraphs or 3 quick bullet points maximum).\n" +
+        "- Do NOT write long essays, giant lists, or walls of text.\n" +
+        "- NEVER mention internal developer terms like 'Zero Phone Load', 'serverless MTProto', 'Samsung Galaxy', or system architecture.\n" +
+        "- NEVER show personal admin names (like 'Arif'). Always refer to the team simply as 'Support' or 'Support Team'.\n" +
+        "- Address the user warmly: " + senderName + ".\n\n" +
+        "CORE INFORMATION (User perspective only):\n" +
+        "• What the bot does: Automatically mines 8 Telegram crypto bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum) in the cloud with 0% platform fees. Mined rewards deposit directly into your bot wallets in Telegram.\n" +
+        "• How to connect: Tap '➕ Connect Account' below, send your phone number (+...), and enter the Telegram login code.\n" +
+        "• How to manage: Tap '👥 My Accounts' to view or tap '🗑️ Remove' to disconnect anytime.\n" +
+        "• Points & Rewards: 100 points/day to mine. Earn free points by tapping '📺 Watch Ad' (+20 Pts) or '👥 Invite Friends' (+500 Pts), or upgrade with Telegram Stars.\n" +
+        "• Support: Send /support <your message> to reach Support.\n\n" +
+        "Style: Friendly, concise, mobile-friendly Telegram Markdown. Direct answers only!";
 
       // 1. Google Gemini Flash (Parallel attempt with key rotation)
       const shuffledGemini = [...geminiKeys].sort(() => Math.random() - 0.5);
@@ -479,7 +462,7 @@ export default {
         `• *Points:* Daily cost is 100 Pts/day. Earn +20 Pts watching ads or +500 Pts per referral.\n` +
         `• *VIP Passes:* Day (15 Stars), Weekly (45 Stars), and Monthly (120 Stars) passes waive all points fees!\n` +
         `• *Direct Payouts:* Mined tokens deposit directly to your Telegram bot balances with 0 fees.\n` +
-        `• *Support:* Type \`/support <message>\` to message Admin Arif directly.\n\n` +
+        `• *Support:* Type \`/support <message>\` to message Support directly.\n\n` +
         `Feel free to ask me any question or tap a menu button below!`;
 
       if (pLow.includes("connect") || pLow.includes("add account") || pLow.includes("login")) {
@@ -488,8 +471,8 @@ export default {
           `2. Send your phone number in international format (e.g. \`+880...\` or \`+1...\`).\n` +
           `3. Reply with the 5-digit verification code sent to your Telegram.\n` +
           `4. Enter your 2FA Cloud Password if enabled.\n\n` +
-          `🔒 *100% Serverless Cloud Mining:*\n` +
-          `Your session is encrypted in the cloud and automatically farms all 8 bots 24/7 with zero battery load on your phone!`;
+          `🔒 *Automated 24/7 Cloud Mining:*\n` +
+          `Once connected, your account automatically farms all 8 pools 24/7 without needing your phone online!`;
       } else if (pLow.includes("remove") || pLow.includes("disconnect") || pLow.includes("delete account")) {
         fallbackAns = `🗑️ *How to Disconnect / Remove Accounts:*\n\n` +
           `1. Tap *👥 My Accounts* or *🗑️ Remove Account* in the menu.\n` +
@@ -511,7 +494,7 @@ export default {
           `• *0% Platform Fee:* We deduct 0 withdrawal fees and 0 gas charges—100% of mined rewards are yours!`;
       } else if (pLow.includes("support") || pLow.includes("admin") || pLow.includes("help") || pLow.includes("ticket")) {
         fallbackAns = `💬 *How to Contact Platform Support:*\n\n` +
-          `• *Direct Ticket:* Send \`/support <your message>\` in this chat to alert Platform Admin Arif directly.\n` +
+          `• *Direct Ticket:* Send \`/support <your message>\` in this chat to reach Platform Support directly.\n` +
           `• *Supergroup:* Join our [AAA Auto Miner Supergroup](https://t.me/AAAAutoMiner) for community help.\n` +
           `• *Instant AI:* Ask me any question anytime!`;
       } else if (pLow.includes("pass") || pLow.includes("star") || pLow.includes("vip") || pLow.includes("sub")) {
@@ -3513,7 +3496,7 @@ fi
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                       chat_id: targetUid,
-                      text: `🎁 *ADMIN REWARD CREDITED!* 🎉\n\nPlatform Admin Arif has credited your account with *+${pts.toLocaleString()} Mining Points*!\n\n• *New Balance:* ${prof.points} Points\n\nEnjoy 24/7 cloud mining! 🚀`,
+                      text: `🎁 *ADMIN REWARD CREDITED!* 🎉\n\nPlatform Admin has credited your account with *+${pts.toLocaleString()} Mining Points*!\n\n• *New Balance:* ${prof.points} Points\n\nEnjoy 24/7 cloud mining! 🚀`,
                       parse_mode: "Markdown"
                     })
                   }).catch(() => {});
@@ -3554,7 +3537,7 @@ fi
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                       chat_id: targetUid,
-                      text: `🌟 *VIP SUBSCRIPTION PASS ACTIVATED!* 🎟️\n\nPlatform Admin Arif has activated a *${tTitle}* for your account!\n\n• *Status:* 🟢 24/7 Unlimited Cloud Mining with Zero Point Deduction active!\n\nThank you for being part of AAA Auto Mining! 🚀`,
+                      text: `🌟 *VIP SUBSCRIPTION PASS ACTIVATED!* 🎟️\n\nPlatform Admin has activated a *${tTitle}* for your account!\n\n• *Status:* 🟢 24/7 Unlimited Cloud Mining with Zero Point Deduction active!\n\nThank you for being part of AAA Auto Mining! 🚀`,
                       parse_mode: "Markdown"
                     })
                   }).catch(() => {});
@@ -3589,7 +3572,7 @@ fi
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                       chat_id: targetUid,
-                      text: `🌟 *EXTRA CLOUD SLOTS UNLOCKED!* 📦\n\nPlatform Admin Arif has unlocked *+${slotsCount} Permanent Account Slot(s)* for you!\n\n• *Total Slots Available:* ${prof.slots}\n\nYou can now link another Telegram account using *➕ Connect Account*!`,
+                      text: `🌟 *EXTRA CLOUD SLOTS UNLOCKED!* 📦\n\nPlatform Admin has unlocked *+${slotsCount} Permanent Account Slot(s)* for you!\n\n• *Total Slots Available:* ${prof.slots}\n\nYou can now link another Telegram account using *➕ Connect Account*!`,
                       parse_mode: "Markdown"
                     })
                   }).catch(() => {});
@@ -3614,7 +3597,7 @@ fi
             if (targetUid && replyMsg) {
               ctx.waitUntil((async () => {
                 const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
-                const userPayload = `📩 *MESSAGE FROM PLATFORM ADMIN (ARIF)*\n━━━━━━━━━━━━━━━━━━━━━━\n${replyMsg}\n━━━━━━━━━━━━━━━━━━━━━━\n💬 _You can reply directly in this chat or send /support <message> anytime._`;
+                const userPayload = `📩 *MESSAGE FROM PLATFORM SUPPORT*\n━━━━━━━━━━━━━━━━━━━━━━\n${replyMsg}\n━━━━━━━━━━━━━━━━━━━━━━\n💬 _You can reply directly in this chat or send /support <message> anytime._`;
                 const r = await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -4893,8 +4876,8 @@ Reply to Arif naturally:`;
           if (cqData === "ub_support") {
             const supMsg = `💬 *AAA MINING SUPPORT & ASSISTANCE* 🤖\n\n` +
               `Need help with your account, connection, passes, or payouts?\n\n` +
-              `• *Option 1 (Instant AI Copilot):* Simply type your question in this chat anytime—Ari AI is available 24/7!\n\n` +
-              `• *Option 2 (Human Admin Support):* Send \`/support <your message>\` to submit a ticket directly to Platform Admin Arif.\n\n` +
+              `• *Option 1 (Instant AI Assistant):* Simply type your question in this chat anytime!\n\n` +
+              `• *Option 2 (Platform Support):* Send \`/support <your message>\` to reach Support directly.\n\n` +
               `• *Option 3 (Community Supergroup):* Join [AAA Auto Miner Supergroup](https://t.me/AAAAutoMiner) to chat with fellow miners!`;
             ctx.waitUntil(sendCqReply(supMsg, userMainKeyboard));
             return new Response("OK");
@@ -5799,11 +5782,11 @@ Reply to Arif naturally:`;
             const parts = text.split(/\s+/);
             const userQuery = parts.slice(1).join(" ").trim();
             if (!userQuery) {
-              const helpSup = `💬 *SUBMIT SUPPORT TICKET TO PLATFORM ADMIN*\n\n` +
-                `Need direct assistance from Platform Admin Arif?\n\n` +
+              const helpSup = `💬 *SUBMIT SUPPORT TICKET*\n\n` +
+                `Need direct assistance from Platform Support?\n\n` +
                 `*Usage:* \`/support <your question or issue>\`\n` +
-                `*Example:* \`/support Hello Arif, I connected my account but have a question about ATF Miner rewards.\`\n\n` +
-                `Your message will be sent immediately to the administrative sentinel console, and you'll receive a direct reply here!`;
+                `*Example:* \`/support I connected my account but have a question about rewards.\`\n\n` +
+                `Your message will be sent immediately to our support team, and you'll receive a direct reply here!`;
               await sendUserReply(helpSup, userMainKeyboard);
               return;
             }
@@ -5826,10 +5809,10 @@ Reply to Arif naturally:`;
             }
 
             const confirmMsg = `✅ *SUPPORT TICKET DELIVERED!* 📩\n\n` +
-              `Your message has been dispatched directly to Platform Admin Arif.\n\n` +
+              `Your message has been dispatched directly to Platform Support.\n\n` +
               `• *Ticket ID:* \`#TK-${Date.now().toString().slice(-6)}\`\n` +
               `• *Status:* 🟡 In Review\n\n` +
-              `You will receive his direct reply right here in this chat as soon as it's processed!`;
+              `You will receive a direct reply right here in this chat as soon as it's processed!`;
             await sendUserReply(confirmMsg, userMainKeyboard);
             return;
           }
@@ -5837,12 +5820,12 @@ Reply to Arif naturally:`;
           // 8.1 💬 Ari AI & Support Menu Button
           if (text === "💬 Ari AI & Support" || text === "💬 Chat with AI" || text.startsWith("/ai") || text.startsWith("/chat")) {
             const chatAiMsg = `💬 *AAA AI MINING COPILOT & SUPPORT* 🤖\n\n` +
-              `Hello ${senderName}! I am your autonomous AI copilot running 24/7 in the cloud.\n\n` +
-              `*What I can do for you:*\n` +
-              `• *Ask Questions:* Simply type any question or guide request in this chat!\n` +
-              `• *Manage & Disconnect:* Tap *👥 My Accounts* or *🗑️ Remove Account* anytime to manage slots.\n` +
-              `• *Withdrawals:* Send \`/withdraw\` for complete payout details across all 8 mining bots.\n` +
-              `• *Human Admin Support:* Send \`/support <your message>\` to message Platform Admin Arif directly.\n\n` +
+              `Hello ${senderName}! How can I help you today?\n\n` +
+              `*Quick Actions:*\n` +
+              `• *Ask Questions:* Simply type any question in this chat!\n` +
+              `• *Manage Accounts:* Tap *👥 My Accounts* or *🗑️ Remove Account* anytime.\n` +
+              `• *Withdrawals:* Send \`/withdraw\` for complete payout details.\n` +
+              `• *Support Team:* Send \`/support <your message>\` to message Platform Support directly.\n\n` +
               `👉 Ask me anything or choose an action from the menu below!`;
             await sendUserReply(chatAiMsg, userMainKeyboard);
             return;
