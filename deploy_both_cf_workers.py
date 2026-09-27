@@ -4581,8 +4581,8 @@ Reply to Arif naturally:`;
               { text: "🗑️ Remove Account" }
             ],
             [
-              { text: "📺 Watch Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } },
-              { text: "👥 Invite Friends (+500 Pts)" }
+              { text: "👥 Invite Friends (+500 Pts)" },
+              { text: "💳 Withdrawals" }
             ],
             [
               { text: "📊 My Stats" },
@@ -4624,20 +4624,11 @@ Reply to Arif naturally:`;
               { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }
             ],
             [
-              { text: "🚀 Launch Cloud Miner", callback_data: "ub_start_mining" },
-              { text: "➕ Connect Account", callback_data: "ub_add_acc" }
+              { text: "🌟 VIP Passes & Boosts (Stars)", callback_data: "ub_buy_stars" }
             ],
             [
-              { text: "👥 My Accounts", callback_data: "ub_accounts_list" },
-              { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }
-            ],
-            [
-              { text: "🎁 Invite & Earn", callback_data: "ub_referral" },
-              { text: "📊 My Stats", callback_data: "ub_stats" }
-            ],
-            [
-              { text: "💳 Payouts Guide", callback_data: "ub_withdraw" },
-              { text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" }
+              { text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" },
+              { text: "💬 Community Supergroup", url: "https://t.me/AAAAutoMiner" }
             ]
           ]
         };
@@ -4754,7 +4745,7 @@ Reply to Arif naturally:`;
               `• *Daily Cost:* ${(profile.accounts?.length || 0) * 100} Pts/day\n\n` +
               `📺 *Earn Points:* Watch ads (+20 Pts) or invite friends (+500 Pts).\n` +
               `🌟 *Subscriptions:* Day, Weekly, and Monthly VIP Passes with Telegram Stars!\n\n` +
-              `👇 *Tap 🎬 Watch Video Ad or ➕ Connect Account below to start:*`;
+              `👇 *Tap 🎬 Watch Video Ad below or choose an option from the menu:*`;
 
             ctx.waitUntil((async () => {
               await sendCqReply("✅ *Membership verified! 100 Welcome Points awarded!*", userMainKeyboard);
@@ -4921,7 +4912,7 @@ Reply to Arif naturally:`;
 
           // C2.5 Daily Check-In Bonus (Retired)
           if (cqData === "ub_daily_claim") {
-            ctx.waitUntil(sendCqReply("ℹ️ *Daily Bonus Retired*\n\nPoints are earned via *📺 Watch Ad (+20 Pts)* and *👥 Invite Friends (+500 Pts)*!\n\nTo manage or disconnect accounts, tap *👥 My Accounts* or *🗑️ Remove Account*.", userMainKeyboard));
+            ctx.waitUntil(sendCqReply("ℹ️ *Daily Bonus Retired*\n\nPoints are earned via *🎬 Watch Ads* (next to message input) and *👥 Invite Friends (+500 Pts)*!\n\nTo manage or disconnect accounts, tap *👥 My Accounts* or *🗑️ Remove Account*.", userMainKeyboard));
             return new Response("OK");
           }
 
@@ -4975,7 +4966,7 @@ Reply to Arif naturally:`;
               `• *Ads Watched:* ${profile.ads_watched || 0} / 50 (${(profile.ads_watched || 0) % 50}/50 towards bonus slot)\n` +
               `• *Referral Friends:* ${profile.referral_count || 0} (${(profile.referral_count || 0) * 500} Pts earned)\n` +
               `• *Active Pools (8/8):* ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
-              `• *Cloud MTProto:* 🟢 24/7 Serverless Running`;
+              `• *Cloud Mining:* 🟢 24/7 Automated Running`;
             const statsBtns = {
               inline_keyboard: [
                 [{ text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }, { text: "💳 Payouts Guide", callback_data: "ub_withdraw" }],
@@ -5522,7 +5513,7 @@ Reply to Arif naturally:`;
             return;
           }
 
-          if (text.startsWith("/start stats") || text === "/stats" || text.startsWith("/stats") || text === "/status" || text.startsWith("/status")) {
+          if (text === "📊 My Stats" || text === "My Stats" || text === "📊 Stats" || text.startsWith("/start stats") || text === "/stats" || text.startsWith("/stats") || text === "/status" || text.startsWith("/status")) {
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
             const isCovered = profile.subscription_expiry && profile.subscription_expiry > Date.now();
             let passBadge = "Free Tier";
@@ -5583,7 +5574,7 @@ Reply to Arif naturally:`;
               `• *Daily Cost:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${profile.accounts.length * 100} Pts/day (100 Pts per account)`}\n\n` +
               `📺 *Earn Points:* Tap *🎬 Watch Video Ad (+20 Pts)* below or invite friends (+500 Pts).\n` +
               `🌟 *Subscriptions:* Day, Weekly, and Monthly VIP Passes with Telegram Stars!\n\n` +
-              `👇 *Tap 🎬 Watch Video Ad or ➕ Connect Account below to start:*`;
+              `👇 *Tap 🎬 Watch Video Ad below or choose an option from the menu:*`;
             await sendUserReply("👋 *Welcome to AAA Auto Mining!* (Created by AAA)\nAccess all features below or choose from the interactive menu:", userMainKeyboard);
             await sendUserReply(welcomeText, userWelcomeInlineKeyboard);
 
@@ -5696,7 +5687,7 @@ Reply to Arif naturally:`;
           }
 
           // 3. ➕ Connect Account
-          if (text === "➕ Connect Account" || text.startsWith("/add_account")) {
+          if (text === "➕ Connect Account" || text === "Connect Account" || text.startsWith("/connect") || text.startsWith("/add_account")) {
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
             if (profile.accounts.length >= totalSlots) {
               const slotLimitMsg = `⚠️ *Account Slot Limit Reached (${profile.accounts.length}/${totalSlots})*\n\n` +
@@ -5768,9 +5759,8 @@ Reply to Arif naturally:`;
 
             await sendUserReply(ptsMsg, {
               inline_keyboard: [
-                [{ text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }, { text: "➕ Connect Account", callback_data: "ub_add_acc" }],
-                [{ text: "📺 Watch Ad (+20 Pts)", callback_data: "ub_watch_ad" }, { text: "👥 Invite (+500 Pts)", callback_data: "ub_referral" }],
-                [{ text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
+                [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }],
+                [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
               ]
             });
             return;
@@ -5778,7 +5768,7 @@ Reply to Arif naturally:`;
 
           // 4.1 Daily Bonus Notice (System Retired)
           if (text === "📅 Daily Bonus" || text === "/daily" || text.startsWith("/daily") || text === "/checkin") {
-            await sendUserReply("ℹ️ *Daily Bonus Retired*\n\nPoints are earned via *📺 Watch Ad (+20 Pts)* and *👥 Invite Friends (+500 Pts)*!\n\nTo manage or disconnect accounts, tap *👥 My Accounts* or *🗑️ Remove Account*.", userMainKeyboard);
+            await sendUserReply("ℹ️ *Daily Bonus Retired*\n\nPoints are earned via *🎬 Watch Ads* (next to message input) and *👥 Invite Friends (+500 Pts)*!\n\nTo manage or disconnect accounts, tap *👥 My Accounts* or *🗑️ Remove Account*.", userMainKeyboard);
             return;
           }
 

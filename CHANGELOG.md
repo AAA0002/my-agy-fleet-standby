@@ -4,6 +4,27 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **UI Streamlining, Duplicate Button Removal & Premium Bot Polish (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Zero Duplicate Buttons in Messages (`userWelcomeInlineKeyboard`)**:
+    * Removed all duplicate buttons (`➕ Connect Account`, `👥 My Accounts`, `🗑️ Remove Account`, `🎁 Invite & Earn`, `📊 My Stats`, `🚀 Launch Cloud Miner`, `💳 Payouts Guide`) from the message inline keyboard.
+    * Streamlined the message inline keyboard into 3 sleek, non-overlapping rows:
+      1. `🎬 Watch Video Ad (+20 Pts) ⚡` (Web App modal)
+      2. `🌟 VIP Passes & Boosts (Stars)` (In-app Stars checkout)
+      3. `📢 Announcements` & `💬 Community Supergroup` (Official channels)
+  - **Removal of "Watch Ads" from Bottom Keyboard (`userMainKeyboard`)**:
+    * Removed `📺 Watch Ad (+20 Pts)` from the bottom reply keyboard to prevent redundancy with the native Chat Menu Button on the emoji side (`[🎬 Watch Ads]`) and the message inline button.
+    * Rebalanced the bottom reply keyboard into a clean 2x4 grid:
+      - Row 1: `👥 My Accounts` | `➕ Connect Account`
+      - Row 2: `💎 Points & Pass` | `🗑️ Remove Account`
+      - Row 3: `👥 Invite Friends (+500 Pts)` | `💳 Withdrawals`
+      - Row 4: `📊 My Stats` | `💬 Ari AI & Support`
+  - **Bug Fixes & UX Polish**:
+    * Fixed bug where tapping `📊 My Stats` in the bottom keyboard fell through to AI fallback; added explicit string matching for `📊 My Stats`, `My Stats`, and `📊 Stats`.
+    * Added `/connect` alias for `➕ Connect Account`.
+    * Cleaned up prompt texts across `/start` and onboarding gate to avoid mentioning removed buttons.
+    * Replaced technical jargon (`• *Cloud MTProto:*`) with consumer-friendly telemetry (`• *Cloud Mining:* 🟢 24/7 Automated Running`).
+    * Deployed across all 5 Cloudflare Edge nodes with 100% Zero Phone Load.
+
 - **Native Chat Menu Button Mini App & Bot Commands Integration (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Native Telegram Chat Menu Button (`MenuButtonWebApp`)**:
     * Configured Telegram Bot API `setChatMenuButton` globally and per-user with `type: "web_app"`, `text: "🎬 Watch Ads"`, and `url: "https://restore-agy.aaaai2.workers.dev/adsgram"`.
