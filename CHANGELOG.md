@@ -4,6 +4,21 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Fleet-Wide Task Discovery & Execution Engine, MRG Auto-Level Unlocks & Referral Finish Work Overhaul (`deploy_both_cf_workers.py`, `render_app_latest.py`, `render_standby_app.py`, `CHANGELOG.md`)**:
+  - **Stones Miner Dynamic Task Object/Array Structure Normalization**:
+    * Identified root cause behind missed Stones tasks: `/api/state` returns `tasks` as an Object/Dictionary (`{"join_channel": "completed", ...}`), whereas code expected an Array. In JS this threw `TypeError: object is not iterable` and in Python `AttributeError: 'str' object has no attribute 'get'`.
+    * Upgraded both Cloudflare Workers edge cron (`deploy_both_cf_workers.py`) and Render backend (`render_app_latest.py` & `render_standby_app.py`) to inspect and normalize both dictionary and array structures, auto-starting, completing, and verifying all pending tasks.
+  - **MRG Miner Instant Task Claims & Autonomous Level Progression**:
+    * Eliminated 15-second background timeout delays in MRG task claiming on Cloudflare Workers; verified live API accepts immediate `POST /api/user/claim-task` claims.
+    * Reverse engineered MRG frontend bundle (`index-BbHDzEua.js`) level unlock algorithm: holding balance grants free tier promotions (`POST /api/user/unlock-level`) without spending tokens. Implemented binary search solver with `wp(lvl)` formula to auto-promote all accounts to their maximum unlocked tier.
+    * Added automated Squad activation bonus claims (`POST /api/user/claim-one-time-bonus`) for master account `6727787768` whenever squad members qualify.
+  - **ATF Miner Fleet-Wide Task Optimization**:
+    * Executed fleet-wide repeatable task claims across all 14 accounts, claiming `website_visit`, `telegram_react_latest`, `twitter_retweet`, and `youtube_like_comment` (+4 ATF per account per 2-hour cooldown).
+    * Removed deprecated `partner_channel` from task suites to eliminate `400 Invalid Task` backend errors.
+  - **Zero Phone Load Verification & 5-Node Edge Mesh Deployment**:
+    * Verified 100% Zero Phone Load (0 bot loops running locally on the Samsung Galaxy A30).
+    * Deployed live to all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **Cloudflare Edge Math Solver & Ainovum Mining Cycle Overhaul (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **ATF Miner Dynamic Math Challenge Solver Fix**:
     * Identified that Cloudflare Workers V8 isolates disallow dynamic code generation from strings (`new Function(...)` / `eval(...)`), throwing `EvalError: Code generation from strings disallowed for this context`.

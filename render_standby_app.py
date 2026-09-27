@@ -1091,9 +1091,19 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                     async with http.post("https://app.stoneswithestand.my.id/api/state", json={"initData": s_init}, timeout=aiohttp.ClientTimeout(total=6)) as st_r:
                         if st_r.status == 200:
                             st_data = await st_r.json()
-                            for t in st_data.get("tasks", []):
-                                slug = t.get("slug") or t.get("id")
-                                if slug and not t.get("completed") and not t.get("is_completed"):
+                            raw_tasks = st_data.get("tasks", {})
+                            tasks_to_do = []
+                            if isinstance(raw_tasks, dict):
+                                for slug, status in raw_tasks.items():
+                                    if status != "completed":
+                                        tasks_to_do.append(slug)
+                            elif isinstance(raw_tasks, list):
+                                for t in raw_tasks:
+                                    slug = t.get("slug") or t.get("id")
+                                    if slug and not t.get("completed") and not t.get("is_completed"):
+                                        tasks_to_do.append(slug)
+                            for slug in tasks_to_do:
+                                if slug not in ["daily_checkin", "join_channel"]:
                                     await http.post("https://app.stoneswithestand.my.id/api/task/start", json={"initData": s_init, "slug": slug}, timeout=aiohttp.ClientTimeout(total=4))
                                     await http.post("https://app.stoneswithestand.my.id/api/task/complete", json={"initData": s_init, "slug": slug}, timeout=aiohttp.ClientTimeout(total=4))
                                     await http.post("https://app.stoneswithestand.my.id/api/task/verify", json={"initData": s_init, "slug": slug}, timeout=aiohttp.ClientTimeout(total=4))
@@ -1119,10 +1129,38 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                                 tid = t.get("taskId")
                                 if tid and tid not in completed:
                                     await http.post("https://mrg.up.railway.app/api/user/claim-task", json={"initData": m_init, "taskId": tid}, timeout=aiohttp.ClientTimeout(total=5))
+                            # Auto-unlock Level in MRG if balance permits
+                            u_obj = me_d.get("user", {})
+                            in_bal = float(u_obj.get("inAppBalance", 0) or 0)
+                            cur_lvl = int(u_obj.get("peakLevel") or u_obj.get("manualUnlockedLevel") or 1)
+                            if in_bal >= 100:
+                                def wp_calc(e):
+                                    if e <= 0: return 0
+                                    if e == 1: return 100
+                                    if e <= 203: return round(100 + 9900 * (((e - 1) / 202.0) ** 1.8))
+                                    return 10000
+                                lo, hi, target_lvl = 1, 203, cur_lvl
+                                while lo <= hi:
+                                    mid = (lo + hi) // 2
+                                    if in_bal >= wp_calc(mid):
+                                        target_lvl = mid
+                                        lo = mid + 1
+                                    else:
+                                        hi = mid - 1
+                                if target_lvl > cur_lvl:
+                                    await http.post("https://mrg.up.railway.app/api/user/unlock-level", json={"initData": m_init, "level": target_lvl}, timeout=aiohttp.ClientTimeout(total=5))
                 except Exception:
                     pass
                 if uid == "6727787768":
                     await http.post("https://mrg.up.railway.app/api/user/claim-commission", json={"initData": m_init}, timeout=aiohttp.ClientTimeout(total=5))
+                    try:
+                        async with http.post("https://mrg.up.railway.app/api/user/friends", json={"initData": m_init}, timeout=aiohttp.ClientTimeout(total=5)) as fr_r:
+                            if fr_r.status == 200:
+                                fr_d = await fr_r.json()
+                                if (fr_d.get("teamStats", {}).get("unclaimedOneTimeBonusMRG", 0) or 0) > 0:
+                                    await http.post("https://mrg.up.railway.app/api/user/claim-one-time-bonus", json={"initData": m_init}, timeout=aiohttp.ClientTimeout(total=5))
+                    except Exception:
+                        pass
                 logger.info(f"[{name}] ✅ MRG initial mining started & tasks claimed")
             except Exception as e:
                 logger.debug(f"[{name}] MRG bootstrap note: {e}")
@@ -1297,7 +1335,7 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                 await http.post(f"{atf_base}?action=record_daily_interaction&t={int(time.time()*1000)}", json=payload_base, headers=atf_h, timeout=aiohttp.ClientTimeout(total=5))
                 await http.post(f"{atf_base}?action=claim_referrals&t={int(time.time()*1000)}", json=payload_base, headers=atf_h, timeout=aiohttp.ClientTimeout(total=5))
                 await http.post(f"{atf_base}?action=claim_team_wallet&t={int(time.time()*1000)}", json=payload_base, headers=atf_h, timeout=aiohttp.ClientTimeout(total=5))
-                starter_tasks = ["telegram_join", "telegram_join_fa", "twitter_follow", "youtube_subscribe", "website_visit", "telegram_react_latest", "twitter_retweet", "youtube_like_comment", "partner_channel"]
+                starter_tasks = ["telegram_join", "telegram_join_fa", "twitter_follow", "youtube_subscribe", "website_visit", "telegram_react_latest", "twitter_retweet", "youtube_like_comment"]
                 for tid in starter_tasks:
                     st_at = int(time.time()) - 25
                     await http.post(f"{atf_base}?action=start_task&t={int(time.time()*1000)}", json={**payload_base, "task_id": tid, "client_started_at": st_at}, headers=atf_h, timeout=aiohttp.ClientTimeout(total=4))
@@ -2527,9 +2565,19 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 async with session.post("https://app.stoneswithestand.my.id/api/state", json={"initData": s_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as st_r:
                     if st_r.status == 200:
                         st_data = await st_r.json()
-                        for t in st_data.get("tasks", []):
-                            slug = t.get("slug") or t.get("id")
-                            if slug and not t.get("completed") and not t.get("is_completed"):
+                        raw_tasks = st_data.get("tasks", {})
+                        tasks_to_do = []
+                        if isinstance(raw_tasks, dict):
+                            for slug, status in raw_tasks.items():
+                                if status != "completed":
+                                    tasks_to_do.append(slug)
+                        elif isinstance(raw_tasks, list):
+                            for t in raw_tasks:
+                                slug = t.get("slug") or t.get("id")
+                                if slug and not t.get("completed") and not t.get("is_completed"):
+                                    tasks_to_do.append(slug)
+                        for slug in tasks_to_do:
+                            if slug not in ["daily_checkin", "join_channel"]:
                                 await session.post("https://app.stoneswithestand.my.id/api/task/start", json={"initData": s_init, "slug": slug}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
                                 await session.post("https://app.stoneswithestand.my.id/api/task/complete", json={"initData": s_init, "slug": slug}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
                                 await session.post("https://app.stoneswithestand.my.id/api/task/verify", json={"initData": s_init, "slug": slug}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
@@ -2573,7 +2621,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         try:
             m_init = acc_tokens["mrg_init_data"]
             await session.post("https://mrg.up.railway.app/api/user/claim-mining", json={"initData": m_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=6))
-            # Task completion
+            # Task completion & level auto-unlock
             try:
                 async with session.post("https://mrg.up.railway.app/api/user/me", json={"initData": m_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as me_r:
                     if me_r.status == 200:
@@ -2583,10 +2631,38 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                             tid = t.get("taskId")
                             if tid and tid not in completed:
                                 await session.post("https://mrg.up.railway.app/api/user/claim-task", json={"initData": m_init, "taskId": tid}, headers=headers, timeout=aiohttp.ClientTimeout(total=5))
+                        # Auto-unlock Level in MRG if balance permits
+                        u_obj = me_d.get("user", {})
+                        in_bal = float(u_obj.get("inAppBalance", 0) or 0)
+                        cur_lvl = int(u_obj.get("peakLevel") or u_obj.get("manualUnlockedLevel") or 1)
+                        if in_bal >= 100:
+                            def wp_calc(e):
+                                if e <= 0: return 0
+                                if e == 1: return 100
+                                if e <= 203: return round(100 + 9900 * (((e - 1) / 202.0) ** 1.8))
+                                return 10000
+                            lo, hi, target_lvl = 1, 203, cur_lvl
+                            while lo <= hi:
+                                mid = (lo + hi) // 2
+                                if in_bal >= wp_calc(mid):
+                                    target_lvl = mid
+                                    lo = mid + 1
+                                else:
+                                    hi = mid - 1
+                            if target_lvl > cur_lvl:
+                                await session.post("https://mrg.up.railway.app/api/user/unlock-level", json={"initData": m_init, "level": target_lvl}, headers=headers, timeout=aiohttp.ClientTimeout(total=5))
             except Exception:
                 pass
             if uid == "6727787768":
                 await session.post("https://mrg.up.railway.app/api/user/claim-commission", json={"initData": m_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=5))
+                try:
+                    async with session.post("https://mrg.up.railway.app/api/user/friends", json={"initData": m_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as fr_r:
+                        if fr_r.status == 200:
+                            fr_d = await fr_r.json()
+                            if (fr_d.get("teamStats", {}).get("unclaimedOneTimeBonusMRG", 0) or 0) > 0:
+                                await session.post("https://mrg.up.railway.app/api/user/claim-one-time-bonus", json={"initData": m_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=5))
+                except Exception:
+                    pass
             status["bots"]["mrg"] = "farmed"
         except Exception as e:
             status["bots"]["mrg"] = f"error: {e}"
@@ -2771,7 +2847,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             # Auto complete ATF repeatable and side tasks
             atf_tasks = [
                 "telegram_join", "telegram_join_fa", "twitter_follow", "youtube_subscribe",
-                "website_visit", "telegram_react_latest", "twitter_retweet", "youtube_like_comment", "partner_channel"
+                "website_visit", "telegram_react_latest", "twitter_retweet", "youtube_like_comment"
             ]
             for tid in atf_tasks:
                 st_at = int(time.time()) - 25

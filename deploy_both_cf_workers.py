@@ -1564,10 +1564,54 @@ fi
                   await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-mining", {
                     method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
                   }).catch(() => {});
+                  try {
+                    const meR = await fetchWithRetry("https://mrg.up.railway.app/api/user/me", {
+                      method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
+                    }, 1, 800).catch(() => null);
+                    if (meR && meR.ok) {
+                      const meD = await meR.json().catch(() => ({}));
+                      const doneTasks = new Set(meD.completedTaskIds || []);
+                      for (const t of (meD.tasks || [])) {
+                        if (t.taskId && !doneTasks.has(t.taskId)) {
+                          await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
+                            method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
+                          }, 1, 400).catch(() => {});
+                        }
+                      }
+                      const inBal = parseFloat(meD.user?.inAppBalance || 0);
+                      const curLvl = parseInt(meD.user?.peakLevel || meD.user?.manualUnlockedLevel || 1, 10);
+                      if (inBal >= 100) {
+                        let lo = 1, hi = 203, targetLvl = curLvl;
+                        while (lo <= hi) {
+                          const mid = Math.floor((lo + hi) / 2);
+                          const reqM = mid === 1 ? 100 : Math.round(100 + 9900 * Math.pow((mid - 1) / 202, 1.8));
+                          if (inBal >= reqM) { targetLvl = mid; lo = mid + 1; } else { hi = mid - 1; }
+                        }
+                        if (targetLvl > curLvl) {
+                          await fetchWithRetry("https://mrg.up.railway.app/api/user/unlock-level", {
+                            method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.mrg_init_data, level: targetLvl })
+                          }, 1, 500).catch(() => {});
+                        }
+                      }
+                    }
+                  } catch (_) {}
                   if (String(uid) === (env.OWNER_ID || "6727787768")) {
                     await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-commission", {
                       method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
                     }).catch(() => {});
+                    try {
+                      const frR = await fetchWithRetry("https://mrg.up.railway.app/api/user/friends", {
+                        method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
+                      }, 1, 600).catch(() => null);
+                      if (frR && frR.ok) {
+                        const frD = await frR.json().catch(() => ({}));
+                        if ((frD.teamStats?.unclaimedOneTimeBonusMRG || 0) > 0) {
+                          await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-one-time-bonus", {
+                            method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
+                          }, 1, 500).catch(() => {});
+                        }
+                      }
+                    } catch (_) {}
                   }
                 }
                 // ART
@@ -5543,25 +5587,23 @@ Reply to Arif naturally:`;
                 }, 2, 800).catch(() => null);
                 if (stResp && stResp.ok) {
                   const stData = await stResp.json().catch(() => ({}));
-                  for (const t of (stData.tasks || [])) {
-                    const slug = t.slug || t.id;
-                    if (slug && !t.completed && !t.is_completed && slug !== "daily_checkin" && slug !== "join_channel") {
+                  const rawTasks = stData.tasks;
+                  const taskEntries = Array.isArray(rawTasks) ?
+                    rawTasks.map(t => ({ slug: t.slug || t.id, completed: t.completed || t.is_completed })) :
+                    (typeof rawTasks === "object" && rawTasks !== null ?
+                      Object.entries(rawTasks).map(([slug, status]) => ({ slug, completed: status === "completed" })) : []);
+
+                  for (const t of taskEntries) {
+                    if (t.slug && !t.completed && t.slug !== "daily_checkin" && t.slug !== "join_channel") {
                       await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/start", {
-                        method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug })
+                        method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
                       }, 1, 500).catch(() => {});
-                      ctx.waitUntil(new Promise(resolve => {
-                        setTimeout(async () => {
-                          try {
-                            await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
-                              method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug })
-                            }, 1, 500);
-                            await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
-                              method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug })
-                            }, 1, 500);
-                          } catch (_) {}
-                          resolve();
-                        }, 12000);
-                      }));
+                      await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
+                        method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
+                      }, 1, 500).catch(() => {});
+                      await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
+                        method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
+                      }, 1, 500).catch(() => {});
                     }
                   }
                 }
@@ -5670,7 +5712,7 @@ Reply to Arif naturally:`;
             } catch (_) {}
           }
 
-          // B. MRG Miner Edge Claim (Auth verify ref + claim-mining + recurring tasks)
+          // B. MRG Miner Edge Claim (Auth verify ref + claim-mining + instant task claims + auto-level unlock)
           if (accData.mrg_init_data) {
             try {
               if (String(uid) !== (env.OWNER_ID || "6727787768")) {
@@ -5686,7 +5728,7 @@ Reply to Arif naturally:`;
                 body: JSON.stringify({ initData: accData.mrg_init_data })
               }).catch(() => {});
 
-              // Discover and claim tasks (tap -> wait 15s in background -> claim)
+              // Discover and claim tasks immediately without delay
               const meResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/me", {
                 method: "POST",
                 headers,
@@ -5698,19 +5740,41 @@ Reply to Arif naturally:`;
                 const completed = new Set(meD.completedTaskIds || []);
                 for (const t of tasks) {
                   if (t.taskId && !completed.has(t.taskId)) {
-                    const mrgWait = (t.verificationType === "link_visit" || t.url || String(t.taskType).includes("social")) ? 15000 : 2000;
-                    ctx.waitUntil(new Promise(resolve => {
-                      setTimeout(async () => {
-                        try {
-                          await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
-                            method: "POST",
-                            headers,
-                            body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
-                          }, 2, 800);
-                        } catch (_) {}
-                        resolve();
-                      }, mrgWait);
-                    }));
+                    await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
+                      method: "POST",
+                      headers,
+                      body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
+                    }, 1, 500).catch(() => {});
+                  }
+                }
+
+                // Autonomous MRG Level Unlock (increases mining rate & qualifies referrals for 100 MRG bonus)
+                const uObj = meD.user || {};
+                const inBal = parseFloat(uObj.inAppBalance || 0);
+                const curLvl = parseInt(uObj.peakLevel || uObj.manualUnlockedLevel || 1, 10);
+                if (inBal >= 100) {
+                  const calcReqMRG = (lvl) => {
+                    if (lvl <= 0) return 0;
+                    if (lvl === 1) return 100;
+                    if (lvl <= 203) return Math.round(100 + 9900 * Math.pow((lvl - 1) / 202, 1.8));
+                    return 10000;
+                  };
+                  let lo = 1, hi = 203, targetLvl = curLvl;
+                  while (lo <= hi) {
+                    const mid = Math.floor((lo + hi) / 2);
+                    if (inBal >= calcReqMRG(mid)) {
+                      targetLvl = mid;
+                      lo = mid + 1;
+                    } else {
+                      hi = mid - 1;
+                    }
+                  }
+                  if (targetLvl > curLvl) {
+                    await fetchWithRetry("https://mrg.up.railway.app/api/user/unlock-level", {
+                      method: "POST",
+                      headers,
+                      body: JSON.stringify({ initData: accData.mrg_init_data, level: targetLvl })
+                    }, 1, 600).catch(() => {});
                   }
                 }
               }
@@ -5721,6 +5785,24 @@ Reply to Arif naturally:`;
                   headers,
                   body: JSON.stringify({ initData: accData.mrg_init_data })
                 }).catch(() => {});
+
+                // Claim squad referral one-time activation bonus (+100 MRG per qualified referral)
+                const frResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/friends", {
+                  method: "POST",
+                  headers,
+                  body: JSON.stringify({ initData: accData.mrg_init_data })
+                }, 1, 800).catch(() => null);
+                if (frResp && frResp.ok) {
+                  const frD = await frResp.json().catch(() => ({}));
+                  const tStats = frD.teamStats || {};
+                  if ((tStats.unclaimedOneTimeBonusMRG || 0) > 0) {
+                    await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-one-time-bonus", {
+                      method: "POST",
+                      headers,
+                      body: JSON.stringify({ initData: accData.mrg_init_data })
+                    }, 1, 600).catch(() => {});
+                  }
+                }
               }
             } catch (_) {}
           }
@@ -6169,8 +6251,7 @@ Reply to Arif naturally:`;
                 { id: "website_visit", minSeconds: 10 },
                 { id: "telegram_react_latest", minSeconds: 20 },
                 { id: "twitter_retweet", minSeconds: 30 },
-                { id: "youtube_like_comment", minSeconds: 30 },
-                { id: "partner_channel", minSeconds: 15 }
+                { id: "youtube_like_comment", minSeconds: 30 }
               ];
               for (const t of atfTasks) {
                 try {
