@@ -308,7 +308,7 @@ function App() {
   const filteredUsers = useMemo(() => {
     return adminUsers.filter(u => {
       const q = userSearchQuery.toLowerCase().trim();
-      const accountsStr = (u.accounts || []).map(a => `${a.name || ''} ${a.phone || ''} ${a.user_id || ''}`).join(" ").toLowerCase();
+      const accountsStr = (u.accounts || []).map(a => `${a.name || ''} ${a.phone || ''} ${a.user_id || ''} ${a.mining_id || a.miningId || ''}`).join(" ").toLowerCase();
       const matchSearch = !q ||
         (u.first_name || "").toLowerCase().includes(q) ||
         (u.last_name || "").toLowerCase().includes(q) ||
@@ -544,7 +544,13 @@ function App() {
                       className: "text-slate-400 hover:text-slate-600"
                     }, React.createElement(Icon, { name: "copy", className: "w-2.5 h-2.5" })),
                     React.createElement("span", { className: "text-slate-300" }, "•"),
-                    React.createElement("span", { className: "bg-slate-200 text-slate-800 text-[10px] px-1 py-0.2 rounded" }, `Mining ID: ${acc.user_id || u.user_id}`)
+                    React.createElement("span", { className: "bg-slate-200 text-slate-800 text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1" },
+                      `Mining ID: ${acc.user_id || u.user_id}`,
+                      React.createElement("button", {
+                        onClick: () => copyToClipboard(String(acc.user_id || u.user_id), `Copied Mining ID: ${acc.user_id || u.user_id}`),
+                        className: "text-slate-400 hover:text-slate-700 cursor-pointer"
+                      }, React.createElement(Icon, { name: "copy", className: "w-2.5 h-2.5" }))
+                    )
                   )
                 ),
                 React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold px-1.5 py-0.5 rounded-md" },
@@ -665,6 +671,31 @@ function App() {
             React.createElement("span", { className: `font-bold ${selectedUserDetail.is_banned ? "text-red-600 font-black" : "text-emerald-600"}` },
               selectedUserDetail.is_banned ? "🚫 Suspended (Banned)" : "🟢 Active (Good Standing)"
             )
+          )
+        ),
+
+        // Connected Accounts Section in Modal
+        (selectedUserDetail.accounts && selectedUserDetail.accounts.length > 0) && React.createElement("div", { className: "mb-4" },
+          React.createElement("div", { className: "text-[11px] font-bold text-slate-700 mb-1.5" }, `Linked Mining Accounts (${selectedUserDetail.accounts.length}):`),
+          React.createElement("div", { className: "space-y-1.5" },
+            selectedUserDetail.accounts.map((acc, aIdx) => React.createElement("div", {
+              key: aIdx,
+              className: "p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs"
+            },
+              React.createElement("div", null,
+                React.createElement("div", { className: "font-bold text-slate-900" }, acc.name || `Account #${aIdx + 1}`),
+                React.createElement("div", { className: "text-[10px] font-mono text-slate-500 flex items-center gap-1.5 mt-0.5" },
+                  React.createElement("span", { className: "text-blue-600 font-bold" }, acc.phone || "No Phone"),
+                  acc.phone && React.createElement("button", {
+                    onClick: () => copyToClipboard(acc.phone, `Copied phone: ${acc.phone}`),
+                    className: "text-slate-400 hover:text-slate-600 cursor-pointer"
+                  }, React.createElement(Icon, { name: "copy", className: "w-2.5 h-2.5" })),
+                  React.createElement("span", { className: "text-slate-300" }, "•"),
+                  React.createElement("span", { className: "bg-slate-200 text-slate-800 text-[10px] px-1 py-0.2 rounded" }, `Mining ID: ${acc.user_id || selectedUserDetail.user_id}`)
+                )
+              ),
+              React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold px-1.5 py-0.5 rounded" }, "Active")
+            ))
           )
         ),
 

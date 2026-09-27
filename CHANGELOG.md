@@ -4,6 +4,11 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **User Bot Admin Console Polish: 1-Tap Mining ID Copy & Search Expansion (`public/index.html`)**:
+  - Added `mining_id` directly into the instant client-side search index so admins can look up any user by their mining ID.
+  - Added 1-tap clipboard copy button directly inside the `Mining ID` badge on each user card.
+  - Added dedicated linked mining accounts inspection section inside the user detail modal with phone number and mining ID copy triggers.
+
 - **Admin Bot Dashboard Bug Fixes & Stale Cache Elimination (`deploy_both_cf_workers.py`, `deploy_vercel.py`, `vercel.json`, `public/vercel_redirect.html`)**:
   - **Zero Accounts Bug Root Cause & Resolution**:
     * Identified that `/api/fleet/live` was returning `null` when Upstash had `"null"` stored in `fleet:live_state`, causing dashboards to initialize with 0 accounts (`All Accounts (0)` and `0 Active`).
