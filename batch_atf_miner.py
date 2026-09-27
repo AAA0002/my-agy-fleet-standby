@@ -452,7 +452,9 @@ async def main():
     cf_workers = [
         "https://restore-agy.aaaai2.workers.dev",
         "https://restore-agy.aaa-bot.workers.dev",
-        "https://restore-agy.aaa222.workers.dev"
+        "https://restore-agy.aaa222.workers.dev",
+        "https://restore-agy.agorameet.workers.dev",
+        "https://restore-agy.aaaai.workers.dev"
     ]
     cf_secret = "agy_cf_secret_7d36994e_2026"
     fleet_payload = {
@@ -490,10 +492,10 @@ async def main():
             f"• *Math Captchas Solved:* `{sum(1 for r in results if r.get('math_solved'))}/{total}`\n"
             f"• *Total Fleet Mined:* `{total_mined:,.2f} ATF`\n"
             f"• *Primary Host Yield:* `{primary_mined:,.2f} ATF`\n"
-            f"• *Assigned Wallets:* 13 Dedicated TON v4r2 + Binance TON\n"
+            f"• *Assigned Wallets:* {total - 1} Dedicated TON v4r2 + Binance TON\n"
             f"• *Payout Target (TON):* `{PRIMARY_TON_WALLET}`\n"
             f"• *Next Automatic Cycle:* `8 Hours` via crontab\n\n"
-            f"_Cloudflare Edge Mesh synchronized across all 3 nodes._"
+            f"_Cloudflare Edge Mesh synchronized across all 5 nodes._"
         )
         # Telegram alert muted: only confirmed on-chain payments trigger Telegram messages
         pass

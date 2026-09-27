@@ -1173,8 +1173,13 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                 apx_init = tokens["apx_init_data"]
                 apx_base = "https://apxn-miner-live.apxn-network.workers.dev/api"
                 await http.post(f"{apx_base}/auth/telegram", json={"initData": apx_init}, timeout=aiohttp.ClientTimeout(total=8))
-                await http.post(f"{apx_base}/register", json={"initData": apx_init}, timeout=aiohttp.ClientTimeout(total=8))
+                async with http.post(f"{apx_base}/bootstrap", json={"initData": apx_init}, timeout=aiohttp.ClientTimeout(total=8)) as b_r:
+                    if b_r.status == 200:
+                        b_data = await b_r.json()
+                        if not b_data.get("exists") or not b_data.get("user"):
+                            await http.post(f"{apx_base}/register", json={"initData": apx_init}, timeout=aiohttp.ClientTimeout(total=8))
                 await http.post(f"{apx_base}/checkin", json={"initData": apx_init, "clientV2": True}, timeout=aiohttp.ClientTimeout(total=8))
+                await http.post(f"{apx_base}/mining/claim", json={"initData": apx_init}, timeout=aiohttp.ClientTimeout(total=8))
                 await http.post(f"{apx_base}/mining/restart", json={"initData": apx_init}, timeout=aiohttp.ClientTimeout(total=8))
                 logger.info(f"[{name}] ✅ Apex Miner initial mining started")
             except Exception as e:
@@ -1231,12 +1236,18 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                     "registration_duration_ms": 1500
                 }, headers=ain_h, timeout=aiohttp.ClientTimeout(total=8)) as br:
                     if br.status == 200:
-                        raw_c = br.headers.get("set-cookie") or ""
-                        m_sid = re.search(r"astra\.tg\.sid=([^;]+)", raw_c)
+                        raw_cookies = br.headers.getall("Set-Cookie", [])
+                        cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
+                        if not cookie_hdr and "set-cookie" in br.headers:
+                            cookie_hdr = br.headers.get("set-cookie")
                         req_h = {**ain_h}
-                        if m_sid:
-                            req_h["Cookie"] = f"astra.tg.sid={m_sid.group(1)}"
+                        if cookie_hdr:
+                            req_h["Cookie"] = cookie_hdr
+                        await http.post(f"{ain_base}/api/mining/start", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=6))
                         await http.post(f"{ain_base}/api/mining/claim", json={"action": "claim_cycle"}, headers=req_h, timeout=aiohttp.ClientTimeout(total=6))
+                        await http.post(f"{ain_base}/api/daily-bonus/claim", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=6))
+                        await http.post(f"{ain_base}/api/channel-bonus/claim", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=6))
+                        await http.post(f"{ain_base}/api/gift-box/open", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=6))
                         logger.info(f"[{name}] ✅ Ainovum initial mining started")
             except Exception as e:
                 logger.debug(f"[{name}] Ainovum bootstrap note: {e}")
@@ -2596,16 +2607,18 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 "registration_duration_ms": 1500
             }, headers=ain_h, timeout=aiohttp.ClientTimeout(total=6)) as br:
                 if br.status == 200:
-                    raw_c = br.headers.get("set-cookie") or ""
-                    m_sid = re.search(r"astra\.tg\.sid=([^;]+)", raw_c)
+                    raw_cookies = br.headers.getall("Set-Cookie", [])
+                    cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
+                    if not cookie_hdr and "set-cookie" in br.headers:
+                        cookie_hdr = br.headers.get("set-cookie")
                     req_h = {**ain_h}
-                    if m_sid:
-                        req_h["Cookie"] = f"astra.tg.sid={m_sid.group(1)}"
+                    if cookie_hdr:
+                        req_h["Cookie"] = cookie_hdr
+                    await session.post(f"{ain_base}/api/mining/start", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=5))
                     await session.post(f"{ain_base}/api/mining/claim", json={"action": "claim_cycle"}, headers=req_h, timeout=aiohttp.ClientTimeout(total=5))
                     await session.post(f"{ain_base}/api/channel-bonus/claim", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=5))
                     await session.post(f"{ain_base}/api/gift-box/open", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=5))
                     await session.post(f"{ain_base}/api/daily-bonus/claim", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=5))
-                    await session.post(f"{ain_base}/api/mining/start", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=5))
             status["bots"]["ainovum"] = "farmed"
         except Exception as e:
             status["bots"]["ainovum"] = f"error: {e}"

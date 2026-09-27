@@ -4,6 +4,24 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Comprehensive Bug Audit, Multi-Header Session Parsing, Bootstrap Mining Hardening & 5-Node Edge Mesh Sync (`render_standby_app.py`, `render_app_latest.py`, `batch_atf_miner.py`, `backup_manager.py`, `fleet_miniapp_tokens.json`, `CHANGELOG.md`)**:
+  - **Ainovum Multi-Header Cookie Parsing & Auth Loss Bug Fix**:
+    * **Root Cause Fixed**: `aiohttp`'s `br.headers.get("set-cookie")` only returned the first `Set-Cookie` header. When Ainovum sent multiple headers (e.g. CSRF + `astra.tg.sid`), the session cookie was dropped, causing subsequent API actions (`/api/mining/claim`, `/api/mining/start`, `/api/daily-bonus/claim`, `/api/channel-bonus/claim`, `/api/gift-box/open`) to fail with 401 Unauthorized.
+    * **Fix**: Replaced single-header fetch with `br.headers.getall("Set-Cookie", [])` joined into a complete `Cookie` header string, ensuring permanent authenticated access in both `bootstrap_account_mining` and `farm_single_account_bots`.
+  - **New Account Ainovum Mining Start Bootstrap Gap Fixed**:
+    * **Root Cause Fixed**: When onboarding new accounts, `bootstrap_account_mining` called `/api/mining/claim` without ever calling `/api/mining/start`. For brand new accounts with no active mining clock, claiming did nothing and mining was never initiated.
+    * **Fix**: Added explicit `/api/mining/start`, `/api/daily-bonus/claim`, `/api/channel-bonus/claim`, and `/api/gift-box/open` to `bootstrap_account_mining`.
+  - **Apex Miner Bootstrap Validation & Claim Flow Added**:
+    * Added `/bootstrap` existence probe before `/register` call to avoid redundant registrations and added `/mining/claim` before `/mining/restart` in `bootstrap_account_mining`.
+  - **ATF Miner 5-Node Cloudflare Edge Mesh Sync (`batch_atf_miner.py`)**:
+    * Expanded `cf_workers` from 3 nodes to all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`), and made fleet account and assigned wallet metrics dynamic.
+  - **Disaster Recovery Backup Inclusions (`backup_manager.py`)**:
+    * Added `render_standby_app.py` and `render_app_latest.py` to `CORE_BOT_FILES` in `backup_manager.py`. Generated and uploaded fresh timestamped disaster recovery archive to Telegram vault (`@myagyai`) and Cloudflare Edge KV mesh.
+  - **Fleet-Wide Token Sync & Live Verification**:
+    * Synchronized all 14 accounts from Upstash Redis into `fleet_miniapp_tokens.json`.
+    * Pushed commit `4fea2746` to `AAA2743/my-agy-fleet-standby` on GitHub. Verified both Render Node 1 (Singapore) and Render Node 2 (Frankfurt) transitioned to `status=live`.
+    * Executed live synchronous test: **14/14 accounts successfully farmed across all 8 bots (`ok: True`, `farmed_count: 14`)**.
+
 - **Account 14 Cloudflare EVM Mapping, Web Dashboard Sync & Dynamic Sweep Auditing (`deploy_both_cf_workers.py`, `public/index.html`, `cloud_wallet_sweeper.py`, `CHANGELOG.md`)**:
   - **Cloudflare Edge Isolated EVM Mapping**:
     * Integrated Account 14 (`8727040932`) with EVM wallet `0x117a66bf79f63E5cC1dAB047047d62c651Eae335` into `isolatedEvmMap` in `deploy_both_cf_workers.py`.

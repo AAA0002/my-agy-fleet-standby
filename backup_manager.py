@@ -70,6 +70,8 @@ CORE_BOT_FILES = [
     "stones_captcha_templates.json",
     "execute_ailab_ainovum_withdrawals.py",
     "batch_stones_withdraw.py",
+    "render_standby_app.py",
+    "render_app_latest.py",
     "vercel.json",
     "deploy_vercel.py",
     "public/index.html",
