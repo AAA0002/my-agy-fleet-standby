@@ -4,6 +4,22 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **On-the-Fly Cloud Token Extraction, Multi-Node Aggregator, Fleet 14-Account Sync & Zero-Spam Enforcement (`render_standby_app.py`, `render_app_latest.py`, `accounts.json`, `fleet_evm_wallets.json`, `fleet_ton_wallets.json`, `CHANGELOG.md`)**:
+  - **On-the-Fly Cloud Token Extraction & Instant Mining Bootstrap in Farming Cycles**:
+    * **Root Cause Fixed**: Previously, `run_cloud_fleet_farming_cycle` simply skipped any account if `tokens_map.get(uid)` was empty. Accounts that were onboarded without tokens never started farming.
+    * **Automatic Cloud Extraction**: If an account in the fleet lacks active WebApp tokens when a farming cycle runs, the system automatically uses Telethon in the cloud to extract fresh tokens, syncs them to all 5 Cloudflare Edge nodes and Upstash Redis, bootstraps initial mining across all 8 bots, and proceeds to farm the account immediately.
+  - **Aggregated Multi-Node Token Aggregator (`fetch_cloud_miniapp_tokens`)**:
+    * **Early-Return Bug Eliminated**: Replaced the premature early-return in `fetch_cloud_miniapp_tokens()` with a complete aggregation loop that queries all 5 Cloudflare Edge nodes and Upstash Redis (`keys fleet:tokens:*`), merging tokens across all sources by user ID.
+  - **Master Referral Pre-Binding Prior to WebApp WebView Requests (`extract_tokens_for_account`)**:
+    * When extracting tokens for new accounts, `extract_tokens_for_account()` now proactively sends `/start <ref>` with Master ID `6727787768` to all 8 bots before calling `RequestWebViewRequest` / `RequestAppWebViewRequest`, guaranteeing Telegram authorizes the WebApp dialog for new accounts.
+  - **Fleet-Wide 14-Account Federation & Isolated Wallet Assignment**:
+    * Added account `8727040932` ("Raj Thakur Козлов") into `accounts.json`, `fleet_evm_wallets.json` (`0x117a66bf79f63E5cC1dAB047047d62c651Eae335`), and `fleet_ton_wallets.json` (`UQCbqkSPVKS2aNWkk_LZ2r98aorh4O-1OuPCarCpsVIPUsLo`).
+    * Generated and uploaded fresh disaster recovery `backup.zip` containing all 14 accounts and isolated wallets to all 5 Cloudflare Edge nodes.
+  - **Zero-Spam Enforcement on Onboarding**:
+    * Removed verbose onboarding receipts from `bind_account_master_referrals()` to maintain strict payment confirmation exclusivity.
+  - **On-Demand Single-Account Farming Endpoint (`POST /api/farm/account/{uid}`)**:
+    * Implemented single-account farming endpoint allowing targeted manual or webhook triggering for any individual account.
+
 - **Anti-Spam Telegram Notification Purge & Strictly Confirmed On-Chain Payment Notifications (`render_standby_app.py`, `render_app_latest.py`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Eliminated Telegram Message Flood & Ban Risk**:
     * **Root Cause Fixed**: Previously, `check_and_withdraw_stones()` broadcasted a notification every time an account had >= 500 STONES (`💎 Stones Miners Threshold Reached`). Because 10+ accounts met this threshold and 5 Cloudflare edge nodes triggered checks every 15 minutes, it flooded the Telegram channel and admin chat with 350+ spam messages in minutes, risking bot bans.

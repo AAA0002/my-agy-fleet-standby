@@ -292,6 +292,27 @@ async def extract_tokens_for_account(acc: dict) -> dict:
         if not await client.is_user_authorized():
             logger.warning(f"[{name}] Session unauthorized")
             return {}
+
+        # Ensure all 8 bots are started with master referral 6727787768 to authorize WebApps
+        bots_to_start = [
+            (STONES_BOT, "r6727787768"),
+            (MRG_BOT, MRG_REFERRAL_CODE),
+            (ART_BOT, str(REPORT_CHAT_ID)),
+            (AILAB_BOT, "296852"),
+            (ULTRAWALLET_BOT, str(ULTRAWALLET_REFERRAL_CODE)),
+            (APX_BOT, str(APX_REFERRAL_CODE)),
+            (AINOVUM_BOT, AINOVUM_REFERRAL_CODE),
+            ("ATF_AIRDROP_bot", str(REPORT_CHAT_ID))
+        ]
+        for bot_uname, ref_code in bots_to_start:
+            try:
+                b_ent = await client.get_entity(bot_uname)
+                await client.send_message(b_ent, f"/start {ref_code}")
+                await asyncio.sleep(0.3)
+            except Exception:
+                pass
+        await asyncio.sleep(1.0)
+
         return await extract_tokens_with_client(client, acc)
     except Exception as e:
         logger.error(f"[{name}] Telethon connection error: {e}")
@@ -1325,33 +1346,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
         except Exception as fse:
             logger.error(f"[{name}] Initial farming note: {fse}")
 
-    # Notify Telegram Admin & Vault with complete onboarding & mining receipt
-    bot_token = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o")
-    receipt = (
-        f"🚀 <b>Master Fleet Onboarding & Mining Active (8/8 Bots)</b>\n\n"
-        f"• <b>Account:</b> {name} (<code>{uid}</code>)\n"
-        f"• <b>Master Referral ID:</b> <code>6727787768</code>\n"
-        f"• <b>Active Bots Bound & Mining:</b>\n"
-        f"  ✅ Stones Miners (@stoneswithestand_bot)\n"
-        f"  ✅ MRG Miner (@mrgminerbot)\n"
-        f"  ✅ ART Airdrop (@ART_AIRDROP_BOT)\n"
-        f"  ✅ AI Lab Robot (@AiLab_robot)\n"
-        f"  ✅ UltraWallet (@UltrawalletTrade_Bot)\n"
-        f"  ✅ Apex Miner (@ApxMinerBot)\n"
-        f"  ✅ Ainovum Bot (@ainovum_bot)\n"
-        f"  ✅ ATF Miner (@ATF_AIRDROP_bot)\n\n"
-        f"⚡ <b>Cloud Edge Tokens:</b> Extracted & Synchronized to 5x Cloudflare Edge Nodes + Upstash Redis\n"
-        f"⛏️ <b>Mining Engine:</b> 8/8 Bots Bootstrapped & Actively Mining in the Cloud 24/7!"
-    )
-    async with aiohttp.ClientSession() as s:
-        try:
-            await s.post(
-                f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                json={"chat_id": REPORT_CHAT_ID, "text": receipt, "parse_mode": "HTML"},
-                timeout=aiohttp.ClientTimeout(total=8)
-            )
-        except Exception:
-            pass
+    logger.info(f"[{name}] 🚀 Master Fleet Onboarding & Mining Active (8/8 Bots) for account {uid} bound to Master ID 6727787768")
 
 
 async def sync_new_account_to_clouds(acc_entry: dict):
@@ -2163,11 +2158,12 @@ async def api_sweep_execute(request: Request):
 
 
 async def fetch_cloud_miniapp_tokens(session: aiohttp.ClientSession) -> dict:
-    """Fetches miniapp session tokens across Cloudflare edge nodes with User-Agent & Upstash Redis fallback."""
+    """Fetches and aggregates miniapp session tokens across all Cloudflare edge nodes and Upstash Redis."""
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
         "Authorization": f"Bearer {SECRET_KEY}"
     }
+    tokens_map = {}
     for cf_url in CF_WORKER_URLS:
         for ep in ["/api/miniapp/tokens", "/api/fleet/tokens"]:
             try:
@@ -2175,12 +2171,19 @@ async def fetch_cloud_miniapp_tokens(session: aiohttp.ClientSession) -> dict:
                     if r.status == 200:
                         data = await r.json()
                         tokens = data.get("tokens", data) if isinstance(data, dict) else {}
-                        if isinstance(tokens, dict) and any(k.isdigit() for k in tokens.keys()):
-                            return tokens
+                        if isinstance(tokens, dict):
+                            for k, v in tokens.items():
+                                if k.isdigit() and isinstance(v, dict):
+                                    if k not in tokens_map:
+                                        tokens_map[k] = v
+                                    else:
+                                        for tk, tv in v.items():
+                                            if tk not in tokens_map[k] or not tokens_map[k][tk]:
+                                                tokens_map[k][tk] = tv
             except Exception:
                 pass
 
-    # Fallback to Upstash Redis
+    # Merge from Upstash Redis (fleet:tokens:*)
     if UPSTASH_URL and UPSTASH_TOKEN:
         try:
             upstash_headers = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
@@ -2188,7 +2191,6 @@ async def fetch_cloud_miniapp_tokens(session: aiohttp.ClientSession) -> dict:
                 if ur.status == 200:
                     uk = await ur.json()
                     keys = uk.get("result", [])
-                    tokens_collected = {}
                     for k in keys:
                         async with session.get(f"{UPSTASH_URL}/get/{k}", headers=upstash_headers, timeout=aiohttp.ClientTimeout(total=4)) as gr:
                             if gr.status == 200:
@@ -2198,15 +2200,19 @@ async def fetch_cloud_miniapp_tokens(session: aiohttp.ClientSession) -> dict:
                                     try:
                                         t_obj = json.loads(res_str) if isinstance(res_str, str) else res_str
                                         acc_id = str(t_obj.get("account_id", k.split(":")[-1]))
-                                        tokens_collected[acc_id] = t_obj
+                                        if acc_id.isdigit():
+                                            if acc_id not in tokens_map:
+                                                tokens_map[acc_id] = t_obj
+                                            else:
+                                                for tk, tv in t_obj.items():
+                                                    if tk not in tokens_map[acc_id] or not tokens_map[acc_id][tk]:
+                                                        tokens_map[acc_id][tk] = tv
                                     except Exception:
                                         pass
-                    if tokens_collected:
-                        return tokens_collected
         except Exception as ue:
-            logger.warning(f"Upstash token fallback error: {ue}")
+            logger.warning(f"Upstash token merge error: {ue}")
 
-    return {}
+    return tokens_map
 
 
 async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, acc_tokens: dict) -> dict:
@@ -2515,6 +2521,19 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
         for acc in accounts:
             uid = str(acc.get("user_id"))
             acc_tok = tokens_map.get(uid, {})
+            # If account has no active WebApp tokens, trigger on-the-fly extraction & bootstrap in the cloud
+            if not acc_tok or not any(k.endswith("_init_data") for k in acc_tok.keys()):
+                logger.info(f"[Farm Cycle] Account {uid} ({acc.get('name')}) has no active WebApp tokens. Triggering cloud extraction & bootstrap...")
+                try:
+                    fresh = await extract_tokens_for_account(acc)
+                    if fresh:
+                        acc_tok = fresh
+                        tokens_map[uid] = fresh
+                        await sync_account_tokens_to_clouds(fresh)
+                        await bootstrap_account_mining(acc, fresh)
+                except Exception as ex_e:
+                    logger.warning(f"[Farm Cycle] On-the-fly token extraction note for {uid}: {ex_e}")
+
             if acc_tok:
                 farm_tasks.append(farm_single_account_bots(session, acc, acc_tok))
 
@@ -2587,6 +2606,31 @@ async def api_farm_cloud_all(request: Request):
 async def api_farm_status():
     """Returns the latest cloud fleet farming execution status and metrics."""
     return {"ok": True, "last_farm_run": LAST_FARM_RUN, "timestamp": time.time()}
+
+
+@app.post("/api/farm/account/{uid}")
+async def api_farm_single_account(uid: str, request: Request):
+    """Executes on-demand cloud farming & token bootstrap for a single account in the fleet."""
+    accounts = await fetch_accounts_from_cloud()
+    target_acc = next((a for a in accounts if str(a.get("user_id")) == str(uid)), None)
+    if not target_acc:
+        raise HTTPException(status_code=404, detail=f"Account {uid} not found in fleet")
+
+    async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as session:
+        tokens_map = await fetch_cloud_miniapp_tokens(session)
+        acc_tok = tokens_map.get(str(uid), {})
+        if not acc_tok or not any(k.endswith("_init_data") for k in acc_tok.keys()):
+            fresh = await extract_tokens_for_account(target_acc)
+            if fresh:
+                acc_tok = fresh
+                await sync_account_tokens_to_clouds(fresh)
+                await bootstrap_account_mining(target_acc, fresh)
+
+        if not acc_tok:
+            return {"ok": False, "message": "Failed to extract WebApp tokens for account", "uid": uid}
+
+        res = await farm_single_account_bots(session, target_acc, acc_tok)
+        return {"ok": True, "result": res}
 
 
 @app.post("/api/withdraw/auto-cycle")
