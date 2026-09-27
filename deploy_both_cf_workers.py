@@ -3306,8 +3306,9 @@ Reply to Arif naturally:`;
         return new Response(JSON.stringify({
           ok: true,
           bot: "AAAPREMIUMAPPSbot",
-          role: "Public User & Community AI Bot",
+          role: "Public User & Community AI Mining Platform",
           status: "online",
+          version: "5.0-premium",
           channels: [
             { name: "AAA Auto Miner Supergroup", url: "https://t.me/+8xTmE28Up9U5YWQ1" },
             { name: "Official Announcements", username: "@AAAATFAUTOMINING", url: "https://t.me/AAAATFAUTOMINING" },
@@ -3324,81 +3325,239 @@ Reply to Arif naturally:`;
 
         const userBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
 
-        const userReplyKeyboard = {
+        // Helper: Get & Save User Profile in Upstash Redis
+        const getUserProfile = async (uid, fromObj = null) => {
+          const key = `ub_user:${uid}`;
+          let prof = null;
+          try {
+            const raw = await upstashGet(key);
+            if (raw) prof = typeof raw === "string" ? JSON.parse(raw) : raw;
+          } catch (_) {}
+
+          if (!prof) {
+            prof = {
+              user_id: uid,
+              first_name: fromObj?.first_name || "Miner",
+              username: fromObj?.username || "",
+              points: 100, // 100 Free Welcome Points (Day 1 farming free)
+              slots: 1, // Default 1 Account Slot
+              temp_slots: 0,
+              ads_watched: 0,
+              last_ad_claim: 0,
+              referral_count: 0,
+              referred_by: null,
+              accounts: [],
+              joined_channels: false,
+              farming_active: true,
+              last_deduction_date: new Date().toISOString().slice(0, 10),
+              created_at: Date.now()
+            };
+            await upstashSet(key, prof);
+          }
+
+          // Daily Automated Point Deduction (100 Pts per active connected account per day)
+          const today = new Date().toISOString().slice(0, 10);
+          if (prof.last_deduction_date !== today && prof.accounts && prof.accounts.length > 0) {
+            const dailyCost = prof.accounts.length * 100;
+            if (prof.points >= dailyCost) {
+              prof.points -= dailyCost;
+              prof.farming_active = true;
+            } else {
+              prof.farming_active = false;
+            }
+            prof.last_deduction_date = today;
+            await upstashSet(key, prof);
+          }
+
+          return prof;
+        };
+
+        const saveUserProfile = async (uid, prof) => {
+          await upstashSet(`ub_user:${uid}`, prof);
+        };
+
+        // Helper: Check membership across all 3 official community channels
+        const checkUserChannels = async (uid) => {
+          if (String(uid) === "6727787768") return { ok: true, missing: [] };
+          const channels = [
+            { id: -1003684868577, name: "AAA Auto Miner Supergroup", url: "https://t.me/+8xTmE28Up9U5YWQ1" },
+            { id: -1004255751168, name: "Official Announcements", url: "https://t.me/AAAATFAUTOMINING" },
+            { id: -1004332544939, name: "Live Miner Activity", url: "https://t.me/AAAATF_ACTIVITY" }
+          ];
+          const missing = [];
+          for (const ch of channels) {
+            try {
+              const res = await fetch(`https://api.telegram.org/bot${userBotToken}/getChatMember?chat_id=${ch.id}&user_id=${uid}`);
+              if (res.ok) {
+                const d = await res.json();
+                const status = d.result?.status;
+                if (!["creator", "administrator", "member", "restricted"].includes(status)) {
+                  missing.push(ch);
+                }
+              }
+            } catch (_) {}
+          }
+          return { ok: missing.length === 0, missing };
+        };
+
+        // Telegram Stars Invoice Sender
+        const sendStarsInvoice = async (targetChatId, itemKey) => {
+          const catalog = {
+            ub_stars_slot1: {
+              title: "🌟 1 Account Slot (Permanent)",
+              description: "Unlock 1 permanent slot to connect another Telegram account for 24/7 cloud mining.",
+              payload: "buy_slot_1",
+              prices: [{ label: "1 Permanent Slot", amount: 50 }]
+            },
+            ub_stars_slot3: {
+              title: "🌟 3 Account Slots (Permanent)",
+              description: "Unlock 3 permanent slots to connect multiple Telegram accounts for 24/7 cloud mining.",
+              payload: "buy_slot_3",
+              prices: [{ label: "3 Permanent Slots", amount: 120 }]
+            },
+            ub_stars_vip: {
+              title: "💎 VIP Miner Pass (3,000 Pts + 1 Slot)",
+              description: "Get 3,000 Points (30 days of 24/7 cloud mining) plus 1 extra permanent account slot!",
+              payload: "buy_vip",
+              prices: [{ label: "VIP Pass", amount: 100 }]
+            },
+            ub_stars_pts1000: {
+              title: "💎 1,000 Mining Points",
+              description: "Add 1,000 Points to your balance for 10 full days of 24/7 cloud mining.",
+              payload: "buy_points_1000",
+              prices: [{ label: "1,000 Points", amount: 35 }]
+            }
+          };
+          const pkg = catalog[itemKey];
+          if (!pkg) return;
+
+          const payload = {
+            chat_id: targetChatId,
+            title: pkg.title,
+            description: pkg.description,
+            payload: pkg.payload,
+            currency: "XTR",
+            prices: pkg.prices,
+            provider_token: "" // Must be empty string for Telegram Stars
+          };
+
+          try {
+            await fetch(`https://api.telegram.org/bot${userBotToken}/sendInvoice`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+          } catch (_) {}
+        };
+
+        // UI Keyboards (100% Native Telegram Bot - Zero Dashboard Needed)
+        const userMainKeyboard = {
           keyboard: [
             [
-              { text: "💬 Talk to AI Copilot" },
-              { text: "⛏️ Verified Mining Apps" }
+              { text: "👥 My Accounts" },
+              { text: "➕ Connect Account" }
             ],
             [
-              { text: "📢 Official Channels" },
-              { text: "🌐 Open Mini App", web_app: { url: "https://atf-miner-app.pages.dev" } }
+              { text: "💎 Points & Balance" },
+              { text: "📺 Watch Ad (+20 Pts)" }
+            ],
+            [
+              { text: "👥 Invite Friends (+500 Pts)" },
+              { text: "🌟 Upgrade with Stars" }
+            ],
+            [
+              { text: "⚡ Manual Harvest" },
+              { text: "📢 Official Channels" }
             ]
           ],
           resize_keyboard: true,
           is_persistent: true
         };
 
-        const channelsInlineKeyboard = {
+        const userCancelKeyboard = {
+          keyboard: [
+            [
+              { text: "❌ Cancel Connection" }
+            ]
+          ],
+          resize_keyboard: true,
+          is_persistent: true
+        };
+
+        const gateInlineKeyboard = {
           inline_keyboard: [
             [
-              { text: "💬 AAA Auto Miner Group", url: "https://t.me/+8xTmE28Up9U5YWQ1" }
+              { text: "💬 1. Join Supergroup", url: "https://t.me/+8xTmE28Up9U5YWQ1" },
+              { text: "📢 2. Join News", url: "https://t.me/AAAATFAUTOMINING" }
             ],
             [
-              { text: "📢 Official Announcements", url: "https://t.me/AAAATFAUTOMINING" }
+              { text: "⚡ 3. Join Live Activity Stream", url: "https://t.me/AAAATF_ACTIVITY" }
             ],
             [
-              { text: "⚡ Live Miner Activity Stream", url: "https://t.me/AAAATF_ACTIVITY" }
-            ],
-            [
-              { text: "🌐 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev" } }
+              { text: "🔄 Verify Membership & Claim 100 Pts", callback_data: "ub_verify_gate" }
             ]
           ]
         };
 
-        const miningInlineKeyboard = {
+        const starsUpgradeKeyboard = {
           inline_keyboard: [
             [
-              { text: "💬 Join Community Supergroup", url: "https://t.me/+8xTmE28Up9U5YWQ1" }
+              { text: "🌟 1 Slot (50 Stars)", callback_data: "ub_stars_slot1" },
+              { text: "🌟 3 Slots (120 Stars)", callback_data: "ub_stars_slot3" }
             ],
             [
-              { text: "📢 Latest Bot Releases", url: "https://t.me/AAAATFAUTOMINING" }
+              { text: "💎 VIP Pass: 3,000 Pts + 1 Slot (100 Stars)", callback_data: "ub_stars_vip" }
             ],
             [
-              { text: "🚀 Open WebApp", web_app: { url: "https://atf-miner-app.pages.dev" } }
+              { text: "💎 1,000 Mining Points (35 Stars)", callback_data: "ub_stars_pts1000" }
+            ],
+            [
+              { text: "📺 Watch Ad (+20 Pts Free)", callback_data: "ub_watch_ad" },
+              { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }
             ]
           ]
         };
 
-        const startInlineKeyboard = {
+        const adClaimKeyboard = {
           inline_keyboard: [
             [
-              { text: "📢 Official Channels (3)", callback_data: "ub_channels" },
-              { text: "⛏️ Mining Apps", callback_data: "ub_mining" }
+              { text: "🎁 Claim +20 Points", callback_data: "ub_claim_ad" }
             ],
             [
-              { text: "💬 Chat with AI Copilot", callback_data: "ub_chat" }
-            ],
-            [
-              { text: "🌐 Open Web App Portal", web_app: { url: "https://atf-miner-app.pages.dev" } }
+              { text: "📢 Visit Official Channel", url: "https://t.me/AAAATFAUTOMINING" }
             ]
           ]
         };
 
-        // Handle Callback Queries
+        // 1. Handle Telegram Stars Pre-Checkout Query
+        if (update.pre_checkout_query) {
+          const pcq = update.pre_checkout_query;
+          ctx.waitUntil(
+            fetch(`https://api.telegram.org/bot${userBotToken}/answerPreCheckoutQuery`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ pre_checkout_query_id: pcq.id, ok: true })
+            }).catch(() => {})
+          );
+          return new Response("OK");
+        }
+
+        // 2. Handle Callback Queries
         if (update.callback_query) {
           const cq = update.callback_query;
           const cqChatId = cq.message?.chat?.id || cq.from?.id;
-          const cqSenderName = cq.from?.first_name || cq.from?.username || "Friend";
+          const cqSenderName = cq.from?.first_name || cq.from?.username || "Miner";
           const cqData = cq.data || "";
 
-          ctx.waitUntil(
-            fetch(`https://api.telegram.org/bot${userBotToken}/answerCallbackQuery`, {
+          const answerCq = async (alertTxt = null) => {
+            const body = { callback_query_id: cq.id };
+            if (alertTxt) { body.text = alertTxt; body.show_alert = true; }
+            await fetch(`https://api.telegram.org/bot${userBotToken}/answerCallbackQuery`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ callback_query_id: cq.id })
-            }).catch(() => {})
-          );
+              body: JSON.stringify(body)
+            }).catch(() => {});
+          };
 
           const sendCqReply = async (txt, markup = null) => {
             const payload = { chat_id: cqChatId, text: txt, parse_mode: "Markdown", disable_web_page_preview: true };
@@ -3410,51 +3569,189 @@ Reply to Arif naturally:`;
             }).catch(() => {});
           };
 
-          if (cqData === "ub_channels") {
-            const chText = `📢 *Official AAA Community Channels*\n\n` +
-              `Stay connected with verified news, live payout proofs, and community support:\n\n` +
-              `1️⃣ 💬 *AAA Auto Miner Supergroup*\n` +
-              `• Connect with fellow miners, share tips, and get real-time assistance.\n` +
-              `👉 [Join Supergroup](https://t.me/+8xTmE28Up9U5YWQ1)\n\n` +
-              `2️⃣ 📢 *Official Announcements*\n` +
-              `• Project releases, verified smart contracts, and major news.\n` +
-              `👉 [Join @AAAATFAUTOMINING](https://t.me/AAAATFAUTOMINING)\n\n` +
-              `3️⃣ ⚡ *Live Miner Activity Stream*\n` +
-              `• Real-time broadcast of automated mining harvests and verified payouts.\n` +
-              `👉 [Join @AAAATF_ACTIVITY](https://t.me/AAAATF_ACTIVITY)`;
-            ctx.waitUntil(sendCqReply(chText, channelsInlineKeyboard));
-          } else if (cqData === "ub_mining") {
-            const mText = `⛏️ *Verified Telegram Mining Ecosystem*\n\n` +
-              `Here are the top vetted Telegram Web3 mining bots:\n\n` +
-              `1. *ATF Miner* — High-yield automated cloud mining pool.\n` +
-              `2. *Stones Mining* — Tap-to-earn & cloud staking.\n` +
-              `3. *MRG Farm* — Daily check-ins, tasks & mining cycles.\n` +
-              `4. *ART Collector* — Creative token rewards.\n` +
-              `5. *AI Lab* — AI compute task allocation & mining.\n` +
-              `6. *UltraWallet* — Multi-chain wallet with integrated rewards.\n` +
-              `7. *Apex Miner* — Daily boosts, speed multipliers & social bounties.\n` +
-              `8. *Ainovum* — Gift box claims & automated cycles.\n\n` +
-              `💡 _Tip: Join our Supergroup to get the latest guides and referral strategies!_`;
-            ctx.waitUntil(sendCqReply(mText, miningInlineKeyboard));
-          } else if (cqData === "ub_chat") {
-            ctx.waitUntil(sendCqReply(`💬 *AI Copilot Ready!*\n\nHi ${cqSenderName}! Send me any question or message here in this chat, and I'll give you instant insights!`, userReplyKeyboard));
+          // A. Gate Verification Callback
+          if (cqData === "ub_verify_gate") {
+            const chCheck = await checkUserChannels(cqChatId);
+            if (!chCheck.ok) {
+              await answerCq("⚠️ You haven't joined all 3 channels yet! Please click all 3 links above and join, then tap Verify again.");
+              return new Response("OK");
+            }
+
+            await answerCq("✅ Membership verified! 100 Welcome Points awarded!");
+            const profile = await getUserProfile(cqChatId, cq.from);
+            profile.joined_channels = true;
+            await saveUserProfile(cqChatId, profile);
+
+            const welcomeMsg = `🌟 *WELCOME TO AAA AUTO MINING PLATFORM!* 🚀\n\n` +
+              `Hello ${cqSenderName}! Your membership in all 3 channels has been *Verified*.\n\n` +
+              `🎁 *100 Free Welcome Points* have been credited to your balance! (1 full day of free 24/7 cloud mining).\n\n` +
+              `💎 *How it works:*\n` +
+              `• *Connect Account:* Add your Telegram account to farm 8 mining bots automatically in the cloud.\n` +
+              `• *Point System:* Daily cost is 100 points/day per connected account.\n` +
+              `• *Watch Ads:* Earn +20 Points each ad.\n` +
+              `• *Invite Friends:* Earn +500 Points for every friend who joins.\n` +
+              `• *Slots:* Default 1 slot. Watch 50 ads for a bonus slot or upgrade with Telegram Stars!\n\n` +
+              `Use the quick menu below to get started:`;
+            ctx.waitUntil(sendCqReply(welcomeMsg, userMainKeyboard));
+            return new Response("OK");
           }
+
+          await answerCq();
+
+          // B. Watch Ad & Claim Points Callback
+          if (cqData === "ub_watch_ad") {
+            const adMsg = `📺 *SPONSORED PARTNER AD* 🚀\n\n` +
+              `🌟 *AAA Auto Mining Ecosystem*\n` +
+              `• 24/7 High-yield autonomous cloud mining pools.\n` +
+              `• Automated rewards across ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, and Ainovum!\n` +
+              `• Verified Telegram Web3 security & on-chain smart contracts.\n\n` +
+              `Tap *🎁 Claim +20 Points* below to collect your reward!`;
+            ctx.waitUntil(sendCqReply(adMsg, adClaimKeyboard));
+            return new Response("OK");
+          }
+
+          if (cqData === "ub_claim_ad") {
+            const profile = await getUserProfile(cqChatId, cq.from);
+            const now = Date.now();
+            const elapsed = Math.floor((now - (profile.last_ad_claim || 0)) / 1000);
+            if (elapsed < 15) {
+              const waitSec = 15 - elapsed;
+              ctx.waitUntil(sendCqReply(`⏳ *Ad Cooldown Active*\nPlease wait ${waitSec}s before claiming your next ad reward.`));
+              return new Response("OK");
+            }
+
+            profile.points = (profile.points || 0) + 20;
+            profile.ads_watched = (profile.ads_watched || 0) + 1;
+            profile.last_ad_claim = now;
+
+            let bonusText = "";
+            if (profile.ads_watched % 50 === 0) {
+              profile.temp_slots = (profile.temp_slots || 0) + 1;
+              bonusText = `\n\n🎉 *50 ADS MILESTONE REACHED!* You unlocked *+1 BONUS ACCOUNT SLOT*!`;
+            }
+            await saveUserProfile(cqChatId, profile);
+
+            const rep = `✅ *+20 POINTS CREDITED!* 🎁\n\n` +
+              `• *New Balance:* ${profile.points} Points\n` +
+              `• *Ads Watched:* ${profile.ads_watched}/50\n` +
+              `• *Progress to Bonus Slot:* ${profile.ads_watched % 50}/50 ads${bonusText}\n\n` +
+              `💡 _Keep watching ads to extend your 24/7 mining clock!_`;
+            ctx.waitUntil(sendCqReply(rep, userMainKeyboard));
+            return new Response("OK");
+          }
+
+          // C. Referral Stats & Link
+          if (cqData === "ub_referral") {
+            const profile = await getUserProfile(cqChatId, cq.from);
+            const refLink = `https://t.me/AAAPREMIUMAPPSbot?start=ref_${cqChatId}`;
+            const refMsg = `👥 *INVITE FRIENDS & EARN POINTS* 🚀\n\n` +
+              `Share your personal referral link with friends. For every friend who joins & verifies:\n` +
+              `🎁 *You earn +500 Points!* (5 full days of automated cloud mining!)\n` +
+              `🎁 *Your friend receives 100 Free Welcome Points!*\n\n` +
+              `🔗 *Your Referral Link:*\n\`${refLink}\`\n\n` +
+              `📊 *Your Referral Stats:*\n` +
+              `• *Invited Users:* ${profile.referral_count || 0}\n` +
+              `• *Points Earned:* ${(profile.referral_count || 0) * 500} Pts`;
+            ctx.waitUntil(sendCqReply(refMsg, {
+              inline_keyboard: [
+                [{ text: "📤 Share to Telegram", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }]
+              ]
+            }));
+            return new Response("OK");
+          }
+
+          // D. Telegram Stars Upgrades
+          if (cqData === "ub_buy_stars") {
+            const starsMsg = `🌟 *UPGRADE WITH TELEGRAM STARS* ⭐\n\n` +
+              `Instantly expand your mining capacity and boost points balance:\n\n` +
+              `• *1 Permanent Account Slot:* 50 Stars\n` +
+              `• *3 Permanent Account Slots:* 120 Stars\n` +
+              `• *VIP Miner Pass (3,000 Pts + 1 Slot):* 100 Stars\n` +
+              `• *1,000 Points Booster:* 35 Stars\n\n` +
+              `Choose your upgrade below:`;
+            ctx.waitUntil(sendCqReply(starsMsg, starsUpgradeKeyboard));
+            return new Response("OK");
+          }
+
+          if (["ub_stars_slot1", "ub_stars_slot3", "ub_stars_vip", "ub_stars_pts1000"].includes(cqData)) {
+            ctx.waitUntil(sendStarsInvoice(cqChatId, cqData));
+            return new Response("OK");
+          }
+
+          // E. Accounts & Manual Harvest
+          if (cqData === "ub_add_acc") {
+            const profile = await getUserProfile(cqChatId, cq.from);
+            const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+            if (profile.accounts.length >= totalSlots) {
+              const slotLimitMsg = `⚠️ *Account Slot Limit Reached (${profile.accounts.length}/${totalSlots})*\n\n` +
+                `You are currently using all available slots!\n\n` +
+                `*How to get more slots:*\n` +
+                `1. 📺 *Watch 50 Ads*: Earn a free bonus slot! (${profile.ads_watched % 50}/50 watched)\n` +
+                `2. 🌟 *Telegram Stars*: Buy permanent slots instantly below!`;
+              ctx.waitUntil(sendCqReply(slotLimitMsg, starsUpgradeKeyboard));
+              return new Response("OK");
+            }
+            if (profile.points < 100) {
+              const lowPtsMsg = `⚠️ *Insufficient Points to Connect Account*\n\n` +
+                `Connecting an account requires at least *100 Points* for Day 1 automated cloud farming.\n` +
+                `Your balance: *${profile.points} Points*.\n\n` +
+                `*Quickly earn points:*\n` +
+                `• 📺 Watch an ad (+20 Pts)\n` +
+                `• 👥 Invite a friend (+500 Pts)`;
+              ctx.waitUntil(sendCqReply(lowPtsMsg, userMainKeyboard));
+              return new Response("OK");
+            }
+
+            if (env.BACKUP_KV) {
+              await env.BACKUP_KV.put("login_flow:user_" + cqChatId, JSON.stringify({ step: "waiting_phone" }), { expirationTtl: 600 }).catch(() => {});
+            }
+            const promptPhone = `📱 *Connect Telegram Account for 24/7 Cloud Mining*\n\n` +
+              `Please send the phone number of the Telegram account you want to connect:\n\n` +
+              `• *Format:* \`+88017XXXXXXXX\` or \`017XXXXXXXX\`\n` +
+              `• *International:* \`+1...\`, \`+44...\`, \`+91...\`\n\n` +
+              `🔒 *100% Serverless & Encrypted:*\n` +
+              `Your session runs safely in the cloud and automatically binds to all 8 mining pools.\n\n` +
+              `_(Send phone number or tap ❌ Cancel Connection below)_`;
+            ctx.waitUntil(sendCqReply(promptPhone, userCancelKeyboard));
+            return new Response("OK");
+          }
+
+          if (cqData === "ub_manual_harvest") {
+            const profile = await getUserProfile(cqChatId, cq.from);
+            if (profile.accounts.length === 0) {
+              ctx.waitUntil(sendCqReply(`⚠️ *No Accounts Connected*\n\nPlease tap *➕ Connect Account* to start automated cloud mining.`, userMainKeyboard));
+              return new Response("OK");
+            }
+            const harvMsg = `⚡ *INSTANT CLOUD HARVEST EXECUTED* 🚀\n\n` +
+              `• *Accounts Harvested:* ${profile.accounts.length}\n` +
+              `• *Active Pools (8/8):* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
+              `• *Status:* 🟢 All cycles refreshed and farming actively in the cloud.\n` +
+              `• *Remaining Points:* ${profile.points} Pts`;
+            ctx.waitUntil(sendCqReply(harvMsg, userMainKeyboard));
+            return new Response("OK");
+          }
+
+          if (cqData.startsWith("ub_disconnect_")) {
+            const targetUid = cqData.replace("ub_disconnect_", "");
+            const profile = await getUserProfile(cqChatId, cq.from);
+            profile.accounts = (profile.accounts || []).filter(a => String(a.user_id) !== String(targetUid));
+            await saveUserProfile(cqChatId, profile);
+            ctx.waitUntil(sendCqReply(`✅ *Account Disconnected!*\n\nAccount ID \`${targetUid}\` has been removed from your active cloud slots.`, userMainKeyboard));
+            return new Response("OK");
+          }
+
           return new Response("OK");
         }
 
-        // Handle Messages
+        // 3. Handle Incoming Messages
         const msg = update.message;
         if (!msg || !msg.chat) return new Response("OK");
         const chatId = msg.chat.id;
-        const senderName = msg.from?.first_name || msg.from?.username || "Friend";
+        const senderName = msg.from?.first_name || msg.from?.username || "Miner";
         const text = (msg.text || "").trim();
 
         const sendUserReply = async (txt, replyMarkup = null, parseMode = "Markdown") => {
-          const payload = {
-            chat_id: chatId,
-            text: txt,
-            disable_web_page_preview: true
-          };
+          const payload = { chat_id: chatId, text: txt, disable_web_page_preview: true };
           if (parseMode) payload.parse_mode = parseMode;
           if (replyMarkup) payload.reply_markup = replyMarkup;
           try {
@@ -3479,85 +3776,452 @@ Reply to Arif naturally:`;
             await fetch(`https://api.telegram.org/bot${userBotToken}/sendChatAction`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ chat_id: chatId, action: action })
+              body: JSON.stringify({ chat_id: chatId, action })
             });
           } catch (_) {}
         };
 
+        // A. Telegram Stars Payment Receipt
+        if (msg.successful_payment) {
+          const pay = msg.successful_payment;
+          const item = pay.invoice_payload;
+          const profile = await getUserProfile(chatId, msg.from);
+          let grantedText = "";
+          if (item === "buy_slot_1") {
+            profile.slots = (profile.slots || 1) + 1;
+            grantedText = "🌟 *+1 Permanent Account Slot* unlocked!";
+          } else if (item === "buy_slot_3") {
+            profile.slots = (profile.slots || 1) + 3;
+            grantedText = "🌟 *+3 Permanent Account Slots* unlocked!";
+          } else if (item === "buy_vip") {
+            profile.slots = (profile.slots || 1) + 1;
+            profile.points = (profile.points || 0) + 3000;
+            grantedText = "💎 *VIP Miner Pass Activated!*\n• +1 Permanent Slot\n• +3,000 Points credited!";
+          } else if (item === "buy_points_1000") {
+            profile.points = (profile.points || 0) + 1000;
+            grantedText = "💎 *+1,000 Points Credited!*";
+          }
+          await saveUserProfile(chatId, profile);
+          const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+          ctx.waitUntil(sendUserReply(
+            `🎉 *PAYMENT RECEIVED VIA TELEGRAM STARS!* ⭐\n\n` +
+            `Thank you for upgrading with Telegram Stars!\n\n` +
+            `${grantedText}\n\n` +
+            `• *Total Available Slots:* ${totalSlots}\n` +
+            `• *Points Balance:* ${profile.points} Pts\n` +
+            `• *Transaction ID:* \`${pay.telegram_payment_charge_id}\``,
+            userMainKeyboard
+          ));
+          return new Response("OK");
+        }
+
+        // B. Handle Cancel Connection Command
+        const isCancel = (text === "/cancel" || text === "❌ Cancel Connection" || text === "❌ Cancel");
+        if (isCancel) {
+          if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
+          ctx.waitUntil(cloudLoginCancel("ub_" + chatId));
+          ctx.waitUntil(sendUserReply("❌ Account connection cancelled. Returning to main menu.", userMainKeyboard));
+          return new Response("OK");
+        }
+
+        // C. Check Active Account Login Flow in KV
+        let loginFlowState = null;
+        if (env.BACKUP_KV) {
+          try {
+            const rawFlow = await env.BACKUP_KV.get("login_flow:user_" + chatId);
+            if (rawFlow) loginFlowState = JSON.parse(rawFlow);
+          } catch (_) {}
+        }
+
+        const isCommandOrMenu = text.startsWith("/") || text.includes("👥") || text.includes("➕") || text.includes("💎") || text.includes("📺") || text.includes("🌟") || text.includes("⚡") || text.includes("📢");
+
+        if (loginFlowState && !isCommandOrMenu) {
+          ctx.waitUntil((async () => {
+            await sendUserChatAction("typing");
+            const step = loginFlowState.step;
+            const phone = loginFlowState.phone || "";
+            const node_url = loginFlowState.node_url || "";
+
+            // 1. Waiting for Phone Number
+            if (step === "waiting_phone") {
+              let normalized = text.replace(/[\s\-]/g, '');
+              if (normalized.startsWith("01") && normalized.length === 11) {
+                normalized = "+88" + normalized;
+              } else if (normalized.startsWith("1") && normalized.length === 10) {
+                normalized = "+880" + normalized;
+              } else if (!normalized.startsWith("+")) {
+                normalized = "+" + normalized;
+              }
+
+              const res = await cloudLoginSendCode(normalized, "ub_" + chatId);
+              if (res && res.ok) {
+                if (env.BACKUP_KV) {
+                  await env.BACKUP_KV.put("login_flow:user_" + chatId, JSON.stringify({ step: "waiting_code", phone: normalized, node_url: res.node_url || "" }), { expirationTtl: 600 }).catch(() => {});
+                }
+                const msgTxt = `📨 *Telegram Verification Code Sent!*\n\n` +
+                  `Telegram sent a 5-digit verification code to \`${normalized}\`.\n\n` +
+                  `Please reply with the code (e.g. \`12345\`):\n` +
+                  `_(Or tap ❌ Cancel Connection to abort)_`;
+                await sendUserReply(msgTxt, userCancelKeyboard);
+              } else {
+                const errDetail = res ? (res.error || res.message) : "Failed to connect to Telegram MTProto Gateway";
+                const errMsg = `❌ *Could Not Request Code*\n\n` +
+                  `Failed to request code for \`${normalized}\`.\n` +
+                  `*Error:* ${errDetail}\n\n` +
+                  `Please check the phone number and send again (or tap ❌ Cancel Connection):`;
+                await sendUserReply(errMsg, userCancelKeyboard);
+              }
+              return;
+            }
+
+            // 2. Waiting for 2FA Password
+            if (step === "waiting_2fa") {
+              const res = await cloudLoginVerify("ub_" + chatId, { password: text, phone, node_url });
+              if (res && res.ok) {
+                if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
+                const profile = await getUserProfile(chatId, msg.from);
+                profile.accounts = profile.accounts || [];
+                // Add account to user profile
+                profile.accounts.push({
+                  user_id: res.user_id,
+                  phone: res.phone || phone,
+                  name: res.name || "User",
+                  username: res.username || "None",
+                  added_at: Date.now(),
+                  status: "active"
+                });
+                await saveUserProfile(chatId, profile);
+
+                const succMsg = `🎉 *ACCOUNT CONNECTED SUCCESSFULLY WITH 2FA!* 🚀\n\n` +
+                  `• *Name:* ${res.name || "User"}\n` +
+                  `• *Username:* @${res.username || "None"}\n` +
+                  `• *User ID:* \`${res.user_id}\`\n` +
+                  `• *Mining Status:* 🟢 24/7 Cloud Automated\n` +
+                  `• *Pools Active (8/8):* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n\n` +
+                  `✅ 100% Cloud MTProto active! 100 points/day will be deducted while farming is live.`;
+                await sendUserReply(succMsg, userMainKeyboard);
+              } else {
+                const errDetail = res ? (res.error || res.message) : "Invalid 2FA password";
+                const errMsg = `❌ *2FA Authentication Failed*\n\n` +
+                  `*Error:* ${errDetail}\n\n` +
+                  `Please check your Two-Factor Password and try again:\n` +
+                  `_(Or tap ❌ Cancel Connection to abort)_`;
+                await sendUserReply(errMsg, userCancelKeyboard);
+              }
+              return;
+            }
+
+            // 3. Waiting for Verification Code
+            const res = await cloudLoginVerify("ub_" + chatId, { code: text, phone, node_url });
+            if (res && res.need_2fa) {
+              if (env.BACKUP_KV) {
+                await env.BACKUP_KV.put("login_flow:user_" + chatId, JSON.stringify({ step: "waiting_2fa", phone: res.phone || phone, node_url }), { expirationTtl: 600 }).catch(() => {});
+              }
+              const twoFaMsg = `🔒 *Two-Factor Authentication (2FA) Required*\n\n` +
+                `This account has a Two-Step Cloud Password enabled.\n` +
+                `Please reply with your 2FA password:\n\n` +
+                `_(Or tap ❌ Cancel Connection to abort)_`;
+              await sendUserReply(twoFaMsg, userCancelKeyboard);
+              return;
+            }
+
+            if (res && res.ok) {
+              if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
+              const profile = await getUserProfile(chatId, msg.from);
+              profile.accounts = profile.accounts || [];
+              profile.accounts.push({
+                user_id: res.user_id,
+                phone: res.phone || phone,
+                name: res.name || "User",
+                username: res.username || "None",
+                added_at: Date.now(),
+                status: "active"
+              });
+              await saveUserProfile(chatId, profile);
+
+              const succMsg = `🎉 *ACCOUNT CONNECTED SUCCESSFULLY!* 🚀\n\n` +
+                `• *Name:* ${res.name || "User"}\n` +
+                `• *Username:* @${res.username || "None"}\n` +
+                `• *User ID:* \`${res.user_id}\`\n` +
+                `• *Mining Status:* 🟢 24/7 Cloud Automated\n` +
+                `• *Pools Active (8/8):* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n\n` +
+                `✅ 100% Cloud MTProto active! 100 points/day will be deducted while farming is live.`;
+              await sendUserReply(succMsg, userMainKeyboard);
+            } else {
+              const errDetail = res ? (res.error || res.message) : "Invalid verification code";
+              const errMsg = `❌ *Authentication Failed*\n\n` +
+                `*Error:* ${errDetail}\n\n` +
+                `Please check the 5-digit code and reply again:\n` +
+                `_(Or tap ❌ Cancel Connection to abort)_`;
+              await sendUserReply(errMsg, userCancelKeyboard);
+            }
+          })());
+          return new Response("OK");
+        }
+
+        // D. Channel Gate Check on All User Interactions
         ctx.waitUntil((async () => {
+          const profile = await getUserProfile(chatId, msg.from);
+
+          // Handle Referral Tracking on /start ref_<id>
+          if (text.startsWith("/start ref_")) {
+            const parts = text.split(/\s+/);
+            if (parts.length > 1 && parts[1].startsWith("ref_")) {
+              const refId = parts[1].replace("ref_", "").trim();
+              if (refId && refId !== String(chatId) && !profile.referred_by) {
+                profile.referred_by = refId;
+                await saveUserProfile(chatId, profile);
+                // Credit referrer +500 points
+                try {
+                  const refProf = await getUserProfile(refId);
+                  if (refProf) {
+                    refProf.points = (refProf.points || 0) + 500;
+                    refProf.referral_count = (refProf.referral_count || 0) + 1;
+                    await saveUserProfile(refId, refProf);
+                    await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        chat_id: refId,
+                        text: `🎉 *REFERRAL BONUS RECEIVED!* 🎁\n\n` +
+                          `Your friend *${senderName}* just joined via your link!\n\n` +
+                          `• *Reward:* +500 Mining Points\n` +
+                          `• *New Balance:* ${refProf.points} Points\n` +
+                          `• *Total Referrals:* ${refProf.referral_count}`,
+                        parse_mode: "Markdown"
+                      })
+                    }).catch(() => {});
+                  }
+                } catch (_) {}
+              }
+            }
+          }
+
+          // Verify Channel Membership
+          const chCheck = await checkUserChannels(chatId);
+          if (!chCheck.ok) {
+            const gateMsg = `🔒 *MANDATORY COMMUNITY ACCESS GATE*\n\n` +
+              `Welcome to *AAA Auto Mining Platform*!\n` +
+              `To access automated 24/7 cloud mining, free AI copilot, and account management, you must join our 3 official community hubs:\n\n` +
+              `1️⃣ 💬 [AAA Auto Miner Supergroup](https://t.me/+8xTmE28Up9U5YWQ1)\n` +
+              `2️⃣ 📢 [Official Announcements Channel](https://t.me/AAAATFAUTOMINING)\n` +
+              `3️⃣ ⚡ [Live Miner Activity Stream](https://t.me/AAAATF_ACTIVITY)\n\n` +
+              `👉 *Join all 3 channels above, then tap 🔄 Verify Membership below to claim 🎁 100 Free Welcome Points!*`;
+            await sendUserReply(gateMsg, gateInlineKeyboard);
+            return;
+          }
+
+          // E. Process Standard Bot Commands & Menu Buttons
+
+          // 1. /start, /help, /menu
           if (text.startsWith("/start") || text.startsWith("/help") || text === "/menu") {
-            const welcomeText = `🌟 *Welcome to AAA AUTO MINING AI Assistant!* 🚀\n\n` +
-              `Hello ${senderName}! I am your 24/7 AI companion for the AAA Auto Mining ecosystem.\n\n` +
-              `Here is what you can do:\n` +
-              `• 💬 *Chat with AI*: Ask me any questions about crypto, mining, or Telegram Web3 apps!\n` +
-              `• 📢 *Official Channels*: Join our 3 official community hubs for news, support & live payouts!\n` +
-              `• ⛏️ *Verified Mining Apps*: Discover vetted Telegram bots to earn rewards 24/7.\n` +
-              `• 🌐 *Web Portal*: Access our community portal directly.\n\n` +
-              `Tap an option below or simply send me a message to start chatting!`;
-            await sendUserReply(welcomeText, startInlineKeyboard);
-            await sendUserReply(`Use the quick menu below anytime:`, userReplyKeyboard);
+            const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+            const welcomeText = `🌟 *AAA AUTO MINING PLATFORM (PREMIUM)* 🚀\n\n` +
+              `Hello ${senderName}! Your 24/7 autonomous cloud mining assistant is ready.\n\n` +
+              `💎 *Your Fleet Overview:*\n` +
+              `• *Connected Accounts:* ${profile.accounts.length} / ${totalSlots} Slots\n` +
+              `• *Points Balance:* ${profile.points} Points\n` +
+              `• *Farming Status:* ${profile.farming_active ? "🟢 Active & Mining 24/7" : "🔴 Paused (Needs Points)"}\n` +
+              `• *Daily Cost:* ${profile.accounts.length * 100} Pts/day (100 pts per account)\n\n` +
+              `📺 *Earn Points:* Watch ads (+20 Pts) or invite friends (+500 Pts).\n` +
+              `🌟 *Upgrade:* Purchase permanent slots & points with Telegram Stars!\n\n` +
+              `Choose an option from the menu below:`;
+            await sendUserReply(welcomeText, userMainKeyboard);
             return;
           }
 
-          if (text === "📢 Official Channels" || text.startsWith("/channels") || text.startsWith("/community") || text.toLowerCase() === "channels" || text.toLowerCase() === "group") {
-            const chText = `📢 *Official AAA Community Channels*\n\n` +
-              `Stay connected with verified news, live payout proofs, and community support:\n\n` +
-              `1️⃣ 💬 *AAA Auto Miner Supergroup*\n` +
-              `• Connect with fellow miners, share tips, and get real-time assistance.\n` +
-              `👉 [Join Supergroup](https://t.me/+8xTmE28Up9U5YWQ1)\n\n` +
-              `2️⃣ 📢 *Official Announcements*\n` +
-              `• Project releases, verified smart contracts, and major news.\n` +
-              `👉 [Join @AAAATFAUTOMINING](https://t.me/AAAATFAUTOMINING)\n\n` +
-              `3️⃣ ⚡ *Live Miner Activity Stream*\n` +
-              `• Real-time broadcast of automated mining harvests and verified payouts.\n` +
-              `👉 [Join @AAAATF_ACTIVITY](https://t.me/AAAATF_ACTIVITY)`;
-            await sendUserReply(chText, channelsInlineKeyboard);
+          // 2. 👥 My Accounts
+          if (text === "👥 My Accounts" || text.startsWith("/accounts")) {
+            const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+            const daysRemaining = profile.accounts.length > 0 ? Math.floor(profile.points / (profile.accounts.length * 100)) : "Unlimited";
+            let accList = "• _No accounts connected yet. Tap ➕ Connect Account below!_";
+            if (profile.accounts && profile.accounts.length > 0) {
+              accList = profile.accounts.map((a, i) =>
+                `*${i + 1}.* \`${a.phone || a.user_id}\` (${a.name || "User"}) — 🟢 Active Cloud Farming`
+              ).join("\n");
+            }
+
+            const accMsg = `👥 *MY CONNECTED ACCOUNTS* 📱\n\n` +
+              `• *Slots In Use:* ${profile.accounts.length} / ${totalSlots}\n` +
+              `• *Farming Status:* ${profile.farming_active ? "🟢 Active 24/7" : "🔴 Paused (Insufficient Points)"}\n` +
+              `• *Daily Cost:* ${profile.accounts.length * 100} Pts/day\n` +
+              `• *Points Balance:* ${profile.points} Pts (~${daysRemaining} days left)\n\n` +
+              `📱 *Active Accounts:*\n${accList}\n\n` +
+              `💡 _Every account automatically farms all 8 bots: ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, and Ainovum._`;
+
+            const inlineBtns = [
+              [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "⚡ Manual Harvest", callback_data: "ub_manual_harvest" }],
+              [{ text: "🌟 Get More Slots with Stars", callback_data: "ub_buy_stars" }]
+            ];
+            if (profile.accounts && profile.accounts.length > 0) {
+              const disBtns = profile.accounts.slice(0, 3).map(a => ({ text: `❌ Remove ${a.name || a.phone}`, callback_data: `ub_disconnect_${a.user_id}` }));
+              inlineBtns.push(disBtns);
+            }
+            await sendUserReply(accMsg, { inline_keyboard: inlineBtns });
             return;
           }
 
-          if (text === "⛏️ Verified Mining Apps" || text.startsWith("/mining") || text.startsWith("/apps") || text.toLowerCase() === "mining") {
-            const mText = `⛏️ *Verified Telegram Mining Ecosystem*\n\n` +
-              `Here are the top vetted Telegram Web3 mining bots:\n\n` +
-              `1. *ATF Miner* — High-yield automated cloud mining pool.\n` +
-              `2. *Stones Mining* — Tap-to-earn & cloud staking.\n` +
-              `3. *MRG Farm* — Daily check-ins, tasks & mining cycles.\n` +
-              `4. *ART Collector* — Creative token rewards.\n` +
-              `5. *AI Lab* — AI compute task allocation & mining.\n` +
-              `6. *UltraWallet* — Multi-chain wallet with integrated rewards.\n` +
-              `7. *Apex Miner* — Daily boosts, speed multipliers & social bounties.\n` +
-              `8. *Ainovum* — Gift box claims & automated cycles.\n\n` +
-              `💡 _Tip: Join our Supergroup to get the latest guides and referral strategies!_`;
-            await sendUserReply(mText, miningInlineKeyboard);
+          // 3. ➕ Connect Account
+          if (text === "➕ Connect Account" || text.startsWith("/add_account")) {
+            const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+            if (profile.accounts.length >= totalSlots) {
+              const slotLimitMsg = `⚠️ *Account Slot Limit Reached (${profile.accounts.length}/${totalSlots})*\n\n` +
+                `You are currently using all available slots!\n\n` +
+                `*How to get more slots:*\n` +
+                `1. 📺 *Watch 50 Ads*: Earn a free bonus slot! (${profile.ads_watched % 50}/50 watched)\n` +
+                `2. 🌟 *Telegram Stars*: Buy permanent slots instantly below!`;
+              await sendUserReply(slotLimitMsg, starsUpgradeKeyboard);
+              return;
+            }
+            if (profile.points < 100) {
+              const lowPtsMsg = `⚠️ *Insufficient Points to Connect Account*\n\n` +
+                `Connecting an account requires at least *100 Points* for Day 1 automated cloud farming.\n` +
+                `Your balance: *${profile.points} Points*.\n\n` +
+                `*Quickly earn points:*\n` +
+                `• 📺 Watch an ad (+20 Pts)\n` +
+                `• 👥 Invite a friend (+500 Pts)`;
+              await sendUserReply(lowPtsMsg, userMainKeyboard);
+              return;
+            }
+
+            if (env.BACKUP_KV) {
+              await env.BACKUP_KV.put("login_flow:user_" + chatId, JSON.stringify({ step: "waiting_phone" }), { expirationTtl: 600 }).catch(() => {});
+            }
+            const promptPhone = `📱 *Connect Telegram Account for 24/7 Cloud Mining*\n\n` +
+              `Please send the phone number of the Telegram account you want to connect:\n\n` +
+              `• *Format:* \`+88017XXXXXXXX\` or \`017XXXXXXXX\`\n` +
+              `• *International:* \`+1...\`, \`+44...\`, \`+91...\`\n\n` +
+              `🔒 *100% Serverless & Encrypted:*\n` +
+              `Your session runs safely in the cloud and automatically binds to all 8 mining pools.\n\n` +
+              `_(Send phone number or tap ❌ Cancel Connection below)_`;
+            await sendUserReply(promptPhone, userCancelKeyboard);
             return;
           }
 
-          if (text === "🌐 Open Mini App" || text === "🌐 Web App Portal" || text.startsWith("/webapp") || text.startsWith("/app")) {
-            await sendUserReply(`🌐 *AAA Community Web Portal*\n\nTap below to open the Web App:`, {
+          // 4. 💎 Points & Balance
+          if (text === "💎 Points & Balance" || text.startsWith("/points") || text.startsWith("/balance")) {
+            const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+            const daysRemaining = profile.accounts.length > 0 ? Math.floor(profile.points / (profile.accounts.length * 100)) : "Unlimited";
+            const ptsMsg = `💎 *POINTS & MINING BALANCE* ⚡\n\n` +
+              `• *Points Balance:* ${profile.points || 0} Points\n` +
+              `• *Daily Mining Cost:* ${profile.accounts.length * 100} Pts/day (100 Pts/account)\n` +
+              `• *Days of Mining Remaining:* ~${daysRemaining} days\n` +
+              `• *Farming Status:* ${profile.farming_active ? "🟢 Active 24/7" : "🔴 Paused (Needs Points)"}\n\n` +
+              `📊 *Account Slots Breakdown:*\n` +
+              `• *Standard Slots:* ${profile.slots || 1}\n` +
+              `• *Bonus Slots (from 50 Ads):* ${profile.temp_slots || 0}\n` +
+              `• *Total Available Slots:* ${totalSlots}\n\n` +
+              `📺 *Ad Watching Milestone:*\n` +
+              `• *Ads Watched:* ${profile.ads_watched || 0}\n` +
+              `• *Progress to Next Free Slot:* ${(profile.ads_watched || 0) % 50} / 50 ads\n\n` +
+              `👥 *Referral Stats:*\n` +
+              `• *Friends Invited:* ${profile.referral_count || 0}\n` +
+              `• *Points from Referrals:* ${(profile.referral_count || 0) * 500} Pts`;
+
+            await sendUserReply(ptsMsg, {
               inline_keyboard: [
-                [{ text: "🚀 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev" } }]
+                [{ text: "📺 Watch Ad (+20 Pts)", callback_data: "ub_watch_ad" }, { text: "👥 Invite (+500 Pts)", callback_data: "ub_referral" }],
+                [{ text: "🌟 Buy with Telegram Stars", callback_data: "ub_buy_stars" }]
               ]
             });
             return;
           }
 
-          if (text === "💬 Talk to AI Copilot") {
-            await sendUserReply(`💬 *I'm all ears!* Ask me anything about crypto mining, Web3 apps, our 3 channels, or how to get started!`, userReplyKeyboard);
+          // 5. 📺 Watch Ad (+20 Pts)
+          if (text === "📺 Watch Ad (+20 Pts)" || text.startsWith("/watch_ad") || text.toLowerCase() === "watch ad") {
+            const adMsg = `📺 *SPONSORED PARTNER AD* 🚀\n\n` +
+              `🌟 *AAA Auto Mining Ecosystem*\n` +
+              `• 24/7 High-yield autonomous cloud mining pools.\n` +
+              `• Automated rewards across ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, and Ainovum!\n` +
+              `• Verified Telegram Web3 security & on-chain smart contracts.\n\n` +
+              `Tap *🎁 Claim +20 Points* below to collect your reward!`;
+            await sendUserReply(adMsg, adClaimKeyboard);
             return;
           }
 
-          // Natural Conversational AI response to ANY user message
+          // 6. 👥 Invite Friends (+500 Pts)
+          if (text === "👥 Invite Friends (+500 Pts)" || text.startsWith("/referral") || text.toLowerCase() === "referral") {
+            const refLink = `https://t.me/AAAPREMIUMAPPSbot?start=ref_${chatId}`;
+            const refMsg = `👥 *INVITE FRIENDS & EARN POINTS* 🚀\n\n` +
+              `Share your personal referral link with friends. For every friend who joins & verifies:\n` +
+              `🎁 *You earn +500 Points!* (5 full days of automated cloud mining!)\n` +
+              `🎁 *Your friend receives 100 Free Welcome Points!*\n\n` +
+              `🔗 *Your Referral Link:*\n\`${refLink}\`\n\n` +
+              `📊 *Your Referral Stats:*\n` +
+              `• *Invited Users:* ${profile.referral_count || 0}\n` +
+              `• *Points Earned:* ${(profile.referral_count || 0) * 500} Pts`;
+            await sendUserReply(refMsg, {
+              inline_keyboard: [
+                [{ text: "📤 Share to Telegram", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }]
+              ]
+            });
+            return;
+          }
+
+          // 7. 🌟 Upgrade with Stars
+          if (text === "🌟 Upgrade with Stars" || text.startsWith("/upgrade") || text.toLowerCase() === "upgrade") {
+            const starsMsg = `🌟 *UPGRADE WITH TELEGRAM STARS* ⭐\n\n` +
+              `Instantly expand your mining capacity and boost points balance:\n\n` +
+              `• *1 Permanent Account Slot:* 50 Stars\n` +
+              `• *3 Permanent Account Slots:* 120 Stars\n` +
+              `• *VIP Miner Pass (3,000 Pts + 1 Slot):* 100 Stars\n` +
+              `• *1,000 Points Booster:* 35 Stars\n\n` +
+              `Choose your upgrade below:`;
+            await sendUserReply(starsMsg, starsUpgradeKeyboard);
+            return;
+          }
+
+          // 8. ⚡ Manual Harvest
+          if (text === "⚡ Manual Harvest" || text.startsWith("/harvest")) {
+            if (profile.accounts.length === 0) {
+              await sendUserReply(`⚠️ *No Accounts Connected*\n\nPlease tap *➕ Connect Account* to start automated cloud mining.`, userMainKeyboard);
+              return;
+            }
+            const harvMsg = `⚡ *INSTANT CLOUD HARVEST EXECUTED* 🚀\n\n` +
+              `• *Accounts Harvested:* ${profile.accounts.length}\n` +
+              `• *Active Pools (8/8):* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
+              `• *Status:* 🟢 All cycles refreshed and farming actively in the cloud.\n` +
+              `• *Remaining Points:* ${profile.points} Pts`;
+            await sendUserReply(harvMsg, userMainKeyboard);
+            return;
+          }
+
+          // 9. 📢 Official Channels
+          if (text === "📢 Official Channels" || text.startsWith("/channels")) {
+            const chMsg = `📢 *OFFICIAL AAA COMMUNITY CHANNELS*\n\n` +
+              `Stay connected with verified announcements, miner payouts, and community support:\n\n` +
+              `1️⃣ 💬 *AAA Auto Miner Supergroup*\n` +
+              `• Connect with miners, share strategies, and get fast assistance.\n` +
+              `👉 [Join Supergroup](https://t.me/+8xTmE28Up9U5YWQ1)\n\n` +
+              `2️⃣ 📢 *Official Announcements*\n` +
+              `• Real-time updates, releases, and smart contract distributions.\n` +
+              `👉 [Join @AAAATFAUTOMINING](https://t.me/AAAATFAUTOMINING)\n\n` +
+              `3️⃣ ⚡ *Live Miner Activity Stream*\n` +
+              `• Real-time automated mining harvest telemetry & payment proofs.\n` +
+              `👉 [Join @AAAATF_ACTIVITY](https://t.me/AAAATF_ACTIVITY)`;
+            await sendUserReply(chMsg, {
+              inline_keyboard: [
+                [{ text: "💬 Join Supergroup", url: "https://t.me/+8xTmE28Up9U5YWQ1" }],
+                [{ text: "📢 Announcements", url: "https://t.me/AAAATFAUTOMINING" }],
+                [{ text: "⚡ Live Miner Activity", url: "https://t.me/AAAATF_ACTIVITY" }]
+              ]
+            });
+            return;
+          }
+
+          // 10. Natural Conversational AI Copilot for Any Other Message
           await sendUserChatAction("typing");
           try {
             const aiRes = await runUserAiCascade(text, senderName);
             if (aiRes && aiRes.answer) {
-              await sendUserReply(aiRes.answer, userReplyKeyboard, "Markdown");
+              await sendUserReply(aiRes.answer, userMainKeyboard, "Markdown");
               return;
             }
           } catch (e) {
-            console.error("User bot AI error:", e);
+            console.error("User bot AI cascade error:", e);
           }
 
-          await sendUserReply(`🤖 *AI Assistant:*\n\nI received your message: "${text}". How can I help you today? Feel free to ask any question or check our official channels below!`, userReplyKeyboard);
+          await sendUserReply(`🤖 *AI Assistant:*\n\nI received: "${text}". How can I help you today? Check your accounts, watch ads for points, or ask me any question!`, userMainKeyboard);
         })());
 
         return new Response("OK");

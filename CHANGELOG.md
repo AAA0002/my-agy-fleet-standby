@@ -4,6 +4,33 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Premium In-Bot User Mining Platform, Telegram Stars Economy & 3-Channel Gate (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **100% In-Bot Native Architecture (Zero External Dashboards)**:
+    * Purged all external web app dashboard links and dependencies from User Bot (`@AAAPREMIUMAPPSbot`). All account connection, slot management, points tracking, manual harvests, ad rewards, and settings are rendered entirely within Telegram native keyboards and interactive flows.
+  - **Mandatory 3-Channel Verification Gate**:
+    * Integrated Telegram API `getChatMember` verification requiring users to join all 3 official community channels before accessing the platform:
+      1. 💬 **AAA Auto Miner Supergroup** (`-1003684868577` / `https://t.me/+8xTmE28Up9U5YWQ1`)
+      2. 📢 **Official Announcements** (`-1004255751168` / `@AAAATFAUTOMINING`)
+      3. ⚡ **Live Miner Activity Stream** (`-1004332544939` / `@AAAATF_ACTIVITY`)
+    * Awards **100 Free Welcome Points** (1 free day of automated mining) upon channel verification.
+  - **Dual-Sided Point Economy & Automated Deductions**:
+    * **Daily Mining Cost**: Automatically deducts **100 Points/day** per connected account. Automatically pauses cloud farming if points balance falls below daily requirements.
+    * **Ad Rewards**: Interactive partner ad showcase granting **+20 Points** per ad (with 15-second spam protection cooldown).
+    * **Referral System**: Generates personal referral link (`/start ref_<user_id>`) awarding **+500 Points** per verified invited friend.
+  - **Account Slots & 50-Ad Milestone Reward**:
+    * Default limit: 1 account slot per user.
+    * Milestone Reward: Watching 50 ads automatically unlocks **+1 Temporary Bonus Slot**.
+  - **Telegram Stars Native Payments Integration (`currency: "XTR"`)**:
+    * Integrated official Telegram Stars checkout with `sendInvoice`, `pre_checkout_query`, and `successful_payment`:
+      - 🌟 1 Permanent Slot: 50 Stars (`buy_slot_1`)
+      - 🌟 3 Permanent Slots: 120 Stars (`buy_slot_3`)
+      - 💎 VIP Miner Pass (3,000 Points + 1 Slot): 100 Stars (`buy_vip`)
+      - 💎 1,000 Mining Points: 35 Stars (`buy_points_1000`)
+  - **100% Master Referral Link Preservation**:
+    * Seamless cloud MTProto account login flow (`cloudLoginSendCode`, `cloudLoginVerify`, 2FA support) automatically executes `bind_account_master_referrals` on Render cloud backend, binding all onboarded user accounts to Arif's master referral IDs across all 8 bots (`6727787768`).
+  - **5-Node Cloudflare Edge Mesh Synchronization**:
+    * Script deployed across all 5 nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with 0 local processes running on the Samsung Galaxy A30.
+
 - **Unified All-In-One Edge System: Dedicated User Bot & Strict Admin Bot Separation (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **All-in-One Edge Architecture ("Only Admin Bot & User Bot Different")**:
     * Integrated both the private Admin Bot and public User Bot into a single, unified Cloudflare Edge deployment (`deploy_both_cf_workers.py`) sharing the 5-node edge mesh, Upstash cache, and AI cascade.
