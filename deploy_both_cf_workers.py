@@ -1191,9 +1191,9 @@ fi
       }
     }
 
-    // 7.5 High-Speed Vercel Global Edge Dashboard (Vercel CDN)
+    // 7.5 High-Speed Executive Admin Console (Cloudflare Pages)
     if (path === "/" || path === "/dashboard" || path === "/status-ui" || path === "/miniapp" || path === "/app") {
-      return Response.redirect("https://agy-aaa000.vercel.app/?v=4.9", 302);
+      return Response.redirect("https://atf-miner-app.pages.dev", 302);
     }
 
     // 8. Payout Receipts Record (VPS -> Edge with In-Memory + Safe KV)
@@ -2008,7 +2008,7 @@ fi
         if (!update) return new Response("OK");
 
         const botToken = env.ALERT_BOT_TOKEN;
-        const dashUrl = "https://agy-aaa000.vercel.app/?v=4.9";
+        const dashUrl = "https://atf-miner-app.pages.dev";
 
         const statusInlineKeyboard = {
           inline_keyboard: [
@@ -2061,7 +2061,7 @@ fi
         const mainKeyboard = {
           keyboard: [
             [
-              { text: "🚀 Open WebApp Dashboard", web_app: { url: dashUrl } }
+              { text: "👑 Admin Console", web_app: { url: dashUrl } }
             ],
             [
               { text: "👥 Accounts Management" }
@@ -2802,7 +2802,7 @@ fi
               `🤖 *Active Bots (8/8):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
               `💰 *On-Chain Vaults:* BEP-20 (BNB) • Arbitrum (STONES) • 14 TON Wallets\n` +
               `🛡️ *Security:* 5/5 Anti-Bot Verified • Dual-Edge Cloud Sync\n\n` +
-              `📱 *Tap '🚀 Open Executive Dashboard' below or use quick controls:*`;
+              `📱 *Tap '👑 Admin Console' below or use quick controls:*`;
             const frames = [
               "⚡ *MY AGY AI Fleet Initialization...*\n`[▰▰▰▱▱▱▱▱▱▱] 30%` • Verifying Admin Permissions",
               "⚡ *Synchronizing Cloud Edge Nodes...*\n`[▰▰▰▰▰▰▰▱▱▱] 75%` • Loading 14 Mining Accounts",
@@ -7415,6 +7415,47 @@ async def main():
                 print(f"📋 Bot Commands: {res.get('ok')} ({res.get('description', 'OK')})")
         except Exception as e:
             print(f"⚠️ Error setting bot commands: {e}")
+
+        # 4. Set Admin Bot Chat Menu Button & Commands
+        if ALERT_BOT_TOKEN:
+            admin_menu_payload = {
+                "menu_button": {
+                    "type": "web_app",
+                    "text": "👑 Admin Console",
+                    "web_app": {
+                        "url": "https://atf-miner-app.pages.dev"
+                    }
+                }
+            }
+            try:
+                async with session.post(
+                    f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/setChatMenuButton",
+                    json=admin_menu_payload
+                ) as resp:
+                    res = await resp.json()
+                    print(f"👑 Admin Bot Menu Button: {res.get('ok')} ({res.get('description', 'OK')})")
+            except Exception as e:
+                print(f"⚠️ Error setting admin bot menu button: {e}")
+
+            admin_commands_payload = {
+                "commands": [
+                    {"command": "start", "description": "👑 Open Executive Admin Console & Fleet"},
+                    {"command": "dashboard", "description": "🚀 Launch Cloudflare Pages Admin Console"},
+                    {"command": "accounts", "description": "👥 Manage Fleet Accounts & Roster"},
+                    {"command": "harvest", "description": "⚡ Trigger Instant 8 Pools Harvest"},
+                    {"command": "sweep", "description": "💼 Universal Sweep & Payouts"},
+                    {"command": "mesh", "description": "🌐 5-Node Cloudflare Edge Mesh Status"}
+                ]
+            }
+            try:
+                async with session.post(
+                    f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/setMyCommands",
+                    json=admin_commands_payload
+                ) as resp:
+                    res = await resp.json()
+                    print(f"📋 Admin Bot Commands: {res.get('ok')} ({res.get('description', 'OK')})")
+            except Exception as e:
+                print(f"⚠️ Error setting admin bot commands: {e}")
 
     print("\n" + "=" * 60)
     print("  ✅ All Cloudflare Edge Nodes & Telegram Config Synchronized!")

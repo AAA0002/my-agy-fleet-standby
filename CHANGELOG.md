@@ -4,6 +4,20 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Admin Bot Dashboard Overhaul & Global Cloudflare Pages Migration (`deploy_both_cf_workers.py`, `userbot_refresher.py`, `deno_worker/main.ts`, `CHANGELOG.md`)**:
+  - **Admin Bot (`@myagy_ai_bot`) Dashboard Fix**:
+    * Replaced all deprecated references to the old dark-theme Vercel dashboard (`https://agy-aaa000.vercel.app/?v=4.9`) with the new light-theme Cloudflare Pages Admin Console (`https://atf-miner-app.pages.dev`).
+    * Updated `dashUrl` across all admin inline keyboards (`statusInlineKeyboard`, `accountsInlineKeyboard`, and status command responses) to launch `https://atf-miner-app.pages.dev`.
+    * Updated main reply keyboard button from generic `🚀 Open WebApp Dashboard` to role-specific `👑 Admin Console` (`web_app: { url: "https://atf-miner-app.pages.dev" }`).
+  - **Edge Route 302 Redirection Alignment**:
+    * Updated edge routes `/`, `/dashboard`, `/status-ui`, `/miniapp`, and `/app` to issue clean 302 redirects directly to `https://atf-miner-app.pages.dev`.
+  - **Admin Bot Chat Menu Button & Commands Sync**:
+    * Configured dedicated Telegram Chat Menu Button on `@myagy_ai_bot` to `👑 Admin Console` pointing to `https://atf-miner-app.pages.dev`.
+    * Registered dedicated admin bot commands (`/start`, `/dashboard`, `/accounts`, `/harvest`, `/sweep`, `/mesh`) via `setMyCommands`.
+  - **Multi-Node Edge Synchronization & Python Reference Alignment**:
+    * Updated all fallback references and keyboards in `userbot_refresher.py` and `deno_worker/main.ts` to `https://atf-miner-app.pages.dev`.
+    * Deployed live to all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with verified HTTP 200/302 responses and 0% phone load.
+
 - **Professional Light-Theme Admin Console Mini App & Cloudflare Pages Overhaul (`public/index.html`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **New Light-Theme Phone-Sized Admin Dashboard (`https://atf-miner-app.pages.dev`)**:
     * Strictly implemented modern light theme (clean `#f8fafc` background, `#ffffff` cards, `#0f172a` typography, soft shadows, vibrant status badges; 0 dark mode colors).
