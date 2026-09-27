@@ -4,6 +4,29 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Created by AAA Branding, Adsgram Block ID 50317 Live Activation & Consumer Experience Polish (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **"Created by AAA" Platform-Wide Branding**:
+    * Integrated official branding ("Created by AAA") across all user-facing touchpoints in `@AAAPREMIUMAPPSbot`:
+      - Mandatory Community Gate: `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_`
+      - Welcome & `/start` headers and reply intros: `🌟 *AAA AUTO MINING PLATFORM (PREMIUM)* 🚀` with `(Created by AAA)`
+      - User Guide (`/help`, `/guide`, `/info`, `/about`): `📖 *AAA AUTO MINING & ARI AI GUIDE* 🤖`
+      - Mining Withdrawals & Cashout Guide: `💳 *MINING WITHDRAWALS & CASHOUT GUIDE* 💰`
+      - Ari AI & Support menu prompt: `💬 *AAA AI MINING COPILOT & SUPPORT* 🤖`
+      - Rewarded Ads WebApp: `<title>`, official partner header badge, and footer badge.
+  - **Conversational AI System Prompt & Guide Polish (`runUserAiCascade`)**:
+    * Added strict rules instructing Gemini and edge Llama models that the bot was created and engineered by **AAA**.
+    * Added dedicated query handlers for "who made this bot / who created you / what is AAA / features / what can this bot do" that return concise, focused answers with zero internal jargon.
+    * Ensured strict absence of internal developer jargon ("Zero Phone Load", "serverless MTProto", "Samsung Galaxy", Termux) and eliminated personal admin names from all consumer-facing responses.
+  - **Adsgram Live Block ID 50317 & S2S Webhook Optimization**:
+    * Activated Block ID `50317` directly into Upstash Redis (`config:adsgram_block_id`) and updated default fallback across edge workers from test ID `4467` to production ID `50317`.
+    * Implemented automatic stripping/normalization of any `bot-` prefix (e.g. `bot-50317` -> `50317`), guaranteeing compatibility with Adsgram's Adv API.
+    * Improved WebApp error handling for ad units under Adsgram moderation status, displaying informative status messages instead of premature closure errors.
+    * Optimized S2S reward endpoint (`/api/adsgram/reward`) so Adsgram GET webhook pings during cooldown return `HTTP 200 {"ok":true,"status":"already_credited"}` to acknowledge delivery cleanly.
+  - **Live Verification & 5-Node Edge Mesh Deployment**:
+    * Verified live Adsgram configuration endpoint (`/api/adsgram/config`) returning `block_id: "50317"`.
+    * Verified live S2S webhook ping returning `HTTP 200 {"ok":true,"status":"webhook_active"}`.
+    * Deployed live across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **Adsgram Rewarded Video Ads, Community Channel Overhaul & Holding Level Safeguards (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Community Channel Links & Permanent ID Routing**:
     * Queried Telegram live API for user's updated official channels and remapped all handles and links:

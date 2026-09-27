@@ -394,11 +394,13 @@ export default {
         "CRITICAL RULES:\n" +
         "- KEEP RESPONSES SHORT, CLEAR, AND SIMPLE (1 to 2 short paragraphs or 3 quick bullet points maximum).\n" +
         "- Do NOT write long essays, giant lists, or walls of text.\n" +
-        "- NEVER mention internal developer terms like 'Zero Phone Load', 'serverless MTProto', 'Samsung Galaxy', or system architecture.\n" +
+        "- BRANDING: This bot was created and engineered by 'AAA'. When asked who created or made this bot, state clearly that it was created and engineered by AAA.\n" +
+        "- NEVER mention internal developer terms like 'Zero Phone Load', 'serverless MTProto', 'Samsung Galaxy', Termux, or system architecture.\n" +
         "- NEVER show personal admin names (like 'Arif'). Always refer to the team simply as 'Support' or 'Support Team'.\n" +
         "- Address the user warmly: " + senderName + ".\n\n" +
         "CORE INFORMATION (User perspective only):\n" +
-        "• What the bot does: Automatically mines 8 Telegram crypto bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum) in the cloud with 0% platform fees. Mined rewards deposit directly into your bot wallets in Telegram.\n" +
+        "• Creator: Created and engineered by AAA.\n" +
+        "• What the bot does: Automatically mines 8 Telegram crypto bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum) 24/7 in the cloud with 0% platform fees. Mined rewards deposit directly into your bot wallets in Telegram.\n" +
         "• How to connect: Tap '➕ Connect Account' below, send your phone number (+...), and enter the Telegram login code.\n" +
         "• How to manage: Tap '👥 My Accounts' to view or tap '🗑️ Remove' to disconnect anytime.\n" +
         "• Points & Rewards: 100 points/day to mine. Earn free points by tapping '📺 Watch Ad' (+20 Pts) or '👥 Invite Friends' (+500 Pts), or upgrade with Telegram Stars.\n" +
@@ -456,23 +458,35 @@ export default {
 
       // 3. Intelligent Edge Keyword-Aware Fallback (Answers user guides directly even if offline)
       const pLow = prompt.toLowerCase();
-      let fallbackAns = `Hello ${senderName}! I am Ari AI, your official copilot for AAA Auto Mining.\n\n` +
-        `• *Connect Account:* Tap ➕ Connect Account to start cloud farming 8 bots.\n` +
-        `• *Remove Account:* Tap 👥 My Accounts or 🗑️ Remove Account to disconnect.\n` +
-        `• *Points:* Daily cost is 100 Pts/day. Earn +20 Pts watching ads or +500 Pts per referral.\n` +
-        `• *VIP Passes:* Day (15 Stars), Weekly (45 Stars), and Monthly (120 Stars) passes waive all points fees!\n` +
-        `• *Direct Payouts:* Mined tokens deposit directly to your Telegram bot balances with 0 fees.\n` +
-        `• *Support:* Type \`/support <message>\` to message Support directly.\n\n` +
-        `Feel free to ask me any question or tap a menu button below!`;
+      let fallbackAns = `Hello ${senderName}! I am Ari AI, your official copilot for AAA Auto Mining (Created by AAA).\n\n` +
+        `• *What I Do:* Automatically farm 8 Telegram crypto bots 24/7 in the cloud with 0% platform fees.\n` +
+        `• *Connect Account:* Tap *➕ Connect Account* in the menu to add your account.\n` +
+        `• *Manage / Disconnect:* Tap *👥 My Accounts* or *🗑️ Remove Account* anytime.\n` +
+        `• *Earn Points:* 100 Pts/day cost. Earn free points by watching ads (+20 Pts) or inviting friends (+500 Pts).\n` +
+        `• *Direct Payouts:* Mined tokens go directly to your verified bot balances.\n` +
+        `• *Support:* Send \`/support <message>\` to message Platform Support directly.`;
 
-      if (pLow.includes("connect") || pLow.includes("add account") || pLow.includes("login")) {
+      if (pLow.includes("who made") || pLow.includes("who created") || pLow.includes("created by") || pLow.includes("creator") || pLow.includes("developer") || pLow.includes("who are you") || pLow.includes("what is aaa")) {
+        fallbackAns = `⚡ *AAA AUTO MINING* was created and engineered by *AAA*.\n\n` +
+          `• *Created by:* AAA\n` +
+          `• *Ecosystem:* Autonomous 24/7 Cloud Mining for 8 Telegram crypto bots.\n` +
+          `• *Direct Payouts:* Mined tokens deposit directly to your Telegram bot balances with 0% platform fees.`;
+      } else if (pLow.includes("what can this bot do") || pLow.includes("what can you do") || pLow.includes("what does this bot do") || pLow.includes("features")) {
+        fallbackAns = `🌟 *AAA AUTO MINING* (Created by AAA) 🚀\n\n` +
+          `Here is what this bot can do for you:\n\n` +
+          `• *24/7 Cloud Mining:* Automatically farms 8 crypto bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum) with 0 fees.\n` +
+          `• *Connect Effortlessly:* Tap *➕ Connect Account* below, send your phone number & Telegram login code.\n` +
+          `• *Manage & Disconnect:* Tap *👥 My Accounts* or *🗑️ Remove Account* anytime to manage or free slots.\n` +
+          `• *Earn Points:* 100 Pts/day cost. Earn free points by watching ads (+20 Pts) or inviting friends (+500 Pts).\n` +
+          `• *Direct Payouts:* Mined crypto is deposited directly into your Telegram bot balances.`;
+      } else if (pLow.includes("connect") || pLow.includes("add account") || pLow.includes("login")) {
         fallbackAns = `📱 *How to Connect Your Account:*\n\n` +
           `1. Tap *➕ Connect Account* in the menu.\n` +
           `2. Send your phone number in international format (e.g. \`+880...\` or \`+1...\`).\n` +
           `3. Reply with the 5-digit verification code sent to your Telegram.\n` +
           `4. Enter your 2FA Cloud Password if enabled.\n\n` +
           `🔒 *Automated 24/7 Cloud Mining:*\n` +
-          `Once connected, your account automatically farms all 8 pools 24/7 without needing your phone online!`;
+          `Once connected, your account automatically farms all 8 pools 24/7 in the cloud!`;
       } else if (pLow.includes("remove") || pLow.includes("disconnect") || pLow.includes("delete account")) {
         fallbackAns = `🗑️ *How to Disconnect / Remove Accounts:*\n\n` +
           `1. Tap *👥 My Accounts* or *🗑️ Remove Account* in the menu.\n` +
@@ -3893,13 +3907,14 @@ Reply to Arif naturally:`;
 
     // 13.6 Adsgram Rewarded Video WebApp Page
     if (path === "/adsgram") {
-      const currentBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "4467";
+      const rawBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "50317";
+      const currentBlockId = String(rawBlockId).replace(/^["']|["']$/g, "").replace(/^bot-/, "").trim() || "50317";
       const adsgramHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AAA Auto Miner — Rewarded Video Ads</title>
+  <title>AAA Auto Miner — Rewarded Video Ads (Created by AAA)</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
   <style>
@@ -3965,7 +3980,7 @@ Reply to Arif naturally:`;
   <div class="container">
     <div class="header-badge">
       <span class="pulse-dot"></span>
-      <span>Adsgram Official Partner</span>
+      <span>Adsgram Partner • Created by AAA</span>
     </div>
 
     <div class="card">
@@ -4014,8 +4029,8 @@ Reply to Arif naturally:`;
   </div>
 
   <div class="footer">
-    Powered by Adsgram Web3 Ad Network & AAA Edge Mesh<br>
-    Earned points auto-extend your 24/7 cloud mining accounts.
+    Created by AAA • Powered by Adsgram Web3 Ad Network<br>
+    Earned points auto-extend your 24/7 cloud mining accounts with 0 platform fees.
   </div>
 
   <script>
@@ -4105,14 +4120,26 @@ Reply to Arif naturally:`;
           btn.disabled = false;
           btn.innerText = "🎬 Watch Video Ad (+20 Pts)";
           box.className = "status-msg error";
-          box.innerText = "⚠️ Ad closed before completion. Watch the full video to claim points.";
+          const desc = (err && (err.description || err.message)) || "";
+          if (desc.toLowerCase().includes("active") || desc.toLowerCase().includes("moderation")) {
+            box.innerText = "⏳ Ad block is currently undergoing Adsgram moderation. Ads will serve automatically once approved by Adsgram!";
+          } else if (desc.toLowerCase().includes("not found")) {
+            box.innerText = "⚠️ Ad block ID not found. Please verify Block ID in Adsgram dashboard.";
+          } else {
+            box.innerText = desc || "⚠️ Ad closed before completion. Watch the full video to claim points.";
+          }
           if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
         });
       } catch (err) {
         btn.disabled = false;
         btn.innerText = "🎬 Watch Video Ad (+20 Pts)";
         box.className = "status-msg error";
-        box.innerText = "⚠️ Could not launch ad: " + (err.message || "Please retry.");
+        const desc = (err && (err.description || err.message)) || "";
+        if (desc.toLowerCase().includes("active") || desc.toLowerCase().includes("moderation")) {
+          box.innerText = "⏳ Ad block is currently undergoing Adsgram moderation. Ads will serve automatically once approved by Adsgram!";
+        } else {
+          box.innerText = "⚠️ Could not launch ad: " + (desc || "Please retry.");
+        }
       }
     }
 
@@ -4242,6 +4269,15 @@ Reply to Arif naturally:`;
         const elapsed = Math.floor((now - (profile.last_ad_claim || 0)) / 1000);
         if (elapsed < 15) {
           const waitSec = 15 - elapsed;
+          if (request.method === "GET") {
+            // Adsgram S2S GET webhook: Acknowledge with 200 OK so Adsgram records successful delivery
+            return new Response(JSON.stringify({
+              ok: true,
+              status: "already_credited",
+              cooldown_seconds: waitSec,
+              message: "User was recently credited. Acknowledged."
+            }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
+          }
           return new Response(JSON.stringify({
             ok: false,
             error: `Cooldown active. Please wait ${waitSec}s.`,
@@ -4295,14 +4331,16 @@ Reply to Arif naturally:`;
 
     // 13.9 Adsgram Config / Diagnostics API
     if (path === "/api/adsgram/config") {
-      const currentBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "4467";
+      const rawBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "50317";
+      const currentBlockId = String(rawBlockId).replace(/^["']|["']$/g, "").replace(/^bot-/, "").trim() || "50317";
       return new Response(JSON.stringify({
         ok: true,
         block_id: currentBlockId,
         webapp_url: `https://restore-agy.${CURRENT_SUBDOMAIN}.workers.dev/adsgram`,
         cooldown_sec: 15,
         default_pts: 20,
-        monthly_pass_pts: 40
+        monthly_pass_pts: 40,
+        s2s_reward_url: `https://restore-agy.${CURRENT_SUBDOMAIN}.workers.dev/api/adsgram/reward?userid=[userId]`
       }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
@@ -4674,7 +4712,8 @@ Reply to Arif naturally:`;
             }
 
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
-            const welcomeText = `🌟 *AAA AUTO MINING PLATFORM (PREMIUM)* 🚀\n\n` +
+            const welcomeText = `🌟 *AAA AUTO MINING PLATFORM (PREMIUM)* 🚀\n` +
+              `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Hello ${cqSenderName}! You have successfully verified all 3 community channels and claimed 🎁 *100 Free Welcome Points*!\n\n` +
               `💎 *Your Fleet Overview:*\n` +
               `• *Connected Accounts:* ${profile.accounts?.length || 0} / ${totalSlots} Slots\n` +
@@ -5363,6 +5402,7 @@ Reply to Arif naturally:`;
           if (!chCheck.ok) {
             const gateMsg = `🔒 *MANDATORY COMMUNITY ACCESS GATE*\n\n` +
               `Welcome to *AAA Auto Mining Platform*!\n` +
+              `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `To access automated 24/7 cloud mining, free AI copilot, and account management, you must join our 3 official community hubs:\n\n` +
               `1️⃣ 💬 [AAA Auto Miner Supergroup](https://t.me/AAAAutoMiner)\n` +
               `2️⃣ 📢 [Official Announcements Channel](https://t.me/AAAAUTOMINING)\n` +
@@ -5383,12 +5423,13 @@ Reply to Arif naturally:`;
 
           // 0. Dedicated Help & User Guide (/help, /guide, /info, /about)
           if (text.startsWith("/help") || text.startsWith("/guide") || text.startsWith("/info") || text.startsWith("/about")) {
-            const helpMsg = `📖 *AAA AUTO MINING & ARI AI GUIDE* 🤖\n\n` +
+            const helpMsg = `📖 *AAA AUTO MINING & ARI AI GUIDE* 🤖\n` +
+              `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Hello ${senderName}! Here is your complete guide to automated cloud mining:\n\n` +
               `1️⃣ *How to Connect & Remove Accounts*\n` +
               `• *Connect:* Tap *➕ Connect Account*, send phone number & 5-digit Telegram code.\n` +
               `• *Remove:* Tap *👥 My Accounts* in the menu and tap *🗑️ Remove* next to any account, or type \`/remove\` anytime!\n` +
-              `• 100% cloud-hosted MTProto: your accounts farm 24/7 with zero battery load on your device!\n\n` +
+              `• Cloud-powered: your accounts farm 24/7 in the cloud without needing your phone or app open!\n\n` +
               `2️⃣ *8 Automated Mining Pools*\n` +
               `• Automatically farms ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, and Ainovum.\n\n` +
               `3️⃣ *Points & Free Earning*\n` +
@@ -5460,7 +5501,7 @@ Reply to Arif naturally:`;
               `• *Pass Status:* ${passBadge}\n` +
               `• *Daily Fee:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${(profile.accounts || []).length * 100} Pts/day`}\n` +
               `• *Active Pools (8/8):* ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
-              `• *Cloud MTProto:* 🟢 24/7 Serverless Running`;
+              `• *Cloud Mining:* 🟢 24/7 Automated Running`;
             const statsBtns = {
               inline_keyboard: [
                 [{ text: "👥 Manage Accounts", callback_data: "ub_accounts_list" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
@@ -5484,7 +5525,8 @@ Reply to Arif naturally:`;
               passBadge = `${tName} (🟢 Active: ${dLeft > 0 ? `${dLeft}d ` : ""}${hLeft}h left)`;
             }
             const farmStatus = isCovered ? "🟢 Active 24/7 (Covered by VIP Pass)" : (profile.farming_active ? "🟢 Active & Mining 24/7" : "🔴 Paused (Needs Points)");
-            const welcomeText = `🌟 *AAA AUTO MINING PLATFORM (PREMIUM)* 🚀\n\n` +
+            const welcomeText = `🌟 *AAA AUTO MINING PLATFORM (PREMIUM)* 🚀\n` +
+              `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Hello ${senderName}! Your 24/7 autonomous cloud mining assistant is ready.\n\n` +
               `💎 *Your Fleet Overview:*\n` +
               `• *Connected Accounts:* ${profile.accounts.length} / ${totalSlots} Slots\n` +
@@ -5495,7 +5537,7 @@ Reply to Arif naturally:`;
               `📺 *Earn Points:* Watch ads (+20 Pts) or invite friends (+500 Pts).\n` +
               `🌟 *Subscriptions:* Day, Weekly, and Monthly VIP Passes with Telegram Stars!\n\n` +
               `Choose an option from the menu below:`;
-            await sendUserReply("👋 *Welcome to AAA Auto Mining!* Access all features below or choose from the interactive menu:", userMainKeyboard);
+            await sendUserReply("👋 *Welcome to AAA Auto Mining!* (Created by AAA)\nAccess all features below or choose from the interactive menu:", userMainKeyboard);
             await sendUserReply(welcomeText, userWelcomeInlineKeyboard);
             return;
           }
@@ -5675,7 +5717,8 @@ Reply to Arif naturally:`;
 
           // 4.2 💳 Withdrawals & Cashout Guide (/withdraw, /payout, /cashout)
           if (text === "💳 Withdrawals" || text.startsWith("/withdraw") || text.startsWith("/payout") || text.startsWith("/cashout")) {
-            const withMsg = `💳 *MINING WITHDRAWALS & CASHOUT GUIDE* 💰\n\n` +
+            const withMsg = `💳 *MINING WITHDRAWALS & CASHOUT GUIDE* 💰\n` +
+              `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Our automated cloud mining platform farms directly into each of your connected accounts with *0% Platform Fee*:\n\n` +
               `1️⃣ *TON Blockchain Pools (ATF, MRG, ART)*\n` +
               `• Tokens accumulate directly in each bot's internal balance.\n` +
@@ -5758,11 +5801,12 @@ Reply to Arif naturally:`;
           if (text.startsWith("/set_block_id") || text.startsWith("/set_ad_block") || text.startsWith("/setblockid")) {
             if (String(chatId) === "6727787768" || String(chatId) === env.OWNER_ID) {
               const parts = text.split(/\s+/);
-              const newBlockId = parts[1]?.trim();
-              if (!newBlockId) {
-                await sendUserReply("ℹ️ *Usage:* `/set_block_id <YOUR_ADSGRAM_BLOCK_ID>`\n*Example:* `/set_block_id 4467`\n\nGet your Block ID from https://adsgram.ai or @Adsgram_bot!");
+              const rawInput = parts[1]?.trim();
+              if (!rawInput) {
+                await sendUserReply("ℹ️ *Usage:* `/set_block_id <YOUR_ADSGRAM_BLOCK_ID>`\n*Example:* `/set_block_id 50317`\n\nGet your Block ID from https://adsgram.ai or @Adsgram_bot!");
                 return;
               }
+              const newBlockId = rawInput.replace(/^bot-/, "").trim();
               await upstashSet("config:adsgram_block_id", newBlockId);
               await sendUserReply(`✅ *Adsgram Block ID Updated!*\n\n• *New Block ID:* \`${newBlockId}\`\n• *Status:* Live across all Cloudflare Edge nodes\n• *WebApp URL:* https://restore-agy.aaaai2.workers.dev/adsgram`);
               return;
@@ -5771,7 +5815,7 @@ Reply to Arif naturally:`;
 
           if (text === "/get_block_id" || text === "/adsgram_info" || text === "/adsgram") {
             if (String(chatId) === "6727787768" || String(chatId) === env.OWNER_ID) {
-              const currentBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "4467 (Default Test)";
+              const currentBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "50317";
               await sendUserReply(`📊 *Adsgram Configuration:*\n\n• *Active Block ID:* \`${currentBlockId}\`\n• *WebApp URL:* https://restore-agy.aaaai2.workers.dev/adsgram\n• *Update ID:* Send \`/set_block_id <id>\` anytime!`);
               return;
             }
@@ -5819,7 +5863,8 @@ Reply to Arif naturally:`;
 
           // 8.1 💬 Ari AI & Support Menu Button
           if (text === "💬 Ari AI & Support" || text === "💬 Chat with AI" || text.startsWith("/ai") || text.startsWith("/chat")) {
-            const chatAiMsg = `💬 *AAA AI MINING COPILOT & SUPPORT* 🤖\n\n` +
+            const chatAiMsg = `💬 *AAA AI MINING COPILOT & SUPPORT* 🤖\n` +
+              `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Hello ${senderName}! How can I help you today?\n\n` +
               `*Quick Actions:*\n` +
               `• *Ask Questions:* Simply type any question in this chat!\n` +
