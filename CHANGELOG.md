@@ -4,6 +4,14 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **GitHub Actions Workflows Hardening & Mesh Synchronization (`.github/workflows/cloud_token_refresher.yml`, `.github/workflows/cloud_sweeper.yml`, `.github/workflows/fleet_sentinel.yml`, `CHANGELOG.md`)**:
+  - **Eliminated `now_str` NameError Bug (`cloud_token_refresher.yml`)**:
+    * Defined `now_str` with UTC timestamp formatting and ensured `datetime` is properly imported before printing the completion log, preventing runner crashes on completion.
+  - **Synchronized All 5 Cloudflare Edge Nodes Across Workflows**:
+    * Added Nodes 4 (`agorameet`) and 5 (`aaaai`) to `cf_urls` in `cloud_token_refresher.yml` and `cf_nodes` in `cloud_sweeper.yml`.
+  - **Fleet & Mesh Metric Updates (`fleet_sentinel.yml`)**:
+    * Updated telemetry output in `fleet_sentinel.yml` to reflect all 5 Cloudflare Edge Shards and all 14 fleet accounts persisted on Supabase.
+
 - **Comprehensive Bug Audit, Multi-Header Session Parsing, Bootstrap Mining Hardening & 5-Node Edge Mesh Sync (`render_standby_app.py`, `render_app_latest.py`, `batch_atf_miner.py`, `backup_manager.py`, `fleet_miniapp_tokens.json`, `CHANGELOG.md`)**:
   - **Ainovum Multi-Header Cookie Parsing & Auth Loss Bug Fix**:
     * **Root Cause Fixed**: `aiohttp`'s `br.headers.get("set-cookie")` only returned the first `Set-Cookie` header. When Ainovum sent multiple headers (e.g. CSRF + `astra.tg.sid`), the session cookie was dropped, causing subsequent API actions (`/api/mining/claim`, `/api/mining/start`, `/api/daily-bonus/claim`, `/api/channel-bonus/claim`, `/api/gift-box/open`) to fail with 401 Unauthorized.

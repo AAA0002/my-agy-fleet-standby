@@ -39,7 +39,9 @@ jobs:
           cf_urls = [
               "https://restore-agy.aaaai2.workers.dev/backup.zip",
               "https://restore-agy.aaa-bot.workers.dev/backup.zip",
-              "https://restore-agy.aaa222.workers.dev/backup.zip"
+              "https://restore-agy.aaa222.workers.dev/backup.zip",
+              "https://restore-agy.agorameet.workers.dev/backup.zip",
+              "https://restore-agy.aaaai.workers.dev/backup.zip"
           ]
 
           downloaded = False
@@ -141,6 +143,6 @@ jobs:
           import json
           import urllib.request
           import datetime
-
+          now_str = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
           print(f"[{now_str}] Token refresher completed successfully. Silent cloud mode: Telegram notification suppressed.")
           EOF

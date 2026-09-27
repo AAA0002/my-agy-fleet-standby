@@ -318,11 +318,11 @@ jobs:
           # Construct Telegram Status Summary
           report_msg = (
               f"🛡️ *[MY AGY AI — Multi-Cloud 24/7 Fleet Audit]*\n\n"
-              f"• 🌐 **Cloudflare Mesh:** *{cf_ok}/3 Shards Online*\n"
+              f"• 🌐 **Cloudflare Mesh:** *{cf_ok}/5 Shards Online*\n"
               f"• ⚡ **Deno Deploy Edge:** *{deno_ok}/2 Nodes Online*\n"
               f"• ▲ **Vercel Serverless:** {'✅ Online' if vercel_ok else '⚠️ Error'}\n"
               f"• 🖥️ **Render Cloud Mesh:** *{render_ok}/3 Nodes Responding (2x Standby + Ari Copilot)*\n"
-              f"• 🗄️ **Supabase Postgres:** {'✅ Healthy (13/13 Accs)' if supabase_ok else '⚠️ Error'}\n"
+              f"• 🗄️ **Supabase Postgres:** {'✅ Healthy (14/14 Accs)' if supabase_ok else '⚠️ Error'}\n"
               f"• ⚡ **Upstash Redis:** {'✅ Connected' if upstash_ok else '⚠️ Error'}\n"
               f"• 🚀 **Turso LibSQL:** {'✅ Ultra Low Latency' if turso_ok else '⚠️ Error'}\n"
               f"• ⛓️ **dRPC Private RPC:** {'✅ Fast (<100ms)' if drpc_ok else '⚠️ Error'}\n"
