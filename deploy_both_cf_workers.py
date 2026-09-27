@@ -4224,23 +4224,34 @@ Reply to Arif naturally:`;
       }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
-    // 13.8 Adsgram Reward Verification & Claim API
-    if (path === "/api/adsgram/reward" && request.method === "POST") {
+    // 13.8 Adsgram Reward Verification & Claim API (Supports S2S GET from Adsgram and Client POST from WebApp)
+    if (path === "/api/adsgram/reward" && (request.method === "POST" || request.method === "GET")) {
       try {
-        const body = await request.json().catch(() => ({}));
-        let uid = body.user_id;
-        if (!uid && body.initData) {
-          try {
-            const params = new URLSearchParams(body.initData);
-            const userStr = params.get("user");
-            if (userStr) {
-              const uObj = JSON.parse(userStr);
-              uid = uObj.id;
-            }
-          } catch (_) {}
+        let uid = url.searchParams.get("userid") || url.searchParams.get("user_id") || url.searchParams.get("uid");
+        if (!uid && request.method === "POST") {
+          const body = await request.json().catch(() => ({}));
+          uid = body.user_id;
+          if (!uid && body.initData) {
+            try {
+              const params = new URLSearchParams(body.initData);
+              const userStr = params.get("user");
+              if (userStr) {
+                const uObj = JSON.parse(userStr);
+                uid = uObj.id;
+              }
+            } catch (_) {}
+          }
         }
         if (!uid) {
           return new Response(JSON.stringify({ ok: false, error: "Missing user_id" }), { status: 400, headers: corsHeaders });
+        }
+
+        // Adsgram validation ping or test request
+        if (String(uid) === "[userId]" || String(uid) === "test" || String(uid) === "0" || String(uid) === "ping") {
+          return new Response(JSON.stringify({ ok: true, status: "webhook_active" }), {
+            status: 200,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
         }
 
         const profile = await getUserProfile(uid);
