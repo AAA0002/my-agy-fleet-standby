@@ -4,6 +4,15 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Account 14 Cloudflare EVM Mapping, Web Dashboard Sync & Dynamic Sweep Auditing (`deploy_both_cf_workers.py`, `public/index.html`, `cloud_wallet_sweeper.py`, `CHANGELOG.md`)**:
+  - **Cloudflare Edge Isolated EVM Mapping**:
+    * Integrated Account 14 (`8727040932`) with EVM wallet `0x117a66bf79f63E5cC1dAB047047d62c651Eae335` into `isolatedEvmMap` in `deploy_both_cf_workers.py`.
+    * Re-deployed worker script across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`), ensuring isolated Ainovum USDT auto-withdrawals for all 14 fleet accounts.
+  - **Web Dashboard Phone & Wallet Index Alignment (`public/index.html`)**:
+    * Added full 14-account mapping to `KNOWN_PHONES` and `KNOWN_PHONES_BY_INDEX` in the fleet management web frontend (`public/index.html`), preventing phone number omission for Account 12 (`7487048946`), Account 13 (`8741547543`), and Account 14 (`8727040932`).
+  - **Dynamic Multi-Chain Sweeper Telemetry (`cloud_wallet_sweeper.py`)**:
+    * Upgraded `run_full_sweep_audit()` in `cloud_wallet_sweeper.py` from hardcoded "12 worker wallets" to dynamic fleet size logging (`len(evm_audit)` and `len(ton_audit)`), accurately covering all 14 EVM and 14 TON wallets.
+
 - **Zero Unconfirmed Receipt Spam Purge, 100% 8-Bot Task Suite Execution & Guaranteed New Account Auto-Farming (`render_standby_app.py`, `render_app_latest.py`, `cloud_wallet_sweeper.py`, `batch_atf_miner.py`, `.github/workflows/cloud_token_refresher.yml`, `.github/workflows/fleet_sentinel.yml`, `CHANGELOG.md`)**:
   - **Complete Elimination of Unconfirmed Payout Receipts & Zero-Fund Audit Spam**:
     * **Purged BNB Galaxy Processing Receipts**: Removed `🎉 OFFICIAL BNB GALAXY PAYOUT RECEIPT ... Status: Processing (Estimated ~8 hours)` message dispatch from `check_and_auto_withdraw_cloud()` in `render_standby_app.py` and `render_app_latest.py`. Submissions are now logged silently while awaiting real on-chain confirmation.

@@ -451,10 +451,10 @@ async def sweep_ton_balance(
 
 async def run_full_sweep_audit(notify_if_empty: bool = False, execute_sweep: bool = False) -> Dict[str, Any]:
     """Scans all worker wallets and sweeps actionable balances to Binance Web3 Master."""
-    logger.info("Scanning all 12 worker EVM wallets & 12 worker TON wallets...")
     async with aiohttp.ClientSession() as session:
         evm_audit = await audit_evm_worker_wallets(session)
         ton_audit = await audit_ton_worker_wallets(session)
+        logger.info(f"Audited {len(evm_audit)} worker EVM wallets & {len(ton_audit)} worker TON wallets...")
 
         funded_evm = [w for w in evm_audit if w.get("bnb_balance", 0) > 0.0005 or w.get("eth_balance", 0) > 0.0002 or w.get("usdt_balance", 0) > 0.08]
         funded_ton = [w for w in ton_audit if w.get("ton_balance", 0) > 0.01]

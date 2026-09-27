@@ -4043,7 +4043,8 @@ Reply to Arif naturally:`;
                         "8203342513": "0x838bd6C0aCb80bFe3BF684320067672Bf396c479",
                         "8190649727": "0x91B5cd7EfCBd5bc552479f5Eb70221C5E026228A",
                         "7487048946": "0x3129386b118892238EF48428e2e5d19B9F7D8215",
-                        "8741547543": "0xE27Df3117501e3a46cf29848Df3414C4542E6A5c"
+                        "8741547543": "0xE27Df3117501e3a46cf29848Df3414C4542E6A5c",
+                        "8727040932": "0x117a66bf79f63E5cC1dAB047047d62c651Eae335"
                       };
                       const targetWallet = (String(uid) === (env.OWNER_ID || "6727787768")) ? "0xfda4182001672b9f0f09e2118242e543e35ed5ce" : (isolatedEvmMap[String(uid)] || "0xfda4182001672b9f0f09e2118242e543e35ed5ce");
                       await fetchWithRetry(`${anBase}/api/withdraws/usdt/create`, {
