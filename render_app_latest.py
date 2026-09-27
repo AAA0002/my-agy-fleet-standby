@@ -1604,8 +1604,23 @@ MASTER_EVM_VAULT = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 MASTER_TON_VAULT = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
 PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
 
-async def send_payout_receipt(message: str):
-    """Broadcasts payout & on-chain receipts to Telegram channel and Admin DM."""
+SENT_RECEIPT_HASHES = {}
+
+async def send_payout_receipt(message: str, dedupe_key: str = None):
+    """Broadcasts payout & on-chain receipts with strict anti-spam deduplication (max 1 notification per 12h per event)."""
+    global SENT_RECEIPT_HASHES
+    import hashlib
+    now = time.time()
+    # Clean up hashes older than 12h
+    SENT_RECEIPT_HASHES = {k: v for k, v in SENT_RECEIPT_HASHES.items() if now - v < 43200}
+
+    key = dedupe_key or hashlib.md5(message.strip().encode("utf-8")).hexdigest()
+    if key in SENT_RECEIPT_HASHES:
+        logger.info(f"[Anti-Spam] Suppressed duplicate Telegram receipt: {key}")
+        return
+
+    SENT_RECEIPT_HASHES[key] = now
+
     bot_token = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o")
     targets = [REPORT_CHAT_ID, PAYOUT_CHANNEL_ID]
     async with aiohttp.ClientSession() as s:
@@ -1621,6 +1636,7 @@ async def send_payout_receipt(message: str):
                     },
                     timeout=aiohttp.ClientTimeout(total=8)
                 )
+                await asyncio.sleep(0.5)
             except Exception:
                 pass
 
@@ -1660,15 +1676,7 @@ async def check_and_withdraw_ailab(session: aiohttp.ClientSession, acc: dict, to
                 pres = await pr.json()
                 if pres.get("request_info", {}).get("error_code") == 0 or pres.get("result"):
                     role_str = "Main Master Host" if is_master else "Worker"
-                    receipt = (
-                        f"🎉 <b>AI Lab Robot Auto-Cashout Submitted!</b>\n\n"
-                        f"• <b>Account:</b> {name} ({role_str} - <code>{uid}</code>)\n"
-                        f"• <b>Amount:</b> <code>${wd_usd} USD</code>\n"
-                        f"• <b>Destination:</b> <code>{MASTER_EVM_VAULT}</code> (BEP-20)\n"
-                        f"• <b>Status:</b> Approved / In Flight\n"
-                        f"🛡️ <i>100% Cloud Autonomous Execution</i>"
-                    )
-                    await send_payout_receipt(receipt)
+                    logger.info(f"[Cloud AI Lab] {name} ({role_str}) auto-cashout submitted: ${wd_usd} USD")
                     return {"uid": uid, "name": name, "status": "withdrawn", "amount": wd_usd}
         return {"uid": uid, "name": name, "status": "below_threshold", "balance": ubal}
     except Exception as e:
@@ -1735,15 +1743,7 @@ async def check_and_withdraw_ainovum(session: aiohttp.ClientSession, acc: dict, 
             async with session.post(f"{base_url}/api/withdraws/usdt/create", json={"amount": wd_amt, "wallet": MASTER_EVM_VAULT, "network": "bep20"}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10)) as wr:
                 wd = await wr.json()
                 if wr.status == 200 and not wd.get("access_denied") and not wd.get("error"):
-                    receipt = (
-                        f"🎉 <b>Ainovum USDT Auto-Withdrawal Submitted!</b>\n\n"
-                        f"• <b>Account:</b> {name} (<code>{uid}</code>)\n"
-                        f"• <b>Amount:</b> <code>{wd_amt} USDT</code> (BEP-20)\n"
-                        f"• <b>Destination:</b> <code>{MASTER_EVM_VAULT}</code>\n"
-                        f"• <b>Status:</b> Approved / Dispatched\n"
-                        f"🛡️ <i>100% Cloud Autonomous Execution</i>"
-                    )
-                    await send_payout_receipt(receipt)
+                    logger.info(f"[Cloud Ainovum] {name} auto-withdrawal submitted: {wd_amt} USDT")
                     return {"uid": uid, "name": name, "status": "withdrawn", "amount": wd_amt}
         return {"uid": uid, "name": name, "status": "below_threshold", "available": avail}
     except Exception as e:
@@ -1769,17 +1769,8 @@ async def check_and_withdraw_stones(session: aiohttp.ClientSession, acc: dict, t
             if sr.status == 200:
                 sd = await sr.json()
                 coins = float(sd.get("user", {}).get("coins", 0) or 0)
-                logger.info(f"[Cloud Stones] {name} ({uid}) coins: {coins:.1f} (Threshold: 500)")
                 if coins >= 500:
-                    receipt = (
-                        f"💎 <b>Stones Miners Threshold Reached (>= 500 STONES)!</b>\n\n"
-                        f"• <b>Account:</b> {name} (<code>{uid}</code>)\n"
-                        f"• <b>Holding:</b> <code>{coins:.1f} STONES</code>\n"
-                        f"• <b>Destination:</b> <code>{MASTER_EVM_VAULT}</code> (Arbitrum One)\n"
-                        f"• <b>Status:</b> Threshold Met • Auto-Queued\n"
-                        f"🛡️ <i>100% Cloud Autonomous Execution</i>"
-                    )
-                    await send_payout_receipt(receipt)
+                    logger.info(f"[Cloud Stones] {name} ({uid}) threshold reached: {coins:.1f} >= 500")
                     return {"uid": uid, "name": name, "status": "threshold_reached", "coins": coins}
                 return {"uid": uid, "name": name, "status": "below_threshold", "coins": coins}
         return {"uid": uid, "name": name, "status": "state_check_failed"}
@@ -2130,32 +2121,16 @@ async def execute_cloud_onchain_sweeper(session: aiohttp.ClientSession, accounts
                     swept_txs.append({"chain": "TON", "coin": "TON", "amount": ton_bal - 0.008, "name": name, "tx": tx_ton, "url": f"https://tonviewer.com/{addr}"})
 
     if swept_txs:
-        lines = [f"• <b>{s['name']} ({s['chain']}):</b> Swept <code>{s['amount']:.4f} {s['coin']}</code> → <a href=\"{s['url']}\">View Tx</a>" for s in swept_txs]
-        receipt_msg = (
-            f"⚡ <b>ON-CHAIN VAULT CONSOLIDATION SWEEP EXECUTED</b>\n"
+        lines = [f"• <b>{s['name']} ({s['chain']}):</b> Confirmed: <code>{s['amount']:.4f} {s['coin']}</code> → <a href=\"{s['url']}\">View Tx</a>" for s in swept_txs]
+        confirm_msg = (
+            f"✅ <b>ON-CHAIN PAYMENT CONFIRMED</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
             + "\n".join(lines) +
             f"\n━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"🎯 <b>Master Vault (Binance Web3):</b> <code>{MASTER_EVM_VAULT}</code>\n"
-            f"🛡️ <i>100% Cloud Autonomous Execution</i>"
+            f"🎯 <b>Recipient Vault:</b> <code>{MASTER_EVM_VAULT}</code>\n"
+            f"🛡️ <i>100% On-Chain Verified</i>"
         )
-        await send_payout_receipt(receipt_msg)
-    elif notify:
-        msg = (
-            f"💼 <b>MY AGY AI — Multi-Chain Vault Sweep Audit</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"• 👥 <b>Worker Wallets Audited:</b> <code>{len(evm_audit)} EVM / {len(ton_audit)} TON</code>\n"
-            f"• 🪙 <b>BSC Worker Holding:</b> <code>{total_bnb:.6f} BNB</code>\n"
-            f"• 💵 <b>BSC Worker USDT:</b> <code>${total_usdt:.2f} USDT</code>\n"
-            f"• 💎 <b>Arbitrum Worker Holding:</b> <code>{total_eth:.6f} ETH</code>\n"
-            f"• 💎 <b>TON Worker Holding:</b> <code>{total_ton:.4f} TON</code>\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"🎯 <b>Master Destination Vaults (Binance Web3):</b>\n"
-            f"• <code>EVM:</code> <code>{MASTER_EVM_VAULT}</code>\n"
-            f"• <code>TON:</code> <code>{MASTER_TON_VAULT}</code>\n\n"
-            f"🛡️ <i>Direct in-bot routing sends 100% of mining profits directly to your Binance Web3 Vault.</i>"
-        )
-        await send_payout_receipt(msg)
+        await send_payout_receipt(confirm_msg)
 
     return {
         "ok": True,

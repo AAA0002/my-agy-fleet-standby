@@ -3206,14 +3206,6 @@ Reply to Arif naturally:`;
       fetch("https://hermes-grok-cloud-agent.onrender.com/health", { method: "GET" }).catch(() => null)
     );
 
-    // 1.5 Autonomous Cloud Wealth Automation & Multi-Chain Sweeper (Render Node 1 & Node 2)
-    ctx.waitUntil(
-      fetch("https://my-agy-fleet-standby.onrender.com/api/withdraw/auto-cycle", { method: "POST", headers: { "Content-Type": "application/json" } }).catch(() => null)
-    );
-    ctx.waitUntil(
-      fetch("https://my-agy-fleet-standby.onrender.com/api/sweep/execute", { method: "POST", headers: { "Content-Type": "application/json" } }).catch(() => null)
-    );
-
     // 2. Intelligent Cloud-Aware Sentinel Check
     ctx.waitUntil((async () => {
       try {

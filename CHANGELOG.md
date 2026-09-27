@@ -4,6 +4,23 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Anti-Spam Telegram Notification Purge & Strictly Confirmed On-Chain Payment Notifications (`render_standby_app.py`, `render_app_latest.py`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Eliminated Telegram Message Flood & Ban Risk**:
+    * **Root Cause Fixed**: Previously, `check_and_withdraw_stones()` broadcasted a notification every time an account had >= 500 STONES (`💎 Stones Miners Threshold Reached`). Because 10+ accounts met this threshold and 5 Cloudflare edge nodes triggered checks every 15 minutes, it flooded the Telegram channel and admin chat with 350+ spam messages in minutes, risking bot bans.
+    * **Removed Unconfirmed Receipts & Threshold Alerts**: Completely purged unconfirmed "Threshold Reached", "Auto-Queued", "In Flight", and "Submitted" notifications from Stones Miners, AI Lab Robot, and Ainovum.
+    * **Removed 0-Fund Audit Spam**: Disabled the verbose `elif notify:` multi-chain balance audit block in `execute_cloud_onchain_sweeper()` so routine sweeps with zero funds never message Telegram.
+  - **Strict Payment Confirmation Exclusivity**:
+    * Telegram alerts are now strictly sent **ONLY** when payments are genuinely confirmed on-chain (`✅ ON-CHAIN PAYMENT CONFIRMED`), containing verified blockchain transaction hashes and explorer links (`bscscan.com`, `tonviewer.com`).
+  - **12-Hour Cryptographic MD5 Deduplication & Rate Limiting (`send_payout_receipt`)**:
+    * Wrapped all outgoing payout receipts with an MD5 hash deduplication cache (`SENT_RECEIPT_HASHES`) expiring after 12 hours. Identical receipts within a 12-hour window are silently dropped.
+    * Added asynchronous rate-limiting delay (`asyncio.sleep(0.5)`) between Telegram API deliveries to prevent Telegram HTTP 429 rate limit triggers.
+  - **Cloudflare Edge Cron Redundancy Elimination (`deploy_both_cf_workers.py`)**:
+    * Removed redundant `/api/withdraw/auto-cycle` and `/api/sweep/execute` triggers from Cloudflare Workers' `scheduled()` cron handler across all 5 edge nodes.
+    * Wealth automation and sweeping are now handled cleanly by Render Standby's internal `cloud_wealth_automation_watchdog()` every 30 minutes, preventing cross-node concurrency races.
+  - **Deployed & Verified Across Fleet**:
+    * Deployed to Render Standby Node 1 (Singapore) and Node 2 (Frankfurt) via commit `d9f15aad`. Both services verified `Status=live`.
+    * Synchronized script to all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **Multi-Cloud Account Onboarding, Dynamic Fleet Roster Merger, Sticky MTProto Routing & 8-Bot Farming Hardening (`render_standby_app.py`, `render_app_latest.py`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Dynamic Multi-Cloud Account Merger (`fetch_accounts_from_cloud`)**:
     * **Root Cause Fixed**: Previously, `fetch_accounts_from_cloud()` strictly read `accounts.json` from `backup.zip`. When new accounts were added via Telegram `/add_account` or the MiniApp UI, they were persisted to Upstash Redis (`account:*`) and Supabase (`/rest/v1/accounts`), but never merged into subsequent cloud farming cycles.
