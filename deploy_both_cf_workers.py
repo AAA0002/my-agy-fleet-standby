@@ -2356,13 +2356,29 @@ fi
           arb_usd: arbVal,
           btc_usd: btcVal,
           usd_bdt: 122.5,
+          rates: {
+            bnb_usd: bnbVal,
+            ton_usd: tonVal,
+            arb_usd: arbVal,
+            btc_usd: btcVal,
+            usd_bdt: 122.5
+          },
           timestamp: new Date().toISOString()
         };
         const resJson = JSON.stringify(data);
         ctx.waitUntil(env.BACKUP_KV.put("binance_rates_cache", resJson, { expirationTtl: 300 }).catch(() => {}));
         return new Response(resJson, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=120", ...corsHeaders } });
       } catch (e) {
-        return new Response(JSON.stringify({ ok: true, bnb_usd: 749.5, ton_usd: 1.62, arb_usd: 0.21, btc_usd: 80000.0, usd_bdt: 122.5, fallback: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+        return new Response(JSON.stringify({
+          ok: true,
+          bnb_usd: 749.5,
+          ton_usd: 1.62,
+          arb_usd: 0.21,
+          btc_usd: 80000.0,
+          usd_bdt: 122.5,
+          rates: { bnb_usd: 749.5, ton_usd: 1.62, arb_usd: 0.21, btc_usd: 80000.0, usd_bdt: 122.5 },
+          fallback: true
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
     }
 
@@ -2856,16 +2872,27 @@ fi
         const getFleetAccounts = async () => {
           let accounts = [];
           try {
-            if (env.BACKUP_KV) {
-              const raw = await env.BACKUP_KV.get("fleet_live_state");
-              if (raw) {
-                const s = JSON.parse(raw);
-                if (s.accounts && Array.isArray(s.accounts) && s.accounts.length > 0) {
-                  accounts = s.accounts;
-                }
+            const upstashRaw = await upstashGet("fleet:live_state");
+            if (upstashRaw) {
+              const parsed = typeof upstashRaw === "string" ? JSON.parse(upstashRaw) : upstashRaw;
+              if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length > 0) {
+                accounts = parsed.accounts;
               }
             }
           } catch (_) {}
+          if (!accounts || accounts.length === 0) {
+            try {
+              if (env.BACKUP_KV) {
+                const raw = await env.BACKUP_KV.get("fleet_live_state");
+                if (raw) {
+                  const s = JSON.parse(raw);
+                  if (s.accounts && Array.isArray(s.accounts) && s.accounts.length > 0) {
+                    accounts = s.accounts;
+                  }
+                }
+              }
+            } catch (_) {}
+          }
           if (!accounts || accounts.length === 0) {
             accounts = DEFAULT_FLEET_ACCOUNTS.map(a => Object.assign({}, a));
           }
@@ -3208,7 +3235,7 @@ fi
               } catch (_) {}
               
               let totalMined = 3933.99;
-              let activeAccs = 13;
+              let activeAccs = 14;
               if (atfData && atfData.results) {
                 totalMined = atfData.results.reduce((s, a) => s + (parseFloat(a.mined_balance) || 0), 0);
                 activeAccs = atfData.results.filter(a => a.mining_active).length;
@@ -4071,14 +4098,14 @@ fi
               }
             } catch (_) {}
             const rep = `💼 *Multi-Chain Portfolio & Vaults*\n\n` +
-              `🟡 *Binance BEP-20 (All 13 Fleet Accounts):*\n` +
+              `🟡 *Binance BEP-20 (All 14 Fleet Accounts):*\n` +
               `• Address: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
               `• Balance: \`${liveBnb.toFixed(6)} BNB\` (~$${(liveBnb * 764.5).toFixed(2)} USD)\n\n` +
               `💎 *Binance TON (Main Account #1):*\n` +
               `• Address: \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
               `• Network: TON Blockchain (The Open Network)\n\n` +
-              `🛡️ *Worker TON Wallets (Accounts 2–13):*\n` +
-              `• 12 Isolated TON v4r2 Wallets configured in \`fleet_ton_wallets.json\`\n` +
+              `🛡️ *Worker TON Wallets (Accounts 2–14):*\n` +
+              `• 13 Isolated TON v4r2 Wallets configured in \`fleet_ton_wallets.json\`\n` +
               `• Dedicated anti-Sybil protection for MRG, ART, and Stones bots.\n\n` +
               `📱 _Tap '🚀 Open Visual Mini App' below for interactive wallet explorer._`;
             await sendReply(rep, statusInlineKeyboard);

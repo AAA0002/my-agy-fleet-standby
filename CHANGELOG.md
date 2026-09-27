@@ -4,6 +4,21 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Fleet Hub Live Accounts Priority, Oracle Rates Fix & Live Ari AI Copilot (`deploy_both_cf_workers.py`, `public/admin/index.html`)**:
+  - **Live Upstash Priority for Telegram Admin Bot (`getFleetAccounts()`)**:
+    * Identified that `/accounts` and `btn_accounts` in `@myagy_ai_bot` were querying `env.BACKUP_KV` directly without Upstash Redis priority, causing stale account fallback when KV cache expired.
+    * Added Upstash Redis `fleet:live_state` priority check with automatic JSON parsing so live balances and active status are always served.
+  - **Harmonized 14 Fleet Accounts & 13 Isolated TON Wallets**:
+    * Corrected legacy "13 accounts" and "12 isolated wallets" references across Admin Telegram commands (`/wallet`, `/atf`) to accurately reflect all 14 fleet accounts and 13 isolated worker wallets.
+  - **Crypto Oracle Rates Payload Fix (`/api/rates`)**:
+    * Updated `/api/rates` response to supply both flat values and a nested `rates: { ... }` object, ensuring seamless compatibility across different dashboard consumers.
+    * Enhanced `public/admin/index.html` to dynamically bind live BDT conversion rates (`currencyRates.BDT`) from the oracle.
+  - **Live Multi-Cloud AI Copilot in Admin Dashboard (`handleAiSubmit`)**:
+    * Integrated `/api/ai?q=` into the dashboard's Ari AI Copilot tab, enabling real-time answers from Google Gemini 3.5 Flash / Llama 3.2 on free-form operational and technical questions.
+  - **Multi-Node Edge Synchronization**:
+    * Deployed compiled worker script across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) and deployed Vercel 307 redirect proxies.
+
+
 - **Anti-Ban Humanized Farming Overhaul & Unified Edge Engine (`deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`)**:
   - **Eliminated 0ms Instant-Claim Bot Signatures**:
     * Identified root cause of bot task failures: across Stones, MRG, ART, AI Lab, UltraWallet, Apex, and ATF, tasks were previously initiated and claimed in 0ms back-to-back, triggering server "please wait" rejections or silent drop flags.

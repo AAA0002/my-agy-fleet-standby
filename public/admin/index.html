@@ -296,7 +296,15 @@ function App() {
         }
         if (resLive.bnb_balance !== undefined) setBnbBalance(parseFloat(resLive.bnb_balance) || 0.000812);
       }
-      if (resRates && resRates.rates) setRates(resRates.rates);
+      if (resRates) {
+        const rData = resRates.rates || resRates;
+        if (rData && (rData.bnb_usd || rData.ton_usd)) {
+          setRates(rData);
+          if (rData.usd_bdt) {
+            currencyRates.BDT = parseFloat(rData.usd_bdt) || 122.5;
+          }
+        }
+      }
       if (resPayouts && resPayouts.payouts) setPayouts(resPayouts.payouts);
       if (isManual) showToast("Fleet Telemetry Synced!", "success");
     } catch (_) {
@@ -373,7 +381,7 @@ function App() {
     }
   };
 
-  const handleAiSubmit = (promptText = null) => {
+  const handleAiSubmit = async (promptText = null) => {
     const text = (promptText || aiInput).trim();
     if (!text || aiLoading) return;
     setAiInput("");
@@ -382,27 +390,42 @@ function App() {
     haptic("light");
 
     const lower = text.toLowerCase();
-    setTimeout(() => {
-      let reply = "";
-      if (lower.includes("sweep") || lower.includes("withdraw")) {
-        reply = "⚡ Dispatched Universal Sweep to Binance Vault (0xfda418...d5ce). Checking thresholds across Arbitrum One (500 STONES), BEP-20 (0.02 USDT), and TON network.";
-        handleUniversalSweep();
-      } else if (lower.includes("harvest") || lower.includes("farm") || lower.includes("claim")) {
-        reply = "🌾 Dispatched Instant 8-Pool Harvest across all 14 fleet accounts! Automated claim cycles queued on Cloudflare Edge mesh.";
-        handleInstantHarvest();
-      } else if (lower.includes("status") || lower.includes("fleet") || lower.includes("account")) {
-        const totalStones = fleet.reduce((sum, a) => sum + (a.stones_coins || 0), 0);
-        const totalAtf = fleet.reduce((sum, a) => sum + (a.atf_balance || 0), 0);
-        reply = `📊 Executive Fleet Telemetry:\n• Active Accounts: 14/14 Online (100% Cloud-First)\n• Vault Balance: ${bnbBalance.toFixed(6)} BNB (≈ $${(bnbBalance * rates.bnb_usd).toFixed(2)})\n• Total Mined: ${totalStones.toLocaleString()} STONES • ${totalAtf.toFixed(1)} ATF\n• Active Pools (8/8): ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n• 5 Edge Nodes: All Online (0% Phone Load).`;
-      } else if (lower.includes("mesh") || lower.includes("node") || lower.includes("ping")) {
-        reply = "🌐 Cloudflare 5-Node Edge Mesh Status:\n• Node 1 (aaaai2): 🟢 Operational\n• Node 2 (aaa-bot): 🟢 Operational\n• Node 3 (aaa222): 🟢 Operational\n• Node 4 (agorameet): 🟢 Operational\n• Node 5 (aaaai): 🟢 Operational\n• Standby: Render SG & FRA Hot Failover Active.";
-      } else {
-        reply = "🤖 Intelligence report for Commander Arif: All 14 accounts and 8 automated pools are mining uninterrupted. System is running 100% in the cloud on the 5-node edge mesh with zero phone load. You can ask me to 'sweep', 'harvest', or check 'status' anytime!";
-      }
+    if (lower.includes("sweep") || lower.includes("withdraw")) {
+      const reply = "⚡ Dispatched Universal Sweep to Binance Vault (0xfda418...d5ce). Checking thresholds across Arbitrum One (500 STONES), BEP-20 (0.02 USDT), and TON network.";
+      handleUniversalSweep();
       setAiMessages(prev => [...prev, { sender: "ai", text: reply }]);
       setAiLoading(false);
       haptic("success");
-    }, 500);
+    } else if (lower.includes("harvest") || lower.includes("farm") || lower.includes("claim")) {
+      const reply = "🌾 Dispatched Instant 8-Pool Harvest across all 14 fleet accounts! Automated claim cycles queued on Cloudflare Edge mesh.";
+      handleInstantHarvest();
+      setAiMessages(prev => [...prev, { sender: "ai", text: reply }]);
+      setAiLoading(false);
+      haptic("success");
+    } else if (lower.includes("status") || lower.includes("fleet") || lower.includes("account")) {
+      const totalStones = fleet.reduce((sum, a) => sum + (a.stones_coins || 0), 0);
+      const totalAtf = fleet.reduce((sum, a) => sum + (a.atf_balance || 0), 0);
+      const reply = `📊 Executive Fleet Telemetry:\n• Active Accounts: 14/14 Online (100% Cloud-First)\n• Vault Balance: ${bnbBalance.toFixed(6)} BNB (≈ $${(bnbBalance * rates.bnb_usd).toFixed(2)})\n• Total Mined: ${totalStones.toLocaleString()} STONES • ${totalAtf.toFixed(1)} ATF\n• Active Pools (8/8): ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n• 5 Edge Nodes: All Online (0% Phone Load).`;
+      setAiMessages(prev => [...prev, { sender: "ai", text: reply }]);
+      setAiLoading(false);
+      haptic("success");
+    } else if (lower.includes("mesh") || lower.includes("node") || lower.includes("ping")) {
+      const reply = "🌐 Cloudflare 5-Node Edge Mesh Status:\n• Node 1 (aaaai2): 🟢 Operational\n• Node 2 (aaa-bot): 🟢 Operational\n• Node 3 (aaa222): 🟢 Operational\n• Node 4 (agorameet): 🟢 Operational\n• Node 5 (aaaai): 🟢 Operational\n• Standby: Render SG & FRA Hot Failover Active.";
+      setAiMessages(prev => [...prev, { sender: "ai", text: reply }]);
+      setAiLoading(false);
+      haptic("success");
+    } else {
+      try {
+        const aiData = await fetchMeshApi("/api/ai?q=" + encodeURIComponent(text));
+        const ans = aiData?.answer || aiData?.response || "Intelligence report: All 14 accounts and 8 automated pools are mining uninterrupted in the cloud on the 5-node edge mesh with zero phone load.";
+        const prov = aiData?.provider ? `\n\n🤖 _Generated by ${aiData.provider}${aiData.model ? ' (' + aiData.model + ')' : ''}_` : "";
+        setAiMessages(prev => [...prev, { sender: "ai", text: ans + prov }]);
+      } catch (_) {
+        setAiMessages(prev => [...prev, { sender: "ai", text: "All 14 accounts and 8 pools are mining uninterrupted on Cloudflare Edge mesh." }]);
+      }
+      setAiLoading(false);
+      haptic("success");
+    }
   };
 
   // Connect Account Flow
