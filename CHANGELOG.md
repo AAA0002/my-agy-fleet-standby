@@ -4,6 +4,20 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Comprehensive Bug Fixes, Account Deduplication & Global Button Streamlining (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Account Reconnection Deduplication Fix**:
+    * Fixed bug where reconnecting an existing account (`user_id` or `phone`) pushed a duplicate record into `profile.accounts`, consuming multiple cloud slots for the same phone.
+    * Implemented account matching and in-place updating so reconnecting an account cleanly refreshes state without taking extra slots.
+  - **Dynamic `farming_active` Auto-Restoration**:
+    * Fixed bug where user farming remained marked as `🔴 Paused` after earning points from watching ads or referrals until midnight.
+    * Implemented instant dynamic check across `/api/adsgram/reward`, `ub_claim_ad`, and referral bonus handlers: if `profile.points >= dailyCost`, `farming_active` immediately re-activates to `🟢 Active 24/7`.
+  - **Universal Button De-Duplication Across All Menus**:
+    * Removed all duplicate buttons (`➕ Connect Account`, `👥 My Accounts`, `💳 Payouts Guide`) from `chatAiKeyboard` and `aiInlineMarkup` (Ari AI copilot responses).
+    * Removed duplicate account management buttons from `statsBtns` (`/stats` & `ub_stats`), `withMsg` (`/withdraw`), and referral replies (`ub_referral`), ensuring every button on screen has a unique purpose.
+    * Replaced all remaining mentions of internal technical jargon (`MTProto`) with clean consumer-facing terms (`Cloud Mining`).
+  - **Cloudflare Edge Mesh Deployment**:
+    * Deployed live across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with 100% Zero Phone Load.
+
 - **UI Streamlining, Duplicate Button Removal & Premium Bot Polish (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Zero Duplicate Buttons in Messages (`userWelcomeInlineKeyboard`)**:
     * Removed all duplicate buttons (`➕ Connect Account`, `👥 My Accounts`, `🗑️ Remove Account`, `🎁 Invite & Earn`, `📊 My Stats`, `🚀 Launch Cloud Miner`, `💳 Payouts Guide`) from the message inline keyboard.

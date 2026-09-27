@@ -4304,6 +4304,10 @@ Reply to Arif naturally:`;
         profile.points = (profile.points || 0) + adPts;
         profile.ads_watched = (profile.ads_watched || 0) + 1;
         profile.last_ad_claim = now;
+        const dailyCost = (profile.accounts || []).length * 100;
+        if (profile.points >= dailyCost) {
+          profile.farming_active = true;
+        }
 
         let bonusUnlocked = false;
         if (profile.ads_watched % 50 === 0) {
@@ -4788,6 +4792,10 @@ Reply to Arif naturally:`;
             profile.points = (profile.points || 0) + adPts;
             profile.ads_watched = (profile.ads_watched || 0) + 1;
             profile.last_ad_claim = now;
+            const dailyCost = (profile.accounts || []).length * 100;
+            if (profile.points >= dailyCost) {
+              profile.farming_active = true;
+            }
 
             let bonusText = "";
             if (profile.ads_watched % 50 === 0) {
@@ -4969,9 +4977,7 @@ Reply to Arif naturally:`;
               `• *Cloud Mining:* 🟢 24/7 Automated Running`;
             const statsBtns = {
               inline_keyboard: [
-                [{ text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }, { text: "💳 Payouts Guide", callback_data: "ub_withdraw" }],
-                [{ text: "👥 Manage Accounts", callback_data: "ub_accounts_list" }, { text: "➕ Connect Account", callback_data: "ub_add_acc" }],
-                [{ text: "🌟 Upgrade Slots & Passes", callback_data: "ub_buy_stars" }]
+                [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
             };
             ctx.waitUntil(sendCqReply(statsMsg, statsBtns));
@@ -5301,15 +5307,24 @@ Reply to Arif naturally:`;
                 if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
                 const profile = await getUserProfile(chatId, msg.from);
                 profile.accounts = profile.accounts || [];
-                // Add account to user profile
-                profile.accounts.push({
+                const accObj = {
                   user_id: res.user_id,
                   phone: res.phone || phone,
                   name: res.name || "User",
                   username: res.username || "None",
                   added_at: Date.now(),
                   status: "active"
-                });
+                };
+                const existingIdx = profile.accounts.findIndex(a => 
+                  String(a.user_id) === String(res.user_id) || 
+                  (res.phone && a.phone === res.phone) || 
+                  (phone && a.phone === phone)
+                );
+                if (existingIdx >= 0) {
+                  profile.accounts[existingIdx] = accObj;
+                } else {
+                  profile.accounts.push(accObj);
+                }
                 await saveUserProfile(chatId, profile);
                 ctx.waitUntil(broadcastMilestoneUnlocked("Milestone Unlocked", res.name || "Miner", chatId, `Cloud Node Connected (${profile.accounts.length} Active)`, "24/7 Autonomous Mining Live"));
 
@@ -5319,7 +5334,7 @@ Reply to Arif naturally:`;
                   `• *User ID:* \`${res.user_id}\`\n` +
                   `• *Mining Status:* 🟢 24/7 Cloud Automated\n` +
                   `• *Pools Active (8/8):* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n\n` +
-                  `✅ 100% Cloud MTProto active! 100 points/day will be deducted while farming is live.`;
+                  `✅ 100% Cloud Mining active! 100 points/day will be deducted while farming is live.`;
                 await sendUserReply(succMsg, userMainKeyboard);
               } else {
                 const errDetail = res ? (res.error || res.message) : "Invalid 2FA password";
@@ -5350,14 +5365,24 @@ Reply to Arif naturally:`;
               if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
               const profile = await getUserProfile(chatId, msg.from);
               profile.accounts = profile.accounts || [];
-              profile.accounts.push({
+              const accObj = {
                 user_id: res.user_id,
                 phone: res.phone || phone,
                 name: res.name || "User",
                 username: res.username || "None",
                 added_at: Date.now(),
                 status: "active"
-              });
+              };
+              const existingIdx = profile.accounts.findIndex(a => 
+                String(a.user_id) === String(res.user_id) || 
+                (res.phone && a.phone === res.phone) || 
+                (phone && a.phone === phone)
+              );
+              if (existingIdx >= 0) {
+                profile.accounts[existingIdx] = accObj;
+              } else {
+                profile.accounts.push(accObj);
+              }
               await saveUserProfile(chatId, profile);
               ctx.waitUntil(broadcastMilestoneUnlocked("Milestone Unlocked", res.name || "Miner", chatId, `Cloud Node Connected (${profile.accounts.length} Active)`, "24/7 Autonomous Mining Live"));
 
@@ -5367,7 +5392,7 @@ Reply to Arif naturally:`;
                 `• *User ID:* \`${res.user_id}\`\n` +
                 `• *Mining Status:* 🟢 24/7 Cloud Automated\n` +
                 `• *Pools Active (8/8):* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n\n` +
-                `✅ 100% Cloud MTProto active! 100 points/day will be deducted while farming is live.`;
+                `✅ 100% Cloud Mining active! 100 points/day will be deducted while farming is live.`;
               await sendUserReply(succMsg, userMainKeyboard);
             } else {
               const errDetail = res ? (res.error || res.message) : "Invalid verification code";
@@ -5399,6 +5424,10 @@ Reply to Arif naturally:`;
                   if (refProf) {
                     refProf.points = (refProf.points || 0) + 500;
                     refProf.referral_count = (refProf.referral_count || 0) + 1;
+                    const refCost = (refProf.accounts || []).length * 100;
+                    if (refProf.points >= refCost) {
+                      refProf.farming_active = true;
+                    }
                     await saveUserProfile(refId, refProf);
                     await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
                       method: "POST",
@@ -5533,8 +5562,7 @@ Reply to Arif naturally:`;
               `• *Cloud Mining:* 🟢 24/7 Automated Running`;
             const statsBtns = {
               inline_keyboard: [
-                [{ text: "👥 Manage Accounts", callback_data: "ub_accounts_list" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
-                [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🌟 Upgrade Passes", callback_data: "ub_buy_stars" }]
+                [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
             };
             await sendUserReply(statsMsg, statsBtns);
@@ -5788,8 +5816,8 @@ Reply to Arif naturally:`;
               `🛡️ *100% Direct Payouts:* No third-party lockups, no gas fees deducted by us.`;
             await sendUserReply(withMsg, {
               inline_keyboard: [
-                [{ text: "📊 My Stats", callback_data: "ub_stats" }, { text: "👥 My Accounts", callback_data: "ub_accounts_list" }],
-                [{ text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" }]
+                [{ text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" }],
+                [{ text: "💬 Community Supergroup", url: "https://t.me/AAAAutoMiner" }]
               ]
             });
             return;
@@ -5826,7 +5854,7 @@ Reply to Arif naturally:`;
             await sendUserReply(refMsg, {
               inline_keyboard: [
                 [{ text: "📤 Share to Telegram", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
-                [{ text: "🎁 My Rewards", callback_data: "ub_rewards" }, { text: "👥 My Accounts", callback_data: "ub_accounts_list" }]
+                [{ text: "🎁 My Rewards Hub", callback_data: "ub_rewards" }]
               ]
             });
             return;
@@ -5941,12 +5969,11 @@ Reply to Arif naturally:`;
             const chatAiKeyboard = {
               inline_keyboard: [
                 [
-                  { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } },
-                  { text: "➕ Connect Account", callback_data: "ub_add_acc" }
+                  { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }
                 ],
                 [
-                  { text: "👥 My Accounts", callback_data: "ub_accounts_list" },
-                  { text: "💳 Payouts Guide", callback_data: "ub_withdraw" }
+                  { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" },
+                  { text: "💬 Community Supergroup", url: "https://t.me/AAAAutoMiner" }
                 ]
               ]
             };
@@ -5982,12 +6009,11 @@ Reply to Arif naturally:`;
           const aiInlineMarkup = {
             inline_keyboard: [
               [
-                { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } },
-                { text: "➕ Connect Account", callback_data: "ub_add_acc" }
+                { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }
               ],
               [
-                { text: "👥 My Accounts", callback_data: "ub_accounts_list" },
-                { text: "💳 Payouts Guide", callback_data: "ub_withdraw" }
+                { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" },
+                { text: "💬 Community Supergroup", url: "https://t.me/AAAAutoMiner" }
               ]
             ]
           };
