@@ -364,26 +364,6 @@ async def extract_tokens_for_account(acc: dict) -> dict:
             logger.warning(f"[{name}] Session unauthorized")
             return {}
 
-        # Ensure all 8 bots are started with master referral 6727787768 to authorize WebApps
-        bots_to_start = [
-            (STONES_BOT, "r6727787768"),
-            (MRG_BOT, MRG_REFERRAL_CODE),
-            (ART_BOT, str(REPORT_CHAT_ID)),
-            (AILAB_BOT, "296852"),
-            (ULTRAWALLET_BOT, str(ULTRAWALLET_REFERRAL_CODE)),
-            (APX_BOT, str(APX_REFERRAL_CODE)),
-            (AINOVUM_BOT, AINOVUM_REFERRAL_CODE),
-            ("ATF_AIRDROP_bot", str(REPORT_CHAT_ID))
-        ]
-        for bot_uname, ref_code in bots_to_start:
-            try:
-                b_ent = await client.get_entity(bot_uname)
-                await client.send_message(b_ent, f"/start {ref_code}")
-                await asyncio.sleep(0.3)
-            except Exception:
-                pass
-        await asyncio.sleep(1.0)
-
         return await extract_tokens_with_client(client, acc)
     except Exception as e:
         logger.error(f"[{name}] Telethon connection error: {e}")
@@ -1077,19 +1057,20 @@ async def sync_account_tokens_to_clouds(tokens: dict):
 
 async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
     """
-    Kicks off initial WebApp mining & claim cycles across all 8 bots for a newly onboarded account:
-    1. Stones Miners (/api/mining/start, /api/claim)
-    2. MRG Miner (/api/user/claim-mining)
-    3. ART Airdrop (/api/user/start-mining)
-    4. AI Lab Robot (/users/auth/login, /miner-start_mining)
-    5. UltraWallet (/telegramLogin, /mining/start, /checkin/claim)
-    6. Apex Miner (/bootstrap, /register, /mining/restart)
-    7. ATF Miner (math challenge -> /miner/start_mine)
-    8. Ainovum (/api/bootstrap, /api/mining/claim)
+    Kicks off initial WebApp mining, completes referral onboarding finish work,
+    and runs first-cycle claims across all 8 bots:
+    1. Stones Miners (/api/mining/start, /api/claim, dynamic tasks, stone breaker, boost)
+    2. MRG Miner (/api/user/claim-mining, /api/user/claim-task, referral commission)
+    3. ART Airdrop (/api/user/start-mining, /api/user/claim-mining, /api/ads/claim, tasks, miner upgrade)
+    4. AI Lab Robot (/users/auth/login, /miner-start_mining, /miner-exchange_hashes, tasks)
+    5. UltraWallet (/telegramLogin, /mining/start, /checkin/claim, lucky spins, tasks, ads, gift box)
+    6. Apex Miner (/bootstrap, /register, /checkin, /mining/restart, tasks, boost)
+    7. ATF Miner (login, math challenge -> /start_mine, speed boost, tasks, referral claim)
+    8. Ainovum (/api/bootstrap, /api/mining/claim, /api/daily-bonus, /api/channel-bonus, /api/gift-box)
     """
     uid = str(acc_entry.get("user_id"))
     name = acc_entry.get("name", "User")
-    logger.info(f"[{name}] ⚡ Bootstrapping initial cloud mining across all 8 bots...")
+    logger.info(f"[{name}] ⚡ Bootstrapping initial cloud mining & completing referral finish work across all 8 bots...")
     headers = {
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0"
@@ -1103,7 +1084,22 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                 await http.post("https://app.stoneswithestand.my.id/api/mining/start", json={"initData": s_init}, timeout=aiohttp.ClientTimeout(total=8))
                 await http.post("https://app.stoneswithestand.my.id/api/claim", json={"initData": s_init}, timeout=aiohttp.ClientTimeout(total=8))
                 await http.post("https://app.stoneswithestand.my.id/api/task/complete", json={"initData": s_init, "slug": "daily_checkin"}, timeout=aiohttp.ClientTimeout(total=8))
-                logger.info(f"[{name}] ✅ Stones initial mining started")
+                await http.post("https://app.stoneswithestand.my.id/api/task/start", json={"initData": s_init, "slug": "join_channel"}, timeout=aiohttp.ClientTimeout(total=8))
+                await http.post("https://app.stoneswithestand.my.id/api/task/complete", json={"initData": s_init, "slug": "join_channel"}, timeout=aiohttp.ClientTimeout(total=8))
+                await http.post("https://app.stoneswithestand.my.id/api/task/verify", json={"initData": s_init, "slug": "join_channel"}, timeout=aiohttp.ClientTimeout(total=8))
+                try:
+                    async with http.post("https://app.stoneswithestand.my.id/api/state", json={"initData": s_init}, timeout=aiohttp.ClientTimeout(total=6)) as st_r:
+                        if st_r.status == 200:
+                            st_data = await st_r.json()
+                            for t in st_data.get("tasks", []):
+                                slug = t.get("slug") or t.get("id")
+                                if slug and not t.get("completed") and not t.get("is_completed"):
+                                    await http.post("https://app.stoneswithestand.my.id/api/task/start", json={"initData": s_init, "slug": slug}, timeout=aiohttp.ClientTimeout(total=4))
+                                    await http.post("https://app.stoneswithestand.my.id/api/task/complete", json={"initData": s_init, "slug": slug}, timeout=aiohttp.ClientTimeout(total=4))
+                                    await http.post("https://app.stoneswithestand.my.id/api/task/verify", json={"initData": s_init, "slug": slug}, timeout=aiohttp.ClientTimeout(total=4))
+                except Exception:
+                    pass
+                logger.info(f"[{name}] ✅ Stones initial mining started & tasks completed")
             except Exception as e:
                 logger.debug(f"[{name}] Stones bootstrap note: {e}")
 
@@ -1112,7 +1108,20 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             try:
                 m_init = tokens["mrg_init_data"]
                 await http.post("https://mrg.up.railway.app/api/user/claim-mining", json={"initData": m_init}, timeout=aiohttp.ClientTimeout(total=8))
-                logger.info(f"[{name}] ✅ MRG initial mining started")
+                try:
+                    async with http.post("https://mrg.up.railway.app/api/user/me", json={"initData": m_init}, timeout=aiohttp.ClientTimeout(total=6)) as me_r:
+                        if me_r.status == 200:
+                            me_d = await me_r.json()
+                            completed = set(me_d.get("completedTaskIds", []))
+                            for t in me_d.get("tasks", []):
+                                tid = t.get("taskId")
+                                if tid and tid not in completed:
+                                    await http.post("https://mrg.up.railway.app/api/user/claim-task", json={"initData": m_init, "taskId": tid}, timeout=aiohttp.ClientTimeout(total=5))
+                except Exception:
+                    pass
+                if uid == "6727787768":
+                    await http.post("https://mrg.up.railway.app/api/user/claim-commission", json={"initData": m_init}, timeout=aiohttp.ClientTimeout(total=5))
+                logger.info(f"[{name}] ✅ MRG initial mining started & tasks claimed")
             except Exception as e:
                 logger.debug(f"[{name}] MRG bootstrap note: {e}")
 
@@ -1123,7 +1132,21 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                 art_h = {"X-Telegram-Init-Data": art_init, "Content-Type": "application/json", "User-Agent": headers["User-Agent"]}
                 await http.post("https://art.tamimdev.dev/api/user/start-mining", json={"userId": uid}, headers=art_h, timeout=aiohttp.ClientTimeout(total=8))
                 await http.post("https://art.tamimdev.dev/api/user/claim-mining", json={"userId": uid}, headers=art_h, timeout=aiohttp.ClientTimeout(total=8))
-                logger.info(f"[{name}] ✅ ART initial mining started")
+                await http.post("https://art.tamimdev.dev/api/ads/claim", json={"userId": uid}, headers=art_h, timeout=aiohttp.ClientTimeout(total=6))
+                try:
+                    async with http.get(f"https://art.tamimdev.dev/api/tasks/{uid}", headers=art_h, timeout=aiohttp.ClientTimeout(total=6)) as tr:
+                        if tr.status == 200:
+                            td = await tr.json()
+                            for t in td.get("tasks", []):
+                                if not t.get("isCompleted") and t.get("id"):
+                                    await http.post("https://art.tamimdev.dev/api/tasks/start", json={"userId": uid, "taskId": t["id"]}, headers=art_h, timeout=aiohttp.ClientTimeout(total=4))
+                                    await http.post("https://art.tamimdev.dev/api/tasks/claim", json={"userId": uid, "taskId": t["id"]}, headers=art_h, timeout=aiohttp.ClientTimeout(total=4))
+                except Exception:
+                    pass
+                if uid == "6727787768":
+                    await http.post("https://art.tamimdev.dev/api/referrals/claim-team", json={"userId": uid}, headers=art_h, timeout=aiohttp.ClientTimeout(total=4))
+                    await http.post("https://art.tamimdev.dev/api/referrals/claim-bonus", json={"userId": uid}, headers=art_h, timeout=aiohttp.ClientTimeout(total=4))
+                logger.info(f"[{name}] ✅ ART initial mining started & tasks claimed")
             except Exception as e:
                 logger.debug(f"[{name}] ART bootstrap note: {e}")
 
@@ -1139,7 +1162,27 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                         if tok:
                             ai_auth = {"Authorization": f"Bearer {tok}", "Content-Type": "application/json", "User-Agent": headers["User-Agent"]}
                             await http.post(f"{ai_base}/miner-start_mining", json={"start_mining": True}, headers=ai_auth, timeout=aiohttp.ClientTimeout(total=8))
-                            logger.info(f"[{name}] ✅ AI Lab initial mining started")
+                            try:
+                                async with http.get(f"{ai_base}/miner", headers=ai_auth, timeout=aiohttp.ClientTimeout(total=5)) as mr:
+                                    if mr.status == 200:
+                                        md = await mr.json()
+                                        h_bal = float(md.get("result", {}).get("miner", {}).get("hashes_balance", 0))
+                                        if h_bal >= 3.0:
+                                            await http.post(f"{ai_base}/miner-exchange_hashes", json={"exchange": True}, headers=ai_auth, timeout=aiohttp.ClientTimeout(total=5))
+                            except Exception:
+                                pass
+                            try:
+                                async with http.get(f"{ai_base}/tasks", headers=ai_auth, timeout=aiohttp.ClientTimeout(total=5)) as tr:
+                                    if tr.status == 200:
+                                        td = await tr.json()
+                                        tasks = td.get("result", {}).get("referral", []) + td.get("result", {}).get("follow", []) + td.get("result", {}).get("social", [])
+                                        for t in tasks:
+                                            if t.get("id") and t.get("status") != "completed":
+                                                await http.post(f"{ai_base}/task-check", json={"task_id": t["id"], "action": "start"}, headers=ai_auth, timeout=aiohttp.ClientTimeout(total=4))
+                                                await http.post(f"{ai_base}/task-check", json={"task_id": t["id"], "action": "check"}, headers=ai_auth, timeout=aiohttp.ClientTimeout(total=4))
+                            except Exception:
+                                pass
+                            logger.info(f"[{name}] ✅ AI Lab initial mining started & tasks checked")
             except Exception as e:
                 logger.debug(f"[{name}] AI Lab bootstrap note: {e}")
 
@@ -1161,9 +1204,37 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                                     if id_tok:
                                         uw_h = {"Authorization": f"Bearer {id_tok}", "Content-Type": "application/json", "User-Agent": headers["User-Agent"]}
                                         await http.post(f"{uw_base}/checkin/claim", json={}, headers=uw_h, timeout=aiohttp.ClientTimeout(total=6))
+                                        await http.post(f"{uw_base}/mining/claim", json={}, headers=uw_h, timeout=aiohttp.ClientTimeout(total=6))
                                         await http.post(f"{uw_base}/mining/start", json={}, headers=uw_h, timeout=aiohttp.ClientTimeout(total=6))
                                         await http.post(f"{uw_base}/energy/claim", json={}, headers=uw_h, timeout=aiohttp.ClientTimeout(total=6))
-                                        logger.info(f"[{name}] ✅ UltraWallet initial mining started")
+                                        try:
+                                            async with http.get(f"{uw_base}/spin/status", headers=uw_h, timeout=aiohttp.ClientTimeout(total=5)) as spr:
+                                                if spr.status == 200:
+                                                    spi = await spr.json()
+                                                    spins = (spi.get("tickets", 0)) + (spi.get("freeSpinsRemaining", 0))
+                                                    for _ in range(min(spins, 3)):
+                                                        await http.post(f"{uw_base}/spin/play", json={}, headers=uw_h, timeout=aiohttp.ClientTimeout(total=4))
+                                        except Exception:
+                                            pass
+                                        try:
+                                            async with http.get(f"{uw_base}/tasks", headers=uw_h, timeout=aiohttp.ClientTimeout(total=5)) as utr:
+                                                if utr.status == 200:
+                                                    utd = await utr.json()
+                                                    for t in utd.get("tasks", []):
+                                                        if not t.get("completed") and t.get("id"):
+                                                            await http.post(f"{uw_base}/tasks/start", json={"taskId": t["id"]}, headers=uw_h, timeout=aiohttp.ClientTimeout(total=4))
+                                                            await http.post(f"{uw_base}/tasks/complete", json={"taskId": t["id"]}, headers=uw_h, timeout=aiohttp.ClientTimeout(total=4))
+                                        except Exception:
+                                            pass
+                                        try:
+                                            async with http.get(f"{uw_base}/giftBox", headers=uw_h, timeout=aiohttp.ClientTimeout(total=5)) as gbr:
+                                                if gbr.status == 200:
+                                                    gbd = await gbr.json()
+                                                    if gbd.get("enabled") and gbd.get("canOpen"):
+                                                        await http.post(f"{uw_base}/giftBox/claim", json={}, headers=uw_h, timeout=aiohttp.ClientTimeout(total=4))
+                                        except Exception:
+                                            pass
+                                        logger.info(f"[{name}] ✅ UltraWallet initial mining & tasks completed")
             except Exception as e:
                 logger.debug(f"[{name}] UltraWallet bootstrap note: {e}")
 
@@ -1181,11 +1252,16 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                 await http.post(f"{apx_base}/checkin", json={"initData": apx_init, "clientV2": True}, timeout=aiohttp.ClientTimeout(total=8))
                 await http.post(f"{apx_base}/mining/claim", json={"initData": apx_init}, timeout=aiohttp.ClientTimeout(total=8))
                 await http.post(f"{apx_base}/mining/restart", json={"initData": apx_init}, timeout=aiohttp.ClientTimeout(total=8))
-                logger.info(f"[{name}] ✅ Apex Miner initial mining started")
+                for t in ["telegram", "twitter", "discord", "checkin"]:
+                    await http.post(f"{apx_base}/tasks/daily", json={"initData": apx_init, "task": t}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
+                for s in ["channel", "group", "twitter", "partner"]:
+                    await http.post(f"{apx_base}/tasks/social", json={"initData": apx_init, "task": s}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
+                await http.post(f"{apx_base}/ads/boost", json={"initData": apx_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
+                logger.info(f"[{name}] ✅ Apex Miner initial mining & tasks started")
             except Exception as e:
                 logger.debug(f"[{name}] Apex Miner bootstrap note: {e}")
 
-        # 7. ATF Miner
+        # 7. ATF Miner (Comprehensive Referral Finish Work: Login, Math Challenge Solve, Start Mine, Tasks, Boost)
         if tokens.get("atf_init_data"):
             try:
                 atf_init = tokens["atf_init_data"]
@@ -1201,6 +1277,8 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                     "initData": atf_init,
                     "tg_id": int(uid),
                     "username": acc_entry.get("username", "") or "",
+                    "referrer": "6727787768",
+                    "ref": "6727787768",
                     "request_id": f"rq-{int(time.time()*1000)}-init",
                     "device_id": f"dev-boot-{uid}"
                 }
@@ -1213,6 +1291,16 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                             ans = solve_atf_math(q)
                             await http.post(f"{atf_base}?action=start_mine&t={int(time.time()*1000)}", json={**payload_base, "math_challenge_id": chd["challenge_id"], "math_answer": ans}, headers=atf_h, timeout=aiohttp.ClientTimeout(total=8))
                             logger.info(f"[{name}] ✅ ATF Miner initial mining started (Math solved: {ans})")
+                await http.post(f"{atf_base}?action=activate_boost&t={int(time.time()*1000)}", json=payload_base, headers=atf_h, timeout=aiohttp.ClientTimeout(total=5))
+                await http.post(f"{atf_base}?action=record_daily_interaction&t={int(time.time()*1000)}", json=payload_base, headers=atf_h, timeout=aiohttp.ClientTimeout(total=5))
+                await http.post(f"{atf_base}?action=claim_referrals&t={int(time.time()*1000)}", json=payload_base, headers=atf_h, timeout=aiohttp.ClientTimeout(total=5))
+                await http.post(f"{atf_base}?action=claim_team_wallet&t={int(time.time()*1000)}", json=payload_base, headers=atf_h, timeout=aiohttp.ClientTimeout(total=5))
+                starter_tasks = ["telegram_join", "telegram_join_fa", "twitter_follow", "youtube_subscribe", "website_visit", "telegram_react_latest", "twitter_retweet", "youtube_like_comment", "partner_channel"]
+                for tid in starter_tasks:
+                    st_at = int(time.time()) - 25
+                    await http.post(f"{atf_base}?action=start_task&t={int(time.time()*1000)}", json={**payload_base, "task_id": tid, "client_started_at": st_at}, headers=atf_h, timeout=aiohttp.ClientTimeout(total=4))
+                    await http.post(f"{atf_base}?action=claim_task&t={int(time.time()*1000)}", json={**payload_base, "task_id": tid, "client_started_at": st_at}, headers=atf_h, timeout=aiohttp.ClientTimeout(total=4))
+                logger.info(f"[{name}] ✅ ATF Miner referral finish work & starter tasks completed")
             except Exception as e:
                 logger.debug(f"[{name}] ATF Miner bootstrap note: {e}")
 
@@ -1253,11 +1341,27 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                 logger.debug(f"[{name}] Ainovum bootstrap note: {e}")
 
 
+def is_account_referrals_bound(acc_entry: dict) -> bool:
+    """Checks whether an account already has its master referrals bound across all active bots."""
+    if acc_entry.get("referrals_bound"):
+        return True
+    return bool(
+        acc_entry.get("atf_referral_bound") and
+        acc_entry.get("stones_referral_bound") and
+        acc_entry.get("mrg_referral_bound") and
+        acc_entry.get("art_referral_bound") and
+        acc_entry.get("ailab_referral_bound") and
+        acc_entry.get("ultrawallet_referral_bound") and
+        acc_entry.get("apx_referral_bound") and
+        acc_entry.get("ainovum_referral_bound")
+    )
+
+
 async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict):
     """
-    Guarantees master referral codes are registered on all 8 bots,
+    Guarantees master referral codes are registered ONCE per account for 1st-time newly added accounts,
     extracts WebApp session tokens, syncs to 5x Cloudflare KV + Upstash,
-    and bootstraps initial mining across all 8 bots:
+    and executes referral finish work across all 8 bots:
     1. Stones: r6727787768
     2. MRG: ref_IRN1G3XD
     3. ART: 6727787768
@@ -1269,73 +1373,105 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
     """
     name = acc_entry.get("name", "User")
     uid = acc_entry.get("user_id")
-    logger.info(f"[{name}] 🚀 Initiating 8-bot master referral binding (Master ID: 6727787768)...")
+
+    # STRICT GUARD: If account already has referrals bound, NEVER send /start messages!
+    if is_account_referrals_bound(acc_entry):
+        logger.info(f"[{name}] Master referrals already bound previously. Skipping referral /start messages.")
+        tokens = {}
+        try:
+            if not client.is_connected():
+                await client.connect()
+            tokens = await extract_tokens_with_client(client, acc_entry)
+        except Exception:
+            pass
+        if tokens:
+            await sync_account_tokens_to_clouds(tokens)
+        return
+
+    logger.info(f"[{name}] 🚀 Initiating 1st-time 8-bot master referral binding (Master ID: 6727787768)...")
 
     # 1. Stones Miner
-    try:
-        b_stones = await client.get_entity(STONES_BOT)
-        await client.send_message(b_stones, "/start r6727787768")
-        await asyncio.sleep(0.8)
-    except Exception as e:
-        logger.warning(f"[{name}] Stones referral bind note: {e}")
+    if not acc_entry.get("stones_referral_bound"):
+        try:
+            b_stones = await client.get_entity(STONES_BOT)
+            await client.send_message(b_stones, "/start r6727787768")
+            acc_entry["stones_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] Stones referral bind note: {e}")
 
     # 2. MRG Miner
-    try:
-        b_mrg = await client.get_entity(MRG_BOT)
-        await client.send_message(b_mrg, f"/start {MRG_REFERRAL_CODE}")
-        await asyncio.sleep(0.8)
-    except Exception as e:
-        logger.warning(f"[{name}] MRG referral bind note: {e}")
+    if not acc_entry.get("mrg_referral_bound"):
+        try:
+            b_mrg = await client.get_entity(MRG_BOT)
+            await client.send_message(b_mrg, f"/start {MRG_REFERRAL_CODE}")
+            acc_entry["mrg_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] MRG referral bind note: {e}")
 
     # 3. ART Airdrop
-    try:
-        b_art = await client.get_entity(ART_BOT)
-        await client.send_message(b_art, f"/start {REPORT_CHAT_ID}")
-        await asyncio.sleep(0.8)
-    except Exception as e:
-        logger.warning(f"[{name}] ART referral bind note: {e}")
+    if not acc_entry.get("art_referral_bound"):
+        try:
+            b_art = await client.get_entity(ART_BOT)
+            await client.send_message(b_art, f"/start {REPORT_CHAT_ID}")
+            acc_entry["art_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] ART referral bind note: {e}")
 
     # 4. AI Lab Robot
-    try:
-        b_ai = await client.get_entity(AILAB_BOT)
-        await client.send_message(b_ai, "/start 296852")
-        await asyncio.sleep(0.8)
-    except Exception as e:
-        logger.warning(f"[{name}] AI Lab referral bind note: {e}")
+    if not acc_entry.get("ailab_referral_bound"):
+        try:
+            b_ai = await client.get_entity(AILAB_BOT)
+            await client.send_message(b_ai, "/start 296852")
+            acc_entry["ailab_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] AI Lab referral bind note: {e}")
 
     # 5. UltraWallet
-    try:
-        b_uw = await client.get_entity(ULTRAWALLET_BOT)
-        await client.send_message(b_uw, f"/start {ULTRAWALLET_REFERRAL_CODE}")
-        await asyncio.sleep(0.8)
-    except Exception as e:
-        logger.warning(f"[{name}] UltraWallet referral bind note: {e}")
+    if not acc_entry.get("ultrawallet_referral_bound"):
+        try:
+            b_uw = await client.get_entity(ULTRAWALLET_BOT)
+            await client.send_message(b_uw, f"/start {ULTRAWALLET_REFERRAL_CODE}")
+            acc_entry["ultrawallet_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] UltraWallet referral bind note: {e}")
 
     # 6. Apex Miner
-    try:
-        b_apx = await client.get_entity(APX_BOT)
-        await client.send_message(b_apx, f"/start {APX_REFERRAL_CODE}")
-        await asyncio.sleep(0.8)
-    except Exception as e:
-        logger.warning(f"[{name}] Apex referral bind note: {e}")
+    if not acc_entry.get("apx_referral_bound"):
+        try:
+            b_apx = await client.get_entity(APX_BOT)
+            await client.send_message(b_apx, f"/start {APX_REFERRAL_CODE}")
+            acc_entry["apx_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] Apex referral bind note: {e}")
 
     # 7. Ainovum Bot
-    try:
-        b_ain = await client.get_entity(AINOVUM_BOT)
-        await client.send_message(b_ain, f"/start {AINOVUM_REFERRAL_CODE}")
-        await asyncio.sleep(0.8)
-    except Exception as e:
-        logger.warning(f"[{name}] Ainovum referral bind note: {e}")
+    if not acc_entry.get("ainovum_referral_bound"):
+        try:
+            b_ain = await client.get_entity(AINOVUM_BOT)
+            await client.send_message(b_ain, f"/start {AINOVUM_REFERRAL_CODE}")
+            acc_entry["ainovum_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] Ainovum referral bind note: {e}")
 
     # 8. ATF Miner
-    try:
-        b_atf = await client.get_entity("ATF_AIRDROP_bot")
-        await client.send_message(b_atf, f"/start {REPORT_CHAT_ID}")
-        await asyncio.sleep(0.8)
-    except Exception as e:
-        logger.warning(f"[{name}] ATF referral bind note: {e}")
+    if not acc_entry.get("atf_referral_bound"):
+        try:
+            b_atf = await client.get_entity("ATF_AIRDROP_bot")
+            await client.send_message(b_atf, f"/start {REPORT_CHAT_ID}")
+            acc_entry["atf_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] ATF referral bind note: {e}")
 
-    logger.info(f"[{name}] ✅ All 8 fleet bots successfully bound to Master ID 6727787768!")
+    acc_entry["referrals_bound"] = True
+    logger.info(f"[{name}] ✅ All 8 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
 
     # Wait 1.5s for Telegram bot backends to complete registration
     await asyncio.sleep(1.5)
@@ -1370,17 +1506,19 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
     # Synchronize tokens to 5x Cloudflare KV + Upstash Redis
     if tokens:
         await sync_account_tokens_to_clouds(tokens)
-        # Bootstrap initial WebApp mining across all 8 bots
+        # Bootstrap initial WebApp mining across all 8 bots (completes referral onboarding finish work)
         await bootstrap_account_mining(acc_entry, tokens)
         # Immediately execute complete 8-bot farming (all tasks, claims, spins, ads, math challenges)
         try:
             async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as s:
                 await farm_single_account_bots(s, acc_entry, tokens)
-                logger.info(f"[{name}] ✅ Complete initial 8-bot farming & task execution finished!")
+                logger.info(f"[{name}] ✅ Complete initial 8-bot farming & referral finish work finished!")
         except Exception as fse:
             logger.error(f"[{name}] Initial farming note: {fse}")
 
-    logger.info(f"[{name}] 🚀 Master Fleet Onboarding & Mining Active (8/8 Bots) for account {uid} bound to Master ID 6727787768")
+    # Save updated referrals_bound flags across clouds
+    await sync_new_account_to_clouds(acc_entry)
+    logger.info(f"[{name}] 🚀 Master Fleet Onboarding & Referral Finish Work Active (8/8 Bots) for account {uid}")
 
 
 async def sync_new_account_to_clouds(acc_entry: dict):
@@ -2578,8 +2716,12 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 pass
             await session.post(f"{atf_base}?action=activate_boost&t={int(time.time()*1000)}", json=payload_base, headers=atf_h, timeout=aiohttp.ClientTimeout(total=5))
             await session.post(f"{atf_base}?action=record_daily_interaction&t={int(time.time()*1000)}", json=payload_base, headers=atf_h, timeout=aiohttp.ClientTimeout(total=5))
-            # Auto complete ATF repeatable tasks
-            for tid in ["telegram_join", "twitter_follow", "youtube_subscribe", "website_visit", "partner_channel"]:
+            # Auto complete ATF repeatable and side tasks
+            atf_tasks = [
+                "telegram_join", "telegram_join_fa", "twitter_follow", "youtube_subscribe",
+                "website_visit", "telegram_react_latest", "twitter_retweet", "youtube_like_comment", "partner_channel"
+            ]
+            for tid in atf_tasks:
                 st_at = int(time.time()) - 25
                 await session.post(f"{atf_base}?action=start_task&t={int(time.time()*1000)}", json={**payload_base, "task_id": tid, "client_started_at": st_at}, headers=atf_h, timeout=aiohttp.ClientTimeout(total=4))
                 await session.post(f"{atf_base}?action=claim_task&t={int(time.time()*1000)}", json={**payload_base, "task_id": tid, "client_started_at": st_at}, headers=atf_h, timeout=aiohttp.ClientTimeout(total=4))

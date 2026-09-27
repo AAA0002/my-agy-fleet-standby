@@ -4,6 +4,33 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Referral 1st-Time Execution Guard, WebApp Referral Finish Work & Complete 8-Bot Side Tasks (`render_standby_app.py`, `render_app_latest.py`, `deploy_both_cf_workers.py`, `accounts.json`, `CHANGELOG.md`)**:
+  - **Elimination of Redundant Referral `/start` Message Spam**:
+    * Identified and removed the unconditional `bots_to_start` loop in `extract_tokens_for_account` in both `render_standby_app.py` and `render_app_latest.py` (which previously spammed `/start {ref_code}` to ATF and other bots on every token refresh / cron cycle).
+    * Introduced strict `is_account_referrals_bound(acc_entry)` guard in `bind_account_master_referrals`: checks both global `referrals_bound` and per-bot flags (`atf_referral_bound`, `stones_referral_bound`, etc.).
+    * Updated all 14 accounts in `accounts.json` with `referrals_bound: true`, guaranteeing existing accounts never receive repeated referral messages.
+    * For new accounts, `/start <ref>` is sent strictly ONCE per bot on first connect, sets the bound flags, and persists immediately to Cloudflare KV, Supabase, and Upstash Redis.
+  - **Comprehensive Referral "Finish Work" Across All 8 Bots**:
+    * Simply sending `/start` in Telegram chat is not enough to complete referral credit on WebApp bots; implemented automated bootstrap & referral finish work in `bootstrap_account_mining`:
+      1. **ATF Miner**: Opens WebApp with `referrer: 6727787768`, fetches math challenge, solves it automatically (`solve_atf_math`), initiates `start_mine`, activates speed boost, claims referral & team wallet rewards, and completes starter tasks.
+      2. **Stones Miners**: Starts mining, claims accumulated pool, completes `daily_checkin` and `join_channel` (start, complete, verify), and completes dynamic tasks from `api/state`.
+      3. **MRG Miner**: Claims mining, completes available starter tasks from `api/user/me`, and claims referral commission for master account `6727787768`.
+      4. **ART Airdrop**: Starts and claims mining, claims daily ads bonus (+10 ART), and completes tasks from `api/tasks/{uid}`.
+      5. **AI Lab Robot**: Logs in, starts miner, exchanges hashes if `>= 3.0`, and checks social/follow tasks via `task-check`.
+      6. **UltraWallet**: Logs in with `refBy: "6727787768"`, claims checkin, starts mining, claims energy, spins wheel tickets, completes tasks, and opens gift box.
+      7. **Apex Miner**: Telegram auth, bootstrap/register, check-in, restarts mining, completes daily and social tasks, and boosts.
+      8. **Ainovum**: Bootstraps with `referrer: "ref_6727787768"`, starts mining, claims cycle, claims daily bonus, claims channel bonus, and opens gift box.
+  - **Full Side Task Discovery & Execution Across Cloudflare Edge & Render**:
+    * **Stones**: Added dynamic task discovery from `https://app.stoneswithestand.my.id/api/state` on Cloudflare Edge cron; runs `api/task/start`, `complete`, and `verify` in background `ctx.waitUntil` promises.
+    * **ATF**: Expanded task suite to all 9 tasks (`telegram_join`, `telegram_join_fa`, `twitter_follow`, `youtube_subscribe`, `website_visit`, `telegram_react_latest`, `twitter_retweet`, `youtube_like_comment`, `partner_channel`).
+    * **Apex**: Added `discord`, `checkin`, and `partner` tasks to Edge cron.
+    * **Ainovum**: Added `api/daily-bonus/claim` to Edge cron cycle alongside channel bonus and gift box.
+  - **Verification & Deployment**:
+    * Compiled all Python files with `python3 -m py_compile` (0 errors).
+    * Validated JavaScript syntax via `node --check` across all 5 Cloudflare subdomains (0 errors).
+    * Deployed live to all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Zero local Python bot daemons on Samsung Galaxy A30 (100% Zero Phone Load directive preserved).
+
 - **Mesh-Wide Bug Audit, Command Mention Normalization & Shard Optimization (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Bot Username Suffix Stripping & Command Normalization**:
     * Resolved Telegram command auto-complete / group mention bug where Telegram appends `@BotUsername` to commands (e.g., `/accounts@AAAPREMIUMAPPSbot`, `/status@My_Router_AI_bot`, `/help@My_Router_AI_bot`).

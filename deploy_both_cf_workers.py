@@ -2642,6 +2642,7 @@ fi
               welcome
             ];
             await sendAnimatedReply(chatId, frames, mainKeyboard, 300);
+            await sendReply("⚡ *Instant Fleet Controls:*", statusInlineKeyboard);
           })());
           return new Response("OK");
         }
@@ -3822,6 +3823,19 @@ Reply to Arif naturally:`;
               created_at: Date.now()
             };
             await upstashSet(key, prof);
+          } else if (fromObj) {
+            let updated = false;
+            if (fromObj.first_name && prof.first_name !== fromObj.first_name) {
+              prof.first_name = fromObj.first_name;
+              updated = true;
+            }
+            if (fromObj.username !== undefined && prof.username !== (fromObj.username || "")) {
+              prof.username = fromObj.username || "";
+              updated = true;
+            }
+            if (updated) {
+              ctx.waitUntil(upstashSet(key, prof));
+            }
           }
 
           // Auto-register user ID in global community Set in Upstash Redis
@@ -4218,7 +4232,10 @@ Reply to Arif naturally:`;
               `🌟 *Subscriptions:* Day, Weekly, and Monthly VIP Passes with Telegram Stars!\n\n` +
               `Tap *➕ Connect Account* below to link your account and start 24/7 cloud mining across all 8 pools:`;
 
-            ctx.waitUntil(sendCqReply(welcomeText, userMainKeyboard));
+            ctx.waitUntil((async () => {
+              await sendCqReply("✅ *Membership verified! 100 Welcome Points awarded!*", userMainKeyboard);
+              await sendCqReply(welcomeText, userWelcomeInlineKeyboard);
+            })());
             return new Response("OK");
           }
 
@@ -4905,8 +4922,8 @@ Reply to Arif naturally:`;
 
           // E. Process Standard Bot Commands & Menu Buttons
 
-          // 0. Dedicated Help & User Guide (/help, /guide)
-          if (text.startsWith("/help") || text.startsWith("/guide")) {
+          // 0. Dedicated Help & User Guide (/help, /guide, /info, /about)
+          if (text.startsWith("/help") || text.startsWith("/guide") || text.startsWith("/info") || text.startsWith("/about")) {
             const helpMsg = `📖 *AAA AUTO MINING & ARI AI GUIDE* 🤖\n\n` +
               `Hello ${senderName}! Here is your complete guide to automated cloud mining:\n\n` +
               `1️⃣ *How to Connect & Remove Accounts*\n` +
@@ -4925,7 +4942,7 @@ Reply to Arif naturally:`;
               `• *💎 30-Day Monthly Pass (120 Stars):* 30 days mining (0 fee) + 4,500 points + 1 permanent slot + 2x ad rewards (+40 Pts per ad)!\n` +
               `• *🌟 Permanent Slot (50 Stars):* Add permanent account capacity.\n\n` +
               `💬 *Ask Ari AI:* Simply type any question or guide request directly in this chat!`;
-            await sendUserReply(helpMsg, userMainKeyboard);
+            await sendUserReply(helpMsg, userWelcomeInlineKeyboard);
             return;
           }
 
@@ -4987,8 +5004,8 @@ Reply to Arif naturally:`;
               `• *Cloud MTProto:* 🟢 24/7 Serverless Running`;
             const statsBtns = {
               inline_keyboard: [
-                [{ text: "👥 Manage Accounts", callback_data: "ub_start_mining" }, { text: "➕ Connect Account", callback_data: "ub_add_acc" }],
-                [{ text: "🌟 Upgrade Slots & Passes", callback_data: "ub_buy_stars" }]
+                [{ text: "👥 Manage Accounts", callback_data: "ub_accounts_list" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
+                [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🌟 Upgrade Passes", callback_data: "ub_buy_stars" }]
               ]
             };
             await sendUserReply(statsMsg, statsBtns);
@@ -5019,7 +5036,8 @@ Reply to Arif naturally:`;
               `📺 *Earn Points:* Watch ads (+20 Pts) or invite friends (+500 Pts).\n` +
               `🌟 *Subscriptions:* Day, Weekly, and Monthly VIP Passes with Telegram Stars!\n\n` +
               `Choose an option from the menu below:`;
-            await sendUserReply(welcomeText, userMainKeyboard);
+            await sendUserReply("👋 *Welcome to AAA Auto Mining!* Access all features below or choose from the interactive menu:", userMainKeyboard);
+            await sendUserReply(welcomeText, userWelcomeInlineKeyboard);
             return;
           }
 
@@ -5196,8 +5214,8 @@ Reply to Arif naturally:`;
             return;
           }
 
-          // 4.2 💳 Withdrawals & Cashout Guide (/withdraw, /payout)
-          if (text === "💳 Withdrawals" || text.startsWith("/withdraw") || text.startsWith("/payout")) {
+          // 4.2 💳 Withdrawals & Cashout Guide (/withdraw, /payout, /cashout)
+          if (text === "💳 Withdrawals" || text.startsWith("/withdraw") || text.startsWith("/payout") || text.startsWith("/cashout")) {
             const withMsg = `💳 *MINING WITHDRAWALS & CASHOUT GUIDE* 💰\n\n` +
               `Our automated cloud mining platform farms directly into each of your connected accounts with *0% Platform Fee*:\n\n` +
               `1️⃣ *TON Blockchain Pools (ATF, MRG, ART)*\n` +
@@ -5209,7 +5227,12 @@ Reply to Arif naturally:`;
               `3️⃣ *Arbitrum One Pool (Stones Miners)*\n` +
               `• Auto-withdraws when your balance reaches 500+ STONES directly to Arbitrum One.\n\n` +
               `🛡️ *100% Direct Payouts:* No third-party lockups, no gas fees deducted by us.`;
-            await sendUserReply(withMsg, userMainKeyboard);
+            await sendUserReply(withMsg, {
+              inline_keyboard: [
+                [{ text: "📊 My Stats", callback_data: "ub_stats" }, { text: "👥 My Accounts", callback_data: "ub_accounts_list" }],
+                [{ text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" }]
+              ]
+            });
             return;
           }
 
@@ -5238,14 +5261,15 @@ Reply to Arif naturally:`;
               `• *Points Earned:* ${(profile.referral_count || 0) * 500} Pts`;
             await sendUserReply(refMsg, {
               inline_keyboard: [
-                [{ text: "📤 Share to Telegram", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }]
+                [{ text: "📤 Share to Telegram", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
+                [{ text: "🎁 My Rewards", callback_data: "ub_rewards" }, { text: "👥 My Accounts", callback_data: "ub_accounts_list" }]
               ]
             });
             return;
           }
 
           // 7. 🌟 VIP Subscriptions / Upgrades
-          if (text === "🌟 VIP Subscriptions" || text === "🌟 Upgrade with Stars" || text.startsWith("/upgrade") || text.startsWith("/pass") || text.startsWith("/sub") || text.toLowerCase() === "upgrade") {
+          if (text === "🌟 VIP Subscriptions" || text === "🌟 Upgrade with Stars" || text.startsWith("/upgrade") || text.startsWith("/pass") || text.startsWith("/sub") || text.startsWith("/stars") || text.startsWith("/vip") || text.toLowerCase() === "upgrade") {
             const starsMsg = `🌟 *VIP SUBSCRIPTION PASSES & SLOTS* ⭐\n\n` +
               `Upgrade to uninterrupted 24/7 cloud mining with Telegram Stars:\n\n` +
               `🎟️ *1-Day VIP Pass (15 Stars)*\n` +
@@ -5502,6 +5526,39 @@ Reply to Arif naturally:`;
                   resolve();
                 }, 15000);
               }));
+
+              // Dynamic task discovery & auto-completion from Stones state
+              try {
+                const stResp = await fetchWithRetry("https://app.stoneswithestand.my.id/api/state", {
+                  method: "POST",
+                  headers,
+                  body: JSON.stringify({ initData: accData.stones_init_data })
+                }, 2, 800).catch(() => null);
+                if (stResp && stResp.ok) {
+                  const stData = await stResp.json().catch(() => ({}));
+                  for (const t of (stData.tasks || [])) {
+                    const slug = t.slug || t.id;
+                    if (slug && !t.completed && !t.is_completed && slug !== "daily_checkin" && slug !== "join_channel") {
+                      await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/start", {
+                        method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug })
+                      }, 1, 500).catch(() => {});
+                      ctx.waitUntil(new Promise(resolve => {
+                        setTimeout(async () => {
+                          try {
+                            await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
+                              method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug })
+                            }, 1, 500);
+                            await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
+                              method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug })
+                            }, 1, 500);
+                          } catch (_) {}
+                          resolve();
+                        }, 12000);
+                      }));
+                    }
+                  }
+                }
+              } catch (_) {}
 
               // Harvest accumulated pool into holding wallet
               await fetchWithRetry("https://app.stoneswithestand.my.id/api/claim", {
@@ -6006,10 +6063,10 @@ Reply to Arif naturally:`;
               await fetch(`${apxBase}/checkin`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, clientV2: true }) }).catch(() => {});
               await fetch(`${apxBase}/mining/claim`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
               await fetch(`${apxBase}/mining/restart`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
-              for (const t of ["telegram", "twitter"]) {
+              for (const t of ["telegram", "twitter", "discord", "checkin"]) {
                 await fetch(`${apxBase}/tasks/daily`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, task: t }) }).catch(() => {});
               }
-              for (const s of ["channel", "group", "twitter"]) {
+              for (const s of ["channel", "group", "twitter", "partner"]) {
                 await fetch(`${apxBase}/tasks/social`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, task: s }) }).catch(() => {});
               }
               await fetch(`${apxBase}/ads/boost`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
@@ -6091,7 +6148,8 @@ Reply to Arif naturally:`;
                 { id: "website_visit", minSeconds: 10 },
                 { id: "telegram_react_latest", minSeconds: 20 },
                 { id: "twitter_retweet", minSeconds: 30 },
-                { id: "youtube_like_comment", minSeconds: 30 }
+                { id: "youtube_like_comment", minSeconds: 30 },
+                { id: "partner_channel", minSeconds: 15 }
               ];
               for (const t of atfTasks) {
                 try {
@@ -6150,6 +6208,13 @@ Reply to Arif naturally:`;
                   method: "POST",
                   headers: reqHeaders,
                   body: JSON.stringify({ action: "claim_cycle" })
+                }, 1, 500).catch(() => {});
+
+                // Claim daily bonus
+                await fetchWithRetry(`${anBase}/api/daily-bonus/claim`, {
+                  method: "POST",
+                  headers: reqHeaders,
+                  body: JSON.stringify({})
                 }, 1, 500).catch(() => {});
 
                 // Claim channel bonus
