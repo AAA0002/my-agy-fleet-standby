@@ -4,6 +4,25 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Anti-Sybil Moderation Hub, First-Account Gift Protection, and Shuffled Multi-Bot Farming Engine (`deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`)**:
+  - **🛡️ Anti-Sybil Moderation Hub in Telegram Admin Bot (`@myagy_ai_bot`)**:
+    * Integrated `/sybil` and `/moderation` audit commands providing instant cross-account linking telemetry, Sybil risk audits, first-account gift claim counters, and banned user rosters.
+    * Added interactive user inspection card via `/user <user_id>` and `/inspect <user_id>` with inline quick-action buttons: Ban/Suspend, Reinstate, Grant +100 Points, Grant VIP Day, and Grant +1 Account Slot.
+    * Added direct administrative commands: `/ban <user_id> [reason]`, `/unban <user_id>`, and `/deduct <user_id> <pts>`.
+    * Synchronized Telegram Admin Bot `setMyCommands` to include `/sybil`, `/community`, `/nodes`, and `/help` for immediate mobile command autocomplete.
+  - **🎁 First-Account Welcome Gift Sybil Guardrails**:
+    * Hardened both 2FA and Direct Code registration flows (`cloudLoginVerify`) with global account-level anti-sybil indexing (`ub_welcome_claimed_acc:<acc_uid>`).
+    * Prevents malicious multi-profile Sybil abuse from collecting multiple +100 point welcome gifts using the same worker account sessions.
+    * Automatically marks `welcome_gift_claimed` on the user profile to prevent repeat checks and logs legitimate recipients to `ub_welcome_gift_recipients`.
+  - **⚡ Anti-Ban Randomized Human Execution Pipeline**:
+    * Replaced static sequential bot execution with Fisher-Yates shuffled routines across all 8 supported bots (Stones, MRG, ART, AI Lab, UltraWallet, Apex, ATF, Ainovum) per account session.
+    * Injected tailored `Origin` and `Referer` headers for each WebApp platform to eliminate automated bot detection signatures.
+    * Upgraded external channel/sponsor tasks in Stones with 15–17s non-blocking background dwell timers before verification.
+    * Brought `render_standby_app.py` and `render_app_latest.py` into 100% architectural parity with the Cloudflare Edge engine.
+  - **🌐 5-Node Edge Mesh Deployment**:
+    * Deployed updated workers across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Probed and confirmed 100% healthy status (200 OK) across the distributed mesh.
+
 - **Fleet Hub Live Accounts Priority, Oracle Rates Fix & Live Ari AI Copilot (`deploy_both_cf_workers.py`, `public/admin/index.html`)**:
   - **Live Upstash Priority for Telegram Admin Bot (`getFleetAccounts()`)**:
     * Identified that `/accounts` and `btn_accounts` in `@myagy_ai_bot` were querying `env.BACKUP_KV` directly without Upstash Redis priority, causing stale account fallback when KV cache expired.

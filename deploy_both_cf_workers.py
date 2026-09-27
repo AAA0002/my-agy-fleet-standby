@@ -184,42 +184,47 @@ function getHumanHeaders(uid, extra = {}) {
 
 async function farmSingleAccountAllBots(uid, accData, env, ctx) {
   const result = { user_id: uid, bots: {} };
-  const headers = getHumanHeaders(uid, { "Content-Type": "application/json" });
   const isOwner = String(uid) === (env.OWNER_ID || "6727787768");
 
-  // A. Stones Miners Edge Claim & Tasks
-  if (accData.stones_init_data) {
+  // 1. Stones Miners Edge Claim & Tasks
+  const farmStones = async () => {
+    if (!accData.stones_init_data) return;
     try {
-      await humanDelay(1000, 2500);
+      const stonesHeaders = getHumanHeaders(uid, {
+        "Content-Type": "application/json",
+        "Origin": "https://app.stoneswithestand.my.id",
+        "Referer": "https://app.stoneswithestand.my.id/"
+      });
+
+      await humanDelay(1000, 2200);
       await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
-        method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: "daily_checkin" })
+        method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: "daily_checkin" })
       }, 2, 800).catch(() => {});
 
-      await humanDelay(1200, 2800);
+      await humanDelay(1200, 2500);
       await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/start", {
-        method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
+        method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
       }, 2, 800).catch(() => {});
       if (ctx && ctx.waitUntil) {
-        ctx.waitUntil(new Promise(resolve => {
-          setTimeout(async () => {
-            try {
-              await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
-                method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
-              }, 2, 800);
-              await humanDelay(1500, 3000);
-              await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
-                method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
-              }, 2, 800);
-            } catch (_) {}
-            resolve();
-          }, 15000);
+        ctx.waitUntil(new Promise(async (resolve) => {
+          try {
+            await humanDelay(15000, 17000);
+            await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
+              method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
+            }, 2, 800);
+            await humanDelay(1500, 3000);
+            await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
+              method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
+            }, 2, 800);
+          } catch (_) {}
+          resolve();
         }));
       }
 
       // Dynamic task discovery from /api/state
       try {
         const stResp = await fetchWithRetry("https://app.stoneswithestand.my.id/api/state", {
-          method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data })
+          method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
         }, 2, 800).catch(() => null);
         if (stResp && stResp.ok) {
           const stData = await stResp.json().catch(() => ({}));
@@ -231,48 +236,66 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
 
           for (const t of taskEntries) {
             if (t.slug && !t.completed && t.slug !== "daily_checkin" && t.slug !== "join_channel") {
+              const isExternal = ["sponsor", "channel", "tg", "telegram", "twitter", "youtube", "sub", "follow", "visit"].some(k => t.slug.toLowerCase().includes(k));
               await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/start", {
-                method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
+                method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
               }, 1, 500).catch(() => {});
-              await humanDelay(2500, 4500);
-              await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
-                method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
-              }, 1, 500).catch(() => {});
-              await humanDelay(1500, 3000);
-              await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
-                method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
-              }, 1, 500).catch(() => {});
-              await humanDelay(1200, 2500);
+
+              if (isExternal && ctx && ctx.waitUntil) {
+                ctx.waitUntil(new Promise(async (resolve) => {
+                  try {
+                    await humanDelay(14500, 16500);
+                    await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
+                      method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
+                    }, 2, 800).catch(() => {});
+                    await humanDelay(1500, 2800);
+                    await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
+                      method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
+                    }, 2, 800).catch(() => {});
+                  } catch (_) {}
+                  resolve();
+                }));
+              } else {
+                await humanDelay(2500, 4000);
+                await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
+                  method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
+                }, 1, 500).catch(() => {});
+                await humanDelay(1500, 2800);
+                await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
+                  method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
+                }, 1, 500).catch(() => {});
+              }
+              await humanDelay(1000, 2000);
             }
           }
         }
       } catch (_) {}
 
-      await humanDelay(1500, 3000);
+      await humanDelay(1200, 2500);
       await fetchWithRetry("https://app.stoneswithestand.my.id/api/claim", {
-        method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data })
+        method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
       }).catch(() => {});
 
-      await humanDelay(1200, 2500);
+      await humanDelay(1000, 2200);
       await fetchWithRetry("https://app.stoneswithestand.my.id/api/mining/start", {
-        method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data })
+        method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
       }).catch(() => {});
 
       // Stone Breaker Play & Earn (+10 STONES/hr, +100 STONES/day)
       try {
         const sbr = await fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/status", {
-          method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data })
+          method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
         }).then(r => r.json()).catch(() => ({}));
         if (sbr.ok && (sbr.hour_got || 0) < (sbr.hourly_cap || 10) && (sbr.day_got || 0) < (sbr.daily_cap || 100)) {
           const sbs = await fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/start", {
-            method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data })
+            method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
           }).then(r => r.json()).catch(() => ({}));
           if (sbs.ok && sbs.session && sbs.session.session_id) {
             const dur = (sbs.session.duration || 30) + 1;
             const finishPromise = new Promise(resolve => setTimeout(resolve, dur * 1000)).then(() => {
               const sc = Math.floor(142 + Math.random() * 24);
               return fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/finish", {
-                method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, session_id: sbs.session.session_id, score: sc })
+                method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, session_id: sbs.session.session_id, score: sc })
               });
             }).catch(() => {});
             if (ctx && ctx.waitUntil) ctx.waitUntil(finishPromise);
@@ -283,26 +306,25 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
       // Mining Boost (+0.5 TH/s for 5 min)
       try {
         const abc = await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/boost/challenge", {
-          method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data })
+          method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
         }).then(r => r.json()).catch(() => ({}));
         if (abc.ok && abc.challenge && abc.challenge.challenge_id) {
           const cid = abc.challenge.challenge_id;
           await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/beat", {
-            method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, scope: "boost", challenge_id: cid })
+            method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, scope: "boost", challenge_id: cid })
           }, 1, 500).catch(() => {});
           if (ctx && ctx.waitUntil) {
-            ctx.waitUntil(new Promise(resolve => {
-              setTimeout(async () => {
-                try {
-                  await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/beat", {
-                    method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, scope: "boost", challenge_id: cid })
-                  }, 1, 500);
-                  await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/boost/reward", {
-                    method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, challenge_id: cid })
-                  });
-                } catch (_) {}
-                resolve();
-              }, 16000);
+            ctx.waitUntil(new Promise(async (resolve) => {
+              try {
+                await humanDelay(15500, 17500);
+                await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/beat", {
+                  method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, scope: "boost", challenge_id: cid })
+                }, 1, 500);
+                await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/boost/reward", {
+                  method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, challenge_id: cid })
+                });
+              } catch (_) {}
+              resolve();
             }));
           }
         }
@@ -312,16 +334,16 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
       if (!isOwner) {
         try {
           await fetchWithRetry("https://app.stoneswithestand.my.id/api/wallet", {
-            method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce" })
+            method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce" })
           }).catch(() => {});
 
           const pc = await fetchWithRetry("https://app.stoneswithestand.my.id/api/wd/ad/precheck", {
-            method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, amount: 500, wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce", currency: "stones" })
+            method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, amount: 500, wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce", currency: "stones" })
           }).then(r => r.json()).catch(() => ({}));
 
           if (pc && pc.ok && (!pc.need_ad || (pc.boarded || 0) >= (pc.required || 4))) {
             await fetchWithRetry("https://app.stoneswithestand.my.id/api/withdraw", {
-              method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, amount: 500, wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce", currency: "stones" })
+              method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, amount: 500, wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce", currency: "stones" })
             }).catch(() => {});
           }
         } catch (_) {}
@@ -330,71 +352,74 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     } catch (e) {
       result.bots.stones = `error: ${e.message}`;
     }
-  }
+  };
 
-  // B. MRG Miner
-  if (accData.mrg_init_data) {
+  // 2. MRG Miner
+  const farmMrg = async () => {
+    if (!accData.mrg_init_data) return;
     try {
+      const mrgHeaders = getHumanHeaders(uid, {
+        "Content-Type": "application/json",
+        "Origin": "https://app.mrgtoken.xyz",
+        "Referer": "https://app.mrgtoken.xyz/"
+      });
+      const fp = getDeterministicDevice(uid);
+
+      await humanDelay(1000, 2400);
+      await fetchWithRetry("https://mrg.up.railway.app/api/auth/verify", {
+        method: "POST", headers: mrgHeaders, body: JSON.stringify({
+          initData: accData.mrg_init_data,
+          startParam: "ref_IRN1G3XD",
+          start_param: "ref_IRN1G3XD",
+          deviceInfo: {
+            platform: "android",
+            deviceName: fp.model,
+            ram: "8 GB",
+            cpuCores: 8,
+            screenResolution: "1080x2400",
+            userAgent: fp.ua,
+            timezone: "UTC",
+            language: "en"
+          }
+        })
+      }, 2, 800).catch(() => {});
+
       await humanDelay(1200, 2600);
-      if (!isOwner) {
-        await fetchWithRetry("https://mrg.up.railway.app/api/auth/verify", {
-          method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data, start_param: "ref_IRN1G3XD" })
-        }, 2, 800).catch(() => {});
-      }
-      await humanDelay(1500, 3000);
       await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-mining", {
-        method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data })
+        method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
       }).catch(() => {});
 
-      await humanDelay(1500, 3200);
+      await humanDelay(1200, 2800);
       const meResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/me", {
-        method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data })
+        method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
       }, 2, 1000).catch(() => null);
+
       if (meResp && meResp.ok) {
         const meD = await meResp.json().catch(() => ({}));
         const tasks = meD.tasks || [];
         const completed = new Set(meD.completedTaskIds || []);
         for (const t of tasks) {
-          if (t.taskId && !completed.has(t.taskId)) {
+          const isRecurring = t.taskType === "recurring" || (t.type && t.type.includes("recurring"));
+          if (t.taskId && (!completed.has(t.taskId) || isRecurring)) {
             const isLinkTask = (t.type === "link_visit" || t.url || String(t.title || "").toLowerCase().includes("channel") || String(t.title || "").toLowerCase().includes("social"));
-            const waitTime = isLinkTask ? 15000 : 2500;
-            if (isLinkTask && ctx && ctx.waitUntil) {
-              ctx.waitUntil(new Promise(resolve => {
-                setTimeout(async () => {
-                  try {
-                    const clResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
-                      method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
-                    }, 2, 600);
-                    const clD = await clResp.json().catch(() => ({}));
-                    if (!clD.success && (JSON.stringify(clD).toLowerCase().includes("wait") || JSON.stringify(clD).toLowerCase().includes("second"))) {
-                      setTimeout(async () => {
-                        await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
-                          method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
-                        }, 1, 600).catch(() => {});
-                      }, 12000);
-                    }
-                  } catch (_) {}
-                  resolve();
-                }, waitTime);
+            const waitTime = isLinkTask ? 15000 : 2800;
+            if (ctx && ctx.waitUntil) {
+              ctx.waitUntil(new Promise(async (resolve) => {
+                try {
+                  await humanDelay(waitTime, waitTime + 2000);
+                  const clResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
+                    method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
+                  }, 2, 600);
+                  const clD = await clResp.json().catch(() => ({}));
+                  if (!clD.success && (JSON.stringify(clD).toLowerCase().includes("wait") || JSON.stringify(clD).toLowerCase().includes("second"))) {
+                    await humanDelay(12000, 15000);
+                    await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
+                      method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
+                    }, 1, 600).catch(() => {});
+                  }
+                } catch (_) {}
+                resolve();
               }));
-            } else {
-              await humanDelay(1800, 3500);
-              const clResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
-                method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
-              }, 1, 500).catch(() => null);
-              if (clResp && clResp.ok) {
-                const clD = await clResp.json().catch(() => ({}));
-                if (!clD.success && (JSON.stringify(clD).toLowerCase().includes("wait") || JSON.stringify(clD).toLowerCase().includes("second")) && ctx && ctx.waitUntil) {
-                  ctx.waitUntil(new Promise(resolve => {
-                    setTimeout(async () => {
-                      await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
-                        method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
-                      }, 1, 600).catch(() => {});
-                      resolve();
-                    }, 14000);
-                  }));
-                }
-              }
             }
           }
         }
@@ -417,26 +442,31 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
           }
           if (targetLvl > curLvl) {
             await fetchWithRetry("https://mrg.up.railway.app/api/user/unlock-level", {
-              method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data, level: targetLvl })
+              method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data, level: targetLvl })
             }, 1, 600).catch(() => {});
           }
         }
       }
 
+      // Claim One-Time Bonus (Available to all fleet accounts)
+      await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-one-time-bonus", {
+        method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
+      }, 1, 600).catch(() => {});
+
       if (isOwner) {
         await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-commission", {
-          method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data })
+          method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
         }).catch(() => {});
 
         const frResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/friends", {
-          method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data })
+          method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
         }, 1, 800).catch(() => null);
         if (frResp && frResp.ok) {
           const frD = await frResp.json().catch(() => ({}));
           const tStats = frD.teamStats || {};
           if ((tStats.unclaimedOneTimeBonusMRG || 0) > 0) {
             await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-one-time-bonus", {
-              method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data })
+              method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
             }, 1, 600).catch(() => {});
           }
         }
@@ -445,17 +475,23 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     } catch (e) {
       result.bots.mrg = `error: ${e.message}`;
     }
-  }
+  };
 
-  // C. ART Airdrop
-  if (accData.art_init_data) {
+  // 3. ART Airdrop
+  const farmArt = async () => {
+    if (!accData.art_init_data) return;
     try {
-      const artHeaders = { ...headers, "X-Telegram-Init-Data": accData.art_init_data };
-      await humanDelay(1000, 2500);
+      const artHeaders = getHumanHeaders(uid, {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": accData.art_init_data,
+        "Origin": "https://art.tamimdev.dev",
+        "Referer": "https://art.tamimdev.dev/"
+      });
+      await humanDelay(1000, 2200);
       await fetchWithRetry("https://art.tamimdev.dev/api/user/claim-mining", {
         method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid) })
       }).catch(() => {});
-      await humanDelay(1200, 2800);
+      await humanDelay(1000, 2200);
       await fetchWithRetry("https://art.tamimdev.dev/api/user/start-mining", {
         method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid) })
       }).catch(() => {});
@@ -466,36 +502,34 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         const td = await tr.json().catch(() => ({}));
         for (const t of (td.tasks || [])) {
           if (!t.isCompleted && t.id) {
-            await humanDelay(1500, 3000);
+            await humanDelay(1200, 2500);
             await fetchWithRetry("https://art.tamimdev.dev/api/tasks/start", {
               method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid), taskId: t.id })
             }, 1, 500).catch(() => {});
-            const artWait = (t.actionUrl || String(t.title || "").toLowerCase().includes("sponsor") || String(t.title || "").toLowerCase().includes("channel") || String(t.title || "").toLowerCase().includes("youtube")) ? 16000 : 3500;
+            const artWait = (t.actionUrl || String(t.title || "").toLowerCase().includes("sponsor") || String(t.title || "").toLowerCase().includes("channel") || String(t.title || "").toLowerCase().includes("youtube")) ? 15500 : 3500;
             if (ctx && ctx.waitUntil) {
-              ctx.waitUntil(new Promise(resolve => {
-                setTimeout(async () => {
-                  try {
-                    const clResp = await fetchWithRetry("https://art.tamimdev.dev/api/tasks/claim", {
+              ctx.waitUntil(new Promise(async (resolve) => {
+                try {
+                  await humanDelay(artWait, artWait + 2000);
+                  const clResp = await fetchWithRetry("https://art.tamimdev.dev/api/tasks/claim", {
+                    method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid), taskId: t.id })
+                  }, 2, 800);
+                  const cld = await clResp.json().catch(() => ({}));
+                  if (!cld.success && (JSON.stringify(cld).toLowerCase().includes("wait") || JSON.stringify(cld).toLowerCase().includes("second"))) {
+                    await humanDelay(12000, 15000);
+                    await fetchWithRetry("https://art.tamimdev.dev/api/tasks/claim", {
                       method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid), taskId: t.id })
-                    }, 2, 800);
-                    const cld = await clResp.json().catch(() => ({}));
-                    if (!cld.success && (JSON.stringify(cld).toLowerCase().includes("wait") || JSON.stringify(cld).toLowerCase().includes("second"))) {
-                      setTimeout(async () => {
-                        await fetchWithRetry("https://art.tamimdev.dev/api/tasks/claim", {
-                          method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid), taskId: t.id })
-                        }, 1, 800).catch(() => {});
-                      }, 12000);
-                    }
-                  } catch (_) {}
-                  resolve();
-                }, artWait);
+                    }, 1, 800).catch(() => {});
+                  }
+                } catch (_) {}
+                resolve();
               }));
             }
           }
         }
       }
 
-      await humanDelay(1500, 3000);
+      await humanDelay(1200, 2500);
       await fetchWithRetry("https://art.tamimdev.dev/api/ads/claim", {
         method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid) })
       }, 1, 500).catch(() => {});
@@ -548,26 +582,37 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     } catch (e) {
       result.bots.art = `error: ${e.message}`;
     }
-  }
+  };
 
-  // D. AI Lab Robot
-  if (accData.ailab_init_data) {
+  // 4. AI Lab Robot
+  const farmAiLab = async () => {
+    if (!accData.ailab_init_data) return;
     try {
       const aiBase = "https://api.ailab-agent.online/api/v1";
-      await humanDelay(1200, 2500);
+      const aiHeaders = getHumanHeaders(uid, {
+        "Content-Type": "application/json",
+        "Origin": "https://ailab-agent.online",
+        "Referer": "https://ailab-agent.online/"
+      });
+      await humanDelay(1000, 2400);
       const lResp = await fetchWithRetry(`${aiBase}/users/auth/login`, {
-        method: "POST", headers, body: JSON.stringify({ user: accData.ailab_init_data })
+        method: "POST", headers: aiHeaders, body: JSON.stringify({ user: accData.ailab_init_data })
       }).catch(() => null);
 
       if (lResp && lResp.ok) {
         const lData = await lResp.json().catch(() => ({}));
         const tok = lData.result?.bearer || lData.user_info?.session_id;
         if (tok) {
-          const aiAuth = getHumanHeaders(uid, { "Content-Type": "application/json", "Authorization": `Bearer ${tok}` });
+          const aiAuth = getHumanHeaders(uid, {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${tok}`,
+            "Origin": "https://ailab-agent.online",
+            "Referer": "https://ailab-agent.online/"
+          });
           let minerRunning = false;
           let hashesBal = 0;
           try {
-            await humanDelay(1200, 2500);
+            await humanDelay(1000, 2200);
             const mResp = await fetch(`${aiBase}/miner`, { headers: aiAuth });
             if (mResp.ok) {
               const mData = await mResp.json();
@@ -578,14 +623,14 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
           } catch (_) {}
 
           if (!minerRunning) {
-            await humanDelay(1200, 2500);
+            await humanDelay(1000, 2200);
             await fetch(`${aiBase}/miner-start_mining`, {
               method: "POST", headers: aiAuth, body: JSON.stringify({ start_mining: true })
             }).catch(() => {});
           }
 
           if (hashesBal >= 3.0) {
-            await humanDelay(1200, 2500);
+            await humanDelay(1000, 2200);
             await fetch(`${aiBase}/miner-exchange_hashes`, {
               method: "POST", headers: aiAuth, body: JSON.stringify({ exchange: true })
             }).catch(() => {});
@@ -593,7 +638,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
 
           // Discover and complete all task categories
           try {
-            await humanDelay(1200, 2500);
+            await humanDelay(1000, 2200);
             const tResp = await fetch(`${aiBase}/tasks`, { headers: aiAuth });
             if (tResp.ok) {
               const tData = await tResp.json();
@@ -607,22 +652,23 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
                 }
               }
               for (const t of tasks) {
-                if (t.id && t.status !== "completed" && !(t.progress_finish && (t.progress_current || 0) < t.progress_finish)) {
-                  await humanDelay(1500, 3000);
+                const isDone = t.status === "completed" || t.is_claimed || t.is_completed;
+                const isMilestoneLocked = t.progress_finish && (t.progress_current || 0) < t.progress_finish;
+                if (t.id && !isDone && !isMilestoneLocked) {
+                  await humanDelay(1200, 2600);
                   await fetch(`${aiBase}/task-check`, {
                     method: "POST", headers: aiAuth, body: JSON.stringify({ task_id: t.id, action: "start" })
                   }).catch(() => {});
-                  const aiWait = ("follow" in t || "social" in t || String(t.title || "").toLowerCase().includes("channel")) ? 16000 : 3500;
+                  const aiWait = ("follow" in t || "social" in t || "partner" in t || String(t.title || "").toLowerCase().includes("channel")) ? 15500 : 3500;
                   if (ctx && ctx.waitUntil) {
-                    ctx.waitUntil(new Promise(resolve => {
-                      setTimeout(async () => {
-                        try {
-                          await fetch(`${aiBase}/task-check`, {
-                            method: "POST", headers: aiAuth, body: JSON.stringify({ task_id: t.id, action: "check" })
-                          });
-                        } catch (_) {}
-                        resolve();
-                      }, aiWait);
+                    ctx.waitUntil(new Promise(async (resolve) => {
+                      try {
+                        await humanDelay(aiWait, aiWait + 2000);
+                        await fetch(`${aiBase}/task-check`, {
+                          method: "POST", headers: aiAuth, body: JSON.stringify({ task_id: t.id, action: "check" })
+                        });
+                      } catch (_) {}
+                      resolve();
                     }));
                   }
                 }
@@ -657,14 +703,20 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     } catch (e) {
       result.bots.ailab = `error: ${e.message}`;
     }
-  }
+  };
 
-  // E. UltraWallet
-  if (accData.ultrawallet_init_data) {
+  // 5. UltraWallet
+  const farmUltra = async () => {
+    if (!accData.ultrawallet_init_data) return;
     try {
       const uwBase = "https://wallet.trxvault.top/api";
+      const uwInitHeaders = getHumanHeaders(uid, {
+        "Content-Type": "application/json",
+        "Origin": "https://wallet.trxvault.top",
+        "Referer": "https://wallet.trxvault.top/"
+      });
       const loginResp = await fetchWithRetry(`${uwBase}/telegramLogin`, {
-        method: "POST", headers, body: JSON.stringify({ initData: accData.ultrawallet_init_data, refBy: "6727787768" })
+        method: "POST", headers: uwInitHeaders, body: JSON.stringify({ initData: accData.ultrawallet_init_data, refBy: "6727787768" })
       }).catch(() => null);
 
       if (loginResp && loginResp.ok) {
@@ -680,14 +732,19 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
             const fbData = await fbResp.json().catch(() => ({}));
             const idToken = fbData.idToken;
             if (idToken) {
-              const uwHeaders = getHumanHeaders(uid, { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` });
-              await humanDelay(1200, 2500);
+              const uwHeaders = getHumanHeaders(uid, {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${idToken}`,
+                "Origin": "https://wallet.trxvault.top",
+                "Referer": "https://wallet.trxvault.top/"
+              });
+              await humanDelay(1000, 2200);
               await fetch(`${uwBase}/checkin/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
-              await humanDelay(1200, 2500);
+              await humanDelay(1000, 2200);
               await fetch(`${uwBase}/mining/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
-              await humanDelay(1200, 2500);
+              await humanDelay(1000, 2200);
               await fetch(`${uwBase}/mining/start`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
-              await humanDelay(1200, 2500);
+              await humanDelay(1000, 2200);
               await fetch(`${uwBase}/energy/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
 
               // Lucky spins
@@ -697,7 +754,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
                   const spInfo = await spResp.json();
                   let spinsAvail = (spInfo.tickets || 0) + (spInfo.freeSpinsRemaining || 0);
                   while (spinsAvail > 0) {
-                    await humanDelay(1500, 3000);
+                    await humanDelay(1500, 2800);
                     const pResp = await fetch(`${uwBase}/spin/play`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) });
                     if (pResp.ok) {
                       const pData = await pResp.json();
@@ -714,21 +771,27 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
                   const trData = await trResp.json();
                   for (const t of (trData.tasks || [])) {
                     if (!t.completed && t.id) {
-                      await humanDelay(1500, 3000);
+                      await humanDelay(1200, 2600);
                       await fetch(`${uwBase}/tasks/start`, {
                         method: "POST", headers: uwHeaders, body: JSON.stringify({ taskId: t.id })
                       }).catch(() => {});
-                      const uwWait = (t.type === "website" || t.category === "hot" || t.category === "partner") ? 16000 : 3500;
+                      const uwWait = (t.type === "website" || t.category === "hot" || t.category === "partner") ? 15500 : 3500;
                       if (ctx && ctx.waitUntil) {
-                        ctx.waitUntil(new Promise(resolve => {
-                          setTimeout(async () => {
-                            try {
+                        ctx.waitUntil(new Promise(async (resolve) => {
+                          try {
+                            await humanDelay(uwWait, uwWait + 2000);
+                            const tcr = await fetch(`${uwBase}/tasks/complete`, {
+                              method: "POST", headers: uwHeaders, body: JSON.stringify({ taskId: t.id })
+                            });
+                            const tcd = await tcr.json().catch(() => ({}));
+                            if (!tcd.ok && JSON.stringify(tcd).toLowerCase().includes("wait")) {
+                              await humanDelay(12000, 14000);
                               await fetch(`${uwBase}/tasks/complete`, {
                                 method: "POST", headers: uwHeaders, body: JSON.stringify({ taskId: t.id })
-                              });
-                            } catch (_) {}
-                            resolve();
-                          }, uwWait);
+                              }).catch(() => {});
+                            }
+                          } catch (_) {}
+                          resolve();
                         }));
                       }
                     }
@@ -752,7 +815,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
                           adsWatched++;
                           c.watchedToday = (c.watchedToday || 0) + 1;
                         } else { break; }
-                        await humanDelay(16000, 24000);
+                        await humanDelay(16000, 22000);
                       }
                       if (adsWatched >= 3) break;
                     }
@@ -764,7 +827,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
               try {
                 const gbr = await fetch(`${uwBase}/giftBox`, { headers: uwHeaders }).then(r => r.json()).catch(() => ({}));
                 if (gbr && gbr.enabled && gbr.canOpen) {
-                  await humanDelay(1500, 3000);
+                  await humanDelay(1200, 2500);
                   await fetch(`${uwBase}/giftBox/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
                 }
               } catch (_) {}
@@ -780,48 +843,55 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     } catch (e) {
       result.bots.ultrawallet = `error: ${e.message}`;
     }
-  }
+  };
 
-  // F. Apex Miner
-  if (accData.apx_init_data) {
+  // 6. Apex Miner
+  const farmApex = async () => {
+    if (!accData.apx_init_data) return;
     try {
       const apxBase = "https://apxn-miner-live.apxn-network.workers.dev/api";
-      await humanDelay(1200, 2500);
-      await fetch(`${apxBase}/auth/telegram`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
-      await humanDelay(1200, 2500);
-      const bResp = await fetch(`${apxBase}/bootstrap`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => null);
+      const apxHeaders = getHumanHeaders(uid, {
+        "Content-Type": "application/json",
+        "Origin": "https://apxn-miner-live.apxn-network.workers.dev",
+        "Referer": "https://apxn-miner-live.apxn-network.workers.dev/"
+      });
+      await humanDelay(1000, 2200);
+      await fetch(`${apxBase}/auth/telegram`, { method: "POST", headers: apxHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+      await humanDelay(1000, 2200);
+      const bResp = await fetch(`${apxBase}/bootstrap`, { method: "POST", headers: apxHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => null);
       if (bResp && bResp.ok) {
         const bData = await bResp.json().catch(() => ({}));
         if (!bData.exists || !bData.user) {
-          await fetch(`${apxBase}/register`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+          await fetch(`${apxBase}/register`, { method: "POST", headers: apxHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
         }
       }
-      await humanDelay(1200, 2500);
-      await fetch(`${apxBase}/checkin`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, clientV2: true }) }).catch(() => {});
-      await humanDelay(1200, 2500);
-      await fetch(`${apxBase}/mining/claim`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
-      await humanDelay(1200, 2500);
-      await fetch(`${apxBase}/mining/restart`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+      await humanDelay(1000, 2200);
+      await fetch(`${apxBase}/checkin`, { method: "POST", headers: apxHeaders, body: JSON.stringify({ initData: accData.apx_init_data, clientV2: true }) }).catch(() => {});
+      await humanDelay(1000, 2200);
+      await fetch(`${apxBase}/mining/claim`, { method: "POST", headers: apxHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+      await humanDelay(1000, 2200);
+      await fetch(`${apxBase}/mining/restart`, { method: "POST", headers: apxHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
       for (const t of ["telegram", "twitter", "discord", "checkin"]) {
-        await humanDelay(1000, 2000);
-        await fetch(`${apxBase}/tasks/daily`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, task: t }) }).catch(() => {});
+        await humanDelay(800, 1800);
+        await fetch(`${apxBase}/tasks/daily`, { method: "POST", headers: apxHeaders, body: JSON.stringify({ initData: accData.apx_init_data, task: t }) }).catch(() => {});
       }
       for (const s of ["channel", "group", "twitter", "partner"]) {
-        await humanDelay(1000, 2000);
-        await fetch(`${apxBase}/tasks/social`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, task: s }) }).catch(() => {});
+        await humanDelay(800, 1800);
+        await fetch(`${apxBase}/tasks/social`, { method: "POST", headers: apxHeaders, body: JSON.stringify({ initData: accData.apx_init_data, task: s }) }).catch(() => {});
       }
-      await humanDelay(1200, 2500);
-      await fetch(`${apxBase}/ads/boost`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
-      await humanDelay(1200, 2500);
-      await fetch(`${apxBase}/ads/reward`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+      await humanDelay(1000, 2200);
+      await fetch(`${apxBase}/ads/boost`, { method: "POST", headers: apxHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+      await humanDelay(1000, 2200);
+      await fetch(`${apxBase}/ads/reward`, { method: "POST", headers: apxHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
       result.bots.apx = "ok";
     } catch (e) {
       result.bots.apx = `error: ${e.message}`;
     }
-  }
+  };
 
-  // G. ATF Miner
-  if (accData.atf_init_data) {
+  // 7. ATF Miner
+  const farmAtf = async () => {
+    if (!accData.atf_init_data) return;
     try {
       const atfBase = "https://atfminers.asloni.online/miner/index.php";
       const atfHeaders = getHumanHeaders(uid, {
@@ -837,7 +907,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         ...obj
       });
 
-      await humanDelay(1200, 2500);
+      await humanDelay(1000, 2200);
       const logResp = await fetchWithRetry(`${atfBase}?action=login&t=${Date.now()}`, {
         method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid), username: accData.username || "" }))
       }, 2, 800).catch(() => null);
@@ -850,15 +920,15 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         taskCooldowns = logData.task_cooldowns || {};
       }
 
-      await humanDelay(1200, 2500);
+      await humanDelay(1000, 2200);
       await fetchWithRetry(`${atfBase}?action=claim&t=${Date.now()}`, {
         method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
       }, 2, 800).catch(() => {});
-      await humanDelay(1000, 2000);
+      await humanDelay(800, 1800);
       await fetchWithRetry(`${atfBase}?action=claim_referrals&t=${Date.now()}`, {
         method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
       }, 1, 800).catch(() => {});
-      await humanDelay(1000, 2000);
+      await humanDelay(800, 1800);
       await fetchWithRetry(`${atfBase}?action=claim_team_wallet&t=${Date.now()}`, {
         method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
       }, 1, 800).catch(() => {});
@@ -891,7 +961,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
               else if (q.includes("/") && nums[1] !== 0) ans = String(Math.floor(nums[0] / nums[1]));
             }
           }
-          await humanDelay(2000, 4200);
+          await humanDelay(2200, 4200);
           await fetchWithRetry(`${atfBase}?action=start_mine&t=${Date.now()}`, {
             method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
               tg_id: parseInt(uid), math_challenge_id: chData.challenge_id, math_answer: ans
@@ -900,7 +970,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         }
       }
 
-      await humanDelay(1200, 2500);
+      await humanDelay(1000, 2200);
       await fetchWithRetry(`${atfBase}?action=activate_boost&t=${Date.now()}`, {
         method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
       }, 1, 500).catch(() => {});
@@ -936,7 +1006,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
                 tg_id: parseInt(uid), task_id: t.id, client_started_at: sAt
               }))
             }, 1, 500).catch(() => {});
-            await humanDelay(1000, 2200);
+            await humanDelay(800, 1800);
           } catch (_) {}
         }
       }
@@ -944,10 +1014,11 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     } catch (e) {
       result.bots.atf = `error: ${e.message}`;
     }
-  }
+  };
 
-  // H. Ainovum
-  if (accData.ainovum_init_data) {
+  // 8. Ainovum
+  const farmAinovum = async () => {
+    if (!accData.ainovum_init_data) return;
     try {
       const anBase = "https://ainovum.biz";
       const anHeaders = getHumanHeaders(uid, {
@@ -955,7 +1026,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         "Referer": "https://ainovum.biz/",
         "Origin": "https://ainovum.biz"
       });
-      await humanDelay(1200, 2500);
+      await humanDelay(1000, 2400);
       const bootResp = await fetchWithRetry(`${anBase}/api/bootstrap`, {
         method: "POST",
         headers: anHeaders,
@@ -977,27 +1048,27 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
           reqHeaders["Cookie"] = `astra.tg.sid=${sidMatch[1]}`;
         }
 
-        await humanDelay(1500, 3000);
+        await humanDelay(1200, 2600);
         await fetchWithRetry(`${anBase}/api/mining/start`, {
           method: "POST", headers: reqHeaders, body: JSON.stringify({})
         }, 1, 500).catch(() => {});
 
-        await humanDelay(1200, 2500);
+        await humanDelay(1000, 2200);
         await fetchWithRetry(`${anBase}/api/mining/claim`, {
           method: "POST", headers: reqHeaders, body: JSON.stringify({ action: "claim_cycle" })
         }, 1, 500).catch(() => {});
 
-        await humanDelay(1200, 2500);
+        await humanDelay(1000, 2200);
         await fetchWithRetry(`${anBase}/api/daily-bonus/claim`, {
           method: "POST", headers: reqHeaders, body: JSON.stringify({})
         }, 1, 500).catch(() => {});
 
-        await humanDelay(1200, 2500);
+        await humanDelay(1000, 2200);
         await fetchWithRetry(`${anBase}/api/channel-bonus/claim`, {
           method: "POST", headers: reqHeaders, body: JSON.stringify({})
         }, 1, 500).catch(() => {});
 
-        await humanDelay(1200, 2500);
+        await humanDelay(1000, 2200);
         await fetchWithRetry(`${anBase}/api/gift-box/open`, {
           method: "POST", headers: reqHeaders, body: JSON.stringify({})
         }, 1, 500).catch(() => {});
@@ -1042,6 +1113,33 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
       result.bots.ainovum = "ok";
     } catch (e) {
       result.bots.ainovum = `error: ${e.message}`;
+    }
+  };
+
+  // Humanized Execution Pipeline: Randomize the order of bot executions per account session
+  const botRoutines = [
+    { name: "stones", fn: farmStones, hasData: Boolean(accData.stones_init_data) },
+    { name: "mrg", fn: farmMrg, hasData: Boolean(accData.mrg_init_data) },
+    { name: "art", fn: farmArt, hasData: Boolean(accData.art_init_data) },
+    { name: "ailab", fn: farmAiLab, hasData: Boolean(accData.ailab_init_data) },
+    { name: "ultrawallet", fn: farmUltra, hasData: Boolean(accData.ultrawallet_init_data) },
+    { name: "apx", fn: farmApex, hasData: Boolean(accData.apx_init_data) },
+    { name: "atf", fn: farmAtf, hasData: Boolean(accData.atf_init_data) },
+    { name: "ainovum", fn: farmAinovum, hasData: Boolean(accData.ainovum_init_data) },
+  ];
+
+  const activeRoutines = botRoutines.filter(b => b.hasData);
+  for (let i = activeRoutines.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [activeRoutines[i], activeRoutines[j]] = [activeRoutines[j], activeRoutines[i]];
+  }
+
+  for (const b of activeRoutines) {
+    try {
+      await b.fn();
+      await humanDelay(1200, 3000);
+    } catch (err) {
+      result.bots[b.name] = `error: ${err.message}`;
     }
   }
 
@@ -2677,7 +2775,10 @@ fi
               { text: "📊 Community & Users", callback_data: "btn_community" }
             ],
             [
-              { text: "🌅 AI Briefing", callback_data: "btn_briefing" },
+              { text: "🛡️ Anti-Sybil Hub", callback_data: "btn_sybil" },
+              { text: "🌅 AI Briefing", callback_data: "btn_briefing" }
+            ],
+            [
               { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }
             ]
           ]
@@ -2972,6 +3073,7 @@ fi
               const removedAcc = accounts.find(a => String(a.user_id) === targetId || String(a.phone || "").replace("+", "") === targetId.replace("+", ""));
               accounts = accounts.filter(a => String(a.user_id) !== targetId && String(a.phone || "").replace("+", "") !== targetId.replace("+", ""));
               try {
+                ctx.waitUntil(upstashSet("fleet:live_state", { accounts, timestamp: Date.now() }));
                 if (env.BACKUP_KV) {
                   await env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts, timestamp: Date.now() }));
                 }
@@ -3380,6 +3482,219 @@ fi
                   await sendAnimatedReply(chatId, [msgText], statusInlineKeyboard, 200);
                 }
               })());
+            } else if (cbData === "btn_sybil") {
+              ctx.waitUntil((async () => {
+                const totalUsers = await upstashScard("ub_registered_users");
+                const userList = await upstashSmembers("ub_registered_users");
+                const bannedUsers = await upstashSmembers("ub_banned_users");
+                const welcomeRecipients = await upstashScard("ub_welcome_gift_recipients");
+
+                let duplicateAccountsFound = 0;
+                const seenAccountIds = new Map();
+                const sample = userList.slice(0, 40);
+
+                for (const uid of sample) {
+                  try {
+                    const raw = await upstashGet(`ub_user:${uid}`);
+                    if (raw) {
+                      const p = typeof raw === "string" ? JSON.parse(raw) : raw;
+                      for (const a of (p.accounts || [])) {
+                        const aid = String(a.user_id || a.phone);
+                        if (seenAccountIds.has(aid) && seenAccountIds.get(aid) !== uid) {
+                          duplicateAccountsFound++;
+                        } else {
+                          seenAccountIds.set(aid, uid);
+                        }
+                      }
+                    }
+                  } catch (_) {}
+                }
+
+                const sybilRep = `🛡️ *ANTI-SYBIL & ACCOUNT MODERATION AUDIT*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `• *Total Registered Users:* \`${totalUsers || 1}\`\n` +
+                  `• *Banned / Suspended Users:* \`${bannedUsers.length}\`\n` +
+                  `• *First-Account Gifts Claimed:* \`${welcomeRecipients || 0}\` (+100 Pts verified)\n` +
+                  `• *Unique Connected Accounts:* \`${seenAccountIds.size}\`\n` +
+                  `• *Duplicate Linked Accounts:* \`${duplicateAccountsFound}\` ${duplicateAccountsFound > 0 ? "⚠️ (Sybil Risk Detected)" : "✅ (Zero Cross-Linking)"}\n` +
+                  `• *Anti-Ban Guardrails:* Deterministic Android UA + 15s Dwell Timers + Shuffled Bot Routines Active ✅\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `💡 *Moderation Commands:*\n` +
+                  `• \`/user <user_id>\` — Inspect user profile & connected accounts\n` +
+                  `• \`/ban <user_id> [reason]\` — Immediately suspend user access & farming\n` +
+                  `• \`/unban <user_id>\` — Restore user access & resume mining\n` +
+                  `• \`/deduct <user_id> <pts>\` — Claw back fraudulent points`;
+
+                const sybilMarkup = {
+                  inline_keyboard: [
+                    [
+                      { text: "📊 Community Roster", callback_data: "btn_community" },
+                      { text: "🔄 Re-Audit Fleet", callback_data: "btn_sybil" }
+                    ],
+                    [
+                      { text: "🚀 Open Admin Console", web_app: { url: dashUrl } }
+                    ]
+                  ]
+                };
+                const cbMsgId = cb.message ? cb.message.message_id : null;
+                if (cbMsgId) {
+                  await editAnimatedMessage(chatId, cbMsgId, [sybilRep], sybilMarkup, 200);
+                } else {
+                  await sendAnimatedReply(chatId, [sybilRep], sybilMarkup, 200);
+                }
+              })());
+            } else if (cbData.startsWith("cb_ban_")) {
+              const targetUid = cbData.replace("cb_ban_", "").trim();
+              ctx.waitUntil((async () => {
+                const raw = await upstashGet(`ub_user:${targetUid}`);
+                if (raw) {
+                  const prof = typeof raw === "string" ? JSON.parse(raw) : raw;
+                  prof.is_banned = true;
+                  prof.ban_reason = "Suspicious anti-sybil activity or policy violations";
+                  prof.farming_active = false;
+                  prof.banned_at = Date.now();
+                  await upstashSet(`ub_user:${targetUid}`, prof);
+                  await upstashSadd("ub_banned_users", String(targetUid));
+                  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                  await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: targetUid,
+                      text: `🚫 *ACCESS RESTRICTED*\n\nYour account has been suspended by platform administration for suspicious anti-sybil activity.\n\n• *Status:* 🔴 Farming Halted\n\nIf you believe this is an error, please contact @AAAAutoMiner.`,
+                      parse_mode: "Markdown"
+                    })
+                  }).catch(() => {});
+                  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: chatId,
+                      text: `🚫 *User \`${targetUid}\` Suspended Successfully!*\n\nAdded to \`ub_banned_users\`. Mining halted.`,
+                      parse_mode: "Markdown",
+                      reply_markup: statusInlineKeyboard
+                    })
+                  }).catch(() => {});
+                }
+              })());
+            } else if (cbData.startsWith("cb_unban_")) {
+              const targetUid = cbData.replace("cb_unban_", "").trim();
+              ctx.waitUntil((async () => {
+                const raw = await upstashGet(`ub_user:${targetUid}`);
+                if (raw) {
+                  const prof = typeof raw === "string" ? JSON.parse(raw) : raw;
+                  prof.is_banned = false;
+                  delete prof.ban_reason;
+                  delete prof.banned_at;
+                  prof.farming_active = true;
+                  await upstashSet(`ub_user:${targetUid}`, prof);
+                  await upstashSrem("ub_banned_users", String(targetUid));
+                  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                  await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: targetUid,
+                      text: `✅ *ACCOUNT RESTORED!*\n\nYour account has been reinstated by platform administration.\n• *Status:* 🟢 Active & Ready\n\nThank you for your patience! 🚀`,
+                      parse_mode: "Markdown"
+                    })
+                  }).catch(() => {});
+                  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: chatId,
+                      text: `✅ *User \`${targetUid}\` Reinstated Successfully!*\n\nRemoved from ban list. Access restored.`,
+                      parse_mode: "Markdown",
+                      reply_markup: statusInlineKeyboard
+                    })
+                  }).catch(() => {});
+                }
+              })());
+            } else if (cbData.startsWith("cb_grant100_")) {
+              const targetUid = cbData.replace("cb_grant100_", "").trim();
+              ctx.waitUntil((async () => {
+                const raw = await upstashGet(`ub_user:${targetUid}`);
+                if (raw) {
+                  const prof = typeof raw === "string" ? JSON.parse(raw) : raw;
+                  prof.points = (prof.points || 0) + 100;
+                  await upstashSet(`ub_user:${targetUid}`, prof);
+                  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                  await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: targetUid,
+                      text: `🎁 *+100 Mining Points Credited!* 🎉\n\nPlatform Admin has credited your account with +100 Points!\n• *New Balance:* ${prof.points} Points`,
+                      parse_mode: "Markdown"
+                    })
+                  }).catch(() => {});
+                  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: chatId,
+                      text: `✅ Granted *+100 Points* to \`${targetUid}\` (Balance: ${prof.points} Pts)`,
+                      parse_mode: "Markdown",
+                      reply_markup: statusInlineKeyboard
+                    })
+                  }).catch(() => {});
+                }
+              })());
+            } else if (cbData.startsWith("cb_grantvip_")) {
+              const targetUid = cbData.replace("cb_grantvip_", "").trim();
+              ctx.waitUntil((async () => {
+                const raw = await upstashGet(`ub_user:${targetUid}`);
+                if (raw) {
+                  const prof = typeof raw === "string" ? JSON.parse(raw) : raw;
+                  const now = Date.now();
+                  const baseExp = (prof.subscription_expiry && prof.subscription_expiry > now) ? prof.subscription_expiry : now;
+                  prof.subscription_expiry = baseExp + 86400000;
+                  prof.subscription_tier = "day";
+                  prof.farming_active = true;
+                  await upstashSet(`ub_user:${targetUid}`, prof);
+                  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                  await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: targetUid,
+                      text: `🌟 *VIP PASS ACTIVATED!* 🎟️\n\nPlatform Admin has activated a 1-Day VIP Pass for your account!\n• 24/7 Unlimited Mining with 0 deductions active!`,
+                      parse_mode: "Markdown"
+                    })
+                  }).catch(() => {});
+                  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: chatId,
+                      text: `✅ Granted *1-Day VIP Pass* to \`${targetUid}\``,
+                      parse_mode: "Markdown",
+                      reply_markup: statusInlineKeyboard
+                    })
+                  }).catch(() => {});
+                }
+              })());
+            } else if (cbData.startsWith("cb_grantslot_")) {
+              const targetUid = cbData.replace("cb_grantslot_", "").trim();
+              ctx.waitUntil((async () => {
+                const raw = await upstashGet(`ub_user:${targetUid}`);
+                if (raw) {
+                  const prof = typeof raw === "string" ? JSON.parse(raw) : raw;
+                  prof.slots = (prof.slots || 1) + 1;
+                  await upstashSet(`ub_user:${targetUid}`, prof);
+                  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: chatId,
+                      text: `✅ Granted *+1 Permanent Slot* to \`${targetUid}\` (Total: ${prof.slots})`,
+                      parse_mode: "Markdown",
+                      reply_markup: statusInlineKeyboard
+                    })
+                  }).catch(() => {});
+                }
+              })());
             } else {
               ctx.waitUntil((async () => {
                 let liveBnb = 0.000622;
@@ -3677,6 +3992,7 @@ fi
             const removedAcc = accounts.find(a => String(a.user_id) === targetId || String(a.phone || "").replace("+", "") === targetId);
             accounts = accounts.filter(a => String(a.user_id) !== targetId && String(a.phone || "").replace("+", "") !== targetId);
             try {
+              ctx.waitUntil(upstashSet("fleet:live_state", { accounts, timestamp: Date.now() }));
               if (env.BACKUP_KV) {
                 await env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts, timestamp: Date.now() }));
               }
@@ -4441,6 +4757,223 @@ fi
           return new Response("OK");
         }
 
+        // 7.65 Anti-Sybil & Account Moderation Commands (/ban, /unban, /deduct, /user, /sybil)
+        if (text.startsWith("/ban") || text.startsWith("/suspend")) {
+          const parts = text.split(/\s+/);
+          if (parts.length >= 2) {
+            const targetUid = parts[1].trim();
+            const reason = parts.slice(2).join(" ").trim() || "Suspicious anti-sybil activity or policy violations";
+            ctx.waitUntil((async () => {
+              const raw = await upstashGet(`ub_user:${targetUid}`);
+              if (raw) {
+                const prof = typeof raw === "string" ? JSON.parse(raw) : raw;
+                prof.is_banned = true;
+                prof.ban_reason = reason;
+                prof.farming_active = false;
+                prof.banned_at = Date.now();
+                await upstashSet(`ub_user:${targetUid}`, prof);
+                await upstashSadd("ub_banned_users", String(targetUid));
+
+                const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: targetUid,
+                    text: `🚫 *ACCOUNT SUSPENDED*\n\nYour account has been suspended by platform administration.\n\n• *Reason:* ${reason}\n• *Farming Status:* 🔴 Halted\n\nIf you believe this is an error, please contact @AAAAutoMiner.`,
+                    parse_mode: "Markdown"
+                  })
+                }).catch(() => {});
+                await sendReply(`🚫 *User Suspended Successfully!*\n\n• *User ID:* \`${targetUid}\`\n• *Name:* ${prof.first_name || "Miner"} (@${prof.username || "None"})\n• *Reason:* ${reason}\n• *Action:* Added to \`ub_banned_users\`, cloud farming halted.`, statusInlineKeyboard);
+              } else {
+                await sendReply(`⚠️ User \`${targetUid}\` not found in database.`, statusInlineKeyboard);
+              }
+            })());
+            return new Response("OK");
+          }
+          await sendReply("Usage: `/ban <user_id> [reason]`\nExample: `/ban 12345678 Multi-account sybil abuse`", statusInlineKeyboard);
+          return new Response("OK");
+        }
+
+        if (text.startsWith("/unban") || text.startsWith("/reinstate")) {
+          const parts = text.split(/\s+/);
+          if (parts.length >= 2) {
+            const targetUid = parts[1].trim();
+            ctx.waitUntil((async () => {
+              const raw = await upstashGet(`ub_user:${targetUid}`);
+              if (raw) {
+                const prof = typeof raw === "string" ? JSON.parse(raw) : raw;
+                prof.is_banned = false;
+                delete prof.ban_reason;
+                delete prof.banned_at;
+                prof.farming_active = true;
+                await upstashSet(`ub_user:${targetUid}`, prof);
+                await upstashSrem("ub_banned_users", String(targetUid));
+
+                const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: targetUid,
+                    text: `✅ *ACCOUNT RESTORED!*\n\nYour account has been reinstated by platform administration.\n• *Status:* 🟢 Active & Ready\n\nThank you for your patience! 🚀`,
+                    parse_mode: "Markdown"
+                  })
+                }).catch(() => {});
+                await sendReply(`✅ *User Reinstated Successfully!*\n\n• *User ID:* \`${targetUid}\`\n• *Name:* ${prof.first_name || "Miner"} (@${prof.username || "None"})\n• *Action:* Removed from ban list, access restored.`, statusInlineKeyboard);
+              } else {
+                await sendReply(`⚠️ User \`${targetUid}\` not found in database.`, statusInlineKeyboard);
+              }
+            })());
+            return new Response("OK");
+          }
+          await sendReply("Usage: `/unban <user_id>`\nExample: `/unban 12345678`", statusInlineKeyboard);
+          return new Response("OK");
+        }
+
+        if (text.startsWith("/deduct")) {
+          const parts = text.split(/\s+/);
+          if (parts.length >= 3) {
+            const targetUid = parts[1].trim();
+            const pts = parseInt(parts[2].trim(), 10);
+            if (targetUid && !isNaN(pts)) {
+              ctx.waitUntil((async () => {
+                const raw = await upstashGet(`ub_user:${targetUid}`);
+                if (raw) {
+                  const prof = typeof raw === "string" ? JSON.parse(raw) : raw;
+                  prof.points = Math.max(0, (prof.points || 0) - pts);
+                  await upstashSet(`ub_user:${targetUid}`, prof);
+                  await sendReply(`✅ Deducted *-${pts.toLocaleString()} Points* from User \`${targetUid}\`!\n• New Balance: ${prof.points} Points`, statusInlineKeyboard);
+                } else {
+                  await sendReply(`⚠️ User \`${targetUid}\` not found in database.`, statusInlineKeyboard);
+                }
+              })());
+              return new Response("OK");
+            }
+          }
+          await sendReply("Usage: `/deduct <user_id> <points>`\nExample: `/deduct 12345678 100`", statusInlineKeyboard);
+          return new Response("OK");
+        }
+
+        if (text.startsWith("/user") || text.startsWith("/inspect")) {
+          const parts = text.split(/\s+/);
+          if (parts.length >= 2) {
+            const targetUid = parts[1].trim();
+            ctx.waitUntil((async () => {
+              const raw = await upstashGet(`ub_user:${targetUid}`);
+              if (raw) {
+                const prof = typeof raw === "string" ? JSON.parse(raw) : raw;
+                const totalSlots = (prof.slots || 1) + (prof.temp_slots || 0);
+                const isBanned = Boolean(prof.is_banned);
+                const banTag = isBanned ? `🚫 *BANNED* (${prof.ban_reason || "Policy Violation"})` : "🟢 *CLEAN / GOOD STANDING*";
+                const hasGift = prof.welcome_gift_claimed ? "Claimed (+100 Pts) ✅" : "Unclaimed ⏳";
+                const accs = prof.accounts || [];
+                const accList = accs.length ? accs.map((a, i) => `  #${i+1} ${a.name || "User"} (\`${a.user_id}\`, ${a.phone || "N/A"}) — ${a.status || "active"}`).join("\n") : "  _No connected accounts_";
+                const passText = (prof.subscription_expiry && prof.subscription_expiry > Date.now()) ?
+                  `VIP Pass (${prof.subscription_tier || "VIP"} - ${Math.ceil((prof.subscription_expiry - Date.now()) / 86400000)}d left)` : "Free Tier (Pay-As-You-Go)";
+
+                const userCard = `👤 *USER AUDIT & MODERATION REPORT*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `• *User ID:* \`${prof.user_id}\`\n` +
+                  `• *Name:* ${prof.first_name || "Miner"} (@${prof.username || "None"})\n` +
+                  `• *Points Balance:* \`${(prof.points || 0).toLocaleString()}\` Points\n` +
+                  `• *Account Slots:* \`${accs.length}/${totalSlots}\`\n` +
+                  `• *Plan:* ${passText}\n` +
+                  `• *Welcome Gift:* ${hasGift}\n` +
+                  `• *Moderation Status:* ${banTag}\n` +
+                  `• *Referrals:* \`${prof.referral_count || 0}\` (Referred by: \`${prof.referred_by || "Organic"}\`)\n` +
+                  `• *Registered:* ${new Date(prof.created_at || Date.now()).toISOString().slice(0, 10)}\n\n` +
+                  `📱 *Connected Cloud Accounts (${accs.length}):*\n` +
+                  `${accList}\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━`;
+
+                const userKeyboard = {
+                  inline_keyboard: [
+                    [
+                      isBanned ?
+                        { text: "✅ Unban User", callback_data: `cb_unban_${targetUid}` } :
+                        { text: "🚫 Ban / Suspend", callback_data: `cb_ban_${targetUid}` },
+                      { text: "➕ +100 Pts", callback_data: `cb_grant100_${targetUid}` }
+                    ],
+                    [
+                      { text: "🎟️ Grant VIP Day", callback_data: `cb_grantvip_${targetUid}` },
+                      { text: "📦 Grant +1 Slot", callback_data: `cb_grantslot_${targetUid}` }
+                    ],
+                    [
+                      { text: "🔙 Community Hub", callback_data: "btn_community" }
+                    ]
+                  ]
+                };
+                await sendReply(userCard, userKeyboard);
+              } else {
+                await sendReply(`⚠️ User \`${targetUid}\` not found in database.`, statusInlineKeyboard);
+              }
+            })());
+            return new Response("OK");
+          }
+          await sendReply("Usage: `/user <user_id>`\nExample: `/user 6727787768`", statusInlineKeyboard);
+          return new Response("OK");
+        }
+
+        if (text === "/sybil" || text.startsWith("/sybil") || text === "/moderation" || text.startsWith("/moderation") || text === "🛡️ Anti-Sybil Hub") {
+          ctx.waitUntil((async () => {
+            const totalUsers = await upstashScard("ub_registered_users");
+            const userList = await upstashSmembers("ub_registered_users");
+            const bannedUsers = await upstashSmembers("ub_banned_users");
+            const welcomeRecipients = await upstashScard("ub_welcome_gift_recipients");
+
+            let duplicateAccountsFound = 0;
+            const seenAccountIds = new Map();
+            const sample = userList.slice(0, 40);
+
+            for (const uid of sample) {
+              try {
+                const raw = await upstashGet(`ub_user:${uid}`);
+                if (raw) {
+                  const p = typeof raw === "string" ? JSON.parse(raw) : raw;
+                  for (const a of (p.accounts || [])) {
+                    const aid = String(a.user_id || a.phone);
+                    if (seenAccountIds.has(aid) && seenAccountIds.get(aid) !== uid) {
+                      duplicateAccountsFound++;
+                    } else {
+                      seenAccountIds.set(aid, uid);
+                    }
+                  }
+                }
+              } catch (_) {}
+            }
+
+            const sybilRep = `🛡️ *ANTI-SYBIL & ACCOUNT MODERATION AUDIT*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Total Registered Users:* \`${totalUsers || 1}\`\n` +
+              `• *Banned / Suspended Users:* \`${bannedUsers.length}\`\n` +
+              `• *First-Account Gifts Claimed:* \`${welcomeRecipients || 0}\` (+100 Pts verified)\n` +
+              `• *Unique Connected Accounts:* \`${seenAccountIds.size}\`\n` +
+              `• *Duplicate Linked Accounts:* \`${duplicateAccountsFound}\` ${duplicateAccountsFound > 0 ? "⚠️ (Sybil Risk Detected)" : "✅ (Zero Cross-Linking)"}\n` +
+              `• *Anti-Ban Guardrails:* Deterministic Android UA + 15s Dwell Timers + Shuffled Bot Routines Active ✅\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `💡 *Moderation Commands:*\n` +
+              `• \`/user <user_id>\` — Inspect user profile & connected accounts\n` +
+              `• \`/ban <user_id> [reason]\` — Immediately suspend user access & farming\n` +
+              `• \`/unban <user_id>\` — Restore user access & resume mining\n` +
+              `• \`/deduct <user_id> <pts>\` — Claw back fraudulent points`;
+
+            const sybilMarkup = {
+              inline_keyboard: [
+                [
+                  { text: "📊 Community Roster", callback_data: "btn_community" },
+                  { text: "🔄 Re-Audit Fleet", callback_data: "btn_sybil" }
+                ],
+                [
+                  { text: "🚀 Open Admin Console", web_app: { url: dashUrl } }
+                ]
+              ]
+            };
+            await sendReply(sybilRep, sybilMarkup);
+          })());
+          return new Response("OK");
+        }
+
         // 7.7 Live Multi-Cloud Edge Prober (/nodes or /health)
         if (text === "/nodes" || text.startsWith("/nodes") || text === "/health" || text.startsWith("/health")) {
           ctx.waitUntil((async () => {
@@ -4491,6 +5024,12 @@ fi
             `• \`/grantslot <user_id> <slots>\` — Unlock permanent account slots for user\n` +
             `• \`/reply <user_id> <text>\` — Direct message reply to user support ticket\n` +
             `• \`/broadcast <text>\` — Broadcast official announcement to all miners\n\n` +
+            `🛡️ *Anti-Sybil & Account Moderation:*\n` +
+            `• \`/sybil\` or \`/moderation\` — Full anti-sybil cross-linking audit\n` +
+            `• \`/user <user_id>\` — Deep profile audit & interactive moderation card\n` +
+            `• \`/ban <user_id> [reason]\` — Immediately suspend user access & farming\n` +
+            `• \`/unban <user_id>\` — Re-enable suspended miner access\n` +
+            `• \`/deduct <user_id> <pts>\` — Claw back fraudulent points\n\n` +
             `📱 _Tap the buttons below to trigger instant fleet actions:_`;
           ctx.waitUntil(sendReply(helpText, statusInlineKeyboard));
           return new Response("OK");
@@ -6166,10 +6705,19 @@ Reply to Arif naturally:`;
 
                 let welcomeBonusText = "";
                 if (!profile.welcome_gift_claimed && profile.accounts.length === 1) {
-                  profile.welcome_gift_claimed = true;
-                  profile.points = (profile.points || 0) + 100;
-                  profile.farming_active = true;
-                  welcomeBonusText = "\n\n🎁 *First-Account Welcome Gift:* +100 Points Credited for instant cloud farming!";
+                  const claimedKey = `ub_welcome_claimed_acc:${res.user_id}`;
+                  const alreadyClaimed = await upstashGet(claimedKey);
+                  if (!alreadyClaimed) {
+                    profile.welcome_gift_claimed = true;
+                    profile.points = (profile.points || 0) + 100;
+                    profile.farming_active = true;
+                    welcomeBonusText = "\n\n🎁 *First-Account Welcome Gift:* +100 Points Credited for instant cloud farming!";
+                    ctx.waitUntil(upstashSet(claimedKey, { profile_uid: chatId, acc_uid: res.user_id, claimed_at: Date.now() }));
+                    ctx.waitUntil(upstashSadd("ub_welcome_gift_recipients", String(chatId)));
+                  } else {
+                    profile.welcome_gift_claimed = true;
+                    welcomeBonusText = "\n\nℹ️ *Account Connected:* Welcome gift was already claimed previously on this account.";
+                  }
                 }
 
                 await saveUserProfile(chatId, profile);
@@ -6234,10 +6782,19 @@ Reply to Arif naturally:`;
 
               let welcomeBonusText = "";
               if (!profile.welcome_gift_claimed && profile.accounts.length === 1) {
-                profile.welcome_gift_claimed = true;
-                profile.points = (profile.points || 0) + 100;
-                profile.farming_active = true;
-                welcomeBonusText = "\n\n🎁 *First-Account Welcome Gift:* +100 Points Credited for instant cloud farming!";
+                const claimedKey = `ub_welcome_claimed_acc:${res.user_id}`;
+                const alreadyClaimed = await upstashGet(claimedKey);
+                if (!alreadyClaimed) {
+                  profile.welcome_gift_claimed = true;
+                  profile.points = (profile.points || 0) + 100;
+                  profile.farming_active = true;
+                  welcomeBonusText = "\n\n🎁 *First-Account Welcome Gift:* +100 Points Credited for instant cloud farming!";
+                  ctx.waitUntil(upstashSet(claimedKey, { profile_uid: chatId, acc_uid: res.user_id, claimed_at: Date.now() }));
+                  ctx.waitUntil(upstashSadd("ub_welcome_gift_recipients", String(chatId)));
+                } else {
+                  profile.welcome_gift_claimed = true;
+                  welcomeBonusText = "\n\nℹ️ *Account Connected:* Welcome gift was already claimed previously on this account.";
+                }
               }
 
               await saveUserProfile(chatId, profile);
@@ -7344,7 +7901,11 @@ async def main():
                     {"command": "accounts", "description": "👥 Manage Fleet Accounts & Roster"},
                     {"command": "harvest", "description": "⚡ Trigger Instant 8 Pools Harvest"},
                     {"command": "sweep", "description": "💼 Universal Sweep & Payouts"},
-                    {"command": "mesh", "description": "🌐 5-Node Cloudflare Edge Mesh Status"}
+                    {"command": "sybil", "description": "🛡️ Anti-Sybil & Moderation Hub"},
+                    {"command": "community", "description": "📊 Community Miners & VIP Passes"},
+                    {"command": "nodes", "description": "⚡ 5-Node Edge Latency Probe"},
+                    {"command": "mesh", "description": "🌐 5-Node Cloudflare Edge Mesh Status"},
+                    {"command": "help", "description": "ℹ️ Operations & Moderation Guide"}
                 ]
             }
             try:

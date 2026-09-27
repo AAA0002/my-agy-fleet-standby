@@ -2565,8 +2565,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
     Engineered with:
       - Deterministic mobile device fingerprinting per account (eliminates bot signatures)
       - Realistic human jitter delays
-      - Anti-ban background dwell timers (14-16s for external/channel/social tasks)
+      - Anti-ban background dwell timers (14-17s for external/channel/social tasks)
       - Dynamic task discovery & retry logic
+      - Fisher-Yates shuffled execution order per session
       - Strict Master Account compounding protection
     """
     uid = str(acc.get("user_id"))
@@ -2622,27 +2623,34 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             return 0, None
 
     # 1. Stones Miners
-    if tokens.get("stones_init_data"):
+    async def _farm_stones():
+        if not tokens.get("stones_init_data"):
+            return
         try:
             s_init = tokens["stones_init_data"]
+            s_headers = {
+                **headers,
+                "Origin": "https://app.stoneswithestand.my.id",
+                "Referer": "https://app.stoneswithestand.my.id/"
+            }
             await jitter(1.0, 2.2)
             # Daily checkin
-            await safe_post("https://app.stoneswithestand.my.id/api/task/complete", {"initData": s_init, "slug": "daily_checkin"})
+            await safe_post("https://app.stoneswithestand.my.id/api/task/complete", {"initData": s_init, "slug": "daily_checkin"}, req_headers=s_headers)
 
             # Join channel with realistic dwell time
             await jitter(1.2, 2.5)
-            await safe_post("https://app.stoneswithestand.my.id/api/task/start", {"initData": s_init, "slug": "join_channel"})
+            await safe_post("https://app.stoneswithestand.my.id/api/task/start", {"initData": s_init, "slug": "join_channel"}, req_headers=s_headers)
 
             async def _stones_complete_channel():
-                await asyncio.sleep(15)
-                await safe_post("https://app.stoneswithestand.my.id/api/task/complete", {"initData": s_init, "slug": "join_channel"})
-                await asyncio.sleep(random.uniform(1.5, 2.8))
-                await safe_post("https://app.stoneswithestand.my.id/api/task/verify", {"initData": s_init, "slug": "join_channel"})
+                await asyncio.sleep(random.uniform(15.0, 17.0))
+                await safe_post("https://app.stoneswithestand.my.id/api/task/complete", {"initData": s_init, "slug": "join_channel"}, req_headers=s_headers)
+                await asyncio.sleep(random.uniform(1.5, 3.0))
+                await safe_post("https://app.stoneswithestand.my.id/api/task/verify", {"initData": s_init, "slug": "join_channel"}, req_headers=s_headers)
             bg_tasks.append(asyncio.create_task(_stones_complete_channel()))
 
             # Dynamic task discovery from /api/state
             try:
-                _, st_data = await safe_post("https://app.stoneswithestand.my.id/api/state", {"initData": s_init})
+                _, st_data = await safe_post("https://app.stoneswithestand.my.id/api/state", {"initData": s_init}, req_headers=s_headers)
                 if st_data and isinstance(st_data, dict):
                     raw_tasks = st_data.get("tasks", {})
                     tasks_to_do = []
@@ -2657,26 +2665,35 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                 tasks_to_do.append(slug)
                     for slug in tasks_to_do:
                         if slug not in ["daily_checkin", "join_channel"]:
-                            await safe_post("https://app.stoneswithestand.my.id/api/task/start", {"initData": s_init, "slug": slug})
-                            await jitter(2.2, 4.0)
-                            await safe_post("https://app.stoneswithestand.my.id/api/task/complete", {"initData": s_init, "slug": slug})
-                            await jitter(1.5, 2.8)
-                            await safe_post("https://app.stoneswithestand.my.id/api/task/verify", {"initData": s_init, "slug": slug})
+                            await safe_post("https://app.stoneswithestand.my.id/api/task/start", {"initData": s_init, "slug": slug}, req_headers=s_headers)
+                            is_ext = any(k in str(slug).lower() for k in ["sponsor", "channel", "tg", "telegram", "twitter", "youtube", "sub", "follow", "visit"])
+                            if is_ext:
+                                async def _stones_complete_ext(t_slug):
+                                    await asyncio.sleep(random.uniform(14.5, 16.5))
+                                    await safe_post("https://app.stoneswithestand.my.id/api/task/complete", {"initData": s_init, "slug": t_slug}, req_headers=s_headers)
+                                    await asyncio.sleep(random.uniform(1.5, 2.8))
+                                    await safe_post("https://app.stoneswithestand.my.id/api/task/verify", {"initData": s_init, "slug": t_slug}, req_headers=s_headers)
+                                bg_tasks.append(asyncio.create_task(_stones_complete_ext(slug)))
+                            else:
+                                await jitter(2.2, 4.0)
+                                await safe_post("https://app.stoneswithestand.my.id/api/task/complete", {"initData": s_init, "slug": slug}, req_headers=s_headers)
+                                await jitter(1.5, 2.8)
+                                await safe_post("https://app.stoneswithestand.my.id/api/task/verify", {"initData": s_init, "slug": slug}, req_headers=s_headers)
                             await jitter(1.0, 2.0)
             except Exception:
                 pass
 
             # Claim pool & mining start
             await jitter(1.2, 2.5)
-            await safe_post("https://app.stoneswithestand.my.id/api/claim", {"initData": s_init})
+            await safe_post("https://app.stoneswithestand.my.id/api/claim", {"initData": s_init}, req_headers=s_headers)
             await jitter(1.0, 2.0)
-            await safe_post("https://app.stoneswithestand.my.id/api/mining/start", {"initData": s_init})
+            await safe_post("https://app.stoneswithestand.my.id/api/mining/start", {"initData": s_init}, req_headers=s_headers)
 
             # Stone Breaker Play & Earn (+10 STONES/hr, +100 STONES/day)
             try:
-                _, sbd = await safe_post("https://app.stoneswithestand.my.id/api/sb/status", {"initData": s_init})
+                _, sbd = await safe_post("https://app.stoneswithestand.my.id/api/sb/status", {"initData": s_init}, req_headers=s_headers)
                 if sbd and sbd.get("ok") and (sbd.get("hour_got", 0) < sbd.get("hourly_cap", 10)) and (sbd.get("day_got", 0) < sbd.get("daily_cap", 100)):
-                    _, sbsd = await safe_post("https://app.stoneswithestand.my.id/api/sb/start", {"initData": s_init})
+                    _, sbsd = await safe_post("https://app.stoneswithestand.my.id/api/sb/start", {"initData": s_init}, req_headers=s_headers)
                     if sbsd and sbsd.get("ok"):
                         sess_id = sbsd.get("session", {}).get("session_id")
                         dur = int(sbsd.get("session", {}).get("duration", 30)) + 1
@@ -2684,22 +2701,22 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                             async def _stones_finish_game(sid, d):
                                 await asyncio.sleep(d)
                                 sc = random.randint(142, 166)
-                                await safe_post("https://app.stoneswithestand.my.id/api/sb/finish", {"initData": s_init, "session_id": sid, "score": sc})
+                                await safe_post("https://app.stoneswithestand.my.id/api/sb/finish", {"initData": s_init, "session_id": sid, "score": sc}, req_headers=s_headers)
                             bg_tasks.append(asyncio.create_task(_stones_finish_game(sess_id, dur)))
             except Exception:
                 pass
 
             # Mining Boost (+0.5 TH/s)
             try:
-                _, abcd = await safe_post("https://app.stoneswithestand.my.id/api/ad/boost/challenge", {"initData": s_init})
+                _, abcd = await safe_post("https://app.stoneswithestand.my.id/api/ad/boost/challenge", {"initData": s_init}, req_headers=s_headers)
                 if abcd and abcd.get("ok"):
                     cid = abcd.get("challenge", {}).get("challenge_id")
                     if cid:
-                        await safe_post("https://app.stoneswithestand.my.id/api/ad/beat", {"initData": s_init, "scope": "boost", "challenge_id": cid})
+                        await safe_post("https://app.stoneswithestand.my.id/api/ad/beat", {"initData": s_init, "scope": "boost", "challenge_id": cid}, req_headers=s_headers)
                         async def _stones_finish_boost(chid):
                             await asyncio.sleep(16)
-                            await safe_post("https://app.stoneswithestand.my.id/api/ad/beat", {"initData": s_init, "scope": "boost", "challenge_id": chid})
-                            await safe_post("https://app.stoneswithestand.my.id/api/ad/boost/reward", {"initData": s_init, "challenge_id": chid})
+                            await safe_post("https://app.stoneswithestand.my.id/api/ad/beat", {"initData": s_init, "scope": "boost", "challenge_id": chid}, req_headers=s_headers)
+                            await safe_post("https://app.stoneswithestand.my.id/api/ad/boost/reward", {"initData": s_init, "challenge_id": chid}, req_headers=s_headers)
                         bg_tasks.append(asyncio.create_task(_stones_finish_boost(cid)))
             except Exception:
                 pass
@@ -2707,10 +2724,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             # Auto-withdrawal check (Worker accounts only; Master account strictly compounds)
             if not is_owner:
                 try:
-                    await safe_post("https://app.stoneswithestand.my.id/api/wallet", {"initData": s_init, "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce"})
-                    _, pc = await safe_post("https://app.stoneswithestand.my.id/api/wd/ad/precheck", {"initData": s_init, "amount": 500, "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce", "currency": "stones"})
+                    await safe_post("https://app.stoneswithestand.my.id/api/wallet", {"initData": s_init, "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce"}, req_headers=s_headers)
+                    _, pc = await safe_post("https://app.stoneswithestand.my.id/api/wd/ad/precheck", {"initData": s_init, "amount": 500, "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce", "currency": "stones"}, req_headers=s_headers)
                     if pc and pc.get("ok") and (not pc.get("need_ad") or (pc.get("boarded", 0) >= pc.get("required", 4))):
-                        await safe_post("https://app.stoneswithestand.my.id/api/withdraw", {"initData": s_init, "amount": 500, "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce", "currency": "stones"})
+                        await safe_post("https://app.stoneswithestand.my.id/api/withdraw", {"initData": s_init, "amount": 500, "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce", "currency": "stones"}, req_headers=s_headers)
                 except Exception:
                     pass
 
@@ -2719,18 +2736,33 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             status["bots"]["stones"] = f"error: {e}"
 
     # 2. MRG Miner
-    if tokens.get("mrg_init_data"):
+    async def _farm_mrg():
+        if not tokens.get("mrg_init_data"):
+            return
         try:
             m_init = tokens["mrg_init_data"]
+            m_headers = {
+                **headers,
+                "Origin": "https://app.mrgtoken.xyz",
+                "Referer": "https://app.mrgtoken.xyz/"
+            }
+            num_uid = int(str(uid)[-4:]) if str(uid)[-4:].isdigit() else 0
+            device_info = {
+                "model": ["SM-S928B", "Pixel 8 Pro", "SM-A536B", "23127PN0CG"][num_uid % 4],
+                "ram": [8, 12, 6, 12][num_uid % 4],
+                "cores": 8,
+                "screen": ["1440x3120", "1344x2992", "1080x2400", "1200x2670"][num_uid % 4],
+                "language": "en-US"
+            }
             await jitter(1.0, 2.2)
             if not is_owner:
-                await safe_post("https://mrg.up.railway.app/api/auth/verify", {"initData": m_init, "start_param": "ref_IRN1G3XD"})
+                await safe_post("https://mrg.up.railway.app/api/auth/verify", {"initData": m_init, "start_param": "ref_IRN1G3XD"}, req_headers=m_headers)
             await jitter(1.2, 2.5)
-            await safe_post("https://mrg.up.railway.app/api/user/claim-mining", {"initData": m_init})
+            await safe_post("https://mrg.up.railway.app/api/user/claim-mining", {"initData": m_init, "deviceInfo": device_info}, req_headers=m_headers)
 
             # Task completion & level auto-unlock
             await jitter(1.2, 2.6)
-            _, me_d = await safe_post("https://mrg.up.railway.app/api/user/me", {"initData": m_init})
+            _, me_d = await safe_post("https://mrg.up.railway.app/api/user/me", {"initData": m_init}, req_headers=m_headers)
             if me_d and isinstance(me_d, dict):
                 completed = set(me_d.get("completedTaskIds", []))
                 for t in me_d.get("tasks", []):
@@ -2740,18 +2772,18 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         if is_link:
                             async def _mrg_claim_link_task(task_id):
                                 await asyncio.sleep(15)
-                                _, cl_d = await safe_post("https://mrg.up.railway.app/api/user/claim-task", {"initData": m_init, "taskId": task_id})
+                                _, cl_d = await safe_post("https://mrg.up.railway.app/api/user/claim-task", {"initData": m_init, "taskId": task_id}, req_headers=m_headers)
                                 if cl_d and not cl_d.get("success") and ("wait" in json.dumps(cl_d).lower() or "second" in json.dumps(cl_d).lower()):
                                     await asyncio.sleep(12)
-                                    await safe_post("https://mrg.up.railway.app/api/user/claim-task", {"initData": m_init, "taskId": task_id})
+                                    await safe_post("https://mrg.up.railway.app/api/user/claim-task", {"initData": m_init, "taskId": task_id}, req_headers=m_headers)
                             bg_tasks.append(asyncio.create_task(_mrg_claim_link_task(tid)))
                         else:
                             await jitter(1.8, 3.2)
-                            _, cl_d = await safe_post("https://mrg.up.railway.app/api/user/claim-task", {"initData": m_init, "taskId": tid})
+                            _, cl_d = await safe_post("https://mrg.up.railway.app/api/user/claim-task", {"initData": m_init, "taskId": tid}, req_headers=m_headers)
                             if cl_d and not cl_d.get("success") and ("wait" in json.dumps(cl_d).lower() or "second" in json.dumps(cl_d).lower()):
                                 async def _mrg_retry_claim(task_id):
                                     await asyncio.sleep(14)
-                                    await safe_post("https://mrg.up.railway.app/api/user/claim-task", {"initData": m_init, "taskId": task_id})
+                                    await safe_post("https://mrg.up.railway.app/api/user/claim-task", {"initData": m_init, "taskId": task_id}, req_headers=m_headers)
                                 bg_tasks.append(asyncio.create_task(_mrg_retry_claim(tid)))
 
                 # Auto-unlock level up to 203
@@ -2773,23 +2805,30 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         else:
                             hi = mid - 1
                     if target_lvl > cur_lvl:
-                        await safe_post("https://mrg.up.railway.app/api/user/unlock-level", {"initData": m_init, "level": target_lvl})
+                        await safe_post("https://mrg.up.railway.app/api/user/unlock-level", {"initData": m_init, "level": target_lvl}, req_headers=m_headers)
 
             if is_owner:
-                await safe_post("https://mrg.up.railway.app/api/user/claim-commission", {"initData": m_init})
-                _, fr_d = await safe_post("https://mrg.up.railway.app/api/user/friends", {"initData": m_init})
+                await safe_post("https://mrg.up.railway.app/api/user/claim-commission", {"initData": m_init}, req_headers=m_headers)
+                _, fr_d = await safe_post("https://mrg.up.railway.app/api/user/friends", {"initData": m_init}, req_headers=m_headers)
                 if fr_d and (fr_d.get("teamStats", {}).get("unclaimedOneTimeBonusMRG", 0) or 0) > 0:
-                    await safe_post("https://mrg.up.railway.app/api/user/claim-one-time-bonus", {"initData": m_init})
+                    await safe_post("https://mrg.up.railway.app/api/user/claim-one-time-bonus", {"initData": m_init}, req_headers=m_headers)
 
             status["bots"]["mrg"] = "farmed"
         except Exception as e:
             status["bots"]["mrg"] = f"error: {e}"
 
     # 3. ART Airdrop
-    if tokens.get("art_init_data"):
+    async def _farm_art():
+        if not tokens.get("art_init_data"):
+            return
         try:
             art_init = tokens["art_init_data"]
-            art_h = {**headers, "X-Telegram-Init-Data": art_init}
+            art_h = {
+                **headers,
+                "Origin": "https://art.tamimdev.dev",
+                "Referer": "https://art.tamimdev.dev/",
+                "X-Telegram-Init-Data": art_init
+            }
             await jitter(1.0, 2.2)
             await safe_post("https://art.tamimdev.dev/api/user/claim-mining", {"userId": int(uid)}, art_h)
             await jitter(1.0, 2.0)
@@ -2803,7 +2842,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         await jitter(1.2, 2.5)
                         await safe_post("https://art.tamimdev.dev/api/tasks/start", {"userId": int(uid), "taskId": t["id"]}, art_h)
                         is_external = bool(t.get("actionUrl") or any(w in str(t.get("title", "")).lower() for w in ["channel", "sponsor", "youtube", "social"]))
-                        dwell_s = 16 if is_external else 3.5
+                        dwell_s = random.uniform(15.0, 17.0) if is_external else 3.5
                         async def _art_claim_task(task_id, wait_time):
                             await asyncio.sleep(wait_time)
                             _, cld = await safe_post("https://art.tamimdev.dev/api/tasks/claim", {"userId": int(uid), "taskId": task_id}, art_h)
@@ -2847,16 +2886,23 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             status["bots"]["art"] = f"error: {e}"
 
     # 4. AI Lab Robot
-    if tokens.get("ailab_init_data"):
+    async def _farm_ailab():
+        if not tokens.get("ailab_init_data"):
+            return
         try:
             ai_init = tokens["ailab_init_data"]
             ai_base = "https://api.ailab-agent.online/api/v1"
+            ai_default_h = {
+                **headers,
+                "Origin": "https://ailab-agent.online",
+                "Referer": "https://ailab-agent.online/"
+            }
             await jitter(1.0, 2.2)
-            _, ld = await safe_post(f"{ai_base}/users/auth/login", {"user": ai_init})
+            _, ld = await safe_post(f"{ai_base}/users/auth/login", {"user": ai_init}, req_headers=ai_default_h)
             if ld and isinstance(ld, dict):
                 tok = ld.get("result", {}).get("bearer") or ld.get("user_info", {}).get("session_id")
                 if tok:
-                    ai_auth = {**headers, "Authorization": f"Bearer {tok}"}
+                    ai_auth = {**ai_default_h, "Authorization": f"Bearer {tok}"}
                     # Check miner
                     try:
                         _, md = await safe_get(f"{ai_base}/miner", ai_auth)
@@ -2887,13 +2933,13 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                         tasks.extend(v)
                             for t in tasks:
                                 tid = t.get("id")
-                                if tid and t.get("status") != "completed":
+                                if tid and t.get("status") not in ["completed", "claimed"] and not t.get("is_claimed"):
                                     if t.get("progress_finish") and (t.get("progress_current", 0) < t.get("progress_finish")):
                                         continue
                                     await jitter(1.2, 2.5)
                                     await safe_post(f"{ai_base}/task-check", {"task_id": tid, "action": "start"}, ai_auth)
                                     is_ext = ("follow" in t or "social" in t or "channel" in str(t.get("title", "")).lower())
-                                    ai_wait = 16 if is_ext else 3.5
+                                    ai_wait = random.uniform(15.0, 17.0) if is_ext else 3.5
                                     async def _ailab_check_task(task_id, wait_time):
                                         await asyncio.sleep(wait_time)
                                         await safe_post(f"{ai_base}/task-check", {"task_id": task_id, "action": "check"}, ai_auth)
@@ -2921,21 +2967,28 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             status["bots"]["ailab"] = f"error: {e}"
 
     # 5. UltraWallet
-    if tokens.get("ultrawallet_init_data"):
+    async def _farm_ultra():
+        if not tokens.get("ultrawallet_init_data"):
+            return
         try:
             uw_init = tokens["ultrawallet_init_data"]
             uw_base = "https://wallet.trxvault.top/api"
+            uw_origin_h = {
+                **headers,
+                "Origin": "https://wallet.trxvault.top",
+                "Referer": "https://wallet.trxvault.top/"
+            }
             await jitter(1.0, 2.2)
-            _, ud = await safe_post(f"{uw_base}/telegramLogin", {"initData": uw_init, "refBy": "6727787768"})
+            _, ud = await safe_post(f"{uw_base}/telegramLogin", {"initData": uw_init, "refBy": "6727787768"}, req_headers=uw_origin_h)
             if ud and isinstance(ud, dict):
                 cust_tok = ud.get("token")
                 if cust_tok:
                     fb_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyAIKTCEFqC5LFRc89nuOLhTGPHIZTIjEsU"
-                    _, fbd = await safe_post(fb_url, {"token": cust_tok, "returnSecureToken": True})
+                    _, fbd = await safe_post(fb_url, {"token": cust_tok, "returnSecureToken": True}, req_headers=uw_origin_h)
                     if fbd and isinstance(fbd, dict):
                         id_tok = fbd.get("idToken")
                         if id_tok:
-                            uw_h = {**headers, "Authorization": f"Bearer {id_tok}"}
+                            uw_h = {**uw_origin_h, "Authorization": f"Bearer {id_tok}"}
                             await jitter(1.0, 2.0)
                             await safe_post(f"{uw_base}/checkin/claim", {}, uw_h)
                             await jitter(1.0, 2.0)
@@ -2965,7 +3018,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                             await jitter(1.2, 2.5)
                                             await safe_post(f"{uw_base}/tasks/start", {"taskId": t["id"]}, uw_h)
                                             is_ext = (t.get("type") == "website" or t.get("category") in ("hot", "partner"))
-                                            uw_wait = 16 if is_ext else 3.5
+                                            uw_wait = random.uniform(15.0, 17.0) if is_ext else 3.5
                                             async def _uw_complete_task(task_id, wait_time):
                                                 await asyncio.sleep(wait_time)
                                                 await safe_post(f"{uw_base}/tasks/complete", {"taskId": task_id}, uw_h)
@@ -3013,38 +3066,47 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             status["bots"]["ultrawallet"] = f"error: {e}"
 
     # 6. Apex Miner
-    if tokens.get("apx_init_data"):
+    async def _farm_apex():
+        if not tokens.get("apx_init_data"):
+            return
         try:
             apx_init = tokens["apx_init_data"]
             apx_base = "https://apxn-miner-live.apxn-network.workers.dev/api"
+            apx_h = {
+                **headers,
+                "Origin": "https://apxn-miner-live.apxn-network.workers.dev",
+                "Referer": "https://apxn-miner-live.apxn-network.workers.dev/"
+            }
             await jitter(1.0, 2.0)
-            await safe_post(f"{apx_base}/auth/telegram", {"initData": apx_init})
+            await safe_post(f"{apx_base}/auth/telegram", {"initData": apx_init}, req_headers=apx_h)
             await jitter(1.0, 2.0)
-            _, bd = await safe_post(f"{apx_base}/bootstrap", {"initData": apx_init})
+            _, bd = await safe_post(f"{apx_base}/bootstrap", {"initData": apx_init}, req_headers=apx_h)
             if bd and (not bd.get("exists") or not bd.get("user")):
-                await safe_post(f"{apx_base}/register", {"initData": apx_init})
+                await safe_post(f"{apx_base}/register", {"initData": apx_init}, req_headers=apx_h)
             await jitter(1.0, 2.0)
-            await safe_post(f"{apx_base}/checkin", {"initData": apx_init, "clientV2": True})
+            await safe_post(f"{apx_base}/checkin", {"initData": apx_init, "clientV2": True}, req_headers=apx_h)
             await jitter(1.0, 2.0)
-            await safe_post(f"{apx_base}/mining/claim", {"initData": apx_init})
+            await safe_post(f"{apx_base}/mining/claim", {"initData": apx_init}, req_headers=apx_h)
             await jitter(1.0, 2.0)
-            await safe_post(f"{apx_base}/mining/restart", {"initData": apx_init})
+            await safe_post(f"{apx_base}/mining/restart", {"initData": apx_init}, req_headers=apx_h)
             for t in ["telegram", "twitter", "discord", "checkin"]:
                 await jitter(0.8, 1.6)
-                await safe_post(f"{apx_base}/tasks/daily", {"initData": apx_init, "task": t})
+                await safe_post(f"{apx_base}/tasks/daily", {"initData": apx_init, "task": t}, req_headers=apx_h)
             for s in ["channel", "group", "twitter", "partner"]:
                 await jitter(0.8, 1.6)
-                await safe_post(f"{apx_base}/tasks/social", {"initData": apx_init, "task": s})
+                await safe_post(f"{apx_base}/tasks/social", {"initData": apx_init, "task": s}, req_headers=apx_h)
             await jitter(1.0, 2.0)
-            await safe_post(f"{apx_base}/ads/boost", {"initData": apx_init})
+            await safe_post(f"{apx_base}/ads/boost", {"initData": apx_init}, req_headers=apx_h)
             await jitter(1.0, 2.0)
-            await safe_post(f"{apx_base}/ads/reward", {"initData": apx_init})
+            await safe_post(f"{apx_base}/ads/reward", {"initData": apx_init}, req_headers=apx_h)
             status["bots"]["apx"] = "farmed"
         except Exception as e:
             status["bots"]["apx"] = f"error: {e}"
 
     # 7. ATF Miner
-    if tokens.get("atf_init_data"):
+    async def _farm_atf():
+        if not tokens.get("atf_init_data"):
+            return
         try:
             atf_init = tokens["atf_init_data"]
             atf_base = "https://atfminers.asloni.online/miner/index.php"
@@ -3087,7 +3149,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 if chd and chd.get("status") == "success" and chd.get("challenge_id"):
                     q = chd.get("question", "")
                     ans = solve_atf_math(q)
-                    await jitter(2.0, 4.2)
+                    await jitter(2.2, 4.5)
                     await safe_post(f"{atf_base}?action=start_mine&t={int(time.time()*1000)}", atf_payload({"math_challenge_id": chd["challenge_id"], "math_answer": ans}), atf_h)
             except Exception:
                 pass
@@ -3123,7 +3185,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             status["bots"]["atf"] = f"error: {e}"
 
     # 8. Ainovum
-    if tokens.get("ainovum_init_data"):
+    async def _farm_ainovum():
+        if not tokens.get("ainovum_init_data"):
+            return
         try:
             ain_init = tokens["ainovum_init_data"]
             ain_base = "https://ainovum.biz"
@@ -3196,6 +3260,28 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             status["bots"]["ainovum"] = "farmed"
         except Exception as e:
             status["bots"]["ainovum"] = f"error: {e}"
+
+    # Humanized Execution Pipeline: Randomize the order of bot executions per account session
+    bot_routines = [
+        {"name": "stones", "fn": _farm_stones, "has_data": bool(tokens.get("stones_init_data"))},
+        {"name": "mrg", "fn": _farm_mrg, "has_data": bool(tokens.get("mrg_init_data"))},
+        {"name": "art", "fn": _farm_art, "has_data": bool(tokens.get("art_init_data"))},
+        {"name": "ailab", "fn": _farm_ailab, "has_data": bool(tokens.get("ailab_init_data"))},
+        {"name": "ultrawallet", "fn": _farm_ultra, "has_data": bool(tokens.get("ultrawallet_init_data"))},
+        {"name": "apx", "fn": _farm_apex, "has_data": bool(tokens.get("apx_init_data"))},
+        {"name": "atf", "fn": _farm_atf, "has_data": bool(tokens.get("atf_init_data"))},
+        {"name": "ainovum", "fn": _farm_ainovum, "has_data": bool(tokens.get("ainovum_init_data"))},
+    ]
+
+    active_routines = [b for b in bot_routines if b["has_data"]]
+    random.shuffle(active_routines)
+
+    for b in active_routines:
+        try:
+            await b["fn"]()
+            await jitter(1.2, 3.0)
+        except Exception as err:
+            status["bots"][b["name"]] = f"error: {err}"
 
     # Await all background dwell/retry tasks for this account before completing
     if bg_tasks:
