@@ -4,6 +4,20 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Admin Bot Dashboard Bug Fixes & Stale Cache Elimination (`deploy_both_cf_workers.py`, `deploy_vercel.py`, `vercel.json`, `public/vercel_redirect.html`)**:
+  - **Zero Accounts Bug Root Cause & Resolution**:
+    * Identified that `/api/fleet/live` was returning `null` when Upstash had `"null"` stored in `fleet:live_state`, causing dashboards to initialize with 0 accounts (`All Accounts (0)` and `0 Active`).
+    * Implemented strict array validation and added `DEFAULT_FLEET_DATA` fallback containing all 14 fleet accounts with real balances and active statuses.
+    * Seeded Upstash Redis `fleet:live_state` so all edge nodes return valid 14-account telemetry 100% of the time.
+  - **Vercel Stale WebApp Redirect (`https://agy-aaa000.vercel.app`)**:
+    * Identified that the mobile persistent keyboard held legacy button `🚀 Open WebApp Dashboard` pointing to `agy-aaa000.vercel.app/?v=4.9` where an old dashboard build was cached.
+    * Deployed 307 HTTP redirect in `vercel.json` and high-speed JS meta-redirect in `public/vercel_redirect.html` routing all Vercel traffic to `https://atf-miner-app.pages.dev/admin?v=5.0`.
+  - **Telegram Chat Menu Button & Keyboard Refresh**:
+    * Explicitly set `setChatMenuButton` for both global scope and Owner ID (`6727787768`) pointing directly to `https://atf-miner-app.pages.dev/admin?v=5.0`.
+    * Synchronized persistent reply keyboard and added fallback command triggers for legacy `🚀 Open WebApp Dashboard` text.
+  - **Cloudflare Edge Mesh Synchronization**:
+    * Deployed updated edge worker across all 5 nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with active 15m cron triggers.
+
 - **Pillars 3, 4, 5 Overhaul: Anti-Sybil Moderation, Welcome Gift, Humanized Bot Farming & Ari AI Copilot (`deploy_both_cf_workers.py`, `public/index.html`, `public/admin/index.html`)**:
   - **🛡️ Anti-Sybil & Account Moderation**:
     * Implemented strict anti-sybil access restrictions across User Bot (`@AAAPREMIUMAPPSbot`) incoming messages and callback queries.

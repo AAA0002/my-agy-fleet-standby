@@ -14,7 +14,7 @@ PROJECTS = [
 ]
 
 FILES = [
-    ('index.html', 'public/index.html'),
+    ('index.html', 'public/vercel_redirect.html'),
     ('vercel.json', 'vercel.json'),
     ('_headers', 'public/_headers'),
     ('_redirects', 'public/_redirects'),

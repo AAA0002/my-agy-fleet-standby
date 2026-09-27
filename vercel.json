@@ -2,26 +2,19 @@
   "version": 2,
   "public": true,
   "cleanUrls": true,
-  "rewrites": [
-    {
-      "source": "/ai",
-      "destination": "https://restore-agy.aaaai2.workers.dev/ai"
-    },
-    {
-      "source": "/api/:path*",
-      "destination": "https://restore-agy.aaaai2.workers.dev/api/:path*"
-    },
+  "redirects": [
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "https://atf-miner-app.pages.dev/admin?v=5.0",
+      "permanent": false
     }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Cache-Control", "value": "no-cache" }
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
       ]
     }
   ]
