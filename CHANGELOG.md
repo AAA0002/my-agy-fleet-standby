@@ -4,6 +4,19 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Cloudflare Edge Math Solver & Ainovum Mining Cycle Overhaul (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **ATF Miner Dynamic Math Challenge Solver Fix**:
+    * Identified that Cloudflare Workers V8 isolates disallow dynamic code generation from strings (`new Function(...)` / `eval(...)`), throwing `EvalError: Code generation from strings disallowed for this context`.
+    * Previously, when `Function(...)` threw inside `try-catch`, the fallback `else` branch did not execute because `match` was truthy, causing `ans` to default to `"0"` and silently failing `start_mine` for arithmetic challenges (e.g. `9 + 2 = ?`).
+    * Fixed across both manual trigger `/atf` (line 1754) and 24/7 scheduled cron (line 6124) by replacing `Function(...)` with pure-JavaScript integer arithmetic with regex operator matching (`+`, `-`, `*`, `/`).
+  - **Ainovum Autonomous Mining Cycle Restart & Cookie Resilience**:
+    * Added missing `POST /api/mining/start` to Ainovum edge claim cycle; previously, edge cron only called `mining/claim`, causing miners to remain idle once their cycle completed.
+    * Upgraded session cookie extraction to prioritize `bootResp.headers.getSetCookie()` over `bootResp.headers.get("set-cookie")` to ensure `astra.tg.sid` is never truncated when multi-cookie headers are received from Cloudflare Workers.
+  - **Verification & 5-Node Edge Deployment**:
+    * Tested JS syntax across all 5 subdomains with `node --check` (0 errors).
+    * Deployed live to all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Maintained 100% Zero Phone Load (0 local bot processes on phone).
+
 - **Strict Referral Confirmation Handshake Discovery & Comprehensive 8-Bot Onboarding Overhaul (`render_standby_app.py`, `render_app_latest.py`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Root-Cause Diagnosis of Bot Referral Handshakes ("Strk / Strict" Referral Confirmation)**:
     * Discovered the exact mechanism behind why only 5 accounts (`8851426148`, `8203342513`, `7487048946`, `8881914294`, `8727040932`) were credited as referrals in MRG Miner: the user manually opened them via Telegram WebApp with the referral link, whereas automated scripts previously only sent `/start ref_IRN1G3XD` as a chat message.

@@ -1752,16 +1752,23 @@ fi
                       if (chData.status === "success" && chData.question && chData.challenge_id) {
                         const q = chData.question;
                         const cleaned = q.replace(/[^\d\+\-\*\/\(\)\s]/g, " ");
-                        const match = cleaned.match(/(\d+\s*[\+\-\*\/]\s*\d+)/);
+                        const parts = cleaned.match(/(\d+)\s*([\+\-\*\/])\s*(\d+)/);
                         let ans = "0";
-                        if (match) {
-                          try { ans = String(Function('"use strict";return (' + match[1] + ')')()); } catch (_) {}
+                        if (parts) {
+                          const a = parseInt(parts[1], 10);
+                          const op = parts[2];
+                          const b = parseInt(parts[3], 10);
+                          if (op === "+") ans = String(a + b);
+                          else if (op === "-") ans = String(a - b);
+                          else if (op === "*") ans = String(a * b);
+                          else if (op === "/" && b !== 0) ans = String(Math.floor(a / b));
                         } else {
                           const nums = (q.match(/\d+/g) || []).map(Number);
                           if (nums.length >= 2) {
-                            if (q.includes("+")) ans = String(nums[0] + nums[1]);
-                            else if (q.includes("-")) ans = String(nums[0] - nums[1]);
-                            else if (q.includes("*") || q.includes("x")) ans = String(nums[0] * nums[1]);
+                            if (q.includes("+") || q.toLowerCase().includes("plus")) ans = String(nums[0] + nums[1]);
+                            else if (q.includes("-") || q.toLowerCase().includes("minus")) ans = String(nums[0] - nums[1]);
+                            else if (q.includes("*") || q.toLowerCase().includes("x") || q.toLowerCase().includes("times")) ans = String(nums[0] * nums[1]);
+                            else if (q.includes("/") && nums[1] !== 0) ans = String(Math.floor(nums[0] / nums[1]));
                           }
                         }
                         await new Promise(r => setTimeout(r, 1000));
@@ -6117,16 +6124,23 @@ Reply to Arif naturally:`;
                 if (chData.status === "success" && chData.question && chData.challenge_id) {
                   const q = chData.question;
                   const cleaned = q.replace(/[^\d\+\-\*\/\(\)\s]/g, " ");
-                  const match = cleaned.match(/(\d+\s*[\+\-\*\/]\s*\d+)/);
+                  const parts = cleaned.match(/(\d+)\s*([\+\-\*\/])\s*(\d+)/);
                   let ans = "0";
-                  if (match) {
-                    try { ans = String(Function('"use strict";return (' + match[1] + ')')()); } catch (_) {}
+                  if (parts) {
+                    const a = parseInt(parts[1], 10);
+                    const op = parts[2];
+                    const b = parseInt(parts[3], 10);
+                    if (op === "+") ans = String(a + b);
+                    else if (op === "-") ans = String(a - b);
+                    else if (op === "*") ans = String(a * b);
+                    else if (op === "/" && b !== 0) ans = String(Math.floor(a / b));
                   } else {
                     const nums = (q.match(/\d+/g) || []).map(Number);
                     if (nums.length >= 2) {
-                      if (q.includes("+")) ans = String(nums[0] + nums[1]);
-                      else if (q.includes("-")) ans = String(nums[0] - nums[1]);
-                      else if (q.includes("*") || q.includes("x")) ans = String(nums[0] * nums[1]);
+                      if (q.includes("+") || q.toLowerCase().includes("plus")) ans = String(nums[0] + nums[1]);
+                      else if (q.includes("-") || q.toLowerCase().includes("minus")) ans = String(nums[0] - nums[1]);
+                      else if (q.includes("*") || q.toLowerCase().includes("x") || q.toLowerCase().includes("times")) ans = String(nums[0] * nums[1]);
+                      else if (q.includes("/") && nums[1] !== 0) ans = String(Math.floor(nums[0] / nums[1]));
                     }
                   }
                   await new Promise(r => setTimeout(r, 1000));
@@ -6201,7 +6215,7 @@ Reply to Arif naturally:`;
               }, 2, 800).catch(() => null);
 
               if (bootResp && bootResp.ok) {
-                const rawCookie = bootResp.headers.get("set-cookie") || "";
+                const rawCookie = (typeof bootResp.headers.getSetCookie === "function" ? bootResp.headers.getSetCookie().join("; ") : "") || bootResp.headers.get("set-cookie") || "";
                 const sidMatch = rawCookie.match(/astra\.tg\.sid=([^;]+)/);
                 const reqHeaders = { ...anHeaders };
                 if (sidMatch) {
@@ -6209,6 +6223,13 @@ Reply to Arif naturally:`;
                 }
 
                 await new Promise(r => setTimeout(r, 1000));
+
+                // Ensure mining cycle is started / active
+                await fetchWithRetry(`${anBase}/api/mining/start`, {
+                  method: "POST",
+                  headers: reqHeaders,
+                  body: JSON.stringify({})
+                }, 1, 500).catch(() => {});
 
                 // Claim AI agent mining profit
                 await fetchWithRetry(`${anBase}/api/mining/claim`, {
