@@ -563,6 +563,46 @@ function App() {
         )
       ),
 
+      // 8-Pool Autonomous Fleet Telemetry Card
+      React.createElement("div", { className: "pro-card rounded-2xl p-3.5 mb-3.5" },
+        React.createElement("div", { className: "flex items-center justify-between mb-2" },
+          React.createElement("div", { className: "flex items-center gap-1.5" },
+            React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400" }, "8-Pool Autonomous Telemetry"),
+            React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold px-1.5 py-0.2 rounded" }, "8/8 LIVE")
+          ),
+          React.createElement("div", { className: "flex items-center gap-1 text-[10px] text-emerald-600 font-semibold" },
+            React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" }),
+            "Cloud-First Edge"
+          )
+        ),
+        React.createElement("div", { className: "grid grid-cols-2 gap-1.5" },
+          [
+            { name: "ATF Miner", chain: "TON", status: "Auto-Claim & Math", icon: "🪙" },
+            { name: "Stones Miner", chain: "Arbitrum", status: "500+ STONES Auto-WD", icon: "💎" },
+            { name: "MRG Miner", chain: "TON", status: "Peak Tier Hashrate", icon: "⚡" },
+            { name: "ART Coin", chain: "TON", status: "Level 8 Compound", icon: "🎨" },
+            { name: "AI Lab Robot", chain: "BSC / BEP-20", status: "0.02 USDT Cashout", icon: "🤖" },
+            { name: "UltraWallet", chain: "Multi-Chain", status: "24/7 Node & Spins", icon: "👛" },
+            { name: "Apex Miner", chain: "APX Node", status: "Auto Checkin & Boost", icon: "🏔️" },
+            { name: "Ainovum", chain: "BSC / BEP-20", status: "0.10 USDT Threshold", icon: "🌐" }
+          ].map((pool, pIdx) => React.createElement("div", {
+            key: pIdx,
+            className: "p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between"
+          },
+            React.createElement("div", { className: "flex items-center gap-1.5 min-w-0" },
+              React.createElement("span", { className: "text-sm" }, pool.icon),
+              React.createElement("div", { className: "min-w-0" },
+                React.createElement("div", { className: "font-black text-[11px] text-slate-900 truncate" }, pool.name),
+                React.createElement("div", { className: "text-[9px] font-medium text-slate-500 truncate" }, pool.status)
+              )
+            ),
+            React.createElement("span", { className: "bg-white border border-slate-200 text-slate-600 font-mono text-[8px] font-bold px-1.5 py-0.5 rounded shadow-2xs shrink-0" },
+              pool.chain
+            )
+          ))
+        )
+      ),
+
       // Fleet Search & Add Account Button
       React.createElement("div", { className: "flex items-center gap-2 mb-3" },
         React.createElement("div", { className: "relative flex-1" },

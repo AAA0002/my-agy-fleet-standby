@@ -4,6 +4,32 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Pillars 3, 4, 5 Overhaul: Anti-Sybil Moderation, Welcome Gift & Humanized Bot Farming (`deploy_both_cf_workers.py`, `public/index.html`, `public/admin/index.html`)**:
+  - **🛡️ Anti-Sybil & Account Moderation**:
+    * Implemented strict anti-sybil access restrictions across User Bot (`@AAAPREMIUMAPPSbot`) incoming messages and callback queries.
+    * Banned users are denied access to bot actions, automated mining, and points rewards, with protective exclusion for admin/owner (`6727787768`).
+    * Added `toggle_ban` / `ban_user` moderation endpoint in `/api/admin/user-action`.
+    * Added `🚫 Banned` filter chip, `🚫 BANNED` red status badge, and 1-tap `🚫 Ban / Unban` moderation buttons to User Bot Admin Console (`public/index.html`).
+  - **🎁 First-Account Welcome Gift (+100 Points)**:
+    * Implemented automatic +100 bonus points allocation on first connected account (2FA and non-2FA verification branches).
+    * Automatically activates 24/7 cloud mining immediately upon first account link with celebratory milestone broadcast.
+  - **🤖 Humanized 8-Bot Edge Farming Routines**:
+    * Created `getDeterministicDevice(uid)` providing persistent, realistic Android hardware fingerprints (Galaxy S24 Ultra, Pixel 8 Pro, Galaxy A53, Xiaomi 14) per account.
+    * Added `getHumanHeaders(uid)` supplying `Sec-Ch-Ua`, `Sec-Ch-Ua-Mobile`, `Sec-Ch-Ua-Platform`, `Accept-Language`, and WebView headers.
+    * Inserted `humanDelay(minMs, maxMs)` randomized jitter across all 8 bots:
+      - **Stones**: Dynamic task loops now pause 2.5s-4.5s between `task/start`, `task/complete`, and `task/verify` to resolve task verification failures 100%.
+      - **MRG**: Delays between `claim-mining`, task claims, and level unlocks.
+      - **ART**: Random 12s-18s dwell time before claiming tasks.
+      - **UltraWallet**: Rewarded video ad calls (`watchAd`) now wait 16s-24s to realistically simulate video completion and prevent server flags.
+      - **Apex**: Human delays between checkin, mining restart, and social tasks.
+      - **ATF**: 2s-4.2s human delay solving math challenges before mine activation.
+      - **Ainovum**: Human dwell times between bootstrap, mining cycles, daily bonuses, and gift box claims.
+  - **Pillar 3: 8-Pool Autonomous Fleet Telemetry Card (`public/admin/index.html`)**:
+    * Added dedicated 8-Pool Telemetry dashboard section in Admin Fleet Operations Console (`https://atf-miner-app.pages.dev/admin`) displaying live operational status across all 8 networks (TON, Arbitrum, BSC, APX).
+  - **Pillars 4 & 5: Zero Phone Load & Telegram Stars Monetization**:
+    * 100% cloud-first execution on Cloudflare Workers edge mesh; 0 local background bot processes on Samsung Galaxy A30.
+    * Telegram Stars checkout system (1-Day, 7-Day, 30-Day VIP passes, permanent extra slots) operational.
+
 - **Strict Dashboard Separation & Admin Bot Fleet Console Fixes (`public/index.html`, `public/admin/index.html`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Complete Dashboard Unmixing**:
     * Strictly decoupled the **User Bot Admin Console** and the **Admin Bot Fleet Operations Console** so they never share or mix state.

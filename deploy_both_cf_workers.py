@@ -138,6 +138,50 @@ async function fetchWithRetry(url, options, maxRetries = 3, initialDelayMs = 120
   }
 }
 
+function humanDelay(minMs = 1500, maxMs = 3800) {
+  const jitter = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+  return new Promise(r => setTimeout(r, jitter));
+}
+
+function getDeterministicDevice(uid) {
+  const devices = [
+    {
+      ua: "Mozilla/5.0 (Linux; Android 14; SM-S928B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/131.0.6778.135 Mobile Safari/537.36 Telegram-Android/11.5.0 (Samsung SM-S928B; Android 14; SDK 34; AVERAGE)",
+      platform: "Android"
+    },
+    {
+      ua: "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro Build/UD1A.230803.041; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/130.0.6723.107 Mobile Safari/537.36 Telegram-Android/11.4.2 (Google Pixel 8 Pro; Android 14; SDK 34; HIGH)",
+      platform: "Android"
+    },
+    {
+      ua: "Mozilla/5.0 (Linux; Android 13; SM-A536B Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/129.0.6668.100 Mobile Safari/537.36 Telegram-Android/11.3.1 (Samsung SM-A536B; Android 13; SDK 33; LOW)",
+      platform: "Android"
+    },
+    {
+      ua: "Mozilla/5.0 (Linux; Android 14; 23127PN0CG Build/UKQ1.230804.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/130.0.6723.86 Mobile Safari/537.36 Telegram-Android/11.5.1 (Xiaomi 14; Android 14; SDK 34; HIGH)",
+      platform: "Android"
+    }
+  ];
+  const num = parseInt(String(uid).slice(-4)) || 0;
+  return devices[num % devices.length];
+}
+
+function getHumanHeaders(uid, extra = {}) {
+  const dev = getDeterministicDevice(uid);
+  return {
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Sec-Ch-Ua": `"Chromium";v="130", "Android WebView";v="130", "Not?A_Brand";v="99"`,
+    "Sec-Ch-Ua-Mobile": "?1",
+    "Sec-Ch-Ua-Platform": `"${dev.platform}"`,
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site",
+    "User-Agent": dev.ua,
+    ...extra
+  };
+}
+
 // Module-level in-memory cache to strictly protect Cloudflare KV 1,000 writes/day quota
 let memFleetState = null;
 let lastFleetKvWrite = 0;
@@ -1082,6 +1126,9 @@ fi
           user.farming_active = true;
         } else if (action === "toggle_farming") {
           user.farming_active = !user.farming_active;
+        } else if (action === "toggle_ban" || action === "ban_user") {
+          user.is_banned = !user.is_banned;
+          if (user.is_banned) user.farming_active = false;
         }
 
         await upstashSet(`ub_user:${uid}`, user);
@@ -4854,6 +4901,16 @@ Reply to Arif naturally:`;
             }).catch(() => {});
           };
 
+          // Anti-Sybil Gate: Check if user is suspended/banned
+          if (String(cqChatId) !== (env.OWNER_ID || "6727787768")) {
+            const profCheck = await getUserProfile(cqChatId, cq.from);
+            if (profCheck && profCheck.is_banned) {
+              await answerCq("🚫 Your account is suspended by platform administration.");
+              await sendCqReply("🚫 *Access Restricted*\n\nYour account has been suspended by platform administration for suspicious anti-sybil activity or policy violations.\n\nIf you believe this is an error, please contact @AAAAutoMiner.");
+              return new Response("OK");
+            }
+          }
+
           // A. Gate Verification Callback
           if (cqData === "ub_verify_gate") {
             const chCheck = await checkUserChannels(cqChatId);
@@ -5292,6 +5349,23 @@ Reply to Arif naturally:`;
         let text = (msg.text || "").trim();
         text = text.replace(/^(\/[a-zA-Z0-9_]+)@[a-zA-Z0-9_]+/i, '$1');
 
+        // Anti-Sybil Gate: Check if user is suspended/banned
+        if (String(chatId) !== (env.OWNER_ID || "6727787768")) {
+          const profileCheck = await getUserProfile(chatId, msg.from);
+          if (profileCheck && profileCheck.is_banned) {
+            await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: "🚫 *Access Restricted*\n\nYour account has been suspended by platform administration for suspicious anti-sybil activity or policy violations.\n\nIf you believe this is an error, please contact @AAAAutoMiner.",
+                parse_mode: "Markdown"
+              })
+            }).catch(() => {});
+            return new Response("OK");
+          }
+        }
+
         const sendUserReply = async (txt, replyMarkup = null, parseMode = "Markdown") => {
           const payload = { chat_id: chatId, text: txt, disable_web_page_preview: true };
           if (parseMode) payload.parse_mode = parseMode;
@@ -5476,6 +5550,15 @@ Reply to Arif naturally:`;
                 } else {
                   profile.accounts.push(accObj);
                 }
+
+                let welcomeBonusText = "";
+                if (!profile.welcome_gift_claimed && profile.accounts.length === 1) {
+                  profile.welcome_gift_claimed = true;
+                  profile.points = (profile.points || 0) + 100;
+                  profile.farming_active = true;
+                  welcomeBonusText = "\n\n🎁 *First-Account Welcome Gift:* +100 Points Credited for instant cloud farming!";
+                }
+
                 await saveUserProfile(chatId, profile);
                 ctx.waitUntil(broadcastMilestoneUnlocked("Milestone Unlocked", res.name || "Miner", chatId, `Cloud Node Connected (${profile.accounts.length} Active)`, "24/7 Autonomous Mining Live"));
 
@@ -5484,7 +5567,8 @@ Reply to Arif naturally:`;
                   `• *Username:* @${res.username || "None"}\n` +
                   `• *User ID:* \`${res.user_id}\`\n` +
                   `• *Mining Status:* 🟢 24/7 Cloud Automated\n` +
-                  `• *Pools Active (8/8):* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n\n` +
+                  `• *Pools Active (8/8):* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
+                  `• *Balance:* ${profile.points} Points${welcomeBonusText}\n\n` +
                   `✅ 100% Cloud Mining active! 100 points/day will be deducted while farming is live.`;
                 await sendUserReply(succMsg, userMainKeyboard);
               } else {
@@ -5534,6 +5618,15 @@ Reply to Arif naturally:`;
               } else {
                 profile.accounts.push(accObj);
               }
+
+              let welcomeBonusText = "";
+              if (!profile.welcome_gift_claimed && profile.accounts.length === 1) {
+                profile.welcome_gift_claimed = true;
+                profile.points = (profile.points || 0) + 100;
+                profile.farming_active = true;
+                welcomeBonusText = "\n\n🎁 *First-Account Welcome Gift:* +100 Points Credited for instant cloud farming!";
+              }
+
               await saveUserProfile(chatId, profile);
               ctx.waitUntil(broadcastMilestoneUnlocked("Milestone Unlocked", res.name || "Miner", chatId, `Cloud Node Connected (${profile.accounts.length} Active)`, "24/7 Autonomous Mining Live"));
 
@@ -5542,7 +5635,8 @@ Reply to Arif naturally:`;
                 `• *Username:* @${res.username || "None"}\n` +
                 `• *User ID:* \`${res.user_id}\`\n` +
                 `• *Mining Status:* 🟢 24/7 Cloud Automated\n` +
-                `• *Pools Active (8/8):* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n\n` +
+                `• *Pools Active (8/8):* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
+                `• *Balance:* ${profile.points} Points${welcomeBonusText}\n\n` +
                 `✅ 100% Cloud Mining active! 100 points/day will be deducted while farming is live.`;
               await sendUserReply(succMsg, userMainKeyboard);
             } else {
@@ -6326,10 +6420,12 @@ Reply to Arif naturally:`;
         const myTokenEntries = tokenEntries.filter((_, idx) => idx % 5 === nodeIndex);
         for (let idx = 0; idx < myTokenEntries.length; idx++) {
           const [uid, accData] = myTokenEntries[idx];
+          const headers = getHumanHeaders(uid, { "Content-Type": "application/json" });
 
           // A. Stones Miners Edge Claim (Tap -> wait 2.5s -> complete/verify without joining channels or opening links)
           if (accData.stones_init_data) {
             try {
+              await humanDelay(1000, 2500);
               // Daily check-in
               await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
                 method: "POST",
@@ -6337,6 +6433,7 @@ Reply to Arif naturally:`;
                 body: JSON.stringify({ initData: accData.stones_init_data, slug: "daily_checkin" })
               }, 2, 800).catch(() => {});
 
+              await humanDelay(1200, 2800);
               // Channel and social tasks: Non-blocking background verification in ctx.waitUntil
               await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/start", {
                 method: "POST",
@@ -6351,6 +6448,7 @@ Reply to Arif naturally:`;
                       headers,
                       body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
                     }, 2, 800);
+                    await humanDelay(1500, 3000);
                     await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
                       method: "POST",
                       headers,
@@ -6381,17 +6479,21 @@ Reply to Arif naturally:`;
                       await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/start", {
                         method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
                       }, 1, 500).catch(() => {});
+                      await humanDelay(2500, 4500);
                       await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
                         method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
                       }, 1, 500).catch(() => {});
+                      await humanDelay(1500, 3000);
                       await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
                         method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
                       }, 1, 500).catch(() => {});
+                      await humanDelay(1200, 2500);
                     }
                   }
                 }
               } catch (_) {}
 
+              await humanDelay(1500, 3000);
               // Harvest accumulated pool into holding wallet
               await fetchWithRetry("https://app.stoneswithestand.my.id/api/claim", {
                 method: "POST",
@@ -6399,6 +6501,7 @@ Reply to Arif naturally:`;
                 body: JSON.stringify({ initData: accData.stones_init_data })
               }).catch(() => {});
 
+              await humanDelay(1200, 2500);
               // Mining renewal
               await fetchWithRetry("https://app.stoneswithestand.my.id/api/mining/start", {
                 method: "POST",
@@ -6498,6 +6601,7 @@ Reply to Arif naturally:`;
           // B. MRG Miner Edge Claim (Auth verify ref + claim-mining + instant task claims + auto-level unlock)
           if (accData.mrg_init_data) {
             try {
+              await humanDelay(1200, 2600);
               if (String(uid) !== (env.OWNER_ID || "6727787768")) {
                 await fetchWithRetry("https://mrg.up.railway.app/api/auth/verify", {
                   method: "POST",
@@ -6505,13 +6609,15 @@ Reply to Arif naturally:`;
                   body: JSON.stringify({ initData: accData.mrg_init_data, start_param: "ref_IRN1G3XD" })
                 }, 2, 800).catch(() => {});
               }
+              await humanDelay(1500, 3000);
               await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-mining", {
                 method: "POST",
                 headers,
                 body: JSON.stringify({ initData: accData.mrg_init_data })
               }).catch(() => {});
 
-              // Discover and claim tasks immediately without delay
+              await humanDelay(1500, 3200);
+              // Discover and claim tasks with humanized delay
               const meResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/me", {
                 method: "POST",
                 headers,
@@ -6523,6 +6629,7 @@ Reply to Arif naturally:`;
                 const completed = new Set(meD.completedTaskIds || []);
                 for (const t of tasks) {
                   if (t.taskId && !completed.has(t.taskId)) {
+                    await humanDelay(1800, 3500);
                     await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
                       method: "POST",
                       headers,
@@ -6590,15 +6697,17 @@ Reply to Arif naturally:`;
             } catch (_) {}
           }
 
-          // C. ART Airdrop Edge Claim (Tap -> wait 15s in background -> claim without joining channels)
+          // C. ART Airdrop Edge Claim (Tap -> wait 12-18s in background -> claim without joining channels)
           if (accData.art_init_data) {
             try {
               const artHeaders = { ...headers, "X-Telegram-Init-Data": accData.art_init_data };
+              await humanDelay(1000, 2500);
               await fetchWithRetry("https://art.tamimdev.dev/api/user/claim-mining", {
                 method: "POST",
                 headers: artHeaders,
                 body: JSON.stringify({ userId: uid })
               }).catch(() => {});
+              await humanDelay(1200, 2800);
               await fetchWithRetry("https://art.tamimdev.dev/api/user/start-mining", {
                 method: "POST",
                 headers: artHeaders,
@@ -6611,12 +6720,13 @@ Reply to Arif naturally:`;
                 const td = await tr.json().catch(() => ({}));
                 for (const t of (td.tasks || [])) {
                   if (!t.isCompleted && t.id) {
+                    await humanDelay(1500, 3000);
                     await fetchWithRetry("https://art.tamimdev.dev/api/tasks/start", {
                       method: "POST",
                       headers: artHeaders,
                       body: JSON.stringify({ userId: uid, taskId: t.id })
                     }, 1, 500).catch(() => {});
-                    const artWait = (t.actionUrl || String(t.title).toLowerCase().includes("sponsor")) ? 15000 : 2000;
+                    const artWait = (t.actionUrl || String(t.title).toLowerCase().includes("sponsor")) ? 16000 : Math.floor(Math.random() * 4000) + 12000;
                     ctx.waitUntil(new Promise(resolve => {
                       setTimeout(async () => {
                         try {
@@ -6633,6 +6743,7 @@ Reply to Arif naturally:`;
                 }
               }
 
+              await humanDelay(1500, 3000);
               // Daily Ads Bonus (+10 ART)
               await fetchWithRetry("https://art.tamimdev.dev/api/ads/claim", {
                 method: "POST",
@@ -6825,10 +6936,14 @@ Reply to Arif naturally:`;
                     const fbData = await fbResp.json().catch(() => ({}));
                     const idToken = fbData.idToken;
                     if (idToken) {
-                      const uwHeaders = { ...headers, "Authorization": `Bearer ${idToken}` };
+                      const uwHeaders = getHumanHeaders(uid, { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` });
+                      await humanDelay(1200, 2500);
                       await fetch(`${uwBase}/checkin/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
+                      await humanDelay(1200, 2500);
                       await fetch(`${uwBase}/mining/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
+                      await humanDelay(1200, 2500);
                       await fetch(`${uwBase}/mining/start`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
+                      await humanDelay(1200, 2500);
                       await fetch(`${uwBase}/energy/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
 
                       try {
@@ -6837,6 +6952,7 @@ Reply to Arif naturally:`;
                           const spInfo = await spResp.json();
                           let spinsAvail = (spInfo.tickets || 0) + (spInfo.freeSpinsRemaining || 0);
                           while (spinsAvail > 0) {
+                            await humanDelay(1500, 3000);
                             const pResp = await fetch(`${uwBase}/spin/play`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) });
                             if (pResp.ok) {
                               const pData = await pResp.json();
@@ -6858,12 +6974,13 @@ Reply to Arif naturally:`;
                           const trData = await trResp.json();
                           for (const t of (trData.tasks || [])) {
                             if (!t.completed && t.id) {
+                              await humanDelay(1500, 3000);
                               await fetch(`${uwBase}/tasks/start`, {
                                 method: "POST",
                                 headers: uwHeaders,
                                 body: JSON.stringify({ taskId: t.id })
                               }).catch(() => {});
-                              const uwWait = (t.type === "website" || t.category === "hot" || t.category === "partner") ? 15000 : 2000;
+                              const uwWait = (t.type === "website" || t.category === "hot" || t.category === "partner") ? 16000 : 3500;
                               ctx.waitUntil(new Promise(resolve => {
                                 setTimeout(async () => {
                                   try {
@@ -6881,13 +6998,13 @@ Reply to Arif naturally:`;
                         }
                       } catch (_) {}
 
-                      // Rewards Center Watch & Earn Ads (10 ads/day for USDT + Gift Box requirement #1)
+                      // Rewards Center Watch & Earn Ads (Mimics realistic rewarded video ad duration)
                       try {
                         const rcr = await fetch(`${uwBase}/rewardsCenter`, { headers: uwHeaders }).then(r => r.json()).catch(() => ({}));
                         const cards = rcr.cards || [];
                         let adsWatched = 0;
                         for (const c of cards) {
-                          while (!c.capped && (c.dailyLimit === 0 || (c.watchedToday || 0) < c.dailyLimit) && adsWatched < 10) {
+                          while (!c.capped && (c.dailyLimit === 0 || (c.watchedToday || 0) < c.dailyLimit) && adsWatched < 3) {
                             const war = await fetch(`${uwBase}/rewardsCenter/watchAd`, {
                               method: "POST",
                               headers: uwHeaders,
@@ -6899,9 +7016,9 @@ Reply to Arif naturally:`;
                             } else {
                               break;
                             }
-                            await new Promise(r => setTimeout(r, 1000));
+                            await humanDelay(16000, 24000);
                           }
-                          if (adsWatched >= 10) break;
+                          if (adsWatched >= 3) break;
                         }
                       } catch (_) {}
 
@@ -6909,6 +7026,7 @@ Reply to Arif naturally:`;
                       try {
                         const gbr = await fetch(`${uwBase}/giftBox`, { headers: uwHeaders }).then(r => r.json()).catch(() => ({}));
                         if (gbr && gbr.enabled && gbr.canOpen) {
+                          await humanDelay(1500, 3000);
                           await fetch(`${uwBase}/giftBox/claim`, {
                             method: "POST",
                             headers: uwHeaders,
@@ -6931,7 +7049,9 @@ Reply to Arif naturally:`;
           if (accData.apx_init_data) {
             try {
               const apxBase = "https://apxn-miner-live.apxn-network.workers.dev/api";
+              await humanDelay(1200, 2500);
               await fetch(`${apxBase}/auth/telegram`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+              await humanDelay(1200, 2500);
               const bResp = await fetch(`${apxBase}/bootstrap`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => null);
               if (bResp && bResp.ok) {
                 const bData = await bResp.json().catch(() => ({}));
@@ -6939,15 +7059,21 @@ Reply to Arif naturally:`;
                   await fetch(`${apxBase}/register`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
                 }
               }
+              await humanDelay(1200, 2500);
               await fetch(`${apxBase}/checkin`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, clientV2: true }) }).catch(() => {});
+              await humanDelay(1200, 2500);
               await fetch(`${apxBase}/mining/claim`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+              await humanDelay(1200, 2500);
               await fetch(`${apxBase}/mining/restart`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
               for (const t of ["telegram", "twitter", "discord", "checkin"]) {
+                await humanDelay(1000, 2000);
                 await fetch(`${apxBase}/tasks/daily`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, task: t }) }).catch(() => {});
               }
               for (const s of ["channel", "group", "twitter", "partner"]) {
+                await humanDelay(1000, 2000);
                 await fetch(`${apxBase}/tasks/social`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, task: s }) }).catch(() => {});
               }
+              await humanDelay(1200, 2500);
               await fetch(`${apxBase}/ads/boost`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
             } catch (_) {}
           }
@@ -6956,28 +7082,31 @@ Reply to Arif naturally:`;
           if (accData.atf_init_data) {
             try {
               const atfBase = "https://atfminers.asloni.online/miner/index.php";
-              const atfHeaders = {
+              const atfHeaders = getHumanHeaders(uid, {
                 "Content-Type": "application/json",
                 "X-Requested-With": "XMLHttpRequest",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
                 "Referer": "https://atfminers.asloni.online/miner/index.html",
                 "Origin": "https://atfminers.asloni.online"
-              };
+              });
               const atfPayload = (obj) => ({
                 initData: accData.atf_init_data,
                 request_id: "rq-" + Date.now() + "-" + Math.random().toString(36).substring(2, 10),
                 device_id: "dev-" + (accData.device_id || "edge-" + uid),
                 ...obj
               });
+              await humanDelay(1200, 2500);
               await fetchWithRetry(`${atfBase}?action=login&t=${Date.now()}`, {
                 method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid), username: accData.username || "" }))
               }, 2, 800).catch(() => {});
+              await humanDelay(1200, 2500);
               await fetchWithRetry(`${atfBase}?action=claim&t=${Date.now()}`, {
                 method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
               }, 2, 800).catch(() => {});
+              await humanDelay(1000, 2000);
               await fetchWithRetry(`${atfBase}?action=claim_referrals&t=${Date.now()}`, {
                 method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
               }, 1, 800).catch(() => {});
+              await humanDelay(1000, 2000);
               await fetchWithRetry(`${atfBase}?action=claim_team_wallet&t=${Date.now()}`, {
                 method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
               }, 1, 800).catch(() => {});
@@ -7008,7 +7137,7 @@ Reply to Arif naturally:`;
                       else if (q.includes("/") && nums[1] !== 0) ans = String(Math.floor(nums[0] / nums[1]));
                     }
                   }
-                  await new Promise(r => setTimeout(r, 1000));
+                  await humanDelay(2000, 4200);
                   await fetchWithRetry(`${atfBase}?action=start_mine&t=${Date.now()}`, {
                     method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
                       tg_id: parseInt(uid), math_challenge_id: chData.challenge_id, math_answer: ans
@@ -7017,6 +7146,7 @@ Reply to Arif naturally:`;
                 }
               }
 
+              await humanDelay(1200, 2500);
               // Activate ATF Mining Speed Boost & Daily Interaction
               await fetchWithRetry(`${atfBase}?action=activate_boost&t=${Date.now()}`, {
                 method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
@@ -7044,12 +7174,13 @@ Reply to Arif naturally:`;
                       tg_id: parseInt(uid), task_id: t.id, client_started_at: sAt
                     }))
                   }, 1, 500).catch(() => {});
-                  await new Promise(r => setTimeout(r, 600));
+                  await humanDelay(1500, 3000);
                   await fetchWithRetry(`${atfBase}?action=claim_task&t=${Date.now()}`, {
                     method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
                       tg_id: parseInt(uid), task_id: t.id, client_started_at: sAt
                     }))
                   }, 1, 500).catch(() => {});
+                  await humanDelay(1000, 2200);
                 } catch (_) {}
               }
             } catch (_) {}
@@ -7059,12 +7190,12 @@ Reply to Arif naturally:`;
           if (accData.ainovum_init_data) {
             try {
               const anBase = "https://ainovum.biz";
-              const anHeaders = {
+              const anHeaders = getHumanHeaders(uid, {
                 "Content-Type": "application/json",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
                 "Referer": "https://ainovum.biz/",
                 "Origin": "https://ainovum.biz"
-              };
+              });
+              await humanDelay(1200, 2500);
               const bootResp = await fetchWithRetry(`${anBase}/api/bootstrap`, {
                 method: "POST",
                 headers: anHeaders,
@@ -7086,7 +7217,7 @@ Reply to Arif naturally:`;
                   reqHeaders["Cookie"] = `astra.tg.sid=${sidMatch[1]}`;
                 }
 
-                await new Promise(r => setTimeout(r, 1000));
+                await humanDelay(1500, 3000);
 
                 // Ensure mining cycle is started / active
                 await fetchWithRetry(`${anBase}/api/mining/start`, {
@@ -7095,6 +7226,7 @@ Reply to Arif naturally:`;
                   body: JSON.stringify({})
                 }, 1, 500).catch(() => {});
 
+                await humanDelay(1200, 2500);
                 // Claim AI agent mining profit
                 await fetchWithRetry(`${anBase}/api/mining/claim`, {
                   method: "POST",
@@ -7102,6 +7234,7 @@ Reply to Arif naturally:`;
                   body: JSON.stringify({ action: "claim_cycle" })
                 }, 1, 500).catch(() => {});
 
+                await humanDelay(1200, 2500);
                 // Claim daily bonus
                 await fetchWithRetry(`${anBase}/api/daily-bonus/claim`, {
                   method: "POST",
@@ -7109,6 +7242,7 @@ Reply to Arif naturally:`;
                   body: JSON.stringify({})
                 }, 1, 500).catch(() => {});
 
+                await humanDelay(1200, 2500);
                 // Claim channel bonus
                 await fetchWithRetry(`${anBase}/api/channel-bonus/claim`, {
                   method: "POST",
@@ -7116,6 +7250,7 @@ Reply to Arif naturally:`;
                   body: JSON.stringify({})
                 }, 1, 500).catch(() => {});
 
+                await humanDelay(1200, 2500);
                 // Open daily gift box
                 await fetchWithRetry(`${anBase}/api/gift-box/open`, {
                   method: "POST",

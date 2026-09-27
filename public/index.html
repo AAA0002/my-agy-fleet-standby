@@ -288,7 +288,12 @@ function App() {
         if (selectedUserDetail && String(selectedUserDetail.user_id) === String(uid)) {
           setSelectedUserDetail(res.user);
         }
-        showToast(action === "add_points" ? `+${payload.amount} Points Credited!` : (action === "set_vip" ? "30-Day VIP Pass Granted!" : "Mining Status Toggled!"), "success");
+        let toastMsg = "Action Completed!";
+        if (action === "add_points") toastMsg = `+${payload.amount} Points Credited!`;
+        else if (action === "set_vip") toastMsg = "30-Day VIP Pass Granted!";
+        else if (action === "toggle_ban" || action === "ban_user") toastMsg = res.user.is_banned ? "🚫 User Account Suspended & Banned!" : "✅ User Account Unbanned & Restored!";
+        else if (action === "toggle_farming") toastMsg = res.user.farming_active ? "Mining Resumed!" : "Mining Paused!";
+        showToast(toastMsg, res.user.is_banned ? "warning" : "success");
       } else {
         showToast("Action queued on edge mesh", "info");
       }
@@ -314,8 +319,9 @@ function App() {
       if (!matchSearch) return false;
       if (usersFilter === "accounts") return (u.accounts && u.accounts.length > 0);
       if (usersFilter === "vip") return (u.subscription_expiry && u.subscription_expiry > Date.now());
-      if (usersFilter === "active") return u.farming_active;
-      if (usersFilter === "paused") return !u.farming_active;
+      if (usersFilter === "active") return u.farming_active && !u.is_banned;
+      if (usersFilter === "paused") return !u.farming_active && !u.is_banned;
+      if (usersFilter === "banned") return !!u.is_banned;
       return true;
     });
   }, [adminUsers, userSearchQuery, usersFilter]);
@@ -424,8 +430,9 @@ function App() {
           { id: "all", label: `All Users (${adminUsers.length})` },
           { id: "accounts", label: `With Accounts (${adminUsers.filter(u => u.accounts?.length > 0).length})` },
           { id: "vip", label: `VIP Passes (${adminUsers.filter(u => u.subscription_expiry > Date.now()).length})` },
-          { id: "active", label: `Active (${adminUsers.filter(u => u.farming_active).length})` },
-          { id: "paused", label: `Paused (${adminUsers.filter(u => !u.farming_active).length})` }
+          { id: "active", label: `Active (${adminUsers.filter(u => u.farming_active && !u.is_banned).length})` },
+          { id: "paused", label: `Paused (${adminUsers.filter(u => !u.farming_active && !u.is_banned).length})` },
+          { id: "banned", label: `🚫 Banned (${adminUsers.filter(u => u.is_banned).length})` }
         ].map(f => React.createElement("button", {
           key: f.id,
           onClick: () => { setUsersFilter(f.id); haptic("light"); },
@@ -481,16 +488,18 @@ function App() {
               )
             ),
             React.createElement("div", { className: "flex flex-col items-end gap-1" },
-              React.createElement("span", { className: `text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                hasVip ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-slate-50 text-slate-600 border-slate-200"
-              }` },
-                hasVip ? `👑 ${u.subscription_tier ? u.subscription_tier.toUpperCase() : "VIP"}` : "Free Tier"
+              u.is_banned ? React.createElement("span", { className: "bg-red-100 text-red-700 border border-red-300 text-[10px] font-black px-2 py-0.5 rounded-full" }, "🚫 BANNED") : (
+                React.createElement("span", { className: `text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                  hasVip ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-slate-50 text-slate-600 border-slate-200"
+                }` },
+                  hasVip ? `👑 ${u.subscription_tier ? u.subscription_tier.toUpperCase() : "VIP"}` : "Free Tier"
+                )
               ),
               React.createElement("span", { className: `text-[10px] font-semibold flex items-center gap-1 ${
-                u.farming_active ? "text-emerald-600" : "text-red-500"
+                u.is_banned ? "text-red-600 font-bold" : (u.farming_active ? "text-emerald-600" : "text-amber-500")
               }` },
-                React.createElement("span", { className: `w-1.5 h-1.5 rounded-full ${u.farming_active ? "bg-emerald-500" : "bg-red-400"}` }),
-                u.farming_active ? "Mining 24/7" : "Paused"
+                React.createElement("span", { className: `w-1.5 h-1.5 rounded-full ${u.is_banned ? "bg-red-600" : (u.farming_active ? "bg-emerald-500" : "bg-amber-400")}` }),
+                u.is_banned ? "Suspended" : (u.farming_active ? "Mining 24/7" : "Paused")
               )
             )
           ),
@@ -577,9 +586,16 @@ function App() {
               disabled: actionLoadingId === `${u.user_id}_toggle_farming`,
               onClick: () => handleUserAction(u.user_id, "toggle_farming"),
               className: `py-1.5 px-2.5 rounded-lg text-[11px] font-bold border transition active:scale-95 cursor-pointer ${
-                u.farming_active ? "bg-red-50 text-red-700 border-red-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                u.farming_active ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"
               }`
-            }, u.farming_active ? "Pause" : "Resume")
+            }, u.farming_active ? "Pause" : "Resume"),
+            React.createElement("button", {
+              disabled: actionLoadingId === `${u.user_id}_toggle_ban`,
+              onClick: () => handleUserAction(u.user_id, "toggle_ban"),
+              className: `py-1.5 px-2 rounded-lg text-[11px] font-bold border transition active:scale-95 cursor-pointer ${
+                u.is_banned ? "bg-red-600 text-white border-red-700 hover:bg-red-700" : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+              }`
+            }, u.is_banned ? "Unban" : "🚫 Ban")
           )
         );
       })
@@ -639,6 +655,12 @@ function App() {
           React.createElement("div", { className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
             React.createElement("span", { className: "text-slate-500 font-sans font-bold" }, "Referral Code"),
             React.createElement("span", { className: "font-bold text-slate-800" }, selectedUserDetail.referral_code || `ref_${selectedUserDetail.user_id}`)
+          ),
+          React.createElement("div", { className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
+            React.createElement("span", { className: "text-slate-500 font-sans font-bold" }, "Account Standing"),
+            React.createElement("span", { className: `font-bold ${selectedUserDetail.is_banned ? "text-red-600 font-black" : "text-emerald-600"}` },
+              selectedUserDetail.is_banned ? "🚫 Suspended (Banned)" : "🟢 Active (Good Standing)"
+            )
           )
         ),
 
@@ -661,10 +683,19 @@ function App() {
           React.createElement("button", {
             onClick: () => handleUserAction(selectedUserDetail.user_id, "toggle_farming"),
             className: `w-full py-2.5 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 border cursor-pointer active:scale-95 ${
-              selectedUserDetail.farming_active ? "bg-red-50 text-red-700 border-red-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"
+              selectedUserDetail.farming_active ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"
             }`
           },
             selectedUserDetail.farming_active ? "Pause User Mining" : "Resume 24/7 Automated Mining"
+          ),
+          React.createElement("button", {
+            onClick: () => handleUserAction(selectedUserDetail.user_id, "toggle_ban"),
+            className: `w-full py-2.5 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 border cursor-pointer active:scale-95 ${
+              selectedUserDetail.is_banned ? "bg-emerald-600 hover:bg-emerald-700 text-white border-transparent" : "bg-red-600 hover:bg-red-700 text-white border-transparent"
+            }`
+          },
+            React.createElement(Icon, { name: "shieldCheck", className: "w-4 h-4" }),
+            selectedUserDetail.is_banned ? "✅ Unban Account & Restore Access" : "🚫 Ban & Suspend Account (Anti-Sybil)"
           )
         )
       )
