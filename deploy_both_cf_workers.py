@@ -1599,7 +1599,7 @@ fi
     }
 
     // 12.5 Autonomous Cloud Farming Engine (Stones, MRG, ART, AI Lab, UltraWallet, Apex Miner, Ainovum, ATF)
-    if (path === "/api/farm/all" || path === "/api/fleet/claim-all" || path === "/api/farm/bnb" || path === "/api/farm/execute") {
+    if (path === "/api/farm/all" || path === "/api/fleet/claim-all" || path === "/api/farm/bnb" || path === "/api/farm/execute" || path === "/api/fleet/harvest" || path === "/api/harvest") {
       try {
         const body = await request.json().catch(() => ({}));
         let targetUids = [];
@@ -6814,6 +6814,7 @@ Reply to Arif naturally:`;
           if (accData.ailab_init_data) {
             try {
               const aiBase = "https://api.ailab-agent.online/api/v1";
+              await humanDelay(1200, 2500);
               const lResp = await fetchWithRetry(`${aiBase}/users/auth/login`, {
                 method: "POST",
                 headers,
@@ -6824,10 +6825,11 @@ Reply to Arif naturally:`;
                 const lData = await lResp.json().catch(() => ({}));
                 const tok = lData.result?.bearer || lData.user_info?.session_id;
                 if (tok) {
-                  const aiAuth = { ...headers, "Authorization": `Bearer ${tok}` };
+                  const aiAuth = getHumanHeaders(uid, { "Content-Type": "application/json", "Authorization": `Bearer ${tok}` });
                   let minerRunning = false;
                   let hashesBal = 0;
                   try {
+                    await humanDelay(1200, 2500);
                     const mResp = await fetch(`${aiBase}/miner`, { headers: aiAuth });
                     if (mResp.ok) {
                       const mData = await mResp.json();
@@ -6838,6 +6840,7 @@ Reply to Arif naturally:`;
                   } catch (_) {}
 
                   if (!minerRunning) {
+                    await humanDelay(1200, 2500);
                     await fetch(`${aiBase}/miner-start_mining`, {
                       method: "POST",
                       headers: aiAuth,
@@ -6846,6 +6849,7 @@ Reply to Arif naturally:`;
                   }
 
                   if (hashesBal >= 3.0) {
+                    await humanDelay(1200, 2500);
                     await fetch(`${aiBase}/miner-exchange_hashes`, {
                       method: "POST",
                       headers: aiAuth,
@@ -6854,12 +6858,14 @@ Reply to Arif naturally:`;
                   }
 
                   try {
+                    await humanDelay(1200, 2500);
                     const tResp = await fetch(`${aiBase}/tasks`, { headers: aiAuth });
                     if (tResp.ok) {
                       const tData = await tResp.json();
                       const tasks = [...(tData.result?.referral || []), ...(tData.result?.follow || []), ...(tData.result?.social || [])];
                       for (const t of tasks) {
                         if (t.id && t.status !== "completed" && !(t.progress_finish && (t.progress_current || 0) < t.progress_finish)) {
+                          await humanDelay(1500, 3000);
                           await fetch(`${aiBase}/task-check`, {
                             method: "POST",
                             headers: aiAuth,
@@ -6875,7 +6881,7 @@ Reply to Arif naturally:`;
                                 });
                               } catch (_) {}
                               resolve();
-                            }, 15000);
+                            }, 16000);
                           }));
                         }
                       }

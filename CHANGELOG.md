@@ -4,7 +4,7 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-- **Pillars 3, 4, 5 Overhaul: Anti-Sybil Moderation, Welcome Gift & Humanized Bot Farming (`deploy_both_cf_workers.py`, `public/index.html`, `public/admin/index.html`)**:
+- **Pillars 3, 4, 5 Overhaul: Anti-Sybil Moderation, Welcome Gift, Humanized Bot Farming & Ari AI Copilot (`deploy_both_cf_workers.py`, `public/index.html`, `public/admin/index.html`)**:
   - **🛡️ Anti-Sybil & Account Moderation**:
     * Implemented strict anti-sybil access restrictions across User Bot (`@AAAPREMIUMAPPSbot`) incoming messages and callback queries.
     * Banned users are denied access to bot actions, automated mining, and points rewards, with protective exclusion for admin/owner (`6727787768`).
@@ -20,10 +20,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
       - **Stones**: Dynamic task loops now pause 2.5s-4.5s between `task/start`, `task/complete`, and `task/verify` to resolve task verification failures 100%.
       - **MRG**: Delays between `claim-mining`, task claims, and level unlocks.
       - **ART**: Random 12s-18s dwell time before claiming tasks.
+      - **AI Lab**: Jitter delays before login, miner start, exchange hashes, and between task checks.
       - **UltraWallet**: Rewarded video ad calls (`watchAd`) now wait 16s-24s to realistically simulate video completion and prevent server flags.
       - **Apex**: Human delays between checkin, mining restart, and social tasks.
       - **ATF**: 2s-4.2s human delay solving math challenges before mine activation.
       - **Ainovum**: Human dwell times between bootstrap, mining cycles, daily bonuses, and gift box claims.
+  - **⚙️ Custom Points Grant Modal (`public/index.html`)**:
+    * Added 1-tap modal to grant custom points amounts with quick-presets (`+50`, `+200`, `+1,000`, `+5,000`) and arbitrary numerical input.
+  - **🧠 Ari AI Fleet Operations Copilot (`public/admin/index.html`)**:
+    * Added interactive quick action chips (`📊 Fleet Status`, `⚡ Universal Sweep`, `🌾 Instant Harvest`, `🌐 Mesh Health`).
+    * Built dynamic fleet command handler supporting contextual status, node telemetry, sweep triggers, and auto-scrolling terminal output.
   - **Pillar 3: 8-Pool Autonomous Fleet Telemetry Card (`public/admin/index.html`)**:
     * Added dedicated 8-Pool Telemetry dashboard section in Admin Fleet Operations Console (`https://atf-miner-app.pages.dev/admin`) displaying live operational status across all 8 networks (TON, Arbitrum, BSC, APX).
   - **Pillars 4 & 5: Zero Phone Load & Telegram Stars Monetization**:

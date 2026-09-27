@@ -583,6 +583,10 @@ function App() {
               className: "flex-1 py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
             }, "👑 30D VIP"),
             React.createElement("button", {
+              onClick: () => { setGrantModalUser(u); setCustomPointsInput("250"); haptic("light"); },
+              className: "py-1.5 px-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer"
+            }, "⚙️ Pts"),
+            React.createElement("button", {
               disabled: actionLoadingId === `${u.user_id}_toggle_farming`,
               onClick: () => handleUserAction(u.user_id, "toggle_farming"),
               className: `py-1.5 px-2.5 rounded-lg text-[11px] font-bold border transition active:scale-95 cursor-pointer ${
@@ -674,6 +678,13 @@ function App() {
             "Credit +500 Points Instantly"
           ),
           React.createElement("button", {
+            onClick: () => { setGrantModalUser(selectedUserDetail); setCustomPointsInput("500"); haptic("light"); },
+            className: "w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 border border-slate-200 cursor-pointer active:scale-95"
+          },
+            React.createElement(Icon, { name: "sparkles", className: "w-4 h-4 text-blue-600" }),
+            "Grant Custom Points Amount..."
+          ),
+          React.createElement("button", {
             onClick: () => handleUserAction(selectedUserDetail.user_id, "set_vip", { tier: "month", days: 30 }),
             className: "w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
           },
@@ -697,6 +708,61 @@ function App() {
             React.createElement(Icon, { name: "shieldCheck", className: "w-4 h-4" }),
             selectedUserDetail.is_banned ? "✅ Unban Account & Restore Access" : "🚫 Ban & Suspend Account (Anti-Sybil)"
           )
+        )
+      )
+    ),
+
+    // Custom Points Grant Modal
+    grantModalUser && React.createElement("div", {
+      className: "fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4",
+      onClick: () => setGrantModalUser(null)
+    },
+      React.createElement("div", {
+        className: "bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl border border-slate-200 animate-slide-up",
+        onClick: (e) => e.stopPropagation()
+      },
+        React.createElement("div", { className: "flex items-center justify-between pb-3 mb-3 border-b border-slate-100" },
+          React.createElement("div", null,
+            React.createElement("h3", { className: "font-black text-sm text-slate-900" }, "Grant Custom Points"),
+            React.createElement("div", { className: "text-xs text-slate-500 font-mono" }, `${grantModalUser.first_name || "User"} (${grantModalUser.user_id})`)
+          ),
+          React.createElement("button", {
+            onClick: () => setGrantModalUser(null),
+            className: "w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center"
+          }, React.createElement(Icon, { name: "x", className: "w-3.5 h-3.5" }))
+        ),
+        React.createElement("div", { className: "mb-3" },
+          React.createElement("label", { className: "text-[10px] font-bold text-slate-500 uppercase block mb-1" }, "Points Amount"),
+          React.createElement("input", {
+            type: "number",
+            value: customPointsInput,
+            onChange: (e) => setCustomPointsInput(e.target.value),
+            placeholder: "Enter points...",
+            className: "w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 outline-none focus:border-blue-500 font-mono"
+          })
+        ),
+        React.createElement("div", { className: "flex items-center gap-1.5 mb-4" },
+          [50, 200, 1000, 5000].map(amt => React.createElement("button", {
+            key: amt,
+            onClick: () => setCustomPointsInput(String(amt)),
+            className: "flex-1 py-1 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition"
+          }, `+${amt}`))
+        ),
+        React.createElement("div", { className: "flex gap-2" },
+          React.createElement("button", {
+            onClick: () => setGrantModalUser(null),
+            className: "flex-1 py-2 rounded-xl text-xs font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 cursor-pointer"
+          }, "Cancel"),
+          React.createElement("button", {
+            onClick: () => {
+              const amt = parseInt(customPointsInput) || 0;
+              if (amt > 0) {
+                handleUserAction(grantModalUser.user_id, "add_points", { amount: amt });
+                setGrantModalUser(null);
+              }
+            },
+            className: "flex-1 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-xs cursor-pointer"
+          }, "Grant Points")
         )
       )
     )

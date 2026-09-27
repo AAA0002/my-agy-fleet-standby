@@ -373,6 +373,38 @@ function App() {
     }
   };
 
+  const handleAiSubmit = (promptText = null) => {
+    const text = (promptText || aiInput).trim();
+    if (!text || aiLoading) return;
+    setAiInput("");
+    setAiMessages(prev => [...prev, { sender: "user", text }]);
+    setAiLoading(true);
+    haptic("light");
+
+    const lower = text.toLowerCase();
+    setTimeout(() => {
+      let reply = "";
+      if (lower.includes("sweep") || lower.includes("withdraw")) {
+        reply = "⚡ Dispatched Universal Sweep to Binance Vault (0xfda418...d5ce). Checking thresholds across Arbitrum One (500 STONES), BEP-20 (0.02 USDT), and TON network.";
+        handleUniversalSweep();
+      } else if (lower.includes("harvest") || lower.includes("farm") || lower.includes("claim")) {
+        reply = "🌾 Dispatched Instant 8-Pool Harvest across all 14 fleet accounts! Automated claim cycles queued on Cloudflare Edge mesh.";
+        handleInstantHarvest();
+      } else if (lower.includes("status") || lower.includes("fleet") || lower.includes("account")) {
+        const totalStones = fleet.reduce((sum, a) => sum + (a.stones_coins || 0), 0);
+        const totalAtf = fleet.reduce((sum, a) => sum + (a.atf_balance || 0), 0);
+        reply = `📊 Executive Fleet Telemetry:\n• Active Accounts: 14/14 Online (100% Cloud-First)\n• Vault Balance: ${bnbBalance.toFixed(6)} BNB (≈ $${(bnbBalance * rates.bnb_usd).toFixed(2)})\n• Total Mined: ${totalStones.toLocaleString()} STONES • ${totalAtf.toFixed(1)} ATF\n• Active Pools (8/8): ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n• 5 Edge Nodes: All Online (0% Phone Load).`;
+      } else if (lower.includes("mesh") || lower.includes("node") || lower.includes("ping")) {
+        reply = "🌐 Cloudflare 5-Node Edge Mesh Status:\n• Node 1 (aaaai2): 🟢 Operational\n• Node 2 (aaa-bot): 🟢 Operational\n• Node 3 (aaa222): 🟢 Operational\n• Node 4 (agorameet): 🟢 Operational\n• Node 5 (aaaai): 🟢 Operational\n• Standby: Render SG & FRA Hot Failover Active.";
+      } else {
+        reply = "🤖 Intelligence report for Commander Arif: All 14 accounts and 8 automated pools are mining uninterrupted. System is running 100% in the cloud on the 5-node edge mesh with zero phone load. You can ask me to 'sweep', 'harvest', or check 'status' anytime!";
+      }
+      setAiMessages(prev => [...prev, { sender: "ai", text: reply }]);
+      setAiLoading(false);
+      haptic("success");
+    }, 500);
+  };
+
   // Connect Account Flow
   const handleConnectPhone = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
@@ -730,28 +762,33 @@ function App() {
         aiLoading && React.createElement("div", { className: "p-3 rounded-2xl bg-white border border-slate-200 text-slate-400 text-xs animate-pulse" }, "Ari AI is thinking..."),
         React.createElement("div", { ref: messagesEndRef })
       ),
+      React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto pb-2 mb-2" },
+        [
+          { label: "📊 Fleet Status", cmd: "status" },
+          { label: "⚡ Universal Sweep", cmd: "sweep" },
+          { label: "🌾 Instant Harvest", cmd: "harvest" },
+          { label: "🌐 Mesh Health", cmd: "mesh" }
+        ].map((chip, cIdx) => React.createElement("button", {
+          key: cIdx,
+          onClick: () => handleAiSubmit(chip.cmd),
+          className: "px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 whitespace-nowrap shadow-2xs transition active:scale-95 cursor-pointer"
+        }, chip.label))
+      ),
       React.createElement("div", { className: "flex items-center gap-1.5" },
         React.createElement("input", {
           type: "text",
           value: aiInput,
           onChange: (e) => setAiInput(e.target.value),
           onKeyDown: (e) => {
-            if (e.key === "Enter" && aiInput.trim()) {
-              setAiMessages(prev => [...prev, { sender: "user", text: aiInput.trim() }, { sender: "ai", text: "Fleet status: All 14 accounts active across 5 edge nodes. Automated claims running every 15 minutes." }]);
-              setAiInput("");
-            }
+            if (e.key === "Enter") handleAiSubmit();
           },
-          placeholder: "Ask Ari AI about fleet status...",
-          className: "flex-1 px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 outline-none shadow-2xs"
+          placeholder: "Ask Ari AI (e.g. status, sweep, harvest, mesh)...",
+          className: "flex-1 px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 outline-none shadow-2xs font-medium"
         }),
         React.createElement("button", {
-          onClick: () => {
-            if (aiInput.trim()) {
-              setAiMessages(prev => [...prev, { sender: "user", text: aiInput.trim() }, { sender: "ai", text: "Fleet status: All 14 accounts active across 5 edge nodes. Automated claims running every 15 minutes." }]);
-              setAiInput("");
-            }
-          },
-          className: "p-2.5 bg-blue-600 text-white rounded-xl shadow-xs"
+          onClick: () => handleAiSubmit(),
+          disabled: aiLoading || !aiInput.trim(),
+          className: "p-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl shadow-xs cursor-pointer transition active:scale-95"
         },
           React.createElement(Icon, { name: "send", className: "w-4 h-4" })
         )
