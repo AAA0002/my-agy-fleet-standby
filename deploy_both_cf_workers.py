@@ -176,6 +176,41 @@ async function upstashGet(key) {
   return null;
 }
 
+async function upstashSadd(key, member) {
+  try {
+    await fetch(`${UPSTASH_URL}/sadd/${key}/${encodeURIComponent(member)}`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
+    });
+  } catch (_) {}
+}
+
+async function upstashScard(key) {
+  try {
+    const resp = await fetch(`${UPSTASH_URL}/scard/${key}`, {
+      headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      return typeof data.result === "number" ? data.result : 0;
+    }
+  } catch (_) {}
+  return 0;
+}
+
+async function upstashSmembers(key) {
+  try {
+    const resp = await fetch(`${UPSTASH_URL}/smembers/${key}`, {
+      headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      return Array.isArray(data.result) ? data.result : [];
+    }
+  } catch (_) {}
+  return [];
+}
+
 export default {
   async fetch(request, env, ctx) {
     const SIBLING_URLS = __SIBLING_URLS_JSON__;
@@ -361,17 +396,21 @@ export default {
         "YOUR ROLE & KNOWLEDGE BASE:\n" +
         "1. Help & User Guide:\n" +
         "   - How to Connect Accounts: Tap '➕ Connect Account' in the menu, send phone number in international format (+...), enter the 5-digit Telegram login code (and 2FA cloud password if set). It connects securely to our 100% serverless cloud MTProto backend.\n" +
+        "   - How to Remove Accounts: Tap '👥 My Accounts' and tap '🗑️ Remove' next to any account, or simply type /remove or /disconnect anytime. Removing an account instantly frees up its cloud slot.\n" +
         "   - Zero Phone Load: Mining runs 100% in the cloud 24/7. Users can turn off their phone or disconnect; farming never stops.\n" +
         "   - 8 Mining Pools: ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, and Ainovum.\n" +
+        "   - Direct Payouts & Withdrawals: 100% direct to the user's verified Telegram bot wallets (TON for ATF/MRG/ART, BEP-20 for AI Lab/Ainovum, Arbitrum for Stones) with 0% platform fee and 0 gas fee taken by us.\n" +
         "   - Point System: Costs 100 points/day per active connected account.\n" +
-        "   - Free Points:\n" +
-        "     * 📺 Watch Ads: Earn +20 Points each ad (15s cooldown). Watching 50 ads gives +1 temporary bonus slot!\n" +
+        "   - Free Points & Rewards:\n" +
+        "     * 📅 Daily Bonus: Check in daily to build a 7-day streak (+30 Pts up to +150 Pts + bonus 24h slot on Day 7)!\n" +
+        "     * 📺 Watch Ads: Earn +20 Points each ad (15s cooldown). Watching 50 ads unlocks a free bonus slot!\n" +
         "     * 👥 Invite Friends: Earn +500 Points for every friend who joins & verifies!\n" +
-        "   - Subscription Passes (Telegram Stars):\n" +
+        "   - VIP Subscription Passes (Telegram Stars):\n" +
         "     * 🎟️ 1-Day Pass (15 Stars): 24h unlimited cloud mining with zero point deduction + 150 points.\n" +
         "     * 🎟️ 7-Day Weekly Pass (45 Stars): 7 days mining with 0 point deduction + 1,000 points + 1 extra account slot.\n" +
         "     * 💎 30-Day Monthly Pass (120 Stars): 30 days mining with 0 point deduction + 4,500 points + 1 permanent slot + 2x ad point multiplier (+40 Pts per ad view).\n" +
         "     * 🌟 Permanent Slot (50 Stars): +1 permanent account slot.\n" +
+        "   - Human Admin Support: Users can submit a direct support ticket to Platform Admin Arif by sending /support <their message>.\n" +
         "   - 3 Official Channels:\n" +
         "     * 💬 Supergroup (https://t.me/+8xTmE28Up9U5YWQ1): Friendly community help & discussions.\n" +
         "     * 📢 Announcements (@AAAATFAUTOMINING / https://t.me/AAAATFAUTOMINING): Real-time updates & giveaways.\n" +
@@ -437,9 +476,11 @@ export default {
       const pLow = prompt.toLowerCase();
       let fallbackAns = `Hello ${senderName}! I am Ari AI, your official copilot for AAA Auto Mining.\n\n` +
         `• *Connect Account:* Tap ➕ Connect Account to start cloud farming 8 bots.\n` +
+        `• *Daily Streak:* Check in daily for +30 up to +150 Points and bonus slots!\n` +
         `• *Points:* Daily cost is 100 Pts/day. Earn +20 Pts watching ads or +500 Pts per referral.\n` +
         `• *VIP Passes:* Day (15 Stars), Weekly (45 Stars), and Monthly (120 Stars) passes waive all points fees!\n` +
-        `• *Channels:* Join our Supergroup, Announcements, and Live Activity streams.\n\n` +
+        `• *Direct Payouts:* Mined tokens deposit directly to your Telegram bot balances with 0 fees.\n` +
+        `• *Support:* Type \`/support <message>\` to message Admin Arif directly.\n\n` +
         `Feel free to ask me any question or tap a menu button below!`;
 
       if (pLow.includes("connect") || pLow.includes("add account") || pLow.includes("login")) {
@@ -450,12 +491,42 @@ export default {
           `4. Enter your 2FA Cloud Password if enabled.\n\n` +
           `🔒 *100% Serverless Cloud Mining:*\n` +
           `Your session is encrypted in the cloud and automatically farms all 8 bots 24/7 with zero battery load on your phone!`;
+      } else if (pLow.includes("remove") || pLow.includes("disconnect") || pLow.includes("delete account")) {
+        fallbackAns = `🗑️ *How to Disconnect / Remove Accounts:*\n\n` +
+          `1. Tap *👥 My Accounts* in the menu.\n` +
+          `2. Tap the *🗑️ Remove <Account>* button next to the account.\n` +
+          `3. Or simply send \`/remove\` to open the interactive removal menu, or \`/remove +880...\`.\n\n` +
+          `Disconnecting an account immediately frees up your cloud slot!`;
       } else if (pLow.includes("point") || pLow.includes("earn") || pLow.includes("free")) {
         fallbackAns = `💎 *How to Earn Free Mining Points:*\n\n` +
+          `• *📅 Daily Bonus:* Tap *📅 Daily Bonus* to earn +30 up to +150 Points every day!\n` +
           `• *📺 Watch Ads:* Tap *Watch Ad* to get *+20 Points* (every 15s). Reach 50 ads for a free bonus slot!\n` +
           `• *👥 Invite Friends:* Share your referral link to earn *+500 Points* for every friend who joins & verifies!\n` +
           `• *🎁 Welcome Gift:* Every new verified user gets 100 free points.\n\n` +
           `Each connected account uses 100 points/day for continuous 24/7 cloud mining.`;
+      } else if (pLow.includes("daily") || pLow.includes("streak") || pLow.includes("checkin")) {
+        fallbackAns = `📅 *7-Day Daily Check-in Streak System:*\n\n` +
+          `Check in once every 24 hours to earn escalating rewards:\n` +
+          `• Day 1: +30 Points\n` +
+          `• Day 2: +45 Points\n` +
+          `• Day 3: +60 Points\n` +
+          `• Day 4: +80 Points\n` +
+          `• Day 5: +100 Points\n` +
+          `• Day 6: +125 Points\n` +
+          `• Day 7: +150 Points + 1 Extra 24h Cloud Slot!\n\n` +
+          `Tap *📅 Daily Bonus* in the menu or send \`/daily\` to claim!`;
+      } else if (pLow.includes("withdraw") || pLow.includes("payout") || pLow.includes("cashout") || pLow.includes("balance")) {
+        fallbackAns = `💳 *How Withdrawals & Payouts Work:*\n\n` +
+          `• All 8 mining bots accumulate tokens directly inside their respective official Telegram bot balances:\n` +
+          `  - *ATF Miner, MRG, ART:* Direct TON Blockchain withdrawal inside the bots.\n` +
+          `  - *AI Lab, Ainovum:* Direct BEP-20 (BNB/USDT) withdrawal to your Binance or Trust Wallet.\n` +
+          `  - *Stones Miners:* Arbitrum One auto-withdrawals.\n` +
+          `• *0% Platform Fee:* We deduct 0 withdrawal fees and 0 gas charges—100% of mined rewards are yours!`;
+      } else if (pLow.includes("support") || pLow.includes("admin") || pLow.includes("help") || pLow.includes("ticket")) {
+        fallbackAns = `💬 *How to Contact Platform Support:*\n\n` +
+          `• *Direct Ticket:* Send \`/support <your message>\` in this chat to alert Platform Admin Arif directly.\n` +
+          `• *Supergroup:* Join our [AAA Auto Miner Supergroup](https://t.me/+8xTmE28Up9U5YWQ1) for community help.\n` +
+          `• *Instant AI:* Ask me any question anytime!`;
       } else if (pLow.includes("pass") || pLow.includes("star") || pLow.includes("vip") || pLow.includes("sub")) {
         fallbackAns = `🌟 *VIP Subscription Passes (Telegram Stars):*\n\n` +
           `• *🎟️ 1-Day Pass (15 Stars):* 24h unlimited cloud mining (0 point deduction) + 150 points.\n` +
@@ -1788,6 +1859,18 @@ fi
         const statusInlineKeyboard = {
           inline_keyboard: [
             [
+              { text: "⚡ Instant Harvest", callback_data: "btn_harvest" },
+              { text: "💼 Universal Sweep", callback_data: "btn_withdraw" }
+            ],
+            [
+              { text: "👥 Fleet Accounts (14)", callback_data: "btn_accounts" },
+              { text: "🌐 Cloud Mesh (5/5)", callback_data: "btn_mesh" }
+            ],
+            [
+              { text: "📊 Community & Users", callback_data: "btn_community" },
+              { text: "🌅 AI Briefing", callback_data: "btn_briefing" }
+            ],
+            [
               { text: "🚀 Open Executive Dashboard", web_app: { url: dashUrl } }
             ]
           ]
@@ -1822,6 +1905,10 @@ fi
             [
               { text: "📊 Fleet Status" },
               { text: "🌐 Cloud Mesh" }
+            ],
+            [
+              { text: "👥 Community & Users" },
+              { text: "🌅 AI Briefing" }
             ]
           ],
           resize_keyboard: true,
@@ -2336,6 +2423,61 @@ fi
                   await editAnimatedMessage(chatId, cbMsgId, frames, statusInlineKeyboard, 300);
                 } else {
                   await sendAnimatedReply(chatId, frames, statusInlineKeyboard, 300);
+                }
+              })());
+            } else if (cbData === "btn_community") {
+              ctx.waitUntil((async () => {
+                const totalUsers = await upstashScard("ub_registered_users");
+                const userList = await upstashSmembers("ub_registered_users");
+                let activePasses = 0;
+                let activeAccountsCount = 0;
+                let totalPointsCirculation = 0;
+                const sampleUsers = userList.slice(0, 30);
+                for (const uid of sampleUsers) {
+                  try {
+                    const raw = await upstashGet(`ub_user:${uid}`);
+                    if (raw) {
+                      const p = typeof raw === "string" ? JSON.parse(raw) : raw;
+                      if (p.subscription_expiry && p.subscription_expiry > Date.now()) activePasses++;
+                      if (p.accounts && p.accounts.length) activeAccountsCount += p.accounts.length;
+                      if (p.points) totalPointsCirculation += p.points;
+                    }
+                  } catch (_) {}
+                }
+                const rep = `📊 *AAA COMMUNITY & PUBLIC USER BASE* 🚀\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `• *Registered Miners:* \`${totalUsers || 1}\` Users\n` +
+                  `• *Community Cloud Accounts:* \`${activeAccountsCount}\` Active\n` +
+                  `• *Active VIP Passes:* \`${activePasses}\` (Day / Week / Month)\n` +
+                  `• *Sample Points In Circulation:* \`${totalPointsCirculation.toLocaleString()}\` Pts\n` +
+                  `• *Live Community Channels:* Supergroup, Announcements & Live Activity\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `💡 *Admin Tools:*\n` +
+                  `• \`/grant <user_id> <pts>\` — Award points\n` +
+                  `• \`/grantpass <user_id> <day|week|month>\` — Grant VIP Pass\n` +
+                  `• \`/grantslot <user_id> <slots>\` — Grant account slots\n` +
+                  `• \`/broadcast <text>\` — Broadcast to all users\n` +
+                  `• \`/reply <user_id> <text>\` — Direct reply to user\n` +
+                  `• \`/nodes\` — Live latency probe across 5 edge nodes`;
+                const cbMsgId = cb.message ? cb.message.message_id : null;
+                if (cbMsgId) {
+                  await editAnimatedMessage(chatId, cbMsgId, [rep], statusInlineKeyboard, 200);
+                } else {
+                  await sendAnimatedReply(chatId, [rep], statusInlineKeyboard, 200);
+                }
+              })());
+            } else if (cbData === "btn_briefing") {
+              ctx.waitUntil((async () => {
+                const aiData = await runAiCascade("You are the Chief AI Operations Officer for the 14-account autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. 14/14 accounts active & 100% 5/5 verified. 2. 8 mining bots active (Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, ATF Miner). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.");
+                const ans = aiData.answer || aiData.response || "All 14 accounts active and mining across 14 cloud nodes.";
+                const prov = aiData.provider || "Google Gemini";
+                const mod = aiData.model || "gemini-3.6-flash";
+                const msgText = `📊 *MY AGY AI — Daily Executive Briefing*\n━━━━━━━━━━━━━━━━━━━━━━\n${ans}\n━━━━━━━━━━━━━━━━━━━━━━\n🤖 _Generated by ${prov} (${mod})_`;
+                const cbMsgId = cb.message ? cb.message.message_id : null;
+                if (cbMsgId) {
+                  await editAnimatedMessage(chatId, cbMsgId, [msgText], statusInlineKeyboard, 200);
+                } else {
+                  await sendAnimatedReply(chatId, [msgText], statusInlineKeyboard, 200);
                 }
               })());
             } else {
@@ -3228,22 +3370,266 @@ fi
           return new Response("OK");
         }
 
+        // 7.1 Community & Public User Base Metrics (/community, /users, /userstats)
+        if (text === "👥 Community & Users" || text === "/community" || text.startsWith("/community") || text === "/users" || text.startsWith("/users") || text.startsWith("/userstats")) {
+          ctx.waitUntil((async () => {
+            const totalUsers = await upstashScard("ub_registered_users");
+            const userList = await upstashSmembers("ub_registered_users");
+            let activePasses = 0;
+            let activeAccountsCount = 0;
+            let totalPointsCirculation = 0;
+            const sampleUsers = userList.slice(0, 30);
+            for (const uid of sampleUsers) {
+              try {
+                const raw = await upstashGet(`ub_user:${uid}`);
+                if (raw) {
+                  const p = typeof raw === "string" ? JSON.parse(raw) : raw;
+                  if (p.subscription_expiry && p.subscription_expiry > Date.now()) activePasses++;
+                  if (p.accounts && p.accounts.length) activeAccountsCount += p.accounts.length;
+                  if (p.points) totalPointsCirculation += p.points;
+                }
+              } catch (_) {}
+            }
+            const rep = `📊 *AAA COMMUNITY & PUBLIC USER BASE* 🚀\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Registered Miners:* \`${totalUsers || 1}\` Users\n` +
+              `• *Community Cloud Accounts:* \`${activeAccountsCount}\` Active\n` +
+              `• *Active VIP Passes:* \`${activePasses}\` (Day / Week / Month)\n` +
+              `• *Sample Points In Circulation:* \`${totalPointsCirculation.toLocaleString()}\` Pts\n` +
+              `• *Live Channels:* Supergroup, Announcements & Live Activity\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `💡 *Admin Commands:*\n` +
+              `• \`/grant <user_id> <pts>\` — Award mining points\n` +
+              `• \`/grantpass <user_id> <day|week|month>\` — Grant VIP Pass\n` +
+              `• \`/grantslot <user_id> <slots>\` — Grant account slots\n` +
+              `• \`/broadcast <text>\` — Broadcast announcement to all users\n` +
+              `• \`/reply <user_id> <text>\` — Direct reply to user support ticket\n` +
+              `• \`/nodes\` — Probe latency across all 5 Cloudflare Edge nodes`;
+            await sendReply(rep, statusInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 7.2 Admin Grant Points Command (/grant <user_id> <points>)
+        if (text.startsWith("/grant ") && !text.startsWith("/grantpass") && !text.startsWith("/grantslot")) {
+          const parts = text.split(/\s+/);
+          if (parts.length >= 3) {
+            const targetUid = parts[1].trim();
+            const pts = parseInt(parts[2].trim(), 10);
+            if (targetUid && !isNaN(pts)) {
+              ctx.waitUntil((async () => {
+                const raw = await upstashGet(`ub_user:${targetUid}`);
+                if (raw) {
+                  const prof = typeof raw === "string" ? JSON.parse(raw) : raw;
+                  prof.points = (prof.points || 0) + pts;
+                  await upstashSet(`ub_user:${targetUid}`, prof);
+                  // Notify user via User Bot
+                  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                  await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: targetUid,
+                      text: `🎁 *ADMIN REWARD CREDITED!* 🎉\n\nPlatform Admin Arif has credited your account with *+${pts.toLocaleString()} Mining Points*!\n\n• *New Balance:* ${prof.points} Points\n\nEnjoy 24/7 cloud mining! 🚀`,
+                      parse_mode: "Markdown"
+                    })
+                  }).catch(() => {});
+                  await sendReply(`✅ Successfully granted *+${pts.toLocaleString()} Points* to User \`${targetUid}\`!\n• User New Balance: ${prof.points} Points`, statusInlineKeyboard);
+                } else {
+                  await sendReply(`⚠️ User \`${targetUid}\` not found in database.`, statusInlineKeyboard);
+                }
+              })());
+              return new Response("OK");
+            }
+          }
+          await sendReply("Usage: `/grant <user_id> <points>`\nExample: `/grant 6727787768 500`", statusInlineKeyboard);
+          return new Response("OK");
+        }
+
+        // 7.3 Admin Grant VIP Pass Command (/grantpass <user_id> <day|week|month>)
+        if (text.startsWith("/grantpass")) {
+          const parts = text.split(/\s+/);
+          if (parts.length >= 3) {
+            const targetUid = parts[1].trim();
+            const tier = parts[2].trim().toLowerCase();
+            const validTiers = { day: 86400 * 1000, week: 7 * 86400 * 1000, month: 30 * 86400 * 1000 };
+            if (validTiers[tier]) {
+              ctx.waitUntil((async () => {
+                const raw = await upstashGet(`ub_user:${targetUid}`);
+                if (raw) {
+                  const prof = typeof raw === "string" ? JSON.parse(raw) : raw;
+                  const now = Date.now();
+                  const baseExp = (prof.subscription_expiry && prof.subscription_expiry > now) ? prof.subscription_expiry : now;
+                  prof.subscription_expiry = baseExp + validTiers[tier];
+                  prof.subscription_tier = tier;
+                  prof.farming_active = true;
+                  await upstashSet(`ub_user:${targetUid}`, prof);
+                  const tTitle = tier === "month" ? "💎 30-Day Monthly Pass" : (tier === "week" ? "🎟️ 7-Day Weekly Pass" : "🎟️ 1-Day Pass");
+                  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                  await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: targetUid,
+                      text: `🌟 *VIP SUBSCRIPTION PASS ACTIVATED!* 🎟️\n\nPlatform Admin Arif has activated a *${tTitle}* for your account!\n\n• *Status:* 🟢 24/7 Unlimited Cloud Mining with Zero Point Deduction active!\n\nThank you for being part of AAA Auto Mining! 🚀`,
+                      parse_mode: "Markdown"
+                    })
+                  }).catch(() => {});
+                  await sendReply(`✅ Successfully granted *${tTitle}* to User \`${targetUid}\`!`, statusInlineKeyboard);
+                } else {
+                  await sendReply(`⚠️ User \`${targetUid}\` not found in database.`, statusInlineKeyboard);
+                }
+              })());
+              return new Response("OK");
+            }
+          }
+          await sendReply("Usage: `/grantpass <user_id> <day|week|month>`\nExample: `/grantpass 6727787768 month`", statusInlineKeyboard);
+          return new Response("OK");
+        }
+
+        // 7.4 Admin Grant Account Slots Command (/grantslot <user_id> <slots>)
+        if (text.startsWith("/grantslot")) {
+          const parts = text.split(/\s+/);
+          if (parts.length >= 3) {
+            const targetUid = parts[1].trim();
+            const slotsCount = parseInt(parts[2].trim(), 10);
+            if (targetUid && !isNaN(slotsCount)) {
+              ctx.waitUntil((async () => {
+                const raw = await upstashGet(`ub_user:${targetUid}`);
+                if (raw) {
+                  const prof = typeof raw === "string" ? JSON.parse(raw) : raw;
+                  prof.slots = (prof.slots || 1) + slotsCount;
+                  await upstashSet(`ub_user:${targetUid}`, prof);
+                  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                  await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: targetUid,
+                      text: `🌟 *EXTRA CLOUD SLOTS UNLOCKED!* 📦\n\nPlatform Admin Arif has unlocked *+${slotsCount} Permanent Account Slot(s)* for you!\n\n• *Total Slots Available:* ${prof.slots}\n\nYou can now link another Telegram account using *➕ Connect Account*!`,
+                      parse_mode: "Markdown"
+                    })
+                  }).catch(() => {});
+                  await sendReply(`✅ Successfully granted *+${slotsCount} slot(s)* to User \`${targetUid}\`! Total slots: ${prof.slots}`, statusInlineKeyboard);
+                } else {
+                  await sendReply(`⚠️ User \`${targetUid}\` not found in database.`, statusInlineKeyboard);
+                }
+              })());
+              return new Response("OK");
+            }
+          }
+          await sendReply("Usage: `/grantslot <user_id> <slots>`\nExample: `/grantslot 6727787768 2`", statusInlineKeyboard);
+          return new Response("OK");
+        }
+
+        // 7.5 Admin Direct Reply / Support Dispatch (/reply <user_id> <message> or /dm <user_id> <message>)
+        if (text.startsWith("/reply ") || text.startsWith("/dm ")) {
+          const parts = text.split(/\s+/);
+          if (parts.length >= 3) {
+            const targetUid = parts[1].trim();
+            const replyMsg = parts.slice(2).join(" ").trim();
+            if (targetUid && replyMsg) {
+              ctx.waitUntil((async () => {
+                const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                const userPayload = `📩 *MESSAGE FROM PLATFORM ADMIN (ARIF)*\n━━━━━━━━━━━━━━━━━━━━━━\n${replyMsg}\n━━━━━━━━━━━━━━━━━━━━━━\n💬 _You can reply directly in this chat or send /support <message> anytime._`;
+                const r = await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ chat_id: targetUid, text: userPayload, parse_mode: "Markdown" })
+                });
+                if (r.ok) {
+                  await sendReply(`✅ Reply delivered to User \`${targetUid}\` successfully!`, statusInlineKeyboard);
+                } else {
+                  await sendReply(`⚠️ Failed to deliver reply to User \`${targetUid}\`. Check user ID.`, statusInlineKeyboard);
+                }
+              })());
+              return new Response("OK");
+            }
+          }
+          await sendReply("Usage: `/reply <user_id> <message>`\nExample: `/reply 6727787768 Hello! Your account is active.`", statusInlineKeyboard);
+          return new Response("OK");
+        }
+
+        // 7.6 Admin Community Broadcast (/broadcast <message> or /announce <message>)
+        if (text.startsWith("/broadcast ") || text.startsWith("/announce ")) {
+          const parts = text.split(/\s+/);
+          const bMsg = parts.slice(1).join(" ").trim();
+          if (!bMsg) {
+            await sendReply("Usage: `/broadcast <message>`\nExample: `/broadcast 🚀 Big update! All 8 pools are paying out today!`", statusInlineKeyboard);
+            return new Response("OK");
+          }
+          ctx.waitUntil((async () => {
+            const userList = await upstashSmembers("ub_registered_users");
+            const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+            let sentCount = 0;
+            const fullBroadcast = `📢 *OFFICIAL PLATFORM ANNOUNCEMENT*\n━━━━━━━━━━━━━━━━━━━━━━\n${bMsg}\n━━━━━━━━━━━━━━━━━━━━━━\n🤖 _Sent by Admin Team · @AAAPREMIUMAPPSbot_`;
+            for (const uid of userList) {
+              try {
+                const res = await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ chat_id: uid, text: fullBroadcast, parse_mode: "Markdown" })
+                });
+                if (res.ok) sentCount++;
+                await new Promise(r => setTimeout(r, 60)); // Rate limit throttle
+              } catch (_) {}
+            }
+            await sendReply(`📢 *Broadcast Dispatched Successfully!*\n\n• *Recipients:* Delivered to \`${sentCount}\` / \`${userList.length}\` users ✅`, statusInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 7.7 Live Multi-Cloud Edge Prober (/nodes or /health)
+        if (text === "/nodes" || text.startsWith("/nodes") || text === "/health" || text.startsWith("/health")) {
+          ctx.waitUntil((async () => {
+            const probeNodes = [
+              { name: "Node 1 (korimhaji)", url: "https://restore-agy.aaaai2.workers.dev/health" },
+              { name: "Node 2 (koramshah)", url: "https://restore-agy.aaa-bot.workers.dev/health" },
+              { name: "Node 3 (coz1gameh3)", url: "https://restore-agy.aaa222.workers.dev/health" },
+              { name: "Node 4 (aaafreeai)", url: "https://restore-agy.agorameet.workers.dev/health" },
+              { name: "Node 5 (aaaai-engine)", url: "https://restore-agy.aaaai.workers.dev/health" }
+            ];
+            const results = await Promise.all(probeNodes.map(async (n) => {
+              const start = Date.now();
+              try {
+                const res = await fetch(n.url, { signal: AbortSignal.timeout(3000) });
+                const lat = Date.now() - start;
+                return `• *${n.name}:* ${res.ok ? "🟢 Online" : "⚠️ " + res.status} (\`${lat}ms\`)`;
+              } catch (_) {
+                return `• *${n.name}:* 🔴 Unreachable`;
+              }
+            }));
+            const rep = `⚡ *MY AGY AI — 5 Edge Nodes Live Latency Probe*\n━━━━━━━━━━━━━━━━━━━━━━\n${results.join("\n")}\n━━━━━━━━━━━━━━━━━━━━━━\n🛡️ _100% High-Availability Multi-Region Mesh Active_`;
+            await sendReply(rep, statusInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
         // 8. Help & Command Guide (/help)
         if (text === "/help" || text.startsWith("/help")) {
-          const helpText = `ℹ️ *MY AGY AI — Operations Commands*\n\n` +
-            `• \`/start\` or \`/menu\` — Main operations dashboard & bottom toolbar\n` +
-            `• \`/app\` or \`/dashboard\` — Real-time visual Mini App\n` +
+          const helpText = `ℹ️ *MY AGY AI — Operations & Admin Command Center*\n\n` +
+            `🖥️ *Fleet Operations:*\n` +
+            `• \`/start\` or \`/menu\` — Operations dashboard & quick action grid\n` +
+            `• \`/status\` or \`/app\` — Real-time telemetry Mini App\n` +
+            `• \`/harvest\` — Dispatches multi-bot harvest across all 14 accounts\n` +
+            `• \`/sweep\` or \`/withdraw\` — Instant cashout threshold check & auto-sweep\n` +
             `• \`/stones\` — Stones Miners Command Center (Arbitrum One vault)\n` +
             `• \`/atf\` — ATF Miner Command Center (100% farming mode)\n` +
-            `• \`/withdraw\` — Multi-chain balance check & instant auto-sweep\n` +
-            `• \`/wallet\` — Binance BEP-20 & TON vaults\n` +
-            `• \`/accounts\` — View all 13 fleet accounts & anti-bot status\n` +
+            `• \`/accounts\` — Inspect all 14 fleet accounts & sessions\n` +
             `• \`/add_account <phone>\` — Connect a new Telegram account\n` +
-            `• \`/briefing\` — Daily AI financial briefing (Gemini 3.6 Flash)\n` +
-            `• \`/ai <question>\` — Ask the multi-cloud AI assistant\n` +
-            `• \`/sync\` — Force multi-cloud fleet sync\n` +
+            `• \`/remove_account <id>\` — Disconnect an account from automation\n` +
+            `• \`/mesh\` or \`/cloud\` — Multi-Cloud unified mesh topology\n` +
+            `• \`/nodes\` — Live latency probe across 5 Cloudflare Edge nodes\n` +
+            `• \`/briefing\` — Daily AI executive briefing (Gemini 3.6 Flash)\n` +
             `• \`/backup\` — Instant 1-click cloud backup download\n\n` +
-            `📱 _Tap '🚀 Open Visual Mini App' below for full visual control._`;
+            `👥 *Community & User Management (@AAAPREMIUMAPPSbot):*\n` +
+            `• \`/community\` or \`/users\` — Public miner stats & pass circulation\n` +
+            `• \`/grant <user_id> <pts>\` — Grant points to any user\n` +
+            `• \`/grantpass <user_id> <day|week|month>\` — Activate VIP Pass for user\n` +
+            `• \`/grantslot <user_id> <slots>\` — Unlock permanent account slots for user\n` +
+            `• \`/reply <user_id> <text>\` — Direct message reply to user support ticket\n` +
+            `• \`/broadcast <text>\` — Broadcast official announcement to all miners\n\n` +
+            `📱 _Tap the buttons below to trigger instant fleet actions:_`;
           ctx.waitUntil(sendReply(helpText, statusInlineKeyboard));
           return new Response("OK");
         }
@@ -3407,9 +3793,14 @@ Reply to Arif naturally:`;
             await upstashSet(key, prof);
           }
 
-          // Ensure subscription fields exist
+          // Auto-register user ID in global community Set in Upstash Redis
+          ctx.waitUntil(upstashSadd("ub_registered_users", String(uid)));
+
+          // Ensure subscription & daily streak fields exist
           if (prof.subscription_expiry === undefined) prof.subscription_expiry = 0;
           if (prof.subscription_tier === undefined) prof.subscription_tier = null;
+          if (prof.daily_streak === undefined) prof.daily_streak = 0;
+          if (prof.last_daily_claim === undefined) prof.last_daily_claim = 0;
 
           const now = Date.now();
           const hasActivePass = prof.subscription_expiry > now;
@@ -3636,20 +4027,32 @@ Reply to Arif naturally:`;
               { text: "➕ Connect Account" }
             ],
             [
-              { text: "💎 Points & Balance" },
-              { text: "📺 Watch Ad (+20 Pts)" }
+              { text: "💎 Points & Pass" },
+              { text: "📅 Daily Bonus" }
             ],
             [
-              { text: "👥 Invite Friends (+500 Pts)" },
-              { text: "🌟 VIP Subscriptions" }
+              { text: "📺 Watch Ad (+20 Pts)" },
+              { text: "👥 Invite Friends (+500 Pts)" }
             ],
             [
-              { text: "📢 Official Channels" },
-              { text: "💬 Chat with AI" }
+              { text: "📊 My Stats" },
+              { text: "💬 Ari AI & Support" }
             ]
           ],
           resize_keyboard: true,
           is_persistent: true
+        };
+
+        const dailyBonusKeyboard = {
+          inline_keyboard: [
+            [
+              { text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }
+            ],
+            [
+              { text: "📺 Watch Ad (+20 Pts)", callback_data: "ub_watch_ad" },
+              { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }
+            ]
+          ]
         };
 
         const userCancelKeyboard = {
@@ -3681,10 +4084,14 @@ Reply to Arif naturally:`;
           inline_keyboard: [
             [
               { text: "🚀 Launch Cloud Miner", callback_data: "ub_start_mining" },
-              { text: "🎁 Invite & Earn", callback_data: "ub_referral" }
+              { text: "📅 Daily Bonus", callback_data: "ub_daily_claim" }
             ],
             [
-              { text: "📊 My Rewards", callback_data: "ub_rewards" },
+              { text: "🎁 Invite & Earn", callback_data: "ub_referral" },
+              { text: "📊 My Stats", callback_data: "ub_stats" }
+            ],
+            [
+              { text: "💳 Payouts Guide", callback_data: "ub_withdraw" },
               { text: "📢 Announcements", url: "https://t.me/AAAATFAUTOMINING" }
             ]
           ]
@@ -3941,28 +4348,105 @@ Reply to Arif naturally:`;
             return new Response("OK");
           }
 
+          // C2.5 Daily Check-In Bonus
+          if (cqData === "ub_daily_claim") {
+            const profile = await getUserProfile(cqChatId, cq.from);
+            const now = Date.now();
+            const elapsedHours = (now - (profile.last_daily_claim || 0)) / (3600 * 1000);
+            if (elapsedHours < 24 && profile.last_daily_claim > 0) {
+              const remHours = Math.floor(24 - elapsedHours);
+              const remMins = Math.floor(((24 - elapsedHours) % 1) * 60);
+              ctx.waitUntil(sendCqReply(`⏳ *Daily Bonus Already Claimed!*\n\nYour next check-in reward will unlock in *${remHours}h ${remMins}m*.\n\nKeep your streak alive! 🔥`, userMainKeyboard));
+              return new Response("OK");
+            }
+
+            let streak = profile.daily_streak || 0;
+            if (elapsedHours <= 48 && profile.last_daily_claim > 0) {
+              streak = (streak % 7) + 1;
+            } else {
+              streak = 1;
+            }
+
+            const rewardsByDay = [30, 45, 60, 80, 100, 125, 150];
+            const ptsEarned = rewardsByDay[streak - 1] || 50;
+            profile.daily_streak = streak;
+            profile.last_daily_claim = now;
+            profile.points = (profile.points || 0) + ptsEarned;
+
+            let extraRewardText = "";
+            if (streak === 7) {
+              profile.temp_slots = (profile.temp_slots || 0) + 1;
+              extraRewardText = "\n\n🔥 *7-DAY STREAK COMPLETE!* You unlocked *+1 FREE BONUS ACCOUNT SLOT* for 24 hours!";
+            }
+
+            await saveUserProfile(cqChatId, profile);
+
+            const repMsg = `📅 *DAILY CHECK-IN REWARD CLAIMED!* 🎁\n\n` +
+              `• *Streak Progress:* Day ${streak} / 7 Streak 🔥\n` +
+              `• *Reward Credited:* +${ptsEarned} Mining Points\n` +
+              `• *New Points Balance:* ${profile.points} Points\n` +
+              `• *Next Day Reward:* +${rewardsByDay[streak % 7]} Points${extraRewardText}\n\n` +
+              `💡 _Check in daily to build your mining reserve with zero cost!_`;
+
+            ctx.waitUntil(sendCqReply(repMsg, userMainKeyboard));
+            return new Response("OK");
+          }
+
+          // C2.6 Withdrawals & Cashout Guide
+          if (cqData === "ub_withdraw") {
+            const withMsg = `💳 *MINING WITHDRAWALS & CASHOUT GUIDE* 💰\n\n` +
+              `Our automated cloud mining platform farms directly into each of your connected accounts with *0% Platform Fee*:\n\n` +
+              `1️⃣ *TON Blockchain Pools (ATF, MRG, ART)*\n` +
+              `• Tokens accumulate directly in each bot's internal balance.\n` +
+              `• Withdraw to Tonkeeper, MyTonWallet, or Binance TON deposit anytime!\n\n` +
+              `2️⃣ *BEP-20 / BNB Pools (AI Lab, Ainovum)*\n` +
+              `• AI Lab: Auto-exchanges hashes for USDT and pays to BEP-20.\n` +
+              `• Ainovum: Reaches 0.10 USDT threshold and sends directly to your BSC wallet.\n\n` +
+              `3️⃣ *Arbitrum One Pool (Stones Miners)*\n` +
+              `• Auto-withdraws when your balance reaches 500+ STONES directly to Arbitrum One.\n\n` +
+              `🛡️ *100% Direct Payouts:* No third-party lockups, no gas fees deducted by us.`;
+            ctx.waitUntil(sendCqReply(withMsg, userMainKeyboard));
+            return new Response("OK");
+          }
+
+          // C2.7 Support & Ticket
+          if (cqData === "ub_support") {
+            const supMsg = `💬 *AAA MINING SUPPORT & ASSISTANCE* 🤖\n\n` +
+              `Need help with your account, connection, passes, or payouts?\n\n` +
+              `• *Option 1 (Instant AI Copilot):* Simply type your question in this chat anytime—Ari AI is available 24/7!\n\n` +
+              `• *Option 2 (Human Admin Support):* Send \`/support <your message>\` to submit a ticket directly to Platform Admin Arif.\n\n` +
+              `• *Option 3 (Community Supergroup):* Join [AAA Auto Miner Supergroup](https://t.me/+8xTmE28Up9U5YWQ1) to chat with fellow miners!`;
+            ctx.waitUntil(sendCqReply(supMsg, userMainKeyboard));
+            return new Response("OK");
+          }
+
           // C3. Mining Fleet Stats
           if (cqData === "ub_stats") {
             const profile = await getUserProfile(cqChatId, cq.from);
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
             const isCovered = profile.subscription_expiry && profile.subscription_expiry > Date.now();
-            let passBadge = "Free Tier";
+            let passBadge = "Free Tier (Pay-As-You-Go)";
             if (isCovered) {
               const remMs = profile.subscription_expiry - Date.now();
               const dLeft = Math.floor(remMs / (86400 * 1000));
               const hLeft = Math.floor((remMs % (86400 * 1000)) / (3600 * 1000));
-              const tName = profile.subscription_tier === "month" ? "💎 Monthly Pass" : (profile.subscription_tier === "week" ? "🎟️ Weekly Pass" : "🎟️ Day Pass");
-              passBadge = `${tName} (${dLeft > 0 ? `${dLeft}d ` : ""}${hLeft}h left)`;
+              const tName = profile.subscription_tier === "month" ? "💎 30-Day Monthly Pass" : (profile.subscription_tier === "week" ? "🎟️ 7-Day Weekly Pass" : "🎟️ 1-Day Pass");
+              passBadge = `${tName} (🟢 Active: ${dLeft > 0 ? `${dLeft}d ` : ""}${hLeft}h left)`;
             }
-            const statsMsg = `📊 *MY MINING FLEET STATS* ⚡\n\n` +
+            const daysRemaining = isCovered ? "Covered by VIP Pass" : (profile.accounts.length > 0 ? Math.floor(profile.points / (profile.accounts.length * 100)) : "Unlimited");
+            const statsMsg = `📊 *MY MINING FLEET STATS & TELEMETRY* ⚡\n\n` +
               `• *Connected Accounts:* ${(profile.accounts || []).length} / ${totalSlots} Slots\n` +
-              `• *Points Balance:* ${profile.points} Points\n` +
+              `• *Points Balance:* ${profile.points} Points (~${daysRemaining} days left)\n` +
               `• *Pass Status:* ${passBadge}\n` +
               `• *Daily Fee:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${(profile.accounts || []).length * 100} Pts/day`}\n` +
+              `• *Daily Streak:* Day ${profile.daily_streak || 0} / 7 🔥\n` +
+              `• *Ads Watched:* ${profile.ads_watched || 0} / 50 (${(profile.ads_watched || 0) % 50}/50 towards bonus slot)\n` +
+              `• *Referral Friends:* ${profile.referral_count || 0} (${(profile.referral_count || 0) * 500} Pts earned)\n` +
               `• *Active Pools (8/8):* ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
               `• *Cloud MTProto:* 🟢 24/7 Serverless Running`;
             const statsBtns = {
               inline_keyboard: [
+                [{ text: "📅 Daily Bonus", callback_data: "ub_daily_claim" }, { text: "💳 Payouts Guide", callback_data: "ub_withdraw" }],
                 [{ text: "👥 Manage Accounts", callback_data: "ub_start_mining" }, { text: "➕ Connect Account", callback_data: "ub_add_acc" }],
                 [{ text: "🌟 Upgrade Slots & Passes", callback_data: "ub_buy_stars" }]
               ]
@@ -4668,8 +5152,8 @@ Reply to Arif naturally:`;
             return;
           }
 
-          // 4. 💎 Points & Balance
-          if (text === "💎 Points & Balance" || text.startsWith("/points") || text.startsWith("/balance")) {
+          // 4. 💎 Points & Balance / Passes
+          if (text === "💎 Points & Pass" || text === "💎 Points & Balance" || text.startsWith("/points") || text.startsWith("/balance")) {
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
             const isCovered = profile.subscription_expiry && profile.subscription_expiry > Date.now();
             let passBadge = "Free Tier (Pay-As-You-Go)";
@@ -4687,7 +5171,8 @@ Reply to Arif naturally:`;
               `• *Subscription Pass:* ${passBadge}\n` +
               `• *Farming Status:* ${farmStatus}\n` +
               `• *Daily Mining Cost:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${profile.accounts.length * 100} Pts/day (100 Pts/account)`}\n` +
-              `• *Days of Mining Remaining:* ~${daysRemaining} days\n\n` +
+              `• *Days of Mining Remaining:* ~${daysRemaining} days\n` +
+              `• *Daily Streak:* Day ${profile.daily_streak || 0} / 7 Streak 🔥\n\n` +
               `📊 *Account Slots Breakdown:*\n` +
               `• *Standard Slots:* ${profile.slots || 1}\n` +
               `• *Bonus Slots (from 50 Ads):* ${profile.temp_slots || 0}\n` +
@@ -4701,10 +5186,71 @@ Reply to Arif naturally:`;
 
             await sendUserReply(ptsMsg, {
               inline_keyboard: [
+                [{ text: "📅 Claim Daily Bonus", callback_data: "ub_daily_claim" }],
                 [{ text: "📺 Watch Ad (+20 Pts)", callback_data: "ub_watch_ad" }, { text: "👥 Invite (+500 Pts)", callback_data: "ub_referral" }],
                 [{ text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
             });
+            return;
+          }
+
+          // 4.1 📅 Daily Bonus / Check-in Streak Command (/daily, /checkin)
+          if (text === "📅 Daily Bonus" || text === "/daily" || text.startsWith("/daily") || text === "/checkin") {
+            const now = Date.now();
+            const elapsedHours = (now - (profile.last_daily_claim || 0)) / (3600 * 1000);
+            if (elapsedHours < 24 && profile.last_daily_claim > 0) {
+              const remHours = Math.floor(24 - elapsedHours);
+              const remMins = Math.floor(((24 - elapsedHours) % 1) * 60);
+              await sendUserReply(`⏳ *Daily Bonus Already Claimed!*\n\nYour next check-in reward will unlock in *${remHours}h ${remMins}m*.\n\n• Current Streak: Day ${profile.daily_streak || 1} / 7 🔥\n• Keep your streak alive tomorrow!`, userMainKeyboard);
+              return;
+            }
+
+            let streak = profile.daily_streak || 0;
+            if (elapsedHours <= 48 && profile.last_daily_claim > 0) {
+              streak = (streak % 7) + 1;
+            } else {
+              streak = 1;
+            }
+
+            const rewardsByDay = [30, 45, 60, 80, 100, 125, 150];
+            const ptsEarned = rewardsByDay[streak - 1] || 50;
+            profile.daily_streak = streak;
+            profile.last_daily_claim = now;
+            profile.points = (profile.points || 0) + ptsEarned;
+
+            let extraRewardText = "";
+            if (streak === 7) {
+              profile.temp_slots = (profile.temp_slots || 0) + 1;
+              extraRewardText = "\n\n🔥 *7-DAY STREAK COMPLETE!* You unlocked *+1 FREE BONUS ACCOUNT SLOT* for 24 hours!";
+            }
+
+            await saveUserProfile(chatId, profile);
+
+            const repMsg = `📅 *DAILY CHECK-IN REWARD CLAIMED!* 🎁\n\n` +
+              `• *Streak Progress:* Day ${streak} / 7 Streak 🔥\n` +
+              `• *Reward Credited:* +${ptsEarned} Mining Points\n` +
+              `• *New Points Balance:* ${profile.points} Points\n` +
+              `• *Next Day Reward:* +${rewardsByDay[streak % 7]} Points${extraRewardText}\n\n` +
+              `💡 _Check in daily to build your mining reserve with zero cost!_`;
+
+            await sendUserReply(repMsg, userMainKeyboard);
+            return;
+          }
+
+          // 4.2 💳 Withdrawals & Cashout Guide (/withdraw, /payout)
+          if (text === "💳 Withdrawals" || text.startsWith("/withdraw") || text.startsWith("/payout")) {
+            const withMsg = `💳 *MINING WITHDRAWALS & CASHOUT GUIDE* 💰\n\n` +
+              `Our automated cloud mining platform farms directly into each of your connected accounts with *0% Platform Fee*:\n\n` +
+              `1️⃣ *TON Blockchain Pools (ATF, MRG, ART)*\n` +
+              `• Tokens accumulate directly in each bot's internal balance.\n` +
+              `• Withdraw to Tonkeeper, MyTonWallet, or Binance TON deposit anytime!\n\n` +
+              `2️⃣ *BEP-20 / BNB Pools (AI Lab, Ainovum)*\n` +
+              `• AI Lab: Auto-exchanges hashes for USDT and pays to BEP-20.\n` +
+              `• Ainovum: Reaches 0.10 USDT threshold and sends directly to your BSC wallet.\n\n` +
+              `3️⃣ *Arbitrum One Pool (Stones Miners)*\n` +
+              `• Auto-withdraws when your balance reaches 500+ STONES directly to Arbitrum One.\n\n` +
+              `🛡️ *100% Direct Payouts:* No third-party lockups, no gas fees deducted by us.`;
+            await sendUserReply(withMsg, userMainKeyboard);
             return;
           }
 
@@ -4760,16 +5306,56 @@ Reply to Arif naturally:`;
             return;
           }
 
-          // 8. 💬 Chat with AI Copilot
-          if (text === "💬 Chat with AI" || text.startsWith("/ai") || text.startsWith("/chat")) {
-            const chatAiMsg = `💬 *AAA AI MINING COPILOT* 🤖\n\n` +
-              `Hello ${senderName}! I am your autonomous AI assistant running 24/7 in the cloud.\n\n` +
-              `*You can ask me anything about:*\n` +
-              `• How to connect your Telegram accounts securely\n` +
-              `• How points and subscription passes work\n` +
-              `• Cloud farming status across all 8 mining bots\n` +
-              `• Earning crypto rewards and maximizing yield\n\n` +
-              `👉 Simply send any question or message to this chat, and I will assist you!`;
+          // 8. 💬 Support & Admin Ticket (/support <message>)
+          if (text.startsWith("/support")) {
+            const parts = text.split(/\s+/);
+            const userQuery = parts.slice(1).join(" ").trim();
+            if (!userQuery) {
+              const helpSup = `💬 *SUBMIT SUPPORT TICKET TO PLATFORM ADMIN*\n\n` +
+                `Need direct assistance from Platform Admin Arif?\n\n` +
+                `*Usage:* \`/support <your question or issue>\`\n` +
+                `*Example:* \`/support Hello Arif, I connected my account but have a question about ATF Miner rewards.\`\n\n` +
+                `Your message will be sent immediately to the administrative sentinel console, and you'll receive a direct reply here!`;
+              await sendUserReply(helpSup, userMainKeyboard);
+              return;
+            }
+
+            const alertToken = env.ALERT_BOT_TOKEN;
+            const ownerId = env.OWNER_ID || "6727787768";
+            if (alertToken && ownerId) {
+              const adminTicket = `📩 *NEW USER SUPPORT TICKET*\n━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `• *From:* ${senderName} (@${msg.from?.username || "None"})\n` +
+                `• *User ID:* \`${chatId}\`\n` +
+                `• *Connected Accounts:* ${(profile.accounts || []).length}\n` +
+                `• *Points:* ${profile.points} Pts\n` +
+                `• *Message:*\n"${userQuery}"\n━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `👉 *Reply to this user by sending:*\n\`/reply ${chatId} <your answer>\``;
+              ctx.waitUntil(fetch(`https://api.telegram.org/bot${alertToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: ownerId, text: adminTicket, parse_mode: "Markdown" })
+              }).catch(() => {}));
+            }
+
+            const confirmMsg = `✅ *SUPPORT TICKET DELIVERED!* 📩\n\n` +
+              `Your message has been dispatched directly to Platform Admin Arif.\n\n` +
+              `• *Ticket ID:* \`#TK-${Date.now().toString().slice(-6)}\`\n` +
+              `• *Status:* 🟡 In Review\n\n` +
+              `You will receive his direct reply right here in this chat as soon as it's processed!`;
+            await sendUserReply(confirmMsg, userMainKeyboard);
+            return;
+          }
+
+          // 8.1 💬 Ari AI & Support Menu Button
+          if (text === "💬 Ari AI & Support" || text === "💬 Chat with AI" || text.startsWith("/ai") || text.startsWith("/chat")) {
+            const chatAiMsg = `💬 *AAA AI MINING COPILOT & SUPPORT* 🤖\n\n` +
+              `Hello ${senderName}! I am your autonomous AI copilot running 24/7 in the cloud.\n\n` +
+              `*What I can do for you:*\n` +
+              `• *Ask Questions:* Simply type any question or guide request in this chat!\n` +
+              `• *Daily Streak:* Check in daily using *📅 Daily Bonus* to earn free points & bonus slots.\n` +
+              `• *Withdrawals:* Send \`/withdraw\` for complete payout details across all 8 mining bots.\n` +
+              `• *Human Admin Support:* Send \`/support <your message>\` to message Platform Admin Arif directly.\n\n` +
+              `👉 Ask me anything or choose an action from the menu below!`;
             await sendUserReply(chatAiMsg, userMainKeyboard);
             return;
           }
