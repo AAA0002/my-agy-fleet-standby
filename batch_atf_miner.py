@@ -482,7 +482,7 @@ async def main():
             pass
 
     # 2. Send Telegram report to Admin
-    report_bot_token = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o")
+    report_bot_token = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8")
     report_chat_id = os.getenv("REPORT_CHAT_ID", "6727787768")
     if report_bot_token and report_chat_id:
         tg_text = (

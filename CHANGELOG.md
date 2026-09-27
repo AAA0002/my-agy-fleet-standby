@@ -4,6 +4,21 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Security Hardening: Telegram Bot Token Rotation & 100% Repository Visibility Lockdown (`CHANGELOG.md`, `deploy_both_cf_workers.py`, `fleet_sentinel.yml`)**:
+  - **Bot Token Revocation & Re-Issuance (`@My_Router_AI_bot`)**:
+    * Identified unauthorized spam injection caused by crawler bots harvesting an exposed fallback token on a public standby repo (`AAA2743/my-agy-fleet-standby`).
+    * Revoked compromised token (`8858823950:AAFF...`) via `@BotFather` (now returning HTTP 401 Unauthorized).
+    * Re-issued and activated new secure admin token (`8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8`).
+    * Replaced all token references across 19 files in the codebase and removed local `__pycache__` artifacts.
+  - **5-Node Cloudflare Edge Mesh Re-Deployment & Webhook Restoration**:
+    * Deployed updated environment secrets and bindings across all 5 Cloudflare Worker nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Re-registered `/telegram-webhook` to `https://restore-agy.aaaai2.workers.dev/telegram-webhook` with confirmed test handshake.
+  - **Full Multi-Account GitHub Repository Isolation**:
+    * Enforced strict private visibility across all repositories in `AAA2743` (`my-agy-ai-fleet`, `my-agy-fleet-standby`, `hermes-grok-cloud-agent`, `AA`) and `AAA0002` (`atf-mtproto-relayer`, `ATL`, `AA`).
+    * Patched fallback token in remote `AAA2743/my-agy-fleet-standby/app.py`.
+  - **Zero Phone Load Guardrail**:
+    * Maintained 0 background bot processes on the Samsung Galaxy A30. All infrastructure running serverless in the cloud.
+
 - **Live Activity Broadcasts (`@AAAATF_ACTIVITY`), Ari AI Copilot Upgrade & Dedicated Help Guide (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Real-Time Live Activity Stream Announcements (`@AAAATF_ACTIVITY`)**:
     * **New Miner Joined Broadcast**: Automatically announces new miners to `AAA ATF Miner — Live Activity` (`@AAAATF_ACTIVITY`) upon verifying all 3 community channels:

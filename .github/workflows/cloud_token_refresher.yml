@@ -135,7 +135,7 @@ jobs:
       - name: Dispatch Telegram Completion Notification
         if: always()
         env:
-          ALERT_BOT_TOKEN: "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o"
+          ALERT_BOT_TOKEN: "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8"
           OWNER_ID: "6727787768"
         run: |
           python - << 'EOF'

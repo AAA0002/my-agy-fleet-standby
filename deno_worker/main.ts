@@ -1,7 +1,7 @@
 // MY AGY AI - Autonomous Multi-Cloud Edge Sentinel & Mesh Synchronizer
 // Powered by Deno Deploy V2, Supabase Postgres, Upstash Redis & TonAPI
 
-const BOT_TOKEN = Deno.env.get("REPORT_BOT_TOKEN") || "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o";
+const BOT_TOKEN = Deno.env.get("REPORT_BOT_TOKEN") || "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8";
 const CHAT_ID = Deno.env.get("REPORT_CHAT_ID") || "6727787768";
 
 // Cloud Integrations

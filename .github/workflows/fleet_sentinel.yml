@@ -21,7 +21,7 @@ jobs:
 
       - name: Run Multi-Cloud Mesh & Infrastructure Audit
         env:
-          ALERT_BOT_TOKEN: "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o"
+          ALERT_BOT_TOKEN: "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8"
           OWNER_ID: "6727787768"
           SECRET_KEY: "agy_cf_secret_7d36994e_2026"
           SUPABASE_URL: "https://znbbaozpevurvbfkxakz.supabase.co"

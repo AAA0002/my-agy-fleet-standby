@@ -1650,7 +1650,7 @@ async def send_payout_receipt(message: str, dedupe_key: str = None):
 
     SENT_RECEIPT_HASHES[key] = now
 
-    bot_token = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAFFkuls8hBf23taCZE1y5gVzP4AFCuqI5o")
+    bot_token = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8")
     targets = [REPORT_CHAT_ID, PAYOUT_CHANNEL_ID]
     async with aiohttp.ClientSession() as s:
         for tid in targets:
