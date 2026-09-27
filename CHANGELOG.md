@@ -4,6 +4,31 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Professional Light-Theme Admin Console Mini App & Cloudflare Pages Overhaul (`public/index.html`, `deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **New Light-Theme Phone-Sized Admin Dashboard (`https://atf-miner-app.pages.dev`)**:
+    * Strictly implemented modern light theme (clean `#f8fafc` background, `#ffffff` cards, `#0f172a` typography, soft shadows, vibrant status badges; 0 dark mode colors).
+    * Mobile-first responsive container (`max-w-md mx-auto`) optimized specifically for Samsung Galaxy A30 and Telegram WebApp viewports.
+    * **Miners Hub (Primary Tab)**:
+      - Live telemetry directly from Upstash Redis (`ub_registered_users` & `ub_user:{uid}`).
+      - Shows all community users with user ID, name, `@username`, points balance, and active VIP pass tier.
+      - Full list of connected Telegram accounts for each user, including account phone numbers, mining IDs, account names, and an 8-pool status matrix (`ATF Miner`, `Stones`, `MRG`, `ART`, `AI Lab`, `UltraWallet`, `Apex`, `Ainovum`).
+      - Real-time instant search by phone number (`+880...`), Telegram user ID (`6727787768`), mining ID (`8190...`), or name.
+      - Filter chips for `All`, `With Accounts`, `VIP Passes`, `Active 24/7`, and `Paused`.
+      - Quick Admin Actions on cards: `+100 Pts`, `+500 Pts`, `👑 Grant 30D VIP`, and `Toggle Status`.
+    * **Fleet Pools, Payouts & Ari AI Tabs**:
+      - Complete overview of the 14 platform fleet accounts, on-chain balances, universal treasury sweep, payout receipts ledger, and real-time Ari AI chat.
+    * Deployed live to Cloudflare Pages project `atf-miner-app` (`https://atf-miner-app.pages.dev`).
+  - **User Bot Keyboard Integration (`@AAAPREMIUMAPPSbot`)**:
+    * Implemented role-isolated `adminMainKeyboard` for Admin Arif (`chatId === 6727787768`).
+    * Added prominent `👑 Admin Console` button (`web_app: { url: "https://atf-miner-app.pages.dev" }`) directly on the bottom reply keyboard downside.
+    * Added `/admin` and `👑 Admin Console` command handlers returning 1-tap Mini App launcher cards.
+  - **Cloudflare Edge Mesh APIs**:
+    * Added `GET /api/admin/users`, `GET /api/admin/stats`, and `POST /api/admin/user-action` with CORS support to `deploy_both_cf_workers.py`.
+    * Deployed live across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+  - **Claude Fable 5.1 Architectural Review**:
+    * Consulted Claude Fable 5.1 via CleanAPIs for platform gap analysis, mobile-first UX blueprint, and Redis schema validation.
+    * Purged and cleaned up all temporary review scripts and credentials per user directive.
+
 - **Official Community Channels Enhancement, Gate Verification Fix & Bot Polish (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Channel Verification HTTP 400 Bug Fix**:
     * Fixed bug where non-members returning HTTP 400 (`PARTICIPANT_ID_INVALID` / `user not found`) were skipped instead of flagged as missing, allowing unverified bypasses.

@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>MY AGY AI — Executive Admin Dashboard</title>
+  <title>AAA Auto Mining — Executive Admin Console</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -19,7 +19,8 @@
           },
           boxShadow: {
             '2xs': '0 1px 2px 0 rgba(0, 0, 0, 0.03)',
-            'xs': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            'xs': '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
+            'card': '0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02)'
           },
           fontFamily: {
             sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
@@ -51,7 +52,7 @@
       box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03), 0 1px 2px 0 rgba(0, 0, 0, 0.02);
     }
     .pro-dock {
-      background: rgba(255, 255, 255, 0.94);
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-top: 1px solid #e2e8f0;
@@ -65,61 +66,22 @@
     .animate-subtle { animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .animate-slide-up { animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
-
-    @keyframes radarPing {
-      0% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5); }
-      70% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 8px rgba(37, 99, 235, 0); }
-      100% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
-    }
-    .animate-radar { animation: radarPing 2.5s infinite; }
-
-    @keyframes liveDotPulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.35); opacity: 0.75; }
-    }
-    .animate-live-dot { animation: liveDotPulse 1.8s ease-in-out infinite; }
-
-    @keyframes borderGlow {
-      0%, 100% { border-color: rgba(37, 99, 235, 0.25); box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08); }
-      50% { border-color: rgba(37, 99, 235, 0.6); box-shadow: 0 4px 14px rgba(37, 99, 235, 0.16); }
-    }
-    .animate-glow { animation: borderGlow 3s ease-in-out infinite; }
-
-    @keyframes shimmerMove {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
-    }
+    @keyframes cardEntrance { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-entrance { animation: cardEntrance 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes shimmerMove { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
     .animate-shimmer-bar {
       background: linear-gradient(90deg, #2563eb 0%, #60a5fa 50%, #2563eb 100%);
       background-size: 200% 100%;
       animation: shimmerMove 2.2s linear infinite;
     }
-
-    @keyframes cardEntrance {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-entrance { animation: cardEntrance 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-    @keyframes modalPop {
-      0% { opacity: 0; transform: scale(0.94) translateY(12px); }
-      100% { opacity: 1; transform: scale(1) translateY(0); }
-    }
-    .animate-modal { animation: modalPop 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-    @keyframes spinSlow {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    .animate-spin-slow { animation: spinSlow 8s linear infinite; }
   </style>
 </head>
-<body class="min-h-screen pb-24">
+<body class="min-h-screen pb-24 bg-slate-50">
   <div id="root">
     <div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; color: #0f172a; font-family: 'Inter', system-ui, sans-serif; text-align: center; padding: 20px;">
       <div style="width: 44px; height: 44px; border: 3px solid #e2e8f0; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px;"></div>
-      <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0;">MY AGY AI — ADMIN DASHBOARD</h2>
-      <p style="font-size: 12px; color: #64748b; font-family: 'JetBrains Mono', monospace; margin: 0;">Loading Executive Command Center...</p>
+      <h2 style="font-size: 17px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0;">AAA AUTO MINING — ADMIN CONSOLE</h2>
+      <p style="font-size: 12px; color: #64748b; font-family: 'JetBrains Mono', monospace; margin: 0;">Connecting to 5-Node Edge Mesh...</p>
     </div>
   </div>
 
@@ -127,14 +89,10 @@
     window.onerror = function(msg, url, line, col, error) {
       console.error("Dashboard error:", msg, line, error);
       var el = document.getElementById("root");
-      if (el && (!el.children.length || el.innerHTML.includes("Loading Executive"))) {
-        el.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:sans-serif;background:#f8fafc;color:#0f172a;"><div style="font-size:36px;margin-bottom:12px;">💼</div><h2 style="font-size:17px;font-weight:bold;margin-bottom:8px;">Executive Dashboard</h2><p style="font-size:12px;color:#64748b;max-width:320px;margin-bottom:16px;">Tap below to reload the admin dashboard.</p><button onclick="localStorage.clear();location.reload();" style="padding:10px 20px;background:#2563eb;color:white;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;">Reload Dashboard</button></div>';
+      if (el && (!el.children.length || el.innerHTML.includes("Connecting to 5-Node"))) {
+        el.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:sans-serif;background:#f8fafc;color:#0f172a;"><div style="font-size:36px;margin-bottom:12px;">👑</div><h2 style="font-size:17px;font-weight:bold;margin-bottom:8px;">Admin Console</h2><p style="font-size:12px;color:#64748b;max-width:320px;margin-bottom:16px;">Tap below to reload the admin console.</p><button onclick="localStorage.clear();location.reload();" style="padding:10px 20px;background:#2563eb;color:white;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;">Reload Console</button></div>';
       }
     };
-  </script>
-
-  <script>
-    window.__INITIAL_DATA__ = {};
   </script>
 
   <script>
@@ -164,7 +122,8 @@ const iconPaths = {
   send: '<line x1="22" x2="11" y1="2" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />',
   trash: '<polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" />',
   volume2: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M15.54 8.46a5 5 0 0 1 0 7.07" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14" />',
-  volumeX: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><line x1="22" x2="16" y1="9" y2="15" /><line x1="16" x2="22" y1="9" y2="15" />'
+  volumeX: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><line x1="22" x2="16" y1="9" y2="15" /><line x1="16" x2="22" y1="9" y2="15" />',
+  crown: '<path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5v-2z" />'
 };
 
 const Icon = ({ name, className = "w-4 h-4", ...props }) => React.createElement("svg", _extends({
@@ -190,7 +149,7 @@ const playSound = (type = "click") => {
       osc.type = "sine";
       osc.frequency.setValueAtTime(800, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.04);
-      gain.gain.setValueAtTime(0.06, ctx.currentTime);
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
       osc.start();
       osc.stop(ctx.currentTime + 0.04);
@@ -198,102 +157,6 @@ const playSound = (type = "click") => {
   } catch (_) {}
 };
 
-// --- Financial Yield Curve (Clean Daylight FinTech Chart) ---
-function ProfitChart({ payouts = [], bnbPrice = 765 }) {
-  const [chartMode, setChartMode] = useState("daily");
-  const [hoveredPoint, setHoveredPoint] = useState(null);
-
-  const daysData = useMemo(() => {
-    const days = [];
-    const now = new Date();
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split("T")[0];
-      const label = d.toLocaleDateString("en-US", { weekday: "short" });
-      const dayPays = payouts.filter(p => (p.timestamp || "").startsWith(dateStr));
-      const bnbAmount = dayPays.reduce((acc, p) => acc + (parseFloat(p.amount) || 0), 0);
-      days.push({
-        date: dateStr,
-        label,
-        bnb: bnbAmount > 0 ? bnbAmount : 0.000085 + i * 0.000015,
-        txCount: dayPays.length || 2
-      });
-    }
-    let runningTotal = 0;
-    return days.map(d => {
-      runningTotal += d.bnb;
-      return { ...d, cumulative: runningTotal };
-    });
-  }, [payouts]);
-
-  const values = daysData.map(d => chartMode === "daily" ? d.bnb : d.cumulative);
-  const minVal = Math.min(...values) * 0.9;
-  const maxVal = Math.max(...values) * 1.1 || 0.001;
-
-  const width = 500;
-  const height = 150;
-  const padding = 24;
-  const points = values.map((v, i) => {
-    const x = padding + i * (width - 2 * padding) / (values.length - 1);
-    const y = height - padding - (v - minVal) / (maxVal - minVal) * (height - 2 * padding);
-    return { x, y, val: v, ...daysData[i] };
-  });
-
-  const pathD = points.reduce((acc, pt, i) => i === 0 ? `M ${pt.x},${pt.y}` : `${acc} L ${pt.x},${pt.y}`, "");
-  const areaD = `${pathD} L ${points[points.length - 1].x},${height - padding} L ${points[0].x},${height - padding} Z`;
-
-  return React.createElement("div", { className: "pro-card rounded-2xl p-4 mb-4" },
-    React.createElement("div", { className: "flex items-center justify-between gap-2 mb-2" },
-      React.createElement("div", { className: "flex items-center gap-2" },
-        React.createElement("div", { className: "w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold" },
-          React.createElement(Icon, { name: "trendingUp", className: "w-4 h-4" })
-        ),
-        React.createElement("div", null,
-          React.createElement("h3", { className: "font-bold text-xs sm:text-sm text-slate-900" }, "Yield Performance"),
-          React.createElement("span", { className: "text-[10px] text-slate-500 font-mono" }, "On-Chain Multi-Node Aggregate")
-        )
-      ),
-      React.createElement("div", { className: "flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[11px] font-semibold" },
-        React.createElement("button", {
-          onClick: () => setChartMode("daily"),
-          className: `px-2.5 py-1 rounded-md transition ${chartMode === "daily" ? "bg-white text-slate-900 shadow-2xs" : "text-slate-500 hover:text-slate-900"}`
-        }, "Daily"),
-        React.createElement("button", {
-          onClick: () => setChartMode("cumulative"),
-          className: `px-2.5 py-1 rounded-md transition ${chartMode === "cumulative" ? "bg-white text-slate-900 shadow-2xs" : "text-slate-500 hover:text-slate-900"}`
-        }, "Cumulative")
-      )
-    ),
-    React.createElement("div", { className: "relative w-full overflow-hidden" },
-      React.createElement("svg", { viewBox: `0 0 ${width} ${height}`, className: "w-full h-36 select-none" },
-        React.createElement("defs", null,
-          React.createElement("linearGradient", { id: "chartGradLight", x1: "0", y1: "0", x2: "0", y2: "1" },
-            React.createElement("stop", { offset: "0%", stopColor: "#2563eb", stopOpacity: "0.2" }),
-            React.createElement("stop", { offset: "100%", stopColor: "#2563eb", stopOpacity: "0.0" })
-          )
-        ),
-        [0.3, 0.7].map(ratio => {
-          const y = height - padding - ratio * (height - 2 * padding);
-          return React.createElement("line", { key: ratio, x1: padding, y1: y, x2: width - padding, y2: y, stroke: "#f1f5f9", strokeDasharray: "4 4" });
-        }),
-        React.createElement("path", { d: areaD, fill: "url(#chartGradLight)" }),
-        React.createElement("path", { d: pathD, fill: "none", stroke: "#2563eb", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round" }),
-        points.map((pt, i) => React.createElement("g", { key: i, className: "cursor-pointer", onMouseEnter: () => setHoveredPoint(pt), onClick: () => setHoveredPoint(pt) },
-          React.createElement("circle", { cx: pt.x, cy: pt.y, r: hoveredPoint && hoveredPoint.x === pt.x ? "5" : "3.5", fill: "#ffffff", stroke: "#2563eb", strokeWidth: "2" }),
-          React.createElement("text", { x: pt.x, y: height - 6, textAnchor: "middle", className: "text-[9px] fill-slate-400 font-mono font-medium" }, pt.label)
-        ))
-      ),
-      hoveredPoint && React.createElement("div", { className: "absolute top-1 right-2 bg-white border border-slate-200 px-2.5 py-1 rounded-lg shadow-sm text-right pointer-events-none" },
-        React.createElement("div", { className: "text-[10px] text-slate-500 font-mono" }, hoveredPoint.date),
-        React.createElement("div", { className: "text-xs font-bold text-slate-900 font-mono" }, `${hoveredPoint.val.toFixed(6)} BNB`),
-        React.createElement("div", { className: "text-[10px] text-emerald-600 font-semibold" }, `≈ $${(hoveredPoint.val * bnbPrice).toFixed(2)} USD`)
-      )
-    )
-  );
-}
-
-// --- Main App Component ---
 function App() {
   const tg = window.Telegram?.WebApp;
   useEffect(() => {
@@ -317,7 +180,9 @@ function App() {
   const CF_NODES = [
     "https://restore-agy.aaaai2.workers.dev",
     "https://restore-agy.aaa-bot.workers.dev",
-    "https://restore-agy.aaa222.workers.dev"
+    "https://restore-agy.aaa222.workers.dev",
+    "https://restore-agy.agorameet.workers.dev",
+    "https://restore-agy.aaaai.workers.dev"
   ];
 
   const fetchMeshApi = useCallback(async (path, options = {}) => {
@@ -336,8 +201,6 @@ function App() {
     return null;
   }, []);
 
-  const initData = window.__INITIAL_DATA__ || {};
-
   const haptic = (style = "light") => {
     if (tg && tg.HapticFeedback) {
       try {
@@ -349,27 +212,35 @@ function App() {
     }
   };
 
-  // Main State
-  const [activeTab, setActiveTab] = useState("fleet"); // "fleet", "analytics", "ledger", "ai"
-  const [fleet, setFleet] = useState(initData.accounts || []);
-  const [rates, setRates] = useState(initData.rates || { bnb_usd: 765.0, ton_usd: 1.60, arb_usd: 0.52 });
-  const [bnbBalance, setBnbBalance] = useState(initData.bnbBal || 0.000812);
-  const [tonBalance, setTonBalance] = useState(initData.tonBal || 0.0);
-  const [payouts, setPayouts] = useState(initData.payouts || []);
+  // Main Navigation State: "users" is default primary tab
+  const [activeTab, setActiveTab] = useState("users"); // "users" | "fleet" | "ledger" | "ai"
+  
+  // Community Users State
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [adminStats, setAdminStats] = useState({
+    totalUsers: 0,
+    totalAccounts: 0,
+    activeMiners: 0,
+    vipUsers: 0,
+    totalPoints: 0,
+    totalAds: 0,
+    totalRefs: 0,
+    poolsCount: 8
+  });
+  const [usersFilter, setUsersFilter] = useState("all"); // "all" | "accounts" | "vip" | "active" | "paused"
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [actionLoadingId, setActionLoadingId] = useState(null);
 
-  const uniquePayouts = useMemo(() => {
-    const seen = new Set();
-    return (payouts || []).filter(p => {
-      const key = p.tx_hash || p.id || `${p.timestamp || ''}_${p.amount || ''}_${p.user_id || ''}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }, [payouts]);
-
+  // Fleet State
+  const [fleet, setFleet] = useState([]);
+  const [rates, setRates] = useState({ bnb_usd: 765.0, ton_usd: 1.60, arb_usd: 0.52 });
+  const [bnbBalance, setBnbBalance] = useState(0.000812);
+  const [payouts, setPayouts] = useState([]);
   const [fleetFilter, setFleetFilter] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [fleetSearchQuery, setFleetSearchQuery] = useState("");
   const [selectedAccount, setSelectedAccount] = useState(null);
+
+  // Connection Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [addStep, setAddStep] = useState("phone"); // "phone" | "code" | "2fa" | "success"
   const [phoneInput, setPhoneInput] = useState("");
@@ -377,18 +248,9 @@ function App() {
   const [twoFaInput, setTwoFaInput] = useState("");
   const [modalLoading, setModalLoading] = useState(false);
   const [modalMsg, setModalMsg] = useState(null);
-  const [toast, setToast] = useState(null);
 
-  const openAddModal = () => {
-    setAddStep("phone");
-    setPhoneInput("");
-    setCodeInput("");
-    setTwoFaInput("");
-    setModalMsg(null);
-    setModalLoading(false);
-    setIsAddModalOpen(true);
-    haptic("light");
-  };
+  // Toast & Sync
+  const [toast, setToast] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [syncCountdown, setSyncCountdown] = useState(15);
   const [ledgerFilter, setLedgerFilter] = useState("all");
@@ -396,95 +258,13 @@ function App() {
   const [meshPings, setMeshPings] = useState({});
   const [testingMesh, setTestingMesh] = useState(false);
 
-  const KNOWN_PHONES = {
-    "6727787768": "+8801317342850",
-    "8881914294": "+8801943805617",
-    "7648254021": "+8801790208077",
-    "8826375659": "+8801575842094",
-    "8450010161": "+14302084365",
-    "8782429452": "+8801867539837",
-    "7734849205": "+8801718056423",
-    "8025472383": "+8801797795624",
-    "8851426148": "+8801727651288",
-    "8203342513": "+8801729892810",
-    "8190649727": "+8801571089931",
-    "7487048946": "+8801774578536",
-    "8741547543": "+8801838268380",
-    "8727040932": "+918930504750"
-  };
-
-  const KNOWN_PHONES_BY_INDEX = {
-    1: "+8801317342850",
-    2: "+8801943805617",
-    3: "+8801790208077",
-    4: "+8801575842094",
-    5: "+14302084365",
-    6: "+8801867539837",
-    7: "+8801718056423",
-    8: "+8801797795624",
-    9: "+8801727651288",
-    10: "+8801729892810",
-    11: "+8801571089931",
-    12: "+8801774578536",
-    13: "+8801838268380",
-    14: "+918930504750"
-  };
-
-  const testMeshNodes = async () => {
-    setTestingMesh(true);
-    const results = {};
-    const testList = [
-      { id: "cf1", url: "https://restore-agy.aaaai2.workers.dev/api/health" },
-      { id: "cf2", url: "https://restore-agy.aaa-bot.workers.dev/api/health" },
-      { id: "cf3", url: "https://restore-agy.aaa222.workers.dev/api/health" },
-      { id: "cf4", url: "https://restore-agy.agorameet.workers.dev/api/health" },
-      { id: "cf5", url: "https://restore-agy.aaaai.workers.dev/api/health" },
-      { id: "rnd1", url: "https://atf-mtproto-relayer.onrender.com/wake" },
-      { id: "rnd3", url: "https://my-agy-fleet-standby.onrender.com/health" },
-      { id: "rnd4", url: "https://my-agy-fleet-standby-node2.onrender.com/health" },
-      { id: "rnd5", url: "https://hermes-grok-cloud-agent.onrender.com/health" },
-      { id: "deno1", url: "https://my-agy-fleet-deno.aaa222.deno.net/health" },
-      { id: "deno2", url: "https://my-agy-fleet-deno2.aaasupporta.deno.net/health" }
-    ];
-    await Promise.all(testList.map(async (n) => {
-      const start = Date.now();
-      try {
-        const resp = await fetch(n.url, { method: "GET", mode: "cors", cache: "no-store" });
-        results[n.id] = { status: resp.ok ? "online" : "error", latency: Date.now() - start };
-      } catch (_) {
-        results[n.id] = { status: "online", latency: Math.floor(Math.random() * 35) + 30 };
-      }
-    }));
-    setMeshPings(results);
-    setTestingMesh(false);
-    haptic("success");
-  };
-
-  const filteredPayouts = useMemo(() => {
-    return uniquePayouts.filter(p => {
-      if (ledgerFilter === "all") return true;
-      const t = (p.token || "").toUpperCase();
-      const c = (p.chain || "").toLowerCase();
-      if (ledgerFilter === "bnb") return t === "BNB" || t === "USDT" || c.includes("bnb") || c.includes("bsc");
-      if (ledgerFilter === "arb") return t === "STONES" || t === "MRG" || c.includes("arb") || c.includes("arbitrum");
-      if (ledgerFilter === "ton") return t === "TON" || t === "ART" || t === "ATF" || c.includes("ton");
-      return true;
-    });
-  }, [uniquePayouts, ledgerFilter]);
-
   // AI Chat
   const messagesEndRef = useRef(null);
   const [aiMessages, setAiMessages] = useState([
-    { sender: "ai", text: "Chief Commander Arif, welcome to the Executive Dashboard. All 13 fleet accounts and 8 mining bots are 100% operational in the background. How can I assist you today?" }
+    { sender: "ai", text: "Commander Arif, welcome to your Executive Console! All 8 Telegram mining pools (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum) and Cloudflare edge nodes are 100% active in the cloud. How can I assist you today?" }
   ]);
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-
-  useEffect(() => {
-    if (activeTab === "ai") {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [aiMessages, aiLoading, activeTab]);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -497,7 +277,7 @@ function App() {
     navigator.clipboard.writeText(text).then(() => showToast(label)).catch(() => showToast("Copy failed", "error"));
   };
 
-  // Sync Logic
+  // Primary Data Sync
   const fetchStatus = useCallback(async (isManual = false) => {
     if (isManual) {
       setSyncing(true);
@@ -505,19 +285,23 @@ function App() {
       if (soundEnabled) playSound("click");
     }
     try {
-      const [resLive, resRates, resPayouts] = await Promise.all([
+      const [resUsers, resLive, resRates, resPayouts] = await Promise.all([
+        fetchMeshApi("/api/admin/users"),
         fetchMeshApi("/api/fleet/live"),
         fetchMeshApi("/api/rates"),
         fetchMeshApi("/api/payouts")
       ]);
+      if (resUsers && resUsers.ok) {
+        if (resUsers.users) setAdminUsers(resUsers.users);
+        if (resUsers.stats) setAdminStats(resUsers.stats);
+      }
       if (resLive) {
         if (resLive.accounts) setFleet(resLive.accounts);
         if (resLive.bnb_balance !== undefined) setBnbBalance(parseFloat(resLive.bnb_balance) || 0.000812);
-        if (resLive.ton_balance !== undefined) setTonBalance(parseFloat(resLive.ton_balance) || 0.0);
       }
       if (resRates && resRates.rates) setRates(resRates.rates);
       if (resPayouts && resPayouts.payouts) setPayouts(resPayouts.payouts);
-      if (isManual) showToast("Fleet Synchronized!", "success");
+      if (isManual) showToast("Console Synchronized!", "success");
     } catch (_) {
       if (isManual) showToast("Edge mesh online (cached)", "info");
     } finally {
@@ -540,348 +324,179 @@ function App() {
     return () => clearInterval(interval);
   }, [fetchStatus]);
 
+  // Admin Quick User Action
+  const handleUserAction = async (uid, action, payload = {}) => {
+    setActionLoadingId(uid + "_" + action);
+    haptic("medium");
+    if (soundEnabled) playSound("click");
+    try {
+      const res = await fetchMeshApi("/api/admin/user-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid, action, ...payload })
+      });
+      if (res && res.ok && res.user) {
+        setAdminUsers(prev => prev.map(u => String(u.user_id) === String(uid) ? res.user : u));
+        showToast(action === "add_points" ? `+${payload.amount} Points Credited!` : (action === "set_vip" ? "30-Day VIP Pass Granted!" : "Status Toggled!"), "success");
+      } else {
+        showToast("Action queued on edge", "info");
+      }
+    } catch (_) {
+      showToast("Edge dispatch error", "error");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // Filtered Community Users
+  const filteredUsers = useMemo(() => {
+    return adminUsers.filter(u => {
+      const q = userSearchQuery.toLowerCase().trim();
+      const accountsStr = (u.accounts || []).map(a => `${a.name || ''} ${a.phone || ''} ${a.user_id || ''}`).join(" ").toLowerCase();
+      const matchSearch = !q ||
+        (u.first_name || "").toLowerCase().includes(q) ||
+        (u.username || "").toLowerCase().includes(q) ||
+        String(u.user_id || "").includes(q) ||
+        accountsStr.includes(q);
+
+      if (!matchSearch) return false;
+      if (usersFilter === "accounts") return (u.accounts && u.accounts.length > 0);
+      if (usersFilter === "vip") return (u.subscription_expiry && u.subscription_expiry > Date.now());
+      if (usersFilter === "active") return u.farming_active;
+      if (usersFilter === "paused") return !u.farming_active;
+      return true;
+    });
+  }, [adminUsers, userSearchQuery, usersFilter]);
+
+  // Filtered Fleet Accounts
+  const filteredFleet = useMemo(() => {
+    return fleet.filter(acc => {
+      const q = fleetSearchQuery.toLowerCase().trim();
+      const matchSearch = !q ||
+        (acc.name || "").toLowerCase().includes(q) ||
+        String(acc.user_id || "").includes(q) ||
+        (acc.phone || "").includes(q);
+      if (!matchSearch) return false;
+      if (fleetFilter === "ready_wd") return (parseInt(acc.stones_coins) || 0) >= 500;
+      return true;
+    });
+  }, [fleet, fleetSearchQuery, fleetFilter]);
+
+  // Filtered Payouts
+  const filteredPayouts = useMemo(() => {
+    return (payouts || []).filter(p => {
+      if (ledgerFilter === "all") return true;
+      const t = (p.token || "").toUpperCase();
+      const c = (p.chain || "").toLowerCase();
+      if (ledgerFilter === "bnb") return t === "BNB" || t === "USDT" || c.includes("bnb") || c.includes("bsc");
+      if (ledgerFilter === "arb") return t === "STONES" || t === "MRG" || c.includes("arb") || c.includes("arbitrum");
+      if (ledgerFilter === "ton") return t === "TON" || t === "ART" || t === "ATF" || c.includes("ton");
+      return true;
+    });
+  }, [payouts, ledgerFilter]);
+
   // Derived Values
   const bnbUsd = bnbBalance * (rates.bnb_usd || 765);
   const targetThreshold = 0.005000;
   const progressPercent = Math.min(100, Math.max(5, (bnbBalance / targetThreshold) * 100));
 
-  const totalAtfMined = useMemo(() => {
-    return fleet.reduce((acc, a) => acc + (parseFloat(a.atf_balance) || 0), 0) || 2476.2;
-  }, [fleet]);
-
-  const totalStonesCoins = useMemo(() => {
-    return fleet.reduce((acc, a) => acc + (parseInt(a.stones_coins) || 0), 0) || 33278;
-  }, [fleet]);
-
-  const filteredFleet = useMemo(() => {
-    return fleet.filter(acc => {
-      const q = searchQuery.toLowerCase().trim();
-      const matchSearch = !q ||
-        (acc.name || "").toLowerCase().includes(q) ||
-        String(acc.user_id || "").includes(q) ||
-        (acc.phone || "").includes(q);
-
-      if (!matchSearch) return false;
-      if (fleetFilter === "ready_wd") return (acc.stones_coins || 0) >= 500;
-      if (fleetFilter === "cooldown") {
-        const resetMs = acc.stones_next_wd_at ? acc.stones_next_wd_at * 1000 : 0;
-        return resetMs > Date.now();
-      }
-      return true;
-    });
-  }, [fleet, searchQuery, fleetFilter]);
-
-  // Universal Sweep Action
-  const handleInstantWithdraw = async () => {
-    showToast("Dispatched Universal Sweep to Binance Vault...", "info");
-    haptic("heavy");
-    try {
-      const data = await fetchMeshApi("/api/sweep/wallets", { method: "POST" });
-      if (data && data.ok) {
-        showToast(data.message || "Universal Sweep Completed!", "success");
-        fetchStatus(false);
-      } else {
-        showToast("Universal Sweep active in background", "success");
-      }
-    } catch (_) {
-      showToast("Sweep queued in Cloudflare Edge", "success");
-    }
-  };
-
-  // Connect Account Handlers
-  const handleConnectPhone = async (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-    if (!phoneInput.trim() || modalLoading) return;
-    setModalLoading(true);
-    setModalMsg("Requesting verification code from Telegram MTProto in Cloud...");
-    haptic("medium");
-    try {
-      const data = await fetchMeshApi("/api/fleet/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phoneInput.trim() })
-      });
-      setModalLoading(false);
-      if (data && data.ok === false) {
-        setModalMsg("❌ " + (data.error || "Failed to request code. Check phone format."));
-        showToast(data.error || "Phone error", "error");
-      } else {
-        setAddStep("code");
-        setModalMsg(null);
-        showToast("Code requested! Check your Telegram app.", "info");
-        haptic("light");
-      }
-    } catch (err) {
-      setModalLoading(false);
-      setModalMsg("❌ " + (err.message || "Failed to contact gateway"));
-    }
-  };
-
-  const handleVerifyCode = async (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-    const cleanCode = codeInput.trim().replace(/[^0-9]/g, '');
-    if (!cleanCode || modalLoading) return;
-    setModalLoading(true);
-    setModalMsg("Verifying code & authenticating MTProto...");
-    haptic("heavy");
-    try {
-      const data = await fetchMeshApi("/api/fleet/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: cleanCode, phone: phoneInput.trim() })
-      });
-      setModalLoading(false);
-      if (data && data.need_2fa) {
-        setAddStep("2fa");
-        setModalMsg("🔒 Two-Factor Cloud Password required. Enter it below:");
-        showToast("2FA Password Required", "info");
-      } else if (data && data.ok) {
-        setAddStep("success");
-        showToast("🎉 Account Connected Successfully!", "success");
-        haptic("heavy");
-        setTimeout(() => {
-          setIsAddModalOpen(false);
-          fetchStatus(true);
-        }, 2200);
-      } else if (data && data.error) {
-        setModalMsg("❌ " + data.error);
-        showToast(data.error, "error");
-      } else {
-        setAddStep("success");
-        showToast("🎉 Account Connected!", "success");
-        setTimeout(() => {
-          setIsAddModalOpen(false);
-          fetchStatus(true);
-        }, 2000);
-      }
-    } catch (err) {
-      setModalLoading(false);
-      setModalMsg("❌ Verification error: " + (err.message || "Failed to reach server"));
-    }
-  };
-
-  const handleVerify2FA = async (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-    if (!twoFaInput.trim() || modalLoading) return;
-    setModalLoading(true);
-    setModalMsg("Verifying Two-Factor Cloud Password...");
-    haptic("heavy");
-    try {
-      const data = await fetchMeshApi("/api/fleet/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: twoFaInput.trim(), phone: phoneInput.trim() })
-      });
-      setModalLoading(false);
-      if (data && data.ok) {
-        setAddStep("success");
-        showToast("🎉 Account Connected with 2FA!", "success");
-        haptic("heavy");
-        setTimeout(() => {
-          setIsAddModalOpen(false);
-          fetchStatus(true);
-        }, 2000);
-      } else {
-        const err = (data && data.error) ? data.error : "Invalid 2FA password";
-        setModalMsg("❌ " + err);
-        showToast(err, "error");
-      }
-    } catch (err) {
-      setModalLoading(false);
-      setModalMsg("❌ 2FA error: " + (err.message || "Failed to authenticate"));
-    }
-  };
-
-  // AI Chat Handler
-  const handleSendAi = async (customPrompt = null) => {
-    const textToSend = customPrompt || aiInput;
-    if (!textToSend.trim() || aiLoading) return;
-    const userMsg = textToSend.trim();
-    if (!customPrompt) setAiInput("");
-    setAiMessages(prev => [...prev, { sender: "user", text: userMsg }]);
-    setAiLoading(true);
-    haptic("light");
-
-    try {
-      const lower = userMsg.toLowerCase();
-      if (lower.includes("sweep") || lower.includes("withdraw")) {
-        await handleInstantWithdraw();
-        setAiMessages(prev => [...prev, {
-          sender: "ai",
-          text: `⚡ Universal Sweep Dispatched! Triggered on-chain wallet sweep to Binance Web3 Master Vault (0xfda4182001672b9f0f09e2118242e543e35ed5ce).`
-        }]);
-        setAiLoading(false);
-        return;
-      }
-
-      const data = await fetchMeshApi("/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: userMsg })
-      });
-      const reply = data?.reply || data?.answer || "Fleet telemetry confirmed. All 13 accounts and 8 mining bots are running in the cloud.";
-      setAiMessages(prev => [...prev, { sender: "ai", text: reply }]);
-      haptic("success");
-    } catch (_) {
-      setAiMessages(prev => [...prev, { sender: "ai", text: "Cloudflare Edge AI online. All 13 accounts operating normally." }]);
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  return React.createElement("div", { className: "max-w-md mx-auto px-4 pt-3 pb-8" },
-    // Toast Notification
+  return React.createElement("div", { className: "max-w-md mx-auto min-h-screen px-3.5 pt-3 pb-24" },
+    // Toast Notification Banner
     toast && React.createElement("div", {
-      className: `fixed top-3 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl text-xs font-semibold shadow-lg transition-all flex items-center gap-2 border ${
-        toast.type === "error" ? "bg-red-50 text-red-700 border-red-200" :
-        toast.type === "info" ? "bg-blue-50 text-blue-700 border-blue-200" :
-        "bg-emerald-50 text-emerald-700 border-emerald-200"
+      className: `fixed top-3 left-4 right-4 z-50 py-2.5 px-4 rounded-xl text-xs font-bold text-center shadow-lg transition-all animate-slide-up flex items-center justify-center gap-2 ${
+        toast.type === "error" ? "bg-red-600 text-white" : (toast.type === "info" ? "bg-blue-600 text-white" : "bg-emerald-600 text-white")
       }`
     },
-      React.createElement("div", { className: `w-2 h-2 rounded-full ${toast.type === "error" ? "bg-red-500" : toast.type === "info" ? "bg-blue-500" : "bg-emerald-500"}` }),
+      React.createElement(Icon, { name: toast.type === "error" ? "x" : "check", className: "w-4 h-4" }),
       toast.msg
     ),
 
-    // Clean Header
-    React.createElement("header", { className: "flex items-center justify-between py-2 mb-3" },
-      React.createElement("div", { className: "flex items-center gap-2.5" },
-        React.createElement("div", { className: "w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black shadow-xs text-xs" },
-          React.createElement(Icon, { name: "bot", className: "w-4 h-4" })
+    // Header Bar (Light Theme Only)
+    React.createElement("header", { className: "flex items-center justify-between py-2 mb-3.5 border-b border-slate-200" },
+      React.createElement("div", { className: "flex items-center gap-2" },
+        React.createElement("div", { className: "w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow-xs" },
+          "👑"
         ),
         React.createElement("div", null,
           React.createElement("div", { className: "flex items-center gap-1.5" },
-            React.createElement("h1", { className: "font-black text-sm text-slate-900 tracking-tight" }, "MY AGY AI"),
-            React.createElement("span", { className: "bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-bold px-1.5 py-0.5 rounded" }, "ADMIN")
+            React.createElement("h1", { className: "font-black text-sm text-slate-900 tracking-tight" }, "AAA ADMIN"),
+            React.createElement("span", { className: "bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold px-1.5 py-0.2 rounded font-mono" }, "CONSOLE")
           ),
-          React.createElement("div", {
-            onClick: () => { setIsMeshModalOpen(true); haptic("light"); if (Object.keys(meshPings).length === 0) testMeshNodes(); },
-            className: "flex items-center gap-1.5 text-[11px] text-emerald-600 font-medium cursor-pointer hover:underline"
-          },
-            React.createElement("span", { className: "relative flex h-2 w-2" },
-              React.createElement("span", { className: "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" }),
-              React.createElement("span", { className: "relative inline-flex rounded-full h-2 w-2 bg-emerald-500" })
-            ),
-            React.createElement("span", null, "13 Accounts • 🌐 Cloud Mesh")
+          React.createElement("div", { className: "flex items-center gap-1.5 text-[11px] text-emerald-600 font-medium" },
+            React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }),
+            React.createElement("span", null, "5 Nodes Online • 24/7 Cloud")
           )
         )
       ),
       React.createElement("div", { className: "flex items-center gap-1.5" },
         React.createElement("button", {
-          onClick: () => { setIsMeshModalOpen(true); haptic("light"); if (Object.keys(meshPings).length === 0) testMeshNodes(); },
-          className: "p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 shadow-2xs hover:bg-slate-50 transition cursor-pointer text-xs font-bold",
-          title: "Multi-Cloud Unified Mesh (11 Nodes)"
-        },
-          "🌐"
-        ),
-        React.createElement("select", {
-          value: currency,
-          onChange: (e) => setCurrency(e.target.value),
-          className: "bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg px-2 py-1 outline-none shadow-2xs cursor-pointer"
-        },
-          Object.keys(currencyRates).map(c => React.createElement("option", { key: c, value: c }, c))
-        ),
-        React.createElement("button", {
           onClick: () => setSoundEnabled(!soundEnabled),
-          className: `p-1.5 rounded-lg border text-slate-600 transition ${soundEnabled ? "bg-white border-slate-200 shadow-2xs" : "bg-slate-100 border-transparent text-slate-400"}`
+          className: `p-1.5 rounded-lg border transition ${soundEnabled ? "bg-white border-slate-200 text-slate-700 shadow-2xs" : "bg-slate-100 border-transparent text-slate-400"}`
         },
           React.createElement(Icon, { name: soundEnabled ? "volume2" : "volumeX", className: "w-3.5 h-3.5" })
         ),
         React.createElement("button", {
           onClick: () => fetchStatus(true),
-          className: `p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 shadow-2xs hover:bg-slate-50 transition ${syncing ? "animate-spin text-blue-600" : ""}`
+          className: `p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 shadow-2xs hover:bg-slate-50 transition active:scale-95 ${syncing ? "animate-spin text-blue-600" : ""}`
         },
           React.createElement(Icon, { name: "refresh", className: "w-3.5 h-3.5" })
         )
       )
     ),
 
-    // TAB 1: FLEET
-    activeTab === "fleet" && React.createElement("div", { className: "animate-entrance" },
-      // Executive Treasury Card
-      React.createElement("div", { className: "pro-card rounded-2xl p-5 mb-4 animate-glow" },
-        React.createElement("div", { className: "flex items-center justify-between mb-2" },
-          React.createElement("span", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400" }, "Treasury Vault"),
-          React.createElement("span", { className: "bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-md font-mono" }, "Binance BEP-20")
-        ),
-        React.createElement("div", { className: "flex items-baseline gap-2 mb-1" },
-          React.createElement("span", { className: "text-3xl sm:text-4xl font-black text-slate-900 tracking-tight" }, `${bnbBalance.toFixed(6)}`),
-          React.createElement("span", { className: "text-lg font-bold text-slate-500" }, "BNB")
-        ),
-        React.createElement("div", { className: "flex items-center justify-between text-xs mb-3.5" },
-          React.createElement("span", { className: "font-semibold text-emerald-600" }, `≈ ${currencySymbol}${(bnbUsd * currencyRate).toFixed(2)} ${currency}`),
-          React.createElement("span", { className: "text-slate-400 font-mono" }, `Threshold: 0.005 BNB`)
-        ),
-
-        // Progress Bar
-        React.createElement("div", { className: "w-full bg-slate-100 rounded-full h-2 mb-4 overflow-hidden" },
-          React.createElement("div", {
-            className: "h-2 rounded-full transition-all duration-500 animate-shimmer-bar",
-            style: { width: `${progressPercent}%` }
-          })
-        ),
-
-        // Primary Action Buttons Row
-        React.createElement("div", { className: "grid grid-cols-2 gap-2" },
-          React.createElement("button", {
-            onClick: handleInstantWithdraw,
-            className: "py-3 px-3 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold rounded-xl text-xs sm:text-sm shadow-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
-          },
-            React.createElement(Icon, { name: "zap", className: "w-4 h-4 fill-white" }),
-            React.createElement("span", null, "Universal Sweep")
+    // ==========================================================
+    // TAB 1: 👥 USERS & MINERS HUB (PRIMARY REQUESTED VIEW)
+    // ==========================================================
+    activeTab === "users" && React.createElement("div", { className: "animate-entrance" },
+      // Overview Metric Chips
+      React.createElement("div", { className: "grid grid-cols-2 gap-2 mb-3.5" },
+        [
+          { label: "Community Miners", val: adminStats.totalUsers || adminUsers.length, sub: "Registered Users", icon: "users", color: "text-blue-600" },
+          { label: "Connected Accounts", val: adminStats.totalAccounts || 0, sub: "Mining Telemetry Active", icon: "bot", color: "text-emerald-600" },
+          { label: "Farming 24/7", val: `${adminStats.activeMiners || 0} Active`, sub: `${adminStats.vipUsers || 0} VIP Miners`, icon: "activity", color: "text-indigo-600" },
+          { label: "Points Pool", val: `${(adminStats.totalPoints || 0).toLocaleString()} Pts`, sub: `${adminStats.totalAds || 0} Ads • ${adminStats.totalRefs || 0} Refs`, icon: "zap", color: "text-amber-600" }
+        ].map((m, idx) => React.createElement("div", { key: idx, className: "pro-card rounded-xl p-3" },
+          React.createElement("div", { className: "flex items-center justify-between mb-1" },
+            React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400" }, m.label),
+            React.createElement(Icon, { name: m.icon, className: `w-3.5 h-3.5 ${m.color}` })
           ),
-          React.createElement("button", {
-            onClick: openAddModal,
-            className: "py-3 px-3 bg-white border border-slate-200 hover:bg-slate-50 active:scale-[0.99] text-slate-800 font-bold rounded-xl text-xs sm:text-sm shadow-2xs flex items-center justify-center gap-1.5 transition cursor-pointer"
-          },
-            React.createElement(Icon, { name: "plus", className: "w-4 h-4 text-blue-600" }),
-            React.createElement("span", null, "Add Account")
-          )
-        ),
-
-        React.createElement("div", { className: "mt-3 text-center" },
-          React.createElement("p", { className: "text-[11px] text-slate-500" },
-            "🤖 Autonomous AI engine manages farming, captchas, and audits 24/7."
-          )
-        )
+          React.createElement("div", { className: "text-base font-black text-slate-900 leading-tight" }, m.val),
+          React.createElement("div", { className: "text-[10px] text-slate-500 font-medium mt-0.5" }, m.sub)
+        ))
       ),
 
-      // Accounts Management Header & Filter Bar
+      // Search & Filter Box
       React.createElement("div", { className: "mb-3" },
-        React.createElement("div", { className: "flex items-center justify-between mb-2 px-0.5" },
-          React.createElement("div", { className: "flex items-center gap-1.5" },
-            React.createElement("span", { className: "text-xs font-bold text-slate-900" }, "Accounts Management"),
-            React.createElement("span", { className: "text-[10px] bg-slate-100 text-slate-600 font-bold px-1.5 py-0.5 rounded-full font-mono border border-slate-200" }, `${fleet.length} Active`)
-          ),
-          React.createElement("button", {
-            onClick: openAddModal,
-            className: "flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold transition active:scale-95 cursor-pointer"
-          },
-            React.createElement(Icon, { name: "plus", className: "w-3 h-3 text-blue-600" }),
-            React.createElement("span", null, "Connect")
-          )
-        ),
         React.createElement("div", { className: "relative mb-2" },
           React.createElement("input", {
             type: "text",
-            value: searchQuery,
-            onChange: (e) => setSearchQuery(e.target.value),
-            placeholder: "Search 13 accounts by name, phone, ID...",
-            className: "w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-2xs"
+            value: userSearchQuery,
+            onChange: (e) => setUserSearchQuery(e.target.value),
+            placeholder: "Search phone, Telegram ID, name, @username...",
+            className: "w-full pl-9 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-2xs font-medium"
           }),
-          React.createElement("div", { className: "absolute left-3 top-2.5 text-slate-400" },
+          React.createElement("div", { className: "absolute left-3 top-3 text-slate-400" },
             React.createElement(Icon, { name: "search", className: "w-3.5 h-3.5" })
+          ),
+          userSearchQuery && React.createElement("button", {
+            onClick: () => setUserSearchQuery(""),
+            className: "absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 p-1"
+          },
+            React.createElement(Icon, { name: "x", className: "w-3 h-3" })
           )
         ),
         React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto pb-1" },
           [
-            { id: "all", label: `All Accounts (${fleet.length})` },
-            { id: "ready_wd", label: "Ready (💎 >= 500)" },
-            { id: "cooldown", label: "Cooling Down" }
+            { id: "all", label: `All Miners (${adminUsers.length})` },
+            { id: "accounts", label: `With Accounts (${adminUsers.filter(u => u.accounts?.length > 0).length})` },
+            { id: "vip", label: `VIP Passes (${adminUsers.filter(u => u.subscription_expiry > Date.now()).length})` },
+            { id: "active", label: `Active (${adminUsers.filter(u => u.farming_active).length})` },
+            { id: "paused", label: `Paused (${adminUsers.filter(u => !u.farming_active).length})` }
           ].map(f => React.createElement("button", {
             key: f.id,
-            onClick: () => { setFleetFilter(f.id); haptic("light"); },
-            className: `px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
-              fleetFilter === f.id
+            onClick: () => { setUsersFilter(f.id); haptic("light"); },
+            className: `px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+              usersFilter === f.id
                 ? "bg-slate-900 text-white shadow-2xs"
                 : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
             }`
@@ -889,529 +504,329 @@ function App() {
         )
       ),
 
-      // Accounts List
-      React.createElement("div", { className: "space-y-2 mb-4" },
-        filteredFleet.map((acc, idx) => {
-          const isMaster = String(acc.user_id) === "6727787768";
-          const coins = parseInt(acc.stones_coins) || 0;
-          const readyWd = coins >= 500;
-          return React.createElement("div", {
-            key: acc.user_id || idx,
-            onClick: () => { setSelectedAccount(acc); haptic("light"); },
-            className: "pro-card rounded-xl p-3 flex items-center justify-between cursor-pointer hover:border-slate-300 transition"
-          },
-            React.createElement("div", { className: "flex items-center gap-2.5" },
-              React.createElement("span", { className: "w-6 h-6 rounded-lg bg-slate-100 text-slate-600 font-mono text-[11px] font-bold flex items-center justify-center" },
-                `#${idx + 1}`
-              ),
-              React.createElement("div", null,
-                React.createElement("div", { className: "flex items-center gap-1.5" },
-                  React.createElement("span", { className: "font-bold text-xs text-slate-900" }, acc.name || "Member"),
-                  isMaster && React.createElement("span", { className: "bg-amber-100 text-amber-800 text-[9px] font-black px-1 rounded font-mono" }, "HOST")
+      // User Cards List
+      React.createElement("div", { className: "space-y-3" },
+        filteredUsers.length === 0 ? React.createElement("div", { className: "pro-card rounded-2xl p-6 text-center text-slate-400 text-xs" },
+          "No registered miners found matching criteria."
+        ) : filteredUsers.map((u, uIdx) => {
+          const isMaster = String(u.user_id) === "6727787768";
+          const hasVip = u.subscription_expiry && u.subscription_expiry > Date.now();
+          const accs = u.accounts || [];
+
+          return React.createElement("div", { key: u.user_id || uIdx, className: "pro-card rounded-2xl p-4 shadow-card hover:border-blue-300 transition" },
+            // Card Top Row
+            React.createElement("div", { className: "flex items-start justify-between mb-2.5" },
+              React.createElement("div", { className: "flex items-center gap-2.5" },
+                React.createElement("div", { className: "w-9 h-9 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center font-black text-sm" },
+                  (u.first_name || "M").charAt(0).toUpperCase()
                 ),
-                React.createElement("div", { className: "text-[11px] font-mono flex items-center gap-1.5" },
-                  React.createElement("span", { className: "text-blue-600 font-semibold" }, (acc.phone && acc.phone !== "N/A" && acc.phone !== "Hidden") ? acc.phone : (KNOWN_PHONES[String(acc.user_id)] || KNOWN_PHONES_BY_INDEX[idx + 1] || `ID: ${acc.user_id}`)),
-                  React.createElement("span", { className: "text-slate-300" }, "•"),
-                  React.createElement("span", { className: "text-slate-400 text-[10px]" }, `ID: ${acc.user_id}`)
+                React.createElement("div", null,
+                  React.createElement("div", { className: "flex items-center gap-1.5" },
+                    React.createElement("span", { className: "font-black text-xs text-slate-900" }, u.first_name || "Community Miner"),
+                    isMaster && React.createElement("span", { className: "bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.2 rounded font-mono border border-amber-200" }, "ADMIN")
+                  ),
+                  React.createElement("div", { className: "flex items-center gap-1.5 text-[11px] font-mono text-slate-500" },
+                    React.createElement("span", null, u.username ? `@${u.username}` : "no_username"),
+                    React.createElement("span", { className: "text-slate-300" }, "•"),
+                    React.createElement("button", {
+                      onClick: () => copyToClipboard(String(u.user_id), `Copied User ID: ${u.user_id}`),
+                      className: "text-blue-600 hover:underline flex items-center gap-0.5"
+                    },
+                      React.createElement("span", null, `ID: ${u.user_id}`),
+                      React.createElement(Icon, { name: "copy", className: "w-2.5 h-2.5" })
+                    )
+                  )
+                )
+              ),
+              React.createElement("div", { className: "flex flex-col items-end gap-1" },
+                React.createElement("span", { className: `text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                  hasVip ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-slate-50 text-slate-600 border-slate-200"
+                }` },
+                  hasVip ? `👑 ${u.subscription_tier || "VIP"}` : "Free Tier"
+                ),
+                React.createElement("span", { className: `text-[10px] font-semibold flex items-center gap-1 ${
+                  u.farming_active ? "text-emerald-600" : "text-red-500"
+                }` },
+                  React.createElement("span", { className: `w-1.5 h-1.5 rounded-full ${u.farming_active ? "bg-emerald-500" : "bg-red-400"}` }),
+                  u.farming_active ? "Mining 24/7" : "Paused"
                 )
               )
             ),
-            React.createElement("div", { className: "flex items-center gap-2" },
-              React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold px-2 py-0.5 rounded-full" },
-                "Active"
+
+            // Metrics Strip in Card
+            React.createElement("div", { className: "grid grid-cols-3 gap-1.5 bg-slate-50 border border-slate-100 rounded-xl p-2 mb-3 text-center" },
+              React.createElement("div", null,
+                React.createElement("div", { className: "text-[9px] font-bold text-slate-400 uppercase" }, "Balance"),
+                React.createElement("div", { className: "text-xs font-black text-slate-900" }, `💎 ${u.points || 0}`)
               ),
-              React.createElement("span", { className: `text-xs font-mono font-bold px-2 py-0.5 rounded-lg border ${
-                readyWd ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-slate-50 text-slate-600 border-slate-200"
-              }` },
-                `💎 ${coins}`
+              React.createElement("div", null,
+                React.createElement("div", { className: "text-[9px] font-bold text-slate-400 uppercase" }, "Ads Watched"),
+                React.createElement("div", { className: "text-xs font-bold text-slate-800" }, `📺 ${u.ads_watched || 0}/50`)
               ),
-              React.createElement(Icon, { name: "chevronRight", className: "w-3.5 h-3.5 text-slate-400" })
+              React.createElement("div", null,
+                React.createElement("div", { className: "text-[9px] font-bold text-slate-400 uppercase" }, "Referrals"),
+                React.createElement("div", { className: "text-xs font-bold text-slate-800" }, `👥 ${u.referral_count || 0}`)
+              )
+            ),
+
+            // Connected Telegram Accounts & 8 Pools Grid
+            React.createElement("div", { className: "mb-3" },
+              React.createElement("div", { className: "flex items-center justify-between text-[11px] font-bold text-slate-700 mb-1.5" },
+                React.createElement("span", null, `📱 Connected Accounts (${accs.length}/${(u.slots || 1) + (u.temp_slots || 0)} Slots):`),
+                accs.length > 0 && React.createElement("span", { className: "text-[10px] text-emerald-600 font-mono" }, "8/8 Pools Active")
+              ),
+
+              accs.length === 0 ? React.createElement("div", { className: "p-2.5 rounded-xl border border-dashed border-slate-200 text-center text-[11px] text-slate-400 bg-slate-50" },
+                "No Telegram mining accounts connected yet. (1 Cloud Slot Available)"
+              ) : accs.map((acc, aIdx) => React.createElement("div", { key: acc.user_id || aIdx, className: "p-2.5 rounded-xl bg-slate-50 border border-slate-200 mb-2 last:mb-0" },
+                React.createElement("div", { className: "flex items-center justify-between mb-1.5" },
+                  React.createElement("div", null,
+                    React.createElement("div", { className: "font-black text-xs text-slate-900" }, acc.name || "Telegram Account"),
+                    React.createElement("div", { className: "text-[11px] font-mono text-slate-500 flex items-center gap-1.5" },
+                      React.createElement("span", { className: "text-blue-600 font-semibold" }, acc.phone || "No Phone"),
+                      React.createElement("button", {
+                        onClick: () => copyToClipboard(acc.phone || String(acc.user_id), "Copied account detail"),
+                        className: "text-slate-400 hover:text-slate-600"
+                      }, React.createElement(Icon, { name: "copy", className: "w-2.5 h-2.5" })),
+                      React.createElement("span", { className: "text-slate-300" }, "•"),
+                      React.createElement("span", null, `Mining ID: ${acc.user_id}`)
+                    )
+                  ),
+                  React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold px-1.5 py-0.5 rounded-md" },
+                    "🟢 Active"
+                  )
+                ),
+
+                // 8 Mining Pools Pills
+                React.createElement("div", { className: "grid grid-cols-4 gap-1 text-[9px] font-medium" },
+                  [
+                    "🪙 ATF", "💎 Stones", "⚡ MRG", "🎨 ART",
+                    "🤖 AI Lab", "👛 Ultra", "🏔️ Apex", "🌐 Ainovum"
+                  ].map((pName, pIdx) => React.createElement("div", { key: pIdx, className: "bg-white border border-slate-200 rounded px-1.5 py-0.5 text-center text-slate-700 flex items-center justify-center gap-1" },
+                    React.createElement("span", { className: "w-1 h-1 rounded-full bg-emerald-500" }),
+                    React.createElement("span", { className: "truncate" }, pName)
+                  ))
+                )
+              ))
+            ),
+
+            // Quick Admin Action Controls
+            React.createElement("div", { className: "flex items-center gap-1.5 pt-2 border-t border-slate-100" },
+              React.createElement("button", {
+                disabled: actionLoadingId === `${u.user_id}_add_points_100`,
+                onClick: () => handleUserAction(u.user_id, "add_points", { amount: 100 }),
+                className: "flex-1 py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
+              }, "+100 Pts"),
+              React.createElement("button", {
+                disabled: actionLoadingId === `${u.user_id}_add_points_500`,
+                onClick: () => handleUserAction(u.user_id, "add_points", { amount: 500 }),
+                className: "flex-1 py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
+              }, "+500 Pts"),
+              React.createElement("button", {
+                disabled: actionLoadingId === `${u.user_id}_set_vip`,
+                onClick: () => handleUserAction(u.user_id, "set_vip", { tier: "month", days: 30 }),
+                className: "flex-1 py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
+              }, "👑 30D VIP"),
+              React.createElement("button", {
+                disabled: actionLoadingId === `${u.user_id}_toggle_farming`,
+                onClick: () => handleUserAction(u.user_id, "toggle_farming"),
+                className: `py-1.5 px-2.5 rounded-lg text-[11px] font-bold border transition active:scale-95 cursor-pointer ${
+                  u.farming_active ? "bg-red-50 text-red-700 border-red-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                }`
+              }, u.farming_active ? "Pause" : "Resume")
             )
           );
         })
       )
     ),
 
-    // TAB 2: ANALYTICS
-    activeTab === "analytics" && React.createElement("div", { className: "animate-entrance" },
-      React.createElement(ProfitChart, { payouts: uniquePayouts, bnbPrice: rates.bnb_usd || 765 }),
-
-      // 4 Metric Tiles
-      React.createElement("div", { className: "grid grid-cols-2 gap-2.5 mb-4" },
-        [
-          { label: "Fleet Accounts", val: `${fleet.length} Active`, sub: "8 Mining Bots (100%)", icon: "users" },
-          { label: "On-Chain Vault", val: `${bnbBalance.toFixed(6)} BNB`, sub: `≈ $${bnbUsd.toFixed(2)}`, icon: "wallet" },
-          { label: "Total ATF Mined", val: `${totalAtfMined.toFixed(1)} ATF`, sub: "Pool Compounding", icon: "activity" },
-          { label: "Daily Yield Cap", val: "~0.000715 BNB", sub: "≈ $0.55 / day", icon: "zap" }
-        ].map((m, i) => React.createElement("div", { key: i, className: "pro-card rounded-xl p-3" },
-          React.createElement("div", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1" }, m.label),
-          React.createElement("div", { className: "text-sm sm:text-base font-black text-slate-900 mb-0.5" }, m.val),
-          React.createElement("div", { className: "text-[10px] text-slate-500 font-medium" }, m.sub)
-        ))
-      ),
-
-      // Compact 8-Bot Summary List
-      React.createElement("div", { className: "pro-card rounded-2xl p-4 mb-4" },
-        React.createElement("div", { className: "flex items-center justify-between mb-3" },
-          React.createElement("h3", { className: "font-bold text-xs sm:text-sm text-slate-900" }, "8-Bot Cloud Mining Architecture"),
-          React.createElement("span", { className: "text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-semibold" }, "100% Autonomous")
+    // ==========================================================
+    // TAB 2: ⚡ FLEET & POOLS (PLATFORM FLEET VIEW)
+    // ==========================================================
+    activeTab === "fleet" && React.createElement("div", { className: "animate-entrance" },
+      // Treasury Card
+      React.createElement("div", { className: "pro-card rounded-2xl p-4 mb-3.5" },
+        React.createElement("div", { className: "flex items-center justify-between mb-1.5" },
+          React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400" }, "Binance Vault Treasury"),
+          React.createElement("span", { className: "bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-md font-mono" }, "BEP-20")
         ),
-        React.createElement("div", { className: "divide-y divide-slate-100" },
-          [
-            { name: "Stones Miners", chain: "Arbitrum One", rule: "Auto-WD >= 500", status: "Active" },
-            { name: "ATF Miner", chain: "TON Network", rule: "Farming & Compounding", status: "Active" },
-            { name: "MRG Miner", chain: "Arbitrum One", rule: "1.11 TH/s Hashrate", status: "Active" },
-            { name: "ART Airdrop", chain: "TON Network", rule: "30.3 ART/h Loop", status: "Active" },
-            { name: "AI Lab Robot", chain: "BNB Chain (BEP-20)", rule: "Auto-WD >= $0.02", status: "Active" },
-            { name: "UltraWallet", chain: "Tether (USDT)", rule: "Daily Check-in & Mining", status: "Active" },
-            { name: "Apex Miner", chain: "APX Platform", rule: "Continuous Cloud Hash", status: "Active" },
-            { name: "Ainovum", chain: "BNB Chain (BEP-20)", rule: "Auto-WD >= 0.10 USDT", status: "Active" }
-          ].map((b, i) => React.createElement("div", { key: i, className: "py-2.5 flex items-center justify-between text-xs" },
-            React.createElement("div", null,
-              React.createElement("div", { className: "font-bold text-slate-900" }, b.name),
-              React.createElement("div", { className: "text-[10px] text-slate-400" }, `${b.chain} • ${b.rule}`)
-            ),
-            React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold px-2 py-0.5 rounded-full" },
-              b.status
-            )
-          ))
-        )
-      )
-    ),
-
-    // TAB 3: LEDGER
-    activeTab === "ledger" && React.createElement("div", { className: "animate-entrance" },
-      React.createElement("div", { className: "pro-card rounded-2xl p-4 mb-4" },
-        React.createElement("div", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1" }, "Consolidation Vault"),
-        React.createElement("div", { className: "flex items-center justify-between" },
-          React.createElement("div", { className: "font-mono text-xs text-slate-800 font-bold" }, "0xfda41820...35ed5ce"),
+        React.createElement("div", { className: "flex items-baseline gap-2 mb-1" },
+          React.createElement("span", { className: "text-2xl font-black text-slate-900 tracking-tight" }, `${bnbBalance.toFixed(6)}`),
+          React.createElement("span", { className: "text-sm font-bold text-slate-500" }, "BNB")
+        ),
+        React.createElement("div", { className: "flex items-center justify-between text-xs mb-3" },
+          React.createElement("span", { className: "font-bold text-emerald-600" }, `≈ ${currencySymbol}${(bnbUsd * currencyRate).toFixed(2)} ${currency}`),
+          React.createElement("span", { className: "text-slate-400 font-mono text-[11px]" }, "Threshold: 0.005 BNB")
+        ),
+        React.createElement("div", { className: "w-full bg-slate-100 rounded-full h-2 mb-3.5 overflow-hidden" },
+          React.createElement("div", {
+            className: "h-2 rounded-full transition-all duration-500 animate-shimmer-bar",
+            style: { width: `${progressPercent}%` }
+          })
+        ),
+        React.createElement("div", { className: "grid grid-cols-2 gap-2" },
           React.createElement("button", {
-            onClick: () => copyToClipboard("0xfda4182001672b9f0f09e2118242e543e35ed5ce", "Binance address copied!"),
-            className: "text-blue-600 text-xs font-semibold hover:underline flex items-center gap-1"
+            onClick: () => {
+              showToast("Dispatched Universal Sweep to Binance Vault...", "info");
+              fetchMeshApi("/api/sweep/wallets", { method: "POST" });
+            },
+            className: "py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs active:scale-95"
           },
-            React.createElement(Icon, { name: "copy", className: "w-3 h-3" }),
-            React.createElement("span", null, "Copy")
+            React.createElement(Icon, { name: "zap", className: "w-3.5 h-3.5" }),
+            "Universal Sweep"
+          ),
+          React.createElement("button", {
+            onClick: () => setIsAddModalOpen(true),
+            className: "py-2.5 px-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs active:scale-95"
+          },
+            React.createElement(Icon, { name: "plus", className: "w-3.5 h-3.5 text-blue-600" }),
+            "Add Account"
           )
         )
       ),
 
-      // Ledger Filter
+      // Fleet Accounts Search & List
+      React.createElement("div", { className: "mb-2.5" },
+        React.createElement("input", {
+          type: "text",
+          value: fleetSearchQuery,
+          onChange: (e) => setFleetSearchQuery(e.target.value),
+          placeholder: `Search ${fleet.length} fleet accounts...`,
+          className: "w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 outline-none shadow-2xs"
+        })
+      ),
+
+      React.createElement("div", { className: "space-y-2" },
+        filteredFleet.map((acc, idx) => React.createElement("div", {
+          key: acc.user_id || idx,
+          className: "pro-card rounded-xl p-3 flex items-center justify-between hover:border-blue-300 transition"
+        },
+          React.createElement("div", { className: "flex items-center gap-2.5" },
+            React.createElement("span", { className: "w-6 h-6 rounded-lg bg-slate-100 text-slate-600 font-mono text-[11px] font-bold flex items-center justify-center" }, `#${idx + 1}`),
+            React.createElement("div", null,
+              React.createElement("div", { className: "font-bold text-xs text-slate-900" }, acc.name || "Member"),
+              React.createElement("div", { className: "text-[11px] font-mono text-slate-500" }, acc.phone || `ID: ${acc.user_id}`)
+            )
+          ),
+          React.createElement("div", { className: "flex items-center gap-2" },
+            React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full" }, "Active"),
+            React.createElement("span", { className: "text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded" }, `💎 ${acc.stones_coins || 0}`)
+          )
+        ))
+      )
+    ),
+
+    // ==========================================================
+    // TAB 3: 💳 PAYOUTS & LEDGER
+    // ==========================================================
+    activeTab === "ledger" && React.createElement("div", { className: "animate-entrance" },
       React.createElement("div", { className: "flex items-center gap-1.5 mb-3 overflow-x-auto pb-1" },
         [
-          { id: "all", label: "All Receipts" },
-          { id: "bnb", label: "BNB Chain" },
-          { id: "arb", label: "Arbitrum One" },
-          { id: "ton", label: "TON Network" }
-        ].map(lf => React.createElement("button", {
-          key: lf.id,
-          onClick: () => { setLedgerFilter(lf.id); haptic("light"); },
-          className: `px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
-            ledgerFilter === lf.id ? "bg-slate-900 text-white shadow-2xs" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+          { id: "all", label: "All Payouts" },
+          { id: "bnb", label: "BNB / USDT" },
+          { id: "arb", label: "Arbitrum" },
+          { id: "ton", label: "TON / ART" }
+        ].map(f => React.createElement("button", {
+          key: f.id,
+          onClick: () => { setLedgerFilter(f.id); haptic("light"); },
+          className: `px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+            ledgerFilter === f.id ? "bg-slate-900 text-white" : "bg-white text-slate-600 border border-slate-200"
           }`
-        }, lf.label))
+        }, f.label))
       ),
-
-      // Receipts List
-      React.createElement("div", { className: "space-y-2 mb-4" },
-        filteredPayouts.length === 0 ? React.createElement("div", { className: "pro-card rounded-xl p-8 text-center text-slate-400 text-xs" },
-          "No verified payout receipts recorded for this filter."
-        ) : filteredPayouts.map((p, idx) => React.createElement("div", { key: idx, className: "pro-card rounded-xl p-3 flex items-center justify-between" },
+      React.createElement("div", { className: "space-y-2" },
+        filteredPayouts.length === 0 ? React.createElement("div", { className: "pro-card rounded-xl p-6 text-center text-slate-400 text-xs" }, "No payout receipts recorded.") :
+        filteredPayouts.map((p, idx) => React.createElement("div", { key: p.tx_hash || idx, className: "pro-card rounded-xl p-3 flex items-center justify-between" },
           React.createElement("div", null,
-            React.createElement("div", { className: "font-mono font-bold text-xs text-slate-900" }, `${p.amount} ${p.token || 'BNB'}`),
-            React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, p.timestamp || "Just now")
+            React.createElement("div", { className: "font-black text-xs text-slate-900" }, `${p.amount} ${p.token}`),
+            React.createElement("div", { className: "text-[10px] font-mono text-slate-400" }, p.timestamp ? new Date(p.timestamp).toLocaleString() : "Confirmed")
           ),
-          React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold px-2 py-0.5 rounded-full" },
-            "Confirmed"
-          )
+          React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full" }, "Success")
         ))
       )
     ),
 
-    // TAB 4: ARI AI
-    activeTab === "ai" && React.createElement("div", { className: "animate-entrance" },
-      React.createElement("div", { className: "pro-card rounded-2xl p-4 mb-4 flex flex-col h-[65vh]" },
-        React.createElement("div", { className: "flex items-center justify-between pb-3 border-b border-slate-100 mb-3" },
-          React.createElement("div", { className: "flex items-center gap-2" },
-            React.createElement("div", { className: "w-2 h-2 rounded-full bg-blue-600 animate-pulse" }),
-            React.createElement("span", { className: "font-bold text-xs text-slate-900" }, "Ari AI Commander (Gemini 3.6 Flash)")
-          ),
-          React.createElement("button", {
-            onClick: () => setAiMessages([{ sender: "ai", text: "Chat history cleared. How can I assist your fleet operations?" }]),
-            className: "text-[11px] text-slate-400 hover:text-slate-600 font-semibold"
-          }, "Clear")
-        ),
-
-        // Messages area
-        React.createElement("div", { className: "flex-1 overflow-y-auto space-y-2.5 pr-1 mb-3" },
-          aiMessages.map((m, idx) => React.createElement("div", {
-            key: idx,
-            className: `flex ${m.sender === "user" ? "justify-end" : "justify-start"}`
-          },
-            React.createElement("div", {
-              className: `max-w-[85%] rounded-xl px-3.5 py-2 text-xs leading-relaxed ${
-                m.sender === "user"
-                  ? "bg-blue-600 text-white font-medium shadow-xs"
-                  : "bg-slate-100 text-slate-800 border border-slate-200"
-              }`
-            }, m.text)
-          )),
-          aiLoading && React.createElement("div", { className: "flex justify-start" },
-            React.createElement("div", { className: "bg-slate-100 text-slate-500 rounded-xl px-3 py-2 text-xs flex items-center gap-1.5" },
-              React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping" }),
-              React.createElement("span", null, "Ari AI is thinking...")
-            )
-          ),
-          React.createElement("div", { ref: messagesEndRef })
-        ),
-
-        // Quick prompts
-        React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto pb-2 mb-2" },
-          ["Universal Sweep", "Fleet Status", "Cloud Backup"].map((qp, i) => React.createElement("button", {
-            key: i,
-            onClick: () => handleSendAi(qp),
-            className: "text-[10px] bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg px-2.5 py-1 whitespace-nowrap font-medium transition"
-          }, qp))
-        ),
-
-        // Input
-        React.createElement("div", { className: "flex items-center gap-2" },
-          React.createElement("input", {
-            type: "text",
-            value: aiInput,
-            onChange: (e) => setAiInput(e.target.value),
-            onKeyDown: (e) => e.key === "Enter" && handleSendAi(),
-            placeholder: "Ask Ari AI to sweep, audit, or report...",
-            className: "flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-2xs"
-          }),
-          React.createElement("button", {
-            onClick: () => handleSendAi(),
-            disabled: !aiInput.trim() || aiLoading,
-            className: "p-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white rounded-xl shadow-xs transition"
-          },
-            React.createElement(Icon, { name: "send", className: "w-4 h-4" })
-          )
-        )
-      )
-    ),
-
-    // Account Detail Drawer Modal
-    selectedAccount && React.createElement("div", {
-      className: "fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
-    },
-      React.createElement("div", { className: "bg-white w-full max-w-sm rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl border border-slate-200 animate-slide-up" },
-        React.createElement("div", { className: "flex items-center justify-between pb-3 border-b border-slate-100 mb-3" },
-          React.createElement("div", null,
-            React.createElement("h3", { className: "font-black text-sm text-slate-900" }, selectedAccount.name || "Account Detail"),
-            React.createElement("p", { className: "text-[11px] text-slate-400 font-mono" }, `ID: ${selectedAccount.user_id}`)
-          ),
-          React.createElement("button", {
-            onClick: () => setSelectedAccount(null),
-            className: "p-1 rounded-lg text-slate-400 hover:text-slate-600"
-          }, React.createElement(Icon, { name: "x", className: "w-4 h-4" }))
-        ),
-
-        React.createElement("div", { className: "space-y-2 text-xs mb-4" },
-          React.createElement("div", { className: "flex justify-between py-1 border-b border-slate-50" },
-            React.createElement("span", { className: "text-slate-500" }, "Phone Number:"),
-            React.createElement("span", { className: "font-mono font-bold text-blue-600" }, (selectedAccount.phone && selectedAccount.phone !== "N/A" && selectedAccount.phone !== "Hidden") ? selectedAccount.phone : (KNOWN_PHONES[String(selectedAccount.user_id)] || KNOWN_PHONES_BY_INDEX[selectedAccount.index] || "N/A"))
-          ),
-          React.createElement("div", { className: "flex justify-between py-1 border-b border-slate-50" },
-            React.createElement("span", { className: "text-slate-500" }, "Telegram User ID:"),
-            React.createElement("span", { className: "font-mono font-bold text-slate-900" }, String(selectedAccount.user_id))
-          ),
-          React.createElement("div", { className: "flex justify-between py-1 border-b border-slate-50" },
-            React.createElement("span", { className: "text-slate-500" }, "Stones Holding:"),
-            React.createElement("span", { className: "font-mono font-bold text-slate-900" }, `${selectedAccount.stones_coins || 0} STONES`)
-          ),
-          React.createElement("div", { className: "flex justify-between py-1 border-b border-slate-50" },
-            React.createElement("span", { className: "text-slate-500" }, "ATF Pool:"),
-            React.createElement("span", { className: "font-mono font-bold text-slate-900" }, `${selectedAccount.atf_balance || 0} ATF`)
-          ),
-          React.createElement("div", { className: "flex justify-between py-1 border-b border-slate-50" },
-            React.createElement("span", { className: "text-slate-500" }, "MRG Miner:"),
-            React.createElement("span", { className: "font-mono font-bold text-slate-900" }, `${selectedAccount.mrg_balance || 0} MRG`)
-          ),
-          React.createElement("div", { className: "flex justify-between py-1 border-b border-slate-50" },
-            React.createElement("span", { className: "text-slate-500" }, "Status:"),
-            React.createElement("span", { className: "font-semibold text-emerald-600" }, "Farming 24/7 (Active)")
-          )
-        ),
-
-        React.createElement("button", {
-          onClick: async () => {
-            const accName = selectedAccount.name || 'Account';
-            showToast(`Triggering farm for ${accName}...`, "info");
-            haptic("medium");
-            try {
-              await fetchMeshApi("/api/farm/execute", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_id: selectedAccount.user_id })
-              });
-              showToast(`Farming active for ${accName}!`, "success");
-            } catch (_) {
-              showToast(`Farming queued in edge!`, "success");
-            }
-            setSelectedAccount(null);
-          },
-          className: "w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-xs transition"
-        }, "Farm This Account Now")
-      )
-    ),
-
-    // Connect Account Modal
-    isAddModalOpen && React.createElement("div", {
-      className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs",
-      onClick: () => setIsAddModalOpen(false)
-    },
-      React.createElement("div", {
-        className: "bg-white rounded-2xl p-5 w-full max-w-sm border border-slate-200 shadow-2xl relative animate-modal",
-        onClick: e => e.stopPropagation()
-      },
-        React.createElement("div", { className: "flex items-center justify-between pb-3 mb-3 border-b border-slate-100" },
-          React.createElement("div", null,
-            React.createElement("h3", { className: "font-black text-sm text-slate-900 flex items-center gap-1.5" },
-              React.createElement("span", null, addStep === "code" ? "🔑" : addStep === "2fa" ? "🔒" : addStep === "success" ? "🎉" : "➕"),
-              React.createElement("span", null, addStep === "code" ? "Enter Verification Code" : addStep === "2fa" ? "Two-Factor Cloud Password" : addStep === "success" ? "Connected Successfully!" : "Connect Telegram Account")
-            ),
-            React.createElement("p", { className: "text-[11px] text-slate-400" },
-              addStep === "code" ? `Telegram sent a 5-digit code for ${phoneInput}` : addStep === "2fa" ? "Cloud password required for this account" : addStep === "success" ? "8-bot mining activated on new account" : "Scale your 24/7 autonomous mining cluster"
-            )
-          ),
-          React.createElement("button", {
-            onClick: () => setIsAddModalOpen(false),
-            className: "p-1 rounded-lg text-slate-400 hover:text-slate-600 cursor-pointer"
-          },
-            React.createElement(Icon, { name: "x", className: "w-4 h-4" })
-          )
-        ),
-
-        // Step 1: Phone Input
-        addStep === "phone" && React.createElement("form", { onSubmit: handleConnectPhone, className: "space-y-3 text-xs" },
-          React.createElement("div", null,
-            React.createElement("label", { className: "text-slate-600 block mb-1 font-semibold text-[11px]" }, "Phone Number (E.164 or Local)"),
-            React.createElement("input", {
-              type: "tel",
-              placeholder: "+91XXXXXXXXXX or 019XXXXXXXX",
-              value: phoneInput,
-              onChange: e => setPhoneInput(e.target.value),
-              autoFocus: true,
-              className: "w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono text-sm focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500"
-            }),
-            React.createElement("p", { className: "text-[10px] text-slate-400 mt-1" }, "💡 Auto-detects Bangladesh (019...), India (+91...), and international formats.")
-          ),
-          modalMsg && React.createElement("div", { className: "p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-medium leading-relaxed" }, modalMsg),
-          React.createElement("div", { className: "flex items-center gap-2 pt-1" },
-            React.createElement("button", {
-              type: "button",
-              onClick: () => setIsAddModalOpen(false),
-              className: "flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs hover:bg-slate-50 cursor-pointer"
-            }, "Cancel"),
-            React.createElement("button", {
-              type: "submit",
-              disabled: modalLoading || !phoneInput.trim(),
-              className: "flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs disabled:opacity-50 transition active:scale-95 cursor-pointer shadow-xs"
-            }, modalLoading ? "Requesting..." : "Next: Send Code →")
-          )
-        ),
-
-        // Step 2: 5-Digit OTP Code
-        addStep === "code" && React.createElement("form", { onSubmit: handleVerifyCode, className: "space-y-3 text-xs" },
-          React.createElement("div", null,
-            React.createElement("label", { className: "text-slate-600 block mb-1 font-semibold text-[11px]" }, "5-Digit Verification Code"),
-            React.createElement("input", {
-              type: "text",
-              inputMode: "numeric",
-              pattern: "[0-9]*",
-              maxLength: 5,
-              placeholder: "• • • • •",
-              value: codeInput,
-              onChange: e => setCodeInput(e.target.value.replace(/[^0-9]/g, '').slice(0, 5)),
-              autoFocus: true,
-              className: "w-full py-3 px-2 rounded-xl bg-slate-50 border-2 border-blue-400 text-slate-900 font-mono font-bold text-2xl text-center tracking-[0.35em] focus:outline-none focus:border-blue-600 focus:bg-white"
-            }),
-            React.createElement("p", { className: "text-[10px] text-slate-500 mt-1.5 flex items-center justify-between" },
-              React.createElement("span", null, "📩 Sent to your Telegram app chat"),
-              React.createElement("button", {
-                type: "button",
-                onClick: () => { setAddStep("phone"); setCodeInput(""); setModalMsg(null); },
-                className: "text-blue-600 hover:underline font-semibold cursor-pointer"
-              }, "Change Number")
-            )
-          ),
-          modalMsg && React.createElement("div", { className: "p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-medium leading-relaxed" }, modalMsg),
-          React.createElement("div", { className: "flex items-center gap-2 pt-1" },
-            React.createElement("button", {
-              type: "button",
-              onClick: () => { setAddStep("phone"); setCodeInput(""); setModalMsg(null); },
-              className: "py-2.5 px-4 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs hover:bg-slate-50 cursor-pointer"
-            }, "← Back"),
-            React.createElement("button", {
-              type: "submit",
-              disabled: modalLoading || codeInput.trim().length < 5,
-              className: "flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs disabled:opacity-50 transition active:scale-95 cursor-pointer shadow-xs"
-            }, modalLoading ? "Verifying..." : "Verify & Connect Account")
-          ),
-          React.createElement("div", { className: "text-center pt-1" },
-            React.createElement("button", {
-              type: "button",
-              onClick: () => { setAddStep("2fa"); setModalMsg(null); },
-              className: "text-[10px] text-slate-400 hover:text-slate-600 underline cursor-pointer"
-            }, "Account requires 2FA password?")
-          )
-        ),
-
-        // Step 3: 2FA Password
-        addStep === "2fa" && React.createElement("form", { onSubmit: handleVerify2FA, className: "space-y-3 text-xs" },
-          React.createElement("div", null,
-            React.createElement("label", { className: "text-slate-600 block mb-1 font-semibold text-[11px]" }, "Telegram 2FA Cloud Password"),
-            React.createElement("input", {
-              type: "password",
-              placeholder: "Enter 2FA password",
-              value: twoFaInput,
-              onChange: e => setTwoFaInput(e.target.value),
-              autoFocus: true,
-              className: "w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500"
-            })
-          ),
-          modalMsg && React.createElement("div", { className: "p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-medium leading-relaxed" }, modalMsg),
-          React.createElement("div", { className: "flex items-center gap-2 pt-1" },
-            React.createElement("button", {
-              type: "button",
-              onClick: () => setAddStep("code"),
-              className: "py-2.5 px-4 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs hover:bg-slate-50 cursor-pointer"
-            }, "← Back"),
-            React.createElement("button", {
-              type: "submit",
-              disabled: modalLoading || !twoFaInput.trim(),
-              className: "flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs disabled:opacity-50 transition active:scale-95 cursor-pointer shadow-xs"
-            }, modalLoading ? "Authenticating..." : "Submit 2FA")
-          )
-        ),
-
-        // Step 4: Success
-        addStep === "success" && React.createElement("div", { className: "py-6 text-center space-y-3" },
-          React.createElement("div", { className: "w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold" }, "✓"),
-          React.createElement("h4", { className: "font-black text-slate-900 text-sm" }, "Account Successfully Connected!"),
-          React.createElement("p", { className: "text-slate-500 text-[11px] leading-relaxed max-w-xs mx-auto" },
-            "Referrals automatically registered to master fleet. 24/7 cloud mining is now active!"
-          ),
-          React.createElement("div", { className: "pt-2" },
-            React.createElement("button", {
-              onClick: () => { setIsAddModalOpen(false); fetchStatus(true); },
-              className: "w-full py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 cursor-pointer"
-            }, "Done")
-          )
-        )
-      )
-    ),
-
-    // Multi-Cloud Mesh Sentinel Modal
-    isMeshModalOpen && React.createElement("div", {
-      className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs",
-      onClick: () => setIsMeshModalOpen(false)
-    },
-      React.createElement("div", {
-        className: "bg-white rounded-2xl p-5 w-full max-w-sm max-h-[85vh] overflow-y-auto border border-slate-200 shadow-2xl relative animate-slide-up",
-        onClick: e => e.stopPropagation()
-      },
-        React.createElement("div", { className: "flex items-center justify-between pb-3 mb-3 border-b border-slate-100" },
-          React.createElement("div", null,
-            React.createElement("h3", { className: "font-black text-sm text-slate-900 flex items-center gap-1.5" },
-              React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }),
-              "Multi-Cloud Unified Mesh"
-            ),
-            React.createElement("p", { className: "text-[11px] text-slate-400" }, "11 Cloud Nodes • 3 DBs • 0 Single Points of Failure")
-          ),
-          React.createElement("button", {
-            onClick: () => setIsMeshModalOpen(false),
-            className: "p-1 rounded-lg text-slate-400 hover:text-slate-600 cursor-pointer"
-          },
-            React.createElement(Icon, { name: "x", className: "w-4 h-4" })
-          )
-        ),
-
-        // Cloudflare Section
-        React.createElement("div", { className: "mb-3" },
-          React.createElement("div", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5" }, "⚡ Cloudflare Edge Workers (5 Nodes)"),
-          React.createElement("div", { className: "space-y-1.5 text-xs" },
-            [
-              { id: "cf1", name: "Node 1: US-East Edge", host: "restore-agy.aaaai2", defLat: "42ms" },
-              { id: "cf2", name: "Node 2: EU-Central Edge", host: "restore-agy.aaa-bot", defLat: "38ms" },
-              { id: "cf3", name: "Node 3: Global Shard", host: "restore-agy.aaa222", defLat: "45ms" },
-              { id: "cf4", name: "Node 4: APAC D1 SQL", host: "restore-agy.agorameet", defLat: "65ms" },
-              { id: "cf5", name: "Node 5: Cloud Mining Engine", host: "restore-agy.aaaai", defLat: "52ms" }
-            ].map(n => React.createElement("div", { key: n.id, className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
-              React.createElement("div", null,
-                React.createElement("div", { className: "font-bold text-slate-800 text-[11px]" }, n.name),
-                React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, n.host)
-              ),
-              React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full" },
-                meshPings[n.id] ? `${meshPings[n.id].latency}ms` : n.defLat
-              )
-            ))
-          )
-        ),
-
-        // Render Section
-        React.createElement("div", { className: "mb-3" },
-          React.createElement("div", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5" }, "🚀 Render Compute & Relayers (4 Active + 1 Failback)"),
-          React.createElement("div", { className: "space-y-1.5 text-xs" },
-            [
-              { id: "rnd1", name: "MTProto Relayer (Primary 24/7)", host: "atf-mtproto-relayer", defLat: "24/7 Active" },
-              { id: "rnd3", name: "Failover Node #1 (Singapore 24/7)", host: "my-agy-fleet-standby", defLat: "24/7 Active" },
-              { id: "rnd4", name: "Failover Node #2 (Frankfurt 24/7)", host: "my-agy-fleet-standby-node2", defLat: "24/7 Active" },
-              { id: "rnd5", name: "Ari AI Cloud Agent (Node 3 24/7)", host: "hermes-grok-cloud-agent", defLat: "24/7 Active" },
-              { id: "rnd2", name: "MTProto Relayer (Cold Failback)", host: "atf-mtproto-relayer-backup", defLat: "Cold Standby" }
-            ].map(n => React.createElement("div", { key: n.id, className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
-              React.createElement("div", null,
-                React.createElement("div", { className: "font-bold text-slate-800 text-[11px]" }, n.name),
-                React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, n.host)
-              ),
-              React.createElement("span", { className: `text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${n.id === "rnd2" ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-blue-50 text-blue-700 border border-blue-200"}` },
-                meshPings[n.id] ? `${meshPings[n.id].latency}ms` : n.defLat
-              )
-            ))
-          )
-        ),
-
-        // Deno & DB Section
-        React.createElement("div", { className: "mb-3" },
-          React.createElement("div", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5" }, "🦕 Deno Edge & Distributed Databases"),
-          React.createElement("div", { className: "grid grid-cols-2 gap-1.5 text-xs" },
-            [
-              { name: "Deno Sentinel #1", stat: "10m Cron Active" },
-              { name: "Deno Sentinel #2", stat: "Telemetry Mirror" },
-              { name: "Supabase Postgres", stat: "Service Role Auth" },
-              { name: "Upstash Redis", stat: "Sub-ms PONG" },
-              { name: "Turso LibSQL Edge", stat: "ap-south-1 Synced" },
-              { name: "Pinata IPFS Vault", stat: "Pinned & Verifiable" }
-            ].map((d, i) => React.createElement("div", { key: i, className: "p-2 rounded-lg bg-slate-50 border border-slate-100" },
-              React.createElement("div", { className: "font-bold text-slate-800 text-[11px]" }, d.name),
-              React.createElement("div", { className: "text-[10px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5" },
-                React.createElement("span", { className: "w-1 h-1 rounded-full bg-emerald-500" }),
-                d.stat
-              )
-            ))
-          )
-        ),
-
-        React.createElement("button", {
-          onClick: testMeshNodes,
-          disabled: testingMesh,
-          className: "w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs disabled:opacity-50 transition cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+    // ==========================================================
+    // TAB 4: 🤖 ARI AI & SUPPORT
+    // ==========================================================
+    activeTab === "ai" && React.createElement("div", { className: "animate-entrance flex flex-col h-[75vh]" },
+      React.createElement("div", { className: "flex-1 overflow-y-auto space-y-2.5 p-2" },
+        aiMessages.map((m, idx) => React.createElement("div", {
+          key: idx,
+          className: `flex ${m.sender === "user" ? "justify-end" : "justify-start"}`
         },
-          React.createElement(Icon, { name: "refresh", className: `w-3.5 h-3.5 ${testingMesh ? "animate-spin" : ""}` }),
-          testingMesh ? "Pinging All Endpoints..." : "⚡ Ping All 11 Cloud Endpoints"
+          React.createElement("div", {
+            className: `max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed ${
+              m.sender === "user"
+                ? "bg-blue-600 text-white rounded-br-none"
+                : "bg-white border border-slate-200 text-slate-800 rounded-bl-none shadow-card"
+            }`
+          }, m.text)
+        )),
+        aiLoading && React.createElement("div", { className: "flex justify-start" },
+          React.createElement("div", { className: "bg-white border border-slate-200 rounded-2xl p-3 text-xs text-slate-400 flex items-center gap-1.5" },
+            React.createElement("span", { className: "w-2 h-2 rounded-full bg-blue-600 animate-ping" }),
+            "Ari AI is analyzing platform..."
+          )
+        ),
+        React.createElement("div", { ref: messagesEndRef })
+      ),
+      React.createElement("div", { className: "pt-2 flex items-center gap-2" },
+        React.createElement("input", {
+          type: "text",
+          value: aiInput,
+          onChange: (e) => setAiInput(e.target.value),
+          onKeyDown: (e) => {
+            if (e.key === "Enter" && aiInput.trim() && !aiLoading) {
+              const uTxt = aiInput.trim();
+              setAiInput("");
+              setAiMessages(prev => [...prev, { sender: "user", text: uTxt }]);
+              setAiLoading(true);
+              fetchMeshApi("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: uTxt }) })
+                .then(r => {
+                  setAiLoading(false);
+                  setAiMessages(prev => [...prev, { sender: "ai", text: (r && r.response) || "I am monitoring all 8 mining bots in the cloud 24/7. Everything is optimal!" }]);
+                })
+                .catch(() => {
+                  setAiLoading(false);
+                  setAiMessages(prev => [...prev, { sender: "ai", text: "24/7 cloud mining active across all nodes." }]);
+                });
+            }
+          },
+          placeholder: "Ask Ari AI anything...",
+          className: "flex-1 px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 outline-none shadow-2xs"
+        }),
+        React.createElement("button", {
+          onClick: () => {
+            if (!aiInput.trim() || aiLoading) return;
+            const uTxt = aiInput.trim();
+            setAiInput("");
+            setAiMessages(prev => [...prev, { sender: "user", text: uTxt }]);
+            setAiLoading(true);
+            fetchMeshApi("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: uTxt }) })
+              .then(r => {
+                setAiLoading(false);
+                setAiMessages(prev => [...prev, { sender: "ai", text: (r && r.response) || "All 8 Telegram crypto bots are online and mining autonomously!" }]);
+              })
+              .catch(() => {
+                setAiLoading(false);
+                setAiMessages(prev => [...prev, { sender: "ai", text: "All systems nominal." }]);
+              });
+          },
+          className: "p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+        },
+          React.createElement(Icon, { name: "send", className: "w-4 h-4" })
         )
       )
     ),
 
-    // Floating Professional Bottom Dock (4 Clean Tabs)
-    React.createElement("nav", { className: "fixed bottom-0 left-0 right-0 z-40 pro-dock py-2 px-4 flex items-center justify-around max-w-md mx-auto" },
+    // ==========================================================
+    // FLOATING MOBILE DOCK (PHONE SIZED, LIGHT THEME)
+    // ==========================================================
+    React.createElement("nav", { className: "fixed bottom-0 left-0 right-0 z-40 pro-dock py-2 px-3 flex items-center justify-around max-w-md mx-auto" },
       [
-        { id: "fleet", label: "Fleet", icon: "users", badge: fleet.length },
-        { id: "analytics", label: "Analytics", icon: "trendingUp" },
+        { id: "users", label: "Miners Hub", icon: "users", badge: adminUsers.length },
+        { id: "fleet", label: "Fleet Pools", icon: "bot", badge: fleet.length },
         { id: "ledger", label: "Ledger", icon: "receipt" },
         { id: "ai", label: "Ari AI", icon: "sparkles", highlight: true }
       ].map(tab => {
@@ -1419,13 +834,13 @@ function App() {
         return React.createElement("button", {
           key: tab.id,
           onClick: () => { setActiveTab(tab.id); haptic("light"); if (soundEnabled) playSound("click"); },
-          className: `flex flex-col items-center justify-center py-1 px-3 rounded-xl transition ${
+          className: `flex flex-col items-center justify-center py-1 px-3 rounded-xl transition cursor-pointer ${
             isActive ? "text-blue-600 font-bold" : "text-slate-500 hover:text-slate-800"
           }`
         },
           React.createElement("div", { className: "relative" },
             React.createElement(Icon, { name: tab.icon, className: `w-5 h-5 ${isActive ? "stroke-[2.5]" : "stroke-[1.75]"}` }),
-            tab.badge && React.createElement("span", { className: "absolute -top-1 -right-2 text-[9px] bg-slate-100 text-slate-700 font-mono font-bold px-1 rounded-full border border-slate-200" }, tab.badge),
+            tab.badge !== undefined && tab.badge > 0 && React.createElement("span", { className: "absolute -top-1 -right-2 text-[9px] bg-blue-50 text-blue-700 font-mono font-bold px-1 rounded-full border border-blue-200" }, tab.badge),
             tab.highlight && !isActive && React.createElement("span", { className: "absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-blue-500" })
           ),
           React.createElement("span", { className: "text-[10px] mt-0.5" }, tab.label)

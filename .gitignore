@@ -42,3 +42,4 @@ build/
 Thumbs.db
 *.swp
 *~
+.wrangler/

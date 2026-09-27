@@ -986,6 +986,111 @@ fi
       }
     }
 
+    // 7.15 Community Admin Users & Telemetry API (@AAAPREMIUMAPPSbot Users & Connected Mining Accounts)
+    if (path === "/api/admin/users" || path === "/api/admin/community" || path === "/api/admin/stats") {
+      try {
+        let uids = [];
+        try {
+          const res = await fetch(`${UPSTASH_URL}/smembers/ub_registered_users`, {
+            headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
+          });
+          if (res.ok) {
+            const d = await res.json();
+            uids = d.result || [];
+          }
+        } catch (_) {}
+
+        // Fallback: ensure primary admin Arif is present
+        if (!uids.includes("6727787768")) uids.unshift("6727787768");
+
+        const users = [];
+        let totalPoints = 0;
+        let totalAccounts = 0;
+        let activeMiners = 0;
+        let vipUsers = 0;
+        let totalAds = 0;
+        let totalRefs = 0;
+
+        for (const uid of uids) {
+          try {
+            const rawU = await upstashGet(`ub_user:${uid}`);
+            if (rawU) {
+              const u = typeof rawU === "string" ? JSON.parse(rawU) : rawU;
+              users.push(u);
+              totalPoints += (u.points || 0);
+              totalAccounts += (u.accounts || []).length;
+              if (u.farming_active) activeMiners++;
+              if (u.subscription_expiry && u.subscription_expiry > Date.now()) vipUsers++;
+              totalAds += (u.ads_watched || 0);
+              totalRefs += (u.referral_count || 0);
+            }
+          } catch (_) {}
+        }
+
+        // Sort: users with accounts first, then highest points
+        users.sort((a, b) => {
+          const accDiff = (b.accounts?.length || 0) - (a.accounts?.length || 0);
+          if (accDiff !== 0) return accDiff;
+          return (b.points || 0) - (a.points || 0);
+        });
+
+        return new Response(JSON.stringify({
+          ok: true,
+          timestamp: Date.now(),
+          stats: {
+            totalUsers: users.length,
+            totalAccounts,
+            activeMiners,
+            vipUsers,
+            totalPoints,
+            totalAds,
+            totalRefs,
+            poolsCount: 8
+          },
+          users
+        }), {
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            ...corsHeaders
+          }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
+    // 7.16 Admin User Action API (Add Points, Set VIP, Toggle Farming)
+    if (path === "/api/admin/user-action" && request.method === "POST") {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const { uid, action, amount, tier, days } = body;
+        if (!uid) return new Response(JSON.stringify({ ok: false, error: "Missing uid" }), { status: 400, headers: corsHeaders });
+
+        const rawU = await upstashGet(`ub_user:${uid}`);
+        if (!rawU) return new Response(JSON.stringify({ ok: false, error: "User not found" }), { status: 404, headers: corsHeaders });
+        const user = typeof rawU === "string" ? JSON.parse(rawU) : rawU;
+
+        if (action === "add_points") {
+          user.points = (user.points || 0) + (parseInt(amount) || 100);
+          const dailyCost = (user.accounts || []).length * 100;
+          if (user.points >= dailyCost) user.farming_active = true;
+        } else if (action === "set_vip") {
+          const passDays = parseInt(days) || 30;
+          user.subscription_tier = tier || "month";
+          user.subscription_expiry = Date.now() + (passDays * 86400 * 1000);
+          user.farming_active = true;
+        } else if (action === "toggle_farming") {
+          user.farming_active = !user.farming_active;
+        }
+
+        await upstashSet(`ub_user:${uid}`, user);
+        return new Response(JSON.stringify({ ok: true, user }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
     // 7.2 Fast Action Dispatcher (Dashboard / Admin -> Edge Queue & Direct Cloud Execution)
     if ((path === "/api/action" || path === "/api/fleet/add" || path === "/api/fleet/verify" || path === "/api/fleet/remove" || path === "/api/fleet/account/remove") && request.method === "POST") {
       try {
@@ -4602,6 +4707,32 @@ Reply to Arif naturally:`;
           is_persistent: true
         };
 
+        const adminMainKeyboard = {
+          keyboard: [
+            [
+              { text: "👑 Admin Console", web_app: { url: "https://atf-miner-app.pages.dev" } }
+            ],
+            [
+              { text: "👥 My Accounts" },
+              { text: "➕ Connect Account" }
+            ],
+            [
+              { text: "💎 Points & Pass" },
+              { text: "🗑️ Remove Account" }
+            ],
+            [
+              { text: "👥 Invite Friends (+500 Pts)" },
+              { text: "💳 Withdrawals" }
+            ],
+            [
+              { text: "📊 My Stats" },
+              { text: "💬 Ari AI & Support" }
+            ]
+          ],
+          resize_keyboard: true,
+          is_persistent: true
+        };
+
         const userCancelKeyboard = {
           keyboard: [
             [
@@ -4708,7 +4839,11 @@ Reply to Arif naturally:`;
 
           const sendCqReply = async (txt, markup = null) => {
             const payload = { chat_id: cqChatId, text: txt, parse_mode: "Markdown", disable_web_page_preview: true };
-            if (markup) payload.reply_markup = markup;
+            if (markup === userMainKeyboard && String(cqChatId) === "6727787768") {
+              payload.reply_markup = adminMainKeyboard;
+            } else if (markup) {
+              payload.reply_markup = markup;
+            }
             await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -5157,7 +5292,11 @@ Reply to Arif naturally:`;
         const sendUserReply = async (txt, replyMarkup = null, parseMode = "Markdown") => {
           const payload = { chat_id: chatId, text: txt, disable_web_page_preview: true };
           if (parseMode) payload.parse_mode = parseMode;
-          if (replyMarkup) payload.reply_markup = replyMarkup;
+          if (replyMarkup === userMainKeyboard && String(chatId) === "6727787768") {
+            payload.reply_markup = adminMainKeyboard;
+          } else if (replyMarkup) {
+            payload.reply_markup = replyMarkup;
+          }
           try {
             const resp = await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
               method: "POST",
@@ -5482,6 +5621,27 @@ Reply to Arif naturally:`;
           }
 
           // E. Process Standard Bot Commands & Menu Buttons
+
+          // 0.0 👑 Admin Console Command (/admin, "👑 Admin Console")
+          if (text === "👑 Admin Console" || text === "/admin" || text.startsWith("/admin")) {
+            if (String(chatId) !== "6727787768") {
+              await sendUserReply("⚠️ Access restricted to Platform Administrator Arif.", userMainKeyboard);
+              return;
+            }
+            const adminMsg = `👑 *AAA EXECUTIVE ADMIN CONSOLE* 🚀\n\n` +
+              `Hello Commander Arif! Your mobile-first Admin Dashboard is online.\n\n` +
+              `• 👥 *Miners Hub:* Complete list of community users & balances\n` +
+              `• 📱 *Mining Accounts:* View all connected phone numbers & Telegram IDs\n` +
+              `• ⚡ *8 Mining Pools:* Real-time 24/7 harvest telemetry\n` +
+              `• 💎 *Points & VIP Passes:* Manage balances & subscriptions\n\n` +
+              `👇 *Tap button below to launch your light-theme Mini App:*`;
+            await sendUserReply(adminMsg, {
+              inline_keyboard: [
+                [{ text: "🚀 Open Admin Console (Mini App)", web_app: { url: "https://atf-miner-app.pages.dev" } }]
+              ]
+            });
+            return;
+          }
 
           // 0. Dedicated Help & User Guide (/help, /guide, /info, /about)
           if (text.startsWith("/help") || text.startsWith("/guide") || text.startsWith("/info") || text.startsWith("/about")) {
