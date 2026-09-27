@@ -411,9 +411,9 @@ export default {
         "     * 🌟 Permanent Slot (50 Stars): +1 permanent account slot.\n" +
         "   - Human Admin Support: Users can submit a direct support ticket to Platform Admin Arif by sending /support <their message>.\n" +
         "   - 3 Official Channels:\n" +
-        "     * 💬 Supergroup (https://t.me/+8xTmE28Up9U5YWQ1): Friendly community help & discussions.\n" +
-        "     * 📢 Announcements (@AAAATFAUTOMINING / https://t.me/AAAATFAUTOMINING): Real-time updates & giveaways.\n" +
-        "     * ⚡ Live Miner Activity (@AAAATF_ACTIVITY / https://t.me/AAAATF_ACTIVITY): Real-time live new miner registrations and milestone proofs.\n" +
+        "     * 💬 Supergroup (@AAAAutoMiner / https://t.me/AAAAutoMiner): Friendly community help & discussions.\n" +
+        "     * 📢 Announcements (@AAAAUTOMINING / https://t.me/AAAAUTOMINING): Real-time updates & giveaways.\n" +
+        "     * ⚡ Live Miner Activity (@AAA_ACTIVITY / https://t.me/AAA_ACTIVITY): Real-time live new miner registrations and milestone proofs.\n" +
         "2. Answering Questions:\n" +
         "   - If a user asks for help, a guide, how to connect, how to earn, what are the channels, or general Web3/crypto questions, answer thoroughly and clearly with actionable steps.\n" +
         "   - If a user says hi or asks a casual question, chat with them warmly and guide them to explore the features.\n" +
@@ -512,7 +512,7 @@ export default {
       } else if (pLow.includes("support") || pLow.includes("admin") || pLow.includes("help") || pLow.includes("ticket")) {
         fallbackAns = `💬 *How to Contact Platform Support:*\n\n` +
           `• *Direct Ticket:* Send \`/support <your message>\` in this chat to alert Platform Admin Arif directly.\n` +
-          `• *Supergroup:* Join our [AAA Auto Miner Supergroup](https://t.me/+8xTmE28Up9U5YWQ1) for community help.\n` +
+          `• *Supergroup:* Join our [AAA Auto Miner Supergroup](https://t.me/AAAAutoMiner) for community help.\n` +
           `• *Instant AI:* Ask me any question anytime!`;
       } else if (pLow.includes("pass") || pLow.includes("star") || pLow.includes("vip") || pLow.includes("sub")) {
         fallbackAns = `🌟 *VIP Subscription Passes (Telegram Stars):*\n\n` +
@@ -3819,6 +3819,498 @@ Reply to Arif naturally:`;
       }
     }
 
+
+    // 13.5 Helper: Get & Save User Profile in Upstash Redis (Shared across Adsgram & Webhook)
+    const getUserProfile = async (uid, fromObj = null) => {
+      const key = `ub_user:${uid}`;
+      let prof = null;
+      try {
+        const raw = await upstashGet(key);
+        if (raw) prof = typeof raw === "string" ? JSON.parse(raw) : raw;
+      } catch (_) {}
+
+      if (!prof) {
+        prof = {
+          user_id: uid,
+          first_name: fromObj?.first_name || "Miner",
+          username: fromObj?.username || "",
+          points: 100, // 100 Free Welcome Points (Day 1 farming free)
+          slots: 1, // Default 1 Account Slot
+          temp_slots: 0,
+          ads_watched: 0,
+          last_ad_claim: 0,
+          referral_count: 0,
+          referred_by: null,
+          accounts: [],
+          joined_channels: false,
+          farming_active: true,
+          subscription_tier: null,
+          subscription_expiry: 0,
+          last_deduction_date: new Date().toISOString().slice(0, 10),
+          created_at: Date.now()
+        };
+        await upstashSet(key, prof);
+      } else if (fromObj) {
+        let updated = false;
+        if (fromObj.first_name && prof.first_name !== fromObj.first_name) {
+          prof.first_name = fromObj.first_name;
+          updated = true;
+        }
+        if (fromObj.username !== undefined && prof.username !== (fromObj.username || "")) {
+          prof.username = fromObj.username || "";
+          updated = true;
+        }
+        if (updated) {
+          ctx.waitUntil(upstashSet(key, prof));
+        }
+      }
+
+      // Auto-register user ID in global community Set in Upstash Redis
+      ctx.waitUntil(upstashSadd("ub_registered_users", String(uid)));
+
+      // Ensure subscription & daily streak fields exist
+      if (prof.subscription_expiry === undefined) prof.subscription_expiry = 0;
+      if (prof.subscription_tier === undefined) prof.subscription_tier = null;
+      if (prof.daily_streak === undefined) prof.daily_streak = 0;
+      if (prof.last_daily_claim === undefined) prof.last_daily_claim = 0;
+
+      const now = Date.now();
+      const hasActivePass = prof.subscription_expiry > now;
+      if (hasActivePass) {
+        prof.farming_active = true;
+      }
+
+      // Daily Automated Point Deduction (100 Pts per active connected account per day)
+      const today = new Date().toISOString().slice(0, 10);
+      if (prof.last_deduction_date !== today && prof.accounts && prof.accounts.length > 0) {
+        if (hasActivePass) {
+          prof.farming_active = true;
+          prof.last_deduction_date = today;
+          await upstashSet(key, prof);
+        } else {
+          const dailyCost = prof.accounts.length * 100;
+          if (prof.points >= dailyCost) {
+            prof.points -= dailyCost;
+            prof.farming_active = true;
+          } else {
+            prof.farming_active = false;
+          }
+          prof.last_deduction_date = today;
+          await upstashSet(key, prof);
+        }
+      }
+
+      return prof;
+    };
+
+    const saveUserProfile = async (uid, prof) => {
+      await upstashSet(`ub_user:${uid}`, prof);
+    };
+
+    // 13.6 Adsgram Rewarded Video WebApp Page
+    if (path === "/adsgram") {
+      const currentBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "4467";
+      const adsgramHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AAA Auto Miner — Rewarded Video Ads</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body {
+      background: #090d16;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 20px;
+      overflow-x: hidden;
+    }
+    .container { width: 100%; max-width: 440px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+    .header-badge {
+      display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px;
+      border-radius: 9999px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25);
+      font-size: 13px; font-weight: 600; color: #38bdf8;
+    }
+    .pulse-dot {
+      width: 8px; height: 8px; background: #10b981; border-radius: 50%;
+      box-shadow: 0 0 10px #10b981; animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.2); } }
+    .card {
+      width: 100%; background: rgba(30, 41, 59, 0.65); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .user-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+    .user-info { display: flex; align-items: center; gap: 12px; }
+    .avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #3b82f6); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; color: #fff; }
+    .user-details h3 { font-size: 16px; font-weight: 600; color: #fff; }
+    .user-details p { font-size: 12px; color: #94a3b8; }
+    .balance-pill { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 12px; border-radius: 12px; text-align: right; }
+    .balance-val { font-size: 15px; font-weight: 700; color: #34d399; }
+    .balance-lbl { font-size: 10px; color: #a7f3d0; text-transform: uppercase; letter-spacing: 0.5px; }
+    .perk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .perk-item { background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 14px; text-align: center; }
+    .perk-val { font-size: 20px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
+    .perk-lbl { font-size: 12px; color: #94a3b8; }
+    .progress-box { margin-top: 14px; padding: 14px; background: rgba(15, 23, 42, 0.4); border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.05); }
+    .progress-header { display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8; margin-bottom: 8px; }
+    .progress-track { width: 100%; height: 8px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); border-radius: 9999px; transition: width 0.4s ease; }
+    .btn-action {
+      width: 100%; padding: 16px; border-radius: 16px; border: none; font-size: 16px; font-weight: 700; color: #fff;
+      background: linear-gradient(135deg, #2563eb, #7c3aed); box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+    .btn-action:active { transform: scale(0.98); }
+    .btn-action:disabled { background: #334155; color: #64748b; box-shadow: none; cursor: not-allowed; }
+    .status-msg { margin-top: 14px; padding: 12px; border-radius: 12px; font-size: 13px; text-align: center; display: none; }
+    .status-msg.success { display: block; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
+    .status-msg.error { display: block; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
+    .footer { font-size: 11px; color: #64748b; text-align: center; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-badge">
+      <span class="pulse-dot"></span>
+      <span>Adsgram Official Partner</span>
+    </div>
+
+    <div class="card">
+      <div class="user-row">
+        <div class="user-info">
+          <div class="avatar" id="uAvatar">M</div>
+          <div class="user-details">
+            <h3 id="uName">Miner</h3>
+            <p id="uId">ID: Loading...</p>
+          </div>
+        </div>
+        <div class="balance-pill">
+          <div class="balance-val" id="uPoints">---</div>
+          <div class="balance-lbl">Points</div>
+        </div>
+      </div>
+
+      <div class="perk-grid">
+        <div class="perk-item">
+          <div class="perk-val" id="rewardPerView">+20 Pts</div>
+          <div class="perk-lbl">Reward per View</div>
+        </div>
+        <div class="perk-item">
+          <div class="perk-val" id="uAdsCount">0</div>
+          <div class="perk-lbl">Ads Watched</div>
+        </div>
+      </div>
+
+      <div class="progress-box">
+        <div class="progress-header">
+          <span>Bonus Account Slot Milestone</span>
+          <span id="milestoneProgress">0 / 50</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="milestoneBar" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px;">
+        <button class="btn-action" id="watchBtn" onclick="watchAd()">
+          <span>🎬 Watch Video Ad (+20 Pts)</span>
+        </button>
+        <div class="status-msg" id="statusBox"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Powered by Adsgram Web3 Ad Network & AAA Edge Mesh<br>
+    Earned points auto-extend your 24/7 cloud mining accounts.
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      try { tg.setHeaderColor('#090d16'); } catch (_) {}
+    }
+
+    const tgUser = tg?.initDataUnsafe?.user || {};
+    const userId = tgUser.id || new URLSearchParams(window.location.search).get('uid') || "6727787768";
+    const userName = tgUser.first_name || "Miner";
+    
+    document.getElementById('uName').innerText = userName;
+    document.getElementById('uAvatar').innerText = userName.charAt(0).toUpperCase();
+    document.getElementById('uId').innerText = "ID: " + userId;
+
+    let userBalance = 0;
+    let adsCount = 0;
+    let isVip = false;
+
+    async function fetchUserStatus() {
+      try {
+        const res = await fetch("/api/adsgram/status?user_id=" + userId);
+        if (res.ok) {
+          const d = await res.json();
+          userBalance = d.points || 0;
+          adsCount = d.ads_watched || 0;
+          isVip = !!d.is_monthly_pass;
+          updateUi();
+        }
+      } catch (_) {}
+    }
+
+    function updateUi() {
+      document.getElementById('uPoints').innerText = userBalance;
+      document.getElementById('uAdsCount').innerText = adsCount;
+      const progress = adsCount % 50;
+      document.getElementById('milestoneProgress').innerText = progress + " / 50";
+      document.getElementById('milestoneBar').style.width = ((progress / 50) * 100) + "%";
+      if (isVip) {
+        document.getElementById('rewardPerView').innerText = "+40 Pts (2x)";
+      }
+    }
+
+    fetchUserStatus();
+
+    const configuredBlockId = "__BLOCK_ID__";
+    let adController = null;
+    try {
+      if (window.Adsgram) {
+        adController = window.Adsgram.init({
+          blockId: configuredBlockId,
+          debug: false
+        });
+      }
+    } catch (e) {
+      console.error("Adsgram init error:", e);
+    }
+
+    let isCooldown = false;
+
+    async function watchAd() {
+      if (isCooldown) return;
+      const btn = document.getElementById('watchBtn');
+      const box = document.getElementById('statusBox');
+      box.className = "status-msg";
+      box.style.display = "none";
+
+      if (!adController && window.Adsgram) {
+        adController = window.Adsgram.init({ blockId: configuredBlockId, debug: false });
+      }
+
+      if (!adController) {
+        claimReward("direct");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "⏳ Loading Video Ad...";
+
+      try {
+        adController.show().then(async (result) => {
+          await claimReward(result);
+        }).catch((err) => {
+          btn.disabled = false;
+          btn.innerText = "🎬 Watch Video Ad (+20 Pts)";
+          box.className = "status-msg error";
+          box.innerText = "⚠️ Ad closed before completion. Watch the full video to claim points.";
+          if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+        });
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerText = "🎬 Watch Video Ad (+20 Pts)";
+        box.className = "status-msg error";
+        box.innerText = "⚠️ Could not launch ad: " + (err.message || "Please retry.");
+      }
+    }
+
+    async function claimReward(adResult) {
+      const btn = document.getElementById('watchBtn');
+      const box = document.getElementById('statusBox');
+      btn.innerText = "🎁 Crediting Points...";
+
+      try {
+        const resp = await fetch("/api/adsgram/reward", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: userId,
+            initData: tg?.initData || ""
+          })
+        });
+
+        const data = await resp.json();
+        if (data.ok) {
+          userBalance = data.new_balance;
+          adsCount = data.ads_watched;
+          updateUi();
+
+          box.className = "status-msg success";
+          let msg = "🎉 Success! +" + data.points_awarded + " Points credited to your account!";
+          if (data.bonus_unlocked) {
+            msg += " 🏆 50-Ad Milestone reached: +1 Free Account Slot unlocked!";
+          }
+          box.innerText = msg;
+          if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+          startCooldown(15);
+        } else {
+          box.className = "status-msg error";
+          box.innerText = data.error || "Claim failed. Please retry.";
+          btn.disabled = false;
+          btn.innerText = "🎬 Watch Video Ad (+20 Pts)";
+        }
+      } catch (e) {
+        box.className = "status-msg error";
+        box.innerText = "Network error syncing reward. Your points are safe.";
+        btn.disabled = false;
+        btn.innerText = "🎬 Watch Video Ad (+20 Pts)";
+      }
+    }
+
+    function startCooldown(sec) {
+      isCooldown = true;
+      const btn = document.getElementById('watchBtn');
+      let rem = sec;
+      btn.disabled = true;
+      btn.innerText = "⏳ Next Ad in " + rem + "s";
+
+      const iv = setInterval(() => {
+        rem--;
+        if (rem <= 0) {
+          clearInterval(iv);
+          isCooldown = false;
+          btn.disabled = false;
+          btn.innerText = "🎬 Watch Video Ad (+20 Pts)";
+        } else {
+          btn.innerText = "⏳ Next Ad in " + rem + "s";
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>`.replace("__BLOCK_ID__", currentBlockId);
+
+      return new Response(adsgramHtml, {
+        headers: { "Content-Type": "text/html; charset=utf-8", ...corsHeaders }
+      });
+    }
+
+    // 13.7 Adsgram User Status API
+    if (path === "/api/adsgram/status") {
+      const uid = url.searchParams.get("user_id");
+      if (!uid) {
+        return new Response(JSON.stringify({ ok: false, error: "Missing user_id" }), { status: 400, headers: corsHeaders });
+      }
+      const profile = await getUserProfile(uid);
+      const now = Date.now();
+      const isMonthlyPass = profile.subscription_tier === "month" && profile.subscription_expiry && profile.subscription_expiry > now;
+      return new Response(JSON.stringify({
+        ok: true,
+        user_id: uid,
+        points: profile.points || 0,
+        ads_watched: profile.ads_watched || 0,
+        is_monthly_pass: isMonthlyPass,
+        slots: (profile.slots || 1) + (profile.temp_slots || 0)
+      }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+
+    // 13.8 Adsgram Reward Verification & Claim API
+    if (path === "/api/adsgram/reward" && request.method === "POST") {
+      try {
+        const body = await request.json().catch(() => ({}));
+        let uid = body.user_id;
+        if (!uid && body.initData) {
+          try {
+            const params = new URLSearchParams(body.initData);
+            const userStr = params.get("user");
+            if (userStr) {
+              const uObj = JSON.parse(userStr);
+              uid = uObj.id;
+            }
+          } catch (_) {}
+        }
+        if (!uid) {
+          return new Response(JSON.stringify({ ok: false, error: "Missing user_id" }), { status: 400, headers: corsHeaders });
+        }
+
+        const profile = await getUserProfile(uid);
+        const now = Date.now();
+        const elapsed = Math.floor((now - (profile.last_ad_claim || 0)) / 1000);
+        if (elapsed < 15) {
+          const waitSec = 15 - elapsed;
+          return new Response(JSON.stringify({
+            ok: false,
+            error: `Cooldown active. Please wait ${waitSec}s.`,
+            cooldown_seconds: waitSec
+          }), { status: 429, headers: corsHeaders });
+        }
+
+        const isMonthlyPass = profile.subscription_tier === "month" && profile.subscription_expiry && profile.subscription_expiry > now;
+        const adPts = isMonthlyPass ? 40 : 20;
+        profile.points = (profile.points || 0) + adPts;
+        profile.ads_watched = (profile.ads_watched || 0) + 1;
+        profile.last_ad_claim = now;
+
+        let bonusUnlocked = false;
+        if (profile.ads_watched % 50 === 0) {
+          profile.temp_slots = (profile.temp_slots || 0) + 1;
+          bonusUnlocked = true;
+        }
+        await saveUserProfile(uid, profile);
+
+        const userBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+        const bonusText = bonusUnlocked ? "\n\n🎉 *50 ADS MILESTONE REACHED!* You unlocked *+1 BONUS ACCOUNT SLOT*!" : "";
+        const notifTxt = `✅ *+${adPts} POINTS CREDITED!* 🎬${isMonthlyPass ? " _(2x Monthly Pass Bonus!)_" : ""}\n\n` +
+          `• *New Balance:* ${profile.points} Points\n` +
+          `• *Ads Watched:* ${profile.ads_watched}/50\n` +
+          `• *Progress to Bonus Slot:* ${profile.ads_watched % 50}/50 ads${bonusText}\n\n` +
+          `💡 _Keep watching ads to extend your 24/7 cloud mining!_`;
+
+        ctx.waitUntil(fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: uid,
+            text: notifTxt,
+            parse_mode: "Markdown"
+          })
+        }).catch(() => {}));
+
+        return new Response(JSON.stringify({
+          ok: true,
+          points_awarded: adPts,
+          new_balance: profile.points,
+          ads_watched: profile.ads_watched,
+          progress_to_bonus: profile.ads_watched % 50,
+          bonus_unlocked: bonusUnlocked
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
+    // 13.9 Adsgram Config / Diagnostics API
+    if (path === "/api/adsgram/config") {
+      const currentBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "4467";
+      return new Response(JSON.stringify({
+        ok: true,
+        block_id: currentBlockId,
+        webapp_url: `https://restore-agy.${CURRENT_SUBDOMAIN}.workers.dev/adsgram`,
+        cooldown_sec: 15,
+        default_pts: 20,
+        monthly_pass_pts: 40
+      }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+
     // 14. 24/7 Telegram User Bot Webhook Endpoint (@AAAPREMIUMAPPSbot - Hosted 100% on Cloudflare Edge)
     if (path === "/user-bot-webhook" || path === "/user-webhook") {
       if (request.method === "GET") {
@@ -3829,9 +4321,9 @@ Reply to Arif naturally:`;
           status: "online",
           version: "5.0-premium",
           channels: [
-            { name: "AAA Auto Miner Supergroup", url: "https://t.me/+8xTmE28Up9U5YWQ1" },
-            { name: "Official Announcements", username: "@AAAATFAUTOMINING", url: "https://t.me/AAAATFAUTOMINING" },
-            { name: "Live Miner Activity", username: "@AAAATF_ACTIVITY", url: "https://t.me/AAAATF_ACTIVITY" }
+            { name: "AAA Auto Miner Supergroup", username: "@AAAAutoMiner", url: "https://t.me/AAAAutoMiner" },
+            { name: "Official Announcements", username: "@AAAAUTOMINING", url: "https://t.me/AAAAUTOMINING" },
+            { name: "Live Miner Activity", username: "@AAA_ACTIVITY", url: "https://t.me/AAA_ACTIVITY" }
           ]
         }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
@@ -3844,101 +4336,16 @@ Reply to Arif naturally:`;
 
         const userBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
 
-        // Helper: Get & Save User Profile in Upstash Redis
-        const getUserProfile = async (uid, fromObj = null) => {
-          const key = `ub_user:${uid}`;
-          let prof = null;
-          try {
-            const raw = await upstashGet(key);
-            if (raw) prof = typeof raw === "string" ? JSON.parse(raw) : raw;
-          } catch (_) {}
+        // (getUserProfile & saveUserProfile lifted to shared scope above)
 
-          if (!prof) {
-            prof = {
-              user_id: uid,
-              first_name: fromObj?.first_name || "Miner",
-              username: fromObj?.username || "",
-              points: 100, // 100 Free Welcome Points (Day 1 farming free)
-              slots: 1, // Default 1 Account Slot
-              temp_slots: 0,
-              ads_watched: 0,
-              last_ad_claim: 0,
-              referral_count: 0,
-              referred_by: null,
-              accounts: [],
-              joined_channels: false,
-              farming_active: true,
-              subscription_tier: null,
-              subscription_expiry: 0,
-              last_deduction_date: new Date().toISOString().slice(0, 10),
-              created_at: Date.now()
-            };
-            await upstashSet(key, prof);
-          } else if (fromObj) {
-            let updated = false;
-            if (fromObj.first_name && prof.first_name !== fromObj.first_name) {
-              prof.first_name = fromObj.first_name;
-              updated = true;
-            }
-            if (fromObj.username !== undefined && prof.username !== (fromObj.username || "")) {
-              prof.username = fromObj.username || "";
-              updated = true;
-            }
-            if (updated) {
-              ctx.waitUntil(upstashSet(key, prof));
-            }
-          }
-
-          // Auto-register user ID in global community Set in Upstash Redis
-          ctx.waitUntil(upstashSadd("ub_registered_users", String(uid)));
-
-          // Ensure subscription & daily streak fields exist
-          if (prof.subscription_expiry === undefined) prof.subscription_expiry = 0;
-          if (prof.subscription_tier === undefined) prof.subscription_tier = null;
-          if (prof.daily_streak === undefined) prof.daily_streak = 0;
-          if (prof.last_daily_claim === undefined) prof.last_daily_claim = 0;
-
-          const now = Date.now();
-          const hasActivePass = prof.subscription_expiry > now;
-          if (hasActivePass) {
-            prof.farming_active = true;
-          }
-
-          // Daily Automated Point Deduction (100 Pts per active connected account per day)
-          const today = new Date().toISOString().slice(0, 10);
-          if (prof.last_deduction_date !== today && prof.accounts && prof.accounts.length > 0) {
-            if (hasActivePass) {
-              // Active Pass covers daily mining fee completely (0 point deduction)
-              prof.farming_active = true;
-              prof.last_deduction_date = today;
-              await upstashSet(key, prof);
-            } else {
-              const dailyCost = prof.accounts.length * 100;
-              if (prof.points >= dailyCost) {
-                prof.points -= dailyCost;
-                prof.farming_active = true;
-              } else {
-                prof.farming_active = false;
-              }
-              prof.last_deduction_date = today;
-              await upstashSet(key, prof);
-            }
-          }
-
-          return prof;
-        };
-
-        const saveUserProfile = async (uid, prof) => {
-          await upstashSet(`ub_user:${uid}`, prof);
-        };
 
         // Helper: Check membership across all 3 official community channels
         const checkUserChannels = async (uid) => {
           if (String(uid) === "6727787768") return { ok: true, missing: [] };
           const channels = [
-            { id: -1003684868577, name: "AAA Auto Miner Supergroup", url: "https://t.me/+8xTmE28Up9U5YWQ1" },
-            { id: -1004255751168, name: "Official Announcements", url: "https://t.me/AAAATFAUTOMINING" },
-            { id: -1004332544939, name: "Live Miner Activity", url: "https://t.me/AAAATF_ACTIVITY" }
+            { id: -1003684868577, name: "AAA Auto Miner Supergroup", username: "@AAAAutoMiner", url: "https://t.me/AAAAutoMiner" },
+            { id: -1004255751168, name: "Official Announcements", url: "https://t.me/AAAAUTOMINING" },
+            { id: -1004332544939, name: "Live Miner Activity", url: "https://t.me/AAA_ACTIVITY" }
           ];
           const missing = [];
           for (const ch of channels) {
@@ -3956,10 +4363,10 @@ Reply to Arif naturally:`;
           return { ok: missing.length === 0, missing };
         };
 
-        // Broadcast Event to Official Live Activity Channel (@AAAATF_ACTIVITY)
+        // Broadcast Event to Official Live Activity Channel (@AAA_ACTIVITY)
         const broadcastToLiveActivity = async (txt, replyMarkup = null) => {
           const payload = {
-            chat_id: "@AAAATF_ACTIVITY",
+            chat_id: -1004332544939,
             text: txt,
             parse_mode: "Markdown",
             disable_web_page_preview: true
@@ -4005,7 +4412,7 @@ Reply to Arif naturally:`;
               ],
               [
                 { text: "📊 My Rewards", url: "https://t.me/AAAPREMIUMAPPSbot?start=rewards" },
-                { text: "📢 Announcements", url: "https://t.me/AAAATFAUTOMINING" }
+                { text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" }
               ]
             ]
           };
@@ -4039,7 +4446,7 @@ Reply to Arif naturally:`;
               ],
               [
                 { text: "📊 My Rewards", url: "https://t.me/AAAPREMIUMAPPSbot?start=rewards" },
-                { text: "📢 Announcements", url: "https://t.me/AAAATFAUTOMINING" }
+                { text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" }
               ]
             ]
           };
@@ -4127,7 +4534,7 @@ Reply to Arif naturally:`;
               { text: "🗑️ Remove Account" }
             ],
             [
-              { text: "📺 Watch Ad (+20 Pts)" },
+              { text: "📺 Watch Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } },
               { text: "👥 Invite Friends (+500 Pts)" }
             ],
             [
@@ -4152,11 +4559,11 @@ Reply to Arif naturally:`;
         const gateInlineKeyboard = {
           inline_keyboard: [
             [
-              { text: "💬 1. Join Supergroup", url: "https://t.me/+8xTmE28Up9U5YWQ1" },
-              { text: "📢 2. Join News", url: "https://t.me/AAAATFAUTOMINING" }
+              { text: "💬 1. Join Supergroup", url: "https://t.me/AAAAutoMiner" },
+              { text: "📢 2. Join News", url: "https://t.me/AAAAUTOMINING" }
             ],
             [
-              { text: "⚡ 3. Join Live Activity Stream", url: "https://t.me/AAAATF_ACTIVITY" }
+              { text: "⚡ 3. Join Live Activity Stream", url: "https://t.me/AAA_ACTIVITY" }
             ],
             [
               { text: "🔄 Verify Membership & Claim 100 Pts", callback_data: "ub_verify_gate" }
@@ -4176,7 +4583,7 @@ Reply to Arif naturally:`;
             ],
             [
               { text: "💳 Payouts Guide", callback_data: "ub_withdraw" },
-              { text: "📢 Announcements", url: "https://t.me/AAAATFAUTOMINING" }
+              { text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" }
             ]
           ]
         };
@@ -4194,7 +4601,7 @@ Reply to Arif naturally:`;
               { text: "🌟 +1 Permanent Slot (50 Stars)", callback_data: "ub_stars_slot1" }
             ],
             [
-              { text: "📺 Watch Ad (+20 Pts Free)", callback_data: "ub_watch_ad" },
+              { text: "📺 Watch Ad (+20 Pts Free)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } },
               { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }
             ]
           ]
@@ -4203,10 +4610,11 @@ Reply to Arif naturally:`;
         const adClaimKeyboard = {
           inline_keyboard: [
             [
-              { text: "🎁 Claim +20 Points", callback_data: "ub_claim_ad" }
+              { text: "🎬 Watch Real Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }
             ],
             [
-              { text: "📢 Visit Official Channel", url: "https://t.me/AAAATFAUTOMINING" }
+              { text: "🎁 Claim Reward Directly", callback_data: "ub_claim_ad" },
+              { text: "📢 Official Channel", url: "https://t.me/AAAAUTOMINING" }
             ]
           ]
         };
@@ -4294,13 +4702,18 @@ Reply to Arif naturally:`;
 
           // B. Watch Ad & Claim Points Callback
           if (cqData === "ub_watch_ad") {
-            const adMsg = `📺 *SPONSORED PARTNER AD* 🚀\n\n` +
-              `🌟 *AAA Auto Mining Ecosystem*\n` +
-              `• 24/7 High-yield autonomous cloud mining pools.\n` +
-              `• Automated rewards across ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, and Ainovum!\n` +
-              `• Verified Telegram Web3 security & on-chain smart contracts.\n\n` +
-              `Tap *🎁 Claim +20 Points* below to collect your reward!`;
-            ctx.waitUntil(sendCqReply(adMsg, adClaimKeyboard));
+            const adMsg = `📺 *WATCH REWARDED ADS & EARN POINTS* 🚀\n\n` +
+              `Watch real video ads via Adsgram to keep your 24/7 cloud mining active with 0 fees!\n\n` +
+              `🎁 *Per-Ad Reward:* +20 Points (+40 for VIP Monthly Pass)\n` +
+              `🏆 *Milestone Bonus:* Every 50 ads unlocks *+1 Free Bonus Account Slot*!\n` +
+              `⏱️ *Cooldown:* 15 seconds between ads.\n\n` +
+              `👇 *Tap below to launch the video ad:*`;
+            ctx.waitUntil(sendCqReply(adMsg, {
+              inline_keyboard: [
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: "🎁 Claim Directly (Fallback)", callback_data: "ub_claim_ad" }]
+              ]
+            }));
             return new Response("OK");
           }
 
@@ -4453,7 +4866,8 @@ Reply to Arif naturally:`;
               `Our automated cloud mining platform farms directly into each of your connected accounts with *0% Platform Fee*:\n\n` +
               `1️⃣ *TON Blockchain Pools (ATF, MRG, ART)*\n` +
               `• Tokens accumulate directly in each bot's internal balance.\n` +
-              `• Withdraw to Tonkeeper, MyTonWallet, or Binance TON deposit anytime!\n\n` +
+              `• ⚠️ *Holding Level Safeguard:* In MRG Miner and tiered bots, your miner level and mining hashrate are directly determined by your holding balance. Withdrawing reduces your holding balance and can decrease your miner level and rewards. Maintain the required balance holding to preserve peak level and referral rewards!\n` +
+              `• Withdraw to Tonkeeper, MyTonWallet, or OKX anytime.\n\n` +
               `2️⃣ *BEP-20 / BNB Pools (AI Lab, Ainovum)*\n` +
               `• AI Lab: Auto-exchanges hashes for USDT and pays to BEP-20.\n` +
               `• Ainovum: Reaches 0.10 USDT threshold and sends directly to your BSC wallet.\n\n` +
@@ -4470,7 +4884,7 @@ Reply to Arif naturally:`;
               `Need help with your account, connection, passes, or payouts?\n\n` +
               `• *Option 1 (Instant AI Copilot):* Simply type your question in this chat anytime—Ari AI is available 24/7!\n\n` +
               `• *Option 2 (Human Admin Support):* Send \`/support <your message>\` to submit a ticket directly to Platform Admin Arif.\n\n` +
-              `• *Option 3 (Community Supergroup):* Join [AAA Auto Miner Supergroup](https://t.me/+8xTmE28Up9U5YWQ1) to chat with fellow miners!`;
+              `• *Option 3 (Community Supergroup):* Join [AAA Auto Miner Supergroup](https://t.me/AAAAutoMiner) to chat with fellow miners!`;
             ctx.waitUntil(sendCqReply(supMsg, userMainKeyboard));
             return new Response("OK");
           }
@@ -4956,9 +5370,9 @@ Reply to Arif naturally:`;
             const gateMsg = `🔒 *MANDATORY COMMUNITY ACCESS GATE*\n\n` +
               `Welcome to *AAA Auto Mining Platform*!\n` +
               `To access automated 24/7 cloud mining, free AI copilot, and account management, you must join our 3 official community hubs:\n\n` +
-              `1️⃣ 💬 [AAA Auto Miner Supergroup](https://t.me/+8xTmE28Up9U5YWQ1)\n` +
-              `2️⃣ 📢 [Official Announcements Channel](https://t.me/AAAATFAUTOMINING)\n` +
-              `3️⃣ ⚡ [Live Miner Activity Stream](https://t.me/AAAATF_ACTIVITY)\n\n` +
+              `1️⃣ 💬 [AAA Auto Miner Supergroup](https://t.me/AAAAutoMiner)\n` +
+              `2️⃣ 📢 [Official Announcements Channel](https://t.me/AAAAUTOMINING)\n` +
+              `3️⃣ ⚡ [Live Miner Activity Stream](https://t.me/AAA_ACTIVITY)\n\n` +
               `👉 *Join all 3 channels above, then tap 🔄 Verify Membership below to claim 🎁 100 Free Welcome Points!*`;
             await sendUserReply(gateMsg, gateInlineKeyboard);
             return;
@@ -5289,13 +5703,18 @@ Reply to Arif naturally:`;
 
           // 5. 📺 Watch Ad (+20 Pts)
           if (text === "📺 Watch Ad (+20 Pts)" || text.startsWith("/watch_ad") || text === "/ad" || text === "/ads" || text.startsWith("/ad ") || text.toLowerCase() === "watch ad") {
-            const adMsg = `📺 *SPONSORED PARTNER AD* 🚀\n\n` +
-              `🌟 *AAA Auto Mining Ecosystem*\n` +
-              `• 24/7 High-yield autonomous cloud mining pools.\n` +
-              `• Automated rewards across ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, and Ainovum!\n` +
-              `• Verified Telegram Web3 security & on-chain smart contracts.\n\n` +
-              `Tap *🎁 Claim +20 Points* below to collect your reward!`;
-            await sendUserReply(adMsg, adClaimKeyboard);
+            const adMsg = `📺 *WATCH REWARDED ADS & EARN POINTS* 🚀\n\n` +
+              `Watch real video ads via Adsgram to keep your 24/7 cloud mining active with 0 fees!\n\n` +
+              `🎁 *Per-Ad Reward:* +20 Points (+40 for VIP Monthly Pass)\n` +
+              `🏆 *Milestone Bonus:* Every 50 ads unlocks *+1 Free Bonus Account Slot*!\n` +
+              `⏱️ *Cooldown:* 15 seconds between ads.\n\n` +
+              `👇 *Tap below to launch the video ad:*`;
+            await sendUserReply(adMsg, {
+              inline_keyboard: [
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: "🎁 Claim Directly (Fallback)", callback_data: "ub_claim_ad" }]
+              ]
+            });
             return;
           }
 
@@ -5338,6 +5757,30 @@ Reply to Arif naturally:`;
               `Choose your subscription pass below:`;
             await sendUserReply(starsMsg, starsUpgradeKeyboard);
             return;
+          }
+
+
+          // Owner/Admin Command: Set Adsgram Block ID (/set_block_id <id>)
+          if (text.startsWith("/set_block_id") || text.startsWith("/set_ad_block") || text.startsWith("/setblockid")) {
+            if (String(chatId) === "6727787768" || String(chatId) === env.OWNER_ID) {
+              const parts = text.split(/\s+/);
+              const newBlockId = parts[1]?.trim();
+              if (!newBlockId) {
+                await sendUserReply("ℹ️ *Usage:* `/set_block_id <YOUR_ADSGRAM_BLOCK_ID>`\n*Example:* `/set_block_id 4467`\n\nGet your Block ID from https://adsgram.ai or @Adsgram_bot!");
+                return;
+              }
+              await upstashSet("config:adsgram_block_id", newBlockId);
+              await sendUserReply(`✅ *Adsgram Block ID Updated!*\n\n• *New Block ID:* \`${newBlockId}\`\n• *Status:* Live across all Cloudflare Edge nodes\n• *WebApp URL:* https://restore-agy.aaaai2.workers.dev/adsgram`);
+              return;
+            }
+          }
+
+          if (text === "/get_block_id" || text === "/adsgram_info" || text === "/adsgram") {
+            if (String(chatId) === "6727787768" || String(chatId) === env.OWNER_ID) {
+              const currentBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "4467 (Default Test)";
+              await sendUserReply(`📊 *Adsgram Configuration:*\n\n• *Active Block ID:* \`${currentBlockId}\`\n• *WebApp URL:* https://restore-agy.aaaai2.workers.dev/adsgram\n• *Update ID:* Send \`/set_block_id <id>\` anytime!`);
+              return;
+            }
           }
 
           // 8. 💬 Support & Admin Ticket (/support <message>)
@@ -5400,18 +5843,18 @@ Reply to Arif naturally:`;
               `Stay connected with verified announcements, miner payouts, and community support:\n\n` +
               `1️⃣ 💬 *AAA Auto Miner Supergroup*\n` +
               `• Connect with miners, share strategies, and get fast assistance.\n` +
-              `👉 [Join Supergroup](https://t.me/+8xTmE28Up9U5YWQ1)\n\n` +
+              `👉 [Join Supergroup](https://t.me/AAAAutoMiner)\n\n` +
               `2️⃣ 📢 *Official Announcements*\n` +
               `• Real-time updates, releases, and smart contract distributions.\n` +
-              `👉 [Join @AAAATFAUTOMINING](https://t.me/AAAATFAUTOMINING)\n\n` +
+              `👉 [Join @AAAAUTOMINING](https://t.me/AAAAUTOMINING)\n\n` +
               `3️⃣ ⚡ *Live Miner Activity Stream*\n` +
               `• Real-time automated mining harvest telemetry & payment proofs.\n` +
-              `👉 [Join @AAAATF_ACTIVITY](https://t.me/AAAATF_ACTIVITY)`;
+              `👉 [Join @AAA_ACTIVITY](https://t.me/AAA_ACTIVITY)`;
             await sendUserReply(chMsg, {
               inline_keyboard: [
-                [{ text: "💬 Join Supergroup", url: "https://t.me/+8xTmE28Up9U5YWQ1" }],
-                [{ text: "📢 Announcements", url: "https://t.me/AAAATFAUTOMINING" }],
-                [{ text: "⚡ Live Miner Activity", url: "https://t.me/AAAATF_ACTIVITY" }]
+                [{ text: "💬 Join Supergroup", url: "https://t.me/AAAAutoMiner" }],
+                [{ text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" }],
+                [{ text: "⚡ Live Miner Activity", url: "https://t.me/AAA_ACTIVITY" }]
               ]
             });
             return;

@@ -4,6 +4,33 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Adsgram Rewarded Video Ads, Community Channel Overhaul & Holding Level Safeguards (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Community Channel Links & Permanent ID Routing**:
+    * Queried Telegram live API for user's updated official channels and remapped all handles and links:
+      - Supergroup: `@AAAAutoMiner` (`https://t.me/AAAAutoMiner`, ID `-1003684868577`)
+      - Announcements: `@AAAAUTOMINING` (`https://t.me/AAAAUTOMINING`, ID `-1004255751168`)
+      - Live Miner Activity: `@AAA_ACTIVITY` (`https://t.me/AAA_ACTIVITY`, ID `-1004332544939`)
+    * Converted `broadcastToLiveActivity` to use permanent numeric ID `-1004332544939` directly, guaranteeing zero breakage even if usernames change in the future.
+    * Replaced all 29 instances across AI system prompt, mandatory gate check, welcome menus, info cards, and keyboard buttons.
+  - **Full Adsgram Rewarded Video Ad Integration on User Bot (`@AAAPREMIUMAPPSbot`)**:
+    * Served mobile-optimized HTML WebApp at `/adsgram` with Adsgram official SDK (`sad.min.js`), Telegram WebApp SDK, dark-themed responsive glassmorphism UI, real-time balance card, animated progress bar towards the 50-ad milestone, and 15s cooldown countdown.
+    * Implemented `/api/adsgram/status` to serve live user points, ads count, and VIP status.
+    * Implemented `/api/adsgram/reward` with rate-limiting, awarding +20 Points (+40 for VIP Monthly Pass), incrementing `ads_watched`, unlocking +1 Free Account Slot at each 50-ad milestone, saving to Upstash Redis, and sending real-time Telegram completion notifications.
+    * Added `/api/adsgram/config` returning active Block ID and diagnostics.
+    * Implemented owner/admin commands in `@AAAPREMIUMAPPSbot`:
+      - `/set_block_id <id>`: Instantly updates Adsgram Block ID in Upstash Redis across all edge nodes without re-deployment.
+      - `/get_block_id`: Displays current Block ID and WebApp test URL.
+    * Updated `userMainKeyboard`, `starsUpgradeKeyboard`, `adClaimKeyboard`, and text command `/watch_ad` to launch the Adsgram WebApp modal directly.
+  - **Holding-Based Level Safeguard**:
+    * Documented and reinforced that holding balance in MRG Miner and tiered pools directly controls miner level (Level 1..50) and hashrate.
+    * Integrated prominent holding level warnings in the bot Payouts & Cashout Guide (`ub_withdraw`) to inform users that balance withdrawals can reduce miner tier and revoke referral status.
+    * Reinforced guardrails keeping auto-withdrawals disabled for holding-based pools.
+  - **Live Verification & 5-Node Edge Mesh Deployment**:
+    * Validated JS template syntax with `node -c` (0 syntax errors).
+    * Deployed live to all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Verified live endpoints via `curl` with HTTP 200 OK.
+    * 100% Zero Phone Load maintained (0 bot loops running locally on Samsung Galaxy A30).
+
 - **Fleet-Wide Task Discovery & Execution Engine, MRG Auto-Level Unlocks & Referral Finish Work Overhaul (`deploy_both_cf_workers.py`, `render_app_latest.py`, `render_standby_app.py`, `CHANGELOG.md`)**:
   - **Stones Miner Dynamic Task Object/Array Structure Normalization**:
     * Identified root cause behind missed Stones tasks: `/api/state` returns `tasks` as an Object/Dictionary (`{"join_channel": "completed", ...}`), whereas code expected an Array. In JS this threw `TypeError: object is not iterable` and in Python `AttributeError: 'str' object has no attribute 'get'`.
