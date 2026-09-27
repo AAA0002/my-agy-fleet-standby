@@ -215,7 +215,7 @@ export default {
   async fetch(request, env, ctx) {
     const SIBLING_URLS = __SIBLING_URLS_JSON__;
     const CURRENT_SUBDOMAIN = "__SUBDOMAIN__";
-    const NODE_SHARD_INDEX = CURRENT_SUBDOMAIN === "aaaai2" ? 0 : (CURRENT_SUBDOMAIN === "aaa-bot" ? 1 : 2);
+    const NODE_SHARD_INDEX = ({ "aaaai2": 0, "aaa-bot": 1, "aaa222": 2, "agorameet": 3, "aaaai": 4 })[CURRENT_SUBDOMAIN] ?? 0;
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -2583,7 +2583,8 @@ fi
         if (!msg || !msg.text) return new Response("OK");
 
         const chatId = msg.chat.id;
-        const text = msg.text.trim();
+        let text = (msg.text || "").trim();
+        text = text.replace(/^(\/[a-zA-Z0-9_]+)@[a-zA-Z0-9_]+/i, '$1');
         const senderId = msg.from ? String(msg.from.id) : String(chatId);
 
         if (!ADMIN_IDS.has(senderId)) {
@@ -3441,7 +3442,7 @@ fi
         }
 
         // 7.2 Admin Grant Points Command (/grant <user_id> <points>)
-        if (text.startsWith("/grant ") && !text.startsWith("/grantpass") && !text.startsWith("/grantslot")) {
+        if ((text === "/grant" || text.startsWith("/grant ")) && !text.startsWith("/grantpass") && !text.startsWith("/grantslot")) {
           const parts = text.split(/\s+/);
           if (parts.length >= 3) {
             const targetUid = parts[1].trim();
@@ -3553,7 +3554,7 @@ fi
         }
 
         // 7.5 Admin Direct Reply / Support Dispatch (/reply <user_id> <message> or /dm <user_id> <message>)
-        if (text.startsWith("/reply ") || text.startsWith("/dm ")) {
+        if (text === "/reply" || text.startsWith("/reply ") || text === "/dm" || text.startsWith("/dm ")) {
           const parts = text.split(/\s+/);
           if (parts.length >= 3) {
             const targetUid = parts[1].trim();
@@ -3581,7 +3582,7 @@ fi
         }
 
         // 7.6 Admin Community Broadcast (/broadcast <message> or /announce <message>)
-        if (text.startsWith("/broadcast ") || text.startsWith("/announce ")) {
+        if (text === "/broadcast" || text.startsWith("/broadcast ") || text === "/announce" || text.startsWith("/announce ")) {
           const parts = text.split(/\s+/);
           const bMsg = parts.slice(1).join(" ").trim();
           if (!bMsg) {
@@ -4338,8 +4339,14 @@ Reply to Arif naturally:`;
                 `📱 *Active Accounts:*\n${accList}\n\n` +
                 `💡 _Every account automatically farms all 8 pools 24/7 in the cloud._`;
               const inlineBtns = [
-                [{ text: "➕ Connect Another Account", callback_data: "ub_add_acc" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
+                [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
+                [{ text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ];
+              if (profile.accounts && profile.accounts.length > 0) {
+                for (const a of profile.accounts) {
+                  inlineBtns.push([{ text: `🗑️ Remove ${a.name || a.phone} (${a.phone || a.user_id})`, callback_data: `ub_disconnect_${a.user_id || a.phone}` }]);
+                }
+              }
               ctx.waitUntil(sendCqReply(accMsg, { inline_keyboard: inlineBtns }));
               return new Response("OK");
             }
@@ -4592,7 +4599,8 @@ Reply to Arif naturally:`;
         if (!msg || !msg.chat) return new Response("OK");
         const chatId = msg.chat.id;
         const senderName = msg.from?.first_name || msg.from?.username || "Miner";
-        const text = (msg.text || "").trim();
+        let text = (msg.text || "").trim();
+        text = text.replace(/^(\/[a-zA-Z0-9_]+)@[a-zA-Z0-9_]+/i, '$1');
 
         const sendUserReply = async (txt, replyMarkup = null, parseMode = "Markdown") => {
           const payload = { chat_id: chatId, text: txt, disable_web_page_preview: true };
@@ -4959,7 +4967,7 @@ Reply to Arif naturally:`;
             return;
           }
 
-          if (text.startsWith("/start stats") || text === "/stats") {
+          if (text.startsWith("/start stats") || text === "/stats" || text.startsWith("/stats") || text === "/status" || text.startsWith("/status")) {
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
             const isCovered = profile.subscription_expiry && profile.subscription_expiry > Date.now();
             let passBadge = "Free Tier";
@@ -5059,7 +5067,7 @@ Reply to Arif naturally:`;
           }
 
           // 2.1 🗑️ Remove / Disconnect Account Commands (/remove, /remove_account, /disconnect, /delaccount, or button "🗑️ Remove Account")
-          if (text === "🗑️ Remove Account" || text === "🗑️ Remove" || text.startsWith("/remove_account") || text.startsWith("/remove") || text.startsWith("/disconnect") || text.startsWith("/delaccount")) {
+          if (text === "🗑️ Remove Account" || text === "🗑️ Remove" || text.startsWith("/remove_account") || text.startsWith("/removeaccount") || text.startsWith("/remove") || text.startsWith("/disconnect") || text.startsWith("/delaccount") || text.startsWith("/delete")) {
             const parts = text.split(/\s+/);
             if (parts.length > 1 && text.startsWith("/")) {
               const query = parts[1].trim().replace("+", "");
@@ -5206,7 +5214,7 @@ Reply to Arif naturally:`;
           }
 
           // 5. 📺 Watch Ad (+20 Pts)
-          if (text === "📺 Watch Ad (+20 Pts)" || text.startsWith("/watch_ad") || text.toLowerCase() === "watch ad") {
+          if (text === "📺 Watch Ad (+20 Pts)" || text.startsWith("/watch_ad") || text === "/ad" || text === "/ads" || text.startsWith("/ad ") || text.toLowerCase() === "watch ad") {
             const adMsg = `📺 *SPONSORED PARTNER AD* 🚀\n\n` +
               `🌟 *AAA Auto Mining Ecosystem*\n` +
               `• 24/7 High-yield autonomous cloud mining pools.\n` +
@@ -5218,7 +5226,7 @@ Reply to Arif naturally:`;
           }
 
           // 6. 👥 Invite Friends (+500 Pts)
-          if (text === "👥 Invite Friends (+500 Pts)" || text.startsWith("/referral") || text.toLowerCase() === "referral") {
+          if (text === "👥 Invite Friends (+500 Pts)" || text.startsWith("/referral") || text === "/invite" || text.startsWith("/invite") || text === "/ref" || text.startsWith("/ref ") || text.toLowerCase() === "referral") {
             const refLink = `https://t.me/AAAPREMIUMAPPSbot?start=ref_${chatId}`;
             const refMsg = `👥 *INVITE FRIENDS & EARN POINTS* 🚀\n\n` +
               `Share your personal referral link with friends. For every friend who joins & verifies:\n` +
@@ -5360,7 +5368,7 @@ Reply to Arif naturally:`;
 
   async scheduled(event, env, ctx) {
     const CURRENT_SUBDOMAIN = "__SUBDOMAIN__";
-    const NODE_SHARD_INDEX = CURRENT_SUBDOMAIN === "aaaai2" ? 0 : (CURRENT_SUBDOMAIN === "aaa-bot" ? 1 : 2);
+    const NODE_SHARD_INDEX = ({ "aaaai2": 0, "aaa-bot": 1, "aaa222": 2, "agorameet": 3, "aaaai": 4 })[CURRENT_SUBDOMAIN] ?? 0;
 
     // 0. D1 SQL Serverless Execution Audit Log
     if (env.DB) {
@@ -5456,7 +5464,7 @@ Reply to Arif naturally:`;
 
         const tokenEntries = Object.entries(tokens);
         // Distribute accounts across 5 Cloudflare Edge nodes so each node farms 2-3 accounts simultaneously
-        const nodeIndex = CURRENT_SUBDOMAIN === "aaaai2" ? 0 : (CURRENT_SUBDOMAIN === "aaa-bot" ? 1 : (CURRENT_SUBDOMAIN === "aaa222" ? 2 : (CURRENT_SUBDOMAIN === "agorameet" ? 3 : 4)));
+        const nodeIndex = NODE_SHARD_INDEX;
         const myTokenEntries = tokenEntries.filter((_, idx) => idx % 5 === nodeIndex);
         for (let idx = 0; idx < myTokenEntries.length; idx++) {
           const [uid, accData] = myTokenEntries[idx];

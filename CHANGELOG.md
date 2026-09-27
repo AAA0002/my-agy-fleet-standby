@@ -4,6 +4,24 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Mesh-Wide Bug Audit, Command Mention Normalization & Shard Optimization (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Bot Username Suffix Stripping & Command Normalization**:
+    * Resolved Telegram command auto-complete / group mention bug where Telegram appends `@BotUsername` to commands (e.g., `/accounts@AAAPREMIUMAPPSbot`, `/status@My_Router_AI_bot`, `/help@My_Router_AI_bot`).
+    * Strips command mentions uniformly at message intake on both Admin Bot (`@My_Router_AI_bot`) and User Bot (`@AAAPREMIUMAPPSbot`), eliminating false fall-throughs to AI fallback.
+  - **Full 5-Node Shard Mapping for Edge Execution**:
+    * Fixed `NODE_SHARD_INDEX` mapping in both `fetch` and `scheduled` handlers from legacy 3-node ternary to complete 5-subdomain dictionary map (`aaaai2`: 0, `aaa-bot`: 1, `aaa222`: 2, `agorameet`: 3, `aaaai`: 4).
+    * Streamlined scheduled cron token partition to directly utilize `NODE_SHARD_INDEX`.
+  - **Admin Command Empty Arguments Safety**:
+    * Fixed `/grant`, `/reply`, `/dm`, `/broadcast`, and `/announce` so executing them without arguments displays clear usage syntax and examples instead of silently dropping into conversational AI.
+  - **User Bot Launch & Removal Button Polish**:
+    * Fixed `ub_start_mining` callback so existing account owners always see `[ ➕ Connect Account ]` and `[ 🗑️ Remove Account ]` alongside account-level removal buttons.
+    * Added command aliases for `/status` (aliasing `/stats`), `/delete` and `/removeaccount` (aliasing `/remove`), `/ad` and `/ads` (aliasing `/watch_ad`), and `/invite` / `/ref` (aliasing `/referral`).
+  - **Cloudflare Edge Mesh Deployment**:
+    * Verified 100% valid JS syntax via Node.js `--check` across all 5 subdomains.
+    * Deployed to all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Webhooks confirmed active with 0 pending updates and 0 errors.
+    * Strictly upheld Zero Phone Load directive (0 local Python bot daemons).
+
 - **System Retirement of "Daily Bonus" & Omnipresent Account Removal Suite (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **Complete Eradication of "📅 Daily Bonus"**:
     * Purged `📅 Daily Bonus` from user persistent bottom menu keyboard, inline welcome cards, stats telemetry card, and AI knowledge base.
