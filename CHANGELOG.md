@@ -4,6 +4,28 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Anti-Ban Humanized Farming Overhaul & Unified Edge Engine (`deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`)**:
+  - **Eliminated 0ms Instant-Claim Bot Signatures**:
+    * Identified root cause of bot task failures: across Stones, MRG, ART, AI Lab, UltraWallet, Apex, and ATF, tasks were previously initiated and claimed in 0ms back-to-back, triggering server "please wait" rejections or silent drop flags.
+    * Added non-blocking background dwell timers (14–16s for sponsor/channel/social tasks, 2.5–3.5s for native) with automatic wait/retry handlers if servers request a delay.
+  - **Deterministic Mobile Device Fingerprinting**:
+    * Replaced static Windows NT and generic Android Chrome User-Agents with deterministic per-account device profiles (`getHumanHeaders(uid)` and `get_account_user_agent(uid)`), rotating across Galaxy S24 Ultra, Pixel 8 Pro, OnePlus 12, Xiaomi 14 Pro, Sony Xperia 1 VI, and Motorola Edge 50 Ultra.
+  - **Unified Edge Farming Engine (`deploy_both_cf_workers.py`)**:
+    * Created `farmSingleAccountAllBots(uid, accData, env, ctx)` unifying all 8 bots into a single, maintainable edge function.
+    * Replaced over 1,200 lines of repetitive, unhumanized code across `/api/farm/all`, `/api/fleet/claim-all`, and `scheduled` cron tasks.
+    * Enhanced queue harvesting in `queueHarvestAction()` to execute edge farming in `ctx.waitUntil` alongside notifying Render Standby.
+    * Upgraded Stone Breaker play timer (`duration + 1` sec before finish) and mining boost beat intervals.
+    * Added `/ads/reward` to Apex Miner alongside `/ads/boost` for proper token reward claims.
+    * Added Ainovum `astra.tg.sid` session cookie extraction and daily bonus endpoint.
+    * Protected Master Account (`6727787768`) from automated withdrawal in Stones so it compounds rewards indefinitely.
+  - **Render Standby Engine Parity (`render_standby_app.py`, `render_app_latest.py`)**:
+    * Brought `farm_single_account_bots` into 100% feature parity with edge farming routines, including dynamic task discovery, math challenge solver with 2.0–4.2s jitter, lucky wheel spins, and multi-ad rewards center background tasks.
+    * Enabled concurrent multi-account execution without blocking or session leaks.
+  - **Cloudflare Edge Mesh Synchronization**:
+    * Deployed compiled worker script across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Probed and confirmed `/health` (200 OK) and `/api/fleet/live` (14 active accounts reporting).
+
+
 - **User Bot Admin Console Polish: 1-Tap Mining ID Copy & Search Expansion (`public/index.html`)**:
   - Added `mining_id` directly into the instant client-side search index so admins can look up any user by their mining ID.
   - Added 1-tap clipboard copy button directly inside the `Mining ID` badge on each user card.

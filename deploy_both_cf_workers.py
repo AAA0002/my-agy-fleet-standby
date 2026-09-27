@@ -182,6 +182,872 @@ function getHumanHeaders(uid, extra = {}) {
   };
 }
 
+async function farmSingleAccountAllBots(uid, accData, env, ctx) {
+  const result = { user_id: uid, bots: {} };
+  const headers = getHumanHeaders(uid, { "Content-Type": "application/json" });
+  const isOwner = String(uid) === (env.OWNER_ID || "6727787768");
+
+  // A. Stones Miners Edge Claim & Tasks
+  if (accData.stones_init_data) {
+    try {
+      await humanDelay(1000, 2500);
+      await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
+        method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: "daily_checkin" })
+      }, 2, 800).catch(() => {});
+
+      await humanDelay(1200, 2800);
+      await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/start", {
+        method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
+      }, 2, 800).catch(() => {});
+      if (ctx && ctx.waitUntil) {
+        ctx.waitUntil(new Promise(resolve => {
+          setTimeout(async () => {
+            try {
+              await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
+                method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
+              }, 2, 800);
+              await humanDelay(1500, 3000);
+              await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
+                method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
+              }, 2, 800);
+            } catch (_) {}
+            resolve();
+          }, 15000);
+        }));
+      }
+
+      // Dynamic task discovery from /api/state
+      try {
+        const stResp = await fetchWithRetry("https://app.stoneswithestand.my.id/api/state", {
+          method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data })
+        }, 2, 800).catch(() => null);
+        if (stResp && stResp.ok) {
+          const stData = await stResp.json().catch(() => ({}));
+          const rawTasks = stData.tasks;
+          const taskEntries = Array.isArray(rawTasks) ?
+            rawTasks.map(t => ({ slug: t.slug || t.id, completed: t.completed || t.is_completed })) :
+            (typeof rawTasks === "object" && rawTasks !== null ?
+              Object.entries(rawTasks).map(([slug, status]) => ({ slug, completed: status === "completed" })) : []);
+
+          for (const t of taskEntries) {
+            if (t.slug && !t.completed && t.slug !== "daily_checkin" && t.slug !== "join_channel") {
+              await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/start", {
+                method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
+              }, 1, 500).catch(() => {});
+              await humanDelay(2500, 4500);
+              await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
+                method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
+              }, 1, 500).catch(() => {});
+              await humanDelay(1500, 3000);
+              await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
+                method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
+              }, 1, 500).catch(() => {});
+              await humanDelay(1200, 2500);
+            }
+          }
+        }
+      } catch (_) {}
+
+      await humanDelay(1500, 3000);
+      await fetchWithRetry("https://app.stoneswithestand.my.id/api/claim", {
+        method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data })
+      }).catch(() => {});
+
+      await humanDelay(1200, 2500);
+      await fetchWithRetry("https://app.stoneswithestand.my.id/api/mining/start", {
+        method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data })
+      }).catch(() => {});
+
+      // Stone Breaker Play & Earn (+10 STONES/hr, +100 STONES/day)
+      try {
+        const sbr = await fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/status", {
+          method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data })
+        }).then(r => r.json()).catch(() => ({}));
+        if (sbr.ok && (sbr.hour_got || 0) < (sbr.hourly_cap || 10) && (sbr.day_got || 0) < (sbr.daily_cap || 100)) {
+          const sbs = await fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/start", {
+            method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data })
+          }).then(r => r.json()).catch(() => ({}));
+          if (sbs.ok && sbs.session && sbs.session.session_id) {
+            const dur = (sbs.session.duration || 30) + 1;
+            const finishPromise = new Promise(resolve => setTimeout(resolve, dur * 1000)).then(() => {
+              const sc = Math.floor(142 + Math.random() * 24);
+              return fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/finish", {
+                method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, session_id: sbs.session.session_id, score: sc })
+              });
+            }).catch(() => {});
+            if (ctx && ctx.waitUntil) ctx.waitUntil(finishPromise);
+          }
+        }
+      } catch (_) {}
+
+      // Mining Boost (+0.5 TH/s for 5 min)
+      try {
+        const abc = await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/boost/challenge", {
+          method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data })
+        }).then(r => r.json()).catch(() => ({}));
+        if (abc.ok && abc.challenge && abc.challenge.challenge_id) {
+          const cid = abc.challenge.challenge_id;
+          await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/beat", {
+            method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, scope: "boost", challenge_id: cid })
+          }, 1, 500).catch(() => {});
+          if (ctx && ctx.waitUntil) {
+            ctx.waitUntil(new Promise(resolve => {
+              setTimeout(async () => {
+                try {
+                  await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/beat", {
+                    method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, scope: "boost", challenge_id: cid })
+                  }, 1, 500);
+                  await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/boost/reward", {
+                    method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, challenge_id: cid })
+                  });
+                } catch (_) {}
+                resolve();
+              }, 16000);
+            }));
+          }
+        }
+      } catch (_) {}
+
+      // Bind Arbitrum Wallet & Auto-Withdraw Check (Worker Accounts Only; Master account strictly compounds)
+      if (!isOwner) {
+        try {
+          await fetchWithRetry("https://app.stoneswithestand.my.id/api/wallet", {
+            method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce" })
+          }).catch(() => {});
+
+          const pc = await fetchWithRetry("https://app.stoneswithestand.my.id/api/wd/ad/precheck", {
+            method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, amount: 500, wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce", currency: "stones" })
+          }).then(r => r.json()).catch(() => ({}));
+
+          if (pc && pc.ok && (!pc.need_ad || (pc.boarded || 0) >= (pc.required || 4))) {
+            await fetchWithRetry("https://app.stoneswithestand.my.id/api/withdraw", {
+              method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, amount: 500, wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce", currency: "stones" })
+            }).catch(() => {});
+          }
+        } catch (_) {}
+      }
+      result.bots.stones = "ok";
+    } catch (e) {
+      result.bots.stones = `error: ${e.message}`;
+    }
+  }
+
+  // B. MRG Miner
+  if (accData.mrg_init_data) {
+    try {
+      await humanDelay(1200, 2600);
+      if (!isOwner) {
+        await fetchWithRetry("https://mrg.up.railway.app/api/auth/verify", {
+          method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data, start_param: "ref_IRN1G3XD" })
+        }, 2, 800).catch(() => {});
+      }
+      await humanDelay(1500, 3000);
+      await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-mining", {
+        method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data })
+      }).catch(() => {});
+
+      await humanDelay(1500, 3200);
+      const meResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/me", {
+        method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data })
+      }, 2, 1000).catch(() => null);
+      if (meResp && meResp.ok) {
+        const meD = await meResp.json().catch(() => ({}));
+        const tasks = meD.tasks || [];
+        const completed = new Set(meD.completedTaskIds || []);
+        for (const t of tasks) {
+          if (t.taskId && !completed.has(t.taskId)) {
+            const isLinkTask = (t.type === "link_visit" || t.url || String(t.title || "").toLowerCase().includes("channel") || String(t.title || "").toLowerCase().includes("social"));
+            const waitTime = isLinkTask ? 15000 : 2500;
+            if (isLinkTask && ctx && ctx.waitUntil) {
+              ctx.waitUntil(new Promise(resolve => {
+                setTimeout(async () => {
+                  try {
+                    const clResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
+                      method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
+                    }, 2, 600);
+                    const clD = await clResp.json().catch(() => ({}));
+                    if (!clD.success && (JSON.stringify(clD).toLowerCase().includes("wait") || JSON.stringify(clD).toLowerCase().includes("second"))) {
+                      setTimeout(async () => {
+                        await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
+                          method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
+                        }, 1, 600).catch(() => {});
+                      }, 12000);
+                    }
+                  } catch (_) {}
+                  resolve();
+                }, waitTime);
+              }));
+            } else {
+              await humanDelay(1800, 3500);
+              const clResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
+                method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
+              }, 1, 500).catch(() => null);
+              if (clResp && clResp.ok) {
+                const clD = await clResp.json().catch(() => ({}));
+                if (!clD.success && (JSON.stringify(clD).toLowerCase().includes("wait") || JSON.stringify(clD).toLowerCase().includes("second")) && ctx && ctx.waitUntil) {
+                  ctx.waitUntil(new Promise(resolve => {
+                    setTimeout(async () => {
+                      await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
+                        method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
+                      }, 1, 600).catch(() => {});
+                      resolve();
+                    }, 14000);
+                  }));
+                }
+              }
+            }
+          }
+        }
+
+        // Level Unlock
+        const uObj = meD.user || {};
+        const inBal = parseFloat(uObj.inAppBalance || 0);
+        const curLvl = parseInt(uObj.peakLevel || uObj.manualUnlockedLevel || 1, 10);
+        if (inBal >= 100) {
+          const calcReqMRG = (lvl) => {
+            if (lvl <= 0) return 0;
+            if (lvl === 1) return 100;
+            if (lvl <= 203) return Math.round(100 + 9900 * Math.pow((lvl - 1) / 202, 1.8));
+            return 10000;
+          };
+          let lo = 1, hi = 203, targetLvl = curLvl;
+          while (lo <= hi) {
+            const mid = Math.floor((lo + hi) / 2);
+            if (inBal >= calcReqMRG(mid)) { targetLvl = mid; lo = mid + 1; } else { hi = mid - 1; }
+          }
+          if (targetLvl > curLvl) {
+            await fetchWithRetry("https://mrg.up.railway.app/api/user/unlock-level", {
+              method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data, level: targetLvl })
+            }, 1, 600).catch(() => {});
+          }
+        }
+      }
+
+      if (isOwner) {
+        await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-commission", {
+          method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data })
+        }).catch(() => {});
+
+        const frResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/friends", {
+          method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data })
+        }, 1, 800).catch(() => null);
+        if (frResp && frResp.ok) {
+          const frD = await frResp.json().catch(() => ({}));
+          const tStats = frD.teamStats || {};
+          if ((tStats.unclaimedOneTimeBonusMRG || 0) > 0) {
+            await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-one-time-bonus", {
+              method: "POST", headers, body: JSON.stringify({ initData: accData.mrg_init_data })
+            }, 1, 600).catch(() => {});
+          }
+        }
+      }
+      result.bots.mrg = "ok";
+    } catch (e) {
+      result.bots.mrg = `error: ${e.message}`;
+    }
+  }
+
+  // C. ART Airdrop
+  if (accData.art_init_data) {
+    try {
+      const artHeaders = { ...headers, "X-Telegram-Init-Data": accData.art_init_data };
+      await humanDelay(1000, 2500);
+      await fetchWithRetry("https://art.tamimdev.dev/api/user/claim-mining", {
+        method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid) })
+      }).catch(() => {});
+      await humanDelay(1200, 2800);
+      await fetchWithRetry("https://art.tamimdev.dev/api/user/start-mining", {
+        method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid) })
+      }).catch(() => {});
+
+      // Tasks
+      const tr = await fetchWithRetry(`https://art.tamimdev.dev/api/tasks/${uid}`, { headers: artHeaders }, 2, 1000).catch(() => null);
+      if (tr && tr.ok) {
+        const td = await tr.json().catch(() => ({}));
+        for (const t of (td.tasks || [])) {
+          if (!t.isCompleted && t.id) {
+            await humanDelay(1500, 3000);
+            await fetchWithRetry("https://art.tamimdev.dev/api/tasks/start", {
+              method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid), taskId: t.id })
+            }, 1, 500).catch(() => {});
+            const artWait = (t.actionUrl || String(t.title || "").toLowerCase().includes("sponsor") || String(t.title || "").toLowerCase().includes("channel") || String(t.title || "").toLowerCase().includes("youtube")) ? 16000 : 3500;
+            if (ctx && ctx.waitUntil) {
+              ctx.waitUntil(new Promise(resolve => {
+                setTimeout(async () => {
+                  try {
+                    const clResp = await fetchWithRetry("https://art.tamimdev.dev/api/tasks/claim", {
+                      method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid), taskId: t.id })
+                    }, 2, 800);
+                    const cld = await clResp.json().catch(() => ({}));
+                    if (!cld.success && (JSON.stringify(cld).toLowerCase().includes("wait") || JSON.stringify(cld).toLowerCase().includes("second"))) {
+                      setTimeout(async () => {
+                        await fetchWithRetry("https://art.tamimdev.dev/api/tasks/claim", {
+                          method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid), taskId: t.id })
+                        }, 1, 800).catch(() => {});
+                      }, 12000);
+                    }
+                  } catch (_) {}
+                  resolve();
+                }, artWait);
+              }));
+            }
+          }
+        }
+      }
+
+      await humanDelay(1500, 3000);
+      await fetchWithRetry("https://art.tamimdev.dev/api/ads/claim", {
+        method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid) })
+      }, 1, 500).catch(() => {});
+
+      if (isOwner) {
+        await fetchWithRetry("https://art.tamimdev.dev/api/referrals/claim-team", {
+          method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid) })
+        }, 1, 500).catch(() => {});
+        await fetchWithRetry("https://art.tamimdev.dev/api/referrals/claim-bonus", {
+          method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid) })
+        }, 1, 500).catch(() => {});
+      }
+
+      // TON wallet connection & auto-withdraw check
+      try {
+        const tonPrimary = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT";
+        await fetchWithRetry("https://art.tamimdev.dev/api/user/connect-wallet", {
+          method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid), tonAddress: tonPrimary })
+        }, 1, 500).catch(() => {});
+
+        const uResp = await fetchWithRetry(`https://art.tamimdev.dev/api/user/${uid}`, { headers: artHeaders }, 2, 800).catch(() => null);
+        if (uResp && uResp.ok) {
+          const uData = await uResp.json().catch(() => ({}));
+          let poolBal = parseFloat(uData.user?.poolWallet || 0);
+          const unlockedMiners = new Set(uData.user?.unlockedMiners || []);
+          const artLevels = [
+            [2, 100], [3, 250], [4, 500], [5, 1000], [6, 2000], [7, 4000], [8, 8000]
+          ];
+          for (const [lvl, cost] of artLevels) {
+            if (!unlockedMiners.has(lvl) && poolBal >= cost) {
+              const buyResp = await fetchWithRetry("https://art.tamimdev.dev/api/user/buy-miner", {
+                method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid), level: lvl })
+              }, 2, 800).catch(() => null);
+              if (buyResp && buyResp.ok) {
+                poolBal -= cost;
+                unlockedMiners.add(lvl);
+              }
+            }
+          }
+          const hasLvl8 = unlockedMiners.has(8) || (uData.user?.level || 1) >= 8;
+          if (hasLvl8 && poolBal >= 1000) {
+            const wdAmt = Math.min(30000, Math.floor(poolBal));
+            await fetchWithRetry("https://art.tamimdev.dev/api/withdraw", {
+              method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid), amount: wdAmt })
+            }, 2, 1000).catch(() => {});
+          }
+        }
+      } catch (_) {}
+      result.bots.art = "ok";
+    } catch (e) {
+      result.bots.art = `error: ${e.message}`;
+    }
+  }
+
+  // D. AI Lab Robot
+  if (accData.ailab_init_data) {
+    try {
+      const aiBase = "https://api.ailab-agent.online/api/v1";
+      await humanDelay(1200, 2500);
+      const lResp = await fetchWithRetry(`${aiBase}/users/auth/login`, {
+        method: "POST", headers, body: JSON.stringify({ user: accData.ailab_init_data })
+      }).catch(() => null);
+
+      if (lResp && lResp.ok) {
+        const lData = await lResp.json().catch(() => ({}));
+        const tok = lData.result?.bearer || lData.user_info?.session_id;
+        if (tok) {
+          const aiAuth = getHumanHeaders(uid, { "Content-Type": "application/json", "Authorization": `Bearer ${tok}` });
+          let minerRunning = false;
+          let hashesBal = 0;
+          try {
+            await humanDelay(1200, 2500);
+            const mResp = await fetch(`${aiBase}/miner`, { headers: aiAuth });
+            if (mResp.ok) {
+              const mData = await mResp.json();
+              const curM = mData.result?.miner?.current_miner || {};
+              minerRunning = curM.is_running && (curM.time_left > 0);
+              hashesBal = parseFloat(mData.result?.miner?.hashes_balance || 0);
+            }
+          } catch (_) {}
+
+          if (!minerRunning) {
+            await humanDelay(1200, 2500);
+            await fetch(`${aiBase}/miner-start_mining`, {
+              method: "POST", headers: aiAuth, body: JSON.stringify({ start_mining: true })
+            }).catch(() => {});
+          }
+
+          if (hashesBal >= 3.0) {
+            await humanDelay(1200, 2500);
+            await fetch(`${aiBase}/miner-exchange_hashes`, {
+              method: "POST", headers: aiAuth, body: JSON.stringify({ exchange: true })
+            }).catch(() => {});
+          }
+
+          // Discover and complete all task categories
+          try {
+            await humanDelay(1200, 2500);
+            const tResp = await fetch(`${aiBase}/tasks`, { headers: aiAuth });
+            if (tResp.ok) {
+              const tData = await tResp.json();
+              const resObj = tData.result || {};
+              let tasks = [];
+              if (Array.isArray(resObj)) {
+                tasks = resObj;
+              } else if (typeof resObj === "object") {
+                for (const v of Object.values(resObj)) {
+                  if (Array.isArray(v)) tasks.push(...v);
+                }
+              }
+              for (const t of tasks) {
+                if (t.id && t.status !== "completed" && !(t.progress_finish && (t.progress_current || 0) < t.progress_finish)) {
+                  await humanDelay(1500, 3000);
+                  await fetch(`${aiBase}/task-check`, {
+                    method: "POST", headers: aiAuth, body: JSON.stringify({ task_id: t.id, action: "start" })
+                  }).catch(() => {});
+                  const aiWait = ("follow" in t || "social" in t || String(t.title || "").toLowerCase().includes("channel")) ? 16000 : 3500;
+                  if (ctx && ctx.waitUntil) {
+                    ctx.waitUntil(new Promise(resolve => {
+                      setTimeout(async () => {
+                        try {
+                          await fetch(`${aiBase}/task-check`, {
+                            method: "POST", headers: aiAuth, body: JSON.stringify({ task_id: t.id, action: "check" })
+                          });
+                        } catch (_) {}
+                        resolve();
+                      }, aiWait);
+                    }));
+                  }
+                }
+              }
+            }
+          } catch (_) {}
+
+          // Worker Accounts auto-cashout (Master account strictly protected)
+          if (!isOwner) {
+            try {
+              const coResp = await fetch(`${aiBase}/cashout`, { headers: aiAuth });
+              if (coResp.ok) {
+                const coData = await coResp.json();
+                const usdBal = parseFloat(coData.user_info?.balance || 0);
+                if (usdBal >= 0.02) {
+                  const targetEvm = "0xfda4182001672b9f0f09e2118242e543e35ed5ce";
+                  await fetch(`${aiBase}/cashout-pay`, {
+                    method: "POST", headers: aiAuth, body: JSON.stringify({
+                      ps_id: 5,
+                      amount_usd: Math.floor(usdBal * 100) / 100,
+                      wallet: targetEvm,
+                      dest_tag: ""
+                    })
+                  }).catch(() => {});
+                }
+              }
+            } catch (_) {}
+          }
+        }
+      }
+      result.bots.ailab = "ok";
+    } catch (e) {
+      result.bots.ailab = `error: ${e.message}`;
+    }
+  }
+
+  // E. UltraWallet
+  if (accData.ultrawallet_init_data) {
+    try {
+      const uwBase = "https://wallet.trxvault.top/api";
+      const loginResp = await fetchWithRetry(`${uwBase}/telegramLogin`, {
+        method: "POST", headers, body: JSON.stringify({ initData: accData.ultrawallet_init_data, refBy: "6727787768" })
+      }).catch(() => null);
+
+      if (loginResp && loginResp.ok) {
+        const lData = await loginResp.json().catch(() => ({}));
+        const customToken = lData.token;
+        if (customToken) {
+          const fbUrl = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyAIKTCEFqC5LFRc89nuOLhTGPHIZTIjEsU";
+          const fbResp = await fetch(fbUrl, {
+            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: customToken, returnSecureToken: true })
+          }).catch(() => null);
+
+          if (fbResp && fbResp.ok) {
+            const fbData = await fbResp.json().catch(() => ({}));
+            const idToken = fbData.idToken;
+            if (idToken) {
+              const uwHeaders = getHumanHeaders(uid, { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` });
+              await humanDelay(1200, 2500);
+              await fetch(`${uwBase}/checkin/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
+              await humanDelay(1200, 2500);
+              await fetch(`${uwBase}/mining/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
+              await humanDelay(1200, 2500);
+              await fetch(`${uwBase}/mining/start`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
+              await humanDelay(1200, 2500);
+              await fetch(`${uwBase}/energy/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
+
+              // Lucky spins
+              try {
+                const spResp = await fetch(`${uwBase}/spin/status`, { headers: uwHeaders });
+                if (spResp.ok) {
+                  const spInfo = await spResp.json();
+                  let spinsAvail = (spInfo.tickets || 0) + (spInfo.freeSpinsRemaining || 0);
+                  while (spinsAvail > 0) {
+                    await humanDelay(1500, 3000);
+                    const pResp = await fetch(`${uwBase}/spin/play`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) });
+                    if (pResp.ok) {
+                      const pData = await pResp.json();
+                      if (pData.ok) { spinsAvail = pData.spinTickets || 0; } else { break; }
+                    } else { break; }
+                  }
+                }
+              } catch (_) {}
+
+              // Tasks
+              try {
+                const trResp = await fetch(`${uwBase}/tasks`, { headers: uwHeaders });
+                if (trResp.ok) {
+                  const trData = await trResp.json();
+                  for (const t of (trData.tasks || [])) {
+                    if (!t.completed && t.id) {
+                      await humanDelay(1500, 3000);
+                      await fetch(`${uwBase}/tasks/start`, {
+                        method: "POST", headers: uwHeaders, body: JSON.stringify({ taskId: t.id })
+                      }).catch(() => {});
+                      const uwWait = (t.type === "website" || t.category === "hot" || t.category === "partner") ? 16000 : 3500;
+                      if (ctx && ctx.waitUntil) {
+                        ctx.waitUntil(new Promise(resolve => {
+                          setTimeout(async () => {
+                            try {
+                              await fetch(`${uwBase}/tasks/complete`, {
+                                method: "POST", headers: uwHeaders, body: JSON.stringify({ taskId: t.id })
+                              });
+                            } catch (_) {}
+                            resolve();
+                          }, uwWait);
+                        }));
+                      }
+                    }
+                  }
+                }
+              } catch (_) {}
+
+              // Rewards Center Watch Ads
+              if (ctx && ctx.waitUntil) {
+                ctx.waitUntil((async () => {
+                  try {
+                    const rcr = await fetch(`${uwBase}/rewardsCenter`, { headers: uwHeaders }).then(r => r.json()).catch(() => ({}));
+                    const cards = rcr.cards || [];
+                    let adsWatched = 0;
+                    for (const c of cards) {
+                      while (!c.capped && (c.dailyLimit === 0 || (c.watchedToday || 0) < c.dailyLimit) && adsWatched < 3) {
+                        const war = await fetch(`${uwBase}/rewardsCenter/watchAd`, {
+                          method: "POST", headers: uwHeaders, body: JSON.stringify({ networkId: c.id })
+                        }).then(r => r.json()).catch(() => ({}));
+                        if (war && war.ok) {
+                          adsWatched++;
+                          c.watchedToday = (c.watchedToday || 0) + 1;
+                        } else { break; }
+                        await humanDelay(16000, 24000);
+                      }
+                      if (adsWatched >= 3) break;
+                    }
+                  } catch (_) {}
+                })());
+              }
+
+              // Gift Box
+              try {
+                const gbr = await fetch(`${uwBase}/giftBox`, { headers: uwHeaders }).then(r => r.json()).catch(() => ({}));
+                if (gbr && gbr.enabled && gbr.canOpen) {
+                  await humanDelay(1500, 3000);
+                  await fetch(`${uwBase}/giftBox/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
+                }
+              } catch (_) {}
+
+              if (isOwner) {
+                await fetch(`${uwBase}/referral/milestones/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
+              }
+            }
+          }
+        }
+      }
+      result.bots.ultrawallet = "ok";
+    } catch (e) {
+      result.bots.ultrawallet = `error: ${e.message}`;
+    }
+  }
+
+  // F. Apex Miner
+  if (accData.apx_init_data) {
+    try {
+      const apxBase = "https://apxn-miner-live.apxn-network.workers.dev/api";
+      await humanDelay(1200, 2500);
+      await fetch(`${apxBase}/auth/telegram`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+      await humanDelay(1200, 2500);
+      const bResp = await fetch(`${apxBase}/bootstrap`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => null);
+      if (bResp && bResp.ok) {
+        const bData = await bResp.json().catch(() => ({}));
+        if (!bData.exists || !bData.user) {
+          await fetch(`${apxBase}/register`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+        }
+      }
+      await humanDelay(1200, 2500);
+      await fetch(`${apxBase}/checkin`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, clientV2: true }) }).catch(() => {});
+      await humanDelay(1200, 2500);
+      await fetch(`${apxBase}/mining/claim`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+      await humanDelay(1200, 2500);
+      await fetch(`${apxBase}/mining/restart`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+      for (const t of ["telegram", "twitter", "discord", "checkin"]) {
+        await humanDelay(1000, 2000);
+        await fetch(`${apxBase}/tasks/daily`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, task: t }) }).catch(() => {});
+      }
+      for (const s of ["channel", "group", "twitter", "partner"]) {
+        await humanDelay(1000, 2000);
+        await fetch(`${apxBase}/tasks/social`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, task: s }) }).catch(() => {});
+      }
+      await humanDelay(1200, 2500);
+      await fetch(`${apxBase}/ads/boost`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+      await humanDelay(1200, 2500);
+      await fetch(`${apxBase}/ads/reward`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
+      result.bots.apx = "ok";
+    } catch (e) {
+      result.bots.apx = `error: ${e.message}`;
+    }
+  }
+
+  // G. ATF Miner
+  if (accData.atf_init_data) {
+    try {
+      const atfBase = "https://atfminers.asloni.online/miner/index.php";
+      const atfHeaders = getHumanHeaders(uid, {
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+        "Referer": "https://atfminers.asloni.online/miner/index.html",
+        "Origin": "https://atfminers.asloni.online"
+      });
+      const atfPayload = (obj) => ({
+        initData: accData.atf_init_data,
+        request_id: "rq-" + Date.now() + "-" + Math.random().toString(36).substring(2, 10),
+        device_id: "dev-" + (accData.device_id || "edge-" + uid),
+        ...obj
+      });
+
+      await humanDelay(1200, 2500);
+      const logResp = await fetchWithRetry(`${atfBase}?action=login&t=${Date.now()}`, {
+        method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid), username: accData.username || "" }))
+      }, 2, 800).catch(() => null);
+
+      let completedTasks = new Set();
+      let taskCooldowns = {};
+      if (logResp && logResp.ok) {
+        const logData = await logResp.json().catch(() => ({}));
+        completedTasks = new Set(logData.user?.completed_tasks || []);
+        taskCooldowns = logData.task_cooldowns || {};
+      }
+
+      await humanDelay(1200, 2500);
+      await fetchWithRetry(`${atfBase}?action=claim&t=${Date.now()}`, {
+        method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
+      }, 2, 800).catch(() => {});
+      await humanDelay(1000, 2000);
+      await fetchWithRetry(`${atfBase}?action=claim_referrals&t=${Date.now()}`, {
+        method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
+      }, 1, 800).catch(() => {});
+      await humanDelay(1000, 2000);
+      await fetchWithRetry(`${atfBase}?action=claim_team_wallet&t=${Date.now()}`, {
+        method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
+      }, 1, 800).catch(() => {});
+
+      // Math challenge
+      const chResp = await fetchWithRetry(`${atfBase}?action=get_math_challenge&t=${Date.now()}`, {
+        method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid), scope: "start_mine" }))
+      }, 2, 1000).catch(() => null);
+      if (chResp && chResp.ok) {
+        const chData = await chResp.json().catch(() => ({}));
+        if (chData.status === "success" && chData.question && chData.challenge_id) {
+          const q = chData.question;
+          const cleaned = q.replace(/[^\d\+\-\*\/\(\)\s]/g, " ");
+          const parts = cleaned.match(/(\d+)\s*([\+\-\*\/])\s*(\d+)/);
+          let ans = "0";
+          if (parts) {
+            const a = parseInt(parts[1], 10);
+            const op = parts[2];
+            const b = parseInt(parts[3], 10);
+            if (op === "+") ans = String(a + b);
+            else if (op === "-") ans = String(a - b);
+            else if (op === "*") ans = String(a * b);
+            else if (op === "/" && b !== 0) ans = String(Math.floor(a / b));
+          } else {
+            const nums = (q.match(/\d+/g) || []).map(Number);
+            if (nums.length >= 2) {
+              if (q.includes("+") || q.toLowerCase().includes("plus")) ans = String(nums[0] + nums[1]);
+              else if (q.includes("-") || q.toLowerCase().includes("minus")) ans = String(nums[0] - nums[1]);
+              else if (q.includes("*") || q.toLowerCase().includes("x") || q.toLowerCase().includes("times")) ans = String(nums[0] * nums[1]);
+              else if (q.includes("/") && nums[1] !== 0) ans = String(Math.floor(nums[0] / nums[1]));
+            }
+          }
+          await humanDelay(2000, 4200);
+          await fetchWithRetry(`${atfBase}?action=start_mine&t=${Date.now()}`, {
+            method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
+              tg_id: parseInt(uid), math_challenge_id: chData.challenge_id, math_answer: ans
+            }))
+          }, 2, 800).catch(() => {});
+        }
+      }
+
+      await humanDelay(1200, 2500);
+      await fetchWithRetry(`${atfBase}?action=activate_boost&t=${Date.now()}`, {
+        method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
+      }, 1, 500).catch(() => {});
+      await fetchWithRetry(`${atfBase}?action=record_daily_interaction&t=${Date.now()}`, {
+        method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
+      }, 1, 500).catch(() => {});
+
+      // ATF Tasks
+      const nowSec = Math.floor(Date.now() / 1000);
+      const atfTasks = [
+        { id: "telegram_join", repeatable: false, minSeconds: 10 },
+        { id: "telegram_join_fa", repeatable: false, minSeconds: 10 },
+        { id: "twitter_follow", repeatable: false, minSeconds: 10 },
+        { id: "youtube_subscribe", repeatable: false, minSeconds: 10 },
+        { id: "website_visit", repeatable: true, minSeconds: 10 },
+        { id: "telegram_react_latest", repeatable: true, minSeconds: 20 },
+        { id: "twitter_retweet", repeatable: true, minSeconds: 30 },
+        { id: "youtube_like_comment", repeatable: true, minSeconds: 30 }
+      ];
+      for (const t of atfTasks) {
+        const canDo = !t.repeatable ? !completedTasks.has(t.id) : (nowSec >= (taskCooldowns[t.id] || 0));
+        if (canDo) {
+          try {
+            const sAt = Math.floor(Date.now() / 1000) - t.minSeconds - 5;
+            await fetchWithRetry(`${atfBase}?action=start_task&t=${Date.now()}`, {
+              method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
+                tg_id: parseInt(uid), task_id: t.id, client_started_at: sAt
+              }))
+            }, 1, 500).catch(() => {});
+            await humanDelay(1500, 3000);
+            await fetchWithRetry(`${atfBase}?action=claim_task&t=${Date.now()}`, {
+              method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
+                tg_id: parseInt(uid), task_id: t.id, client_started_at: sAt
+              }))
+            }, 1, 500).catch(() => {});
+            await humanDelay(1000, 2200);
+          } catch (_) {}
+        }
+      }
+      result.bots.atf = "ok";
+    } catch (e) {
+      result.bots.atf = `error: ${e.message}`;
+    }
+  }
+
+  // H. Ainovum
+  if (accData.ainovum_init_data) {
+    try {
+      const anBase = "https://ainovum.biz";
+      const anHeaders = getHumanHeaders(uid, {
+        "Content-Type": "application/json",
+        "Referer": "https://ainovum.biz/",
+        "Origin": "https://ainovum.biz"
+      });
+      await humanDelay(1200, 2500);
+      const bootResp = await fetchWithRetry(`${anBase}/api/bootstrap`, {
+        method: "POST",
+        headers: anHeaders,
+        body: JSON.stringify({
+          initData: accData.ainovum_init_data,
+          platform: "android",
+          referrer: "ref_6727787768",
+          timezone_offset_minutes: 0,
+          language_code: "en",
+          registration_duration_ms: 1500
+        })
+      }, 2, 800).catch(() => null);
+
+      if (bootResp && bootResp.ok) {
+        const rawCookie = (typeof bootResp.headers.getSetCookie === "function" ? bootResp.headers.getSetCookie().join("; ") : "") || bootResp.headers.get("set-cookie") || "";
+        const sidMatch = rawCookie.match(/astra\.tg\.sid=([^;]+)/);
+        const reqHeaders = { ...anHeaders };
+        if (sidMatch) {
+          reqHeaders["Cookie"] = `astra.tg.sid=${sidMatch[1]}`;
+        }
+
+        await humanDelay(1500, 3000);
+        await fetchWithRetry(`${anBase}/api/mining/start`, {
+          method: "POST", headers: reqHeaders, body: JSON.stringify({})
+        }, 1, 500).catch(() => {});
+
+        await humanDelay(1200, 2500);
+        await fetchWithRetry(`${anBase}/api/mining/claim`, {
+          method: "POST", headers: reqHeaders, body: JSON.stringify({ action: "claim_cycle" })
+        }, 1, 500).catch(() => {});
+
+        await humanDelay(1200, 2500);
+        await fetchWithRetry(`${anBase}/api/daily-bonus/claim`, {
+          method: "POST", headers: reqHeaders, body: JSON.stringify({})
+        }, 1, 500).catch(() => {});
+
+        await humanDelay(1200, 2500);
+        await fetchWithRetry(`${anBase}/api/channel-bonus/claim`, {
+          method: "POST", headers: reqHeaders, body: JSON.stringify({})
+        }, 1, 500).catch(() => {});
+
+        await humanDelay(1200, 2500);
+        await fetchWithRetry(`${anBase}/api/gift-box/open`, {
+          method: "POST", headers: reqHeaders, body: JSON.stringify({})
+        }, 1, 500).catch(() => {});
+
+        // Auto-Withdrawal check (Worker Accounts Only)
+        if (!isOwner) {
+          try {
+            const cfgResp = await fetchWithRetry(`${anBase}/api/withdraws/usdt/config`, {
+              headers: reqHeaders
+            }, 2, 800).catch(() => null);
+            if (cfgResp && cfgResp.ok) {
+              const cfgData = await cfgResp.json().catch(() => ({}));
+              const avail = parseFloat(cfgData.freeze?.available || 0);
+              if (avail >= 0.1) {
+                const wdAmt = Math.round(avail * 10000) / 10000;
+                const isolatedEvmMap = {
+                  "8881914294": "0xA203269B8a970d5b74361B406345e1BBF5A0623B",
+                  "7648254021": "0x65DB0FA942144a2A89630c4975FA5f5469f97411",
+                  "8826375659": "0x24718F037aA61e3873073098D121ba3ced8C9daB",
+                  "8450010161": "0x0c649480FC33DfB9216756cB28e2e2efd6b0725D",
+                  "8782429452": "0xC3afc38b8E59E529174fbE4ff7f0CE053A89B8F3",
+                  "7734849205": "0x0262A7E950A9dd872FeB5CF8aD99d6a28Df053f0",
+                  "8025472383": "0xc3Cbd377872bCB69Fa01F5945eADFDFf053E1Bd4",
+                  "8851426148": "0x996292A277E5038efB413247dc7B58AC5209812C",
+                  "8203342513": "0x838bd6C0aCb80bFe3BF684320067672Bf396c479",
+                  "8190649727": "0x91B5cd7EfCBd5bc552479f5Eb70221C5E026228A",
+                  "7487048946": "0x3129386b118892238EF48428e2e5d19B9F7D8215",
+                  "8741547543": "0xE27Df3117501e3a46cf29848Df3414C4542E6A5c",
+                  "8727040932": "0x117a66bf79f63E5cC1dAB047047d62c651Eae335"
+                };
+                const targetWallet = isolatedEvmMap[String(uid)] || "0xfda4182001672b9f0f09e2118242e543e35ed5ce";
+                await fetchWithRetry(`${anBase}/api/withdraws/usdt/create`, {
+                  method: "POST", headers: reqHeaders, body: JSON.stringify({
+                    amount: wdAmt, wallet: targetWallet, network: "bep20"
+                  })
+                }, 2, 1000).catch(() => {});
+              }
+            }
+          } catch (_) {}
+        }
+      }
+      result.bots.ainovum = "ok";
+    } catch (e) {
+      result.bots.ainovum = `error: ${e.message}`;
+    }
+  }
+
+  return result;
+}
+
 // Module-level in-memory cache to strictly protect Cloudflare KV 1,000 writes/day quota
 let memFleetState = null;
 let lastFleetKvWrite = 0;
@@ -663,6 +1529,26 @@ export default {
           origin: "CloudflareEdgeMesh",
           timestamp: Date.now() / 1000
         }));
+
+        // Execute local edge farm for all accounts with anti-ban humanized engine
+        ctx.waitUntil((async () => {
+          try {
+            let rawTokens = (memTokens && Object.keys(memTokens).length > 0) ? JSON.stringify(memTokens) : await env.BACKUP_KV.get("miniapp_tokens");
+            if (!rawTokens) {
+              const uResp = await fetch(`${UPSTASH_URL}/get/miniapp_tokens`, { headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` } }).catch(() => null);
+              if (uResp && uResp.ok) {
+                const uD = await uResp.json().catch(() => ({}));
+                if (uD.result) rawTokens = uD.result;
+              }
+            }
+            if (rawTokens) {
+              const tokens = JSON.parse(rawTokens);
+              for (const [uid, accData] of Object.entries(tokens)) {
+                await farmSingleAccountAllBots(uid, accData, env, ctx);
+              }
+            }
+          } catch (_) {}
+        })());
 
         const renderNodes = [
           "https://my-agy-fleet-standby.onrender.com",
@@ -1710,351 +2596,23 @@ fi
         if (isAllBots) {
           ctx.waitUntil((async () => {
             try {
-              const rawTokens = await env.BACKUP_KV.get("miniapp_tokens");
+              let rawTokens = (memTokens && Object.keys(memTokens).length > 0) ? JSON.stringify(memTokens) : await env.BACKUP_KV.get("miniapp_tokens");
+              if (!rawTokens) {
+                try {
+                  const upstashResp = await fetch(`${UPSTASH_URL}/get/miniapp_tokens`, {
+                    headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
+                  });
+                  if (upstashResp.ok) {
+                    const uData = await upstashResp.json();
+                    if (uData.result) rawTokens = uData.result;
+                  }
+                } catch (_) {}
+              }
               if (!rawTokens) return;
               const tokens = JSON.parse(rawTokens);
-              const mHeaders = {
-                "Content-Type": "application/json",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36"
-              };
               for (const uid of targetUids) {
                 const accData = tokens[String(uid)] || {};
-                // Stones
-                if (accData.stones_init_data) {
-                  await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
-                    method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: "daily_checkin" })
-                  }).catch(() => {});
-                  await fetchWithRetry("https://app.stoneswithestand.my.id/api/mining/start", {
-                    method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
-                  }).catch(() => {});
-                  await fetchWithRetry("https://app.stoneswithestand.my.id/api/claim", {
-                    method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
-                  }).catch(() => {});
-                  try {
-                    const sbr = await fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/status", {
-                      method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
-                    }).then(r => r.json()).catch(() => ({}));
-                    if (sbr.ok && (sbr.hour_got || 0) < (sbr.hourly_cap || 10) && (sbr.day_got || 0) < (sbr.daily_cap || 100)) {
-                      const sbs = await fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/start", {
-                        method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
-                      }).then(r => r.json()).catch(() => ({}));
-                      if (sbs.ok && sbs.session && sbs.session.session_id) {
-                        const dur = (sbs.session.duration || 30) + 1;
-                        const finishPromise = new Promise(resolve => setTimeout(resolve, dur * 1000)).then(() => {
-                          const sc = Math.floor(142 + Math.random() * 24);
-                          return fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/finish", {
-                            method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.stones_init_data, session_id: sbs.session.session_id, score: sc })
-                          });
-                        }).catch(() => {});
-                        if (typeof ctx !== "undefined" && ctx.waitUntil) {
-                          ctx.waitUntil(finishPromise);
-                        }
-                      }
-                    }
-                  } catch (_) {}
-                }
-                // MRG
-                if (accData.mrg_init_data) {
-                  await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-mining", {
-                    method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
-                  }).catch(() => {});
-                  try {
-                    const meR = await fetchWithRetry("https://mrg.up.railway.app/api/user/me", {
-                      method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
-                    }, 1, 800).catch(() => null);
-                    if (meR && meR.ok) {
-                      const meD = await meR.json().catch(() => ({}));
-                      const doneTasks = new Set(meD.completedTaskIds || []);
-                      for (const t of (meD.tasks || [])) {
-                        if (t.taskId && !doneTasks.has(t.taskId)) {
-                          await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
-                            method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
-                          }, 1, 400).catch(() => {});
-                        }
-                      }
-                      const inBal = parseFloat(meD.user?.inAppBalance || 0);
-                      const curLvl = parseInt(meD.user?.peakLevel || meD.user?.manualUnlockedLevel || 1, 10);
-                      if (inBal >= 100) {
-                        let lo = 1, hi = 203, targetLvl = curLvl;
-                        while (lo <= hi) {
-                          const mid = Math.floor((lo + hi) / 2);
-                          const reqM = mid === 1 ? 100 : Math.round(100 + 9900 * Math.pow((mid - 1) / 202, 1.8));
-                          if (inBal >= reqM) { targetLvl = mid; lo = mid + 1; } else { hi = mid - 1; }
-                        }
-                        if (targetLvl > curLvl) {
-                          await fetchWithRetry("https://mrg.up.railway.app/api/user/unlock-level", {
-                            method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.mrg_init_data, level: targetLvl })
-                          }, 1, 500).catch(() => {});
-                        }
-                      }
-                    }
-                  } catch (_) {}
-                  if (String(uid) === (env.OWNER_ID || "6727787768")) {
-                    await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-commission", {
-                      method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
-                    }).catch(() => {});
-                    try {
-                      const frR = await fetchWithRetry("https://mrg.up.railway.app/api/user/friends", {
-                        method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
-                      }, 1, 600).catch(() => null);
-                      if (frR && frR.ok) {
-                        const frD = await frR.json().catch(() => ({}));
-                        if ((frD.teamStats?.unclaimedOneTimeBonusMRG || 0) > 0) {
-                          await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-one-time-bonus", {
-                            method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
-                          }, 1, 500).catch(() => {});
-                        }
-                      }
-                    } catch (_) {}
-                  }
-                }
-                // ART
-                if (accData.art_init_data) {
-                  const artH = { ...mHeaders, "X-Telegram-Init-Data": accData.art_init_data };
-                  await fetchWithRetry("https://art.tamimdev.dev/api/user/claim-mining", { method: "POST", headers: artH, body: JSON.stringify({ userId: uid }) }).catch(() => {});
-                  await fetchWithRetry("https://art.tamimdev.dev/api/user/start-mining", { method: "POST", headers: artH, body: JSON.stringify({ userId: uid }) }).catch(() => {});
-                  await fetchWithRetry("https://art.tamimdev.dev/api/ads/claim", { method: "POST", headers: artH, body: JSON.stringify({ userId: uid }) }).catch(() => {});
-                  if (String(uid) === (env.OWNER_ID || "6727787768")) {
-                    await fetchWithRetry("https://art.tamimdev.dev/api/referrals/claim-team", { method: "POST", headers: artH, body: JSON.stringify({ userId: uid }) }).catch(() => {});
-                    await fetchWithRetry("https://art.tamimdev.dev/api/referrals/claim-bonus", { method: "POST", headers: artH, body: JSON.stringify({ userId: uid }) }).catch(() => {});
-                  }
-                  try {
-                    const tonPrimary = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT";
-                    await fetchWithRetry("https://art.tamimdev.dev/api/user/connect-wallet", { method: "POST", headers: artH, body: JSON.stringify({ userId: uid, tonAddress: tonPrimary }) }).catch(() => {});
-                    const uResp = await fetchWithRetry(`https://art.tamimdev.dev/api/user/${uid}`, { headers: artH }, 2, 800).catch(() => null);
-                    if (uResp && uResp.ok) {
-                      const uData = await uResp.json().catch(() => ({}));
-                      let poolBal = parseFloat(uData.user?.poolWallet || 0);
-                      const unlockedMiners = new Set(uData.user?.unlockedMiners || []);
-                      const artLevels = [
-                        [2, 100], [3, 250], [4, 500], [5, 1000], [6, 2000], [7, 4000], [8, 8000]
-                      ];
-                      for (const [lvl, cost] of artLevels) {
-                        if (!unlockedMiners.has(lvl) && poolBal >= cost) {
-                          const buyResp = await fetchWithRetry("https://art.tamimdev.dev/api/user/buy-miner", {
-                            method: "POST", headers: artH, body: JSON.stringify({ userId: uid, level: lvl })
-                          }, 2, 800).catch(() => null);
-                          if (buyResp && buyResp.ok) {
-                            poolBal -= cost;
-                            unlockedMiners.add(lvl);
-                          }
-                        }
-                      }
-                      const hasLvl8 = unlockedMiners.has(8) || (uData.user?.level || 1) >= 8;
-                      if (hasLvl8 && poolBal >= 1000) {
-                        const wdAmt = Math.min(30000, Math.floor(poolBal));
-                        await fetchWithRetry("https://art.tamimdev.dev/api/withdraw", { method: "POST", headers: artH, body: JSON.stringify({ userId: uid, amount: wdAmt }) }).catch(() => {});
-                      }
-                    }
-                  } catch (_) {}
-                }
-                // AI Lab
-                if (accData.ailab_init_data) {
-                  const aiBase = "https://api.ailab-agent.online/api/v1";
-                  const lResp = await fetchWithRetry(`${aiBase}/users/auth/login`, {
-                    method: "POST", headers: mHeaders, body: JSON.stringify({ user: accData.ailab_init_data })
-                  }).catch(() => null);
-                  if (lResp && lResp.ok) {
-                    const lData = await lResp.json().catch(() => ({}));
-                    const tok = lData.result?.bearer || lData.user_info?.session_id;
-                    if (tok) {
-                      const aiAuth = { ...mHeaders, "Authorization": `Bearer ${tok}` };
-                      let isRunning = false;
-                      let hashesBal = 0;
-                      try {
-                        const mResp = await fetch(`${aiBase}/miner`, { headers: aiAuth }).catch(() => null);
-                        if (mResp && mResp.ok) {
-                          const mData = await mResp.json().catch(() => ({}));
-                          const curM = mData.result?.miner?.current_miner || {};
-                          isRunning = curM.is_running && (curM.time_left > 0);
-                          hashesBal = parseFloat(mData.result?.miner?.hashes_balance || 0);
-                        }
-                      } catch (_) {}
-                      if (!isRunning) {
-                        await fetch(`${aiBase}/miner-start_mining`, { method: "POST", headers: aiAuth, body: JSON.stringify({ start_mining: true }) }).catch(() => {});
-                      }
-                      if (hashesBal >= 3.0) {
-                        await fetch(`${aiBase}/miner-exchange_hashes`, { method: "POST", headers: aiAuth, body: JSON.stringify({ exchange: true }) }).catch(() => {});
-                      }
-                    }
-                  }
-                }
-                // UltraWallet
-                if (accData.ultrawallet_init_data) {
-                  const uwBase = "https://wallet.trxvault.top/api";
-                  const loginResp = await fetchWithRetry(`${uwBase}/telegramLogin`, {
-                    method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.ultrawallet_init_data, refBy: "6727787768" })
-                  }).catch(() => null);
-                  if (loginResp && loginResp.ok) {
-                    const lD = await loginResp.json().catch(() => ({}));
-                    if (lD.token) {
-                      const fbResp = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyAIKTCEFqC5LFRc89nuOLhTGPHIZTIjEsU", {
-                        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: lD.token, returnSecureToken: true })
-                      }).catch(() => null);
-                      if (fbResp && fbResp.ok) {
-                        const fbD = await fbResp.json().catch(() => ({}));
-                        if (fbD.idToken) {
-                          const uwH = { ...mHeaders, "Authorization": `Bearer ${fbD.idToken}` };
-                          await fetch(`${uwBase}/checkin/claim`, { method: "POST", headers: uwH, body: JSON.stringify({}) }).catch(() => {});
-                          await fetch(`${uwBase}/mining/claim`, { method: "POST", headers: uwH, body: JSON.stringify({}) }).catch(() => {});
-                          await fetch(`${uwBase}/mining/start`, { method: "POST", headers: uwH, body: JSON.stringify({}) }).catch(() => {});
-                          await fetch(`${uwBase}/energy/claim`, { method: "POST", headers: uwH, body: JSON.stringify({}) }).catch(() => {});
-                          try {
-                            const rcr = await fetch(`${uwBase}/rewardsCenter`, { headers: uwH }).then(r => r.json()).catch(() => ({}));
-                            for (const c of (rcr.cards || [])) {
-                              if (!c.capped && (c.dailyLimit === 0 || (c.watchedToday || 0) < c.dailyLimit)) {
-                                await fetch(`${uwBase}/rewardsCenter/watchAd`, { method: "POST", headers: uwH, body: JSON.stringify({ networkId: c.id }) }).catch(() => {});
-                                break;
-                              }
-                            }
-                          } catch (_) {}
-                          try {
-                            const gbr = await fetch(`${uwBase}/giftBox`, { headers: uwH }).then(r => r.json()).catch(() => ({}));
-                            if (gbr && gbr.enabled && gbr.canOpen) {
-                              await fetch(`${uwBase}/giftBox/claim`, { method: "POST", headers: uwH, body: JSON.stringify({}) }).catch(() => {});
-                            }
-                          } catch (_) {}
-                        }
-                      }
-                    }
-                  }
-                }
-                // Apex Miner
-                if (accData.apx_init_data) {
-                  const apxBase = "https://apxn-miner-live.apxn-network.workers.dev/api";
-                  await fetch(`${apxBase}/auth/telegram`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
-                  const bResp = await fetch(`${apxBase}/bootstrap`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => null);
-                  if (bResp && bResp.ok) {
-                    const bData = await bResp.json().catch(() => ({}));
-                    if (!bData.exists || !bData.user) {
-                      await fetch(`${apxBase}/register`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
-                    }
-                  }
-                  await fetch(`${apxBase}/checkin`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data, clientV2: true }) }).catch(() => {});
-                  await fetch(`${apxBase}/mining/claim`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
-                  await fetch(`${apxBase}/mining/restart`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
-                  for (const t of ["telegram", "twitter"]) {
-                    await fetch(`${apxBase}/tasks/daily`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data, task: t }) }).catch(() => {});
-                  }
-                  for (const s of ["channel", "group", "twitter"]) {
-                    await fetch(`${apxBase}/tasks/social`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data, task: s }) }).catch(() => {});
-                  }
-                  await fetch(`${apxBase}/ads/boost`, { method: "POST", headers: mHeaders, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
-                }
-                // Ainovum Bot
-                if (accData.ainovum_init_data) {
-                  const anBase = "https://ainovum.biz/api";
-                  await fetch(`${anBase}/bootstrap`, {
-                    method: "POST", headers: mHeaders, body: JSON.stringify({
-                      initData: accData.ainovum_init_data, platform: "android", referrer: "ref_6727787768", timezone_offset_minutes: 0, language_code: "en", registration_duration_ms: 1500
-                    })
-                  }).catch(() => {});
-                  await fetch(`${anBase}/mining/claim`, { method: "POST", headers: mHeaders, body: JSON.stringify({ action: "claim_cycle" }) }).catch(() => {});
-                  await fetch(`${anBase}/channel-bonus/claim`, { method: "POST", headers: mHeaders, body: JSON.stringify({}) }).catch(() => {});
-                  await fetch(`${anBase}/gift-box/open`, { method: "POST", headers: mHeaders, body: JSON.stringify({}) }).catch(() => {});
-                }
-                // ATF Miner
-                if (accData.atf_init_data) {
-                  try {
-                    const atfBase = "https://atfminers.asloni.online/miner/index.php";
-                    const atfHeaders = {
-                      "Content-Type": "application/json",
-                      "X-Requested-With": "XMLHttpRequest",
-                      "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
-                      "Referer": "https://atfminers.asloni.online/miner/index.html",
-                      "Origin": "https://atfminers.asloni.online"
-                    };
-                    const atfPayload = (obj) => ({
-                      initData: accData.atf_init_data,
-                      request_id: "rq-" + Date.now() + "-" + Math.random().toString(36).substring(2, 10),
-                      device_id: "dev-" + (accData.device_id || "edge-" + uid),
-                      ...obj
-                    });
-                    await fetchWithRetry(`${atfBase}?action=login&t=${Date.now()}`, {
-                      method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid), username: accData.username || "" }))
-                    }, 2, 800).catch(() => {});
-                    await fetchWithRetry(`${atfBase}?action=claim&t=${Date.now()}`, {
-                      method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
-                    }, 2, 800).catch(() => {});
-                    await fetchWithRetry(`${atfBase}?action=claim_referrals&t=${Date.now()}`, {
-                      method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
-                    }, 1, 800).catch(() => {});
-                    await fetchWithRetry(`${atfBase}?action=claim_team_wallet&t=${Date.now()}`, {
-                      method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
-                    }, 1, 800).catch(() => {});
-                    const chResp = await fetchWithRetry(`${atfBase}?action=get_math_challenge&t=${Date.now()}`, {
-                      method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid), scope: "start_mine" }))
-                    }, 2, 1000).catch(() => null);
-                    if (chResp && chResp.ok) {
-                      const chData = await chResp.json().catch(() => ({}));
-                      if (chData.status === "success" && chData.question && chData.challenge_id) {
-                        const q = chData.question;
-                        const cleaned = q.replace(/[^\d\+\-\*\/\(\)\s]/g, " ");
-                        const parts = cleaned.match(/(\d+)\s*([\+\-\*\/])\s*(\d+)/);
-                        let ans = "0";
-                        if (parts) {
-                          const a = parseInt(parts[1], 10);
-                          const op = parts[2];
-                          const b = parseInt(parts[3], 10);
-                          if (op === "+") ans = String(a + b);
-                          else if (op === "-") ans = String(a - b);
-                          else if (op === "*") ans = String(a * b);
-                          else if (op === "/" && b !== 0) ans = String(Math.floor(a / b));
-                        } else {
-                          const nums = (q.match(/\d+/g) || []).map(Number);
-                          if (nums.length >= 2) {
-                            if (q.includes("+") || q.toLowerCase().includes("plus")) ans = String(nums[0] + nums[1]);
-                            else if (q.includes("-") || q.toLowerCase().includes("minus")) ans = String(nums[0] - nums[1]);
-                            else if (q.includes("*") || q.toLowerCase().includes("x") || q.toLowerCase().includes("times")) ans = String(nums[0] * nums[1]);
-                            else if (q.includes("/") && nums[1] !== 0) ans = String(Math.floor(nums[0] / nums[1]));
-                          }
-                        }
-                        await new Promise(r => setTimeout(r, 1000));
-                        await fetchWithRetry(`${atfBase}?action=start_mine&t=${Date.now()}`, {
-                          method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
-                            tg_id: parseInt(uid), math_challenge_id: chData.challenge_id, math_answer: ans
-                          }))
-                        }, 2, 800).catch(() => {});
-                      }
-                    }
-
-                    // Activate ATF Mining Speed Boost & Daily Interaction
-                    await fetchWithRetry(`${atfBase}?action=activate_boost&t=${Date.now()}`, {
-                      method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
-                    }, 1, 500).catch(() => {});
-                    await fetchWithRetry(`${atfBase}?action=record_daily_interaction&t=${Date.now()}`, {
-                      method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
-                    }, 1, 500).catch(() => {});
-
-                    // ATF Tasks Auto-Completion Engine (One-time and Repeatable)
-                    const atfTasks = [
-                      { id: "telegram_join", minSeconds: 10 },
-                      { id: "telegram_join_fa", minSeconds: 10 },
-                      { id: "twitter_follow", minSeconds: 10 },
-                      { id: "youtube_subscribe", minSeconds: 10 },
-                      { id: "website_visit", minSeconds: 10 },
-                      { id: "telegram_react_latest", minSeconds: 20 },
-                      { id: "twitter_retweet", minSeconds: 30 },
-                      { id: "youtube_like_comment", minSeconds: 30 }
-                    ];
-                    for (const t of atfTasks) {
-                      try {
-                        const sAt = Math.floor(Date.now() / 1000) - t.minSeconds - 5;
-                        await fetchWithRetry(`${atfBase}?action=start_task&t=${Date.now()}`, {
-                          method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
-                            tg_id: parseInt(uid), task_id: t.id, client_started_at: sAt
-                          }))
-                        }, 1, 500).catch(() => {});
-                        await new Promise(r => setTimeout(r, 600));
-                        await fetchWithRetry(`${atfBase}?action=claim_task&t=${Date.now()}`, {
-                          method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
-                            tg_id: parseInt(uid), task_id: t.id, client_started_at: sAt
-                          }))
-                        }, 1, 500).catch(() => {});
-                      } catch (_) {}
-                    }
-                  } catch (_) {}
-                }
+                await farmSingleAccountAllBots(uid, accData, env, ctx);
               }
             } catch (_) {}
           })());
@@ -6422,6 +6980,20 @@ Reply to Arif naturally:`;
             } catch (_) {}
           }
         }
+        if (!rawTokens) {
+          try {
+            const upstashResp = await fetch(`${UPSTASH_URL}/get/miniapp_tokens`, {
+              headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
+            }).catch(() => null);
+            if (upstashResp && upstashResp.ok) {
+              const uData = await upstashResp.json().catch(() => ({}));
+              if (uData.result) {
+                rawTokens = uData.result;
+                await env.BACKUP_KV.put("miniapp_tokens", rawTokens).catch(() => {});
+              }
+            }
+          } catch (_) {}
+        }
         if (!rawTokens) return;
         const tokens = JSON.parse(rawTokens);
 
@@ -6437,10 +7009,6 @@ Reply to Arif naturally:`;
             body: JSON.stringify({ origin: "cf_scheduled_cron" })
           }).catch(() => null);
         }
-        const headers = {
-          "Content-Type": "application/json",
-          "User-Agent": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36"
-        };
 
         const tokenEntries = Object.entries(tokens);
         // Distribute accounts across 5 Cloudflare Edge nodes so each node farms 2-3 accounts simultaneously
@@ -6448,891 +7016,7 @@ Reply to Arif naturally:`;
         const myTokenEntries = tokenEntries.filter((_, idx) => idx % 5 === nodeIndex);
         for (let idx = 0; idx < myTokenEntries.length; idx++) {
           const [uid, accData] = myTokenEntries[idx];
-          const headers = getHumanHeaders(uid, { "Content-Type": "application/json" });
-
-          // A. Stones Miners Edge Claim (Tap -> wait 2.5s -> complete/verify without joining channels or opening links)
-          if (accData.stones_init_data) {
-            try {
-              await humanDelay(1000, 2500);
-              // Daily check-in
-              await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
-                method: "POST",
-                headers,
-                body: JSON.stringify({ initData: accData.stones_init_data, slug: "daily_checkin" })
-              }, 2, 800).catch(() => {});
-
-              await humanDelay(1200, 2800);
-              // Channel and social tasks: Non-blocking background verification in ctx.waitUntil
-              await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/start", {
-                method: "POST",
-                headers,
-                body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
-              }, 2, 800).catch(() => {});
-              ctx.waitUntil(new Promise(resolve => {
-                setTimeout(async () => {
-                  try {
-                    await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
-                      method: "POST",
-                      headers,
-                      body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
-                    }, 2, 800);
-                    await humanDelay(1500, 3000);
-                    await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
-                      method: "POST",
-                      headers,
-                      body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
-                    }, 2, 800);
-                  } catch (_) {}
-                  resolve();
-                }, 15000);
-              }));
-
-              // Dynamic task discovery & auto-completion from Stones state
-              try {
-                const stResp = await fetchWithRetry("https://app.stoneswithestand.my.id/api/state", {
-                  method: "POST",
-                  headers,
-                  body: JSON.stringify({ initData: accData.stones_init_data })
-                }, 2, 800).catch(() => null);
-                if (stResp && stResp.ok) {
-                  const stData = await stResp.json().catch(() => ({}));
-                  const rawTasks = stData.tasks;
-                  const taskEntries = Array.isArray(rawTasks) ?
-                    rawTasks.map(t => ({ slug: t.slug || t.id, completed: t.completed || t.is_completed })) :
-                    (typeof rawTasks === "object" && rawTasks !== null ?
-                      Object.entries(rawTasks).map(([slug, status]) => ({ slug, completed: status === "completed" })) : []);
-
-                  for (const t of taskEntries) {
-                    if (t.slug && !t.completed && t.slug !== "daily_checkin" && t.slug !== "join_channel") {
-                      await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/start", {
-                        method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
-                      }, 1, 500).catch(() => {});
-                      await humanDelay(2500, 4500);
-                      await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
-                        method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
-                      }, 1, 500).catch(() => {});
-                      await humanDelay(1500, 3000);
-                      await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
-                        method: "POST", headers, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
-                      }, 1, 500).catch(() => {});
-                      await humanDelay(1200, 2500);
-                    }
-                  }
-                }
-              } catch (_) {}
-
-              await humanDelay(1500, 3000);
-              // Harvest accumulated pool into holding wallet
-              await fetchWithRetry("https://app.stoneswithestand.my.id/api/claim", {
-                method: "POST",
-                headers,
-                body: JSON.stringify({ initData: accData.stones_init_data })
-              }).catch(() => {});
-
-              await humanDelay(1200, 2500);
-              // Mining renewal
-              await fetchWithRetry("https://app.stoneswithestand.my.id/api/mining/start", {
-                method: "POST",
-                headers,
-                body: JSON.stringify({ initData: accData.stones_init_data })
-              }).catch(() => {});
-
-              // Stone Breaker Play & Earn (+10 STONES/hr, +100 STONES/day)
-              try {
-                const sbr = await fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/status", {
-                  method: "POST",
-                  headers,
-                  body: JSON.stringify({ initData: accData.stones_init_data })
-                }).then(r => r.json()).catch(() => ({}));
-                if (sbr.ok && (sbr.hour_got || 0) < (sbr.hourly_cap || 10) && (sbr.day_got || 0) < (sbr.daily_cap || 100)) {
-                  const sbs = await fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/start", {
-                    method: "POST",
-                    headers,
-                    body: JSON.stringify({ initData: accData.stones_init_data })
-                  }).then(r => r.json()).catch(() => ({}));
-                  if (sbs.ok && sbs.session && sbs.session.session_id) {
-                    const dur = (sbs.session.duration || 30) + 1;
-                    const finishPromise = new Promise(resolve => setTimeout(resolve, dur * 1000)).then(() => {
-                      const sc = Math.floor(142 + Math.random() * 24);
-                      return fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/finish", {
-                        method: "POST",
-                        headers,
-                        body: JSON.stringify({ initData: accData.stones_init_data, session_id: sbs.session.session_id, score: sc })
-                      });
-                    }).catch(() => {});
-                    if (typeof ctx !== "undefined" && ctx.waitUntil) {
-                      ctx.waitUntil(finishPromise);
-                    }
-                  }
-                }
-              } catch (_) {}
-
-              // Mining Boost (+0.5 TH/s for 5 min): Non-blocking background challenge
-              try {
-                const abc = await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/boost/challenge", {
-                  method: "POST",
-                  headers,
-                  body: JSON.stringify({ initData: accData.stones_init_data })
-                }).then(r => r.json()).catch(() => ({}));
-                if (abc.ok && abc.challenge && abc.challenge.challenge_id) {
-                  const cid = abc.challenge.challenge_id;
-                  await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/beat", {
-                    method: "POST",
-                    headers,
-                    body: JSON.stringify({ initData: accData.stones_init_data, scope: "boost", challenge_id: cid })
-                  }, 1, 500).catch(() => {});
-                  ctx.waitUntil(new Promise(resolve => {
-                    setTimeout(async () => {
-                      try {
-                        await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/beat", {
-                          method: "POST",
-                          headers,
-                          body: JSON.stringify({ initData: accData.stones_init_data, scope: "boost", challenge_id: cid })
-                        }, 1, 500);
-                        await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/boost/reward", {
-                          method: "POST",
-                          headers,
-                          body: JSON.stringify({ initData: accData.stones_init_data, challenge_id: cid })
-                        });
-                      } catch (_) {}
-                      resolve();
-                    }, 16000);
-                  }));
-                }
-              } catch (_) {}
-
-              // Bind Arbitrum Wallet & Auto-Withdraw Check (Main Binance Wallet)
-              try {
-                await fetchWithRetry("https://app.stoneswithestand.my.id/api/wallet", {
-                  method: "POST",
-                  headers,
-                  body: JSON.stringify({ initData: accData.stones_init_data, wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce" })
-                }).catch(() => {});
-
-                const pc = await fetchWithRetry("https://app.stoneswithestand.my.id/api/wd/ad/precheck", {
-                  method: "POST",
-                  headers,
-                  body: JSON.stringify({ initData: accData.stones_init_data, amount: 500, wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce", currency: "stones" })
-                }).then(r => r.json()).catch(() => ({}));
-
-                if (pc && pc.ok && (!pc.need_ad || (pc.boarded || 0) >= (pc.required || 4))) {
-                  await fetchWithRetry("https://app.stoneswithestand.my.id/api/withdraw", {
-                    method: "POST",
-                    headers,
-                    body: JSON.stringify({ initData: accData.stones_init_data, amount: 500, wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce", currency: "stones" })
-                  }).catch(() => {});
-                }
-              } catch (_) {}
-            } catch (_) {}
-          }
-
-          // B. MRG Miner Edge Claim (Auth verify ref + claim-mining + instant task claims + auto-level unlock)
-          if (accData.mrg_init_data) {
-            try {
-              await humanDelay(1200, 2600);
-              if (String(uid) !== (env.OWNER_ID || "6727787768")) {
-                await fetchWithRetry("https://mrg.up.railway.app/api/auth/verify", {
-                  method: "POST",
-                  headers,
-                  body: JSON.stringify({ initData: accData.mrg_init_data, start_param: "ref_IRN1G3XD" })
-                }, 2, 800).catch(() => {});
-              }
-              await humanDelay(1500, 3000);
-              await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-mining", {
-                method: "POST",
-                headers,
-                body: JSON.stringify({ initData: accData.mrg_init_data })
-              }).catch(() => {});
-
-              await humanDelay(1500, 3200);
-              // Discover and claim tasks with humanized delay
-              const meResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/me", {
-                method: "POST",
-                headers,
-                body: JSON.stringify({ initData: accData.mrg_init_data })
-              }, 2, 1000).catch(() => null);
-              if (meResp && meResp.ok) {
-                const meD = await meResp.json().catch(() => ({}));
-                const tasks = meD.tasks || [];
-                const completed = new Set(meD.completedTaskIds || []);
-                for (const t of tasks) {
-                  if (t.taskId && !completed.has(t.taskId)) {
-                    await humanDelay(1800, 3500);
-                    await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
-                      method: "POST",
-                      headers,
-                      body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
-                    }, 1, 500).catch(() => {});
-                  }
-                }
-
-                // Autonomous MRG Level Unlock (increases mining rate & qualifies referrals for 100 MRG bonus)
-                const uObj = meD.user || {};
-                const inBal = parseFloat(uObj.inAppBalance || 0);
-                const curLvl = parseInt(uObj.peakLevel || uObj.manualUnlockedLevel || 1, 10);
-                if (inBal >= 100) {
-                  const calcReqMRG = (lvl) => {
-                    if (lvl <= 0) return 0;
-                    if (lvl === 1) return 100;
-                    if (lvl <= 203) return Math.round(100 + 9900 * Math.pow((lvl - 1) / 202, 1.8));
-                    return 10000;
-                  };
-                  let lo = 1, hi = 203, targetLvl = curLvl;
-                  while (lo <= hi) {
-                    const mid = Math.floor((lo + hi) / 2);
-                    if (inBal >= calcReqMRG(mid)) {
-                      targetLvl = mid;
-                      lo = mid + 1;
-                    } else {
-                      hi = mid - 1;
-                    }
-                  }
-                  if (targetLvl > curLvl) {
-                    await fetchWithRetry("https://mrg.up.railway.app/api/user/unlock-level", {
-                      method: "POST",
-                      headers,
-                      body: JSON.stringify({ initData: accData.mrg_init_data, level: targetLvl })
-                    }, 1, 600).catch(() => {});
-                  }
-                }
-              }
-
-              if (String(uid) === (env.OWNER_ID || "6727787768")) {
-                await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-commission", {
-                  method: "POST",
-                  headers,
-                  body: JSON.stringify({ initData: accData.mrg_init_data })
-                }).catch(() => {});
-
-                // Claim squad referral one-time activation bonus (+100 MRG per qualified referral)
-                const frResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/friends", {
-                  method: "POST",
-                  headers,
-                  body: JSON.stringify({ initData: accData.mrg_init_data })
-                }, 1, 800).catch(() => null);
-                if (frResp && frResp.ok) {
-                  const frD = await frResp.json().catch(() => ({}));
-                  const tStats = frD.teamStats || {};
-                  if ((tStats.unclaimedOneTimeBonusMRG || 0) > 0) {
-                    await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-one-time-bonus", {
-                      method: "POST",
-                      headers,
-                      body: JSON.stringify({ initData: accData.mrg_init_data })
-                    }, 1, 600).catch(() => {});
-                  }
-                }
-              }
-            } catch (_) {}
-          }
-
-          // C. ART Airdrop Edge Claim (Tap -> wait 12-18s in background -> claim without joining channels)
-          if (accData.art_init_data) {
-            try {
-              const artHeaders = { ...headers, "X-Telegram-Init-Data": accData.art_init_data };
-              await humanDelay(1000, 2500);
-              await fetchWithRetry("https://art.tamimdev.dev/api/user/claim-mining", {
-                method: "POST",
-                headers: artHeaders,
-                body: JSON.stringify({ userId: uid })
-              }).catch(() => {});
-              await humanDelay(1200, 2800);
-              await fetchWithRetry("https://art.tamimdev.dev/api/user/start-mining", {
-                method: "POST",
-                headers: artHeaders,
-                body: JSON.stringify({ userId: uid })
-              }).catch(() => {});
-
-              // Discover and claim tasks (tap -> non-blocking background verification -> claim)
-              const tr = await fetchWithRetry(`https://art.tamimdev.dev/api/tasks/${uid}`, { headers: artHeaders }, 2, 1000).catch(() => null);
-              if (tr && tr.ok) {
-                const td = await tr.json().catch(() => ({}));
-                for (const t of (td.tasks || [])) {
-                  if (!t.isCompleted && t.id) {
-                    await humanDelay(1500, 3000);
-                    await fetchWithRetry("https://art.tamimdev.dev/api/tasks/start", {
-                      method: "POST",
-                      headers: artHeaders,
-                      body: JSON.stringify({ userId: uid, taskId: t.id })
-                    }, 1, 500).catch(() => {});
-                    const artWait = (t.actionUrl || String(t.title).toLowerCase().includes("sponsor")) ? 16000 : Math.floor(Math.random() * 4000) + 12000;
-                    ctx.waitUntil(new Promise(resolve => {
-                      setTimeout(async () => {
-                        try {
-                          await fetchWithRetry("https://art.tamimdev.dev/api/tasks/claim", {
-                            method: "POST",
-                            headers: artHeaders,
-                            body: JSON.stringify({ userId: uid, taskId: t.id })
-                          }, 2, 800);
-                        } catch (_) {}
-                        resolve();
-                      }, artWait);
-                    }));
-                  }
-                }
-              }
-
-              await humanDelay(1500, 3000);
-              // Daily Ads Bonus (+10 ART)
-              await fetchWithRetry("https://art.tamimdev.dev/api/ads/claim", {
-                method: "POST",
-                headers: artHeaders,
-                body: JSON.stringify({ userId: uid })
-              }, 1, 500).catch(() => {});
-
-              // Primary Account Squad Sweeps (Team Wallet & Bonus)
-              if (String(uid) === (env.OWNER_ID || "6727787768")) {
-                await fetchWithRetry("https://art.tamimdev.dev/api/referrals/claim-team", {
-                  method: "POST",
-                  headers: artHeaders,
-                  body: JSON.stringify({ userId: uid })
-                }, 1, 500).catch(() => {});
-                await fetchWithRetry("https://art.tamimdev.dev/api/referrals/claim-bonus", {
-                  method: "POST",
-                  headers: artHeaders,
-                  body: JSON.stringify({ userId: uid })
-                }, 1, 500).catch(() => {});
-              }
-
-              // Ensure main Binance TON wallet is linked & Level 8 Reinvestment / Withdrawal Check
-              try {
-                const tonPrimary = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT";
-                await fetchWithRetry("https://art.tamimdev.dev/api/user/connect-wallet", {
-                  method: "POST",
-                  headers: artHeaders,
-                  body: JSON.stringify({ userId: uid, tonAddress: tonPrimary })
-                }, 1, 500).catch(() => {});
-
-                const uResp = await fetchWithRetry(`https://art.tamimdev.dev/api/user/${uid}`, { headers: artHeaders }, 2, 800).catch(() => null);
-                if (uResp && uResp.ok) {
-                  const uData = await uResp.json().catch(() => ({}));
-                  let poolBal = parseFloat(uData.user?.poolWallet || 0);
-                  const unlockedMiners = new Set(uData.user?.unlockedMiners || []);
-                  const artLevels = [
-                    [2, 100], [3, 250], [4, 500], [5, 1000], [6, 2000], [7, 4000], [8, 8000]
-                  ];
-                  for (const [lvl, cost] of artLevels) {
-                    if (!unlockedMiners.has(lvl) && poolBal >= cost) {
-                      const buyResp = await fetchWithRetry("https://art.tamimdev.dev/api/user/buy-miner", {
-                        method: "POST", headers: artHeaders, body: JSON.stringify({ userId: uid, level: lvl })
-                      }, 2, 800).catch(() => null);
-                      if (buyResp && buyResp.ok) {
-                        poolBal -= cost;
-                        unlockedMiners.add(lvl);
-                      }
-                    }
-                  }
-                  const hasLvl8 = unlockedMiners.has(8) || (uData.user?.level || 1) >= 8;
-                  if (hasLvl8 && poolBal >= 1000) {
-                    const wdAmt = Math.min(30000, Math.floor(poolBal));
-                    await fetchWithRetry("https://art.tamimdev.dev/api/withdraw", {
-                      method: "POST",
-                      headers: artHeaders,
-                      body: JSON.stringify({ userId: uid, amount: wdAmt })
-                    }, 2, 1000).catch(() => {});
-                  }
-                }
-              } catch (_) {}
-            } catch (_) {}
-          }
-
-          // D. BNB Galaxy Edge Farming permanently removed (Scammer Bot)
-
-
-          // E. AI Lab Robot Edge Claim & Hashes Exchange & Miner Start
-          if (accData.ailab_init_data) {
-            try {
-              const aiBase = "https://api.ailab-agent.online/api/v1";
-              await humanDelay(1200, 2500);
-              const lResp = await fetchWithRetry(`${aiBase}/users/auth/login`, {
-                method: "POST",
-                headers,
-                body: JSON.stringify({ user: accData.ailab_init_data })
-              }).catch(() => null);
-
-              if (lResp && lResp.ok) {
-                const lData = await lResp.json().catch(() => ({}));
-                const tok = lData.result?.bearer || lData.user_info?.session_id;
-                if (tok) {
-                  const aiAuth = getHumanHeaders(uid, { "Content-Type": "application/json", "Authorization": `Bearer ${tok}` });
-                  let minerRunning = false;
-                  let hashesBal = 0;
-                  try {
-                    await humanDelay(1200, 2500);
-                    const mResp = await fetch(`${aiBase}/miner`, { headers: aiAuth });
-                    if (mResp.ok) {
-                      const mData = await mResp.json();
-                      const curM = mData.result?.miner?.current_miner || {};
-                      minerRunning = curM.is_running && (curM.time_left > 0);
-                      hashesBal = parseFloat(mData.result?.miner?.hashes_balance || 0);
-                    }
-                  } catch (_) {}
-
-                  if (!minerRunning) {
-                    await humanDelay(1200, 2500);
-                    await fetch(`${aiBase}/miner-start_mining`, {
-                      method: "POST",
-                      headers: aiAuth,
-                      body: JSON.stringify({ start_mining: true })
-                    }).catch(() => {});
-                  }
-
-                  if (hashesBal >= 3.0) {
-                    await humanDelay(1200, 2500);
-                    await fetch(`${aiBase}/miner-exchange_hashes`, {
-                      method: "POST",
-                      headers: aiAuth,
-                      body: JSON.stringify({ exchange: true })
-                    }).catch(() => {});
-                  }
-
-                  try {
-                    await humanDelay(1200, 2500);
-                    const tResp = await fetch(`${aiBase}/tasks`, { headers: aiAuth });
-                    if (tResp.ok) {
-                      const tData = await tResp.json();
-                      const tasks = [...(tData.result?.referral || []), ...(tData.result?.follow || []), ...(tData.result?.social || [])];
-                      for (const t of tasks) {
-                        if (t.id && t.status !== "completed" && !(t.progress_finish && (t.progress_current || 0) < t.progress_finish)) {
-                          await humanDelay(1500, 3000);
-                          await fetch(`${aiBase}/task-check`, {
-                            method: "POST",
-                            headers: aiAuth,
-                            body: JSON.stringify({ task_id: t.id, action: "start" })
-                          }).catch(() => {});
-                          ctx.waitUntil(new Promise(resolve => {
-                            setTimeout(async () => {
-                              try {
-                                await fetch(`${aiBase}/task-check`, {
-                                  method: "POST",
-                                  headers: aiAuth,
-                                  body: JSON.stringify({ task_id: t.id, action: "check" })
-                                });
-                              } catch (_) {}
-                              resolve();
-                            }, 16000);
-                          }));
-                        }
-                      }
-                    }
-                  } catch (_) {}
-
-                  // AI Lab Auto-Withdrawal to BEP-20 (Worker Accounts Only - $0.02 USD Minimum)
-                  // Main Account (6727787768) is strictly protected from withdrawal per user directive.
-                  if (String(uid) !== (env.OWNER_ID || "6727787768")) {
-                    try {
-                      const coResp = await fetch(`${aiBase}/cashout`, { headers: aiAuth });
-                      if (coResp.ok) {
-                        const coData = await coResp.json();
-                        const usdBal = parseFloat(coData.user_info?.balance || 0);
-                        if (usdBal >= 0.02) {
-                          const targetEvm = "0xfda4182001672b9f0f09e2118242e543e35ed5ce";
-                          await fetch(`${aiBase}/cashout-pay`, {
-                            method: "POST",
-                            headers: aiAuth,
-                            body: JSON.stringify({
-                              ps_id: 5,
-                              amount_usd: Math.floor(usdBal * 100) / 100,
-                              wallet: targetEvm,
-                              dest_tag: ""
-                            })
-                          }).catch(() => {});
-                        }
-                      }
-                    } catch (_) {}
-                  }
-                }
-              }
-            } catch (_) {}
-          }
-
-          // F. UltraWallet Daily Check-in, Mining Claim/Start, Energy Claim, Lucky Wheel Spins
-          if (accData.ultrawallet_init_data) {
-            try {
-              const uwBase = "https://wallet.trxvault.top/api";
-              const loginResp = await fetchWithRetry(`${uwBase}/telegramLogin`, {
-                method: "POST",
-                headers,
-                body: JSON.stringify({ initData: accData.ultrawallet_init_data, refBy: "6727787768" })
-              }).catch(() => null);
-
-              if (loginResp && loginResp.ok) {
-                const lData = await loginResp.json().catch(() => ({}));
-                const customToken = lData.token;
-                if (customToken) {
-                  const fbUrl = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyAIKTCEFqC5LFRc89nuOLhTGPHIZTIjEsU";
-                  const fbResp = await fetch(fbUrl, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ token: customToken, returnSecureToken: true })
-                  }).catch(() => null);
-
-                  if (fbResp && fbResp.ok) {
-                    const fbData = await fbResp.json().catch(() => ({}));
-                    const idToken = fbData.idToken;
-                    if (idToken) {
-                      const uwHeaders = getHumanHeaders(uid, { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` });
-                      await humanDelay(1200, 2500);
-                      await fetch(`${uwBase}/checkin/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
-                      await humanDelay(1200, 2500);
-                      await fetch(`${uwBase}/mining/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
-                      await humanDelay(1200, 2500);
-                      await fetch(`${uwBase}/mining/start`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
-                      await humanDelay(1200, 2500);
-                      await fetch(`${uwBase}/energy/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
-
-                      try {
-                        const spResp = await fetch(`${uwBase}/spin/status`, { headers: uwHeaders });
-                        if (spResp.ok) {
-                          const spInfo = await spResp.json();
-                          let spinsAvail = (spInfo.tickets || 0) + (spInfo.freeSpinsRemaining || 0);
-                          while (spinsAvail > 0) {
-                            await humanDelay(1500, 3000);
-                            const pResp = await fetch(`${uwBase}/spin/play`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) });
-                            if (pResp.ok) {
-                              const pData = await pResp.json();
-                              if (pData.ok) {
-                                spinsAvail = pData.spinTickets || 0;
-                              } else {
-                                break;
-                              }
-                            } else {
-                              break;
-                            }
-                          }
-                        }
-                      } catch (_) {}
-
-                      try {
-                        const trResp = await fetch(`${uwBase}/tasks`, { headers: uwHeaders });
-                        if (trResp.ok) {
-                          const trData = await trResp.json();
-                          for (const t of (trData.tasks || [])) {
-                            if (!t.completed && t.id) {
-                              await humanDelay(1500, 3000);
-                              await fetch(`${uwBase}/tasks/start`, {
-                                method: "POST",
-                                headers: uwHeaders,
-                                body: JSON.stringify({ taskId: t.id })
-                              }).catch(() => {});
-                              const uwWait = (t.type === "website" || t.category === "hot" || t.category === "partner") ? 16000 : 3500;
-                              ctx.waitUntil(new Promise(resolve => {
-                                setTimeout(async () => {
-                                  try {
-                                    await fetch(`${uwBase}/tasks/complete`, {
-                                      method: "POST",
-                                      headers: uwHeaders,
-                                      body: JSON.stringify({ taskId: t.id })
-                                    });
-                                  } catch (_) {}
-                                  resolve();
-                                }, uwWait);
-                              }));
-                            }
-                          }
-                        }
-                      } catch (_) {}
-
-                      // Rewards Center Watch & Earn Ads (Mimics realistic rewarded video ad duration)
-                      try {
-                        const rcr = await fetch(`${uwBase}/rewardsCenter`, { headers: uwHeaders }).then(r => r.json()).catch(() => ({}));
-                        const cards = rcr.cards || [];
-                        let adsWatched = 0;
-                        for (const c of cards) {
-                          while (!c.capped && (c.dailyLimit === 0 || (c.watchedToday || 0) < c.dailyLimit) && adsWatched < 3) {
-                            const war = await fetch(`${uwBase}/rewardsCenter/watchAd`, {
-                              method: "POST",
-                              headers: uwHeaders,
-                              body: JSON.stringify({ networkId: c.id })
-                            }).then(r => r.json()).catch(() => ({}));
-                            if (war && war.ok) {
-                              adsWatched++;
-                              c.watchedToday = (c.watchedToday || 0) + 1;
-                            } else {
-                              break;
-                            }
-                            await humanDelay(16000, 24000);
-                          }
-                          if (adsWatched >= 3) break;
-                        }
-                      } catch (_) {}
-
-                      // Gift Box Status & Auto-Claim
-                      try {
-                        const gbr = await fetch(`${uwBase}/giftBox`, { headers: uwHeaders }).then(r => r.json()).catch(() => ({}));
-                        if (gbr && gbr.enabled && gbr.canOpen) {
-                          await humanDelay(1500, 3000);
-                          await fetch(`${uwBase}/giftBox/claim`, {
-                            method: "POST",
-                            headers: uwHeaders,
-                            body: JSON.stringify({})
-                          }).catch(() => {});
-                        }
-                      } catch (_) {}
-
-                      if (String(uid) === (env.OWNER_ID || "6727787768")) {
-                        await fetch(`${uwBase}/referral/milestones/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
-                      }
-                    }
-                  }
-                }
-              }
-            } catch (_) {}
-          }
-
-          // G. Apex Miner Daily Check-in, Mining Claim/Restart, Tasks, Ad Boost & Ad Reward
-          if (accData.apx_init_data) {
-            try {
-              const apxBase = "https://apxn-miner-live.apxn-network.workers.dev/api";
-              await humanDelay(1200, 2500);
-              await fetch(`${apxBase}/auth/telegram`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
-              await humanDelay(1200, 2500);
-              const bResp = await fetch(`${apxBase}/bootstrap`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => null);
-              if (bResp && bResp.ok) {
-                const bData = await bResp.json().catch(() => ({}));
-                if (!bData.exists || !bData.user) {
-                  await fetch(`${apxBase}/register`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
-                }
-              }
-              await humanDelay(1200, 2500);
-              await fetch(`${apxBase}/checkin`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, clientV2: true }) }).catch(() => {});
-              await humanDelay(1200, 2500);
-              await fetch(`${apxBase}/mining/claim`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
-              await humanDelay(1200, 2500);
-              await fetch(`${apxBase}/mining/restart`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
-              for (const t of ["telegram", "twitter", "discord", "checkin"]) {
-                await humanDelay(1000, 2000);
-                await fetch(`${apxBase}/tasks/daily`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, task: t }) }).catch(() => {});
-              }
-              for (const s of ["channel", "group", "twitter", "partner"]) {
-                await humanDelay(1000, 2000);
-                await fetch(`${apxBase}/tasks/social`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data, task: s }) }).catch(() => {});
-              }
-              await humanDelay(1200, 2500);
-              await fetch(`${apxBase}/ads/boost`, { method: "POST", headers, body: JSON.stringify({ initData: accData.apx_init_data }) }).catch(() => {});
-            } catch (_) {}
-          }
-
-          // H. ATF Miner Auto-Claim & Mining Start with Math Solving
-          if (accData.atf_init_data) {
-            try {
-              const atfBase = "https://atfminers.asloni.online/miner/index.php";
-              const atfHeaders = getHumanHeaders(uid, {
-                "Content-Type": "application/json",
-                "X-Requested-With": "XMLHttpRequest",
-                "Referer": "https://atfminers.asloni.online/miner/index.html",
-                "Origin": "https://atfminers.asloni.online"
-              });
-              const atfPayload = (obj) => ({
-                initData: accData.atf_init_data,
-                request_id: "rq-" + Date.now() + "-" + Math.random().toString(36).substring(2, 10),
-                device_id: "dev-" + (accData.device_id || "edge-" + uid),
-                ...obj
-              });
-              await humanDelay(1200, 2500);
-              await fetchWithRetry(`${atfBase}?action=login&t=${Date.now()}`, {
-                method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid), username: accData.username || "" }))
-              }, 2, 800).catch(() => {});
-              await humanDelay(1200, 2500);
-              await fetchWithRetry(`${atfBase}?action=claim&t=${Date.now()}`, {
-                method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
-              }, 2, 800).catch(() => {});
-              await humanDelay(1000, 2000);
-              await fetchWithRetry(`${atfBase}?action=claim_referrals&t=${Date.now()}`, {
-                method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
-              }, 1, 800).catch(() => {});
-              await humanDelay(1000, 2000);
-              await fetchWithRetry(`${atfBase}?action=claim_team_wallet&t=${Date.now()}`, {
-                method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
-              }, 1, 800).catch(() => {});
-              const chResp = await fetchWithRetry(`${atfBase}?action=get_math_challenge&t=${Date.now()}`, {
-                method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid), scope: "start_mine" }))
-              }, 2, 1000).catch(() => null);
-              if (chResp && chResp.ok) {
-                const chData = await chResp.json().catch(() => ({}));
-                if (chData.status === "success" && chData.question && chData.challenge_id) {
-                  const q = chData.question;
-                  const cleaned = q.replace(/[^\d\+\-\*\/\(\)\s]/g, " ");
-                  const parts = cleaned.match(/(\d+)\s*([\+\-\*\/])\s*(\d+)/);
-                  let ans = "0";
-                  if (parts) {
-                    const a = parseInt(parts[1], 10);
-                    const op = parts[2];
-                    const b = parseInt(parts[3], 10);
-                    if (op === "+") ans = String(a + b);
-                    else if (op === "-") ans = String(a - b);
-                    else if (op === "*") ans = String(a * b);
-                    else if (op === "/" && b !== 0) ans = String(Math.floor(a / b));
-                  } else {
-                    const nums = (q.match(/\d+/g) || []).map(Number);
-                    if (nums.length >= 2) {
-                      if (q.includes("+") || q.toLowerCase().includes("plus")) ans = String(nums[0] + nums[1]);
-                      else if (q.includes("-") || q.toLowerCase().includes("minus")) ans = String(nums[0] - nums[1]);
-                      else if (q.includes("*") || q.toLowerCase().includes("x") || q.toLowerCase().includes("times")) ans = String(nums[0] * nums[1]);
-                      else if (q.includes("/") && nums[1] !== 0) ans = String(Math.floor(nums[0] / nums[1]));
-                    }
-                  }
-                  await humanDelay(2000, 4200);
-                  await fetchWithRetry(`${atfBase}?action=start_mine&t=${Date.now()}`, {
-                    method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
-                      tg_id: parseInt(uid), math_challenge_id: chData.challenge_id, math_answer: ans
-                    }))
-                  }, 2, 800).catch(() => {});
-                }
-              }
-
-              await humanDelay(1200, 2500);
-              // Activate ATF Mining Speed Boost & Daily Interaction
-              await fetchWithRetry(`${atfBase}?action=activate_boost&t=${Date.now()}`, {
-                method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
-              }, 1, 500).catch(() => {});
-              await fetchWithRetry(`${atfBase}?action=record_daily_interaction&t=${Date.now()}`, {
-                method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({ tg_id: parseInt(uid) }))
-              }, 1, 500).catch(() => {});
-
-              // ATF Tasks Auto-Completion Engine (One-time and Repeatable)
-              const atfTasks = [
-                { id: "telegram_join", minSeconds: 10 },
-                { id: "telegram_join_fa", minSeconds: 10 },
-                { id: "twitter_follow", minSeconds: 10 },
-                { id: "youtube_subscribe", minSeconds: 10 },
-                { id: "website_visit", minSeconds: 10 },
-                { id: "telegram_react_latest", minSeconds: 20 },
-                { id: "twitter_retweet", minSeconds: 30 },
-                { id: "youtube_like_comment", minSeconds: 30 }
-              ];
-              for (const t of atfTasks) {
-                try {
-                  const sAt = Math.floor(Date.now() / 1000) - t.minSeconds - 5;
-                  await fetchWithRetry(`${atfBase}?action=start_task&t=${Date.now()}`, {
-                    method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
-                      tg_id: parseInt(uid), task_id: t.id, client_started_at: sAt
-                    }))
-                  }, 1, 500).catch(() => {});
-                  await humanDelay(1500, 3000);
-                  await fetchWithRetry(`${atfBase}?action=claim_task&t=${Date.now()}`, {
-                    method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
-                      tg_id: parseInt(uid), task_id: t.id, client_started_at: sAt
-                    }))
-                  }, 1, 500).catch(() => {});
-                  await humanDelay(1000, 2200);
-                } catch (_) {}
-              }
-            } catch (_) {}
-          }
-
-          // I. Ainovum Edge Claim & Auto-Withdrawal (Binance BEP-20 0xfda4182001672b9f0f09e2118242e543e35ed5ce)
-          if (accData.ainovum_init_data) {
-            try {
-              const anBase = "https://ainovum.biz";
-              const anHeaders = getHumanHeaders(uid, {
-                "Content-Type": "application/json",
-                "Referer": "https://ainovum.biz/",
-                "Origin": "https://ainovum.biz"
-              });
-              await humanDelay(1200, 2500);
-              const bootResp = await fetchWithRetry(`${anBase}/api/bootstrap`, {
-                method: "POST",
-                headers: anHeaders,
-                body: JSON.stringify({
-                  initData: accData.ainovum_init_data,
-                  platform: "android",
-                  referrer: "ref_6727787768",
-                  timezone_offset_minutes: 0,
-                  language_code: "en",
-                  registration_duration_ms: 1500
-                })
-              }, 2, 800).catch(() => null);
-
-              if (bootResp && bootResp.ok) {
-                const rawCookie = (typeof bootResp.headers.getSetCookie === "function" ? bootResp.headers.getSetCookie().join("; ") : "") || bootResp.headers.get("set-cookie") || "";
-                const sidMatch = rawCookie.match(/astra\.tg\.sid=([^;]+)/);
-                const reqHeaders = { ...anHeaders };
-                if (sidMatch) {
-                  reqHeaders["Cookie"] = `astra.tg.sid=${sidMatch[1]}`;
-                }
-
-                await humanDelay(1500, 3000);
-
-                // Ensure mining cycle is started / active
-                await fetchWithRetry(`${anBase}/api/mining/start`, {
-                  method: "POST",
-                  headers: reqHeaders,
-                  body: JSON.stringify({})
-                }, 1, 500).catch(() => {});
-
-                await humanDelay(1200, 2500);
-                // Claim AI agent mining profit
-                await fetchWithRetry(`${anBase}/api/mining/claim`, {
-                  method: "POST",
-                  headers: reqHeaders,
-                  body: JSON.stringify({ action: "claim_cycle" })
-                }, 1, 500).catch(() => {});
-
-                await humanDelay(1200, 2500);
-                // Claim daily bonus
-                await fetchWithRetry(`${anBase}/api/daily-bonus/claim`, {
-                  method: "POST",
-                  headers: reqHeaders,
-                  body: JSON.stringify({})
-                }, 1, 500).catch(() => {});
-
-                await humanDelay(1200, 2500);
-                // Claim channel bonus
-                await fetchWithRetry(`${anBase}/api/channel-bonus/claim`, {
-                  method: "POST",
-                  headers: reqHeaders,
-                  body: JSON.stringify({})
-                }, 1, 500).catch(() => {});
-
-                await humanDelay(1200, 2500);
-                // Open daily gift box
-                await fetchWithRetry(`${anBase}/api/gift-box/open`, {
-                  method: "POST",
-                  headers: reqHeaders,
-                  body: JSON.stringify({})
-                }, 1, 500).catch(() => {});
-
-                // Auto-Withdrawal check to Binance BEP-20 (0.1 USDT threshold)
-                try {
-                  const cfgResp = await fetchWithRetry(`${anBase}/api/withdraws/usdt/config`, {
-                    headers: reqHeaders
-                  }, 2, 800).catch(() => null);
-                  if (cfgResp && cfgResp.ok) {
-                    const cfgData = await cfgResp.json().catch(() => ({}));
-                    const avail = parseFloat(cfgData.freeze?.available || 0);
-                    if (avail >= 0.1) {
-                      const wdAmt = Math.round(avail * 10000) / 10000;
-                      const isolatedEvmMap = {
-                        "8881914294": "0xA203269B8a970d5b74361B406345e1BBF5A0623B",
-                        "7648254021": "0x65DB0FA942144a2A89630c4975FA5f5469f97411",
-                        "8826375659": "0x24718F037aA61e3873073098D121ba3ced8C9daB",
-                        "8450010161": "0x0c649480FC33DfB9216756cB28e2e2efd6b0725D",
-                        "8782429452": "0xC3afc38b8E59E529174fbE4ff7f0CE053A89B8F3",
-                        "7734849205": "0x0262A7E950A9dd872FeB5CF8aD99d6a28Df053f0",
-                        "8025472383": "0xc3Cbd377872bCB69Fa01F5945eADFDFf053E1Bd4",
-                        "8851426148": "0x996292A277E5038efB413247dc7B58AC5209812C",
-                        "8203342513": "0x838bd6C0aCb80bFe3BF684320067672Bf396c479",
-                        "8190649727": "0x91B5cd7EfCBd5bc552479f5Eb70221C5E026228A",
-                        "7487048946": "0x3129386b118892238EF48428e2e5d19B9F7D8215",
-                        "8741547543": "0xE27Df3117501e3a46cf29848Df3414C4542E6A5c",
-                        "8727040932": "0x117a66bf79f63E5cC1dAB047047d62c651Eae335"
-                      };
-                      const targetWallet = (String(uid) === (env.OWNER_ID || "6727787768")) ? "0xfda4182001672b9f0f09e2118242e543e35ed5ce" : (isolatedEvmMap[String(uid)] || "0xfda4182001672b9f0f09e2118242e543e35ed5ce");
-                      await fetchWithRetry(`${anBase}/api/withdraws/usdt/create`, {
-                        method: "POST",
-                        headers: reqHeaders,
-                        body: JSON.stringify({
-                          amount: wdAmt,
-                          wallet: targetWallet,
-                          network: "bep20"
-                        })
-                      }, 2, 1000).catch(() => {});
-                    }
-                  }
-                } catch (_) {}
-              }
-            } catch (_) {}
-          }
+          await farmSingleAccountAllBots(uid, accData, env, ctx);
         }
 
 
