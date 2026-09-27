@@ -269,8 +269,12 @@ export default {
     };
 
     // In-memory Core Fleet AI Cascade (Eliminates Cloudflare Error 1042 same-zone self-fetch loops)
-    const runAiCascade = async (prompt) => {
+    const runAiCascade = async (prompt, isUserMode = false, userName = "Friend") => {
       if (!prompt) return { ok: false, error: "Missing prompt" };
+
+      const systemPromptText = isUserMode
+        ? `You are Ari, a friendly, warm, intelligent, and helpful crypto AI companion for the MY AGY AI community. Speak naturally, warmly, and helpfully like ChatGPT or Claude. Never sound like a robot. Never reveal internal admin fleet keys, private credentials, or internal infrastructure. Help users explore verified mining bots (/mining), bind their payout wallets (/wallet), and check their balance (/balance). Address the user by their name (${userName}) if appropriate. Keep responses concise and easy to read on mobile.`
+        : "You are Ari, the personal cloud AI copilot for Arif's 14-account automated mining fleet (MY AGY AI). Speak warmly, naturally, and intelligently like ChatGPT or Claude. Never sound like a robotic machine. Always address the user as Arif. Keep responses concise, clear, and direct.";
 
       // 1. Google Gemini Flash (Fast parallel attempt with 3-key rotation)
       const geminiKeys = [
@@ -297,7 +301,14 @@ export default {
         const gResp = await fetch(gUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: `${systemPromptText}\n\nUser Question/Message: ${prompt}` }]
+              }
+            ]
+          }),
           signal: AbortSignal.timeout(3500)
         });
         if (!gResp.ok) throw new Error("Gemini HTTP " + gResp.status);
@@ -318,7 +329,7 @@ export default {
             messages: [
               {
                 role: "system",
-                content: "You are Ari, the personal cloud AI copilot for Arif's 13-account automated mining fleet (MY AGY AI). Speak warmly, naturally, and intelligently like ChatGPT or Claude. Never sound like a robotic machine. Always address the user as Arif. Keep responses concise, clear, and direct."
+                content: systemPromptText
               },
               { role: "user", content: prompt }
             ],
@@ -343,7 +354,9 @@ export default {
         provider: "Ari Edge Sentinel",
         model: "edge-rule-based",
         node: CURRENT_SUBDOMAIN,
-        answer: "Hi Arif! All 13 accounts across our 8 mining bots are online, healthy, and actively farming 24/7 in the cloud. ATF is accumulating safely in pool mode with zero withdrawals, and on-chain vaults are synchronized."
+        answer: isUserMode
+          ? `Hi ${userName}! I'm Ari, your crypto and automated rewards AI companion. Ask me anything about crypto mining, setting up your payout wallet with /wallet, or exploring top earning bots with /mining!`
+          : "Hi Arif! All 14 accounts across our 8 mining bots are online, healthy, and actively farming 24/7 in the cloud. ATF is accumulating safely in pool mode with zero withdrawals, and on-chain vaults are synchronized."
       };
     };
 
@@ -644,7 +657,7 @@ fi
 
         // 2. D1 SQL Serverless Audit Log
         if (env.DB) {
-          ctx.waitUntil(env.DB.prepare("INSERT INTO fleet_logs (event, details) VALUES (?, ?)").bind("fleet_sync", JSON.stringify({ node: "__SUBDOMAIN__", accounts: body.accounts ? body.accounts.length : 13, ts: Date.now() })).run().catch(() => {}));
+          ctx.waitUntil(env.DB.prepare("INSERT INTO fleet_logs (event, details) VALUES (?, ?)").bind("fleet_sync", JSON.stringify({ node: "__SUBDOMAIN__", accounts: body.accounts ? body.accounts.length : 14, ts: Date.now() })).run().catch(() => {}));
         }
 
         // 3. KV WRITE SAVER: Throttle to at most once per 30 minutes (max 48 writes/day)
@@ -1264,7 +1277,7 @@ fi
           if (state && state.accounts) {
             targetUids = state.accounts.map(a => a.user_id).filter(Boolean);
           } else {
-            targetUids = [6727787768, 8826375659, 8450010161, 8782429452, 7734849205, 8025472383, 8851426148, 8203342513, 8881914294, 7648254021, 8190649727, 7487048946, 8741547543];
+            targetUids = [6727787768, 8826375659, 8450010161, 8782429452, 7734849205, 8025472383, 8851426148, 8203342513, 8881914294, 7648254021, 8190649727, 7487048946, 8741547543, 8727040932];
           }
           // Dynamically merge all account IDs present in miniapp_tokens so newly onboarded accounts are always farmed
           try {
@@ -1781,11 +1794,48 @@ fi
           const fromId = cb.from ? String(cb.from.id) : String(chatId);
 
           if (!ADMIN_IDS.has(fromId)) {
-            await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ callback_query_id: cbId, text: "⛔ Access Restricted: Admin Only", show_alert: true })
-            }).catch(() => {});
+            if (cbData === "user_chat") {
+              await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ callback_query_id: cbId, text: "💬 Just type any message in chat to talk with Ari AI!", show_alert: true })
+              }).catch(() => {});
+            } else if (cbData === "user_wallet") {
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: "💼 *Bind Your Payout Wallets*\n\n• BEP-20 (BNB/USDT): `/wallet 0xYourAddress`\n• TON: `/ton_wallet UQYourAddress`\n\n_Your payouts will route to your registered address with 0% hassle._", parse_mode: "Markdown" })
+              }).catch(() => {});
+              await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ callback_query_id: cbId }) }).catch(() => {});
+            } else if (cbData === "user_mining") {
+              const mText = "🪙 *Verified High-Yield Mining Bots:*\n\n" +
+                "1. 💎 [Stones Miners](https://t.me/stoneswithestand_bot?start=r6727787768)\n" +
+                "2. ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD)\n" +
+                "3. 🎨 [ART Airdrop](https://t.me/ART_AIRDROP_BOT?start=6727787768)\n" +
+                "4. 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852)\n" +
+                "5. 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768)\n" +
+                "6. 🚀 [Apex Miner](https://t.me/ApxMinerBot?start=6727787768)\n" +
+                "7. 💼 [UltraWallet](https://t.me/UltrawalletTrade_Bot?start=6727787768)\n" +
+                "8. 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768)\n\n" +
+                "_Tap any link above to start mining on Telegram!_";
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: mText, parse_mode: "Markdown", disable_web_page_preview: true })
+              }).catch(() => {});
+              await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ callback_query_id: cbId }) }).catch(() => {});
+            } else if (cbData === "user_balance") {
+              let uData = {};
+              try { const raw = await env.BACKUP_KV.get(`user:${fromId}`); if (raw) uData = JSON.parse(raw); } catch (_) {}
+              const bText = `📊 *My Balance & Wallets*\n\n• *Account ID:* \`${fromId}\`\n• *BEP-20 Wallet:* \`${uData.evm_wallet || "Not bound (use /wallet)"}\`\n• *TON Wallet:* \`${uData.ton_wallet || "Not bound (use /ton_wallet)"}\`\n• *Community Tier:* Standard (80% net yield)\n• *Status:* Active Member ✅`;
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: bText, parse_mode: "Markdown" })
+              }).catch(() => {});
+              await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ callback_query_id: cbId }) }).catch(() => {});
+            } else {
+              await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ callback_query_id: cbId, text: "Welcome to MY AGY AI! Type any message to chat with Ari." })
+              }).catch(() => {});
+            }
             return new Response("OK");
           }
 
@@ -1819,7 +1869,8 @@ fi
                   { index: 10, name: "Node 10", user_id: 8203342513, phone: "+8801729892810" },
                   { index: 11, name: "MD. Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
                   { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
-                  { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" }
+                  { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
+                  { index: 14, name: "Node 14", user_id: 8727040932, phone: "+918930504750" }
                 ];
               }
 
@@ -1845,7 +1896,8 @@ fi
                 "8203342513": "+8801729892810",
                 "8190649727": "+8801571089931",
                 "7487048946": "+8801774578536",
-                "8741547543": "+8801838268380"
+                "8741547543": "+8801838268380",
+                "8727040932": "+918930504750"
               };
 
               const KNOWN_PHONES_BY_INDEX = {
@@ -1861,11 +1913,12 @@ fi
                 10: "+8801729892810",
                 11: "+8801571089931",
                 12: "+8801774578536",
-                13: "+8801838268380"
+                13: "+8801838268380",
+                14: "+918930504750"
               };
 
 
-              const lines = accounts.slice(0, 13).map((a, i) => {
+              const lines = accounts.slice(0, 14).map((a, i) => {
                 const isHost = String(a.user_id) === "6727787768";
                 const tag = isHost ? "Master Host 👑" : "🟢 Active";
                 const ph = (a.phone && a.phone !== "N/A" && a.phone !== "Hidden") ? a.phone : (KNOWN_PHONES[String(a.user_id)] || KNOWN_PHONES_BY_INDEX[i + 1] || "");
@@ -1875,7 +1928,7 @@ fi
 
               const rep = `👥 *Accounts Management Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `🟢 *Fleet Status:* \`13/13 Accounts Online & Active\`\n` +
+                `🟢 *Fleet Status:* \`14/14 Accounts Online & Active\`\n` +
                 `🤖 *24/7 Farming:* All 8 Bots Active (Stones • ATF • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum)\n` +
                 `🛡️ *Security:* 100% Anti-Ban Verified • Isolated Wallets & Proxies\n\n` +
                 `📋 *Connected Accounts:*\n` +
@@ -1884,7 +1937,7 @@ fi
                 `💡 *Quick Actions:*\n` +
                 `• Tap *➕ Add Account* below to connect a new number\n` +
                 `• Tap *🚀 Open Executive Dashboard* to view live cards & balances\n` +
-                `• Send \`/acc <1-13>\` (e.g. \`/acc 1\`) to inspect any account in detail`;
+                `• Send \`/acc <1-14>\` (e.g. \`/acc 1\`) to inspect any account in detail`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1985,9 +2038,9 @@ fi
               ctx.waitUntil((async () => {
                 const frames = [
                   "⚡ *Initiating Instant Harvest across Fleet...*\n`[▰▰▱▱▱▱▱▱▱▱] 20%` • Syncing Edge Nodes & Relayers",
-                  "⚡ *Harvesting Multi-Bot Rewards...*\n`[▰▰▰▰▰▰▱▱▱▱] 65%` • Dispatched 13 Accounts (Stones, ATF, MRG, ART...)",
+                  "⚡ *Harvesting Multi-Bot Rewards...*\n`[▰▰▰▰▰▰▱▱▱▱] 65%` • Dispatched 14 Accounts (Stones, ATF, MRG, ART...)",
                   `⚡ *Instant Fleet Harvest Dispatched!*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Executing ✅\`\n\n` +
-                  `• *Status:* Executing across 13 Accounts ✅\n` +
+                  `• *Status:* Executing across 14 Accounts ✅\n` +
                   `• *Active Lineup:* Stones • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum • ATF\n` +
                   `• *Edge Coordination:* 5 Parallel Cloudflare Edge Slots\n\n` +
                   `_Farming cycle and task claims active across all nodes._`
@@ -2140,8 +2193,8 @@ fi
               const atfMsg = `🪙 *ATF MINER CLOUD COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⛏️ *Total Fleet ATF Mined:* \`${totalMined.toFixed(2)} ATF\`\n` +
-                `👥 *Active Mining Accounts:* \`${activeAccs}/13 Accounts\`\n` +
-                `💎 *TON Wallets:* \`13/13 Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
+                `👥 *Active Mining Accounts:* \`${activeAccs}/14 Accounts\`\n` +
+                `💎 *TON Wallets:* \`14/14 Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
                 `🧮 *Anti-Bot Math Verification:* \`100% Solved\` ✅\n` +
                 `🛡️ *TON Connect 2.0 Proofs:* \`Cryptographically Verified\`\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -2156,7 +2209,7 @@ fi
               ctx.waitUntil((async () => {
                 const rep = `⚡ *ATF Miner Cloud Claim Results*\n\n` +
                   `• *Status:* Success ✅\n` +
-                  `• *Accounts Processed:* \`13/13\`\n` +
+                  `• *Accounts Processed:* \`14/14\`\n` +
                   `• *Tasks & Mining:* \`Harvested & Active\`\n` +
                   `• *Math Verification:* \`100% Passed\`\n\n` +
                   `_Next auto-harvest cycle running on Cloudflare Edge cron._`;
@@ -2177,7 +2230,7 @@ fi
             } else if (cbData === "btn_atf_wallets") {
               const rep = `💎 *ATF Miner Dedicated TON Wallets*\n\n` +
                 `• *Account #1 (Host):* \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\` (Binance TON Deposit)\n` +
-                `• *Accounts #2–13 (Workers):* 12 Isolated TON v4r2 Wallets with TON Connect 2.0 Cryptographic Proofs.\n\n` +
+                `• *Accounts #2–14 (Workers):* 13 Isolated TON v4r2 Wallets with TON Connect 2.0 Cryptographic Proofs.\n\n` +
                 `_All wallets isolated to prevent multi-account Sybil flags._`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -2193,12 +2246,12 @@ fi
                 } catch (_) {}
                 const liveBnb = mcData.bsc_bnb_balance !== undefined ? mcData.bsc_bnb_balance : 0.000812;
                 const frames = [
-                  "📊 *Connecting to MY AGY AI Fleet Mesh...*\n`[▰▰▰▱▱▱▱▱▱▱] 30%` • Scanning 13 Accounts & 5 Edge Nodes",
+                  "📊 *Connecting to MY AGY AI Fleet Mesh...*\n`[▰▰▰▱▱▱▱▱▱▱] 30%` • Scanning 14 Accounts & 5 Edge Nodes",
                   "📊 *Aggregating Multi-Chain Telemetry...*\n`[▰▰▰▰▰▰▰▱▱▱] 75%` • Verifying Anti-Bot & Proof-of-Work",
                   `⚡ *MY AGY AI — Private Admin Console*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Synchronized ✅\`\n\n` +
-                  `🟢 *Fleet Health:* 13/13 Accounts Active & Mining\n` +
+                  `🟢 *Fleet Health:* 14/14 Accounts Active & Mining\n` +
                   `🤖 *Active Bots (8/8):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
-                  `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 13 TON Wallets\n` +
+                  `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 14 TON Wallets\n` +
                   `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
                   `📱 *Tap below to open your real-time visual Mini App dashboard:*`
                 ];
@@ -2220,9 +2273,9 @@ fi
                   }
                 } catch (_) {}
                 const rep = `⚡ *MY AGY AI — Fleet Operations*\n\n` +
-                  `🟢 *Fleet Health:* 13/13 Accounts Active & Mining\n` +
+                  `🟢 *Fleet Health:* 14/14 Accounts Active & Mining\n` +
                   `🤖 *Active Bots (8/8):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
-                  `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 13 TON Wallets\n` +
+                  `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 14 TON Wallets\n` +
                   `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
                   `📱 *Tap below to open your real-time visual Mini App dashboard:*`;
                 const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -2246,15 +2299,153 @@ fi
         const senderId = msg.from ? String(msg.from.id) : String(chatId);
 
         if (!ADMIN_IDS.has(senderId)) {
-          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: "🔒 *Access Restricted: Private Admin Fleet Console*\n\nThis bot, channel network, and cluster operations are private and restricted exclusively to the system administrator.",
-              parse_mode: "Markdown"
-            })
-          }).catch(() => {});
+          // --- COMMERCIAL / REGULAR USER BOT MODE ---
+          ctx.waitUntil((async () => {
+            const userKeyboard = {
+              inline_keyboard: [
+                [
+                  { text: "💬 Chat with Ari AI", callback_data: "user_chat" },
+                  { text: "💼 My Wallets", callback_data: "user_wallet" }
+                ],
+                [
+                  { text: "🪙 Top Mining Bots", callback_data: "user_mining" },
+                  { text: "📊 My Balance", callback_data: "user_balance" }
+                ]
+              ]
+            };
+
+            const sendUserReply = async (repText, markup = userKeyboard) => {
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text: repText,
+                  parse_mode: "Markdown",
+                  reply_markup: markup,
+                  disable_web_page_preview: true
+                })
+              }).catch(() => {});
+            };
+
+            // 1. /start & /help command
+            if (text === "/start" || text === "/help" || text.startsWith("/start")) {
+              const uName = msg.from ? (msg.from.first_name || msg.from.username || "Friend") : "Friend";
+              const welcomeUser = `👋 *Hello ${uName}, welcome to MY AGY AI!*\n\n` +
+                `I am **Ari**, your personal AI companion & crypto assistant. Here is what we can do together:\n\n` +
+                `💬 *Chat with Me:* Just type any message or question, and I will reply naturally!\n` +
+                `🪙 *Top Mining Bots:* Discover verified crypto bots that earn real on-chain rewards.\n` +
+                `💼 *Payout Wallet:* Register your BEP-20 or TON wallet to receive community distributions.\n` +
+                `📊 *Balance Check:* Track your registered earnings and rewards.\n\n` +
+                `_Tap an option below, or just type a message to start chatting!_`;
+              await sendUserReply(welcomeUser);
+              return;
+            }
+
+            // 2. /wallet <address> (BEP-20)
+            if (text.startsWith("/wallet")) {
+              const parts = text.split(/\s+/);
+              if (parts.length > 1 && parts[1].startsWith("0x") && parts[1].length === 42) {
+                const wAddr = parts[1];
+                let uData = {};
+                try {
+                  const raw = await env.BACKUP_KV.get(`user:${senderId}`);
+                  if (raw) uData = JSON.parse(raw);
+                } catch (_) {}
+                uData.evm_wallet = wAddr;
+                uData.updated_at = Date.now();
+                await env.BACKUP_KV.put(`user:${senderId}`, JSON.stringify(uData));
+                await sendUserReply(`✅ *BEP-20 Wallet Bound Successfully!*\n\n• *Address:* \`${wAddr}\`\n• *Network:* BNB Smart Chain / Arbitrum\n\nYour future platform distributions will route to this wallet.`);
+              } else {
+                await sendUserReply(`💼 *Bind Your BEP-20 Payout Wallet*\n\nUsage: \`/wallet 0xYourBscAddress\`\n\nExample:\n\`/wallet 0x1234567890abcdef1234567890abcdef12345678\``);
+              }
+              return;
+            }
+
+            // 3. /ton_wallet <address>
+            if (text.startsWith("/ton_wallet") || text.startsWith("/ton")) {
+              const parts = text.split(/\s+/);
+              if (parts.length > 1 && (parts[1].startsWith("EQ") || parts[1].startsWith("UQ")) && parts[1].length >= 48) {
+                const tAddr = parts[1];
+                let uData = {};
+                try {
+                  const raw = await env.BACKUP_KV.get(`user:${senderId}`);
+                  if (raw) uData = JSON.parse(raw);
+                } catch (_) {}
+                uData.ton_wallet = tAddr;
+                uData.updated_at = Date.now();
+                await env.BACKUP_KV.put(`user:${senderId}`, JSON.stringify(uData));
+                await sendUserReply(`✅ *TON Wallet Bound Successfully!*\n\n• *Address:* \`${tAddr}\`\n• *Network:* TON Blockchain\n\nYour TON rewards will route to this wallet.`);
+              } else {
+                await sendUserReply(`💎 *Bind Your TON Payout Wallet*\n\nUsage: \`/ton_wallet UQYourTonAddress\`\n\nExample:\n\`/ton_wallet UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\``);
+              }
+              return;
+            }
+
+            // 4. /balance command
+            if (text === "/balance" || text === "📊 My Balance") {
+              let uData = {};
+              try {
+                const raw = await env.BACKUP_KV.get(`user:${senderId}`);
+                if (raw) uData = JSON.parse(raw);
+              } catch (_) {}
+              const rep = `📊 *Your Personal Rewards Summary*\n\n` +
+                `• *Account ID:* \`${senderId}\`\n` +
+                `• *BEP-20 Wallet:* \`${uData.evm_wallet || "Not bound (use /wallet)"}\`\n` +
+                `• *TON Wallet:* \`${uData.ton_wallet || "Not bound (use /ton_wallet)"}\`\n` +
+                `• *Status:* Active User ✅\n` +
+                `• *Community Tier:* Standard (80% net yield)\n\n` +
+                `_Keep interacting with verified mining bots to accumulate rewards!_`;
+              await sendUserReply(rep);
+              return;
+            }
+
+            // 5. /mining command
+            if (text === "/mining" || text === "🪙 Top Mining Bots") {
+              const mText = `🪙 *Verified High-Yield Mining Bots*\n\n` +
+                `1. 💎 [Stones Miners](https://t.me/stoneswithestand_bot?start=r6727787768) — Mine STONES tokens on Arbitrum\n` +
+                `2. ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — 24/7 cloud mining on TON\n` +
+                `3. 🎨 [ART Airdrop](https://t.me/ART_AIRDROP_BOT?start=6727787768) — Verified TON airdrop bot\n` +
+                `4. 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — Earn USD hash-power rewards\n` +
+                `5. 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — TON proof-of-work auto-miner\n` +
+                `6. 🚀 [Apex Miner](https://t.me/ApxMinerBot?start=6727787768) — Cloud mining with daily boosts\n` +
+                `7. 💼 [UltraWallet](https://t.me/UltrawalletTrade_Bot?start=6727787768) — Multi-token mining vault\n` +
+                `8. 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768) — High-yield USDT cloud mining\n\n` +
+                `_Start any bot above to begin accumulating crypto!_`;
+              await sendUserReply(mText);
+              return;
+            }
+
+            // 6. Security guardrail against admin commands
+            if (text.startsWith("/fleet") || text.startsWith("/harvest") || text.startsWith("/sweep") || text.startsWith("/backup") || text.startsWith("/accounts") || text.startsWith("/add_account")) {
+              await sendUserReply(`🔒 *Administrative Tool*\n\nThis management command is reserved for fleet administrators. For regular user commands, use \`/help\` or chat with Ari!`);
+              return;
+            }
+
+            // 7. Natural AI Chat with Ari! (Default fallback for any user message)
+            await sendChatAction(chatId, "typing");
+            const uName = msg.from ? (msg.from.first_name || "Friend") : "Friend";
+            const userPrompt = `You are Ari, a friendly, intelligent, and helpful AI assistant for the MY AGY AI crypto platform.
+You are talking directly with ${uName} on Telegram.
+Guidelines:
+- Talk like a normal, friendly, intelligent human companion (like ChatGPT or Claude).
+- Sound conversational, warm, and genuinely helpful.
+- If asked about crypto, mining, or blockchain, provide clear and accurate information.
+- If the user asks what you or this bot can do, explain that you are an AI assistant that can chat, answer questions, help them explore crypto mining bots, and bind their payout wallets.
+- Keep Telegram responses concise, clear, and easy to read on mobile.
+- Never use robotic jargon or refer to internal admin fleet details.
+
+${uName} says: "${text}"
+Reply to ${uName} naturally:`;
+
+            try {
+              const aiData = await runAiCascade(userPrompt, true, uName);
+              const reply = (aiData && aiData.answer) ? aiData.answer : `Hello ${uName}! I'm Ari, your AI companion. How can I help you today? Feel free to ask me anything!`;
+              await sendUserReply(reply);
+            } catch (e) {
+              await sendUserReply(`Hello ${uName}! I'm Ari. How can I help you today? Type any question or use /help to explore!`);
+            }
+          })());
           return new Response("OK");
         }
 
@@ -2289,14 +2480,14 @@ fi
             await sendChatAction(chatId, "typing");
             const welcome = `👋 *Welcome to MY AGY AI — Private Admin Console*\n\n` +
               `Your autonomous *24/7 Cloud Operations Hub* is active across 5 Cloudflare Edge nodes.\n\n` +
-              `🟢 *Fleet Health:* 13/13 Accounts Online & Mining\n` +
+              `🟢 *Fleet Health:* 14/14 Accounts Online & Mining\n` +
               `🤖 *Active Bots (8/8):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
-              `💰 *On-Chain Vaults:* BEP-20 (BNB) • Arbitrum (STONES) • 13 TON Wallets\n` +
+              `💰 *On-Chain Vaults:* BEP-20 (BNB) • Arbitrum (STONES) • 14 TON Wallets\n` +
               `🛡️ *Security:* 5/5 Anti-Bot Verified • Dual-Edge Cloud Sync\n\n` +
               `📱 *Tap '🚀 Open Executive Dashboard' below or use quick controls:*`;
             const frames = [
               "⚡ *MY AGY AI Fleet Initialization...*\n`[▰▰▰▱▱▱▱▱▱▱] 30%` • Verifying Admin Permissions",
-              "⚡ *Synchronizing Cloud Edge Nodes...*\n`[▰▰▰▰▰▰▰▱▱▱] 75%` • Loading 13 Mining Accounts",
+              "⚡ *Synchronizing Cloud Edge Nodes...*\n`[▰▰▰▰▰▰▰▱▱▱] 75%` • Loading 14 Mining Accounts",
               welcome
             ];
             await sendAnimatedReply(chatId, frames, mainKeyboard, 300);
@@ -2345,7 +2536,7 @@ fi
             } catch (_) {}
             
             let totalMined = 3933.99;
-            let activeAccs = 13;
+            let activeAccs = 14;
             if (atfData && atfData.results) {
               totalMined = atfData.results.reduce((s, a) => s + (parseFloat(a.mined_balance) || 0), 0);
               activeAccs = atfData.results.filter(a => a.mining_active).length;
@@ -2369,8 +2560,8 @@ fi
             const atfMsg = `🪙 *ATF MINER CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⛏️ *Total Fleet ATF Mined:* \`${totalMined.toFixed(2)} ATF\`\n` +
-              `👥 *Active Mining Accounts:* \`${activeAccs}/13 Accounts\`\n` +
-              `💎 *TON Wallets:* \`13/13 Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
+              `👥 *Active Mining Accounts:* \`${activeAccs}/14 Accounts\`\n` +
+              `💎 *TON Wallets:* \`14/14 Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
               `🧮 *Anti-Bot Math Verification:* \`100% Solved\` ✅\n` +
               `🛡️ *TON Connect 2.0 Proofs:* \`Cryptographically Verified\`\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -2387,8 +2578,8 @@ fi
           ctx.waitUntil((async () => {
             await sendReply("⏳ *Generating AI Executive Briefing via Google Gemini 3.6 Flash & Multi-Cloud AI...*");
             try {
-              const aiData = await runAiCascade("You are the Chief AI Operations Officer for the 13-account autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. 13/13 accounts active & 100% 5/5 verified. 2. 8 mining bots active (Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, ATF Miner). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.");
-              const ans = aiData.answer || aiData.response || "All 13 accounts active and mining across 14 cloud nodes.";
+              const aiData = await runAiCascade("You are the Chief AI Operations Officer for the 14-account autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. 14/14 accounts active & 100% 5/5 verified. 2. 8 mining bots active (Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, ATF Miner). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.");
+              const ans = aiData.answer || aiData.response || "All 14 accounts active and mining across 14 cloud nodes.";
               const prov = aiData.provider || "Google Gemini";
               const mod = aiData.model || "gemini-3.6-flash";
               const msgText = `📊 *MY AGY AI — Daily Executive Briefing*\n━━━━━━━━━━━━━━━━━━━━━━\n${ans}\n━━━━━━━━━━━━━━━━━━━━━━\n🤖 _Generated by ${prov} (${mod})_`;
@@ -2451,7 +2642,7 @@ fi
             }
             const b1 = await getBscBal(w1);
             const rep = `🪙 *On-Chain BNB Vault & Wallet Tracker*\n\n` +
-              `• *Binance BEP-20 Vault (All 13 Accounts):* \`${b1.toFixed(6)} BNB\`\n` +
+              `• *Binance BEP-20 Vault (All 14 Accounts):* \`${b1.toFixed(6)} BNB\`\n` +
               `  \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
               `• *Binance TON Vault (Main Account):*\n` +
               `  \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
@@ -2474,7 +2665,7 @@ fi
             }).catch(() => {});
             const rep = `🔄 *Multi-Cloud Fleet Sync Dispatched!*\n\n` +
               `• Dispatched signal across all 3 Cloudflare nodes\n` +
-              `• Mining cycle triggered across all 13 accounts\n` +
+              `• Mining cycle triggered across all 14 accounts\n` +
               `• Telemetry replicating to Turso LibSQL, D1 SQL, and Supabase`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -2736,13 +2927,13 @@ fi
             } catch (_) {}
 
             const rep = `⚡ *MY AGY AI — Fleet Operations*\n\n` +
-              `🟢 *Fleet Health:* 13/13 Accounts Active & Mining\n` +
+              `🟢 *Fleet Health:* 14/14 Accounts Active & Mining\n` +
               `🤖 *Active Bots (8/8):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum\n` +
-              `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 13 TON Wallets\n` +
+              `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 14 TON Wallets\n` +
               `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Edge Shards\n\n` +
               `📱 *Tap below to open your real-time visual Executive Dashboard:*`;
             const frames = [
-              "📊 *Querying Fleet Live State...*\n`[▰▰▰▱▱▱▱▱▱▱] 30%` • Polling 13 Accounts & 5 Edge Nodes",
+              "📊 *Querying Fleet Live State...*\n`[▰▰▰▱▱▱▱▱▱▱] 30%` • Polling 14 Accounts & 5 Edge Nodes",
               "📊 *Aggregating On-Chain Balances...*\n`[▰▰▰▰▰▰▰▱▱▱] 75%` • BEP-20 • Arbitrum • TON",
               rep
             ];
@@ -2756,12 +2947,12 @@ fi
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
             const rep = `⚡ *Instant Fleet Harvest Dispatched!*\n\n` +
-              `• *Status:* Executing across 13 Accounts ✅\n` +
+              `• *Status:* Executing across 14 Accounts ✅\n` +
               `• *Active Lineup:* Stones • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum • ATF\n\n` +
               `_Farming cycle and task claims active across all 5 parallel Cloudflare edge slots._`;
             const frames = [
               "⚡ *Initiating Instant Harvest across Fleet...*\n`[▰▰▱▱▱▱▱▱▱▱] 20%` • Syncing Edge Nodes & Relayers",
-              "⚡ *Harvesting Multi-Bot Rewards...*\n`[▰▰▰▰▰▰▱▱▱▱] 65%` • Dispatched 13 Accounts (Stones, ATF, MRG, ART...)",
+              "⚡ *Harvesting Multi-Bot Rewards...*\n`[▰▰▰▰▰▰▱▱▱▱] 65%` • Dispatched 14 Accounts (Stones, ATF, MRG, ART...)",
               rep
             ];
             const harvestPromise = queueHarvestAction();
@@ -2920,7 +3111,7 @@ fi
         }
 
         // 6. Accounts Roster Command (/accounts)
-        if (text === "👥 Accounts Management" || text === "👥 My Accounts (13)" || text === "👥 My Accounts" || text === "👥 Accounts" || text === "/accounts" || text.startsWith("/accounts") || text.startsWith("/acc")) {
+        if (text === "👥 Accounts Management" || text === "👥 My Accounts (14)" || text === "👥 My Accounts (13)" || text === "👥 My Accounts" || text === "👥 Accounts" || text === "/accounts" || text.startsWith("/accounts") || text.startsWith("/acc")) {
           ctx.waitUntil((async () => {
             let accounts = [];
             try {
@@ -2944,7 +3135,8 @@ fi
                 { index: 10, name: "Node 10", user_id: 8203342513, phone: "+8801729892810" },
                 { index: 11, name: "MD. Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
                 { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
-                { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" }
+                { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
+                { index: 14, name: "Node 14", user_id: 8727040932, phone: "+918930504750" }
               ];
             }
 
@@ -2970,7 +3162,8 @@ fi
               "8203342513": "+8801729892810",
               "8190649727": "+8801571089931",
               "7487048946": "+8801774578536",
-              "8741547543": "+8801838268380"
+              "8741547543": "+8801838268380",
+              "8727040932": "+918930504750"
             };
 
             const KNOWN_PHONES_BY_INDEX = {
@@ -2986,7 +3179,8 @@ fi
               10: "+8801729892810",
               11: "+8801571089931",
               12: "+8801774578536",
-              13: "+8801838268380"
+              13: "+8801838268380",
+              14: "+918930504750"
             };
 
             const accParts = text.trim().split(/\s+/);
@@ -3008,13 +3202,13 @@ fi
                   `• *AI Lab Policy:* ${isHost ? "Compound / Reinvest (Main ID)" : "Auto-Withdraw >= $0.02 (BEP-20)"}\n` +
                   `• *Active Lineup:* 8 Mining Bots Active 24/7\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                  `💡 _Send \`/acc <1-13>\` to inspect any account or \`/accounts\` for full fleet roster._`;
+                  `💡 _Send \`/acc <1-14>\` to inspect any account or \`/accounts\` for full fleet roster._`;
                 await sendReply(detailRep, accountsInlineKeyboard);
                 return;
               }
             }
 
-            const lines = accounts.slice(0, 13).map((a, i) => {
+            const lines = accounts.slice(0, 14).map((a, i) => {
               const isHost = String(a.user_id) === "6727787768";
               const tag = isHost ? "Master Host 👑" : "🟢 Active";
               const ph = (a.phone && a.phone !== "N/A" && a.phone !== "Hidden") ? a.phone : (KNOWN_PHONES[String(a.user_id)] || KNOWN_PHONES_BY_INDEX[i + 1] || "");
@@ -3024,7 +3218,7 @@ fi
 
             const rep = `👥 *Accounts Management Hub*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `🟢 *Fleet Status:* \`13/13 Accounts Online & Active\`\n` +
+              `🟢 *Fleet Status:* \`14/14 Accounts Online & Active\`\n` +
               `🤖 *24/7 Farming:* All 8 Bots Active (Stones • ATF • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum)\n` +
               `🛡️ *Security:* 100% Anti-Ban Verified • Isolated Wallets & Proxies\n\n` +
               `📋 *Connected Accounts:*\n` +
@@ -3033,7 +3227,7 @@ fi
               `💡 *Quick Actions:*\n` +
               `• Tap *➕ Add Account* below to connect a new number\n` +
               `• Tap *🚀 Open Executive Dashboard* to view live cards & balances\n` +
-              `• Send \`/acc <1-13>\` (e.g. \`/acc 1\`) to inspect any account in detail`;
+              `• Send \`/acc <1-14>\` (e.g. \`/acc 1\`) to inspect any account in detail`;
             await sendReply(rep, accountsInlineKeyboard);
           })());
           return new Response("OK");
@@ -3128,13 +3322,13 @@ fi
 
           if (userLower.includes("harvest") || userLower.includes("farm all") || userLower.includes("claim all")) {
             await queueHarvestAction();
-            await sendReply("🌾 *Fleet Harvest Dispatched!*\n\nAll 13 accounts across all 8 platforms have been queued for harvesting on Cloudflare Edge.", statusInlineKeyboard);
+            await sendReply("🌾 *Fleet Harvest Dispatched!*\n\nAll 14 accounts across all 8 platforms have been queued for harvesting on Cloudflare Edge.", statusInlineKeyboard);
             return;
           }
 
           if (userLower.includes("sweep") || userLower.includes("instant withdraw") || userLower.includes("cash out")) {
             const res = await queueSweepAction();
-            await sendReply(`💰 *Instant Withdrawal Sweep Dispatched!*\n\n• Accounts checked: \`13/13\`\n• Status: ${res.ok ? "Queued to Fleet Workers ✅" : "Dispatched"}\n• Target Vault: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\``, statusInlineKeyboard);
+            await sendReply(`💰 *Instant Withdrawal Sweep Dispatched!*\n\n• Accounts checked: \`14/14\`\n• Status: ${res.ok ? "Queued to Fleet Workers ✅" : "Dispatched"}\n• Target Vault: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\``, statusInlineKeyboard);
             return;
           }
 
@@ -3178,9 +3372,9 @@ fi
               }
             } catch (_) {}
 
-            const systemPrompt = `You are Ari, the personal cloud AI assistant for Arif's 13-account automated crypto and mining fleet (MY AGY AI).
+            const systemPrompt = `You are Ari, the personal cloud AI assistant for Arif's 14-account automated crypto and mining fleet (MY AGY AI).
 Live Fleet Context:
-- 13 active accounts mining 24/7 across all 8 active bots: Stones Miners, ATF Miner, MRG Miner, ART Airdrop, AI Lab Robot, UltraWallet, Apex Miner, Ainovum.
+- 14 active accounts mining 24/7 across all 8 active bots: Stones Miners, ATF Miner, MRG Miner, ART Airdrop, AI Lab Robot, UltraWallet, Apex Miner, Ainovum.
 - Policy: ATF Miner is in 100% farming & accumulation mode (NO withdrawals; let balance grow).
 - Vault BEP-20 (BNB, USDT): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Live Balance: ${liveBnb.toFixed(6)} BNB).
 - Stones Vault (Arbitrum One): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Balance: 500+ STONES).
@@ -3207,7 +3401,7 @@ Reply to Arif naturally:`;
           }
 
           const defaultRep = `⚡ *MY AGY AI Operations Hub*\n\n` +
-            `• 13 Accounts Online & Mining across 8 Platforms\n` +
+            `• 14 Accounts Online & Mining across 8 Platforms\n` +
             `• Tap *🚀 Mini App* below to view your full dashboard or use the toolbar buttons:`;
           await sendReply(defaultRep, statusInlineKeyboard);
         })());

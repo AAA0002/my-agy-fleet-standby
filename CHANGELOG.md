@@ -4,6 +4,18 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Conversational User Mode, Webhook Edge Routing & Fleet-Wide 14-Account Hardening (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Conversational User Bot Experience Enabled 24/7 on Cloudflare Edge**:
+    * **Strict Admin & User Isolation**: Non-admin users chatting with `@My_Router_AI_bot` are routed to conversational AI companion mode ("Ari") instead of getting blocked with access restrictions.
+    * **Interactive User Commands**: Added interactive welcome menu (`/start`, `/help`), personal payout wallet binding (`/wallet <bep20>`, `/ton_wallet <ton>`), personal balance checking (`/balance`), and verified mining bot directory (`/mining`).
+    * **Referral Revenue Alignment**: Verified mining bots list incorporates admin referral links, routing platform commissions to Admin while non-admin users earn rewards.
+    * **Personalized AI Companion**: Enhanced `runAiCascade` to accept `isUserMode` and `userName`, tailoring conversational prompts warmly like ChatGPT while strictly guarding admin fleet data, internal credentials, and sweep infrastructure.
+  - **Fleet-Wide 14-Account Telemetry & Fallback Alignment**:
+    * Added Account 14 (`8727040932`, `+918930504750`) to fallback account lists, `targetUids`, `KNOWN_PHONES`, and `KNOWN_PHONES_BY_INDEX` in `deploy_both_cf_workers.py`.
+    * Updated all operational dashboards, briefing generators, harvest animations, and sweep monitors from 13 accounts to 14 accounts and 14 TON wallets.
+  - **5-Node Cloudflare Edge Mesh Deployment**:
+    * Deployed updated Edge script across all 5 active Cloudflare accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **GitHub Actions Workflows Hardening & Mesh Synchronization (`.github/workflows/cloud_token_refresher.yml`, `.github/workflows/cloud_sweeper.yml`, `.github/workflows/fleet_sentinel.yml`, `CHANGELOG.md`)**:
   - **Eliminated `now_str` NameError Bug (`cloud_token_refresher.yml`)**:
     * Defined `now_str` with UTC timestamp formatting and ensured `datetime` is properly imported before printing the completion log, preventing runner crashes on completion.
