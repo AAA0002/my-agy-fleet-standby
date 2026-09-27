@@ -4,6 +4,43 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Subscription Pass Tier System (Day/Week/Month), Manual Harvest Purge & 2x4 Symmetrical Mobile Layout (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Complete Removal of Manual Harvest**:
+    * Purged `⚡ Manual Harvest` keyboard button, `/harvest` command, and `ub_manual_harvest` callback query handlers. Autonomous cloud mining runs 24/7 in the cloud across all 8 pools, rendering manual harvest redundant and streamlining the mobile UX.
+  - **Symmetrical 2x4 Mobile Keyboard Layout**:
+    * Re-architected `userMainKeyboard` for Samsung Galaxy A30 and mobile screens into a clean 4-row x 2-column grid:
+      - Row 1: `👥 My Accounts` | `➕ Connect Account`
+      - Row 2: `💎 Points & Balance` | `📺 Watch Ad (+20 Pts)`
+      - Row 3: `👥 Invite Friends (+500 Pts)` | `🌟 VIP Subscriptions`
+      - Row 4: `📢 Official Channels` | `💬 Chat with AI`
+    * Added native `💬 Chat with AI` copilot onboarding prompt and shortcut commands (`/ai`, `/chat`).
+  - **Subscription Pass Tier Architecture (Day / Weekly / Monthly Pass)**:
+    * Transformed arbitrary VIP passes into a time-based subscription pass system powered by Telegram Stars:
+      1. 🎟️ **1-Day VIP Pass (24 Hours) — 15 Stars (`pass_day`)**:
+         - 24 Hours guaranteed cloud mining with 0 point deduction.
+         - +150 Bonus Points credited to balance.
+      2. 🎟️ **7-Day Weekly Pass (VIP Miner) — 45 Stars (`pass_week`)**:
+         - 7 Days uninterrupted cloud mining with 0 point deduction.
+         - +1,000 Bonus Points credited to balance.
+         - +1 Extra Account Slot unlocked for multi-account farming.
+      3. 💎 **30-Day Monthly Pass (Ultimate VIP) — 120 Stars (`pass_month`)**:
+         - 30 Days uninterrupted cloud mining with 0 point deduction.
+         - +4,500 Bonus Points credited to balance.
+         - +1 Permanent Extra Account Slot unlocked.
+         - **2x Ad Points Multiplier**: Earns +40 Points per ad view (instead of +20).
+      4. 🌟 **Permanent Account Slot — 50 Stars (`buy_slot_1`)**:
+         - +1 Permanent Account Slot for multi-account farming capacity.
+  - **Automated Pass Protection & Fee Exemption in Cloud Edge**:
+    * In `getUserProfile`, checks `profile.subscription_expiry > Date.now()`.
+    * When an active pass is present, daily point deduction (100 Pts/account/day) is completely waived while farming remains 100% active.
+    * Users with active passes can connect new accounts without requiring a 100-point reserve.
+    * Real-time pass status badge and countdown (`💎 Monthly Pass (🟢 Active: 29d 23h left)`) rendered across `/start`, `👥 My Accounts`, and `💎 Points & Balance`.
+  - **Telegram Stars Webhook Hardening**:
+    * Configured Telegram Bot API webhook `allowed_updates` on `@AAAPREMIUMAPPSbot` to explicitly include `["message", "edited_message", "callback_query", "pre_checkout_query"]` for instant checkout approval.
+  - **Zero Phone Load Guardrail (Samsung Galaxy A30)**:
+    * 0 local Python bot processes running. Full logic compiled and deployed across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
+
 - **Premium In-Bot User Mining Platform, Telegram Stars Economy & 3-Channel Gate (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **100% In-Bot Native Architecture (Zero External Dashboards)**:
     * Purged all external web app dashboard links and dependencies from User Bot (`@AAAPREMIUMAPPSbot`). All account connection, slot management, points tracking, manual harvests, ad rewards, and settings are rendered entirely within Telegram native keyboards and interactive flows.

@@ -3349,24 +3349,43 @@ Reply to Arif naturally:`;
               accounts: [],
               joined_channels: false,
               farming_active: true,
+              subscription_tier: null,
+              subscription_expiry: 0,
               last_deduction_date: new Date().toISOString().slice(0, 10),
               created_at: Date.now()
             };
             await upstashSet(key, prof);
           }
 
+          // Ensure subscription fields exist
+          if (prof.subscription_expiry === undefined) prof.subscription_expiry = 0;
+          if (prof.subscription_tier === undefined) prof.subscription_tier = null;
+
+          const now = Date.now();
+          const hasActivePass = prof.subscription_expiry > now;
+          if (hasActivePass) {
+            prof.farming_active = true;
+          }
+
           // Daily Automated Point Deduction (100 Pts per active connected account per day)
           const today = new Date().toISOString().slice(0, 10);
           if (prof.last_deduction_date !== today && prof.accounts && prof.accounts.length > 0) {
-            const dailyCost = prof.accounts.length * 100;
-            if (prof.points >= dailyCost) {
-              prof.points -= dailyCost;
+            if (hasActivePass) {
+              // Active Pass covers daily mining fee completely (0 point deduction)
               prof.farming_active = true;
+              prof.last_deduction_date = today;
+              await upstashSet(key, prof);
             } else {
-              prof.farming_active = false;
+              const dailyCost = prof.accounts.length * 100;
+              if (prof.points >= dailyCost) {
+                prof.points -= dailyCost;
+                prof.farming_active = true;
+              } else {
+                prof.farming_active = false;
+              }
+              prof.last_deduction_date = today;
+              await upstashSet(key, prof);
             }
-            prof.last_deduction_date = today;
-            await upstashSet(key, prof);
           }
 
           return prof;
@@ -3403,8 +3422,26 @@ Reply to Arif naturally:`;
         // Telegram Stars Invoice Sender
         const sendStarsInvoice = async (targetChatId, itemKey) => {
           const catalog = {
+            ub_pass_day: {
+              title: "🎟️ 1-Day VIP Pass (24 Hours)",
+              description: "24h unlimited cloud mining with zero point deduction + 150 Bonus Points!",
+              payload: "pass_day",
+              prices: [{ label: "1-Day VIP Pass", amount: 15 }]
+            },
+            ub_pass_week: {
+              title: "🎟️ 7-Day Weekly Pass (VIP Miner)",
+              description: "7 days cloud mining (0 points fee) + 1,000 Points + 1 Extra Account Slot!",
+              payload: "pass_week",
+              prices: [{ label: "7-Day Weekly Pass", amount: 45 }]
+            },
+            ub_pass_month: {
+              title: "💎 30-Day Monthly Pass (Ultimate VIP)",
+              description: "30 days cloud mining (0 points fee) + 4,500 Points + 1 Permanent Slot + 2x Ad Rewards!",
+              payload: "pass_month",
+              prices: [{ label: "30-Day Monthly Pass", amount: 120 }]
+            },
             ub_stars_slot1: {
-              title: "🌟 1 Account Slot (Permanent)",
+              title: "🌟 1 Permanent Account Slot",
               description: "Unlock 1 permanent slot to connect another Telegram account for 24/7 cloud mining.",
               payload: "buy_slot_1",
               prices: [{ label: "1 Permanent Slot", amount: 50 }]
@@ -3463,11 +3500,11 @@ Reply to Arif naturally:`;
             ],
             [
               { text: "👥 Invite Friends (+500 Pts)" },
-              { text: "🌟 Upgrade with Stars" }
+              { text: "🌟 VIP Subscriptions" }
             ],
             [
-              { text: "⚡ Manual Harvest" },
-              { text: "📢 Official Channels" }
+              { text: "📢 Official Channels" },
+              { text: "💬 Chat with AI" }
             ]
           ],
           resize_keyboard: true,
@@ -3502,14 +3539,14 @@ Reply to Arif naturally:`;
         const starsUpgradeKeyboard = {
           inline_keyboard: [
             [
-              { text: "🌟 1 Slot (50 Stars)", callback_data: "ub_stars_slot1" },
-              { text: "🌟 3 Slots (120 Stars)", callback_data: "ub_stars_slot3" }
+              { text: "🎟️ 1-Day Pass (15 Stars)", callback_data: "ub_pass_day" },
+              { text: "🎟️ 7-Day Pass (45 Stars)", callback_data: "ub_pass_week" }
             ],
             [
-              { text: "💎 VIP Pass: 3,000 Pts + 1 Slot (100 Stars)", callback_data: "ub_stars_vip" }
+              { text: "💎 30-Day Monthly Pass (120 Stars)", callback_data: "ub_pass_month" }
             ],
             [
-              { text: "💎 1,000 Mining Points (35 Stars)", callback_data: "ub_stars_pts1000" }
+              { text: "🌟 +1 Permanent Slot (50 Stars)", callback_data: "ub_stars_slot1" }
             ],
             [
               { text: "📺 Watch Ad (+20 Pts Free)", callback_data: "ub_watch_ad" },
@@ -3620,7 +3657,9 @@ Reply to Arif naturally:`;
               return new Response("OK");
             }
 
-            profile.points = (profile.points || 0) + 20;
+            const isMonthlyPass = profile.subscription_tier === "month" && profile.subscription_expiry && profile.subscription_expiry > now;
+            const adPts = isMonthlyPass ? 40 : 20;
+            profile.points = (profile.points || 0) + adPts;
             profile.ads_watched = (profile.ads_watched || 0) + 1;
             profile.last_ad_claim = now;
 
@@ -3631,7 +3670,7 @@ Reply to Arif naturally:`;
             }
             await saveUserProfile(cqChatId, profile);
 
-            const rep = `✅ *+20 POINTS CREDITED!* 🎁\n\n` +
+            const rep = `✅ *+${adPts} POINTS CREDITED!* 🎁${isMonthlyPass ? " _(2x Monthly Pass Bonus!)_" : ""}\n\n` +
               `• *New Balance:* ${profile.points} Points\n` +
               `• *Ads Watched:* ${profile.ads_watched}/50\n` +
               `• *Progress to Bonus Slot:* ${profile.ads_watched % 50}/50 ads${bonusText}\n\n` +
@@ -3660,25 +3699,33 @@ Reply to Arif naturally:`;
             return new Response("OK");
           }
 
-          // D. Telegram Stars Upgrades
+          // D. Telegram Stars Subscription Passes & Upgrades
           if (cqData === "ub_buy_stars") {
-            const starsMsg = `🌟 *UPGRADE WITH TELEGRAM STARS* ⭐\n\n` +
-              `Instantly expand your mining capacity and boost points balance:\n\n` +
-              `• *1 Permanent Account Slot:* 50 Stars\n` +
-              `• *3 Permanent Account Slots:* 120 Stars\n` +
-              `• *VIP Miner Pass (3,000 Pts + 1 Slot):* 100 Stars\n` +
-              `• *1,000 Points Booster:* 35 Stars\n\n` +
-              `Choose your upgrade below:`;
+            const starsMsg = `🌟 *VIP SUBSCRIPTION PASSES & SLOTS* ⭐\n\n` +
+              `Upgrade to uninterrupted 24/7 cloud mining with Telegram Stars:\n\n` +
+              `🎟️ *1-Day VIP Pass (15 Stars)*\n` +
+              `• 24h unlimited cloud mining (zero point deduction)\n` +
+              `• +150 Bonus Points\n\n` +
+              `🎟️ *7-Day Weekly Pass (45 Stars)*\n` +
+              `• 7 Days unlimited cloud mining (zero point deduction)\n` +
+              `• +1,000 Bonus Points + 1 Extra Account Slot\n\n` +
+              `💎 *30-Day Monthly Pass (120 Stars)*\n` +
+              `• 30 Days unlimited cloud mining (zero point deduction)\n` +
+              `• +4,500 Bonus Points + 1 Permanent Slot\n` +
+              `• 2x Ad Points Multiplier (+40 Pts per ad view!)\n\n` +
+              `🌟 *+1 Permanent Slot (50 Stars)*\n` +
+              `• Permanently add an account slot for multi-account farming\n\n` +
+              `Choose your subscription pass below:`;
             ctx.waitUntil(sendCqReply(starsMsg, starsUpgradeKeyboard));
             return new Response("OK");
           }
 
-          if (["ub_stars_slot1", "ub_stars_slot3", "ub_stars_vip", "ub_stars_pts1000"].includes(cqData)) {
+          if (["ub_pass_day", "ub_pass_week", "ub_pass_month", "ub_stars_slot1", "ub_stars_slot3", "ub_stars_vip", "ub_stars_pts1000"].includes(cqData)) {
             ctx.waitUntil(sendStarsInvoice(cqChatId, cqData));
             return new Response("OK");
           }
 
-          // E. Accounts & Manual Harvest
+          // E. Accounts Management
           if (cqData === "ub_add_acc") {
             const profile = await getUserProfile(cqChatId, cq.from);
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
@@ -3686,16 +3733,19 @@ Reply to Arif naturally:`;
               const slotLimitMsg = `⚠️ *Account Slot Limit Reached (${profile.accounts.length}/${totalSlots})*\n\n` +
                 `You are currently using all available slots!\n\n` +
                 `*How to get more slots:*\n` +
-                `1. 📺 *Watch 50 Ads*: Earn a free bonus slot! (${profile.ads_watched % 50}/50 watched)\n` +
-                `2. 🌟 *Telegram Stars*: Buy permanent slots instantly below!`;
+                `1. 🌟 *Subscription Pass*: Weekly & Monthly Passes include extra slots!\n` +
+                `2. 📺 *Watch 50 Ads*: Earn a free bonus slot! (${profile.ads_watched % 50}/50 watched)\n` +
+                `3. 🌟 *Telegram Stars*: Buy permanent slots instantly below!`;
               ctx.waitUntil(sendCqReply(slotLimitMsg, starsUpgradeKeyboard));
               return new Response("OK");
             }
-            if (profile.points < 100) {
+            const hasPass = profile.subscription_expiry && profile.subscription_expiry > Date.now();
+            if (!hasPass && profile.points < 100) {
               const lowPtsMsg = `⚠️ *Insufficient Points to Connect Account*\n\n` +
-                `Connecting an account requires at least *100 Points* for Day 1 automated cloud farming.\n` +
+                `Connecting an account requires at least *100 Points* for Day 1 automated cloud farming (or an active VIP Pass).\n` +
                 `Your balance: *${profile.points} Points*.\n\n` +
-                `*Quickly earn points:*\n` +
+                `*Quickly get access:*\n` +
+                `• 🎟️ *Get a Day Pass (15 Stars)* for unlimited 24h mining\n` +
                 `• 📺 Watch an ad (+20 Pts)\n` +
                 `• 👥 Invite a friend (+500 Pts)`;
               ctx.waitUntil(sendCqReply(lowPtsMsg, userMainKeyboard));
@@ -3713,21 +3763,6 @@ Reply to Arif naturally:`;
               `Your session runs safely in the cloud and automatically binds to all 8 mining pools.\n\n` +
               `_(Send phone number or tap ❌ Cancel Connection below)_`;
             ctx.waitUntil(sendCqReply(promptPhone, userCancelKeyboard));
-            return new Response("OK");
-          }
-
-          if (cqData === "ub_manual_harvest") {
-            const profile = await getUserProfile(cqChatId, cq.from);
-            if (profile.accounts.length === 0) {
-              ctx.waitUntil(sendCqReply(`⚠️ *No Accounts Connected*\n\nPlease tap *➕ Connect Account* to start automated cloud mining.`, userMainKeyboard));
-              return new Response("OK");
-            }
-            const harvMsg = `⚡ *INSTANT CLOUD HARVEST EXECUTED* 🚀\n\n` +
-              `• *Accounts Harvested:* ${profile.accounts.length}\n` +
-              `• *Active Pools (8/8):* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
-              `• *Status:* 🟢 All cycles refreshed and farming actively in the cloud.\n` +
-              `• *Remaining Points:* ${profile.points} Pts`;
-            ctx.waitUntil(sendCqReply(harvMsg, userMainKeyboard));
             return new Response("OK");
           }
 
@@ -3787,16 +3822,42 @@ Reply to Arif naturally:`;
           const item = pay.invoice_payload;
           const profile = await getUserProfile(chatId, msg.from);
           let grantedText = "";
-          if (item === "buy_slot_1") {
+          const now = Date.now();
+          const baseExpiry = (profile.subscription_expiry && profile.subscription_expiry > now) ? profile.subscription_expiry : now;
+
+          if (item === "pass_day") {
+            profile.subscription_expiry = baseExpiry + (24 * 3600 * 1000);
+            profile.subscription_tier = "day";
+            profile.points = (profile.points || 0) + 150;
+            profile.farming_active = true;
+            grantedText = "🎟️ *1-Day VIP Pass Activated!*\n• 24 Hours Unlimited Cloud Mining (Zero Point Deduction)\n• +150 Bonus Points credited!";
+          } else if (item === "pass_week") {
+            profile.subscription_expiry = baseExpiry + (7 * 86400 * 1000);
+            profile.subscription_tier = "week";
+            profile.points = (profile.points || 0) + 1000;
+            profile.temp_slots = (profile.temp_slots || 0) + 1;
+            profile.farming_active = true;
+            grantedText = "🎟️ *7-Day Weekly Pass Activated!*\n• 7 Days Unlimited Cloud Mining (Zero Point Deduction)\n• +1,000 Bonus Points credited!\n• +1 Bonus Account Slot unlocked!";
+          } else if (item === "pass_month") {
+            profile.subscription_expiry = baseExpiry + (30 * 86400 * 1000);
+            profile.subscription_tier = "month";
+            profile.points = (profile.points || 0) + 4500;
+            profile.slots = (profile.slots || 1) + 1;
+            profile.farming_active = true;
+            grantedText = "💎 *30-Day Monthly Pass Activated!*\n• 30 Days Unlimited Cloud Mining (Zero Point Deduction)\n• +4,500 Bonus Points credited!\n• +1 Permanent Extra Account Slot unlocked!\n• 2x Ad Points Multiplier (+40 Pts per ad view) active!";
+          } else if (item === "buy_slot_1") {
             profile.slots = (profile.slots || 1) + 1;
             grantedText = "🌟 *+1 Permanent Account Slot* unlocked!";
           } else if (item === "buy_slot_3") {
             profile.slots = (profile.slots || 1) + 3;
             grantedText = "🌟 *+3 Permanent Account Slots* unlocked!";
           } else if (item === "buy_vip") {
+            profile.subscription_expiry = baseExpiry + (30 * 86400 * 1000);
+            profile.subscription_tier = "month";
             profile.slots = (profile.slots || 1) + 1;
             profile.points = (profile.points || 0) + 3000;
-            grantedText = "💎 *VIP Miner Pass Activated!*\n• +1 Permanent Slot\n• +3,000 Points credited!";
+            profile.farming_active = true;
+            grantedText = "💎 *VIP Miner Pass Activated!*\n• 30 Days Cloud Mining (Zero Point Deduction)\n• +1 Permanent Slot\n• +3,000 Points credited!";
           } else if (item === "buy_points_1000") {
             profile.points = (profile.points || 0) + 1000;
             grantedText = "💎 *+1,000 Points Credited!*";
@@ -3833,7 +3894,7 @@ Reply to Arif naturally:`;
           } catch (_) {}
         }
 
-        const isCommandOrMenu = text.startsWith("/") || text.includes("👥") || text.includes("➕") || text.includes("💎") || text.includes("📺") || text.includes("🌟") || text.includes("⚡") || text.includes("📢");
+        const isCommandOrMenu = text.startsWith("/") || text.includes("👥") || text.includes("➕") || text.includes("💎") || text.includes("📺") || text.includes("🌟") || text.includes("📢") || text.includes("💬") || text.includes("🎟️");
 
         if (loginFlowState && !isCommandOrMenu) {
           ctx.waitUntil((async () => {
@@ -4016,15 +4077,26 @@ Reply to Arif naturally:`;
           // 1. /start, /help, /menu
           if (text.startsWith("/start") || text.startsWith("/help") || text === "/menu") {
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+            const isCovered = profile.subscription_expiry && profile.subscription_expiry > Date.now();
+            let passBadge = "Free Tier (Pay-As-You-Go)";
+            if (isCovered) {
+              const remMs = profile.subscription_expiry - Date.now();
+              const dLeft = Math.floor(remMs / (86400 * 1000));
+              const hLeft = Math.floor((remMs % (86400 * 1000)) / (3600 * 1000));
+              const tName = profile.subscription_tier === "month" ? "💎 30-Day Monthly Pass" : (profile.subscription_tier === "week" ? "🎟️ 7-Day Weekly Pass" : "🎟️ 1-Day Pass");
+              passBadge = `${tName} (🟢 Active: ${dLeft > 0 ? `${dLeft}d ` : ""}${hLeft}h left)`;
+            }
+            const farmStatus = isCovered ? "🟢 Active 24/7 (Covered by VIP Pass)" : (profile.farming_active ? "🟢 Active & Mining 24/7" : "🔴 Paused (Needs Points)");
             const welcomeText = `🌟 *AAA AUTO MINING PLATFORM (PREMIUM)* 🚀\n\n` +
               `Hello ${senderName}! Your 24/7 autonomous cloud mining assistant is ready.\n\n` +
               `💎 *Your Fleet Overview:*\n` +
               `• *Connected Accounts:* ${profile.accounts.length} / ${totalSlots} Slots\n` +
               `• *Points Balance:* ${profile.points} Points\n` +
-              `• *Farming Status:* ${profile.farming_active ? "🟢 Active & Mining 24/7" : "🔴 Paused (Needs Points)"}\n` +
-              `• *Daily Cost:* ${profile.accounts.length * 100} Pts/day (100 pts per account)\n\n` +
+              `• *Subscription Pass:* ${passBadge}\n` +
+              `• *Farming Status:* ${farmStatus}\n` +
+              `• *Daily Cost:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${profile.accounts.length * 100} Pts/day (100 Pts per account)`}\n\n` +
               `📺 *Earn Points:* Watch ads (+20 Pts) or invite friends (+500 Pts).\n` +
-              `🌟 *Upgrade:* Purchase permanent slots & points with Telegram Stars!\n\n` +
+              `🌟 *Subscriptions:* Day, Weekly, and Monthly VIP Passes with Telegram Stars!\n\n` +
               `Choose an option from the menu below:`;
             await sendUserReply(welcomeText, userMainKeyboard);
             return;
@@ -4033,7 +4105,16 @@ Reply to Arif naturally:`;
           // 2. 👥 My Accounts
           if (text === "👥 My Accounts" || text.startsWith("/accounts")) {
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
-            const daysRemaining = profile.accounts.length > 0 ? Math.floor(profile.points / (profile.accounts.length * 100)) : "Unlimited";
+            const isCovered = profile.subscription_expiry && profile.subscription_expiry > Date.now();
+            let passBadge = "Free Tier (Pay-As-You-Go)";
+            if (isCovered) {
+              const remMs = profile.subscription_expiry - Date.now();
+              const dLeft = Math.floor(remMs / (86400 * 1000));
+              const hLeft = Math.floor((remMs % (86400 * 1000)) / (3600 * 1000));
+              const tName = profile.subscription_tier === "month" ? "💎 30-Day Monthly Pass" : (profile.subscription_tier === "week" ? "🎟️ 7-Day Weekly Pass" : "🎟️ 1-Day Pass");
+              passBadge = `${tName} (🟢 Active: ${dLeft > 0 ? `${dLeft}d ` : ""}${hLeft}h left)`;
+            }
+            const daysRemaining = isCovered ? "Covered by Pass" : (profile.accounts.length > 0 ? Math.floor(profile.points / (profile.accounts.length * 100)) : "Unlimited");
             let accList = "• _No accounts connected yet. Tap ➕ Connect Account below!_";
             if (profile.accounts && profile.accounts.length > 0) {
               accList = profile.accounts.map((a, i) =>
@@ -4041,17 +4122,18 @@ Reply to Arif naturally:`;
               ).join("\n");
             }
 
+            const farmStatus = isCovered ? "🟢 Active 24/7 (Covered by VIP Pass)" : (profile.farming_active ? "🟢 Active 24/7" : "🔴 Paused (Insufficient Points)");
             const accMsg = `👥 *MY CONNECTED ACCOUNTS* 📱\n\n` +
               `• *Slots In Use:* ${profile.accounts.length} / ${totalSlots}\n` +
-              `• *Farming Status:* ${profile.farming_active ? "🟢 Active 24/7" : "🔴 Paused (Insufficient Points)"}\n` +
-              `• *Daily Cost:* ${profile.accounts.length * 100} Pts/day\n` +
+              `• *Subscription Pass:* ${passBadge}\n` +
+              `• *Farming Status:* ${farmStatus}\n` +
+              `• *Daily Cost:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${profile.accounts.length * 100} Pts/day`}\n` +
               `• *Points Balance:* ${profile.points} Pts (~${daysRemaining} days left)\n\n` +
               `📱 *Active Accounts:*\n${accList}\n\n` +
               `💡 _Every account automatically farms all 8 bots: ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, and Ainovum._`;
 
             const inlineBtns = [
-              [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "⚡ Manual Harvest", callback_data: "ub_manual_harvest" }],
-              [{ text: "🌟 Get More Slots with Stars", callback_data: "ub_buy_stars" }]
+              [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
             ];
             if (profile.accounts && profile.accounts.length > 0) {
               const disBtns = profile.accounts.slice(0, 3).map(a => ({ text: `❌ Remove ${a.name || a.phone}`, callback_data: `ub_disconnect_${a.user_id}` }));
@@ -4068,16 +4150,19 @@ Reply to Arif naturally:`;
               const slotLimitMsg = `⚠️ *Account Slot Limit Reached (${profile.accounts.length}/${totalSlots})*\n\n` +
                 `You are currently using all available slots!\n\n` +
                 `*How to get more slots:*\n` +
-                `1. 📺 *Watch 50 Ads*: Earn a free bonus slot! (${profile.ads_watched % 50}/50 watched)\n` +
-                `2. 🌟 *Telegram Stars*: Buy permanent slots instantly below!`;
+                `1. 🌟 *Subscription Pass*: Weekly & Monthly Passes include extra slots!\n` +
+                `2. 📺 *Watch 50 Ads*: Earn a free bonus slot! (${profile.ads_watched % 50}/50 watched)\n` +
+                `3. 🌟 *Telegram Stars*: Buy permanent slots instantly below!`;
               await sendUserReply(slotLimitMsg, starsUpgradeKeyboard);
               return;
             }
-            if (profile.points < 100) {
+            const hasPass = profile.subscription_expiry && profile.subscription_expiry > Date.now();
+            if (!hasPass && profile.points < 100) {
               const lowPtsMsg = `⚠️ *Insufficient Points to Connect Account*\n\n` +
-                `Connecting an account requires at least *100 Points* for Day 1 automated cloud farming.\n` +
+                `Connecting an account requires at least *100 Points* for Day 1 automated cloud farming (or an active VIP Pass).\n` +
                 `Your balance: *${profile.points} Points*.\n\n` +
-                `*Quickly earn points:*\n` +
+                `*Quickly get access:*\n` +
+                `• 🎟️ *Get a Day Pass (15 Stars)* for unlimited 24h mining\n` +
                 `• 📺 Watch an ad (+20 Pts)\n` +
                 `• 👥 Invite a friend (+500 Pts)`;
               await sendUserReply(lowPtsMsg, userMainKeyboard);
@@ -4101,12 +4186,23 @@ Reply to Arif naturally:`;
           // 4. 💎 Points & Balance
           if (text === "💎 Points & Balance" || text.startsWith("/points") || text.startsWith("/balance")) {
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
-            const daysRemaining = profile.accounts.length > 0 ? Math.floor(profile.points / (profile.accounts.length * 100)) : "Unlimited";
+            const isCovered = profile.subscription_expiry && profile.subscription_expiry > Date.now();
+            let passBadge = "Free Tier (Pay-As-You-Go)";
+            if (isCovered) {
+              const remMs = profile.subscription_expiry - Date.now();
+              const dLeft = Math.floor(remMs / (86400 * 1000));
+              const hLeft = Math.floor((remMs % (86400 * 1000)) / (3600 * 1000));
+              const tName = profile.subscription_tier === "month" ? "💎 30-Day Monthly Pass" : (profile.subscription_tier === "week" ? "🎟️ 7-Day Weekly Pass" : "🎟️ 1-Day Pass");
+              passBadge = `${tName} (🟢 Active: ${dLeft > 0 ? `${dLeft}d ` : ""}${hLeft}h left)`;
+            }
+            const daysRemaining = isCovered ? "Covered by Pass" : (profile.accounts.length > 0 ? Math.floor(profile.points / (profile.accounts.length * 100)) : "Unlimited");
+            const farmStatus = isCovered ? "🟢 Active 24/7 (Covered by VIP Pass)" : (profile.farming_active ? "🟢 Active 24/7" : "🔴 Paused (Needs Points)");
             const ptsMsg = `💎 *POINTS & MINING BALANCE* ⚡\n\n` +
               `• *Points Balance:* ${profile.points || 0} Points\n` +
-              `• *Daily Mining Cost:* ${profile.accounts.length * 100} Pts/day (100 Pts/account)\n` +
-              `• *Days of Mining Remaining:* ~${daysRemaining} days\n` +
-              `• *Farming Status:* ${profile.farming_active ? "🟢 Active 24/7" : "🔴 Paused (Needs Points)"}\n\n` +
+              `• *Subscription Pass:* ${passBadge}\n` +
+              `• *Farming Status:* ${farmStatus}\n` +
+              `• *Daily Mining Cost:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${profile.accounts.length * 100} Pts/day (100 Pts/account)`}\n` +
+              `• *Days of Mining Remaining:* ~${daysRemaining} days\n\n` +
               `📊 *Account Slots Breakdown:*\n` +
               `• *Standard Slots:* ${profile.slots || 1}\n` +
               `• *Bonus Slots (from 50 Ads):* ${profile.temp_slots || 0}\n` +
@@ -4121,7 +4217,7 @@ Reply to Arif naturally:`;
             await sendUserReply(ptsMsg, {
               inline_keyboard: [
                 [{ text: "📺 Watch Ad (+20 Pts)", callback_data: "ub_watch_ad" }, { text: "👥 Invite (+500 Pts)", callback_data: "ub_referral" }],
-                [{ text: "🌟 Buy with Telegram Stars", callback_data: "ub_buy_stars" }]
+                [{ text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
             });
             return;
@@ -4158,31 +4254,38 @@ Reply to Arif naturally:`;
             return;
           }
 
-          // 7. 🌟 Upgrade with Stars
-          if (text === "🌟 Upgrade with Stars" || text.startsWith("/upgrade") || text.toLowerCase() === "upgrade") {
-            const starsMsg = `🌟 *UPGRADE WITH TELEGRAM STARS* ⭐\n\n` +
-              `Instantly expand your mining capacity and boost points balance:\n\n` +
-              `• *1 Permanent Account Slot:* 50 Stars\n` +
-              `• *3 Permanent Account Slots:* 120 Stars\n` +
-              `• *VIP Miner Pass (3,000 Pts + 1 Slot):* 100 Stars\n` +
-              `• *1,000 Points Booster:* 35 Stars\n\n` +
-              `Choose your upgrade below:`;
+          // 7. 🌟 VIP Subscriptions / Upgrades
+          if (text === "🌟 VIP Subscriptions" || text === "🌟 Upgrade with Stars" || text.startsWith("/upgrade") || text.startsWith("/pass") || text.startsWith("/sub") || text.toLowerCase() === "upgrade") {
+            const starsMsg = `🌟 *VIP SUBSCRIPTION PASSES & SLOTS* ⭐\n\n` +
+              `Upgrade to uninterrupted 24/7 cloud mining with Telegram Stars:\n\n` +
+              `🎟️ *1-Day VIP Pass (15 Stars)*\n` +
+              `• 24h unlimited cloud mining (zero point deduction)\n` +
+              `• +150 Bonus Points\n\n` +
+              `🎟️ *7-Day Weekly Pass (45 Stars)*\n` +
+              `• 7 Days unlimited cloud mining (zero point deduction)\n` +
+              `• +1,000 Bonus Points + 1 Extra Account Slot\n\n` +
+              `💎 *30-Day Monthly Pass (120 Stars)*\n` +
+              `• 30 Days unlimited cloud mining (zero point deduction)\n` +
+              `• +4,500 Bonus Points + 1 Permanent Slot\n` +
+              `• 2x Ad Points Multiplier (+40 Pts per ad view!)\n\n` +
+              `🌟 *+1 Permanent Slot (50 Stars)*\n` +
+              `• Permanently add an account slot for multi-account farming\n\n` +
+              `Choose your subscription pass below:`;
             await sendUserReply(starsMsg, starsUpgradeKeyboard);
             return;
           }
 
-          // 8. ⚡ Manual Harvest
-          if (text === "⚡ Manual Harvest" || text.startsWith("/harvest")) {
-            if (profile.accounts.length === 0) {
-              await sendUserReply(`⚠️ *No Accounts Connected*\n\nPlease tap *➕ Connect Account* to start automated cloud mining.`, userMainKeyboard);
-              return;
-            }
-            const harvMsg = `⚡ *INSTANT CLOUD HARVEST EXECUTED* 🚀\n\n` +
-              `• *Accounts Harvested:* ${profile.accounts.length}\n` +
-              `• *Active Pools (8/8):* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
-              `• *Status:* 🟢 All cycles refreshed and farming actively in the cloud.\n` +
-              `• *Remaining Points:* ${profile.points} Pts`;
-            await sendUserReply(harvMsg, userMainKeyboard);
+          // 8. 💬 Chat with AI Copilot
+          if (text === "💬 Chat with AI" || text.startsWith("/ai") || text.startsWith("/chat")) {
+            const chatAiMsg = `💬 *AAA AI MINING COPILOT* 🤖\n\n` +
+              `Hello ${senderName}! I am your autonomous AI assistant running 24/7 in the cloud.\n\n` +
+              `*You can ask me anything about:*\n` +
+              `• How to connect your Telegram accounts securely\n` +
+              `• How points and subscription passes work\n` +
+              `• Cloud farming status across all 8 mining bots\n` +
+              `• Earning crypto rewards and maximizing yield\n\n` +
+              `👉 Simply send any question or message to this chat, and I will assist you!`;
+            await sendUserReply(chatAiMsg, userMainKeyboard);
             return;
           }
 
