@@ -4,15 +4,21 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-- **Scan-Friendly UI Modernization: Dedicated Live Activity Stream (`@AAAATF_ACTIVITY`) & Streamlined User Onboarding Card (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
-  - **Live Activity Feed Format Optimization (`broadcastNewMinerJoined`)**:
-    * Re-engineered channel broadcasts for `AAA ATF Miner — Live Activity` (`@AAAATF_ACTIVITY`) into an ultra-clean, scan-friendly automated feed (3–5 second comprehension):
+- **Scan-Friendly UI Modernization & Strict Channel Exclusivity (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **Live Activity Feed Format Exclusivity (`@AAAATF_ACTIVITY`)**:
+    * `🚀 NEW MINER JOINED!` short format is strictly and exclusively routed to `AAA ATF Miner — Live Activity` (`@AAAATF_ACTIVITY`).
+    * Completely purged any "NEW MINER JOINED!" text from the private bot chats (`@AAAPREMIUMAPPSbot`).
+    * Re-engineered channel broadcasts into the exact compact layout requested:
       - Result-first header: `🚀 NEW MINER JOINED!`
       - Compact identity summary: Full name, username link, and privacy-masked ID (`6727****68`).
       - Compact package breakdown: `📦 Slot: 1× Base Cloud` | `🎁 Welcome Bonus: +100 Points`.
       - Clean status lines: `⚡ Status: 🟢 Mining Ready` | `☁️ Cloud Mining: 24/7`.
       - Condensed incentive block: `🎁 INVITE & EARN: Get +500 Points + bonus slots for every friend you invite!`.
-      - Removed noisy long raw URLs in favor of native Telegram inline button links.
+      - 2x2 inline buttons: `[🚀 Launch Cloud Miner | 🎁 Invite & Earn]`, `[📊 My Rewards | 📢 Announcements]`.
+  - **In-Bot Experience Exclusivity (`@AAAPREMIUMAPPSbot`)**:
+    * Verified members and `/start` / `/menu` commands now strictly receive the executive cloud mining dashboard and persistent control panel keyboard:
+      - Fleet overview with connected accounts, slots, points balance, and active pool status.
+      - Never sends channel-style self-announcements to the user inside their private bot chat.
     * 2x2 Interactive Action Grid:
       - `[🚀 Launch Cloud Miner]` ➡️ Direct bot deep-link (`https://t.me/AAAPREMIUMAPPSbot`).
       - `[🎁 Invite & Earn]` ➡️ Direct referral & friend invite deep-link (`/start invite`).
