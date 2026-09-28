@@ -2484,6 +2484,21 @@ fi
           }
         } catch (_) {}
 
+        // Fallback: merge with Supabase Postgres community_miners
+        try {
+          const sRes = await fetch(`${SUPABASE_URL}/rest/v1/community_miners?select=id`, {
+            headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+          });
+          if (sRes.ok) {
+            const sArr = await sRes.json();
+            for (const r of (sArr || [])) {
+              if (r.id && !uids.includes(String(r.id))) {
+                uids.push(String(r.id));
+              }
+            }
+          }
+        } catch (_) {}
+
         // Fallback: ensure primary admin Arif is present
         if (!uids.includes("6727787768")) uids.unshift("6727787768");
 
@@ -2498,7 +2513,21 @@ fi
 
         const userKeys = uids.map(uid => `ub_user:${uid}`);
         const userProfiles = await upstashMget(userKeys);
-        for (const u of userProfiles) {
+        for (let i = 0; i < uids.length; i++) {
+          let u = userProfiles[i];
+          if (!u) {
+            try {
+              const suRes = await fetch(`${SUPABASE_URL}/rest/v1/community_miners?id=eq.${uids[i]}&select=*`, {
+                headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+              });
+              if (suRes.ok) {
+                const suArr = await suRes.json();
+                if (suArr && suArr.length > 0) {
+                  u = suArr[0].profile_data || suArr[0];
+                }
+              }
+            } catch (_) {}
+          }
           if (u) {
             users.push(u);
             const pts = (u.points || 0);
@@ -2513,7 +2542,7 @@ fi
               }
             }
             if (hasVip) vipUsers++;
-            totalAds += (u.ads_watched || 0);
+            totalAds += (u.ads_watched || u.ad_count || 0);
             totalRefs += (u.referral_count || 0);
           }
         }
@@ -6167,8 +6196,64 @@ Reply to Arif naturally:`;
       return prof;
     };
 
+    const supabaseSyncMiner = async (uid, prof) => {
+      try {
+        const payload = {
+          id: String(uid),
+          username: prof.username || "",
+          first_name: prof.first_name || "",
+          points: Number(prof.points || 0),
+          slots: Number(prof.slots || 1),
+          temp_slots: Number(prof.temp_slots || 0),
+          farming_active: Boolean(prof.farming_active !== false),
+          daily_streak: Number(prof.daily_streak || 0),
+          ad_count: Number(prof.ads_watched || prof.ad_count || 0),
+          accounts: prof.accounts || [],
+          profile_data: prof,
+          updated_at: new Date().toISOString()
+        };
+        await fetch(`${SUPABASE_URL}/rest/v1/community_miners`, {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates"
+          },
+          body: JSON.stringify(payload)
+        });
+      } catch (_) {}
+    };
+
+    const supabaseLogAdImpression = async (uid, network, pts, req) => {
+      try {
+        const clientIp = req ? (req.headers.get("cf-connecting-ip") || "") : "";
+        const country = req ? (req.headers.get("cf-ipcountry") || "") : "";
+        const ua = req ? (req.headers.get("user-agent") || "") : "";
+        await fetch(`${SUPABASE_URL}/rest/v1/ad_impressions_log`, {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            user_id: String(uid),
+            network: network || "monetag",
+            points_awarded: Number(pts || 20),
+            ip: clientIp,
+            country: country,
+            user_agent: ua
+          })
+        });
+      } catch (_) {}
+    };
+
     const saveUserProfile = async (uid, prof) => {
       await upstashSet(`ub_user:${uid}`, prof);
+      if (ctx && ctx.waitUntil) {
+        ctx.waitUntil(supabaseSyncMiner(uid, prof).catch(() => {}));
+      }
     };
 
     // 13.6 Multi-Network Ad Portal Route (Monetag, GigaPub, Adsterra 7 Formats, HilltopAds VAST 3.0, A-Ads)
@@ -6322,6 +6407,9 @@ Reply to Arif naturally:`;
           bonusUnlocked = true;
         }
         await saveUserProfile(uid, profile);
+        if (ctx && ctx.waitUntil) {
+          ctx.waitUntil(supabaseLogAdImpression(uid, "monetag_chain", adPts, request).catch(() => {}));
+        }
 
         const userBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
         const bonusText = bonusUnlocked ? "\n\n🎉 *50 ADS MILESTONE REACHED!* You unlocked *+1 BONUS ACCOUNT SLOT*!" : "";

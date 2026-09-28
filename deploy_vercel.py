@@ -9,6 +9,7 @@ TOKEN = 'vcp_3mspd9O3CPSBrt4jjTo9h3OXwOV6JT069jJNfvDXinPE04NwR73gb3LE'
 TEAM_ID = 'team_C2l6j4UJ0x8Cwu7xvYtxBn02'
 
 ADMIN_PROJECT = {'id': 'prj_ogrrPM7nncstax8qNgDhmtZ4IgLE', 'name': 'my-agy-ai-fleet'} # agy-aaa000.vercel.app
+ADMIN_PROJECT_2 = {'id': 'prj_cRQOVIEldwoVTdZy45GQ95hcGhy1', 'name': 'aaa-free-ai'}       # aaa-free-ai.vercel.app
 ADS_PROJECT   = {'id': 'prj_BWMgTGbwBc4KEQvyC1uvpL90DxCa', 'name': 'agy'}              # agy-henna.vercel.app
 
 ADMIN_FILES = [
@@ -119,6 +120,9 @@ def deploy():
         print(f"  ✓ {fn} ({info['size']} bytes)")
     deploy_to_project(ADMIN_PROJECT, admin_uploaded)
 
+    print("\n=== DEPLOYING DEDICATED ADMIN DASHBOARD TO VERCEL (aaa-free-ai) ===")
+    deploy_to_project(ADMIN_PROJECT_2, admin_uploaded)
+
     print("\n=== DEPLOYING DEDICATED WATCH ADS PORTAL TO VERCEL (agy) ===")
     ads_uploaded = []
     for fn, lp in ADS_FILES:
@@ -138,7 +142,18 @@ def deploy():
             else:
                 print("! Notice: Body on agy-aaa000:", body[:100])
     except Exception as e:
-        print("Admin verify err:", e)
+        print("Admin verify err (agy-aaa000):", e)
+
+    try:
+        req = urllib.request.Request("https://aaa-free-ai.vercel.app/", headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            body = r.read().decode('utf-8')
+            if "User Bot Admin Console" in body or "ADMIN SECURITY GATE" in body:
+                print("✓ SUCCESS: Admin Console active on https://aaa-free-ai.vercel.app/ (ZERO ADS)")
+            else:
+                print("! Notice: Body on aaa-free-ai:", body[:100])
+    except Exception as e:
+        print("Admin verify err (aaa-free-ai):", e)
 
     try:
         req = urllib.request.Request("https://agy-henna.vercel.app/", headers={'User-Agent': 'Mozilla/5.0'})

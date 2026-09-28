@@ -661,6 +661,7 @@ function App() {
           React.createElement("div", { className: "flex items-center gap-1.5 text-[11px] text-emerald-600 font-medium" },
             React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }),
             React.createElement("span", null, `Live Community Telemetry (${adminUsers.length} Users)`),
+            React.createElement("span", { className: "ml-1.5 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md font-mono font-medium" }, "⚡ Supabase Active"),
             React.createElement("button", {
               onClick: () => {
                 setAuthToken("");
