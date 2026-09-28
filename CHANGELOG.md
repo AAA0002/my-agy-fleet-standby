@@ -4,6 +4,35 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Multi-Account Cloudflare & Vercel Physical Separation (`deploy_both_cf_workers.py`, `deploy_vercel.py`, `public_admin/`, `public_ads/`, `CHANGELOG.md`)**:
+  - **🛡️ Complete Physical Infrastructure & Domain Separation**:
+    * Resolved cross-talk where Admin Dashboard and Watch Ads were previously bundled into the same Pages project.
+    * Separated codebases into two isolated deploy trees:
+      - `public_admin/`: Dedicated User Bot Admin Console (`index.html`, `user-admin.html`, `admin.html`) with Supabase Biometric Passkey & Master Password `Arif-Abid`. **Zero ads code**.
+      - `public_ads/`: Dedicated Watch Ads Mini-App (`index.html`, `app/ad/index.html`, `shared/*`) with Monetag, GigaPub, Adsterra, VAST 3.0, and A-Ads. **Zero admin code**.
+  - **🌐 Multi-Cloud Account Distribution**:
+    * **Node 1 Cloudflare Account (`korimhaji210@gmail.com`)**:
+      - Created & deployed Pages project `aaa-admin-portal`: `https://aaa-admin-portal.pages.dev/` dedicated 100% to **👑 User Bot & Fleet Admin Dashboard**.
+    * **Vercel Account (`team_C2l6j4UJ0x8Cwu7xvYtxBn02`)**:
+      - Project `my-agy-ai-fleet` (`https://agy-aaa000.vercel.app`): Dedicated **👑 Admin Dashboard Mirror**.
+      - Project `agy` (`https://agy-henna.vercel.app`): Dedicated **🎬 Watch Ads Mirror**.
+    * **Node 4 Cloudflare Account (`aaafreeai@gmail.com`)**:
+      - Project `atf-miner-app` (`https://atf-miner-app.pages.dev/`): Dedicated **🎬 Watch Ads Portal**.
+    * **Node 2 Cloudflare Account (`Koramshah2@gmail.com`)**:
+      - Created & deployed Pages project `aaa-watch-ads`: `https://aaa-watch-ads.pages.dev/` dedicated **🎬 Watch Ads Mesh Node 2**.
+    * **Node 3 Cloudflare Account (`coz1gameh3@gmail.com`)**:
+      - Created & deployed Pages project `aaa-community-ads`: `https://aaa-community-ads.pages.dev/` dedicated **🎬 Watch Ads Mesh Node 3**.
+  - **🤖 Telegram Bot Keyboards, Menus & Commands Refactored**:
+    * **Commander Arif (`6727787768`)**:
+      - Bottom-left Chat Menu Button dynamically set to `👑 Admin Dashboard` -> `https://aaa-admin-portal.pages.dev/`.
+      - Persistent Reply Keyboard Row 5 points to `https://aaa-admin-portal.pages.dev/`.
+      - Commands `/admin`, `/dashboard`, `/users` provide dual buttons: Node 1 Pages (`https://aaa-admin-portal.pages.dev/`) & Vercel Mirror (`https://agy-aaa000.vercel.app/`).
+    * **Community Users**:
+      - Chat Menu Button set to `🎬 Watch Ads` -> `https://atf-miner-app.pages.dev/`.
+      - Zero admin exposure, completely isolated to mining and ad rewards.
+  - **🧪 100% Verification Suite**:
+    - Validated all 6 production endpoints live: Admin Dashboards return 200 with zero ads; Ads portals return 200 with zero admin code; Edge Worker `/user-admin` redirects seamlessly to `https://aaa-admin-portal.pages.dev/`.
+
 - **Supabase Biometric Passkey (WebAuthn) & Master Password Admin Security Gate (`deploy_both_cf_workers.py`, `public/user-admin.html`, `public/admin.html`, `public/app/ad/index.html`, `public/index.html`, `CHANGELOG.md`)**:
   - **🔐 Supabase Postgres Security Layer (`admin_auth`)**:
     * Created dedicated Supabase Postgres authentication table `admin_auth` with cryptographic fields: `id`, `username`, `password_hash` (SHA-256), `passkey_credential_id`, `passkey_public_key`, `passkey_counter`, `session_token`, `session_expires_at`, `passkey_transports`, `created_at`, `updated_at`.

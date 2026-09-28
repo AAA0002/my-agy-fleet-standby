@@ -1,0 +1,6 @@
+/ai  https://restore-agy.aaaai2.workers.dev/ai  200
+/api/*  https://restore-agy.aaaai2.workers.dev/api/:splat  200
+/app/ad  /index.html  200
+/app/ad/*  /index.html  200
+/ads  /index.html  200
+/*  /index.html  200

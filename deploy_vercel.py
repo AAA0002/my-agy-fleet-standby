@@ -8,25 +8,31 @@ import urllib.error
 TOKEN = 'vcp_3mspd9O3CPSBrt4jjTo9h3OXwOV6JT069jJNfvDXinPE04NwR73gb3LE'
 TEAM_ID = 'team_C2l6j4UJ0x8Cwu7xvYtxBn02'
 
-PROJECTS = [
-    {'id': 'prj_ogrrPM7nncstax8qNgDhmtZ4IgLE', 'name': 'my-agy-ai-fleet'}, # Contains agy-aaa000.vercel.app
-    {'id': 'prj_BWMgTGbwBc4KEQvyC1uvpL90DxCa', 'name': 'agy'}              # Contains agy-henna.vercel.app
+ADMIN_PROJECT = {'id': 'prj_ogrrPM7nncstax8qNgDhmtZ4IgLE', 'name': 'my-agy-ai-fleet'} # agy-aaa000.vercel.app
+ADS_PROJECT   = {'id': 'prj_BWMgTGbwBc4KEQvyC1uvpL90DxCa', 'name': 'agy'}              # agy-henna.vercel.app
+
+ADMIN_FILES = [
+    ('index.html', 'public_admin/index.html'),
+    ('user-admin.html', 'public_admin/user-admin.html'),
+    ('users.html', 'public_admin/user-admin.html'),
+    ('admin.html', 'public_admin/admin.html'),
+    ('vercel.json', 'public_admin/vercel.json'),
+    ('_headers', 'public_admin/_headers'),
+    ('_redirects', 'public_admin/_redirects'),
 ]
 
-FILES = [
-    ('index.html', 'public/admin.html'),
-    ('user-admin.html', 'public/user-admin.html'),
-    ('users.html', 'public/user-admin.html'),
-    ('app/ad/index.html', 'public/app/ad/index.html'),
-    ('shared/waterfallController.js', 'public/shared/waterfallController.js'),
-    ('shared/gigapubController.js', 'public/shared/gigapubController.js'),
-    ('shared/vastLoader.js', 'public/shared/vastLoader.js'),
-    ('shared/audio.js', 'public/shared/audio.js'),
-    ('shared/geo.js', 'public/shared/geo.js'),
-    ('shared/i18n.js', 'public/shared/i18n.js'),
-    ('vercel.json', 'vercel.json'),
-    ('_headers', 'public/_headers'),
-    ('_redirects', 'public/_redirects'),
+ADS_FILES = [
+    ('index.html', 'public_ads/index.html'),
+    ('app/ad/index.html', 'public_ads/app/ad/index.html'),
+    ('shared/waterfallController.js', 'public_ads/shared/waterfallController.js'),
+    ('shared/gigapubController.js', 'public_ads/shared/gigapubController.js'),
+    ('shared/vastLoader.js', 'public_ads/shared/vastLoader.js'),
+    ('shared/audio.js', 'public_ads/shared/audio.js'),
+    ('shared/geo.js', 'public_ads/shared/geo.js'),
+    ('shared/i18n.js', 'public_ads/shared/i18n.js'),
+    ('vercel.json', 'public_ads/vercel.json'),
+    ('_headers', 'public_ads/_headers'),
+    ('_redirects', 'public_ads/_redirects'),
 ]
 
 def upload_file(file_name, local_path):
@@ -105,34 +111,45 @@ def deploy_to_project(proj, uploaded_files):
     return False
 
 def deploy():
-    print("Uploading static assets to Vercel global store...")
-    uploaded = []
-    for fn, lp in FILES:
+    print("=== DEPLOYING DEDICATED ADMIN DASHBOARD TO VERCEL (my-agy-ai-fleet) ===")
+    admin_uploaded = []
+    for fn, lp in ADMIN_FILES:
         info = upload_file(fn, lp)
-        uploaded.append(info)
-        print(f"  ✓ {fn} ({info['size']} bytes, sha1: {info['sha'][:8]})")
-        
-    for proj in PROJECTS:
-        deploy_to_project(proj, uploaded)
+        admin_uploaded.append(info)
+        print(f"  ✓ {fn} ({info['size']} bytes)")
+    deploy_to_project(ADMIN_PROJECT, admin_uploaded)
 
-    # Verify primary alias
-    test_urls = [
-        "https://agy-aaa000.vercel.app/?v=4.8",
-        "https://my-agy-ai-fleet.vercel.app/?v=4.8",
-        "https://agy-henna.vercel.app/?v=4.8"
-    ]
-    for test_url in test_urls:
-        print(f"\nVerifying live alias {test_url}...")
-        try:
-            req_verify = urllib.request.Request(test_url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req_verify, timeout=10) as resp:
-                body = resp.read().decode('utf-8')
-                if "Executive Fleet Operations" in body or "Executive" in body:
-                    print(f"✓ SUCCESS: 'Executive Fleet Operations' is active on {test_url}!")
-                else:
-                    print(f"! Warning: 'Executive Fleet Operations' not found yet on {test_url}.")
-        except Exception as e:
-            print(f"Verification error for {test_url}: {e}")
+    print("\n=== DEPLOYING DEDICATED WATCH ADS PORTAL TO VERCEL (agy) ===")
+    ads_uploaded = []
+    for fn, lp in ADS_FILES:
+        info = upload_file(fn, lp)
+        ads_uploaded.append(info)
+        print(f"  ✓ {fn} ({info['size']} bytes)")
+    deploy_to_project(ADS_PROJECT, ads_uploaded)
+
+    # Verification
+    print("\n--- Verifying Vercel Deployments ---")
+    try:
+        req = urllib.request.Request("https://agy-aaa000.vercel.app/", headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            body = r.read().decode('utf-8')
+            if "User Bot Admin Console" in body or "ADMIN SECURITY GATE" in body:
+                print("✓ SUCCESS: Admin Console active on https://agy-aaa000.vercel.app/ (ZERO ADS)")
+            else:
+                print("! Notice: Body on agy-aaa000:", body[:100])
+    except Exception as e:
+        print("Admin verify err:", e)
+
+    try:
+        req = urllib.request.Request("https://agy-henna.vercel.app/", headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            body = r.read().decode('utf-8')
+            if "Watch Sponsored Ad" in body:
+                print("✓ SUCCESS: Watch Ads Portal active on https://agy-henna.vercel.app/ (ZERO ADMIN)")
+            else:
+                print("! Notice: Body on agy-henna:", body[:100])
+    except Exception as e:
+        print("Ads verify err:", e)
 
 if __name__ == '__main__':
     deploy()

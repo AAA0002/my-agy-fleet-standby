@@ -2741,13 +2741,13 @@ fi
     }
 
     // 7.5 High-Speed Dedicated Dashboards
-    // User Bot Admin Dashboard (Users & Miners Only) -> Cloudflare Pages
+    // User Bot Admin Dashboard (Users & Miners Only) -> Node 1 Cloudflare Pages (korimhaji210)
     if (path === "/user-dash" || path === "/users-admin" || path === "/user-admin" || path === "/users" || path === "/user-dashboard" || path === "/community-admin") {
-      return Response.redirect("https://atf-miner-app.pages.dev/user-admin", 302);
+      return Response.redirect("https://aaa-admin-portal.pages.dev/", 302);
     }
-    // Admin Bot Executive Fleet Dashboard (All 14 Private Fleet Accounts & Operations) -> Vercel
+    // Admin Bot Executive Fleet Dashboard (All 14 Private Fleet Accounts & Operations) -> Node 1 Pages / Vercel
     if (path === "/" || path === "/dashboard" || path === "/status-ui" || path === "/miniapp" || path === "/app" || path === "/fleet" || path === "/admin") {
-      return Response.redirect("https://agy-aaa000.vercel.app/?v=5.0", 302);
+      return Response.redirect("https://aaa-admin-portal.pages.dev/admin", 302);
     }
 
     // 8. Payout Receipts Record (VPS -> Edge with In-Memory + Safe KV)
@@ -6653,7 +6653,7 @@ Reply to Arif naturally:`;
               { text: "💬 Ari AI & Support" }
             ],
             [
-              { text: "👑 User Admin Dashboard", web_app: { url: "https://atf-miner-app.pages.dev/user-admin" } }
+              { text: "👑 User Admin Dashboard", web_app: { url: "https://aaa-admin-portal.pages.dev/" } }
             ]
           ],
           resize_keyboard: true,
@@ -7747,12 +7747,13 @@ Reply to Arif naturally:`;
               `• 👥 *Miners Hub:* Community accounts & balances\n` +
               `• 💎 *Points Economy:* Daily cost sweeps & grants\n` +
               `• 🛡️ *Moderation:* Ban/Unban & VIP passes\n` +
-              `• 📱 *Dedicated to User Bot:* 100% focused on community accounts\n\n` +
+              `• 🔐 *Biometrics & Supabase:* Protected by WebAuthn Passkey + Master Password\n` +
+              `• 🌐 *Dedicated Node 1 Cloudflare Account:* Zero ads, pure admin console\n\n` +
               `👇 *Tap button below to launch the User Bot Admin Dashboard:*`;
             await sendUserReply(adminMsg, {
               inline_keyboard: [
-                [{ text: "🚀 Open User Bot Admin Dashboard", web_app: { url: "https://atf-miner-app.pages.dev/user-admin" } }],
-                [{ text: "🌐 Open User Bot Admin Dashboard (Mirror)", web_app: { url: "https://agy-aaa000.vercel.app/user-admin" } }]
+                [{ text: "🚀 Open Admin Dashboard (Node 1 Pages)", web_app: { url: "https://aaa-admin-portal.pages.dev/" } }],
+                [{ text: "🌐 Open Admin Dashboard (Vercel Mirror)", web_app: { url: "https://agy-aaa000.vercel.app/" } }]
               ]
             });
             return;
@@ -7900,11 +7901,17 @@ Reply to Arif naturally:`;
             await sendUserReply("👋 *Welcome to AAA Auto Mining!* (Created by AAA)\nAccess all features below or choose from the interactive menu:", activeUserKeyboard);
             await sendUserReply(welcomeText, activeWelcomeInlineKeyboard);
 
-            // Ensure persistent Chat Menu Button is set to Watch Ads WebApp for this user
+            // Ensure persistent Chat Menu Button is set appropriately (Admin Dashboard for Arif, Watch Ads for users)
             if (ctx && ctx.waitUntil) {
               const menuPayload = {
                 chat_id: chatId,
-                menu_button: {
+                menu_button: isOwner ? {
+                  type: "web_app",
+                  text: "👑 Admin Dashboard",
+                  web_app: {
+                    url: "https://aaa-admin-portal.pages.dev/"
+                  }
+                } : {
                   type: "web_app",
                   text: "🎬 Watch Ads",
                   web_app: {
@@ -8790,16 +8797,16 @@ async def main():
         except Exception as e:
             print(f"⚠️ Error setting global menu button: {e}")
 
-        # 2. Ensure Owner Menu Button is set to "🎬 Watch Ads" on User Bot (@AAAPREMIUMAPPSbot)
+        # 2. Ensure Owner Menu Button is set to "👑 Admin Dashboard" on User Bot (@AAAPREMIUMAPPSbot)
         if OWNER_ID:
             try:
                 owner_menu = {
                     "chat_id": int(OWNER_ID),
                     "menu_button": {
                         "type": "web_app",
-                        "text": "🎬 Watch Ads",
+                        "text": "👑 Admin Dashboard",
                         "web_app": {
-                            "url": "https://atf-miner-app.pages.dev/app/ad/"
+                            "url": "https://aaa-admin-portal.pages.dev/"
                         }
                     }
                 }

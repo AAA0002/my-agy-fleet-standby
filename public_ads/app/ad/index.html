@@ -1,0 +1,2494 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#070b12" />
+  <title>Watch Sponsored Ad — AAA Auto Mining</title>
+
+  <!-- HilltopAds Verification -->
+  <meta name="77d314e64e8dc15578e7d6411310745a041720e6" content="77d314e64e8dc15578e7d6411310745a041720e6" />
+
+  <!-- Clickadu Verification -->
+  <meta name="clckd" content="e924148c5d931ae4a1270696d955223c" />
+
+  <!-- Official Telegram WebApp SDK & Safe Launch Parameter Bridging -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    (function() {
+      // 1. Intercept any blocking error alerts/popups from SDKs
+      var origAlert = window.alert;
+      window.alert = function(msg) {
+        if (typeof msg === 'string' && (msg.indexOf('launch parameters') !== -1 || msg.indexOf('Telegram environment') !== -1)) {
+          console.warn('[Alert Suppressed]:', msg);
+          return;
+        }
+        return origAlert ? origAlert.apply(window, arguments) : undefined;
+      };
+
+      try {
+        if (window.Telegram?.WebApp) {
+          var twa = window.Telegram.WebApp;
+          twa.ready();
+          twa.expand();
+          if (typeof twa.disableVerticalSwipes === 'function') {
+            twa.disableVerticalSwipes();
+          }
+          // Intercept showPopup for launch parameter errors
+          var origShowPopup = twa.showPopup;
+          twa.showPopup = function(params, callback) {
+            if (params && params.message && (params.message.indexOf('launch parameters') !== -1 || params.message.indexOf('Telegram environment') !== -1)) {
+              console.warn('[TMA showPopup Suppressed]:', params.message);
+              if (typeof callback === 'function') callback('ok');
+              return;
+            }
+            return origShowPopup ? origShowPopup.apply(twa, arguments) : undefined;
+          };
+        }
+      } catch (e) {}
+
+      // 2. Pre-seed launch parameters in sessionStorage & location.hash for @telegram-apps/sdk
+      try {
+        var twa = window.Telegram?.WebApp;
+        var platform = (twa && twa.platform) || 'android';
+        var version = (twa && twa.version) || '7.10';
+        var rawInitData = (twa && twa.initData) || '';
+
+        // Extract user_id from query if initData is empty
+        if (!rawInitData) {
+          var sp = new URLSearchParams(window.location.search);
+          var uid = sp.get('user_id') || localStorage.getItem('atf_user_id') || '6727787768';
+          var uname = localStorage.getItem('atf_user_name') || 'Miner';
+          var dummyUser = JSON.stringify({ id: Number(uid), first_name: uname });
+          rawInitData = 'user=' + encodeURIComponent(dummyUser) + '&auth_date=' + Math.floor(Date.now() / 1000) + '&hash=dummy';
+        }
+
+        var themeJson = JSON.stringify((twa && twa.themeParams) || {});
+        var launchQuery = 'tgWebAppData=' + encodeURIComponent(rawInitData) +
+                          '&tgWebAppPlatform=' + encodeURIComponent(platform) +
+                          '&tgWebAppVersion=' + encodeURIComponent(version) +
+                          '&tgWebAppThemeParams=' + encodeURIComponent(themeJson);
+
+        sessionStorage.setItem('telegram-apps/launch-params', launchQuery);
+        sessionStorage.setItem('tma.js/launch-params', launchQuery);
+        sessionStorage.setItem('tapps/launchParams', launchQuery);
+
+        // Also ensure location.hash contains tgWebAppPlatform and tgWebAppVersion
+        var curHash = window.location.hash || '';
+        if (curHash.indexOf('tgWebAppPlatform') === -1) {
+          var cleanHash = curHash.replace(/^#/, '');
+          var newHash = '#' + (cleanHash ? cleanHash + '&' : '') + 'tgWebAppPlatform=' + platform + '&tgWebAppVersion=' + version;
+          if (curHash.indexOf('tgWebAppData') === -1 && rawInitData) {
+            newHash += '&tgWebAppData=' + encodeURIComponent(rawInitData);
+          }
+          if (window.history && window.history.replaceState) {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search + newHash);
+          }
+        }
+        var _st = localStorage.getItem('atf_theme');
+        if (!_st && window.Telegram?.WebApp?.colorScheme) _st = window.Telegram.WebApp.colorScheme;
+        if (!_st && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) _st = 'dark';
+        if (_st === 'dark') {
+          document.documentElement.classList.add('dark');
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else if (_st === 'light') {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      } catch (lpErr) {
+        console.warn('[AdPortal LaunchParam Pre-seed]:', lpErr);
+      }
+    })();
+  </script>
+
+  <!-- Inline Resilient Fallbacks for i18n and Geo -->
+  <script>
+    window.ATFI18n = window.ATFI18n || {
+      t: function(k, d) { return d || k; },
+      setLanguage: function() {},
+      applyTranslations: function() {},
+      getLanguage: function() { return 'en'; },
+      SUPPORTED_LANGS: ['en', 'bn', 'ru', 'hi']
+    };
+    window.ATFGeo = window.ATFGeo || {
+      countryCodeToEmoji: function(c) {
+        if (!c || c === 'UN' || c.length !== 2) return '🌐';
+        var code = c.toUpperCase();
+        return String.fromCodePoint.apply(null, [].slice.call(code).map(function(ch) { return 127397 + ch.charCodeAt(0); }));
+      },
+      getLocalTime: function(tz) {
+        try { return new Date().toLocaleTimeString([], { timeZone: tz || undefined, hour: '2-digit', minute: '2-digit' }); }
+        catch(e) { return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+      },
+      initGeoClock: function(geo) {
+        var flagEl = document.getElementById('geo-flag');
+        var clockEl = document.getElementById('geo-clock');
+        var pillEl = document.getElementById('geo-pill');
+        if (pillEl) pillEl.classList.remove('hidden');
+        if (flagEl) flagEl.textContent = window.ATFGeo.countryCodeToEmoji(geo && geo.country);
+        if (clockEl) clockEl.textContent = window.ATFGeo.getLocalTime(geo && geo.timezone);
+      }
+    };
+  </script>
+
+  <!-- 4-Language Localization & Edge Geo Clocks -->
+  <script src="/shared/i18n.js"></script>
+  <script src="/shared/geo.js"></script>
+
+  <!-- Google Fonts: Inter, Space Grotesk, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Dual-Network Waterfall Mediation: Monetag (Primary Zone 11753248) & GigaPub (Fallback Placement 8160) -->
+  <script src="https://yoszi.com/sdk.js" data-zone="11753248" data-sdk="show_11753248" onerror="this.onerror=null;this.src='https://libtl.com/sdk.js';"></script>
+  <script src="/shared/gigapubController.js"></script>
+  <script src="https://ad.gigapub.tech/script?id=8160" async defer></script>
+  <script src="/shared/waterfallController.js"></script>
+  <!-- Google Interactive Media Ads (IMA) SDK for HTML5 & HilltopAds VAST 3.0 -->
+  <script src="https://imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
+  <script src="/shared/vastLoader.js"></script>
+
+  <style>
+    :root {
+      --bg-gradient: radial-gradient(circle at 12% 18%, rgba(245, 158, 11, 0.12) 0%, transparent 42%),
+                     radial-gradient(circle at 88% 82%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
+                     #070b12;
+      --card-glass: rgba(15, 23, 42, 0.88);
+      --card-border: rgba(255, 255, 255, 0.09);
+      --card-highlight: rgba(255, 255, 255, 0.06);
+      --text-main: #f8fafc;
+    }
+    [data-theme="dark"], .dark {
+      --bg-gradient: radial-gradient(circle at 12% 18%, rgba(245, 158, 11, 0.12) 0%, transparent 42%),
+                     radial-gradient(circle at 88% 82%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
+                     #070b12;
+      --card-glass: rgba(15, 23, 42, 0.88);
+      --card-border: rgba(255, 255, 255, 0.09);
+      --card-highlight: rgba(255, 255, 255, 0.06);
+      --text-main: #f8fafc;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-gradient: radial-gradient(circle at 12% 18%, rgba(245, 158, 11, 0.12) 0%, transparent 42%),
+                       radial-gradient(circle at 88% 82%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
+                       #070b12;
+        --card-glass: rgba(15, 23, 42, 0.88);
+        --card-border: rgba(255, 255, 255, 0.09);
+        --card-highlight: rgba(255, 255, 255, 0.06);
+        --text-main: #f8fafc;
+      }
+    }
+    @media screen and (max-width: 768px) {
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+    }
+    [data-theme="dark"] .text-slate-900, .dark .text-slate-900 { color: #f8fafc !important; }
+    [data-theme="dark"] .text-slate-800, .dark .text-slate-800 { color: #e2e8f0 !important; }
+    [data-theme="dark"] .text-slate-700, .dark .text-slate-700 { color: #cbd5e1 !important; }
+    [data-theme="dark"] .text-slate-600, .dark .text-slate-600 { color: #94a3b8 !important; }
+    [data-theme="dark"] .text-slate-500, .dark .text-slate-500 { color: #64748b !important; }
+    [data-theme="dark"] .bg-slate-100, .dark .bg-slate-100 { background-color: #1e293b !important; }
+    [data-theme="dark"] .border-slate-200, .dark .border-slate-200 { border-color: rgba(255, 255, 255, 0.08) !important; }
+    body {
+      background: var(--bg-gradient);
+      background-attachment: fixed;
+      color: var(--text-main);
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      min-height: 100vh;
+      overscroll-behavior-y: contain;
+      padding-top: max(env(safe-area-inset-top, 0px), 0.5rem);
+      padding-bottom: max(env(safe-area-inset-bottom, 0px), 1rem);
+    }
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .ad-card-glass {
+      background: var(--card-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.04), inset 0 1px 0 0 var(--card-highlight);
+    }
+    .pulse-glow {
+      animation: pulseGlow 2s infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 15px rgba(245, 158, 11, 0.25)); }
+      50% { transform: scale(1.05); opacity: 0.85; filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.45)); }
+    }
+    .spinner {
+      border: 3px solid rgba(0, 0, 0, 0.08);
+      border-top-color: #f59e0b;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-4 sm:p-6 text-center">
+
+  <!-- Top Bar: Dynamic Telegram User Profile, Sound Toggle & Close Button -->
+  <header class="w-full max-w-sm mb-auto p-3 sm:p-3.5 rounded-2xl ad-card-glass flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div id="ad-user-avatar" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center font-bold text-white text-sm shadow-sm overflow-hidden">M</div>
+      <div class="text-left">
+        <div id="ad-user-name" class="font-bold text-sm text-white drop-shadow-xs">ATF Miner</div>
+        <div id="ad-user-handle" class="text-xs text-slate-300 font-mono">Ad Portal</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <button id="sound-toggle-btn" onclick="toggleSound()" class="p-2 rounded-xl bg-white/10 hover:bg-white/15 active:scale-95 transition text-xs font-semibold text-slate-200 border border-white/10 shadow-2xs cursor-pointer" title="Toggle Sound">
+        <span id="sound-icon">🔊</span>
+      </button>
+      <button onclick="closeMiniApp()" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-rose-500/20 active:scale-95 transition text-xs font-semibold text-slate-200 hover:text-rose-400 border border-white/10 flex items-center gap-1 shrink-0 shadow-2xs cursor-pointer" title="Close Portal">
+        <span>✕ Close</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Instant Dynamic Ad Header Sync Script for ALL Users -->
+  <script>
+    (function() {
+      try {
+        var tg = window.Telegram?.WebApp;
+        if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
+        var u = tg?.initDataUnsafe?.user;
+        if (!u && tg?.initData) {
+          try {
+            var p = new URLSearchParams(tg.initData);
+            var s = p.get('user');
+            if (s) {
+              try { u = JSON.parse(s); } catch (e2) { u = JSON.parse(decodeURIComponent(s)); }
+            }
+          } catch (e) {}
+        }
+        if (!u && window.location.hash) {
+          try {
+            var h = window.location.hash.replace(/^#/, '');
+            var hp = new URLSearchParams(h);
+            var raw = hp.get('tgWebAppData') || hp.get('initData') || h;
+            var s2 = new URLSearchParams(raw).get('user');
+            if (s2) {
+              try { u = JSON.parse(s2); } catch (e3) { u = JSON.parse(decodeURIComponent(s2)); }
+            }
+          } catch (e) {}
+        }
+        if (!u) {
+          try {
+            var cached = localStorage.getItem('atf_cached_user');
+            if (cached) {
+              var parsed = JSON.parse(cached);
+              var qId = new URLSearchParams(window.location.search).get('user_id');
+              var liveId = tg?.initDataUnsafe?.user?.id;
+              if (((liveId && String(liveId) === String(parsed.id)) || (qId && String(qId) === String(parsed.id))) && (parsed.first_name || parsed.username || parsed.id)) {
+                u = parsed;
+              } else if (liveId && String(liveId) !== String(parsed.id)) {
+                localStorage.removeItem('atf_cached_user');
+              }
+            }
+          } catch (e) {}
+        }
+        if (!u) {
+          var qId = new URLSearchParams(window.location.search).get('user_id');
+          if (qId) {
+            u = { first_name: 'Miner ' + qId, last_name: '', username: '', id: qId };
+          }
+        }
+        if (u) {
+          var f = String(u.first_name || '').trim();
+          var l = String(u.last_name || '').trim();
+          var fn = [f, l].filter(Boolean).join(' ') || f || u.username || 'Telegram User';
+          var hd = u.username ? ('@' + u.username) : (u.id ? ('ID: ' + u.id) : '');
+          var ini = 'M';
+          if (f && l) {
+            ini = (f[0] + l[0]).toUpperCase();
+          } else if (f) {
+            var parts = f.split(/\s+/).filter(Boolean);
+            ini = parts.length > 1 ? (parts[0][0] + parts[1][0]).toUpperCase() : f[0].toUpperCase();
+          } else if (l) {
+            ini = l[0].toUpperCase();
+          } else if (u.username) {
+            ini = u.username[0].toUpperCase();
+          }
+
+          if (u.first_name || u.username) {
+            try {
+              localStorage.setItem('atf_cached_user', JSON.stringify({
+                id: u.id,
+                first_name: u.first_name || '',
+                last_name: u.last_name || '',
+                username: u.username || '',
+                photo_url: u.photo_url || null
+              }));
+            } catch (e4) {}
+          }
+
+          var n = document.getElementById('ad-user-name');
+          var hElem = document.getElementById('ad-user-handle');
+          var a = document.getElementById('ad-user-avatar');
+          if (n) {
+            n.textContent = fn;
+            if (u.username || (u.id && !f.startsWith('Miner '))) n.dataset.userType = 'telegram';
+          }
+          if (hElem) hElem.textContent = hd;
+          if (a) {
+            if (u.photo_url) {
+              a.innerHTML = '<img src="' + u.photo_url + '" class="w-full h-full object-cover rounded-xl" alt="Avatar" onerror="this.remove(); this.parentElement.textContent=\'' + ini + '\';" />';
+            } else {
+              a.textContent = ini;
+            }
+          }
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- New User Onboarding Verification Gate Banner (Shown if mode=verify) -->
+  <div id="verify-mode-banner" class="hidden w-full max-w-sm mx-auto mt-3 mb-2 p-3.5 bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 border border-indigo-400/30 rounded-2xl shadow-md text-white text-xs text-left">
+    <div class="flex items-start gap-2.5">
+      <span class="text-xl shrink-0">🛡️</span>
+      <div class="flex-1 min-w-0">
+        <div class="font-bold text-xs sm:text-sm text-indigo-100 flex items-center justify-between gap-1">
+          <span>New Miner Verification Gate</span>
+          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">10 Ads</span>
+        </div>
+        <p class="text-[11px] text-indigo-200 mt-1 leading-snug">
+          Watch our 10-ad verification chain to validate your cloud miner account, complete referrer verification, and unlock 24h autonomous mining.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIP Pass Active Alert Banner -->
+  <div id="ad-vip-active-banner" class="hidden w-full max-w-sm mx-auto mb-2 p-3 bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-amber-500/10 border border-amber-500/40 rounded-2xl shadow-sm text-left">
+    <div class="flex items-center gap-2">
+      <span class="text-xl">🌟</span>
+      <div class="flex-1 min-w-0">
+        <div class="font-bold text-xs text-amber-200 flex items-center justify-between">
+          <span>VIP Commander Pass Active</span>
+          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">Zero Ads Needed</span>
+        </div>
+        <p class="text-[11px] text-amber-300/80 mt-0.5 leading-snug">
+          Your miners bypass daily ad gates 24/7. Watching ads here provides optional temporary boost slots (+1 or +2).
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chain Ad Mode Status Card (Dynamic: 1 Ad for Miner Console, 10 Ads for Chain Boost) -->
+  <div id="chain-mode-card" class="w-full max-w-sm mx-auto mt-3 mb-2 p-3 ad-card-glass rounded-2xl shadow-sm flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <div id="chain-mode-icon" class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center text-xl shrink-0">
+        ⚡
+      </div>
+      <div class="text-left">
+        <div id="chain-mode-title" class="font-bold text-xs sm:text-sm text-white font-display">10-Ad Continuous Chain</div>
+        <div id="chain-mode-subtitle" class="text-[10px] text-slate-300 font-mono mt-0.5">Auto-advancing 16.30s timer • Auto-refreshes ads</div>
+      </div>
+    </div>
+    <div id="chain-mode-badge" class="px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30 shrink-0">
+      10 Ads
+    </div>
+  </div>
+
+  <!-- Multi-Ad Animated Progress Bar -->
+  <div id="chain-progress-container" class="w-full max-w-sm mx-auto mb-2 px-1">
+    <div class="flex items-center justify-between text-[11px] font-semibold text-slate-300 mb-1">
+      <span id="chain-progress-label">Queue: 1/10 Ads</span>
+      <span id="chain-reward-preview" class="text-amber-400 font-bold">+1 Slot at 10 Ads</span>
+    </div>
+    <div class="w-full bg-slate-800/80 rounded-full h-2 overflow-hidden shadow-inner border border-white/5">
+      <div id="chain-progress-fill" class="bg-gradient-to-r from-amber-400 to-amber-600 h-full rounded-full transition-all duration-500 w-[10%]"></div>
+    </div>
+  </div>
+
+  <!-- Distraction-free Centered Ad Container -->
+  <main id="ad-container" class="max-w-sm w-full mx-auto my-auto flex flex-col items-center justify-center space-y-3">
+    <div class="flex items-center gap-2">
+      <span id="chain-progress-badge" class="hidden px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold border border-amber-300/70">Queue: 1/15</span>
+    </div>
+
+    <!-- Network Offline Warning -->
+    <div id="ad-offline-banner" class="hidden w-full max-w-xs mx-auto py-1 px-3 bg-red-50 text-red-700 border border-red-200 rounded-xl text-center text-xs font-semibold animate-pulse">
+      ⚠️ Internet connection lost. Ad timer paused.
+    </div>
+
+    <!-- Active Sponsored Showcase Card -->
+    <div id="sponsored-showcase-card" class="w-full ad-card-glass border-amber-500/30 rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col items-center text-center relative overflow-hidden transition-all duration-300">
+      <!-- Top Accent Ribbon -->
+      <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-indigo-500"></div>
+
+      <!-- Live Sponsored Sponsor Tag -->
+      <div class="w-full flex items-center justify-between text-[10px] uppercase font-bold tracking-wider mb-2">
+        <span class="flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full text-amber-300">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="ad-provider-name">Monetag Rewarded Network</span>
+        </span>
+        <span id="ad-provider-tag" class="text-slate-400 font-mono text-[9px]">Monetag • Zone 11753248</span>
+      </div>
+
+      <!-- Clean Cyber Rewarded Ad Showcase Window (Monetag & GigaPub) -->
+      <div class="relative w-full h-36 sm:h-40 rounded-2xl overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border border-white/12 my-1.5 flex items-center justify-center shadow-inner">
+        <!-- Subtle Ambient Grid & Pulse Background -->
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/15 via-slate-950/80 to-slate-950 pointer-events-none"></div>
+        <div class="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none"></div>
+
+        <!-- Video Overlay Badges -->
+        <div class="absolute top-2 left-2 z-10 flex items-center gap-1.5 pointer-events-none">
+          <span class="px-1.5 py-0.5 rounded bg-black/70 backdrop-blur-sm border border-white/10 text-[9px] font-bold text-sky-400 font-mono">REWARDED</span>
+          <span id="ad-active-network-pill" class="px-1.5 py-0.5 rounded bg-amber-500/20 backdrop-blur-sm border border-amber-500/30 text-[9px] font-bold text-amber-300 font-mono">MONETAG ZONE 11753248</span>
+        </div>
+
+        <!-- In-Player Timer Pill -->
+        <div class="absolute top-2 right-2 z-10 pointer-events-none">
+          <div class="px-2.5 py-0.5 rounded-full bg-black/75 backdrop-blur-sm border border-amber-400/40 text-amber-300 font-mono text-[10px] font-bold flex items-center gap-1 shadow-md">
+            <span>⏳</span>
+            <span id="ad-sec">16.3s</span>
+          </div>
+        </div>
+
+        <!-- Center Floating Monetag & GigaPub Interactive Branding -->
+        <div class="relative z-10 flex flex-col items-center justify-center p-2 text-center pointer-events-none">
+          <div id="sponsor-icon-box" class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500/30 via-orange-500/30 to-indigo-500/30 border border-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-lg mb-1.5 animate-pulse">
+            ⚡
+          </div>
+          <div id="sponsor-creative-badge" class="px-2.5 py-0.5 rounded-full bg-black/60 border border-white/10 text-[9px] font-mono font-bold text-amber-300 uppercase tracking-wide">
+            Monetag • Zone 11753248
+          </div>
+        </div>
+      </div>
+
+      <!-- Sponsor Creative Information & Interactive CTA -->
+      <div class="w-full text-left bg-black/40 border border-white/8 rounded-2xl p-3 my-1.5 space-y-1.5">
+        <div class="flex items-center justify-between">
+          <h4 id="sponsor-creative-title" class="text-xs font-bold text-white truncate font-display">Monetag High-CPM Rewarded Video</h4>
+          <span class="text-[9px] font-mono text-emerald-400 font-bold shrink-0 ml-1">PARTNER</span>
+        </div>
+        <p id="sponsor-creative-desc" class="text-[11px] text-slate-300 leading-snug">
+          Verified Monetag Rewarded Ads. Keep window active for 16.30s to unlock 24h autonomous mining boost.
+        </p>
+        <div class="pt-1 flex items-center justify-between">
+          <a id="sponsor-cta-link" href="https://t.me/AAAPREMIUMAPPSbot" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 transition">
+            <span id="sponsor-cta-text">⚡ Claim Offer / Boost</span>
+            <span>➔</span>
+          </a>
+          <span class="text-[9px] font-mono text-slate-400">Reward unlocks at 0s</span>
+        </div>
+      </div>
+
+      <!-- Sponsor / Ad Status Text -->
+      <div class="mt-1 space-y-0.5 w-full">
+        <div id="ad-status" class="text-white font-bold text-xs sm:text-sm leading-snug">
+          🎬 Playing Sponsored Ad...
+        </div>
+        <div id="ad-substatus" class="text-slate-400 text-[11px] leading-tight font-mono">
+          Watching verified sponsor video... Please keep window open
+        </div>
+      </div>
+
+      <!-- Dynamic Slot Reward Pill -->
+      <div class="mt-2 py-1 px-3 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-xl border border-amber-500/30 flex items-center gap-1.5 text-xs text-amber-300 font-semibold shadow-2xs">
+        <span>⚡</span>
+        <span id="ad-reward-hint">10-Ad Chain: +1 Extra Slot (24h)</span>
+      </div>
+
+      <!-- Primary Watch Ad Action Button -->
+      <div id="watch-ad-btn-container" class="w-full pt-2">
+        <button id="watch-ad-btn" onclick="launchAd()" class="w-full py-3 px-4 bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 hover:from-amber-600 hover:to-orange-600 active:scale-95 text-white font-bold text-sm rounded-2xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+          <span>🎬 Watch Ad</span>
+          <span id="watch-ad-step" class="text-xs opacity-90 font-mono">(Ad 1/10)</span>
+        </button>
+      </div>
+
+      <!-- Post-Ad Actions: Close or Continue (Shown when an ad finishes) -->
+      <div id="post-ad-actions" class="hidden w-full pt-2 flex flex-col gap-2">
+        <button onclick="closeMiniApp()" class="w-full py-2.5 px-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+          <span>✓ Finish & Close Mini App</span>
+          <span class="text-[10px] opacity-90 font-mono">(Reward Saved)</span>
+        </button>
+      </div>
+
+      <!-- Spinner -->
+      <div id="ad-spinner" class="spinner my-2 hidden"></div>
+
+      <!-- Emergency Skip Button (Revealed after 8s) -->
+      <div id="emergency-skip-box" class="hidden w-full pt-2">
+        <button onclick="emergencySkipCurrentAd()" class="w-full py-2 px-3 bg-white/10 hover:bg-white/15 active:scale-95 text-slate-200 font-semibold text-xs rounded-xl border border-white/10 transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer">
+          <span>⚡ Ad Finished / Claim Reward</span>
+          <span>➔</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Missing Telegram Account Guest Banner -->
+    <div id="ad-guest-notice" class="hidden w-full bg-indigo-50 border border-indigo-200 rounded-3xl p-5 text-center space-y-3 shadow-sm">
+      <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto text-2xl shadow-inner">
+        🚀
+      </div>
+      <div>
+        <h3 class="font-bold text-sm text-slate-900 font-display">Telegram Miner Session Required</h3>
+        <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+          Watching ads unlocks temporary mining slots for your Telegram miner account. Launch via our official bot to credit your rewards!
+        </p>
+      </div>
+      <a href="https://t.me/AAAPREMIUMAPPSbot?start=app" target="_blank" class="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer">
+        <span>🚀 Launch via Telegram (@AAAPREMIUMAPPSbot)</span>
+      </a>
+    </div>
+
+    <!-- Stop Chain Early (Keep Rewards) -->
+    <div id="chain-control-box" class="w-full max-w-xs mx-auto pt-1">
+      <button onclick="closeMiniApp()" class="w-full py-2 px-3 bg-white/5 hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 border border-white/10 text-xs font-semibold rounded-xl active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer">
+        <span>✕ Finish & Close (Keep Progress)</span>
+      </button>
+    </div>
+
+    <!-- Premature Dismissal Warning Banner (Hidden by default) -->
+    <div id="ad-dismissal-warning" class="hidden w-full p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs text-left my-2 shadow-xs">
+      <div class="flex items-start gap-2.5">
+        <span class="text-base select-none">⚠️</span>
+        <div>
+          <div class="font-bold text-slate-900 text-xs">Video Dismissed Early</div>
+          <div class="text-[11px] text-slate-600 mt-0.5 leading-relaxed">You must watch the entire rewarded video without closing to unlock your 24/7 cloud mining slot. Click below to resume.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error / Dismissal Actions (Hidden by default) -->
+    <div id="ad-retry-box" class="hidden flex flex-col sm:flex-row gap-2.5 w-full pt-2">
+      <button onclick="launchAd()" class="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer">
+        <span>🔁 Try Again</span>
+      </button>
+      <button onclick="closeMiniApp()" class="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200 active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer">
+        <span>❌ Return to Chat</span>
+      </button>
+    </div>
+  </main>
+
+  <!-- Reward Celebration Modal (Activated upon 5 Completed Ads) -->
+  <div id="rewardModal" class="hidden fixed inset-0 z-[99999] bg-slate-900/80 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-amber-400/60 dark:border-amber-500/40 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
+      <div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-amber-400 via-amber-500 to-orange-500 text-white flex items-center justify-center mx-auto text-3xl shadow-lg shadow-amber-500/30">
+        ⚡
+      </div>
+      <div class="space-y-1.5">
+        <span class="inline-block px-3 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-[11px] font-bold rounded-full uppercase tracking-wider border border-amber-200 dark:border-amber-700/50">Boost Unlocked</span>
+        <h3 class="text-xl font-bold font-display text-slate-900 dark:text-white">🎉 +1 Mining Slot Active!</h3>
+        <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pt-1">
+          You completed all 10 sponsored ads! <strong>+1 temporary cloud mining slot</strong> is now active on your account for <strong>24 hours</strong>.
+        </p>
+      </div>
+      <div class="p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-slate-800 dark:to-slate-800/80 rounded-2xl border border-amber-200 dark:border-slate-700 flex items-center justify-around text-xs font-semibold text-amber-900 dark:text-amber-200">
+        <div class="flex flex-col items-center">
+          <span class="text-[9px] text-amber-600 dark:text-amber-400 font-mono uppercase tracking-wider">Extra Slots</span>
+          <span class="text-base font-bold text-amber-700 dark:text-amber-300">+1 SLOT</span>
+        </div>
+        <div class="h-6 w-px bg-amber-200 dark:bg-slate-700"></div>
+        <div class="flex flex-col items-center">
+          <span class="text-[9px] text-amber-600 dark:text-amber-400 font-mono uppercase tracking-wider">Duration</span>
+          <span class="text-base font-bold text-emerald-600 dark:text-emerald-400">24 HOURS</span>
+        </div>
+      </div>
+      <div class="space-y-2 pt-1">
+        <button onclick="continueUnlimitedAds()" class="w-full py-3 px-4 bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 hover:from-amber-600 hover:to-orange-600 active:scale-95 text-white font-bold text-sm rounded-2xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+          <span>🎬 Watch More (Unlimited Bonus Ads)</span>
+        </button>
+        <button onclick="closeMiniApp()" class="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 hover:from-emerald-600 hover:to-teal-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+          <span>✕ Close & Return to Telegram</span>
+        </button>
+        <button onclick="returnToDashboard()" class="w-full py-2 px-4 bg-white/10 hover:bg-white/15 active:scale-95 text-slate-200 font-semibold text-xs rounded-xl border border-white/10 transition flex items-center justify-center gap-2 cursor-pointer">
+          <span>🚀 View Mining Dashboard</span>
+        </button>
+      </div>
+      <div id="rewardModalAutoClose" class="text-[11px] text-slate-400 font-mono">
+        Auto-closing in <span id="rewardAutoCloseSec" class="font-bold text-amber-400">7</span>s...
+        <button onclick="cancelRewardAutoClose()" class="underline text-slate-300 hover:text-white ml-1 cursor-pointer">Stay</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daily UTC Reset Banner & Live Slot Expiry Preview -->
+  <div class="w-full max-w-sm mx-auto mb-2 p-2.5 ad-card-glass rounded-2xl flex items-center justify-between text-xs shadow-xs">
+    <div class="flex items-center gap-2 text-slate-700">
+      <span class="text-base select-none">⏳</span>
+      <div class="text-left">
+        <div class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Daily Reset (00:00 UTC)</div>
+        <div class="font-mono font-bold text-amber-700 text-xs flex items-center gap-1">
+          <span id="daily-reset-timer">--:--:--</span>
+          <span class="text-[10px] font-normal text-slate-400">left today</span>
+        </div>
+      </div>
+    </div>
+    <div class="text-right">
+      <div class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Boost Outcome</div>
+      <div id="slot-expiry-preview" class="text-emerald-600 font-bold text-[11px]">+1 Slot for 24h</div>
+    </div>
+  </div>
+
+  <!-- Live Daily Ads & Temporary Slots Status Card -->
+  <div id="ad-live-stats" class="w-full max-w-sm mx-auto mt-auto mb-2 p-3 ad-card-glass rounded-2xl shadow-xs flex items-center justify-between text-xs">
+    <div class="flex items-center gap-2.5">
+      <span class="text-xl select-none">🎯</span>
+      <div class="text-left">
+        <div class="font-bold text-white" id="live-ads-today">Daily Ads: <span class="text-amber-400 font-mono font-bold">0</span>/10</div>
+        <div class="text-[11px] text-slate-300" id="live-slot-status">Watch 10 ads for 24h Daily Fuel & Tier 1 Boost</div>
+      </div>
+    </div>
+    <div class="text-right flex flex-col items-end gap-1">
+      <span id="live-temp-badge" class="px-2.5 py-1 rounded-xl bg-white/10 text-slate-200 font-bold text-[10px] border border-white/10">Base</span>
+      <span id="live-ad-streak" class="hidden px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold text-[10px] border border-amber-500/30 shadow-2xs">🔥 1d Streak</span>
+    </div>
+  </div>
+
+  <!-- Ad Policy & Network Transparency Guide Card -->
+  <div class="w-full max-w-sm mx-auto mb-3 p-3.5 ad-card-glass rounded-2xl border border-white/10 text-left space-y-2.5 shadow-sm">
+    <div class="flex items-center justify-between text-xs font-bold text-white border-b border-white/10 pb-1.5">
+      <span class="flex items-center gap-1.5">
+        <span class="text-amber-400">📋</span>
+        <span>Ad Rules & Unlimited Rewards</span>
+      </span>
+      <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">Official</span>
+    </div>
+    <div class="grid grid-cols-1 gap-2 text-[11px] text-slate-300">
+      <div class="flex items-start gap-2 bg-black/20 p-2 rounded-xl border border-white/5">
+        <span class="text-amber-400 font-bold">1.</span>
+        <div><strong class="text-white">Daily 10-Ad Gate:</strong> Every non-VIP user must watch 10 ads daily. If &lt;10 ads, mining pauses until fuel is refilled. VIP members are 100% exempt.</div>
+      </div>
+      <div class="flex items-start gap-2 bg-black/20 p-2 rounded-xl border border-white/5">
+        <span class="text-indigo-400 font-bold">2.</span>
+        <div><strong class="text-white">New User Verification:</strong> New users must watch 10 ads to complete identity verification and activate referrer credits.</div>
+      </div>
+      <div class="flex items-start gap-2 bg-black/20 p-2 rounded-xl border border-white/5">
+        <span class="text-emerald-400 font-bold">3.</span>
+        <div><strong class="text-white">Console Opening Ad:</strong> Launching the Miner Console plays 1 quick ad that adds +1 to your daily 10-ad count.</div>
+      </div>
+      <div class="flex items-start gap-2 bg-black/20 p-2 rounded-xl border border-white/5">
+        <span class="text-sky-400 font-bold">4.</span>
+        <div><strong class="text-white">All Networks Count:</strong> Monetag (Rewarded/Interstitial), GigaPub, HilltopAds VAST 3.0, and Adsgram all count toward your 10 ads.</div>
+      </div>
+      <div class="flex items-start gap-2 bg-black/20 p-2 rounded-xl border border-white/5">
+        <span class="text-purple-400 font-bold">5.</span>
+        <div><strong class="text-white">Unlimited Ads:</strong> Watch as many ads as you want! 10 ads = Tier 1 (+1 temp slot for 24h), 20 ads = Tier 2 (+2 temp slots for 24h), 20+ ads = bonus hashpower and weekly leaderboard points. Ads grant temporary slots; permanent slots are earned exclusively via referrals and VIP.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clear Downside Separation Divider (Deep Below Normal Interface) -->
+  <div class="w-full max-w-sm mx-auto flex items-center justify-center gap-3 my-10 text-[10px] uppercase font-bold tracking-wider text-slate-500">
+    <div class="h-px bg-white/10 flex-1"></div>
+    <span class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/90 border border-white/10 text-slate-400">
+      <span>⬇️</span>
+      <span>SPONSOR BANNERS & DEEP VIDEO FEED</span>
+    </span>
+    <div class="h-px bg-white/10 flex-1"></div>
+  </div>
+
+  <!-- Deep Downside Multi-Provider Banner Cluster (Under Video & Controls, 140px bottom padding) -->
+  <div id="deep-downside-ad-cluster" style="margin-top: 20px; padding-bottom: 140px; display: flex; flex-direction: column; gap: 20px; align-items: center; width: 100%; box-sizing: border-box;">
+
+    <!-- Dynamic Downside Live Status & Quick Refresh Action -->
+    <div id="downside-refresh-indicator" style="display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 350px; padding: 8px 12px; background: rgba(17, 24, 39, 0.85); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; font-size: 11px; box-sizing: border-box;">
+      <span style="display: flex; align-items: center; gap: 7px;">
+        <span id="downside-refresh-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block; transition: all 0.3s ease;"></span>
+        <span id="downside-refresh-label" style="font-weight: 600; color: #e2e8f0; font-family: monospace;">Sponsor Banners Live</span>
+      </span>
+      <button onclick="if(typeof window.refreshDownsideAds==='function') window.refreshDownsideAds(true);" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 8px; padding: 3px 10px; font-size: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+        <span>🔄</span>
+        <span>Refresh Ads</span>
+      </button>
+    </div>
+
+    <!-- [0] HilltopAds Silent VAST 3.0 & Google IMA Video Feed (Deep Downside) -->
+    <div class="ad-card" style="width: 100%; max-width: 350px; background: rgba(17, 24, 39, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; align-items: center; box-sizing: border-box;">
+      <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span style="font-size: 11px; color: #38bdf8; font-weight: 700; text-transform: uppercase; display: flex; align-items: center; gap: 5px;">
+          <span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+          HilltopAds Video Feed (VAST 3.0 / IMA)
+        </span>
+        <span style="font-size: 10px; color: #64748b; font-family: monospace;">16.30s Muted CPM</span>
+      </div>
+      <div id="vast-video-wrapper" style="width: 300px; height: 170px; background: #000; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer;">
+        <video id="silent-vast-player" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;" muted autoplay playsinline></video>
+        <div id="ima-ad-container" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: auto;"></div>
+        <div id="vast-ad-badge" style="position: absolute; top: 6px; left: 8px; z-index: 10; font-size: 9px; font-weight: bold; background: rgba(0,0,0,0.7); padding: 2px 6px; border-radius: 4px; color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); display: flex; align-items: center; gap: 4px;">
+          <span style="width: 5px; height: 5px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+          <span id="vast-ad-label">VAST 3.0 AD</span>
+        </div>
+        <div id="vast-click-cta" style="position: absolute; bottom: 6px; right: 6px; z-index: 10; font-size: 9px; font-weight: 600; background: rgba(14, 165, 233, 0.85); padding: 2px 8px; border-radius: 4px; color: #ffffff; display: none; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.4);">
+          <span>Visit Sponsor ↗</span>
+        </div>
+        <div style="position: absolute; bottom: 6px; left: 8px; z-index: 10; font-size: 9px; background: rgba(0,0,0,0.7); padding: 2px 6px; border-radius: 4px; color: #94a3b8;">
+          🔊 Muted
+        </div>
+      </div>
+    </div>
+
+    <!-- [1] RichAds Native TMA Controller Container -->
+    <div class="ad-card" style="width: 100%; max-width: 350px; background: rgba(17, 24, 39, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; box-sizing: border-box;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span style="font-size: 11px; color: #a855f7; font-weight: 700;">● RICHADS TMA NATIVE</span>
+        <span style="font-size: 10px; color: #64748b;">APP 8896</span>
+      </div>
+      <div id="richads-target" style="min-height: 50px; width: 100%;"></div>
+      <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
+      <script>
+        try {
+          window.TelegramAdsController = new TelegramAdsController();
+          window.TelegramAdsController.initialize({
+            pubId: "1021343",
+            appId: "8896",
+          });
+        } catch(e) { console.warn("RichAds error:", e); }
+      </script>
+    </div>
+
+    <!-- [2] OnClickA 300x250 Banner -->
+    <div class="ad-card" style="width: 100%; max-width: 350px; background: rgba(17, 24, 39, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center;">
+      <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span style="font-size: 11px; color: #fbbf24; font-weight: 700;">● ONCLICKA DISPLAY</span>
+        <span style="font-size: 10px; color: #64748b;">SPOT 464181</span>
+      </div>
+      <div id="onclicka-ad" style="width: 300px; height: 250px; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+        <script async src="https://js.wpadmngr.com/static/adManager.js" data-admpid="464181"></script>
+      </div>
+    </div>
+
+    <!-- [3] A-Ads Adaptive Unit (Unit 2455341) -->
+    <div class="ad-card" style="width: 100%; max-width: 350px; background: rgba(17, 24, 39, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center;">
+      <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span style="font-size: 11px; color: #38bdf8; font-weight: 700;">● A-ADS CRYPTO</span>
+        <span style="font-size: 10px; color: #64748b;">ID 2455341</span>
+      </div>
+      <div id="aads-box" style="width: 100%; display: flex; justify-content: center;">
+        <iframe id="a-ads-frame" data-aa="2455341" src="https://acceptable.a-ads.com/2455341/?size=Adaptive" style="border:0; padding:0; width:100%; max-width:320px; height:60px; overflow:hidden; background-color:transparent;" loading="eager"></iframe>
+      </div>
+    </div>
+
+    <!-- [4] Adsterra Multi-Unit Container (7 Isolated Formats Engine) -->
+    <div id="adsterra-ecosystem-container" class="ad-card" style="width: 100%; max-width: 350px; background: rgba(17, 24, 39, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center;">
+      <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span style="font-size: 11px; color: #f43f5e; font-weight: 700;">● ADSTERRA ECOSYSTEM</span>
+        <span style="font-size: 10px; color: #64748b;">KEY 765c6203...</span>
+      </div>
+      <!-- Format 1: 300x250 Mobile Banner -->
+      <div style="margin-bottom: 12px; width: 100%; display: flex; justify-content: center;">
+        <iframe srcdoc="&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;meta name='viewport' content='width=device-width, initial-scale=1'&gt;&lt;style&gt;body{margin:0;padding:0;overflow:hidden;background:transparent;display:flex;justify-content:center;align-items:center;min-height:250px;}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;script type='text/javascript'&gt;atOptions = {'key' : '093a2a60816f82120a652df35ed46961','format' : 'iframe','height' : 250,'width' : 300,'params' : {}};&lt;/script&gt;&lt;script type='text/javascript' src='https://www.highrevenueformat.com/093a2a60816f82120a652df35ed46961/invoke.js'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" style="width:300px; height:250px; border:0; overflow:hidden;" scrolling="no" loading="eager"></iframe>
+      </div>
+      <!-- Format 2: 320x50 Mobile Strip -->
+      <div style="margin-bottom: 12px; width: 100%; display: flex; justify-content: center;">
+        <iframe srcdoc="&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;meta name='viewport' content='width=device-width, initial-scale=1'&gt;&lt;style&gt;body{margin:0;padding:0;overflow:hidden;background:transparent;display:flex;justify-content:center;align-items:center;min-height:50px;}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;script type='text/javascript'&gt;atOptions = {'key' : '4a5d0f1e81c6b96c79c633df6eed444f','format' : 'iframe','height' : 50,'width' : 320,'params' : {}};&lt;/script&gt;&lt;script type='text/javascript' src='https://www.highrevenueformat.com/4a5d0f1e81c6b96c79c633df6eed444f/invoke.js'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" style="width:320px; height:50px; border:0; overflow:hidden;" scrolling="no" loading="eager"></iframe>
+      </div>
+      <!-- Format 3: Native Responsive Banner Container -->
+      <div id="container-cddb980692194d13198a2a8e374c5fbc" style="width: 100%; margin-bottom: 12px; min-height: 50px;"></div>
+      <script async="async" data-cfasync="false" src="https://pl31346908.profitableratecpmnetwork.com/cddb980692194d13198a2a8e374c5fbc/invoke.js"></script>
+      <!-- Format 4: 468x60 Banner -->
+      <div style="margin-bottom: 12px; width: 100%; max-width: 320px; overflow-x: auto; display: flex; justify-content: center;">
+        <iframe srcdoc="&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;style&gt;body{margin:0;padding:0;overflow:hidden;background:transparent;display:flex;justify-content:center;align-items:center;min-height:60px;}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;script type='text/javascript'&gt;atOptions = {'key' : '6dcd8ca954d06fe38cb3b5de16ae77be','format' : 'iframe','height' : 60,'width' : 468,'params' : {}};&lt;/script&gt;&lt;script type='text/javascript' src='https://www.highrevenueformat.com/6dcd8ca954d06fe38cb3b5de16ae77be/invoke.js'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" style="width:468px; height:60px; border:0; overflow:hidden;" scrolling="no" loading="eager"></iframe>
+      </div>
+      <!-- Format 5: 160x300 Skyscraper -->
+      <div style="margin-bottom: 12px; width: 100%; display: flex; justify-content: center;">
+        <iframe srcdoc="&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;style&gt;body{margin:0;padding:0;overflow:hidden;background:transparent;display:flex;justify-content:center;align-items:center;min-height:300px;}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;script type='text/javascript'&gt;atOptions = {'key' : '32eb7e21714d272af4e0526f9fb52111','format' : 'iframe','height' : 300,'width' : 160,'params' : {}};&lt;/script&gt;&lt;script type='text/javascript' src='https://www.highrevenueformat.com/32eb7e21714d272af4e0526f9fb52111/invoke.js'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" style="width:160px; height:300px; border:0; overflow:hidden;" scrolling="no" loading="eager"></iframe>
+      </div>
+      <!-- Format 6: 160x600 Vertical Banner -->
+      <div style="margin-bottom: 12px; width: 100%; display: flex; justify-content: center;">
+        <iframe srcdoc="&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;style&gt;body{margin:0;padding:0;overflow:hidden;background:transparent;display:flex;justify-content:center;align-items:center;min-height:600px;}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;script type='text/javascript'&gt;atOptions = {'key' : '78eaae68603f29e30ad1f6686e347877','format' : 'iframe','height' : 600,'width' : 160,'params' : {}};&lt;/script&gt;&lt;script type='text/javascript' src='https://www.highrevenueformat.com/78eaae68603f29e30ad1f6686e347877/invoke.js'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" style="width:160px; height:600px; border:0; overflow:hidden;" scrolling="no" loading="eager"></iframe>
+      </div>
+      <!-- Format 7: 728x90 Leaderboard (Scrollable Box) -->
+      <div style="width: 100%; max-width: 320px; overflow-x: auto; display: flex; justify-content: flex-start;">
+        <iframe srcdoc="&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;style&gt;body{margin:0;padding:0;overflow:hidden;background:transparent;display:flex;justify-content:center;align-items:center;min-height:90px;}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;script type='text/javascript'&gt;atOptions = {'key' : 'd1e04d9f634054cf0442d12d106132f6','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};&lt;/script&gt;&lt;script type='text/javascript' src='https://www.highrevenueformat.com/d1e04d9f634054cf0442d12d106132f6/invoke.js'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" style="width:728px; height:90px; border:0; overflow:hidden;" scrolling="no" loading="eager"></iframe>
+      </div>
+    </div>
+
+    <!-- ================= HILLTOPADS UNITS ================= -->
+
+    <!-- HilltopAds MultiTag Zone A (Zone 7428545) -->
+    <div class="ad-provider-card" style="width: 100%; max-width: 340px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; box-sizing: border-box;">
+      <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span style="font-size: 10px; color: #10b981; font-weight: 600; text-transform: uppercase;">● HilltopAds MultiTag A</span>
+        <span style="font-size: 10px; color: #64748b;">Zone 7428545</span>
+      </div>
+      <div id="hilltop-zone-a" style="min-height: 50px; width: 100%; display: flex; justify-content: center;">
+        <script>
+          (function(vbopj){
+            var d = document,
+                s = d.createElement('script'),
+                l = d.currentScript || d.scripts[d.scripts.length - 1];
+            s.settings = vbopj || {};
+            s.src = "https:\/\/candid-revenue.com\/b.XcVfsXdJGqlU0GYxWAcS\/IekmO9YuEZHULlCkFPqT\/cC0LM\/jtgH1fNbDbUYt\/NQzjQWy\/O\/DTUI0ZO-Qn";
+            s.async = true;
+            s.referrerPolicy = 'no-referrer-when-downgrade';
+            l.parentNode.insertBefore(s, l);
+          })({});
+        </script>
+      </div>
+    </div>
+
+    <!-- HilltopAds MultiTag Zone B (Zone 7428533) -->
+    <div class="ad-provider-card" style="width: 100%; max-width: 340px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; box-sizing: border-box;">
+      <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span style="font-size: 10px; color: #10b981; font-weight: 600; text-transform: uppercase;">● HilltopAds MultiTag B</span>
+        <span style="font-size: 10px; color: #64748b;">Zone 7428533</span>
+      </div>
+      <div id="hilltop-zone-b" style="min-height: 50px; width: 100%; display: flex; justify-content: center;">
+        <script>
+          (function(zkbf){
+            var d = document,
+                s = d.createElement('script'),
+                l = d.currentScript || d.scripts[d.scripts.length - 1];
+            s.settings = zkbf || {};
+            s.src = "https:\/\/candid-revenue.com\/b\/X\/VTsnd.Gxlv0nYAW\/co\/WeXmV9_u_ZQUulqktPHT\/cY0hM\/jmg\/1vMlztMptqN\/z\/QXyfOCD\/UCzKNmwW";
+            s.async = true;
+            s.referrerPolicy = 'no-referrer-when-downgrade';
+            l.parentNode.insertBefore(s, l);
+          })({});
+        </script>
+      </div>
+    </div>
+
+
+    <!-- [6] Verified Web3 & Crypto High-Yield CPM Sponsor Unit -->
+    <div class="ad-card" style="width: 100%; max-width: 350px; background: rgba(17, 24, 39, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center;">
+      <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span style="font-size: 11px; color: #06b6d4; font-weight: 700;">● CRYPTO CPM SPONSOR</span>
+        <span style="font-size: 10px; color: #64748b;">300x250 RECTANGLE</span>
+      </div>
+      <div id="crypto-sponsor-box" style="width: 300px; height: 250px; overflow: hidden; display: flex; justify-content: center; align-items: center; border-radius: 8px; background: rgba(0,0,0,0.3);">
+        <iframe id="crypto-sponsor-frame" data-aa="2455341" src="https://acceptable.a-ads.com/2455341/?size=300x250" style="border:0; padding:0; width:300px; height:250px; overflow:hidden; background-color:transparent;" loading="eager"></iframe>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="w-full max-w-sm pt-2 pb-4 text-center">
+    <button onclick="returnToDashboard()" class="text-xs text-slate-400 hover:text-slate-200 transition cursor-pointer">✕ Return to Mining Console</button>
+  </footer>
+
+  <script>
+    const CF_NODES = [
+      "https://restore-agy.aaaai2.workers.dev",
+      "https://restore-agy.aaa-bot.workers.dev",
+      "https://restore-agy.aaa222.workers.dev",
+      "https://restore-agy.agorameet.workers.dev",
+      "https://restore-agy.aaaai.workers.dev"
+    ];
+    const API_BASE = (typeof window !== "undefined" && window.location.hostname.includes("workers.dev"))
+      ? window.location.origin
+      : CF_NODES[0];
+        async function fetchMeshWithFailover(path, options = {}) {
+      const isOriginWorker = typeof window !== "undefined" && window.location.hostname.includes("workers.dev");
+      const primaryOrigin = isOriginWorker ? window.location.origin : CF_NODES[0];
+      const candidateUrls = isOriginWorker 
+        ? [primaryOrigin + path, ...CF_NODES.map(n => n + path)]
+        : CF_NODES.map(n => n + path);
+      
+      for (const url of candidateUrls) {
+        try {
+          const resp = await fetch(url, options);
+          if (resp && resp.ok) return resp;
+        } catch (_) {}
+      }
+      return await fetch(candidateUrls[0], options).catch(() => ({ ok: false, json: async () => ({}) }));
+    }
+
+    let activeSession = null;
+    let timerInterval = null;
+    let adFinished = false;
+    let activeElapsedMs = 0;
+    let lastTickTime = Date.now();
+
+    let autoAdvanceEnabled = false;
+    try {
+      autoAdvanceEnabled = localStorage.getItem('atf_auto_advance_ads') === '1';
+    } catch (e) {}
+
+    function handleToggleAutoAdvance(enabled) {
+      autoAdvanceEnabled = Boolean(enabled);
+      try {
+        localStorage.setItem('atf_auto_advance_ads', autoAdvanceEnabled ? '1' : '0');
+        window.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.();
+      } catch (e) {}
+      updateAutoAdvanceUI();
+      if (!autoAdvanceEnabled && window._nextAdCountdown) {
+        cancelNextAdCountdown();
+      }
+    }
+    window.handleToggleAutoAdvance = handleToggleAutoAdvance;
+
+    function updateAutoAdvanceUI() {
+      const toggle = document.getElementById('toggleAutoAdvance');
+      if (toggle) toggle.checked = autoAdvanceEnabled;
+      const dot = document.getElementById('autoAdvanceDot');
+      if (dot) {
+        dot.className = autoAdvanceEnabled
+          ? 'w-2 h-2 rounded-full bg-emerald-400 shadow-xs animate-pulse'
+          : 'w-2 h-2 rounded-full bg-slate-500';
+      }
+    }
+
+    function cancelNextAdCountdown() {
+      if (window._nextAdCountdown) {
+        clearInterval(window._nextAdCountdown);
+        window._nextAdCountdown = null;
+      }
+      const substatusEl = document.getElementById('ad-substatus');
+      if (substatusEl) {
+        substatusEl.textContent = 'Auto-play stopped. Click "Watch Next Ad" when ready, or "Close" to finish.';
+      }
+      const postAdActions = document.getElementById('post-ad-actions');
+      if (postAdActions) postAdActions.classList.remove('hidden');
+    }
+    window.cancelNextAdCountdown = cancelNextAdCountdown;
+
+    function cancelRewardAutoClose() {
+      if (window._rewardAutoCloseTimer) {
+        clearInterval(window._rewardAutoCloseTimer);
+        window._rewardAutoCloseTimer = null;
+      }
+      const box = document.getElementById('rewardModalAutoClose');
+      if (box) box.innerHTML = '<span class="text-emerald-400 font-bold">✓ Reward saved. You can close anytime.</span>';
+    }
+    window.cancelRewardAutoClose = cancelRewardAutoClose;
+
+    function continueUnlimitedAds() {
+      cancelRewardAutoClose();
+      const modal = document.getElementById('rewardModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      adFinished = false;
+      chainTarget = Math.max(chainTarget + 10, completedAds + 10);
+      currentAdIndex = completedAds + 1;
+      updateModeUI();
+      const watchBtn = document.getElementById('watch-ad-btn');
+      if (watchBtn) watchBtn.disabled = false;
+      const tg = window.Telegram?.WebApp;
+      try { tg?.HapticFeedback?.impactOccurred('medium'); } catch (e) {}
+      setTimeout(() => launchAd(), 300);
+    }
+    window.continueUnlimitedAds = continueUnlimitedAds;
+
+    function returnToDashboard() {
+      if (window._nextAdCountdown) {
+        clearInterval(window._nextAdCountdown);
+        window._nextAdCountdown = null;
+      }
+      if (window._rewardAutoCloseTimer) {
+        clearInterval(window._rewardAutoCloseTimer);
+        window._rewardAutoCloseTimer = null;
+      }
+      const tg = window.Telegram?.WebApp;
+      try { tg?.HapticFeedback?.notificationOccurred('success'); } catch (e) {}
+      const urlParams = new URLSearchParams(window.location.search);
+      const uid = urlParams.get('user_id') || localStorage.getItem('atf_user_id') || '';
+      window.location.href = '/app/' + (uid ? `?user_id=${encodeURIComponent(uid)}` : '');
+    }
+    window.returnToDashboard = returnToDashboard;
+
+    function closeMiniApp() {
+      if (window._autoAdvanceTimer) {
+        clearTimeout(window._autoAdvanceTimer);
+        window._autoAdvanceTimer = null;
+      }
+      if (window._nextAdCountdown) {
+        clearInterval(window._nextAdCountdown);
+        window._nextAdCountdown = null;
+      }
+      if (window._rewardAutoCloseTimer) {
+        clearInterval(window._rewardAutoCloseTimer);
+        window._rewardAutoCloseTimer = null;
+      }
+      currentAdRunId++;
+      isAdPlaying = false;
+      adFinished = true;
+      stopVisualCountdown();
+      stopInCardAdCanvas();
+
+      const tg = window.Telegram?.WebApp;
+      try { tg?.HapticFeedback?.notificationOccurred?.('success'); } catch (e) {}
+      try { tg?.disableClosingConfirmation?.(); } catch (e) {}
+
+      try {
+        if (tg && typeof tg.close === 'function') {
+          tg.close();
+        }
+      } catch (e) {}
+      try {
+        window.close();
+      } catch (e) {}
+
+      setTimeout(() => {
+        returnToDashboard();
+      }, 500);
+    }
+    window.closeMiniApp = closeMiniApp;
+
+    async function getTelegramSession() {
+      for (let i = 0; i < 20; i++) {
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+          tg.ready();
+          tg.expand();
+          if (typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();
+          if (tg.initDataUnsafe?.user?.id) return { user: tg.initDataUnsafe.user, initData: tg.initData };
+          if (tg.initData) {
+            try {
+              const u = new URLSearchParams(tg.initData).get('user');
+              if (u) return { user: JSON.parse(decodeURIComponent(u)), initData: tg.initData };
+            } catch(e) {}
+          }
+        }
+        await new Promise(r => setTimeout(r, 100));
+      }
+      return null;
+    }
+
+    // =========================================================================
+    // 👤 PURE TELEGRAM USER PROFILE HEADER BINDING (AD PORTAL)
+    // =========================================================================
+    function parseTelegramUserJson(raw) {
+      if (!raw) return null;
+      let str = String(raw).trim();
+      for (let i = 0; i < 3; i++) {
+        try {
+          const parsed = JSON.parse(str);
+          if (parsed && typeof parsed === 'object' && (parsed.id || parsed.first_name || parsed.username)) {
+            return parsed;
+          }
+        } catch (e) {}
+        try {
+          const decoded = decodeURIComponent(str);
+          if (decoded === str) break;
+          str = decoded;
+        } catch (e) {
+          break;
+        }
+      }
+      return null;
+    }
+
+    function extractUserFromParamString(paramStr) {
+      if (!paramStr) return null;
+      let s = String(paramStr).trim();
+      if (s.startsWith('#') || s.startsWith('?')) s = s.slice(1);
+      try {
+        const p = new URLSearchParams(s);
+        // 1. Direct 'user' JSON parameter
+        const uVal = p.get('user');
+        if (uVal) {
+          const u = parseTelegramUserJson(uVal);
+          if (u) return u;
+        }
+        // 2. Nested inside tgWebAppData or initData
+        const tgData = p.get('tgWebAppData') || p.get('initData');
+        if (tgData) {
+          const innerP = new URLSearchParams(tgData);
+          const innerU = innerP.get('user');
+          if (innerU) {
+            const u = parseTelegramUserJson(innerU);
+            if (u) return u;
+          }
+          const m = tgData.match(/user=([^&]+)/);
+          if (m) {
+            const u = parseTelegramUserJson(m[1]);
+            if (u) return u;
+          }
+        }
+        // 3. Direct query parameters (?first_name=...&username=...&user_id=...)
+        const directId = p.get('user_id') || p.get('id');
+        const directFirst = p.get('first_name') || p.get('name');
+        const directUser = p.get('username');
+        if (directFirst || directUser) {
+          return {
+            id: directId ? (Number(directId) || directId) : undefined,
+            first_name: directFirst || '',
+            last_name: p.get('last_name') || '',
+            username: directUser || ''
+          };
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    function resolveAdTelegramUser(fallbackUser = null) {
+      const tg = window.Telegram?.WebApp;
+      if (tg) {
+        try {
+          tg.ready();
+          tg.expand();
+        } catch (e) {}
+
+        // 1. LIVE USER ACCOUNT directly from Telegram.WebApp.initDataUnsafe.user (ALWAYS PRIMARY!)
+        if (tg.initDataUnsafe?.user && (tg.initDataUnsafe.user.first_name || tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.id)) {
+          return tg.initDataUnsafe.user;
+        }
+
+        // 2. Parse initData string directly from Telegram client
+        if (tg.initData) {
+          const u = extractUserFromParamString(tg.initData);
+          if (u) return u;
+        }
+      }
+
+      // 3. Check location.hash (Standard Telegram TMA fragment)
+      if (window.location.hash) {
+        const u = extractUserFromParamString(window.location.hash);
+        if (u) return u;
+      }
+
+      // 4. Check location.search (Telegraph & third-party client query string)
+      if (window.location.search) {
+        const u = extractUserFromParamString(window.location.search);
+        if (u) return u;
+      }
+
+      // 5. Fallback to sessionStorage
+      try {
+        const stored = sessionStorage.getItem('__telegram__initParams');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed?.tgWebAppData) {
+            const u = extractUserFromParamString(parsed.tgWebAppData);
+            if (u) return u;
+          }
+        }
+        const tmaLaunch = sessionStorage.getItem('telegram-apps/launch-params') || sessionStorage.getItem('tma.js/launch-params');
+        if (tmaLaunch) {
+          const u = extractUserFromParamString(tmaLaunch);
+          if (u) return u;
+        }
+      } catch (e) {}
+
+      // 6. Check localStorage cached user (only if matching live session or query id)
+      try {
+        const cached = localStorage.getItem('atf_cached_user');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          const liveId = tg?.initDataUnsafe?.user?.id;
+          const qId = new URLSearchParams(window.location.search).get('user_id');
+          if (((liveId && String(liveId) === String(parsed.id)) || (qId && String(qId) === String(parsed.id))) && (parsed.first_name || parsed.username)) {
+            return parsed;
+          } else if (liveId && String(liveId) !== String(parsed.id)) {
+            localStorage.removeItem('atf_cached_user');
+          }
+        }
+      } catch (e) {}
+
+      // 7. Only if NO live Telegram user exists at all, use fallbackUser
+      if (fallbackUser && (fallbackUser.first_name || fallbackUser.username || fallbackUser.id)) {
+        return fallbackUser;
+      }
+
+      return null;
+    }
+
+    function renderPureAdTelegramProfile(overrideUser = null) {
+      console.log("[Telegram Ad Profile] renderPureAdTelegramProfile running...", { overrideUser });
+
+      const tg = window.Telegram?.WebApp;
+      if (tg) {
+        try {
+          tg.ready();
+          tg.expand();
+        } catch (e) {}
+      }
+
+      // Exact DOM element targets (Step 1 & 2)
+      const adName = document.getElementById('ad-user-name');
+      const adHandle = document.getElementById('ad-user-handle');
+      const adAvatar = document.getElementById('ad-user-avatar');
+
+      if (!adName || !adHandle || !adAvatar) {
+        console.warn("[Telegram Ad Profile] Elements not found in DOM.");
+        return false;
+      }
+
+      let liveUser = resolveAdTelegramUser(overrideUser);
+      console.log("[Telegram Ad Profile] Resolved user:", liveUser);
+
+      if (!liveUser) {
+        try {
+          const cached = localStorage.getItem('atf_cached_user');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            const liveId = tg?.initDataUnsafe?.user?.id;
+            const qId = new URLSearchParams(window.location.search).get('user_id');
+            if (((liveId && String(liveId) === String(parsed.id)) || (qId && String(qId) === String(parsed.id))) && (parsed.first_name || parsed.username)) {
+              liveUser = parsed;
+            } else if (liveId && String(liveId) !== String(parsed.id)) {
+              localStorage.removeItem('atf_cached_user');
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (!liveUser) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const queryId = urlParams.get('user_id');
+        if (queryId) {
+          adName.textContent = `Miner ${queryId}`;
+          adHandle.textContent = `ID: ${queryId}`;
+          adAvatar.textContent = 'M';
+          return true;
+        }
+        if (!adName.textContent.trim() || adName.textContent === 'ATF Miner') {
+          const isTgEnv = !!(window.TelegramWebviewProxy || (window.Telegram && window.Telegram.WebApp && (window.Telegram.WebApp.initData || window.Telegram.WebApp.initDataUnsafe?.user?.id)));
+          adName.textContent = isTgEnv ? 'ATF Miner' : 'ATF Ad Rewards';
+          adHandle.textContent = isTgEnv ? 'Initializing...' : 'Public Portal';
+          adAvatar.textContent = '🎬';
+        }
+        return false;
+      }
+
+      // Persist real user into localStorage
+      try {
+        if (liveUser && (liveUser.first_name || liveUser.username)) {
+          localStorage.setItem('atf_cached_user', JSON.stringify({
+            id: liveUser.id,
+            first_name: liveUser.first_name || '',
+            last_name: liveUser.last_name || '',
+            username: liveUser.username || '',
+            photo_url: liveUser.photo_url || null
+          }));
+        }
+      } catch (e) {}
+
+      // Step 3 & 4: Read first_name and username directly from Telegram.WebApp.initDataUnsafe.user
+      const firstName = String(liveUser.first_name || '').trim();
+      const lastName = String(liveUser.last_name || '').trim();
+      const fullName = [firstName, lastName].filter(Boolean).join(' ');
+      const username = String(liveUser.username || '').trim();
+      const userId = liveUser.id ? String(liveUser.id) : '';
+      const handle = username ? `@${username}` : (userId ? `ID: ${userId}` : '');
+      
+      let initial = 'M';
+      if (firstName && lastName) {
+        initial = (firstName[0] + lastName[0]).toUpperCase();
+      } else if (firstName) {
+        const parts = firstName.split(/\s+/).filter(Boolean);
+        initial = parts.length > 1 ? (parts[0][0] + parts[1][0]).toUpperCase() : firstName[0].toUpperCase();
+      } else if (lastName) {
+        initial = lastName[0].toUpperCase();
+      } else if (username) {
+        initial = username[0].toUpperCase();
+      }
+
+      // Set text content of the name element to first_name (plus last_name if present)
+      adName.textContent = fullName || firstName || (username ? `@${username}` : (userId ? `ID: ${userId}` : "Telegram User"));
+      // Handle to @username (or user ID)
+      adHandle.textContent = handle;
+      // Avatar to first letter of first_name
+      if (liveUser.photo_url) {
+        adAvatar.innerHTML = `<img src="${liveUser.photo_url}" class="w-full h-full object-cover rounded-xl" alt="Avatar" onerror="this.remove(); this.parentElement.textContent='${initial}';" />`;
+      } else {
+        adAvatar.textContent = initial;
+      }
+      adName.dataset.userType = 'telegram';
+
+      console.log("[Telegram Ad Profile] Successfully updated DOM header:", {
+        name: adName.textContent,
+        handle: adHandle.textContent,
+        avatar: adAvatar.textContent || "photo"
+      });
+
+      return true;
+    }
+
+    window.renderPureAdTelegramProfile = renderPureAdTelegramProfile;
+    window.bindPureAdTelegramHeader = renderPureAdTelegramProfile;
+    window.renderHeader = renderPureAdTelegramProfile;
+
+    // Execution triggers
+    renderPureAdTelegramProfile();
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => renderPureAdTelegramProfile());
+    }
+
+    window.addEventListener('load', () => renderPureAdTelegramProfile());
+
+    let _adHeaderPollCount = 0;
+    const _adHeaderTimer = setInterval(() => {
+      _adHeaderPollCount++;
+      const nameEl = document.getElementById('ad-user-name');
+      const isTelegramUser = nameEl && nameEl.dataset.userType === 'telegram';
+      if (isTelegramUser && _adHeaderPollCount > 10) {
+        clearInterval(_adHeaderTimer);
+      } else {
+        renderPureAdTelegramProfile();
+      }
+      if (_adHeaderPollCount >= 200) {
+        clearInterval(_adHeaderTimer);
+      }
+    }, 50);
+
+    let chainTarget = 10;
+    let currentAdIndex = 1;
+
+    let soundEnabled = true;
+    try {
+      const savedSound = localStorage.getItem('atf_ad_sound');
+      if (savedSound === '0') soundEnabled = false;
+      const soundIcon = document.getElementById('sound-icon');
+      if (soundIcon) soundIcon.textContent = soundEnabled ? '🔊' : '🔇';
+    } catch(e) {}
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const icon = document.getElementById('sound-icon');
+      if (icon) icon.textContent = soundEnabled ? '🔊' : '🔇';
+      try { localStorage.setItem('atf_ad_sound', soundEnabled ? '1' : '0'); } catch(e) {}
+    }
+
+    let audioCtx = null;
+    function playChime(type) {
+      if (!soundEnabled) return;
+      try {
+        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtxClass) return;
+        if (!audioCtx) audioCtx = new AudioCtxClass();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const now = audioCtx.currentTime;
+        if (type === 'tick') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.frequency.setValueAtTime(520, now);
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        } else if (type === 'coin' || type === 'success') {
+          // Mario-style coin reward chime (B5 -> E6)
+          const osc1 = audioCtx.createOscillator();
+          const gain1 = audioCtx.createGain();
+          osc1.connect(gain1);
+          gain1.connect(audioCtx.destination);
+          osc1.frequency.setValueAtTime(987.77, now);
+          gain1.gain.setValueAtTime(0.12, now);
+          gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+          osc1.start(now);
+          osc1.stop(now + 0.12);
+
+          const osc2 = audioCtx.createOscillator();
+          const gain2 = audioCtx.createGain();
+          osc2.connect(gain2);
+          gain2.connect(audioCtx.destination);
+          osc2.frequency.setValueAtTime(1318.51, now + 0.08);
+          gain2.gain.setValueAtTime(0.14, now + 0.08);
+          gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+          osc2.start(now + 0.08);
+          osc2.stop(now + 0.35);
+        } else if (type === 'celebration') {
+          [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const t = now + (idx * 0.09);
+            osc.frequency.setValueAtTime(freq, t);
+            gain.gain.setValueAtTime(0.12, t);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+            osc.start(t);
+            osc.stop(t + 0.3);
+          });
+        }
+      } catch(e) {}
+    }
+
+    function playFX(name) {
+      playChime(name);
+    }
+    window.playFX = playFX;
+
+    function triggerConfetti() {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        canvas.style.pointerEvents = 'none';
+        canvas.style.zIndex = '999999';
+        document.body.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const particles = [];
+        const colors = ['#f59e0b', '#10b981', '#6366f1', '#ec4899', '#3b82f6'];
+        for (let i = 0; i < 70; i++) {
+          particles.push({
+            x: canvas.width / 2,
+            y: canvas.height * 0.45,
+            vx: (Math.random() - 0.5) * 16,
+            vy: (Math.random() - 0.5) * 16 - 4,
+            size: Math.random() * 5 + 3,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            alpha: 1,
+            decay: Math.random() * 0.02 + 0.015
+          });
+        }
+
+        function render() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          let alive = false;
+          particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.3;
+            p.alpha -= p.decay;
+            if (p.alpha > 0) {
+              alive = true;
+              ctx.globalAlpha = p.alpha;
+              ctx.fillStyle = p.color;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          });
+          if (alive) {
+            requestAnimationFrame(render);
+          } else {
+            canvas.remove();
+          }
+        }
+        render();
+      } catch(e) {}
+    }
+
+
+
+    function updateLiveStatsUI(stats) {
+      if (!stats) return;
+      const isVip = Boolean(stats.is_vip || stats.user_slots?.is_vip || stats.ad_rewards?.is_vip);
+      const vipSlots = Number(stats.vip_slots || stats.user_slots?.vip_slots || stats.ad_rewards?.vip_slots || 0);
+      const watched = Number(stats.ads_watched_today ?? stats.adsWatchedToday ?? stats.daily_ads_watched ?? stats.ads_watched ?? stats.ad_rewards?.ads_watched_today ?? 0);
+      const tempCount = Number(stats.temp_slots_count ?? stats.tempSlotsCount ?? stats.ad_rewards?.temp_slots_count ?? 0);
+      const hoursLeft = Number(stats.hours_left ?? stats.temp_hours_left ?? 0);
+      const streak = Number(stats.ad_streak ?? stats.adStreak ?? 0);
+
+      const vipBanner = document.getElementById('ad-vip-active-banner');
+      if (vipBanner) {
+        if (isVip) vipBanner.classList.remove('hidden');
+        else vipBanner.classList.add('hidden');
+      }
+
+      const watchedEl = document.getElementById('live-ads-today');
+      if (watchedEl) {
+        if (isVip) {
+          watchedEl.innerHTML = `🌟 VIP Status: <span class="text-amber-300 font-mono font-bold">Infinite Autopilot</span> <span class="text-[10px] text-amber-300 font-bold bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 rounded-full ml-1">VIP PASS</span>`;
+        } else if (watched >= 10) {
+          watchedEl.innerHTML = `Daily Ads: <span class="text-emerald-400 font-mono font-bold">${watched}</span>/10 <span class="text-[10px] text-emerald-300 font-bold bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.5 rounded-full ml-1">GATE CLEARED</span>`;
+        } else {
+          watchedEl.innerHTML = `Daily Ads: <span class="text-amber-400 font-mono font-bold">${watched}</span>/10 <span class="text-[10px] text-rose-300 font-bold bg-rose-500/20 border border-rose-500/30 px-1.5 py-0.5 rounded-full ml-1">${10 - watched} NEEDED</span>`;
+        }
+      }
+
+      const slotStatusEl = document.getElementById('live-slot-status');
+      if (slotStatusEl) {
+        if (isVip) {
+          slotStatusEl.innerHTML = `<span class="text-amber-300 font-bold">Fleet: +${vipSlots} VIP Slots</span> · Voluntary Boost / Unlimited Ads`;
+        } else if (watched >= 20) {
+          slotStatusEl.innerHTML = `<span class="text-emerald-400 font-bold">🔥 Tier 2 (+2 Slots)</span> active (${watched} ads · Unlimited Mode)`;
+        } else if (watched >= 10) {
+          slotStatusEl.innerHTML = `<span class="text-emerald-400 font-bold">⚡ Tier 1 (+1 Slot)</span> active · ${20 - watched} more for Tier 2 (+2 Slots)`;
+        } else {
+          slotStatusEl.innerHTML = `<span class="text-rose-300 font-bold">Daily Fuel & Verification:</span> Watch ${10 - watched} more ads to unlock mining`;
+        }
+      }
+
+      const badgeEl = document.getElementById('live-temp-badge');
+      if (badgeEl) {
+        if (isVip) {
+          badgeEl.className = "px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-bold text-[10px] border border-amber-500/30 shadow-2xs";
+          badgeEl.textContent = `🌟 VIP (+${vipSlots})`;
+        } else if (tempCount > 0) {
+          badgeEl.className = "px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 font-bold text-[10px] border border-emerald-500/30 shadow-2xs";
+          badgeEl.textContent = `+${tempCount} Boost`;
+        } else {
+          badgeEl.className = "px-2.5 py-1 rounded-xl bg-white/10 text-slate-300 font-bold text-[10px] border border-white/10";
+          badgeEl.textContent = "Base (1)";
+        }
+      }
+
+      const streakEl = document.getElementById('live-ad-streak');
+      if (streakEl) {
+        if (streak > 0) {
+          streakEl.innerHTML = `🔥 <span class="font-bold text-amber-300">${streak}d</span> Streak`;
+          streakEl.classList.remove('hidden');
+        } else {
+          streakEl.classList.add('hidden');
+        }
+      }
+    }
+
+    async function fetchInitialUserStats(userId, initData) {
+      if (!userId) return;
+      try {
+        const res = await fetchMeshWithFailover(`/api/user/data?user_id=${userId}`, {
+          headers: {
+            'Authorization': initData ? `tma ${initData}` : '',
+            'X-Telegram-Init-Data': initData || ''
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const stats = {
+            ...(data?.ad_rewards || data?.stats || {}),
+            is_vip: Boolean(data?.user_slots?.is_vip || data?.vip?.is_vip),
+            vip_slots: Number(data?.user_slots?.vip_slots || data?.vip?.vip_slots || 0),
+            total_allowed: Number(data?.user_slots?.allowed || 1)
+          };
+          updateLiveStatsUI(stats);
+        }
+      } catch(e) {}
+    }
+
+    function setChainTarget(target) {
+      const num = Number(target);
+      const validTarget = num === 1 ? 1 : 10;
+      if (chainTarget === validTarget) return;
+      chainTarget = validTarget;
+      try { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); } catch (e) {}
+      updateModeUI();
+      try {
+        localStorage.setItem('atf_chain_target', String(validTarget));
+        localStorage.setItem('continuous_ad_mode', String(validTarget));
+      } catch (e) {}
+    }
+
+    function updateModeUI() {
+      const isSingle = chainTarget === 1;
+
+      const modeTitle = document.getElementById('chain-mode-title');
+      const modeSub = document.getElementById('chain-mode-subtitle');
+      const modeBadge = document.getElementById('chain-mode-badge');
+      const modeIcon = document.getElementById('chain-mode-icon');
+
+      if (isSingle) {
+        if (modeTitle) modeTitle.textContent = "Console Opening Ad";
+        if (modeSub) modeSub.textContent = "1 Ad • Quick Console Launch Ad (+1 to Daily Count)";
+        if (modeBadge) {
+          modeBadge.textContent = "1 Ad Mode";
+          modeBadge.className = "px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30 shrink-0";
+        }
+        if (modeIcon) {
+          modeIcon.textContent = "🎬";
+          modeIcon.className = "w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-xl shrink-0";
+        }
+      } else {
+        if (modeTitle) modeTitle.textContent = "Daily Fuel & Verification (10 Ads)";
+        if (modeSub) modeSub.textContent = "Auto-advancing 16.30s • Monetag, GigaPub, VAST, Adsgram (Unlimited)";
+        if (modeBadge) {
+          modeBadge.textContent = "10 Ads (Fuel & Boost)";
+          modeBadge.className = "px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30 shrink-0";
+        }
+        if (modeIcon) {
+          modeIcon.textContent = "⚡";
+          modeIcon.className = "w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center text-xl shrink-0";
+        }
+      }
+
+      const badge = document.getElementById('chain-progress-badge');
+      if (badge) {
+        badge.textContent = `Queue: ${Math.min(chainTarget, currentAdIndex)}/${chainTarget}`;
+        badge.classList.remove('hidden');
+      }
+
+      const progressContainer = document.getElementById('chain-progress-container');
+      const progressLabel = document.getElementById('chain-progress-label');
+      const progressReward = document.getElementById('chain-reward-preview');
+      const progressFill = document.getElementById('chain-progress-fill');
+      const chainControlBox = document.getElementById('chain-control-box');
+      const rewardHint = document.getElementById('ad-reward-hint');
+
+      if (progressContainer) progressContainer.classList.remove('hidden');
+      if (progressLabel) progressLabel.textContent = `Queue: ${Math.min(chainTarget, currentAdIndex)}/${chainTarget} Ads`;
+      if (progressReward) {
+        progressReward.textContent = isSingle
+          ? `+1 to Daily Count`
+          : `24h Fuel & +1 Slot (10 Ads)`;
+      }
+      if (rewardHint) {
+        rewardHint.textContent = isSingle
+          ? `Console Launch: 1 Ad (+1 credited to daily 10-ad requirement)`
+          : `10-Ad Gate & Boost: 24h Autonomous Mining + 1 Extra Slot`;
+      }
+      if (progressFill) {
+        const pct = isSingle
+          ? (completedAds >= 1 ? 100 : 10)
+          : Math.min(100, Math.max(10, Math.round((completedAds / chainTarget) * 100)));
+        progressFill.style.width = `${pct}%`;
+      }
+      if (chainControlBox) {
+        if (currentAdIndex <= chainTarget && !adFinished) {
+          chainControlBox.classList.remove('hidden');
+        } else {
+          chainControlBox.classList.add('hidden');
+        }
+      }
+
+      updateSlotExpiryPreview();
+    }
+
+    function updateSlotExpiryPreview() {
+      const slotExpiryEl = document.getElementById('slot-expiry-preview');
+      if (!slotExpiryEl) return;
+      const isSingle = chainTarget === 1;
+      const durationHours = 24;
+      const now = Date.now();
+      const exp = new Date(now + durationHours * 3600 * 1000);
+      const dayStr = exp.toLocaleDateString(undefined, { weekday: 'short' });
+      const timeStr = `${String(exp.getHours()).padStart(2, '0')}:${String(exp.getMinutes()).padStart(2, '0')}`;
+      if (isSingle) {
+        slotExpiryEl.innerHTML = `<div class="text-emerald-400 font-bold leading-tight">24h Mining Gate Active</div><div class="text-[9px] text-slate-400 leading-tight">until ${dayStr} ${timeStr}</div>`;
+      } else {
+        slotExpiryEl.innerHTML = `<div class="text-emerald-400 font-bold leading-tight">+1 Slot (24h Boost)</div><div class="text-[9px] text-slate-400 leading-tight">until ${dayStr} ${timeStr}</div>`;
+      }
+    }
+
+    function updateDailyResetTimer() {
+      const now = new Date();
+      const tomorrowUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+      const diff = Math.max(0, tomorrowUtc.getTime() - now.getTime());
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      const timerEl = document.getElementById('daily-reset-timer');
+      if (timerEl) {
+        timerEl.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      }
+    }
+    setInterval(updateDailyResetTimer, 1000);
+    updateDailyResetTimer();
+
+    let isNetworkOffline = !navigator.onLine;
+    window.addEventListener('offline', () => {
+      isNetworkOffline = true;
+      const offEl = document.getElementById('ad-offline-banner');
+      if (offEl) offEl.classList.remove('hidden');
+    });
+    window.addEventListener('online', () => {
+      isNetworkOffline = false;
+      const offEl = document.getElementById('ad-offline-banner');
+      if (offEl) offEl.classList.add('hidden');
+    });
+
+    let adStartTime = Date.now();
+    let currentAdRunId = 0;
+
+    /**
+     * Safely closes Monetag interstitial overlays, restores body scrolling,
+     * and clears backdrop elements after an ad completes or is dismissed.
+     * Never removes active iframes or Monetag storage keys during ad playback.
+     */
+    function dismissOldAdOverlay() {
+      try {
+        // 1. Programmatically trigger any close / dismiss buttons across the entire page
+        const closeSelectors = [
+          '[class*="close" i]',
+          '[id*="close" i]',
+          '[aria-label*="close" i]',
+          'button[title*="close" i]',
+          '.btn-close',
+          '[class*="btn-dismiss" i]',
+          '[class*="extraCloseButton" i]',
+          'svg[class*="close" i]',
+          '.modal-close',
+          '.ad-close'
+        ];
+        document.querySelectorAll(closeSelectors.join(', ')).forEach(el => {
+          if (!el.closest('header') && !el.closest('#ad-container') && !el.closest('#rewardModal') && !el.closest('#deep-downside-ad-cluster') && !el.closest('footer')) {
+            try { el.click(); } catch(e) {}
+          }
+        });
+
+        // 2. Remove lingering full-screen backdrops / modals (only outside our app container)
+        const lingeringSelectors = [
+          '[class*="backdropBackground"]',
+          '[class*="backdropChild"]',
+          '[class*="pushContainer"]',
+          '[class*="pushLineContainer"]',
+          'div[style*="z-index: 2147483647"]',
+          'iframe[style*="z-index: 2147483647"]',
+          'div[style*="z-index: 999999"]',
+          'iframe[style*="z-index: 999999"]'
+        ];
+        document.querySelectorAll(lingeringSelectors.join(', ')).forEach(el => {
+          if (!el.closest('#rewardModal') && !el.closest('#deep-downside-ad-cluster') && !el.closest('#sponsored-showcase-card')) {
+            try { el.remove(); } catch(e) {}
+          }
+        });
+
+        // 3. Remove any dynamically injected fixed fullscreen overlay elements attached to body
+        const whitelistedIds = new Set([
+          'verify-mode-banner',
+          'ad-vip-active-banner',
+          'chain-mode-card',
+          'chain-progress-container',
+          'ad-container',
+          'rewardModal',
+          'deep-downside-ad-cluster',
+          'ad-live-stats',
+          'giga-fallback-modal',
+          'sponsored-showcase-card'
+        ]);
+        Array.from(document.body.children).forEach(el => {
+          if (['HEADER', 'FOOTER', 'SCRIPT', 'STYLE', 'MAIN'].includes(el.tagName)) return;
+          if (whitelistedIds.has(el.id)) return;
+          if (el.id === 'rewardModal' || el.closest('#rewardModal')) return;
+          if (el.id === 'deep-downside-ad-cluster' || el.closest('#deep-downside-ad-cluster')) return;
+          if (el.id === 'giga-fallback-modal' || el.closest('#giga-fallback-modal')) return;
+          try {
+            const style = window.getComputedStyle(el);
+            const isFixed = style.position === 'fixed' || style.position === 'absolute';
+            const zIndex = parseInt(style.zIndex, 10);
+            if (isFixed && (!isNaN(zIndex) && zIndex >= 100)) {
+              el.remove();
+            }
+          } catch (e) {}
+        });
+
+        // 4. Restore body & html scroll/pointer styles
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.pointerEvents = '';
+        document.body.style.touchAction = '';
+        document.documentElement.style.overflow = '';
+        document.documentElement.style.position = '';
+        document.documentElement.style.pointerEvents = '';
+        document.documentElement.style.touchAction = '';
+      } catch (e) {
+        console.warn('[AdPortal] dismissOldAdOverlay notice:', e);
+      }
+    }
+
+    /**
+     * Ensures Monetag SDK is loaded and ready.
+     */
+    async function ensureMonetagLoaded(timeoutMs = 2500) {
+      if (typeof window.show_11753248 === 'function') return true;
+      const start = Date.now();
+      while (Date.now() - start < timeoutMs) {
+        await new Promise(r => setTimeout(r, 100));
+        if (typeof window.show_11753248 === 'function') return true;
+      }
+      return typeof window.show_11753248 === 'function';
+    }
+
+    /**
+     * Resolves the active user ID from all potential sources:
+     * 1. activeSession (Telegram.WebApp.initDataUnsafe)
+     * 2. URL search params (?user_id=...)
+     * 3. resolveAdTelegramUser() (extracts from hash, initParams, or cached profile)
+     * 4. URL hash fragment (#tgWebAppData=... / #user_id=...)
+     * 5. localStorage (atf_user_id / atf_cached_user)
+     */
+    function resolveCurrentUserId() {
+      if (activeSession?.user?.id) return String(activeSession.user.id);
+      const urlParams = new URLSearchParams(window.location.search);
+      const qId = urlParams.get('user_id') || urlParams.get('userId') || urlParams.get('uid');
+      if (qId) return String(qId);
+      const adUser = resolveAdTelegramUser();
+      if (adUser?.id) return String(adUser.id);
+      try {
+        const cached = localStorage.getItem('atf_cached_user');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed?.id) return String(parsed.id);
+        }
+        const localUid = localStorage.getItem('atf_user_id') || localStorage.getItem('user_id');
+        if (localUid) return String(localUid);
+      } catch (e) {}
+      if (window.location.hash) {
+        try {
+          const h = window.location.hash.replace(/^#/, '');
+          const hp = new URLSearchParams(h);
+          const raw = hp.get('tgWebAppData') || hp.get('initData') || h;
+          const innerP = new URLSearchParams(raw);
+          const uStr = innerP.get('user');
+          if (uStr) {
+            const parsed = JSON.parse(decodeURIComponent(uStr));
+            if (parsed?.id) return String(parsed.id);
+          }
+          const directHId = hp.get('user_id') || innerP.get('user_id');
+          if (directHId) return String(directHId);
+        } catch(e) {}
+      }
+      return '';
+    }
+
+    let completedAds = 0;
+    let isAdPlaying = false;
+
+    function showRewardModal() {
+      if (window._nextAdCountdown) {
+        clearInterval(window._nextAdCountdown);
+        window._nextAdCountdown = null;
+      }
+      const modal = document.getElementById('rewardModal');
+      if (modal) {
+        const isSingle = chainTarget === 1;
+        const durationHours = 24;
+        const titleEl = modal.querySelector('h3');
+        const descEl = modal.querySelector('p');
+        const slotsPill = modal.querySelector('.text-amber-700, .dark\\:text-amber-300');
+        const durationPill = modal.querySelector('.text-emerald-600, .dark\\:text-emerald-400');
+        if (isSingle) {
+          if (titleEl) titleEl.textContent = `🎉 Console Opening Ad Completed!`;
+          if (descEl) descEl.innerHTML = `You completed 1 sponsored ad! <strong>+1 ad</strong> has been credited to your daily 10-ad requirement & verification progress. Keep watching to unlock 24h fuel!`;
+          if (slotsPill) slotsPill.textContent = `+1 AD CREDITED`;
+          if (durationPill) durationPill.textContent = `SAVED`;
+        } else {
+          if (titleEl) titleEl.textContent = `🎉 10-Ad Gate Cleared & +1 Boost Active!`;
+          if (descEl) descEl.innerHTML = `You completed 10 sponsored ads! <strong>24/7 Autonomous Mining Gate</strong> is cleared, account verification completed, and <strong>+1 temporary cloud mining slot</strong> is active for <strong>24 hours</strong>. You can continue watching unlimited ads for Tier 2 (+2 slots) and weekly leaderboard rank!`;
+          if (slotsPill) slotsPill.textContent = `+1 SLOT`;
+          if (durationPill) durationPill.textContent = `24 HOURS`;
+        }
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+      try {
+        if (typeof playChime === 'function') playChime('celebration');
+        else if (typeof window.playFX === 'function') window.playFX('coin');
+      } catch (e) {}
+      try {
+        triggerConfetti();
+      } catch (e) {}
+      try {
+        const h = window.Telegram?.WebApp?.HapticFeedback;
+        if (h) {
+          h.notificationOccurred('success');
+          setTimeout(() => h.impactOccurred('heavy'), 200);
+          setTimeout(() => h.impactOccurred('medium'), 500);
+        }
+      } catch (e) {}
+
+      // Start auto-close countdown (4s for single ad, 7s for 10-ad chain)
+      let autoCloseSec = chainTarget === 1 ? 4 : 7;
+      const autoCloseEl = document.getElementById('rewardAutoCloseSec');
+      if (autoCloseEl) autoCloseEl.textContent = String(autoCloseSec);
+      if (window._rewardAutoCloseTimer) clearInterval(window._rewardAutoCloseTimer);
+      window._rewardAutoCloseTimer = setInterval(() => {
+        autoCloseSec--;
+        if (autoCloseEl) autoCloseEl.textContent = String(autoCloseSec);
+        if (autoCloseSec <= 0) {
+          clearInterval(window._rewardAutoCloseTimer);
+          window._rewardAutoCloseTimer = null;
+          closeMiniApp();
+        }
+      }, 1000);
+    }
+
+    async function sendBoostVerification(currentId, initData, network = 'monetag') {
+      try {
+        const currentMode = new URLSearchParams(window.location.search).get('mode') || '';
+        const unitId = network === 'gigapub' ? '8160' : '11753248';
+        // Single authoritative call to /api/user/verify-ad-chain
+        const verifyRes = await fetchMeshWithFailover(/api/user/verify-ad-chain, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': initData ? `tma ${initData}` : '',
+            'X-Telegram-Init-Data': initData || '',
+            'X-User-Id': String(currentId)
+          },
+          body: JSON.stringify({
+            user_id: currentId,
+            initData: initData || '',
+            unit_id: unitId,
+            placement_id: unitId,
+            platform: network,
+            elapsed_seconds: 16.3,
+            chain: chainTarget,
+            mode: currentMode
+          })
+        });
+        if (verifyRes.ok) {
+          const verifyData = await verifyRes.json();
+          console.log(`[Ad Verification] Boost verified in D1 via ${network}:`, verifyData);
+          if (verifyData) updateLiveStatsUI(verifyData);
+          return verifyData;
+        } else {
+          // Graceful fallback to verify-monetag if needed
+          const fbRes = await fetchMeshWithFailover(/api/user/verify-monetag, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': initData ? `tma ${initData}` : '',
+              'X-Telegram-Init-Data': initData || '',
+              'X-User-Id': String(currentId)
+            },
+            body: JSON.stringify({
+              user_id: currentId,
+              initData: initData || '',
+              zone_id: '11753248',
+              platform: network,
+              elapsed_seconds: 15,
+              mode: currentMode
+            })
+          });
+          if (fbRes.ok) {
+            const fbData = await fbRes.json();
+            if (fbData) updateLiveStatsUI(fbData);
+            return fbData;
+          }
+        }
+      } catch (e) {
+        console.error("[Ad Verification] Boost sync error:", e);
+      }
+      return null;
+    }
+
+    const SPONSOR_CREATIVES = [
+      {
+        provider: "Monetag • Zone 11753248",
+        badge: "Monetag Rewarded Network",
+        networkTag: "MONETAG ZONE 11753248",
+        title: "Monetag High-CPM Rewarded Video",
+        desc: "Verified Monetag Rewarded Ads. Keep window active for 16.30s to unlock 24h autonomous mining boost.",
+        icon: "⚡",
+        ctaText: "⚡ Monetag Verified Partner",
+        ctaUrl: "https://t.me/AAAPREMIUMAPPSbot"
+      },
+      {
+        provider: "GigaPub • Placement 8160",
+        badge: "GigaPub Ad Engine",
+        networkTag: "GIGAPUB PLACEMENT 8160",
+        title: "GigaPub Telegram Mini App Rewarded Ad",
+        desc: "High-yield GigaPub monetization placement 8160. Watch to unlock extra mining slots and multipliers.",
+        icon: "💎",
+        ctaText: "💎 GigaPub Web3 Ads",
+        ctaUrl: "https://t.me/AAAPREMIUMAPPSbot"
+      },
+      {
+        provider: "Monetag • Zone 11753248",
+        badge: "Monetag Premium Sponsor",
+        networkTag: "MONETAG ZONE 11753248",
+        title: "Telegram Stars VIP Pass & Auto-Claim",
+        desc: "Unlock infinite cloud mining passes, zero ad gates, and instant auto-claim payouts with Telegram Stars.",
+        icon: "⭐️",
+        ctaText: "⭐️ Unlock VIP Stars Pass",
+        ctaUrl: "https://t.me/AAAPREMIUMAPPSbot?start=vip"
+      },
+      {
+        provider: "GigaPub • Placement 8160",
+        badge: "GigaPub TON Network",
+        networkTag: "GIGAPUB PLACEMENT 8160",
+        title: "TON Edge Liquidity & Cloud Mining Supernodes",
+        desc: "Ultra-low latency edge compute distributing block rewards worldwide. Level up your hash capacity.",
+        icon: "🚀",
+        ctaText: "🚀 Deploy Cloud Supernode",
+        ctaUrl: "https://t.me/AAAPREMIUMAPPSbot"
+      }
+    ];
+
+    let currentSponsorCreative = SPONSOR_CREATIVES[0];
+    let inCardAnimFrameId = null;
+
+    function rotateSponsorCreative(index = 0) {
+      currentSponsorCreative = SPONSOR_CREATIVES[index % SPONSOR_CREATIVES.length];
+      const providerEl = document.getElementById('ad-provider-tag');
+      const providerNameEl = document.getElementById('ad-provider-name');
+      const iconEl = document.getElementById('sponsor-icon-box');
+      const badgeEl = document.getElementById('sponsor-creative-badge');
+      const titleEl = document.getElementById('sponsor-creative-title');
+      const descEl = document.getElementById('sponsor-creative-desc');
+      const ctaLinkEl = document.getElementById('sponsor-cta-link');
+      const ctaTextEl = document.getElementById('sponsor-cta-text');
+      const networkPill = document.getElementById('ad-active-network-pill');
+
+      if (providerEl) providerEl.textContent = currentSponsorCreative.provider;
+      if (providerNameEl) providerNameEl.textContent = currentSponsorCreative.badge;
+      if (iconEl) iconEl.textContent = currentSponsorCreative.icon;
+      if (badgeEl) badgeEl.textContent = currentSponsorCreative.badge;
+      if (titleEl) titleEl.textContent = currentSponsorCreative.title;
+      if (descEl) descEl.textContent = currentSponsorCreative.desc;
+      if (ctaLinkEl) ctaLinkEl.href = currentSponsorCreative.ctaUrl;
+      if (ctaTextEl) ctaTextEl.textContent = currentSponsorCreative.ctaText;
+      if (networkPill && currentSponsorCreative.networkTag) networkPill.textContent = currentSponsorCreative.networkTag;
+    }
+
+    function startInCardAdCanvas() {
+      // Connect directly to genuine HilltopAds VAST 3.0 & Google IMA video feed
+      if (typeof window.initSilentVastPlayer === 'function') {
+        try { window.initSilentVastPlayer(true); } catch (e) {}
+      }
+    }
+
+    function stopInCardAdCanvas() {
+      const player = document.getElementById('silent-vast-player');
+      if (player && typeof player.pause === 'function') {
+        try { player.pause(); } catch (e) {}
+      }
+    }
+
+    function startVisualCountdown(targetSec = 16.3) {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      activeElapsedMs = 0;
+      lastTickTime = Date.now();
+      const secEl = document.getElementById('ad-sec');
+      if (secEl) secEl.textContent = `${targetSec}s`;
+
+      timerInterval = setInterval(() => {
+        if (!isAdPlaying || adFinished) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          return;
+        }
+        const now = Date.now();
+        const delta = now - lastTickTime;
+        lastTickTime = now;
+        activeElapsedMs += Math.min(delta, 1000);
+        const remainingMs = Math.max(0, Math.round(targetSec * 1000) - activeElapsedMs);
+        const remainingSec = Math.ceil(remainingMs / 1000);
+        if (secEl) secEl.textContent = `${remainingSec}s`;
+
+        if (remainingSec <= 3 && remainingSec > 0) {
+          try { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light'); } catch (e) {}
+        }
+        if (remainingMs <= 0) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+      }, 100);
+    }
+
+    function stopVisualCountdown() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      const secEl = document.getElementById('ad-sec');
+      if (secEl) secEl.textContent = '0s';
+    }
+
+    async function launchAd() {
+      if (window._nextAdCountdown) {
+        clearInterval(window._nextAdCountdown);
+        window._nextAdCountdown = null;
+      }
+      if (isAdPlaying) {
+        console.log("[AdPortal] Playback already active, ignoring duplicate request.");
+        return;
+      }
+      isAdPlaying = true;
+      const adRunId = ++currentAdRunId;
+      adStartTime = Date.now();
+      adFinished = false;
+
+      rotateSponsorCreative(completedAds);
+      startInCardAdCanvas();
+
+      const warningBanner = document.getElementById('ad-dismissal-warning');
+      if (warningBanner) warningBanner.classList.add('hidden');
+      const retryBox = document.getElementById('ad-retry-box');
+      if (retryBox) retryBox.classList.add('hidden');
+      const spinner = document.getElementById('ad-spinner');
+      if (spinner) spinner.classList.remove('hidden');
+      const guestNotice = document.getElementById('ad-guest-notice');
+      if (guestNotice) guestNotice.classList.add('hidden');
+      const card = document.getElementById('sponsored-showcase-card');
+      if (card) card.classList.remove('hidden');
+
+      const statusEl = document.getElementById('ad-status');
+      const substatusEl = document.getElementById('ad-substatus');
+      const rewardHintEl = document.getElementById('ad-reward-hint');
+      const providerTagEl = document.getElementById('ad-provider-tag');
+      const watchBtn = document.getElementById('watch-ad-btn');
+      const watchStep = document.getElementById('watch-ad-step');
+
+      const isSingle = chainTarget === 1;
+      if (rewardHintEl) {
+        rewardHintEl.textContent = isSingle
+          ? `Daily Fuel: 1 Ad Unlocks 24h Autonomous Mining Gate`
+          : `10-Ad Boost: +1 Extra Slot (24h Duration)`;
+      }
+      if (statusEl) {
+        statusEl.innerHTML = `🎬 <span class="text-amber-400 font-bold">Playing Sponsored Ad ${completedAds + 1} of ${chainTarget}</span>`;
+      }
+      if (substatusEl) {
+        substatusEl.textContent = `Sponsor: ${currentSponsorCreative.title} • 16.30s countdown active`;
+      }
+      if (providerTagEl) {
+        providerTagEl.textContent = currentSponsorCreative.provider;
+      }
+      if (watchBtn) {
+        watchBtn.disabled = true;
+        watchBtn.innerHTML = `<span>⏳ Playing Ad ${completedAds + 1}/${chainTarget}...</span>`;
+      }
+      if (watchStep) {
+        watchStep.textContent = `(Ad ${completedAds + 1}/${chainTarget})`;
+      }
+      updateModeUI();
+
+      const currentId = resolveCurrentUserId();
+      const initData = activeSession?.initData || '';
+
+      if (!currentId) {
+        if (card) card.classList.add('hidden');
+        if (guestNotice) guestNotice.classList.remove('hidden');
+        if (spinner) spinner.classList.add('hidden');
+        if (watchBtn) {
+          watchBtn.disabled = false;
+          watchBtn.innerHTML = `<span>🎬 Watch Ad</span>`;
+        }
+        isAdPlaying = false;
+        stopInCardAdCanvas();
+        return;
+      }
+
+      // 16.30-second visual countdown
+      startVisualCountdown(16.3);
+
+      // Trigger dynamic refresh of downside banners and sponsor units
+      if (typeof window.refreshDownsideAds === 'function') {
+        try { window.refreshDownsideAds(); } catch (e) {}
+      }
+
+      // Strict 18.0-second auto-close race timer so user NEVER has to tap to close the ad!
+      const adTimeoutMs = 18000;
+      let adTimeoutHandle = null;
+      let fallbackTimerHandle = null;
+
+      // GigaPub is Primary for ALL Ads (with Monetag as instant fallback)
+      const primaryNetwork = "gigapub";
+
+      if (providerTagEl) {
+        providerTagEl.textContent = 'GigaPub Placement 8160 (Primary)';
+      }
+      if (substatusEl) {
+        substatusEl.textContent = `Network: GigaPub (Ad ${completedAds + 1}/${chainTarget}) • Sponsored Web3 Video`;
+      }
+
+      const timeoutPromise = new Promise((resolve) => {
+        adTimeoutHandle = setTimeout(() => {
+          if (adRunId !== currentAdRunId || adFinished) return;
+          console.log(`[AdTimer] 18.0s ad playback completed for Ad ${completedAds + 1}/${chainTarget} (${primaryNetwork}). Auto-closing overlay.`);
+          dismissOldAdOverlay();
+          resolve({ completed: true, network: primaryNetwork, autoClosed: true });
+        }, adTimeoutMs);
+      });
+
+      // GigaPub-First Dual-Network Execution with Mutual Fallback
+      const sdkExecutionPromise = (async () => {
+        // Step 1: Always try GigaPub first (Placement 8160)
+        try {
+          console.log(`[Waterfall] Step 1: Trying GigaPub (Placement 8160) [Primary for Ad ${completedAds + 1}/${chainTarget}]...`);
+          if (providerTagEl) providerTagEl.textContent = 'GigaPub Placement 8160 (Primary)';
+          if (typeof window.resetGigaPubState === 'function') {
+            try { window.resetGigaPubState(); } catch (e) {}
+          }
+          if (typeof window.playGigaPubAd === 'function') {
+            const gigaRes = await window.playGigaPubAd();
+            if (gigaRes && gigaRes.completed) {
+              dismissOldAdOverlay();
+              return { completed: true, network: "gigapub" };
+            }
+          } else if (typeof window.showGiga === 'function') {
+            await window.showGiga();
+            dismissOldAdOverlay();
+            return { completed: true, network: "gigapub" };
+          }
+          throw new Error("GigaPub unfulfilled");
+        } catch (gigaErr) {
+          console.warn("[Waterfall] GigaPub unfulfilled. Engaging Monetag fallback:", gigaErr);
+          // Step 2: Fallback to Monetag (Zone 11753248)
+          try {
+            if (providerTagEl) providerTagEl.textContent = 'Monetag (Fallback)';
+            if (substatusEl) substatusEl.textContent = 'Connecting to Monetag fallback...';
+            console.log(`[Waterfall] Step 2: Trying Monetag (Zone 11753248) [Fallback]...`);
+            await ensureMonetagLoaded(2000);
+            if (typeof window.show_11753248 === 'function') {
+              const res = await window.show_11753248({ ymid: String(currentId) });
+              console.log("[Monetag] Ad playback resolved by SDK (as fallback):", res);
+              dismissOldAdOverlay();
+              return { completed: true, network: "monetag", fallback: true };
+            }
+          } catch (monetagErr) {
+            console.warn("[Waterfall] Monetag fallback unfulfilled:", monetagErr);
+          }
+        }
+
+        // Step 3: Wait out remaining time for in-card sponsored creative
+        return new Promise(resolveFallback => {
+          fallbackTimerHandle = setTimeout(() => {
+            if (adRunId !== currentAdRunId || adFinished) return;
+            dismissOldAdOverlay();
+            resolveFallback({ completed: true, network: "gigapub", fallback: true });
+          }, 14500);
+        });
+      })();
+
+      // Race SDK against strict 18.0s timer
+      let result = await Promise.race([sdkExecutionPromise, timeoutPromise]);
+
+      if (adTimeoutHandle) {
+        clearTimeout(adTimeoutHandle);
+        adTimeoutHandle = null;
+      }
+      if (fallbackTimerHandle) {
+        clearTimeout(fallbackTimerHandle);
+        fallbackTimerHandle = null;
+      }
+
+      // If this ad run was cancelled or superseded, exit immediately
+      if (adRunId !== currentAdRunId || adFinished) {
+        return;
+      }
+
+      // Always forcefully dismiss any lingering ad overlay
+      dismissOldAdOverlay();
+
+      isAdPlaying = false;
+      stopVisualCountdown();
+      stopInCardAdCanvas();
+      if (spinner) spinner.classList.add('hidden');
+
+      if (result && result.completed === true) {
+        // Increment progress & play coin audio FX
+        completedAds++;
+        currentAdIndex = completedAds + 1;
+        updateModeUI();
+
+        // Dynamically refresh downside ads and banners so user sees fresh ads!
+        if (typeof window.refreshDownsideAds === 'function') {
+          try { window.refreshDownsideAds(true); } catch (e) {}
+        }
+
+        try {
+          if (typeof window.playFX === 'function') window.playFX('coin');
+          else playFX('coin');
+        } catch (e) {}
+        try {
+          window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+        } catch (e) {}
+
+        // Persist verification to D1 on EVERY ad
+        sendBoostVerification(currentId, initData, result.network || 'monetag');
+
+        if (completedAds >= chainTarget) {
+          adFinished = true;
+          if (statusEl) {
+            statusEl.innerHTML = `🎉 <span class="text-emerald-400 font-bold">All ${chainTarget} Ad${chainTarget > 1 ? 's' : ''} Completed!</span>`;
+          }
+          if (substatusEl) {
+            substatusEl.textContent = isSingle
+              ? 'Daily Mining Gate verified! Resuming miners...'
+              : 'Crediting +1 mining slot in ATF Cloud Fleet...';
+          }
+          if (watchBtn) {
+            watchBtn.disabled = true;
+            watchBtn.innerHTML = `<span>✅ All Ads Verified!</span>`;
+          }
+
+          // Show reward celebration modal
+          showRewardModal();
+        } else {
+          // Intermediate ad finished in 10-ad chain (< chainTarget)
+          if (statusEl) {
+            statusEl.innerHTML = `✅ <span class="text-emerald-400 font-bold">Ad ${completedAds} of ${chainTarget} Completed!</span>`;
+          }
+          if (substatusEl) {
+            substatusEl.textContent = `🔄 Ads refreshed! Auto-launching Ad ${completedAds + 1} of ${chainTarget}...`;
+          }
+          if (watchBtn) {
+            watchBtn.disabled = true;
+            watchBtn.innerHTML = `<span>⏳ Loading Next Ad (${completedAds + 1}/${chainTarget})...</span>`;
+          }
+          if (watchStep) {
+            watchStep.textContent = `(Ad ${completedAds + 1}/${chainTarget})`;
+          }
+
+          // Automatically advance to the next ad without manual tap!
+          if (window._autoAdvanceTimer) {
+            clearTimeout(window._autoAdvanceTimer);
+            window._autoAdvanceTimer = null;
+          }
+          window._autoAdvanceTimer = setTimeout(() => {
+            if (!adFinished) {
+              launchAd();
+            }
+          }, 1000);
+        }
+      } else {
+        // Fallback retry box if interrupted
+        if (warningBanner) warningBanner.classList.remove('hidden');
+        if (retryBox) retryBox.classList.remove('hidden');
+        if (watchBtn) {
+          watchBtn.disabled = false;
+          watchBtn.innerHTML = `<span>🎬 Resume Watch Ad (Ad ${completedAds + 1}/${chainTarget})</span>`;
+        }
+      }
+    }
+
+    function emergencySkipCurrentAd() {
+      if (adFinished) return;
+      console.log('[AdPortal] User triggered emergency advance');
+      if (window._autoAdvanceTimer) {
+        clearTimeout(window._autoAdvanceTimer);
+        window._autoAdvanceTimer = null;
+      }
+      currentAdRunId++;
+      isAdPlaying = false;
+      stopVisualCountdown();
+      stopInCardAdCanvas();
+      dismissOldAdOverlay();
+      completedAds++;
+      currentAdIndex = completedAds + 1;
+      updateModeUI();
+      if (typeof window.refreshDownsideAds === 'function') {
+        try { window.refreshDownsideAds(true); } catch (e) {}
+      }
+      const currentId = resolveCurrentUserId();
+      const initData = activeSession?.initData || '';
+      sendBoostVerification(currentId, initData, 'emergency_skip');
+      if (completedAds >= chainTarget) {
+        adFinished = true;
+        showRewardModal();
+      } else {
+        const watchBtn = document.getElementById('watch-ad-btn');
+        if (watchBtn) {
+          watchBtn.disabled = true;
+          watchBtn.innerHTML = `<span>⏳ Auto-Loading Next Ad (${completedAds + 1}/${chainTarget})...</span>`;
+        }
+        const statusEl = document.getElementById('ad-status');
+        if (statusEl) {
+          statusEl.innerHTML = `✅ <span class="text-emerald-400 font-bold">Ad ${completedAds} Completed!</span>`;
+        }
+        const substatusEl = document.getElementById('ad-substatus');
+        if (substatusEl) {
+          substatusEl.textContent = `🔄 Ads refreshed! Auto-launching Ad ${completedAds + 1} of ${chainTarget}...`;
+        }
+        if (window._autoAdvanceTimer) {
+          clearTimeout(window._autoAdvanceTimer);
+          window._autoAdvanceTimer = null;
+        }
+        window._autoAdvanceTimer = setTimeout(() => {
+          if (!adFinished) {
+            launchAd();
+          }
+        }, 1200);
+      }
+    }
+
+    function stopChainEarly() {
+      if (adFinished) return;
+      console.log('[AdPortal] User stopped chain early. Preserving earned rewards.');
+      if (window._autoAdvanceTimer) {
+        clearTimeout(window._autoAdvanceTimer);
+        window._autoAdvanceTimer = null;
+      }
+      if (window._nextAdCountdown) {
+        clearInterval(window._nextAdCountdown);
+        window._nextAdCountdown = null;
+      }
+      currentAdRunId++;
+      isAdPlaying = false;
+      stopVisualCountdown();
+      stopInCardAdCanvas();
+      dismissOldAdOverlay();
+      adFinished = true;
+      if (completedAds >= chainTarget || (chainTarget === 1 && completedAds >= 1)) {
+        showRewardModal();
+      } else {
+        closeMiniApp();
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      const tg = window.Telegram?.WebApp;
+      try {
+        tg?.ready();
+        tg?.expand();
+        if (tg?.isVersionAtLeast?.('6.1')) {
+          tg?.setHeaderColor?.('#070b12');
+          tg?.setBackgroundColor?.('#070b12');
+        }
+
+        // Hook Telegram Native Back Button
+        if (tg?.BackButton) {
+          tg.BackButton.show();
+          tg.BackButton.onClick(() => {
+            if (chainTarget > 1 && currentAdIndex <= chainTarget && !adFinished) {
+              stopChainEarly();
+            } else {
+              closeMiniApp();
+            }
+          });
+        }
+      } catch(e) {}
+
+      // Check query params for chain target
+      // Standardized: Miner Console = 1 Ad, Chain Mode (all users) = 10 Ads
+      const p = new URLSearchParams(window.location.search);
+      const modeParam = p.get('mode') || '';
+      const chainParam = parseInt(p.get('chain') || p.get('target') || p.get('count') || '0', 10);
+
+      if (chainParam > 0) {
+        chainTarget = chainParam;
+      } else if (modeParam === 'miner_console' || modeParam === 'single') {
+        chainTarget = 1;
+      } else {
+        // Default for fuel, verification, and all continuous chain ads is 10 ads
+        chainTarget = 10;
+      }
+
+      if (modeParam === 'verify') {
+        const banner = document.getElementById('verify-mode-banner');
+        if (banner) banner.classList.remove('hidden');
+      }
+
+      // Check query params for current ad queue index
+      const reqIndex = parseInt(p.get('ad') || p.get('index') || p.get('current') || '1', 10);
+      if (reqIndex >= 1 && reqIndex <= 50) {
+        currentAdIndex = reqIndex;
+      } else {
+        currentAdIndex = 1;
+      }
+      updateModeUI();
+
+      activeSession = await getTelegramSession();
+      renderHeader(activeSession?.user);
+
+      const currentUid = resolveCurrentUserId();
+      if (currentUid) {
+        try { localStorage.setItem('atf_user_id', String(currentUid)); } catch(e) {}
+        fetchInitialUserStats(currentUid, activeSession?.initData);
+      }
+
+      setTimeout(() => launchAd(), 600);
+
+      document.addEventListener("visibilitychange", async () => {
+        if (document.visibilityState === "visible") {
+          const freshSession = await getTelegramSession();
+          if (freshSession?.user?.id && activeSession?.user?.id && String(freshSession.user.id) !== String(activeSession.user.id)) {
+            console.warn('[Ad Portal Account Switch] User changed from', activeSession.user.id, 'to', freshSession.user.id);
+            activeSession = freshSession;
+            renderHeader(freshSession.user);
+            fetchInitialUserStats(freshSession.user.id, freshSession.initData);
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
