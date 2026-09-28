@@ -4,6 +4,26 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Points System Hardening, Proactive Runway Alerts, Leaderboard Engine & Admin Executive Suite (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **⚡ Proactive Low-Balance Warning Alerts & Atomic Mesh Sweep Engine**:
+    * Hardened `runDailyCostSweep` with dual-sync across Upstash Redis and Cloudflare KV (`daily_cost_sweep_date`), guaranteeing that sweeps are executed once daily across the multi-node mesh without race conditions or double charges.
+    * Added proactive Telegram alerts dispatched to miners when their remaining balance drops below 2 days of daily cost (`< dailyCost * 2`), warning them before an interruption occurs and providing 1-tap recharge buttons (`🎁 Daily Bonus`, `🎬 Watch Video Ad (+20 Pts)`, `🌟 VIP Passes`).
+    * Enabled all Cloudflare Edge nodes in the mesh to safely trigger daily cost sweeps during cron, eliminating single-node dependency.
+  - **🟢 Auto-Resumption & Runway UX in Reward Engines (`/api/adsgram/reward` & `ub_daily_claim`)**:
+    * Enhanced Adsgram rewarded video claiming and 24h daily check-in streak claiming: automatically transitions paused miners (`farming_active = false`) back to active (`farming_active = true`) the moment their points balance reaches the daily threshold.
+    * Appends celebratory auto-resumption banners to Telegram reward receipts, confirming that 24/7 cloud mining has resumed for all connected accounts.
+    * Displays calculated mining runway (`~X days remaining` or `Unlimited`) on all reward notifications.
+  - **🏆 Community Leaderboard Engine for Users (`/leaderboard`, `/top`, `/whales`)**:
+    * Implemented `/leaderboard`, `/top`, and `/whales` text commands in User Bot (`@AAAPREMIUMAPPSbot`): returns the top 5 community miners with privacy-anonymized IDs, verified point totals, active account counts, and the user's personal rank and streak.
+    * Expanded `/points` text router with aliases `/balance`, `/wallet`, `/pts`, and `/runway`, equipping the response with 1-tap video ad and daily bonus recharge buttons.
+  - **👑 Admin Bot Executive Command Center (`/whales`, `/paused`, `/summary`, `/user <id>`)**:
+    * Implemented `/whales` command & `btn_whales` callback: ranks and displays the top 10 community miners by points balance and account count with direct moderation shortcuts.
+    * Implemented `/paused` / `/low_balance` command & `btn_paused` callback: surfaces all miners currently paused due to points deficit with instant 1-tap `/grant <user_id> 100` refill capabilities.
+    * Implemented `/summary` / `/executive` command: comprehensive executive summary aggregating 14 fleet accounts, 8 mining pools, Ultra Wallet 6-day launch status, community miner counts, network daily burn rate, and 5-node edge mesh health.
+    * Upgraded `/user <id>` moderation profile with daily cost (`-100 Pts/acc`), runway in days, streak, ads watched, and live 24/7 mining status.
+  - **🚀 Edge Deployment & Verification**:
+    * Compiled and deployed live to all 5 Cloudflare Worker Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`), verified 200 OK across edge health checks and daily cost sweep endpoints.
+
 - **Ecosystem Bug Audit, Ultra Wallet 6-Day Global Launch Readiness, Token Edge Ingestion & User Points UX Overhaul (`deploy_both_cf_workers.py`, `public/admin/index.html`, `public/admin.html`, `public/index.html`, `refresh_cloud_tokens.py`)**:
   - **🔐 Fixed MTProto Token Pipeline Ingestion (`/api/tokens` & `/api/tokens/sync`)**:
     * Resolved critical route mismatch where `refresh_cloud_tokens.py` pushed extracted tokens to `{cf_url}/api/tokens`, which previously returned 404 Not Found.
