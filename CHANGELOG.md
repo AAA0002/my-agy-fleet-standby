@@ -4,6 +4,22 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Multi-Network Ad Ecosystem Collection from ATL Backup (`public/app/ad/`, `public/shared/`, `ads_engine/`, `CHANGELOG.md`)**:
+  - **📦 Collected Multi-Network Ad Assets from `ATL_FULL_BACKUP.zip`**:
+    * Per direct user request following Adsgram rejection, extracted and collected **only** ad-related assets from `/sdcard/Download/ATL_FULL_BACKUP.zip`, leaving all other archive files untouched to maintain strict project isolation.
+    * **Ad Portal Mini-App**: Collected `public/app/ad/index.html` (121 KB high-performance ad portal supporting Monetag, GigaPub, HilltopAds VAST 3.0, A-Ads, and Clickadu verification).
+    * **Mediation & Delivery Controllers**:
+      - `public/shared/waterfallController.js`: Multi-provider dynamic waterfall mediation controller for fallback ad serving.
+      - `public/shared/gigapubController.js`: Official GigaPub TMA SDK integration (Placement ID: 8160) with fallback modal.
+      - `public/shared/vastLoader.js`: HilltopAds VAST 3.0 & Google IMA video loader with impression beacons and clickthrough tracking.
+    * **Support & Localization Modules**:
+      - `public/shared/geo.js`: Country detection & timezone clocks for ad geotargeting.
+      - `public/shared/i18n.js`: 4-language localization for ad interface (`en`, `bn`, `ru`, `hi`).
+      - `public/shared/audio.js`: Coin reward sound FX synthesizer for ad completions.
+    * **Backend Verification Handlers**:
+      - `ads_engine/monetag.ts`: Monetag playback verification and slot bonus credit logic.
+      - `ads_engine/adChain.ts`: Multi-network ad chain verification, rate-limiting, and reward distribution.
+
 - **Remove Duplicate Watch Video Ad Button & Keyboard Streamlining (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **🧹 Purged Duplicate Watch Video Ad Button**:
     * Removed `{ text: "🎬 Watch Video Ad (+20 Pts)" }` from both `userMainKeyboard` and `ownerUserKeyboard`.
