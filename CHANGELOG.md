@@ -4,6 +4,15 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Instant Telegram Inline Button Responsiveness & Supabase Claim Audit (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **⚡ Mobile UX & Button Spinner Bug Fixed**:
+    * Resolved an issue where inline keyboard buttons on `@AAAPREMIUMAPPSbot` (`ub_points`, `ub_rewards`, `ub_claim_ad`, `ub_withdraw`, `ub_add_acc`, etc.) caused a perpetual spinning loader on mobile screens.
+    * Added immediate asynchronous acknowledgment (`ctx.waitUntil(answerCq())`) at the entry of the callback query pipeline, instantly dismissing the Telegram loading spinner.
+  - **📊 100% Comprehensive Supabase Impression Auditing**:
+    * Integrated `supabaseLogAdImpression` into the direct claim fallback handler (`ub_claim_ad`), guaranteeing that all ad point grants (whether from interactive video webapps or direct bot claims) are recorded in Supabase Postgres `ad_impressions_log`.
+  - **✅ Live Verification**:
+    * Simulated live callback query via webhook; confirmed instant 200 OK and verified entry #3 in Supabase Postgres.
+
 - **Complete Ad System Overhaul & Verification Fix (`public_ads/`, `deploy_both_cf_workers.py`, `deploy_vercel.py`, `CHANGELOG.md`)**:
   - **🔧 Critical Point Verification Bug Fixed**:
     * Resolved an issue where ad verification calls in `public_ads/app/ad/index.html` were invoking `fetchMeshWithFailover` with unquoted regular expression literals (`/api/user/verify-ad-chain` and `/api/user/verify-monetag`) instead of strings.

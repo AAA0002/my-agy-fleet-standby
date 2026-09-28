@@ -6872,6 +6872,9 @@ Reply to Arif naturally:`;
             }).catch(() => {});
           };
 
+          // Immediately dismiss spinning loader on Telegram mobile client
+          ctx.waitUntil(answerCq());
+
           // Anti-Sybil Gate: Check if user is suspended/banned
           if (String(cqChatId) !== (env.OWNER_ID || "6727787768")) {
             const profCheck = await getUserProfile(cqChatId, cq.from);
@@ -6978,6 +6981,9 @@ Reply to Arif naturally:`;
               bonusText = `\n\n🎉 *50 ADS MILESTONE REACHED!* You unlocked *+1 BONUS ACCOUNT SLOT*!`;
             }
             await saveUserProfile(cqChatId, profile);
+            if (ctx && ctx.waitUntil) {
+              ctx.waitUntil(supabaseLogAdImpression(cqChatId, "direct_claim", adPts, request).catch(() => {}));
+            }
 
             const rep = `✅ *+${adPts} POINTS CREDITED!* 🎁${isMonthlyPass ? " _(2x Monthly Pass Bonus!)_" : ""}\n\n` +
               `• *New Balance:* ${profile.points} Points\n` +
