@@ -2098,16 +2098,25 @@ fi
         let vipUsers = 0;
         let totalAds = 0;
         let totalRefs = 0;
+        let dailyBurnRate = 0;
 
         const userKeys = uids.map(uid => `ub_user:${uid}`);
         const userProfiles = await upstashMget(userKeys);
         for (const u of userProfiles) {
           if (u) {
             users.push(u);
-            totalPoints += (u.points || 0);
-            totalAccounts += (u.accounts || []).length;
-            if (u.farming_active) activeMiners++;
-            if (u.subscription_expiry && u.subscription_expiry > Date.now()) vipUsers++;
+            const pts = (u.points || 0);
+            const accCount = (u.accounts || []).length;
+            const hasVip = u.subscription_expiry && u.subscription_expiry > Date.now();
+            totalPoints += pts;
+            totalAccounts += accCount;
+            if (u.farming_active && !u.is_banned) {
+              activeMiners++;
+              if (!hasVip && accCount > 0) {
+                dailyBurnRate += accCount * 100;
+              }
+            }
+            if (hasVip) vipUsers++;
             totalAds += (u.ads_watched || 0);
             totalRefs += (u.referral_count || 0);
           }
@@ -2129,6 +2138,7 @@ fi
             activeMiners,
             vipUsers,
             totalPoints,
+            dailyBurnRate,
             totalAds,
             totalRefs,
             poolsCount: 8
@@ -2163,6 +2173,11 @@ fi
           if (user.points >= dailyCost) user.farming_active = true;
         } else if (action === "deduct_points") {
           user.points = Math.max(0, (user.points || 0) - (parseInt(amount) || 100));
+          const dailyCost = (user.accounts || []).length * 100;
+          const hasVip = user.subscription_expiry && user.subscription_expiry > Date.now();
+          if (!hasVip && user.points < dailyCost && (user.accounts || []).length > 0) {
+            user.farming_active = false;
+          }
         } else if (action === "grant_slots" || action === "add_slot") {
           user.slots = (user.slots || 1) + (parseInt(body.slots) || 1);
         } else if (action === "set_vip") {
@@ -5255,14 +5270,47 @@ Reply to Arif naturally:`;
           await upstashSet(key, prof);
         } else {
           const dailyCost = prof.accounts.length * 100;
-          if (prof.points >= dailyCost) {
-            prof.points -= dailyCost;
-            prof.farming_active = true;
+          if (prof.farming_active !== false) {
+            if (prof.points >= dailyCost) {
+              prof.points -= dailyCost;
+              prof.farming_active = true;
+            } else {
+              prof.farming_active = false;
+              // Alert user that farming is paused due to insufficient points
+              ctx.waitUntil(fetch(`https://api.telegram.org/bot${USER_BOT_TOKEN}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: uid,
+                  text: `⚠️ *Cloud Mining Paused — Insufficient Points* ⚠️\n\n` +
+                    `Your 24/7 cloud mining has been temporarily paused because your points balance (*${prof.points} Points*) is below today's daily cost (*${dailyCost} Points* for ${prof.accounts.length} connected account${prof.accounts.length > 1 ? "s" : ""}).\n\n` +
+                    `*Quick Ways to Resume 24/7 Mining:*\n` +
+                    `• 🎁 *Claim Daily Bonus* (+25-50 Pts)\n` +
+                    `• 🎬 *Watch Rewarded Video Ads* (+20 Pts/ad)\n` +
+                    `• 👥 *Invite Friends* (+500 Pts each)\n` +
+                    `• 🌟 *Upgrade to VIP Pass* (0 fee + unlimited mining)`,
+                  parse_mode: "Markdown",
+                  reply_markup: {
+                    inline_keyboard: [
+                      [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }],
+                      [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                      [{ text: "🌟 VIP Passes (0 fee)", callback_data: "ub_buy_stars" }]
+                    ]
+                  }
+                })
+              }).catch(() => {}));
+            }
+            prof.last_deduction_date = today;
+            await upstashSet(key, prof);
           } else {
-            prof.farming_active = false;
+            // Already paused: if user points were refilled, auto-resume!
+            if (prof.points >= dailyCost) {
+              prof.points -= dailyCost;
+              prof.farming_active = true;
+            }
+            prof.last_deduction_date = today;
+            await upstashSet(key, prof);
           }
-          prof.last_deduction_date = today;
-          await upstashSet(key, prof);
         }
       }
 
@@ -5941,14 +5989,17 @@ Reply to Arif naturally:`;
             ],
             [
               { text: "💎 Points & Pass" },
-              { text: "🗑️ Remove Account" }
+              { text: "🎁 Daily Bonus (+25-50 Pts)" }
             ],
             [
               { text: "👥 Invite Friends (+500 Pts)" },
-              { text: "💳 Withdrawals" }
+              { text: "🗑️ Remove Account" }
             ],
             [
-              { text: "📊 My Stats" },
+              { text: "💳 Withdrawals" },
+              { text: "📊 My Stats" }
+            ],
+            [
               { text: "💬 Ari AI & Support" }
             ]
           ],
@@ -5959,7 +6010,8 @@ Reply to Arif naturally:`;
         const adminMainKeyboard = {
           keyboard: [
             [
-              { text: "👑 Admin Console", web_app: { url: "https://atf-miner-app.pages.dev" } }
+              { text: "👑 Admin Console", web_app: { url: "https://atf-miner-app.pages.dev" } },
+              { text: "⚡ Executive Console", web_app: { url: "https://atf-miner-app.pages.dev/admin?v=5.0" } }
             ],
             [
               { text: "👥 My Accounts" },
@@ -5967,14 +6019,17 @@ Reply to Arif naturally:`;
             ],
             [
               { text: "💎 Points & Pass" },
-              { text: "🗑️ Remove Account" }
+              { text: "🎁 Daily Bonus (+25-50 Pts)" }
             ],
             [
               { text: "👥 Invite Friends (+500 Pts)" },
-              { text: "💳 Withdrawals" }
+              { text: "🗑️ Remove Account" }
             ],
             [
-              { text: "📊 My Stats" },
+              { text: "💳 Withdrawals" },
+              { text: "📊 My Stats" }
+            ],
+            [
               { text: "💬 Ari AI & Support" }
             ]
           ],
@@ -6321,9 +6376,67 @@ Reply to Arif naturally:`;
             return new Response("OK");
           }
 
-          // C2.5 Daily Check-In Bonus (Retired)
-          if (cqData === "ub_daily_claim") {
-            ctx.waitUntil(sendCqReply("ℹ️ *Daily Bonus Retired*\n\nPoints are earned via *🎬 Watch Ads* (next to message input) and *👥 Invite Friends (+500 Pts)*!\n\nTo manage or disconnect accounts, tap *👥 My Accounts* or *🗑️ Remove Account*.", userMainKeyboard));
+          // C2.5 Daily Check-In Bonus (24h Streak Rewards: +25 to +50 Pts)
+          if (cqData === "ub_daily_claim" || cqData === "ub_daily_bonus" || cqData === "ub_claim") {
+            const profile = await getUserProfile(cqChatId, cq.from);
+            const now = Date.now();
+            const lastClaim = profile.last_daily_claim || 0;
+            const elapsed = now - lastClaim;
+            const COOLDOWN_MS = 24 * 3600 * 1000;
+            
+            if (elapsed < COOLDOWN_MS) {
+              const remMs = COOLDOWN_MS - elapsed;
+              const h = Math.floor(remMs / 3600000);
+              const m = Math.floor((remMs % 3600000) / 60000);
+              const alreadyClaimedMsg = `⏳ *Daily Bonus Already Claimed!* 🎁\n\n` +
+                `You have already claimed today's check-in bonus!\n\n` +
+                `• *Next Claim In:* ${h}h ${m}m\n` +
+                `• *Current Streak:* 🔥 ${profile.daily_streak || 1} Days\n` +
+                `• *Points Balance:* 💎 ${profile.points || 0} Points\n\n` +
+                `💡 *Earn points right now:*\n` +
+                `• 🎬 *Watch Rewarded Video Ads* (+20 Pts/ad)\n` +
+                `• 👥 *Invite Friends* (+500 Pts per referral)\n` +
+                `• 🌟 *Upgrade with Telegram Stars* (0 point daily fee)`;
+              const kb = {
+                inline_keyboard: [
+                  [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                  [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
+                ]
+              };
+              ctx.waitUntil(sendCqReply(alreadyClaimedMsg, kb));
+              return new Response("OK");
+            }
+
+            const streakContinues = lastClaim > 0 && elapsed < (48 * 3600 * 1000);
+            const streak = streakContinues ? ((profile.daily_streak || 0) + 1) : 1;
+            const bonusPts = Math.min(50, 25 + (streak - 1) * 5);
+            
+            profile.points = (profile.points || 0) + bonusPts;
+            profile.daily_streak = streak;
+            profile.last_daily_claim = now;
+            
+            const dailyCost = (profile.accounts || []).length * 100;
+            if (profile.points >= dailyCost) {
+              profile.farming_active = true;
+            }
+            await saveUserProfile(cqChatId, profile);
+
+            const hasPass = profile.subscription_expiry && profile.subscription_expiry > now;
+            const statusTxt = hasPass ? "🟢 Active 24/7 (Covered by VIP Pass)" : (profile.farming_active ? "🟢 Active 24/7" : "🔴 Paused (Needs Points)");
+            const succMsg = `🎉 *DAILY BONUS CLAIMED!* 🎁\n\n` +
+              `• *Bonus Awarded:* +${bonusPts} Mining Points Credited!\n` +
+              `• *Check-In Streak:* 🔥 Day ${streak} Streak (${streak >= 5 ? "MAX +50 Pts!" : `+${bonusPts + 5} Pts tomorrow`})\n` +
+              `• *New Points Balance:* 💎 ${profile.points} Points\n` +
+              `• *Daily Mining Cost:* ${hasPass ? "0 Pts/day (VIP Pass)" : `${dailyCost} Pts/day`}\n` +
+              `• *Mining Status:* ${statusTxt}\n\n` +
+              `💡 _Come back in 24 hours to keep your streak burning!_`;
+            const succKb = {
+              inline_keyboard: [
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: "💎 View Points & Passes", callback_data: "ub_points" }]
+              ]
+            };
+            ctx.waitUntil(sendCqReply(succMsg, succKb));
             return new Response("OK");
           }
 
@@ -7279,9 +7392,66 @@ Reply to Arif naturally:`;
             return;
           }
 
-          // 4.1 Daily Bonus Notice (System Retired)
-          if (text === "📅 Daily Bonus" || text === "/daily" || text.startsWith("/daily") || text === "/checkin") {
-            await sendUserReply("ℹ️ *Daily Bonus Retired*\n\nPoints are earned via *🎬 Watch Ads* (next to message input) and *👥 Invite Friends (+500 Pts)*!\n\nTo manage or disconnect accounts, tap *👥 My Accounts* or *🗑️ Remove Account*.", userMainKeyboard);
+          // 4.1 Daily Check-In Bonus (24h Streak Rewards: +25 to +50 Pts)
+          if (text === "🎁 Daily Bonus" || text === "🎁 Daily Bonus (+25-50 Pts)" || text === "📅 Daily Bonus" || text.startsWith("/daily") || text.startsWith("/bonus") || text.startsWith("/claim") || text.startsWith("/checkin")) {
+            const now = Date.now();
+            const lastClaim = profile.last_daily_claim || 0;
+            const elapsed = now - lastClaim;
+            const COOLDOWN_MS = 24 * 3600 * 1000;
+            
+            if (elapsed < COOLDOWN_MS) {
+              const remMs = COOLDOWN_MS - elapsed;
+              const h = Math.floor(remMs / 3600000);
+              const m = Math.floor((remMs % 3600000) / 60000);
+              const alreadyClaimedMsg = `⏳ *Daily Bonus Already Claimed!* 🎁\n\n` +
+                `You have already claimed today's check-in bonus!\n\n` +
+                `• *Next Claim In:* ${h}h ${m}m\n` +
+                `• *Current Streak:* 🔥 ${profile.daily_streak || 1} Days\n` +
+                `• *Points Balance:* 💎 ${profile.points || 0} Points\n\n` +
+                `💡 *Earn points right now:*\n` +
+                `• 🎬 *Watch Rewarded Video Ads* (+20 Pts/ad)\n` +
+                `• 👥 *Invite Friends* (+500 Pts per referral)\n` +
+                `• 🌟 *Upgrade with Telegram Stars* (0 point daily fee)`;
+              const kb = {
+                inline_keyboard: [
+                  [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                  [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
+                ]
+              };
+              await sendUserReply(alreadyClaimedMsg, kb);
+              return;
+            }
+
+            const streakContinues = lastClaim > 0 && elapsed < (48 * 3600 * 1000);
+            const streak = streakContinues ? ((profile.daily_streak || 0) + 1) : 1;
+            const bonusPts = Math.min(50, 25 + (streak - 1) * 5);
+            
+            profile.points = (profile.points || 0) + bonusPts;
+            profile.daily_streak = streak;
+            profile.last_daily_claim = now;
+            
+            const dailyCost = (profile.accounts || []).length * 100;
+            if (profile.points >= dailyCost) {
+              profile.farming_active = true;
+            }
+            await saveUserProfile(chatId, profile);
+
+            const hasPass = profile.subscription_expiry && profile.subscription_expiry > now;
+            const statusTxt = hasPass ? "🟢 Active 24/7 (Covered by VIP Pass)" : (profile.farming_active ? "🟢 Active 24/7" : "🔴 Paused (Needs Points)");
+            const succMsg = `🎉 *DAILY BONUS CLAIMED!* 🎁\n\n` +
+              `• *Bonus Awarded:* +${bonusPts} Mining Points Credited!\n` +
+              `• *Check-In Streak:* 🔥 Day ${streak} Streak (${streak >= 5 ? "MAX +50 Pts!" : `+${bonusPts + 5} Pts tomorrow`})\n` +
+              `• *New Points Balance:* 💎 ${profile.points} Points\n` +
+              `• *Daily Mining Cost:* ${hasPass ? "0 Pts/day (VIP Pass)" : `${dailyCost} Pts/day`}\n` +
+              `• *Mining Status:* ${statusTxt}\n\n` +
+              `💡 _Come back in 24 hours to keep your streak burning!_`;
+            const succKb = {
+              inline_keyboard: [
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: "💎 View Points & Passes", callback_data: "ub_points" }]
+              ]
+            };
+            await sendUserReply(succMsg, succKb);
             return;
           }
 
@@ -7589,6 +7759,110 @@ Reply to Arif naturally:`;
           }
       } catch (_) {}
     })());
+
+    // 2.5 Automated Daily Cost Deduction Sweep (Runs once per day across all registered users)
+    if (NODE_SHARD_INDEX === 0) {
+      ctx.waitUntil((async () => {
+        try {
+          const today = new Date().toISOString().slice(0, 10);
+          let lastSweep = null;
+          if (env.BACKUP_KV) {
+            lastSweep = await env.BACKUP_KV.get("daily_cost_sweep_date");
+          }
+          if (lastSweep === today) return;
+
+          if (env.BACKUP_KV) {
+            await env.BACKUP_KV.put("daily_cost_sweep_date", today, { expirationTtl: 86400 * 2 }).catch(() => {});
+          }
+
+          const uidsResp = await fetch(`${UPSTASH_URL}/smembers/ub_registered_users`, {
+            headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
+          }).catch(() => null);
+          if (!uidsResp || !uidsResp.ok) return;
+          const uidsData = await uidsResp.json().catch(() => ({}));
+          const uids = uidsData.result || [];
+          if (!Array.isArray(uids) || uids.length === 0) return;
+
+          const userKeys = uids.map(uid => `ub_user:${uid}`);
+          const userProfiles = await upstashMget(userKeys);
+          const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+
+          for (const prof of userProfiles) {
+            if (!prof || !prof.user_id || !prof.accounts || prof.accounts.length === 0) continue;
+            if (prof.last_deduction_date === today) continue;
+
+            const now = Date.now();
+            const hasActivePass = prof.subscription_expiry && prof.subscription_expiry > now;
+
+            if (hasActivePass) {
+              prof.farming_active = true;
+              prof.last_deduction_date = today;
+              await upstashSet(`ub_user:${prof.user_id}`, prof);
+            } else {
+              const dailyCost = prof.accounts.length * 100;
+              if (prof.farming_active !== false) {
+                if ((prof.points || 0) >= dailyCost) {
+                  prof.points = (prof.points || 0) - dailyCost;
+                  prof.farming_active = true;
+                  prof.last_deduction_date = today;
+                  await upstashSet(`ub_user:${prof.user_id}`, prof);
+                } else {
+                  prof.farming_active = false;
+                  prof.last_deduction_date = today;
+                  await upstashSet(`ub_user:${prof.user_id}`, prof);
+
+                  // Send Pause Notification to User
+                  fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: prof.user_id,
+                      text: `⚠️ *Cloud Mining Paused — Insufficient Points* ⚠️\n\n` +
+                        `Your 24/7 cloud mining has been temporarily paused because your points balance (*${prof.points || 0} Points*) is below today's daily cost (*${dailyCost} Points* for ${prof.accounts.length} connected account${prof.accounts.length > 1 ? "s" : ""}).\n\n` +
+                        `*Resume 24/7 Cloud Mining:*\n` +
+                        `• 🎁 *Claim Daily Bonus* (+25-50 Pts)\n` +
+                        `• 🎬 *Watch Rewarded Video Ads* (+20 Pts/ad)\n` +
+                        `• 👥 *Invite Friends* (+500 Pts each)\n` +
+                        `• 🌟 *Upgrade with Telegram Stars* (0 fee + unlimited mining)`,
+                      parse_mode: "Markdown",
+                      reply_markup: {
+                        inline_keyboard: [
+                          [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }],
+                          [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                          [{ text: "🌟 VIP Passes (0 fee)", callback_data: "ub_buy_stars" }]
+                        ]
+                      }
+                    })
+                  }).catch(() => {});
+                }
+              } else {
+                // If user was paused, check if balance now covers cost
+                if ((prof.points || 0) >= dailyCost) {
+                  prof.points = (prof.points || 0) - dailyCost;
+                  prof.farming_active = true;
+                  prof.last_deduction_date = today;
+                  await upstashSet(`ub_user:${prof.user_id}`, prof);
+
+                  fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: prof.user_id,
+                      text: `🟢 *Cloud Mining Auto-Resumed!* 🚀\n\n` +
+                        `Your points balance covered today's cost (*${dailyCost} Points*). 24/7 cloud mining has resumed for all ${prof.accounts.length} accounts.\n• *Remaining Balance:* 💎 ${prof.points} Points`,
+                      parse_mode: "Markdown"
+                    })
+                  }).catch(() => {});
+                } else {
+                  prof.last_deduction_date = today;
+                  await upstashSet(`ub_user:${prof.user_id}`, prof);
+                }
+              }
+            }
+          }
+        } catch (_) {}
+      })());
+    }
 
     // 3. Mini-App Automated Edge Claims (All 8 Active Bots: Stones, MRG, ART, AI Lab, UltraWallet, Apex Miner, ATF Miner, Ainovum)
     ctx.waitUntil((async () => {
@@ -7909,6 +8183,7 @@ async def main():
                 {"command": "accounts", "description": "👥 Manage Connected Accounts"},
                 {"command": "ads", "description": "🎬 Watch Ads & Earn Points"},
                 {"command": "points", "description": "💎 Points Balance & VIP Passes"},
+                {"command": "daily", "description": "🎁 Claim Daily Bonus (+25-50 Pts)"},
                 {"command": "withdraw", "description": "💳 8 Bots Payout & Cashout Guide"},
                 {"command": "help", "description": "💬 Ari AI Copilot & Live Support"}
             ]

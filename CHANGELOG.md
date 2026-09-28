@@ -4,6 +4,31 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Points Economy Overhaul, 100 Pts/Day Autonomous Daily Deduction Sweep, and Unified Executive Dashboards (`deploy_both_cf_workers.py`, `public/index.html`, `public/admin/index.html`, `public/admin.html`)**:
+  - **⚡ Automated Daily Point Deduction Sweep (100 Pts/Day / Account)**:
+    * Implemented step 2.5 in Cloudflare Worker `scheduled` cron trigger (firing on Node 1 / Shard 0 `aaaai2`) that executes an autonomous daily cost deduction sweep across all users in `ub_registered_users`.
+    * Users with connected accounts now have 100 points per account automatically deducted each day even if they do not message the bot.
+    * Users with active VIP passes (`subscription_expiry > Date.now()`) incur 0 platform fee with uninterrupted 24/7 cloud mining.
+    * If a user's points drop below the daily requirement, their accounts are automatically paused (`farming_active = false`), and an instant Telegram notification is dispatched via `@AAAPREMIUMAPPSbot` explaining how to resume (Daily Bonus, Ads, Referrals, or Stars).
+    * If a previously paused user gains sufficient points (e.g. from bonus or ads), the system automatically resumes mining (`farming_active = true`) and notifies them.
+  - **🎁 Reactivated 24h Daily Check-In Bonus Engine (`/daily`, `/bonus`, `/claim`, `ub_daily_claim`)**:
+    * Implemented a rewarding 24-hour streak engine: Day 1 (+25 Pts), Day 2 (+30 Pts), Day 3 (+35 Pts), Day 4 (+40 Pts), Day 5+ (+50 Pts MAX).
+    * Added countdown cooldown timers when claimed within 24h, automatic streak maintenance (resets to Day 1 if missed for >48h), and auto-resumption if new balance meets daily cost.
+    * Added `🎁 Daily Bonus (+25-50 Pts)` button to native Telegram keyboards (`userMainKeyboard` & `adminMainKeyboard`) and registered `/daily` in bot commands.
+  - **📊 Fixed Dashboard Calculation Bug & Added Real-Time Runway Telemetry (`public/index.html`)**:
+    * Fixed bug on line 460 where daily cost was erroneously calculated as `* 20` instead of `* 100` per account.
+    * Added real-time runway indicator (`X days remaining` or `∞ VIP Pass`) with dynamic color states (green for >=3d, amber for 1-2d, red for depleted/paused).
+    * Added `dailyBurnRate` calculation to `/api/admin/users` and displayed live community burn rate in top KPI cards (`Burn: -100 Pts/day`).
+  - **⚙️ Dual-Mode Points Moderation Console with Live Forecast**:
+    * Upgraded Points Modal in both User Console (`public/index.html`) and Executive Dashboard (`public/admin/index.html`) with dual-mode toggle ("➕ Add Points" vs "➖ Deduct Points").
+    * Added quick preset chips (`+100`, `+500`, `+1,000`, `+3,000`, `-50`, `-100`, `-200`, `-500`) and live preview forecasting projected balance, daily cost, and active/paused mining status.
+  - **👑 Unified Executive Admin Dashboard (`public/admin/index.html` & `public/admin.html`)**:
+    * Integrated a dedicated "Miners" tab (`activeTab === "miners"`) into the bottom navigation dock of the Executive Console.
+    * Allows Commander Arif to view the entire community fleet, search miners, inspect points/accounts, grant VIP passes, toggle farming status, and moderate points directly from the executive interface without switching URLs.
+  - **🚀 End-to-End Multi-Cloud Deployment**:
+    * Deployed worker bundles across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Synchronized bot commands and chat menu buttons for both Telegram bots.
+
 - **Bug Fixes: Upstash MGET Subrequest Optimization, Missing `upstashSrem`, and `JoinChannelRequest` Import (`deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`)**:
   - **🐛 Fixed Missing `upstashSrem` Implementation**:
     * Identified that `/unban` command and `cb_unban_` inline button called `upstashSrem("ub_banned_users", ...)`, but the function was never defined in `deploy_both_cf_workers.py`, causing a runtime `ReferenceError`.
