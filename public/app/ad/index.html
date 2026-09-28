@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#070b12" />
-  <title>Watch Sponsored Ad — AAA ATF Miner</title>
+  <title>Watch Sponsored Ad — AAA Auto Mining</title>
 
   <!-- HilltopAds Verification -->
   <meta name="77d314e64e8dc15578e7d6411310745a041720e6" content="77d314e64e8dc15578e7d6411310745a041720e6" />
@@ -874,7 +874,16 @@
   </footer>
 
   <script>
-    const API_BASE = "https://atf-miner-worker.agorameet.workers.dev";
+    const CF_NODES = [
+      "https://restore-agy.aaaai2.workers.dev",
+      "https://restore-agy.aaa-bot.workers.dev",
+      "https://restore-agy.aaa222.workers.dev",
+      "https://restore-agy.agorameet.workers.dev",
+      "https://restore-agy.aaaai.workers.dev"
+    ];
+    const API_BASE = (typeof window !== "undefined" && window.location.hostname.includes("workers.dev"))
+      ? window.location.origin
+      : CF_NODES[0];
     let activeSession = null;
     let timerInterval = null;
     let adFinished = false;

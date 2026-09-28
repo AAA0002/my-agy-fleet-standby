@@ -1365,7 +1365,7 @@ async function runDailyCostSweep(env, force = false) {
                 reply_markup: {
                   inline_keyboard: [
                     [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }],
-                    [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                    [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }],
                     [{ text: "🌟 VIP Passes", callback_data: "ub_buy_stars" }]
                   ]
                 }
@@ -1395,7 +1395,7 @@ async function runDailyCostSweep(env, force = false) {
               reply_markup: {
                 inline_keyboard: [
                   [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }],
-                  [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                  [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }],
                   [{ text: "🌟 VIP Passes", callback_data: "ub_buy_stars" }]
                 ]
               }
@@ -1454,7 +1454,7 @@ export default {
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Telegram-Init-Data, X-User-Id"
     };
 
     if (request.method === "OPTIONS") {
@@ -5899,7 +5899,7 @@ Reply to Arif naturally:`;
                   reply_markup: {
                     inline_keyboard: [
                       [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }],
-                      [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                      [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }],
                       [{ text: "🌟 VIP Passes", callback_data: "ub_buy_stars" }]
                     ]
                   }
@@ -5938,333 +5938,73 @@ Reply to Arif naturally:`;
       await upstashSet(`ub_user:${uid}`, prof);
     };
 
-    // 13.6 Adsgram Rewarded Video WebApp Page
-    if (path === "/adsgram") {
-      const rawBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "50527";
-      const currentBlockId = String(rawBlockId).replace(/^["']|["']$/g, "").replace(/^bot-/, "").trim() || "50527";
-      const adsgramHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AAA Auto Miner — Rewarded Video Ads (Created by AAA)</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
-    body {
-      background: #090d16;
-      color: #f1f5f9;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      padding: 24px 20px;
-      overflow-x: hidden;
-    }
-    .container { width: 100%; max-width: 440px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
-    .header-badge {
-      display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px;
-      border-radius: 9999px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25);
-      font-size: 13px; font-weight: 600; color: #38bdf8;
-    }
-    .pulse-dot {
-      width: 8px; height: 8px; background: #10b981; border-radius: 50%;
-      box-shadow: 0 0 10px #10b981; animation: pulse 2s infinite;
-    }
-    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.2); } }
-    .card {
-      width: 100%; background: rgba(30, 41, 59, 0.65); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    }
-    .user-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
-    .user-info { display: flex; align-items: center; gap: 12px; }
-    .avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #3b82f6); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; color: #fff; }
-    .user-details h3 { font-size: 16px; font-weight: 600; color: #fff; }
-    .user-details p { font-size: 12px; color: #94a3b8; }
-    .balance-pill { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 12px; border-radius: 12px; text-align: right; }
-    .balance-val { font-size: 15px; font-weight: 700; color: #34d399; }
-    .balance-lbl { font-size: 10px; color: #a7f3d0; text-transform: uppercase; letter-spacing: 0.5px; }
-    .perk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-    .perk-item { background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 14px; text-align: center; }
-    .perk-val { font-size: 20px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
-    .perk-lbl { font-size: 12px; color: #94a3b8; }
-    .progress-box { margin-top: 14px; padding: 14px; background: rgba(15, 23, 42, 0.4); border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.05); }
-    .progress-header { display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8; margin-bottom: 8px; }
-    .progress-track { width: 100%; height: 8px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; }
-    .progress-fill { height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); border-radius: 9999px; transition: width 0.4s ease; }
-    .btn-action {
-      width: 100%; padding: 16px; border-radius: 16px; border: none; font-size: 16px; font-weight: 700; color: #fff;
-      background: linear-gradient(135deg, #2563eb, #7c3aed); box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
-      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
-      transition: transform 0.15s ease, opacity 0.15s ease;
-    }
-    .btn-action:active { transform: scale(0.98); }
-    .btn-action:disabled { background: #334155; color: #64748b; box-shadow: none; cursor: not-allowed; }
-    .status-msg { margin-top: 14px; padding: 12px; border-radius: 12px; font-size: 13px; text-align: center; display: none; }
-    .status-msg.success { display: block; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
-    .status-msg.error { display: block; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
-    .footer { font-size: 11px; color: #64748b; text-align: center; line-height: 1.5; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header-badge">
-      <span class="pulse-dot"></span>
-      <span>Adsgram Partner • Created by AAA</span>
-    </div>
-
-    <div class="card">
-      <div class="user-row">
-        <div class="user-info">
-          <div class="avatar" id="uAvatar">M</div>
-          <div class="user-details">
-            <h3 id="uName">Miner</h3>
-            <p id="uId">ID: Loading...</p>
-          </div>
-        </div>
-        <div class="balance-pill">
-          <div class="balance-val" id="uPoints">---</div>
-          <div class="balance-lbl">Points</div>
-        </div>
-      </div>
-
-      <div class="perk-grid">
-        <div class="perk-item">
-          <div class="perk-val" id="rewardPerView">+20 Pts</div>
-          <div class="perk-lbl">Reward per View</div>
-        </div>
-        <div class="perk-item">
-          <div class="perk-val" id="uAdsCount">0</div>
-          <div class="perk-lbl">Ads Watched</div>
-        </div>
-      </div>
-
-      <div class="progress-box">
-        <div class="progress-header">
-          <span>Bonus Account Slot Milestone</span>
-          <span id="milestoneProgress">0 / 50</span>
-        </div>
-        <div class="progress-track">
-          <div class="progress-fill" id="milestoneBar" style="width: 0%"></div>
-        </div>
-      </div>
-
-      <div style="margin-top: 24px;">
-        <button class="btn-action" id="watchBtn" onclick="watchAd()">
-          <span>🎬 Watch Video Ad (+20 Pts)</span>
-        </button>
-        <div class="status-msg" id="statusBox"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="footer">
-    Created by AAA • Powered by Adsgram Web3 Ad Network<br>
-    Earned points auto-extend your 24/7 cloud mining accounts continuously.
-  </div>
-
-  <script>
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand();
-      try { tg.setHeaderColor('#090d16'); } catch (_) {}
+    // 13.6 Multi-Network Ad Portal Route (Monetag, GigaPub, Adsterra 7 Formats, HilltopAds VAST 3.0, A-Ads)
+    if (path === "/ads" || path === "/app/ad" || path === "/ad" || path === "/adsgram") {
+      const redirectTarget = "https://atf-miner-app.pages.dev/app/ad" + (url.search || "");
+      return Response.redirect(redirectTarget, 302);
     }
 
-    const tgUser = tg?.initDataUnsafe?.user || {};
-    const userId = tgUser.id || new URLSearchParams(window.location.search).get('uid') || "6727787768";
-    const userName = tgUser.first_name || "Miner";
-    
-    document.getElementById('uName').innerText = userName;
-    document.getElementById('uAvatar').innerText = userName.charAt(0).toUpperCase();
-    document.getElementById('uId').innerText = "ID: " + userId;
-
-    let userBalance = 0;
-    let adsCount = 0;
-    let isVip = false;
-
-    async function fetchUserStatus() {
-      try {
-        const res = await fetch("/api/adsgram/status?user_id=" + userId);
-        if (res.ok) {
-          const d = await res.json();
-          userBalance = d.points || 0;
-          adsCount = d.ads_watched || 0;
-          isVip = !!d.is_monthly_pass;
-          updateUi();
-        }
-      } catch (_) {}
-    }
-
-    function updateUi() {
-      document.getElementById('uPoints').innerText = userBalance;
-      document.getElementById('uAdsCount').innerText = adsCount;
-      const progress = adsCount % 50;
-      document.getElementById('milestoneProgress').innerText = progress + " / 50";
-      document.getElementById('milestoneBar').style.width = ((progress / 50) * 100) + "%";
-      if (isVip) {
-        document.getElementById('rewardPerView').innerText = "+40 Pts (2x)";
+    // 13.7 User Status & Multi-Network Ad Data API
+    if (path === "/api/adsgram/status" || path === "/api/user/data" || path === "/api/user/stats") {
+      let uid = url.searchParams.get("user_id") || url.searchParams.get("userid") || url.searchParams.get("uid");
+      const authHeader = request.headers.get("Authorization") || request.headers.get("X-Telegram-Init-Data") || "";
+      if (!uid && authHeader) {
+        try {
+          const initStr = authHeader.replace(/^tma\s+/i, "");
+          const params = new URLSearchParams(initStr);
+          const uStr = params.get("user");
+          if (uStr) uid = JSON.parse(uStr).id;
+        } catch (_) {}
       }
-    }
-
-    fetchUserStatus();
-
-    const configuredBlockId = "__BLOCK_ID__";
-    let adController = null;
-    try {
-      if (window.Adsgram) {
-        adController = window.Adsgram.init({
-          blockId: configuredBlockId,
-          debug: false
-        });
+      if (!uid) {
+        uid = request.headers.get("X-User-Id");
       }
-    } catch (e) {
-      console.error("Adsgram init error:", e);
-    }
-
-    let isCooldown = false;
-
-    async function watchAd() {
-      if (isCooldown) return;
-      const btn = document.getElementById('watchBtn');
-      const box = document.getElementById('statusBox');
-      box.className = "status-msg";
-      box.style.display = "none";
-
-      if (!adController && window.Adsgram) {
-        adController = window.Adsgram.init({ blockId: configuredBlockId, debug: false });
-      }
-
-      if (!adController) {
-        claimReward("direct");
-        return;
-      }
-
-      btn.disabled = true;
-      btn.innerText = "⏳ Loading Video Ad...";
-
-      try {
-        adController.show().then(async (result) => {
-          await claimReward(result);
-        }).catch((err) => {
-          btn.disabled = false;
-          btn.innerText = "🎬 Watch Video Ad (+20 Pts)";
-          box.className = "status-msg error";
-          const desc = typeof err === "string" ? err : ((err && (err.description || err.message)) || "");
-          let errMsg = desc || "⚠️ Video ad completed or unavailable in your region.";
-          if (desc.toLowerCase().includes("active") || desc.toLowerCase().includes("moderation")) {
-            errMsg = "⏳ Ad block is undergoing Adsgram moderation. Ads will serve automatically once approved!";
-          } else if (desc.toLowerCase().includes("not found")) {
-            errMsg = "⚠️ Ad block initializing on Adsgram network...";
-          }
-          box.innerHTML = '<div>' + errMsg + '</div><button style="margin-top:10px;padding:8px 18px;border-radius:10px;border:none;background:#10b981;color:#fff;font-weight:700;font-size:13px;cursor:pointer;" onclick="claimReward(\'fallback\')">🎁 Claim Points (Fallback)</button>';
-          if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-        });
-      } catch (err) {
-        btn.disabled = false;
-        btn.innerText = "🎬 Watch Video Ad (+20 Pts)";
-        box.className = "status-msg error";
-        const desc = typeof err === "string" ? err : ((err && (err.description || err.message)) || "");
-        box.innerHTML = '<div>⚠️ Could not launch video: ' + (desc || "Network glitch") + '</div><button style="margin-top:10px;padding:8px 18px;border-radius:10px;border:none;background:#10b981;color:#fff;font-weight:700;font-size:13px;cursor:pointer;" onclick="claimReward(\'fallback\')">🎁 Claim Points (Fallback)</button>';
-      }
-    }
-
-    async function claimReward(adResult) {
-      const btn = document.getElementById('watchBtn');
-      const box = document.getElementById('statusBox');
-      btn.innerText = "🎁 Crediting Points...";
-
-      try {
-        const resp = await fetch("/api/adsgram/reward", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user_id: userId,
-            initData: tg?.initData || ""
-          })
-        });
-
-        const data = await resp.json();
-        if (data.ok) {
-          userBalance = data.new_balance;
-          adsCount = data.ads_watched;
-          updateUi();
-
-          box.className = "status-msg success";
-          let msg = "🎉 Success! +" + data.points_awarded + " Points credited to your account!";
-          if (data.bonus_unlocked) {
-            msg += " 🏆 50-Ad Milestone reached: +1 Free Account Slot unlocked!";
-          }
-          box.innerText = msg;
-          if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-
-          startCooldown(15);
-        } else {
-          box.className = "status-msg error";
-          box.innerText = data.error || "Claim failed. Please retry.";
-          btn.disabled = false;
-          btn.innerText = "🎬 Watch Video Ad (+20 Pts)";
-        }
-      } catch (e) {
-        box.className = "status-msg error";
-        box.innerText = "Network error syncing reward. Your points are safe.";
-        btn.disabled = false;
-        btn.innerText = "🎬 Watch Video Ad (+20 Pts)";
-      }
-    }
-
-    function startCooldown(sec) {
-      isCooldown = true;
-      const btn = document.getElementById('watchBtn');
-      let rem = sec;
-      btn.disabled = true;
-      btn.innerText = "⏳ Next Ad in " + rem + "s";
-
-      const iv = setInterval(() => {
-        rem--;
-        if (rem <= 0) {
-          clearInterval(iv);
-          isCooldown = false;
-          btn.disabled = false;
-          btn.innerText = "🎬 Watch Video Ad (+20 Pts)";
-        } else {
-          btn.innerText = "⏳ Next Ad in " + rem + "s";
-        }
-      }, 1000);
-    }
-  </script>
-</body>
-</html>`.replace("__BLOCK_ID__", currentBlockId);
-
-      return new Response(adsgramHtml, {
-        headers: { "Content-Type": "text/html; charset=utf-8", ...corsHeaders }
-      });
-    }
-
-    // 13.7 Adsgram User Status API
-    if (path === "/api/adsgram/status") {
-      const uid = url.searchParams.get("user_id");
       if (!uid) {
         return new Response(JSON.stringify({ ok: false, error: "Missing user_id" }), { status: 400, headers: corsHeaders });
       }
       const profile = await getUserProfile(uid);
       const now = Date.now();
       const isMonthlyPass = profile.subscription_tier === "month" && profile.subscription_expiry && profile.subscription_expiry > now;
+      const totalAllowed = (profile.slots || 1) + (profile.temp_slots || 0);
+
       return new Response(JSON.stringify({
         ok: true,
+        success: true,
         user_id: uid,
         points: profile.points || 0,
         ads_watched: profile.ads_watched || 0,
+        ads_watched_today: profile.ads_watched || 0,
+        daily_ads_watched: profile.ads_watched || 0,
         is_monthly_pass: isMonthlyPass,
-        slots: (profile.slots || 1) + (profile.temp_slots || 0)
+        slots: totalAllowed,
+        user_slots: {
+          allowed: totalAllowed,
+          is_vip: isMonthlyPass,
+          vip_slots: isMonthlyPass ? 2 : 0
+        },
+        vip: {
+          is_vip: isMonthlyPass,
+          vip_slots: isMonthlyPass ? 2 : 0
+        },
+        ad_rewards: {
+          points: profile.points || 0,
+          ads_watched_today: profile.ads_watched || 0,
+          temp_slots_count: profile.temp_slots || 0,
+          ad_streak: 1,
+          is_vip: isMonthlyPass,
+          vip_slots: isMonthlyPass ? 2 : 0
+        },
+        stats: {
+          points: profile.points || 0,
+          ads_watched_today: profile.ads_watched || 0,
+          temp_slots_count: profile.temp_slots || 0,
+          is_vip: isMonthlyPass
+        }
       }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
-    // 13.8 Adsgram Reward Verification & Claim API (Supports S2S GET from Adsgram and Client POST from WebApp)
-    if (path === "/api/adsgram/reward" && (request.method === "POST" || request.method === "GET")) {
+    // 13.8 Multi-Network Ad Verification & Claim API (Monetag, GigaPub, Adsterra 7 Formats, HilltopAds VAST, A-Ads)
+    if ((path === "/api/adsgram/reward" || path === "/api/user/verify-ad-chain" || path === "/api/user/verify-monetag" || path === "/api/user/claim-ad") && (request.method === "POST" || request.method === "GET")) {
       try {
         let uid = url.searchParams.get("userid") || url.searchParams.get("user_id") || url.searchParams.get("uid");
         if (!uid && request.method === "POST") {
@@ -6282,10 +6022,23 @@ Reply to Arif naturally:`;
           }
         }
         if (!uid) {
+          const authH = request.headers.get("Authorization") || request.headers.get("X-Telegram-Init-Data") || "";
+          if (authH) {
+            try {
+              const p = new URLSearchParams(authH.replace(/^tma\s+/i, ""));
+              const us = p.get("user");
+              if (us) uid = JSON.parse(us).id;
+            } catch (_) {}
+          }
+        }
+        if (!uid) {
+          uid = request.headers.get("X-User-Id");
+        }
+        if (!uid) {
           return new Response(JSON.stringify({ ok: false, error: "Missing user_id" }), { status: 400, headers: corsHeaders });
         }
 
-        // Adsgram validation ping or test request
+        // Ad network validation ping or test request
         if (String(uid) === "[userId]" || String(uid) === "test" || String(uid) === "0" || String(uid) === "ping") {
           return new Response(JSON.stringify({ ok: true, status: "webhook_active" }), {
             status: 200,
@@ -6299,9 +6052,9 @@ Reply to Arif naturally:`;
         if (elapsed < 15) {
           const waitSec = 15 - elapsed;
           if (request.method === "GET") {
-            // Adsgram S2S GET webhook: Acknowledge with 200 OK so Adsgram records successful delivery
             return new Response(JSON.stringify({
               ok: true,
+              success: true,
               status: "already_credited",
               cooldown_seconds: waitSec,
               message: "User was recently credited. Acknowledged."
@@ -6309,6 +6062,7 @@ Reply to Arif naturally:`;
           }
           return new Response(JSON.stringify({
             ok: false,
+            success: false,
             error: `Cooldown active. Please wait ${waitSec}s.`,
             cooldown_seconds: waitSec
           }), { status: 429, headers: corsHeaders });
@@ -6325,7 +6079,7 @@ Reply to Arif naturally:`;
         if (profile.points >= dailyCost) {
           profile.farming_active = true;
           if (wasPaused) {
-            resumedText = `\n\n🟢 *Cloud Mining Auto-Resumed!* 🚀\nYour points balance now covers today's cost (${dailyCost} Points). 24/7 autonomous mining has resumed for all ${profile.accounts.length} accounts!`;
+            resumedText = `\n\n🟢 *Cloud Mining Auto-Resumed!* 🚀\nYour points balance now covers today\x27s cost (${dailyCost} Points). 24/7 autonomous mining has resumed for all ${profile.accounts.length} accounts!`;
           }
         }
 
@@ -6358,11 +6112,28 @@ Reply to Arif naturally:`;
 
         return new Response(JSON.stringify({
           ok: true,
+          success: true,
+          points: profile.points,
           points_awarded: adPts,
           new_balance: profile.points,
           ads_watched: profile.ads_watched,
+          ads_watched_today: profile.ads_watched,
+          daily_ads_watched: profile.ads_watched,
           progress_to_bonus: profile.ads_watched % 50,
-          bonus_unlocked: bonusUnlocked
+          bonus_unlocked: bonusUnlocked,
+          user_slots: {
+            allowed: (profile.slots || 1) + (profile.temp_slots || 0),
+            is_vip: isMonthlyPass,
+            vip_slots: isMonthlyPass ? 2 : 0
+          },
+          ad_rewards: {
+            points: profile.points,
+            ads_watched_today: profile.ads_watched,
+            temp_slots_count: profile.temp_slots || 0,
+            ad_streak: 1,
+            is_vip: isMonthlyPass,
+            vip_slots: isMonthlyPass ? 2 : 0
+          }
         }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
         return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
@@ -6376,7 +6147,7 @@ Reply to Arif naturally:`;
       return new Response(JSON.stringify({
         ok: true,
         block_id: currentBlockId,
-        webapp_url: `https://restore-agy.${CURRENT_SUBDOMAIN}.workers.dev/adsgram`,
+        webapp_url: "https://atf-miner-app.pages.dev/app/ad",
         cooldown_sec: 15,
         default_pts: 20,
         monthly_pass_pts: 40,
@@ -6689,7 +6460,7 @@ Reply to Arif naturally:`;
               { text: "⛏️ 8 Supported Farming Bots 🤖", callback_data: "ub_pools" }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }
             ],
             [
               { text: "🌟 VIP Passes & Boosts (Stars)", callback_data: "ub_buy_stars" }
@@ -6719,7 +6490,7 @@ Reply to Arif naturally:`;
               { text: "🌟 +1 Permanent Slot (50 Stars)", callback_data: "ub_stars_slot1" }
             ],
             [
-              { text: "📺 Watch Ad (+20 Pts Free)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } },
+              { text: "📺 Watch Ad (+20 Pts Free)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } },
               { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }
             ]
           ]
@@ -6728,7 +6499,7 @@ Reply to Arif naturally:`;
         const adClaimKeyboard = {
           inline_keyboard: [
             [
-              { text: "🎬 Watch Real Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }
+              { text: "🎬 Watch Real Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }
             ],
             [
               { text: "🎁 Claim Reward Directly", callback_data: "ub_claim_ad" },
@@ -6852,7 +6623,7 @@ Reply to Arif naturally:`;
               `👇 *Tap below to launch the video ad:*`;
             ctx.waitUntil(sendCqReply(adMsg, {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }],
                 [{ text: "🎁 Claim Directly (Fallback)", callback_data: "ub_claim_ad" }]
               ]
             }));
@@ -6992,7 +6763,7 @@ Reply to Arif naturally:`;
               `Earn free points below:`;
             const rewBtns = {
               inline_keyboard: [
-                [{ text: `🎬 Watch Video Ad (+${adPts} Pts)`, web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: `🎬 Watch Video Ad (+${adPts} Pts)`, web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }],
                 [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
@@ -7024,7 +6795,7 @@ Reply to Arif naturally:`;
                 `• 🌟 *Upgrade with Telegram Stars* (0 point daily fee)`;
               const kb = {
                 inline_keyboard: [
-                  [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                  [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }],
                   [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
                 ]
               };
@@ -7063,7 +6834,7 @@ Reply to Arif naturally:`;
               `💡 _Come back in 24 hours to keep your streak burning!_`;
             const succKb = {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }],
                 [{ text: "💎 View Points & Passes", callback_data: "ub_points" }]
               ]
             };
@@ -7106,7 +6877,7 @@ Reply to Arif naturally:`;
 
             const ptsKb = {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }],
                 [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
@@ -7134,7 +6905,7 @@ Reply to Arif naturally:`;
             ctx.waitUntil(sendCqReply(poolsMsg, {
               inline_keyboard: [
                 [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "👥 My Accounts", callback_data: "ub_accounts" }],
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }]
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }]
               ]
             }));
             return new Response("OK");
@@ -7816,7 +7587,7 @@ Reply to Arif naturally:`;
               `Earn free points below:`;
             const rewBtns = {
               inline_keyboard: [
-                [{ text: `🎬 Watch Video Ad (+${adPts} Pts)`, web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: `🎬 Watch Video Ad (+${adPts} Pts)`, web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }],
                 [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
@@ -7850,7 +7621,7 @@ Reply to Arif naturally:`;
               `• *Cloud Mining:* ${farmStatus}`;
             const statsBtns = {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }],
                 [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
@@ -7904,7 +7675,7 @@ Reply to Arif naturally:`;
                   type: "web_app",
                   text: "🎬 Watch Ads",
                   web_app: {
-                    url: "https://restore-agy.aaaai2.workers.dev/adsgram"
+                    url: "https://atf-miner-app.pages.dev/app/ad"
                   }
                 }
               };
@@ -8078,7 +7849,7 @@ Reply to Arif naturally:`;
 
             await sendUserReply(ptsMsg, {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }],
                 [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
@@ -8108,7 +7879,7 @@ Reply to Arif naturally:`;
                 `• 🌟 *Upgrade with Telegram Stars* (VIP Pass - unlimited mining)`;
               const kb = {
                 inline_keyboard: [
-                  [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                  [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }],
                   [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
                 ]
               };
@@ -8147,7 +7918,7 @@ Reply to Arif naturally:`;
               `💡 _Come back in 24 hours to keep your streak burning!_`;
             const succKb = {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }],
                 [{ text: "💎 View Points & Passes", callback_data: "ub_points" }]
               ]
             };
@@ -8175,7 +7946,7 @@ Reply to Arif naturally:`;
             await sendUserReply(poolsMsg, {
               inline_keyboard: [
                 [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "👥 My Accounts", callback_data: "ub_accounts" }],
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }]
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }]
               ]
             });
             return;
@@ -8191,7 +7962,7 @@ Reply to Arif naturally:`;
               `👇 *Tap below to launch the video ad:*`;
             await sendUserReply(adMsg, {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }],
                 [{ text: "🎁 Claim Directly (Fallback)", callback_data: "ub_claim_ad" }]
               ]
             });
@@ -8258,7 +8029,7 @@ Reply to Arif naturally:`;
               `💡 _Watch ads & invite friends to climb the leaderboard!_`;
             await sendUserReply(boardMsg, {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }],
                 [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
               ]
             });
@@ -8277,7 +8048,7 @@ Reply to Arif naturally:`;
               }
               const newBlockId = rawInput.replace(/^bot-/, "").trim();
               await upstashSet("config:adsgram_block_id", newBlockId);
-              await sendUserReply(`✅ *Adsgram Block ID Updated!*\n\n• *New Block ID:* \`${newBlockId}\`\n• *Status:* Live across all Cloudflare Edge nodes\n• *WebApp URL:* https://restore-agy.aaaai2.workers.dev/adsgram`);
+              await sendUserReply(`✅ *Adsgram Block ID Updated!*\n\n• *New Block ID:* \`${newBlockId}\`\n• *Status:* Live across all Cloudflare Edge nodes\n• *WebApp URL:* https://atf-miner-app.pages.dev/app/ad`);
               return;
             }
           }
@@ -8285,7 +8056,7 @@ Reply to Arif naturally:`;
           if (text === "/get_block_id" || text === "/adsgram_info" || text === "/adsgram") {
             if (String(chatId) === "6727787768" || String(chatId) === env.OWNER_ID) {
               const currentBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "50527";
-              await sendUserReply(`📊 *Adsgram Configuration:*\n\n• *Active Block ID:* \`${currentBlockId}\`\n• *WebApp URL:* https://restore-agy.aaaai2.workers.dev/adsgram\n• *Update ID:* Send \`/set_block_id <id>\` anytime!`);
+              await sendUserReply(`📊 *Adsgram Configuration:*\n\n• *Active Block ID:* \`${currentBlockId}\`\n• *WebApp URL:* https://atf-miner-app.pages.dev/app/ad\n• *Update ID:* Send \`/set_block_id <id>\` anytime!`);
               return;
             }
           }
@@ -8353,7 +8124,7 @@ Reply to Arif naturally:`;
             const chatAiKeyboard = {
               inline_keyboard: [
                 [
-                  { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }
+                  { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }
                 ],
                 [
                   { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" }
@@ -8401,7 +8172,7 @@ Reply to Arif naturally:`;
           const aiInlineMarkup = {
             inline_keyboard: [
               [
-                { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }
+                { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad" } }
               ],
               [
                 { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" }
@@ -8772,7 +8543,7 @@ async def main():
                 "type": "web_app",
                 "text": "🎬 Watch Ads",
                 "web_app": {
-                    "url": "https://restore-agy.aaaai2.workers.dev/adsgram"
+                    "url": "https://atf-miner-app.pages.dev/app/ad"
                 }
             }
         }
@@ -8795,7 +8566,7 @@ async def main():
                         "type": "web_app",
                         "text": "🎬 Watch Ads",
                         "web_app": {
-                            "url": "https://restore-agy.aaaai2.workers.dev/adsgram"
+                            "url": "https://atf-miner-app.pages.dev/app/ad"
                         }
                     }
                 }

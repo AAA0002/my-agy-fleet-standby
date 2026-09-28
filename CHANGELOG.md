@@ -4,7 +4,19 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-- **Multi-Network Ad Ecosystem Collection from ATL Backup (`public/app/ad/`, `public/shared/`, `ads_engine/`, `CHANGELOG.md`)**:
+- **Multi-Network Ad Ecosystem Migration & Edge Mesh Deployment (`deploy_both_cf_workers.py`, `deploy_vercel.py`, `public/app/ad/index.html`, `CHANGELOG.md`)**:
+  - **🚀 Complete Adsgram Replacement with 5-Network Ecosystem**:
+    * Replaced rejected Adsgram service with multi-network ad stack: Monetag (Zone 11753248 rewarded video), GigaPub (Placement 8160 TMA SDK), Adsterra (7 isolated banner/native formats with dynamic refresh), HilltopAds VAST 3.0 (with Google IMA fallback), and A-Ads crypto banners.
+    * Routed `/adsgram`, `/ad`, `/app/ad`, and `/ads` to permanent 302 redirect pointing directly to the high-performance Pages portal (`https://atf-miner-app.pages.dev/app/ad`), maintaining 100% backward compatibility for any cached links.
+  - **⚡ Unified Backend Verification & Data Endpoints**:
+    * Implemented `/api/user/data` and `/api/user/stats` on Cloudflare Edge Worker with support for `Authorization: tma <initData>`, `X-Telegram-Init-Data`, and `X-User-Id` headers.
+    * Implemented `/api/user/verify-ad-chain` and `/api/user/verify-monetag` crediting +20 Points (+40 for VIP Monthly Pass), advancing daily ad count, auto-resuming cloud mining when daily cost is met, and awarding +1 permanent account slot milestone at 50 ads.
+    * Updated CORS preflight headers to explicitly allow `X-Telegram-Init-Data` and `X-User-Id`.
+  - **📱 Telegram Menu & Bot Integration**:
+    * Synchronized global and owner Chat Menu Buttons on `@AAAPREMIUMAPPSbot` to launch `🎬 Watch Ads` pointing directly to `https://atf-miner-app.pages.dev/app/ad`.
+    * Updated all bot inline buttons (`userWelcomeInlineKeyboard`, `ub_watch_ad`, etc.) to launch the new multi-network ad portal.
+    * Deployed across all 5 Cloudflare Worker accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) and Vercel production.
+
   - **📦 Collected Multi-Network Ad Assets from `ATL_FULL_BACKUP.zip`**:
     * Per direct user request following Adsgram rejection, extracted and collected **only** ad-related assets from `/sdcard/Download/ATL_FULL_BACKUP.zip`, leaving all other archive files untouched to maintain strict project isolation.
     * **Ad Portal Mini-App**: Collected `public/app/ad/index.html` (121 KB high-performance ad portal supporting Monetag, GigaPub, HilltopAds VAST 3.0, A-Ads, and Clickadu verification).
