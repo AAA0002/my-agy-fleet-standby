@@ -4,6 +4,19 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Remove Duplicate Watch Video Ad Button & Keyboard Streamlining (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **🧹 Purged Duplicate Watch Video Ad Button**:
+    * Removed `{ text: "🎬 Watch Video Ad (+20 Pts)" }` from both `userMainKeyboard` and `ownerUserKeyboard`.
+    * Streamlined the chat reply keyboard to an elegant, balanced grid:
+      - Row 1: `➕ Connect Account` | `👥 My Accounts`
+      - Row 2: `⛏️ Farming Bots` | `💎 Points & Pass`
+      - Row 3: `🎁 Daily Bonus` | `👥 Invite Friends`
+      - Row 4: `💬 Ari AI & Support`
+      - Row 5 (Arif ONLY): `👑 User Admin Dashboard`
+    * Avoids clutter since video ads are already launched via the persistent bottom-left menu button (`🎬 Watch Ads`) and the welcome message inline button (`🎬 Watch Video Ad (+20 Pts) ⚡`).
+  - **🚀 Edge Mesh Deployment**:
+    * Deployed updated clean keyboards across all 5 Cloudflare Worker accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **Zero Admin Exposure for Community Users & Single-Tap Owner Dashboard Keyboard (`deploy_both_cf_workers.py`, `public/index.html`, `deploy_vercel.py`, `CHANGELOG.md`)**:
   - **🛡️ Strict Regular User Isolation (Zero Admin Exposure)**:
     * Ensured all standard community users (`another user id`) receive strictly `userMainKeyboard` featuring only standard user features (`➕ Connect Account`, `👥 My Accounts`, `🎬 Watch Video Ad (+20 Pts)`, `⛏️ Farming Bots`, `💎 Points & Pass`, `🎁 Daily Bonus`, `👥 Invite Friends`, `💬 Ari AI & Support`).

@@ -6615,9 +6615,6 @@ Reply to Arif naturally:`;
               { text: "👥 My Accounts" }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts)" }
-            ],
-            [
               { text: "⛏️ Farming Bots" },
               { text: "💎 Points & Pass" }
             ],
@@ -6639,9 +6636,6 @@ Reply to Arif naturally:`;
             [
               { text: "➕ Connect Account" },
               { text: "👥 My Accounts" }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts)" }
             ],
             [
               { text: "⛏️ Farming Bots" },
