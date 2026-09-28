@@ -295,35 +295,44 @@ async def process_account(acc, index, total, ton_wallets, session_pool):
                                 result["mining_active"] = True
 
                 # Step 3d: Claim Mined Balance
-                await asyncio.sleep(0.8)
-                claim_p = with_init_data(init_data, device_id, {
-                    "tg_id": int(uid),
-                    "claim_preview": result["mined_balance"]
-                })
-                async with session_pool.post(f"{BASE_MINER_URL}?action=claim&t={int(time.time()*1000)}", json=claim_p) as cr:
-                    c_data = await cr.json()
-                    if c_data.get("status") == "success":
-                        print(f"    💰 Claimed Mining Balance: {c_data.get('claimed', 'OK')}")
+                try:
+                    await asyncio.sleep(0.8)
+                    claim_p = with_init_data(init_data, device_id, {
+                        "tg_id": int(uid),
+                        "claim_preview": result["mined_balance"]
+                    })
+                    async with session_pool.post(f"{BASE_MINER_URL}?action=claim&t={int(time.time()*1000)}", json=claim_p) as cr:
+                        c_data = await cr.json()
+                        if c_data.get("status") == "success":
+                            print(f"    💰 Claimed Mining Balance: {c_data.get('claimed', 'OK')}")
+                except Exception as ce:
+                    pass
 
                 # Step 3e: Claim Referral Bonuses (Primary host account especially)
-                await asyncio.sleep(0.8)
-                ref_p = with_init_data(init_data, device_id, {
-                    "tg_id": int(uid)
-                })
-                async with session_pool.post(f"{BASE_MINER_URL}?action=claim_referrals&t={int(time.time()*1000)}", json=ref_p) as rr:
-                    r_data = await rr.json()
-                    if r_data.get("status") == "success":
-                        print(f"    🎁 Referral Commission Claimed: {r_data.get('claimed_amount', 'OK')}")
+                try:
+                    await asyncio.sleep(0.8)
+                    ref_p = with_init_data(init_data, device_id, {
+                        "tg_id": int(uid)
+                    })
+                    async with session_pool.post(f"{BASE_MINER_URL}?action=claim_referrals&t={int(time.time()*1000)}", json=ref_p) as rr:
+                        r_data = await rr.json()
+                        if r_data.get("status") == "success":
+                            print(f"    🎁 Referral Commission Claimed: {r_data.get('claimed_amount', 'OK')}")
+                except Exception as re_err:
+                    pass
 
                 # Step 3f: Claim Team Pool
-                await asyncio.sleep(0.8)
-                team_p = with_init_data(init_data, device_id, {
-                    "tg_id": int(uid)
-                })
-                async with session_pool.post(f"{BASE_MINER_URL}?action=claim_team_wallet&t={int(time.time()*1000)}", json=team_p) as tr:
-                    t_data = await tr.json()
-                    if t_data.get("status") == "success":
-                        print(f"    🛡️ Team Pool Reward Claimed: {t_data.get('claimed_amount', 'OK')}")
+                try:
+                    await asyncio.sleep(0.8)
+                    team_p = with_init_data(init_data, device_id, {
+                        "tg_id": int(uid)
+                    })
+                    async with session_pool.post(f"{BASE_MINER_URL}?action=claim_team_wallet&t={int(time.time()*1000)}", json=team_p) as tr:
+                        t_data = await tr.json()
+                        if t_data.get("status") == "success":
+                            print(f"    🛡️ Team Pool Reward Claimed: {t_data.get('claimed_amount', 'OK')}")
+                except Exception as te_err:
+                    pass
 
                 # Step 3g: Complete & Claim Tasks (One-time and Repeatable)
                 completed_tasks = set(u.get("completed_tasks") or [])

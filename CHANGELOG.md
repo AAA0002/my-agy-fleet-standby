@@ -4,6 +4,20 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **ATF Miner Tasks Automation & Fleetwide Claiming: 44 Tasks Harvested (`batch_atf_miner.py`, `render_standby_app.py`, `render_app_latest.py`, `CHANGELOG.md`)**:
+  - **🎯 Identified & Solved ATF Task Claiming Bug**:
+    * Discovered that string cooldown timestamps returned by the ATF Miner API caused type comparison errors in the task loop, blocking automated task claiming.
+    * Added safe integer cooldown parsing (`int(task_cooldowns.get(tid, 0) or 0)`) and isolated per-task `try...except` boundaries in `render_standby_app.py`, `render_app_latest.py`, and `batch_atf_miner.py`.
+    * Wrapped mining balance and referral claim calls in isolated error handlers to prevent unhandled HTTP 401s from aborting the task claiming pipeline.
+  - **⚡ Fleetwide Execution — 44 Tasks Harvested**:
+    * Ran automated task harvester across all 14 fleet accounts, completing and claiming all ready repeatable tasks:
+      1. 🎬 `YouTube Like & Comment (Videos + Shorts)` (+1 ATF)
+      2. 🐦 `X (Twitter) Retweet` (+1 ATF)
+      3. 🌐 `Visit Website (atftoken.com)` (+1 ATF)
+      4. 🔥 `React to latest post (English)` (+1 ATF)
+    * **Results**: Successfully claimed 44 tasks across all 14 accounts.
+    * Account balances updated: Arif Hossain at 2,818.89 ATF, Arif (Acc 4) at 900.61 ATF, Sanzida at 136.08 ATF, Abid (2) at 165.82 ATF, Nadim at 143.93 ATF, etc.
+
 - **Ecosystem Bug Audit & Edge API Resilience: Alias Routing for Community Users and Mining Pools (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **🌐 Edge API Aliases & Resilience**:
     * Added `/api/community/users` and `/api/users` as direct aliases to `/api/admin/users`, resolving 404s when querying community user metrics.

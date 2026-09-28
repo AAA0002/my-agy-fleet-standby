@@ -3172,14 +3172,19 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 {"id": "youtube_like_comment", "repeatable": True, "min_s": 30}
             ]
             for t in atf_tasks:
-                tid = t["id"]
-                can_do = not t["repeatable"] and (tid not in completed_tasks) if not t["repeatable"] else (now_sec >= (task_cooldowns.get(tid, 0)))
-                if can_do:
-                    s_at = int(time.time()) - t["min_s"] - 5
-                    await safe_post(f"{atf_base}?action=start_task&t={int(time.time()*1000)}", atf_payload({"task_id": tid, "client_started_at": s_at}), atf_h)
-                    await jitter(1.5, 3.0)
-                    await safe_post(f"{atf_base}?action=claim_task&t={int(time.time()*1000)}", atf_payload({"task_id": tid, "client_started_at": s_at}), atf_h)
-                    await jitter(1.0, 2.0)
+                try:
+                    tid = t["id"]
+                    is_rep = t["repeatable"]
+                    cd = int(task_cooldowns.get(tid, 0) or 0)
+                    can_do = (tid not in completed_tasks) if not is_rep else (now_sec >= cd)
+                    if can_do:
+                        s_at = int(time.time()) - t["min_s"] - 5
+                        await safe_post(f"{atf_base}?action=start_task&t={int(time.time()*1000)}", atf_payload({"task_id": tid, "client_started_at": s_at}), atf_h)
+                        await jitter(1.2, 2.0)
+                        await safe_post(f"{atf_base}?action=claim_task&t={int(time.time()*1000)}", atf_payload({"task_id": tid, "client_started_at": s_at}), atf_h)
+                        await jitter(0.8, 1.5)
+                except Exception:
+                    pass
 
             status["bots"]["atf"] = "farmed"
         except Exception as e:
