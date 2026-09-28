@@ -4,6 +4,23 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Watch Ads Menu Button Restoration, Strict Bot & Dashboard Isolation & Side Task Hardening (`deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`, `CHANGELOG.md`)**:
+  - **🎬 Restored "Watch Ads" Chat Menu Button on User Bot (`@AAAPREMIUMAPPSbot`)**:
+    * Restored `🎬 Watch Ads` miniapp (`https://restore-agy.aaaai2.workers.dev/adsgram`) as the persistent bottom-left chat menu button for ALL users and Commander Arif (`chat_id: 6727787768`).
+    * Configured Telegram API `setChatMenuButton` to ensure the owner's menu button opens the Adsgram Watch Ads miniapp directly, removing any admin miniapp from that button.
+    * Restored clean `userMainKeyboard` containing `🎬 Watch Video Ad (+20 Pts)`, `➕ Connect Account`, `👥 My Accounts`, `⛏️ Farming Bots`, `💎 Points & Pass`, `🎁 Daily Bonus`, `👥 Invite Friends`, and `💬 Ari AI & Support`.
+  - **🛡️ Strict Bot & Dashboard Isolation (Zero Bot Mixing)**:
+    * Removed cross-bot link `👑 Switch to Fleet Admin Bot (@myagy_ai_bot)` from the User Bot admin command response to enforce complete isolation between the two bots.
+    * Enforced distinct dashboard scopes: Dashboard 2 (`https://atf-miner-app.pages.dev` / `https://agy-aaa000.vercel.app/user-admin`) is strictly for `@AAAPREMIUMAPPSbot` community users (linked accounts, mining IDs, points, 100 Pts/day daily sweep, moderation), accessible to owner via `/admin` or `/dashboard` command without altering the menu button.
+    * Dashboard 1 (`https://agy-aaa000.vercel.app/?v=5.0` / `public/admin.html`) is strictly for `@myagy_ai_bot` fleet operations (14 fleet accounts, sweeps, vaults, on-chain balances).
+  - **⚡ Side Task Harvester Hardening & Fleetwide Harvest**:
+    * Audited all 14 fleet accounts across ATF Miner and discovered 15 ready repeatable cooldown tasks across accounts (`Abid Hasan (2)`, `Sanzida Shimu`, `Kaitlyn`, `Koram Shah`, `Abid Hasan`).
+    * Executed immediate batch harvest claiming rewards (+1 ATF each) and updating account balances.
+    * Hardened `render_standby_app.py` and `render_app_latest.py` with 1.5s verification delay and a 2.5s retry on "wait/progress" responses to guarantee tasks are never skipped during automated cloud cycles.
+  - **🚀 Edge Mesh & Render Standby Cloud Deployments**:
+    * Re-deployed updated edge worker code across all 5 Cloudflare Worker accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`), confirming Telegram Bot Webhooks, Menu buttons, and Owner menu buttons.
+    * Pushed updated codebase with task claiming improvements to `AAA2743/my-agy-fleet-standby` on GitHub (`e9301857`) for continuous cloud execution on Render Singapore and Frankfurt nodes.
+
 - **User Bot Admin Dashboard 2 Surface, Strict Dashboard Isolation & Owner Telegram Menu Synchronization (`deploy_both_cf_workers.py`, `deploy_vercel.py`, `vercel.json`, `public/_redirects`, `CHANGELOG.md`)**:
   - **👑 Dedicated User Bot Admin Dashboard (Dashboard 2)**:
     * Surface the dedicated community user management console exclusively for `@AAAPREMIUMAPPSbot` (`https://atf-miner-app.pages.dev` and `https://agy-aaa000.vercel.app/user-admin`), completely isolated from the Fleet Operations Console (`public/admin.html` on `@myagy_ai_bot`).

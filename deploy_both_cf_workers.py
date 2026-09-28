@@ -6611,8 +6611,11 @@ Reply to Arif naturally:`;
         const userMainKeyboard = {
           keyboard: [
             [
-              { text: "👥 My Accounts" },
-              { text: "➕ Connect Account" }
+              { text: "➕ Connect Account" },
+              { text: "👥 My Accounts" }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts)" }
             ],
             [
               { text: "⛏️ Farming Bots" },
@@ -6630,33 +6633,7 @@ Reply to Arif naturally:`;
           is_persistent: true
         };
 
-        // UI Keyboards (Platform Owner / Arif - User Bot Admin Dashboard 2 Dedicated)
-        const ownerUserKeyboard = {
-          keyboard: [
-            [
-              { text: "👑 User Admin Dashboard", web_app: { url: "https://atf-miner-app.pages.dev" } }
-            ],
-            [
-              { text: "👥 My Accounts" },
-              { text: "➕ Connect Account" }
-            ],
-            [
-              { text: "⛏️ Farming Bots" },
-              { text: "💎 Points & Pass" }
-            ],
-            [
-              { text: "🎁 Daily Bonus" },
-              { text: "👥 Invite Friends" }
-            ],
-            [
-              { text: "💬 Ari AI & Support" }
-            ]
-          ],
-          resize_keyboard: true,
-          is_persistent: true
-        };
-
-        const activeUserKeyboard = isOwner ? ownerUserKeyboard : userMainKeyboard;
+        const activeUserKeyboard = userMainKeyboard;
 
         const userCancelKeyboard = {
           keyboard: [
@@ -6704,31 +6681,7 @@ Reply to Arif naturally:`;
           ]
         };
 
-        const ownerWelcomeInlineKeyboard = {
-          inline_keyboard: [
-            [
-              { text: "👑 Open User Bot Admin Dashboard 🚀", web_app: { url: "https://atf-miner-app.pages.dev" } }
-            ],
-            [
-              { text: "⛏️ 8 Supported Farming Bots 🤖", callback_data: "ub_pools" }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }
-            ],
-            [
-              { text: "🌟 VIP Passes & Boosts (Stars)", callback_data: "ub_buy_stars" }
-            ],
-            [
-              { text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" },
-              { text: "💬 Community Hub", url: "https://t.me/AAAAutoMiner" }
-            ],
-            [
-              { text: "⚡ Live Miner Activity Stream", url: "https://t.me/AAA_ACTIVITY" }
-            ]
-          ]
-        };
-
-        const activeWelcomeInlineKeyboard = isOwner ? ownerWelcomeInlineKeyboard : userWelcomeInlineKeyboard;
+        const activeWelcomeInlineKeyboard = userWelcomeInlineKeyboard;
 
         const starsUpgradeKeyboard = {
           inline_keyboard: [
@@ -7770,9 +7723,8 @@ Reply to Arif naturally:`;
               `👇 *Tap button below to launch the User Bot Admin Dashboard:*`;
             await sendUserReply(adminMsg, {
               inline_keyboard: [
-                [{ text: "🚀 Open User Bot Admin Dashboard (Pages)", web_app: { url: "https://atf-miner-app.pages.dev" } }],
-                [{ text: "🌐 Open User Bot Admin Dashboard (Vercel)", web_app: { url: "https://agy-aaa000.vercel.app/user-admin" } }],
-                [{ text: "👑 Switch to Fleet Admin Bot (@myagy_ai_bot)", url: "https://t.me/myagy_ai_bot" }]
+                [{ text: "🚀 Open User Bot Admin Dashboard", web_app: { url: "https://atf-miner-app.pages.dev" } }],
+                [{ text: "🌐 Open User Bot Admin Dashboard (Mirror)", web_app: { url: "https://agy-aaa000.vercel.app/user-admin" } }]
               ]
             });
             return;
@@ -7920,18 +7872,9 @@ Reply to Arif naturally:`;
             await sendUserReply("👋 *Welcome to AAA Auto Mining!* (Created by AAA)\nAccess all features below or choose from the interactive menu:", activeUserKeyboard);
             await sendUserReply(welcomeText, activeWelcomeInlineKeyboard);
 
-            // Ensure persistent Chat Menu Button is set properly for this user
+            // Ensure persistent Chat Menu Button is set to Watch Ads WebApp for this user
             if (ctx && ctx.waitUntil) {
-              const menuPayload = isOwner ? {
-                chat_id: chatId,
-                menu_button: {
-                  type: "web_app",
-                  text: "👑 User Admin Console",
-                  web_app: {
-                    url: "https://atf-miner-app.pages.dev"
-                  }
-                }
-              } : {
+              const menuPayload = {
                 chat_id: chatId,
                 menu_button: {
                   type: "web_app",
@@ -8819,16 +8762,16 @@ async def main():
         except Exception as e:
             print(f"⚠️ Error setting global menu button: {e}")
 
-        # 2. Set chat-specific Menu Button for Owner on User Bot (@AAAPREMIUMAPPSbot)
+        # 2. Ensure Owner Menu Button is set to "🎬 Watch Ads" on User Bot (@AAAPREMIUMAPPSbot)
         if OWNER_ID:
             try:
                 owner_menu = {
                     "chat_id": int(OWNER_ID),
                     "menu_button": {
                         "type": "web_app",
-                        "text": "👑 User Admin Console",
+                        "text": "🎬 Watch Ads",
                         "web_app": {
-                            "url": "https://atf-miner-app.pages.dev"
+                            "url": "https://restore-agy.aaaai2.workers.dev/adsgram"
                         }
                     }
                 }
@@ -8837,7 +8780,7 @@ async def main():
                     json=owner_menu
                 ) as resp:
                     res = await resp.json()
-                    print(f"👑 User Bot Owner Menu Button: {res.get('ok')} ({res.get('description', 'OK')})")
+                    print(f"🎬 User Bot Owner Menu Button: {res.get('ok')} ({res.get('description', 'OK')})")
             except Exception as e:
                 print(f"⚠️ Error setting owner menu button: {e}")
 

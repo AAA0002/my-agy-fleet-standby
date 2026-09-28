@@ -3190,9 +3190,12 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     if can_do:
                         s_at = int(time.time()) - t["min_s"] - 5
                         await safe_post(f"{atf_base}?action=start_task&t={int(time.time()*1000)}", atf_payload({"task_id": tid, "client_started_at": s_at}), atf_h)
-                        await jitter(1.2, 2.0)
-                        await safe_post(f"{atf_base}?action=claim_task&t={int(time.time()*1000)}", atf_payload({"task_id": tid, "client_started_at": s_at}), atf_h)
-                        await jitter(0.8, 1.5)
+                        await asyncio.sleep(1.5)
+                        _, cl_res = await safe_post(f"{atf_base}?action=claim_task&t={int(time.time()*1000)}", atf_payload({"task_id": tid, "client_started_at": s_at}), atf_h)
+                        if cl_res and cl_res.get("status") != "success" and ("wait" in json.dumps(cl_res).lower() or "progress" in json.dumps(cl_res).lower()):
+                            await asyncio.sleep(2.5)
+                            await safe_post(f"{atf_base}?action=claim_task&t={int(time.time()*1000)}", atf_payload({"task_id": tid, "client_started_at": s_at}), atf_h)
+                        await asyncio.sleep(1.0)
                 except Exception:
                     pass
 
