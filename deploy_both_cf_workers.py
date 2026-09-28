@@ -7039,9 +7039,10 @@ Reply to Arif naturally:`;
               `📊 *Your Referral Stats:*\n` +
               `• *Invited Users:* ${profile.referral_count || 0}\n` +
               `• *Points Earned:* ${(profile.referral_count || 0) * 500} Pts`;
-            ctx.waitUntil(sendCqReply(refMsg, {
+            ctx.waitUntil(sendCqPhoto(BOT_BANNER_URL, refMsg, {
               inline_keyboard: [
-                [{ text: "📤 Share to Telegram", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }]
+                [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }]
               ]
             }));
             return new Response("OK");
@@ -7156,11 +7157,11 @@ Reply to Arif naturally:`;
                 `• 🌟 *Upgrade with Telegram Stars* (0 point daily fee)`;
               const kb = {
                 inline_keyboard: [
-                  [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                  [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
                   [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
                 ]
               };
-              ctx.waitUntil(sendCqReply(alreadyClaimedMsg, kb));
+              ctx.waitUntil(sendCqPhoto(BOT_BANNER_URL, alreadyClaimedMsg, kb));
               return new Response("OK");
             }
 
@@ -7195,11 +7196,11 @@ Reply to Arif naturally:`;
               `💡 _Come back in 24 hours to keep your streak burning!_`;
             const succKb = {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
                 [{ text: "💎 View Points & Passes", callback_data: "ub_points" }]
               ]
             };
-            ctx.waitUntil(sendCqReply(succMsg, succKb));
+            ctx.waitUntil(sendCqPhoto(BOT_BANNER_URL, succMsg, succKb));
             return new Response("OK");
           }
 
@@ -7238,12 +7239,12 @@ Reply to Arif naturally:`;
 
             const ptsKb = {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
                 [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
             };
-            ctx.waitUntil(sendCqReply(ptsMsg, ptsKb));
+            ctx.waitUntil(sendCqPhoto(BOT_BANNER_URL, ptsMsg, ptsKb));
             return new Response("OK");
           }
 
@@ -7263,10 +7264,10 @@ Reply to Arif naturally:`;
               `• Automatically runs 24/7 cloud auto-farming across all 8 bots for your connected accounts.\n` +
               `• Executes daily claims, starts, tasks, and point rewards without keeping your phone or app open.\n` +
               `• All mined tokens accumulate directly in your accounts inside each respective official bot.`;
-            ctx.waitUntil(sendCqReply(poolsMsg, {
+            ctx.waitUntil(sendCqPhoto(BOT_BANNER_URL, poolsMsg, {
               inline_keyboard: [
                 [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "👥 My Accounts", callback_data: "ub_accounts" }],
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }]
+                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }]
               ]
             }));
             return new Response("OK");
@@ -7308,10 +7309,12 @@ Reply to Arif naturally:`;
               `• *Cloud Mining:* 🟢 24/7 Automated Running`;
             const statsBtns = {
               inline_keyboard: [
+                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "👥 My Accounts", callback_data: "ub_accounts" }],
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
             };
-            ctx.waitUntil(sendCqReply(statsMsg, statsBtns));
+            ctx.waitUntil(sendCqPhoto(BOT_BANNER_URL, statsMsg, statsBtns));
             return new Response("OK");
           }
 
@@ -7332,7 +7335,7 @@ Reply to Arif naturally:`;
               `🌟 *+1 Permanent Slot (50 Stars)*\n` +
               `• Permanently add an account slot for multi-account farming\n\n` +
               `Choose your subscription pass below:`;
-            ctx.waitUntil(sendCqReply(starsMsg, starsUpgradeKeyboard));
+            ctx.waitUntil(sendCqPhoto(BOT_BANNER_URL, starsMsg, starsUpgradeKeyboard));
             return new Response("OK");
           }
 
@@ -7947,7 +7950,7 @@ Reply to Arif naturally:`;
               `• *💎 30-Day Monthly Pass (120 Stars):* 30 days unlimited cloud mining + 4,500 points + 1 permanent slot + 2x ad rewards (+40 Pts per ad)!\n` +
               `• *🌟 Permanent Slot (50 Stars):* Add permanent account capacity.\n\n` +
               `💬 *Ask Ari AI:* Simply type any question or guide request directly in this chat!`;
-            await sendUserReply(helpMsg, userWelcomeInlineKeyboard);
+            await sendUserPhoto(BOT_BANNER_URL, helpMsg, userWelcomeInlineKeyboard);
             return;
           }
 
@@ -7962,9 +7965,10 @@ Reply to Arif naturally:`;
               `📊 *Your Referral Stats:*\n` +
               `• *Invited Users:* ${profile.referral_count || 0}\n` +
               `• *Points Earned:* ${(profile.referral_count || 0) * 500} Pts`;
-            await sendUserReply(refMsg, {
+            await sendUserPhoto(BOT_BANNER_URL, refMsg, {
               inline_keyboard: [
-                [{ text: "📤 Share to Telegram", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }]
+                [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }]
               ]
             });
             return;
@@ -7986,7 +7990,7 @@ Reply to Arif naturally:`;
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
             };
-            await sendUserReply(rewMsg, rewBtns);
+            await sendUserPhoto(BOT_BANNER_URL, rewMsg, rewBtns);
             return;
           }
 
@@ -8020,7 +8024,7 @@ Reply to Arif naturally:`;
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
             };
-            await sendUserReply(statsMsg, statsBtns);
+            await sendUserPhoto(BOT_BANNER_URL, statsMsg, statsBtns);
             return;
           }
 
@@ -8123,7 +8127,7 @@ Reply to Arif naturally:`;
                 inlineBtns.push([{ text: `🗑️ Remove ${a.name || a.phone} (${a.phone || a.user_id})`, callback_data: `ub_disconnect_${a.user_id || a.phone}` }]);
               }
             }
-            await sendUserReply(accMsg, { inline_keyboard: inlineBtns });
+            await sendUserPhoto(BOT_BANNER_URL, accMsg, { inline_keyboard: inlineBtns });
             return;
           }
 
@@ -8241,9 +8245,9 @@ Reply to Arif naturally:`;
               `• *Friends Invited:* ${profile.referral_count || 0}\n` +
               `• *Points from Referrals:* ${(profile.referral_count || 0) * 500} Pts`;
 
-            await sendUserReply(ptsMsg, {
+            await sendUserPhoto(BOT_BANNER_URL, ptsMsg, {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
                 [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
@@ -8273,11 +8277,11 @@ Reply to Arif naturally:`;
                 `• 🌟 *Upgrade with Telegram Stars* (VIP Pass - unlimited mining)`;
               const kb = {
                 inline_keyboard: [
-                  [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                  [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
                   [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
                 ]
               };
-              await sendUserReply(alreadyClaimedMsg, kb);
+              await sendUserPhoto(BOT_BANNER_URL, alreadyClaimedMsg, kb);
               return;
             }
 
@@ -8312,11 +8316,11 @@ Reply to Arif naturally:`;
               `💡 _Come back in 24 hours to keep your streak burning!_`;
             const succKb = {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
                 [{ text: "💎 View Points & Passes", callback_data: "ub_points" }]
               ]
             };
-            await sendUserReply(succMsg, succKb);
+            await sendUserPhoto(BOT_BANNER_URL, succMsg, succKb);
             return;
           }
 
@@ -8337,10 +8341,10 @@ Reply to Arif naturally:`;
               `• Automatically runs 24/7 cloud auto-farming across all 8 bots for your connected accounts.\n` +
               `• Executes daily claims, starts, tasks, and point rewards without keeping your phone or app open.\n` +
               `• All mined tokens accumulate directly in your accounts inside each respective official bot.`;
-            await sendUserReply(poolsMsg, {
+            await sendUserPhoto(BOT_BANNER_URL, poolsMsg, {
               inline_keyboard: [
                 [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "👥 My Accounts", callback_data: "ub_accounts" }],
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }]
+                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }]
               ]
             });
             return;
@@ -8354,7 +8358,7 @@ Reply to Arif naturally:`;
               `🏆 *Milestone Bonus:* Every 50 ads unlocks *+1 Free Bonus Account Slot*!\n` +
               `⏱️ *Cooldown:* 15 seconds between ads.\n\n` +
               `👇 *Tap below to launch the video ad:*`;
-            await sendUserReply(adMsg, {
+            await sendUserPhoto(BOT_BANNER_URL, adMsg, {
               inline_keyboard: [
                 [{ text: "🎬 Watch Video Ad (+20 Pts) — Node 4", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
                 [
@@ -8379,9 +8383,10 @@ Reply to Arif naturally:`;
               `📊 *Your Referral Stats:*\n` +
               `• *Invited Users:* ${profile.referral_count || 0}\n` +
               `• *Points Earned:* ${(profile.referral_count || 0) * 500} Pts`;
-            await sendUserReply(refMsg, {
+            await sendUserPhoto(BOT_BANNER_URL, refMsg, {
               inline_keyboard: [
-                [{ text: "📤 Share to Telegram", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
+                [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
                 [{ text: "🎁 My Rewards Hub", callback_data: "ub_rewards" }]
               ]
             });
@@ -8405,7 +8410,7 @@ Reply to Arif naturally:`;
               `🌟 *+1 Permanent Slot (50 Stars)*\n` +
               `• Permanently add an account slot for multi-account farming\n\n` +
               `Choose your subscription pass below:`;
-            await sendUserReply(starsMsg, starsUpgradeKeyboard);
+            await sendUserPhoto(BOT_BANNER_URL, starsMsg, starsUpgradeKeyboard);
             return;
           }
 
@@ -8426,9 +8431,9 @@ Reply to Arif naturally:`;
             const boardMsg = `🏆 *COMMUNITY MINERS LEADERBOARD* 🚀\n━━━━━━━━━━━━━━━━━━━━━━\n${boardLines.join("\n\n")}\n━━━━━━━━━━━━━━━━━━━━━━\n` +
               `💎 *Your Current Standing:*\n• *Your Points:* ${(profile.points || 0).toLocaleString()} Points\n• *Your Streak:* 🔥 Day ${profile.daily_streak || 0} Streak\n\n` +
               `💡 _Watch ads & invite friends to climb the leaderboard!_`;
-            await sendUserReply(boardMsg, {
+            await sendUserPhoto(BOT_BANNER_URL, boardMsg, {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
                 [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
               ]
             });
@@ -8577,8 +8582,8 @@ Reply to Arif naturally:`;
                 { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" }
               ],
               [
-                { text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" },
-                { text: "💬 Community Hub", url: "https://t.me/AAAAutoMiner" }
+                { text: "📢 Announcements ↗️", url: "https://t.me/AAAAUTOMINING" },
+                { text: "💬 Community Hub ↗️", url: "https://t.me/AAAAutoMiner" }
               ]
             ]
           };
