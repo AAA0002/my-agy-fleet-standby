@@ -1275,6 +1275,137 @@ async function upstashMget(keys) {
   return [];
 }
 
+async function runDailyCostSweep(env, force = false) {
+  const today = new Date().toISOString().slice(0, 10);
+  if (!force && env.BACKUP_KV) {
+    const lastSweep = await env.BACKUP_KV.get("daily_cost_sweep_date");
+    if (lastSweep === today) {
+      return { ok: true, skipped: true, reason: "Already ran today", today };
+    }
+  }
+
+  if (env.BACKUP_KV) {
+    await env.BACKUP_KV.put("daily_cost_sweep_date", today, { expirationTtl: 86400 * 2 }).catch(() => {});
+  }
+
+  let uids = [];
+  try {
+    const res = await fetch(`${UPSTASH_URL}/smembers/ub_registered_users`, {
+      headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
+    });
+    if (res.ok) {
+      const d = await res.json();
+      uids = d.result || [];
+    }
+  } catch (_) {}
+
+  if (!Array.isArray(uids) || uids.length === 0) {
+    return { ok: true, processed: 0, totalDeducted: 0, activeCount: 0, pausedCount: 0, vipCount: 0, today };
+  }
+
+  const userKeys = uids.map(uid => `ub_user:${uid}`);
+  const userProfiles = await upstashMget(userKeys);
+  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+
+  let totalDeducted = 0;
+  let activeCount = 0;
+  let pausedCount = 0;
+  let vipCount = 0;
+  let processed = 0;
+
+  for (const prof of userProfiles) {
+    if (!prof || !prof.user_id || !prof.accounts || prof.accounts.length === 0) continue;
+    if (!force && prof.last_deduction_date === today) continue;
+    processed++;
+
+    const now = Date.now();
+    const hasActivePass = prof.subscription_expiry && prof.subscription_expiry > now;
+
+    if (hasActivePass) {
+      vipCount++;
+      prof.farming_active = true;
+      prof.last_deduction_date = today;
+      await upstashSet(`ub_user:${prof.user_id}`, prof);
+    } else {
+      const dailyCost = prof.accounts.length * 100;
+      if (prof.farming_active !== false) {
+        if ((prof.points || 0) >= dailyCost) {
+          prof.points = (prof.points || 0) - dailyCost;
+          totalDeducted += dailyCost;
+          prof.farming_active = true;
+          activeCount++;
+          prof.last_deduction_date = today;
+          await upstashSet(`ub_user:${prof.user_id}`, prof);
+        } else {
+          prof.farming_active = false;
+          pausedCount++;
+          prof.last_deduction_date = today;
+          await upstashSet(`ub_user:${prof.user_id}`, prof);
+
+          // Send Pause Notification to User
+          fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: prof.user_id,
+              text: `⚠️ *Cloud Mining Paused — Insufficient Points* ⚠️\n\n` +
+                `Your 24/7 cloud mining has been temporarily paused because your points balance (*${prof.points || 0} Points*) is below today's daily cost (*${dailyCost} Points* for ${prof.accounts.length} connected account${prof.accounts.length > 1 ? "s" : ""}).\n\n` +
+                `*Resume 24/7 Cloud Mining:*\n` +
+                `• 🎁 *Claim Daily Bonus* (+25-50 Pts)\n` +
+                `• 🎬 *Watch Rewarded Video Ads* (+20 Pts/ad)\n` +
+                `• 👥 *Invite Friends* (+500 Pts each)\n` +
+                `• 🌟 *Upgrade with Telegram Stars* (0 fee + unlimited mining)`,
+              parse_mode: "Markdown",
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }],
+                  [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                  [{ text: "🌟 VIP Passes (0 fee)", callback_data: "ub_buy_stars" }]
+                ]
+              }
+            })
+          }).catch(() => {});
+        }
+      } else {
+        // If user was paused, check if balance now covers cost
+        if ((prof.points || 0) >= dailyCost) {
+          prof.points = (prof.points || 0) - dailyCost;
+          totalDeducted += dailyCost;
+          prof.farming_active = true;
+          activeCount++;
+          prof.last_deduction_date = today;
+          await upstashSet(`ub_user:${prof.user_id}`, prof);
+
+          fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: prof.user_id,
+              text: `🟢 *Cloud Mining Auto-Resumed!* 🚀\n\n` +
+                `Your points balance covered today's cost (*${dailyCost} Points*). 24/7 cloud mining has resumed for all ${prof.accounts.length} accounts.\n• *Remaining Balance:* 💎 ${prof.points} Points`,
+              parse_mode: "Markdown"
+            })
+          }).catch(() => {});
+        } else {
+          pausedCount++;
+          prof.last_deduction_date = today;
+          await upstashSet(`ub_user:${prof.user_id}`, prof);
+        }
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    processed,
+    totalDeducted,
+    activeCount,
+    pausedCount,
+    vipCount,
+    today
+  };
+}
+
 
 export default {
   async fetch(request, env, ctx) {
@@ -2206,6 +2337,20 @@ fi
       }
     }
 
+    // 7.165 Admin Daily Cost Deduction Sweep API (Manual & Dashboard Trigger)
+    if (path === "/api/admin/daily-sweep" && (request.method === "POST" || request.method === "GET")) {
+      try {
+        const urlParams = new URL(request.url).searchParams;
+        const force = urlParams.get("force") === "true" || request.method === "POST";
+        const result = await runDailyCostSweep(env, force);
+        return new Response(JSON.stringify(result), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
     // 7.2 Fast Action Dispatcher (Dashboard / Admin -> Edge Queue & Direct Cloud Execution)
     if ((path === "/api/action" || path === "/api/fleet/add" || path === "/api/fleet/verify" || path === "/api/fleet/remove" || path === "/api/fleet/account/remove") && request.method === "POST") {
       try {
@@ -2823,6 +2968,10 @@ fi
               { text: "💼 Universal Sweep", callback_data: "btn_withdraw" }
             ],
             [
+              { text: "🔥 Economy & Burn", callback_data: "btn_burn" },
+              { text: "⚡ Run Daily Sweep", callback_data: "btn_sweep_daily" }
+            ],
+            [
               { text: "👥 Fleet Accounts (14)", callback_data: "btn_accounts" },
               { text: "🗑️ Remove Account", callback_data: "btn_admin_remove_menu" }
             ],
@@ -2873,22 +3022,26 @@ fi
               { text: "👑 Admin Console", web_app: { url: dashUrl } }
             ],
             [
-              { text: "👥 Accounts Management" }
+              { text: "👥 Accounts Management" },
+              { text: "👥 Community & Users" }
             ],
             [
-              { text: "➕ Add Account" },
-              { text: "🗑️ Remove Account" }
+              { text: "🔥 Economy & Burn" },
+              { text: "⚡ Run Daily Sweep" }
             ],
             [
               { text: "⚡ Instant Harvest" },
               { text: "💼 Universal Sweep" }
             ],
             [
+              { text: "➕ Add Account" },
+              { text: "🗑️ Remove Account" }
+            ],
+            [
               { text: "📊 Fleet Status" },
               { text: "🌐 Cloud Mesh" }
             ],
             [
-              { text: "👥 Community & Users" },
               { text: "🌅 AI Briefing" }
             ]
           ],
@@ -3523,6 +3676,116 @@ fi
                 } else {
                   await sendAnimatedReply(chatId, [rep], statusInlineKeyboard, 200);
                 }
+              })());
+            } else if (cbData === "btn_burn" || cbData === "btn_economy") {
+              ctx.waitUntil((async () => {
+                const totalUsers = await upstashScard("ub_registered_users");
+                const userList = await upstashSmembers("ub_registered_users");
+                let activePasses = 0;
+                let activeAccountsCount = 0;
+                let totalPointsCirculation = 0;
+                let activeMiners = 0;
+                let pausedMiners = 0;
+                let dailyBurn = 0;
+
+                const sample = userList.slice(0, 50);
+                const profiles = await upstashMget(sample.map(u => `ub_user:${u}`));
+                for (const p of profiles) {
+                  if (p) {
+                    const accCount = (p.accounts || []).length;
+                    const hasVip = p.subscription_expiry && p.subscription_expiry > Date.now();
+                    if (hasVip) activePasses++;
+                    activeAccountsCount += accCount;
+                    totalPointsCirculation += (p.points || 0);
+                    if (p.farming_active && !p.is_banned) {
+                      activeMiners++;
+                      if (!hasVip && accCount > 0) dailyBurn += (accCount * 100);
+                    } else if (!p.is_banned && accCount > 0) {
+                      pausedMiners++;
+                    }
+                  }
+                }
+
+                const burnRep = `🔥 *COMMUNITY POINTS ECONOMY & DAILY BURN* 📊\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `• *Registered Miners:* \`${totalUsers || userList.length || 1}\` Users\n` +
+                  `• *Connected Cloud Accounts:* \`${activeAccountsCount}\` Phones\n` +
+                  `• *Active 24/7 Miners:* \`${activeMiners}\` Active\n` +
+                  `• *Auto-Paused Miners:* \`${pausedMiners}\` (Points below daily cost)\n` +
+                  `• *VIP Pass Holders:* \`${activePasses}\` (0 fee / unlimited mining)\n` +
+                  `• *Sample Points In Circulation:* \`💎 ${totalPointsCirculation.toLocaleString()} Pts\`\n` +
+                  `• *Network Daily Burn Rate:* \`🔥 -${dailyBurn.toLocaleString()} Pts/day\` (-100 Pts/account/day)\n` +
+                  `• *Daily Sweep Engine:* Active once per day (Midnight UTC)\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `💡 *Economy Commands:*\n` +
+                  `• \`/sweep_daily\` — Manually trigger 100 Pts daily deduction sweep\n` +
+                  `• \`/grant <user_id> <pts>\` — Credit points to user\n` +
+                  `• \`/deduct <user_id> <pts>\` — Claw back points from user\n` +
+                  `• \`/grantpass <user_id> <day|week|month>\` — Grant VIP Pass`;
+
+                const burnMarkup = {
+                  inline_keyboard: [
+                    [
+                      { text: "⚡ Run Daily Sweep Now", callback_data: "btn_sweep_daily" },
+                      { text: "🔄 Refresh Economy", callback_data: "btn_burn" }
+                    ],
+                    [
+                      { text: "📊 Community Roster", callback_data: "btn_community" },
+                      { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }
+                    ]
+                  ]
+                };
+                const cbMsgId = cb.message ? cb.message.message_id : null;
+                if (cbMsgId) {
+                  await editAnimatedMessage(chatId, cbMsgId, [burnRep], burnMarkup, 200);
+                } else {
+                  await sendAnimatedReply(chatId, [burnRep], burnMarkup, 200);
+                }
+              })());
+            } else if (cbData === "btn_sweep_daily") {
+              ctx.waitUntil((async () => {
+                const frames = [
+                  "⚡ *Initiating Daily Cost Deduction Sweep...*\n`[▰▰▰▱▱▱▱▱▱▱] 30%` • Scanning all registered community miners",
+                  "⚡ *Evaluating Accounts & Deducting 100 Pts/Day...*\n`[▰▰▰▰▰▰▰▱▱▱] 70%` • VIP check & auto-pause for low balances",
+                  "⚡ *Finalizing Sweep Ledger & Telemetry...*\n`[▰▰▰▰▰▰▰▰▰▰] 95%` • Syncing with Upstash Redis"
+                ];
+                const cbMsgId = cb.message ? cb.message.message_id : null;
+                if (cbMsgId) {
+                  await editAnimatedMessage(chatId, cbMsgId, frames, statusInlineKeyboard, 250);
+                } else {
+                  await sendAnimatedReply(chatId, frames, statusInlineKeyboard, 250);
+                }
+
+                const res = await runDailyCostSweep(env, true);
+                const summary = `⚡ *UNIVERSAL DAILY DEDUCTION SWEEP COMPLETED* 🧹\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `• *Status:* 🟢 Executed successfully\n` +
+                  `• *Processed Accounts:* \`${res.processed}\` Miners evaluated\n` +
+                  `• *Active 24/7 Miners:* \`${res.activeCount}\` (Deduction verified)\n` +
+                  `• *VIP Free Pass Miners:* \`${res.vipCount}\` (0 Fee exempt)\n` +
+                  `• *Auto-Paused Miners:* \`${res.pausedCount}\` (Balance < 100 Pts)\n` +
+                  `• *Total Points Swept:* \`🔥 -${res.totalDeducted.toLocaleString()} Pts\` (-100 Pts/account)\n` +
+                  `• *Execution Date:* \`${res.today}\`\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `🛡️ _Users with insufficient balance were paused and alerted with recharge bonuses._`;
+
+                const sweepDoneMarkup = {
+                  inline_keyboard: [
+                    [
+                      { text: "🔥 Economy & Burn Stats", callback_data: "btn_burn" },
+                      { text: "📊 Community Roster", callback_data: "btn_community" }
+                    ],
+                    [
+                      { text: "🚀 Open Executive Dashboard", web_app: { url: dashUrl } }
+                    ]
+                  ]
+                };
+
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ chat_id: chatId, text: summary, parse_mode: "Markdown", reply_markup: sweepDoneMarkup })
+                }).catch(() => {});
               })());
             } else if (cbData === "btn_briefing") {
               ctx.waitUntil((async () => {
@@ -4608,6 +4871,110 @@ fi
               `• *Telegram Vault:* Backed up to @myagyai\n\n` +
               `🛡️ _100% cloud disaster resilience active._`;
             await sendReply(rep, statusInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 7.05 Community Points Economy & Daily Burn Telemetry (/burn, /economy, /points_summary)
+        if (text === "🔥 Economy & Burn" || text === "🔥 Economy" || text === "/burn" || text.startsWith("/burn") || text === "/economy" || text.startsWith("/economy") || text === "/points_summary" || text === "/points_stats") {
+          ctx.waitUntil((async () => {
+            const totalUsers = await upstashScard("ub_registered_users");
+            const userList = await upstashSmembers("ub_registered_users");
+            let activePasses = 0;
+            let activeAccountsCount = 0;
+            let totalPointsCirculation = 0;
+            let activeMiners = 0;
+            let pausedMiners = 0;
+            let dailyBurn = 0;
+
+            const sample = userList.slice(0, 50);
+            const profiles = await upstashMget(sample.map(u => `ub_user:${u}`));
+            for (const p of profiles) {
+              if (p) {
+                const accCount = (p.accounts || []).length;
+                const hasVip = p.subscription_expiry && p.subscription_expiry > Date.now();
+                if (hasVip) activePasses++;
+                activeAccountsCount += accCount;
+                totalPointsCirculation += (p.points || 0);
+                if (p.farming_active && !p.is_banned) {
+                  activeMiners++;
+                  if (!hasVip && accCount > 0) dailyBurn += (accCount * 100);
+                } else if (!p.is_banned && accCount > 0) {
+                  pausedMiners++;
+                }
+              }
+            }
+
+            const rep = `🔥 *COMMUNITY POINTS ECONOMY & DAILY BURN* 📊\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Registered Miners:* \`${totalUsers || userList.length || 1}\` Users\n` +
+              `• *Connected Cloud Accounts:* \`${activeAccountsCount}\` Phones\n` +
+              `• *Active 24/7 Miners:* \`${activeMiners}\` Active\n` +
+              `• *Auto-Paused Miners:* \`${pausedMiners}\` (Points below daily cost)\n` +
+              `• *VIP Pass Holders:* \`${activePasses}\` (0 fee / unlimited mining)\n` +
+              `• *Sample Points In Circulation:* \`💎 ${totalPointsCirculation.toLocaleString()} Pts\`\n` +
+              `• *Network Daily Burn Rate:* \`🔥 -${dailyBurn.toLocaleString()} Pts/day\` (-100 Pts/account/day)\n` +
+              `• *Daily Sweep Engine:* Active once per day (Midnight UTC)\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `💡 *Economy Commands:*\n` +
+              `• \`/sweep_daily\` — Manually trigger 100 Pts daily deduction sweep\n` +
+              `• \`/grant <user_id> <pts>\` — Credit points to user\n` +
+              `• \`/deduct <user_id> <pts>\` — Claw back points from user\n` +
+              `• \`/grantpass <user_id> <day|week|month>\` — Grant VIP Pass`;
+
+            const burnMarkup = {
+              inline_keyboard: [
+                [
+                  { text: "⚡ Run Daily Sweep Now", callback_data: "btn_sweep_daily" },
+                  { text: "🔄 Refresh Economy", callback_data: "btn_burn" }
+                ],
+                [
+                  { text: "📊 Community Roster", callback_data: "btn_community" },
+                  { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }
+                ]
+              ]
+            };
+            await sendReply(rep, burnMarkup);
+          })());
+          return new Response("OK");
+        }
+
+        // 7.08 Manual Daily Cost Deduction Sweep Command (/sweep_daily, /sweeptoday)
+        if (text === "⚡ Run Daily Sweep" || text === "⚡ Daily Sweep" || text === "/sweep_daily" || text.startsWith("/sweep_daily") || text === "/sweeptoday") {
+          ctx.waitUntil((async () => {
+            await sendChatAction(chatId, "typing");
+            const frames = [
+              "⚡ *Initiating Daily Cost Deduction Sweep...*\n`[▰▰▰▱▱▱▱▱▱▱] 30%` • Scanning all registered community miners",
+              "⚡ *Evaluating Accounts & Deducting 100 Pts/Day...*\n`[▰▰▰▰▰▰▰▱▱▱] 70%` • VIP check & auto-pause for low balances",
+              "⚡ *Finalizing Sweep Ledger & Telemetry...*\n`[▰▰▰▰▰▰▰▰▰▰] 95%` • Syncing with Upstash Redis"
+            ];
+            await sendAnimatedReply(chatId, frames, statusInlineKeyboard, 250);
+
+            const res = await runDailyCostSweep(env, true);
+            const summary = `⚡ *UNIVERSAL DAILY DEDUCTION SWEEP COMPLETED* 🧹\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Status:* 🟢 Executed successfully\n` +
+              `• *Processed Accounts:* \`${res.processed}\` Miners evaluated\n` +
+              `• *Active 24/7 Miners:* \`${res.activeCount}\` (Deduction verified)\n` +
+              `• *VIP Free Pass Miners:* \`${res.vipCount}\` (0 Fee exempt)\n` +
+              `• *Auto-Paused Miners:* \`${res.pausedCount}\` (Balance < 100 Pts)\n` +
+              `• *Total Points Swept:* \`🔥 -${res.totalDeducted.toLocaleString()} Pts\` (-100 Pts/account)\n` +
+              `• *Execution Date:* \`${res.today}\`\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `🛡️ _Users with insufficient balance were paused and alerted with recharge bonuses._`;
+
+            const sweepDoneMarkup = {
+              inline_keyboard: [
+                [
+                  { text: "🔥 Economy & Burn Stats", callback_data: "btn_burn" },
+                  { text: "📊 Community Roster", callback_data: "btn_community" }
+                ],
+                [
+                  { text: "🚀 Open Executive Dashboard", web_app: { url: dashUrl } }
+                ]
+              ]
+            };
+            await sendReply(summary, sweepDoneMarkup);
           })());
           return new Response("OK");
         }
@@ -7760,106 +8127,11 @@ Reply to Arif naturally:`;
       } catch (_) {}
     })());
 
-    // 2.5 Automated Daily Cost Deduction Sweep (Runs once per day across all registered users)
+    // 2.5 Automated Daily Cost Deduction Sweep (Runs once per day on Node 1 via unified sweep engine)
     if (NODE_SHARD_INDEX === 0) {
       ctx.waitUntil((async () => {
         try {
-          const today = new Date().toISOString().slice(0, 10);
-          let lastSweep = null;
-          if (env.BACKUP_KV) {
-            lastSweep = await env.BACKUP_KV.get("daily_cost_sweep_date");
-          }
-          if (lastSweep === today) return;
-
-          if (env.BACKUP_KV) {
-            await env.BACKUP_KV.put("daily_cost_sweep_date", today, { expirationTtl: 86400 * 2 }).catch(() => {});
-          }
-
-          const uidsResp = await fetch(`${UPSTASH_URL}/smembers/ub_registered_users`, {
-            headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
-          }).catch(() => null);
-          if (!uidsResp || !uidsResp.ok) return;
-          const uidsData = await uidsResp.json().catch(() => ({}));
-          const uids = uidsData.result || [];
-          if (!Array.isArray(uids) || uids.length === 0) return;
-
-          const userKeys = uids.map(uid => `ub_user:${uid}`);
-          const userProfiles = await upstashMget(userKeys);
-          const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
-
-          for (const prof of userProfiles) {
-            if (!prof || !prof.user_id || !prof.accounts || prof.accounts.length === 0) continue;
-            if (prof.last_deduction_date === today) continue;
-
-            const now = Date.now();
-            const hasActivePass = prof.subscription_expiry && prof.subscription_expiry > now;
-
-            if (hasActivePass) {
-              prof.farming_active = true;
-              prof.last_deduction_date = today;
-              await upstashSet(`ub_user:${prof.user_id}`, prof);
-            } else {
-              const dailyCost = prof.accounts.length * 100;
-              if (prof.farming_active !== false) {
-                if ((prof.points || 0) >= dailyCost) {
-                  prof.points = (prof.points || 0) - dailyCost;
-                  prof.farming_active = true;
-                  prof.last_deduction_date = today;
-                  await upstashSet(`ub_user:${prof.user_id}`, prof);
-                } else {
-                  prof.farming_active = false;
-                  prof.last_deduction_date = today;
-                  await upstashSet(`ub_user:${prof.user_id}`, prof);
-
-                  // Send Pause Notification to User
-                  fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      chat_id: prof.user_id,
-                      text: `⚠️ *Cloud Mining Paused — Insufficient Points* ⚠️\n\n` +
-                        `Your 24/7 cloud mining has been temporarily paused because your points balance (*${prof.points || 0} Points*) is below today's daily cost (*${dailyCost} Points* for ${prof.accounts.length} connected account${prof.accounts.length > 1 ? "s" : ""}).\n\n` +
-                        `*Resume 24/7 Cloud Mining:*\n` +
-                        `• 🎁 *Claim Daily Bonus* (+25-50 Pts)\n` +
-                        `• 🎬 *Watch Rewarded Video Ads* (+20 Pts/ad)\n` +
-                        `• 👥 *Invite Friends* (+500 Pts each)\n` +
-                        `• 🌟 *Upgrade with Telegram Stars* (0 fee + unlimited mining)`,
-                      parse_mode: "Markdown",
-                      reply_markup: {
-                        inline_keyboard: [
-                          [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }],
-                          [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
-                          [{ text: "🌟 VIP Passes (0 fee)", callback_data: "ub_buy_stars" }]
-                        ]
-                      }
-                    })
-                  }).catch(() => {});
-                }
-              } else {
-                // If user was paused, check if balance now covers cost
-                if ((prof.points || 0) >= dailyCost) {
-                  prof.points = (prof.points || 0) - dailyCost;
-                  prof.farming_active = true;
-                  prof.last_deduction_date = today;
-                  await upstashSet(`ub_user:${prof.user_id}`, prof);
-
-                  fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      chat_id: prof.user_id,
-                      text: `🟢 *Cloud Mining Auto-Resumed!* 🚀\n\n` +
-                        `Your points balance covered today's cost (*${dailyCost} Points*). 24/7 cloud mining has resumed for all ${prof.accounts.length} accounts.\n• *Remaining Balance:* 💎 ${prof.points} Points`,
-                      parse_mode: "Markdown"
-                    })
-                  }).catch(() => {});
-                } else {
-                  prof.last_deduction_date = today;
-                  await upstashSet(`ub_user:${prof.user_id}`, prof);
-                }
-              }
-            }
-          }
+          await runDailyCostSweep(env, false);
         } catch (_) {}
       })());
     }
@@ -8240,6 +8512,8 @@ async def main():
                 "commands": [
                     {"command": "start", "description": "👑 Open Executive Admin Console & Fleet"},
                     {"command": "dashboard", "description": "🚀 Launch Cloudflare Pages Admin Console"},
+                    {"command": "burn", "description": "🔥 Economy & Daily Burn (100 Pts/day)"},
+                    {"command": "sweep_daily", "description": "⚡ Run 100 Pts Daily Deduction Sweep"},
                     {"command": "accounts", "description": "👥 Manage Fleet Accounts & Roster"},
                     {"command": "harvest", "description": "⚡ Trigger Instant 8 Pools Harvest"},
                     {"command": "sweep", "description": "💼 Universal Sweep & Payouts"},

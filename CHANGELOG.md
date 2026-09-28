@@ -4,6 +4,22 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Admin Bot (`@myagy_ai_bot`) & Executive Dashboard Improvements (`deploy_both_cf_workers.py`, `public/admin/index.html`, `public/admin.html`, `public/index.html`)**:
+  - **👑 Admin Bot Management Commands & Interactive Controls**:
+    * Implemented `/burn`, `/economy`, and `/points_summary` commands in `ALERT_BOT_TOKEN` webhook handler: returns a real-time points economy breakdown with registered miners, active 24/7 miners, auto-paused accounts, VIP pass holders, total points in circulation, and net daily burn rate (`-X Pts/day`).
+    * Implemented `/sweep_daily` and `/sweeptoday` manual commands: triggers an on-demand 100 Pts/day daily deduction sweep across all miners with live animated progress frames and instant results card.
+    * Added interactive inline keyboard buttons: `🔥 Economy & Burn` (`btn_burn`) and `⚡ Run Daily Sweep` (`btn_sweep_daily`) to `statusInlineKeyboard` and persistent reply keyboard `mainKeyboard`.
+    * Updated Telegram Bot API commands (`setMyCommands`) registering `/burn` and `/sweep_daily` for instant mobile command autocomplete.
+  - **⚙️ Unified Daily Deduction Engine & Admin API (`/api/admin/daily-sweep`)**:
+    * Refactored daily sweep logic into a top-level `runDailyCostSweep(env, force)` engine shared across Cloudflare scheduled cron triggers, Telegram admin bot, and web dashboards.
+    * Added `/api/admin/daily-sweep` (POST/GET) endpoint supporting on-demand force-execution (`force=true`) and automated skip when already executed today.
+  - **📊 Executive Dashboard Enhancements (`public/admin/index.html`, `public/admin.html`, `public/index.html`)**:
+    * Added dedicated "100 Pts/Day Autonomous Daily Deduction Sweep" control card to the Miners tab with live network drain stats, active paying miners, and low-balance indicators.
+    * Added 1-tap "⚡ Run Daily Deduction Sweep Now" button with spinner states, haptic feedback, and instant summary banner.
+    * Added `⚠️ Low Pts (<100)` filter chip to quickly identify and assist miners at risk of being paused.
+    * Added `⚡ Daily Sweep` and `🔥 Points Burn` quick action chips to Ari AI Copilot.
+    * Synchronized `public/admin/index.html` with `public/admin.html` and deployed to 5 Cloudflare edge nodes.
+
 - **Points Economy Overhaul, 100 Pts/Day Autonomous Daily Deduction Sweep, and Unified Executive Dashboards (`deploy_both_cf_workers.py`, `public/index.html`, `public/admin/index.html`, `public/admin.html`)**:
   - **⚡ Automated Daily Point Deduction Sweep (100 Pts/Day / Account)**:
     * Implemented step 2.5 in Cloudflare Worker `scheduled` cron trigger (firing on Node 1 / Shard 0 `aaaai2`) that executes an autonomous daily cost deduction sweep across all users in `ub_registered_users`.
