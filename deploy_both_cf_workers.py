@@ -6607,7 +6607,7 @@ Reply to Arif naturally:`;
         const effectiveUid = String(update?.message?.chat?.id || update?.callback_query?.message?.chat?.id || update?.callback_query?.from?.id || "");
         const isOwner = effectiveUid === "6727787768" || effectiveUid === String(env.OWNER_ID || "6727787768");
 
-        // UI Keyboards (Standard Community Miners)
+        // UI Keyboards (Standard Community Miners - STRICTLY ZERO ADMIN BUTTONS)
         const userMainKeyboard = {
           keyboard: [
             [
@@ -6633,7 +6633,36 @@ Reply to Arif naturally:`;
           is_persistent: true
         };
 
-        const activeUserKeyboard = userMainKeyboard;
+        // UI Keyboards (Platform Administrator Arif ONLY)
+        const ownerUserKeyboard = {
+          keyboard: [
+            [
+              { text: "➕ Connect Account" },
+              { text: "👥 My Accounts" }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts)" }
+            ],
+            [
+              { text: "⛏️ Farming Bots" },
+              { text: "💎 Points & Pass" }
+            ],
+            [
+              { text: "🎁 Daily Bonus" },
+              { text: "👥 Invite Friends" }
+            ],
+            [
+              { text: "💬 Ari AI & Support" }
+            ],
+            [
+              { text: "👑 User Admin Dashboard", web_app: { url: "https://atf-miner-app.pages.dev" } }
+            ]
+          ],
+          resize_keyboard: true,
+          is_persistent: true
+        };
+
+        const activeUserKeyboard = isOwner ? ownerUserKeyboard : userMainKeyboard;
 
         const userCancelKeyboard = {
           keyboard: [
@@ -7694,6 +7723,7 @@ Reply to Arif naturally:`;
                 `2️⃣ 📢 [AAA Auto Miner — Announcements](https://t.me/AAAAUTOMINING)\n` +
                 `3️⃣ ⚡ [AAA ATF Miner — Live Activity](https://t.me/AAA_ACTIVITY)\n\n` +
                 `👉 *Join all 3 channels above, then tap 🔄 Verify Membership below to claim 🎁 100 Free Welcome Points!*`;
+              await sendUserReply("👋 *Welcome to AAA Auto Mining!* (Created by AAA)\nAccess all features below or choose from the interactive menu:", activeUserKeyboard);
               await sendUserReply(gateMsg, gateInlineKeyboard);
               return;
             }

@@ -4,6 +4,20 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Zero Admin Exposure for Community Users & Single-Tap Owner Dashboard Keyboard (`deploy_both_cf_workers.py`, `public/index.html`, `deploy_vercel.py`, `CHANGELOG.md`)**:
+  - **🛡️ Strict Regular User Isolation (Zero Admin Exposure)**:
+    * Ensured all standard community users (`another user id`) receive strictly `userMainKeyboard` featuring only standard user features (`➕ Connect Account`, `👥 My Accounts`, `🎬 Watch Video Ad (+20 Pts)`, `⛏️ Farming Bots`, `💎 Points & Pass`, `🎁 Daily Bonus`, `👥 Invite Friends`, `💬 Ari AI & Support`).
+    * Updated channel membership gate handler to explicitly dispatch `activeUserKeyboard`, immediately replacing and wiping out any stale/cached client keyboards from older sessions.
+    * Enforced server-side command security blocking `/admin`, `/dashboard`, and `/users` from any user ID other than Arif (`6727787768`).
+  - **🔒 Client-Side WebApp ID Verification (`public/index.html`)**:
+    * Implemented strict Telegram WebApp user verification (`tg?.initDataUnsafe?.user?.id`).
+    * If a non-admin Telegram user attempts to open the User Admin Console, the app halts all telemetry requests (`/api/admin/users`) and renders an explicit `🔒 Administrator Access Only` locked screen.
+  - **👑 Single-Tap Administrator Dashboard for Arif (`6727787768`)**:
+    * Added `👑 User Admin Dashboard` exclusively to `ownerUserKeyboard` at the bottom of the reply keyboard for Arif (`6727787768`).
+    * Preserved `🎬 Watch Ads` in the bottom-left persistent chat menu button so Arif can test and watch ads at any time.
+  - **🚀 Production Synchronization**:
+    * Re-deployed to Vercel production (`user-admin.html` and `users.html`) and all 5 Cloudflare Edge Worker nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **Watch Ads Menu Button Restoration, Strict Bot & Dashboard Isolation & Side Task Hardening (`deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`, `CHANGELOG.md`)**:
   - **🎬 Restored "Watch Ads" Chat Menu Button on User Bot (`@AAAPREMIUMAPPSbot`)**:
     * Restored `🎬 Watch Ads` miniapp (`https://restore-agy.aaaai2.workers.dev/adsgram`) as the persistent bottom-left chat menu button for ALL users and Commander Arif (`chat_id: 6727787768`).

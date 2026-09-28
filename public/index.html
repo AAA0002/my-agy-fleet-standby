@@ -146,6 +146,9 @@ const playSound = (type = "click") => {
 
 function App() {
   const tg = window.Telegram?.WebApp;
+  const webAppUserId = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : null;
+  const isDenied = Boolean(webAppUserId && webAppUserId !== "6727787768");
+
   useEffect(() => {
     if (tg) {
       tg.ready();
@@ -237,6 +240,7 @@ function App() {
 
   // Primary Data Sync: Fetch Users & Stats Only
   const fetchStatus = useCallback(async (isManual = false) => {
+    if (isDenied) return;
     if (isManual) {
       setSyncing(true);
       haptic("medium");
@@ -258,9 +262,13 @@ function App() {
       setInitialLoading(false);
       setSyncCountdown(15);
     }
-  }, [fetchMeshApi, soundEnabled]);
+  }, [fetchMeshApi, soundEnabled, isDenied]);
 
   useEffect(() => {
+    if (isDenied) {
+      setInitialLoading(false);
+      return;
+    }
     fetchStatus(false);
     const interval = setInterval(() => {
       setSyncCountdown(prev => {
@@ -272,7 +280,7 @@ function App() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [fetchStatus]);
+  }, [fetchStatus, isDenied]);
 
   // Admin Quick User Action
   const handleUserAction = async (uid, action, payload = {}) => {
@@ -365,6 +373,18 @@ function App() {
     { name: "Apex", key: "apex", icon: "🏔️", cadence: "Auto-Claim" },
     { name: "Ainovum", key: "ainovum", icon: "🌐", cadence: "Active" }
   ];
+
+  if (isDenied) {
+    return React.createElement("div", { className: "max-w-md mx-auto min-h-screen px-6 py-24 text-center flex flex-col items-center justify-center bg-slate-50 font-sans" },
+      React.createElement("div", { className: "w-16 h-16 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center text-3xl font-black mb-4 shadow-sm" }, "🔒"),
+      React.createElement("h2", { className: "text-base font-black text-slate-900 tracking-tight mb-2 uppercase" }, "Administrator Access Only"),
+      React.createElement("p", { className: "text-xs text-slate-500 mb-6 leading-relaxed max-w-xs" }, "This console is strictly restricted to Platform Administrator Arif. Standard community users cannot view or manage community accounts."),
+      React.createElement("button", {
+        onClick: () => { try { if (tg) tg.close(); } catch (_) {} },
+        className: "px-6 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl shadow hover:bg-slate-800 transition active:scale-95"
+      }, "Close Console")
+    );
+  }
 
   return React.createElement("div", { className: "max-w-md mx-auto min-h-screen px-3.5 pt-3 pb-8" },
     // Toast Notification Banner
