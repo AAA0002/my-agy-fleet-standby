@@ -2623,6 +2623,11 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         except Exception:
             return 0, None
 
+    # Helper for formatted error string (never returns empty string)
+    def format_error(e: Exception) -> str:
+        msg = str(e).strip()
+        return f"{type(e).__name__}: {msg}" if msg else type(e).__name__
+
     # 1. Stones Miners
     async def _farm_stones():
         if not tokens.get("stones_init_data"):
@@ -2734,7 +2739,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
             status["bots"]["stones"] = "farmed"
         except Exception as e:
-            status["bots"]["stones"] = f"error: {e}"
+            status["bots"]["stones"] = f"error: {format_error(e)}"
 
     # 2. MRG Miner
     async def _farm_mrg():
@@ -2816,7 +2821,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
             status["bots"]["mrg"] = "farmed"
         except Exception as e:
-            status["bots"]["mrg"] = f"error: {e}"
+            status["bots"]["mrg"] = f"error: {format_error(e)}"
 
     # 3. ART Airdrop
     async def _farm_art():
@@ -2884,7 +2889,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
             status["bots"]["art"] = "farmed"
         except Exception as e:
-            status["bots"]["art"] = f"error: {e}"
+            status["bots"]["art"] = f"error: {format_error(e)}"
 
     # 4. AI Lab Robot
     async def _farm_ailab():
@@ -2965,7 +2970,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
             status["bots"]["ailab"] = "farmed"
         except Exception as e:
-            status["bots"]["ailab"] = f"error: {e}"
+            status["bots"]["ailab"] = f"error: {format_error(e)}"
 
     # 5. UltraWallet
     async def _farm_ultra():
@@ -2979,6 +2984,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 "Origin": "https://wallet.trxvault.top",
                 "Referer": "https://wallet.trxvault.top/"
             }
+            cust_tok = None
             await jitter(1.0, 2.2)
             _, ud = await safe_post(f"{uw_base}/telegramLogin", {"initData": uw_init, "refBy": "6727787768"}, req_headers=uw_origin_h)
             if ud and isinstance(ud, dict):
@@ -3062,9 +3068,13 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                             if is_owner:
                                 await safe_post(f"{uw_base}/referral/milestones/claim", {}, uw_h)
 
-            status["bots"]["ultrawallet"] = "farmed"
+            if cust_tok:
+                status["bots"]["ultrawallet"] = "farmed"
+            else:
+                err_msg = ud.get("error", {}).get("message") if (ud and isinstance(ud, dict)) else "session verification failed"
+                status["bots"]["ultrawallet"] = f"auth_failed: {err_msg}"
         except Exception as e:
-            status["bots"]["ultrawallet"] = f"error: {e}"
+            status["bots"]["ultrawallet"] = f"error: {format_error(e)}"
 
     # 6. Apex Miner
     async def _farm_apex():
@@ -3102,7 +3112,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             await safe_post(f"{apx_base}/ads/reward", {"initData": apx_init}, req_headers=apx_h)
             status["bots"]["apx"] = "farmed"
         except Exception as e:
-            status["bots"]["apx"] = f"error: {e}"
+            status["bots"]["apx"] = f"error: {format_error(e)}"
 
     # 7. ATF Miner
     async def _farm_atf():
@@ -3188,7 +3198,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
             status["bots"]["atf"] = "farmed"
         except Exception as e:
-            status["bots"]["atf"] = f"error: {e}"
+            status["bots"]["atf"] = f"error: {format_error(e)}"
 
     # 8. Ainovum
     async def _farm_ainovum():
@@ -3265,7 +3275,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
             status["bots"]["ainovum"] = "farmed"
         except Exception as e:
-            status["bots"]["ainovum"] = f"error: {e}"
+            status["bots"]["ainovum"] = f"error: {format_error(e)}"
 
     # Humanized Execution Pipeline: Randomize the order of bot executions per account session
     bot_routines = [
@@ -3287,7 +3297,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             await b["fn"]()
             await jitter(1.2, 3.0)
         except Exception as err:
-            status["bots"][b["name"]] = f"error: {err}"
+            status["bots"][b["name"]] = f"error: {format_error(err)}"
 
     # Await all background dwell/retry tasks for this account before completing
     if bg_tasks:

@@ -4,6 +4,25 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Full Fleet 8-Bot Cloud Auto-Farming Upgrade, Diagnostic Hardening, Copy Purification & Multi-Cloud Deployment (`render_standby_app.py`, `render_app_latest.py`, `deploy_both_cf_workers.py`, `public/admin.html`, `deploy_vercel.py`, `CHANGELOG.md`)**:
+  - **🧹 Complete Copy Purification & User Bot Role Focus**:
+    * Per direct user request, completely purged all developer and financial terms ("0% platform fees", "0% fee payouts", "zero phone load") from user-facing prompts, bot fallback answers, and `public/admin.html`.
+    * Focused the User Bot (`@AAAPREMIUMAPPSbot`) strictly on 24/7 cloud auto-farming across the 8 supported bots (ATF Miner, Stones Miner, MRG Miner, ART Airdrop, AI Lab Robot, UltraWallet, Apex Miner, Ainovum).
+    * Updated user support messaging and `/withdraw` alias routing to explain how cloud auto-farming continuously accumulates rewards directly inside each bot.
+  - **🛡️ Error Diagnostic Hardening across All 8 Bot Routines**:
+    * Implemented `format_error` helper in `render_standby_app.py` and `render_app_latest.py` ensuring exceptions with empty string representations (e.g. standard library `TimeoutError` or empty exceptions) display detailed diagnostic labels like `"error: TimeoutError"` rather than blank `"error: "` tags.
+    * Hardened UltraWallet (`_farm_ultra`) to explicitly verify Firebase custom token creation and report `auth_failed: <reason>` when session verification fails, and `"farmed"` when the full cycle completes.
+    * Added explicit 401 Unauthorized handling in ATF Miner, MRG Miner, Apex Miner, and Ainovum to prevent silent failures or unhandled exceptions.
+  - **🚀 Render Standby Engine Deployment & Live Status**:
+    * Pushed updated FastAPI codebase with all 8-bot auto-farming improvements to `AAA2743/my-agy-fleet-standby` on GitHub (`5823ddba`).
+    * Render Standby Node 1 (Singapore) successfully built and transitioned to `status: live` on `https://my-agy-fleet-standby.onrender.com`.
+    * Accepted collaborator invitation for `AAA0002` on `my-agy-fleet-standby`.
+    * Dispatched cloud token collection across all 14 accounts (`collected: 14`) and full 8-bot farming cycle (`status: dispatched`) in the cloud with zero phone load.
+  - **🌐 Edge Mesh & Vercel Synchronized Deployments**:
+    * Re-deployed updated edge script across all 5 Cloudflare Worker accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`), verifying Telegram Bot Webhooks, Menu buttons, Descriptions, and Commands.
+    * Deployed updated frontend to Vercel projects `my-agy-ai-fleet` (`https://agy-aaa000.vercel.app/`) and `agy` (`https://agy-henna.vercel.app/`), verified HTTP 200.
+    * Verified 100% Node.js AST syntax validity on all 8,463 lines of worker JavaScript.
+
 - **ATF Miner Tasks Automation & Fleetwide Claiming: 44 Tasks Harvested (`batch_atf_miner.py`, `render_standby_app.py`, `render_app_latest.py`, `CHANGELOG.md`)**:
   - **🎯 Identified & Solved ATF Task Claiming Bug**:
     * Discovered that string cooldown timestamps returned by the ATF Miner API caused type comparison errors in the task loop, blocking automated task claiming.

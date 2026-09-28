@@ -1700,31 +1700,31 @@ export default {
       // 3. Intelligent Edge Keyword-Aware Fallback (Answers user guides directly even if offline)
       const pLow = prompt.toLowerCase();
       let fallbackAns = `Hello ${senderName}! I am Ari AI, your official copilot for AAA Auto Mining (Created by AAA).\n\n` +
-        `• *What I Do:* Automatically farm 8 Telegram crypto bots 24/7 in the cloud with 0% platform fees.\n` +
+        `• *What I Do:* Automatically farm 8 Telegram crypto bots 24/7 in the cloud.\n` +
+        `• *8 Supported Bots:* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, and Ainovum.\n` +
         `• *Connect Account:* Tap *➕ Connect Account* in the menu to add your account.\n` +
         `• *Manage / Disconnect:* Tap *👥 My Accounts* or *🗑️ Remove Account* anytime.\n` +
         `• *Earn Points:* 100 Pts/day cost. Earn free points by watching ads (+20 Pts) or inviting friends (+500 Pts).\n` +
-        `• *Direct Payouts:* Mined tokens go directly to your verified bot balances.\n` +
         `• *Support:* Send \`/support <message>\` to message Platform Support directly.`;
 
       if (pLow.includes("who made") || pLow.includes("who created") || pLow.includes("created by") || pLow.includes("creator") || pLow.includes("developer") || pLow.includes("who are you") || pLow.includes("what is aaa")) {
         fallbackAns = `⚡ *AAA AUTO MINING* was created and engineered by *AAA*.\n\n` +
           `• *Created by:* AAA\n` +
-          `• *Ecosystem:* Autonomous 24/7 Cloud Mining for 8 Telegram crypto bots.\n` +
-          `• *Direct Payouts:* Mined tokens deposit directly to your Telegram bot balances with 0% platform fees.`;
+          `• *Ecosystem:* Autonomous 24/7 Cloud Mining Platform.\n` +
+          `• *Supported Bots:* Auto-farms 8 Telegram crypto bots 24/7 (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum).`;
       } else if (pLow.includes("what can this bot do") || pLow.includes("what can you do") || pLow.includes("what does this bot do") || pLow.includes("features") || pLow.includes("bot list") || pLow.includes("which bots")) {
         fallbackAns = `🌟 *AAA AUTO MINING* (Created by AAA) 🚀\n\n` +
-          `This bot **automatically mines 8 Telegram crypto bots 24/7 in the cloud** with 0% platform fees! All rewards deposit directly into your bot balances.\n\n` +
+          `This bot **automatically mines 8 Telegram crypto bots 24/7 in the cloud**! It executes mining starts, daily claims, task completions, and point rewards continuously.\n\n` +
           `🤖 *The 8 Automated Mining Pools & Links:*\n` +
           `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & task claiming\n` +
-          `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Auto-farming & Arbitrum payouts\n` +
-          `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON rewards\n` +
-          `4️⃣ 🎨 [ART Miner](https://t.me/ART_AIRDROP_BOT?start=6727787768) — Auto-farming & TON airdrop\n` +
-          `5️⃣ 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — USDT auto-exchange & BEP-20 payouts\n` +
-          `6️⃣ 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Multi-chain cloud mining\n` +
-          `7️⃣ 🏔️ [Apex Miner](https://t.me/ApxMinerBot/app?startapp=6727787768) — APX token node farming\n` +
-          `8️⃣ 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768) — Auto-mining & direct BSC withdrawals\n\n` +
-          `📱 *How to Start:* Tap *➕ Connect Account*, send your phone number & Telegram login code. Your account will automatically farm all 8 pools 24/7 without needing your phone online!`;
+          `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Auto-farming & energy claims\n` +
+          `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & tasks\n` +
+          `4️⃣ 🎨 [ART Miner](https://t.me/ART_AIRDROP_BOT?start=6727787768) — Auto-mining & daily airdrop claims\n` +
+          `5️⃣ 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — 24/7 hash exchange & mining cycles\n` +
+          `6️⃣ 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Daily check-ins, spins & energy\n` +
+          `7️⃣ 🏔️ [Apex Miner](https://t.me/ApxMinerBot/app?startapp=6727787768) — APX token node farming & boosts\n` +
+          `8️⃣ 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768) — Auto-mining cycles & gift boxes\n\n` +
+          `📱 *How to Start:* Tap *➕ Connect Account*, send your phone number & Telegram login code. Your account will automatically farm all 8 pools 24/7 in the cloud!`;
       } else if (pLow.includes("connect") || pLow.includes("add account") || pLow.includes("login")) {
         fallbackAns = `📱 *How to Connect Your Account:*\n\n` +
           `1. Tap *➕ Connect Account* in the menu.\n` +
@@ -1746,12 +1746,10 @@ export default {
           `• *🎁 Welcome Gift:* Every new verified user gets 100 free points.\n\n` +
           `Each connected account uses 100 points/day for continuous 24/7 cloud mining.`;
       } else if (pLow.includes("withdraw") || pLow.includes("payout") || pLow.includes("cashout") || pLow.includes("balance")) {
-        fallbackAns = `💳 *How Withdrawals & Payouts Work:*\n\n` +
-          `• All 8 mining bots accumulate tokens directly inside their respective official Telegram bot balances:\n` +
-          `  - *ATF Miner, MRG, ART:* Direct TON Blockchain withdrawal inside the bots.\n` +
-          `  - *AI Lab, Ainovum:* Direct BEP-20 (BNB/USDT) withdrawal to your Binance or Trust Wallet.\n` +
-          `  - *Stones Miners:* Arbitrum One auto-withdrawals.\n` +
-          `• *0% Platform Fee:* We deduct 0 withdrawal fees and 0 gas charges—100% of mined rewards are yours!`;
+        fallbackAns = `⛏️ *Autonomous Cloud Auto-Farming:*\n\n` +
+          `• Our bot is dedicated strictly to 24/7 cloud auto-farming, task completion, and mining accumulation across all 8 bots.\n` +
+          `• All mined tokens, coins, and rewards accumulate directly inside each official Telegram bot.\n` +
+          `• Tap */pools* to see the complete list of 8 supported crypto mining pools.`;
       } else if (pLow.includes("support") || pLow.includes("admin") || pLow.includes("help") || pLow.includes("ticket")) {
         fallbackAns = `💬 *How to Contact Platform Support:*\n\n` +
           `• *Direct Ticket:* Send \`/support <your message>\` in this chat to reach Platform Support directly.\n` +
@@ -7098,7 +7096,7 @@ Reply to Arif naturally:`;
           // C2.7 Support & Ticket
           if (cqData === "ub_support") {
             const supMsg = `💬 *AAA MINING SUPPORT & ASSISTANCE* 🤖\n\n` +
-              `Need help with your account, connection, passes, or payouts?\n\n` +
+              `Need help with your account, connection, passes, or mining?\n\n` +
               `• *Option 1 (Instant AI Assistant):* Simply type your question in this chat anytime!\n\n` +
               `• *Option 2 (Platform Support):* Send \`/support <your message>\` to reach Support directly.\n\n` +
               `• *Option 3 (Community Supergroup):* Join [AAA Auto Miner Supergroup](https://t.me/AAAAutoMiner) to chat with fellow miners!`;
@@ -8135,7 +8133,7 @@ Reply to Arif naturally:`;
           // 5. 📺 Watch Ad (+20 Pts)
           if (text === "📺 Watch Ad (+20 Pts)" || text === "🎬 Watch Ads (+20 Pts)" || text === "🎬 Watch Ads" || text.startsWith("/watch_ad") || text === "/ad" || text === "/ads" || text.startsWith("/ad ") || text.toLowerCase() === "watch ad" || text.toLowerCase() === "watch ads") {
             const adMsg = `📺 *WATCH REWARDED ADS & EARN POINTS* 🚀\n\n` +
-              `Watch real video ads via Adsgram to keep your 24/7 cloud mining active with 0 fees!\n\n` +
+              `Watch real video ads via Adsgram to keep your 24/7 cloud mining running continuously!\n\n` +
               `🎁 *Per-Ad Reward:* +20 Points (+40 for VIP Monthly Pass)\n` +
               `🏆 *Milestone Bonus:* Every 50 ads unlocks *+1 Free Bonus Account Slot*!\n` +
               `⏱️ *Cooldown:* 15 seconds between ads.\n\n` +
