@@ -1,9 +1,3 @@
 /ai  https://restore-agy.aaaai2.workers.dev/ai  200
 /api/*  https://restore-agy.aaaai2.workers.dev/api/:splat  200
-/user-admin  /user-admin.html  200
-/user-admin/*  /user-admin.html  200
-/admin  /user-admin.html  200
-/users  /user-admin.html  200
 /fleet  https://agy-aaa000.vercel.app/  302
-/app/ad  /app/ad/index.html  200
-/ads  /index.html  200
