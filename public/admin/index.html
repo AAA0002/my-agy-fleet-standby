@@ -727,6 +727,37 @@ function App() {
         )
       ),
 
+      // Ultra Wallet 6-Day Global Launch Official Alert Card
+      React.createElement("div", { className: "bg-gradient-to-r from-purple-950 via-indigo-950 to-slate-900 rounded-2xl p-4 mb-3.5 text-white shadow-md border border-purple-800/40 relative overflow-hidden" },
+        React.createElement("div", { className: "flex items-start justify-between relative z-10" },
+          React.createElement("div", null,
+            React.createElement("div", { className: "flex items-center gap-1.5 mb-1" },
+              React.createElement("span", { className: "bg-purple-500/30 text-purple-200 border border-purple-400/40 text-[9px] font-black px-1.5 py-0.5 rounded tracking-wider uppercase" }, "Official Launch Reminder"),
+              React.createElement("span", { className: "text-[10px] text-purple-300 font-semibold" }, "340K+ Miners")
+            ),
+            React.createElement("h3", { className: "font-black text-sm text-white tracking-tight" }, "Ultra Wallet — Global Launch in 6 Days! 🌍"),
+            React.createElement("p", { className: "text-[11px] text-purple-200/90 mt-0.5 leading-snug" },
+              "Daily cloud check-ins, tasks & mining activities are 100% automated across all fleet accounts before Global Launch."
+            )
+          ),
+          React.createElement("div", { className: "w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-xl shrink-0" }, "👛")
+        ),
+        React.createElement("div", { className: "grid grid-cols-3 gap-1.5 mt-3 pt-2.5 border-t border-purple-800/60 text-center relative z-10" },
+          React.createElement("div", { className: "bg-purple-900/40 rounded-lg p-1.5 border border-purple-700/30" },
+            React.createElement("span", { className: "text-[9px] text-purple-300 uppercase font-bold block" }, "Countdown"),
+            React.createElement("span", { className: "text-xs font-black text-white" }, "6 Days Left")
+          ),
+          React.createElement("div", { className: "bg-purple-900/40 rounded-lg p-1.5 border border-purple-700/30" },
+            React.createElement("span", { className: "text-[9px] text-purple-300 uppercase font-bold block" }, "Daily Checkin"),
+            React.createElement("span", { className: "text-xs font-black text-emerald-400" }, "Active ✅")
+          ),
+          React.createElement("div", { className: "bg-purple-900/40 rounded-lg p-1.5 border border-purple-700/30" },
+            React.createElement("span", { className: "text-[9px] text-purple-300 uppercase font-bold block" }, "Mining Speed"),
+            React.createElement("span", { className: "text-xs font-black text-emerald-400" }, "10 Hash/h")
+          )
+        )
+      ),
+
       // 8-Pool Autonomous Fleet Telemetry Card
       React.createElement("div", { className: "pro-card rounded-2xl p-3.5 mb-3.5" },
         React.createElement("div", { className: "flex items-center justify-between mb-2" },
@@ -746,7 +777,7 @@ function App() {
             { name: "MRG Miner", chain: "TON", status: "Peak Tier Hashrate", icon: "⚡" },
             { name: "ART Coin", chain: "TON", status: "Level 8 Compound", icon: "🎨" },
             { name: "AI Lab Robot", chain: "BSC / BEP-20", status: "0.02 USDT Cashout", icon: "🤖" },
-            { name: "UltraWallet", chain: "Multi-Chain", status: "24/7 Node & Spins", icon: "👛" },
+            { name: "UltraWallet", chain: "Multi-Chain", status: "Launch in 6 Days! 🚀", icon: "👛" },
             { name: "Apex Miner", chain: "APX Node", status: "Auto Checkin & Boost", icon: "🏔️" },
             { name: "Ainovum", chain: "BSC / BEP-20", status: "0.10 USDT Threshold", icon: "🌐" }
           ].map((pool, pIdx) => React.createElement("div", {

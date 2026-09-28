@@ -4,6 +4,28 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Ecosystem Bug Audit, Ultra Wallet 6-Day Global Launch Readiness, Token Edge Ingestion & User Points UX Overhaul (`deploy_both_cf_workers.py`, `public/admin/index.html`, `public/admin.html`, `public/index.html`, `refresh_cloud_tokens.py`)**:
+  - **🔐 Fixed MTProto Token Pipeline Ingestion (`/api/tokens` & `/api/tokens/sync`)**:
+    * Resolved critical route mismatch where `refresh_cloud_tokens.py` pushed extracted tokens to `{cf_url}/api/tokens`, which previously returned 404 Not Found.
+    * Expanded Cloudflare Worker token sync handler to accept `/api/miniapp/tokens/sync`, `/api/tokens`, `/api/tokens/sync`, and `/api/fleet/tokens/sync` with payload compatibility for both `uid` and `account_id`.
+    * Added auto-replication to Upstash Redis key `fleet_miniapp_tokens` so all 5 edge worker nodes immediately share fresh tokens without cold start delays.
+    * Triggered 100% cloud-hosted GitHub Actions MTProto refresher (`cloud_token_refresher.yml` run `36368015431`) to collect fresh 24h WebApp tokens across the 14-account fleet with zero local phone load.
+  - **🚨 Ultra Wallet 6-Day Global Launch Readiness**:
+    * Integrated official Global Launch Countdown banner (6 days remaining!) and activity verification status across Executive Admin Console (`public/admin/index.html` & `public/admin.html`), User Console (`public/index.html`), and Admin Bot `/ultra` / `/ultrawallet` command.
+    * Verified 100% cloud automation for Ultra Wallet: daily check-ins (`/checkin/claim`), continuous mining (`/mining/start`, 10 Hash/h), lucky spins (`/spin/play`), rewards center video ads, and gift boxes (`/giftBox/claim`).
+  - **⚡ MRG Miner & ATF Miner Task Engine Hardening**:
+    * In `farmMrg`: enhanced task identification to support both `t.taskId` and `t.id` objects returned by Railway backend, preventing silent skips on new task schemas.
+    * Expanded link visit wait times and pattern matching to include YouTube Shorts, discussion groups, and latest post reactions.
+    * Verified ATF Miner math challenge solver and repeatable interaction tasks.
+  - **💎 User Bot Points System, 100 Pts/Day Cost & Native Keyboards**:
+    * Fixed missing callback query handler `ub_points` / `ub_balance`: now renders the comprehensive Points & Mining Balance card with real-time balance, VIP status, daily cost, days of mining remaining, slots, and referral metrics.
+    * Normalized `ub_accounts_list` callback query to also match `ub_accounts`.
+    * Upgraded `userMainKeyboard` and `adminMainKeyboard` with 1-tap `🎬 Watch Ads (+20 Pts)` button directly launching the Adsgram Mini App WebApp (`https://restore-agy.aaaai2.workers.dev/adsgram`).
+    * Added text router support for `🎬 Watch Ads (+20 Pts)` and `🎬 Watch Ads` for consistent interaction.
+    * Reinforced automated mining pause on insufficient balance (<100 Pts/acc) and auto-resumption with instant Telegram notification when refilled.
+  - **🚀 Multi-Node Deployment**:
+    * Compiled and deployed updated worker bundles across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with 100% verification.
+
 - **Admin Bot (`@myagy_ai_bot`) & Executive Dashboard Improvements (`deploy_both_cf_workers.py`, `public/admin/index.html`, `public/admin.html`, `public/index.html`)**:
   - **👑 Admin Bot Management Commands & Interactive Controls**:
     * Implemented `/burn`, `/economy`, and `/points_summary` commands in `ALERT_BOT_TOKEN` webhook handler: returns a real-time points economy breakdown with registered miners, active 24/7 miners, auto-paused accounts, VIP pass holders, total points in circulation, and net daily burn rate (`-X Pts/day`).

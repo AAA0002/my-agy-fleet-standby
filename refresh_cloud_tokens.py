@@ -87,9 +87,10 @@ def load_accounts():
 
 
 async def sync_tokens_to_edge(session: aiohttp.ClientSession, uid: str, name: str, tokens: dict):
-    """Pushes extracted tokens to all 3 Cloudflare Edge Worker nodes."""
+    """Pushes extracted tokens to all 5 Cloudflare Edge Worker nodes."""
     payload = {
         "uid": str(uid),
+        "account_id": str(uid),
         "name": name,
         **tokens
     }

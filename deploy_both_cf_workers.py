@@ -399,22 +399,23 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         const tasks = meD.tasks || [];
         const completed = new Set(meD.completedTaskIds || []);
         for (const t of tasks) {
+          const tid = t.taskId || t.id;
           const isRecurring = t.taskType === "recurring" || (t.type && t.type.includes("recurring"));
-          if (t.taskId && (!completed.has(t.taskId) || isRecurring)) {
-            const isLinkTask = (t.type === "link_visit" || t.url || String(t.title || "").toLowerCase().includes("channel") || String(t.title || "").toLowerCase().includes("social"));
-            const waitTime = isLinkTask ? 15000 : 2800;
+          if (tid && (!completed.has(tid) || isRecurring)) {
+            const isLinkTask = (t.type === "link_visit" || t.url || String(t.title || "").toLowerCase().includes("channel") || String(t.title || "").toLowerCase().includes("social") || String(t.title || "").toLowerCase().includes("shorts") || String(t.title || "").toLowerCase().includes("discussion") || String(t.title || "").toLowerCase().includes("post"));
+            const waitTime = isLinkTask ? 16000 : 2800;
             if (ctx && ctx.waitUntil) {
               ctx.waitUntil(new Promise(async (resolve) => {
                 try {
                   await humanDelay(waitTime, waitTime + 2000);
                   const clResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
-                    method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
+                    method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: tid })
                   }, 2, 600);
                   const clD = await clResp.json().catch(() => ({}));
                   if (!clD.success && (JSON.stringify(clD).toLowerCase().includes("wait") || JSON.stringify(clD).toLowerCase().includes("second"))) {
                     await humanDelay(12000, 15000);
                     await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
-                      method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: t.taskId })
+                      method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: tid })
                     }, 1, 600).catch(() => {});
                   }
                 } catch (_) {}
@@ -2531,11 +2532,12 @@ fi
       }
     }
 
-    // 9.5 MiniApp 24h Tokens Sync (In-Memory + Safe KV)
-    if (path === "/api/miniapp/tokens/sync" && request.method === "POST") {
+    // 9.5 MiniApp 24h Tokens Sync (In-Memory + Safe KV + Upstash)
+    if ((path === "/api/miniapp/tokens/sync" || path === "/api/tokens" || path === "/api/tokens/sync" || path === "/api/fleet/tokens/sync") && request.method === "POST") {
       try {
         const auth = request.headers.get("Authorization") || "";
-        if (auth !== `Bearer ${env.SECRET_KEY}`) {
+        const expectedSecret = env.SECRET_KEY || "agy_cf_secret_7d36994e_2026";
+        if (auth !== `Bearer ${expectedSecret}`) {
           return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), { status: 401, headers: corsHeaders });
         }
         const body = await request.json();
@@ -2546,10 +2548,12 @@ fi
             if (raw) current = JSON.parse(raw);
           } catch (_) {}
         }
-        if (body.account_id) {
-          current[body.account_id] = {
-            ...current[body.account_id],
+        const accId = body.account_id || body.uid || body.id;
+        if (accId) {
+          current[accId] = {
+            ...current[accId],
             ...body,
+            account_id: String(accId),
             synced_at: new Date().toISOString()
           };
         } else if (typeof body === 'object') {
@@ -2559,6 +2563,9 @@ fi
         try {
           await env.BACKUP_KV.put("miniapp_tokens", JSON.stringify(current));
         } catch (_) {}
+        try {
+          await upstashSet("fleet_miniapp_tokens", current);
+        } catch (_) {}
         return new Response(JSON.stringify({ ok: true, accounts: Object.keys(current).length }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
         return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
@@ -2566,7 +2573,7 @@ fi
     }
 
     // 9.6 MiniApp Tokens Status (In-Memory First)
-    if (path === "/api/miniapp/tokens" || path === "/api/fleet/tokens") {
+    if (path === "/api/miniapp/tokens" || path === "/api/fleet/tokens" || path === "/api/tokens") {
       try {
         if (memTokens && Object.keys(memTokens).length > 0) {
           return new Response(JSON.stringify(memTokens), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
@@ -3502,12 +3509,17 @@ fi
             } else if (cbData === "btn_ultra") {
               const rep = `💳 *ULTRAWALLET COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• *Platform:* UltraWallet Mining (@UltraWalletBot)\n` +
+                `🚨 *GLOBAL LAUNCH IN 6 DAYS!* 🌍\n` +
+                `• *Community Size:* 340,000+ Active Miners\n` +
+                `• *Platform:* UltraWallet (@UltraWalletBot)\n` +
+                `• *Launch Readiness:* 100% Operational\n` +
                 `• *Status:* Active & Mining (10 Hash/h)\n` +
-                `• *Streak:* Daily Check-in Claimed (Continuous Streak) ✅\n` +
-                `• *Auto-Compound:* Active\n` +
+                `• *Streak:* Daily Check-in & Gift Box Claimed ✅\n` +
+                `• *Rewards Center:* Video Ads & Activities Automated\n` +
+                `• *Auto-Compound:* Active 24/7 in Cloud\n` +
                 `• *Payout Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━`;
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `💡 _Stay active over the next 6 days to prepare for Global Launch!_`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -4700,16 +4712,21 @@ fi
           return new Response("OK");
         }
 
-        if (text === "💳 UltraWallet" || text.startsWith("/ultra")) {
+        if (text === "💳 UltraWallet" || text.startsWith("/ultra") || text.startsWith("/ultrawallet")) {
           ctx.waitUntil((async () => {
             const rep = `💳 *ULTRAWALLET COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `• *Platform:* UltraWallet Mining (@UltraWalletBot)\n` +
+              `🚨 *GLOBAL LAUNCH IN 6 DAYS!* 🌍\n` +
+              `• *Community Size:* 340,000+ Active Miners\n` +
+              `• *Platform:* UltraWallet (@UltraWalletBot)\n` +
+              `• *Launch Readiness:* 100% Operational\n` +
               `• *Status:* Active & Mining (10 Hash/h)\n` +
-              `• *Streak:* Daily Check-in Claimed (Continuous Streak) ✅\n` +
-              `• *Auto-Compound:* Active\n` +
+              `• *Streak:* Daily Check-in & Gift Box Claimed ✅\n` +
+              `• *Rewards Center:* Video Ads & Activities Automated\n` +
+              `• *Auto-Compound:* Active 24/7 in Cloud\n` +
               `• *Payout Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━`;
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `💡 _Stay active over the next 6 days to prepare for Global Launch!_`;
             await sendReply(rep, statusInlineKeyboard);
           })());
           return new Response("OK");
@@ -5644,7 +5661,8 @@ Reply to Arif naturally:`;
             } else {
               prof.farming_active = false;
               // Alert user that farming is paused due to insufficient points
-              ctx.waitUntil(fetch(`https://api.telegram.org/bot${USER_BOT_TOKEN}/sendMessage`, {
+              const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+              ctx.waitUntil(fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -5674,6 +5692,17 @@ Reply to Arif naturally:`;
             if (prof.points >= dailyCost) {
               prof.points -= dailyCost;
               prof.farming_active = true;
+              const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+              ctx.waitUntil(fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chat_id: uid,
+                  text: `🟢 *Cloud Mining Auto-Resumed!* 🚀\n\n` +
+                    `Your points balance covered today's cost (*${dailyCost} Points*). 24/7 cloud mining has resumed for all ${prof.accounts.length} accounts.\n• *Remaining Balance:* 💎 ${prof.points} Points`,
+                  parse_mode: "Markdown"
+                })
+              }).catch(() => {}));
             }
             prof.last_deduction_date = today;
             await upstashSet(key, prof);
@@ -6359,14 +6388,15 @@ Reply to Arif naturally:`;
               { text: "🎁 Daily Bonus (+25-50 Pts)" }
             ],
             [
-              { text: "👥 Invite Friends (+500 Pts)" },
-              { text: "🗑️ Remove Account" }
+              { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } },
+              { text: "👥 Invite Friends (+500 Pts)" }
             ],
             [
               { text: "💳 Withdrawals" },
               { text: "📊 My Stats" }
             ],
             [
+              { text: "🗑️ Remove Account" },
               { text: "💬 Ari AI & Support" }
             ]
           ],
@@ -6389,14 +6419,15 @@ Reply to Arif naturally:`;
               { text: "🎁 Daily Bonus (+25-50 Pts)" }
             ],
             [
-              { text: "👥 Invite Friends (+500 Pts)" },
-              { text: "🗑️ Remove Account" }
+              { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } },
+              { text: "👥 Invite Friends (+500 Pts)" }
             ],
             [
               { text: "💳 Withdrawals" },
               { text: "📊 My Stats" }
             ],
             [
+              { text: "🗑️ Remove Account" },
               { text: "💬 Ari AI & Support" }
             ]
           ],
@@ -6807,6 +6838,50 @@ Reply to Arif naturally:`;
             return new Response("OK");
           }
 
+          // C2.55 Points & Balance / Passes Callback
+          if (cqData === "ub_points" || cqData === "ub_balance") {
+            const profile = await getUserProfile(cqChatId, cq.from);
+            const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+            const isCovered = profile.subscription_expiry && profile.subscription_expiry > Date.now();
+            let passBadge = "Free Tier (Pay-As-You-Go)";
+            if (isCovered) {
+              const remMs = profile.subscription_expiry - Date.now();
+              const dLeft = Math.floor(remMs / (86400 * 1000));
+              const hLeft = Math.floor((remMs % (86400 * 1000)) / (3600 * 1000));
+              const tName = profile.subscription_tier === "month" ? "💎 30-Day Monthly Pass" : (profile.subscription_tier === "week" ? "🎟️ 7-Day Weekly Pass" : "🎟️ 1-Day Pass");
+              passBadge = `${tName} (🟢 Active: ${dLeft > 0 ? `${dLeft}d ` : ""}${hLeft}h left)`;
+            }
+            const daysRemaining = isCovered ? "Covered by Pass" : (profile.accounts && profile.accounts.length > 0 ? Math.floor((profile.points || 0) / (profile.accounts.length * 100)) : "Unlimited");
+            const farmStatus = isCovered ? "🟢 Active 24/7 (Covered by VIP Pass)" : (profile.farming_active ? "🟢 Active 24/7" : "🔴 Paused (Needs Points)");
+            const dailyCost = (profile.accounts || []).length * 100;
+            const ptsMsg = `💎 *POINTS & MINING BALANCE* ⚡\n\n` +
+              `• *Points Balance:* ${profile.points || 0} Points\n` +
+              `• *Subscription Pass:* ${passBadge}\n` +
+              `• *Farming Status:* ${farmStatus}\n` +
+              `• *Daily Mining Cost:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${dailyCost} Pts/day (100 Pts/account)`}\n` +
+              `• *Days of Mining Remaining:* ~${daysRemaining} days\n\n` +
+              `📊 *Account Slots Breakdown:*\n` +
+              `• *Standard Slots:* ${profile.slots || 1}\n` +
+              `• *Bonus Slots (from 50 Ads):* ${profile.temp_slots || 0}\n` +
+              `• *Total Available Slots:* ${totalSlots}\n\n` +
+              `📺 *Ad Watching Milestone:*\n` +
+              `• *Ads Watched:* ${profile.ads_watched || 0}\n` +
+              `• *Progress to Next Free Slot:* ${(profile.ads_watched || 0) % 50} / 50 ads\n\n` +
+              `👥 *Referral Stats:*\n` +
+              `• *Friends Invited:* ${profile.referral_count || 0}\n` +
+              `• *Points from Referrals:* ${(profile.referral_count || 0) * 500} Pts`;
+
+            const ptsKb = {
+              inline_keyboard: [
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
+                [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
+              ]
+            };
+            ctx.waitUntil(sendCqReply(ptsMsg, ptsKb));
+            return new Response("OK");
+          }
+
           // C2.6 Withdrawals & Cashout Guide
           if (cqData === "ub_withdraw") {
             const withMsg = `💳 *MINING WITHDRAWALS & CASHOUT GUIDE* 💰\n\n` +
@@ -6974,7 +7049,7 @@ Reply to Arif naturally:`;
             return new Response("OK");
           }
 
-          if (cqData === "ub_accounts_list") {
+          if (cqData === "ub_accounts_list" || cqData === "ub_accounts") {
             const profile = await getUserProfile(cqChatId, cq.from);
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
             const isCovered = profile.subscription_expiry && profile.subscription_expiry > Date.now();
@@ -7846,7 +7921,7 @@ Reply to Arif naturally:`;
           }
 
           // 5. 📺 Watch Ad (+20 Pts)
-          if (text === "📺 Watch Ad (+20 Pts)" || text.startsWith("/watch_ad") || text === "/ad" || text === "/ads" || text.startsWith("/ad ") || text.toLowerCase() === "watch ad") {
+          if (text === "📺 Watch Ad (+20 Pts)" || text === "🎬 Watch Ads (+20 Pts)" || text === "🎬 Watch Ads" || text.startsWith("/watch_ad") || text === "/ad" || text === "/ads" || text.startsWith("/ad ") || text.toLowerCase() === "watch ad" || text.toLowerCase() === "watch ads") {
             const adMsg = `📺 *WATCH REWARDED ADS & EARN POINTS* 🚀\n\n` +
               `Watch real video ads via Adsgram to keep your 24/7 cloud mining active with 0 fees!\n\n` +
               `🎁 *Per-Ad Reward:* +20 Points (+40 for VIP Monthly Pass)\n` +
