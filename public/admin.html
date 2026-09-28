@@ -167,8 +167,252 @@ const DEFAULT_FLEET = [
   { index: 14, name: "Node 14", user_id: 8727040932, phone: "+918930504750", stones_coins: 508, atf_balance: 180.1 }
 ];
 
+function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnabled }) {
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.PublicKeyCredential) {
+      if (PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+          .then(avail => setBiometricSupported(Boolean(avail)))
+          .catch(() => setBiometricSupported(true));
+      } else {
+        setBiometricSupported(true);
+      }
+    }
+  }, []);
+
+  const handlePasswordLogin = async (e) => {
+    if (e) e.preventDefault();
+    if (!password.trim()) {
+      setErrorMsg("Please enter the master admin password.");
+      haptic("warning");
+      return;
+    }
+    setLoading(true);
+    setErrorMsg("");
+    haptic("medium");
+
+    try {
+      const res = await fetchMeshApi("/api/admin/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: password.trim() })
+      });
+
+      if (res && res.ok && res.token) {
+        haptic("success");
+        onSuccess(res.token, res);
+      } else {
+        haptic("error");
+        setErrorMsg(res?.error || "Incorrect password. Access denied.");
+      }
+    } catch (err) {
+      haptic("error");
+      setErrorMsg("Connection error: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    setErrorMsg("");
+    setBiometricLoading(true);
+    haptic("medium");
+
+    try {
+      if (!window.PublicKeyCredential) {
+        setErrorMsg("Biometrics/Passkeys not supported in this browser.");
+        setBiometricLoading(false);
+        return;
+      }
+
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+
+      const assertion = await navigator.credentials.get({
+        publicKey: {
+          challenge,
+          rpId: window.location.hostname,
+          userVerification: "preferred",
+          timeout: 60000
+        }
+      });
+
+      if (assertion && assertion.id) {
+        const res = await fetchMeshApi("/api/admin/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            passkey_credential_id: assertion.id,
+            credential_id: assertion.id
+          })
+        });
+
+        if (res && res.ok && res.token) {
+          haptic("success");
+          onSuccess(res.token, res);
+          return;
+        } else {
+          setErrorMsg(res?.error || "Fingerprint passkey not found. Login with password first to enroll.");
+        }
+      }
+    } catch (err) {
+      if (err.name !== "NotAllowedError" && err.name !== "AbortError") {
+        setErrorMsg("Biometric note: " + err.message);
+      }
+    } finally {
+      setBiometricLoading(false);
+    }
+  };
+
+  const handleEnrollBiometrics = async () => {
+    if (!password.trim()) {
+      setErrorMsg("Enter master password to authorize enrolling device fingerprint.");
+      haptic("warning");
+      return;
+    }
+    setBiometricLoading(true);
+    setErrorMsg("");
+    haptic("medium");
+
+    try {
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+      const userIdBytes = new TextEncoder().encode("arif_6727787768");
+
+      const cred = await navigator.credentials.create({
+        publicKey: {
+          challenge,
+          rp: { name: "AAA AUTO Executive Console", id: window.location.hostname },
+          user: { id: userIdBytes, name: "arif", displayName: "Commander Arif" },
+          pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+          authenticatorSelection: {
+            authenticatorAttachment: "platform",
+            userVerification: "preferred"
+          },
+          timeout: 60000,
+          attestation: "none"
+        }
+      });
+
+      if (cred && cred.id) {
+        const res = await fetchMeshApi("/api/admin/auth/register-passkey", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            password: password.trim(),
+            credential_id: cred.id,
+            transports: ["internal"]
+          })
+        });
+
+        if (res && res.ok) {
+          haptic("success");
+          showToast("Fingerprint Registered in Supabase!", "success");
+          handlePasswordLogin();
+        } else {
+          setErrorMsg(res?.error || "Failed to register fingerprint passkey.");
+        }
+      }
+    } catch (err) {
+      setErrorMsg("Enrollment note: " + err.message);
+    } finally {
+      setBiometricLoading(false);
+    }
+  };
+
+  return React.createElement("div", { className: "min-h-screen flex items-center justify-center p-4 bg-slate-50 font-sans" },
+    React.createElement("div", { className: "w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 animate-slide-up text-center" },
+      React.createElement("div", { className: "w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-3xl shadow-md border-2 border-white" }, "🛡️"),
+      React.createElement("h2", { className: "text-lg font-black text-slate-900 tracking-tight mb-1" }, "ADMIN SECURITY GATE"),
+      React.createElement("p", { className: "text-xs text-slate-500 mb-5 leading-relaxed" }, "Commander Arif Executive Access · Protected by Supabase Cloud Postgres & WebAuthn Biometrics"),
+
+      errorMsg && React.createElement("div", { className: "mb-4 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center justify-center gap-1.5 animate-pulse" },
+        "⚠️ ", errorMsg
+      ),
+
+      React.createElement("button", {
+        type: "button",
+        onClick: handleBiometricLogin,
+        disabled: biometricLoading,
+        className: "w-full py-3 px-4 mb-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold shadow-md flex items-center justify-center gap-2 cursor-pointer transition active:scale-98 disabled:opacity-50"
+      },
+        React.createElement("span", { className: "text-base" }, "👆"),
+        biometricLoading ? "Verifying Sensor..." : "One-Tap Fingerprint / Passkey Login"
+      ),
+      React.createElement("div", { className: "text-[10px] text-slate-400 mb-4 font-mono" }, "Supports Samsung, Android Fingerprint & Face ID"),
+
+      React.createElement("div", { className: "relative my-4" },
+        React.createElement("div", { className: "absolute inset-0 flex items-center" },
+          React.createElement("div", { className: "w-full border-t border-slate-200" })
+        ),
+        React.createElement("div", { className: "relative flex justify-center text-[10px] uppercase font-bold text-slate-400 bg-white px-2 tracking-wider" }, "Or Master Password")
+      ),
+
+      React.createElement("form", { onSubmit: handlePasswordLogin, className: "space-y-3" },
+        React.createElement("div", { className: "relative" },
+          React.createElement("input", {
+            type: showPassword ? "text" : "password",
+            value: password,
+            onChange: (e) => setPassword(e.target.value),
+            placeholder: "Enter admin password...",
+            className: "w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition"
+          }),
+          React.createElement("button", {
+            type: "button",
+            onClick: () => setShowPassword(!showPassword),
+            className: "absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs p-1"
+          }, showPassword ? "🙈" : "👁️")
+        ),
+        React.createElement("button", {
+          type: "submit",
+          disabled: loading,
+          className: "w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow transition active:scale-98 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+        },
+          loading ? "Verifying..." : "🔓 Unlock Admin Console"
+        )
+      ),
+
+      React.createElement("div", { className: "mt-4 pt-3 border-t border-slate-100 flex items-center justify-between" },
+        React.createElement("span", { className: "text-[11px] text-slate-500" }, "Enable device sensor?"),
+        React.createElement("button", {
+          type: "button",
+          onClick: handleEnrollBiometrics,
+          disabled: biometricLoading,
+          className: "text-[11px] font-bold text-blue-600 hover:text-blue-800 transition cursor-pointer"
+        }, "✨ Enroll Fingerprint")
+      ),
+
+      React.createElement("div", { className: "mt-5 pt-3 border-t border-slate-100 flex items-center justify-center gap-3 text-[10px] text-slate-400 font-mono" },
+        React.createElement("span", { className: "flex items-center gap-1" },
+          React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-500" }),
+          "Supabase Active"
+        ),
+        React.createElement("span", null, "•"),
+        React.createElement("span", null, "SHA-256 Vault"),
+        React.createElement("span", null, "•"),
+        React.createElement("span", null, "5-Node Mesh")
+      )
+    )
+  );
+}
+
 function App() {
   const tg = window.Telegram?.WebApp;
+  const webAppUserId = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : null;
+  const isDenied = Boolean(webAppUserId && webAppUserId !== "6727787768");
+  const [authToken, setAuthToken] = useState(() => {
+    try {
+      return sessionStorage.getItem("atf_admin_token") || localStorage.getItem("atf_admin_token") || "";
+    } catch (_) { return ""; }
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(authToken));
   useEffect(() => {
     if (tg) {
       tg.ready();
@@ -204,7 +448,13 @@ function App() {
     
     for (const url of candidateUrls) {
       try {
-        const resp = await fetch(url, options);
+        const headers = {
+          ...(options.headers || {}),
+          "X-Telegram-Init-Data": tg?.initData || "",
+          "Authorization": authToken ? `Bearer ${authToken}` : (tg?.initData ? `tma ${tg.initData}` : ""),
+          "X-Admin-Token": authToken || ""
+        };
+        const resp = await fetch(url, { ...options, headers });
         if (resp.ok) return await resp.json();
       } catch (_) {}
     }
@@ -534,6 +784,37 @@ function App() {
   const bnbUsd = bnbBalance * (rates.bnb_usd || 765);
   const targetThreshold = 0.005000;
   const progressPercent = Math.min(100, Math.max(5, (bnbBalance / targetThreshold) * 100));
+
+  if (isDenied) {
+    return React.createElement("div", { className: "min-h-screen flex flex-col items-center justify-center p-6 text-center bg-slate-50" },
+      React.createElement("div", { className: "w-14 h-14 rounded-2xl bg-red-100 border border-red-200 text-red-600 flex items-center justify-center text-2xl mb-4 shadow-sm" }, "🔒"),
+      React.createElement("h2", { className: "text-base font-black text-slate-900 tracking-tight mb-2 uppercase" }, "Executive Fleet Access Only"),
+      React.createElement("p", { className: "text-xs text-slate-500 mb-6 leading-relaxed max-w-xs" }, "This console is strictly restricted to Platform Commander Arif. Standard community users cannot view or manage private fleet operations."),
+      React.createElement("button", {
+        onClick: () => { try { if (tg) tg.close(); } catch (_) {} },
+        className: "px-6 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl shadow hover:bg-slate-800 transition active:scale-95"
+      }, "Close Console")
+    );
+  }
+
+  if (!isAuthenticated) {
+    return React.createElement(AdminAuthGate, {
+      onSuccess: (token, info) => {
+        setAuthToken(token);
+        setIsAuthenticated(true);
+        try {
+          sessionStorage.setItem("atf_admin_token", token);
+          localStorage.setItem("atf_admin_token", token);
+        } catch (_) {}
+        showToast("Authenticated as Commander Arif!", "success");
+        fetchStatus(true);
+      },
+      fetchMeshApi,
+      haptic,
+      showToast,
+      soundEnabled
+    });
+  }
 
   return React.createElement("div", { className: "max-w-md mx-auto min-h-screen px-3.5 pt-3 pb-24" },
     // Toast Notification Banner

@@ -1245,6 +1245,41 @@ async function upstashSmembers(key) {
   return [];
 }
 
+// Supabase Managed Cloud Postgres Configuration for Admin Security & Telemetry
+const SUPABASE_URL = "https://znbbaozpevurvbfkxakz.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYmJhb3pwZXZ1cnZiZmt4YWt6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTgxNjE1NCwiZXhwIjoyMTA1MzkyMTU0fQ.rPI9mpzfVGauoF8gVgzWB0E1lZZiONEuVnkUgvU7bzM";
+
+async function supabaseGetAdminAuth(id = "6727787768") {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/admin_auth?id=eq.${id}&select=*`, {
+      headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
+    });
+    if (res.ok) {
+      const arr = await res.json();
+      return arr && arr.length > 0 ? arr[0] : null;
+    }
+  } catch (_) {}
+  return null;
+}
+
+async function supabaseUpdateAdminAuth(id = "6727787768", fields = {}) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/admin_auth?id=eq.${id}`, {
+      method: "PATCH",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+      },
+      body: JSON.stringify(fields)
+    });
+    if (res.ok) return await res.json();
+  } catch (_) {}
+  return null;
+}
+
+
 async function upstashSrem(key, member) {
   try {
     await fetch(`${UPSTASH_URL}/srem/${key}/${encodeURIComponent(member)}`, {
@@ -1451,10 +1486,50 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
+    const verifyAdminRequest = async (req) => {
+      const authHeader = req.headers.get("Authorization") || "";
+      let token = "";
+      if (authHeader.startsWith("Bearer adm_sess_")) {
+        token = authHeader.replace(/^Bearer\s+/i, "").trim();
+      } else if (req.headers.get("X-Admin-Token")) {
+        token = req.headers.get("X-Admin-Token").trim();
+      }
+      if (token && token.startsWith("adm_sess_")) {
+        const sessRaw = await upstashGet("admin_sess:" + token);
+        if (sessRaw) {
+          try {
+            const sObj = typeof sessRaw === "string" ? JSON.parse(sessRaw) : sessRaw;
+            if (sObj && sObj.exp > Date.now()) return { ok: true, user: sObj.user || "arif", uid: sObj.uid || "6727787768" };
+          } catch (_) {}
+        }
+        const sbAdmin = await supabaseGetAdminAuth("6727787768");
+        if (sbAdmin && sbAdmin.session_token === token) {
+          const expTime = sbAdmin.session_expires_at ? new Date(sbAdmin.session_expires_at).getTime() : 0;
+          if (expTime > Date.now()) return { ok: true, user: sbAdmin.username || "arif", uid: "6727787768" };
+        }
+      }
+
+      const tgHeader = req.headers.get("X-Telegram-Init-Data") || (authHeader.startsWith("tma ") ? authHeader.replace(/^tma\s+/i, "") : "");
+      if (tgHeader) {
+        try {
+          const p = new URLSearchParams(tgHeader);
+          const uStr = p.get("user");
+          if (uStr) {
+            const uObj = JSON.parse(uStr);
+            if (String(uObj.id) === "6727787768") {
+              return { ok: true, user: "arif", uid: "6727787768" };
+            }
+          }
+        } catch (_) {}
+      }
+
+      return { ok: false, error: "Unauthorized: Admin authentication required" };
+    };
+
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Telegram-Init-Data, X-User-Id"
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Telegram-Init-Data, X-User-Id, X-Admin-Token"
     };
 
     if (request.method === "OPTIONS") {
@@ -2239,8 +2314,164 @@ fi
       }
     }
 
+    // 7.14 Admin Security & Biometric Passkey / Password Authentication (Supabase + Upstash Edge)
+    if (path === "/api/admin/auth/login" && request.method === "POST") {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const { password, passkey_credential_id, passkey_response } = body;
+
+        let authValid = false;
+        let authMethod = "";
+        const sbAdmin = await supabaseGetAdminAuth("6727787768");
+        const masterHash = sbAdmin?.password_hash || "4258745ceecd1c623fce00d9720bf716adcaf2edcb74e8da3499cbd734c9905f";
+
+        if (password) {
+          const encoder = new TextEncoder();
+          const pwBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(password));
+          const hexHash = Array.from(new Uint8Array(pwBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+          if (hexHash === masterHash || password === "Arif-Abid") {
+            authValid = true;
+            authMethod = "password";
+          }
+        }
+
+        if (!authValid && (passkey_credential_id || body.credential_id || passkey_response?.id)) {
+          const credId = passkey_credential_id || body.credential_id || passkey_response?.id;
+          if (sbAdmin?.passkey_credential_id && credId === sbAdmin.passkey_credential_id) {
+            authValid = true;
+            authMethod = "passkey";
+          } else {
+            const cachedCred = await upstashGet("admin_passkey:6727787768");
+            if (cachedCred && (credId === cachedCred || credId === cachedCred.credential_id)) {
+              authValid = true;
+              authMethod = "passkey";
+            }
+          }
+        }
+
+        if (!authValid) {
+          return new Response(JSON.stringify({ ok: false, error: "Invalid password or biometric passkey" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+
+        const randBytes = new Uint8Array(24);
+        crypto.getRandomValues(randBytes);
+        const randHex = Array.from(randBytes).map(b => b.toString(16).padStart(2, "0")).join("");
+        const sessToken = "adm_sess_" + randHex;
+        const expiresAtMs = Date.now() + (24 * 3600 * 1000);
+
+        await upstashSet(`admin_sess:${sessToken}`, {
+          user: "arif",
+          uid: "6727787768",
+          method: authMethod,
+          exp: expiresAtMs
+        });
+
+        ctx.waitUntil(supabaseUpdateAdminAuth("6727787768", {
+          session_token: sessToken,
+          session_expires_at: new Date(expiresAtMs).toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+
+        return new Response(JSON.stringify({
+          ok: true,
+          success: true,
+          token: sessToken,
+          method: authMethod,
+          user: "Commander Arif",
+          uid: "6727787768",
+          expires_at: expiresAtMs,
+          has_passkey: Boolean(sbAdmin?.passkey_credential_id)
+        }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
+    if (path === "/api/admin/auth/register-passkey" && request.method === "POST") {
+      try {
+        const adminCheck = await verifyAdminRequest(request);
+        const body = await request.json().catch(() => ({}));
+        const { password, credential_id, public_key, transports } = body;
+
+        if (!adminCheck.ok) {
+          if (!password) {
+            return new Response(JSON.stringify({ ok: false, error: "Admin authentication required to register passkey" }), { status: 401, headers: corsHeaders });
+          }
+          const encoder = new TextEncoder();
+          const pwBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(password));
+          const hexHash = Array.from(new Uint8Array(pwBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+          const sbAdmin = await supabaseGetAdminAuth("6727787768");
+          const masterHash = sbAdmin?.password_hash || "4258745ceecd1c623fce00d9720bf716adcaf2edcb74e8da3499cbd734c9905f";
+          if (hexHash !== masterHash && password !== "Arif-Abid") {
+            return new Response(JSON.stringify({ ok: false, error: "Invalid master password" }), { status: 401, headers: corsHeaders });
+          }
+        }
+
+        if (!credential_id) {
+          return new Response(JSON.stringify({ ok: false, error: "Missing credential_id" }), { status: 400, headers: corsHeaders });
+        }
+
+        await upstashSet("admin_passkey:6727787768", { credential_id, public_key, transports });
+
+        await supabaseUpdateAdminAuth("6727787768", {
+          passkey_credential_id: credential_id,
+          passkey_public_key: public_key || null,
+          passkey_transports: transports || ["internal"],
+          updated_at: new Date().toISOString()
+        });
+
+        return new Response(JSON.stringify({
+          ok: true,
+          success: true,
+          message: "Biometric Passkey registered successfully in Supabase and Edge Mesh!"
+        }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
+    if (path === "/api/admin/auth/check") {
+      try {
+        const adminCheck = await verifyAdminRequest(request);
+        const sbAdmin = await supabaseGetAdminAuth("6727787768");
+        return new Response(JSON.stringify({
+          ok: true,
+          authenticated: adminCheck.ok,
+          user: adminCheck.ok ? (adminCheck.user || "arif") : null,
+          uid: "6727787768",
+          has_passkey: Boolean(sbAdmin?.passkey_credential_id)
+        }), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
+    if (path === "/api/admin/auth/logout" && request.method === "POST") {
+      try {
+        const token = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "") || request.headers.get("X-Admin-Token") || "";
+        if (token && token.startsWith("adm_sess_")) {
+          await upstashSet(`admin_sess:${token}`, { exp: 0 });
+          ctx.waitUntil(supabaseUpdateAdminAuth("6727787768", { session_token: null, session_expires_at: null }));
+        }
+        return new Response(JSON.stringify({ ok: true, message: "Logged out" }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
     // 7.15 Community Admin Users & Telemetry API (@AAAPREMIUMAPPSbot Users & Connected Mining Accounts)
     if (path === "/api/admin/users" || path === "/api/admin/community" || path === "/api/admin/stats" || path === "/api/community/users" || path === "/api/users") {
+      const adminCheck = await verifyAdminRequest(request);
+      if (!adminCheck.ok) return new Response(JSON.stringify({ ok: false, error: "Unauthorized: Admin authentication required" }), { status: 401, headers: corsHeaders });
       try {
         let uids = [];
         try {
@@ -2323,6 +2554,8 @@ fi
 
     // 7.16 Admin User Action API (Add Points, Set VIP, Toggle Farming)
     if (path === "/api/admin/user-action" && request.method === "POST") {
+      const adminCheck = await verifyAdminRequest(request);
+      if (!adminCheck.ok) return new Response(JSON.stringify({ ok: false, error: "Unauthorized: Admin authentication required" }), { status: 401, headers: corsHeaders });
       try {
         const body = await request.json().catch(() => ({}));
         const { uid, action, amount, tier, days } = body;
@@ -6049,8 +6282,8 @@ Reply to Arif naturally:`;
         const profile = await getUserProfile(uid);
         const now = Date.now();
         const elapsed = Math.floor((now - (profile.last_ad_claim || 0)) / 1000);
-        if (elapsed < 15) {
-          const waitSec = 15 - elapsed;
+        if (elapsed < 12) {
+          const waitSec = 12 - elapsed;
           if (request.method === "GET") {
             return new Response(JSON.stringify({
               ok: true,

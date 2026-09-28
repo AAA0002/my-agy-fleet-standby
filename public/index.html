@@ -884,6 +884,22 @@
     const API_BASE = (typeof window !== "undefined" && window.location.hostname.includes("workers.dev"))
       ? window.location.origin
       : CF_NODES[0];
+        async function fetchMeshWithFailover(path, options = {}) {
+      const isOriginWorker = typeof window !== "undefined" && window.location.hostname.includes("workers.dev");
+      const primaryOrigin = isOriginWorker ? window.location.origin : CF_NODES[0];
+      const candidateUrls = isOriginWorker 
+        ? [primaryOrigin + path, ...CF_NODES.map(n => n + path)]
+        : CF_NODES.map(n => n + path);
+      
+      for (const url of candidateUrls) {
+        try {
+          const resp = await fetch(url, options);
+          if (resp && resp.ok) return resp;
+        } catch (_) {}
+      }
+      return await fetch(candidateUrls[0], options).catch(() => ({ ok: false, json: async () => ({}) }));
+    }
+
     let activeSession = null;
     let timerInterval = null;
     let adFinished = false;
@@ -1459,10 +1475,10 @@
 
     function updateLiveStatsUI(stats) {
       if (!stats) return;
-      const isVip = Boolean(stats.is_vip);
-      const vipSlots = Number(stats.vip_slots || 0);
-      const watched = Number(stats.ads_watched_today ?? stats.adsWatchedToday ?? stats.daily_ads_watched ?? 0);
-      const tempCount = Number(stats.temp_slots_count ?? stats.tempSlotsCount ?? 0);
+      const isVip = Boolean(stats.is_vip || stats.user_slots?.is_vip || stats.ad_rewards?.is_vip);
+      const vipSlots = Number(stats.vip_slots || stats.user_slots?.vip_slots || stats.ad_rewards?.vip_slots || 0);
+      const watched = Number(stats.ads_watched_today ?? stats.adsWatchedToday ?? stats.daily_ads_watched ?? stats.ads_watched ?? stats.ad_rewards?.ads_watched_today ?? 0);
+      const tempCount = Number(stats.temp_slots_count ?? stats.tempSlotsCount ?? stats.ad_rewards?.temp_slots_count ?? 0);
       const hoursLeft = Number(stats.hours_left ?? stats.temp_hours_left ?? 0);
       const streak = Number(stats.ad_streak ?? stats.adStreak ?? 0);
 
@@ -1524,7 +1540,7 @@
     async function fetchInitialUserStats(userId, initData) {
       if (!userId) return;
       try {
-        const res = await fetch(`${API_BASE}/api/user/data?user_id=${userId}`, {
+        const res = await fetchMeshWithFailover(`/api/user/data?user_id=${userId}`, {
           headers: {
             'Authorization': initData ? `tma ${initData}` : '',
             'X-Telegram-Init-Data': initData || ''
@@ -1884,7 +1900,7 @@
         const currentMode = new URLSearchParams(window.location.search).get('mode') || '';
         const unitId = network === 'gigapub' ? '8160' : '11753248';
         // Single authoritative call to /api/user/verify-ad-chain
-        const verifyRes = await fetch(`${API_BASE}/api/user/verify-ad-chain`, {
+        const verifyRes = await fetchMeshWithFailover(/api/user/verify-ad-chain, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1910,7 +1926,7 @@
           return verifyData;
         } else {
           // Graceful fallback to verify-monetag if needed
-          const fbRes = await fetch(`${API_BASE}/api/user/verify-monetag`, {
+          const fbRes = await fetchMeshWithFailover(/api/user/verify-monetag, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

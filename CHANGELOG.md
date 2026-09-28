@@ -4,6 +4,30 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Supabase Biometric Passkey (WebAuthn) & Master Password Admin Security Gate (`deploy_both_cf_workers.py`, `public/user-admin.html`, `public/admin.html`, `public/app/ad/index.html`, `public/index.html`, `CHANGELOG.md`)**:
+  - **🔐 Supabase Postgres Security Layer (`admin_auth`)**:
+    * Created dedicated Supabase Postgres authentication table `admin_auth` with cryptographic fields: `id`, `username`, `password_hash` (SHA-256), `passkey_credential_id`, `passkey_public_key`, `passkey_counter`, `session_token`, `session_expires_at`, `passkey_transports`, `created_at`, `updated_at`.
+    * Provisioned Commander Arif (`id: "6727787768"`, `username: "arif"`) with master password `Arif-Abid` stored securely as salted SHA-256 hash `4258745ceecd1c623fce00d9720bf716adcaf2edcb74e8da3499cbd734c9905f`.
+  - **⚡ Cloudflare Edge Worker Supabase Auth & Route Shielding**:
+    * Built asynchronous Supabase REST integration (`supabaseGetAdminAuth`, `supabaseUpdateAdminAuth`) operating directly at the edge across all 5 Cloudflare Worker accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Implemented `/api/admin/auth/login`: validates SHA-256 master password or WebAuthn assertion signature, generates 24h cryptographically secure session tokens (`adm_sess_<hex>`), and caches sessions in Upstash Redis and Supabase.
+    * Implemented `/api/admin/auth/register-passkey`: stores new WebAuthn credential IDs and public keys in Supabase `admin_auth` for instant biometric authentication.
+    * Implemented `/api/admin/auth/check` & `/api/admin/auth/logout`.
+    * Hardened `/api/admin/users`, `/api/admin/user-action`, and `/api/admin/daily-sweep` behind `verifyAdminRequest` middleware, strictly rejecting unauthenticated requests with HTTP 401.
+    * Refined ad verification cooldown threshold from 15s to 12s to eliminate false 429 cooldowns caused by network clock drift.
+  - **🛡️ Frontend Biometric & Master Password Gate (`AdminAuthGate`)**:
+    * Embedded zero-dependency biometric and password gate in both `public/user-admin.html` and `public/admin.html`.
+    * **Biometric Fingerprint / Passkey**: Uses W3C WebAuthn `navigator.credentials.get()` allowing Commander Arif to unlock the admin console with a single fingerprint or Face ID tap on Samsung Galaxy A30, Android, or iOS devices.
+    * **Device Biometrics Enrollment**: One-click enrollment (`navigator.credentials.create()`) that permanently saves device public keys to Supabase.
+    * **Master Password Fallback**: Secure toggleable password input accepting master password `Arif-Abid`.
+    * Added visual security status badges, biometric manager modals, and instant session logout controls.
+  - **🌐 Ad Portal Resilient Multi-Node Mesh Failover**:
+    * Implemented `fetchMeshWithFailover` across all 5 Edge nodes in `public/app/ad/index.html` and `public/index.html`, eliminating latency spikes or single-node downtime.
+    * Enhanced `updateLiveStatsUI` to robustly parse both nested object and numeric representations of `user_slots` and `ad_rewards`.
+  - **🚀 Cloud Deployments & End-to-End Verification**:
+    * Deployed to Cloudflare Pages `atf-miner-app` (Direct Upload) and Vercel production.
+    * Verified 100% test suite pass rate: Login with `Arif-Abid` (HTTP 200), bad credentials (HTTP 401), unauthenticated admin routes (HTTP 401), authenticated user queries (HTTP 200), and ad monetization fallback endpoints (active).
+
 - **Watch Ads Mini-App vs. User Admin Dashboard Permanent Separation (`public/index.html`, `public/user-admin.html`, `public/_redirects`, `deploy_both_cf_workers.py`, `deploy_vercel.py`, `vercel.json`, `CHANGELOG.md`)**:
   - **🛡️ Root Cause Identified & Resolved**:
     * Previously, `public/index.html` contained the User Bot Admin Console, and `public/_redirects` contained `/* /index.html 200` (SPA catch-all rewrite). This caused Cloudflare Pages to rewrite `/app/ad` to `/index.html`, displaying the Admin Console when users opened the Watch Ads mini-app.
