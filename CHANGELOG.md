@@ -4,6 +4,28 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **User Bot Profile & Auto-Farming Polish: Purged Internal Developer Terms & Withdrawal Text, Highlighted 8-Pool Cloud Automation (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **🚫 Complete Removal of Internal Developer Terms & Withdrawal Mentions**:
+    * Purged "Zero Phone Load" from user-facing Telegram descriptions, welcome text, Ari AI prompts, and bot command descriptions (preserving this strictly as an internal development directive).
+    * Removed "0% fee payouts", "withdrawals", and "cashout guides" from the consumer User Bot (@AAAPREMIUMAPPSbot). The User Bot is now 100% focused on autonomous cloud auto-farming across the 8 supported bots, account management, and point earning.
+  - **⛏️ 8-Pool Auto-Farming Showcase**:
+    * Replaced `/withdraw` command with `/pools` (`⛏️ 8 Supported Mining Pools & Bots`).
+    * Replaced `ub_withdraw` callback and text handler with dedicated 8-pool breakdown:
+      1. 🪙 **ATF Miner** (`@ATF_AIRDROP_bot`): Daily mining cycles & task claims
+      2. 💎 **Stones Miner** (`@stoneswithestand_bot`): Continuous auto-farming sessions
+      3. ⚡ **MRG Miner** (`@mrgminerbot`): Peak tier hashrate & TON auto-mining
+      4. 🎨 **ART Miner** (`@ART_AIRDROP_BOT`): Auto-farming & token claims
+      5. 🤖 **AI Lab Robot** (`@AiLab_robot`): Automated hash generation & daily bonuses
+      6. 👛 **UltraWallet** (`@UltrawalletTrade_Bot`): Multi-pool automated cloud mining
+      7. 🏔️ **Apex Miner** (`@ApxMinerBot`): Continuous APX node farming
+      8. 🌐 **Ainovum** (`@ainovum_bot`): 24/7 automated node mining & daily tasks
+  - **📝 Official Bot Profile & Commands Updated Live on Telegram**:
+    * Set new 502-character clean description via `setMyDescription`.
+    * Set new 92-character short description via `setMyShortDescription`.
+    * Synchronized bot commands list via `setMyCommands` (`/start`, `/accounts`, `/pools`, `/ads`, `/points`, `/daily`, `/help`).
+  - **🚀 5-Node Edge Mesh Deployment**:
+    * Deployed updated edge worker across all 5 Cloudflare Worker accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **Adsgram TMA Transition: Configured Unit ID 50527 for Telegram Mini App Platform 47792 (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **📺 Transition to Telegram Mini App (TMA) Platform**:
     * Following Adsgram's Clause 6 moderation requirement regarding video player WebApp rendering, switched from plain bot submission to official TMA platform (`PlatformID: 47792 TMA`, name: `AAA Cloud Mining Console`).
