@@ -7841,6 +7841,7 @@ Reply to Arif naturally:`;
             await sendUserReply(adminMsg, {
               inline_keyboard: [
                 [{ text: "🚀 Open Admin Dashboard (Node 1 Pages)", web_app: { url: "https://aaa-admin-portal.pages.dev/" } }],
+                [{ text: "🤖 Open Admin Dashboard (Node 5 Pages)", web_app: { url: "https://aaa-ai-engine.pages.dev/" } }],
                 [{ text: "🌐 Open Admin Dashboard (Vercel Mirror)", web_app: { url: "https://agy-aaa000.vercel.app/" } }]
               ]
             });
@@ -7989,17 +7990,11 @@ Reply to Arif naturally:`;
             await sendUserReply("👋 *Welcome to AAA Auto Mining!* (Created by AAA)\nAccess all features below or choose from the interactive menu:", activeUserKeyboard);
             await sendUserReply(welcomeText, activeWelcomeInlineKeyboard);
 
-            // Ensure persistent Chat Menu Button is set appropriately (Admin Dashboard for Arif, Watch Ads for users)
+            // Ensure persistent Chat Menu Button on User Bot is ALWAYS set to Watch Ads for ALL users (including owner)
             if (ctx && ctx.waitUntil) {
               const menuPayload = {
                 chat_id: chatId,
-                menu_button: isOwner ? {
-                  type: "web_app",
-                  text: "👑 Admin Dashboard",
-                  web_app: {
-                    url: "https://aaa-admin-portal.pages.dev/"
-                  }
-                } : {
+                menu_button: {
                   type: "web_app",
                   text: "🎬 Watch Ads",
                   web_app: {
@@ -8283,14 +8278,19 @@ Reply to Arif naturally:`;
           // 5. 📺 Watch Ad (+20 Pts)
           if (text === "📺 Watch Ad (+20 Pts)" || text === "🎬 Watch Ads (+20 Pts)" || text === "🎬 Watch Ads" || text.startsWith("/watch_ad") || text === "/ad" || text === "/ads" || text.startsWith("/ad ") || text.toLowerCase() === "watch ad" || text.toLowerCase() === "watch ads") {
             const adMsg = `📺 *WATCH REWARDED ADS & EARN POINTS* 🚀\n\n` +
-              `Watch real video ads via Adsgram to keep your 24/7 cloud mining running continuously!\n\n` +
+              `Watch real video ads via 6 ad networks (Monetag, GigaPub, Adsterra, HilltopAds, A-Ads, Adsgram) across 4 high-speed CDN edges to keep your 24/7 cloud mining running continuously!\n\n` +
               `🎁 *Per-Ad Reward:* +20 Points (+40 for VIP Monthly Pass)\n` +
               `🏆 *Milestone Bonus:* Every 50 ads unlocks *+1 Free Bonus Account Slot*!\n` +
               `⏱️ *Cooldown:* 15 seconds between ads.\n\n` +
               `👇 *Tap below to launch the video ad:*`;
             await sendUserReply(adMsg, {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts) — Node 4", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [
+                  { text: "⚡ Mirror 2 (Node 2)", web_app: { url: "https://aaa-watch-ads.pages.dev/" } },
+                  { text: "🌐 Mirror 3 (Node 3)", web_app: { url: "https://aaa-community-ads.pages.dev/" } }
+                ],
+                [{ text: "☁️ Mirror 4 (Vercel Edge)", web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "🎁 Claim Directly (Fallback)", callback_data: "ub_claim_ad" }]
               ]
             });
@@ -8885,16 +8885,16 @@ async def main():
         except Exception as e:
             print(f"⚠️ Error setting global menu button: {e}")
 
-        # 2. Ensure Owner Menu Button is set to "👑 Admin Dashboard" on User Bot (@AAAPREMIUMAPPSbot)
+        # 2. Ensure Owner Menu Button is ALWAYS "🎬 Watch Ads" on User Bot (@AAAPREMIUMAPPSbot)
         if OWNER_ID:
             try:
                 owner_menu = {
                     "chat_id": int(OWNER_ID),
                     "menu_button": {
                         "type": "web_app",
-                        "text": "👑 Admin Dashboard",
+                        "text": "🎬 Watch Ads",
                         "web_app": {
-                            "url": "https://aaa-admin-portal.pages.dev/"
+                            "url": "https://atf-miner-app.pages.dev/app/ad/"
                         }
                     }
                 }

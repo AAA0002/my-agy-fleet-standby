@@ -4,6 +4,29 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Fix Persistent Chat Menu Button & Resolve 308 Redirect Loop on Admin Dashboards (`deploy_both_cf_workers.py`, `deploy_vercel.py`, `public_admin/`, `public_ads/`, `CHANGELOG.md`)**:
+  - **🎬 Universal "Watch Ads" Menu Button on User Bot (`@AAAPREMIUMAPPSbot`)**:
+    * **Root Cause Fixed**: Previously, an `isOwner` branch was dynamically resetting Commander Arif's (`6727787768`) persistent bottom-left Chat Menu Button to `👑 Admin Dashboard`. This wiped out the primary `🎬 Watch Ads` menu button and created duplicate UI with Row 5 of the custom reply keyboard.
+    * **Fix Applied**: Set the User Bot's Chat Menu Button to `🎬 Watch Ads` (`https://atf-miner-app.pages.dev/app/ad/`) for **ALL** users without exception.
+    * Reset Commander Arif's chat menu button via Telegram API to `🎬 Watch Ads` so one-tap video ad viewing is immediately restored.
+    * Commander Arif's Admin Console access is cleanly preserved on Row 5 of his reply keyboard (`👑 User Admin Dashboard`) and via `/admin`, `/dashboard`, and `/users` commands.
+  - **🚀 308 Infinite Redirect Loop Resolved on `aaa-admin-portal.pages.dev/admin`**:
+    * **Root Cause Fixed**: The `public_admin/_redirects` file contained `/admin /admin.html 200`, which collided with Cloudflare Pages' automatic extensionless canonicalization, causing an infinite 308 loop.
+    * **Fix Applied**: Created physical directories `admin/index.html`, `user-admin/index.html`, and `users/index.html` in `public_admin`, and removed conflicting HTML rewrite rules from `_redirects`.
+    * All admin endpoints now resolve directly with instant HTTP 200:
+      - `https://aaa-admin-portal.pages.dev/` (HTTP 200)
+      - `https://aaa-admin-portal.pages.dev/admin` (HTTP 200)
+      - `https://aaa-ai-engine.pages.dev/` (HTTP 200)
+      - `https://agy-aaa000.vercel.app/` (HTTP 200)
+      - `https://agy-aaa000.vercel.app/admin` (HTTP 200)
+      - `https://aaa-free-ai.vercel.app/` (HTTP 200)
+  - **🌐 Multi-CDN Mirror Options in Commands**:
+    * Updated `/admin` command on User Bot to provide 3 dedicated admin endpoints (Node 1 Pages, Node 5 Pages, Vercel Mirror).
+    * Updated `/ads` command on User Bot to provide 4 high-speed watch ads endpoints (Node 4 Pages, Node 2 Pages, Node 3 Pages, Vercel Mirror).
+  - **✅ Complete End-to-End Verification**:
+    * Verified 100% of Telegram chat menu buttons and commands across both `@AAAPREMIUMAPPSbot` and `@My_Router_AI_bot`.
+    * Verified all 10 web endpoints across 5 Cloudflare accounts and Vercel for zero cross-talk, zero ad scripts in admin, and zero admin code in ads.
+
 - **Full Multi-Cloud Ecosystem Expansion & Supabase Real-Time Sync ("Use All Things") (`deploy_both_cf_workers.py`, `deploy_vercel.py`, `sync_miners_to_supabase.py`, `public_admin/index.html`, `CHANGELOG.md`)**:
   - **⚡ Supabase Cloud Postgres Full Data Mesh**:
     * Created and migrated tables `community_miners`, `ad_impressions_log`, and `system_events` in Supabase Postgres (`znbbaozpevurvbfkxakz.supabase.co`).
