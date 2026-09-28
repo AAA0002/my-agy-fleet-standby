@@ -3543,17 +3543,13 @@ fi
             } else if (cbData === "btn_ultra") {
               const rep = `💳 *ULTRAWALLET COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `🚨 *GLOBAL LAUNCH IN 6 DAYS!* 🌍\n` +
-                `• *Community Size:* 340,000+ Active Miners\n` +
                 `• *Platform:* UltraWallet (@UltraWalletBot)\n` +
-                `• *Launch Readiness:* 100% Operational\n` +
-                `• *Status:* Active & Mining (10 Hash/h)\n` +
+                `• *Status:* 🟢 Active & Mining 24/7 (10 Hash/h)\n` +
                 `• *Streak:* Daily Check-in & Gift Box Claimed ✅\n` +
                 `• *Rewards Center:* Video Ads & Activities Automated\n` +
                 `• *Auto-Compound:* Active 24/7 in Cloud\n` +
                 `• *Payout Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `💡 _Stay active over the next 6 days to prepare for Global Launch!_`;
+                `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -4813,17 +4809,13 @@ fi
           ctx.waitUntil((async () => {
             const rep = `💳 *ULTRAWALLET COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `🚨 *GLOBAL LAUNCH IN 6 DAYS!* 🌍\n` +
-              `• *Community Size:* 340,000+ Active Miners\n` +
               `• *Platform:* UltraWallet (@UltraWalletBot)\n` +
-              `• *Launch Readiness:* 100% Operational\n` +
-              `• *Status:* Active & Mining (10 Hash/h)\n` +
+              `• *Status:* 🟢 Active & Mining 24/7 (10 Hash/h)\n` +
               `• *Streak:* Daily Check-in & Gift Box Claimed ✅\n` +
               `• *Rewards Center:* Video Ads & Activities Automated\n` +
               `• *Auto-Compound:* Active 24/7 in Cloud\n` +
               `• *Payout Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `💡 _Stay active over the next 6 days to prepare for Global Launch!_`;
+              `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
           return new Response("OK");

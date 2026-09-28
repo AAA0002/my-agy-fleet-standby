@@ -4,6 +4,26 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Clean Dashboard Separation, Account Inspection Modal, UltraWallet Normalization, and Fleet Console Optimization (`public/admin.html`, `deploy_both_cf_workers.py`, `deploy_vercel.py`, `CHANGELOG.md`)**:
+  - **🛡️ Complete Separation of User Bot Admin vs Admin Bot Fleet Consoles**:
+    * Stripped out all community user tables, points adjustment modals, and community sweep triggers from the Executive Fleet Console (`public/admin.html`).
+    * Re-architected the bottom navigation dock to exactly 3 focused operational tabs:
+      1. 🤖 **`Fleet (14)`**: All 14 private cloud fleet accounts, Binance BEP-20 treasury card, and 8 automated pool grid.
+      2. 👛 **`Wallets`**: Direct multi-chain settlement engine showing verified personal destination addresses (Binance BEP-20, Arbitrum One, TON Network).
+      3. ✨ **`Ari AI`**: Executive Fleet Copilot with quick operational command chips (`status`, `wallets`, `sweep`, `harvest`, `mesh`).
+    * Community miners, accounts, and points management remain 100% strictly hosted on Cloudflare Pages (`https://atf-miner-app.pages.dev`, `public/index.html`).
+  - **🔍 Interactive Account Detail Modal (`selectedAccount`)**:
+    * Implemented interactive modal when tapping any account card in `public/admin.html`.
+    * Displays account index, name, phone with 1-tap copy, Telegram user ID with 1-tap copy, MTProto cloud status, destination BSC vault, and active 8-pool lineup.
+  - **👛 UltraWallet Normalization (Zero Promotional Clutter)**:
+    * Replaced "Launch in 6 Days! 🚀" badge in pool telemetry grid with standard "Auto-Mining 24/7".
+    * Removed promotional "GLOBAL LAUNCH IN 6 DAYS!" countdown banners from Telegram bot callback responses and `/ultra` command in `deploy_both_cf_workers.py`.
+  - **⚡ Network & Battery Optimization**:
+    * Removed unused `payouts` state, `ledgerFilter`, and redundant `fetchMeshApi("/api/payouts")` subrequest polling from `public/admin.html`.
+  - **🚀 Multi-Cloud Mesh Synchronization**:
+    * Deployed to Vercel projects `my-agy-ai-fleet` (`https://agy-aaa000.vercel.app/`) and `agy` (`https://agy-henna.vercel.app/`).
+    * Deployed updated Edge Worker script across all 5 Cloudflare Worker accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **Executive Fleet Console Redesign: Purged Ultra Wallet Banner, Replaced Ledger Receipts with Direct Destination Wallets, and Hardened Error Boundaries (`public/admin.html`, `public/index.html`, `deploy_both_cf_workers.py`, `deploy_vercel.py`, `CHANGELOG.md`)**:
   - **🚫 Removed Prominent Ultra Wallet Reminder Cards**:
     * Completely eradicated the oversized purple Ultra Wallet reminder banner from both the Executive Fleet Console (`public/admin.html`) and the User Console (`public/index.html`).
