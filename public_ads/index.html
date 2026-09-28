@@ -887,9 +887,16 @@
         async function fetchMeshWithFailover(path, options = {}) {
       const isOriginWorker = typeof window !== "undefined" && window.location.hostname.includes("workers.dev");
       const primaryOrigin = isOriginWorker ? window.location.origin : CF_NODES[0];
+      let cleanPath = String(path);
+      if (cleanPath.startsWith('/') && cleanPath.length > 1 && cleanPath.endsWith('/')) {
+        cleanPath = cleanPath.slice(0, -1);
+      }
+      if (!cleanPath.startsWith('/')) {
+        cleanPath = '/' + cleanPath;
+      }
       const candidateUrls = isOriginWorker 
-        ? [primaryOrigin + path, ...CF_NODES.map(n => n + path)]
-        : CF_NODES.map(n => n + path);
+        ? [primaryOrigin + cleanPath, ...CF_NODES.map(n => n + cleanPath)]
+        : CF_NODES.map(n => n + cleanPath);
       
       for (const url of candidateUrls) {
         try {
@@ -1900,7 +1907,7 @@
         const currentMode = new URLSearchParams(window.location.search).get('mode') || '';
         const unitId = network === 'gigapub' ? '8160' : '11753248';
         // Single authoritative call to /api/user/verify-ad-chain
-        const verifyRes = await fetchMeshWithFailover(/api/user/verify-ad-chain, {
+        const verifyRes = await fetchMeshWithFailover("/api/user/verify-ad-chain", {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1926,7 +1933,7 @@
           return verifyData;
         } else {
           // Graceful fallback to verify-monetag if needed
-          const fbRes = await fetchMeshWithFailover(/api/user/verify-monetag, {
+          const fbRes = await fetchMeshWithFailover("/api/user/verify-monetag", {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

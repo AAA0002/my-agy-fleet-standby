@@ -4,6 +4,26 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Complete Ad System Overhaul & Verification Fix (`public_ads/`, `deploy_both_cf_workers.py`, `deploy_vercel.py`, `CHANGELOG.md`)**:
+  - **🔧 Critical Point Verification Bug Fixed**:
+    * Resolved an issue where ad verification calls in `public_ads/app/ad/index.html` were invoking `fetchMeshWithFailover` with unquoted regular expression literals (`/api/user/verify-ad-chain` and `/api/user/verify-monetag`) instead of strings.
+    * This converted to invalid URL strings with trailing slashes (`//api/user/verify-ad-chain/`), resulting in 404 errors and preventing points from being awarded upon completing ads.
+    * Added rigorous path sanitization in `fetchMeshWithFailover` and quoted all endpoint strings.
+    * Updated Edge Worker router in `deploy_both_cf_workers.py` to normalize ad verification paths, stripping accidental trailing slashes and redundant slashes.
+  - **⚡ Live End-to-End Ad Verification Confirmed**:
+    * Verified ad completion and reward crediting across all 5 Edge Worker nodes:
+      - Awarded +20 Points (or +40 Points for VIP Monthly Pass).
+      - Updated point balances and streak in Upstash Redis.
+      - Logged ad impressions in real time to Supabase Postgres `ad_impressions_log` (with IP, country, network, timestamp).
+      - Dispatched instant Telegram reward confirmation message to the user via `@AAAPREMIUMAPPSbot`.
+  - **🌐 Synchronized Multi-Account Pages & Vercel Deployments**:
+    * Redeployed updated ad code to:
+      - Node 4 Cloudflare Pages: `https://atf-miner-app.pages.dev/` & `https://atf-miner-app.pages.dev/app/ad/`
+      - Node 2 Cloudflare Pages: `https://aaa-watch-ads.pages.dev/`
+      - Node 3 Cloudflare Pages: `https://aaa-community-ads.pages.dev/`
+      - Vercel Project 3: `https://agy-henna.vercel.app/`
+      - All 5 Cloudflare Worker Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **Fix Persistent Chat Menu Button & Resolve 308 Redirect Loop on Admin Dashboards (`deploy_both_cf_workers.py`, `deploy_vercel.py`, `public_admin/`, `public_ads/`, `CHANGELOG.md`)**:
   - **🎬 Universal "Watch Ads" Menu Button on User Bot (`@AAAPREMIUMAPPSbot`)**:
     * **Root Cause Fixed**: Previously, an `isOwner` branch was dynamically resetting Commander Arif's (`6727787768`) persistent bottom-left Chat Menu Button to `👑 Admin Dashboard`. This wiped out the primary `🎬 Watch Ads` menu button and created duplicate UI with Row 5 of the custom reply keyboard.

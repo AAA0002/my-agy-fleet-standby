@@ -6322,7 +6322,8 @@ Reply to Arif naturally:`;
     }
 
     // 13.8 Multi-Network Ad Verification & Claim API (Monetag, GigaPub, Adsterra 7 Formats, HilltopAds VAST, A-Ads)
-    if ((path === "/api/adsgram/reward" || path === "/api/user/verify-ad-chain" || path === "/api/user/verify-monetag" || path === "/api/user/claim-ad") && (request.method === "POST" || request.method === "GET")) {
+    const cleanAdPath = path.replace(/\/+$/, "").replace(/^\/\/+/, "/");
+    if ((cleanAdPath === "/api/adsgram/reward" || cleanAdPath === "/api/user/verify-ad-chain" || cleanAdPath === "/api/user/verify-monetag" || cleanAdPath === "/api/user/claim-ad" || cleanAdPath === "/api/ad/verify") && (request.method === "POST" || request.method === "GET")) {
       try {
         let uid = url.searchParams.get("userid") || url.searchParams.get("user_id") || url.searchParams.get("uid");
         if (!uid && request.method === "POST") {
