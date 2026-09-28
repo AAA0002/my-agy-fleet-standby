@@ -4,6 +4,19 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Adsgram TMA Transition: Configured Unit ID 50527 for Telegram Mini App Platform 47792 (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **📺 Transition to Telegram Mini App (TMA) Platform**:
+    * Following Adsgram's Clause 6 moderation requirement regarding video player WebApp rendering, switched from plain bot submission to official TMA platform (`PlatformID: 47792 TMA`, name: `AAA Cloud Mining Console`).
+    * Configured new Rewarded Video ad block (`UnitID: 50527`).
+    * Configured S2S Reward URL: `https://restore-agy.aaaai2.workers.dev/api/adsgram/reward?userid=[userId]`.
+  - **⚙️ Edge Worker Fallback & Bot Commands Synchronization**:
+    * Updated default fallback block ID in `deploy_both_cf_workers.py` to `50527`.
+    * Synchronized `/get_block_id`, `/adsgram_info`, `/set_block_id` commands and `/api/adsgram/config` endpoint to deliver `50527`.
+    * Upstash Redis key `config:adsgram_block_id` updated to `50527`.
+  - **🚀 5-Node Edge Mesh Deployment**:
+    * Re-deployed worker across all 5 Cloudflare Worker accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Verified live JSON diagnostics: `{"ok":true,"block_id":"50527",...}`.
+
 - **Clean Dashboard Separation, Account Inspection Modal, UltraWallet Normalization, and Fleet Console Optimization (`public/admin.html`, `deploy_both_cf_workers.py`, `deploy_vercel.py`, `CHANGELOG.md`)**:
   - **🛡️ Complete Separation of User Bot Admin vs Admin Bot Fleet Consoles**:
     * Stripped out all community user tables, points adjustment modals, and community sweep triggers from the Executive Fleet Console (`public/admin.html`).

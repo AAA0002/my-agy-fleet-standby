@@ -5941,8 +5941,8 @@ Reply to Arif naturally:`;
 
     // 13.6 Adsgram Rewarded Video WebApp Page
     if (path === "/adsgram") {
-      const rawBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "50317";
-      const currentBlockId = String(rawBlockId).replace(/^["']|["']$/g, "").replace(/^bot-/, "").trim() || "50317";
+      const rawBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "50527";
+      const currentBlockId = String(rawBlockId).replace(/^["']|["']$/g, "").replace(/^bot-/, "").trim() || "50527";
       const adsgramHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6372,8 +6372,8 @@ Reply to Arif naturally:`;
 
     // 13.9 Adsgram Config / Diagnostics API
     if (path === "/api/adsgram/config") {
-      const rawBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "50317";
-      const currentBlockId = String(rawBlockId).replace(/^["']|["']$/g, "").replace(/^bot-/, "").trim() || "50317";
+      const rawBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "50527";
+      const currentBlockId = String(rawBlockId).replace(/^["']|["']$/g, "").replace(/^bot-/, "").trim() || "50527";
       return new Response(JSON.stringify({
         ok: true,
         block_id: currentBlockId,
@@ -8220,7 +8220,7 @@ Reply to Arif naturally:`;
               const parts = text.split(/\s+/);
               const rawInput = parts[1]?.trim();
               if (!rawInput) {
-                await sendUserReply("ℹ️ *Usage:* `/set_block_id <YOUR_ADSGRAM_BLOCK_ID>`\n*Example:* `/set_block_id 50317`\n\nGet your Block ID from https://adsgram.ai or @Adsgram_bot!");
+                await sendUserReply("ℹ️ *Usage:* `/set_block_id <YOUR_ADSGRAM_BLOCK_ID>`\n*Example:* `/set_block_id 50527`\n\nGet your Block ID from https://adsgram.ai or @Adsgram_bot!");
                 return;
               }
               const newBlockId = rawInput.replace(/^bot-/, "").trim();
@@ -8232,7 +8232,7 @@ Reply to Arif naturally:`;
 
           if (text === "/get_block_id" || text === "/adsgram_info" || text === "/adsgram") {
             if (String(chatId) === "6727787768" || String(chatId) === env.OWNER_ID) {
-              const currentBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "50317";
+              const currentBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "50527";
               await sendUserReply(`📊 *Adsgram Configuration:*\n\n• *Active Block ID:* \`${currentBlockId}\`\n• *WebApp URL:* https://restore-agy.aaaai2.workers.dev/adsgram\n• *Update ID:* Send \`/set_block_id <id>\` anytime!`);
               return;
             }
