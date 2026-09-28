@@ -446,20 +446,37 @@ function App() {
       ? [primaryOrigin + path, ...CF_NODES.map(n => n + path)]
       : CF_NODES.map(n => n + path);
     
+    const activeToken = authToken || (typeof sessionStorage !== "undefined" ? sessionStorage.getItem("atf_admin_token") : "") || (typeof localStorage !== "undefined" ? localStorage.getItem("atf_admin_token") : "") || "";
     for (const url of candidateUrls) {
       try {
         const headers = {
           ...(options.headers || {}),
           "X-Telegram-Init-Data": tg?.initData || "",
-          "Authorization": authToken ? `Bearer ${authToken}` : (tg?.initData ? `tma ${tg.initData}` : ""),
-          "X-Admin-Token": authToken || ""
+          "Authorization": activeToken ? `Bearer ${activeToken}` : (tg?.initData ? `tma ${tg.initData}` : ""),
+          "X-Admin-Token": activeToken || ""
         };
         const resp = await fetch(url, { ...options, headers });
         if (resp.ok) return await resp.json();
       } catch (_) {}
     }
     return null;
-  }, []);
+  }, [authToken]);
+
+  useEffect(() => {
+    const savedToken = (typeof sessionStorage !== "undefined" ? sessionStorage.getItem("atf_admin_token") : "") || (typeof localStorage !== "undefined" ? localStorage.getItem("atf_admin_token") : "");
+    if (savedToken) {
+      fetchMeshApi("/api/admin/auth/check").then(res => {
+        if (!res || !res.authenticated) {
+          setAuthToken("");
+          setIsAuthenticated(false);
+          try {
+            sessionStorage.removeItem("atf_admin_token");
+            localStorage.removeItem("atf_admin_token");
+          } catch (_) {}
+        }
+      }).catch(() => {});
+    }
+  }, [fetchMeshApi]);
 
   const haptic = (style = "light") => {
     if (tg && tg.HapticFeedback) {

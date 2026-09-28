@@ -4,6 +4,35 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Strict Admin vs. Watch Ads Physical Separation & Biometric/Password Security Gate (`public_admin/`, `public_ads/`, `deploy_both_cf_workers.py`, `deploy_all_pages.py`, `deploy_vercel.py`, `CHANGELOG.md`)**:
+  - **🛡️ Root Cause of Cross-Contamination Resolved**:
+    * Identified that when ads completed or auto-closed after 7 seconds, `public_ads/index.html` was invoking `returnToDashboard()`, which ran `window.location.href = '/app/'`.
+    * In Cloudflare Worker routing, `/app` was previously caught by a broad dashboard redirect rule that forwarded traffic to `https://aaa-admin-portal.pages.dev/admin`. This caused users and Commander Arif to land unexpectedly on the Admin Dashboard after watching ads.
+    * Fixed `returnToDashboard()` and `closeMiniApp()` in `public_ads/index.html` and `public_ads/app/ad/index.html` to cleanly call `tg.close()` / `window.close()` or link directly to `https://t.me/AAAPREMIUMAPPSbot`, strictly eliminating any redirects to `/app/` or `/admin`.
+    * Updated Edge Worker router in `deploy_both_cf_workers.py`: `/app`, `/app/`, `/app/ad`, `/ads`, and `/ad` routes strictly redirect to the Watch Ads portal (`https://atf-miner-app.pages.dev/app/ad/`), while only explicit admin routes (`/admin`, `/fleet`, `/status-ui`) route to the Admin Portal.
+  - **🔐 Admin Security Gate with Biometrics & Master Password (`Arif-Abid`)**:
+    * Enforced `if (!isAuthenticated) return React.createElement(AdminAuthGate, ...)` across all Admin Dashboard surfaces (`public_admin/index.html`, `public_admin/admin/index.html`, `public_admin/user-admin/index.html`, `public_admin/users/index.html`).
+    * Secured with Master Password `Arif-Abid` (SHA-256 hash verified against Supabase Postgres and Upstash edge cache) and WebAuthn Biometric Passkey / Fingerprint sensor verification.
+    * Added device biometric passkey enrollment button directly syncing credentials to Supabase `admin_auth` table.
+    * Fixed `fetchMeshApi` stale closure bug to dynamically read `atf_admin_token` from `sessionStorage` and `localStorage`, ensuring authorization headers are always included.
+    * Added session validity probe against `/api/admin/auth/check` on component mount, and added instant lock/logout controls.
+  - **🌐 Complete Multi-Cloud Fleet Deployment Across 5 Cloudflare Accounts & 3 Vercel Projects**:
+    * **Dedicated Admin Portals (100% Pure Admin, Biometric Passkey + `Arif-Abid`, Zero Ads)**:
+      - Node 1 Cloudflare Pages (`korimhaji210@gmail.com`): `https://aaa-admin-portal.pages.dev/` & `/admin`
+      - Node 5 Cloudflare Pages (`da98cfb7cca333391bb349333f294d0f`): `https://aaa-ai-engine.pages.dev/` & `/admin`
+      - Vercel Admin 1 (`my-agy-ai-fleet`): `https://agy-aaa000.vercel.app/` & `/admin`
+      - Vercel Admin 2 (`aaa-free-ai`): `https://aaa-free-ai.vercel.app/` & `/admin`
+    * **Dedicated Watch Ads Portals (100% Pure Ads, 6 Networks, Zero Admin)**:
+      - Node 4 Cloudflare Pages (`aaafreeai@gmail.com`): `https://atf-miner-app.pages.dev/app/ad/` & `/`
+      - Node 2 Cloudflare Pages (`Koramshah2@gmail.com`): `https://aaa-watch-ads.pages.dev/`
+      - Node 3 Cloudflare Pages (`coz1gameh3@gmail.com`): `https://aaa-community-ads.pages.dev/`
+      - Vercel Ads 3 (`agy`): `https://agy-henna.vercel.app/`
+    * **Edge Worker Sync**: Deployed to all 5 Cloudflare Worker accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * **Telegram Bot Menus**: Verified `@AAAPREMIUMAPPSbot` bottom-left Chat Menu Button is permanently `🎬 Watch Ads` for all users, while Admin Bot `@My_Router_AI_bot` is permanently `👑 Fleet Console` (`/admin`).
+  - **☁️ Disaster Recovery & Zero Phone Load**:
+    * Created automated disaster recovery archive and uploaded to Telegram vault (`@myagyai`).
+    * Verified 0 local Python bots running on the phone.
+
 - **Instant Telegram Inline Button Responsiveness & Supabase Claim Audit (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **⚡ Mobile UX & Button Spinner Bug Fixed**:
     * Resolved an issue where inline keyboard buttons on `@AAAPREMIUMAPPSbot` (`ub_points`, `ub_rewards`, `ub_claim_ad`, `ub_withdraw`, `ub_add_acc`, etc.) caused a perpetual spinning loader on mobile screens.

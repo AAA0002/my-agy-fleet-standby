@@ -2769,13 +2769,18 @@ fi
       }
     }
 
-    // 7.5 High-Speed Dedicated Dashboards
+    // 7.5 High-Speed Dedicated Dashboards & Watch Ads Separation
+    // Watch Ads Portals (100% Dedicated Watch Ads on Node 4, Node 2, Node 3, Vercel)
+    if (path === "/app" || path === "/app/" || path === "/app/ad" || path === "/app/ad/" || path === "/ads" || path === "/ad" || path === "/adsgram" || path === "/watch-ad") {
+      const redirectTarget = "https://atf-miner-app.pages.dev/app/ad/" + (url.search || "");
+      return Response.redirect(redirectTarget, 302);
+    }
     // User Bot Admin Dashboard (Users & Miners Only) -> Node 1 Cloudflare Pages (korimhaji210)
     if (path === "/user-dash" || path === "/users-admin" || path === "/user-admin" || path === "/users" || path === "/user-dashboard" || path === "/community-admin") {
       return Response.redirect("https://aaa-admin-portal.pages.dev/", 302);
     }
     // Admin Bot Executive Fleet Dashboard (All 14 Private Fleet Accounts & Operations) -> Node 1 Pages / Vercel
-    if (path === "/" || path === "/dashboard" || path === "/status-ui" || path === "/miniapp" || path === "/app" || path === "/fleet" || path === "/admin") {
+    if (path === "/fleet" || path === "/admin" || path === "/status-ui" || path === "/executive-dashboard") {
       return Response.redirect("https://aaa-admin-portal.pages.dev/admin", 302);
     }
 
@@ -3287,7 +3292,7 @@ fi
         if (!update) return new Response("OK");
 
         const botToken = env.ALERT_BOT_TOKEN;
-        const dashUrl = "https://agy-aaa000.vercel.app/?v=5.0";
+        const dashUrl = "https://aaa-admin-portal.pages.dev/admin";
 
         const statusInlineKeyboard = {
           inline_keyboard: [
@@ -9003,7 +9008,7 @@ async def main():
                     "type": "web_app",
                     "text": "👑 Fleet Console",
                     "web_app": {
-                        "url": "https://agy-aaa000.vercel.app/?v=5.0"
+                        "url": "https://aaa-admin-portal.pages.dev/admin"
                     }
                 }
             }
@@ -9021,7 +9026,7 @@ async def main():
                         "type": "web_app",
                         "text": "👑 Fleet Console",
                         "web_app": {
-                            "url": "https://agy-aaa000.vercel.app/?v=5.0"
+                            "url": "https://aaa-admin-portal.pages.dev/admin"
                         }
                     }
                 }
