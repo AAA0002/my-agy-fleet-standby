@@ -4,6 +4,16 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Watch Ads Mini-App vs. User Admin Dashboard Permanent Separation (`public/index.html`, `public/user-admin.html`, `public/_redirects`, `deploy_both_cf_workers.py`, `deploy_vercel.py`, `vercel.json`, `CHANGELOG.md`)**:
+  - **🛡️ Root Cause Identified & Resolved**:
+    * Previously, `public/index.html` contained the User Bot Admin Console, and `public/_redirects` contained `/* /index.html 200` (SPA catch-all rewrite). This caused Cloudflare Pages to rewrite `/app/ad` to `/index.html`, displaying the Admin Console when users opened the Watch Ads mini-app.
+  - **✨ Clean Asset & Route Separation**:
+    * **Watch Ads Portal (`public/index.html` & `public/app/ad/index.html`)**: Set root `index.html` and `/app/ad/index.html` directly to the 121 KB multi-network ad mini-app (Monetag, GigaPub, Adsterra, VAST 3.0, A-Ads). Tapping the Watch Ads button or opening the root mini-app now 100% guarantees opening the Watch Ads interface.
+    * **User Bot Admin Console (`public/user-admin.html`)**: Moved Arif's User Admin Console to `public/user-admin.html` (accessible via `/user-admin`).
+    * **Cloudflare Pages `_redirects`**: Removed the `/* /index.html 200` catch-all rule so `/app/ad` and `/shared/*` are served directly as static files.
+    * **Bot Keyboards & Commands**: Updated `ownerUserKeyboard` (`👑 User Admin Dashboard`) and `/admin` inline buttons to point exclusively to `https://atf-miner-app.pages.dev/user-admin`. Watch Ads buttons continue pointing to `https://atf-miner-app.pages.dev/app/ad`.
+  - **🚀 Multi-Cloud Synchronized**: Deployed to Vercel production, all 5 Cloudflare Worker Edge nodes, and pushed to GitHub main for Pages automatic deployment.
+
 - **Multi-Network Ad Ecosystem Migration & Edge Mesh Deployment (`deploy_both_cf_workers.py`, `deploy_vercel.py`, `public/app/ad/index.html`, `CHANGELOG.md`)**:
   - **🚀 Complete Adsgram Replacement with 5-Network Ecosystem**:
     * Replaced rejected Adsgram service with multi-network ad stack: Monetag (Zone 11753248 rewarded video), GigaPub (Placement 8160 TMA SDK), Adsterra (7 isolated banner/native formats with dynamic refresh), HilltopAds VAST 3.0 (with Google IMA fallback), and A-Ads crypto banners.

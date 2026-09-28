@@ -20,6 +20,18 @@
       "destination": "/users.html"
     },
     {
+      "source": "/app/ad",
+      "destination": "/app/ad/index.html"
+    },
+    {
+      "source": "/app/ad/(.*)",
+      "destination": "/app/ad/index.html"
+    },
+    {
+      "source": "/ads",
+      "destination": "/app/ad/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

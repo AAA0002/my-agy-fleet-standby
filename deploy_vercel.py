@@ -15,8 +15,8 @@ PROJECTS = [
 
 FILES = [
     ('index.html', 'public/admin.html'),
-    ('user-admin.html', 'public/index.html'),
-    ('users.html', 'public/index.html'),
+    ('user-admin.html', 'public/user-admin.html'),
+    ('users.html', 'public/user-admin.html'),
     ('app/ad/index.html', 'public/app/ad/index.html'),
     ('shared/waterfallController.js', 'public/shared/waterfallController.js'),
     ('shared/gigapubController.js', 'public/shared/gigapubController.js'),

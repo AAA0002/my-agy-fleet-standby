@@ -2510,7 +2510,7 @@ fi
     // 7.5 High-Speed Dedicated Dashboards
     // User Bot Admin Dashboard (Users & Miners Only) -> Cloudflare Pages
     if (path === "/user-dash" || path === "/users-admin" || path === "/user-admin" || path === "/users" || path === "/user-dashboard" || path === "/community-admin") {
-      return Response.redirect("https://atf-miner-app.pages.dev", 302);
+      return Response.redirect("https://atf-miner-app.pages.dev/user-admin", 302);
     }
     // Admin Bot Executive Fleet Dashboard (All 14 Private Fleet Accounts & Operations) -> Vercel
     if (path === "/" || path === "/dashboard" || path === "/status-ui" || path === "/miniapp" || path === "/app" || path === "/fleet" || path === "/admin") {
@@ -6420,7 +6420,7 @@ Reply to Arif naturally:`;
               { text: "💬 Ari AI & Support" }
             ],
             [
-              { text: "👑 User Admin Dashboard", web_app: { url: "https://atf-miner-app.pages.dev" } }
+              { text: "👑 User Admin Dashboard", web_app: { url: "https://atf-miner-app.pages.dev/user-admin" } }
             ]
           ],
           resize_keyboard: true,
@@ -7518,7 +7518,7 @@ Reply to Arif naturally:`;
               `👇 *Tap button below to launch the User Bot Admin Dashboard:*`;
             await sendUserReply(adminMsg, {
               inline_keyboard: [
-                [{ text: "🚀 Open User Bot Admin Dashboard", web_app: { url: "https://atf-miner-app.pages.dev" } }],
+                [{ text: "🚀 Open User Bot Admin Dashboard", web_app: { url: "https://atf-miner-app.pages.dev/user-admin" } }],
                 [{ text: "🌐 Open User Bot Admin Dashboard (Mirror)", web_app: { url: "https://agy-aaa000.vercel.app/user-admin" } }]
               ]
             });
