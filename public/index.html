@@ -213,6 +213,7 @@ function App() {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [selectedUserDetail, setSelectedUserDetail] = useState(null);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   // Quick Point Grant & Deduct Modal
   const [grantModalUser, setGrantModalUser] = useState(null);
@@ -257,6 +258,7 @@ function App() {
       if (isManual) showToast("Edge connection error", "error");
     } finally {
       if (isManual) setSyncing(false);
+      setInitialLoading(false);
       setSyncCountdown(15);
     }
   }, [fetchMeshApi, soundEnabled]);
@@ -552,7 +554,11 @@ function App() {
     // USERS & MINERS LIST
     // ==========================================================
     React.createElement("div", { className: "space-y-3" },
-      filteredUsers.length === 0 ? React.createElement("div", { className: "pro-card rounded-2xl p-8 text-center text-slate-400 text-xs" },
+      initialLoading && adminUsers.length === 0 ? React.createElement("div", { className: "pro-card rounded-2xl p-8 text-center text-slate-400 text-xs" },
+        React.createElement("div", { className: "w-8 h-8 mx-auto mb-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" }),
+        React.createElement("div", { className: "font-bold text-slate-700 mb-1" }, "Connecting to Cloudflare Edge Mesh..."),
+        React.createElement("div", { className: "text-[11px]" }, "Loading Community Miners & Points Roster...")
+      ) : filteredUsers.length === 0 ? React.createElement("div", { className: "pro-card rounded-2xl p-8 text-center text-slate-400 text-xs" },
         React.createElement("div", { className: "text-2xl mb-2" }, "🔍"),
         React.createElement("div", { className: "font-bold text-slate-600 mb-1" }, "No Community Users Found"),
         React.createElement("div", { className: "text-[11px]" }, "Try adjusting your search query or filter chips.")

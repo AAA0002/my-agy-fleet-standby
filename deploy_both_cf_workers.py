@@ -8152,7 +8152,7 @@ Reply to Arif naturally:`;
           }
 
           // 6. 👥 Invite Friends (+500 Pts)
-          if (text === "👥 Invite Friends (+500 Pts)" || text.startsWith("/referral") || text === "/invite" || text.startsWith("/invite") || text === "/ref" || text.startsWith("/ref ") || text.toLowerCase() === "referral") {
+          if (text === "👥 Invite Friends" || text === "Invite Friends" || text === "👥 Invite Friends (+500 Pts)" || text.startsWith("/referral") || text === "/invite" || text.startsWith("/invite") || text === "/ref" || text.startsWith("/ref ") || text.toLowerCase() === "referral") {
             const refLink = `https://t.me/AAAPREMIUMAPPSbot?start=ref_${chatId}`;
             const refMsg = `👥 *INVITE FRIENDS & EARN POINTS* 🚀\n\n` +
               `Share your personal referral link with friends. For every friend who joins & verifies:\n` +

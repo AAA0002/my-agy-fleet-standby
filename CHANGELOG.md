@@ -4,6 +4,17 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **User Bot Keyboard Handler Bug Fix & Cloudflare Pages Initial Loading Polish (`deploy_both_cf_workers.py`, `public/index.html`, `CHANGELOG.md`)**:
+  - **🐛 Fixed User Bot `👥 Invite Friends` Button Matching**:
+    * Identified and resolved a mismatch where the 6-button main keyboard sent `"👥 Invite Friends"`, but the router strictly checked for `"👥 Invite Friends (+500 Pts)"`.
+    * Added full matching for `"👥 Invite Friends"` and `"Invite Friends"`, ensuring that tapping the button immediately delivers the user's referral link, Telegram share button, and referral stats.
+  - **✨ Cloudflare Pages Initial Loading Experience (`public/index.html`)**:
+    * Introduced an `initialLoading` state to `public/index.html`, rendering an animated spinner and loading card while polling the Cloudflare Edge Mesh.
+    * Eliminates premature "No Community Users Found" flashes during initial page load and edge cold-starts.
+  - **🚀 Edge Synchronizations**:
+    * Deployed across all 5 Cloudflare Worker Edge nodes and verified with live curl queries.
+    * Re-verified Vercel deployments across `my-agy-ai-fleet` (`agy-aaa000.vercel.app`) and `agy` (`agy-henna.vercel.app`).
+
 - **Strict Infrastructure Separation: User Bot Admin Dashboard on Cloudflare Pages vs Admin Bot Fleet Console on Vercel (`deploy_both_cf_workers.py`, `deploy_vercel.py`, `vercel.json`, `public/_redirects`, `public/index.html`, `userbot_refresher.py`, `deno_worker/main.ts`, `CHANGELOG.md`)**:
   - **🌐 Cloudflare Pages (`https://atf-miner-app.pages.dev`) — Dedicated Exclusively to User Bot Admin Dashboard**:
     * Cleaned `public/index.html` to focus 100% on community users, linked accounts, points balances, VIP passes, user moderation (ban/unban, grant/deduct points), and 100 Pts/day daily cost sweeps.
