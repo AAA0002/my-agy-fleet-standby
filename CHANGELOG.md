@@ -4,6 +4,17 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Ecosystem Bug Audit & Edge API Resilience: Alias Routing for Community Users and Mining Pools (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
+  - **🌐 Edge API Aliases & Resilience**:
+    * Added `/api/community/users` and `/api/users` as direct aliases to `/api/admin/users`, resolving 404s when querying community user metrics.
+    * Added `/api/pools` and `/api/mining-pools` as direct aliases routing to `/api/farm/status`, allowing instant inspection of the 8-pool cloud farm state.
+  - **🔍 Deep Codebase Syntax & Runtime Audit**:
+    * Ran Node.js AST syntax validation on all 8,464 lines of worker JavaScript (`deploy_both_cf_workers.py`), `public/index.html` (52KB script), and `public/admin.html` (62KB script). 0 syntax errors.
+    * Verified Vercel multi-deployment (`https://agy-aaa000.vercel.app/` and `https://agy-henna.vercel.app/`) with HTTP 200.
+    * Verified Cloudflare Pages deployment (`https://atf-miner-app.pages.dev/`) with HTTP 200.
+  - **🚀 5-Node Edge Mesh Deployment**:
+    * Deployed live across all 5 Cloudflare Worker accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **User Bot Profile & Auto-Farming Polish: Purged Internal Developer Terms & Withdrawal Text, Highlighted 8-Pool Cloud Automation (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **🚫 Complete Removal of Internal Developer Terms & Withdrawal Mentions**:
     * Purged "Zero Phone Load" from user-facing Telegram descriptions, welcome text, Ari AI prompts, and bot command descriptions (preserving this strictly as an internal development directive).

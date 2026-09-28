@@ -2242,7 +2242,7 @@ fi
     }
 
     // 7.15 Community Admin Users & Telemetry API (@AAAPREMIUMAPPSbot Users & Connected Mining Accounts)
-    if (path === "/api/admin/users" || path === "/api/admin/community" || path === "/api/admin/stats") {
+    if (path === "/api/admin/users" || path === "/api/admin/community" || path === "/api/admin/stats" || path === "/api/community/users" || path === "/api/users") {
       try {
         let uids = [];
         try {
@@ -2866,14 +2866,15 @@ fi
     }
 
     // 12.48 Cloud Standby Farm Proxy (Status, Cloud-All, Single Account)
-    if (path === "/api/farm/status" || path === "/api/farm/cloud-all" || path.startsWith("/api/farm/account/")) {
+    if (path === "/api/farm/status" || path === "/api/farm/cloud-all" || path.startsWith("/api/farm/account/") || path === "/api/pools" || path === "/api/mining-pools") {
       const renderNodes = [
         "https://my-agy-fleet-standby.onrender.com",
         "https://my-agy-fleet-standby-node2.onrender.com"
       ];
       for (const rNode of renderNodes) {
         try {
-          const resp = await fetch(`${rNode}${path}`, {
+          const targetPath = (path === "/api/pools" || path === "/api/mining-pools") ? "/api/farm/status" : path;
+          const resp = await fetch(`${rNode}${targetPath}`, {
             method: request.method,
             headers: {
               "Content-Type": "application/json",
