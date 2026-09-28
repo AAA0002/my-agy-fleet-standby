@@ -4,6 +4,24 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **User Bot Admin Dashboard 2 Surface, Strict Dashboard Isolation & Owner Telegram Menu Synchronization (`deploy_both_cf_workers.py`, `deploy_vercel.py`, `vercel.json`, `public/_redirects`, `CHANGELOG.md`)**:
+  - **👑 Dedicated User Bot Admin Dashboard (Dashboard 2)**:
+    * Surface the dedicated community user management console exclusively for `@AAAPREMIUMAPPSbot` (`https://atf-miner-app.pages.dev` and `https://agy-aaa000.vercel.app/user-admin`), completely isolated from the Fleet Operations Console (`public/admin.html` on `@myagy_ai_bot`).
+    * Dashboard 2 focuses 100% on community users: linked Telegram accounts, Mining IDs, points economy, 100 Pts/day daily deduction sweep engine, VIP passes, and account moderation (ban/unban, pause/resume).
+  - **📱 Owner-Specific Telegram UI on User Bot (`@AAAPREMIUMAPPSbot`)**:
+    * Dynamically configured chat-scoped menu button for Platform Commander Arif (`chat_id: 6727787768`) pointing directly to `👑 User Admin Console` (`https://atf-miner-app.pages.dev`), preventing it from ever resetting to "Watch Ads".
+    * Registered owner-specific chat commands (`/admin`, `/dashboard`, `/start`, `/accounts`, `/pools`, `/ads`, `/points`, `/daily`, `/help`) on `@AAAPREMIUMAPPSbot`.
+    * Created `ownerUserKeyboard` featuring top button `👑 User Admin Dashboard` and `ownerWelcomeInlineKeyboard` with dual launch options (Pages + Vercel).
+    * Replaced all instances of `userMainKeyboard` in bot callback dispatches with `activeUserKeyboard`, ensuring the owner never loses the persistent Admin Dashboard button.
+  - **🌐 Dual-Hosted Routing on Edge & Vercel**:
+    * Updated `deploy_vercel.py` to upload `public/index.html` as both `user-admin.html` and `users.html`.
+    * Configured `vercel.json` rewrites and `public/_redirects` rules routing `/user-admin` and `/users` directly to `user-admin.html` with HTTP 200.
+    * Added edge redirects in Cloudflare worker routing `/user-dashboard` and `/community-admin` to `https://atf-miner-app.pages.dev`.
+  - **🚀 Production Deployment & Verification**:
+    * Deployed worker script across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`), verifying live HTTP 200 responses.
+    * Deployed static frontends to Vercel projects `my-agy-ai-fleet` and `agy`.
+    * Verified live titles: `User Bot Admin Console — Miners & Community Accounts` on `https://atf-miner-app.pages.dev` and `https://agy-aaa000.vercel.app/user-admin`, and `MY AGY AI — Executive Fleet Operations` on `https://agy-aaa000.vercel.app/?v=5.0`.
+
 - **User Bot Keyboard & UI Upgrade, 100% Copy Purification & Zero Phone Load Restoration Guardrail (`deploy_both_cf_workers.py`, `public/admin.html`, `public/index.html`, `restore.sh`, `CHANGELOG.md`)**:
   - **⛏️ Native Farming Bots Menu & Pool Showcase**:
     * Added dedicated `⛏️ Farming Bots` button directly into the User Bot main keyboard (`userMainKeyboard`) alongside `👥 My Accounts`, `➕ Connect Account`, and `💎 Points & Pass`.

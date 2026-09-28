@@ -12,6 +12,14 @@
       "destination": "https://restore-agy.aaaai2.workers.dev/api/:path*"
     },
     {
+      "source": "/user-admin",
+      "destination": "/user-admin.html"
+    },
+    {
+      "source": "/users",
+      "destination": "/users.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

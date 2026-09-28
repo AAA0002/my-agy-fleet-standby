@@ -2509,7 +2509,7 @@ fi
 
     // 7.5 High-Speed Dedicated Dashboards
     // User Bot Admin Dashboard (Users & Miners Only) -> Cloudflare Pages
-    if (path === "/user-dash" || path === "/users-admin" || path === "/user-admin" || path === "/users") {
+    if (path === "/user-dash" || path === "/users-admin" || path === "/user-admin" || path === "/users" || path === "/user-dashboard" || path === "/community-admin") {
       return Response.redirect("https://atf-miner-app.pages.dev", 302);
     }
     // Admin Bot Executive Fleet Dashboard (All 14 Private Fleet Accounts & Operations) -> Vercel
@@ -6604,7 +6604,10 @@ Reply to Arif naturally:`;
           } catch (_) {}
         };
 
-        // UI Keyboards (100% Native Telegram Bot - Zero Clutter, Zero Admin Dashboard in User Bot)
+        const effectiveUid = String(update?.message?.chat?.id || update?.callback_query?.message?.chat?.id || update?.callback_query?.from?.id || "");
+        const isOwner = effectiveUid === "6727787768" || effectiveUid === String(env.OWNER_ID || "6727787768");
+
+        // UI Keyboards (Standard Community Miners)
         const userMainKeyboard = {
           keyboard: [
             [
@@ -6626,6 +6629,34 @@ Reply to Arif naturally:`;
           resize_keyboard: true,
           is_persistent: true
         };
+
+        // UI Keyboards (Platform Owner / Arif - User Bot Admin Dashboard 2 Dedicated)
+        const ownerUserKeyboard = {
+          keyboard: [
+            [
+              { text: "👑 User Admin Dashboard", web_app: { url: "https://atf-miner-app.pages.dev" } }
+            ],
+            [
+              { text: "👥 My Accounts" },
+              { text: "➕ Connect Account" }
+            ],
+            [
+              { text: "⛏️ Farming Bots" },
+              { text: "💎 Points & Pass" }
+            ],
+            [
+              { text: "🎁 Daily Bonus" },
+              { text: "👥 Invite Friends" }
+            ],
+            [
+              { text: "💬 Ari AI & Support" }
+            ]
+          ],
+          resize_keyboard: true,
+          is_persistent: true
+        };
+
+        const activeUserKeyboard = isOwner ? ownerUserKeyboard : userMainKeyboard;
 
         const userCancelKeyboard = {
           keyboard: [
@@ -6672,6 +6703,32 @@ Reply to Arif naturally:`;
             ]
           ]
         };
+
+        const ownerWelcomeInlineKeyboard = {
+          inline_keyboard: [
+            [
+              { text: "👑 Open User Bot Admin Dashboard 🚀", web_app: { url: "https://atf-miner-app.pages.dev" } }
+            ],
+            [
+              { text: "⛏️ 8 Supported Farming Bots 🤖", callback_data: "ub_pools" }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }
+            ],
+            [
+              { text: "🌟 VIP Passes & Boosts (Stars)", callback_data: "ub_buy_stars" }
+            ],
+            [
+              { text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" },
+              { text: "💬 Community Hub", url: "https://t.me/AAAAutoMiner" }
+            ],
+            [
+              { text: "⚡ Live Miner Activity Stream", url: "https://t.me/AAA_ACTIVITY" }
+            ]
+          ]
+        };
+
+        const activeWelcomeInlineKeyboard = isOwner ? ownerWelcomeInlineKeyboard : userWelcomeInlineKeyboard;
 
         const starsUpgradeKeyboard = {
           inline_keyboard: [
@@ -6801,8 +6858,8 @@ Reply to Arif naturally:`;
               `👇 *Tap 🎬 Watch Video Ad below or choose an option from the menu:*`;
 
             ctx.waitUntil((async () => {
-              await sendCqReply("✅ *Membership verified! 100 Welcome Points awarded!*", userMainKeyboard);
-              await sendCqReply(welcomeText, userWelcomeInlineKeyboard);
+              await sendCqReply("✅ *Membership verified! 100 Welcome Points awarded!*", activeUserKeyboard);
+              await sendCqReply(welcomeText, activeWelcomeInlineKeyboard);
             })());
             return new Response("OK");
           }
@@ -6858,7 +6915,7 @@ Reply to Arif naturally:`;
               `• *Ads Watched:* ${profile.ads_watched}/50\n` +
               `• *Progress to Bonus Slot:* ${profile.ads_watched % 50}/50 ads${bonusText}\n\n` +
               `💡 _Keep watching ads to extend your 24/7 mining clock!_`;
-            ctx.waitUntil(sendCqReply(rep, userMainKeyboard));
+            ctx.waitUntil(sendCqReply(rep, activeUserKeyboard));
             return new Response("OK");
           }
 
@@ -6896,7 +6953,7 @@ Reply to Arif naturally:`;
                   `• 🎟️ *Get a Day Pass (15 Stars)* for unlimited 24h mining\n` +
                   `• 📺 Watch an ad (+20 Pts)\n` +
                   `• 👥 Invite a friend (+500 Pts)`;
-                ctx.waitUntil(sendCqReply(lowPtsMsg, userMainKeyboard));
+                ctx.waitUntil(sendCqReply(lowPtsMsg, activeUserKeyboard));
                 return new Response("OK");
               }
 
@@ -7114,7 +7171,7 @@ Reply to Arif naturally:`;
               `• *Option 1 (Instant AI Assistant):* Simply type your question in this chat anytime!\n\n` +
               `• *Option 2 (Platform Support):* Send \`/support <your message>\` to reach Support directly.\n\n` +
               `• *Option 3 (Community Supergroup):* Join [AAA Auto Miner Supergroup](https://t.me/AAAAutoMiner) to chat with fellow miners!`;
-            ctx.waitUntil(sendCqReply(supMsg, userMainKeyboard));
+            ctx.waitUntil(sendCqReply(supMsg, activeUserKeyboard));
             return new Response("OK");
           }
 
@@ -7199,7 +7256,7 @@ Reply to Arif naturally:`;
                 `• 🎟️ *Get a Day Pass (15 Stars)* for unlimited 24h mining\n` +
                 `• 📺 Watch an ad (+20 Pts)\n` +
                 `• 👥 Invite a friend (+500 Pts)`;
-              ctx.waitUntil(sendCqReply(lowPtsMsg, userMainKeyboard));
+              ctx.waitUntil(sendCqReply(lowPtsMsg, activeUserKeyboard));
               return new Response("OK");
             }
 
@@ -7231,7 +7288,7 @@ Reply to Arif naturally:`;
               `• *Slots In Use:* ${profile.accounts.length} / ${totalSlots}\n` +
               `• *Freed Capacity:* ⚡ 1 Cloud Slot is now available!\n\n` +
               `You can now connect another account using *➕ Connect Account*.`;
-            ctx.waitUntil(sendCqReply(repMsg, userMainKeyboard));
+            ctx.waitUntil(sendCqReply(repMsg, activeUserKeyboard));
             return new Response("OK");
           }
 
@@ -7421,7 +7478,7 @@ Reply to Arif naturally:`;
             `• *Total Available Slots:* ${totalSlots}\n` +
             `• *Points Balance:* ${profile.points} Pts\n` +
             `• *Transaction ID:* \`${pay.telegram_payment_charge_id}\``,
-            userMainKeyboard
+            activeUserKeyboard
           ));
           return new Response("OK");
         }
@@ -7431,7 +7488,7 @@ Reply to Arif naturally:`;
         if (isCancel) {
           if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
           ctx.waitUntil(cloudLoginCancel("ub_" + chatId));
-          ctx.waitUntil(sendUserReply("❌ Account connection cancelled. Returning to main menu.", userMainKeyboard));
+          ctx.waitUntil(sendUserReply("❌ Account connection cancelled. Returning to main menu.", activeUserKeyboard));
           return new Response("OK");
         }
 
@@ -7539,7 +7596,7 @@ Reply to Arif naturally:`;
                   `• *Pools Active (8/8):* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
                   `• *Balance:* ${profile.points} Points${welcomeBonusText}\n\n` +
                   `✅ 100% Cloud Mining active! 100 points/day will be deducted while farming is live.`;
-                await sendUserReply(succMsg, userMainKeyboard);
+                await sendUserReply(succMsg, activeUserKeyboard);
               } else {
                 const errDetail = res ? (res.error || res.message) : "Invalid 2FA password";
                 const errMsg = `❌ *2FA Authentication Failed*\n\n` +
@@ -7616,7 +7673,7 @@ Reply to Arif naturally:`;
                 `• *Pools Active (8/8):* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
                 `• *Balance:* ${profile.points} Points${welcomeBonusText}\n\n` +
                 `✅ 100% Cloud Mining active! 100 points/day will be deducted while farming is live.`;
-              await sendUserReply(succMsg, userMainKeyboard);
+              await sendUserReply(succMsg, activeUserKeyboard);
             } else {
               const errDetail = res ? (res.error || res.message) : "Invalid verification code";
               const errMsg = `❌ *Authentication Failed*\n\n` +
@@ -7698,21 +7755,23 @@ Reply to Arif naturally:`;
 
           // E. Process Standard Bot Commands & Menu Buttons
 
-          // 0.0 Executive Admin Router (/admin, "👑 Admin Console", "⚡ Executive Console")
-          if (text === "👑 Admin Console" || text === "⚡ Executive Console" || text === "/admin" || text.startsWith("/admin")) {
-            if (String(chatId) !== "6727787768") {
-              await sendUserReply("⚠️ Access restricted to Platform Administrator Arif.", userMainKeyboard);
+          // 0.0 Executive Admin Router (/admin, /dashboard, /users, "👑 User Admin Dashboard", "👑 Admin Console")
+          if (text === "👑 User Admin Dashboard" || text === "👑 User Admin Console" || text === "👑 Admin Console" || text === "⚡ Executive Console" || text === "/admin" || text.startsWith("/admin") || text === "/dashboard" || text.startsWith("/dashboard") || text === "/users" || text.startsWith("/users")) {
+            if (String(chatId) !== "6727787768" && String(chatId) !== (env.OWNER_ID || "6727787768")) {
+              await sendUserReply("⚠️ Access restricted to Platform Administrator Arif.", activeUserKeyboard);
               return;
             }
-            const adminMsg = `👑 *USER BOT ADMIN CONSOLE* 🚀\n\n` +
+            const adminMsg = `👑 *USER BOT ADMIN CONSOLE (DASHBOARD 2)* 🚀\n\n` +
               `Hello Commander Arif! Here is your dedicated *User Bot Admin Dashboard* for managing community miners, accounts, and points:\n\n` +
               `• 👥 *Miners Hub:* Community accounts & balances\n` +
               `• 💎 *Points Economy:* Daily cost sweeps & grants\n` +
-              `• 🛡️ *Moderation:* Ban/Unban & VIP passes\n\n` +
+              `• 🛡️ *Moderation:* Ban/Unban & VIP passes\n` +
+              `• 📱 *Dedicated to User Bot:* 100% focused on community accounts\n\n` +
               `👇 *Tap button below to launch the User Bot Admin Dashboard:*`;
             await sendUserReply(adminMsg, {
               inline_keyboard: [
-                [{ text: "🚀 Open User Bot Admin Dashboard", web_app: { url: "https://atf-miner-app.pages.dev" } }],
+                [{ text: "🚀 Open User Bot Admin Dashboard (Pages)", web_app: { url: "https://atf-miner-app.pages.dev" } }],
+                [{ text: "🌐 Open User Bot Admin Dashboard (Vercel)", web_app: { url: "https://agy-aaa000.vercel.app/user-admin" } }],
                 [{ text: "👑 Switch to Fleet Admin Bot (@myagy_ai_bot)", url: "https://t.me/myagy_ai_bot" }]
               ]
             });
@@ -7858,25 +7917,35 @@ Reply to Arif naturally:`;
               `📺 *Earn Points:* Tap *🎬 Watch Video Ad (+20 Pts)* below or invite friends (+500 Pts).\n` +
               `🌟 *Subscriptions:* Day, Weekly, and Monthly VIP Passes with Telegram Stars!\n\n` +
               `👇 *Tap 🎬 Watch Video Ad below or choose an option from the menu:*`;
-            await sendUserReply("👋 *Welcome to AAA Auto Mining!* (Created by AAA)\nAccess all features below or choose from the interactive menu:", userMainKeyboard);
-            await sendUserReply(welcomeText, userWelcomeInlineKeyboard);
+            await sendUserReply("👋 *Welcome to AAA Auto Mining!* (Created by AAA)\nAccess all features below or choose from the interactive menu:", activeUserKeyboard);
+            await sendUserReply(welcomeText, activeWelcomeInlineKeyboard);
 
-            // Ensure persistent Chat Menu Button is set to Watch Ads WebApp for this user
+            // Ensure persistent Chat Menu Button is set properly for this user
             if (ctx && ctx.waitUntil) {
+              const menuPayload = isOwner ? {
+                chat_id: chatId,
+                menu_button: {
+                  type: "web_app",
+                  text: "👑 User Admin Console",
+                  web_app: {
+                    url: "https://atf-miner-app.pages.dev"
+                  }
+                }
+              } : {
+                chat_id: chatId,
+                menu_button: {
+                  type: "web_app",
+                  text: "🎬 Watch Ads",
+                  web_app: {
+                    url: "https://restore-agy.aaaai2.workers.dev/adsgram"
+                  }
+                }
+              };
               ctx.waitUntil(
                 fetch(`https://api.telegram.org/bot${userBotToken}/setChatMenuButton`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    chat_id: chatId,
-                    menu_button: {
-                      type: "web_app",
-                      text: "🎬 Watch Ads",
-                      web_app: {
-                        url: "https://restore-agy.aaaai2.workers.dev/adsgram"
-                      }
-                    }
-                  })
+                  body: JSON.stringify(menuPayload)
                 }).catch(() => {})
               );
             }
@@ -7941,10 +8010,10 @@ Reply to Arif naturally:`;
                   `• *Slots In Use:* ${profile.accounts.length} / ${totalSlots}\n` +
                   `• *Freed Capacity:* ⚡ 1 Cloud Slot is now available!\n\n` +
                   `You can now connect another account using *➕ Connect Account*.`;
-                await sendUserReply(repMsg, userMainKeyboard);
+                await sendUserReply(repMsg, activeUserKeyboard);
                 return;
               } else {
-                await sendUserReply(`⚠️ Account \`${query}\` not found in your connected list.\n\nType \`/accounts\` to see your active accounts.`, userMainKeyboard);
+                await sendUserReply(`⚠️ Account \`${query}\` not found in your connected list.\n\nType \`/accounts\` to see your active accounts.`, activeUserKeyboard);
                 return;
               }
             }
@@ -7991,7 +8060,7 @@ Reply to Arif naturally:`;
                 `• 🎟️ *Get a Day Pass (15 Stars)* for unlimited 24h mining\n` +
                 `• 📺 Watch an ad (+20 Pts)\n` +
                 `• 👥 Invite a friend (+500 Pts)`;
-              await sendUserReply(lowPtsMsg, userMainKeyboard);
+              await sendUserReply(lowPtsMsg, activeUserKeyboard);
               return;
             }
 
@@ -8264,7 +8333,7 @@ Reply to Arif naturally:`;
                 `*Usage:* \`/support <your question or issue>\`\n` +
                 `*Example:* \`/support I connected my account but have a question about rewards.\`\n\n` +
                 `Your message will be sent immediately to our support team, and you'll receive a direct reply here!`;
-              await sendUserReply(helpSup, userMainKeyboard);
+              await sendUserReply(helpSup, activeUserKeyboard);
               return;
             }
 
@@ -8290,7 +8359,7 @@ Reply to Arif naturally:`;
               `• *Ticket ID:* \`#TK-${Date.now().toString().slice(-6)}\`\n` +
               `• *Status:* 🟡 In Review\n\n` +
               `You will receive a direct reply right here in this chat as soon as it's processed!`;
-            await sendUserReply(confirmMsg, userMainKeyboard);
+            await sendUserReply(confirmMsg, activeUserKeyboard);
             return;
           }
 
@@ -8750,16 +8819,16 @@ async def main():
         except Exception as e:
             print(f"⚠️ Error setting global menu button: {e}")
 
-        # 2. Set chat-specific Menu Button for Owner
+        # 2. Set chat-specific Menu Button for Owner on User Bot (@AAAPREMIUMAPPSbot)
         if OWNER_ID:
             try:
                 owner_menu = {
                     "chat_id": int(OWNER_ID),
                     "menu_button": {
                         "type": "web_app",
-                        "text": "🎬 Watch Ads",
+                        "text": "👑 User Admin Console",
                         "web_app": {
-                            "url": "https://restore-agy.aaaai2.workers.dev/adsgram"
+                            "url": "https://atf-miner-app.pages.dev"
                         }
                     }
                 }
@@ -8768,9 +8837,34 @@ async def main():
                     json=owner_menu
                 ) as resp:
                     res = await resp.json()
-                    print(f"🎬 Owner Chat Menu Button: {res.get('ok')} ({res.get('description', 'OK')})")
+                    print(f"👑 User Bot Owner Menu Button: {res.get('ok')} ({res.get('description', 'OK')})")
             except Exception as e:
                 print(f"⚠️ Error setting owner menu button: {e}")
+
+            # Register Owner-specific commands on User Bot
+            owner_commands_payload = {
+                "scope": {"type": "chat", "chat_id": int(OWNER_ID)},
+                "commands": [
+                    {"command": "admin", "description": "👑 Open User Bot Admin Dashboard"},
+                    {"command": "dashboard", "description": "🚀 Launch User Bot Admin Dashboard"},
+                    {"command": "start", "description": "🌟 Open Mining Dashboard & Fleet"},
+                    {"command": "accounts", "description": "👥 Manage Connected Accounts"},
+                    {"command": "pools", "description": "⛏️ 8 Supported Mining Pools & Bots"},
+                    {"command": "ads", "description": "🎬 Watch Ads & Earn Points"},
+                    {"command": "points", "description": "💎 Points Balance & VIP Passes"},
+                    {"command": "daily", "description": "🎁 Claim Daily Bonus (+25-50 Pts)"},
+                    {"command": "help", "description": "💬 Ari AI Copilot & Live Support"}
+                ]
+            }
+            try:
+                async with session.post(
+                    f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setMyCommands",
+                    json=owner_commands_payload
+                ) as resp:
+                    res_oc = await resp.json()
+                    print(f"👑 Owner User Bot Commands: {res_oc.get('ok')} ({res_oc.get('description', 'OK')})")
+            except Exception as e:
+                print(f"⚠️ Error setting owner bot commands: {e}")
 
         # 3. Set Bot Commands & Descriptions (User Bot)
         user_desc = (
