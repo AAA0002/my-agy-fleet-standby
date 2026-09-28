@@ -4,6 +4,28 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **UI De-Cluttering, Elimination of Double Dashboard & Complete Admin/User Bot Separation (`deploy_both_cf_workers.py`, `public/index.html`, `CHANGELOG.md`)**:
+  - **🚫 Removed Double Dashboard & Unified WebApp Console**:
+    * Replaced fragmented `public/index.html` with the unified, full-featured Master Executive Dashboard (`public/admin.html`), guaranteeing that accessing `https://atf-miner-app.pages.dev` or `https://atf-miner-app.pages.dev/admin` serves the exact same unified, ultra-polished console.
+    * Removed confusing duplicate buttons (`👑 Admin Console` and `⚡ Executive Console`) pointing to different URLs.
+  - **🧹 Eradicated Keyboard Clutter in User Bot (`@AAAPREMIUMAPPSbot`)**:
+    * Completely deleted `adminMainKeyboard` which was previously overriding the user keyboard for admin accounts, cluttering the screen with 12 oversized buttons.
+    * Streamlined `userMainKeyboard` to exactly 6 essential, clean buttons in 3 neat rows:
+      1. `👥 My Accounts` | `➕ Connect Account`
+      2. `💎 Points & Pass` | `🎁 Daily Bonus`
+      3. `👥 Invite Friends` | `💬 Ari AI & Support`
+    * Removed redundant top-level buttons: `🗑️ Remove Account` (handled natively inside `My Accounts`), `💳 Withdrawals`, `🎬 Watch Ads` in keyboard (available via Telegram menu button and inside Points card), and duplicate `📊 My Stats` (merged cleanly into `💎 Points & Pass`).
+  - **🛡️ Strict Separation of Concerns (Admin Bot vs User Bot)**:
+    * Completely removed all Admin Console WebApps from the User Bot (`@AAAPREMIUMAPPSbot`).
+    * Re-routed `/admin` or `👑 Admin Console` commands in `@AAAPREMIUMAPPSbot` to an informative redirect message with a 1-tap link to the private Admin Bot (`@myagy_ai_bot`), ensuring the user bot is strictly dedicated to community miners.
+  - **👑 Streamlined Admin Bot (`@myagy_ai_bot`) Controls**:
+    * Reduced `mainKeyboard` from 7 rows (12 buttons) down to 4 compact rows (7 buttons: `👑 Admin Console`, `📊 Fleet Status` | `👥 Community Miners`, `⚡ Instant Harvest` | `🔥 Economy & Sweep`, `⚙️ Fleet Accounts` | `🌐 Cloud Mesh`).
+    * Reduced `statusInlineKeyboard` from 11 buttons down to 5 high-impact buttons (`⚡ Instant Harvest` | `🔥 Economy & Sweep`, `👥 Fleet Accounts (14)` | `📊 Community Miners`, `🚀 Open Admin Console`).
+    * Preserved all drill-down actions (`Add/Remove Account`, `Run Daily Sweep`, `Whales`, `Paused Miners`) on-demand inside second-level inline menus.
+  - **🚀 Edge Deployment & Verification**:
+    * Recompiled and deployed across all 5 Cloudflare Worker Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`), verified 200 OK.
+    * Synchronized bot menu buttons and command registries.
+
 - **Points System Hardening, Proactive Runway Alerts, Leaderboard Engine & Admin Executive Suite (`deploy_both_cf_workers.py`, `CHANGELOG.md`)**:
   - **⚡ Proactive Low-Balance Warning Alerts & Atomic Mesh Sweep Engine**:
     * Hardened `runDailyCostSweep` with dual-sync across Upstash Redis and Cloudflare KV (`daily_cost_sweep_date`), guaranteeing that sweeps are executed once daily across the multi-node mesh without race conditions or double charges.

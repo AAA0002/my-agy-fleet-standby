@@ -3007,26 +3007,14 @@ fi
           inline_keyboard: [
             [
               { text: "⚡ Instant Harvest", callback_data: "btn_harvest" },
-              { text: "💼 Universal Sweep", callback_data: "btn_withdraw" }
-            ],
-            [
-              { text: "🔥 Economy & Burn", callback_data: "btn_burn" },
-              { text: "⚡ Run Daily Sweep", callback_data: "btn_sweep_daily" }
+              { text: "🔥 Economy & Sweep", callback_data: "btn_burn" }
             ],
             [
               { text: "👥 Fleet Accounts (14)", callback_data: "btn_accounts" },
-              { text: "🗑️ Remove Account", callback_data: "btn_admin_remove_menu" }
+              { text: "📊 Community Miners", callback_data: "btn_community" }
             ],
             [
-              { text: "🌐 Cloud Mesh (5/5)", callback_data: "btn_mesh" },
-              { text: "📊 Community & Users", callback_data: "btn_community" }
-            ],
-            [
-              { text: "🛡️ Anti-Sybil Hub", callback_data: "btn_sybil" },
-              { text: "🌅 AI Briefing", callback_data: "btn_briefing" }
-            ],
-            [
-              { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }
+              { text: "🚀 Open Admin Console", web_app: { url: dashUrl } }
             ]
           ]
         };
@@ -3039,10 +3027,7 @@ fi
             ],
             [
               { text: "🔄 Refresh Fleet Roster", callback_data: "btn_accounts" },
-              { text: "⚡ Instant Harvest", callback_data: "btn_harvest" }
-            ],
-            [
-              { text: "🚀 Open Executive Dashboard", web_app: { url: dashUrl } }
+              { text: "🚀 Open Admin Console", web_app: { url: dashUrl } }
             ]
           ]
         };
@@ -3064,27 +3049,16 @@ fi
               { text: "👑 Admin Console", web_app: { url: dashUrl } }
             ],
             [
-              { text: "👥 Accounts Management" },
-              { text: "👥 Community & Users" }
-            ],
-            [
-              { text: "🔥 Economy & Burn" },
-              { text: "⚡ Run Daily Sweep" }
+              { text: "📊 Fleet Status" },
+              { text: "👥 Community Miners" }
             ],
             [
               { text: "⚡ Instant Harvest" },
-              { text: "💼 Universal Sweep" }
+              { text: "🔥 Economy & Sweep" }
             ],
             [
-              { text: "➕ Add Account" },
-              { text: "🗑️ Remove Account" }
-            ],
-            [
-              { text: "📊 Fleet Status" },
+              { text: "⚙️ Fleet Accounts" },
               { text: "🌐 Cloud Mesh" }
-            ],
-            [
-              { text: "🌅 AI Briefing" }
             ]
           ],
           resize_keyboard: true,
@@ -4872,7 +4846,7 @@ fi
         }
 
         // 6. Accounts Roster Command (/accounts)
-        if (text === "👥 Accounts Management" || text === "👥 My Accounts (14)" || text === "👥 My Accounts (13)" || text === "👥 My Accounts" || text === "👥 Accounts" || text === "/accounts" || text.startsWith("/accounts") || text.startsWith("/acc")) {
+        if (text === "⚙️ Fleet Accounts" || text === "👥 Accounts Management" || text === "👥 My Accounts (14)" || text === "👥 My Accounts (13)" || text === "👥 My Accounts" || text === "👥 Accounts" || text === "/accounts" || text.startsWith("/accounts") || text.startsWith("/acc")) {
           ctx.waitUntil((async () => {
             const accounts = await getFleetAccounts();
 
@@ -4990,8 +4964,8 @@ fi
           return new Response("OK");
         }
 
-        // 7.05 Community Points Economy & Daily Burn Telemetry (/burn, /economy, /points_summary)
-        if (text === "🔥 Economy & Burn" || text === "🔥 Economy" || text === "/burn" || text.startsWith("/burn") || text === "/economy" || text.startsWith("/economy") || text === "/points_summary" || text === "/points_stats") {
+        // 7.05 Community Points Economy & Daily Burn Telemetry (/burn, /economy, /points_summary, /sweep)
+        if (text === "🔥 Economy & Sweep" || text === "🔥 Economy & Burn" || text === "🔥 Economy" || text === "/burn" || text.startsWith("/burn") || text === "/economy" || text.startsWith("/economy") || text === "/points_summary" || text === "/points_stats" || text === "/sweep" || text.startsWith("/sweep")) {
           ctx.waitUntil((async () => {
             const totalUsers = await upstashScard("ub_registered_users");
             const userList = await upstashSmembers("ub_registered_users");
@@ -5211,7 +5185,7 @@ fi
         }
 
         // 7.1 Community & Public User Base Metrics (/community, /users, /userstats)
-        if (text === "👥 Community & Users" || text === "/community" || text.startsWith("/community") || text === "/users" || text.startsWith("/users") || text.startsWith("/userstats")) {
+        if (text === "👥 Community Miners" || text === "👥 Community & Users" || text === "/community" || text.startsWith("/community") || text === "/users" || text.startsWith("/users") || text.startsWith("/userstats")) {
           ctx.waitUntil((async () => {
             const totalUsers = await upstashScard("ub_registered_users");
             const userList = await upstashSmembers("ub_registered_users");
@@ -6609,7 +6583,7 @@ Reply to Arif naturally:`;
           } catch (_) {}
         };
 
-        // UI Keyboards (100% Native Telegram Bot - Zero Dashboard Needed)
+        // UI Keyboards (100% Native Telegram Bot - Zero Clutter, Zero Admin Dashboard in User Bot)
         const userMainKeyboard = {
           keyboard: [
             [
@@ -6618,49 +6592,10 @@ Reply to Arif naturally:`;
             ],
             [
               { text: "💎 Points & Pass" },
-              { text: "🎁 Daily Bonus (+25-50 Pts)" }
+              { text: "🎁 Daily Bonus" }
             ],
             [
-              { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } },
-              { text: "👥 Invite Friends (+500 Pts)" }
-            ],
-            [
-              { text: "💳 Withdrawals" },
-              { text: "📊 My Stats" }
-            ],
-            [
-              { text: "🗑️ Remove Account" },
-              { text: "💬 Ari AI & Support" }
-            ]
-          ],
-          resize_keyboard: true,
-          is_persistent: true
-        };
-
-        const adminMainKeyboard = {
-          keyboard: [
-            [
-              { text: "👑 Admin Console", web_app: { url: "https://atf-miner-app.pages.dev" } },
-              { text: "⚡ Executive Console", web_app: { url: "https://atf-miner-app.pages.dev/admin?v=5.0" } }
-            ],
-            [
-              { text: "👥 My Accounts" },
-              { text: "➕ Connect Account" }
-            ],
-            [
-              { text: "💎 Points & Pass" },
-              { text: "🎁 Daily Bonus (+25-50 Pts)" }
-            ],
-            [
-              { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } },
-              { text: "👥 Invite Friends (+500 Pts)" }
-            ],
-            [
-              { text: "💳 Withdrawals" },
-              { text: "📊 My Stats" }
-            ],
-            [
-              { text: "🗑️ Remove Account" },
+              { text: "👥 Invite Friends" },
               { text: "💬 Ari AI & Support" }
             ]
           ],
@@ -6774,9 +6709,7 @@ Reply to Arif naturally:`;
 
           const sendCqReply = async (txt, markup = null) => {
             const payload = { chat_id: cqChatId, text: txt, parse_mode: "Markdown", disable_web_page_preview: true };
-            if (markup === userMainKeyboard && String(cqChatId) === "6727787768") {
-              payload.reply_markup = adminMainKeyboard;
-            } else if (markup) {
+            if (markup) {
               payload.reply_markup = markup;
             }
             await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
@@ -6999,8 +6932,9 @@ Reply to Arif naturally:`;
               `Earn free points below:`;
             const rewBtns = {
               inline_keyboard: [
-                [{ text: `📺 Watch Ad (+${adPts} Pts)`, callback_data: "ub_watch_ad" }, { text: "👥 Invite (+500 Pts)", callback_data: "ub_referral" }],
-                [{ text: "🌟 Buy Pass (Telegram Stars)", callback_data: "ub_buy_stars" }]
+                [{ text: `🎬 Watch Video Ad (+${adPts} Pts)`, web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
+                [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
             };
             ctx.waitUntil(sendCqReply(rewMsg, rewBtns));
@@ -7362,9 +7296,7 @@ Reply to Arif naturally:`;
         const sendUserReply = async (txt, replyMarkup = null, parseMode = "Markdown") => {
           const payload = { chat_id: chatId, text: txt, disable_web_page_preview: true };
           if (parseMode) payload.parse_mode = parseMode;
-          if (replyMarkup === userMainKeyboard && String(chatId) === "6727787768") {
-            payload.reply_markup = adminMainKeyboard;
-          } else if (replyMarkup) {
+          if (replyMarkup) {
             payload.reply_markup = replyMarkup;
           }
           try {
@@ -7666,12 +7598,13 @@ Reply to Arif naturally:`;
         ctx.waitUntil((async () => {
           const profile = await getUserProfile(chatId, msg.from);
 
-          // Handle Referral Tracking on /start ref_<id>
-          if (text.startsWith("/start ref_")) {
+          // Handle Referral Tracking on /start ref_<id> or /start <id>
+          if (text.startsWith("/start")) {
             const parts = text.split(/\s+/);
-            if (parts.length > 1 && parts[1].startsWith("ref_")) {
-              const refId = parts[1].replace("ref_", "").trim();
-              if (refId && refId !== String(chatId) && !profile.referred_by) {
+            if (parts.length > 1) {
+              let refId = parts[1].trim();
+              if (refId.startsWith("ref_")) refId = refId.replace("ref_", "").trim();
+              if (/^\d{6,12}$/.test(refId) && refId !== String(chatId) && !profile.referred_by) {
                 profile.referred_by = refId;
                 await saveUserProfile(chatId, profile);
                 // Credit referrer +500 points
@@ -7730,22 +7663,14 @@ Reply to Arif naturally:`;
 
           // E. Process Standard Bot Commands & Menu Buttons
 
-          // 0.0 👑 Admin Console Command (/admin, "👑 Admin Console")
-          if (text === "👑 Admin Console" || text === "/admin" || text.startsWith("/admin")) {
-            if (String(chatId) !== "6727787768") {
-              await sendUserReply("⚠️ Access restricted to Platform Administrator Arif.", userMainKeyboard);
-              return;
-            }
-            const adminMsg = `👑 *AAA EXECUTIVE ADMIN CONSOLE* 🚀\n\n` +
-              `Hello Commander Arif! Your mobile-first Admin Dashboard is online.\n\n` +
-              `• 👥 *Miners Hub:* Complete list of community users & balances\n` +
-              `• 📱 *Mining Accounts:* View all connected phone numbers & Telegram IDs\n` +
-              `• ⚡ *8 Mining Pools:* Real-time 24/7 harvest telemetry\n` +
-              `• 💎 *Points & VIP Passes:* Manage balances & subscriptions\n\n` +
-              `👇 *Tap button below to launch your light-theme Mini App:*`;
+          // 0.0 Executive Admin Router (/admin, "👑 Admin Console", "⚡ Executive Console")
+          if (text === "👑 Admin Console" || text === "⚡ Executive Console" || text === "/admin" || text.startsWith("/admin")) {
+            const adminMsg = `👑 *Executive Admin Controls*\n\n` +
+              `Fleet management, analytics, and admin controls are managed exclusively in your private Admin Bot:\n\n` +
+              `👉 *@myagy_ai_bot*`;
             await sendUserReply(adminMsg, {
               inline_keyboard: [
-                [{ text: "🚀 Open Admin Console (Mini App)", web_app: { url: "https://atf-miner-app.pages.dev" } }]
+                [{ text: "👑 Open Admin Bot (@myagy_ai_bot)", url: "https://t.me/myagy_ai_bot" }]
               ]
             });
             return;
@@ -7813,8 +7738,9 @@ Reply to Arif naturally:`;
               `Earn free points below:`;
             const rewBtns = {
               inline_keyboard: [
-                [{ text: `📺 Watch Ad (+${adPts} Pts)`, callback_data: "ub_watch_ad" }, { text: "👥 Invite (+500 Pts)", callback_data: "ub_referral" }],
-                [{ text: "🌟 Buy Pass (Telegram Stars)", callback_data: "ub_buy_stars" }]
+                [{ text: `🎬 Watch Video Ad (+${adPts} Pts)`, web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
+                [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
             };
             await sendUserReply(rewMsg, rewBtns);
@@ -7832,15 +7758,22 @@ Reply to Arif naturally:`;
               const tName = profile.subscription_tier === "month" ? "💎 Monthly Pass" : (profile.subscription_tier === "week" ? "🎟️ Weekly Pass" : "🎟️ Day Pass");
               passBadge = `${tName} (${dLeft > 0 ? `${dLeft}d ` : ""}${hLeft}h left)`;
             }
+            const dCost = isCovered ? 0 : ((profile.accounts || []).length * 100);
+            const daysRemaining = isCovered ? "Unlimited (VIP Pass)" : (dCost > 0 ? `${Math.floor((profile.points || 0) / dCost)} Days` : "0 Accounts");
+            const farmStatus = isCovered ? "🟢 Active 24/7 (Covered by VIP Pass)" : (profile.farming_active ? "🟢 Active & Mining 24/7" : "🔴 Paused (Needs Points)");
             const statsMsg = `📊 *MY MINING FLEET STATS* ⚡\n\n` +
               `• *Connected Accounts:* ${(profile.accounts || []).length} / ${totalSlots} Slots\n` +
-              `• *Points Balance:* ${profile.points} Points\n` +
+              `• *Points Balance:* ${profile.points || 0} Points\n` +
               `• *Pass Status:* ${passBadge}\n` +
-              `• *Daily Fee:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${(profile.accounts || []).length * 100} Pts/day`}\n` +
+              `• *Daily Fee:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${dCost} Pts/day (100/acc)`}\n` +
+              `• *Runway:* ~${daysRemaining}\n` +
+              `• *Streak / Ads:* 🔥 Day ${profile.daily_streak || 0} • 🎬 ${profile.ads_watched || 0} Ads\n` +
               `• *Active Pools (8/8):* ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
-              `• *Cloud Mining:* 🟢 24/7 Automated Running`;
+              `• *Cloud Mining:* ${farmStatus}`;
             const statsBtns = {
               inline_keyboard: [
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
+                [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
             };
