@@ -7665,12 +7665,20 @@ Reply to Arif naturally:`;
 
           // 0.0 Executive Admin Router (/admin, "👑 Admin Console", "⚡ Executive Console")
           if (text === "👑 Admin Console" || text === "⚡ Executive Console" || text === "/admin" || text.startsWith("/admin")) {
-            const adminMsg = `👑 *Executive Admin Controls*\n\n` +
-              `Fleet management, analytics, and admin controls are managed exclusively in your private Admin Bot:\n\n` +
-              `👉 *@myagy_ai_bot*`;
+            if (String(chatId) !== "6727787768") {
+              await sendUserReply("⚠️ Access restricted to Platform Administrator Arif.", userMainKeyboard);
+              return;
+            }
+            const adminMsg = `👑 *USER BOT ADMIN CONSOLE* 🚀\n\n` +
+              `Hello Commander Arif! Here is your dedicated *User Bot Admin Dashboard* for managing community miners, accounts, and points:\n\n` +
+              `• 👥 *Miners Hub:* Community accounts & balances\n` +
+              `• 💎 *Points Economy:* Daily cost sweeps & grants\n` +
+              `• 🛡️ *Moderation:* Ban/Unban & VIP passes\n\n` +
+              `👇 *Tap button below to launch the User Bot Admin Dashboard:*`;
             await sendUserReply(adminMsg, {
               inline_keyboard: [
-                [{ text: "👑 Open Admin Bot (@myagy_ai_bot)", url: "https://t.me/myagy_ai_bot" }]
+                [{ text: "🚀 Open User Bot Admin Dashboard", web_app: { url: "https://atf-miner-app.pages.dev" } }],
+                [{ text: "👑 Switch to Fleet Admin Bot (@myagy_ai_bot)", url: "https://t.me/myagy_ai_bot" }]
               ]
             });
             return;
