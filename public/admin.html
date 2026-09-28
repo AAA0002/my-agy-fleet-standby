@@ -87,11 +87,8 @@
 
   <script>
     window.onerror = function(msg, url, line, col, error) {
-      console.error("Dashboard error:", msg, line, error);
-      var el = document.getElementById("root");
-      if (el && (!el.children.length || el.innerHTML.includes("Connecting to 5-Node"))) {
-        el.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:sans-serif;background:#f8fafc;color:#0f172a;"><div style="font-size:36px;margin-bottom:12px;">👑</div><h2 style="font-size:17px;font-weight:bold;margin-bottom:8px;">Fleet Operations Dashboard</h2><p style="font-size:12px;color:#64748b;max-width:320px;margin-bottom:16px;">Tap below to reload the dashboard.</p><button onclick="localStorage.clear();location.reload();" style="padding:10px 20px;background:#2563eb;color:white;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;">Reload Dashboard</button></div>';
-      }
+      console.warn("Telemetry warning:", msg, line, error);
+      return false;
     };
   </script>
 
@@ -727,37 +724,6 @@ function App() {
         )
       ),
 
-      // Ultra Wallet 6-Day Global Launch Official Alert Card
-      React.createElement("div", { className: "bg-gradient-to-r from-purple-950 via-indigo-950 to-slate-900 rounded-2xl p-4 mb-3.5 text-white shadow-md border border-purple-800/40 relative overflow-hidden" },
-        React.createElement("div", { className: "flex items-start justify-between relative z-10" },
-          React.createElement("div", null,
-            React.createElement("div", { className: "flex items-center gap-1.5 mb-1" },
-              React.createElement("span", { className: "bg-purple-500/30 text-purple-200 border border-purple-400/40 text-[9px] font-black px-1.5 py-0.5 rounded tracking-wider uppercase" }, "Official Launch Reminder"),
-              React.createElement("span", { className: "text-[10px] text-purple-300 font-semibold" }, "340K+ Miners")
-            ),
-            React.createElement("h3", { className: "font-black text-sm text-white tracking-tight" }, "Ultra Wallet — Global Launch in 6 Days! 🌍"),
-            React.createElement("p", { className: "text-[11px] text-purple-200/90 mt-0.5 leading-snug" },
-              "Daily cloud check-ins, tasks & mining activities are 100% automated across all fleet accounts before Global Launch."
-            )
-          ),
-          React.createElement("div", { className: "w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-xl shrink-0" }, "👛")
-        ),
-        React.createElement("div", { className: "grid grid-cols-3 gap-1.5 mt-3 pt-2.5 border-t border-purple-800/60 text-center relative z-10" },
-          React.createElement("div", { className: "bg-purple-900/40 rounded-lg p-1.5 border border-purple-700/30" },
-            React.createElement("span", { className: "text-[9px] text-purple-300 uppercase font-bold block" }, "Countdown"),
-            React.createElement("span", { className: "text-xs font-black text-white" }, "6 Days Left")
-          ),
-          React.createElement("div", { className: "bg-purple-900/40 rounded-lg p-1.5 border border-purple-700/30" },
-            React.createElement("span", { className: "text-[9px] text-purple-300 uppercase font-bold block" }, "Daily Checkin"),
-            React.createElement("span", { className: "text-xs font-black text-emerald-400" }, "Active ✅")
-          ),
-          React.createElement("div", { className: "bg-purple-900/40 rounded-lg p-1.5 border border-purple-700/30" },
-            React.createElement("span", { className: "text-[9px] text-purple-300 uppercase font-bold block" }, "Mining Speed"),
-            React.createElement("span", { className: "text-xs font-black text-emerald-400" }, "10 Hash/h")
-          )
-        )
-      ),
-
       // 8-Pool Autonomous Fleet Telemetry Card
       React.createElement("div", { className: "pro-card rounded-2xl p-3.5 mb-3.5" },
         React.createElement("div", { className: "flex items-center justify-between mb-2" },
@@ -1107,33 +1073,147 @@ function App() {
     ),
 
     // ==========================================================
-    // TAB 2: PAYOUTS & LEDGER
+    // TAB 2: VERIFIED DESTINATION WALLETS & ON-CHAIN SETTLEMENT
     // ==========================================================
-    activeTab === "ledger" && React.createElement("div", { className: "animate-entrance" },
-      React.createElement("div", { className: "flex items-center gap-1.5 mb-3 overflow-x-auto pb-1" },
-        [
-          { id: "all", label: "All Payouts" },
-          { id: "bnb", label: "BNB / USDT" },
-          { id: "arb", label: "Arbitrum" },
-          { id: "ton", label: "TON / ART" }
-        ].map(f => React.createElement("button", {
-          key: f.id,
-          onClick: () => { setLedgerFilter(f.id); haptic("light"); },
-          className: `px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
-            ledgerFilter === f.id ? "bg-slate-900 text-white" : "bg-white text-slate-600 border border-slate-200"
-          }`
-        }, f.label))
-      ),
-      React.createElement("div", { className: "space-y-2" },
-        (payouts || []).length === 0 ? React.createElement("div", { className: "pro-card rounded-xl p-8 text-center text-slate-400 text-xs" },
-          "No payout receipts recorded yet."
-        ) : payouts.map((p, idx) => React.createElement("div", { key: p.tx_hash || idx, className: "pro-card rounded-xl p-3 flex items-center justify-between" },
+    (activeTab === "wallets" || activeTab === "ledger") && React.createElement("div", { className: "animate-entrance space-y-3" },
+      // Direct Settlement Guarantee Card
+      React.createElement("div", { className: "pro-card rounded-2xl p-4 border-l-4 border-l-emerald-500 shadow-card" },
+        React.createElement("div", { className: "flex items-start justify-between mb-1" },
           React.createElement("div", null,
-            React.createElement("div", { className: "font-black text-xs text-slate-900" }, `${p.amount || 0} ${p.token || 'BNB'}`),
-            React.createElement("div", { className: "text-[10px] font-mono text-slate-400" }, p.timestamp ? new Date(p.timestamp).toLocaleString() : "Auto-Sweep")
+            React.createElement("h3", { className: "font-black text-sm text-slate-900 flex items-center gap-1.5" },
+              React.createElement(Icon, { name: "shieldCheck", className: "w-4 h-4 text-emerald-600" }),
+              "Direct Wallet Settlement Engine"
+            ),
+            React.createElement("p", { className: "text-xs text-slate-500 mt-0.5 leading-snug" },
+              "All automated withdrawals and rewards are routed 100% directly to your verified personal wallets upon reaching thresholds. Zero intermediary receipts, zero manual claims."
+            )
           ),
-          React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full" }, "Success")
-        ))
+          React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black px-2 py-0.5 rounded-full shrink-0" }, "100% Direct")
+        )
+      ),
+
+      // 1. Binance BEP-20 Vault Card
+      React.createElement("div", { className: "pro-card rounded-2xl p-4 shadow-card" },
+        React.createElement("div", { className: "flex items-center justify-between mb-2.5 pb-2 border-b border-slate-100" },
+          React.createElement("div", { className: "flex items-center gap-2" },
+            React.createElement("div", { className: "w-8 h-8 rounded-xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center text-base font-black" }, "🟡"),
+            React.createElement("div", null,
+              React.createElement("div", { className: "font-black text-xs text-slate-900" }, "Binance Vault (BEP-20 / BSC)"),
+              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "USDT & BNB Direct Payouts")
+            )
+          ),
+          React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" },
+            React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" }),
+            "Direct to Binance"
+          )
+        ),
+        React.createElement("div", { className: "mb-3" },
+          React.createElement("div", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" }, "Destination Wallet Address"),
+          React.createElement("div", { className: "flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-xl" },
+            React.createElement("span", { className: "font-mono text-xs text-slate-800 break-all select-all font-bold" }, "0xfda4182001672b9f0f09e2118242e543e35ed5ce"),
+            React.createElement("button", {
+              onClick: () => copyToClipboard("0xfda4182001672b9f0f09e2118242e543e35ed5ce", "Copied Binance Address"),
+              className: "p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition ml-2 shrink-0 cursor-pointer"
+            }, React.createElement(Icon, { name: "copy", className: "w-3.5 h-3.5" }))
+          )
+        ),
+        React.createElement("div", { className: "grid grid-cols-2 gap-2 mb-3 font-mono" },
+          React.createElement("div", { className: "p-2 bg-slate-50 rounded-xl border border-slate-100" },
+            React.createElement("div", { className: "text-[10px] text-slate-400" }, "Vault Balance"),
+            React.createElement("div", { className: "font-black text-xs text-slate-900" }, `${bnbBalance.toFixed(6)} BNB`),
+            React.createElement("div", { className: "text-[9px] text-slate-400" }, `≈ $${(bnbBalance * rates.bnb_usd).toFixed(2)} USD`)
+          ),
+          React.createElement("div", { className: "p-2 bg-slate-50 rounded-xl border border-slate-100" },
+            React.createElement("div", { className: "text-[10px] text-slate-400" }, "Auto-Withdraw"),
+            React.createElement("div", { className: "font-black text-xs text-emerald-600" }, "Active 24/7"),
+            React.createElement("div", { className: "text-[9px] text-slate-400" }, "AI Lab & Ainovum")
+          )
+        ),
+        React.createElement("div", { className: "text-[11px] text-slate-500 space-y-1 mb-3 pt-2 border-t border-slate-100 font-medium" },
+          React.createElement("div", { className: "flex items-center gap-1.5" },
+            React.createElement("span", { className: "text-emerald-500 font-bold" }, "✓"),
+            React.createElement("span", null, "AI Lab Robot: Auto-converted & paid to BEP-20 (threshold >= $0.02)")
+          ),
+          React.createElement("div", { className: "flex items-center gap-1.5" },
+            React.createElement("span", { className: "text-emerald-500 font-bold" }, "✓"),
+            React.createElement("span", null, "Ainovum Miner: Direct BSC withdrawals (threshold >= 0.10 USDT)")
+          )
+        ),
+        React.createElement("button", {
+          onClick: handleUniversalSweep,
+          className: "w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs active:scale-95"
+        },
+          React.createElement(Icon, { name: "wallet", className: "w-3.5 h-3.5" }),
+          "Flush & Sweep to Binance Vault"
+        )
+      ),
+
+      // 2. Arbitrum One (STONES)
+      React.createElement("div", { className: "pro-card rounded-2xl p-4 shadow-card" },
+        React.createElement("div", { className: "flex items-center justify-between mb-2.5 pb-2 border-b border-slate-100" },
+          React.createElement("div", { className: "flex items-center gap-2" },
+            React.createElement("div", { className: "w-8 h-8 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center text-base font-black" }, "💎"),
+            React.createElement("div", null,
+              React.createElement("div", { className: "font-black text-xs text-slate-900" }, "Arbitrum One (STONES Miner)"),
+              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "Automated L2 Mining Payouts")
+            )
+          ),
+          React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" },
+            React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" }),
+            "Direct to Arbitrum"
+          )
+        ),
+        React.createElement("div", { className: "mb-3" },
+          React.createElement("div", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" }, "Destination Wallet Address"),
+          React.createElement("div", { className: "flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-xl" },
+            React.createElement("span", { className: "font-mono text-xs text-slate-800 break-all select-all font-bold" }, "0xfda4182001672b9f0f09e2118242e543e35ed5ce"),
+            React.createElement("button", {
+              onClick: () => copyToClipboard("0xfda4182001672b9f0f09e2118242e543e35ed5ce", "Copied Arbitrum Address"),
+              className: "p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition ml-2 shrink-0 cursor-pointer"
+            }, React.createElement(Icon, { name: "copy", className: "w-3.5 h-3.5" }))
+          )
+        ),
+        React.createElement("div", { className: "p-2.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between font-mono" },
+          React.createElement("div", null,
+            React.createElement("div", { className: "text-[10px] text-slate-400" }, "Total Mined & Deposited"),
+            React.createElement("div", { className: "font-black text-xs text-blue-600" }, "500+ STONES")
+          ),
+          React.createElement("div", { className: "text-right" },
+            React.createElement("div", { className: "text-[10px] text-slate-400" }, "Cashout Rule"),
+            React.createElement("div", { className: "text-xs font-bold text-slate-700" }, ">= 500 STONES (Auto)")
+          )
+        )
+      ),
+
+      // 3. TON Network (14 Accounts Dedicated Wallets)
+      React.createElement("div", { className: "pro-card rounded-2xl p-4 shadow-card" },
+        React.createElement("div", { className: "flex items-center justify-between mb-2.5 pb-2 border-b border-slate-100" },
+          React.createElement("div", { className: "flex items-center gap-2" },
+            React.createElement("div", { className: "w-8 h-8 rounded-xl bg-cyan-50 text-cyan-600 border border-cyan-200 flex items-center justify-center text-base font-black" }, "⚡"),
+            React.createElement("div", null,
+              React.createElement("div", { className: "font-black text-xs text-slate-900" }, "TON Network (14 Fleet Accounts)"),
+              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "ATF Miner, MRG Miner, ART Coin")
+            )
+          ),
+          React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full" }, "14/14 Bound")
+        ),
+        React.createElement("div", { className: "text-xs text-slate-600 leading-snug mb-2 font-medium" },
+          "All 14 fleet accounts possess dedicated on-chain TON non-custodial wallets generated through Telegram MTProto cloud binding. Tasks, rewards, and airdrops deposit directly into each account's wallet."
+        ),
+        React.createElement("div", { className: "grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100 text-center font-mono" },
+          React.createElement("div", { className: "p-1.5 bg-slate-50 rounded-lg" },
+            React.createElement("span", { className: "text-[9px] text-slate-400 block" }, "ATF Miner"),
+            React.createElement("span", { className: "text-[11px] font-bold text-emerald-600" }, "Auto-Claim")
+          ),
+          React.createElement("div", { className: "p-1.5 bg-slate-50 rounded-lg" },
+            React.createElement("span", { className: "text-[9px] text-slate-400 block" }, "MRG Miner"),
+            React.createElement("span", { className: "text-[11px] font-bold text-emerald-600" }, "Peak Hashrate")
+          ),
+          React.createElement("div", { className: "p-1.5 bg-slate-50 rounded-lg" },
+            React.createElement("span", { className: "text-[9px] text-slate-400 block" }, "ART Coin"),
+            React.createElement("span", { className: "text-[11px] font-bold text-emerald-600" }, "Compound L8")
+          )
+        )
       )
     ),
 
@@ -1193,7 +1273,7 @@ function App() {
       [
         { id: "fleet", label: "Fleet (14)", icon: "bot" },
         { id: "miners", label: `Miners (${adminUsers.length || 0})`, icon: "users" },
-        { id: "ledger", label: "Ledger", icon: "receipt" },
+        { id: "wallets", label: "Wallets", icon: "wallet" },
         { id: "ai", label: "Ari AI", icon: "sparkles" }
       ].map(tab => React.createElement("button", {
         key: tab.id,

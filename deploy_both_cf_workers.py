@@ -4854,17 +4854,20 @@ fi
                 if (mc.bsc_bnb_balance !== undefined) liveBnb = mc.bsc_bnb_balance;
               }
             } catch (_) {}
-            const rep = `💼 *Multi-Chain Portfolio & Vaults*\n\n` +
+            const rep = `💼 *Multi-Chain Verified Destination Wallets*\n\n` +
               `🟡 *Binance BEP-20 (All 14 Fleet Accounts):*\n` +
               `• Address: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
-              `• Balance: \`${liveBnb.toFixed(6)} BNB\` (~$${(liveBnb * 764.5).toFixed(2)} USD)\n\n` +
+              `• Balance: \`${liveBnb.toFixed(6)} BNB\` (~$${(liveBnb * 764.5).toFixed(2)} USD)\n` +
+              `• Direct Payouts: AI Lab (>= $0.02) • Ainovum (>= 0.10 USDT)\n\n` +
+              `🔵 *Arbitrum One (STONES Miner):*\n` +
+              `• Address: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+              `• Deposited: \`500+ STONES\` (Auto-claimed to wallet)\n\n` +
               `💎 *Binance TON (Main Account #1):*\n` +
               `• Address: \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
               `• Network: TON Blockchain (The Open Network)\n\n` +
               `🛡️ *Worker TON Wallets (Accounts 2–14):*\n` +
-              `• 13 Isolated TON v4r2 Wallets configured in \`fleet_ton_wallets.json\`\n` +
-              `• Dedicated anti-Sybil protection for MRG, ART, and Stones bots.\n\n` +
-              `📱 _Tap '🚀 Open Visual Mini App' below for interactive wallet explorer._`;
+              `• 13 Dedicated TON v4r2 Wallets bound for MRG, ART, and ATF pools.\n\n` +
+              `📱 _Tap '🚀 Open Executive Dashboard' below for interactive wallet explorer._`;
             await sendReply(rep, statusInlineKeyboard);
           })());
           return new Response("OK");
@@ -8825,11 +8828,12 @@ async def main():
                 "commands": [
                     {"command": "start", "description": "👑 Open Executive Fleet Console & Roster"},
                     {"command": "dashboard", "description": "🚀 Launch Vercel Fleet Operations Console"},
+                    {"command": "wallets", "description": "👛 Verified Destination Wallets & Balances"},
+                    {"command": "sweep", "description": "💼 Universal Sweep to Binance Vault"},
+                    {"command": "harvest", "description": "⚡ Trigger Instant 8 Pools Harvest"},
+                    {"command": "accounts", "description": "👥 Manage Fleet Accounts & Roster"},
                     {"command": "burn", "description": "🔥 Economy & Daily Burn (100 Pts/day)"},
                     {"command": "sweep_daily", "description": "⚡ Run 100 Pts Daily Deduction Sweep"},
-                    {"command": "accounts", "description": "👥 Manage Fleet Accounts & Roster"},
-                    {"command": "harvest", "description": "⚡ Trigger Instant 8 Pools Harvest"},
-                    {"command": "sweep", "description": "💼 Universal Sweep & Payouts"},
                     {"command": "sybil", "description": "🛡️ Anti-Sybil & Moderation Hub"},
                     {"command": "community", "description": "📊 Community Miners & VIP Passes"},
                     {"command": "nodes", "description": "⚡ 5-Node Edge Latency Probe"},

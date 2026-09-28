@@ -81,11 +81,8 @@
 
   <script>
     window.onerror = function(msg, url, line, col, error) {
-      console.error("Dashboard error:", msg, line, error);
-      var el = document.getElementById("root");
-      if (el && (!el.children.length || el.innerHTML.includes("Connecting to Community"))) {
-        el.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:sans-serif;background:#f8fafc;color:#0f172a;"><div style="font-size:36px;margin-bottom:12px;">👑</div><h2 style="font-size:17px;font-weight:bold;margin-bottom:8px;">User Bot Admin Console</h2><p style="font-size:12px;color:#64748b;max-width:320px;margin-bottom:16px;">Tap below to reload the admin console.</p><button onclick="localStorage.clear();location.reload();" style="padding:10px 20px;background:#2563eb;color:white;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;">Reload Console</button></div>';
-      }
+      console.warn("Telemetry warning:", msg, line, error);
+      return false;
     };
   </script>
 
@@ -433,37 +430,6 @@ function App() {
         React.createElement("div", { className: "text-base font-black text-slate-900 leading-tight" }, m.val),
         React.createElement("div", { className: "text-[10px] text-slate-500 font-medium mt-0.5" }, m.sub)
       ))
-    ),
-
-    // Ultra Wallet 6-Day Global Launch Alert Card
-    React.createElement("div", { className: "bg-gradient-to-r from-purple-950 via-indigo-950 to-slate-900 rounded-2xl p-4 mb-3.5 text-white shadow-md border border-purple-800/40 relative overflow-hidden" },
-      React.createElement("div", { className: "flex items-start justify-between relative z-10" },
-        React.createElement("div", null,
-          React.createElement("div", { className: "flex items-center gap-1.5 mb-1" },
-            React.createElement("span", { className: "bg-purple-500/30 text-purple-200 border border-purple-400/40 text-[9px] font-black px-1.5 py-0.5 rounded tracking-wider uppercase" }, "Official Launch Reminder"),
-            React.createElement("span", { className: "text-[10px] text-purple-300 font-semibold" }, "340K+ Miners")
-          ),
-          React.createElement("h3", { className: "font-black text-sm text-white tracking-tight" }, "Ultra Wallet — Global Launch in 6 Days! 🌍"),
-          React.createElement("p", { className: "text-[11px] text-purple-200/90 mt-0.5 leading-snug" },
-            "Daily cloud check-ins, tasks & mining activities are 100% automated across all community accounts before Global Launch."
-          )
-        ),
-        React.createElement("div", { className: "w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-xl shrink-0" }, "👛")
-      ),
-      React.createElement("div", { className: "grid grid-cols-3 gap-1.5 mt-3 pt-2.5 border-t border-purple-800/60 text-center relative z-10" },
-        React.createElement("div", { className: "bg-purple-900/40 rounded-lg p-1.5 border border-purple-700/30" },
-          React.createElement("span", { className: "text-[9px] text-purple-300 uppercase font-bold block" }, "Countdown"),
-          React.createElement("span", { className: "text-xs font-black text-white" }, "6 Days Left")
-        ),
-        React.createElement("div", { className: "bg-purple-900/40 rounded-lg p-1.5 border border-purple-700/30" },
-          React.createElement("span", { className: "text-[9px] text-purple-300 uppercase font-bold block" }, "Daily Checkin"),
-          React.createElement("span", { className: "text-xs font-black text-emerald-400" }, "Active ✅")
-        ),
-        React.createElement("div", { className: "bg-purple-900/40 rounded-lg p-1.5 border border-purple-700/30" },
-          React.createElement("span", { className: "text-[9px] text-purple-300 uppercase font-bold block" }, "Mining Speed"),
-          React.createElement("span", { className: "text-xs font-black text-emerald-400" }, "10 Hash/h")
-        )
-      )
     ),
 
     // 100 Pts/Day Autonomous Daily Deduction Sweep Card

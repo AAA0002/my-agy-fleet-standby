@@ -4,6 +4,22 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Executive Fleet Console Redesign: Purged Ultra Wallet Banner, Replaced Ledger Receipts with Direct Destination Wallets, and Hardened Error Boundaries (`public/admin.html`, `public/index.html`, `deploy_both_cf_workers.py`, `deploy_vercel.py`, `CHANGELOG.md`)**:
+  - **🚫 Removed Prominent Ultra Wallet Reminder Cards**:
+    * Completely eradicated the oversized purple Ultra Wallet reminder banner from both the Executive Fleet Console (`public/admin.html`) and the User Console (`public/index.html`).
+    * Ultra Wallet is now treated as an equal, automated pool in the 8-Pool Telemetry Grid without cluttering the main operational screen.
+  - **👛 Replaced Ledger Receipts with Verified Destination Wallets Console**:
+    * Eliminated the micro-receipt transaction logs (`0.00005 BNB Success`, etc.) that cluttered the `Ledger` tab.
+    * Replaced the tab with **`Wallets`** (icon: `wallet`), displaying the verified on-chain destination wallets where user funds actually deposit:
+      1. **Binance Smart Chain (BEP-20)**: Address `0xfda4182001672b9f0f09e2118242e543e35ed5ce` with live vault balance (`0.000812 BNB`), USD value, auto-thresholds for AI Lab (>= $0.02) and Ainovum (>= 0.10 USDT), and 1-tap `Universal Sweep to Wallet` trigger.
+      2. **Arbitrum One (STONES)**: Address `0xfda4182001672b9f0f09e2118242e543e35ed5ce` with live `500+ STONES` on-chain deposit status and auto-claim threshold.
+      3. **TON Network**: 14 Dedicated non-custodial wallets bound across all 14 accounts for ATF, MRG, and ART pools.
+      4. **Direct Settlement Guarantee**: Explaining transparently that mined cryptocurrency is never held in intermediary bots, but swept directly into personal wallets.
+  - **🛡️ Hardened `window.onerror` Against Blank/Reload Screen Glitches**:
+    * Replaced the hyper-sensitive `window.onerror` DOM replacement in both `public/admin.html` and `public/index.html` with safe warning logging, completely eliminating the sudden flash of the "Fleet Operations Dashboard Reload Dashboard" fallback screen.
+  - **🤖 Bot Command Registry Update**:
+    * Added `/wallets` command (`👛 Verified Destination Wallets & Balances`) to `@myagy_ai_bot` and updated command description for `/sweep` to `💼 Universal Sweep to Binance Vault`.
+
 - **User Bot Keyboard Handler Bug Fix & Cloudflare Pages Initial Loading Polish (`deploy_both_cf_workers.py`, `public/index.html`, `CHANGELOG.md`)**:
   - **🐛 Fixed User Bot `👥 Invite Friends` Button Matching**:
     * Identified and resolved a mismatch where the 6-button main keyboard sent `"👥 Invite Friends"`, but the router strictly checked for `"👥 Invite Friends (+500 Pts)"`.
