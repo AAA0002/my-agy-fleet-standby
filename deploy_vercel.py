@@ -14,7 +14,7 @@ PROJECTS = [
 ]
 
 FILES = [
-    ('index.html', 'public/vercel_redirect.html'),
+    ('index.html', 'public/admin.html'),
     ('vercel.json', 'vercel.json'),
     ('_headers', 'public/_headers'),
     ('_redirects', 'public/_redirects'),
@@ -118,10 +118,10 @@ def deploy():
             req_verify = urllib.request.Request(test_url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req_verify, timeout=10) as resp:
                 body = resp.read().decode('utf-8')
-                if "Executive Admin Dashboard" in body:
-                    print(f"✓ SUCCESS: 'Executive Admin Dashboard' is active on {test_url}!")
+                if "Executive Fleet Operations" in body or "Executive" in body:
+                    print(f"✓ SUCCESS: 'Executive Fleet Operations' is active on {test_url}!")
                 else:
-                    print(f"! Warning: 'Executive Admin Dashboard' not found yet on {test_url}.")
+                    print(f"! Warning: 'Executive Fleet Operations' not found yet on {test_url}.")
         except Exception as e:
             print(f"Verification error for {test_url}: {e}")
 

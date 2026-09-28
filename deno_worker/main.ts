@@ -23,7 +23,8 @@ const NODES = [
   { name: "Cloudflare Shard 2 (aaa222)", url: "https://restore-agy.aaa222.workers.dev/health", type: "cloudflare" },
   { name: "Cloudflare Node 4 D1 (agorameet)", url: "https://atf-miner-worker.agorameet.workers.dev/", type: "cloudflare" },
   { name: "Cloudflare Node 5 Mining (aaaai)", url: "https://atf-mining-engine.aaaai.workers.dev/", type: "cloudflare" },
-  { name: "Cloudflare Pages Admin Console", url: "https://atf-miner-app.pages.dev", type: "pages" }
+  { name: "Cloudflare Pages User Bot Admin Console", url: "https://atf-miner-app.pages.dev", type: "pages" },
+  { name: "Vercel Executive Fleet Console", url: "https://agy-aaa000.vercel.app", type: "vercel" }
 ];
 
 // Deno KV

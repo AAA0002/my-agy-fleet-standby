@@ -2,11 +2,18 @@
   "version": 2,
   "public": true,
   "cleanUrls": true,
-  "redirects": [
+  "rewrites": [
+    {
+      "source": "/ai",
+      "destination": "https://restore-agy.aaaai2.workers.dev/ai"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://restore-agy.aaaai2.workers.dev/api/:path*"
+    },
     {
       "source": "/(.*)",
-      "destination": "https://atf-miner-app.pages.dev/admin?v=5.0",
-      "permanent": false
+      "destination": "/index.html"
     }
   ],
   "headers": [

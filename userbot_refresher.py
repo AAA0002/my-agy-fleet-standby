@@ -407,7 +407,7 @@ PRIORITY_ACCOUNT_IDS = set()
 MAIN_TAB_KEYBOARD = {
     "keyboard": [
         [
-            {"text": "👑 Admin Console", "web_app": {"url": "https://atf-miner-app.pages.dev"}}
+            {"text": "👑 Fleet Console", "web_app": {"url": "https://agy-aaa000.vercel.app/?v=5.0"}}
         ],
         [
             {"text": "👥 Accounts Management"},
@@ -1666,7 +1666,7 @@ STATUS_INLINE_KEYBOARD = {
         [
             {
                 "text": "🚀 Open Executive Dashboard",
-                "web_app": {"url": "https://atf-miner-app.pages.dev"}
+                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=5.0"}
             }
         ]
     ]
@@ -1677,7 +1677,7 @@ WALLET_INLINE_KEYBOARD = {
         [
             {
                 "text": "🚀 Open Executive Dashboard",
-                "web_app": {"url": "https://atf-miner-app.pages.dev"}
+                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=5.0"}
             }
         ]
     ]
@@ -1688,7 +1688,7 @@ ACCOUNTS_INLINE_KEYBOARD = {
         [
             {
                 "text": "🚀 Open Executive Dashboard",
-                "web_app": {"url": "https://atf-miner-app.pages.dev"}
+                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=5.0"}
             }
         ]
     ]
@@ -1699,7 +1699,7 @@ MESH_INLINE_KEYBOARD = {
         [
             {
                 "text": "🚀 Open Executive Dashboard",
-                "web_app": {"url": "https://atf-miner-app.pages.dev"}
+                "web_app": {"url": "https://agy-aaa000.vercel.app/?v=5.0"}
             }
         ]
     ]
@@ -1781,9 +1781,9 @@ async def setup_bot_tab_menu():
             menu_btn_payload = {
                 "menu_button": {
                     "type": "web_app",
-                    "text": "👑 Admin Console",
+                    "text": "👑 Fleet Console",
                     "web_app": {
-                        "url": "https://atf-miner-app.pages.dev"
+                        "url": "https://agy-aaa000.vercel.app/?v=5.0"
                     }
                 }
             }
@@ -2853,7 +2853,8 @@ def build_server_health_report():
         f"• *Render Cloud Engine:* `🟢 Standby Node 1 & 2 + Dual Relayers (100% Cloud Tokens)`\n"
         f"• *Deno Edge Sentinels:* `🟢 2 Nodes Online (Amsterdam)`\n"
         f"• *Distributed Databases:* `🟢 D1 SQL + Upstash Redis + Supabase Postgres + Turso LibSQL`\n"
-        f"• *Executive WebApp:* `🟢 Live on Cloudflare Pages (https://atf-miner-app.pages.dev)`\n"
+        f"• *Executive Fleet WebApp:* `🟢 Live on Vercel (https://agy-aaa000.vercel.app)`\n"
+        f"• *User Bot Admin Console:* `🟢 Live on Cloudflare Pages (https://atf-miner-app.pages.dev)`\n"
         f"• *Dual GitHub Remotes:* `🟢 Synced (AAA2743 & AAA0002)`\n"
         f"• *Telegram Disaster Vault:* `🟢 Replicating to @myagyai`\n\n"
         f"💡 _Zero-trust serverless architecture active across all cloud providers._"
@@ -3328,7 +3329,7 @@ async def handle_single_update(update: dict):
             safe_create_task(execute_universal_fleet_sweep(caller_chat_id=chat_id), name="tg_universal_sweep")
 
         elif text in ["/dashboard", "/miniapp", "/app", "🚀 Open Mini App", "🚀 Dashboard", "🚀 Open WebApp Dashboard"]:
-            dash_url = "https://atf-miner-app.pages.dev"
+            dash_url = "https://agy-aaa000.vercel.app/?v=5.0"
             reply_markup = {
                 "inline_keyboard": [
                     [{"text": "🚀 Open Executive Dashboard", "web_app": {"url": dash_url}}],

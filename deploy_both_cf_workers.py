@@ -2509,12 +2509,14 @@ fi
       }
     }
 
-    // 7.5 High-Speed Dedicated Dashboards (Cloudflare Pages)
+    // 7.5 High-Speed Dedicated Dashboards
+    // User Bot Admin Dashboard (Users & Miners Only) -> Cloudflare Pages
     if (path === "/user-dash" || path === "/users-admin" || path === "/user-admin" || path === "/users") {
       return Response.redirect("https://atf-miner-app.pages.dev", 302);
     }
+    // Admin Bot Executive Fleet Dashboard (All 14 Private Fleet Accounts & Operations) -> Vercel
     if (path === "/" || path === "/dashboard" || path === "/status-ui" || path === "/miniapp" || path === "/app" || path === "/fleet" || path === "/admin") {
-      return Response.redirect("https://atf-miner-app.pages.dev/admin?v=5.0", 302);
+      return Response.redirect("https://agy-aaa000.vercel.app/?v=5.0", 302);
     }
 
     // 8. Payout Receipts Record (VPS -> Edge with In-Memory + Safe KV)
@@ -3024,7 +3026,7 @@ fi
         if (!update) return new Response("OK");
 
         const botToken = env.ALERT_BOT_TOKEN;
-        const dashUrl = "https://atf-miner-app.pages.dev/admin?v=5.0";
+        const dashUrl = "https://agy-aaa000.vercel.app/?v=5.0";
 
         const statusInlineKeyboard = {
           inline_keyboard: [
@@ -3037,7 +3039,7 @@ fi
               { text: "📊 Community Miners", callback_data: "btn_community" }
             ],
             [
-              { text: "🚀 Open Admin Console", web_app: { url: dashUrl } }
+              { text: "🚀 Open Executive Dashboard", web_app: { url: dashUrl } }
             ]
           ]
         };
@@ -8781,14 +8783,14 @@ async def main():
         except Exception as e:
             print(f"⚠️ Error setting bot commands: {e}")
 
-        # 4. Set Admin Bot Chat Menu Button & Commands
+        # 4. Set Admin Bot Chat Menu Button & Commands (Points to Vercel Executive Fleet Dashboard)
         if ALERT_BOT_TOKEN:
             admin_menu_payload = {
                 "menu_button": {
                     "type": "web_app",
-                    "text": "👑 Admin Console",
+                    "text": "👑 Fleet Console",
                     "web_app": {
-                        "url": "https://atf-miner-app.pages.dev/admin?v=5.0"
+                        "url": "https://agy-aaa000.vercel.app/?v=5.0"
                     }
                 }
             }
@@ -8804,9 +8806,9 @@ async def main():
                     "chat_id": int(OWNER_ID),
                     "menu_button": {
                         "type": "web_app",
-                        "text": "👑 Admin Console",
+                        "text": "👑 Fleet Console",
                         "web_app": {
-                            "url": "https://atf-miner-app.pages.dev/admin?v=5.0"
+                            "url": "https://agy-aaa000.vercel.app/?v=5.0"
                         }
                     }
                 }
@@ -8821,8 +8823,8 @@ async def main():
 
             admin_commands_payload = {
                 "commands": [
-                    {"command": "start", "description": "👑 Open Executive Admin Console & Fleet"},
-                    {"command": "dashboard", "description": "🚀 Launch Cloudflare Pages Admin Console"},
+                    {"command": "start", "description": "👑 Open Executive Fleet Console & Roster"},
+                    {"command": "dashboard", "description": "🚀 Launch Vercel Fleet Operations Console"},
                     {"command": "burn", "description": "🔥 Economy & Daily Burn (100 Pts/day)"},
                     {"command": "sweep_daily", "description": "⚡ Run 100 Pts Daily Deduction Sweep"},
                     {"command": "accounts", "description": "👥 Manage Fleet Accounts & Roster"},

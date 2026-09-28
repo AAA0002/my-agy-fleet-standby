@@ -4,6 +4,20 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Strict Infrastructure Separation: User Bot Admin Dashboard on Cloudflare Pages vs Admin Bot Fleet Console on Vercel (`deploy_both_cf_workers.py`, `deploy_vercel.py`, `vercel.json`, `public/_redirects`, `public/index.html`, `userbot_refresher.py`, `deno_worker/main.ts`, `CHANGELOG.md`)**:
+  - **🌐 Cloudflare Pages (`https://atf-miner-app.pages.dev`) — Dedicated Exclusively to User Bot Admin Dashboard**:
+    * Cleaned `public/index.html` to focus 100% on community users, linked accounts, points balances, VIP passes, user moderation (ban/unban, grant/deduct points), and 100 Pts/day daily cost sweeps.
+    * Removed legacy `public/admin/` directory from Cloudflare Pages so fleet accounts and private wallets are never exposed or mixed into Cloudflare Pages.
+    * Configured `public/_redirects` to redirect `/admin` and `/fleet` to `https://agy-aaa000.vercel.app/` with HTTP 302, while serving `index.html` for all user routes.
+  - **🚀 Vercel (`https://agy-aaa000.vercel.app`) — Dedicated Exclusively to Admin Bot Executive Fleet Operations**:
+    * Restored clean proxy rewrites in `vercel.json` (`/ai` and `/api/*` routed to Cloudflare Edge Node 1 gateway while serving `index.html`).
+    * Deployed `public/admin.html` as `index.html` via `deploy_vercel.py` to Vercel projects `my-agy-ai-fleet` (`agy-aaa000.vercel.app`) and `agy` (`agy-henna.vercel.app`).
+    * Surfaces all 14 Private Fleet Accounts, 8 Mining Pools, on-chain wallets, instant harvest, universal sweep, 5-node edge mesh, and Ari AI Briefing.
+  - **🤖 Bot Webhook & Menu Button Alignment**:
+    * **Admin Bot (`@myagy_ai_bot`)**: `dashUrl` updated in webhook and commands (`/start`, `/dashboard`, `/status`, inline keyboards, and persistent `👑 Fleet Console` chat menu button) to launch `https://agy-aaa000.vercel.app/?v=5.0`.
+    * **User Bot (`@AAAPREMIUMAPPSbot`)**: Admin command `/admin` exclusively points to `https://atf-miner-app.pages.dev`. Regular user keyboards remain clean with only 6 essential user buttons.
+    * Synchronized and verified live across all 5 Cloudflare Worker edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`), Vercel, and Telegram bot menu API.
+
 - **Ecosystem Bug Fixes & Dashboard Polish (`deploy_both_cf_workers.py`, `public/index.html`, `public/admin/index.html`, `public/admin.html`, `CHANGELOG.md`)**:
   - **🛡️ Fixed Sweep Double-Deduction Risk**:
     * Hardened `runDailyCostSweep` so that manual sweep triggers (from dashboard or `/sweep_daily`) check `prof.last_deduction_date === today && prof.farming_active === true`.
