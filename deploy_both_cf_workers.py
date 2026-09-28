@@ -1323,7 +1323,8 @@ async function runDailyCostSweep(env, force = false) {
 
   for (const prof of userProfiles) {
     if (!prof || !prof.user_id || !prof.accounts || prof.accounts.length === 0) continue;
-    if (!force && prof.last_deduction_date === today) continue;
+    // Never double-charge a miner who already paid and is actively mining today
+    if (prof.last_deduction_date === today && prof.farming_active === true) continue;
     processed++;
 
     const now = Date.now();
@@ -2337,6 +2338,16 @@ fi
           user.points = (user.points || 0) + (parseInt(amount) || 100);
           const dailyCost = (user.accounts || []).length * 100;
           if (user.points >= dailyCost) user.farming_active = true;
+          const uToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+          ctx.waitUntil(fetch(`https://api.telegram.org/bot${uToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: uid,
+              text: `🎁 *POINTS CREDITED BY ADMIN* 💎\n\n+${parseInt(amount) || 100} Mining Points have been credited to your balance by Platform Administrator Arif!\n\n• *New Balance:* ${user.points} Points\n• *Cloud Mining:* ${user.farming_active ? "🟢 Active 24/7" : "🔴 Paused"}`,
+              parse_mode: "Markdown"
+            })
+          }).catch(() => {}));
         } else if (action === "deduct_points") {
           user.points = Math.max(0, (user.points || 0) - (parseInt(amount) || 100));
           const dailyCost = (user.accounts || []).length * 100;
@@ -2351,6 +2362,16 @@ fi
           user.subscription_tier = tier || "month";
           user.subscription_expiry = Date.now() + (passDays * 86400 * 1000);
           user.farming_active = true;
+          const uToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+          ctx.waitUntil(fetch(`https://api.telegram.org/bot${uToken}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: uid,
+              text: `🌟 *VIP PASS ACTIVATED BY ADMIN* 👑\n\nA 30-Day VIP Pass has been granted to your account by Platform Administrator Arif!\n\n• *Daily Fee:* 0 Pts/day (100% Free / Exempt)\n• *Cloud Mining:* 🟢 Active 24/7 Unlimited`,
+              parse_mode: "Markdown"
+            })
+          }).catch(() => {}));
         } else if (action === "toggle_farming") {
           user.farming_active = !user.farming_active;
         } else if (action === "toggle_ban" || action === "ban_user") {
@@ -2362,6 +2383,8 @@ fi
           } else {
             delete user.ban_reason;
             await upstashSrem("ub_banned_users", String(uid));
+            const dailyCost = (user.accounts || []).length * 100;
+            if (user.points >= dailyCost) user.farming_active = true;
           }
         }
 
@@ -5833,7 +5856,9 @@ Reply to Arif naturally:`;
       // Auto-register user ID in global community Set in Upstash Redis
       ctx.waitUntil(upstashSadd("ub_registered_users", String(uid)));
 
-      // Ensure subscription & daily streak fields exist
+      // Ensure subscription, accounts & daily streak fields exist
+      if (!prof.accounts || !Array.isArray(prof.accounts)) prof.accounts = [];
+      if (prof.points === undefined || prof.points === null) prof.points = 0;
       if (prof.subscription_expiry === undefined) prof.subscription_expiry = 0;
       if (prof.subscription_tier === undefined) prof.subscription_tier = null;
       if (prof.daily_streak === undefined) prof.daily_streak = 0;

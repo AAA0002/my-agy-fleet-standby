@@ -4,6 +4,19 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **Ecosystem Bug Fixes & Dashboard Polish (`deploy_both_cf_workers.py`, `public/index.html`, `public/admin/index.html`, `public/admin.html`, `CHANGELOG.md`)**:
+  - **🛡️ Fixed Sweep Double-Deduction Risk**:
+    * Hardened `runDailyCostSweep` so that manual sweep triggers (from dashboard or `/sweep_daily`) check `prof.last_deduction_date === today && prof.farming_active === true`.
+    * Guarantees active accounts already swept today are never double-charged, while still picking up newly connected accounts or paused accounts that refilled points.
+  - **📬 Real-time Telegram Notifications on Admin Action**:
+    * Enhanced `/api/admin/user-action`: when points are added or a VIP pass is granted from either dashboard or API, an instant notification receipt is delivered to the user's Telegram chat via `USER_BOT_TOKEN`.
+    * Automatically resumes mining (`farming_active = true`) upon unbanning a user if their points balance covers today's daily cost.
+  - **⚡ Double-Click Protection & Loading States on Dashboards**:
+    * Fixed button `disabled` state logic in both `public/index.html` (User Bot Admin Dashboard) and `public/admin/index.html` (Admin Bot Fleet Dashboard) by properly matching `actionLoadingId?.startsWith(String(u.user_id))`.
+    * Prevents rapid duplicate requests and displays active loading states (`...`) during edge API calls.
+  - **🛡️ Array & Points Normalization in `getUserProfile`**:
+    * Explicitly guarantees `prof.accounts = []` and `prof.points = 0` on every profile retrieval, preventing any potential `TypeError` crashes on legacy or corrupted records.
+
 - **Architectural Clarification & Complete Separation of the 2 Distinct Dashboards (`deploy_both_cf_workers.py`, `public/index.html`, `public/admin/index.html`, `CHANGELOG.md`)**:
   - **🏛️ 2 Distinct Dashboards Defined & Separated**:
     1. **User Bot Admin Dashboard (`public/index.html` at `https://atf-miner-app.pages.dev`)**:

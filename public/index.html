@@ -678,38 +678,38 @@ function App() {
           // Quick Admin Action Controls
           React.createElement("div", { className: "flex items-center gap-1.5 pt-2 border-t border-slate-100" },
             React.createElement("button", {
-              disabled: actionLoadingId === `${u.user_id}_add_points_100`,
+              disabled: actionLoadingId?.startsWith(String(u.user_id)),
               onClick: () => handleUserAction(u.user_id, "add_points", { amount: 100 }),
               className: "flex-1 py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
-            }, "+100 Pts"),
+            }, actionLoadingId === `${u.user_id}_add_points` ? "..." : "+100 Pts"),
             React.createElement("button", {
-              disabled: actionLoadingId === `${u.user_id}_add_points_500`,
+              disabled: actionLoadingId?.startsWith(String(u.user_id)),
               onClick: () => handleUserAction(u.user_id, "add_points", { amount: 500 }),
               className: "flex-1 py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
-            }, "+500 Pts"),
+            }, actionLoadingId === `${u.user_id}_add_points` ? "..." : "+500 Pts"),
             React.createElement("button", {
-              disabled: actionLoadingId === `${u.user_id}_set_vip`,
+              disabled: actionLoadingId?.startsWith(String(u.user_id)),
               onClick: () => handleUserAction(u.user_id, "set_vip", { tier: "month", days: 30 }),
               className: "flex-1 py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer disabled:opacity-50"
-            }, "👑 30D VIP"),
+            }, actionLoadingId === `${u.user_id}_set_vip` ? "..." : "👑 30D VIP"),
             React.createElement("button", {
               onClick: () => { setGrantModalUser(u); setCustomPointsInput("250"); haptic("light"); },
               className: "py-1.5 px-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer"
             }, "⚙️ Pts"),
             React.createElement("button", {
-              disabled: actionLoadingId === `${u.user_id}_toggle_farming`,
+              disabled: actionLoadingId?.startsWith(String(u.user_id)),
               onClick: () => handleUserAction(u.user_id, "toggle_farming"),
-              className: `py-1.5 px-2.5 rounded-lg text-[11px] font-bold border transition active:scale-95 cursor-pointer ${
+              className: `py-1.5 px-2.5 rounded-lg text-[11px] font-bold border transition active:scale-95 cursor-pointer disabled:opacity-50 ${
                 u.farming_active ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"
               }`
-            }, u.farming_active ? "Pause" : "Resume"),
+            }, actionLoadingId === `${u.user_id}_toggle_farming` ? "..." : (u.farming_active ? "Pause" : "Resume")),
             React.createElement("button", {
-              disabled: actionLoadingId === `${u.user_id}_toggle_ban`,
+              disabled: actionLoadingId?.startsWith(String(u.user_id)),
               onClick: () => handleUserAction(u.user_id, "toggle_ban"),
-              className: `py-1.5 px-2 rounded-lg text-[11px] font-bold border transition active:scale-95 cursor-pointer ${
+              className: `py-1.5 px-2 rounded-lg text-[11px] font-bold border transition active:scale-95 cursor-pointer disabled:opacity-50 ${
                 u.is_banned ? "bg-red-600 text-white border-red-700 hover:bg-red-700" : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
               }`
-            }, u.is_banned ? "Unban" : "🚫 Ban")
+            }, actionLoadingId === `${u.user_id}_toggle_ban` ? "..." : (u.is_banned ? "Unban" : "🚫 Ban"))
           )
         );
       })
