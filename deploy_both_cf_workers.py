@@ -6766,17 +6766,19 @@ Reply to Arif naturally:`;
           is_persistent: true
         };
 
+        const BOT_BANNER_URL = "https://aaa-admin-portal.pages.dev/assets/banner.jpg";
+
         const gateInlineKeyboard = {
           inline_keyboard: [
             [
-              { text: "💬 1. Join Community Hub", url: "https://t.me/AAAAutoMiner" },
-              { text: "📢 2. Join Announcements", url: "https://t.me/AAAAUTOMINING" }
+              { text: "📢 Community Hub ↗️", url: "https://t.me/AAAAutoMiner" },
+              { text: "📢 Announcements ↗️", url: "https://t.me/AAAAUTOMINING" }
             ],
             [
-              { text: "⚡ 3. Join Live Activity Stream", url: "https://t.me/AAA_ACTIVITY" }
+              { text: "⚡ Live Activity Stream ↗️", url: "https://t.me/AAA_ACTIVITY" }
             ],
             [
-              { text: "🔄 Verify Membership & Claim 100 Pts", callback_data: "ub_verify_gate" }
+              { text: "🎖️ VERIFY JOIN & CLAIM 100 PTS 🎁", callback_data: "ub_verify_gate" }
             ]
           ]
         };
@@ -6793,11 +6795,11 @@ Reply to Arif naturally:`;
               { text: "🌟 VIP Passes & Boosts (Stars)", callback_data: "ub_buy_stars" }
             ],
             [
-              { text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" },
-              { text: "💬 Community Hub", url: "https://t.me/AAAAutoMiner" }
+              { text: "📢 Announcements ↗️", url: "https://t.me/AAAAUTOMINING" },
+              { text: "💬 Community Hub ↗️", url: "https://t.me/AAAAutoMiner" }
             ],
             [
-              { text: "⚡ Live Miner Activity Stream", url: "https://t.me/AAA_ACTIVITY" }
+              { text: "⚡ Live Activity Stream ↗️", url: "https://t.me/AAA_ACTIVITY" }
             ]
           ]
         };
@@ -6877,6 +6879,38 @@ Reply to Arif naturally:`;
             }).catch(() => {});
           };
 
+          const sendCqPhoto = async (photoUrl, caption, markup = null) => {
+            const payload = {
+              chat_id: cqChatId,
+              photo: photoUrl,
+              caption: caption,
+              parse_mode: "Markdown"
+            };
+            if (markup) {
+              payload.reply_markup = markup;
+            }
+            try {
+              const resp = await fetch(`https://api.telegram.org/bot${userBotToken}/sendPhoto`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+              });
+              if (!resp.ok) {
+                delete payload.parse_mode;
+                const retry = await fetch(`https://api.telegram.org/bot${userBotToken}/sendPhoto`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload)
+                });
+                if (!retry.ok) {
+                  await sendCqReply(caption, markup);
+                }
+              }
+            } catch (_) {
+              await sendCqReply(caption, markup);
+            }
+          };
+
           // Immediately dismiss spinning loader on Telegram mobile client
           ctx.waitUntil(answerCq());
 
@@ -6884,7 +6918,7 @@ Reply to Arif naturally:`;
           if (String(cqChatId) !== (env.OWNER_ID || "6727787768")) {
             const profCheck = await getUserProfile(cqChatId, cq.from);
             if (profCheck && profCheck.is_banned) {
-              await answerCq("🚫 Your account is suspended by platform administration.");
+              await answerCq("🚫 Your account is suspended by platform administration.", true);
               await sendCqReply("🚫 *Access Restricted*\n\nYour account has been suspended by platform administration for suspicious anti-sybil activity or policy violations.\n\nIf you believe this is an error, please contact @AAAAutoMiner.");
               return new Response("OK");
             }
@@ -6895,15 +6929,18 @@ Reply to Arif naturally:`;
             const chCheck = await checkUserChannels(cqChatId);
             if (!chCheck.ok) {
               const missingNames = chCheck.missing.map(m => m.username || m.name).join(", ");
-              await answerCq(`⚠️ You still need to join: ${missingNames}! Please join all 3 channels above, then tap Verify again.`);
+              await answerCq(`⚠️ You still need to join: ${missingNames}! Please join all 3 channels above, then tap Verify again.`, true);
               return new Response("OK");
             }
 
-            await answerCq("✅ Membership verified! 100 Welcome Points awarded!");
+            await answerCq("✅ Membership verified! 100 Welcome Points awarded!", false);
             const profile = await getUserProfile(cqChatId, cq.from);
             const isFirst = !profile.joined_channels || !profile.activity_broadcasted;
             profile.joined_channels = true;
             profile.activity_broadcasted = true;
+            if (isFirst) {
+              profile.points = (profile.points || 0) + 100;
+            }
             await saveUserProfile(cqChatId, profile);
 
             if (isFirst) {
@@ -6913,21 +6950,12 @@ Reply to Arif naturally:`;
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
             const welcomeText = `🌟 *AAA AUTO MINING PLATFORM (PREMIUM)* 🚀\n` +
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
-              `Hello ${cqSenderName}! You have successfully verified all 3 community channels and claimed 🎁 *100 Free Welcome Points*!\n\n` +
-              `Connect your account once, and AAA Auto Mining will **automatically farm all 8 Telegram crypto bots 24/7 in the cloud**! Our cloud engines handle all daily mining sessions, task farming, and claim cycles continuously.\n\n` +
-              `🤖 *8 Automated Mining Pools & Links:*\n` +
-              `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
-              `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Continuous auto-farming sessions\n` +
-              `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
-              `4️⃣ 🎨 [ART Miner](https://t.me/ART_AIRDROP_BOT?start=6727787768) — Auto-farming & token claims\n` +
-              `5️⃣ 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — Automated hash generation & daily bonuses\n` +
-              `6️⃣ 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Multi-pool automated cloud mining\n` +
-              `7️⃣ 🏔️ [Apex Miner](https://t.me/ApxMinerBot/app?startapp=6727787768) — Continuous APX node farming\n` +
-              `8️⃣ 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768) — 24/7 automated node mining & daily tasks\n\n` +
+              `Welcome ${cqSenderName}! You have successfully verified all 3 community channels and claimed 🎁 *100 Free Welcome Points*!\n\n` +
+              `Connect your account once, and AAA Auto Mining will **automatically farm all 8 Telegram crypto bots 24/7 in the cloud**! Cloud engines handle all daily mining sessions, task farming, and claim cycles continuously.\n\n` +
               `💎 *Your Fleet Overview:*\n` +
               `• *Connected Accounts:* ${profile.accounts?.length || 0} / ${totalSlots} Slots\n` +
               `• *Points Balance:* ${profile.points || 100} Points\n` +
-              `• *Subscription Pass:* Free Tier (Pay-As-You-Go)\n` +
+              `• *Pass Status:* Free Tier (Pay-As-You-Go)\n` +
               `• *Farming Status:* 🟢 Active & Ready\n` +
               `• *Daily Cost:* ${(profile.accounts?.length || 0) * 100} Pts/day\n\n` +
               `📺 *Earn Points:* Watch ads (+20 Pts) or invite friends (+500 Pts).\n` +
@@ -6935,8 +6963,8 @@ Reply to Arif naturally:`;
               `👇 *Tap 🎬 Watch Video Ad below or choose an option from the menu:*`;
 
             ctx.waitUntil((async () => {
-              await sendCqReply("✅ *Membership verified! 100 Welcome Points awarded!*", activeUserKeyboard);
-              await sendCqReply(welcomeText, activeWelcomeInlineKeyboard);
+              await sendCqPhoto(BOT_BANNER_URL, welcomeText, activeWelcomeInlineKeyboard);
+              await sendCqReply("🎉 *Account Activated!* Choose an action below or tap 🎬 Watch Ads:", activeUserKeyboard);
             })());
             return new Response("OK");
           }
@@ -7488,6 +7516,40 @@ Reply to Arif naturally:`;
           } catch (_) {}
         };
 
+        const sendUserPhoto = async (photoUrl, caption, replyMarkup = null, parseMode = "Markdown") => {
+          const payload = {
+            chat_id: chatId,
+            photo: photoUrl,
+            caption: caption
+          };
+          if (parseMode) payload.parse_mode = parseMode;
+          if (replyMarkup) payload.reply_markup = replyMarkup;
+          try {
+            const resp = await fetch(`https://api.telegram.org/bot${userBotToken}/sendPhoto`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            if (!resp.ok) {
+              if (parseMode) {
+                delete payload.parse_mode;
+                const retry = await fetch(`https://api.telegram.org/bot${userBotToken}/sendPhoto`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload)
+                });
+                if (!retry.ok) {
+                  await sendUserReply(caption, replyMarkup, parseMode);
+                }
+              } else {
+                await sendUserReply(caption, replyMarkup, parseMode);
+              }
+            }
+          } catch (_) {
+            await sendUserReply(caption, replyMarkup, parseMode);
+          }
+        };
+
         const sendUserChatAction = async (action = "typing") => {
           try {
             await fetch(`https://api.telegram.org/bot${userBotToken}/sendChatAction`, {
@@ -7813,16 +7875,13 @@ Reply to Arif naturally:`;
           if (!profile.joined_channels) {
             const chCheck = await checkUserChannels(chatId);
             if (!chCheck.ok) {
-              const gateMsg = `🔒 *MANDATORY COMMUNITY ACCESS GATE*\n\n` +
-                `Welcome to *AAA Auto Mining Platform*!\n` +
-                `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
-                `To access automated 24/7 cloud mining, free AI copilot, and account management, you must join our 3 official community hubs:\n\n` +
-                `1️⃣ 💬 [AAA Auto Miner — Community Hub](https://t.me/AAAAutoMiner)\n` +
-                `2️⃣ 📢 [AAA Auto Miner — Announcements](https://t.me/AAAAUTOMINING)\n` +
-                `3️⃣ ⚡ [AAA ATF Miner — Live Activity](https://t.me/AAA_ACTIVITY)\n\n` +
-                `👉 *Join all 3 channels above, then tap 🔄 Verify Membership below to claim 🎁 100 Free Welcome Points!*`;
-              await sendUserReply("👋 *Welcome to AAA Auto Mining!* (Created by AAA)\nAccess all features below or choose from the interactive menu:", activeUserKeyboard);
-              await sendUserReply(gateMsg, gateInlineKeyboard);
+              const gateCaption = `🚫 *Access Denied*\n\n` +
+                `You must *JOIN OUR CHANNELS FIRST*:\n\n` +
+                `• *Community Hub* (@AAAAutoMiner)\n` +
+                `• *Announcements* (@AAAAUTOMINING)\n` +
+                `• *Live Activity Stream* (@AAA_ACTIVITY)\n\n` +
+                `🎁 *Reward:* Claim *100 Free Welcome Points* instantly upon verification!`;
+              await sendUserPhoto(BOT_BANNER_URL, gateCaption, gateInlineKeyboard);
               return;
             }
 
@@ -7999,8 +8058,8 @@ Reply to Arif naturally:`;
               `📺 *Earn Points:* Tap *🎬 Watch Video Ad (+20 Pts)* below or invite friends (+500 Pts).\n` +
               `🌟 *Subscriptions:* Day, Weekly, and Monthly VIP Passes with Telegram Stars!\n\n` +
               `👇 *Tap 🎬 Watch Video Ad below or choose an option from the menu:*`;
-            await sendUserReply("👋 *Welcome to AAA Auto Mining!* (Created by AAA)\nAccess all features below or choose from the interactive menu:", activeUserKeyboard);
-            await sendUserReply(welcomeText, activeWelcomeInlineKeyboard);
+            await sendUserPhoto(BOT_BANNER_URL, welcomeText, activeWelcomeInlineKeyboard);
+            await sendUserReply("⚡ *Control Panel:* Select an option below or tap 🎬 Watch Ads:", activeUserKeyboard);
 
             // Ensure persistent Chat Menu Button on User Bot is ALWAYS set to Watch Ads for ALL users (including owner)
             if (ctx && ctx.waitUntil) {
@@ -8497,11 +8556,11 @@ Reply to Arif naturally:`;
               `3️⃣ ⚡ *AAA ATF Miner — Live Activity* (${status3})\n` +
               `• Real-time automated mining harvest telemetry & payment proofs.\n` +
               `👉 [Join Live Activity Stream](https://t.me/AAA_ACTIVITY)`;
-            await sendUserReply(chMsg, {
+            await sendUserPhoto(BOT_BANNER_URL, chMsg, {
               inline_keyboard: [
-                [{ text: `💬 1. Community Hub (${status1})`, url: "https://t.me/AAAAutoMiner" }],
-                [{ text: `📢 2. Announcements (${status2})`, url: "https://t.me/AAAAUTOMINING" }],
-                [{ text: `⚡ 3. Live Activity Stream (${status3})`, url: "https://t.me/AAA_ACTIVITY" }]
+                [{ text: `💬 Community Hub (${status1}) ↗️`, url: "https://t.me/AAAAutoMiner" }],
+                [{ text: `📢 Announcements (${status2}) ↗️`, url: "https://t.me/AAAAUTOMINING" }],
+                [{ text: `⚡ Live Activity Stream (${status3}) ↗️`, url: "https://t.me/AAA_ACTIVITY" }]
               ]
             });
             return;

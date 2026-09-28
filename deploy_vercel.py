@@ -20,6 +20,7 @@ ADMIN_FILES = [
     ('admin/index.html', 'public_admin/admin/index.html'),
     ('user-admin/index.html', 'public_admin/user-admin/index.html'),
     ('users/index.html', 'public_admin/users/index.html'),
+    ('assets/banner.jpg', 'public_admin/assets/banner.jpg'),
     ('vercel.json', 'public_admin/vercel.json'),
     ('_headers', 'public_admin/_headers'),
     ('_redirects', 'public_admin/_redirects'),
@@ -28,6 +29,7 @@ ADMIN_FILES = [
 ADS_FILES = [
     ('index.html', 'public_ads/index.html'),
     ('app/ad/index.html', 'public_ads/app/ad/index.html'),
+    ('assets/banner.jpg', 'public_ads/assets/banner.jpg'),
     ('shared/waterfallController.js', 'public_ads/shared/waterfallController.js'),
     ('shared/gigapubController.js', 'public_ads/shared/gigapubController.js'),
     ('shared/vastLoader.js', 'public_ads/shared/vastLoader.js'),

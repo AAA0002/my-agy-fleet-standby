@@ -4,7 +4,27 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-- **Strict Admin vs. Watch Ads Physical Separation & Biometric/Password Security Gate (`public_admin/`, `public_ads/`, `deploy_both_cf_workers.py`, `deploy_all_pages.py`, `deploy_vercel.py`, `CHANGELOG.md`)**:
+- **Professional Bot Visual Architecture & Card Redesign (`deploy_both_cf_workers.py`, `deploy_all_pages.py`, `deploy_vercel.py`, `CHANGELOG.md`)**:
+  - **🎨 Visual Card Excellence (Exceeding Reference Bot)**:
+    * Replaced all plain text messages and cluttered walls of text with high-definition anime cyberpunk AI crypto mining artwork (`banner.jpg`).
+    * Deployed banner asset across all edge surfaces: Cloudflare Pages Primary (`https://atf-miner-app.pages.dev/assets/banner.jpg`), Admin Portal (`https://aaa-admin-portal.pages.dev/assets/banner.jpg`), and Vercel (`https://agy-aaa000.vercel.app/assets/banner.jpg`).
+  - **🚫 Access Denied & Community Gate Transformation**:
+    * Eliminated 15-line wall of spammy text and replaced with a clean, punchy 4-line bulleted card:
+      "🚫 *Access Denied*\n\nYou must *JOIN OUR CHANNELS FIRST*:\n• *Community Hub* (@AAAAutoMiner)\n• *Announcements* (@AAAAUTOMINING)\n• *Live Activity Stream* (@AAA_ACTIVITY)\n\n🎁 *Reward:* Claim *100 Free Welcome Points* instantly upon verification!"
+    * Fixed truncated button labels: Replaced long, awkward numbered strings ("2. Join Announcement") with sleek, symmetrical labels and external indicators:
+      `[ 📢 Community Hub ↗️ ]  [ 📢 Announcements ↗️ ]`
+      `[ ⚡ Live Activity Stream ↗️ ]`
+      `[ 🎖️ VERIFY JOIN & CLAIM 100 PTS 🎁 ]`
+    * Fixed Keyboard Clutter Bug: Previously, locked-out users received both a duplicate greeting and the full 4-row interactive reply keyboard before verifying. Removed all preemptive keyboard dispatch during lockout so unverified users see a clean, distraction-free interface matching the reference bot.
+  - **⚡ Verification Flow & Onboarding Polish**:
+    * Upgraded `ub_verify_gate` callback to check membership, award +100 Welcome Points, send the welcome photo banner card, and seamlessly activate the control panel reply keyboard.
+    * Upgraded `/start` for verified users to send a single cohesive photo card with fleet stats and inline quick actions.
+  - **🌐 Fleet-Wide Edge Deployment & Verification**:
+    * Deployed updated Edge Workers to all 5 Cloudflare accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Deployed all 5 Cloudflare Pages nodes (`aaa-admin-portal`, `aaa-ai-engine`, `atf-miner-app`, `aaa-watch-ads`, `aaa-community-ads`).
+    * Deployed all 3 Vercel projects (`my-agy-ai-fleet`, `aaa-free-ai`, `agy`).
+    * Verified live `sendPhoto` rendering on Telegram API (Message ID: 3357).
+
   - **🛡️ Root Cause of Cross-Contamination Resolved**:
     * Identified that when ads completed or auto-closed after 7 seconds, `public_ads/index.html` was invoking `returnToDashboard()`, which ran `window.location.href = '/app/'`.
     * In Cloudflare Worker routing, `/app` was previously caught by a broad dashboard redirect rule that forwarded traffic to `https://aaa-admin-portal.pages.dev/admin`. This caused users and Commander Arif to land unexpectedly on the Admin Dashboard after watching ads.
