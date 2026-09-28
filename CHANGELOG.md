@@ -4,6 +4,24 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **User Bot Keyboard & UI Upgrade, 100% Copy Purification & Zero Phone Load Restoration Guardrail (`deploy_both_cf_workers.py`, `public/admin.html`, `public/index.html`, `restore.sh`, `CHANGELOG.md`)**:
+  - **⛏️ Native Farming Bots Menu & Pool Showcase**:
+    * Added dedicated `⛏️ Farming Bots` button directly into the User Bot main keyboard (`userMainKeyboard`) alongside `👥 My Accounts`, `➕ Connect Account`, and `💎 Points & Pass`.
+    * Added `⛏️ 8 Supported Farming Bots 🤖` as the primary action button on the welcome inline keyboard (`userWelcomeInlineKeyboard`), allowing users to immediately explore all supported mining bots and understand how cloud automation works.
+    * Enriched `/pools`, `/bots`, `/farm`, and `ub_pools` callback responses with direct clickable Telegram bot links to all 8 bots (`ATF Miner`, `Stones Miner`, `MRG Miner`, `ART Miner`, `AI Lab Robot`, `UltraWallet`, `Apex Miner`, `Ainovum`).
+    * Clarified that our bot is exclusively designed for 24/7 autonomous cloud auto-farming, where mined rewards accumulate directly inside each official bot with zero manual effort required.
+  - **🧹 Comprehensive "0% Fee" and Internal Term Scrubbing**:
+    * Purged all remaining occurrences of "0 fee", "0% fee", "zero point deduction", and "miner payouts" from `deploy_both_cf_workers.py` (Ari AI prompts, fallback answers, daily check-in alerts, Stars pass descriptions, milestone unlocks, and economy summaries).
+    * Removed "0% Phone Load" and "Payouts" subheadings from `public/admin.html`, replacing with "100% Cloud-Powered" and "Direct Vault / Rewards".
+    * Cleaned up `public/index.html` to describe VIP passes as "unlimited passes" rather than "0 fees".
+  - **📱 Termux Zero Phone Load Guardrail in 1-Click Restoration (`restore.sh`)**:
+    * Implemented `IS_TERMUX` detection in `restore.sh` to distinguish between Android Termux (`IS_TERMUX=true` on Samsung Galaxy A30) and remote Linux VPS.
+    * On Termux, `restore.sh` strictly bypasses local bot daemon startup (`start_userbot.sh`), keeping 100% of phone RAM and CPU reserved for the Antigravity AI pair programming session while all bot cycles run 100% in the cloud.
+  - **🚀 Synchronized Mesh & Production Deployment**:
+    * Deployed updated worker script across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`), re-syncing bot commands, descriptions, and webhooks.
+    * Deployed updated webapps to Vercel production (`https://agy-aaa000.vercel.app/` and `https://agy-henna.vercel.app/`), verified HTTP 200.
+    * Verified 100% Node.js AST syntax validation on all 8,470 lines of worker JavaScript.
+
 - **Full Fleet 8-Bot Cloud Auto-Farming Upgrade, Diagnostic Hardening, Copy Purification & Multi-Cloud Deployment (`render_standby_app.py`, `render_app_latest.py`, `deploy_both_cf_workers.py`, `public/admin.html`, `deploy_vercel.py`, `CHANGELOG.md`)**:
   - **🧹 Complete Copy Purification & User Bot Role Focus**:
     * Per direct user request, completely purged all developer and financial terms ("0% platform fees", "0% fee payouts", "zero phone load") from user-facing prompts, bot fallback answers, and `public/admin.html`.

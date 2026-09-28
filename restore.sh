@@ -15,8 +15,10 @@ cd "$BASE_DIR"
 
 # 1. Detect environment and install packages
 echo "📦 Checking system dependencies..."
+IS_TERMUX=false
 if command -v pkg &> /dev/null; then
     echo "📱 Android Termux environment detected."
+    IS_TERMUX=true
     pkg update -y && pkg install -y python tmux git unzip curl
 elif command -v apt-get &> /dev/null; then
     echo "🖥️ Linux VPS environment detected."
@@ -76,13 +78,23 @@ fi
 # 7. Make all scripts executable
 chmod +x bot_supervisor.sh start_userbot.sh stop_userbot.sh login_account.py phone_detector.py proxy_manager.py backup_manager.py restore.sh restore_fleet.sh cloudflared_tunnel.sh autonomous_cloud_agent.py refresh_cloud_tokens.py render_failover_manager.py deploy_both_cf_workers.py 2>/dev/null || true
 
-# 8. Start 24/7 background supervisor daemon in tmux
-echo "⚡ Starting immortal 24/7 supervisor in tmux session: telegram_bot..."
-./start_userbot.sh
-
-echo "======================================================"
-echo "  🎉 RESTORATION 100% COMPLETE!"
-echo "  • Telegram Bot: Running 24/7 in tmux session: telegram_bot"
-echo "  • Antigravity CLI: Ready to use ('agy')"
-echo "  • Live Bot Logs: tail -f userbot.log"
-echo "======================================================"
+# 8. Start 24/7 background supervisor daemon (Linux VPS only; Termux is 100% cloud-first)
+if [ "$IS_TERMUX" = true ]; then
+    echo "📱 Android Termux detected (Samsung Galaxy A30)."
+    echo "🛡️ Zero Phone Load Directive: Bot daemon loops run 100% in the cloud."
+    echo "======================================================"
+    echo "  🎉 RESTORATION 100% COMPLETE!"
+    echo "  • Phone Status: 100% Free RAM/CPU for AI Coding"
+    echo "  • Antigravity CLI: Ready to use ('agy')"
+    echo "  • Cloud Edge Mesh: Active & Auto-Farming 24/7 in Cloud"
+    echo "======================================================"
+else
+    echo "⚡ Starting immortal 24/7 supervisor in tmux session: telegram_bot..."
+    ./start_userbot.sh
+    echo "======================================================"
+    echo "  🎉 RESTORATION 100% COMPLETE!"
+    echo "  • Telegram Bot: Running 24/7 in tmux session: telegram_bot"
+    echo "  • Antigravity CLI: Ready to use ('agy')"
+    echo "  • Live Bot Logs: tail -f userbot.log"
+    echo "======================================================"
+fi

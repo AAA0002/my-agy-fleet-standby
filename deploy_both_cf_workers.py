@@ -1360,13 +1360,13 @@ async function runDailyCostSweep(env, force = false) {
                   `• 🎁 *Claim Daily Bonus* (+25-50 Pts)\n` +
                   `• 🎬 *Watch Rewarded Video Ads* (+20 Pts/ad)\n` +
                   `• 👥 *Invite Friends* (+500 Pts each)\n` +
-                  `• 🌟 *Upgrade with Telegram Stars* (0 fee + unlimited mining)`,
+                  `• 🌟 *Upgrade with Telegram Stars* (VIP Pass + unlimited mining)`,
                 parse_mode: "Markdown",
                 reply_markup: {
                   inline_keyboard: [
                     [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }],
                     [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
-                    [{ text: "🌟 VIP Passes (0 fee)", callback_data: "ub_buy_stars" }]
+                    [{ text: "🌟 VIP Passes", callback_data: "ub_buy_stars" }]
                   ]
                 }
               })
@@ -1390,13 +1390,13 @@ async function runDailyCostSweep(env, force = false) {
                 `• 🎁 *Claim Daily Bonus* (+25-50 Pts)\n` +
                 `• 🎬 *Watch Rewarded Video Ads* (+20 Pts/ad)\n` +
                 `• 👥 *Invite Friends* (+500 Pts each)\n` +
-                `• 🌟 *Upgrade with Telegram Stars* (0 fee + unlimited mining)`,
+                `• 🌟 *Upgrade with Telegram Stars* (VIP Pass + unlimited mining)`,
               parse_mode: "Markdown",
               reply_markup: {
                 inline_keyboard: [
                   [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }],
                   [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
-                  [{ text: "🌟 VIP Passes (0 fee)", callback_data: "ub_buy_stars" }]
+                  [{ text: "🌟 VIP Passes", callback_data: "ub_buy_stars" }]
                 ]
               }
             })
@@ -1627,10 +1627,10 @@ export default {
         "- KEEP RESPONSES SHORT, CLEAR, AND SIMPLE.\n" +
         "- When asked what this bot can do, how it works, or what bots are supported, ALWAYS showcase the 8 mining pools with their names and links:\n" +
         "  1. 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & task claiming\n" +
-        "  2. 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Auto-farming & Arbitrum payouts\n" +
+        "  2. 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Auto-farming & reward collection\n" +
         "  3. ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON rewards\n" +
         "  4. 🎨 [ART Miner](https://t.me/ART_AIRDROP_BOT?start=6727787768) — Auto-farming & TON airdrop\n" +
-        "  5. 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — USDT auto-exchange & BEP-20 payouts\n" +
+        "  5. 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — 24/7 autonomous farming & token accumulation\n" +
         "  6. 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Multi-chain cloud mining\n" +
         "  7. 🏔️ [Apex Miner](https://t.me/ApxMinerBot/app?startapp=6727787768) — APX token node farming\n" +
         "  8. 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768) — 24/7 automated node mining & daily tasks\n" +
@@ -1757,9 +1757,9 @@ export default {
           `• *Instant AI:* Ask me any question anytime!`;
       } else if (pLow.includes("pass") || pLow.includes("star") || pLow.includes("vip") || pLow.includes("sub")) {
         fallbackAns = `🌟 *VIP Subscription Passes (Telegram Stars):*\n\n` +
-          `• *🎟️ 1-Day Pass (15 Stars):* 24h unlimited cloud mining (0 point deduction) + 150 points.\n` +
-          `• *🎟️ 7-Day Weekly Pass (45 Stars):* 7 days mining (0 fee) + 1,000 points + 1 extra account slot.\n` +
-          `• *💎 30-Day Monthly Pass (120 Stars):* 30 days mining (0 fee) + 4,500 points + 1 permanent slot + 2x ad rewards (+40 Pts/ad)!\n` +
+          `• *🎟️ 1-Day Pass (15 Stars):* 24h unlimited cloud mining + 150 points.\n` +
+          `• *🎟️ 7-Day Weekly Pass (45 Stars):* 7 days unlimited cloud mining + 1,000 points + 1 extra account slot.\n` +
+          `• *💎 30-Day Monthly Pass (120 Stars):* 30 days unlimited cloud mining + 4,500 points + 1 permanent slot + 2x ad rewards (+40 Pts/ad)!\n` +
           `• *🌟 Permanent Slot (50 Stars):* +1 permanent slot.\n\n` +
           `Tap *🌟 VIP Subscriptions* in the menu to upgrade!`;
       }
@@ -3753,7 +3753,7 @@ fi
                   `• *Connected Cloud Accounts:* \`${activeAccountsCount}\` Phones\n` +
                   `• *Active 24/7 Miners:* \`${activeMiners}\` Active\n` +
                   `• *Auto-Paused Miners:* \`${pausedMiners}\` (Points below daily cost)\n` +
-                  `• *VIP Pass Holders:* \`${activePasses}\` (0 fee / unlimited mining)\n` +
+                  `• *VIP Pass Holders:* \`${activePasses}\` (VIP Pass / unlimited mining)\n` +
                   `• *Sample Points In Circulation:* \`💎 ${totalPointsCirculation.toLocaleString()} Pts\`\n` +
                   `• *Network Daily Burn Rate:* \`🔥 -${dailyBurn.toLocaleString()} Pts/day\` (-100 Pts/account/day)\n` +
                   `• *Daily Sweep Engine:* Active once per day (Midnight UTC)\n` +
@@ -3803,7 +3803,7 @@ fi
                   `• *Status:* 🟢 Executed successfully\n` +
                   `• *Processed Accounts:* \`${res.processed}\` Miners evaluated\n` +
                   `• *Active 24/7 Miners:* \`${res.activeCount}\` (Deduction verified)\n` +
-                  `• *VIP Free Pass Miners:* \`${res.vipCount}\` (0 Fee exempt)\n` +
+                  `• *VIP Pass Miners:* \`${res.vipCount}\` (VIP Pass active)\n` +
                   `• *Auto-Paused Miners:* \`${res.pausedCount}\` (Balance < 100 Pts)\n` +
                   `• *Total Points Swept:* \`🔥 -${res.totalDeducted.toLocaleString()} Pts\` (-100 Pts/account)\n` +
                   `• *Execution Date:* \`${res.today}\`\n` +
@@ -5019,7 +5019,7 @@ fi
               `• *Connected Cloud Accounts:* \`${activeAccountsCount}\` Phones\n` +
               `• *Active 24/7 Miners:* \`${activeMiners}\` Active\n` +
               `• *Auto-Paused Miners:* \`${pausedMiners}\` (Points below daily cost)\n` +
-              `• *VIP Pass Holders:* \`${activePasses}\` (0 fee / unlimited mining)\n` +
+              `• *VIP Pass Holders:* \`${activePasses}\` (VIP Pass / unlimited mining)\n` +
               `• *Sample Points In Circulation:* \`💎 ${totalPointsCirculation.toLocaleString()} Pts\`\n` +
               `• *Network Daily Burn Rate:* \`🔥 -${dailyBurn.toLocaleString()} Pts/day\` (-100 Pts/account/day)\n` +
               `• *Daily Sweep Engine:* Active once per day (Midnight UTC)\n` +
@@ -5064,7 +5064,7 @@ fi
               `• *Status:* 🟢 Executed successfully\n` +
               `• *Processed Accounts:* \`${res.processed}\` Miners evaluated\n` +
               `• *Active 24/7 Miners:* \`${res.activeCount}\` (Deduction verified)\n` +
-              `• *VIP Free Pass Miners:* \`${res.vipCount}\` (0 Fee exempt)\n` +
+              `• *VIP Pass Miners:* \`${res.vipCount}\` (VIP Pass active)\n` +
               `• *Auto-Paused Miners:* \`${res.pausedCount}\` (Balance < 100 Pts)\n` +
               `• *Total Points Swept:* \`🔥 -${res.totalDeducted.toLocaleString()} Pts\` (-100 Pts/account)\n` +
               `• *Execution Date:* \`${res.today}\`\n` +
@@ -5894,13 +5894,13 @@ Reply to Arif naturally:`;
                     `• 🎁 *Claim Daily Bonus* (+25-50 Pts)\n` +
                     `• 🎬 *Watch Rewarded Video Ads* (+20 Pts/ad)\n` +
                     `• 👥 *Invite Friends* (+500 Pts each)\n` +
-                    `• 🌟 *Upgrade to VIP Pass* (0 fee + unlimited mining)`,
+                    `• 🌟 *Upgrade to VIP Pass* (VIP Pass + unlimited mining)`,
                   parse_mode: "Markdown",
                   reply_markup: {
                     inline_keyboard: [
                       [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }],
                       [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
-                      [{ text: "🌟 VIP Passes (0 fee)", callback_data: "ub_buy_stars" }]
+                      [{ text: "🌟 VIP Passes", callback_data: "ub_buy_stars" }]
                     ]
                   }
                 })
@@ -6063,7 +6063,7 @@ Reply to Arif naturally:`;
 
   <div class="footer">
     Created by AAA • Powered by Adsgram Web3 Ad Network<br>
-    Earned points auto-extend your 24/7 cloud mining accounts with 0 platform fees.
+    Earned points auto-extend your 24/7 cloud mining accounts continuously.
   </div>
 
   <script>
@@ -6612,11 +6612,14 @@ Reply to Arif naturally:`;
               { text: "➕ Connect Account" }
             ],
             [
-              { text: "💎 Points & Pass" },
-              { text: "🎁 Daily Bonus" }
+              { text: "⛏️ Farming Bots" },
+              { text: "💎 Points & Pass" }
             ],
             [
-              { text: "👥 Invite Friends" },
+              { text: "🎁 Daily Bonus" },
+              { text: "👥 Invite Friends" }
+            ],
+            [
               { text: "💬 Ari AI & Support" }
             ]
           ],
@@ -6651,6 +6654,9 @@ Reply to Arif naturally:`;
 
         const userWelcomeInlineKeyboard = {
           inline_keyboard: [
+            [
+              { text: "⛏️ 8 Supported Farming Bots 🤖", callback_data: "ub_pools" }
+            ],
             [
               { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }
             ],
@@ -6806,7 +6812,7 @@ Reply to Arif naturally:`;
           // B. Watch Ad & Claim Points Callback
           if (cqData === "ub_watch_ad") {
             const adMsg = `📺 *WATCH REWARDED ADS & EARN POINTS* 🚀\n\n` +
-              `Watch real video ads via Adsgram to keep your 24/7 cloud mining active with 0 fees!\n\n` +
+              `Watch real video ads via Adsgram to keep your 24/7 cloud mining active continuously!\n\n` +
               `🎁 *Per-Ad Reward:* +20 Points (+40 for VIP Monthly Pass)\n` +
               `🏆 *Milestone Bonus:* Every 50 ads unlocks *+1 Free Bonus Account Slot*!\n` +
               `⏱️ *Cooldown:* 15 seconds between ads.\n\n` +
@@ -7079,17 +7085,25 @@ Reply to Arif naturally:`;
           // C2.6 8 Mining Pools & Auto-Farming Guide
           if (cqData === "ub_withdraw" || cqData === "ub_pools") {
             const poolsMsg = `⛏️ *8 SUPPORTED CLOUD MINING POOLS & BOTS* 🤖\n\n` +
-              `Our cloud engines automatically farm all 8 bots 24/7 across your connected accounts:\n\n` +
-              `1️⃣ 🪙 *ATF Miner* — Automated daily mining cycles & task farming\n` +
-              `2️⃣ 💎 *Stones Miner* — Automated mining sessions & claims\n` +
-              `3️⃣ ⚡ *MRG Miner* — Continuous hashrate mining & claim cycles\n` +
-              `4️⃣ 🎨 *ART Miner* — Regular token auto-farming & airdrop claims\n` +
-              `5️⃣ 🤖 *AI Lab Robot* — Automated hash generation & daily bonuses\n` +
-              `6️⃣ 👛 *UltraWallet* — Multi-pool automated cloud mining\n` +
-              `7️⃣ 🏔️ *Apex Miner* — Continuous APX token node farming\n` +
-              `8️⃣ 🌐 *Ainovum* — 24/7 automated node mining & daily tasks\n\n` +
-              `☁️ *100% Autonomous Cloud Mining:* Your accounts farm 24/7 in the cloud without needing your device open.`;
-            ctx.waitUntil(sendCqReply(poolsMsg, userMainKeyboard));
+              `Our cloud engines automatically farm and claim all 8 bots 24/7 across your connected accounts:\n\n` +
+              `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
+              `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Continuous auto-farming sessions\n` +
+              `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
+              `4️⃣ 🎨 [ART Miner](https://t.me/ART_AIRDROP_BOT?start=6727787768) — Auto-farming & token claims\n` +
+              `5️⃣ 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — Automated hash generation & daily bonuses\n` +
+              `6️⃣ 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Multi-pool automated cloud mining\n` +
+              `7️⃣ 🏔️ [Apex Miner](https://t.me/ApxMinerBot/app?startapp=6727787768) — Continuous APX token node farming\n` +
+              `8️⃣ 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768) — 24/7 automated node mining & daily tasks\n\n` +
+              `☁️ *What Our Bot Does:*\n` +
+              `• Automatically runs 24/7 cloud auto-farming across all 8 bots for your connected accounts.\n` +
+              `• Executes daily claims, starts, tasks, and point rewards without keeping your phone or app open.\n` +
+              `• All mined tokens accumulate directly in your accounts inside each respective official bot.`;
+            ctx.waitUntil(sendCqReply(poolsMsg, {
+              inline_keyboard: [
+                [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "👥 My Accounts", callback_data: "ub_accounts" }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }]
+              ]
+            }));
             return new Response("OK");
           }
 
@@ -7122,7 +7136,7 @@ Reply to Arif naturally:`;
               `• *Connected Accounts:* ${(profile.accounts || []).length} / ${totalSlots} Slots\n` +
               `• *Points Balance:* ${profile.points} Points (~${daysRemaining} days left)\n` +
               `• *Pass Status:* ${passBadge}\n` +
-              `• *Daily Fee:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${(profile.accounts || []).length * 100} Pts/day`}\n` +
+              `• *Daily Cost:* ${isCovered ? "Covered by VIP Pass" : `${(profile.accounts || []).length * 100} Pts/day`}\n` +
               `• *Ads Watched:* ${profile.ads_watched || 0} / 50 (${(profile.ads_watched || 0) % 50}/50 towards bonus slot)\n` +
               `• *Referral Friends:* ${profile.referral_count || 0} (${(profile.referral_count || 0) * 500} Pts earned)\n` +
               `• *Active Pools (8/8):* ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
@@ -7141,13 +7155,13 @@ Reply to Arif naturally:`;
             const starsMsg = `🌟 *VIP SUBSCRIPTION PASSES & SLOTS* ⭐\n\n` +
               `Upgrade to uninterrupted 24/7 cloud mining with Telegram Stars:\n\n` +
               `🎟️ *1-Day VIP Pass (15 Stars)*\n` +
-              `• 24h unlimited cloud mining (zero point deduction)\n` +
+              `• 24h unlimited cloud mining\n` +
               `• +150 Bonus Points\n\n` +
               `🎟️ *7-Day Weekly Pass (45 Stars)*\n` +
-              `• 7 Days unlimited cloud mining (zero point deduction)\n` +
+              `• 7 Days unlimited cloud mining\n` +
               `• +1,000 Bonus Points + 1 Extra Account Slot\n\n` +
               `💎 *30-Day Monthly Pass (120 Stars)*\n` +
-              `• 30 Days unlimited cloud mining (zero point deduction)\n` +
+              `• 30 Days unlimited cloud mining\n` +
               `• +4,500 Bonus Points + 1 Permanent Slot\n` +
               `• 2x Ad Points Multiplier (+40 Pts per ad view!)\n\n` +
               `🌟 *+1 Permanent Slot (50 Stars)*\n` +
@@ -7388,7 +7402,7 @@ Reply to Arif naturally:`;
             profile.slots = (profile.slots || 1) + 1;
             profile.points = (profile.points || 0) + 3000;
             profile.farming_active = true;
-            grantedText = "💎 *VIP Miner Pass Activated!*\n• 30 Days Cloud Mining (Zero Point Deduction)\n• +1 Permanent Slot\n• +3,000 Points credited!";
+            grantedText = "💎 *VIP Miner Pass Activated!*\n• 30 Days Unlimited Cloud Mining\n• +1 Permanent Slot\n• +3,000 Points credited!";
           } else if (item === "buy_points_1000") {
             profile.points = (profile.points || 0) + 1000;
             grantedText = "💎 *+1,000 Points Credited!*";
@@ -7398,7 +7412,7 @@ Reply to Arif naturally:`;
 
           const tierTitle = item === "pass_day" ? "🎟️ 1-Day VIP Pass" : (item === "pass_week" ? "🎟️ 7-Day Weekly Pass" : (item === "pass_month" ? "💎 30-Day Monthly Pass" : (item === "buy_slot_1" ? "🌟 1 Permanent Slot" : "💎 VIP Pass")));
           const bonusPts = item === "pass_day" ? 150 : (item === "pass_week" ? 1000 : (item === "pass_month" ? 4500 : 0));
-          ctx.waitUntil(broadcastMilestoneUnlocked("Milestone Unlocked", senderName, chatId, `${tierTitle} Activated`, bonusPts ? `+${bonusPts} Points & Zero Point Drain` : "Extra Account Capacity Unlocked"));
+          ctx.waitUntil(broadcastMilestoneUnlocked("Milestone Unlocked", senderName, chatId, `${tierTitle} Activated`, bonusPts ? `+${bonusPts} Points & Unlimited VIP Mining` : "Extra Account Capacity Unlocked"));
 
           ctx.waitUntil(sendUserReply(
             `🎉 *PAYMENT RECEIVED VIA TELEGRAM STARS!* ⭐\n\n` +
@@ -7728,9 +7742,9 @@ Reply to Arif naturally:`;
               `• *🎬 Watch Ads:* Tap *🎬 Watch Ads* (next to message input) or in the message above to earn +20 Points every 15s. Every 50 ads unlocks a *Free Bonus Account Slot*!\n` +
               `• *👥 Invite Friends:* Earn +500 Points for every friend who joins & verifies.\n\n` +
               `3️⃣ *VIP Subscription Passes (Telegram Stars)*\n` +
-              `• *🎟️ 1-Day Pass (15 Stars):* 24h unlimited cloud mining (0 point deduction) + 150 points.\n` +
-              `• *🎟️ 7-Day Weekly Pass (45 Stars):* 7 days mining (0 fee) + 1,000 points + 1 extra account slot.\n` +
-              `• *💎 30-Day Monthly Pass (120 Stars):* 30 days mining (0 fee) + 4,500 points + 1 permanent slot + 2x ad rewards (+40 Pts per ad)!\n` +
+              `• *🎟️ 1-Day Pass (15 Stars):* 24h unlimited cloud mining + 150 points.\n` +
+              `• *🎟️ 7-Day Weekly Pass (45 Stars):* 7 days unlimited cloud mining + 1,000 points + 1 extra account slot.\n` +
+              `• *💎 30-Day Monthly Pass (120 Stars):* 30 days unlimited cloud mining + 4,500 points + 1 permanent slot + 2x ad rewards (+40 Pts per ad)!\n` +
               `• *🌟 Permanent Slot (50 Stars):* Add permanent account capacity.\n\n` +
               `💬 *Ask Ari AI:* Simply type any question or guide request directly in this chat!`;
             await sendUserReply(helpMsg, userWelcomeInlineKeyboard);
@@ -7794,7 +7808,7 @@ Reply to Arif naturally:`;
               `• *Connected Accounts:* ${(profile.accounts || []).length} / ${totalSlots} Slots\n` +
               `• *Points Balance:* ${profile.points || 0} Points\n` +
               `• *Pass Status:* ${passBadge}\n` +
-              `• *Daily Fee:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${dCost} Pts/day (100/acc)`}\n` +
+              `• *Daily Cost:* ${isCovered ? "Covered by VIP Pass" : `${dCost} Pts/day (100/acc)`}\n` +
               `• *Runway:* ~${daysRemaining}\n` +
               `• *Streak / Ads:* 🔥 Day ${profile.daily_streak || 0} • 🎬 ${profile.ads_watched || 0} Ads\n` +
               `• *Active Pools (8/8):* ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n` +
@@ -8055,7 +8069,7 @@ Reply to Arif naturally:`;
                 `💡 *Earn points right now:*\n` +
                 `• 🎬 *Watch Rewarded Video Ads* (+20 Pts/ad)\n` +
                 `• 👥 *Invite Friends* (+500 Pts per referral)\n` +
-                `• 🌟 *Upgrade with Telegram Stars* (0 point daily fee)`;
+                `• 🌟 *Upgrade with Telegram Stars* (VIP Pass - unlimited mining)`;
               const kb = {
                 inline_keyboard: [
                   [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
@@ -8105,26 +8119,27 @@ Reply to Arif naturally:`;
             return;
           }
 
-          // 4.2 ⛏️ 8 Supported Mining Pools & Bots (/pools, /bots, /farm)
-          if (text === "⛏️ Mining Pools" || text === "🤖 Farming Bots" || text.startsWith("/pools") || text.startsWith("/bots") || text.startsWith("/farm") || text.startsWith("/withdraw")) {
+          // 4.2 ⛏️ 8 Supported Mining Pools & Bots (/pools, /bots, /farm, "⛏️ Farming Bots")
+          if (text === "⛏️ Farming Bots" || text === "⛏️ Mining Pools" || text === "🤖 Farming Bots" || text.startsWith("/pools") || text.startsWith("/bots") || text.startsWith("/farm") || text.startsWith("/farming") || text.startsWith("/withdraw")) {
             const poolsMsg = `⛏️ *8 SUPPORTED CLOUD MINING POOLS & BOTS* 🤖\n` +
               `_⚡ Created by AAA — 100% Autonomous Cloud Mining_\n\n` +
-              `Our cloud engines automatically farm and harvest all 8 bots 24/7 across your connected accounts:\n\n` +
-              `1️⃣ 🪙 *ATF Miner* — Auto 24h mining & daily task claiming\n` +
-              `2️⃣ 💎 *Stones Miner* — Continuous auto-farming sessions\n` +
-              `3️⃣ ⚡ *MRG Miner* — Peak tier hashrate & TON auto-mining\n` +
-              `4️⃣ 🎨 *ART Miner* — Auto-farming & token claims\n` +
-              `5️⃣ 🤖 *AI Lab Robot* — Automated hash generation & daily bonuses\n` +
-              `6️⃣ 👛 *UltraWallet* — Multi-pool automated cloud mining\n` +
-              `7️⃣ 🏔️ *Apex Miner* — Continuous APX node farming\n` +
-              `8️⃣ 🌐 *Ainovum* — 24/7 automated node mining & daily tasks\n\n` +
-              `☁️ *How It Works:*\n` +
-              `• Your connected accounts farm 24/7 in the cloud without needing your app or device open.\n` +
-              `• All daily claims, boosts, and farming sessions are executed automatically by our cloud engines.`;
+              `Our cloud engines automatically farm and claim all 8 bots 24/7 across your connected accounts:\n\n` +
+              `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
+              `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Continuous auto-farming sessions\n` +
+              `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
+              `4️⃣ 🎨 [ART Miner](https://t.me/ART_AIRDROP_BOT?start=6727787768) — Auto-farming & token claims\n` +
+              `5️⃣ 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — Automated hash generation & daily bonuses\n` +
+              `6️⃣ 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Multi-pool automated cloud mining\n` +
+              `7️⃣ 🏔️ [Apex Miner](https://t.me/ApxMinerBot/app?startapp=6727787768) — Continuous APX token node farming\n` +
+              `8️⃣ 🌐 [Ainovum](https://t.me/ainovum_bot?start=ref_6727787768) — 24/7 automated node mining & daily tasks\n\n` +
+              `☁️ *What Our Bot Does:*\n` +
+              `• Automatically runs 24/7 cloud auto-farming across all 8 bots for your connected accounts.\n` +
+              `• Executes daily claims, starts, tasks, and point rewards without keeping your phone or app open.\n` +
+              `• All mined tokens accumulate directly in your accounts inside each respective official bot.`;
             await sendUserReply(poolsMsg, {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }],
-                [{ text: "👥 Manage My Accounts", callback_data: "ub_accounts" }]
+                [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "👥 My Accounts", callback_data: "ub_accounts" }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://restore-agy.aaaai2.workers.dev/adsgram" } }]
               ]
             });
             return;
@@ -8325,7 +8340,7 @@ Reply to Arif naturally:`;
             const status3 = chCheck.missing.some(m => m.id === -1004332544939) ? "⚠️ Join Required" : "✅ Joined";
             const chMsg = `📢 *OFFICIAL AAA COMMUNITY & NEWS HUBS*\n\n` +
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
-              `Stay connected with verified announcements, miner payouts, and community support:\n\n` +
+              `Stay connected with verified announcements, automated mining updates, and community support:\n\n` +
               `1️⃣ 💬 *AAA Auto Miner — Community Hub* (${status1})\n` +
               `• Connect with fellow miners, strategies, and ecosystem updates.\n` +
               `👉 [Join Community Hub](https://t.me/AAAAutoMiner)\n\n` +

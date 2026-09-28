@@ -408,7 +408,7 @@ function App() {
     } else if (lower.includes("status") || lower.includes("fleet") || lower.includes("account")) {
       const totalStones = fleet.reduce((sum, a) => sum + (a.stones_coins || 0), 0);
       const totalAtf = fleet.reduce((sum, a) => sum + (a.atf_balance || 0), 0);
-      const reply = `📊 Executive Fleet Telemetry:\n• Active Accounts: 14/14 Online (100% Cloud-First)\n• Vault Balance: ${bnbBalance.toFixed(6)} BNB (≈ $${(bnbBalance * rates.bnb_usd).toFixed(2)})\n• Total Mined: ${totalStones.toLocaleString()} STONES • ${totalAtf.toFixed(1)} ATF\n• Active Pools (8/8): ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n• 5 Edge Nodes: All Online (0% Phone Load).`;
+      const reply = `📊 Executive Fleet Telemetry:\n• Active Accounts: 14/14 Online (100% Cloud-First)\n• Vault Balance: ${bnbBalance.toFixed(6)} BNB (≈ $${(bnbBalance * rates.bnb_usd).toFixed(2)})\n• Total Mined: ${totalStones.toLocaleString()} STONES • ${totalAtf.toFixed(1)} ATF\n• Active Pools (8/8): ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n• 5 Edge Nodes: All Online (100% Cloud-Powered).`;
       setAiMessages(prev => [...prev, { sender: "ai", text: reply }]);
       setAiLoading(false);
       haptic("success");
@@ -770,7 +770,7 @@ function App() {
             React.createElement("div", { className: "w-8 h-8 rounded-xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center text-base font-black" }, "🟡"),
             React.createElement("div", null,
               React.createElement("div", { className: "font-black text-xs text-slate-900" }, "Binance Vault (BEP-20 / BSC)"),
-              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "USDT & BNB Direct Payouts")
+              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "USDT & BNB Direct Vault")
             )
           ),
           React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" },
@@ -826,7 +826,7 @@ function App() {
             React.createElement("div", { className: "w-8 h-8 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center text-base font-black" }, "💎"),
             React.createElement("div", null,
               React.createElement("div", { className: "font-black text-xs text-slate-900" }, "Arbitrum One (STONES Miner)"),
-              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "Automated L2 Mining Payouts")
+              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "Automated L2 Mining Rewards")
             )
           ),
           React.createElement("span", { className: "bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" },
