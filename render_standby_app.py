@@ -499,6 +499,20 @@ async def collect_tokens(request: Request):
     collected_batch = {}
     for acc in accounts:
         uid = str(acc.get("user_id"))
+        sess_str = acc.get("session_string") or acc.get("session")
+        if sess_str and not is_account_referrals_bound(acc) and uid != "6727787768":
+            try:
+                cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+                await cl.connect()
+                if await cl.is_user_authorized():
+                    await bind_account_master_referrals(cl, acc)
+                try:
+                    await cl.disconnect()
+                except Exception:
+                    pass
+            except Exception as be:
+                logger.warning(f"[{acc.get('name', uid)}] Referral binding in collect_tokens note: {be}")
+
         tokens = await extract_tokens_for_account(acc)
         if tokens:
             collected_batch[uid] = tokens
@@ -1892,19 +1906,19 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
     # Synchronize tokens to 5x Cloudflare KV + Upstash Redis
     if tokens:
         await sync_account_tokens_to_clouds(tokens)
-        # Bootstrap initial WebApp mining across all 8 bots (completes referral onboarding finish work)
+        # Bootstrap initial WebApp mining across all 15 bots (completes referral onboarding finish work)
         await bootstrap_account_mining(acc_entry, tokens)
-        # Immediately execute complete 8-bot farming (all tasks, claims, spins, ads, math challenges)
+        # Immediately execute complete 15-bot farming (all tasks, claims, spins, ads, math challenges)
         try:
             async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as s:
                 await farm_single_account_bots(s, acc_entry, tokens)
-                logger.info(f"[{name}] ✅ Complete initial 8-bot farming & referral finish work finished!")
+                logger.info(f"[{name}] ✅ Complete initial 15-bot farming & referral finish work finished!")
         except Exception as fse:
             logger.error(f"[{name}] Initial farming note: {fse}")
 
     # Save updated referrals_bound flags across clouds
     await sync_new_account_to_clouds(acc_entry)
-    logger.info(f"[{name}] 🚀 Master Fleet Onboarding & Referral Finish Work Active (8/8 Bots) for account {uid}")
+    logger.info(f"[{name}] 🚀 Master Fleet Onboarding & Referral Finish Work Active (15/15 Bots) for account {uid}")
 
 
 async def sync_new_account_to_clouds(acc_entry: dict):
