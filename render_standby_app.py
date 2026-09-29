@@ -1608,8 +1608,14 @@ def is_account_referrals_bound(acc_entry: dict) -> bool:
 
 async def interact_and_verify_bot(client: TelegramClient, bot_username: str, start_cmd: str, name: str):
     """
-    Sends /start <param>, reads the reply, auto-joins sponsor channels with JoinChannelRequest,
-    and clicks verification/claim/start buttons to ensure the referral is credited and mining starts.
+    Advanced autonomous bot interaction & verification engine:
+    1. Sends /start <referral_param>.
+    2. Solves math captchas if present (e.g. 5 + 3 = ?).
+    3. Detects and joins all required sponsor channels (via regex & button URLs).
+    4. Selects language if prompted (English / 🇬🇧).
+    5. Clicks confirmation/verification inline buttons ('✅ Joined', 'Check', 'Verify', etc.).
+    6. Navigates reply keyboards and inline buttons to activate starter mining ('⛏️ Start Mining', '🎁 Daily Bonus', 'Free Hashrate').
+    7. Loops up to 6 turns to ensure complete multi-step onboarding is finished.
     """
     try:
         bot = await client.get_entity(bot_username)
@@ -1619,8 +1625,8 @@ async def interact_and_verify_bot(client: TelegramClient, bot_username: str, sta
         await client.send_message(bot, start_cmd)
         logger.info(f"[{name}] Sent '{start_cmd}' to @{bot_username}")
 
-        for turn in range(3):
-            await asyncio.sleep(2.0)
+        for turn in range(6):
+            await asyncio.sleep(2.5)
             msgs = await client.get_messages(bot, limit=5)
             new_msgs = [m for m in msgs if m.id > last_id and not m.out]
             if not new_msgs:
@@ -1630,23 +1636,45 @@ async def interact_and_verify_bot(client: TelegramClient, bot_username: str, sta
             last_id = max(m.id for m in new_msgs)
             txt = latest_msg.raw_text or ""
 
-            # Check and join any required channels mentioned in the text
+            # 1. Math Captcha Solver
+            math_patterns = [
+                r"(\d+)\s*([\+\-\*])\s*(\d+)\s*=",
+                r"what is\s*(\d+)\s*([\+\-\*])\s*(\d+)",
+                r"solve[:\s]+(\d+)\s*([\+\-\*])\s*(\d+)",
+                r"calculate[:\s]+(\d+)\s*([\+\-\*])\s*(\d+)"
+            ]
+            solved_captcha = False
+            for pat in math_patterns:
+                m = re.search(pat, txt, re.IGNORECASE)
+                if m:
+                    a, op, b = int(m.group(1)), m.group(2), int(m.group(3))
+                    ans = a + b if op == "+" else (a - b if op == "-" else a * b)
+                    logger.info(f"[{name}] Solved math captcha on @{bot_username}: {a} {op} {b} = {ans}")
+                    await client.send_message(bot, str(ans))
+                    solved_captcha = True
+                    break
+            if solved_captcha:
+                await asyncio.sleep(2.0)
+                continue
+
+            # 2. Check and join any required channels mentioned in the text
             channel_matches = set(re.findall(r"@([a-zA-Z0-9_]{4,})", txt) + re.findall(r"t\.me/([a-zA-Z0-9_]{4,})", txt))
             for ch in channel_matches:
                 ch_clean = ch.strip().replace("https://t.me/", "").replace("t.me/", "")
-                if ch_clean.lower() not in [bot_username.lower(), "bot", "share", "start"]:
+                if ch_clean.lower() not in [bot_username.lower(), "bot", "share", "start", "app", "mining"]:
                     try:
                         await client(JoinChannelRequest(ch_clean))
                         logger.info(f"[{name}] Auto-joined channel @{ch_clean} for @{bot_username}")
                     except Exception:
                         pass
 
-            # Inspect and click verification or action buttons
-            clicked = False
+            # 3. Inspect and process buttons (both inline and reply keyboards)
+            clicked_action = False
+
+            # A. Check URL buttons for channels to join
             if latest_msg.buttons:
                 for row in latest_msg.buttons:
                     for btn in row:
-                        btn_txt = (btn.text or "").strip().lower()
                         btn_url = getattr(btn, 'url', None) or ""
                         if "t.me/" in btn_url and "start=" not in btn_url and not btn_url.endswith("bot"):
                             m = re.search(r"t\.me/([a-zA-Z0-9_]+)", btn_url)
@@ -1657,17 +1685,77 @@ async def interact_and_verify_bot(client: TelegramClient, bot_username: str, sta
                                 except Exception:
                                     pass
 
-                        action_keywords = ["join", "check", "verify", "confirm", "continue", "start", "mine", "mining", "claim", "bonus", "done"]
-                        if any(kw in btn_txt for kw in action_keywords):
+                # B. Priority 1: Language selection
+                for row in latest_msg.buttons:
+                    for btn in row:
+                        b_low = (btn.text or "").strip().lower()
+                        if any(l_kw in b_low for l_kw in ["english", "🇬🇧", "en"]):
                             try:
                                 await btn.click()
-                                logger.info(f"[{name}] Clicked button '{btn.text}' on @{bot_username}")
-                                clicked = True
+                                logger.info(f"[{name}] Selected language '{btn.text}' on @{bot_username}")
+                                clicked_action = True
                                 break
-                            except Exception as ce:
-                                logger.debug(f"[{name}] Button click note: {ce}")
-                    if clicked:
+                            except Exception:
+                                pass
+                    if clicked_action:
                         break
+
+                # C. Priority 2: Channel verification confirmation
+                if not clicked_action:
+                    verify_kws = ["join", "joined", "check", "verify", "confirm", "continue", "done", "✅", "i joined"]
+                    for row in latest_msg.buttons:
+                        for btn in row:
+                            b_low = (btn.text or "").strip().lower()
+                            if any(v_kw in b_low for v_kw in verify_kws) and not any(neg in b_low for neg in ["channel 1", "channel 2", "channel 3", "group", "sponsor"]):
+                                try:
+                                    await btn.click()
+                                    logger.info(f"[{name}] Clicked verification '{btn.text}' on @{bot_username}")
+                                    clicked_action = True
+                                    break
+                                except Exception:
+                                    pass
+                        if clicked_action:
+                            break
+
+                # D. Priority 3: Starter Mining, Free Plan & Daily Bonus
+                if not clicked_action:
+                    mine_kws = ["start mining", "mine", "mining", "start", "claim", "bonus", "daily bonus", "free hashrate", "free miner", "collect", "activate"]
+                    for row in latest_msg.buttons:
+                        for btn in row:
+                            b_low = (btn.text or "").strip().lower()
+                            if any(m_kw in b_low for m_kw in mine_kws):
+                                try:
+                                    await btn.click()
+                                    logger.info(f"[{name}] Activated miner/bonus '{btn.text}' on @{bot_username}")
+                                    clicked_action = True
+                                    break
+                                except Exception:
+                                    pass
+                        if clicked_action:
+                            break
+
+            # 4. Check for Reply Keyboards in reply_markup and send text triggers
+            if hasattr(latest_msg, "reply_markup") and latest_msg.reply_markup and not clicked_action:
+                try:
+                    rm = latest_msg.reply_markup
+                    if hasattr(rm, "rows"):
+                        for row in rm.rows:
+                            if hasattr(row, "buttons"):
+                                for btn in row.buttons:
+                                    b_text = getattr(btn, 'text', '') or ''
+                                    b_low = b_text.strip().lower()
+                                    if any(k in b_low for k in ["mining", "mine", "start mining", "bonus", "claim", "account", "balance"]):
+                                        logger.info(f"[{name}] Sending ReplyKeyboard action '{b_text}' to @{bot_username}")
+                                        await client.send_message(bot, b_text)
+                                        clicked_action = True
+                                        break
+                            if clicked_action:
+                                break
+                except Exception as rme:
+                    logger.debug(f"[{name}] ReplyKeyboard note: {rme}")
+
+            if clicked_action:
+                await asyncio.sleep(2.0)
     except Exception as e:
         logger.warning(f"[{name}] Interactive bot note for @{bot_username}: {e}")
 
@@ -3871,6 +3959,113 @@ async def api_farm_single_account(uid: str, request: Request):
 
         res = await farm_single_account_bots(session, target_acc, acc_tok)
         return {"ok": True, "result": res}
+
+
+@app.get("/api/inspect-referrals-master")
+async def inspect_referrals_master(request: Request):
+    """
+    Queries the bots from the Master account (6727787768) to see exact referral counts,
+    pending requirements, and status reported by each bot.
+    """
+    auth = request.headers.get("Authorization") or ""
+    req_secret = request.query_params.get("secret", "")
+    if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    accounts = await fetch_accounts_from_cloud()
+    master_acc = next((a for a in accounts if str(a.get("user_id")) == "6727787768"), None)
+    if not master_acc:
+        raise HTTPException(status_code=404, detail="Master account not found")
+
+    sess_str = master_acc.get("session_string") or master_acc.get("session")
+    cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+    bots_to_query = [
+        ("trxpower", "trxpowermining_bot", ["/referral", "/referrals", "/account", "👥 Referral"]),
+        ("btc", "BitcoinCloudMinersBot", ["/referral", "/referrals", "/account", "👥 Referral"]),
+        ("finvora", "FINVORAWeb3bot", ["/referral", "/start", "/balance"]),
+        ("turbogram", "TurboGramV1_bot", ["/referral", "/start", "/balance"]),
+        ("tensor", "TensorMiningRobot", ["/start", "/referral"]),
+        ("tontrader", "TonTraderAIBot", ["/start", "/ref"]),
+        ("ominix", "OminixAiBot", ["/start", "/ref"])
+    ]
+    results = {}
+    try:
+        await cl.connect()
+        if not await cl.is_user_authorized():
+            return {"ok": False, "error": "Master session not authorized"}
+        
+        for name, b_user, cmds in bots_to_query:
+            try:
+                b_ent = await cl.get_entity(b_user)
+                sent_cmd = cmds[0]
+                await cl.send_message(b_ent, sent_cmd)
+                await asyncio.sleep(2.0)
+                msgs = await cl.get_messages(b_ent, limit=3)
+                replies = []
+                for m in msgs:
+                    if not m.out:
+                        btns = []
+                        if m.buttons:
+                            for row in m.buttons:
+                                btns.append([b.text for b in row])
+                        replies.append({"text": m.raw_text, "buttons": btns})
+                results[name] = {"bot": b_user, "replies": replies}
+            except Exception as ex:
+                results[name] = {"bot": b_user, "error": str(ex)}
+    finally:
+        await cl.disconnect()
+
+    return {"ok": True, "master_id": "6727787768", "bots": results}
+
+
+@app.get("/api/inspect-bot-chat/{uid}")
+async def inspect_bot_chat(uid: str, request: Request):
+    """Fetches the latest messages and buttons from each bot for a specific worker account."""
+    auth = request.headers.get("Authorization") or ""
+    req_secret = request.query_params.get("secret", "")
+    if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    accounts = await fetch_accounts_from_cloud()
+    target_acc = next((a for a in accounts if str(a.get("user_id")) == str(uid)), None)
+    if not target_acc:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    sess_str = target_acc.get("session_string") or target_acc.get("session")
+    cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+    bots_to_check = [
+        ("trxpower", "trxpowermining_bot"),
+        ("btc", "BitcoinCloudMinersBot"),
+        ("finvora", "FINVORAWeb3bot"),
+        ("turbogram", "TurboGramV1_bot"),
+        ("tensor", "TensorMiningRobot"),
+        ("tontrader", "TonTraderAIBot"),
+        ("ominix", "OminixAiBot")
+    ]
+    chats = {}
+    try:
+        await cl.connect()
+        if not await cl.is_user_authorized():
+            return {"ok": False, "error": "Account session not authorized"}
+
+        for name, b_user in bots_to_check:
+            try:
+                b_ent = await cl.get_entity(b_user)
+                msgs = await cl.get_messages(b_ent, limit=4)
+                msg_list = []
+                for m in reversed(msgs):
+                    btns = []
+                    if m.buttons:
+                        for row in m.buttons:
+                            btns.append([{"text": b.text, "url": getattr(b, 'url', None)} for b in row])
+                    msg_list.append({"id": m.id, "out": m.out, "text": m.raw_text, "buttons": btns})
+                chats[name] = msg_list
+            except Exception as ex:
+                chats[name] = [{"error": str(ex)}]
+    finally:
+        await cl.disconnect()
+
+    return {"ok": True, "uid": uid, "chats": chats}
 
 
 @app.post("/api/onboard-new-bots")
