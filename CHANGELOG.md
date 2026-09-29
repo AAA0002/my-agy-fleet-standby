@@ -4,6 +4,43 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **👑 Full Admin Bot Modernization & 15-Bot Cloud Referral Onboarding (`deploy_both_cf_workers.py`, `render_standby_app.py`, `CHANGELOG.md`)**:
+  - **👑 Complete Admin Bot Overhaul (@My_Router_AI_bot)**:
+    * Fully modernized the Admin/Alert Bot to control all 15 mining pools and bots:
+      1. Stones • 2. MRG • 3. ART • 4. AI Lab • 5. UltraWallet • 6. Apex • 7. Ainovum • 8. ATF Miner
+      9. TRX Power • 10. BTC Cloud • 11. Tensor • 12. Ton Trader • 13. FINVORA • 14. TurboGram • 15. Ominix.
+    * Added 7 dedicated sub-bot command centers accessible via direct commands:
+      - `/trxpower` / `/trx`: TRX Power Mining command center & TRON hash status.
+      - `/btc` / `/bitcoincloud`: Bitcoin Cloud Miners command center & BTC acceleration.
+      - `/tensor` / `/tensormining`: Tensor Mining Robot WebApp session claims & GPU node status.
+      - `/tontrader` / `/ttai`: Ton Trader AI algorithmic trade & harvest check-ins.
+      - `/finvora`: FINVORA Web3 DeFi staking & mining command center.
+      - `/turbogram` / `/turbo`: TurboGram V1 high-velocity yield command center.
+      - `/ominix`: Ominix AI Trade quantitative arbitrage command center.
+    * Updated all Admin Bot command handlers and callback flows:
+      - `/start` & `/menu`: Updated active bots counter to `15/15`.
+      - `/status` & `/app`: Real-time telemetry reporting all 15 active bots.
+      - `/harvest` & `/farm`: Multi-bot harvest dispatching across all 15 pools for all 14 accounts.
+      - `/accounts` & `/acc <id>`: Inspection showing 15 active bots 24/7.
+      - `/briefing`: Google Gemini 3.6 Flash AI briefing prompt updated to analyze all 15 bots.
+      - `/help`: Detailed command guide listing all 15 bot commands and operations.
+      - Registered official Telegram descriptions (`setMyDescription`), short descriptions (`setMyShortDescription`), and command autocomplete entries (`setMyCommands`) for both Admin Bot and User Bot.
+  - **☁️ Remote Cloud Referral Onboarding in Render Standby (`render_standby_app.py`)**:
+    * Added bot constants and master referral codes for all 7 new pools:
+      - `TRXPOWER_BOT` (`ref_TRX6727787768`)
+      - `BTC_BOT` (`6727787768`)
+      - `TENSOR_BOT` (`6727787768`)
+      - `TONTRADER_BOT` (`REF_6727787768`)
+      - `FINVORA_BOT` (`ref_TRX6727787768`)
+      - `TURBOGRAM_BOT` (`r_3520c92b`)
+      - `OMINIX_BOT` (`6727787768`)
+    * Upgraded `is_account_referrals_bound` to granularly check that all 15 bot referrals are bound, preventing prematurely skipping new bots on existing accounts.
+    * Integrated 7 new referral registration handshakes into `bind_account_master_referrals`, supporting both `/start <param>` and WebApp `RequestAppWebViewRequest` handshakes.
+    * Expanded `bootstrap_account_mining` to perform initial starter reward claims and daily check-ins for all 7 new bots upon onboarding.
+  - **🛡️ Strict Zero Phone Load & 5-Node Edge Mesh Deployment**:
+    * Deployed to all 5 Cloudflare Worker accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with 100% Zero Phone Load.
+    * Verified webhook dispatch and direct message delivery from Admin Bot to owner `6727787768`.
+
 - **15 Mining Pools Expansion & Pure Text UI Performance Polish (`deploy_both_cf_workers.py`, `render_standby_app.py`, `batch_referral_onboard.py`, `CHANGELOG.md`)**:
   - **🚫 100% Elimination of High-Res Anime Banner Artwork (`sendPhoto`)**:
     * Replaced all heavy photo banner cards (`sendPhoto`) across `@AAAPREMIUMAPPSbot` with instant, clean, zero-delay pure text messages (`sendMessage`).

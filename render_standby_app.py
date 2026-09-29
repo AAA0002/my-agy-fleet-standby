@@ -195,6 +195,20 @@ AINOVUM_BOT = "ainovum_bot"
 AINOVUM_REFERRAL_CODE = "ref_6727787768"
 MININGGRAM_BOT = "MiningGRAM_Bot"
 MININGGRAM_REFERRAL_CODE = "339JU9K"
+TRXPOWER_BOT = "trxpowermining_bot"
+TRXPOWER_REFERRAL_CODE = "ref_TRX6727787768"
+BTC_BOT = "BitcoinCloudMinersBot"
+BTC_REFERRAL_CODE = "6727787768"
+TENSOR_BOT = "TensorMiningRobot"
+TENSOR_REFERRAL_CODE = "6727787768"
+TONTRADER_BOT = "TonTraderAIBot"
+TONTRADER_REFERRAL_CODE = "REF_6727787768"
+FINVORA_BOT = "FINVORAWeb3bot"
+FINVORA_REFERRAL_CODE = "ref_TRX6727787768"
+TURBOGRAM_BOT = "TurboGramV1_bot"
+TURBOGRAM_REFERRAL_CODE = "r_3520c92b"
+OMINIX_BOT = "OminixAiBot"
+OMINIX_REFERRAL_CODE = "6727787768"
 
 LAST_BATCH_RUN = {
     "status": "idle",
@@ -1448,10 +1462,116 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             except Exception as e:
                 logger.debug(f"[{name}] Ainovum bootstrap note: {e}")
 
+        # 9. TRX Power Mining
+        try:
+            trx_h = {
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
+                "Referer": "https://trxpowermining.org/",
+                "Origin": "https://trxpowermining.org"
+            }
+            await http.post("https://trxpowermining.org/api/user/sync", json={"tg_id": int(uid), "ref": TRXPOWER_REFERRAL_CODE, "start_param": TRXPOWER_REFERRAL_CODE}, headers=trx_h, timeout=aiohttp.ClientTimeout(total=6))
+            await http.post("https://trxpowermining.org/api/claim", json={"tg_id": int(uid)}, headers=trx_h, timeout=aiohttp.ClientTimeout(total=6))
+            logger.info(f"[{name}] ✅ TRX Power Mining initial bootstrap claim completed")
+        except Exception as e:
+            logger.debug(f"[{name}] TRX Power bootstrap note: {e}")
+
+        # 10. Bitcoin Cloud Miners
+        try:
+            btc_h = {
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
+                "Referer": "https://btccloudminers.org/",
+                "Origin": "https://btccloudminers.org"
+            }
+            await http.post("https://btccloudminers.org/api/user/sync", json={"tg_id": int(uid), "ref": BTC_REFERRAL_CODE, "start_param": BTC_REFERRAL_CODE}, headers=btc_h, timeout=aiohttp.ClientTimeout(total=6))
+            await http.post("https://btccloudminers.org/api/claim", json={"tg_id": int(uid)}, headers=btc_h, timeout=aiohttp.ClientTimeout(total=6))
+            logger.info(f"[{name}] ✅ Bitcoin Cloud Miners initial bootstrap claim completed")
+        except Exception as e:
+            logger.debug(f"[{name}] Bitcoin Cloud bootstrap note: {e}")
+
+        # 11. Tensor Mining Robot
+        if tokens.get("tensor_init_data"):
+            try:
+                tns_init = tokens["tensor_init_data"]
+                tns_h = {
+                    "Content-Type": "application/json",
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
+                    "Referer": "https://tensormining.online/",
+                    "Origin": "https://tensormining.online"
+                }
+                await http.post("https://tensormining.online/api/auth/telegram", json={"initData": tns_init, "referrer": TENSOR_REFERRAL_CODE}, headers=tns_h, timeout=aiohttp.ClientTimeout(total=6))
+                await http.post("https://tensormining.online/api/mining/claim", json={"initData": tns_init}, headers=tns_h, timeout=aiohttp.ClientTimeout(total=6))
+                logger.info(f"[{name}] ✅ Tensor Mining Robot initial bootstrap claim completed")
+            except Exception as e:
+                logger.debug(f"[{name}] Tensor Mining bootstrap note: {e}")
+
+        # 12. Ton Trader AI
+        if tokens.get("tontrader_init_data"):
+            try:
+                tt_init = tokens["tontrader_init_data"]
+                tt_h = {
+                    "Content-Type": "application/json",
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
+                    "Referer": "https://tontrader.app/",
+                    "Origin": "https://tontrader.app"
+                }
+                await http.post("https://api.tontrader.app/api/v1/auth", json={"initData": tt_init, "ref": TONTRADER_REFERRAL_CODE}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=6))
+                await http.post("https://api.tontrader.app/api/v1/daily-checkin", json={"initData": tt_init}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=6))
+                await http.post("https://api.tontrader.app/api/v1/claim", json={"initData": tt_init}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=6))
+                logger.info(f"[{name}] ✅ Ton Trader AI initial bootstrap claim completed")
+            except Exception as e:
+                logger.debug(f"[{name}] Ton Trader bootstrap note: {e}")
+
+        # 13. FINVORA Web3
+        try:
+            fin_h = {
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
+                "Referer": "https://finvora.io/",
+                "Origin": "https://finvora.io"
+            }
+            await http.post("https://finvora.io/api/user/sync", json={"tg_id": int(uid), "ref": FINVORA_REFERRAL_CODE, "start_param": FINVORA_REFERRAL_CODE}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=6))
+            await http.post("https://finvora.io/api/claim", json={"tg_id": int(uid)}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=6))
+            logger.info(f"[{name}] ✅ FINVORA Web3 initial bootstrap claim completed")
+        except Exception as e:
+            logger.debug(f"[{name}] FINVORA bootstrap note: {e}")
+
+        # 14. TurboGram V1
+        try:
+            turbo_h = {
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
+                "Referer": "https://turbogram.xyz/",
+                "Origin": "https://turbogram.xyz"
+            }
+            await http.post("https://turbogram.xyz/api/user/sync", json={"tg_id": int(uid), "ref": TURBOGRAM_REFERRAL_CODE, "start_param": TURBOGRAM_REFERRAL_CODE}, headers=turbo_h, timeout=aiohttp.ClientTimeout(total=6))
+            await http.post("https://turbogram.xyz/api/claim", json={"tg_id": int(uid)}, headers=turbo_h, timeout=aiohttp.ClientTimeout(total=6))
+            logger.info(f"[{name}] ✅ TurboGram V1 initial bootstrap claim completed")
+        except Exception as e:
+            logger.debug(f"[{name}] TurboGram bootstrap note: {e}")
+
+        # 15. Ominix AI Trade
+        if tokens.get("ominix_init_data"):
+            try:
+                om_init = tokens["ominix_init_data"]
+                om_h = {
+                    "Content-Type": "application/json",
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
+                    "Referer": "https://ominix.trade/",
+                    "Origin": "https://ominix.trade"
+                }
+                await http.post("https://api.ominix.trade/api/auth/verify", json={"initData": om_init, "ref": OMINIX_REFERRAL_CODE}, headers=om_h, timeout=aiohttp.ClientTimeout(total=6))
+                await http.post("https://api.ominix.trade/api/trade/daily-checkin", json={"initData": om_init}, headers=om_h, timeout=aiohttp.ClientTimeout(total=6))
+                await http.post("https://api.ominix.trade/api/trade/claim", json={"initData": om_init}, headers=om_h, timeout=aiohttp.ClientTimeout(total=6))
+                logger.info(f"[{name}] ✅ Ominix AI Trade initial bootstrap claim completed")
+            except Exception as e:
+                logger.debug(f"[{name}] Ominix bootstrap note: {e}")
+
 
 def is_account_referrals_bound(acc_entry: dict) -> bool:
-    """Checks whether an account already has its master referrals bound across all active bots."""
-    if acc_entry.get("referrals_bound"):
+    """Checks whether an account already has its master referrals bound across all 15 active bots."""
+    if acc_entry.get("all_15_referrals_bound"):
         return True
     return bool(
         acc_entry.get("atf_referral_bound") and
@@ -1461,7 +1581,14 @@ def is_account_referrals_bound(acc_entry: dict) -> bool:
         acc_entry.get("ailab_referral_bound") and
         acc_entry.get("ultrawallet_referral_bound") and
         acc_entry.get("apx_referral_bound") and
-        acc_entry.get("ainovum_referral_bound")
+        acc_entry.get("ainovum_referral_bound") and
+        acc_entry.get("trxpower_referral_bound") and
+        acc_entry.get("btc_referral_bound") and
+        acc_entry.get("tensor_referral_bound") and
+        acc_entry.get("tontrader_referral_bound") and
+        acc_entry.get("finvora_referral_bound") and
+        acc_entry.get("turbogram_referral_bound") and
+        acc_entry.get("ominix_referral_bound")
     )
 
 
@@ -1628,8 +1755,109 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
         except Exception as e:
             logger.warning(f"[{name}] ATF referral bind note: {e}")
 
+    # 9. TRX Power Mining
+    if not acc_entry.get("trxpower_referral_bound"):
+        try:
+            b_trx = await client.get_entity(TRXPOWER_BOT)
+            await client.send_message(b_trx, f"/start {TRXPOWER_REFERRAL_CODE}")
+            acc_entry["trxpower_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] TRX Power referral bind note: {e}")
+
+    # 10. Bitcoin Cloud Miners
+    if not acc_entry.get("btc_referral_bound"):
+        try:
+            b_btc = await client.get_entity(BTC_BOT)
+            await client.send_message(b_btc, f"/start {BTC_REFERRAL_CODE}")
+            acc_entry["btc_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] Bitcoin Cloud referral bind note: {e}")
+
+    # 11. Tensor Mining Robot (WebApp + Chat /start)
+    if not acc_entry.get("tensor_referral_bound"):
+        try:
+            b_tensor = await client.get_entity(TENSOR_BOT)
+            await client.send_message(b_tensor, f"/start {TENSOR_REFERRAL_CODE}")
+            try:
+                b_tns_in = await client.get_input_entity(TENSOR_BOT)
+                await client(RequestAppWebViewRequest(
+                    peer=b_tns_in,
+                    app=InputBotAppShortName(bot_id=b_tns_in, short_name="myapp"),
+                    platform="android",
+                    start_param=str(TENSOR_REFERRAL_CODE)
+                ))
+            except Exception as te:
+                logger.debug(f"[{name}] Tensor webview note: {te}")
+            acc_entry["tensor_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] Tensor referral bind note: {e}")
+
+    # 12. Ton Trader AI (WebApp + Chat /start)
+    if not acc_entry.get("tontrader_referral_bound"):
+        try:
+            b_tt = await client.get_entity(TONTRADER_BOT)
+            await client.send_message(b_tt, f"/start {TONTRADER_REFERRAL_CODE}")
+            try:
+                b_tt_in = await client.get_input_entity(TONTRADER_BOT)
+                await client(RequestAppWebViewRequest(
+                    peer=b_tt_in,
+                    app=InputBotAppShortName(bot_id=b_tt_in, short_name="app"),
+                    platform="android",
+                    start_param=str(TONTRADER_REFERRAL_CODE)
+                ))
+            except Exception as tte:
+                logger.debug(f"[{name}] Ton Trader webview note: {tte}")
+            acc_entry["tontrader_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] Ton Trader referral bind note: {e}")
+
+    # 13. FINVORA Web3
+    if not acc_entry.get("finvora_referral_bound"):
+        try:
+            b_fin = await client.get_entity(FINVORA_BOT)
+            await client.send_message(b_fin, f"/start {FINVORA_REFERRAL_CODE}")
+            acc_entry["finvora_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] FINVORA referral bind note: {e}")
+
+    # 14. TurboGram V1
+    if not acc_entry.get("turbogram_referral_bound"):
+        try:
+            b_turbo = await client.get_entity(TURBOGRAM_BOT)
+            await client.send_message(b_turbo, f"/start {TURBOGRAM_REFERRAL_CODE}")
+            acc_entry["turbogram_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] TurboGram referral bind note: {e}")
+
+    # 15. Ominix AI Trade (WebApp + Chat /start)
+    if not acc_entry.get("ominix_referral_bound"):
+        try:
+            b_om = await client.get_entity(OMINIX_BOT)
+            await client.send_message(b_om, f"/start {OMINIX_REFERRAL_CODE}")
+            try:
+                b_om_in = await client.get_input_entity(OMINIX_BOT)
+                await client(RequestAppWebViewRequest(
+                    peer=b_om_in,
+                    app=InputBotAppShortName(bot_id=b_om_in, short_name="Trade"),
+                    platform="android",
+                    start_param=str(OMINIX_REFERRAL_CODE)
+                ))
+            except Exception as ome:
+                logger.debug(f"[{name}] Ominix webview note: {ome}")
+            acc_entry["ominix_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] Ominix referral bind note: {e}")
+
     acc_entry["referrals_bound"] = True
-    logger.info(f"[{name}] ✅ All 8 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
+    acc_entry["all_15_referrals_bound"] = True
+    logger.info(f"[{name}] ✅ All 15 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
 
     # Wait 1.5s for Telegram bot backends to complete registration
     await asyncio.sleep(1.5)
