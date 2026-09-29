@@ -4,6 +4,20 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🚀 15-Bot Interactive Cloud Referral Binding & Onboarding Verification (`render_standby_app.py`, `push_to_standby_repo.py`, `run_onboard_runner.py`, `CHANGELOG.md`)**:
+  - **☁️ Root Cause Resolution for Referrals & Farming**:
+    * Identified why the user's new bot referrals showed 0: Telegram cloud mining bots (`@trxpowermining_bot`, `@BitcoinCloudMinersBot`, `@FINVORAWeb3bot`, `@TurboGramV1_bot`) require mandatory channel joins (`JoinChannelRequest`) and clicking inline verification buttons (`"✅ Joined"`, `"Check"`, `"Verify"`). Simple text `/start` without completing button verification kept referrals in a pending/unverified state on the bot servers. Referrals were NEVER wasted because master referral codes were attached to every single start command.
+    * Discovered that Render Standby Node 1 (`my-agy-fleet-standby`) and Node 2 (`my-agy-fleet-standby-node2`) track the dedicated repository `AAA2743/my-agy-fleet-standby` on GitHub. Built `push_to_standby_repo.py` to automatically synchronize `render_standby_app.py` directly to `app.py` in `AAA2743/my-agy-fleet-standby`.
+    * Render Node 1 (Singapore) successfully built and transitioned to `status: live` on commit `99e7b6a7ceead249b208800a35dcbb06bc97d1fe`.
+  - **🤖 Interactive Bot Verification & 15-Bot Cloud Farming**:
+    * Implemented `interact_and_verify_bot(client, bot_username, start_cmd, name)` in `render_standby_app.py`:
+      - Dispatches referral `/start <code_or_param>`.
+      - Scans bot response messages for sponsor channel URLs (`t.me/...` or `@channel`) and executes `JoinChannelRequest` directly in the cloud.
+      - Scans inline keyboard buttons for confirmation triggers (`"Joined"`, `"Check"`, `"Verify"`, `"Start"`, `"Claim"`) and clicks them automatically via Telethon.
+      - Triggers initial starter claims and bonus buttons.
+    * Exposed dedicated `/api/onboard-new-bots` endpoint and built `run_onboard_runner.py` to orchestrate cloud onboarding across all 13 worker accounts.
+    * Expanded `farm_single_account_bots` and `bot_routines` to 15 active bots: added `_farm_trxpower`, `_farm_btc`, `_farm_tensor`, `_farm_tontrader`, `_farm_finvora`, `_farm_turbogram`, and `_farm_ominix`.
+
 - **👑 Full Admin Bot Modernization & 15-Bot Cloud Referral Onboarding (`deploy_both_cf_workers.py`, `render_standby_app.py`, `CHANGELOG.md`)**:
   - **👑 Complete Admin Bot Overhaul (@My_Router_AI_bot)**:
     * Fully modernized the Admin/Alert Bot to control all 15 mining pools and bots:
