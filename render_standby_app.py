@@ -28,7 +28,7 @@ except Exception:
 from fastapi import FastAPI, HTTPException, Request
 from telethon import TelegramClient
 from telethon.sessions import StringSession
-from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest
+from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest, ImportChatInviteRequest
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.types import InputBotAppShortName
 from telethon.errors import (
@@ -1606,12 +1606,38 @@ def is_account_referrals_bound(acc_entry: dict) -> bool:
     )
 
 
-async def interact_and_verify_bot(client: TelegramClient, bot_username: str, start_cmd: str, name: str):
+async def join_tg_target(client: TelegramClient, link_or_username: str, name: str = ""):
+    target = str(link_or_username or "").strip()
+    if not target:
+        return
+    # Private invite link: https://t.me/+hash or t.me/joinchat/hash or +hash
+    if "+" in target or "joinchat/" in target:
+        h = target.split("+")[-1].split("?")[0] if "+" in target else target.split("joinchat/")[-1].split("?")[0]
+        h = h.strip()
+        if h:
+            try:
+                await client(ImportChatInviteRequest(h))
+                logger.info(f"[{name}] Joined private invite +{h}")
+            except Exception as e:
+                if "already" not in str(e).lower() and "USER_ALREADY_PARTICIPANT" not in str(e):
+                    logger.debug(f"[{name}] Private invite join note (+{h}): {e}")
+    else:
+        clean = target.replace("https://t.me/", "").replace("t.me/", "").replace("@", "").strip()
+        if clean and clean.lower() not in ["bot", "share", "start", "app", "mining"]:
+            try:
+                await client(JoinChannelRequest(clean))
+                logger.info(f"[{name}] Joined public channel @{clean}")
+            except Exception as e:
+                if "already" not in str(e).lower() and "USER_ALREADY_PARTICIPANT" not in str(e):
+                    logger.debug(f"[{name}] Public channel join note (@{clean}): {e}")
+
+
+async def interact_and_verify_bot(client: TelegramClient, bot_username: str, start_cmd: str, name: str, required_channels: list = None, click_buttons: list = None):
     """
     Advanced autonomous bot interaction & verification engine:
     1. Sends /start <referral_param>.
-    2. Solves math captchas if present (e.g. 5 + 3 = ?).
-    3. Detects and joins all required sponsor channels (via regex & button URLs).
+    2. Joins any required sponsor channels (public and private invite links).
+    3. Solves math captchas if present (e.g. 5 + 3 = ?).
     4. Selects language if prompted (English / 🇬🇧).
     5. Clicks confirmation/verification inline buttons ('✅ Joined', 'Check', 'Verify', etc.).
     6. Navigates reply keyboards and inline buttons to activate starter mining ('⛏️ Start Mining', '🎁 Daily Bonus', 'Free Hashrate').
@@ -1621,6 +1647,12 @@ async def interact_and_verify_bot(client: TelegramClient, bot_username: str, sta
         bot = await client.get_entity(bot_username)
         init_msgs = await client.get_messages(bot, limit=1)
         last_id = init_msgs[0].id if init_msgs else 0
+
+        # Pre-join any required channels if specified
+        if required_channels:
+            for ch in required_channels:
+                await join_tg_target(client, ch, name)
+            await asyncio.sleep(1.0)
 
         await client.send_message(bot, start_cmd)
         logger.info(f"[{name}] Sent '{start_cmd}' to @{bot_username}")
@@ -1677,28 +1709,42 @@ async def interact_and_verify_bot(client: TelegramClient, bot_username: str, sta
                     for btn in row:
                         btn_url = getattr(btn, 'url', None) or ""
                         if "t.me/" in btn_url and "start=" not in btn_url and not btn_url.endswith("bot"):
-                            m = re.search(r"t\.me/([a-zA-Z0-9_]+)", btn_url)
-                            if m:
+                            await join_tg_target(client, btn_url, name)
+
+                # B. Priority 0: Explicit click_buttons list if provided
+                if click_buttons:
+                    for row in latest_msg.buttons:
+                        for btn in row:
+                            b_low = (btn.text or "").strip().lower()
+                            for cb in click_buttons:
+                                if cb.lower() in b_low:
+                                    try:
+                                        await btn.click()
+                                        logger.info(f"[{name}] Clicked requested button '{btn.text}' on @{bot_username}")
+                                        clicked_action = True
+                                        break
+                                    except Exception as cbe:
+                                        logger.debug(f"[{name}] Requested button click note: {cbe}")
+                            if clicked_action:
+                                break
+                        if clicked_action:
+                            break
+
+                # C. Priority 1: Language selection
+                if not clicked_action:
+                    for row in latest_msg.buttons:
+                        for btn in row:
+                            b_low = (btn.text or "").strip().lower()
+                            if any(l_kw in b_low for l_kw in ["english", "🇬🇧", "en"]):
                                 try:
-                                    await client(JoinChannelRequest(m.group(1)))
-                                    logger.info(f"[{name}] Auto-joined channel @{m.group(1)} from button")
+                                    await btn.click()
+                                    logger.info(f"[{name}] Selected language '{btn.text}' on @{bot_username}")
+                                    clicked_action = True
+                                    break
                                 except Exception:
                                     pass
-
-                # B. Priority 1: Language selection
-                for row in latest_msg.buttons:
-                    for btn in row:
-                        b_low = (btn.text or "").strip().lower()
-                        if any(l_kw in b_low for l_kw in ["english", "🇬🇧", "en"]):
-                            try:
-                                await btn.click()
-                                logger.info(f"[{name}] Selected language '{btn.text}' on @{bot_username}")
-                                clicked_action = True
-                                break
-                            except Exception:
-                                pass
-                    if clicked_action:
-                        break
+                        if clicked_action:
+                            break
 
                 # C. Priority 2: Channel verification confirmation
                 if not clicked_action:
@@ -4112,7 +4158,20 @@ async def onboard_new_bots(request: Request):
 
             # 1. TRX Power Mining
             try:
-                await interact_and_verify_bot(cl, TRXPOWER_BOT, f"/start {TRXPOWER_REFERRAL_CODE}", name)
+                await join_tg_target(cl, "trxpowerminingOfficial", f"{name} trxpower")
+                await join_tg_target(cl, "TRX_WORLD_WORK", f"{name} trxpower")
+                await asyncio.sleep(1.0)
+                await interact_and_verify_bot(cl, TRXPOWER_BOT, f"/start {TRXPOWER_REFERRAL_CODE}", name, required_channels=["trxpowerminingOfficial", "TRX_WORLD_WORK"], click_buttons=["✅ Check / Verify", "Check / Verify", "Verify"])
+                try:
+                    b_trx_in = await cl.get_input_entity(TRXPOWER_BOT)
+                    await cl(RequestAppWebViewRequest(
+                        peer=b_trx_in,
+                        app=InputBotAppShortName(bot_id=b_trx_in, short_name="app"),
+                        platform="android",
+                        start_param=str(TRXPOWER_REFERRAL_CODE)
+                    ))
+                except Exception:
+                    pass
                 acc["trxpower_referral_bound"] = True
                 acc_res["bots"]["trxpower"] = "verified"
             except Exception as e:
@@ -4120,7 +4179,9 @@ async def onboard_new_bots(request: Request):
 
             # 2. Bitcoin Cloud Miners
             try:
-                await interact_and_verify_bot(cl, BTC_BOT, f"/start {BTC_REFERRAL_CODE}", name)
+                await join_tg_target(cl, "https://t.me/+I1HZjvoqu942MjZl", f"{name} btc")
+                await asyncio.sleep(1.0)
+                await interact_and_verify_bot(cl, BTC_BOT, f"/start {BTC_REFERRAL_CODE}", name, click_buttons=["✅ Continue", "Continue", "🎁 Free Miner Rewards"])
                 acc["btc_referral_bound"] = True
                 acc_res["bots"]["btc"] = "verified"
             except Exception as e:
@@ -4128,7 +4189,19 @@ async def onboard_new_bots(request: Request):
 
             # 3. FINVORA Web3
             try:
-                await interact_and_verify_bot(cl, FINVORA_BOT, f"/start {FINVORA_REFERRAL_CODE}", name)
+                await join_tg_target(cl, "finvoraweb3", f"{name} finvora")
+                await asyncio.sleep(1.0)
+                await interact_and_verify_bot(cl, FINVORA_BOT, f"/start {FINVORA_REFERRAL_CODE}", name, click_buttons=["Check Now", "🚀 Open Mini App"])
+                try:
+                    b_fin_in = await cl.get_input_entity(FINVORA_BOT)
+                    await cl(RequestAppWebViewRequest(
+                        peer=b_fin_in,
+                        app=InputBotAppShortName(bot_id=b_fin_in, short_name="app"),
+                        platform="android",
+                        start_param=str(FINVORA_REFERRAL_CODE)
+                    ))
+                except Exception:
+                    pass
                 acc["finvora_referral_bound"] = True
                 acc_res["bots"]["finvora"] = "verified"
             except Exception as e:
@@ -4136,7 +4209,20 @@ async def onboard_new_bots(request: Request):
 
             # 4. TurboGram V1
             try:
-                await interact_and_verify_bot(cl, TURBOGRAM_BOT, f"/start {TURBOGRAM_REFERRAL_CODE}", name)
+                await join_tg_target(cl, "TurboGramAnnouncements", f"{name} turbogram")
+                await join_tg_target(cl, "TurboGramPayment", f"{name} turbogram")
+                await asyncio.sleep(1.0)
+                await interact_and_verify_bot(cl, TURBOGRAM_BOT, f"/start {TURBOGRAM_REFERRAL_CODE}", name, click_buttons=["Open App"])
+                try:
+                    b_tb_in = await cl.get_input_entity(TURBOGRAM_BOT)
+                    await cl(RequestAppWebViewRequest(
+                        peer=b_tb_in,
+                        app=InputBotAppShortName(bot_id=b_tb_in, short_name="app"),
+                        platform="android",
+                        start_param=str(TURBOGRAM_REFERRAL_CODE)
+                    ))
+                except Exception:
+                    pass
                 acc["turbogram_referral_bound"] = True
                 acc_res["bots"]["turbogram"] = "verified"
             except Exception as e:
@@ -4144,8 +4230,7 @@ async def onboard_new_bots(request: Request):
 
             # 5. Tensor Mining Robot
             try:
-                b_tns = await cl.get_entity(TENSOR_BOT)
-                await cl.send_message(b_tns, f"/start {TENSOR_REFERRAL_CODE}")
+                await interact_and_verify_bot(cl, TENSOR_BOT, f"/start {TENSOR_REFERRAL_CODE}", name, click_buttons=["🚀 Start Mining", "Start Mining"])
                 try:
                     b_tns_in = await cl.get_input_entity(TENSOR_BOT)
                     await cl(RequestAppWebViewRequest(
@@ -4163,8 +4248,10 @@ async def onboard_new_bots(request: Request):
 
             # 6. Ton Trader AI
             try:
-                b_tt = await cl.get_entity(TONTRADER_BOT)
-                await cl.send_message(b_tt, f"/start {TONTRADER_REFERRAL_CODE}")
+                await join_tg_target(cl, "tontraderai_official", f"{name} tontrader")
+                await join_tg_target(cl, "tontraderai_group", f"{name} tontrader")
+                await asyncio.sleep(1.0)
+                await interact_and_verify_bot(cl, TONTRADER_BOT, f"/start {TONTRADER_REFERRAL_CODE}", name, click_buttons=["🚀 Open App", "Open App"])
                 try:
                     b_tt_in = await cl.get_input_entity(TONTRADER_BOT)
                     await cl(RequestAppWebViewRequest(
@@ -4182,8 +4269,7 @@ async def onboard_new_bots(request: Request):
 
             # 7. Ominix AI Trade
             try:
-                b_om = await cl.get_entity(OMINIX_BOT)
-                await cl.send_message(b_om, f"/start {OMINIX_REFERRAL_CODE}")
+                await interact_and_verify_bot(cl, OMINIX_BOT, f"/start {OMINIX_REFERRAL_CODE}", name, click_buttons=["🚀 Open App", "Open App"])
                 try:
                     b_om_in = await cl.get_input_entity(OMINIX_BOT)
                     await cl(RequestAppWebViewRequest(
