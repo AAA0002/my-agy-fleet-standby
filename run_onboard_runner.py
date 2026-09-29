@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 run_onboard_runner.py
-Calls /api/onboard-new-bots on Render Cloud Standby for each worker account.
-Honors the Zero Phone Load directive: All MTProto interaction, channel joins,
-and button clicks execute in the cloud on Render Singapore.
+Orchestrates targeted multi-step cloud onboarding across remaining worker accounts.
+Honors Zero Phone Load directive: All MTProto channel joins, invite acceptance,
+and verification clicks execute 100% in the cloud on Render Singapore.
 """
 
 import json
@@ -15,30 +15,45 @@ RENDER_URL = "https://my-agy-fleet-standby.onrender.com/api/onboard-new-bots"
 SECRET_KEY = "agy_cf_secret_7d36994e_2026"
 ACCOUNTS_FILE = "/root/projects/AAA_AUTO/accounts.json"
 
+PENDING_UIDS = [
+    8450010161,  # Nadim (@Asssssggj)
+    8782429452,  # Kaitlyn (@Asssssklg)
+    7734849205,  # Abid Hasan (@Abidhasan222)
+    8025472383,  # Abid Hasan 2 (Abid)
+    8851426148,  # Node 9 (@Akkffrr)
+    8203342513,  # Node 10 (@AAlllAA2)
+    8190649727,  # MD. ARIF HOSSAIN (@aaamah222)
+    7487048946,  # Sanzida Shimu (@Sanzidashimu)
+    8741547543,  # Abid 3 (@Abid_300)
+    8727040932   # Raj Thakur (@Rajjjjjjjjjk)
+]
+
 def main():
     with open(ACCOUNTS_FILE, "r") as f:
         accounts = json.load(f)
 
-    # Master is index 0 (6727787768). Worker accounts are index 1 to 13.
-    worker_accounts = [a for a in accounts if str(a.get("user_id")) != "6727787768"]
+    # Filter to pending accounts
+    target_accounts = [a for a in accounts if a.get("user_id") in PENDING_UIDS]
+    print(f"🚀 Processing Targeted Multi-Step Onboarding for {len(target_accounts)} Remaining Accounts...")
 
-    print(f"🚀 Starting Cloud Onboarding for {len(worker_accounts)} Worker Accounts via Render...")
     headers = {
         "Authorization": f"Bearer {SECRET_KEY}",
         "Content-Type": "application/json",
         "User-Agent": "Antigravity-Onboard-Runner"
     }
 
-    all_results = []
-    for i, acc in enumerate(worker_accounts, 1):
+    verified_count = 0
+    for i, acc in enumerate(target_accounts, 1):
         uid = acc.get("user_id")
         name = acc.get("name")
-        print(f"\n[{i}/{len(worker_accounts)}] Onboarding Account: {name} (ID: {uid}) on Render Cloud...")
-        
+        print(f"\n[{i}/{len(target_accounts)}] Onboarding: {name} (ID: {uid}) on Render Cloud...")
+
         payload = json.dumps({"accounts": [acc]}).encode("utf-8")
         req = urllib.request.Request(RENDER_URL, data=payload, headers=headers, method="POST")
+
         try:
-            with urllib.request.urlopen(req, timeout=120) as resp:
+            # 240s generous timeout so all 7 bots complete their 6-turn dialogues
+            with urllib.request.urlopen(req, timeout=240) as resp:
                 data = json.loads(resp.read().decode())
                 res_list = data.get("results", [])
                 if res_list:
@@ -47,19 +62,19 @@ def main():
                     print(f"  ✅ Result for {name}:")
                     for b_name, b_stat in bots.items():
                         print(f"     • {b_name}: {b_stat}")
-                    all_results.append(res)
+                    verified_count += 1
                 else:
-                    print(f"  ⚠️ No results array returned: {data}")
+                    print(f"  ⚠️ No results returned: {data}")
         except urllib.error.HTTPError as e:
             print(f"  ❌ Render HTTP Error {e.code}: {e.read().decode()[:200]}")
         except Exception as e:
             print(f"  ❌ Error contacting Render: {e}")
 
-        # Sleep briefly between accounts to be polite
+        # Politeness delay between accounts
         time.sleep(2)
 
     print("\n" + "="*50)
-    print(f"🎉 Onboarding Completed across {len(all_results)} Accounts!")
+    print(f"🎉 Completed Targeted Multi-Step Onboarding for {verified_count}/{len(target_accounts)} Accounts!")
     print("="*50)
 
 if __name__ == "__main__":
