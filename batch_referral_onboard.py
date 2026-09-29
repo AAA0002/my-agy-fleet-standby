@@ -113,6 +113,95 @@ def main():
             except Exception as e:
                 print(f"  ❌ [Zyntrix Mining] Note: {e}")
 
+            time.sleep(2)
+
+            # 5. TRX Power Mining
+            try:
+                bot5 = client.get_entity("trxpowermining_bot")
+                client.send_message(bot5, f"/start ref_TRX{REFERRAL_ID}")
+                time.sleep(1.5)
+                print(f"  ✅ [TRX Power Mining] Bound to referral ref_TRX{REFERRAL_ID}!")
+            except Exception as e:
+                print(f"  ❌ [TRX Power Mining] Note: {e}")
+
+            time.sleep(2)
+
+            # 6. Bitcoin Cloud Miners
+            try:
+                bot6 = client.get_entity("BitcoinCloudMinersBot")
+                client.send_message(bot6, f"/start {REFERRAL_ID}")
+                time.sleep(1.5)
+                print(f"  ✅ [Bitcoin Cloud Miners] Bound to referral {REFERRAL_ID}!")
+            except Exception as e:
+                print(f"  ❌ [Bitcoin Cloud Miners] Note: {e}")
+
+            time.sleep(2)
+
+            # 7. Tensor Mining Robot
+            try:
+                bot7 = client.get_input_entity("TensorMiningRobot")
+                res7 = client(RequestAppWebViewRequest(
+                    peer=bot7,
+                    app=InputBotAppShortName(bot_id=bot7, short_name="myapp"),
+                    platform="android",
+                    start_param=REFERRAL_ID
+                ))
+                print(f"  ✅ [Tensor Mining Robot] Bound! WebApp URL registered.")
+            except Exception as e:
+                print(f"  ❌ [Tensor Mining Robot] Note: {e}")
+
+            time.sleep(2)
+
+            # 8. Ton Trader AI
+            try:
+                bot8 = client.get_input_entity("TonTraderAIBot")
+                res8 = client(RequestAppWebViewRequest(
+                    peer=bot8,
+                    app=InputBotAppShortName(bot_id=bot8, short_name="app"),
+                    platform="android",
+                    start_param=f"REF_{REFERRAL_ID}"
+                ))
+                print(f"  ✅ [Ton Trader AI] Bound! WebApp URL registered.")
+            except Exception as e:
+                print(f"  ❌ [Ton Trader AI] Note: {e}")
+
+            time.sleep(2)
+
+            # 9. FINVORA Web3
+            try:
+                bot9 = client.get_entity("FINVORAWeb3bot")
+                client.send_message(bot9, f"/start ref_TRX{REFERRAL_ID}")
+                time.sleep(1.5)
+                print(f"  ✅ [FINVORA Web3] Bound to referral ref_TRX{REFERRAL_ID}!")
+            except Exception as e:
+                print(f"  ❌ [FINVORA Web3] Note: {e}")
+
+            time.sleep(2)
+
+            # 10. TurboGram V1
+            try:
+                bot10 = client.get_entity("TurboGramV1_bot")
+                client.send_message(bot10, "/start r_3520c92b")
+                time.sleep(1.5)
+                print(f"  ✅ [TurboGram V1] Bound to referral r_3520c92b!")
+            except Exception as e:
+                print(f"  ❌ [TurboGram V1] Note: {e}")
+
+            time.sleep(2)
+
+            # 11. Ominix AI Trade
+            try:
+                bot11 = client.get_input_entity("OminixAiBot")
+                res11 = client(RequestAppWebViewRequest(
+                    peer=bot11,
+                    app=InputBotAppShortName(bot_id=bot11, short_name="Trade"),
+                    platform="android",
+                    start_param=REFERRAL_ID
+                ))
+                print(f"  ✅ [Ominix AI Trade] Bound! WebApp URL registered.")
+            except Exception as e:
+                print(f"  ❌ [Ominix AI Trade] Note: {e}")
+
             acc["custom_referrals_bound"] = True
 
         except Exception as err:

@@ -368,6 +368,54 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     except Exception as atf_e:
         logger.debug(f"[{name}] ATF Miner error: {atf_e}")
 
+    # 11. Tensor Mining Robot WebApp initData (@TensorMiningRobot)
+    try:
+        bot_tensor = await client.get_input_entity("TensorMiningRobot")
+        res_tensor = await client(RequestAppWebViewRequest(
+            peer=bot_tensor,
+            app=InputBotAppShortName(bot_id=bot_tensor, short_name="myapp"),
+            platform="android",
+            start_param=REPORT_CHAT_ID
+        ))
+        parsed_tensor = urllib.parse.urlparse(res_tensor.url)
+        tensor_init = urllib.parse.parse_qs(parsed_tensor.fragment).get("tgWebAppData", [None])[0]
+        if tensor_init:
+            tokens["tensor_init_data"] = tensor_init
+    except Exception as tensor_e:
+        logger.debug(f"[{name}] Tensor error: {tensor_e}")
+
+    # 12. Ton Trader AI WebApp initData (@TonTraderAIBot)
+    try:
+        bot_tt = await client.get_input_entity("TonTraderAIBot")
+        res_tt = await client(RequestAppWebViewRequest(
+            peer=bot_tt,
+            app=InputBotAppShortName(bot_id=bot_tt, short_name="app"),
+            platform="android",
+            start_param=f"REF_{REPORT_CHAT_ID}"
+        ))
+        parsed_tt = urllib.parse.urlparse(res_tt.url)
+        tt_init = urllib.parse.parse_qs(parsed_tt.fragment).get("tgWebAppData", [None])[0]
+        if tt_init:
+            tokens["tontrader_init_data"] = tt_init
+    except Exception as tt_e:
+        logger.debug(f"[{name}] Ton Trader error: {tt_e}")
+
+    # 13. Ominix AI Trade WebApp initData (@OminixAiBot)
+    try:
+        bot_om = await client.get_input_entity("OminixAiBot")
+        res_om = await client(RequestAppWebViewRequest(
+            peer=bot_om,
+            app=InputBotAppShortName(bot_id=bot_om, short_name="Trade"),
+            platform="android",
+            start_param=REPORT_CHAT_ID
+        ))
+        parsed_om = urllib.parse.urlparse(res_om.url)
+        om_init = urllib.parse.parse_qs(parsed_om.fragment).get("tgWebAppData", [None])[0]
+        if om_init:
+            tokens["ominix_init_data"] = om_init
+    except Exception as om_e:
+        logger.debug(f"[{name}] Ominix error: {om_e}")
+
     return tokens
 
 
