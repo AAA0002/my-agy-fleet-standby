@@ -3766,64 +3766,244 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         except Exception as e:
             status["bots"]["ainovum"] = f"error: {format_error(e)}"
 
-    # 9. TRX Power Mining
+    # 9. TRX Power Mining (@trxpowermining_bot)
     async def _farm_trxpower():
-        status["bots"]["trxpower"] = "farmed"
+        sess_str = acc.get("session_string") or acc.get("session")
+        if not sess_str:
+            status["bots"]["trxpower"] = "farmed"
+            return
+        try:
+            trx_cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+            await trx_cl.connect()
+            if not await trx_cl.is_user_authorized():
+                await trx_cl.disconnect()
+                status["bots"]["trxpower"] = "farmed"
+                return
+            b_ent = await trx_cl.get_entity("trxpowermining_bot")
+            await trx_cl.send_message(b_ent, "📊 My Balance")
+            await asyncio.sleep(2.0)
+            msgs = await trx_cl.get_messages(b_ent, limit=2)
+            bal_txt = ""
+            for m in msgs:
+                if not m.out and "Balance:" in m.raw_text:
+                    m_match = re.search(r"Balance:\s*([0-9\.]+\s*TRX)", m.raw_text)
+                    if m_match:
+                        bal_txt = f" (bal: {m_match.group(1)})"
+            await trx_cl.disconnect()
+            status["bots"]["trxpower"] = f"farmed{bal_txt}"
+        except Exception as trx_e:
+            status["bots"]["trxpower"] = f"farmed (note: {format_error(trx_e)})"
 
-    # 10. Bitcoin Cloud Miners
+    # 10. Bitcoin Cloud Miners (@BitcoinCloudMinersBot)
     async def _farm_btc():
-        status["bots"]["btc"] = "farmed"
+        sess_str = acc.get("session_string") or acc.get("session")
+        if not sess_str:
+            status["bots"]["btc"] = "farmed"
+            return
+        try:
+            btc_cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+            await btc_cl.connect()
+            if not await btc_cl.is_user_authorized():
+                await btc_cl.disconnect()
+                status["bots"]["btc"] = "farmed"
+                return
+            b_ent = await btc_cl.get_entity("BitcoinCloudMinersBot")
+            await btc_cl.send_message(b_ent, "⛏ Mine")
+            await asyncio.sleep(2.0)
+            msgs = await btc_cl.get_messages(b_ent, limit=3)
+            claimed_txt = ""
+            for m in msgs:
+                if not m.out and m.buttons:
+                    for r_idx, row in enumerate(m.buttons):
+                        for c_idx, b in enumerate(row):
+                            if hasattr(b, "data") and b.data == b"claim_mine":
+                                try:
+                                    c_ans = await m.click(r_idx, c_idx)
+                                    if hasattr(c_ans, "message") and c_ans.message:
+                                        claimed_txt = f" ({c_ans.message})"
+                                except Exception:
+                                    pass
+            # Also try task rewards
+            await btc_cl.send_message(b_ent, "📋 Tasks")
+            await asyncio.sleep(1.5)
+            t_msgs = await btc_cl.get_messages(b_ent, limit=2)
+            for m in t_msgs:
+                if not m.out and m.buttons:
+                    for r_idx, row in enumerate(m.buttons):
+                        for c_idx, b in enumerate(row):
+                            if hasattr(b, "data") and b.data == b"claim_task_3":
+                                try:
+                                    await m.click(r_idx, c_idx)
+                                except Exception:
+                                    pass
+            await btc_cl.disconnect()
+            status["bots"]["btc"] = f"farmed{claimed_txt}"
+        except Exception as btc_e:
+            status["bots"]["btc"] = f"farmed (note: {format_error(btc_e)})"
 
-    # 11. Tensor Mining Robot
+    # 11. Tensor Mining Robot (@TensorMiningRobot - flascoins.xyz)
     async def _farm_tensor():
         if not tokens.get("tensor_init_data"):
             status["bots"]["tensor"] = "farmed"
             return
         try:
             t_init = tokens["tensor_init_data"]
-            t_h = {**headers, "Origin": "https://tensormining.online", "Referer": "https://tensormining.online/"}
-            await jitter(1.0, 2.0)
-            await safe_post("https://tensormining.online/api/mining/claim", {"initData": t_init, "start_param": "6727787768"}, t_h)
-            await safe_post("https://tensormining.online/api/mining/start", {"initData": t_init}, t_h)
-            status["bots"]["tensor"] = "farmed"
+            t_h = {
+                **headers,
+                "Origin": "https://flascoins.xyz",
+                "Referer": "https://flascoins.xyz/",
+                "Authorization": f"tma {t_init}",
+                "Content-Type": "application/json"
+            }
+            await jitter(0.5, 1.5)
+            # 1. Auth check
+            await safe_post("https://flascoins.xyz/api/auth", {}, t_h)
+            # 2. Daily login reward claim
+            st_d, res_d = await safe_post("https://flascoins.xyz/api/daily", {}, t_h)
+            # 3. Tap mining (50 taps)
+            st_t, res_t = await safe_post("https://flascoins.xyz/api/tap", {"taps": 50}, t_h)
+            # 4. Process tasks
+            st_tasks, res_tasks = await safe_get("https://flascoins.xyz/api/tasks", t_h)
+            if st_tasks == 200 and isinstance(res_tasks, dict) and res_tasks.get("tasks"):
+                for task in res_tasks.get("tasks", [])[:3]:
+                    tid = task.get("id")
+                    if tid:
+                        await safe_post("https://flascoins.xyz/api/tasks/start", {"taskId": tid}, t_h)
+                        await asyncio.sleep(0.4)
+                        await safe_post("https://flascoins.xyz/api/tasks/claim", {"taskId": tid}, t_h)
+            tap_info = ""
+            if st_t == 200 and isinstance(res_t, dict) and res_t.get("reward"):
+                tap_info = f" (+{res_t.get('reward')} ORCA)"
+            status["bots"]["tensor"] = f"farmed{tap_info}"
         except Exception as e:
             status["bots"]["tensor"] = f"error: {format_error(e)}"
 
-    # 12. Ton Trader AI
+    # 12. Ton Trader AI (@TonTraderAIBot - tontraderai.com)
     async def _farm_tontrader():
         if not tokens.get("tontrader_init_data"):
             status["bots"]["tontrader"] = "farmed"
             return
         try:
             tt_init = tokens["tontrader_init_data"]
-            tt_h = {**headers, "Origin": "https://tontrader.app", "Referer": "https://tontrader.app/"}
-            await jitter(1.0, 2.0)
-            await safe_post("https://api.tontrader.app/api/v1/daily-checkin", {"initData": tt_init}, tt_h)
-            await safe_post("https://api.tontrader.app/api/v1/claim", {"initData": tt_init, "ref": "REF_6727787768"}, tt_h)
-            status["bots"]["tontrader"] = "farmed"
+            tt_h = {
+                **headers,
+                "Origin": "https://tontraderai.com",
+                "Referer": "https://tontraderai.com/",
+                "x-telegram-init-data": tt_init,
+                "Content-Type": "application/json"
+            }
+            await jitter(0.5, 1.5)
+            # 1. Claim daily streak gift
+            await safe_post("https://api.tontraderai.com/api/v1/user/claim-daily-gift", {}, tt_h)
+            # 2. Open any mystery gift boxes (up to 3 boxes)
+            for _ in range(3):
+                st_b, res_b = await safe_post("https://api.tontraderai.com/api/v1/user/claim-gift-box", {}, tt_h)
+                if st_b != 200 or not isinstance(res_b, dict) or not res_b.get("success") or res_b.get("pendingGiftBoxes", 0) <= 0:
+                    break
+                await asyncio.sleep(0.5)
+            # 3. Claim algorithmic yield
+            st_y, res_y = await safe_post("https://api.tontraderai.com/api/v1/finance/claim-yield", {}, tt_h)
+            yield_info = ""
+            if st_y == 200 and isinstance(res_y, dict) and res_y.get("claimedTon"):
+                yield_info = f" (+{res_y.get('claimedTon'):.4f} TON)"
+            status["bots"]["tontrader"] = f"farmed{yield_info}"
         except Exception as e:
             status["bots"]["tontrader"] = f"error: {format_error(e)}"
 
-    # 13. FINVORA Web3
+    # 13. FINVORA Web3 (@FINVORAWeb3bot)
     async def _farm_finvora():
-        status["bots"]["finvora"] = "farmed"
+        sess_str = acc.get("session_string") or acc.get("session")
+        if not sess_str:
+            status["bots"]["finvora"] = "farmed"
+            return
+        try:
+            fin_cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+            await fin_cl.connect()
+            if not await fin_cl.is_user_authorized():
+                await fin_cl.disconnect()
+                status["bots"]["finvora"] = "farmed"
+                return
+            b_ent = await fin_cl.get_entity("FINVORAWeb3bot")
+            await fin_cl.send_message(b_ent, "/start")
+            await asyncio.sleep(2.0)
+            msgs = await fin_cl.get_messages(b_ent, limit=2)
+            bal_txt = ""
+            for m in msgs:
+                if not m.out and "Available" in m.raw_text:
+                    m_match = re.search(r"Available\s+([0-9\.]+\s*GRAM)", m.raw_text)
+                    if m_match:
+                        bal_txt = f" (avail: {m_match.group(1)})"
+            await fin_cl.disconnect()
+            status["bots"]["finvora"] = f"farmed{bal_txt}"
+        except Exception as fin_e:
+            status["bots"]["finvora"] = f"farmed (note: {format_error(fin_e)})"
 
-    # 14. TurboGram V1
+    # 14. TurboGram V1 (@TurboGramV1_bot)
     async def _farm_turbogram():
-        status["bots"]["turbogram"] = "farmed"
+        sess_str = acc.get("session_string") or acc.get("session")
+        if not sess_str:
+            status["bots"]["turbogram"] = "farmed"
+            return
+        try:
+            tb_cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+            await tb_cl.connect()
+            if not await tb_cl.is_user_authorized():
+                await tb_cl.disconnect()
+                status["bots"]["turbogram"] = "farmed"
+                return
+            b_ent = await tb_cl.get_entity("TurboGramV1_bot")
+            await tb_cl.send_message(b_ent, "/start")
+            await asyncio.sleep(2.0)
+            await tb_cl.disconnect()
+            status["bots"]["turbogram"] = "farmed"
+        except Exception as tb_e:
+            status["bots"]["turbogram"] = f"farmed (note: {format_error(tb_e)})"
 
-    # 15. Ominix AI Trade
+    # 15. Ominix AI Trade (@OminixAiBot - ominiaibot.lovable.app)
     async def _farm_ominix():
         if not tokens.get("ominix_init_data"):
             status["bots"]["ominix"] = "farmed"
             return
         try:
             om_init = tokens["ominix_init_data"]
-            om_h = {**headers, "Origin": "https://ominix.trade", "Referer": "https://ominix.trade/"}
-            await jitter(1.0, 2.0)
-            await safe_post("https://api.ominix.trade/api/trade/daily-checkin", {"initData": om_init}, om_h)
-            await safe_post("https://api.ominix.trade/api/trade/claim", {"initData": om_init}, om_h)
-            status["bots"]["ominix"] = "farmed"
+            om_h = {
+                **headers,
+                "Origin": "https://ominiaibot.lovable.app",
+                "Referer": "https://ominiaibot.lovable.app/",
+                "Content-Type": "application/json",
+                "x-tsr-serverfn": "true",
+                "accept": "application/x-tss-framed, application/x-ndjson, application/json"
+            }
+            await jitter(0.5, 1.5)
+            seroval_payload = {
+                "t": {
+                    "t": 10,
+                    "i": 0,
+                    "p": {
+                        "k": ["data"],
+                        "v": [{"t": 10, "i": 1, "p": {"k": ["initData"], "v": [{"t": 1, "s": om_init}]}, "o": 0}]
+                    },
+                    "o": 0
+                },
+                "f": 63,
+                "m": []
+            }
+            # 1. Claim profit (server function bcb8e269d7f337068c7424538a77cd77e7013594ec5c8849925e8ca5b7cbe06c)
+            st_cl, res_cl = await safe_post(
+                "https://ominiaibot.lovable.app/_serverFn/bcb8e269d7f337068c7424538a77cd77e7013594ec5c8849925e8ca5b7cbe06c",
+                seroval_payload,
+                om_h
+            )
+            # 2. Open any mystery gift boxes (server function 21aff4856aa0147739b66c3269611c49fd8dd342144e4973589515477e97c95b)
+            await safe_post(
+                "https://ominiaibot.lovable.app/_serverFn/21aff4856aa0147739b66c3269611c49fd8dd342144e4973589515477e97c95b",
+                seroval_payload,
+                om_h
+            )
+            claim_info = ""
+            if st_cl == 200 and isinstance(res_cl, dict) and res_cl.get("amount"):
+                claim_info = f" (+{res_cl.get('amount'):.6f} USDT)"
+            status["bots"]["ominix"] = f"farmed{claim_info}"
         except Exception as e:
             status["bots"]["ominix"] = f"error: {format_error(e)}"
 
@@ -4234,6 +4414,46 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
             if "tgWebApp" in url or ("t.me" in url and "app" in url):
                 found_webview_url = url
                 break
+
+        if not found_webview_url:
+            for m in fresh_msgs:
+                if not m.out and m.buttons:
+                    for r_idx, row in enumerate(m.buttons):
+                        for c_idx, b in enumerate(row):
+                            raw_b = getattr(b, 'button', b)
+                            if hasattr(raw_b, 'url') and raw_b.url:
+                                if "tgWebApp" in raw_b.url or ("t.me" in raw_b.url and "app" in raw_b.url):
+                                    found_webview_url = raw_b.url
+                                    break
+                            if hasattr(raw_b, 'web_app') and getattr(raw_b.web_app, 'url', None):
+                                try:
+                                    wv = await cl(RequestWebViewRequest(
+                                        peer=bot_ent,
+                                        bot=bot_ent,
+                                        platform="android",
+                                        url=raw_b.web_app.url,
+                                        start_param="6727787768"
+                                    ))
+                                    if wv and getattr(wv, 'url', None):
+                                        found_webview_url = wv.url
+                                        break
+                                except Exception:
+                                    pass
+                            if any(w in b.text.lower() for w in ["open", "app", "mini app", "launch", "play"]):
+                                try:
+                                    c_ans = await m.click(r_idx, c_idx)
+                                    if hasattr(c_ans, 'url') and c_ans.url:
+                                        found_webview_url = c_ans.url
+                                        break
+                                    elif isinstance(c_ans, str) and c_ans.startswith("http"):
+                                        found_webview_url = c_ans
+                                        break
+                                except Exception:
+                                    pass
+                        if found_webview_url:
+                            break
+                if found_webview_url:
+                    break
 
         b_input = await cl.get_input_entity(bot_ent)
         for sn in candidate_short_names:
