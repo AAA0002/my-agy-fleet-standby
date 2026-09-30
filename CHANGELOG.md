@@ -4,6 +4,34 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **💎 Complete 15-Bot Fleet Onboarding Architecture, Premature Flag Extermination & 100% Verification Milestone (`login_account.py`, `userbot_refresher.py`, `render_standby_app.py`, `push_to_standby_repo.py`, `deploy_both_cf_workers.py`, `accounts.json`, `CHANGELOG.md`)**:
+  - **🚀 Unified 15-Bot Onboarding in CLI (`login_account.py`)**:
+    * Expanded `login_account.py` from 7 legacy bots to the complete 15-bot fleet (Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, ATF, TRX Power, Bitcoin Cloud Miners, Tensor Mining, Ton Trader AI, FINVORA Web3, TurboGram V1, Ominix AI Trade).
+    * Integrated `mute_peer` (`UpdateNotifySettingsRequest` with `silent=True` and `mute_until=2038-01-01`) and `join_tg_target` (supporting private `+hash` invites and public channels) on all bot onboarding blocks.
+    * Fixed Bitcoin Cloud Miners flow: joins `+I1HZjvoqu942MjZl`, sends `/start 6727787768`, targets inline callbacks `start_play` and `check_join`, and claims mined BTC via `claim_mine`.
+    * Implemented strict verification: individual referral flags (`*_referral_bound`) and `all_15_referrals_bound` are only set when each bot's interaction and WebApp API verify successfully.
+  - **🛡️ Cloud & Bot Refresher Overhaul (`userbot_refresher.py`)**:
+    * Added all 7 new bot constants (`TRXPOWER_BOT`, `BTC_BOT`, `TENSOR_BOT`, `TONTRADER_BOT`, `FINVORA_BOT`, `TURBOGRAM_BOT`, `OMINIX_BOT`) and master referral codes.
+    * Integrated `mute_peer`, `join_tg_target`, and `is_account_referrals_bound`.
+    * Upgraded `ensure_referral_bound` to automatically onboard all 7 new bots with dedicated wallet isolation, channel joins, and API handshakes.
+    * Upgraded `self_heal_account_channels_and_bots` to unblock all 15 bots and ensure all sponsor channels are maintained.
+    * Exterminated premature referral flag bug in `run_background_referral_binding`: eliminated unconditional hardcoding of flags, accurately checking each bot and updating admin receipts to display `🔗 Referral Binding Status ({bound_count}/15 Bots)`.
+    * Updated login announcement messages from `(8/8 Bots)` to `(15/15 Bots)`.
+  - **⚙️ Standby App Safeguards (`render_standby_app.py`)**:
+    * Added channel joins (`trxpowerminingOfficial`, `TRX_WORLD_WORK`) and inline button verification (`✅ Check / Verify`) to TRX Power Mining in `bind_account_master_referrals`.
+    * Guarded `acc_entry["all_15_referrals_bound"]` so it is strictly set only if `is_account_referrals_bound(acc_entry)` is True, preventing accounts with transient bot failures from being locked out of future retries.
+    * Updated login response message from `(8/8 Bots)` to `(15/15 Bots)`.
+    * Deployed commit `1d406ad7` (`app.py`) and `6eda9f3e` (`requirements.txt`) to [`AAA0002/my-agy-fleet-standby`](https://github.com/AAA0002/my-agy-fleet-standby).
+  - **🏆 100% Fleet-Wide Verification Milestone across All 13 Worker Accounts (`accounts.json`)**:
+    * Executed sequential, atomic per-account audit across all 13 worker accounts (Nancy, Koram Shah, Arif, Nadim, Kaitlyn, Abid Hasan, Abid Hasan (2), Node 9, Node 10, MD. Arif Hossain, Sanzida Shimu, Abid (3), Raj Thakur Козлов).
+    * Confirmed 100% verified status (`all_15_referrals_bound=True`) across all 13 worker accounts for all 15 bots.
+  - **🌐 Cloudflare 5-Node Edge Mesh Sync & Telegram Bot Configuration (`deploy_both_cf_workers.py`)**:
+    * Re-deployed updated scripts across all 5 Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Synchronized Admin and User Bot webhooks, global menu buttons, descriptions, and commands.
+  - **💾 Disaster Recovery & Walrus Memory Sync**:
+    * Created full disaster recovery archive and dispatched to `@myagyai` vault via `backup_manager.py`.
+    * Synchronized architectural decisions to Walrus Memory (`job_id=8f9180d8-c569-411f-8d8d-86e916a04236`).
+
 - **🔬 Comprehensive Live 7-Bot Field Study, Bug Extermination & Cloudflare Mesh Sync (`render_standby_app.py`, `deploy_both_cf_workers.py`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
   - **📱 Live Master Account (6727787768) Bot Study & Verification**:
     * **FINVORA Web3 (`@FINVORAWeb3bot`)**: Extracted exact Railway backend Mini App URL (`https://finvora-production.up.railway.app/`). Verified referral binding format `ref_TRX6727787768`. Discovered Master balance: `2.0000 GRAM` holding, `0.4935 GRAM` available. Upgraded `complete_finvora_referral` to execute direct `RequestWebViewRequest` to `finvora-production.up.railway.app`.

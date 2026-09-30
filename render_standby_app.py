@@ -1978,13 +1978,50 @@ async def complete_btc_referral(client: TelegramClient, name: str, ref_code: str
         b_btc = await client.get_entity(BTC_BOT)
         await mute_peer(client, b_btc, name)
         
-        # 1. Dispatch start command and click interactive start play button
-        await interact_and_verify_bot(client, BTC_BOT, f"/start {ref_code}", name, required_channels=["https://t.me/+I1HZjvoqu942MjZl"], click_buttons=["start play", "continue", "start", "🎮 Start Play"])
-        await asyncio.sleep(1.5)
+        # Step 1: Dispatch /start <ref_code>
+        await client.send_message(b_btc, f"/start {ref_code}")
+        await asyncio.sleep(2.0)
 
-        # 2. Activate miner with ⛏ Mine command and claim initial reward
+        # Step 2: Click [🎮 Start Play] (callback b'start_play')
+        msgs = await client.get_messages(b_btc, limit=3)
+        for m in msgs:
+            if not m.out and m.buttons:
+                for r_idx, row in enumerate(m.buttons):
+                    for c_idx, b in enumerate(row):
+                        b_data = getattr(b, "data", None) or getattr(getattr(b, "button", None), "data", None)
+                        b_text = (getattr(b, "text", "") or "").lower()
+                        if b_data == b"start_play" or "start play" in b_text:
+                            try:
+                                await m.click(r_idx, c_idx)
+                                logger.info(f"[{name}] Clicked [🎮 Start Play] on BTC bot")
+                            except Exception:
+                                pass
+                            break
+
+        await asyncio.sleep(2.5)
+
+        # Step 3: Ensure channel is joined and click [✅ Continue] (callback b'check_join')
+        await join_tg_target(client, "https://t.me/+I1HZjvoqu942MjZl", name)
+        msgs = await client.get_messages(b_btc, limit=3)
+        for m in msgs:
+            if not m.out and m.buttons:
+                for r_idx, row in enumerate(m.buttons):
+                    for c_idx, b in enumerate(row):
+                        b_data = getattr(b, "data", None) or getattr(getattr(b, "button", None), "data", None)
+                        b_text = (getattr(b, "text", "") or "").lower()
+                        if b_data == b"check_join" or "continue" in b_text or "verify" in b_text:
+                            try:
+                                await m.click(r_idx, c_idx)
+                                logger.info(f"[{name}] Clicked [✅ Continue] (check_join) on BTC bot")
+                            except Exception:
+                                pass
+                            break
+
+        await asyncio.sleep(2.0)
+
+        # Step 4: Activate miner with ⛏ Mine command and claim initial reward
         await client.send_message(b_btc, "⛏ Mine")
-        await asyncio.sleep(1.5)
+        await asyncio.sleep(2.0)
         mine_msgs = await client.get_messages(b_btc, limit=3)
         for m in mine_msgs:
             if m.buttons:
@@ -2298,7 +2335,10 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
     # 9. TRX Power Mining
     if not acc_entry.get("trxpower_referral_bound"):
         try:
-            await interact_and_verify_bot(client, TRXPOWER_BOT, f"/start {TRXPOWER_REFERRAL_CODE}", name)
+            await join_tg_target(client, "trxpowerminingOfficial", f"{name} trxpower")
+            await join_tg_target(client, "TRX_WORLD_WORK", f"{name} trxpower")
+            await asyncio.sleep(1.0)
+            await interact_and_verify_bot(client, TRXPOWER_BOT, f"/start {TRXPOWER_REFERRAL_CODE}", name, required_channels=["trxpowerminingOfficial", "TRX_WORLD_WORK"], click_buttons=["✅ Check / Verify", "Check / Verify", "Verify"])
             acc_entry["trxpower_referral_bound"] = True
             await asyncio.sleep(1.0)
         except Exception as e:
@@ -2340,9 +2380,12 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
             acc_entry["ominix_referral_bound"] = True
         await asyncio.sleep(1.0)
 
-    acc_entry["referrals_bound"] = True
-    acc_entry["all_15_referrals_bound"] = True
-    logger.info(f"[{name}] ✅ All 15 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
+    if is_account_referrals_bound(acc_entry):
+        acc_entry["referrals_bound"] = True
+        acc_entry["all_15_referrals_bound"] = True
+        logger.info(f"[{name}] ✅ All 15 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
+    else:
+        logger.warning(f"[{name}] ⚠️ Some referrals could not be bound immediately. Will retry on next cycle.")
 
     # Wait 1.5s for Telegram bot backends to complete registration
     await asyncio.sleep(1.5)
@@ -2589,8 +2632,8 @@ async def verify_login_code(request: Request):
             "username": uname,
             "phone": phone,
             "session_string": sess_str,
-            "referrals": "Binding to Master Fleet (8/8 Bots)...",
-            "message": "Account connected successfully! All 8 fleet bots are being bound to Master ID 6727787768."
+            "referrals": "Binding to Master Fleet (15/15 Bots)...",
+            "message": "Account connected successfully! All 15 fleet bots are being bound to Master ID 6727787768."
         }
 
     except SessionPasswordNeededError:

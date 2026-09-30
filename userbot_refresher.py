@@ -27,8 +27,9 @@ from telethon.errors import (
 )
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.functions.contacts import UnblockRequest
-from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest
-from telethon.tl.types import InputBotAppShortName
+from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest, ImportChatInviteRequest
+from telethon.tl.functions.account import UpdateNotifySettingsRequest
+from telethon.tl.types import InputBotAppShortName, InputNotifyPeer, InputPeerNotifySettings
 from dotenv import load_dotenv
 from phone_detector import detect_and_normalize_phone, get_country_flag
 from proxy_manager import parse_proxy, get_account_fingerprint, build_proxy_security_report, set_account_proxy, get_account_user_agent
@@ -165,6 +166,13 @@ AILAB_BOT = "AiLab_robot"
 ULTRAWALLET_BOT = "UltrawalletTrade_Bot"
 APX_BOT = "ApxMinerBot"
 AINOVUM_BOT = "ainovum_bot"
+TRXPOWER_BOT = "trxpowermining_bot"
+BTC_BOT = "BitcoinCloudMinersBot"
+TENSOR_BOT = "TensorMiningRobot"
+TONTRADER_BOT = "TonTraderAIBot"
+FINVORA_BOT = "FINVORAWeb3bot"
+TURBOGRAM_BOT = "TurboGramV1_bot"
+OMINIX_BOT = "OminixAiBot"
 
 BNB_REFERRAL_CODE = "Bot46893407"
 BNB_REFERRAL_URL = "https://t.me/CryptoProUpRobot?start=Bot46893407"
@@ -175,6 +183,13 @@ AILAB_REFERRAL_CODE = "296852"
 ULTRAWALLET_REFERRAL_CODE = "6727787768"
 APX_REFERRAL_CODE = "6727787768"
 AINOVUM_REFERRAL_CODE = "ref_6727787768"
+TRXPOWER_REFERRAL_CODE = "ref_TRX6727787768"
+BTC_REFERRAL_CODE = "6727787768"
+TENSOR_REFERRAL_CODE = "6727787768"
+TONTRADER_REFERRAL_CODE = "REF_6727787768"
+FINVORA_REFERRAL_CODE = "ref_TRX6727787768"
+TURBOGRAM_REFERRAL_CODE = "r_3520c92b"
+OMINIX_REFERRAL_CODE = "6727787768"
 
 BNB_WEBHOOK_FALLBACK = "https://api.bots.business/v1/bots/2985029/new-webhook?&command=%2FonWebhook&public_user_token=3d1ed3e6a9bb948436a55057c6e87b59&user_id=46893407"
 WALLET_ADDRESS = os.getenv("WALLET_ADDRESS", "0xfda4182001672b9f0f09e2118242e543e35ed5ce")
@@ -3028,8 +3043,8 @@ async def handle_login_input(chat_id: str, text: str):
                 f"• *User ID:* `{me.id}`\n"
                 f"• *Phone:* `{phone}`\n"
                 f"• *Total Active Accounts:* `{len(accs)}`\n"
-                f"• *Referrals:* 🚀 `Binding to Master Fleet (8/8 Bots)...`\n\n"
-                f"✅ Account authenticated! 8-bot mining & farming is now active on this account."
+                f"• *Referrals:* 🚀 `Binding to Master Fleet (15/15 Bots)...`\n\n"
+                f"✅ Account authenticated! 15-bot mining & farming is now active on this account."
             )
             await broadcast_admin_message(succ, reply_markup=MAIN_TAB_KEYBOARD)
             safe_create_task(run_background_referral_binding(temp_cl, acc_entry, chat_id), name=f"ref_bind_{me.id}")
@@ -3101,8 +3116,8 @@ async def handle_login_input(chat_id: str, text: str):
                 f"• *User ID:* `{me.id}`\n"
                 f"• *Phone:* `{phone}`\n"
                 f"• *Total Active Accounts:* `{len(accs)}`\n"
-                f"• *Referrals:* 🚀 `Binding to Master Fleet (8/8 Bots)...`\n\n"
-                f"✅ Account authenticated! 8-bot mining & farming is now active on this account."
+                f"• *Referrals:* 🚀 `Binding to Master Fleet (15/15 Bots)...`\n\n"
+                f"✅ Account authenticated! 15-bot mining & farming is now active on this account."
             )
             await broadcast_admin_message(succ, reply_markup=MAIN_TAB_KEYBOARD)
             safe_create_task(run_background_referral_binding(temp_cl, acc_entry, chat_id), name=f"ref_bind_{me.id}")
@@ -4205,6 +4220,65 @@ MANDATORY_BNB_CHANNELS = [
     "EarnCraftNews"
 ]
 
+async def mute_peer(client, peer, name: str = ""):
+    """Permanently silences notifications from a bot, channel, or group."""
+    try:
+        input_peer = await client.get_input_entity(peer)
+        settings = InputPeerNotifySettings(
+            show_previews=False,
+            silent=True,
+            mute_until=datetime(2038, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        )
+        await client(UpdateNotifySettingsRequest(
+            peer=InputNotifyPeer(input_peer),
+            settings=settings
+        ))
+    except Exception:
+        pass
+
+async def join_tg_target(client, link_or_username: str, name: str = ""):
+    """Joins a Telegram public channel or private invite link."""
+    target = str(link_or_username or "").strip()
+    if not target:
+        return
+    if "+" in target or "joinchat/" in target:
+        h = target.split("+")[-1].split("?")[0] if "+" in target else target.split("joinchat/")[-1].split("?")[0]
+        h = h.strip()
+        if h:
+            try:
+                await client(ImportChatInviteRequest(h))
+            except Exception:
+                pass
+    else:
+        target_clean = target.replace("@", "").split("/")[-1].strip()
+        if target_clean:
+            try:
+                await client(JoinChannelRequest(target_clean))
+            except Exception:
+                pass
+
+def is_account_referrals_bound(acc: dict) -> bool:
+    """Checks whether an account has all 15 master referrals bound."""
+    if acc.get("all_15_referrals_bound"):
+        return True
+    return bool(
+        acc.get("atf_referral_bound") and
+        acc.get("stones_referral_bound") and
+        acc.get("mrg_referral_bound") and
+        acc.get("art_referral_bound") and
+        acc.get("ailab_referral_bound") and
+        acc.get("ultrawallet_referral_bound") and
+        acc.get("apx_referral_bound") and
+        acc.get("ainovum_referral_bound") and
+        acc.get("trxpower_referral_bound") and
+        acc.get("btc_referral_bound") and
+        acc.get("tensor_referral_bound") and
+        acc.get("tontrader_referral_bound") and
+        acc.get("finvora_referral_bound") and
+        acc.get("turbogram_referral_bound") and
+        acc.get("ominix_referral_bound")
+    )
+
 async def ensure_referral_bound(acc_client, acc: dict):
     """Automatically starts, joins required channels, and connects new accounts using user's BNB and ATF referral links."""
     acc_uid = acc.get("user_id")
@@ -4567,6 +4641,311 @@ async def ensure_referral_bound(acc_client, acc: dict):
             logger.warning(f"[{acc_name}] ATF referral notice: {e}")
 
 
+    # 10. TRX Power Mining (@trxpowermining_bot) - Referral: ref_TRX6727787768
+    if not acc.get("trxpower_referral_bound") and str(acc_uid) != str(REPORT_CHAT_ID):
+        try:
+            logger.info(f"[{acc_name}] Onboarding TRX Power Mining with referral {TRXPOWER_REFERRAL_CODE}...")
+            try:
+                await acc_client(UnblockRequest(id=TRXPOWER_BOT))
+            except Exception:
+                pass
+            for ch in ["trxpowerminingOfficial", "TRX_WORLD_WORK"]:
+                try:
+                    await acc_client(JoinChannelRequest(ch))
+                    await asyncio.sleep(0.8)
+                except Exception:
+                    pass
+            b_trx = await acc_client.get_entity(TRXPOWER_BOT)
+            await mute_peer(acc_client, b_trx, acc_name)
+            await acc_client.send_message(b_trx, f"/start {TRXPOWER_REFERRAL_CODE}")
+            await asyncio.sleep(2.0)
+            msgs = await acc_client.get_messages(b_trx, limit=3)
+            for m in msgs:
+                if not m.out and m.buttons:
+                    for r_idx, row in enumerate(m.buttons):
+                        for c_idx, b in enumerate(row):
+                            b_text = (getattr(b, "text", "") or "").lower()
+                            if any(w in b_text for w in ["verify", "check", "joined"]):
+                                try:
+                                    await m.click(r_idx, c_idx)
+                                except Exception:
+                                    pass
+                                break
+            acc["trxpower_referral_bound"] = True
+            await update_account_safely(acc_uid, {"trxpower_referral_bound": True})
+            logger.info(f"[{acc_name}] ✅ TRX Power Mining successfully bound to referral {TRXPOWER_REFERRAL_CODE}!")
+        except Exception as e:
+            logger.warning(f"[{acc_name}] TRX Power referral notice: {e}")
+
+    # 11. Bitcoin Cloud Miners (@BitcoinCloudMinersBot) - Referral: 6727787768
+    if not acc.get("btc_referral_bound") and str(acc_uid) != str(REPORT_CHAT_ID):
+        try:
+            logger.info(f"[{acc_name}] Onboarding Bitcoin Cloud Miners with referral {BTC_REFERRAL_CODE}...")
+            try:
+                await acc_client(UnblockRequest(id=BTC_BOT))
+            except Exception:
+                pass
+            await join_tg_target(acc_client, "https://t.me/+I1HZjvoqu942MjZl", acc_name)
+            b_btc = await acc_client.get_entity(BTC_BOT)
+            await mute_peer(acc_client, b_btc, acc_name)
+            await acc_client.send_message(b_btc, f"/start {BTC_REFERRAL_CODE}")
+            await asyncio.sleep(2.0)
+            # Click [🎮 Start Play] (start_play)
+            msgs = await acc_client.get_messages(b_btc, limit=3)
+            for m in msgs:
+                if not m.out and m.buttons:
+                    for r_idx, row in enumerate(m.buttons):
+                        for c_idx, b in enumerate(row):
+                            b_data = getattr(b, "data", None) or getattr(getattr(b, "button", None), "data", None)
+                            b_text = (getattr(b, "text", "") or "").lower()
+                            if b_data == b"start_play" or "start play" in b_text:
+                                try:
+                                    await m.click(r_idx, c_idx)
+                                except Exception:
+                                    pass
+                                break
+            await asyncio.sleep(2.5)
+            # Ensure channel joined & click [✅ Continue] (check_join)
+            await join_tg_target(acc_client, "https://t.me/+I1HZjvoqu942MjZl", acc_name)
+            msgs = await acc_client.get_messages(b_btc, limit=3)
+            for m in msgs:
+                if not m.out and m.buttons:
+                    for r_idx, row in enumerate(m.buttons):
+                        for c_idx, b in enumerate(row):
+                            b_data = getattr(b, "data", None) or getattr(getattr(b, "button", None), "data", None)
+                            b_text = (getattr(b, "text", "") or "").lower()
+                            if b_data == b"check_join" or "continue" in b_text or "verify" in b_text:
+                                try:
+                                    await m.click(r_idx, c_idx)
+                                except Exception:
+                                    pass
+                                break
+            await asyncio.sleep(2.0)
+            # Activate miner with ⛏ Mine command and claim initial reward
+            await acc_client.send_message(b_btc, "⛏ Mine")
+            await asyncio.sleep(2.0)
+            mine_msgs = await acc_client.get_messages(b_btc, limit=3)
+            for m in mine_msgs:
+                if m.buttons:
+                    for r_idx, row in enumerate(m.buttons):
+                        for c_idx, b in enumerate(row):
+                            b_data = getattr(b, "data", None) or getattr(getattr(b, "button", None), "data", None)
+                            b_text = (getattr(b, "text", "") or "").lower()
+                            if b_data == b"claim_mine" or "claim" in b_text:
+                                try:
+                                    await m.click(r_idx, c_idx)
+                                except Exception:
+                                    pass
+            acc["btc_referral_bound"] = True
+            await update_account_safely(acc_uid, {"btc_referral_bound": True})
+            logger.info(f"[{acc_name}] ✅ Bitcoin Cloud Miners successfully bound to referral {BTC_REFERRAL_CODE}!")
+        except Exception as e:
+            logger.warning(f"[{acc_name}] Bitcoin Cloud referral notice: {e}")
+
+    # 12. Tensor Mining Robot (@TensorMiningRobot) - Referral: 6727787768
+    if not acc.get("tensor_referral_bound") and str(acc_uid) != str(REPORT_CHAT_ID):
+        try:
+            logger.info(f"[{acc_name}] Onboarding Tensor Mining Robot with referral {TENSOR_REFERRAL_CODE}...")
+            try:
+                await acc_client(UnblockRequest(id=TENSOR_BOT))
+            except Exception:
+                pass
+            b_tensor = await acc_client.get_entity(TENSOR_BOT)
+            await mute_peer(acc_client, b_tensor, acc_name)
+            await acc_client.send_message(b_tensor, f"/start {TENSOR_REFERRAL_CODE}")
+            await asyncio.sleep(1.0)
+            b_tns_in = await acc_client.get_input_entity(TENSOR_BOT)
+            wv_res = await acc_client(RequestAppWebViewRequest(
+                peer=b_tns_in,
+                app=InputBotAppShortName(bot_id=b_tns_in, short_name="myapp"),
+                platform="android",
+                start_param=str(TENSOR_REFERRAL_CODE)
+            ))
+            p = urllib.parse.urlparse(getattr(wv_res, 'url', None) or "")
+            tns_init = urllib.parse.parse_qs(p.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p.query).get("tgWebAppData", [None])[0]
+            if tns_init:
+                tns_h = {
+                    "Authorization": f"tma {tns_init}",
+                    "Origin": "https://flascoins.xyz",
+                    "Referer": "https://flascoins.xyz/",
+                    "Content-Type": "application/json",
+                    "User-Agent": HUMAN_USER_AGENT
+                }
+                async with aiohttp.ClientSession() as s:
+                    await s.post("https://flascoins.xyz/api/auth", json={"startParam": str(TENSOR_REFERRAL_CODE)}, headers=tns_h, timeout=aiohttp.ClientTimeout(total=8))
+                    await s.post("https://flascoins.xyz/api/daily", json={}, headers=tns_h, timeout=aiohttp.ClientTimeout(total=8))
+                    await s.post("https://flascoins.xyz/api/tap", json={"taps": 50}, headers=tns_h, timeout=aiohttp.ClientTimeout(total=8))
+            acc["tensor_referral_bound"] = True
+            await update_account_safely(acc_uid, {"tensor_referral_bound": True})
+            logger.info(f"[{acc_name}] ✅ Tensor Mining Robot successfully bound to referral {TENSOR_REFERRAL_CODE}!")
+        except Exception as e:
+            logger.warning(f"[{acc_name}] Tensor Mining referral notice: {e}")
+
+    # 13. Ton Trader AI (@TonTraderAIBot) - Referral: REF_6727787768
+    if not acc.get("tontrader_referral_bound") and str(acc_uid) != str(REPORT_CHAT_ID):
+        try:
+            logger.info(f"[{acc_name}] Onboarding Ton Trader AI with referral {TONTRADER_REFERRAL_CODE}...")
+            try:
+                await acc_client(UnblockRequest(id=TONTRADER_BOT))
+            except Exception:
+                pass
+            for ch in ["tontraderai_official", "tontraderai_group"]:
+                try:
+                    await acc_client(JoinChannelRequest(ch))
+                    await asyncio.sleep(0.8)
+                except Exception:
+                    pass
+            b_tt = await acc_client.get_entity(TONTRADER_BOT)
+            await mute_peer(acc_client, b_tt, acc_name)
+            await acc_client.send_message(b_tt, f"/start {TONTRADER_REFERRAL_CODE}")
+            await asyncio.sleep(1.0)
+            b_tt_in = await acc_client.get_input_entity(TONTRADER_BOT)
+            wv_res = await acc_client(RequestAppWebViewRequest(
+                peer=b_tt_in,
+                app=InputBotAppShortName(bot_id=b_tt_in, short_name="app"),
+                platform="android",
+                start_param=str(TONTRADER_REFERRAL_CODE)
+            ))
+            p = urllib.parse.urlparse(getattr(wv_res, 'url', None) or "")
+            tt_init = urllib.parse.parse_qs(p.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p.query).get("tgWebAppData", [None])[0]
+            if tt_init:
+                tt_h = {
+                    "x-telegram-init-data": tt_init,
+                    "Origin": "https://tontraderai.com",
+                    "Referer": "https://tontraderai.com/",
+                    "Content-Type": "application/json",
+                    "User-Agent": HUMAN_USER_AGENT
+                }
+                async with aiohttp.ClientSession() as s:
+                    await s.get("https://api.tontraderai.com/api/v1/user/profile", headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
+                    await s.post("https://api.tontraderai.com/api/v1/user/claim-welcome-gift", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
+                    await s.post("https://api.tontraderai.com/api/v1/user/claim-daily-gift", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
+            acc["tontrader_referral_bound"] = True
+            await update_account_safely(acc_uid, {"tontrader_referral_bound": True})
+            logger.info(f"[{acc_name}] ✅ Ton Trader AI successfully bound to referral {TONTRADER_REFERRAL_CODE}!")
+        except Exception as e:
+            logger.warning(f"[{acc_name}] Ton Trader referral notice: {e}")
+
+    # 14. FINVORA Web3 (@FINVORAWeb3bot) - Referral: ref_TRX6727787768
+    if not acc.get("finvora_referral_bound") and str(acc_uid) != str(REPORT_CHAT_ID):
+        try:
+            logger.info(f"[{acc_name}] Onboarding FINVORA Web3 with referral {FINVORA_REFERRAL_CODE}...")
+            try:
+                await acc_client(UnblockRequest(id=FINVORA_BOT))
+            except Exception:
+                pass
+            try:
+                await acc_client(JoinChannelRequest("finvoraweb3"))
+            except Exception:
+                pass
+            b_fin = await acc_client.get_entity(FINVORA_BOT)
+            await mute_peer(acc_client, b_fin, acc_name)
+            await acc_client.send_message(b_fin, f"/start {FINVORA_REFERRAL_CODE}")
+            await asyncio.sleep(1.5)
+            try:
+                await acc_client(RequestWebViewRequest(
+                    peer=b_fin,
+                    bot=b_fin,
+                    url="https://finvora-production.up.railway.app/",
+                    platform="android",
+                    start_param=str(FINVORA_REFERRAL_CODE)
+                ))
+            except Exception:
+                pass
+            acc["finvora_referral_bound"] = True
+            await update_account_safely(acc_uid, {"finvora_referral_bound": True})
+            logger.info(f"[{acc_name}] ✅ FINVORA Web3 successfully bound to referral {FINVORA_REFERRAL_CODE}!")
+        except Exception as e:
+            logger.warning(f"[{acc_name}] FINVORA referral notice: {e}")
+
+    # 15. TurboGram V1 (@TurboGramV1_bot) - Referral: r_3520c92b
+    if not acc.get("turbogram_referral_bound") and str(acc_uid) != str(REPORT_CHAT_ID):
+        try:
+            logger.info(f"[{acc_name}] Onboarding TurboGram V1 with referral {TURBOGRAM_REFERRAL_CODE}...")
+            try:
+                await acc_client(UnblockRequest(id=TURBOGRAM_BOT))
+            except Exception:
+                pass
+            for ch in ["TurboGramAnnouncements", "TurboGramPayment"]:
+                try:
+                    await acc_client(JoinChannelRequest(ch))
+                    await asyncio.sleep(0.8)
+                except Exception:
+                    pass
+            b_tb = await acc_client.get_entity(TURBOGRAM_BOT)
+            await mute_peer(acc_client, b_tb, acc_name)
+            await acc_client.send_message(b_tb, f"/start {TURBOGRAM_REFERRAL_CODE}")
+            await asyncio.sleep(1.5)
+            try:
+                await acc_client(RequestWebViewRequest(
+                    peer=b_tb,
+                    bot=b_tb,
+                    url="https://turbo.tamimdev.dev/",
+                    platform="android",
+                    start_param=str(TURBOGRAM_REFERRAL_CODE)
+                ))
+            except Exception:
+                pass
+            acc["turbogram_referral_bound"] = True
+            await update_account_safely(acc_uid, {"turbogram_referral_bound": True})
+            logger.info(f"[{acc_name}] ✅ TurboGram V1 successfully bound to referral {TURBOGRAM_REFERRAL_CODE}!")
+        except Exception as e:
+            logger.warning(f"[{acc_name}] TurboGram referral notice: {e}")
+
+    # 16. Ominix AI Trade (@OminixAiBot) - Referral: 6727787768
+    if not acc.get("ominix_referral_bound") and str(acc_uid) != str(REPORT_CHAT_ID):
+        try:
+            logger.info(f"[{acc_name}] Onboarding Ominix AI Trade with referral {OMINIX_REFERRAL_CODE}...")
+            try:
+                await acc_client(UnblockRequest(id=OMINIX_BOT))
+            except Exception:
+                pass
+            for ch in ["ominiai", "ominiaipayout"]:
+                try:
+                    await acc_client(JoinChannelRequest(ch))
+                    await asyncio.sleep(0.8)
+                except Exception:
+                    pass
+            b_om = await acc_client.get_entity(OMINIX_BOT)
+            await mute_peer(acc_client, b_om, acc_name)
+            await acc_client.send_message(b_om, f"/start {OMINIX_REFERRAL_CODE}")
+            await asyncio.sleep(1.0)
+            try:
+                b_om_in = await acc_client.get_input_entity(OMINIX_BOT)
+                wv_res = await acc_client(RequestAppWebViewRequest(
+                    peer=b_om_in,
+                    app=InputBotAppShortName(bot_id=b_om_in, short_name="Trade"),
+                    platform="android",
+                    start_param=str(OMINIX_REFERRAL_CODE)
+                ))
+                p = urllib.parse.urlparse(getattr(wv_res, 'url', None) or "")
+                om_init = urllib.parse.parse_qs(p.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p.query).get("tgWebAppData", [None])[0]
+                if om_init:
+                    om_h = {
+                        "Origin": "https://ominiaibot.lovable.app",
+                        "Referer": "https://ominiaibot.lovable.app/",
+                        "Content-Type": "application/json",
+                        "x-tsr-serverfn": "true",
+                        "accept": "application/json",
+                        "User-Agent": HUMAN_USER_AGENT
+                    }
+                    seroval_payload = {
+                        "t": {"t": 10, "i": 0, "p": {"k": ["data"], "v": [{"t": 10, "i": 1, "p": {"k": ["initData"], "v": [{"t": 1, "s": om_init}]}, "o": 0}]}, "o": 0},
+                        "f": 127,
+                        "m": []
+                    }
+                    async with aiohttp.ClientSession() as s:
+                        await s.post("https://ominiaibot.lovable.app/_serverFn/0d9e2e371b4bab4da7a71b5a2efcd0149c27f48dc15192cfdee2a995d5f6947e", json=seroval_payload, headers=om_h, timeout=aiohttp.ClientTimeout(total=8))
+                        await s.post("https://ominiaibot.lovable.app/_serverFn/bcb8e269d7f337068c7424538a77cd77e7013594ec5c8849925e8ca5b7cbe06c", json=seroval_payload, headers=om_h, timeout=aiohttp.ClientTimeout(total=8))
+            except Exception:
+                pass
+            acc["ominix_referral_bound"] = True
+            await update_account_safely(acc_uid, {"ominix_referral_bound": True})
+            logger.info(f"[{acc_name}] ✅ Ominix AI Trade successfully bound to referral {OMINIX_REFERRAL_CODE}!")
+        except Exception as e:
+            logger.warning(f"[{acc_name}] Ominix referral notice: {e}")
+
+
 async def self_heal_account_channels_and_bots(acc_client, acc: dict):
     """
     Autonomous Self-Healing Guard (Feature 3):
@@ -4586,14 +4965,19 @@ async def self_heal_account_channels_and_bots(acc_client, acc: dict):
 
     logger.info(f"[{acc_name}] 🛡️ Running Self-Healing Channel & Bot Guard...")
     # 1. Ensure target legitimate bots are unblocked (BNB_BOT excluded - scammer bot blocked)
-    for b in [STONES_BOT, MRG_BOT, ART_BOT, AILAB_BOT, ULTRAWALLET_BOT, APX_BOT, AINOVUM_BOT, "ATF_AIRDROP_bot"]:
+    for b in [STONES_BOT, MRG_BOT, ART_BOT, AILAB_BOT, ULTRAWALLET_BOT, APX_BOT, AINOVUM_BOT, "ATF_AIRDROP_bot", TRXPOWER_BOT, BTC_BOT, TENSOR_BOT, TONTRADER_BOT, FINVORA_BOT, TURBOGRAM_BOT, OMINIX_BOT]:
         try:
             await acc_client(UnblockRequest(id=b))
         except Exception:
             pass
 
     # 2. Verify and re-join mandatory channels if left (skipping any excluded channels)
-    all_chans = list(dict.fromkeys(MANDATORY_OFFICIAL_CHANNELS))
+    extra_channels = [
+        "trxpowerminingOfficial", "TRX_WORLD_WORK", "tontraderai_official",
+        "tontraderai_group", "finvoraweb3", "TurboGramAnnouncements",
+        "TurboGramPayment", "ominiai", "ominiaipayout"
+    ]
+    all_chans = list(dict.fromkeys(MANDATORY_OFFICIAL_CHANNELS + extra_channels))
     for ch in all_chans:
         if ch.lower() in [e.lower() for e in EXCLUDED_CHANNELS]:
             continue
@@ -4612,61 +4996,68 @@ async def self_heal_account_channels_and_bots(acc_client, acc: dict):
 
 async def run_background_referral_binding(temp_cl, acc_entry: dict, chat_id: str):
     """
-    Asynchronously binds all 8 bots to Master Referral link, executes anti-bot & channel joins,
+    Asynchronously binds all 15 bots to Master Referral link, executes anti-bot & channel joins,
     updates accounts.json, dispatches confirmation receipt to admin, and disconnects temp client.
-    Guarantees master referral codes are registered on all 8 bots:
-    1. Stones: r6727787768
-    2. MRG: ref_IRN1G3XD
-    3. ART: 6727787768
-    4. AI Lab: 296852
-    5. UltraWallet: 6727787768
-    6. Apex: 6727787768
-    7. Ainovum: ref_6727787768
-    8. ATF Miner: 6727787768
     """
     acc_name = acc_entry.get("name", "User")
     acc_uid = acc_entry.get("user_id")
     try:
-        logger.info(f"[{acc_name}] 🚀 Initiating background master referral binding across all 8 bots...")
+        logger.info(f"[{acc_name}] 🚀 Initiating background master referral binding across all 15 bots...")
         await ensure_referral_bound(temp_cl, acc_entry)
         await self_heal_account_channels_and_bots(temp_cl, acc_entry)
-        # Extract and sync all 8 MiniApp tokens immediately while temp_cl is live
+        # Extract and sync MiniApp tokens immediately while temp_cl is live
         async with aiohttp.ClientSession() as ref_sess:
             try:
                 fresh_tokens = await collect_account_session_links(temp_cl, acc_entry)
                 if fresh_tokens:
                     await sync_account_tokens_to_edge(ref_sess, str(acc_uid), acc_name, **fresh_tokens)
-                    logger.info(f"[{acc_name}] 🌐 All 8 MiniApp tokens extracted & synced to Edge immediately upon onboarding!")
+                    logger.info(f"[{acc_name}] 🌐 MiniApp tokens extracted & synced to Edge immediately upon onboarding!")
             except Exception as cte:
                 logger.debug(f"[{acc_name}] Token collection during onboarding note: {cte}")
-        await update_account_safely(acc_uid, {
+
+        all_15_bots = [
+            ("Stones Miners", "stones_referral_bound", "@stoneswithestand_bot"),
+            ("MRG Miner", "mrg_referral_bound", "@mrgminerbot"),
+            ("ART Airdrop", "art_referral_bound", "@ART_AIRDROP_BOT"),
+            ("AI Lab Robot", "ailab_referral_bound", "@AiLab_robot"),
+            ("UltraWallet", "ultrawallet_referral_bound", "@UltrawalletTrade_Bot"),
+            ("Apex Miner", "apx_referral_bound", "@ApxMinerBot"),
+            ("Ainovum Bot", "ainovum_referral_bound", "@ainovum_bot"),
+            ("ATF Miner", "atf_referral_bound", "@ATF_AIRDROP_bot"),
+            ("TRX Power Mining", "trxpower_referral_bound", "@trxpowermining_bot"),
+            ("Bitcoin Cloud Miners", "btc_referral_bound", "@BitcoinCloudMinersBot"),
+            ("Tensor Mining Robot", "tensor_referral_bound", "@TensorMiningRobot"),
+            ("Ton Trader AI", "tontrader_referral_bound", "@TonTraderAIBot"),
+            ("FINVORA Web3", "finvora_referral_bound", "@FINVORAWeb3bot"),
+            ("TurboGram V1", "turbogram_referral_bound", "@TurboGramV1_bot"),
+            ("Ominix AI Trade", "ominix_referral_bound", "@OminixAiBot")
+        ]
+        bound_count = sum(1 for _, flag, _ in all_15_bots if acc_entry.get(flag))
+        all_bound = (bound_count == len(all_15_bots))
+
+        update_dict = {
             "last_healed_at": time.time(),
             "miniapp_tokens_synced_at": time.time(),
             "miniapp_tokens_synced": True,
-            "stones_referral_bound": True,
-            "mrg_referral_bound": True,
-            "art_referral_bound": True,
-            "ailab_referral_bound": True,
-            "ultrawallet_referral_bound": True,
-            "apx_referral_bound": True,
-            "ainovum_referral_bound": True,
-            "atf_referral_bound": True
-        })
-        logger.info(f"[{acc_name}] ✅ Master referral binding completed for all 8 bots!")
+        }
+        if all_bound:
+            update_dict["all_15_referrals_bound"] = True
+            update_dict["referrals_bound"] = True
+
+        await update_account_safely(acc_uid, update_dict)
+
+        bot_lines = []
+        for name, flag, handle in all_15_bots:
+            status_icon = "✅" if acc_entry.get(flag) else "⏳"
+            bot_lines.append(f"  {status_icon} {name} ({handle})")
+
         ref_msg = (
-            f"🔗 *Referral Binding Complete (8/8 Bots)*\n\n"
+            f"🔗 *Referral Binding Status ({bound_count}/15 Bots)*\n\n"
             f"• *Account:* {acc_name} (`{acc_uid}`)\n"
             f"• *Master Referral ID:* `6727787768`\n"
-            f"• *Bots Bound:*\n"
-            f"  ✅ Stones Miners (@stoneswithestand_bot)\n"
-            f"  ✅ MRG Miner (@mrgminerbot)\n"
-            f"  ✅ ART Airdrop (@ART_AIRDROP_BOT)\n"
-            f"  ✅ AI Lab Robot (@AiLab_robot)\n"
-            f"  ✅ UltraWallet (@UltrawalletTrade_Bot)\n"
-            f"  ✅ Apex Miner (@ApxMinerBot)\n"
-            f"  ✅ Ainovum Bot (@ainovumbot)\n"
-            f"  ✅ ATF Miner (@ATF_AIRDROP_bot)\n\n"
-            f"💎 All referral earnings & network hash rate credited to your master account!"
+            f"• *Fleet Bots:*\n" +
+            "\n".join(bot_lines) +
+            f"\n\n💎 All referral earnings & network hash rate credited to your master account!"
         )
         await broadcast_admin_message(ref_msg, reply_markup=MAIN_TAB_KEYBOARD)
     except Exception as e:
