@@ -4,6 +4,39 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🔬 Deep Bot Reverse-Engineering, Exact API Handshakes & Fleet Notification Silencing Overhaul (`render_standby_app.py`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
+  - **⚡ TRX Power Mining (13/13 Verified Milestone)**:
+    * Live audit of Master account `6727787768` confirms 13/13 worker accounts are 100% verified with 0 pending referrals.
+  - **📈 TonTrader AI Deep Study & Full Lifecycle Integration**:
+    * Reverse-engineered `tontraderai.com` frontend bundle (`index-BKoUItwb.js`) and live backend API `https://api.tontraderai.com`.
+    * Identified mandatory header `x-telegram-init-data` (not Authorization header).
+    * Integrated multi-action lifecycle: `GET /api/v1/user/profile`, `POST /api/v1/user/claim-welcome-gift` (50 coins welcome gift), `POST /api/v1/user/claim-daily-gift`, `POST /api/v1/user/claim-gift-box`, `POST /api/v1/user/claim-channel-boost`, and `POST /api/v1/finance/claim-yield`.
+    * Verified 4 existing referrals (+110 coins awarded) on Master.
+    * Auto-joins and permanently mutes `@tontraderai_official` and `@tontraderai_group`.
+  - **💎 Ominix AI Trade Seroval RPC & TanStack Start Server Functions**:
+    * Decompiled `ominiaibot.lovable.app` JavaScript bundle (`index-DCxMQBA-.js`, `createServerFn-M1ibyhiq.js`, `friends-D8S6acZA.js`).
+    * Discovered exact TanStack Start ServerFn hashes:
+      - GetMe / Auth: `0d9e2e371b4bab4da7a71b5a2efcd0149c27f48dc15192cfdee2a995d5f6947e`
+      - Claim Profit: `bcb8e269d7f337068c7424538a77cd77e7013594ec5c8849925e8ca5b7cbe06c`
+      - Mystery Gift Box: `21aff4856aa0147739b66c3269611c49fd8dd342144e4973589515477e97c95b`
+      - History / Friends: `58658bb1b84414c6807bf669ad64fba2ce427b280c1191b870f295c3fd235e93`
+    * Corrected Seroval `toJSON` serialization structure (`f: 127`, `t: 10`, `i: 0`), successfully tested live RPC returning HTTP 200 with 4 confirmed referrals (+40 coins earned).
+    * Auto-joins and permanently mutes `@ominiai` and `@ominiaipayout`.
+  - **⚡ Tensor Mining Robot Frontend & API Verification**:
+    * Reverse-engineered `flascoins.xyz` Next.js frontend (`06qt_kv2s4l5c.js`).
+    * Validated endpoints: `POST /api/auth` with `startParam`, `POST /api/daily`, and `POST /api/tap` with `{"taps": 50}` under `Authorization: tma <initData>`.
+  - **⛏️ Bitcoin Cloud Miners Milestone & Active Hashrate Claim**:
+    * Discovered inline callback `claim_task_3` ("🎉 Collect: Invite 5 friends") on Master account.
+    * Integrated multi-turn pipeline: `start_play` button click, `⛏ Mine` dispatch, `claim_mine` inline reward claim, and private channel `+I1HZjvoqu942MjZl` join & mute.
+  - **🌐 FINVORA Web3 & TurboGram WebApp Button Extraction Fix**:
+    * Resolved issue where WebApp inline buttons (`InlineButtonTypeWebView` / `ButtonTypeSimpleWebView`) store URLs in `b.button.type.url` rather than `b.url`.
+    * Upgraded `complete_finvora_referral` and `complete_turbogram_referral` to dispatch `RequestWebViewRequest` with discovered button URLs before falling back to `RequestAppWebViewRequest`.
+    * Auto-joins and permanently mutes `@finvoraweb3`, `@TurboGramAnnouncements`, and `@TurboGramPayment`.
+  - **🔕 Comprehensive Notification Silencing Across All Accounts**:
+    * Implemented permanent muting (`UpdateNotifySettingsRequest` with `silent=True, mute_until=2038-01-01`) across all bots, sponsor channels, and groups.
+  - **🚀 Standby Sync to GitHub AAA0002**:
+    * Pushed commits `afdcb6851b` (`app.py`) and `18ab3887ed` (`requirements.txt`) to [`AAA0002/my-agy-fleet-standby`](https://github.com/AAA0002/my-agy-fleet-standby).
+
 - **⚙️ Bot-Specific Referral Completion Handshakes & Active Miner Activation (`render_standby_app.py`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
   - **🎯 Replaced Generic Handshakes with Bot-Specific Pipelines**:
     * **Root Cause Addressed**: Addressed user directive that bots have completely different lifecycle and referral completion rules beyond simple chat `/start` commands.

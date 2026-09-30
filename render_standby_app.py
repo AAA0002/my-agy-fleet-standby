@@ -1833,6 +1833,19 @@ async def interact_and_verify_bot(client: TelegramClient, bot_username: str, sta
         logger.warning(f"[{name}] Interactive bot note for @{bot_username}: {e}")
 
 
+def _extract_tg_init_data(url: str) -> str:
+    """Robustly extracts raw tgWebAppData from either URL fragment (#) or query (?)."""
+    if not url:
+        return ""
+    try:
+        p = urllib.parse.urlparse(url)
+        frag_params = urllib.parse.parse_qs(p.fragment)
+        query_params = urllib.parse.parse_qs(p.query)
+        return frag_params.get("tgWebAppData", [None])[0] or query_params.get("tgWebAppData", [None])[0] or ""
+    except Exception:
+        return ""
+
+
 async def complete_tensor_referral(client: TelegramClient, name: str, ref_code: str = "6727787768"):
     try:
         b_tensor = await client.get_entity(TENSOR_BOT)
@@ -1847,8 +1860,7 @@ async def complete_tensor_referral(client: TelegramClient, name: str, ref_code: 
             platform="android",
             start_param=str(ref_code)
         ))
-        p_tns = urllib.parse.urlparse(wv_res.url)
-        tns_init = urllib.parse.parse_qs(p_tns.fragment).get("tgWebAppData", [None])[0]
+        tns_init = _extract_tg_init_data(getattr(wv_res, 'url', None))
         if tns_init:
             tns_h = {
                 "Authorization": f"tma {tns_init}",
@@ -1884,20 +1896,21 @@ async def complete_tontrader_referral(client: TelegramClient, name: str, ref_cod
             platform="android",
             start_param=str(ref_code)
         ))
-        p_tt = urllib.parse.urlparse(wv_res.url)
-        tt_init = urllib.parse.parse_qs(p_tt.fragment).get("tgWebAppData", [None])[0]
+        tt_init = _extract_tg_init_data(getattr(wv_res, 'url', None))
         if tt_init:
             tt_h = {
                 "x-telegram-init-data": tt_init,
                 "Origin": "https://tontraderai.com",
                 "Referer": "https://tontraderai.com/",
                 "Content-Type": "application/json",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"
+                "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
             }
             async with aiohttp.ClientSession() as s:
                 await s.get("https://api.tontraderai.com/api/v1/user/profile", headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
+                await s.post("https://api.tontraderai.com/api/v1/user/claim-welcome-gift", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
                 await s.post("https://api.tontraderai.com/api/v1/user/claim-daily-gift", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
                 await s.post("https://api.tontraderai.com/api/v1/user/claim-gift-box", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
+                await s.post("https://api.tontraderai.com/api/v1/user/claim-channel-boost", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
                 await s.post("https://api.tontraderai.com/api/v1/finance/claim-yield", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
             logger.info(f"[{name}] ✅ TonTrader AI completed referral & starter activation on api.tontraderai.com")
             return True
@@ -1908,6 +1921,8 @@ async def complete_tontrader_referral(client: TelegramClient, name: str, ref_cod
 
 async def complete_ominix_referral(client: TelegramClient, name: str, ref_code: str = "6727787768"):
     try:
+        await join_tg_target(client, "ominiai", name)
+        await join_tg_target(client, "ominiaipayout", name)
         b_om = await client.get_entity(OMINIX_BOT)
         await mute_peer(client, b_om, name)
         await client.send_message(b_om, f"/start {ref_code}")
@@ -1920,16 +1935,15 @@ async def complete_ominix_referral(client: TelegramClient, name: str, ref_code: 
             platform="android",
             start_param=str(ref_code)
         ))
-        p_om = urllib.parse.urlparse(wv_res.url)
-        om_init = urllib.parse.parse_qs(p_om.fragment).get("tgWebAppData", [None])[0]
+        om_init = _extract_tg_init_data(getattr(wv_res, 'url', None))
         if om_init:
             om_h = {
                 "Origin": "https://ominiaibot.lovable.app",
                 "Referer": "https://ominiaibot.lovable.app/",
                 "Content-Type": "application/json",
                 "x-tsr-serverfn": "true",
-                "accept": "application/x-tss-framed, application/x-ndjson, application/json",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"
+                "accept": "application/json",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
             }
             seroval_payload = {
                 "t": {
@@ -1941,11 +1955,15 @@ async def complete_ominix_referral(client: TelegramClient, name: str, ref_code: 
                     },
                     "o": 0
                 },
-                "f": 63,
+                "f": 127,
                 "m": []
             }
             async with aiohttp.ClientSession() as s:
+                # 1. Register user profile with referral start_param
+                await s.post("https://ominiaibot.lovable.app/_serverFn/0d9e2e371b4bab4da7a71b5a2efcd0149c27f48dc15192cfdee2a995d5f6947e", json=seroval_payload, headers=om_h, timeout=aiohttp.ClientTimeout(total=8))
+                # 2. Claim starting profit
                 await s.post("https://ominiaibot.lovable.app/_serverFn/bcb8e269d7f337068c7424538a77cd77e7013594ec5c8849925e8ca5b7cbe06c", json=seroval_payload, headers=om_h, timeout=aiohttp.ClientTimeout(total=8))
+                # 3. Open mystery gift box
                 await s.post("https://ominiaibot.lovable.app/_serverFn/21aff4856aa0147739b66c3269611c49fd8dd342144e4973589515477e97c95b", json=seroval_payload, headers=om_h, timeout=aiohttp.ClientTimeout(total=8))
             logger.info(f"[{name}] ✅ Ominix completed referral & profit activation on lovable.app")
             return True
@@ -1959,21 +1977,12 @@ async def complete_btc_referral(client: TelegramClient, name: str, ref_code: str
         await join_tg_target(client, "https://t.me/+I1HZjvoqu942MjZl", name)
         b_btc = await client.get_entity(BTC_BOT)
         await mute_peer(client, b_btc, name)
-        await client.send_message(b_btc, f"/start {ref_code}")
+        
+        # 1. Dispatch start command and click interactive start play button
+        await interact_and_verify_bot(client, BTC_BOT, f"/start {ref_code}", name, required_channels=["https://t.me/+I1HZjvoqu942MjZl"], click_buttons=["start play", "continue", "start", "🎮 Start Play"])
         await asyncio.sleep(1.5)
 
-        msgs = await client.get_messages(b_btc, limit=3)
-        for m in msgs:
-            if m.buttons:
-                for r_idx, row in enumerate(m.buttons):
-                    for c_idx, b in enumerate(row):
-                        if getattr(b, "data", None) == b"start_play" or any(w in b.text.lower() for w in ["start play", "continue"]):
-                            try:
-                                await m.click(r_idx, c_idx)
-                                await asyncio.sleep(1.5)
-                            except Exception:
-                                pass
-
+        # 2. Activate miner with ⛏ Mine command and claim initial reward
         await client.send_message(b_btc, "⛏ Mine")
         await asyncio.sleep(1.5)
         mine_msgs = await client.get_messages(b_btc, limit=3)
@@ -1981,9 +1990,12 @@ async def complete_btc_referral(client: TelegramClient, name: str, ref_code: str
             if m.buttons:
                 for r_idx, row in enumerate(m.buttons):
                     for c_idx, b in enumerate(row):
-                        if getattr(b, "data", None) == b"claim_mine" or "claim btc" in b.text.lower():
+                        b_data = getattr(b, "data", None) or getattr(getattr(b, "button", None), "data", None)
+                        b_text = (getattr(b, "text", "") or "").lower()
+                        if b_data == b"claim_mine" or "claim" in b_text:
                             try:
                                 await m.click(r_idx, c_idx)
+                                await asyncio.sleep(1.0)
                             except Exception:
                                 pass
         logger.info(f"[{name}] ✅ Bitcoin Cloud Miners completed referral & active miner claim")
@@ -1999,14 +2011,50 @@ async def complete_finvora_referral(client: TelegramClient, name: str, ref_code:
         b_fin = await client.get_entity(FINVORA_BOT)
         await mute_peer(client, b_fin, name)
         await client.send_message(b_fin, f"/start {ref_code}")
-        await asyncio.sleep(1.5)
-        b_fin_in = await client.get_input_entity(FINVORA_BOT)
-        await client(RequestAppWebViewRequest(
-            peer=b_fin_in,
-            app=InputBotAppShortName(bot_id=b_fin_in, short_name="app"),
-            platform="android",
-            start_param=str(ref_code)
-        ))
+        await asyncio.sleep(2.0)
+
+        opened = False
+        msgs = await client.get_messages(b_fin, limit=5)
+        for m in msgs:
+            if m.buttons:
+                for r_idx, row in enumerate(m.buttons):
+                    for c_idx, b in enumerate(row):
+                        b_url = getattr(b, "url", None)
+                        if not b_url and hasattr(b, "button") and hasattr(b.button, "type") and hasattr(b.button.type, "url"):
+                            b_url = b.button.type.url
+                        if b_url and ("tgWebApp" in b_url or "http" in b_url):
+                            try:
+                                await client(RequestWebViewRequest(
+                                    peer=b_fin,
+                                    bot=b_fin,
+                                    url=b_url,
+                                    platform="android",
+                                    start_param=str(ref_code)
+                                ))
+                                opened = True
+                                break
+                            except Exception:
+                                pass
+                    if opened:
+                        break
+            if opened:
+                break
+
+        if not opened:
+            b_fin_in = await client.get_input_entity(FINVORA_BOT)
+            for sn in ["app", "miniapp", "bot"]:
+                try:
+                    await client(RequestAppWebViewRequest(
+                        peer=b_fin_in,
+                        app=InputBotAppShortName(bot_id=b_fin_in, short_name=sn),
+                        platform="android",
+                        start_param=str(ref_code)
+                    ))
+                    opened = True
+                    break
+                except Exception:
+                    pass
+
         logger.info(f"[{name}] ✅ FINVORA completed referral & webview handshake")
         return True
     except Exception as e:
@@ -2021,14 +2069,50 @@ async def complete_turbogram_referral(client: TelegramClient, name: str, ref_cod
         b_tb = await client.get_entity(TURBOGRAM_BOT)
         await mute_peer(client, b_tb, name)
         await client.send_message(b_tb, f"/start {ref_code}")
-        await asyncio.sleep(1.5)
-        b_tb_in = await client.get_input_entity(TURBOGRAM_BOT)
-        await client(RequestAppWebViewRequest(
-            peer=b_tb_in,
-            app=InputBotAppShortName(bot_id=b_tb_in, short_name="app"),
-            platform="android",
-            start_param=str(ref_code)
-        ))
+        await asyncio.sleep(2.0)
+
+        opened = False
+        msgs = await client.get_messages(b_tb, limit=5)
+        for m in msgs:
+            if m.buttons:
+                for r_idx, row in enumerate(m.buttons):
+                    for c_idx, b in enumerate(row):
+                        b_url = getattr(b, "url", None)
+                        if not b_url and hasattr(b, "button") and hasattr(b.button, "type") and hasattr(b.button.type, "url"):
+                            b_url = b.button.type.url
+                        if b_url and ("tgWebApp" in b_url or "http" in b_url):
+                            try:
+                                await client(RequestWebViewRequest(
+                                    peer=b_tb,
+                                    bot=b_tb,
+                                    url=b_url,
+                                    platform="android",
+                                    start_param=str(ref_code)
+                                ))
+                                opened = True
+                                break
+                            except Exception:
+                                pass
+                    if opened:
+                        break
+            if opened:
+                break
+
+        if not opened:
+            b_tb_in = await client.get_input_entity(TURBOGRAM_BOT)
+            for sn in ["app", "miniapp", "bot"]:
+                try:
+                    await client(RequestAppWebViewRequest(
+                        peer=b_tb_in,
+                        app=InputBotAppShortName(bot_id=b_tb_in, short_name=sn),
+                        platform="android",
+                        start_param=str(ref_code)
+                    ))
+                    opened = True
+                    break
+                except Exception:
+                    pass
+
         logger.info(f"[{name}] ✅ TurboGram completed referral & webview handshake")
         return True
     except Exception as e:
@@ -4509,12 +4593,15 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
                 for r_idx, row in enumerate(m.buttons):
                     row_btns = []
                     for c_idx, b in enumerate(row):
+                        b_url = getattr(b, "url", None)
+                        if not b_url and hasattr(b, "button") and hasattr(b.button, "type") and hasattr(b.button.type, "url"):
+                            b_url = b.button.type.url
                         b_info = {
                             "msg_id": m.id,
                             "row": r_idx,
                             "col": c_idx,
                             "text": b.text,
-                            "url": getattr(b, "url", None)
+                            "url": b_url
                         }
                         if hasattr(b, "data") and b.data:
                             b_info["data"] = b.data.decode("utf-8", errors="ignore")
@@ -4891,12 +4978,29 @@ async def inspect_bot_chat(uid: str, request: Request):
     return {"ok": True, "uid": uid, "chats": chats}
 
 
+LAST_ONBOARD_STATUS = {
+    "status": "idle",
+    "processed": 0,
+    "total": 0,
+    "timestamp": 0,
+    "results": []
+}
+
+
+@app.get("/api/onboard-status")
+async def onboard_status_endpoint(request: Request):
+    """Returns the current background onboarding and referral binding execution status."""
+    return {"ok": True, "status": LAST_ONBOARD_STATUS}
+
+
 @app.post("/api/onboard-new-bots")
+@app.get("/api/onboard-new-bots")
 async def onboard_new_bots(request: Request):
     """
     Explicit interactive cloud onboarding endpoint:
-    Processes all worker accounts, executes interact_and_verify_bot for the 7 new bots,
+    Processes worker accounts, executes bot-specific referral completion pipelines,
     joins sponsor channels, clicks verification buttons, and starts mining.
+    Supports background execution (default) and single account filtering (?uid=<id>).
     """
     auth = request.headers.get("Authorization") or ""
     req_secret = request.query_params.get("secret", "")
@@ -4909,121 +5013,141 @@ async def onboard_new_bots(request: Request):
     except Exception:
         pass
 
+    target_uid = request.query_params.get("uid") or body.get("uid")
+    sync_mode = request.query_params.get("sync") == "1" or bool(target_uid)
+
     accounts = body.get("accounts", [])
     if not accounts:
         accounts = await fetch_accounts_from_cloud()
 
-    results = []
-    for acc in accounts:
-        uid = str(acc.get("user_id"))
-        name = acc.get("name", "User")
-        if uid == "6727787768":
-            continue
+    if target_uid:
+        accounts = [a for a in accounts if str(a.get("user_id")) == str(target_uid)]
+        if not accounts:
+            raise HTTPException(status_code=404, detail=f"Account with UID {target_uid} not found")
 
-        sess_str = acc.get("session_string") or acc.get("session")
-        if not sess_str:
-            continue
+    async def _run_onboard_pipeline():
+        LAST_ONBOARD_STATUS["status"] = "running"
+        LAST_ONBOARD_STATUS["timestamp"] = time.time()
+        LAST_ONBOARD_STATUS["total"] = len(accounts)
+        LAST_ONBOARD_STATUS["processed"] = 0
+        LAST_ONBOARD_STATUS["results"] = []
 
-        acc_res = {"uid": uid, "name": name, "bots": {}}
-        cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
-        try:
-            await cl.connect()
-            if not await cl.is_user_authorized():
-                acc_res["error"] = "unauthorized"
-                results.append(acc_res)
+        results = []
+        for acc in accounts:
+            uid = str(acc.get("user_id"))
+            name = acc.get("name", "User")
+            if uid == "6727787768":
                 continue
 
-            # 1. TRX Power Mining
+            sess_str = acc.get("session_string") or acc.get("session")
+            if not sess_str:
+                continue
+
+            acc_res = {"uid": uid, "name": name, "bots": {}}
+            cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
             try:
-                await join_tg_target(cl, "trxpowerminingOfficial", f"{name} trxpower")
-                await join_tg_target(cl, "TRX_WORLD_WORK", f"{name} trxpower")
-                await asyncio.sleep(1.0)
-                await interact_and_verify_bot(cl, TRXPOWER_BOT, f"/start {TRXPOWER_REFERRAL_CODE}", name, required_channels=["trxpowerminingOfficial", "TRX_WORLD_WORK"], click_buttons=["✅ Check / Verify", "Check / Verify", "Verify"])
+                await cl.connect()
+                if not await cl.is_user_authorized():
+                    acc_res["error"] = "unauthorized"
+                    results.append(acc_res)
+                    continue
+
+                # 1. TRX Power Mining
                 try:
-                    b_trx_in = await cl.get_input_entity(TRXPOWER_BOT)
-                    await cl(RequestAppWebViewRequest(
-                        peer=b_trx_in,
-                        app=InputBotAppShortName(bot_id=b_trx_in, short_name="app"),
-                        platform="android",
-                        start_param=str(TRXPOWER_REFERRAL_CODE)
-                    ))
+                    await join_tg_target(cl, "trxpowerminingOfficial", f"{name} trxpower")
+                    await join_tg_target(cl, "TRX_WORLD_WORK", f"{name} trxpower")
+                    await asyncio.sleep(1.0)
+                    await interact_and_verify_bot(cl, TRXPOWER_BOT, f"/start {TRXPOWER_REFERRAL_CODE}", name, required_channels=["trxpowerminingOfficial", "TRX_WORLD_WORK"], click_buttons=["✅ Check / Verify", "Check / Verify", "Verify"])
+                    acc["trxpower_referral_bound"] = True
+                    acc_res["bots"]["trxpower"] = "verified"
+                except Exception as e:
+                    acc_res["bots"]["trxpower"] = str(e)
+
+                # 2. Bitcoin Cloud Miners (Start Play + Active Mining Claim)
+                try:
+                    if await complete_btc_referral(cl, name, BTC_REFERRAL_CODE):
+                        acc["btc_referral_bound"] = True
+                        acc_res["bots"]["btc"] = "verified"
+                    else:
+                        acc_res["bots"]["btc"] = "pending"
+                except Exception as e:
+                    acc_res["bots"]["btc"] = str(e)
+
+                # 3. FINVORA Web3 (Channel join + WebApp handshake)
+                try:
+                    if await complete_finvora_referral(cl, name, FINVORA_REFERRAL_CODE):
+                        acc["finvora_referral_bound"] = True
+                        acc_res["bots"]["finvora"] = "verified"
+                    else:
+                        acc_res["bots"]["finvora"] = "pending"
+                except Exception as e:
+                    acc_res["bots"]["finvora"] = str(e)
+
+                # 4. TurboGram V1 (Announcement channels + WebApp handshake)
+                try:
+                    if await complete_turbogram_referral(cl, name, TURBOGRAM_REFERRAL_CODE):
+                        acc["turbogram_referral_bound"] = True
+                        acc_res["bots"]["turbogram"] = "verified"
+                    else:
+                        acc_res["bots"]["turbogram"] = "pending"
+                except Exception as e:
+                    acc_res["bots"]["turbogram"] = str(e)
+
+                # 5. Tensor Mining Robot (flascoins.xyz WebApp Auth + Daily + Tap)
+                try:
+                    if await complete_tensor_referral(cl, name, TENSOR_REFERRAL_CODE):
+                        acc["tensor_referral_bound"] = True
+                        acc_res["bots"]["tensor"] = "verified"
+                    else:
+                        acc_res["bots"]["tensor"] = "pending"
+                except Exception as e:
+                    acc_res["bots"]["tensor"] = str(e)
+
+                # 6. Ton Trader AI (api.tontraderai.com Profile + Daily Gift + Yield Claim)
+                try:
+                    if await complete_tontrader_referral(cl, name, TONTRADER_REFERRAL_CODE):
+                        acc["tontrader_referral_bound"] = True
+                        acc_res["bots"]["tontrader"] = "verified"
+                    else:
+                        acc_res["bots"]["tontrader"] = "pending"
+                except Exception as e:
+                    acc_res["bots"]["tontrader"] = str(e)
+
+                # 7. Ominix AI Trade (TanStack ServerFn Claim Profit + Mystery Box)
+                try:
+                    if await complete_ominix_referral(cl, name, OMINIX_REFERRAL_CODE):
+                        acc["ominix_referral_bound"] = True
+                        acc_res["bots"]["ominix"] = "verified"
+                    else:
+                        acc_res["bots"]["ominix"] = "pending"
+                except Exception as e:
+                    acc_res["bots"]["ominix"] = str(e)
+
+                if is_account_referrals_bound(acc):
+                    acc["all_15_referrals_bound"] = True
+                await sync_new_account_to_clouds(acc)
+            finally:
+                try:
+                    await cl.disconnect()
                 except Exception:
                     pass
-                acc["trxpower_referral_bound"] = True
-                acc_res["bots"]["trxpower"] = "verified"
-            except Exception as e:
-                acc_res["bots"]["trxpower"] = str(e)
+            results.append(acc_res)
+            LAST_ONBOARD_STATUS["processed"] += 1
+            LAST_ONBOARD_STATUS["results"].append(acc_res)
 
-            # 2. Bitcoin Cloud Miners (Start Play + Active Mining Claim)
-            try:
-                if await complete_btc_referral(cl, name, BTC_REFERRAL_CODE):
-                    acc["btc_referral_bound"] = True
-                    acc_res["bots"]["btc"] = "verified"
-                else:
-                    acc_res["bots"]["btc"] = "pending"
-            except Exception as e:
-                acc_res["bots"]["btc"] = str(e)
+        LAST_ONBOARD_STATUS["status"] = "completed"
+        return {"ok": True, "count": len(results), "results": results}
 
-            # 3. FINVORA Web3 (Channel join + WebApp handshake)
-            try:
-                if await complete_finvora_referral(cl, name, FINVORA_REFERRAL_CODE):
-                    acc["finvora_referral_bound"] = True
-                    acc_res["bots"]["finvora"] = "verified"
-                else:
-                    acc_res["bots"]["finvora"] = "pending"
-            except Exception as e:
-                acc_res["bots"]["finvora"] = str(e)
-
-            # 4. TurboGram V1 (Announcement channels + WebApp handshake)
-            try:
-                if await complete_turbogram_referral(cl, name, TURBOGRAM_REFERRAL_CODE):
-                    acc["turbogram_referral_bound"] = True
-                    acc_res["bots"]["turbogram"] = "verified"
-                else:
-                    acc_res["bots"]["turbogram"] = "pending"
-            except Exception as e:
-                acc_res["bots"]["turbogram"] = str(e)
-
-            # 5. Tensor Mining Robot (flascoins.xyz WebApp Auth + Daily + Tap)
-            try:
-                if await complete_tensor_referral(cl, name, TENSOR_REFERRAL_CODE):
-                    acc["tensor_referral_bound"] = True
-                    acc_res["bots"]["tensor"] = "verified"
-                else:
-                    acc_res["bots"]["tensor"] = "pending"
-            except Exception as e:
-                acc_res["bots"]["tensor"] = str(e)
-
-            # 6. Ton Trader AI (api.tontraderai.com Profile + Daily Gift + Yield Claim)
-            try:
-                if await complete_tontrader_referral(cl, name, TONTRADER_REFERRAL_CODE):
-                    acc["tontrader_referral_bound"] = True
-                    acc_res["bots"]["tontrader"] = "verified"
-                else:
-                    acc_res["bots"]["tontrader"] = "pending"
-            except Exception as e:
-                acc_res["bots"]["tontrader"] = str(e)
-
-            # 7. Ominix AI Trade (TanStack ServerFn Claim Profit + Mystery Box)
-            try:
-                if await complete_ominix_referral(cl, name, OMINIX_REFERRAL_CODE):
-                    acc["ominix_referral_bound"] = True
-                    acc_res["bots"]["ominix"] = "verified"
-                else:
-                    acc_res["bots"]["ominix"] = "pending"
-            except Exception as e:
-                acc_res["bots"]["ominix"] = str(e)
-
-            acc["all_15_referrals_bound"] = True
-            await sync_new_account_to_clouds(acc)
-        finally:
-            try:
-                await cl.disconnect()
-            except Exception:
-                pass
-        results.append(acc_res)
-
-    return {"ok": True, "count": len(results), "results": results}
+    if not sync_mode:
+        asyncio.create_task(_run_onboard_pipeline())
+        return {
+            "ok": True,
+            "status": "running_in_background",
+            "accounts_to_process": len([a for a in accounts if str(a.get("user_id")) != "6727787768"]),
+            "message": "Cloud onboarding and referral binding running in background. Monitor via /api/onboard-status"
+        }
+    else:
+        return await _run_onboard_pipeline()
 
 
 @app.post("/api/withdraw/auto-cycle")
