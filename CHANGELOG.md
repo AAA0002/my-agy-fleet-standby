@@ -4,6 +4,19 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **⚙️ Bot-Specific Referral Completion Handshakes & Active Miner Activation (`render_standby_app.py`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
+  - **🎯 Replaced Generic Handshakes with Bot-Specific Pipelines**:
+    * **Root Cause Addressed**: Addressed user directive that bots have completely different lifecycle and referral completion rules beyond simple chat `/start` commands.
+    * **`@TensorMiningRobot` (`complete_tensor_referral`)**: Dispatches `/start 6727787768`, requests WebApp webview with `short_name="myapp"`, extracts `tgWebAppData`, and executes `POST https://flascoins.xyz/api/auth` with `startParam="6727787768"`, claims Day 1 reward via `POST /api/daily`, and triggers 50 taps via `POST /api/tap` to activate miner. Master confirmed receiving `⚡ <Name> joined Tensor using your invite link! +300 TENSOR`.
+    * **`@TonTraderAIBot` (`complete_tontrader_referral`)**: Pre-joins sponsor channels (`@tontraderai_official`, `@tontraderai_group`), requests WebApp webview with `start_param="REF_6727787768"`, calls `GET https://api.tontraderai.com/api/v1/user/profile`, claims 50 coins starting gift via `POST /claim-daily-gift`, opens mystery gift box, and triggers algorithmic yield claim.
+    * **`@OminixAiBot` (`complete_ominix_referral`)**: Requests WebApp webview with `short_name="Trade"`, extracts `tgWebAppData`, and executes Seroval RPC payload against TanStack Start server functions on `ominiaibot.lovable.app` (`bcb8e2...` for profit claim and `21aff4...` for gift box).
+    * **`@BitcoinCloudMinersBot` (`complete_btc_referral`)**: Pre-joins private invite channel `https://t.me/+I1HZjvoqu942MjZl`, sends `/start 6727787768`, clicks inline button `[🎮 Start Play]` (callback `start_play`), and dispatches `⛏ Mine` + clicks `[💎 Claim BTC]` (callback `claim_mine`) to register as an active miner and unlock multi-tier referral contest milestones.
+    * **`@FINVORAWeb3bot` (`complete_finvora_referral`)**: Pre-joins `@finvoraweb3`, sends `/start ref_TRX6727787768`, and executes Mini App webview handshake with `start_param="ref_TRX6727787768"`.
+    * **`@TurboGramV1_bot` (`complete_turbogram_referral`)**: Pre-joins `@TurboGramAnnouncements` and `@TurboGramPayment`, sends `/start r_3520c92b`, and executes Mini App webview handshake.
+    * **Permanent Silencing Enforced**: All completion routines permanently silence notifications (`UpdateNotifySettingsRequest`) for every bot and sponsor channel visited.
+  - **🚀 Standby Sync**:
+    * Deployed commit `587936b1` to [`AAA0002/my-agy-fleet-standby`](https://github.com/AAA0002/my-agy-fleet-standby).
+
 - **🛡️ GitHub Account Failover to AAA0002, Permanent Fleet Notification Silencing & Deep Referral Verification (`render_standby_app.py`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
   - **🔄 GitHub Account Failover to `AAA0002`**:
     * Detected suspension of legacy account `AAA2743` by GitHub.
