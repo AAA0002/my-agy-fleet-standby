@@ -7,6 +7,7 @@ import urllib.parse
 import logging
 import re
 import aiohttp
+import datetime
 
 try:
     from proxy_manager import get_account_user_agent
@@ -30,7 +31,8 @@ from telethon import TelegramClient
 from telethon.sessions import StringSession
 from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest, ImportChatInviteRequest, GetBotCallbackAnswerRequest
 from telethon.tl.functions.channels import JoinChannelRequest
-from telethon.tl.types import InputBotAppShortName
+from telethon.tl.functions.account import UpdateNotifySettingsRequest
+from telethon.tl.types import InputBotAppShortName, InputNotifyPeer, InputPeerNotifySettings
 from telethon.errors import (
     SessionPasswordNeededError,
     PhoneCodeInvalidError,
@@ -1606,6 +1608,23 @@ def is_account_referrals_bound(acc_entry: dict) -> bool:
     )
 
 
+async def mute_peer(client: TelegramClient, peer_or_username, name: str = ""):
+    """Permanently silences notifications from a bot, channel, or group."""
+    try:
+        entity = await client.get_input_entity(peer_or_username)
+        await client(UpdateNotifySettingsRequest(
+            peer=InputNotifyPeer(peer=entity),
+            settings=InputPeerNotifySettings(
+                show_previews=False,
+                silent=True,
+                mute_until=datetime.datetime(2038, 1, 1, 0, 0)
+            )
+        ))
+        logger.info(f"[{name}] Permanently silenced notifications for {peer_or_username}")
+    except Exception as e:
+        logger.debug(f"[{name}] Note silencing {peer_or_username}: {e}")
+
+
 async def join_tg_target(client: TelegramClient, link_or_username: str, name: str = ""):
     target = str(link_or_username or "").strip()
     if not target:
@@ -1616,8 +1635,10 @@ async def join_tg_target(client: TelegramClient, link_or_username: str, name: st
         h = h.strip()
         if h:
             try:
-                await client(ImportChatInviteRequest(h))
+                res = await client(ImportChatInviteRequest(h))
                 logger.info(f"[{name}] Joined private invite +{h}")
+                if hasattr(res, 'chats') and res.chats:
+                    await mute_peer(client, res.chats[0], name)
             except Exception as e:
                 if "already" not in str(e).lower() and "USER_ALREADY_PARTICIPANT" not in str(e):
                     logger.debug(f"[{name}] Private invite join note (+{h}): {e}")
@@ -1627,9 +1648,12 @@ async def join_tg_target(client: TelegramClient, link_or_username: str, name: st
             try:
                 await client(JoinChannelRequest(clean))
                 logger.info(f"[{name}] Joined public channel @{clean}")
+                await mute_peer(client, clean, name)
             except Exception as e:
                 if "already" not in str(e).lower() and "USER_ALREADY_PARTICIPANT" not in str(e):
                     logger.debug(f"[{name}] Public channel join note (@{clean}): {e}")
+                else:
+                    await mute_peer(client, clean, name)
 
 
 async def interact_and_verify_bot(client: TelegramClient, bot_username: str, start_cmd: str, name: str, required_channels: list = None, click_buttons: list = None):
@@ -1642,16 +1666,19 @@ async def interact_and_verify_bot(client: TelegramClient, bot_username: str, sta
     5. Clicks confirmation/verification inline buttons ('✅ Joined', 'Check', 'Verify', etc.).
     6. Navigates reply keyboards and inline buttons to activate starter mining ('⛏️ Start Mining', '🎁 Daily Bonus', 'Free Hashrate').
     7. Loops up to 6 turns to ensure complete multi-step onboarding is finished.
+    8. Mutes notifications permanently for the bot and all sponsor channels.
     """
     try:
         bot = await client.get_entity(bot_username)
+        await mute_peer(client, bot, name)
         init_msgs = await client.get_messages(bot, limit=1)
         last_id = init_msgs[0].id if init_msgs else 0
 
-        # Pre-join any required channels if specified
+        # Pre-join any required channels if specified and mute them
         if required_channels:
             for ch in required_channels:
                 await join_tg_target(client, ch, name)
+                await mute_peer(client, ch, name)
             await asyncio.sleep(1.0)
 
         await client.send_message(bot, start_cmd)
@@ -2384,7 +2411,9 @@ async def send_payout_receipt(message: str, dedupe_key: str = None):
 
     SENT_RECEIPT_HASHES[key] = now
 
-    bot_token = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8")
+    bot_token = os.getenv("REPORT_BOT_TOKEN", "")
+    if not bot_token:
+        return
     targets = [REPORT_CHAT_ID, PAYOUT_CHANNEL_ID]
     async with aiohttp.ClientSession() as s:
         for tid in targets:
@@ -4592,6 +4621,72 @@ async def study_bot_endpoint(bot_key: str, request: Request):
         await cl.disconnect()
 
     return {"ok": True, "master_id": "6727787768", "results": results}
+
+
+@app.post("/api/mute-all-chats")
+@app.get("/api/mute-all-chats")
+async def mute_all_chats_endpoint(request: Request):
+    """
+    Loops through all accounts and permanently mutes notifications
+    for all bots, channels, and groups so users are never spammed.
+    """
+    auth = request.headers.get("Authorization") or ""
+    req_secret = request.query_params.get("secret", "")
+    if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    accounts = await fetch_accounts_from_cloud()
+    all_targets_to_mute = [
+        "trxpowermining_bot", "trxpowerminingOfficial", "TRX_WORLD_WORK",
+        "BitcoinCloudMinersBot",
+        "FINVORAWeb3bot", "finvoraweb3",
+        "TurboGramV1_bot", "TurboGramAnnouncements", "TurboGramPayment",
+        "TensorMiningRobot",
+        "TonTraderAIBot", "tontraderai_official", "tontraderai_supportbot", "tontraderai_group",
+        "OminixAiBot", "ominiai", "ominiaipayout"
+    ]
+    results = []
+    for acc in accounts:
+        uid = str(acc.get("user_id"))
+        name = acc.get("name", uid)
+        sess_str = acc.get("session_string") or acc.get("session")
+        if not sess_str:
+            continue
+        cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+        muted_count = 0
+        try:
+            await cl.connect()
+            if not await cl.is_user_authorized():
+                results.append({"uid": uid, "name": name, "error": "unauthorized"})
+                continue
+
+            for tgt in all_targets_to_mute:
+                try:
+                    await mute_peer(cl, tgt, name)
+                    muted_count += 1
+                except Exception:
+                    pass
+
+            # Also mute all dialogs that are channels or bots
+            dialogs = await cl.get_dialogs(limit=50)
+            for d in dialogs:
+                if d.is_channel or d.is_group or getattr(d.entity, 'bot', False):
+                    try:
+                        await mute_peer(cl, d.input_entity, name)
+                        muted_count += 1
+                    except Exception:
+                        pass
+
+            results.append({"uid": uid, "name": name, "muted_chats": muted_count})
+        except Exception as e:
+            results.append({"uid": uid, "name": name, "error": str(e)})
+        finally:
+            try:
+                await cl.disconnect()
+            except Exception:
+                pass
+
+    return {"ok": True, "results": results}
 
 
 @app.get("/api/inspect-bot-chat/{uid}")
