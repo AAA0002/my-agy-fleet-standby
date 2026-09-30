@@ -4,7 +4,29 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-- **🔬 Deep Bot Reverse-Engineering, Exact API Handshakes & Fleet Notification Silencing Overhaul (`render_standby_app.py`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
+- **🔬 Comprehensive Live 7-Bot Field Study, Bug Extermination & Cloudflare Mesh Sync (`render_standby_app.py`, `deploy_both_cf_workers.py`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
+  - **📱 Live Master Account (6727787768) Bot Study & Verification**:
+    * **FINVORA Web3 (`@FINVORAWeb3bot`)**: Extracted exact Railway backend Mini App URL (`https://finvora-production.up.railway.app/`). Verified referral binding format `ref_TRX6727787768`. Discovered Master balance: `2.0000 GRAM` holding, `0.4935 GRAM` available. Upgraded `complete_finvora_referral` to execute direct `RequestWebViewRequest` to `finvora-production.up.railway.app`.
+    * **TurboGram V1 (`@TurboGramV1_bot`)**: Extracted exact Mini App URL (`https://turbo.tamimdev.dev/`). Verified referral binding format `r_3520c92b`. Discovered announcement channels `@TurboGramAnnouncements` and `@TurboGramPayment`. Upgraded `complete_turbogram_referral` to execute direct `RequestWebViewRequest` to `turbo.tamimdev.dev`.
+    * **Tensor Mining Robot (`@TensorMiningRobot`)**: Verified Master account live rewards: confirmed 4 worker referrals (Tiffany, Roger, Mary, Kevin) successfully bound and awarded `+300 TENSOR` each (`+1200 TENSOR` total credited).
+    * **Bitcoin Cloud Miners (`@BitcoinCloudMinersBot`)**: Verified inline callback mechanics: mapped `⛏ Mine` active mining with `💎 Claim BTC` (`claim_mine`), `📋 Tasks`, and referral tier unlock `🎉 Collect: Invite 5 friends` (`claim_task_3`).
+    * **TRX Power Mining (`@trxpowermining_bot`)**: Verified Master account balance `0.8102 TRX` with 17 counted referrals. Mini App URL: `https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/`.
+    * **Ton Trader AI (`@TonTraderAIBot`) & Ominix AI Trade (`@OminixAiBot`)**: Confirmed Mini App entry points, referral binding rules (`REF_6727787768` and `6727787768`), and reward claim pipelines.
+  - **🔕 Permanent Fleet Notification Silencing**:
+    * Executed permanent notification muting (`mute_peer` with `silent=True` and `mute_until=2038-01-01`) for all 7 bots and all 9 sponsor channels (`@trxpowerminingOfficial`, `@TRX_WORLD_WORK`, `@finvoraweb3`, `@TurboGramAnnouncements`, `@TurboGramPayment`, `@tontraderai_official`, `@tontraderai_group`, `@ominiai`, `@ominiaipayout`).
+  - **🐛 Bug Fixes & Codebase Purification**:
+    * **`push_to_standby_repo.py` Duplicate `main()`**: Removed duplicate orphaned `def main():` block that interrupted file execution.
+    * **Purged `AAA2743` Display Strings**: Removed legacy `AAA2743` references in `deploy_both_cf_workers.py` and `userbot_refresher.py`, updating display to active `AAA0002/ATL` and `AAA0002/my-agy-fleet-standby`.
+    * **`render_standby_app.py` Pushed to GitHub**: Pushed commit `f06a5c5d` (`app.py`) and `0a7566d6` (`requirements.txt`) to `AAA0002/my-agy-fleet-standby`.
+  - **🌐 Cloudflare 5-Node Edge Mesh Deployment**:
+    * Successfully deployed updated code across all 5 Edge Worker nodes:
+      - Node 1: `https://restore-agy.aaaai2.workers.dev` (🟢 Synced)
+      - Node 2: `https://restore-agy.aaa-bot.workers.dev` (🟢 Synced)
+      - Node 3: `https://restore-agy.aaa222.workers.dev` (🟢 Synced)
+      - Node 4: `https://restore-agy.agorameet.workers.dev` (🟢 Synced)
+      - Node 5: `https://restore-agy.aaaai.workers.dev` (🟢 Synced)
+    * Synchronized Telegram Admin and User bot webhooks, commands, and global menu buttons.
+
   - **⚡ TRX Power Mining (13/13 Verified Milestone)**:
     * Live audit of Master account `6727787768` confirms 13/13 worker accounts are 100% verified with 0 pending referrals.
   - **📈 TonTrader AI Deep Study & Full Lifecycle Integration**:

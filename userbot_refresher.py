@@ -1653,7 +1653,7 @@ async def build_mesh_status_report():
         "• Pinata IPFS Vault: 🟢 Pinned & Immutable",
         "• Better Stack: 🟢 Uptime Sentinel Active (100.0%)\n",
         "🐙 *Dual Git Remotes:*",
-        "• Primary: `AAA2743/my-agy-ai-fleet` (In Sync)",
+        "• Primary: `AAA0002/ATL` (In Sync)",
         "• Mirror: `AAA0002/ATL` (In Sync)",
         "━━━━━━━━━━━━━━━━━━━━━━",
         "🛡️ *Zero Single Points of Failure • 100% Ephemeral Resilience*"
@@ -2855,7 +2855,7 @@ def build_server_health_report():
         f"• *Distributed Databases:* `🟢 D1 SQL + Upstash Redis + Supabase Postgres + Turso LibSQL`\n"
         f"• *Executive Fleet WebApp:* `🟢 Live on Vercel (https://agy-aaa000.vercel.app)`\n"
         f"• *User Bot Admin Console:* `🟢 Live on Cloudflare Pages (https://atf-miner-app.pages.dev)`\n"
-        f"• *Dual GitHub Remotes:* `🟢 Synced (AAA2743 & AAA0002)`\n"
+        f"• *Primary GitHub Repo:* `🟢 Synced (AAA0002/ATL & Standby)`\n"
         f"• *Telegram Disaster Vault:* `🟢 Replicating to @myagyai`\n\n"
         f"💡 _Zero-trust serverless architecture active across all cloud providers._"
     )

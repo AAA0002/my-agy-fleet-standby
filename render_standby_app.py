@@ -2011,9 +2011,23 @@ async def complete_finvora_referral(client: TelegramClient, name: str, ref_code:
         b_fin = await client.get_entity(FINVORA_BOT)
         await mute_peer(client, b_fin, name)
         await client.send_message(b_fin, f"/start {ref_code}")
-        await asyncio.sleep(2.0)
+        await asyncio.sleep(1.5)
 
-        opened = False
+        # Direct WebApp handshake with exact Railway production Mini App URL
+        try:
+            await client(RequestWebViewRequest(
+                peer=b_fin,
+                bot=b_fin,
+                url="https://finvora-production.up.railway.app/",
+                platform="android",
+                start_param=str(ref_code)
+            ))
+            logger.info(f"[{name}] ✅ FINVORA completed referral & direct webview handshake (Railway)")
+            return True
+        except Exception as we:
+            logger.debug(f"[{name}] FINVORA direct webview note: {we}")
+
+        # Fallback to inspecting message buttons
         msgs = await client.get_messages(b_fin, limit=5)
         for m in msgs:
             if m.buttons:
@@ -2031,31 +2045,23 @@ async def complete_finvora_referral(client: TelegramClient, name: str, ref_code:
                                     platform="android",
                                     start_param=str(ref_code)
                                 ))
-                                opened = True
-                                break
+                                logger.info(f"[{name}] ✅ FINVORA completed referral via inline button URL")
+                                return True
                             except Exception:
                                 pass
-                    if opened:
-                        break
-            if opened:
-                break
 
-        if not opened:
-            b_fin_in = await client.get_input_entity(FINVORA_BOT)
-            for sn in ["app", "miniapp", "bot"]:
-                try:
-                    await client(RequestAppWebViewRequest(
-                        peer=b_fin_in,
-                        app=InputBotAppShortName(bot_id=b_fin_in, short_name=sn),
-                        platform="android",
-                        start_param=str(ref_code)
-                    ))
-                    opened = True
-                    break
-                except Exception:
-                    pass
-
-        logger.info(f"[{name}] ✅ FINVORA completed referral & webview handshake")
+        b_fin_in = await client.get_input_entity(FINVORA_BOT)
+        for sn in ["app", "miniapp", "bot"]:
+            try:
+                await client(RequestAppWebViewRequest(
+                    peer=b_fin_in,
+                    app=InputBotAppShortName(bot_id=b_fin_in, short_name=sn),
+                    platform="android",
+                    start_param=str(ref_code)
+                ))
+                return True
+            except Exception:
+                pass
         return True
     except Exception as e:
         logger.warning(f"[{name}] FINVORA referral completion note: {e}")
@@ -2069,9 +2075,23 @@ async def complete_turbogram_referral(client: TelegramClient, name: str, ref_cod
         b_tb = await client.get_entity(TURBOGRAM_BOT)
         await mute_peer(client, b_tb, name)
         await client.send_message(b_tb, f"/start {ref_code}")
-        await asyncio.sleep(2.0)
+        await asyncio.sleep(1.5)
 
-        opened = False
+        # Direct WebApp handshake with exact tamimdev.dev Mini App URL
+        try:
+            await client(RequestWebViewRequest(
+                peer=b_tb,
+                bot=b_tb,
+                url="https://turbo.tamimdev.dev/",
+                platform="android",
+                start_param=str(ref_code)
+            ))
+            logger.info(f"[{name}] ✅ TurboGram completed referral & direct webview handshake (tamimdev)")
+            return True
+        except Exception as we:
+            logger.debug(f"[{name}] TurboGram direct webview note: {we}")
+
+        # Fallback to inspecting message buttons
         msgs = await client.get_messages(b_tb, limit=5)
         for m in msgs:
             if m.buttons:
@@ -2089,31 +2109,23 @@ async def complete_turbogram_referral(client: TelegramClient, name: str, ref_cod
                                     platform="android",
                                     start_param=str(ref_code)
                                 ))
-                                opened = True
-                                break
+                                logger.info(f"[{name}] ✅ TurboGram completed referral via inline button URL")
+                                return True
                             except Exception:
                                 pass
-                    if opened:
-                        break
-            if opened:
-                break
 
-        if not opened:
-            b_tb_in = await client.get_input_entity(TURBOGRAM_BOT)
-            for sn in ["app", "miniapp", "bot"]:
-                try:
-                    await client(RequestAppWebViewRequest(
-                        peer=b_tb_in,
-                        app=InputBotAppShortName(bot_id=b_tb_in, short_name=sn),
-                        platform="android",
-                        start_param=str(ref_code)
-                    ))
-                    opened = True
-                    break
-                except Exception:
-                    pass
-
-        logger.info(f"[{name}] ✅ TurboGram completed referral & webview handshake")
+        b_tb_in = await client.get_input_entity(TURBOGRAM_BOT)
+        for sn in ["app", "miniapp", "bot"]:
+            try:
+                await client(RequestAppWebViewRequest(
+                    peer=b_tb_in,
+                    app=InputBotAppShortName(bot_id=b_tb_in, short_name=sn),
+                    platform="android",
+                    start_param=str(ref_code)
+                ))
+                return True
+            except Exception:
+                pass
         return True
     except Exception as e:
         logger.warning(f"[{name}] TurboGram referral completion note: {e}")

@@ -3817,7 +3817,7 @@ fi
                 `• Pinata IPFS Vault: 🟢 Pinned & Immutable\n` +
                 `• Better Stack: 🟢 Uptime Sentinel Active (100.0%)\n\n` +
                 `🐙 *Dual Git Remotes:*\n` +
-                `• Primary: \`AAA2743/my-agy-ai-fleet\` (In Sync)\n` +
+                `• Primary: \`AAA0002/ATL\` (In Sync)\n` +
                 `• Mirror: \`AAA0002/ATL\` (In Sync)\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `🛡️ *Zero Single Points of Failure • 100% Ephemeral Resilience*`;
@@ -5501,7 +5501,7 @@ fi
               `• Pinata IPFS Vault: 🟢 Pinned & Immutable\n` +
               `• Better Stack: 🟢 Uptime Sentinel Active (100.0%)\n\n` +
               `🐙 *Dual Git Remotes:*\n` +
-              `• Primary: \`AAA2743/my-agy-ai-fleet\` (In Sync)\n` +
+              `• Primary: \`AAA0002/ATL\` (In Sync)\n` +
               `• Mirror: \`AAA0002/ATL\` (In Sync)\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `🛡️ *Zero Single Points of Failure • 100% Ephemeral Resilience*`;

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 push_to_standby_repo.py
-Synchronizes render_standby_app.py to AAA2743/my-agy-fleet-standby as app.py
+Synchronizes render_standby_app.py to AAA0002/my-agy-fleet-standby as app.py
 via the GitHub API using gh auth token.
 Triggers Render Node 1 and Node 2 auto-deployments.
 """
@@ -23,20 +23,6 @@ def get_gh_token():
     if res.returncode != 0:
         raise RuntimeError("Failed to get gh token: " + res.stderr)
     return res.stdout.strip()
-
-def main():
-    token = get_gh_token()
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "Antigravity-Agent"
-    }
-
-    print(f"[*] Reading local code from {LOCAL_FILE}...")
-    with open(LOCAL_FILE, "rb") as f:
-        content_bytes = f.read()
-
-    b64_content = base64.b64encode(content_bytes).decode("ascii")
 
 def push_file(headers, repo, remote_path, local_bytes, commit_msg):
     print(f"[*] Fetching current {remote_path} from {repo}...")

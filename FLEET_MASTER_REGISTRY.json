@@ -175,35 +175,42 @@
     }
   ],
   "github_ecosystem": {
-    "admin_organization": "AAA2743",
-    "admin_repositories": [
+    "primary_organization": "AAA0002",
+    "primary_repositories": [
       {
-        "name": "my-agy-ai-fleet",
-        "url": "https://github.com/AAA2743/my-agy-ai-fleet",
+        "name": "ATL",
+        "url": "https://github.com/AAA0002/ATL",
         "visibility": "private",
-        "role": "Primary Autonomous Fleet & Admin System"
+        "role": "Primary Autonomous Fleet, Engine & Edge Source"
       },
       {
         "name": "my-agy-fleet-standby",
-        "url": "https://github.com/AAA2743/my-agy-fleet-standby",
+        "url": "https://github.com/AAA0002/my-agy-fleet-standby",
         "visibility": "public",
-        "role": "Render Standby Cloud Refresher Engine"
+        "role": "Render Standby Cloud Refresher & Autonomous Referral Engine"
       },
       {
-        "name": "hermes-grok-cloud-agent",
-        "url": "https://github.com/AAA2743/hermes-grok-cloud-agent",
+        "name": "atf-mtproto-relayer",
+        "url": "https://github.com/AAA0002/atf-mtproto-relayer",
         "visibility": "public",
-        "role": "Hermes-Grok AI Cloud Agent Service"
+        "role": "Render MTProto Relayer Microservice Source"
       }
     ],
     "user_platform_github": {
       "account": "AAA0002",
+      "email": "Jmf705845@gmail.com",
       "repositories": [
         {
           "name": "ATL",
           "url": "https://github.com/AAA0002/ATL",
           "visibility": "private",
-          "role": "ATF Legacy Core & Cloudflare Worker/Pages Source"
+          "role": "Core Fleet & Cloudflare Worker Mesh Source"
+        },
+        {
+          "name": "my-agy-fleet-standby",
+          "url": "https://github.com/AAA0002/my-agy-fleet-standby",
+          "visibility": "public",
+          "role": "Render Standby Cloud Node Source"
         },
         {
           "name": "atf-mtproto-relayer",

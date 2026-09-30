@@ -3,7 +3,7 @@
 # MY AGY AI — 60-SECOND INSTANT VPS DISASTER RECOVERY & FLEET RESTORER
 # =============================================================================
 # Run on ANY fresh Linux VPS / Cloud Instance to restore the entire fleet:
-#   curl -sSL https://raw.githubusercontent.com/AAA2743/my-agy-ai-fleet/main/restore_fleet.sh | bash
+#   curl -sSL https://raw.githubusercontent.com/AAA0002/ATL/main/restore_fleet.sh | bash
 # =============================================================================
 
 set -e
