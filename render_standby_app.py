@@ -28,7 +28,7 @@ except Exception:
 from fastapi import FastAPI, HTTPException, Request
 from telethon import TelegramClient
 from telethon.sessions import StringSession
-from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest, ImportChatInviteRequest
+from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest, ImportChatInviteRequest, GetBotCallbackAnswerRequest
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.types import InputBotAppShortName
 from telethon.errors import (
@@ -4062,6 +4062,316 @@ async def inspect_referrals_master(request: Request):
         await cl.disconnect()
 
     return {"ok": True, "master_id": "6727787768", "bots": results}
+
+
+async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) -> dict:
+    """
+    Performs deep inspection of a single Telegram bot using the connected client:
+    - Pre-joins any required sponsor channels.
+    - Inspects initial messages.
+    - Sends /start and handles verification buttons.
+    - Reads reply keyboards and inline buttons.
+    - Tests clicking candidate buttons (Balance, Claim, Bonus, Reward).
+    - Obtains WebApp URL and tgWebAppData via RequestAppWebViewRequest.
+    - Scans frontend HTML & JS bundles for REST API endpoints and tests them.
+    """
+    res = {
+        "bot_key": bot_key,
+        "bot_username": bot_username,
+        "status": "success",
+        "initial_messages": [],
+        "post_start_messages": [],
+        "reply_keyboard": [],
+        "inline_buttons": [],
+        "tested_actions": [],
+        "webapp": {},
+        "error": None
+    }
+    channel_deps = {
+        "trxpower": ["trxpowerminingOfficial", "TRX_WORLD_WORK"],
+        "btc": ["https://t.me/+I1HZjvoqu942MjZl"],
+        "finvora": ["finvoraweb3"],
+        "turbogram": ["TurboGramAnnouncements", "TurboGramPayment"]
+    }
+
+    try:
+        if bot_key in channel_deps:
+            for ch in channel_deps[bot_key]:
+                try:
+                    await join_tg_target(cl, ch, f"Master {bot_key}")
+                except Exception as je:
+                    logger.debug(f"[Master] Error pre-joining {ch}: {je}")
+
+        bot_ent = await cl.get_entity(bot_username)
+        res["bot_id"] = getattr(bot_ent, "id", None)
+        res["bot_title"] = getattr(bot_ent, "title", None) or getattr(bot_ent, "first_name", "")
+
+        msgs = await cl.get_messages(bot_ent, limit=5)
+        for m in reversed(msgs):
+            res["initial_messages"].append({
+                "id": m.id,
+                "out": m.out,
+                "text": m.raw_text,
+                "buttons": [[b.text for b in row] for row in m.buttons] if m.buttons else []
+            })
+
+        await cl.send_message(bot_ent, "/start")
+        await asyncio.sleep(2.5)
+
+        fresh_msgs = await cl.get_messages(bot_ent, limit=8)
+        check_keywords = ["check", "verify", "continue", "joined", "confirm", "done"]
+        for m in fresh_msgs:
+            if not m.out and m.buttons:
+                clicked_check = False
+                for r_idx, row in enumerate(m.buttons):
+                    for c_idx, b in enumerate(row):
+                        if any(k in b.text.lower() for k in check_keywords):
+                            try:
+                                await m.click(r_idx, c_idx)
+                                clicked_check = True
+                                await asyncio.sleep(2.0)
+                                break
+                            except Exception:
+                                pass
+                    if clicked_check:
+                        break
+                if clicked_check:
+                    break
+
+        fresh_msgs = await cl.get_messages(bot_ent, limit=8)
+        inline_buttons_found = []
+        reply_keyboard_found = []
+
+        for m in reversed(fresh_msgs):
+            m_btns = []
+            if m.buttons:
+                for r_idx, row in enumerate(m.buttons):
+                    row_btns = []
+                    for c_idx, b in enumerate(row):
+                        b_info = {
+                            "msg_id": m.id,
+                            "row": r_idx,
+                            "col": c_idx,
+                            "text": b.text,
+                            "url": getattr(b, "url", None)
+                        }
+                        if hasattr(b, "data") and b.data:
+                            b_info["data"] = b.data.decode("utf-8", errors="ignore")
+                        row_btns.append(b_info)
+                        inline_buttons_found.append(b_info)
+                    m_btns.append(row_btns)
+
+            res["post_start_messages"].append({
+                "id": m.id,
+                "out": m.out,
+                "text": m.raw_text,
+                "buttons": m_btns
+            })
+
+            if m.reply_markup and hasattr(m.reply_markup, "rows"):
+                for r in m.reply_markup.rows:
+                    r_texts = [getattr(b, "text", str(b)) for b in getattr(r, "buttons", []) if hasattr(b, "text")]
+                    if r_texts:
+                        reply_keyboard_found.append(r_texts)
+
+        res["reply_keyboard"] = reply_keyboard_found
+        res["inline_buttons"] = inline_buttons_found
+
+        action_keywords = ["balance", "claim", "bonus", "reward", "miner", "hire", "mining", "referral", "stats", "free", "daily"]
+        tested_actions = []
+
+        flat_reply_btns = [b for row in reply_keyboard_found for b in row]
+        for btn_text in flat_reply_btns:
+            if any(k in btn_text.lower() for k in action_keywords):
+                try:
+                    await cl.send_message(bot_ent, btn_text)
+                    await asyncio.sleep(2.0)
+                    new_msgs = await cl.get_messages(bot_ent, limit=2)
+                    resp_text = new_msgs[0].raw_text if new_msgs and not new_msgs[0].out else "no reply"
+                    tested_actions.append({
+                        "type": "reply_keyboard_send",
+                        "button": btn_text,
+                        "response": resp_text
+                    })
+                except Exception as e:
+                    tested_actions.append({
+                        "type": "reply_keyboard_send",
+                        "button": btn_text,
+                        "error": str(e)
+                    })
+
+        for btn in inline_buttons_found:
+            b_text = btn.get("text", "")
+            if any(k in b_text.lower() for k in ["claim", "bonus", "reward", "free miner", "balance", "start mining"]):
+                try:
+                    m_target = next((m for m in fresh_msgs if m.id == btn.get("msg_id")), None)
+                    if m_target:
+                        click_res = await m_target.click(btn["row"], btn["col"])
+                        await asyncio.sleep(2.0)
+                        after_msgs = await cl.get_messages(bot_ent, limit=2)
+                        after_text = after_msgs[0].raw_text if after_msgs and not after_msgs[0].out else ""
+                        tested_actions.append({
+                            "type": "inline_click",
+                            "button": b_text,
+                            "click_result": str(click_res) if click_res else "ok",
+                            "response": after_text
+                        })
+                except Exception as ce:
+                    tested_actions.append({
+                        "type": "inline_click",
+                        "button": b_text,
+                        "error": str(ce)
+                    })
+
+        res["tested_actions"] = tested_actions
+
+        webapp_info = {"has_webapp": False}
+        candidate_short_names = ["app", "myapp", "Trade", "trade", "bot", "game", "miniapp"]
+        found_webview_url = None
+
+        for btn in inline_buttons_found:
+            url = btn.get("url") or ""
+            if "tgWebApp" in url or ("t.me" in url and "app" in url):
+                found_webview_url = url
+                break
+
+        b_input = await cl.get_input_entity(bot_ent)
+        for sn in candidate_short_names:
+            if found_webview_url and "tgWebAppData" in found_webview_url:
+                break
+            try:
+                wv_res = await cl(RequestAppWebViewRequest(
+                    peer=b_input,
+                    app=InputBotAppShortName(bot_id=b_input, short_name=sn),
+                    platform="android",
+                    start_param="6727787768"
+                ))
+                if wv_res and getattr(wv_res, 'url', None):
+                    found_webview_url = wv_res.url
+                    webapp_info["short_name"] = sn
+                    break
+            except Exception:
+                continue
+
+        if found_webview_url:
+            webapp_info["has_webapp"] = True
+            webapp_info["url"] = found_webview_url
+            parsed_u = urllib.parse.urlparse(found_webview_url)
+            frag_params = urllib.parse.parse_qs(parsed_u.fragment)
+            query_params = urllib.parse.parse_qs(parsed_u.query)
+            init_data = frag_params.get("tgWebAppData", [None])[0] or query_params.get("tgWebAppData", [None])[0]
+            webapp_info["init_data_present"] = bool(init_data)
+            if init_data:
+                webapp_info["init_data_sample"] = init_data[:80] + "..."
+
+            base_url = f"{parsed_u.scheme}://{parsed_u.netloc}"
+            webapp_info["base_url"] = base_url
+
+            async with aiohttp.ClientSession() as http:
+                web_headers = {
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Referer": "https://web.telegram.org/"
+                }
+                try:
+                    async with http.get(found_webview_url, headers=web_headers, timeout=aiohttp.ClientTimeout(total=8)) as html_resp:
+                        html_content = await html_resp.text()
+                        webapp_info["html_status"] = html_resp.status
+
+                        script_srcs = re.findall(r'<script[^>]+src=["\']([^"\']+)["\']', html_content)
+                        webapp_info["script_srcs"] = script_srcs[:5]
+
+                        discovered_routes = set()
+                        for s_src in script_srcs[:3]:
+                            js_url = s_src if s_src.startswith("http") else urllib.parse.urljoin(found_webview_url, s_src)
+                            try:
+                                async with http.get(js_url, headers=web_headers, timeout=aiohttp.ClientTimeout(total=8)) as js_resp:
+                                    if js_resp.status == 200:
+                                        js_code = await js_resp.text()
+                                        routes = re.findall(r'["\'](/api/[a-zA-Z0-9_\-\/]+)["\']', js_code)
+                                        for r in routes:
+                                            if any(k in r.lower() for k in ["claim", "mine", "mining", "bonus", "checkin", "daily", "task", "user", "profile", "info", "balance", "start", "reward", "wallet", "boost"]):
+                                                discovered_routes.add(r)
+                            except Exception:
+                                pass
+                        webapp_info["discovered_api_routes"] = list(discovered_routes)
+
+                        api_test_results = {}
+                        if init_data and discovered_routes:
+                            for candidate_r in list(discovered_routes)[:3]:
+                                full_api_url = urllib.parse.urljoin(base_url, candidate_r)
+                                api_headers = {
+                                    **web_headers,
+                                    "Origin": base_url,
+                                    "Referer": found_webview_url,
+                                    "Authorization": f"tma {init_data}",
+                                    "Content-Type": "application/json"
+                                }
+                                try:
+                                    async with http.post(full_api_url, json={"initData": init_data}, headers=api_headers, timeout=aiohttp.ClientTimeout(total=5)) as post_r:
+                                        post_text = await post_r.text()
+                                        api_test_results[f"POST {candidate_r}"] = {"status": post_r.status, "resp": post_text[:200]}
+                                except Exception as pe:
+                                    api_test_results[f"POST {candidate_r}"] = {"error": str(pe)}
+                        webapp_info["api_test_results"] = api_test_results
+                except Exception as he:
+                    webapp_info["html_fetch_error"] = str(he)
+
+        res["webapp"] = webapp_info
+
+    except Exception as e:
+        res["status"] = "error"
+        res["error"] = str(e)
+
+    return res
+
+
+@app.get("/api/study-bot/{bot_key}")
+@app.post("/api/study-bot/{bot_key}")
+async def study_bot_endpoint(bot_key: str, request: Request):
+    """
+    Studies one or all bots in depth using the Master account (6727787768).
+    bot_key can be: trxpower, btc, finvora, turbogram, tensor, tontrader, ominix, or all.
+    """
+    auth = request.headers.get("Authorization") or ""
+    req_secret = request.query_params.get("secret", "")
+    if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    accounts = await fetch_accounts_from_cloud()
+    master_acc = next((a for a in accounts if str(a.get("user_id")) == "6727787768"), None)
+    if not master_acc:
+        raise HTTPException(status_code=404, detail="Master account not found")
+
+    bot_map = {
+        "trxpower": "trxpowermining_bot",
+        "btc": "BitcoinCloudMinersBot",
+        "finvora": "FINVORAWeb3bot",
+        "turbogram": "TurboGramV1_bot",
+        "tensor": "TensorMiningRobot",
+        "tontrader": "TonTraderAIBot",
+        "ominix": "OminixAiBot"
+    }
+
+    target_bots = list(bot_map.items()) if bot_key == "all" else [(bot_key, bot_map[bot_key])] if bot_key in bot_map else None
+    if not target_bots:
+        raise HTTPException(status_code=400, detail=f"Unknown bot_key: {bot_key}. Available: {list(bot_map.keys())} or 'all'")
+
+    sess_str = master_acc.get("session_string") or master_acc.get("session")
+    cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+
+    results = {}
+    try:
+        await cl.connect()
+        if not await cl.is_user_authorized():
+            return {"ok": False, "error": "Master session not authorized"}
+
+        for b_key, b_user in target_bots:
+            results[b_key] = await study_bot_deep(cl, b_key, b_user)
+    finally:
+        await cl.disconnect()
+
+    return {"ok": True, "master_id": "6727787768", "results": results}
 
 
 @app.get("/api/inspect-bot-chat/{uid}")
