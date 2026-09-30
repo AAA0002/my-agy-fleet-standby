@@ -4073,9 +4073,13 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                 "8190649727": "0x91B5cd7EfCBd5bc552479f5Eb70221C5E026228A",
                                 "7487048946": "0x3129386b118892238EF48428e2e5d19B9F7D8215",
                                 "8741547543": "0xE27Df3117501e3a46cf29848Df3414C4542E6A5c",
-                                "8727040932": "0x117a66bf79f63E5cC1dAB047047d62c651Eae335"
+                                "8727040932": "0x117a66bf79f63E5cC1dAB047047d62c651Eae335",
+                                "7749125802": "0xC54F4e10f7b09287DDF95E1eC4eEdA8A88d82719",
+                                "7954290138": "0xDCd79258596291a4071b88303D919218bfF087B9",
+                                "8841038141": "0xFb5450C077B0956ae3e7Efa8cfa017dA6e99F940",
+                                "8975442879": "0x349C1c924E556dc7694aA6e0c5d773414b83d241"
                             }
-                            tgt_wallet = isolated_evm_map.get(str(uid), "0xfda4182001672b9f0f09e2118242e543e35ed5ce")
+                            tgt_wallet = (acc.get("evm_wallet") or {}).get("address") or isolated_evm_map.get(str(uid), "0xfda4182001672b9f0f09e2118242e543e35ed5ce")
                             await safe_post(f"{ain_base}/api/withdraws/usdt/create", {
                                 "amount": wd_amt, "wallet": tgt_wallet, "network": "bep20"
                             }, req_h)
