@@ -1903,12 +1903,14 @@ async def complete_tontrader_referral(client: TelegramClient, name: str, ref_cod
                 "Origin": "https://tontraderai.com",
                 "Referer": "https://tontraderai.com/",
                 "Content-Type": "application/json",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"
+                "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
             }
             async with aiohttp.ClientSession() as s:
                 await s.get("https://api.tontraderai.com/api/v1/user/profile", headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
+                await s.post("https://api.tontraderai.com/api/v1/user/claim-welcome-gift", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
                 await s.post("https://api.tontraderai.com/api/v1/user/claim-daily-gift", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
                 await s.post("https://api.tontraderai.com/api/v1/user/claim-gift-box", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
+                await s.post("https://api.tontraderai.com/api/v1/user/claim-channel-boost", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
                 await s.post("https://api.tontraderai.com/api/v1/finance/claim-yield", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
             logger.info(f"[{name}] ✅ TonTrader AI completed referral & starter activation on api.tontraderai.com")
             return True
@@ -1919,6 +1921,8 @@ async def complete_tontrader_referral(client: TelegramClient, name: str, ref_cod
 
 async def complete_ominix_referral(client: TelegramClient, name: str, ref_code: str = "6727787768"):
     try:
+        await join_tg_target(client, "ominiai", name)
+        await join_tg_target(client, "ominiaipayout", name)
         b_om = await client.get_entity(OMINIX_BOT)
         await mute_peer(client, b_om, name)
         await client.send_message(b_om, f"/start {ref_code}")
@@ -1938,8 +1942,8 @@ async def complete_ominix_referral(client: TelegramClient, name: str, ref_code: 
                 "Referer": "https://ominiaibot.lovable.app/",
                 "Content-Type": "application/json",
                 "x-tsr-serverfn": "true",
-                "accept": "application/x-tss-framed, application/x-ndjson, application/json",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"
+                "accept": "application/json",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
             }
             seroval_payload = {
                 "t": {
@@ -1951,12 +1955,12 @@ async def complete_ominix_referral(client: TelegramClient, name: str, ref_code: 
                     },
                     "o": 0
                 },
-                "f": 63,
+                "f": 127,
                 "m": []
             }
             async with aiohttp.ClientSession() as s:
                 # 1. Register user profile with referral start_param
-                await s.post("https://ominiaibot.lovable.app/_serverFn/0d9e2e37452d58d712e52e0bc279930777553f191b7d5f0616b47c050caefdf5", json=seroval_payload, headers=om_h, timeout=aiohttp.ClientTimeout(total=8))
+                await s.post("https://ominiaibot.lovable.app/_serverFn/0d9e2e371b4bab4da7a71b5a2efcd0149c27f48dc15192cfdee2a995d5f6947e", json=seroval_payload, headers=om_h, timeout=aiohttp.ClientTimeout(total=8))
                 # 2. Claim starting profit
                 await s.post("https://ominiaibot.lovable.app/_serverFn/bcb8e269d7f337068c7424538a77cd77e7013594ec5c8849925e8ca5b7cbe06c", json=seroval_payload, headers=om_h, timeout=aiohttp.ClientTimeout(total=8))
                 # 3. Open mystery gift box
@@ -2007,14 +2011,50 @@ async def complete_finvora_referral(client: TelegramClient, name: str, ref_code:
         b_fin = await client.get_entity(FINVORA_BOT)
         await mute_peer(client, b_fin, name)
         await client.send_message(b_fin, f"/start {ref_code}")
-        await asyncio.sleep(1.5)
-        b_fin_in = await client.get_input_entity(FINVORA_BOT)
-        await client(RequestAppWebViewRequest(
-            peer=b_fin_in,
-            app=InputBotAppShortName(bot_id=b_fin_in, short_name="app"),
-            platform="android",
-            start_param=str(ref_code)
-        ))
+        await asyncio.sleep(2.0)
+
+        opened = False
+        msgs = await client.get_messages(b_fin, limit=5)
+        for m in msgs:
+            if m.buttons:
+                for r_idx, row in enumerate(m.buttons):
+                    for c_idx, b in enumerate(row):
+                        b_url = getattr(b, "url", None)
+                        if not b_url and hasattr(b, "button") and hasattr(b.button, "type") and hasattr(b.button.type, "url"):
+                            b_url = b.button.type.url
+                        if b_url and ("tgWebApp" in b_url or "http" in b_url):
+                            try:
+                                await client(RequestWebViewRequest(
+                                    peer=b_fin,
+                                    bot=b_fin,
+                                    url=b_url,
+                                    platform="android",
+                                    start_param=str(ref_code)
+                                ))
+                                opened = True
+                                break
+                            except Exception:
+                                pass
+                    if opened:
+                        break
+            if opened:
+                break
+
+        if not opened:
+            b_fin_in = await client.get_input_entity(FINVORA_BOT)
+            for sn in ["app", "miniapp", "bot"]:
+                try:
+                    await client(RequestAppWebViewRequest(
+                        peer=b_fin_in,
+                        app=InputBotAppShortName(bot_id=b_fin_in, short_name=sn),
+                        platform="android",
+                        start_param=str(ref_code)
+                    ))
+                    opened = True
+                    break
+                except Exception:
+                    pass
+
         logger.info(f"[{name}] ✅ FINVORA completed referral & webview handshake")
         return True
     except Exception as e:
@@ -2029,14 +2069,50 @@ async def complete_turbogram_referral(client: TelegramClient, name: str, ref_cod
         b_tb = await client.get_entity(TURBOGRAM_BOT)
         await mute_peer(client, b_tb, name)
         await client.send_message(b_tb, f"/start {ref_code}")
-        await asyncio.sleep(1.5)
-        b_tb_in = await client.get_input_entity(TURBOGRAM_BOT)
-        await client(RequestAppWebViewRequest(
-            peer=b_tb_in,
-            app=InputBotAppShortName(bot_id=b_tb_in, short_name="app"),
-            platform="android",
-            start_param=str(ref_code)
-        ))
+        await asyncio.sleep(2.0)
+
+        opened = False
+        msgs = await client.get_messages(b_tb, limit=5)
+        for m in msgs:
+            if m.buttons:
+                for r_idx, row in enumerate(m.buttons):
+                    for c_idx, b in enumerate(row):
+                        b_url = getattr(b, "url", None)
+                        if not b_url and hasattr(b, "button") and hasattr(b.button, "type") and hasattr(b.button.type, "url"):
+                            b_url = b.button.type.url
+                        if b_url and ("tgWebApp" in b_url or "http" in b_url):
+                            try:
+                                await client(RequestWebViewRequest(
+                                    peer=b_tb,
+                                    bot=b_tb,
+                                    url=b_url,
+                                    platform="android",
+                                    start_param=str(ref_code)
+                                ))
+                                opened = True
+                                break
+                            except Exception:
+                                pass
+                    if opened:
+                        break
+            if opened:
+                break
+
+        if not opened:
+            b_tb_in = await client.get_input_entity(TURBOGRAM_BOT)
+            for sn in ["app", "miniapp", "bot"]:
+                try:
+                    await client(RequestAppWebViewRequest(
+                        peer=b_tb_in,
+                        app=InputBotAppShortName(bot_id=b_tb_in, short_name=sn),
+                        platform="android",
+                        start_param=str(ref_code)
+                    ))
+                    opened = True
+                    break
+                except Exception:
+                    pass
+
         logger.info(f"[{name}] ✅ TurboGram completed referral & webview handshake")
         return True
     except Exception as e:
@@ -4517,12 +4593,15 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
                 for r_idx, row in enumerate(m.buttons):
                     row_btns = []
                     for c_idx, b in enumerate(row):
+                        b_url = getattr(b, "url", None)
+                        if not b_url and hasattr(b, "button") and hasattr(b.button, "type") and hasattr(b.button.type, "url"):
+                            b_url = b.button.type.url
                         b_info = {
                             "msg_id": m.id,
                             "row": r_idx,
                             "col": c_idx,
                             "text": b.text,
-                            "url": getattr(b, "url", None)
+                            "url": b_url
                         }
                         if hasattr(b, "data") and b.data:
                             b_info["data"] = b.data.decode("utf-8", errors="ignore")
