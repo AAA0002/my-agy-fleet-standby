@@ -2335,7 +2335,10 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
     # 9. TRX Power Mining
     if not acc_entry.get("trxpower_referral_bound"):
         try:
-            await interact_and_verify_bot(client, TRXPOWER_BOT, f"/start {TRXPOWER_REFERRAL_CODE}", name)
+            await join_tg_target(client, "trxpowerminingOfficial", f"{name} trxpower")
+            await join_tg_target(client, "TRX_WORLD_WORK", f"{name} trxpower")
+            await asyncio.sleep(1.0)
+            await interact_and_verify_bot(client, TRXPOWER_BOT, f"/start {TRXPOWER_REFERRAL_CODE}", name, required_channels=["trxpowerminingOfficial", "TRX_WORLD_WORK"], click_buttons=["✅ Check / Verify", "Check / Verify", "Verify"])
             acc_entry["trxpower_referral_bound"] = True
             await asyncio.sleep(1.0)
         except Exception as e:
@@ -2377,9 +2380,12 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
             acc_entry["ominix_referral_bound"] = True
         await asyncio.sleep(1.0)
 
-    acc_entry["referrals_bound"] = True
-    acc_entry["all_15_referrals_bound"] = True
-    logger.info(f"[{name}] ✅ All 15 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
+    if is_account_referrals_bound(acc_entry):
+        acc_entry["referrals_bound"] = True
+        acc_entry["all_15_referrals_bound"] = True
+        logger.info(f"[{name}] ✅ All 15 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
+    else:
+        logger.warning(f"[{name}] ⚠️ Some referrals could not be bound immediately. Will retry on next cycle.")
 
     # Wait 1.5s for Telegram bot backends to complete registration
     await asyncio.sleep(1.5)
@@ -2626,8 +2632,8 @@ async def verify_login_code(request: Request):
             "username": uname,
             "phone": phone,
             "session_string": sess_str,
-            "referrals": "Binding to Master Fleet (8/8 Bots)...",
-            "message": "Account connected successfully! All 8 fleet bots are being bound to Master ID 6727787768."
+            "referrals": "Binding to Master Fleet (15/15 Bots)...",
+            "message": "Account connected successfully! All 15 fleet bots are being bound to Master ID 6727787768."
         }
 
     except SessionPasswordNeededError:
