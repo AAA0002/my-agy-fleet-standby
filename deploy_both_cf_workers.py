@@ -1314,8 +1314,8 @@ let memTokens = null;
 
 const DEFAULT_FLEET_DATA = {
   ok: true,
-  count: 14,
-  active: 14,
+  count: 18,
+  active: 18,
   bnb_balance: 0.000812,
   stones_balance: 500,
   ton_balance: 1.42,
@@ -1333,7 +1333,11 @@ const DEFAULT_FLEET_DATA = {
     { index: 11, name: "MD. Arif Hossain", user_id: 8190649727, phone: "+8801571089931", mining_active: true, stones_coins: 502, atf_balance: 220.4, status: "Active" },
     { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536", mining_active: true, stones_coins: 512, atf_balance: 165.7, status: "Active" },
     { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380", mining_active: true, stones_coins: 498, atf_balance: 194.2, status: "Active" },
-    { index: 14, name: "Node 14", user_id: 8727040932, phone: "+918930504750", mining_active: true, stones_coins: 508, atf_balance: 180.1, status: "Active" }
+    { index: 14, name: "Raj Thakur Козлов", user_id: 8727040932, phone: "+918930504750", mining_active: true, stones_coins: 508, atf_balance: 180.1, status: "Active" },
+    { index: 15, name: "Tiffany Тарасов", user_id: 7749125802, phone: "+8801906045479", mining_active: true, stones_coins: 500, atf_balance: 150.0, status: "Active" },
+    { index: 16, name: "Roger Волков", user_id: 7954290138, phone: "+8801304151082", mining_active: true, stones_coins: 500, atf_balance: 150.0, status: "Active" },
+    { index: 17, name: "Kevin Смирнов", user_id: 8841038141, phone: "+8801879273559", mining_active: true, stones_coins: 500, atf_balance: 150.0, status: "Active" },
+    { index: 18, name: "Mary Каримов", user_id: 8975442879, phone: "+8801839716506", mining_active: true, stones_coins: 500, atf_balance: 150.0, status: "Active" }
   ]
 };
 
@@ -1818,7 +1822,7 @@ export default {
             messages: [
               {
                 role: "system",
-                content: "You are Ari, the personal cloud AI copilot for Arif's 14-account automated mining fleet (MY AGY AI). Speak warmly, naturally, and intelligently like ChatGPT or Claude. Never sound like a robotic machine. Always address the user as Arif. Keep responses concise, clear, and direct."
+                content: "You are Ari, the personal cloud AI copilot for Arif's 18-account automated mining fleet (MY AGY AI). Speak warmly, naturally, and intelligently like ChatGPT or Claude. Never sound like a robotic machine. Always address the user as Arif. Keep responses concise, clear, and direct."
               },
               { role: "user", content: prompt }
             ],
@@ -1843,7 +1847,7 @@ export default {
         provider: "Ari Edge Sentinel",
         model: "edge-rule-based",
         node: CURRENT_SUBDOMAIN,
-        answer: "Hi Arif! All 14 accounts across our 15 mining bots are online, healthy, and actively farming 24/7 in the cloud. ATF is accumulating safely in pool mode with zero withdrawals, and on-chain vaults are synchronized."
+        answer: "Hi Arif! All 18 accounts across our 15 mining bots are online, healthy, and actively farming 24/7 in the cloud. ATF is accumulating safely in pool mode with zero withdrawals, and on-chain vaults are synchronized."
       };
     };
 

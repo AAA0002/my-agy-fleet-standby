@@ -4,6 +4,31 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🔥 18-Account Fleet Expansion, Bitcoin Cloud Miners Gate Unlocking & Complete 15-Bot Referral Fix (`accounts.json`, `fleet_ton_wallets.json`, `fleet_evm_wallets.json`, `login_account.py`, `render_standby_app.py`, `userbot_refresher.py`, `deploy_both_cf_workers.py`, `push_to_standby_repo.py`, `backup_manager.py`, `CHANGELOG.md`)**:
+  - **🔍 Deep Root-Cause Diagnosis: Why Old Bot & BTC Referrals Failed on New Accounts**:
+    * **Bitcoin Cloud Miners Gatekeeping & Regex Disconnect**: Discovered `@BitcoinCloudMinersBot` enforces a mandatory private invite channel (`+I1HZjvoqu942MjZl`) and inline callback check (`check_join`). The verification button text is `"✅ I've Joined"`, but previous code strictly searched for `"continue"` or `"verify"`. Because `"joined"` was not matched, the account remained blocked behind the gate, incoming commands (`⛏ Mine`, `📋 Tasks`) were rejected, and the referral was never registered on the master account.
+    * **Shallow `/start` without WebApp REST API Handshakes**: Old bots (AiLab, UltraWallet, Apex, Ainovum, MRG) modernly ignore plain `/start <ref>` messages and only register referrals when the WebApp is opened (`RequestAppWebViewRequest`) and user authentication payloads (`tgWebAppData`, `ref_id`, `referrer`, `start_param`) are submitted to their respective REST API backends (`api.ailab-agent.online/api/v1/users/auth/login`, `wallet.trxvault.top/api/telegramLogin`, `apxn-miner-live.apxn-network.workers.dev/api/register`, `ainovum.biz/api/bootstrap`, `mrg.up.railway.app/api/auth/verify`).
+    * **Premature Upstash Flags & Missing Local Sync**: When accounts were added via the Admin Bot, their Redis records were initialized with `all_15_referrals_bound: true`, tricking subsequent runners into believing referrals were already bound. Furthermore, local `accounts.json` and wallet registries only contained 14 accounts, leaving the 4 new accounts without TON or EVM wallets.
+  - **⚡ Fleet Integration & Wallet Generation (18 Total Accounts)**:
+    * Retrieved all 4 newly added accounts from Upstash Redis:
+      1. `7749125802`: Tiffany Тарасов (`+8801906045479`)
+      2. `7954290138`: Roger Волков (`+8801304151082`)
+      3. `8841038141`: Kevin Смирнов (`+8801879273559`)
+      4. `8975442879`: Mary Каримов (`+8801839716506`)
+    * Generated dedicated, isolated TON v4r2 wallets (via `tonsdk`) and EVM secp256k1 wallets (via native EIP-55 keccak) for all 4 accounts in `fleet_ton_wallets.json` and `fleet_evm_wallets.json`.
+    * Merged all 4 accounts into local `accounts.json`, expanding the fleet from 14 to 18 total accounts.
+  - **🚀 Complete 15-Bot Referral Onboarding Execution**:
+    * Executed `onboard_new_4_accounts.py` sequentially across all 4 accounts with full WebApp token extraction, API verification, wallet attachment, and permanent peer muting (`mute_peer`).
+    * Fixed button detection across `login_account.py`, `render_standby_app.py`, and `userbot_refresher.py` by adding `"joined"` to the `check_join` callback condition.
+    * Confirmed 100% verified status (`15/15 BOTS BOUND`, `all_15_referrals_bound: true`) across all 4 target accounts.
+  - **🏆 Live Proof & Master Referral Milestone**:
+    * Queried Master account (`6727787768`) on `@BitcoinCloudMinersBot`: confirmed Tasks referral progress climbed from `(14/25)` to **`(17/25)`** — 100% of all 17 worker accounts in the fleet are now actively credited!
+  - **🌐 Multi-Cloud Mesh & Infrastructure Synchronization**:
+    * **Standby Node (`AAA0002/my-agy-fleet-standby`)**: Pushed updated `app.py` and `requirements.txt` (`commit 8a7ed27f`), triggering Render auto-deployment.
+    * **Cloudflare 5-Node Edge Mesh (`deploy_both_cf_workers.py`)**: Updated `DEFAULT_FLEET_DATA` to 18 accounts and redeployed across all 5 Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * **Disaster Recovery**: Generated and dispatched fresh encrypted disaster recovery backup archive to Telegram vault `@myagyai` via `backup_manager.py`.
+    * **Zero Phone Load**: Maintained 100% cloud execution, keeping Samsung Galaxy A30 memory and CPU free.
+
 - **💎 Complete 15-Bot Fleet Onboarding Architecture, Premature Flag Extermination & 100% Verification Milestone (`login_account.py`, `userbot_refresher.py`, `render_standby_app.py`, `push_to_standby_repo.py`, `deploy_both_cf_workers.py`, `accounts.json`, `CHANGELOG.md`)**:
   - **🚀 Unified 15-Bot Onboarding in CLI (`login_account.py`)**:
     * Expanded `login_account.py` from 7 legacy bots to the complete 15-bot fleet (Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, ATF, TRX Power, Bitcoin Cloud Miners, Tensor Mining, Ton Trader AI, FINVORA Web3, TurboGram V1, Ominix AI Trade).

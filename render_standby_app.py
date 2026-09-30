@@ -2009,10 +2009,10 @@ async def complete_btc_referral(client: TelegramClient, name: str, ref_code: str
                     for c_idx, b in enumerate(row):
                         b_data = getattr(b, "data", None) or getattr(getattr(b, "button", None), "data", None)
                         b_text = (getattr(b, "text", "") or "").lower()
-                        if b_data == b"check_join" or "continue" in b_text or "verify" in b_text:
+                        if b_data == b"check_join" or "continue" in b_text or "verify" in b_text or "joined" in b_text:
                             try:
                                 await m.click(r_idx, c_idx)
-                                logger.info(f"[{name}] Clicked [✅ Continue] (check_join) on BTC bot")
+                                logger.info(f"[{name}] Clicked [✅ I've Joined / Continue] (check_join) on BTC bot")
                             except Exception:
                                 pass
                             break

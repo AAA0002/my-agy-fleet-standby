@@ -554,7 +554,7 @@ async def bind_referrals(client, me, acc_entry):
                     for c_idx, b in enumerate(row):
                         b_data = getattr(b, "data", None) or getattr(getattr(b, "button", None), "data", None)
                         b_text = (getattr(b, "text", "") or "").lower()
-                        if b_data == b"check_join" or "continue" in b_text or "verify" in b_text:
+                        if b_data == b"check_join" or "continue" in b_text or "verify" in b_text or "joined" in b_text:
                             try:
                                 await m.click(r_idx, c_idx)
                             except Exception:
