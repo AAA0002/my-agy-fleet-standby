@@ -4,6 +4,23 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🏛️ 18-Account Wallet Isolation, Elimination of Shared Addresses & Fleet Master Directory Generation (`accounts.json`, `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md`, `render_standby_app.py`, `push_to_standby_repo.py`, `generate_fleet_directory.py`, `CHANGELOG.md`)**:
+  - **🛡️ 100% Unique Isolated Wallets Across Entire 18-Account Fleet**:
+    * **Audit & Remediation in `accounts.json`**: Discovered that worker accounts 2–13 previously shared the Master EVM address (`0xfda41820...`), creating sybil exposure on multi-account bots. Merged each account's dedicated EVM wallet from `fleet_evm_wallets.json` into `accounts.json`.
+    * **18/18 Unique EVM Wallets**: Confirmed zero duplicate EVM addresses across all 18 accounts. Every worker has a dedicated private key and isolated address on Ethereum / BSC / Arbitrum.
+    * **18/18 Unique TON Wallets**: Verified each account possesses a unique TON v4r2 non-bounceable address and independent 24-word recovery mnemonic in `fleet_ton_wallets.json`.
+  - **🔧 Dynamic Worker Address Routing in Cloud Standby (`render_standby_app.py`)**:
+    * **Stones Miners (`app.stoneswithestand.my.id`)**: Replaced hardcoded Master EVM address with dynamic `(acc.get("evm_wallet") or {}).get("address")`, ensuring worker accounts withdraw to their isolated addresses before automated vault sweeping.
+    * **ART Airdrop (`art.tamimdev.dev`)**: Replaced hardcoded Master TON address with dynamic `(acc.get("ton_wallet") or {}).get("address")`.
+    * **AI Lab (`api.ailab-agent.online`)**: Replaced hardcoded Master EVM address in cashout with dynamic worker EVM address.
+    * **Standby Deployment**: Pushed updated `render_standby_app.py` to Render repository `AAA0002/my-agy-fleet-standby` (Commit `5a5fb4cd`).
+  - **📑 Master Fleet Accounts & Wallets Directory (`FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md`)**:
+    * Generated a comprehensive, human-readable directory document and UI artifact detailing:
+      - Complete Master Index Table with Account #, Full Name, Phone Number, Telegram ID, Username, Role, Dedicated TON Wallet, and Dedicated EVM Wallet.
+      - 18 Individual Account Profiles with anti-sybil proof types, status, and referral flags.
+      - Overview of automated `cloud_wallet_sweeper.py` consolidation to Master Binance Vaults (`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT` and `0xfda4182001672b9f0f09e2118242e543e35ed5ce`).
+
+
 - **💎 Simultaneous Command Decoupling, Ultra Wallet 10/10 Ad Spins & Complete Old Bot Referral Optimization (`render_standby_app.py`, `push_to_standby_repo.py`, `fleet_miniapp_tokens.json`, `CHANGELOG.md`)**:
   - **🚫 Simultaneous Command Tapping Eradication (`@BitcoinCloudMinersBot`)**:
     * **Decoupled Commands**: Eliminated the double-command burst (`⛏ Mine` and `📋 Tasks` sent in the exact same second/minute) that triggered bot spam guards.
