@@ -212,6 +212,9 @@ TURBOGRAM_REFERRAL_CODE = "r_3520c92b"
 OMINIX_BOT = "OminixAiBot"
 OMINIX_REFERRAL_CODE = "6727787768"
 
+LAST_BTC_MINE_TIMES = {}
+LAST_BTC_TASKS_TIMES = {}
+
 LAST_BATCH_RUN = {
     "status": "idle",
     "collected": 0,
@@ -3811,31 +3814,39 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                             await jitter(1.0, 2.0)
                             await safe_post(f"{uw_base}/energy/claim", {}, uw_h)
 
-                            # Lucky spins
+                            # Watch & Earn Ad Spins + Lucky Spins Wheel
                             try:
                                 _, spi = await safe_get(f"{uw_base}/spin/status", uw_h)
                                 if spi and isinstance(spi, dict):
-                                    spins = (spi.get("tickets", 0) or 0) + (spi.get("freeSpinsRemaining", 0) or 0)
-                                    for _ in range(min(spins, 3)):
+                                    watch_info = spi.get("watchAdSpins", {})
+                                    used_ad_spins = watch_info.get("used", 0) or 0
+                                    max_ad_spins = watch_info.get("max", 10) or 10
+                                    ad_spins_to_claim = min(max_ad_spins - used_ad_spins, 4)
+                                    for _ in range(max(0, ad_spins_to_claim)):
+                                        await jitter(1.5, 3.0)
+                                        _, war = await safe_post(f"{uw_base}/spin/watchAdSpin", {}, uw_h)
+                                        if not war or not war.get("ok"):
+                                            break
+                                    # Fetch updated tickets and spin the wheel
+                                    _, spi_after = await safe_get(f"{uw_base}/spin/status", uw_h)
+                                    spins = ((spi_after.get("tickets", 0) or 0) + (spi_after.get("freeSpinsRemaining", 0) or 0)) if (spi_after and isinstance(spi_after, dict)) else ((spi.get("tickets", 0) or 0) + (spi.get("freeSpinsRemaining", 0) or 0))
+                                    for _ in range(min(spins, 5)):
                                         await jitter(1.2, 2.5)
                                         await safe_post(f"{uw_base}/spin/play", {}, uw_h)
                             except Exception:
                                 pass
 
-                            # Tasks with dwell timers
+                            # Tasks with dwell timers (complete all available tasks with 15s delay)
                             try:
                                 _, utd = await safe_get(f"{uw_base}/tasks", uw_h)
                                 if utd and isinstance(utd, dict):
+                                    verify_delay = float(utd.get("verifyDelaySeconds", 15) or 15)
                                     for t in utd.get("tasks", []):
                                         if not t.get("completed") and t.get("id"):
-                                            await jitter(1.2, 2.5)
-                                            await safe_post(f"{uw_base}/tasks/start", {"taskId": t["id"]}, uw_h)
-                                            is_ext = (t.get("type") == "website" or t.get("category") in ("hot", "partner"))
-                                            uw_wait = random.uniform(15.0, 17.0) if is_ext else 3.5
-                                            async def _uw_complete_task(task_id, wait_time):
-                                                await asyncio.sleep(wait_time)
+                                            async def _uw_complete_task(task_id, delay_s):
+                                                await asyncio.sleep(delay_s)
                                                 await safe_post(f"{uw_base}/tasks/complete", {"taskId": task_id}, uw_h)
-                                            bg_tasks.append(asyncio.create_task(_uw_complete_task(t["id"], uw_wait)))
+                                            bg_tasks.append(asyncio.create_task(_uw_complete_task(t["id"], verify_delay + random.uniform(1.0, 3.0))))
                             except Exception:
                                 pass
 
@@ -4124,6 +4135,14 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         if not sess_str:
             status["bots"]["btc"] = "farmed"
             return
+
+        now_ts = time.time()
+        last_mine = LAST_BTC_MINE_TIMES.get(uid, 0)
+        # Rate limit mining command to at most once every 4 hours (14400s) to prevent spamming
+        if now_ts - last_mine < 14400:
+            status["bots"]["btc"] = f"farmed (cooldown: {int((14400 - (now_ts - last_mine))/60)}m left)"
+            return
+
         try:
             btc_cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
             await btc_cl.connect()
@@ -4132,8 +4151,11 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 status["bots"]["btc"] = "farmed"
                 return
             b_ent = await btc_cl.get_entity("BitcoinCloudMinersBot")
+
+            # Send ONLY Mine command - NEVER send Tasks at the same time!
             await btc_cl.send_message(b_ent, "⛏ Mine")
-            await asyncio.sleep(2.0)
+            LAST_BTC_MINE_TIMES[uid] = now_ts
+            await asyncio.sleep(2.5)
             msgs = await btc_cl.get_messages(b_ent, limit=3)
             claimed_txt = ""
             for m in msgs:
@@ -4147,19 +4169,25 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                         claimed_txt = f" ({c_ans.message})"
                                 except Exception:
                                     pass
-            # Also try task rewards
-            await btc_cl.send_message(b_ent, "📋 Tasks")
-            await asyncio.sleep(1.5)
-            t_msgs = await btc_cl.get_messages(b_ent, limit=2)
-            for m in t_msgs:
-                if not m.out and m.buttons:
-                    for r_idx, row in enumerate(m.buttons):
-                        for c_idx, b in enumerate(row):
-                            if hasattr(b, "data") and b.data == b"claim_task_3":
-                                try:
-                                    await m.click(r_idx, c_idx)
-                                except Exception:
-                                    pass
+
+            # Only Master account checks milestone tasks, and ONLY once every 24 hours (86400s)
+            last_tasks = LAST_BTC_TASKS_TIMES.get(uid, 0)
+            if is_owner and (now_ts - last_tasks > 86400):
+                await asyncio.sleep(3.5)
+                await btc_cl.send_message(b_ent, "📋 Tasks")
+                LAST_BTC_TASKS_TIMES[uid] = now_ts
+                await asyncio.sleep(2.0)
+                t_msgs = await btc_cl.get_messages(b_ent, limit=2)
+                for m in t_msgs:
+                    if not m.out and m.buttons:
+                        for r_idx, row in enumerate(m.buttons):
+                            for c_idx, b in enumerate(row):
+                                if hasattr(b, "data") and b.data in (b"claim_task_3", b"claim_task_4", b"claim_task_5"):
+                                    try:
+                                        await m.click(r_idx, c_idx)
+                                    except Exception:
+                                        pass
+
             await btc_cl.disconnect()
             status["bots"]["btc"] = f"farmed{claimed_txt}"
         except Exception as btc_e:
@@ -5181,6 +5209,194 @@ async def onboard_new_bots(request: Request):
                         acc_res["bots"]["ominix"] = "pending"
                 except Exception as e:
                     acc_res["bots"]["ominix"] = str(e)
+
+                # 8. Stones Miners (@stoneswithestand_bot)
+                try:
+                    bot_st = await cl.get_entity(STONES_BOT)
+                    await cl.send_message(bot_st, f"/start {STONES_REFERRAL_CODE}")
+                    await asyncio.sleep(1.2)
+                    await join_tg_target(cl, "stoneswithestand", f"{name} stones")
+                    res_st = await cl(functions.messages.RequestWebViewRequest(
+                        peer=bot_st, bot=bot_st, url="https://app.stoneswithestand.my.id/", platform="android"
+                    ))
+                    parsed_st = urllib.parse.urlparse(res_st.url)
+                    st_init = urllib.parse.parse_qs(parsed_st.fragment).get("tgWebAppData", [None])[0]
+                    if st_init:
+                        async with aiohttp.ClientSession() as st_sess:
+                            st_h = {"Content-Type": "application/json", "Origin": "https://app.stoneswithestand.my.id", "Referer": "https://app.stoneswithestand.my.id/"}
+                            await st_sess.post("https://app.stoneswithestand.my.id/api/init", json={"initData": st_init, "start_param": STONES_REFERRAL_CODE}, headers=st_h, timeout=aiohttp.ClientTimeout(total=8))
+                            await st_sess.post("https://app.stoneswithestand.my.id/api/mining/start", json={"initData": st_init}, headers=st_h, timeout=aiohttp.ClientTimeout(total=8))
+                    acc["stones_referral_bound"] = True
+                    acc_res["bots"]["stones"] = "verified"
+                except Exception as e:
+                    acc_res["bots"]["stones"] = str(e)
+
+                # 9. MRG Miner (@mrgminerbot)
+                try:
+                    b_mrg = await cl.get_entity(MRG_BOT)
+                    await cl.send_message(b_mrg, f"/start {MRG_REFERRAL_CODE}")
+                    await asyncio.sleep(1.2)
+                    await join_tg_target(cl, "mrgminer", f"{name} mrg")
+                    await join_tg_target(cl, "mrgfun", f"{name} mrg")
+                    b_mrg_in = await cl.get_input_entity(MRG_BOT)
+                    res_mrg = await cl(functions.messages.RequestAppWebViewRequest(
+                        peer=b_mrg_in, app=InputBotAppShortName(bot_id=b_mrg_in, short_name="app"),
+                        platform="android", start_param="IRN1G3XD"
+                    ))
+                    parsed_mrg = urllib.parse.urlparse(res_mrg.url)
+                    m_init = urllib.parse.parse_qs(parsed_mrg.fragment).get("tgWebAppData", [None])[0]
+                    if m_init:
+                        async with aiohttp.ClientSession() as m_sess:
+                            m_h = {"Content-Type": "application/json", "Origin": "https://app.mrgtoken.xyz", "Referer": "https://app.mrgtoken.xyz/"}
+                            await m_sess.post("https://mrg.up.railway.app/api/auth/verify", json={"initData": m_init, "startParam": "IRN1G3XD", "start_param": "IRN1G3XD"}, headers=m_h, timeout=aiohttp.ClientTimeout(total=8))
+                            ton_w = (acc.get("ton_wallet") or {}).get("address") if isinstance(acc.get("ton_wallet"), dict) else acc.get("ton_wallet")
+                            if ton_w:
+                                await m_sess.post("https://mrg.up.railway.app/api/user/connect-wallet", json={"initData": m_init, "address": ton_w, "balance": 0}, headers=m_h, timeout=aiohttp.ClientTimeout(total=8))
+                            await m_sess.post("https://mrg.up.railway.app/api/user/claim-mining", json={"initData": m_init}, headers=m_h, timeout=aiohttp.ClientTimeout(total=8))
+                    acc["mrg_referral_bound"] = True
+                    acc_res["bots"]["mrg"] = "verified"
+                except Exception as e:
+                    acc_res["bots"]["mrg"] = str(e)
+
+                # 10. ART Airdrop (@ART_AIRDROP_BOT)
+                try:
+                    b_art = await cl.get_entity(ART_BOT)
+                    await cl.send_message(b_art, f"/start {ART_REFERRAL_CODE}")
+                    await asyncio.sleep(1.2)
+                    await join_tg_target(cl, "ART_AIRDROP", f"{name} art")
+                    async with aiohttp.ClientSession() as art_sess:
+                        art_h = {"Content-Type": "application/json", "Origin": "https://art.tamimdev.dev", "Referer": "https://art.tamimdev.dev/"}
+                        await art_sess.post("https://art.tamimdev.dev/api/user/connect-wallet", json={"userId": int(uid), "tonAddress": "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"}, headers=art_h, timeout=aiohttp.ClientTimeout(total=8))
+                    acc["art_referral_bound"] = True
+                    acc_res["bots"]["art"] = "verified"
+                except Exception as e:
+                    acc_res["bots"]["art"] = str(e)
+
+                # 11. AI Lab Robot (@AiLab_robot)
+                try:
+                    b_ai = await cl.get_entity(AILAB_BOT)
+                    await cl.send_message(b_ai, f"/start {AILAB_REFERRAL_CODE}")
+                    await asyncio.sleep(1.2)
+                    res_ai = await cl(functions.messages.RequestWebViewRequest(
+                        peer=b_ai, bot=b_ai, url=f"https://ailab-agent.online/?ref={AILAB_REFERRAL_CODE}", platform="android"
+                    ))
+                    parsed_ai = urllib.parse.urlparse(res_ai.url)
+                    ai_init = urllib.parse.parse_qs(parsed_ai.fragment).get("tgWebAppData", [None])[0]
+                    if ai_init:
+                        async with aiohttp.ClientSession() as ai_sess:
+                            ai_h = {"Content-Type": "application/json", "Origin": "https://ailab-agent.online", "Referer": "https://ailab-agent.online/"}
+                            _, ai_ld = await safe_post("https://api.ailab-agent.online/api/v1/users/auth/login", {"user": ai_init, "invite_code": AILAB_REFERRAL_CODE}, req_headers=ai_h)
+                            tok = ai_ld.get("result", {}).get("session") or ai_ld.get("user_info", {}).get("session_id") if ai_ld else None
+                            if tok:
+                                ai_auth = {**ai_h, "Authorization": f"Bearer {tok}"}
+                                await safe_post("https://api.ailab-agent.online/api/v1/miner-start_mining", {"start_mining": True}, req_headers=ai_auth)
+                    acc["ailab_referral_bound"] = True
+                    acc_res["bots"]["ailab"] = "verified"
+                except Exception as e:
+                    acc_res["bots"]["ailab"] = str(e)
+
+                # 12. Ultra Wallet (@UltrawalletTrade_Bot)
+                try:
+                    b_uw = await cl.get_entity(ULTRAWALLET_BOT)
+                    await cl.send_message(b_uw, f"/start {ULTRAWALLET_REFERRAL_CODE}")
+                    await asyncio.sleep(1.2)
+                    await join_tg_target(cl, "ultrawalletofficial", f"{name} ultrawallet")
+                    b_uw_in = await cl.get_input_entity(ULTRAWALLET_BOT)
+                    res_uw = await cl(functions.messages.RequestAppWebViewRequest(
+                        peer=b_uw_in, app=InputBotAppShortName(bot_id=b_uw_in, short_name="app"),
+                        platform="android", start_param=ULTRAWALLET_REFERRAL_CODE
+                    ))
+                    parsed_uw = urllib.parse.urlparse(res_uw.url)
+                    uw_init = urllib.parse.parse_qs(parsed_uw.fragment).get("tgWebAppData", [None])[0]
+                    if uw_init:
+                        async with aiohttp.ClientSession() as uw_sess:
+                            uw_h = {"Content-Type": "application/json", "Origin": "https://wallet.trxvault.top", "Referer": "https://wallet.trxvault.top/"}
+                            async with uw_sess.post("https://wallet.trxvault.top/api/telegramLogin", json={"initData": uw_init, "refBy": ULTRAWALLET_REFERRAL_CODE}, headers=uw_h, timeout=aiohttp.ClientTimeout(total=10)) as uwr:
+                                if uwr.status == 200:
+                                    c_tok = (await uwr.json()).get("token")
+                                    if c_tok:
+                                        fb_u = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyAIKTCEFqC5LFRc89nuOLhTGPHIZTIjEsU"
+                                        async with uw_sess.post(fb_u, json={"token": c_tok, "returnSecureToken": True}, timeout=aiohttp.ClientTimeout(total=8)) as fbr:
+                                            id_tok = (await fbr.json()).get("idToken")
+                                            if id_tok:
+                                                a_h = {**uw_h, "Authorization": f"Bearer {id_tok}"}
+                                                await uw_sess.post("https://wallet.trxvault.top/api/mining/start", json={}, headers=a_h, timeout=aiohttp.ClientTimeout(total=6))
+                                                await uw_sess.post("https://wallet.trxvault.top/api/tasks/complete", json={"taskId": "task1"}, headers=a_h, timeout=aiohttp.ClientTimeout(total=6))
+                                                for _ in range(3):
+                                                    await uw_sess.post("https://wallet.trxvault.top/api/spin/watchAdSpin", json={}, headers=a_h, timeout=aiohttp.ClientTimeout(total=6))
+                                                    await uw_sess.post("https://wallet.trxvault.top/api/spin/play", json={}, headers=a_h, timeout=aiohttp.ClientTimeout(total=6))
+                    acc["ultrawallet_referral_bound"] = True
+                    acc_res["bots"]["ultrawallet"] = "verified"
+                except Exception as e:
+                    acc_res["bots"]["ultrawallet"] = str(e)
+
+                # 13. Apex Miner (@ApxMinerBot)
+                try:
+                    b_apx = await cl.get_entity(APX_BOT)
+                    await cl.send_message(b_apx, f"/start {APX_REFERRAL_CODE}")
+                    await asyncio.sleep(1.2)
+                    await join_tg_target(cl, "ApexMiner_Official", f"{name} apx")
+                    await join_tg_target(cl, "ApexMinerGroup", f"{name} apx")
+                    b_apx_in = await cl.get_input_entity(APX_BOT)
+                    res_apx = await cl(functions.messages.RequestAppWebViewRequest(
+                        peer=b_apx_in, app=InputBotAppShortName(bot_id=b_apx_in, short_name="app"),
+                        platform="android", start_param=APX_REFERRAL_CODE
+                    ))
+                    parsed_apx = urllib.parse.urlparse(res_apx.url)
+                    apx_init = urllib.parse.parse_qs(parsed_apx.fragment).get("tgWebAppData", [None])[0]
+                    if apx_init:
+                        async with aiohttp.ClientSession() as apx_sess:
+                            apx_h = {"Content-Type": "application/json", "Origin": "https://apxn-miner-live.apxn-network.workers.dev", "Referer": "https://apxn-miner-live.apxn-network.workers.dev/"}
+                            await apx_sess.post("https://apxn-miner-live.apxn-network.workers.dev/api/auth/telegram", json={"initData": apx_init}, headers=apx_h, timeout=aiohttp.ClientTimeout(total=8))
+                            await apx_sess.post("https://apxn-miner-live.apxn-network.workers.dev/api/register", json={"initData": apx_init, "referrer": str(APX_REFERRAL_CODE)}, headers=apx_h, timeout=aiohttp.ClientTimeout(total=8))
+                            await apx_sess.post("https://apxn-miner-live.apxn-network.workers.dev/api/mining/restart", json={"initData": apx_init}, headers=apx_h, timeout=aiohttp.ClientTimeout(total=8))
+                    acc["apx_referral_bound"] = True
+                    acc_res["bots"]["apx"] = "verified"
+                except Exception as e:
+                    acc_res["bots"]["apx"] = str(e)
+
+                # 14. Ainovum Bot (@ainovum_bot)
+                try:
+                    b_an = await cl.get_entity(AINOVUM_BOT)
+                    await cl.send_message(b_an, f"/start {AINOVUM_REFERRAL_CODE}")
+                    await asyncio.sleep(1.2)
+                    res_an = await cl(functions.messages.RequestWebViewRequest(
+                        peer=b_an, bot=b_an, url=f"https://ainovum.biz/?startapp={AINOVUM_REFERRAL_CODE}&ref={AINOVUM_REFERRAL_CODE}", platform="android"
+                    ))
+                    parsed_an = urllib.parse.urlparse(res_an.url)
+                    an_init = urllib.parse.parse_qs(parsed_an.fragment).get("tgWebAppData", [None])[0]
+                    if an_init:
+                        async with aiohttp.ClientSession() as an_sess:
+                            an_h = {"Content-Type": "application/json", "Origin": "https://ainovum.biz", "Referer": "https://ainovum.biz/"}
+                            await an_sess.post("https://ainovum.biz/api/bootstrap", json={"initData": an_init, "platform": "android", "referrer": AINOVUM_REFERRAL_CODE}, headers=an_h, timeout=aiohttp.ClientTimeout(total=8))
+                            await an_sess.post("https://ainovum.biz/api/channel-bonus/claim", json={}, headers=an_h, timeout=aiohttp.ClientTimeout(total=8))
+                            await an_sess.post("https://ainovum.biz/api/gift-box/open", json={}, headers=an_h, timeout=aiohttp.ClientTimeout(total=8))
+                    acc["ainovum_referral_bound"] = True
+                    acc_res["bots"]["ainovum"] = "verified"
+                except Exception as e:
+                    acc_res["bots"]["ainovum"] = str(e)
+
+                # 15. ATF Miner (@ATF_AIRDROP_bot)
+                try:
+                    b_atf = await cl.get_entity(ATF_BOT)
+                    await cl.send_message(b_atf, f"/start {ATF_REFERRAL_CODE}")
+                    await asyncio.sleep(1.2)
+                    atf_url = f"https://atfminers.asloni.online/miner/index.html?v=1790778623&entry=bot_start&ref={ATF_REFERRAL_CODE}"
+                    res_atf = await cl(functions.messages.RequestWebViewRequest(
+                        peer=b_atf, bot=b_atf, url=atf_url, start_param=ATF_REFERRAL_CODE, platform="android"
+                    ))
+                    parsed_atf = urllib.parse.urlparse(res_atf.url)
+                    atf_init = urllib.parse.parse_qs(parsed_atf.fragment).get("tgWebAppData", [None])[0]
+                    if atf_init:
+                        async with aiohttp.ClientSession() as atf_sess:
+                            atf_h = {"Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest", "Origin": "https://atfminers.asloni.online", "Referer": "https://atfminers.asloni.online/miner/index.html"}
+                            atf_p = {"initData": atf_init, "tg_id": int(uid), "username": acc.get("username", ""), "ref": ATF_REFERRAL_CODE, "request_id": f"rq-{int(time.time()*1000)}-onboard", "device_id": f"dev-{uid}"}
+                            await atf_sess.post(f"https://atfminers.asloni.online/miner/index.php?action=login&t={int(time.time()*1000)}", json=atf_p, headers=atf_h, timeout=aiohttp.ClientTimeout(total=10))
+                            await atf_sess.post(f"https://atfminers.asloni.online/miner/index.php?action=claim&t={int(time.time()*1000)}", json=atf_p, headers=atf_h, timeout=aiohttp.ClientTimeout(total=8))
+                    acc["atf_referral_bound"] = True
+                    acc_res["bots"]["atf"] = "verified"
+                except Exception as e:
+                    acc_res["bots"]["atf"] = str(e)
 
                 if is_account_referrals_bound(acc):
                     acc["all_15_referrals_bound"] = True
