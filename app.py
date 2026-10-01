@@ -3540,10 +3540,11 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             # Auto-withdrawal check (Worker accounts only; Master account strictly compounds)
             if not is_owner:
                 try:
-                    await safe_post("https://app.stoneswithestand.my.id/api/wallet", {"initData": s_init, "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce"}, req_headers=s_headers)
-                    _, pc = await safe_post("https://app.stoneswithestand.my.id/api/wd/ad/precheck", {"initData": s_init, "amount": 500, "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce", "currency": "stones"}, req_headers=s_headers)
+                    w_evm = (acc.get("evm_wallet") or {}).get("address") or "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
+                    await safe_post("https://app.stoneswithestand.my.id/api/wallet", {"initData": s_init, "wallet": w_evm}, req_headers=s_headers)
+                    _, pc = await safe_post("https://app.stoneswithestand.my.id/api/wd/ad/precheck", {"initData": s_init, "amount": 500, "wallet": w_evm, "currency": "stones"}, req_headers=s_headers)
                     if pc and pc.get("ok") and (not pc.get("need_ad") or (pc.get("boarded", 0) >= pc.get("required", 4))):
-                        await safe_post("https://app.stoneswithestand.my.id/api/withdraw", {"initData": s_init, "amount": 500, "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce", "currency": "stones"}, req_headers=s_headers)
+                        await safe_post("https://app.stoneswithestand.my.id/api/withdraw", {"initData": s_init, "amount": 500, "wallet": w_evm, "currency": "stones"}, req_headers=s_headers)
                 except Exception:
                     pass
 
@@ -3676,7 +3677,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
             # TON wallet linking, miner reinvestment & auto-withdraw
             try:
-                ton_addr = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
+                ton_addr = (acc.get("ton_wallet") or {}).get("address") or "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
                 await safe_post("https://art.tamimdev.dev/api/user/connect-wallet", {"userId": int(uid), "tonAddress": ton_addr}, art_h)
                 _, u_data = await safe_get(f"https://art.tamimdev.dev/api/user/{uid}", art_h)
                 if u_data and isinstance(u_data, dict):
@@ -3775,9 +3776,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                 usd_bal = float(cod.get("user_info", {}).get("balance", 0) or 0)
                                 if usd_bal >= 0.02:
                                     wd_usd = round(int(usd_bal * 100) / 100.0, 2)
+                                    w_evm = (acc.get("evm_wallet") or {}).get("address") or "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
                                     await safe_post(f"{ai_base}/cashout-pay", {
                                         "ps_id": 5, "amount_usd": wd_usd,
-                                        "wallet": "0xfda4182001672b9f0f09e2118242e543e35ed5ce", "dest_tag": ""
+                                        "wallet": w_evm, "dest_tag": ""
                                     }, ai_auth)
                         except Exception:
                             pass
