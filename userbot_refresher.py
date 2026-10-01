@@ -1579,6 +1579,16 @@ def format_clean_account_name(acc, index):
         return "Node 9"
     if "Кузнецов" in name or "Girtt" in name:
         return "Node 10"
+    if "Козлов" in name:
+        return "Raj Thakur"
+    if "Тарасов" in name:
+        return "Tiffany"
+    if "Волков" in name:
+        return "Roger"
+    if "Смирнов" in name:
+        return "Kevin"
+    if "Каримов" in name:
+        return "Mary"
     return name or f"Account #{index}"
 
 
@@ -1596,6 +1606,11 @@ KNOWN_PHONES = {
     "8190649727": "+8801571089931",
     "7487048946": "+8801774578536",
     "8741547543": "+8801838268380",
+    "8727040932": "+918930504750",
+    "7749125802": "+8801906045479",
+    "7954290138": "+8801304151082",
+    "8841038141": "+8801879273559",
+    "8975442879": "+8801839716506",
 }
 
 KNOWN_PHONES_BY_INDEX = {
@@ -1612,6 +1627,11 @@ KNOWN_PHONES_BY_INDEX = {
     11: "+8801571089931",
     12: "+8801774578536",
     13: "+8801838268380",
+    14: "+918930504750",
+    15: "+8801906045479",
+    16: "+8801304151082",
+    17: "+8801879273559",
+    18: "+8801839716506",
 }
 
 
@@ -1622,7 +1642,7 @@ def build_accounts_report():
         "👥 *Accounts Management Hub*",
         "━━━━━━━━━━━━━━━━━━━━━━",
         f"🟢 *Fleet Status:* `{len(accounts)}/{len(accounts)} Accounts Online & Active`",
-        "🤖 *24/7 Farming:* All 8 Bots Active (Stones • ATF • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum)",
+        "🤖 *24/7 Farming:* All 15 Bots Active (Stones • ATF • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram • Ominix)",
         "🛡️ *Security:* 100% Anti-Ban Verified • Isolated Wallets & Proxies\n",
         "📋 *Connected Accounts:*"
     ]
@@ -1638,7 +1658,7 @@ def build_accounts_report():
     lines.append("💡 *Quick Actions:*")
     lines.append("• Tap *➕ Add Account* below to connect a new number")
     lines.append("• Tap *🚀 Open Executive Dashboard* to view live cards & balances")
-    lines.append("• Send `/acc <1-13>` (e.g. `/acc 1`) to inspect any account in detail")
+    lines.append("• Send `/acc <1-18>` (e.g. `/acc 1`) to inspect any account in detail")
     return "\n".join(lines)
 
 
@@ -1651,7 +1671,7 @@ async def build_mesh_status_report():
         "• Node 1 (US-East Edge): 🟢 Online (42ms)",
         "• Node 2 (EU-Central Edge): 🟢 Online (38ms)",
         "• Node 3 (Global Shard): 🟢 Online (45ms)",
-        "• Node 4 (Singapore APAC D1 SQL): 🟢 Online (14 Accounts Active)",
+        "• Node 4 (Singapore APAC D1 SQL): 🟢 Online (18 Accounts Active)",
         "• Node 5 (Secondary Mining Engine): 🟢 Online (2m Cron Active)\n",
         "🚀 *Render Compute Nodes (4/4 Online):*",
         "• MTProto Relayer (Primary): 🟢 Online & Authenticated",

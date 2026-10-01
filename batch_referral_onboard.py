@@ -1,225 +1,97 @@
+#!/usr/bin/env python3
+"""
+batch_referral_onboard.py
+Universal 15-Bot Referral Onboarding Runner for All Worker Accounts in accounts.json.
+Guarantees:
+- Skips master account 6727787768
+- Connects each worker account
+- Automatically executes full 15-bot referral binding pipeline via login_account.bind_referrals:
+  1. Stones Miners (@stoneswithestand_bot) -> /start r6727787768
+  2. MRG Miner (@mrgminerbot) -> /start ref_IRN1G3XD + WebApp verify + connect TON wallet
+  3. ART Airdrop (@ART_AIRDROP_BOT) -> /start 6727787768
+  4. AI Lab Robot (@AiLab_robot) -> /start 296852 + WebApp login
+  5. Ultra Wallet (@UltrawalletTrade_Bot) -> /start 6727787768 + WebApp login
+  6. Apex Miner (@ApxMinerBot) -> /start 6727787768 + WebApp register
+  7. Ainovum Bot (@ainovum_bot) -> /start ref_6727787768 + bootstrap
+  8. ATF Miner (@ATF_AIRDROP_bot) -> /start 6727787768
+  9. TRX Power Mining (@trxpowermining_bot) -> /start ref_TRX6727787768 + channel verify
+  10. Bitcoin Cloud Miners (@BitcoinCloudMinersBot) -> join channel + /start 6727787768 + check_join + claim_mine
+  11. Tensor Mining Robot (@TensorMiningRobot) -> /start 6727787768 + WebApp auth
+  12. TON Trader AI (@TonTraderAIBot) -> /start REF_6727787768 + welcome & daily gifts
+  13. FINVORA Web3 (@FINVORAWeb3bot) -> /start ref_TRX6727787768 + WebApp
+  14. TurboGram V1 (@TurboGramV1_bot) -> /start r_3520c92b + WebApp
+  15. Ominix AI Trade (@OminixAiBot) -> /start 6727787768 + ServerFn profit claim
+"""
+
 import os
 import json
 import time
-import urllib.request
-import urllib.parse
-from telethon.sync import TelegramClient
+import asyncio
+from telethon import TelegramClient
 from telethon.sessions import StringSession
-from telethon.tl.functions.messages import RequestAppWebViewRequest
-from telethon.tl.functions.channels import JoinChannelRequest
-from telethon.tl.types import InputBotAppShortName
-from dotenv import load_dotenv
+from login_account import bind_referrals, API_ID, API_HASH, save_accounts
 
-load_dotenv()
-API_ID = int(os.getenv("TELEGRAM_API_ID"))
-API_HASH = os.getenv("TELEGRAM_API_HASH")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
+PRIMARY_CHAT_ID = "6727787768"
 
-REFERRAL_ID = "6727787768"
+async def run_batch():
+    if not os.path.exists(ACCOUNTS_FILE):
+        print(f"❌ {ACCOUNTS_FILE} not found!")
+        return
 
-def main():
     with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
         accounts = json.load(f)
 
-    # Process accounts 4 to 11 (indices 3 to 10)
-    for idx in range(3, len(accounts)):
-        acc = accounts[idx]
+    print(f"\n============================================================")
+    print(f"🚀 Universal 15-Bot Referral Onboarding across {len(accounts)} Accounts")
+    print(f"============================================================\n")
+
+    for idx, acc in enumerate(accounts):
+        uid = str(acc.get("user_id"))
         name = acc.get("name", f"Account #{idx+1}")
-        uid = acc.get("user_id")
+        phone = acc.get("phone", "Unknown")
         sess = acc.get("session_string")
 
-        if not sess or str(uid) == REFERRAL_ID:
+        if uid == PRIMARY_CHAT_ID or acc.get("is_referral_host"):
+            print(f"[{idx+1}/{len(accounts)}] Skipping Primary Host Account: {name} (ID: {uid})")
             continue
 
-        print(f"\n==========================================")
-        print(f"[{idx+1}/{len(accounts)}] Onboarding: {name} (ID: {uid})")
-        print(f"==========================================")
+        if not sess:
+            print(f"[{idx+1}/{len(accounts)}] ⚠️ No session string for {name}, skipping.")
+            continue
 
+        if acc.get("all_15_referrals_bound"):
+            print(f"[{idx+1}/{len(accounts)}] ✅ {name} ({phone}) is ALREADY 15/15 BOUND. Skipping.")
+            continue
+
+        print(f"\n[{idx+1}/{len(accounts)}] Onboarding Worker: {name} ({phone}, ID: {uid})...")
         client = TelegramClient(StringSession(sess), API_ID, API_HASH)
         try:
-            client.connect()
+            await client.connect()
+            if not await client.is_user_authorized():
+                print(f"  ❌ Unauthorized session for {name}, skipping.")
+                continue
 
-            # 1. Ultra Wallet
-            try:
-                bot1 = client.get_input_entity("UltrawalletTrade_Bot")
-                res1 = client(RequestAppWebViewRequest(
-                    peer=bot1,
-                    app=InputBotAppShortName(bot_id=bot1, short_name="app"),
-                    platform="android",
-                    start_param=REFERRAL_ID
-                ))
-                parsed = urllib.parse.urlparse(res1.url)
-                fragment = urllib.parse.parse_qs(parsed.fragment)
-                init_data1 = fragment.get("tgWebAppData", [None])[0]
-                if init_data1:
-                    headers1 = {
-                        "Content-Type": "application/json",
-                        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36",
-                        "Referer": f"https://wallet.trxvault.top/?tgWebAppStartParam={REFERRAL_ID}"
-                    }
-                    req1 = urllib.request.Request(
-                        "https://wallet.trxvault.top/api/telegramLogin",
-                        data=json.dumps({"initData": init_data1, "refBy": REFERRAL_ID}).encode(),
-                        headers=headers1
-                    )
-                    with urllib.request.urlopen(req1, timeout=10) as resp1:
-                        d1 = json.loads(resp1.read())
-                        print(f"  ✅ [Ultra Wallet] Bound! Token: {bool(d1.get('token'))}")
-            except Exception as e:
-                print(f"  ❌ [Ultra Wallet] Note: {e}")
+            me = await client.get_me()
+            await bind_referrals(client, me, acc)
+            save_accounts(accounts)
 
-            time.sleep(2)
-
-            # 2. Gram Workers
-            try:
-                bot2 = client.get_entity("gramworkersbot")
-                client.send_message(bot2, f"/start {REFERRAL_ID}")
-                time.sleep(2)
-                msgs = client.get_messages(bot2, limit=1)
-                if msgs and msgs[0].buttons:
-                    msgs[0].buttons[0][0].click()
-                print(f"  ✅ [Gram Workers] Bound to referral {REFERRAL_ID}!")
-            except Exception as e:
-                print(f"  ❌ [Gram Workers] Note: {e}")
-
-            time.sleep(2)
-
-            # 3. Stones White Stand
-            try:
-                bot3 = client.get_entity("stoneswithestand_bot")
-                client.send_message(bot3, f"/start r{REFERRAL_ID}")
-                time.sleep(1.5)
-                try:
-                    client(JoinChannelRequest("stoneswithestand"))
-                except Exception:
-                    pass
-                print(f"  ✅ [Stones White Stand] Bound to referral r{REFERRAL_ID}!")
-            except Exception as e:
-                print(f"  ❌ [Stones White Stand] Note: {e}")
-
-            time.sleep(2)
-
-            # 4. Zyntrix Mining
-            try:
-                bot4 = client.get_input_entity("ZyntrixMiningBot")
-                res4 = client(RequestAppWebViewRequest(
-                    peer=bot4,
-                    app=InputBotAppShortName(bot_id=bot4, short_name="app"),
-                    platform="android",
-                    start_param=REFERRAL_ID
-                ))
-                print(f"  ✅ [Zyntrix Mining] Bound! WebApp URL registered.")
-            except Exception as e:
-                print(f"  ❌ [Zyntrix Mining] Note: {e}")
-
-            time.sleep(2)
-
-            # 5. TRX Power Mining
-            try:
-                bot5 = client.get_entity("trxpowermining_bot")
-                client.send_message(bot5, f"/start ref_TRX{REFERRAL_ID}")
-                time.sleep(1.5)
-                print(f"  ✅ [TRX Power Mining] Bound to referral ref_TRX{REFERRAL_ID}!")
-            except Exception as e:
-                print(f"  ❌ [TRX Power Mining] Note: {e}")
-
-            time.sleep(2)
-
-            # 6. Bitcoin Cloud Miners
-            try:
-                bot6 = client.get_entity("BitcoinCloudMinersBot")
-                client.send_message(bot6, f"/start {REFERRAL_ID}")
-                time.sleep(1.5)
-                print(f"  ✅ [Bitcoin Cloud Miners] Bound to referral {REFERRAL_ID}!")
-            except Exception as e:
-                print(f"  ❌ [Bitcoin Cloud Miners] Note: {e}")
-
-            time.sleep(2)
-
-            # 7. Tensor Mining Robot
-            try:
-                bot7 = client.get_input_entity("TensorMiningRobot")
-                res7 = client(RequestAppWebViewRequest(
-                    peer=bot7,
-                    app=InputBotAppShortName(bot_id=bot7, short_name="myapp"),
-                    platform="android",
-                    start_param=REFERRAL_ID
-                ))
-                print(f"  ✅ [Tensor Mining Robot] Bound! WebApp URL registered.")
-            except Exception as e:
-                print(f"  ❌ [Tensor Mining Robot] Note: {e}")
-
-            time.sleep(2)
-
-            # 8. Ton Trader AI
-            try:
-                bot8 = client.get_input_entity("TonTraderAIBot")
-                res8 = client(RequestAppWebViewRequest(
-                    peer=bot8,
-                    app=InputBotAppShortName(bot_id=bot8, short_name="app"),
-                    platform="android",
-                    start_param=f"REF_{REFERRAL_ID}"
-                ))
-                print(f"  ✅ [Ton Trader AI] Bound! WebApp URL registered.")
-            except Exception as e:
-                print(f"  ❌ [Ton Trader AI] Note: {e}")
-
-            time.sleep(2)
-
-            # 9. FINVORA Web3
-            try:
-                bot9 = client.get_entity("FINVORAWeb3bot")
-                client.send_message(bot9, f"/start ref_TRX{REFERRAL_ID}")
-                time.sleep(1.5)
-                print(f"  ✅ [FINVORA Web3] Bound to referral ref_TRX{REFERRAL_ID}!")
-            except Exception as e:
-                print(f"  ❌ [FINVORA Web3] Note: {e}")
-
-            time.sleep(2)
-
-            # 10. TurboGram V1
-            try:
-                bot10 = client.get_entity("TurboGramV1_bot")
-                client.send_message(bot10, "/start r_3520c92b")
-                time.sleep(1.5)
-                print(f"  ✅ [TurboGram V1] Bound to referral r_3520c92b!")
-            except Exception as e:
-                print(f"  ❌ [TurboGram V1] Note: {e}")
-
-            time.sleep(2)
-
-            # 11. Ominix AI Trade
-            try:
-                bot11 = client.get_input_entity("OminixAiBot")
-                res11 = client(RequestAppWebViewRequest(
-                    peer=bot11,
-                    app=InputBotAppShortName(bot_id=bot11, short_name="Trade"),
-                    platform="android",
-                    start_param=REFERRAL_ID
-                ))
-                print(f"  ✅ [Ominix AI Trade] Bound! WebApp URL registered.")
-            except Exception as e:
-                print(f"  ❌ [Ominix AI Trade] Note: {e}")
-
-            acc["custom_referrals_bound"] = True
-
-        except Exception as err:
-            print(f"  ⚠️ Error connecting {name}: {err}")
+        except Exception as e:
+            print(f"  ❌ Error for {name}: {e}")
         finally:
             try:
-                client.disconnect()
+                await client.disconnect()
             except Exception:
                 pass
 
-        time.sleep(3)
+        await asyncio.sleep(2.0)
 
-    # Save updated status
-    temp_file = f"{ACCOUNTS_FILE}.tmp.{os.getpid()}_{int(time.time()*1000)}"
-    with open(temp_file, "w", encoding="utf-8") as f:
-        json.dump(accounts, f, indent=2, ensure_ascii=False)
-    os.replace(temp_file, ACCOUNTS_FILE)
-    print("\n🎉 ALL FLEET ACCOUNTS SUCCESSFULLY BOUND TO YOUR REFERRAL LINKS!")
+    save_accounts(accounts)
+    print("\n🎉 ALL FLEET WORKER ACCOUNTS PROCESSED & VERIFIED!")
+
+def main():
+    asyncio.run(run_batch())
 
 if __name__ == "__main__":
     main()

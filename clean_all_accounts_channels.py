@@ -41,9 +41,7 @@ EXPLICIT_UNWANTED_USERNAMES = {
     "zyntrixmining",
     "revolvedao",
     "airdropbulider",
-    "tontraderai_official",
     "rewards_lab",
-    "tensorcoinnews",
     "earncraftnews",
     "airdropfindteam",
     "mininggram_channel"
@@ -63,7 +61,17 @@ PROTECTED_USERNAMES = {
     "ultrawallet",
     "ultrawalletofficial",
     "novum_en",
-    "gramworkers"
+    "gramworkers",
+    "trxpowerminingofficial",
+    "trx_world_work",
+    "finvoraweb3",
+    "turbogramannouncements",
+    "turbogrampayment",
+    "tontraderai_official",
+    "tontraderai_group",
+    "tensorcoinnews",
+    "ominiai",
+    "ominiaipayout"
 }
 
 PROTECTED_CHANNEL_IDS = {

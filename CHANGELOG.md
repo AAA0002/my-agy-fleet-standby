@@ -4,6 +4,31 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **💎 Simultaneous Command Decoupling, Ultra Wallet 10/10 Ad Spins & Complete Old Bot Referral Optimization (`render_standby_app.py`, `push_to_standby_repo.py`, `fleet_miniapp_tokens.json`, `CHANGELOG.md`)**:
+  - **🚫 Simultaneous Command Tapping Eradication (`@BitcoinCloudMinersBot`)**:
+    * **Decoupled Commands**: Eliminated the double-command burst (`⛏ Mine` and `📋 Tasks` sent in the exact same second/minute) that triggered bot spam guards.
+    * **Rate Limiting & Cooldowns**: Enforced a strict 4-hour (`14400s`) cooldown on `⛏ Mine` across all accounts via global state tracker `LAST_BTC_MINE_TIMES`.
+    * **Worker Optimization**: Completely eliminated `📋 Tasks` from all worker accounts (workers have no downline referrals to claim milestone bonuses for).
+    * **Master Query Throttling**: Restructured Master account (`6727787768`) to query `📋 Tasks` with a 3.5s delay after mining, restricted to at most once every 24 hours (`86400s`) via `LAST_BTC_TASKS_TIMES`.
+  - **⚡ Ultra Wallet Automation & Rate Limit Immunity (`wallet.trxvault.top`)**:
+    * **10/10 Watch & Earn Automation**: Discovered and integrated `POST /api/spin/watchAdSpin`, allowing accounts to automatically claim up to 10 daily ad spins ("Watch & Earn: 10/10") and spin the lucky wheel via `POST /api/spin/play`.
+    * **Task Completion**: Verified all 9 tasks are 100% completed on Master account (`6727787768`), with a wallet balance of over $5.05 USDT.
+    * **Firebase Token Caching (`UW_ID_TOKENS`)**: Implemented in-memory caching of Firebase `idToken` with a 55-minute TTL, eliminating repetitive `telegramLogin` calls and permanently exterminating HTTP 429 ("Too many requests") errors.
+    * **Fleet Verification**: Confirmed all 4 new accounts (Tiffany, Roger, Kevin, Mary) successfully claimed ad spins, spun the wheel, and accumulated withdrawable USDT balances.
+  - **🔗 Full Old Bot Referral Binding & Qualification Architecture**:
+    * **Stones Miners (`@stoneswithestand_bot`)**: Verified Master account has **17/17 (100%)** counted referrals after executing `/api/init` with `start_param: "r6727787768"`.
+    * **ART Airdrop (`@ART_AIRDROP_BOT`)**: Verified live on-chain that all 4 new accounts are registered with `referredBy: 6727787768`.
+    * **TRX Power Mining (`@trxpowermining_bot`)**: Confirmed Master account has **17 Counted Referrals** (100% of workers).
+    * **ATF Miner (`@ATF_AIRDROP_bot`)**: Identified that `_farm_atf` omitted `"ref": "6727787768"` in `atf_payload()`. Fixed so every login and farm cycle from worker accounts injects Master's referral code.
+    * **AI Lab (`@AiLab_robot`)**: Identified that `/users/auth/login` omitted the invite code. Fixed so worker accounts send `{"user": ai_init, "invite_code": "296852", "ref": "296852"}`.
+    * **MRG Miner (`@mrgminerbot`)**: Reverse-engineered MRG frontend chunk (`FriendsPage-wIWW7Zvx.js` and `index-Da2QomH7.js`): discovered MRG requires camelCase `startParam` (`ref_IRN1G3XD`) and that referrals only mark `isQualified` upon reaching `peakLevel >= 50` and connecting TON wallet with proof.
+    * **Apex Miner (`@ApxMinerBot`) & Ainovum (`@ainovum_bot`)**: Confirmed Master's Level 7 (18 referrals) in Ainovum and verified registration in Apex.
+  - **🚀 Standby Node & Cloud Synchronization**:
+    * Synchronized updated `app.py` and `requirements.txt` to `AAA0002/my-agy-fleet-standby` via `push_to_standby_repo.py`.
+    * Verified Render Standby Node 1 (Singapore) is active and running 15-bot autonomous farming across all 18 accounts.
+    * Maintained Zero Phone Load directive on Samsung Galaxy A30.
+
+
 - **🔥 18-Account Fleet Expansion, Bitcoin Cloud Miners Gate Unlocking & Complete 15-Bot Referral Fix (`accounts.json`, `fleet_ton_wallets.json`, `fleet_evm_wallets.json`, `login_account.py`, `render_standby_app.py`, `userbot_refresher.py`, `deploy_both_cf_workers.py`, `push_to_standby_repo.py`, `backup_manager.py`, `CHANGELOG.md`)**:
   - **🔍 Deep Root-Cause Diagnosis: Why Old Bot & BTC Referrals Failed on New Accounts**:
     * **Bitcoin Cloud Miners Gatekeeping & Regex Disconnect**: Discovered `@BitcoinCloudMinersBot` enforces a mandatory private invite channel (`+I1HZjvoqu942MjZl`) and inline callback check (`check_join`). The verification button text is `"✅ I've Joined"`, but previous code strictly searched for `"continue"` or `"verify"`. Because `"joined"` was not matched, the account remained blocked behind the gate, incoming commands (`⛏ Mine`, `📋 Tasks`) were rejected, and the referral was never registered on the master account.
