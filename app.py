@@ -214,6 +214,7 @@ OMINIX_REFERRAL_CODE = "6727787768"
 
 LAST_BTC_MINE_TIMES = {}
 LAST_BTC_TASKS_TIMES = {}
+UW_ID_TOKENS = {}
 
 LAST_BATCH_RUN = {
     "status": "idle",
@@ -3571,7 +3572,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             }
             await jitter(1.0, 2.2)
             if not is_owner:
-                await safe_post("https://mrg.up.railway.app/api/auth/verify", {"initData": m_init, "start_param": "ref_IRN1G3XD"}, req_headers=m_headers)
+                await safe_post("https://mrg.up.railway.app/api/auth/verify", {"initData": m_init, "startParam": "ref_IRN1G3XD", "start_param": "ref_IRN1G3XD"}, req_headers=m_headers)
             await jitter(1.2, 2.5)
             await safe_post("https://mrg.up.railway.app/api/user/claim-mining", {"initData": m_init, "deviceInfo": device_info}, req_headers=m_headers)
 
@@ -3713,7 +3714,11 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 "Referer": "https://ailab-agent.online/"
             }
             await jitter(1.0, 2.2)
-            _, ld = await safe_post(f"{ai_base}/users/auth/login", {"user": ai_init}, req_headers=ai_default_h)
+            ai_login_p = {"user": ai_init}
+            if not is_owner:
+                ai_login_p["invite_code"] = "296852"
+                ai_login_p["ref"] = "296852"
+            _, ld = await safe_post(f"{ai_base}/users/auth/login", ai_login_p, req_headers=ai_default_h)
             if ld and isinstance(ld, dict):
                 tok = ld.get("result", {}).get("bearer") or ld.get("user_info", {}).get("session_id")
                 if tok:
@@ -3793,99 +3798,103 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 "Origin": "https://wallet.trxvault.top",
                 "Referer": "https://wallet.trxvault.top/"
             }
-            cust_tok = None
-            await jitter(1.0, 2.2)
-            _, ud = await safe_post(f"{uw_base}/telegramLogin", {"initData": uw_init, "refBy": "6727787768"}, req_headers=uw_origin_h)
-            if ud and isinstance(ud, dict):
-                cust_tok = ud.get("token")
-                if cust_tok:
-                    fb_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyAIKTCEFqC5LFRc89nuOLhTGPHIZTIjEsU"
-                    _, fbd = await safe_post(fb_url, {"token": cust_tok, "returnSecureToken": True}, req_headers=uw_origin_h)
-                    if fbd and isinstance(fbd, dict):
-                        id_tok = fbd.get("idToken")
-                        if id_tok:
-                            uw_h = {**uw_origin_h, "Authorization": f"Bearer {id_tok}"}
-                            await jitter(1.0, 2.0)
-                            await safe_post(f"{uw_base}/checkin/claim", {}, uw_h)
-                            await jitter(1.0, 2.0)
-                            await safe_post(f"{uw_base}/mining/claim", {}, uw_h)
-                            await jitter(1.0, 2.0)
-                            await safe_post(f"{uw_base}/mining/start", {}, uw_h)
-                            await jitter(1.0, 2.0)
-                            await safe_post(f"{uw_base}/energy/claim", {}, uw_h)
+            cached_entry = UW_ID_TOKENS.get(str(uid))
+            id_tok = cached_entry[0] if (cached_entry and time.time() < cached_entry[1] - 120) else None
+            if not id_tok:
+                await jitter(1.0, 2.5)
+                _, ud = await safe_post(f"{uw_base}/telegramLogin", {"initData": uw_init, "refBy": "6727787768"}, req_headers=uw_origin_h)
+                if ud and isinstance(ud, dict):
+                    cust_tok = ud.get("token")
+                    if cust_tok:
+                        fb_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyAIKTCEFqC5LFRc89nuOLhTGPHIZTIjEsU"
+                        _, fbd = await safe_post(fb_url, {"token": cust_tok, "returnSecureToken": True}, req_headers=uw_origin_h)
+                        if fbd and isinstance(fbd, dict):
+                            id_tok = fbd.get("idToken")
+                            if id_tok:
+                                UW_ID_TOKENS[str(uid)] = (id_tok, time.time() + 3300)
 
-                            # Watch & Earn Ad Spins + Lucky Spins Wheel
-                            try:
-                                _, spi = await safe_get(f"{uw_base}/spin/status", uw_h)
-                                if spi and isinstance(spi, dict):
-                                    watch_info = spi.get("watchAdSpins", {})
-                                    used_ad_spins = watch_info.get("used", 0) or 0
-                                    max_ad_spins = watch_info.get("max", 10) or 10
-                                    ad_spins_to_claim = min(max_ad_spins - used_ad_spins, 4)
-                                    for _ in range(max(0, ad_spins_to_claim)):
-                                        await jitter(1.5, 3.0)
-                                        _, war = await safe_post(f"{uw_base}/spin/watchAdSpin", {}, uw_h)
-                                        if not war or not war.get("ok"):
-                                            break
-                                    # Fetch updated tickets and spin the wheel
-                                    _, spi_after = await safe_get(f"{uw_base}/spin/status", uw_h)
-                                    spins = ((spi_after.get("tickets", 0) or 0) + (spi_after.get("freeSpinsRemaining", 0) or 0)) if (spi_after and isinstance(spi_after, dict)) else ((spi.get("tickets", 0) or 0) + (spi.get("freeSpinsRemaining", 0) or 0))
-                                    for _ in range(min(spins, 5)):
-                                        await jitter(1.2, 2.5)
-                                        await safe_post(f"{uw_base}/spin/play", {}, uw_h)
-                            except Exception:
-                                pass
+            if id_tok:
+                uw_h = {**uw_origin_h, "Authorization": f"Bearer {id_tok}"}
+                await jitter(1.0, 2.0)
+                await safe_post(f"{uw_base}/checkin/claim", {}, uw_h)
+                await jitter(1.0, 2.0)
+                await safe_post(f"{uw_base}/mining/claim", {}, uw_h)
+                await jitter(1.0, 2.0)
+                await safe_post(f"{uw_base}/mining/start", {}, uw_h)
+                await jitter(1.0, 2.0)
+                await safe_post(f"{uw_base}/energy/claim", {}, uw_h)
 
-                            # Tasks with dwell timers (complete all available tasks with 15s delay)
-                            try:
-                                _, utd = await safe_get(f"{uw_base}/tasks", uw_h)
-                                if utd and isinstance(utd, dict):
-                                    verify_delay = float(utd.get("verifyDelaySeconds", 15) or 15)
-                                    for t in utd.get("tasks", []):
-                                        if not t.get("completed") and t.get("id"):
-                                            async def _uw_complete_task(task_id, delay_s):
-                                                await asyncio.sleep(delay_s)
-                                                await safe_post(f"{uw_base}/tasks/complete", {"taskId": task_id}, uw_h)
-                                            bg_tasks.append(asyncio.create_task(_uw_complete_task(t["id"], verify_delay + random.uniform(1.0, 3.0))))
-                            except Exception:
-                                pass
+                # Watch & Earn Ad Spins + Lucky Spins Wheel
+                try:
+                    _, spi = await safe_get(f"{uw_base}/spin/status", uw_h)
+                    if spi and isinstance(spi, dict):
+                        watch_info = spi.get("watchAdSpins", {})
+                        used_ad_spins = watch_info.get("used", 0) or 0
+                        max_ad_spins = watch_info.get("max", 10) or 10
+                        ad_spins_to_claim = min(max_ad_spins - used_ad_spins, 4)
+                        for _ in range(max(0, ad_spins_to_claim)):
+                            await jitter(1.5, 3.0)
+                            _, war = await safe_post(f"{uw_base}/spin/watchAdSpin", {}, uw_h)
+                            if not war or not war.get("ok"):
+                                break
+                        # Fetch updated tickets and spin the wheel
+                        _, spi_after = await safe_get(f"{uw_base}/spin/status", uw_h)
+                        spins = ((spi_after.get("tickets", 0) or 0) + (spi_after.get("freeSpinsRemaining", 0) or 0)) if (spi_after and isinstance(spi_after, dict)) else ((spi.get("tickets", 0) or 0) + (spi.get("freeSpinsRemaining", 0) or 0))
+                        for _ in range(min(spins, 5)):
+                            await jitter(1.2, 2.5)
+                            await safe_post(f"{uw_base}/spin/play", {}, uw_h)
+                except Exception:
+                    pass
 
-                            # Rewards Center Ads (Watch up to 3 ads with 16-24s intervals in background)
-                            async def _uw_watch_ads():
-                                try:
-                                    _, rcr = await safe_get(f"{uw_base}/rewardsCenter", uw_h)
-                                    if rcr and isinstance(rcr, dict):
-                                        cards = rcr.get("cards", [])
-                                        ads_watched = 0
-                                        for c in cards:
-                                            cid = c.get("id")
-                                            while not c.get("capped") and (c.get("dailyLimit", 0) == 0 or (c.get("watchedToday", 0) < c.get("dailyLimit", 0))) and ads_watched < 3:
-                                                _, war = await safe_post(f"{uw_base}/rewardsCenter/watchAd", {"networkId": cid}, uw_h)
-                                                if war and war.get("ok"):
-                                                    ads_watched += 1
-                                                    c["watchedToday"] = (c.get("watchedToday", 0) or 0) + 1
-                                                else:
-                                                    break
-                                                await asyncio.sleep(random.uniform(16.0, 24.0))
-                                            if ads_watched >= 3:
-                                                break
-                                except Exception:
-                                    pass
-                            bg_tasks.append(asyncio.create_task(_uw_watch_ads()))
+                # Tasks with dwell timers (complete all available tasks with 15s delay)
+                try:
+                    _, utd = await safe_get(f"{uw_base}/tasks", uw_h)
+                    if utd and isinstance(utd, dict):
+                        verify_delay = float(utd.get("verifyDelaySeconds", 15) or 15)
+                        for t in utd.get("tasks", []):
+                            if not t.get("completed") and t.get("id"):
+                                async def _uw_complete_task(task_id, delay_s):
+                                    await asyncio.sleep(delay_s)
+                                    await safe_post(f"{uw_base}/tasks/complete", {"taskId": task_id}, uw_h)
+                                bg_tasks.append(asyncio.create_task(_uw_complete_task(t["id"], verify_delay + random.uniform(1.0, 3.0))))
+                except Exception:
+                    pass
 
-                            # Gift Box
-                            try:
-                                _, gbd = await safe_get(f"{uw_base}/giftBox", uw_h)
-                                if gbd and gbd.get("enabled") and gbd.get("canOpen"):
-                                    await jitter(1.2, 2.2)
-                                    await safe_post(f"{uw_base}/giftBox/claim", {}, uw_h)
-                            except Exception:
-                                pass
+                # Rewards Center Ads (Watch up to 3 ads with 16-24s intervals in background)
+                async def _uw_watch_ads():
+                    try:
+                        _, rcr = await safe_get(f"{uw_base}/rewardsCenter", uw_h)
+                        if rcr and isinstance(rcr, dict):
+                            cards = rcr.get("cards", [])
+                            ads_watched = 0
+                            for c in cards:
+                                cid = c.get("id")
+                                while not c.get("capped") and (c.get("dailyLimit", 0) == 0 or (c.get("watchedToday", 0) < c.get("dailyLimit", 0))) and ads_watched < 3:
+                                    _, war = await safe_post(f"{uw_base}/rewardsCenter/watchAd", {"networkId": cid}, uw_h)
+                                    if war and war.get("ok"):
+                                        ads_watched += 1
+                                        c["watchedToday"] = (c.get("watchedToday", 0) or 0) + 1
+                                    else:
+                                        break
+                                    await asyncio.sleep(random.uniform(16.0, 24.0))
+                                if ads_watched >= 3:
+                                    break
+                    except Exception:
+                        pass
+                bg_tasks.append(asyncio.create_task(_uw_watch_ads()))
 
-                            if is_owner:
-                                await safe_post(f"{uw_base}/referral/milestones/claim", {}, uw_h)
+                # Gift Box
+                try:
+                    _, gbd = await safe_get(f"{uw_base}/giftBox", uw_h)
+                    if gbd and gbd.get("enabled") and gbd.get("canOpen"):
+                        await jitter(1.2, 2.2)
+                        await safe_post(f"{uw_base}/giftBox/claim", {}, uw_h)
+                except Exception:
+                    pass
 
-            if cust_tok:
+                if is_owner:
+                    await safe_post(f"{uw_base}/referral/milestones/claim", {}, uw_h)
+
                 status["bots"]["ultrawallet"] = "farmed"
             else:
                 err_msg = ud.get("error", {}).get("message") if (ud and isinstance(ud, dict)) else "session verification failed"
@@ -3952,6 +3961,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     "request_id": f"rq-{int(time.time()*1000)}-farm",
                     "device_id": f"dev-farm-{uid}"
                 }
+                if not is_owner:
+                    p["ref"] = ATF_REFERRAL_CODE
                 if extra:
                     p.update(extra)
                 return p
