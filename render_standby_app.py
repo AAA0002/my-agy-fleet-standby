@@ -756,7 +756,7 @@ async def check_and_auto_withdraw_cloud(acc: dict) -> dict:
     name = acc.get("name", "User")
     uid = str(acc.get("user_id"))
     sess_str = acc.get("session_string") or acc.get("session")
-    target_wallet = acc.get("bnb_wallet") or DEFAULT_WALLET
+    target_wallet = (acc.get("evm_wallet") or {}).get("address") or acc.get("bnb_wallet") or DEFAULT_WALLET
     if not sess_str:
         return {"user_id": uid, "name": name, "ok": False, "error": "No session string"}
 
@@ -2759,12 +2759,13 @@ async def check_and_withdraw_ailab(session: aiohttp.ClientSession, acc: dict, to
         logger.info(f"[Cloud AI Lab] {name} ({uid}) balance: ${ubal:.4f} USD (Threshold: ${thresh:.2f})")
         if ubal >= thresh:
             wd_usd = round(int(ubal * 100) / 100.0, 2)
-            async with session.post(f"{base_url}/cashout-pay", json={"ps_id": 5, "amount_usd": wd_usd, "wallet": MASTER_EVM_VAULT, "dest_tag": ""}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10)) as pr:
+            target_wallet = (acc.get("evm_wallet") or {}).get("address") or MASTER_EVM_VAULT
+            async with session.post(f"{base_url}/cashout-pay", json={"ps_id": 5, "amount_usd": wd_usd, "wallet": target_wallet, "dest_tag": ""}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10)) as pr:
                 pres = await pr.json()
                 if pres.get("request_info", {}).get("error_code") == 0 or pres.get("result"):
                     role_str = "Main Master Host" if is_master else "Worker"
-                    logger.info(f"[Cloud AI Lab] {name} ({role_str}) auto-cashout submitted: ${wd_usd} USD")
-                    return {"uid": uid, "name": name, "status": "withdrawn", "amount": wd_usd}
+                    logger.info(f"[Cloud AI Lab] {name} ({role_str}) auto-cashout submitted: ${wd_usd} USD -> {target_wallet}")
+                    return {"uid": uid, "name": name, "status": "withdrawn", "amount": wd_usd, "wallet": target_wallet}
         return {"uid": uid, "name": name, "status": "below_threshold", "balance": ubal}
     except Exception as e:
         logger.warning(f"[Cloud AI Lab] Error for {name}: {e}")
@@ -2827,11 +2828,12 @@ async def check_and_withdraw_ainovum(session: aiohttp.ClientSession, acc: dict, 
 
         if avail >= thresh:
             wd_amt = round(avail, 4)
-            async with session.post(f"{base_url}/api/withdraws/usdt/create", json={"amount": wd_amt, "wallet": MASTER_EVM_VAULT, "network": "bep20"}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10)) as wr:
+            target_wallet = (acc.get("evm_wallet") or {}).get("address") or MASTER_EVM_VAULT
+            async with session.post(f"{base_url}/api/withdraws/usdt/create", json={"amount": wd_amt, "wallet": target_wallet, "network": "bep20"}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10)) as wr:
                 wd = await wr.json()
                 if wr.status == 200 and not wd.get("access_denied") and not wd.get("error"):
-                    logger.info(f"[Cloud Ainovum] {name} auto-withdrawal submitted: {wd_amt} USDT")
-                    return {"uid": uid, "name": name, "status": "withdrawn", "amount": wd_amt}
+                    logger.info(f"[Cloud Ainovum] {name} auto-withdrawal submitted: {wd_amt} USDT -> {target_wallet}")
+                    return {"uid": uid, "name": name, "status": "withdrawn", "amount": wd_amt, "wallet": target_wallet}
         return {"uid": uid, "name": name, "status": "below_threshold", "available": avail}
     except Exception as e:
         logger.warning(f"[Cloud Ainovum] Error for {name}: {e}")
@@ -3581,6 +3583,15 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             await jitter(1.2, 2.6)
             _, me_d = await safe_post("https://mrg.up.railway.app/api/user/me", {"initData": m_init}, req_headers=m_headers)
             if me_d and isinstance(me_d, dict):
+                # Bind dedicated TON wallet if not connected or different
+                u_obj_init = me_d.get("user", {})
+                is_ton_conn = u_obj_init.get("isTonConnected", False)
+                cur_ton_w = u_obj_init.get("tonWalletAddress", "")
+                target_ton_w = (acc.get("ton_wallet") or {}).get("address") or (PRIMARY_TON_WALLET if is_owner else None)
+                if target_ton_w and (not is_ton_conn or not cur_ton_w or cur_ton_w != target_ton_w):
+                    await safe_post("https://mrg.up.railway.app/api/user/connect-wallet", {"initData": m_init, "address": target_ton_w, "balance": 0}, req_headers=m_headers)
+                    logger.info(f"[{name}] ⛏️ [MRG] Bound dedicated TON wallet: {target_ton_w[:10]}...")
+
                 completed = set(me_d.get("completedTaskIds", []))
                 for t in me_d.get("tasks", []):
                     tid = t.get("taskId")

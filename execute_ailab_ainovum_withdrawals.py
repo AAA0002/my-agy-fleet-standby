@@ -100,7 +100,12 @@ async def process_ailab_account(session: aiohttp.ClientSession, acc: dict, token
         logger.info(f"[AI Lab] {name} ({uid}) balance: ${ubal:.4f} USD (Threshold: ${ailab_thresh:.2f}).")
         if ubal >= ailab_thresh:
             wd_usd = round(int(ubal * 100) / 100.0, 2)
-            target_wallet = MASTER_EVM_VAULT  # Direct to Binance Web3 Master (no separate wallet needed)
+            if uid == "6727787768":
+                target_wallet = MASTER_EVM_VAULT
+            elif uid == "8203342513":
+                target_wallet = BINANCE_WALLET_2_EVM
+            else:
+                target_wallet = (acc.get("evm_wallet") or {}).get("address") or (isolated_evms.get(uid, {}).get("address") if isolated_evms else None) or MASTER_EVM_VAULT
             pay_payload = {
                 "ps_id": 5,  # USDT (BEP20)
                 "amount_usd": wd_usd,
@@ -227,13 +232,13 @@ async def process_ainovum_account(session: aiohttp.ClientSession, acc: dict, tok
                 except Exception:
                     return {"uid": uid, "name": name, "status": "invalid_config_json", "available": 0.0}
 
-        # Route target wallet: main gets Binance Wallet 2, Node 10 (@AAlllAA2) gets Binance Wallet 1, workers get isolated EVMs
+        # Route target wallet: main gets Master Binance EVM, Node 10 gets Binance Web3 Wallet 2, workers get isolated EVMs
         if uid == "6727787768":
-            target_wallet = BINANCE_WALLET_2_EVM
-        elif uid == "8203342513":
             target_wallet = MASTER_EVM_VAULT
+        elif uid == "8203342513":
+            target_wallet = BINANCE_WALLET_2_EVM
         else:
-            target_wallet = isolated_evms.get(uid, {}).get("address")
+            target_wallet = (acc.get("evm_wallet") or {}).get("address") or (isolated_evms.get(uid, {}).get("address") if isolated_evms else None)
             if not target_wallet:
                 logger.warning(f"[Ainovum] No isolated EVM found for {name} ({uid}). Skipping to prevent wallet collision.")
                 return {"uid": uid, "name": name, "status": "no_isolated_evm", "available": avail}

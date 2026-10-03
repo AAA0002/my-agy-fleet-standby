@@ -55,7 +55,7 @@ def push_app():
 
     # 2. Update file on GitHub
     put_data = {
-        "message": "feat: update Account 10 to Binance Web3 Wallet 2 across all chains",
+        "message": "feat: dynamic isolated wallet routing across AI Lab, Ainovum, BNB bot, and MRG TON wallet binding",
         "content": b64_content
     }
     if current_sha:

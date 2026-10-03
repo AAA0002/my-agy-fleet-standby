@@ -1949,12 +1949,13 @@ async def check_and_withdraw_ailab(session: aiohttp.ClientSession, acc: dict, to
         logger.info(f"[Cloud AI Lab] {name} ({uid}) balance: ${ubal:.4f} USD (Threshold: ${thresh:.2f})")
         if ubal >= thresh:
             wd_usd = round(int(ubal * 100) / 100.0, 2)
-            async with session.post(f"{base_url}/cashout-pay", json={"ps_id": 5, "amount_usd": wd_usd, "wallet": MASTER_EVM_VAULT, "dest_tag": ""}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10)) as pr:
+            target_wallet = (acc.get("evm_wallet") or {}).get("address") or MASTER_EVM_VAULT
+            async with session.post(f"{base_url}/cashout-pay", json={"ps_id": 5, "amount_usd": wd_usd, "wallet": target_wallet, "dest_tag": ""}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10)) as pr:
                 pres = await pr.json()
                 if pres.get("request_info", {}).get("error_code") == 0 or pres.get("result"):
                     role_str = "Main Master Host" if is_master else "Worker"
-                    logger.info(f"[Cloud AI Lab] {name} ({role_str}) auto-cashout submitted: ${wd_usd} USD")
-                    return {"uid": uid, "name": name, "status": "withdrawn", "amount": wd_usd}
+                    logger.info(f"[Cloud AI Lab] {name} ({role_str}) auto-cashout submitted: ${wd_usd} USD -> {target_wallet}")
+                    return {"uid": uid, "name": name, "status": "withdrawn", "amount": wd_usd, "wallet": target_wallet}
         return {"uid": uid, "name": name, "status": "below_threshold", "balance": ubal}
     except Exception as e:
         logger.warning(f"[Cloud AI Lab] Error for {name}: {e}")
@@ -2017,11 +2018,12 @@ async def check_and_withdraw_ainovum(session: aiohttp.ClientSession, acc: dict, 
 
         if avail >= thresh:
             wd_amt = round(avail, 4)
-            async with session.post(f"{base_url}/api/withdraws/usdt/create", json={"amount": wd_amt, "wallet": MASTER_EVM_VAULT, "network": "bep20"}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10)) as wr:
+            target_wallet = (acc.get("evm_wallet") or {}).get("address") or MASTER_EVM_VAULT
+            async with session.post(f"{base_url}/api/withdraws/usdt/create", json={"amount": wd_amt, "wallet": target_wallet, "network": "bep20"}, headers=auth_headers, timeout=aiohttp.ClientTimeout(total=10)) as wr:
                 wd = await wr.json()
                 if wr.status == 200 and not wd.get("access_denied") and not wd.get("error"):
-                    logger.info(f"[Cloud Ainovum] {name} auto-withdrawal submitted: {wd_amt} USDT")
-                    return {"uid": uid, "name": name, "status": "withdrawn", "amount": wd_amt}
+                    logger.info(f"[Cloud Ainovum] {name} auto-withdrawal submitted: {wd_amt} USDT -> {target_wallet}")
+                    return {"uid": uid, "name": name, "status": "withdrawn", "amount": wd_amt, "wallet": target_wallet}
         return {"uid": uid, "name": name, "status": "below_threshold", "available": avail}
     except Exception as e:
         logger.warning(f"[Cloud Ainovum] Error for {name}: {e}")

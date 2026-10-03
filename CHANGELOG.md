@@ -4,6 +4,15 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **⚡ Dynamic Multi-Bot Isolated Wallet Routing & Automatic TON Wallet Binding (`render_standby_app.py`, `render_app_latest.py`, `execute_ailab_ainovum_withdrawals.py`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
+  - **🛡️ Eradicated Shared Central EVM Fallbacks in Bot Withdrawals**:
+    * **AI Lab (`/cashout-pay`)**: Replaced shared `MASTER_EVM_VAULT` with each account's dedicated isolated EVM wallet. Account 1 withdraws to Binance Main, Account 10 withdraws to Binance Web3 Wallet 2, and workers withdraw to their unique EVMs.
+    * **Ainovum (`/api/withdraws/usdt/create`)**: Replaced shared `MASTER_EVM_VAULT` with each account's dedicated isolated EVM wallet.
+    * **BNB Bot (`check_and_auto_withdraw_cloud`)**: Dynamically submits each account's dedicated BSC address instead of falling back to default vault.
+    * **MRG Miner (`/api/user/connect-wallet`)**: Added automatic dedicated TON wallet connection inside the cloud farming loop so all accounts bind their isolated TON wallets to boost hashrate and unlock withdrawals.
+  - **🚀 Standby Cloud Deployment**:
+    * Deployed updated farming engine to GitHub repo `AAA0002/my-agy-fleet-standby` (Commit `f1a8d4aa`) for automated deployment across Render Node 1 (Singapore) and Node 2 (Frankfurt).
+
 - **🌐 18-Account Multi-Chain (EVM, TON, TRON, Solana, Bitcoin) Fleet Wallet Architecture & Vault Generation (`accounts.json`, `fleet_tron_wallets.json`, `fleet_solana_wallets.json`, `fleet_btc_wallets.json`, `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt`, `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md`, `backup_manager.py`, `CHANGELOG.md`)**:
   - **🛡️ 100% Unique Multi-Chain Wallets Across All 18 Accounts**:
     * **5 Distinct Blockchain Networks**: Derived and verified 18 completely independent, isolated addresses for EVM (BSC/Arbitrum), TON (v4r2), TRON (TRC-20), Solana (SPL), and Bitcoin (Taproot/Legacy).
