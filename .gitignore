@@ -11,6 +11,8 @@ payout_balances.json
 *_state.json
 .onchain_state.json
 FLEET_*.txt
+FLEET_MULTICHAIN_WALLETS_DASHBOARD.md
+generate_wallet_doc.py
 *SECRETS*
 ARCHIVED_*
 antigravity_session/
