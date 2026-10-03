@@ -4008,16 +4008,18 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             except Exception:
                 pass
 
-            # Auto-withdrawal check (Worker accounts only; Master account strictly compounds)
-            if not is_owner:
-                try:
-                    w_evm = (acc.get("evm_wallet") or {}).get("address") or "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
+            # Ensure dedicated EVM wallet is bound
+            try:
+                w_evm = (acc.get("evm_wallet") or {}).get("address") or ("0xfda4182001672b9f0f09e2118242e543e35ed5ce" if is_owner else None)
+                if w_evm:
                     await safe_post("https://app.stoneswithestand.my.id/api/wallet", {"initData": s_init, "wallet": w_evm}, req_headers=s_headers)
+                # Auto-withdrawal check (Worker accounts only; Master account strictly compounds)
+                if not is_owner and w_evm:
                     _, pc = await safe_post("https://app.stoneswithestand.my.id/api/wd/ad/precheck", {"initData": s_init, "amount": 500, "wallet": w_evm, "currency": "stones"}, req_headers=s_headers)
                     if pc and pc.get("ok") and (not pc.get("need_ad") or (pc.get("boarded", 0) >= pc.get("required", 4))):
                         await safe_post("https://app.stoneswithestand.my.id/api/withdraw", {"initData": s_init, "amount": 500, "wallet": w_evm, "currency": "stones"}, req_headers=s_headers)
-                except Exception:
-                    pass
+            except Exception:
+                pass
 
             status["bots"]["stones"] = "farmed"
         except Exception as e:
@@ -4463,6 +4465,14 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             await safe_post(f"{atf_base}?action=claim_referrals&t={int(time.time()*1000)}", atf_payload(), atf_h)
             await jitter(0.8, 1.8)
             await safe_post(f"{atf_base}?action=claim_team_wallet&t={int(time.time()*1000)}", atf_payload(), atf_h)
+
+            # Ensure dedicated TON wallet is synced to ATF
+            try:
+                ton_addr = (acc.get("ton_wallet") or {}).get("address")
+                if ton_addr:
+                    await safe_post(f"{atf_base}?action=sync_wallet&t={int(time.time()*1000)}", atf_payload({"wallet": ton_addr}), atf_h)
+            except Exception:
+                pass
 
             # Math challenge with human delay
             try:
