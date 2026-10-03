@@ -84,6 +84,9 @@ TURBOGRAM_REFERRAL_CODE = "r_3520c92b"
 OMINIX_BOT = "OminixAiBot"
 OMINIX_REFERRAL_CODE = "6727787768"
 
+USDTQUAD_BOT = "usdtquadbot"
+USDTQUAD_REFERRAL_CODE = "6727787768"
+
 PRIMARY_CHAT_ID = "6727787768"
 PRIMARY_EVM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 PRIMARY_TON_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
@@ -250,7 +253,7 @@ async def bind_referrals(client, me, acc_entry):
         acc_entry["is_referral_host"] = True
         return
 
-    print(f"\n🔗 Automatically binding account to all 15 user referral links with wallet isolation...")
+    print(f"\n🔗 Automatically binding account to all 16 user referral links with wallet isolation...")
 
     # 1. Stones Miners (@stoneswithestand_bot) - Referral: r6727787768
     print(f"  • [1/15] Connecting to @{STONES_BOT} with referral: {STONES_REFERRAL_CODE}...")
@@ -755,25 +758,74 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["ominix_referral_bound"] = True
-        print(f"  ✅ [15/15] Successfully bound to Ominix AI Trade ({OMINIX_REFERRAL_CODE})!")
+        print(f"  ✅ [15/16] Successfully bound to Ominix AI Trade ({OMINIX_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding Ominix referral: {e}")
 
+    # 16. USDT QUAD (@usdtquadbot) - Referral: 6727787768
+    print(f"  • [16/16] Connecting to @{USDTQUAD_BOT} with referral: {USDTQUAD_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=USDTQUAD_BOT))
+        except Exception:
+            pass
+        b_uq = await client.get_entity(USDTQUAD_BOT)
+        await mute_peer(client, b_uq, "usdtquadbot")
+        await client.send_message(b_uq, f"/start {USDTQUAD_REFERRAL_CODE}")
+        await asyncio.sleep(1.0)
+        try:
+            res_uq = await client(RequestWebViewRequest(
+                peer=b_uq,
+                bot=b_uq,
+                platform="android",
+                url="https://ustdquad.up.railway.app/"
+            ))
+            p_uq = urllib.parse.urlparse(getattr(res_uq, 'url', None) or "")
+            uq_init = urllib.parse.parse_qs(p_uq.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_uq.query).get("tgWebAppData", [None])[0]
+            photo_url = "/img/doggo.mp4"
+            if uq_init:
+                user_json = urllib.parse.parse_qs(uq_init).get("user", [None])[0]
+                if user_json:
+                    try:
+                        photo_url = json.loads(user_json).get("photo_url", photo_url)
+                    except Exception:
+                        pass
+            reg_payload = urllib.parse.urlencode({
+                "referralCode": str(USDTQUAD_REFERRAL_CODE),
+                "wallet": photo_url,
+                "tgcode": str(acc_uid),
+                "userName": acc_name
+            }).encode("utf-8")
+            async with aiohttp.ClientSession(headers={
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Origin": "https://ustdquad.up.railway.app",
+                "Referer": "https://ustdquad.up.railway.app/"
+            }) as session:
+                await session.post("https://ustdquad.up.railway.app/register", data=reg_payload, timeout=aiohttp.ClientTimeout(total=8))
+        except Exception as reg_e:
+            print(f"  Note during USDT QUAD WebApp registration: {reg_e}")
+        acc_entry["usdtquad_referral_bound"] = True
+        print(f"  ✅ [16/16] Successfully bound to USDT QUAD ({USDTQUAD_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding USDT QUAD referral: {e}")
+
     # Audit final referral status
-    all_15_keys = [
+    all_16_keys = [
         "stones_referral_bound", "mrg_referral_bound", "art_referral_bound",
         "ailab_referral_bound", "ultrawallet_referral_bound", "apx_referral_bound",
         "ainovum_referral_bound", "atf_referral_bound", "trxpower_referral_bound",
         "btc_referral_bound", "tensor_referral_bound", "tontrader_referral_bound",
-        "finvora_referral_bound", "turbogram_referral_bound", "ominix_referral_bound"
+        "finvora_referral_bound", "turbogram_referral_bound", "ominix_referral_bound",
+        "usdtquad_referral_bound"
     ]
-    bound_count = sum(1 for k in all_15_keys if acc_entry.get(k))
-    if bound_count == len(all_15_keys):
-        acc_entry["all_15_referrals_bound"] = True
+    bound_count = sum(1 for k in all_16_keys if acc_entry.get(k))
+    if bound_count == len(all_16_keys):
+        acc_entry["all_16_referrals_bound"] = True
         acc_entry["referrals_bound"] = True
-        print(f"\n🎉 ALL 15/15 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
+        print(f"\n🎉 ALL 16/16 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
     else:
-        print(f"\n⚠️ {bound_count}/15 bots bound. Remaining will be auto-bound on next cloud cycle.")
+        print(f"\n⚠️ {bound_count}/16 bots bound. Remaining will be auto-bound on next cloud cycle.")
 
 
 

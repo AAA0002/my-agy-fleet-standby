@@ -4,6 +4,20 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **⚡ USDT QUAD Mining Onboarding, 16-Bot Master Referral Binding & Cloud Watchdog Bug Fix (`render_standby_app.py`, `login_account.py`, `accounts.json`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
+  - **🚀 100% USDT QUAD (`@usdtquadbot`) Onboarding & Master Referral Securing**:
+    * Integrated `@usdtquadbot` (`ustdquad.up.railway.app`) as the 16th mining bot in the 24/7 cloud auto-farming fleet.
+    * Master Account `6727787768` locked as referral host; all 17 worker accounts (Accounts 2 to 18) registered under referral `6727787768`.
+    * Claimed Master referral milestone rewards (`invite3` +100 GH/s, `invite10` +250 GH/s); Master mining power escalated from 221 to **892 GH/s** with balance growing to **~$30 USDT**.
+    * Automated `_farm_usdtquad`: claims pending balance when >= 0.1 USDT, claims hourly ad boost (+1 GH/s), checks milestone rewards for Master, and auto-reinvests or auto-withdraws for worker accounts to isolated BEP-20 wallets.
+  - **🐛 Critical Watchdog Bug Discovered & Fixed (`render_standby_app.py`)**:
+    * Resolved crash in `token_health_and_refresh_watchdog` caused by string ISO timestamps (`synced_at`) in `fleet_miniapp_tokens.json` causing `TypeError: unsupported operand type(s) for -: 'float' and 'str'`.
+    * Implemented robust `_parse_timestamp` accepting float, int, and ISO date strings, restoring 24/7 cloud WebApp token auto-refresh without phone intervention.
+  - **🔗 16/16 Full Referral Automation (`login_account.py`)**:
+    * Updated CLI onboarding to bind all 16 bots automatically with zero referral leaks.
+  - **🚀 Standby Cloud Deployment**:
+    * Pushed updated codebase to GitHub Standby Repo `AAA0002/my-agy-fleet-standby` (Commit `fa8715e7`) for automated deployment across Render Node 1 (Singapore) and Node 2 (Frankfurt).
+
 - **🤖 Automated End-to-End Account Onboarding, 5-Chain Wallet Provisioning & Cloud Bot Binding (`fleet_wallet_provisioner.py`, `render_standby_app.py`, `login_account.py`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
   - **💎 Pure-Python Bit-Exact 5-Chain Cryptographic Provisioner (`fleet_wallet_provisioner.py`)**:
     * Implemented standalone Keccak-256 (NIST SHA-3), SECP256k1 EVM & TRON derivations, Ed25519 Solana & TON v4r2 derivations, and Bitcoin Taproot/P2PKH generation with zero C-compiler or native compilation overhead (100% phone-safe).

@@ -219,6 +219,8 @@ TURBOGRAM_BOT = "TurboGramV1_bot"
 TURBOGRAM_REFERRAL_CODE = "r_3520c92b"
 OMINIX_BOT = "OminixAiBot"
 OMINIX_REFERRAL_CODE = "6727787768"
+USDTQUAD_BOT = "usdtquadbot"
+USDTQUAD_REFERRAL_CODE = "6727787768"
 
 LAST_BTC_MINE_TIMES = {}
 LAST_BTC_TASKS_TIMES = {}
@@ -443,6 +445,22 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
             tokens["ominix_init_data"] = om_init
     except Exception as om_e:
         logger.debug(f"[{name}] Ominix error: {om_e}")
+
+    # 14. USDT QUAD WebApp initData (@usdtquadbot)
+    try:
+        bot_uq = await client.get_entity(USDTQUAD_BOT)
+        res_uq = await client(RequestWebViewRequest(
+            peer=bot_uq,
+            bot=bot_uq,
+            platform="android",
+            url="https://ustdquad.up.railway.app/"
+        ))
+        parsed_uq = urllib.parse.urlparse(res_uq.url)
+        uq_init = urllib.parse.parse_qs(parsed_uq.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_uq.query).get("tgWebAppData", [None])[0]
+        if uq_init:
+            tokens["usdtquad_init_data"] = uq_init
+    except Exception as uq_e:
+        logger.debug(f"[{name}] USDT QUAD error: {uq_e}")
 
     return tokens
 
@@ -1068,9 +1086,20 @@ async def token_health_and_refresh_watchdog():
                     for acc in accounts:
                         uid = str(acc.get("user_id"))
                         tok = tokens_map.get(uid, {})
-                        synced_at = tok.get("synced_at", 0)
+                        synced_val = tok.get("synced_at", 0)
+                        synced_ts = 0
+                        if isinstance(synced_val, (int, float)):
+                            synced_ts = float(synced_val)
+                        elif isinstance(synced_val, str):
+                            try:
+                                synced_ts = datetime.datetime.fromisoformat(synced_val.replace("Z", "+00:00")).timestamp()
+                            except Exception:
+                                try:
+                                    synced_ts = float(synced_val)
+                                except Exception:
+                                    synced_ts = 0
                         # If token missing or older than 18 hours (64800s), flag for refresh
-                        if not tok or (now - synced_at > 64800) or not tok.get("stones_init_data"):
+                        if not tok or (now - synced_ts > 64800) or not tok.get("stones_init_data"):
                             stale_or_missing_accs.append(acc)
 
                     if stale_or_missing_accs:
@@ -1607,8 +1636,8 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
 
 
 def is_account_referrals_bound(acc_entry: dict) -> bool:
-    """Checks whether an account already has its master referrals bound across all 15 active bots."""
-    if acc_entry.get("all_15_referrals_bound"):
+    """Checks whether an account already has its master referrals bound across all 16 active bots."""
+    if acc_entry.get("all_16_referrals_bound") or acc_entry.get("all_15_referrals_bound"):
         return True
     return bool(
         acc_entry.get("atf_referral_bound") and
@@ -1625,7 +1654,8 @@ def is_account_referrals_bound(acc_entry: dict) -> bool:
         acc_entry.get("tontrader_referral_bound") and
         acc_entry.get("finvora_referral_bound") and
         acc_entry.get("turbogram_referral_bound") and
-        acc_entry.get("ominix_referral_bound")
+        acc_entry.get("ominix_referral_bound") and
+        acc_entry.get("usdtquad_referral_bound")
     )
 
 
@@ -2190,6 +2220,57 @@ async def complete_turbogram_referral(client: TelegramClient, name: str, ref_cod
     return False
 
 
+async def complete_usdtquad_referral(client: TelegramClient, name: str, ref_code: str = USDTQUAD_REFERRAL_CODE) -> bool:
+    """Registers and binds USDT QUAD referral to master account."""
+    try:
+        try:
+            await client(UnblockRequest(id=USDTQUAD_BOT))
+        except Exception:
+            pass
+        bot = await client.get_entity(USDTQUAD_BOT)
+        await mute_peer(client, bot, "usdtquadbot")
+        await client.send_message(bot, f"/start {ref_code}")
+        await asyncio.sleep(1.0)
+        try:
+            res_uq = await client(RequestWebViewRequest(
+                peer=bot,
+                bot=bot,
+                platform="android",
+                url="https://ustdquad.up.railway.app/"
+            ))
+            p_uq = urllib.parse.urlparse(getattr(res_uq, 'url', None) or "")
+            uq_init = urllib.parse.parse_qs(p_uq.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_uq.query).get("tgWebAppData", [None])[0]
+            me = await client.get_me()
+            photo_url = "/img/doggo.mp4"
+            if uq_init:
+                user_json = urllib.parse.parse_qs(uq_init).get("user", [None])[0]
+                if user_json:
+                    try:
+                        photo_url = json.loads(user_json).get("photo_url", photo_url)
+                    except Exception:
+                        pass
+            reg_payload = urllib.parse.urlencode({
+                "referralCode": str(ref_code),
+                "wallet": photo_url,
+                "tgcode": str(me.id),
+                "userName": me.first_name or name
+            }).encode("utf-8")
+            async with aiohttp.ClientSession(headers={
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Origin": "https://ustdquad.up.railway.app",
+                "Referer": "https://ustdquad.up.railway.app/"
+            }) as session:
+                await session.post("https://ustdquad.up.railway.app/register", data=reg_payload, timeout=aiohttp.ClientTimeout(total=8))
+        except Exception as rege:
+            logger.debug(f"[{name}] USDT QUAD WebApp reg note: {rege}")
+        logger.info(f"[{name}] ✅ USDT QUAD successfully bound to {ref_code}")
+        return True
+    except Exception as e:
+        logger.warning(f"[{name}] USDT QUAD referral completion note: {e}")
+        return False
+
+
 async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict):
     """
     Guarantees master referral codes are registered ONCE per account for 1st-time newly added accounts,
@@ -2401,10 +2482,16 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
             acc_entry["ominix_referral_bound"] = True
         await asyncio.sleep(1.0)
 
+    # 16. USDT QUAD (Railway WebApp + Start 6727787768)
+    if not acc_entry.get("usdtquad_referral_bound"):
+        if await complete_usdtquad_referral(client, name, USDTQUAD_REFERRAL_CODE):
+            acc_entry["usdtquad_referral_bound"] = True
+        await asyncio.sleep(1.0)
+
     if is_account_referrals_bound(acc_entry):
         acc_entry["referrals_bound"] = True
-        acc_entry["all_15_referrals_bound"] = True
-        logger.info(f"[{name}] ✅ All 15 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
+        acc_entry["all_16_referrals_bound"] = True
+        logger.info(f"[{name}] ✅ All 16 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
     else:
         logger.warning(f"[{name}] ⚠️ Some referrals could not be bound immediately. Will retry on next cycle.")
 
@@ -4862,6 +4949,111 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         except Exception as e:
             status["bots"]["ominix"] = f"error: {format_error(e)}"
 
+    # 16. USDT QUAD (@usdtquadbot - ustdquad.up.railway.app)
+    async def _farm_usdtquad():
+        uq_headers = {
+            **headers,
+            "Origin": "https://ustdquad.up.railway.app",
+            "Referer": "https://ustdquad.up.railway.app/",
+            "Cookie": f"userId={uid}"
+        }
+        try:
+            await jitter(0.8, 1.8)
+            # 1. Fetch current miner status & pending balance
+            st_m, miner_html = 0, ""
+            try:
+                async with session.get("https://ustdquad.up.railway.app/miner", headers=uq_headers, timeout=aiohttp.ClientTimeout(total=8)) as resp:
+                    st_m = resp.status
+                    if st_m == 200:
+                        miner_html = await resp.text()
+            except Exception:
+                pass
+
+            # If session uninitialized or not recognized, register
+            if st_m != 200 or not miner_html or "userGHS" not in miner_html:
+                ref_code = "" if is_owner else USDTQUAD_REFERRAL_CODE
+                uq_init = tokens.get("usdtquad_init_data")
+                photo_url = "/img/doggo.mp4"
+                if uq_init:
+                    user_json = urllib.parse.parse_qs(uq_init).get("user", [None])[0]
+                    if user_json:
+                        try:
+                            photo_url = json.loads(user_json).get("photo_url", photo_url)
+                        except Exception:
+                            pass
+                reg_body = urllib.parse.urlencode({
+                    "referralCode": ref_code,
+                    "wallet": photo_url,
+                    "tgcode": str(uid),
+                    "userName": name
+                })
+                try:
+                    async with session.post("https://ustdquad.up.railway.app/register", data=reg_body, headers={
+                        **uq_headers,
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    }, timeout=aiohttp.ClientTimeout(total=8)) as reg_resp:
+                        if reg_resp.status == 200:
+                            miner_html = await reg_resp.text()
+                except Exception:
+                    pass
+
+            # 2. Check pending balance and claim if >= 0.1 USDT
+            claimed_txt = ""
+            m_pending = re.search(r"const initialPendingBalance = ([0-9\.]+);", miner_html) if miner_html else None
+            pending_val = float(m_pending.group(1)) if m_pending else 0.0
+            if pending_val >= 0.1:
+                await jitter(1.0, 2.0)
+                st_c, res_c = await safe_post("https://ustdquad.up.railway.app/claim-balance", {}, req_headers={**uq_headers, "Content-Type": "application/json"})
+                if st_c == 200 and isinstance(res_c, dict) and res_c.get("success"):
+                    claimed_txt = f" (+{res_c.get('claimedAmount', 0):.4f} USDT)"
+
+            # 3. Complete hourly ad boost (+1 GH/s)
+            await jitter(1.0, 2.2)
+            st_t, res_t = await safe_post("https://ustdquad.up.railway.app/complete-task", {"taskId": "hourly_watch_ad", "reward": 1}, req_headers={**uq_headers, "Content-Type": "application/json"})
+            task_txt = ""
+            if st_t == 200 and isinstance(res_t, dict) and res_t.get("success"):
+                task_txt = " (+1 GH/s boost)"
+
+            # 4. For Master account, check referral milestones
+            if is_owner:
+                try:
+                    m_refs = re.search(r"const userReferrals = (\d+);", miner_html) if miner_html else None
+                    refs_cnt = int(m_refs.group(1)) if m_refs else 0
+                    milestones = [
+                        ("invite3", 3, 100),
+                        ("invite10", 10, 250),
+                        ("invite25", 25, 500),
+                        ("invite50", 50, 1000),
+                        ("invite100", 100, 2000),
+                        ("invite200", 200, 4000),
+                        ("invite500", 500, 10000),
+                        ("invite1000", 1000, 20000)
+                    ]
+                    for tid, req_refs, rew in milestones:
+                        if refs_cnt >= req_refs:
+                            await safe_post("https://ustdquad.up.railway.app/complete-task", {"taskId": tid, "reward": rew}, req_headers={**uq_headers, "Content-Type": "application/json"})
+                except Exception:
+                    pass
+
+            # 5. Worker auto-reinvest or auto-withdraw
+            if not is_owner:
+                m_bal = re.search(r"const initialBalance = ([0-9\.]+);", miner_html) if miner_html else None
+                cur_bal = float(m_bal.group(1)) if m_bal else 0.0
+                worker_evm = (acc.get("evm_wallet") or {}).get("address")
+                if cur_bal >= 10.0 and worker_evm:
+                    await safe_post("https://ustdquad.up.railway.app/process-withdrawal", {
+                        "walletAddress": worker_evm,
+                        "amount": round(cur_bal, 2),
+                        "selectedCrypto": "USDT",
+                        "selectedNetwork": "BSC"
+                    }, req_headers={**uq_headers, "Content-Type": "application/json"})
+                elif cur_bal >= 0.1:
+                    await safe_post("https://ustdquad.up.railway.app/reinvest-balance", {"amount": round(cur_bal, 2)}, req_headers={**uq_headers, "Content-Type": "application/json"})
+
+            status["bots"]["usdtquad"] = f"farmed{claimed_txt}{task_txt}"
+        except Exception as e:
+            status["bots"]["usdtquad"] = f"error: {format_error(e)}"
+
     # Humanized Execution Pipeline: Randomize the order of bot executions per account session
     bot_routines = [
         {"name": "stones", "fn": _farm_stones, "has_data": bool(tokens.get("stones_init_data"))},
@@ -4879,6 +5071,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "finvora", "fn": _farm_finvora, "has_data": True},
         {"name": "turbogram", "fn": _farm_turbogram, "has_data": True},
         {"name": "ominix", "fn": _farm_ominix, "has_data": True},
+        {"name": "usdtquad", "fn": _farm_usdtquad, "has_data": True},
     ]
 
     active_routines = [b for b in bot_routines if b["has_data"]]
