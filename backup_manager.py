@@ -79,7 +79,12 @@ CORE_BOT_FILES = [
     "AGENTS.md",
     "FLEET_WALLETS_SECRETS_MASTER_VAULT.txt",
     "USER_BOT_FLEET_SECRETS_VAULT.json",
-    "get_login_code.py"
+    "get_login_code.py",
+    "fleet_tron_wallets.json",
+    "fleet_solana_wallets.json",
+    "fleet_btc_wallets.json",
+    "FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md",
+    "ARCHIVED_ACCOUNT_10_OLD_WALLETS.json"
 ]
 
 
