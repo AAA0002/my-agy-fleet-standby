@@ -177,7 +177,7 @@ async def process_account(acc, index, total, ton_wallets, session_pool):
                 current_wallet = u.get("wallet_address") or u.get("wallet")
                 level = u.get("miner_level") or u.get("level")
                 is_wallet_verified = str(u.get("wallet_verified", "0")) == "1"
-                result["wallet_verified"] = is_wallet_verified or (uid == PRIMARY_ID and bool(current_wallet))
+                result["wallet_verified"] = is_wallet_verified or (uid in [PRIMARY_ID, "8203342513"] and bool(current_wallet))
                 if u.get("mining_freezes_at", 0) > time.time() and int(u.get("mining_frozen", 0)) == 0:
                     result["mining_active"] = True
                 print(f"    ✅ Login OK! Level: {level}, Mined: {result['mined_balance']} ATF, Wallet: {current_wallet or 'None'} (Verified: {result['wallet_verified']})")

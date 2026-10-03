@@ -4,6 +4,24 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🪙 Account 10 Dedicated Binance Web3 Wallet 2 Integration across 6 Chains & Cloud Sync (`accounts.json`, `fleet_ton_wallets.json`, `fleet_evm_wallets.json`, `render_standby_app.py`, `render_app_latest.py`, `deploy_both_cf_workers.py`, `batch_atf_miner.py`, `FLEET_MASTER_REGISTRY.json`, `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
+  - **🛡️ Exclusive Multi-Chain Binance Web3 Wallet 2 for Account 10 (`+8801729892810` / `8203342513` / `@AAlllAA2`)**:
+    * **Direct User Confirmation & OCR Extraction**: Extracted and verified multi-chain addresses directly from user's Binance Web3 wallet screenshots:
+      - **EVM (Arbitrum One, BNB Smart Chain BEP-20, Ethereum, Polygon, Avalanche)**: `0x017841f26d5b79cc8c5eb20c65367bb645cc2610`
+      - **TON Network**: `UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH`
+      - **TRON Network (TRX / TRC-20 USDT)**: `TA6yjtuWh6Sz5uE8RywLZxFQBBvhHYP9FP`
+      - **Solana Network (SOL)**: `Bf4uGaYzpZc3aoW4HsABo4obPsk9ozDEUBfzHWTDeM5Q`
+      - **Bitcoin Network (Taproot)**: `bc1pq2kas8lk3w29v6eve9tevnr3sl2ef58zvg9k4krlpu5u7ph7u47s6whcw2`
+      - **Sui Network**: `0x168f99d7d00bd38efaad2f03d7afd195639e7a9710b9c03d57b212fe8c74b6b7`
+    * **Legacy Key Archival**: Safely archived the previously generated local secp256k1 private key (`f18622...`) and TON 24-word seed phrase (`bulk maze evoke...`) into `ARCHIVED_ACCOUNT_10_OLD_WALLETS.json` and `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt`, ensuring zero permanent loss while retiring them from active bot routing.
+    * **Live Cloud State Synchronization**:
+      - Updated `accounts.json`, `fleet_ton_wallets.json`, `fleet_evm_wallets.json`, and `atf_fleet_state.json`.
+      - Updated live Upstash Redis cloud cache key `account:8203342513` with the new addresses.
+      - Updated hardcoded EVM routing tables in `render_standby_app.py`, `render_app_latest.py`, and `deploy_both_cf_workers.py`.
+      - Updated `batch_atf_miner.py` to recognize Account 10's Binance TON address alongside the Primary ID.
+      - Pushed updated cloud farming codebase to GitHub repository `AAA0002/my-agy-fleet-standby` (Commit `e38375e3`) for automated deployment across Render Node 1 (Singapore) and Node 2 (Frankfurt).
+      - Updated `FLEET_MASTER_REGISTRY.json` and `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md`.
+
 - **🏛️ 18-Account Wallet Isolation, Elimination of Shared Addresses & Fleet Master Directory Generation (`accounts.json`, `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md`, `render_standby_app.py`, `push_to_standby_repo.py`, `generate_fleet_directory.py`, `CHANGELOG.md`)**:
   - **🛡️ 100% Unique Isolated Wallets Across Entire 18-Account Fleet**:
     * **Audit & Remediation in `accounts.json`**: Discovered that worker accounts 2–13 previously shared the Master EVM address (`0xfda41820...`), creating sybil exposure on multi-account bots. Merged each account's dedicated EVM wallet from `fleet_evm_wallets.json` into `accounts.json`.

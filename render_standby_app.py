@@ -4093,7 +4093,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                 "7734849205": "0x0262A7E950A9dd872FeB5CF8aD99d6a28Df053f0",
                                 "8025472383": "0xc3Cbd377872bCB69Fa01F5945eADFDFf053E1Bd4",
                                 "8851426148": "0x996292A277E5038efB413247dc7B58AC5209812C",
-                                "8203342513": "0x838bd6C0aCb80bFe3BF684320067672Bf396c479",
+                                "8203342513": "0x017841f26d5b79cc8c5eb20c65367bb645cc2610",
                                 "8190649727": "0x91B5cd7EfCBd5bc552479f5Eb70221C5E026228A",
                                 "7487048946": "0x3129386b118892238EF48428e2e5d19B9F7D8215",
                                 "8741547543": "0xE27Df3117501e3a46cf29848Df3414C4542E6A5c",

@@ -70,9 +70,11 @@
       "name": "Binance Web3 Wallet 2 (AAA)",
       "bep20_bnb_usdt": "0x017841f26d5b79cc8c5eb20c65367bb645cc2610",
       "ton": "UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH",
+      "tron": "TA6yjtuWh6Sz5uE8RywLZxFQBBvhHYP9FP",
       "solana": "Bf4uGaYzpZc3aoW4HsABo4obPsk9ozDEUBfzHWTDeM5Q",
       "btc_taproot": "bc1pq2kas8lk3w29v6eve9tevnr3sl2ef58zvg9k4krlpu5u7ph7u47s6whcw2",
-      "policy": "Dedicated destination for Main Account in @ainovum_bot to avoid duplicate wallet conflict with Node 10 (@AAlllAA2)"
+      "sui": "0x168f99d7d00bd38efaad2f03d7afd195639e7a9710b9c03d57b212fe8c74b6b7",
+      "policy": "Dedicated destination for Account 10 / Node 10 (+8801729892810 / @AAlllAA2 / 8203342513) across EVM, TON, TRON, Solana, BTC, and Sui"
     },
     "ton_workers_count": 12,
     "ton_workers_file": "fleet_ton_wallets.json"

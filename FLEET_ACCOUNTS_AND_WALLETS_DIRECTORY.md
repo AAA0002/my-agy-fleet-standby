@@ -18,7 +18,7 @@
 | 07 | **Abid Hasan** | `+8801718056423` | `7734849205` | @Abidhasan222 | Worker | `UQAtcq_XsUwbFXGV23EZTOYibfvV5DhP70GAXuJLRSXRfVXU` | `0x0262A7E950A9dd872FeB5CF8aD99d6a28Df053f0` |
 | 08 | **Abid Hasan (2)** | `+8801797795624` | `8025472383` | @None | Worker | `UQCIPXAV-BxflwdqW43gAm98CL3_cIbxmbQwv9_hLFvBLydV` | `0xc3Cbd377872bCB69Fa01F5945eADFDFf053E1Bd4` |
 | 09 | **Node 9** | `+8801727651288` | `8851426148` | @Akkffrr | Worker | `UQDF-a-AcQ_A3vn4nLQ5KlVPHr0NO5fvTchJNczOPLBucweI` | `0x996292A277E5038efB413247dc7B58AC5209812C` |
-| 10 | **Node 10** | `+8801729892810` | `8203342513` | @AAlllAA2 | Worker | `UQCqQKfRUNH701zIsbQGGEUDJ8ZOVuW6EwCW7rONiWWKcTdW` | `0x838bd6C0aCb80bFe3BF684320067672Bf396c479` |
+| 10 | **Node 10** | `+8801729892810` | `8203342513` | @AAlllAA2 | Worker | `UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH` | `0x017841f26d5b79cc8c5eb20c65367bb645cc2610` |
 | 11 | **MD. Arif Hossain** | `+8801571089931` | `8190649727` | @aaamah222 | Worker | `UQBgy3ImJtesjl7-R8g6hOEAUHGV2SdB2jBx7IOpEWoRVHrB` | `0x91B5cd7EfCBd5bc552479f5Eb70221C5E026228A` |
 | 12 | **Sanzida Shimu** | `+8801774578536` | `7487048946` | @Sanzidashimu | Worker | `UQBOdyZlFAsbI9aW0ExiRSo-MATOU076H39bP139WaHIBMQo` | `0x3129386b118892238EF48428e2e5d19B9F7D8215` |
 | 13 | **Abid (3)** | `+8801838268380` | `8741547543` | @Abid_300 | Worker | `UQAy5w840mgWqZwlUEIKLnCBVNrh9t4KlZ2EpRijeHw0fDkN` | `0xE27Df3117501e3a46cf29848Df3414C4542E6A5c` |
@@ -136,10 +136,14 @@
 - **Telegram ID:** `8203342513`
 - **Telegram Username:** `@AAlllAA2`
 - **Account Status:** `active`
-- **Dedicated TON Wallet:** `UQCqQKfRUNH701zIsbQGGEUDJ8ZOVuW6EwCW7rONiWWKcTdW`
-  - *Type:* Isolated TON v4r2 Non-Bounceable Wallet (Anti-Sybil Proof)
-- **Dedicated EVM Wallet (Arbitrum / BSC BEP-20 / ETH):** `0x838bd6C0aCb80bFe3BF684320067672Bf396c479`
-  - *Type:* Isolated Secp256k1 Wallet (Anti-Sybil Proof)
+- **Dedicated TON Wallet:** `UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH`
+  - *Type:* Binance Web3 Wallet 2 (AAA)
+- **Dedicated EVM Wallet (Arbitrum / BSC BEP-20 / ETH):** `0x017841f26d5b79cc8c5eb20c65367bb645cc2610`
+  - *Type:* Binance Web3 Wallet 2 (AAA)
+- **Dedicated TRON Wallet:** `TA6yjtuWh6Sz5uE8RywLZxFQBBvhHYP9FP`
+- **Dedicated Solana Wallet:** `Bf4uGaYzpZc3aoW4HsABo4obPsk9ozDEUBfzHWTDeM5Q`
+- **Dedicated Bitcoin (Taproot) Wallet:** `bc1pq2kas8lk3w29v6eve9tevnr3sl2ef58zvg9k4krlpu5u7ph7u47s6whcw2`
+- **Dedicated Sui Wallet:** `0x168f99d7d00bd38efaad2f03d7afd195639e7a9710b9c03d57b212fe8c74b6b7`
 - **All 15 Bot Referrals Bound:** `✅ Yes (All 15 Bots)`
 
 ### 11. MD. Arif Hossain (Worker Account)

@@ -78,7 +78,8 @@ CORE_BOT_FILES = [
     "CHANGELOG.md",
     "AGENTS.md",
     "FLEET_WALLETS_SECRETS_MASTER_VAULT.txt",
-    "USER_BOT_FLEET_SECRETS_VAULT.json"
+    "USER_BOT_FLEET_SECRETS_VAULT.json",
+    "get_login_code.py"
 ]
 
 

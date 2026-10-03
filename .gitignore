@@ -12,6 +12,7 @@ payout_balances.json
 .onchain_state.json
 FLEET_*.txt
 *SECRETS*
+ARCHIVED_*
 antigravity_session/
 cloudflared_config/
 
@@ -43,3 +44,7 @@ Thumbs.db
 *.swp
 *~
 .wrangler/
+.gemini/
+.local/
+.ssh/
+.termux/

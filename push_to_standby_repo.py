@@ -1,96 +1,81 @@
 #!/usr/bin/env python3
 """
 push_to_standby_repo.py
-Synchronizes render_standby_app.py to AAA0002/my-agy-fleet-standby as app.py
-via the GitHub API using gh auth token.
-Triggers Render Node 1 and Node 2 auto-deployments.
+Synchronizes render_standby_app.py as app.py to GitHub repo AAA0002/my-agy-fleet-standby,
+triggering automatic deployment on Render Node 1 (Singapore) and Node 2 (Frankfurt).
 """
 
 import os
-import sys
 import json
 import base64
-import subprocess
 import urllib.request
-import urllib.error
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STANDBY_SRC = os.path.join(BASE_DIR, "render_standby_app.py")
+
+# Read credentials from .env
+env = {}
+with open(os.path.join(BASE_DIR, ".env")) as f:
+    for line in f:
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            env[k.strip()] = v.strip().strip('"').strip("'")
+
+PAT = env.get("GITHUB_USERBOT_PAT") or env.get("GITHUB_FINE_GRAINED_PAT")
 REPO = "AAA0002/my-agy-fleet-standby"
 FILE_PATH = "app.py"
-LOCAL_FILE = "/root/projects/AAA_AUTO/render_standby_app.py"
 
-def get_gh_token():
-    res = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True)
-    if res.returncode != 0:
-        raise RuntimeError("Failed to get gh token: " + res.stderr)
-    return res.stdout.strip()
+def push_app():
+    if not os.path.exists(STANDBY_SRC):
+        print(f"❌ Source file {STANDBY_SRC} not found.")
+        return
 
-def push_file(headers, repo, remote_path, local_bytes, commit_msg):
-    print(f"[*] Fetching current {remote_path} from {repo}...")
-    get_url = f"https://api.github.com/repos/{repo}/contents/{remote_path}"
+    with open(STANDBY_SRC, "rb") as f:
+        content_bytes = f.read()
+
+    b64_content = base64.b64encode(content_bytes).decode("utf-8")
+
+    # 1. Get current SHA
+    get_url = f"https://api.github.com/repos/{REPO}/contents/{FILE_PATH}"
+    headers = {
+        "Authorization": f"Bearer {PAT}",
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/vnd.github.v3+json"
+    }
+
     req = urllib.request.Request(get_url, headers=headers)
-    
-    sha = None
     try:
         with urllib.request.urlopen(req) as resp:
             data = json.loads(resp.read().decode())
-            sha = data.get("sha")
-            print(f"[+] Current remote SHA for {remote_path}: {sha}")
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            print(f"[*] {remote_path} does not exist yet remotely, will create new.")
-        else:
-            raise RuntimeError(f"Error fetching remote file: {e.code} {e.reason}")
+            current_sha = data.get("sha")
+    except Exception as e:
+        print(f"⚠️ Could not get SHA (might be new file): {e}")
+        current_sha = None
 
-    b64_content = base64.b64encode(local_bytes).decode("ascii")
-    commit_payload = {
-        "message": commit_msg,
-        "content": b64_content,
-        "branch": "main"
+    # 2. Update file on GitHub
+    put_data = {
+        "message": "feat: update Account 10 to Binance Web3 Wallet 2 across all chains",
+        "content": b64_content
     }
-    if sha:
-        commit_payload["sha"] = sha
+    if current_sha:
+        put_data["sha"] = current_sha
 
-    payload_json = json.dumps(commit_payload).encode("utf-8")
-    put_req = urllib.request.Request(get_url, data=payload_json, headers=headers, method="PUT")
+    req_put = urllib.request.Request(
+        get_url,
+        data=json.dumps(put_data).encode("utf-8"),
+        headers=headers,
+        method="PUT"
+    )
 
-    print(f"[*] Pushing updated {remote_path} ({len(local_bytes)} bytes) to {repo}...")
     try:
-        with urllib.request.urlopen(put_req) as resp:
-            res_data = json.loads(resp.read().decode())
-            new_sha = res_data.get("commit", {}).get("sha", "unknown")
-            print(f"[+] SUCCESS! Committed {remote_path} to {repo}. New commit: {new_sha}")
-    except urllib.error.HTTPError as e:
-        err_msg = e.read().decode()
-        print(f"[-] HTTP Error {e.code}: {err_msg}")
-        sys.exit(1)
-
-def main():
-    token = get_gh_token()
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "Antigravity-Agent"
-    }
-
-    # 1. Push app.py
-    with open(LOCAL_FILE, "rb") as f:
-        app_bytes = f.read()
-    push_file(headers, REPO, "app.py", app_bytes, "feat: deploy autonomous bot farming, interactive referral binding and mute engine")
-
-    # 2. Push requirements.txt
-    req_content = """fastapi==0.115.0
-uvicorn==0.30.6
-aiohttp==3.14.3
-Telethon==1.45.0
-python-dotenv==1.2.3
-tonsdk>=1.0.15
-web3>=6.0.0
-pyaes==1.6.1
-pyasn1==0.6.4
-rsa==4.9.1
-requests>=2.31.0
-""".encode("utf-8")
-    push_file(headers, REPO, "requirements.txt", req_content, "chore: requirements for standby node")
+        with urllib.request.urlopen(req_put) as put_resp:
+            res = json.loads(put_resp.read().decode())
+            new_commit = res.get("commit", {}).get("sha", "")[:8]
+            print(f"✅ Successfully pushed updated app.py to {REPO} (Commit: {new_commit})!")
+            print("🚀 Render Node 1 (Singapore) and Node 2 (Frankfurt) will auto-deploy.")
+    except Exception as pe:
+        print(f"❌ Error pushing to GitHub: {pe}")
 
 if __name__ == "__main__":
-    main()
+    push_app()
