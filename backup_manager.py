@@ -297,13 +297,9 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
                 f"<i>Restores all accounts, MTProto sessions, Antigravity CLI, and supervisor in under 45 seconds directly from Telegram CDN or IPFS!</i>"
             )
 
-            # 3. Post instructions to @myagyai and pin it permanently
-            async with session.post(url_msg, json={"chat_id": BACKUP_CHANNEL, "text": instructions, "parse_mode": "HTML"}) as resp2:
-                res2 = await resp2.json()
-                if res2.get("ok"):
-                    cmd_msg_id = res2["result"]["message_id"]
-                    pin_url = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/pinChatMessage"
-                    await session.post(pin_url, json={"chat_id": BACKUP_CHANNEL, "message_id": cmd_msg_id, "disable_notification": True})
+            # 3. Post instructions to @myagyai (never pin, keep channel clean)
+            async with session.post(url_msg, json={"chat_id": BACKUP_CHANNEL, "text": instructions, "parse_mode": "HTML"}):
+                pass
 
             # Note: Local backup archive is preserved (up to 2 newest copies) via create_backup_zip pruning
             return True, f"✅ Backup uploaded to https://t.me/myagyai and saved locally!"
