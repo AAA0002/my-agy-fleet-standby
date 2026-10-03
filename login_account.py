@@ -887,6 +887,31 @@ async def interactive_login():
         "status": "active"
     }
 
+    # Generate 100% isolated 5-chain wallets for this new account
+    try:
+        from fleet_wallet_provisioner import generate_multichain_wallet_suite, save_and_archive_account_wallets
+        cur_accs = load_accounts()
+        next_idx = len(cur_accs) + 1
+        wallets = generate_multichain_wallet_suite(next_idx, name, me.id, phone, username)
+        acc_entry.update({
+            "index": next_idx,
+            "evm_wallet": wallets["evm"],
+            "ton_wallet": wallets["ton"],
+            "tron_wallet": wallets["tron"],
+            "solana_wallet": wallets["solana"],
+            "btc_wallet": wallets["btc"],
+            "bnb_wallet": wallets["evm"]["address"]
+        })
+        save_and_archive_account_wallets(acc_entry, wallets)
+        print(f"💎 Generated & Archived 5-chain isolated wallets for {name}:")
+        print(f"   • TON (v4r2): {wallets['ton']['address']}")
+        print(f"   • EVM (BSC):  {wallets['evm']['address']}")
+        print(f"   • TRON:       {wallets['tron']['address']}")
+        print(f"   • Solana:     {wallets['solana']['address']}")
+        print(f"   • Bitcoin:    {wallets['btc']['address']}")
+    except Exception as we:
+        print(f"⚠️ Wallet generation note: {we}")
+
     proxy_val = input("\nEnter SOCKS5/HTTP proxy for this account (or press Enter for Cloud Direct): ").strip()
     if proxy_val:
         acc_entry["proxy"] = proxy_val

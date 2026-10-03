@@ -4,6 +4,22 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🤖 Automated End-to-End Account Onboarding, 5-Chain Wallet Provisioning & Cloud Bot Binding (`fleet_wallet_provisioner.py`, `render_standby_app.py`, `login_account.py`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
+  - **💎 Pure-Python Bit-Exact 5-Chain Cryptographic Provisioner (`fleet_wallet_provisioner.py`)**:
+    * Implemented standalone Keccak-256 (NIST SHA-3), SECP256k1 EVM & TRON derivations, Ed25519 Solana & TON v4r2 derivations, and Bitcoin Taproot/P2PKH generation with zero C-compiler or native compilation overhead (100% phone-safe).
+    * Automatically generates isolated addresses, private keys, and 24-word seeds for any new account across TON, EVM, TRON, Solana, and Bitcoin.
+    * Atomically updates local and cloud master vaults (`accounts.json`, `fleet_*_wallets.json`, `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt`, Upstash Redis).
+  - **⚡ Full Auto-Onboarding Pipeline in Admin Bot (`render_standby_app.py`)**:
+    * **`verify_login_code`**: When an admin adds a new account via `@My_Router_AI_bot` MTProto flow, the standby app automatically generates its 5-chain wallet suite, archives all keys to the master vault, and sends an instant Telegram alert to the Admin with addresses and bot connection status.
+    * **`bind_wallets_to_bots` & `bootstrap_account_mining`**: Automatically binds dedicated wallets to Stones Miner (`/api/wallet`), MRG Miner (`/api/user/connect-wallet`), and ATF Miner (`sync_wallet`), and configures dedicated withdrawal targets for AI Lab, Ainovum, and UltraWallet.
+    * **Instant Cloud Auto-Farming**: Automatically initiates 24/7 cloud mining and starter tasks across all 15 bots without any manual steps required.
+  - **🖥️ Interactive CLI Provisioning (`login_account.py`)**:
+    * Synchronized the same 5-chain generation and vault archival pipeline into `login_account.py` for terminal additions.
+  - **🚀 Standby Cloud Deployment**:
+    * Pushed updated `app.py` and `requirements.txt` to GitHub repo `AAA0002/my-agy-fleet-standby` (Commits `05413a23` & `169e4e3f`) for automated deployment across Render Node 1 (Singapore) and Node 2 (Frankfurt).
+  - **📱 Zero Phone Load Guarantee Enforced**:
+    * Confirmed 0 background python bot processes running on Samsung Galaxy A30; all execution is 100% cloud-hosted.
+
 - **⚡ Dynamic Multi-Bot Isolated Wallet Routing & Automatic TON Wallet Binding (`render_standby_app.py`, `render_app_latest.py`, `execute_ailab_ainovum_withdrawals.py`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
   - **🛡️ Eradicated Shared Central EVM Fallbacks in Bot Withdrawals**:
     * **AI Lab (`/cashout-pay`)**: Replaced shared `MASTER_EVM_VAULT` with each account's dedicated isolated EVM wallet. Account 1 withdraws to Binance Main, Account 10 withdraws to Binance Web3 Wallet 2, and workers withdraw to their unique EVMs.

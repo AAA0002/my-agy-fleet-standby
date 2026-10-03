@@ -26,18 +26,17 @@ PAT = env.get("GITHUB_USERBOT_PAT") or env.get("GITHUB_FINE_GRAINED_PAT")
 REPO = "AAA0002/my-agy-fleet-standby"
 FILE_PATH = "app.py"
 
-def push_app():
-    if not os.path.exists(STANDBY_SRC):
-        print(f"❌ Source file {STANDBY_SRC} not found.")
+def push_file(local_path: str, repo_path: str, commit_msg: str):
+    if not os.path.exists(local_path):
+        print(f"❌ Source file {local_path} not found.")
         return
 
-    with open(STANDBY_SRC, "rb") as f:
+    with open(local_path, "rb") as f:
         content_bytes = f.read()
 
     b64_content = base64.b64encode(content_bytes).decode("utf-8")
 
-    # 1. Get current SHA
-    get_url = f"https://api.github.com/repos/{REPO}/contents/{FILE_PATH}"
+    get_url = f"https://api.github.com/repos/{REPO}/contents/{repo_path}"
     headers = {
         "Authorization": f"Bearer {PAT}",
         "User-Agent": "Mozilla/5.0",
@@ -45,17 +44,16 @@ def push_app():
     }
 
     req = urllib.request.Request(get_url, headers=headers)
+    current_sha = None
     try:
         with urllib.request.urlopen(req) as resp:
             data = json.loads(resp.read().decode())
             current_sha = data.get("sha")
     except Exception as e:
-        print(f"⚠️ Could not get SHA (might be new file): {e}")
-        current_sha = None
+        pass
 
-    # 2. Update file on GitHub
     put_data = {
-        "message": "feat: dynamic isolated wallet routing across AI Lab, Ainovum, BNB bot, and MRG TON wallet binding",
+        "message": commit_msg,
         "content": b64_content
     }
     if current_sha:
@@ -72,10 +70,16 @@ def push_app():
         with urllib.request.urlopen(req_put) as put_resp:
             res = json.loads(put_resp.read().decode())
             new_commit = res.get("commit", {}).get("sha", "")[:8]
-            print(f"✅ Successfully pushed updated app.py to {REPO} (Commit: {new_commit})!")
-            print("🚀 Render Node 1 (Singapore) and Node 2 (Frankfurt) will auto-deploy.")
+            print(f"✅ Pushed {repo_path} to {REPO} (Commit: {new_commit})!")
     except Exception as pe:
-        print(f"❌ Error pushing to GitHub: {pe}")
+        print(f"❌ Error pushing {repo_path} to GitHub: {pe}")
+
+def push_app():
+    push_file(STANDBY_SRC, "app.py", "feat: auto wallet generation, bot binding, and farming for new accounts")
+    req_file = os.path.join(BASE_DIR, "requirements.txt")
+    if os.path.exists(req_file):
+        push_file(req_file, "requirements.txt", "deps: add ecdsa and base58")
+    print("🚀 Render Node 1 (Singapore) and Node 2 (Frankfurt) will auto-deploy.")
 
 if __name__ == "__main__":
     push_app()
