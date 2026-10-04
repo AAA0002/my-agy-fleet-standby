@@ -462,6 +462,22 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     except Exception as uq_e:
         logger.debug(f"[{name}] USDT QUAD error: {uq_e}")
 
+    # 15. TurboGram V1 WebApp initData (@TurboGramV1_bot)
+    try:
+        bot_tb = await client.get_entity(TURBOGRAM_BOT)
+        res_tb = await client(RequestWebViewRequest(
+            peer=bot_tb,
+            bot=bot_tb,
+            platform="android",
+            url="https://turbo.tamimdev.dev/"
+        ))
+        parsed_tb = urllib.parse.urlparse(res_tb.url)
+        tb_init = urllib.parse.parse_qs(parsed_tb.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_tb.query).get("tgWebAppData", [None])[0]
+        if tb_init:
+            tokens["turbogram_init_data"] = tb_init
+    except Exception as tb_e:
+        logger.debug(f"[{name}] TurboGram error: {tb_e}")
+
     return tokens
 
 
@@ -1263,7 +1279,13 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                 if target_ton:
                     await http.post("https://mrg.up.railway.app/api/user/connect-wallet", json={"initData": m_init, "address": target_ton, "balance": 0}, timeout=aiohttp.ClientTimeout(total=8))
                 if uid != "6727787768":
-                    await http.post("https://mrg.up.railway.app/api/auth/verify", json={"initData": m_init, "start_param": MRG_REFERRAL_CODE}, timeout=aiohttp.ClientTimeout(total=8))
+                    dev_info = {
+                        "platform": "android",
+                        "userAgent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36",
+                        "deviceMemory": "4 GB",
+                        "hardwareConcurrency": 8
+                    }
+                    await http.post("https://mrg.up.railway.app/api/auth/verify", json={"initData": m_init, "startParam": MRG_REFERRAL_CODE, "start_param": MRG_REFERRAL_CODE, "deviceInfo": dev_info}, timeout=aiohttp.ClientTimeout(total=8))
                 await http.post("https://mrg.up.railway.app/api/user/claim-mining", json={"initData": m_init}, timeout=aiohttp.ClientTimeout(total=8))
                 try:
                     async with http.post("https://mrg.up.railway.app/api/user/me", json={"initData": m_init}, timeout=aiohttp.ClientTimeout(total=6)) as me_r:
@@ -1578,44 +1600,53 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                 tt_init = tokens["tontrader_init_data"]
                 tt_h = {
                     "Content-Type": "application/json",
-                    "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
-                    "Referer": "https://tontrader.app/",
-                    "Origin": "https://tontrader.app"
+                    "x-telegram-init-data": tt_init,
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36",
+                    "Referer": "https://tontraderai.com/",
+                    "Origin": "https://tontraderai.com"
                 }
-                await http.post("https://api.tontrader.app/api/v1/auth", json={"initData": tt_init, "ref": TONTRADER_REFERRAL_CODE}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=6))
-                await http.post("https://api.tontrader.app/api/v1/daily-checkin", json={"initData": tt_init}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=6))
-                await http.post("https://api.tontrader.app/api/v1/claim", json={"initData": tt_init}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=6))
+                await http.get("https://api.tontraderai.com/api/v1/user/profile", headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
+                await http.post("https://api.tontraderai.com/api/v1/user/claim-welcome-gift", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
+                await http.post("https://api.tontraderai.com/api/v1/user/claim-daily-gift", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
+                await http.post("https://api.tontraderai.com/api/v1/finance/claim-yield", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
                 logger.info(f"[{name}] ✅ Ton Trader AI initial bootstrap claim completed")
             except Exception as e:
                 logger.debug(f"[{name}] Ton Trader bootstrap note: {e}")
 
         # 13. FINVORA Web3
-        try:
-            fin_h = {
-                "Content-Type": "application/json",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
-                "Referer": "https://finvora.io/",
-                "Origin": "https://finvora.io"
-            }
-            await http.post("https://finvora.io/api/user/sync", json={"tg_id": int(uid), "ref": FINVORA_REFERRAL_CODE, "start_param": FINVORA_REFERRAL_CODE}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=6))
-            await http.post("https://finvora.io/api/claim", json={"tg_id": int(uid)}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=6))
-            logger.info(f"[{name}] ✅ FINVORA Web3 initial bootstrap claim completed")
-        except Exception as e:
-            logger.debug(f"[{name}] FINVORA bootstrap note: {e}")
+        if tokens.get("finvora_init_data"):
+            try:
+                fin_init = tokens["finvora_init_data"]
+                fin_h = {
+                    "Content-Type": "application/json",
+                    "X-Telegram-Init-Data": fin_init,
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36"
+                }
+                target_ton = (acc_entry.get("ton_wallet") or {}).get("address")
+                if target_ton:
+                    await http.post("https://finvora-production.up.railway.app/api/wallet/connect", json={"address": target_ton, "walletType": "manual"}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=8))
+                await http.post("https://finvora-production.up.railway.app/api/bonus/instant", json={}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=8))
+                await http.post("https://finvora-production.up.railway.app/api/mining/claim", json={}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=8))
+                logger.info(f"[{name}] ✅ FINVORA Web3 initial bootstrap claim completed")
+            except Exception as e:
+                logger.debug(f"[{name}] FINVORA bootstrap note: {e}")
 
         # 14. TurboGram V1
-        try:
-            turbo_h = {
-                "Content-Type": "application/json",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
-                "Referer": "https://turbogram.xyz/",
-                "Origin": "https://turbogram.xyz"
-            }
-            await http.post("https://turbogram.xyz/api/user/sync", json={"tg_id": int(uid), "ref": TURBOGRAM_REFERRAL_CODE, "start_param": TURBOGRAM_REFERRAL_CODE}, headers=turbo_h, timeout=aiohttp.ClientTimeout(total=6))
-            await http.post("https://turbogram.xyz/api/claim", json={"tg_id": int(uid)}, headers=turbo_h, timeout=aiohttp.ClientTimeout(total=6))
-            logger.info(f"[{name}] ✅ TurboGram V1 initial bootstrap claim completed")
-        except Exception as e:
-            logger.debug(f"[{name}] TurboGram bootstrap note: {e}")
+        if tokens.get("turbogram_init_data"):
+            try:
+                tb_init = tokens["turbogram_init_data"]
+                tb_h = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"tma {tb_init}",
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36"
+                }
+                await http.get("https://turbo.tamimdev.dev/api/me", headers=tb_h, timeout=aiohttp.ClientTimeout(total=8))
+                target_ton = (acc_entry.get("ton_wallet") or {}).get("address")
+                if target_ton:
+                    await http.post("https://turbo.tamimdev.dev/api/me/wallet", json={"address": target_ton}, headers=tb_h, timeout=aiohttp.ClientTimeout(total=8))
+                logger.info(f"[{name}] ✅ TurboGram V1 initial bootstrap claim completed")
+            except Exception as e:
+                logger.debug(f"[{name}] TurboGram bootstrap note: {e}")
 
         # 15. Ominix AI Trade
         if tokens.get("ominix_init_data"):
@@ -2002,7 +2033,7 @@ async def complete_ominix_referral(client: TelegramClient, name: str, ref_code: 
                     "i": 0,
                     "p": {
                         "k": ["data"],
-                        "v": [{"t": 10, "i": 1, "p": {"k": ["initData"], "v": [{"t": 1, "s": om_init}]}, "o": 0}]
+                        "v": [{"t": 10, "i": 1, "p": {"k": ["initData", "fp"], "v": [{"t": 1, "s": om_init}, {"t": 1, "s": "0" * 64}]}, "o": 0}]
                     },
                     "o": 0
                 },
@@ -2335,7 +2366,13 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
                 mrg_init = urllib.parse.parse_qs(p_mrg.fragment).get("tgWebAppData", [None])[0]
                 if mrg_init:
                     async with aiohttp.ClientSession() as hs:
-                        await hs.post("https://mrg.up.railway.app/api/auth/verify", json={"initData": mrg_init, "start_param": MRG_REFERRAL_CODE}, timeout=aiohttp.ClientTimeout(total=8))
+                        dev_info = {
+                            "platform": "android",
+                            "userAgent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36",
+                            "deviceMemory": "4 GB",
+                            "hardwareConcurrency": 8
+                        }
+                        await hs.post("https://mrg.up.railway.app/api/auth/verify", json={"initData": mrg_init, "startParam": MRG_REFERRAL_CODE, "start_param": MRG_REFERRAL_CODE, "deviceInfo": dev_info}, timeout=aiohttp.ClientTimeout(total=8))
             except Exception as me:
                 logger.debug(f"[{name}] MRG direct app verify note: {me}")
             acc_entry["mrg_referral_bound"] = True
@@ -4133,7 +4170,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             }
             await jitter(1.0, 2.2)
             if not is_owner:
-                await safe_post("https://mrg.up.railway.app/api/auth/verify", {"initData": m_init, "startParam": "ref_IRN1G3XD", "start_param": "ref_IRN1G3XD"}, req_headers=m_headers)
+                await safe_post("https://mrg.up.railway.app/api/auth/verify", {"initData": m_init, "startParam": "ref_IRN1G3XD", "start_param": "ref_IRN1G3XD", "deviceInfo": device_info}, req_headers=m_headers)
             await jitter(1.2, 2.5)
             await safe_post("https://mrg.up.railway.app/api/user/claim-mining", {"initData": m_init, "deviceInfo": device_info}, req_headers=m_headers)
 
@@ -4854,6 +4891,33 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
     # 13. FINVORA Web3 (@FINVORAWeb3bot)
     async def _farm_finvora():
+        fin_init = tokens.get("finvora_init_data")
+        if fin_init:
+            try:
+                fin_h = {
+                    "Content-Type": "application/json",
+                    "X-Telegram-Init-Data": fin_init,
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36"
+                }
+                # 1. Connect dedicated TON wallet if not yet linked
+                target_ton = (acc.get("ton_wallet") or {}).get("address")
+                if target_ton:
+                    await safe_post("https://finvora-production.up.railway.app/api/wallet/connect", {"address": target_ton, "walletType": "manual"}, fin_h)
+                # 2. Claim instant bonus & regular mining claim
+                await safe_post("https://finvora-production.up.railway.app/api/bonus/instant", {}, fin_h)
+                st_c, cl_d = await safe_post("https://finvora-production.up.railway.app/api/mining/claim", {}, fin_h)
+                bal_txt = ""
+                if cl_d and isinstance(cl_d, dict):
+                    if cl_d.get("claimed"):
+                        bal_txt = f" (+{cl_d.get('claimed'):.4f} GRAM)"
+                    elif cl_d.get("user", {}).get("withdrawableBalance") is not None:
+                        bal_txt = f" (avail: {cl_d['user']['withdrawableBalance']:.4f} GRAM)"
+                status["bots"]["finvora"] = f"farmed{bal_txt}"
+                return
+            except Exception as e:
+                logger.debug(f"[{name}] FINVORA API farm note: {e}")
+
+        # Fallback to Telegram client if initData is not present
         sess_str = acc.get("session_string") or acc.get("session")
         if not sess_str:
             status["bots"]["finvora"] = "farmed"
@@ -4882,6 +4946,40 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
     # 14. TurboGram V1 (@TurboGramV1_bot)
     async def _farm_turbogram():
+        tb_init = tokens.get("turbogram_init_data")
+        if tb_init:
+            try:
+                tb_h = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"tma {tb_init}",
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36"
+                }
+                # 1. Sync user profile & bind dedicated TON wallet
+                _, me_d = await safe_get("https://turbo.tamimdev.dev/api/me", tb_h)
+                target_ton = (acc.get("ton_wallet") or {}).get("address")
+                if target_ton:
+                    await safe_post("https://turbo.tamimdev.dev/api/me/wallet", {"address": target_ton}, tb_h)
+
+                # 2. Fetch and complete tasks to keep referral status ACTIVE
+                _, tasks_d = await safe_get("https://turbo.tamimdev.dev/api/tasks", tb_h)
+                tasks_done = 0
+                if tasks_d and isinstance(tasks_d, list):
+                    for t in tasks_d:
+                        if not t.get("isCompleted") and t.get("id"):
+                            tid = t["id"]
+                            await safe_post(f"https://turbo.tamimdev.dev/api/tasks/{tid}/start", {}, tb_h)
+                            await asyncio.sleep(1.2)
+                            st_c, _ = await safe_post(f"https://turbo.tamimdev.dev/api/tasks/{tid}/complete", {}, tb_h)
+                            if st_c == 200:
+                                tasks_done += 1
+                bal_txt = ""
+                if me_d and isinstance(me_d, dict) and me_d.get("balance") is not None:
+                    bal_txt = f" (bal: {me_d['balance']:.2f} GRAM{f', +{tasks_done} tasks' if tasks_done else ''})"
+                status["bots"]["turbogram"] = f"farmed{bal_txt}"
+                return
+            except Exception as e:
+                logger.debug(f"[{name}] TurboGram API farm note: {e}")
+
         sess_str = acc.get("session_string") or acc.get("session")
         if not sess_str:
             status["bots"]["turbogram"] = "farmed"
@@ -4923,7 +5021,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     "i": 0,
                     "p": {
                         "k": ["data"],
-                        "v": [{"t": 10, "i": 1, "p": {"k": ["initData"], "v": [{"t": 1, "s": om_init}]}, "o": 0}]
+                        "v": [{"t": 10, "i": 1, "p": {"k": ["initData", "fp"], "v": [{"t": 1, "s": om_init}, {"t": 1, "s": "0" * 64}]}, "o": 0}]
                     },
                     "o": 0
                 },

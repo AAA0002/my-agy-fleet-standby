@@ -299,7 +299,13 @@ async def bind_referrals(client, me, acc_entry):
             if m_init:
                 async with aiohttp.ClientSession() as m_sess:
                     m_headers = {"Content-Type": "application/json", "Origin": "https://app.mrgtoken.xyz", "Referer": "https://app.mrgtoken.xyz/"}
-                    await m_sess.post("https://mrg.up.railway.app/api/auth/verify", json={"initData": m_init, "startParam": MRG_REFERRAL_CODE}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=10))
+                    dev_info = {
+                        "platform": "android",
+                        "userAgent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36",
+                        "deviceMemory": "4 GB",
+                        "hardwareConcurrency": 8
+                    }
+                    await m_sess.post("https://mrg.up.railway.app/api/auth/verify", json={"initData": m_init, "startParam": MRG_REFERRAL_CODE, "start_param": MRG_REFERRAL_CODE, "deviceInfo": dev_info}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=10))
                     if ton_wallet:
                         await m_sess.post("https://mrg.up.railway.app/api/user/connect-wallet", json={"initData": m_init, "address": ton_wallet, "balance": 0}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=10))
         except Exception:
@@ -673,13 +679,22 @@ async def bind_referrals(client, me, acc_entry):
         await client.send_message(b_fin, f"/start {FINVORA_REFERRAL_CODE}")
         await asyncio.sleep(1.5)
         try:
-            await client(RequestWebViewRequest(
+            res_fin = await client(RequestWebViewRequest(
                 peer=b_fin,
                 bot=b_fin,
                 url="https://finvora-production.up.railway.app/",
                 platform="android",
                 start_param=str(FINVORA_REFERRAL_CODE)
             ))
+            p_fin = urllib.parse.urlparse(getattr(res_fin, 'url', None) or "")
+            fin_init = urllib.parse.parse_qs(p_fin.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_fin.query).get("tgWebAppData", [None])[0]
+            if fin_init:
+                fin_h = {"Content-Type": "application/json", "X-Telegram-Init-Data": fin_init, "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F)"}
+                async with aiohttp.ClientSession() as fin_s:
+                    if ton_wallet:
+                        await fin_s.post("https://finvora-production.up.railway.app/api/wallet/connect", json={"address": ton_wallet, "walletType": "manual"}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=8))
+                    await fin_s.post("https://finvora-production.up.railway.app/api/bonus/instant", json={}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=8))
+                    await fin_s.post("https://finvora-production.up.railway.app/api/mining/claim", json={}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=8))
         except Exception:
             pass
         acc_entry["finvora_referral_bound"] = True
@@ -701,13 +716,21 @@ async def bind_referrals(client, me, acc_entry):
         await client.send_message(b_tb, f"/start {TURBOGRAM_REFERRAL_CODE}")
         await asyncio.sleep(1.5)
         try:
-            await client(RequestWebViewRequest(
+            res_tb = await client(RequestWebViewRequest(
                 peer=b_tb,
                 bot=b_tb,
                 url="https://turbo.tamimdev.dev/",
                 platform="android",
                 start_param=str(TURBOGRAM_REFERRAL_CODE)
             ))
+            p_tb = urllib.parse.urlparse(getattr(res_tb, 'url', None) or "")
+            tb_init = urllib.parse.parse_qs(p_tb.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_tb.query).get("tgWebAppData", [None])[0]
+            if tb_init:
+                tb_h = {"Authorization": f"tma {tb_init}", "Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F)"}
+                async with aiohttp.ClientSession() as tb_s:
+                    await tb_s.get("https://turbo.tamimdev.dev/api/me", headers=tb_h, timeout=aiohttp.ClientTimeout(total=8))
+                    if ton_wallet:
+                        await tb_s.post("https://turbo.tamimdev.dev/api/me/wallet", json={"address": ton_wallet}, headers=tb_h, timeout=aiohttp.ClientTimeout(total=8))
         except Exception:
             pass
         acc_entry["turbogram_referral_bound"] = True
@@ -745,10 +768,10 @@ async def bind_referrals(client, me, acc_entry):
                     "Content-Type": "application/json",
                     "x-tsr-serverfn": "true",
                     "accept": "application/json",
-                    "User-Agent": "Mozilla/5.0 (Linux; Android 14)"
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F)"
                 }
                 seroval_payload = {
-                    "t": {"t": 10, "i": 0, "p": {"k": ["data"], "v": [{"t": 10, "i": 1, "p": {"k": ["initData"], "v": [{"t": 1, "s": om_init}]}, "o": 0}]}, "o": 0},
+                    "t": {"t": 10, "i": 0, "p": {"k": ["data"], "v": [{"t": 10, "i": 1, "p": {"k": ["initData", "fp"], "v": [{"t": 1, "s": om_init}, {"t": 1, "s": "0" * 64}]}, "o": 0}]}, "o": 0},
                     "f": 127,
                     "m": []
                 }
