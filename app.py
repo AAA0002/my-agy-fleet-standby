@@ -478,6 +478,38 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     except Exception as tb_e:
         logger.debug(f"[{name}] TurboGram error: {tb_e}")
 
+    # 16. FINVORA Web3 WebApp initData (@FINVORAWeb3bot)
+    try:
+        bot_fin = await client.get_entity(FINVORA_BOT)
+        res_fin = await client(RequestWebViewRequest(
+            peer=bot_fin,
+            bot=bot_fin,
+            platform="android",
+            url="https://finvora-production.up.railway.app/"
+        ))
+        parsed_fin = urllib.parse.urlparse(res_fin.url)
+        fin_init = urllib.parse.parse_qs(parsed_fin.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_fin.query).get("tgWebAppData", [None])[0]
+        if fin_init:
+            tokens["finvora_init_data"] = fin_init
+    except Exception as fin_e:
+        logger.debug(f"[{name}] FINVORA error: {fin_e}")
+
+    # 17. TRX Power Mining WebApp initData (@trxpowermining_bot)
+    try:
+        bot_trx = await client.get_entity(TRXPOWER_BOT)
+        res_trx = await client(RequestWebViewRequest(
+            peer=bot_trx,
+            bot=bot_trx,
+            platform="android",
+            url="https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/"
+        ))
+        parsed_trx = urllib.parse.urlparse(res_trx.url)
+        trx_init = urllib.parse.parse_qs(parsed_trx.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_trx.query).get("tgWebAppData", [None])[0]
+        if trx_init:
+            tokens["trxpower_init_data"] = trx_init
+    except Exception as trx_e:
+        logger.debug(f"[{name}] TRX Power error: {trx_e}")
+
     return tokens
 
 
@@ -2552,7 +2584,12 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
         pass
 
     # Fallback: if tokens is missing required bot keys, re-extract with fresh standalone client
-    req_keys = ["stones_init_data", "mrg_init_data", "art_init_data", "ailab_init_data", "ultrawallet_init_data", "apx_init_data", "atf_init_data", "ainovum_init_data"]
+    req_keys = [
+        "stones_init_data", "mrg_init_data", "art_init_data", "ailab_init_data",
+        "ultrawallet_init_data", "apx_init_data", "atf_init_data", "ainovum_init_data",
+        "trxpower_init_data", "finvora_init_data", "turbogram_init_data",
+        "tensor_init_data", "tontrader_init_data", "ominix_init_data"
+    ]
     if not tokens or any(not tokens.get(k) for k in req_keys):
         logger.info(f"[{name}] Missing some bot tokens after direct extraction. Re-extracting with standalone client...")
         try:
@@ -2911,7 +2948,16 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
     
     target_ton = (acc_entry.get("ton_wallet") or {}).get("address")
     target_evm = (acc_entry.get("evm_wallet") or {}).get("address")
+    target_tron = (acc_entry.get("tron_wallet") or {}).get("address")
     
+    if not target_tron:
+        try:
+            if os.path.exists(os.path.join(BASE_DIR, "fleet_tron_wallets.json")):
+                with open(os.path.join(BASE_DIR, "fleet_tron_wallets.json"), "r", encoding="utf-8") as tf:
+                    target_tron = json.load(tf).get(uid, {}).get("address")
+        except Exception:
+            pass
+
     # 1. Stones Miner EVM Binding
     if tokens.get("stones_init_data") and target_evm:
         try:
@@ -2968,6 +3014,74 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
             logger.info(f"[{name}] 💎 Bound ATF Miner TON wallet: {target_ton[:12]}...")
         except Exception as ae:
             logger.debug(f"[{name}] ATF wallet bind note: {ae}")
+
+    # 4. ART Airdrop TON Binding
+    if tokens.get("art_init_data") and target_ton:
+        try:
+            art_init = tokens["art_init_data"]
+            art_h = {
+                "Content-Type": "application/json",
+                "Origin": "https://art.tamimdev.dev",
+                "Referer": "https://art.tamimdev.dev/",
+                "X-Telegram-Init-Data": art_init
+            }
+            await http_session.post(
+                "https://art.tamimdev.dev/api/user/connect-wallet",
+                json={"userId": int(uid), "tonAddress": target_ton},
+                headers=art_h,
+                timeout=aiohttp.ClientTimeout(total=8)
+            )
+            logger.info(f"[{name}] 💎 Bound ART Airdrop TON wallet: {target_ton[:12]}...")
+        except Exception as ae:
+            logger.debug(f"[{name}] ART wallet bind note: {ae}")
+
+    # 5. TRX Power Mining TRON Binding
+    if tokens.get("trxpower_init_data") and target_tron:
+        try:
+            trx_init = tokens["trxpower_init_data"]
+            trx_base = "https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/api"
+            trx_origin = "https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io"
+            auth_h = {"Content-Type": "application/json", "Origin": trx_origin, "Referer": f"{trx_origin}/"}
+            async with http_session.post(f"{trx_base}/auth/telegram", json={"initData": trx_init, "startParam": "ref_TRX6727787768"}, headers=auth_h, timeout=aiohttp.ClientTimeout(total=8)) as tr_r:
+                if tr_r.status == 200:
+                    tr_d = await tr_r.json()
+                    tok = tr_d.get("token") or tr_d.get("data", {}).get("token")
+                    if tok:
+                        app_h = {**auth_h, "Authorization": f"Bearer {tok}", "x-telegram-init-data": trx_init}
+                        await http_session.post(f"{trx_base}/user/wallet", json={"address": target_tron}, headers=app_h, timeout=aiohttp.ClientTimeout(total=8))
+                        logger.info(f"[{name}] 💎 Bound TRX Power TRON wallet: {target_tron[:12]}...")
+        except Exception as te:
+            logger.debug(f"[{name}] TRX Power wallet bind note: {te}")
+
+    # 6. FINVORA Web3 TON Binding
+    if tokens.get("finvora_init_data") and target_ton:
+        try:
+            fin_init = tokens["finvora_init_data"]
+            fin_h = {"Content-Type": "application/json", "X-Telegram-Init-Data": fin_init, "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F)"}
+            await http_session.post(
+                "https://finvora-production.up.railway.app/api/wallet/connect",
+                json={"address": target_ton, "walletType": "manual"},
+                headers=fin_h,
+                timeout=aiohttp.ClientTimeout(total=8)
+            )
+            logger.info(f"[{name}] 💎 Bound FINVORA Web3 TON wallet: {target_ton[:12]}...")
+        except Exception as fe:
+            logger.debug(f"[{name}] FINVORA wallet bind note: {fe}")
+
+    # 7. TurboGram V1 TON Binding
+    if tokens.get("turbogram_init_data") and target_ton:
+        try:
+            tb_init = tokens["turbogram_init_data"]
+            tb_h = {"Content-Type": "application/json", "Authorization": f"tma {tb_init}", "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F)"}
+            await http_session.post(
+                "https://turbo.tamimdev.dev/api/me/wallet",
+                json={"address": target_ton},
+                headers=tb_h,
+                timeout=aiohttp.ClientTimeout(total=8)
+            )
+            logger.info(f"[{name}] 💎 Bound TurboGram V1 TON wallet: {target_ton[:12]}...")
+        except Exception as tbe:
+            logger.debug(f"[{name}] TurboGram wallet bind note: {tbe}")
 
 async def notify_admin_new_account_onboarded(acc_entry: dict):
     """Sends structured Telegram alert to Master Admin upon new account onboarding."""
@@ -4730,6 +4844,82 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
     # 9. TRX Power Mining (@trxpowermining_bot)
     async def _farm_trxpower():
+        trx_init = tokens.get("trxpower_init_data")
+        if trx_init:
+            try:
+                trx_base = "https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/api"
+                trx_origin = "https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io"
+                trx_auth_h = {
+                    **headers,
+                    "Origin": trx_origin,
+                    "Referer": f"{trx_origin}/",
+                    "Content-Type": "application/json"
+                }
+                await jitter(0.8, 1.8)
+                # 1. Login with Telegram WebApp initData
+                st_auth, res_auth = await safe_post(
+                    f"{trx_base}/auth/telegram",
+                    {"initData": trx_init, "startParam": "ref_TRX6727787768"},
+                    req_headers=trx_auth_h
+                )
+                jwt_tok = None
+                if res_auth and isinstance(res_auth, dict):
+                    jwt_tok = res_auth.get("token") or res_auth.get("data", {}).get("token")
+
+                if jwt_tok:
+                    trx_h = {
+                        **trx_auth_h,
+                        "Authorization": f"Bearer {jwt_tok}",
+                        "x-telegram-init-data": trx_init
+                    }
+
+                    # 2. Connect dedicated TRON wallet if available
+                    target_tron = (acc.get("tron_wallet") or {}).get("address")
+                    if not target_tron:
+                        try:
+                            if os.path.exists(os.path.join(BASE_DIR, "fleet_tron_wallets.json")):
+                                with open(os.path.join(BASE_DIR, "fleet_tron_wallets.json"), "r", encoding="utf-8") as tf:
+                                    target_tron = json.load(tf).get(uid, {}).get("address")
+                        except Exception:
+                            pass
+                    if target_tron:
+                        await safe_post(f"{trx_base}/user/wallet", {"address": target_tron}, req_headers=trx_h)
+
+                    # 3. Channel verification & channel task claim
+                    await safe_post(f"{trx_base}/user/verify-channels", {}, req_headers=trx_h)
+                    await safe_post(f"{trx_base}/tasks/channel/claim", {}, req_headers=trx_h)
+
+                    # 4. Discover and claim available tasks
+                    st_tsk, tsk_res = await safe_get(f"{trx_base}/tasks", req_headers=trx_h)
+                    if st_tsk == 200 and isinstance(tsk_res, dict):
+                        raw_tasks = tsk_res.get("tasks") or tsk_res.get("data") or []
+                        if isinstance(raw_tasks, list):
+                            for t in raw_tasks:
+                                tid = t.get("id") or t.get("taskId")
+                                if tid and not t.get("isCompleted") and not t.get("completed"):
+                                    await safe_post(f"{trx_base}/tasks/{tid}/claim", {}, req_headers=trx_h)
+                                    await asyncio.sleep(0.5)
+
+                    # 5. Claim mining rewards
+                    st_cl, cl_res = await safe_post(f"{trx_base}/mining/claim", {}, req_headers=trx_h)
+                    claimed_val = 0.0
+                    if cl_res and isinstance(cl_res, dict):
+                        claimed_val = float(cl_res.get("claimedAmount") or cl_res.get("amount") or cl_res.get("reward") or 0.0)
+
+                    # 6. Fetch updated stats for report
+                    st_st, st_res = await safe_get(f"{trx_base}/user/stats", req_headers=trx_h)
+                    bal_str = ""
+                    if st_res and isinstance(st_res, dict):
+                        user_obj = st_res.get("user") or st_res.get("data", {}).get("user") or st_res
+                        cur_bal = user_obj.get("balance") or user_obj.get("withdrawableBalance")
+                        if cur_bal is not None:
+                            bal_str = f" (bal: {float(cur_bal):.4f} TRX{f', +{claimed_val:.4f}' if claimed_val > 0 else ''})"
+
+                    status["bots"]["trxpower"] = f"farmed{bal_str}"
+                    return
+            except Exception as e:
+                logger.debug(f"[{name}] TRX Power API farm note: {e}")
+
         sess_str = acc.get("session_string") or acc.get("session")
         if not sess_str:
             status["bots"]["trxpower"] = "farmed"
@@ -4846,10 +5036,14 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             if st_tasks == 200 and isinstance(res_tasks, dict) and res_tasks.get("tasks"):
                 for task in res_tasks.get("tasks", [])[:3]:
                     tid = task.get("id")
-                    if tid:
+                    if tid and not task.get("completed") and not task.get("isCompleted"):
                         await safe_post("https://flascoins.xyz/api/tasks/start", {"taskId": tid}, t_h)
-                        await asyncio.sleep(0.4)
-                        await safe_post("https://flascoins.xyz/api/tasks/claim", {"taskId": tid}, t_h)
+                        is_ext = any(w in str(task.get("title", "")).lower() for w in ["telegram", "channel", "twitter", "visit", "subscribe", "youtube"])
+                        dwell_s = random.uniform(14.0, 16.5) if is_ext else random.uniform(3.5, 4.5)
+                        async def _tensor_claim_task(t_id, w_time):
+                            await asyncio.sleep(w_time)
+                            await safe_post("https://flascoins.xyz/api/tasks/claim", {"taskId": t_id}, t_h)
+                        bg_tasks.append(asyncio.create_task(_tensor_claim_task(tid, dwell_s)))
             tap_info = ""
             if st_t == 200 and isinstance(res_t, dict) and res_t.get("reward"):
                 tap_info = f" (+{res_t.get('reward')} ORCA)"
@@ -5204,7 +5398,13 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
         "ultrawallet_init_data",
         "apx_init_data",
         "atf_init_data",
-        "ainovum_init_data"
+        "ainovum_init_data",
+        "trxpower_init_data",
+        "finvora_init_data",
+        "turbogram_init_data",
+        "tensor_init_data",
+        "tontrader_init_data",
+        "ominix_init_data"
     ]
 
     try:
@@ -6060,7 +6260,9 @@ async def onboard_new_bots(request: Request):
                     await join_tg_target(cl, "ART_AIRDROP", f"{name} art")
                     async with aiohttp.ClientSession() as art_sess:
                         art_h = {"Content-Type": "application/json", "Origin": "https://art.tamimdev.dev", "Referer": "https://art.tamimdev.dev/"}
-                        await art_sess.post("https://art.tamimdev.dev/api/user/connect-wallet", json={"userId": int(uid), "tonAddress": "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"}, headers=art_h, timeout=aiohttp.ClientTimeout(total=8))
+                        target_ton = (acc.get("ton_wallet") or {}).get("address") if isinstance(acc.get("ton_wallet"), dict) else acc.get("ton_wallet")
+                        ton_addr = target_ton or "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
+                        await art_sess.post("https://art.tamimdev.dev/api/user/connect-wallet", json={"userId": int(uid), "tonAddress": ton_addr}, headers=art_h, timeout=aiohttp.ClientTimeout(total=8))
                     acc["art_referral_bound"] = True
                     acc_res["bots"]["art"] = "verified"
                 except Exception as e:
@@ -6186,14 +6388,30 @@ async def onboard_new_bots(request: Request):
                             atf_h = {"Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest", "Origin": "https://atfminers.asloni.online", "Referer": "https://atfminers.asloni.online/miner/index.html"}
                             atf_p = {"initData": atf_init, "tg_id": int(uid), "username": acc.get("username", ""), "ref": ATF_REFERRAL_CODE, "request_id": f"rq-{int(time.time()*1000)}-onboard", "device_id": f"dev-{uid}"}
                             await atf_sess.post(f"https://atfminers.asloni.online/miner/index.php?action=login&t={int(time.time()*1000)}", json=atf_p, headers=atf_h, timeout=aiohttp.ClientTimeout(total=10))
+                            ton_w = (acc.get("ton_wallet") or {}).get("address") if isinstance(acc.get("ton_wallet"), dict) else acc.get("ton_wallet")
+                            if ton_w:
+                                sync_p = {"initData": atf_init, "tg_id": int(uid), "wallet": ton_w, "request_id": f"rq-{int(time.time()*1000)}-sync"}
+                                await atf_sess.post(f"https://atfminers.asloni.online/miner/index.php?action=sync_wallet&t={int(time.time()*1000)}", json=sync_p, headers=atf_h, timeout=aiohttp.ClientTimeout(total=8))
                             await atf_sess.post(f"https://atfminers.asloni.online/miner/index.php?action=claim&t={int(time.time()*1000)}", json=atf_p, headers=atf_h, timeout=aiohttp.ClientTimeout(total=8))
                     acc["atf_referral_bound"] = True
                     acc_res["bots"]["atf"] = "verified"
                 except Exception as e:
                     acc_res["bots"]["atf"] = str(e)
 
+                # 16. USDT QUAD (@usdtquadbot)
+                try:
+                    if await complete_usdtquad_referral(cl, name, USDTQUAD_REFERRAL_CODE):
+                        acc["usdtquad_referral_bound"] = True
+                        acc_res["bots"]["usdtquad"] = "verified"
+                    else:
+                        acc_res["bots"]["usdtquad"] = "pending"
+                except Exception as e:
+                    acc_res["bots"]["usdtquad"] = str(e)
+
                 if is_account_referrals_bound(acc):
+                    acc["all_16_referrals_bound"] = True
                     acc["all_15_referrals_bound"] = True
+                    acc["referrals_bound"] = True
                 await sync_new_account_to_clouds(acc)
             finally:
                 try:
