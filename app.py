@@ -221,6 +221,8 @@ OMINIX_BOT = "OminixAiBot"
 OMINIX_REFERRAL_CODE = "6727787768"
 USDTQUAD_BOT = "usdtquadbot"
 USDTQUAD_REFERRAL_CODE = "6727787768"
+TAC_BOT = "tacairdrop_bot"
+TAC_REFERRAL_CODE = "6727787768"
 
 LAST_BTC_MINE_TIMES = {}
 LAST_BTC_TASKS_TIMES = {}
@@ -509,6 +511,22 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
             tokens["trxpower_init_data"] = trx_init
     except Exception as trx_e:
         logger.debug(f"[{name}] TRX Power error: {trx_e}")
+
+    # 18. TAC Airdrop WebApp initData (@tacairdrop_bot)
+    try:
+        bot_tac = await client.get_input_entity(TAC_BOT)
+        res_tac = await client(RequestAppWebViewRequest(
+            peer=bot_tac,
+            app=InputBotAppShortName(bot_id=bot_tac, short_name="play"),
+            platform="android",
+            start_param=TAC_REFERRAL_CODE
+        ))
+        parsed_tac = urllib.parse.urlparse(getattr(res_tac, 'url', None) or "")
+        tac_init = urllib.parse.parse_qs(parsed_tac.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_tac.query).get("tgWebAppData", [None])[0]
+        if tac_init:
+            tokens["tac_init_data"] = tac_init
+    except Exception as tac_e:
+        logger.debug(f"[{name}] TAC Airdrop error: {tac_e}")
 
     return tokens
 
@@ -1697,10 +1715,29 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             except Exception as e:
                 logger.debug(f"[{name}] Ominix bootstrap note: {e}")
 
+        # 16. TAC Airdrop
+        if tokens.get("tac_init_data"):
+            try:
+                tac_init = tokens["tac_init_data"]
+                tac_h = {
+                    "Content-Type": "application/json",
+                    "X-Telegram-Init-Data": tac_init,
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36"
+                }
+                await http.get(f"https://tacairdrop.xyz/api/state?userId={uid}&ref={TAC_REFERRAL_CODE}", headers=tac_h, timeout=aiohttp.ClientTimeout(total=8))
+                target_ton = (acc_entry.get("ton_wallet") or {}).get("address")
+                if target_ton:
+                    await http.post("https://tacairdrop.xyz/api/user/connect-wallet", json={"userId": uid, "address": target_ton, "walletType": "manual"}, headers=tac_h, timeout=aiohttp.ClientTimeout(total=8))
+                await http.post("https://tacairdrop.xyz/api/mining/start", json={"userId": uid}, headers=tac_h, timeout=aiohttp.ClientTimeout(total=8))
+                await http.post("https://tacairdrop.xyz/api/ads/watch", json={"userId": uid}, headers=tac_h, timeout=aiohttp.ClientTimeout(total=8))
+                logger.info(f"[{name}] ✅ TAC Airdrop initial bootstrap & mining started")
+            except Exception as e:
+                logger.debug(f"[{name}] TAC bootstrap note: {e}")
+
 
 def is_account_referrals_bound(acc_entry: dict) -> bool:
-    """Checks whether an account already has its master referrals bound across all 16 active bots."""
-    if acc_entry.get("all_16_referrals_bound") or acc_entry.get("all_15_referrals_bound"):
+    """Checks whether an account already has its master referrals bound across all 17 active bots."""
+    if acc_entry.get("all_17_referrals_bound") or acc_entry.get("all_16_referrals_bound") or acc_entry.get("all_15_referrals_bound"):
         return True
     return bool(
         acc_entry.get("atf_referral_bound") and
@@ -1718,7 +1755,8 @@ def is_account_referrals_bound(acc_entry: dict) -> bool:
         acc_entry.get("finvora_referral_bound") and
         acc_entry.get("turbogram_referral_bound") and
         acc_entry.get("ominix_referral_bound") and
-        acc_entry.get("usdtquad_referral_bound")
+        acc_entry.get("usdtquad_referral_bound") and
+        acc_entry.get("tac_referral_bound")
     )
 
 
@@ -2334,6 +2372,55 @@ async def complete_usdtquad_referral(client: TelegramClient, name: str, ref_code
         return False
 
 
+async def complete_tac_referral(client: TelegramClient, name: str, ref_code: str = TAC_REFERRAL_CODE) -> bool:
+    """Registers and binds TAC Airdrop referral to master account."""
+    try:
+        try:
+            await client(UnblockRequest(id=TAC_BOT))
+        except Exception:
+            pass
+        bot = await client.get_entity(TAC_BOT)
+        await mute_peer(client, bot, "tacairdrop_bot")
+        await client.send_message(bot, f"/start {ref_code}")
+        await asyncio.sleep(1.0)
+        try:
+            b_in = await client.get_input_entity(bot)
+            res_tac = await client(RequestAppWebViewRequest(
+                peer=b_in,
+                app=InputBotAppShortName(bot_id=b_in, short_name="play"),
+                platform="android",
+                start_param=str(ref_code)
+            ))
+            p_tac = urllib.parse.urlparse(getattr(res_tac, 'url', None) or "")
+            tac_init = urllib.parse.parse_qs(p_tac.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_tac.query).get("tgWebAppData", [None])[0]
+            if tac_init:
+                me = await client.get_me()
+                uid = str(me.id)
+                uname = me.username or me.first_name or name
+                tac_h = {
+                    "Content-Type": "application/json",
+                    "X-Telegram-Init-Data": tac_init,
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36"
+                }
+                async with aiohttp.ClientSession(headers=tac_h) as session:
+                    await session.get(
+                        f"https://tacairdrop.xyz/api/state?userId={uid}&ref={ref_code}&username={urllib.parse.quote(uname)}",
+                        timeout=aiohttp.ClientTimeout(total=8)
+                    )
+                    await session.post(
+                        "https://tacairdrop.xyz/api/mining/start",
+                        json={"userId": uid},
+                        timeout=aiohttp.ClientTimeout(total=8)
+                    )
+        except Exception as tace:
+            logger.debug(f"[{name}] TAC Airdrop WebApp reg note: {tace}")
+        logger.info(f"[{name}] ✅ TAC Airdrop successfully bound to {ref_code}")
+        return True
+    except Exception as e:
+        logger.warning(f"[{name}] TAC Airdrop referral completion note: {e}")
+        return False
+
+
 async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict):
     """
     Guarantees master referral codes are registered ONCE per account for 1st-time newly added accounts,
@@ -2557,10 +2644,17 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
             acc_entry["usdtquad_referral_bound"] = True
         await asyncio.sleep(1.0)
 
+    # 17. TAC Airdrop (tacairdrop.xyz WebApp + Start 6727787768)
+    if not acc_entry.get("tac_referral_bound"):
+        if await complete_tac_referral(client, name, TAC_REFERRAL_CODE):
+            acc_entry["tac_referral_bound"] = True
+        await asyncio.sleep(1.0)
+
     if is_account_referrals_bound(acc_entry):
         acc_entry["referrals_bound"] = True
+        acc_entry["all_17_referrals_bound"] = True
         acc_entry["all_16_referrals_bound"] = True
-        logger.info(f"[{name}] ✅ All 16 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
+        logger.info(f"[{name}] ✅ All 17 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
     else:
         logger.warning(f"[{name}] ⚠️ Some referrals could not be bound immediately. Will retry on next cycle.")
 
@@ -2588,7 +2682,8 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
         "stones_init_data", "mrg_init_data", "art_init_data", "ailab_init_data",
         "ultrawallet_init_data", "apx_init_data", "atf_init_data", "ainovum_init_data",
         "trxpower_init_data", "finvora_init_data", "turbogram_init_data",
-        "tensor_init_data", "tontrader_init_data", "ominix_init_data"
+        "tensor_init_data", "tontrader_init_data", "ominix_init_data",
+        "usdtquad_init_data", "tac_init_data"
     ]
     if not tokens or any(not tokens.get(k) for k in req_keys):
         logger.info(f"[{name}] Missing some bot tokens after direct extraction. Re-extracting with standalone client...")
@@ -3082,6 +3177,25 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
             logger.info(f"[{name}] 💎 Bound TurboGram V1 TON wallet: {target_ton[:12]}...")
         except Exception as tbe:
             logger.debug(f"[{name}] TurboGram wallet bind note: {tbe}")
+
+    # 8. TAC Airdrop TON Binding
+    if tokens.get("tac_init_data") and target_ton:
+        try:
+            tac_init = tokens["tac_init_data"]
+            tac_h = {
+                "Content-Type": "application/json",
+                "X-Telegram-Init-Data": tac_init,
+                "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F)"
+            }
+            await http_session.post(
+                "https://tacairdrop.xyz/api/user/connect-wallet",
+                json={"userId": str(uid), "address": target_ton, "walletType": "manual"},
+                headers=tac_h,
+                timeout=aiohttp.ClientTimeout(total=8)
+            )
+            logger.info(f"[{name}] 💎 Bound TAC Airdrop TON wallet: {target_ton[:12]}...")
+        except Exception as tce:
+            logger.debug(f"[{name}] TAC wallet bind note: {tce}")
 
 async def notify_admin_new_account_onboarded(acc_entry: dict):
     """Sends structured Telegram alert to Master Admin upon new account onboarding."""
@@ -5346,6 +5460,90 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         except Exception as e:
             status["bots"]["usdtquad"] = f"error: {format_error(e)}"
 
+    # 17. TAC Airdrop (@tacairdrop_bot) - WebApp REST API
+    async def _farm_tac():
+        tac_init = tokens.get("tac_init_data")
+        if not tac_init:
+            return
+        tac_headers = {
+            "Content-Type": "application/json",
+            "X-Telegram-Init-Data": tac_init,
+            "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36"
+        }
+        try:
+            await jitter(0.8, 1.8)
+            # 1. State check
+            st_url = f"https://tacairdrop.xyz/api/state?userId={uid}&username={urllib.parse.quote(name)}"
+            st_code, state_data = await safe_get(st_url, req_headers=tac_headers)
+            if st_code != 200 or not isinstance(state_data, dict):
+                status["bots"]["tac"] = f"state_error_{st_code}"
+                return
+
+            cur_u = state_data.get("currentUser", {})
+            m_stat = state_data.get("miningStatus", {})
+            is_mining = m_stat.get("isMining", False)
+            can_claim = m_stat.get("canClaim", False)
+            cur_mined = float(m_stat.get("currentMinedAtf", 0))
+            pool_bal = float(cur_u.get("poolWallet", 0))
+
+            # 2. Claim mining if can_claim or overdue
+            claimed_txt = ""
+            if can_claim or cur_mined >= 0.05 or not is_mining:
+                await jitter(1.0, 2.0)
+                c_code, c_res = await safe_post("https://tacairdrop.xyz/api/mining/claim", {"userId": uid}, req_headers=tac_headers)
+                if c_code == 200 and isinstance(c_res, dict):
+                    amt = c_res.get("claimedAtf", cur_mined)
+                    claimed_txt = f" (+{amt:.4f} TAC)"
+                    pool_bal = float(c_res.get("poolWallet", pool_bal + amt))
+                    is_mining = False
+
+            # 3. Start mining if not running
+            if not is_mining:
+                await jitter(1.0, 2.0)
+                s_code, s_res = await safe_post("https://tacairdrop.xyz/api/mining/start", {"userId": uid}, req_headers=tac_headers)
+                if s_code == 200:
+                    is_mining = True
+
+            # 4. Watch ad (+15 TAC each, up to 7/day)
+            ad_txt = ""
+            ads_today = cur_u.get("adsWatchedToday", 0)
+            if ads_today < 7:
+                await jitter(1.0, 2.2)
+                a_code, a_res = await safe_post("https://tacairdrop.xyz/api/ads/watch", {"userId": uid}, req_headers=tac_headers)
+                if a_code == 200 and isinstance(a_res, dict):
+                    rew = a_res.get("reward", 15)
+                    ad_txt = f" (+{rew} TAC ad)"
+                    pool_bal += rew
+
+            # 5. Complete social tasks
+            tasks = state_data.get("tasks", [])
+            completed_ids = set(cur_u.get("completedTaskIds", []))
+            for t in tasks:
+                tid = t.get("id")
+                if tid and tid not in completed_ids and not t.get("isCompleted") and not t.get("completed"):
+                    try:
+                        await safe_post("https://tacairdrop.xyz/api/tasks/complete", {"userId": uid, "taskId": tid}, req_headers=tac_headers)
+                        await asyncio.sleep(0.5)
+                    except Exception:
+                        pass
+
+            # 6. Master account referral claims
+            if is_owner:
+                try:
+                    await safe_post("https://tacairdrop.xyz/api/referrals/claim", {"userId": uid}, req_headers=tac_headers)
+                    await safe_post("https://tacairdrop.xyz/api/referrals/claim-team", {"userId": uid}, req_headers=tac_headers)
+                except Exception:
+                    pass
+
+            # 7. Dedicated TON wallet binding check
+            target_ton = (acc.get("ton_wallet") or {}).get("address")
+            if not cur_u.get("walletAddress") and target_ton:
+                await safe_post("https://tacairdrop.xyz/api/user/connect-wallet", {"userId": uid, "address": target_ton, "walletType": "manual"}, req_headers=tac_headers)
+
+            status["bots"]["tac"] = f"farmed (pool: {pool_bal:.2f} TAC, mining: {is_mining}){claimed_txt}{ad_txt}"
+        except Exception as e:
+            status["bots"]["tac"] = f"error: {format_error(e)}"
+
     # Humanized Execution Pipeline: Randomize the order of bot executions per account session
     bot_routines = [
         {"name": "stones", "fn": _farm_stones, "has_data": bool(tokens.get("stones_init_data"))},
@@ -5364,6 +5562,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "turbogram", "fn": _farm_turbogram, "has_data": True},
         {"name": "ominix", "fn": _farm_ominix, "has_data": True},
         {"name": "usdtquad", "fn": _farm_usdtquad, "has_data": True},
+        {"name": "tac", "fn": _farm_tac, "has_data": bool(tokens.get("tac_init_data"))},
     ]
 
     active_routines = [b for b in bot_routines if b["has_data"]]
@@ -5404,7 +5603,9 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
         "turbogram_init_data",
         "tensor_init_data",
         "tontrader_init_data",
-        "ominix_init_data"
+        "ominix_init_data",
+        "usdtquad_init_data",
+        "tac_init_data"
     ]
 
     try:
@@ -6408,7 +6609,18 @@ async def onboard_new_bots(request: Request):
                 except Exception as e:
                     acc_res["bots"]["usdtquad"] = str(e)
 
+                # 17. TAC Airdrop (@tacairdrop_bot)
+                try:
+                    if await complete_tac_referral(cl, name, TAC_REFERRAL_CODE):
+                        acc["tac_referral_bound"] = True
+                        acc_res["bots"]["tac"] = "verified"
+                    else:
+                        acc_res["bots"]["tac"] = "pending"
+                except Exception as e:
+                    acc_res["bots"]["tac"] = str(e)
+
                 if is_account_referrals_bound(acc):
+                    acc["all_17_referrals_bound"] = True
                     acc["all_16_referrals_bound"] = True
                     acc["all_15_referrals_bound"] = True
                     acc["referrals_bound"] = True
