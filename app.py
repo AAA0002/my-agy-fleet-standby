@@ -1601,32 +1601,28 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                 logger.debug(f"[{name}] Ainovum bootstrap note: {e}")
 
         # 9. TRX Power Mining
-        try:
-            trx_h = {
-                "Content-Type": "application/json",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
-                "Referer": "https://trxpowermining.org/",
-                "Origin": "https://trxpowermining.org"
-            }
-            await http.post("https://trxpowermining.org/api/user/sync", json={"tg_id": int(uid), "ref": TRXPOWER_REFERRAL_CODE, "start_param": TRXPOWER_REFERRAL_CODE}, headers=trx_h, timeout=aiohttp.ClientTimeout(total=6))
-            await http.post("https://trxpowermining.org/api/claim", json={"tg_id": int(uid)}, headers=trx_h, timeout=aiohttp.ClientTimeout(total=6))
-            logger.info(f"[{name}] ✅ TRX Power Mining initial bootstrap claim completed")
-        except Exception as e:
-            logger.debug(f"[{name}] TRX Power bootstrap note: {e}")
+        if tokens.get("trxpower_init_data"):
+            try:
+                trx_init = tokens["trxpower_init_data"]
+                trx_base = "https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/api"
+                trx_origin = "https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io"
+                auth_h = {"Content-Type": "application/json", "Origin": trx_origin, "Referer": f"{trx_origin}/"}
+                async with http.post(f"{trx_base}/auth/telegram", json={"initData": trx_init, "startParam": TRXPOWER_REFERRAL_CODE}, headers=auth_h, timeout=aiohttp.ClientTimeout(total=8)) as tr_r:
+                    if tr_r.status == 200:
+                        tr_d = await tr_r.json()
+                        tok = tr_d.get("token") or tr_d.get("data", {}).get("token")
+                        if tok:
+                            app_h = {**auth_h, "Authorization": f"Bearer {tok}", "x-telegram-init-data": trx_init}
+                            target_tron = (acc_entry.get("tron_wallet") or {}).get("address")
+                            if target_tron:
+                                await http.post(f"{trx_base}/user/wallet", json={"address": target_tron}, headers=app_h, timeout=aiohttp.ClientTimeout(total=6))
+                            await http.post(f"{trx_base}/mining/claim", json={}, headers=app_h, timeout=aiohttp.ClientTimeout(total=6))
+                logger.info(f"[{name}] ✅ TRX Power Mining initial bootstrap claim completed")
+            except Exception as e:
+                logger.debug(f"[{name}] TRX Power bootstrap note: {e}")
 
         # 10. Bitcoin Cloud Miners
-        try:
-            btc_h = {
-                "Content-Type": "application/json",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
-                "Referer": "https://btccloudminers.org/",
-                "Origin": "https://btccloudminers.org"
-            }
-            await http.post("https://btccloudminers.org/api/user/sync", json={"tg_id": int(uid), "ref": BTC_REFERRAL_CODE, "start_param": BTC_REFERRAL_CODE}, headers=btc_h, timeout=aiohttp.ClientTimeout(total=6))
-            await http.post("https://btccloudminers.org/api/claim", json={"tg_id": int(uid)}, headers=btc_h, timeout=aiohttp.ClientTimeout(total=6))
-            logger.info(f"[{name}] ✅ Bitcoin Cloud Miners initial bootstrap claim completed")
-        except Exception as e:
-            logger.debug(f"[{name}] Bitcoin Cloud bootstrap note: {e}")
+        logger.info(f"[{name}] ℹ️ Bitcoin Cloud Miners active via MTProto /start & inline buttons")
 
         # 11. Tensor Mining Robot
         if tokens.get("tensor_init_data"):
@@ -1635,11 +1631,13 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                 tns_h = {
                     "Content-Type": "application/json",
                     "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
-                    "Referer": "https://tensormining.online/",
-                    "Origin": "https://tensormining.online"
+                    "Referer": "https://flascoins.xyz/",
+                    "Origin": "https://flascoins.xyz",
+                    "Authorization": f"tma {tns_init}"
                 }
-                await http.post("https://tensormining.online/api/auth/telegram", json={"initData": tns_init, "referrer": TENSOR_REFERRAL_CODE}, headers=tns_h, timeout=aiohttp.ClientTimeout(total=6))
-                await http.post("https://tensormining.online/api/mining/claim", json={"initData": tns_init}, headers=tns_h, timeout=aiohttp.ClientTimeout(total=6))
+                await http.post("https://flascoins.xyz/api/auth", json={}, headers=tns_h, timeout=aiohttp.ClientTimeout(total=6))
+                await http.post("https://flascoins.xyz/api/daily", json={}, headers=tns_h, timeout=aiohttp.ClientTimeout(total=6))
+                await http.post("https://flascoins.xyz/api/tap", json={"taps": 50}, headers=tns_h, timeout=aiohttp.ClientTimeout(total=6))
                 logger.info(f"[{name}] ✅ Tensor Mining Robot initial bootstrap claim completed")
             except Exception as e:
                 logger.debug(f"[{name}] Tensor Mining bootstrap note: {e}")
@@ -1655,7 +1653,6 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                     "Referer": "https://tontraderai.com/",
                     "Origin": "https://tontraderai.com"
                 }
-                await http.get("https://api.tontraderai.com/api/v1/user/profile", headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
                 await http.post("https://api.tontraderai.com/api/v1/user/claim-welcome-gift", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
                 await http.post("https://api.tontraderai.com/api/v1/user/claim-daily-gift", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
                 await http.post("https://api.tontraderai.com/api/v1/finance/claim-yield", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
@@ -1703,19 +1700,52 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             try:
                 om_init = tokens["ominix_init_data"]
                 om_h = {
-                    "Content-Type": "application/json",
                     "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
-                    "Referer": "https://ominix.trade/",
-                    "Origin": "https://ominix.trade"
+                    "Referer": "https://ominiaibot.lovable.app/",
+                    "Origin": "https://ominiaibot.lovable.app",
+                    "Content-Type": "application/json",
+                    "x-tsr-serverfn": "true",
+                    "accept": "application/x-tss-framed, application/x-ndjson, application/json"
                 }
-                await http.post("https://api.ominix.trade/api/auth/verify", json={"initData": om_init, "ref": OMINIX_REFERRAL_CODE}, headers=om_h, timeout=aiohttp.ClientTimeout(total=6))
-                await http.post("https://api.ominix.trade/api/trade/daily-checkin", json={"initData": om_init}, headers=om_h, timeout=aiohttp.ClientTimeout(total=6))
-                await http.post("https://api.ominix.trade/api/trade/claim", json={"initData": om_init}, headers=om_h, timeout=aiohttp.ClientTimeout(total=6))
+                seroval_payload = {
+                    "t": {
+                        "t": 10, "i": 0,
+                        "p": {
+                            "k": ["data"],
+                            "v": [{"t": 10, "i": 1, "p": {"k": ["initData", "fp"], "v": [{"t": 1, "s": om_init}, {"t": 1, "s": "0" * 64}]}, "o": 0}]
+                        },
+                        "o": 0
+                    },
+                    "f": 63, "m": []
+                }
+                await http.post("https://ominiaibot.lovable.app/_serverFn/bcb8e269d7f337068c7424538a77cd77e7013594ec5c8849925e8ca5b7cbe06c", json=seroval_payload, headers=om_h, timeout=aiohttp.ClientTimeout(total=8))
+                await http.post("https://ominiaibot.lovable.app/_serverFn/21aff4856aa0147739b66c3269611c49fd8dd342144e4973589515477e97c95b", json=seroval_payload, headers=om_h, timeout=aiohttp.ClientTimeout(total=8))
                 logger.info(f"[{name}] ✅ Ominix AI Trade initial bootstrap claim completed")
             except Exception as e:
                 logger.debug(f"[{name}] Ominix bootstrap note: {e}")
 
-        # 16. TAC Airdrop
+        # 16. USDT QUAD
+        try:
+            uq_headers = {"User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro)", "Cookie": f"userId={uid}"}
+            ref_code = "" if uid == "6727787768" else USDTQUAD_REFERRAL_CODE
+            uq_init = tokens.get("usdtquad_init_data")
+            photo_url = "/img/doggo.mp4"
+            if uq_init:
+                user_json = urllib.parse.parse_qs(uq_init).get("user", [None])[0]
+                if user_json:
+                    try:
+                        photo_url = json.loads(user_json).get("photo_url", photo_url)
+                    except Exception:
+                        pass
+            reg_body = urllib.parse.urlencode({"referralCode": ref_code, "wallet": photo_url, "tgcode": str(uid), "userName": name})
+            await http.post("https://ustdquad.up.railway.app/register", data=reg_body, headers={**uq_headers, "Content-Type": "application/x-www-form-urlencoded"}, timeout=aiohttp.ClientTimeout(total=8))
+            await http.post("https://ustdquad.up.railway.app/claim-balance", json={}, headers={**uq_headers, "Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=8))
+            await http.post("https://ustdquad.up.railway.app/complete-task", json={"taskId": "hourly_watch_ad", "reward": 1}, headers={**uq_headers, "Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=8))
+            logger.info(f"[{name}] ✅ USDT QUAD initial bootstrap claim completed")
+        except Exception as uqe:
+            logger.debug(f"[{name}] USDT QUAD bootstrap note: {uqe}")
+
+        # 17. TAC Airdrop
         if tokens.get("tac_init_data"):
             try:
                 tac_init = tokens["tac_init_data"]
