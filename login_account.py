@@ -33,6 +33,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
 FLEET_TON_WALLETS_FILE = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
 FLEET_EVM_WALLETS_FILE = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
+FLEET_TRON_WALLETS_FILE = os.path.join(BASE_DIR, "fleet_tron_wallets.json")
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 API_ID = os.getenv("TELEGRAM_API_ID")
@@ -90,6 +91,7 @@ USDTQUAD_REFERRAL_CODE = "6727787768"
 PRIMARY_CHAT_ID = "6727787768"
 PRIMARY_EVM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 PRIMARY_TON_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
+PRIMARY_TRON_WALLET = "TZ6LY4QwiJr8WXN6W1HjiUCbkvFxq1vmUJ"
 
 async def mute_peer(client, peer, name: str = ""):
     """Permanently silences notifications from a bot, channel, or group."""
@@ -240,6 +242,42 @@ def ensure_account_evm_wallet(acc: dict) -> str:
         return ""
 
 
+def ensure_account_tron_wallet(acc: dict) -> str:
+    """Ensures account has an isolated TRON (TRX / TRC-20) wallet in fleet_tron_wallets.json."""
+    uid = str(acc.get("user_id"))
+    if not uid or uid == PRIMARY_CHAT_ID:
+        return PRIMARY_TRON_WALLET
+
+    twallets = {}
+    if os.path.exists(FLEET_TRON_WALLETS_FILE):
+        try:
+            with open(FLEET_TRON_WALLETS_FILE, "r", encoding="utf-8") as f:
+                twallets = json.load(f)
+        except Exception:
+            twallets = {}
+
+    if uid in twallets and twallets[uid].get("address"):
+        acc["tron_wallet"] = {"address": twallets[uid]["address"], "private_key": twallets[uid].get("private_key", ""), "network": "TRON (TRX / TRC-20)"}
+        return twallets[uid]["address"]
+
+    try:
+        from fleet_wallet_provisioner import generate_multichain_wallet_suite
+        cur_accs = load_accounts()
+        next_idx = len(cur_accs) + 1
+        suite = generate_multichain_wallet_suite(next_idx, acc.get("name", "Worker"), uid, acc.get("phone", ""), acc.get("username", ""))
+        tw = suite.get("tron", {})
+        if tw.get("address"):
+            twallets[uid] = tw
+            with open(FLEET_TRON_WALLETS_FILE, "w", encoding="utf-8") as f:
+                json.dump(twallets, f, indent=2, ensure_ascii=False)
+            acc["tron_wallet"] = tw
+            print(f"  🔑 Generated isolated TRON wallet for {acc.get('name')}: {tw['address']}")
+            return tw["address"]
+    except Exception as e:
+        print(f"  ⚠️ Could not auto-generate TRON wallet: {e}")
+    return ""
+
+
 async def bind_referrals(client, me, acc_entry):
     acc_uid = str(me.id)
     acc_name = acc_entry.get("name", "Worker")
@@ -247,6 +285,7 @@ async def bind_referrals(client, me, acc_entry):
     # Ensure isolated wallets are assigned
     ton_wallet = ensure_account_ton_wallet(acc_entry)
     evm_wallet = ensure_account_evm_wallet(acc_entry)
+    tron_wallet = ensure_account_tron_wallet(acc_entry)
 
     if acc_uid == PRIMARY_CHAT_ID or acc_entry.get("is_referral_host"):
         print("ℹ️ Primary referral host account. Skipping self-referral.")
@@ -268,6 +307,25 @@ async def bind_referrals(client, me, acc_entry):
         await asyncio.sleep(1.5)
         try:
             await client(JoinChannelRequest("stoneswithestand"))
+        except Exception:
+            pass
+        try:
+            res_st = await client(RequestWebViewRequest(
+                peer=b_stones,
+                bot=b_stones,
+                platform="android",
+                url="https://app.stoneswithestand.my.id/"
+            ))
+            p_st = urllib.parse.urlparse(getattr(res_st, 'url', None) or "")
+            st_init = urllib.parse.parse_qs(p_st.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_st.query).get("tgWebAppData", [None])[0]
+            if st_init:
+                acc_entry["stones_init_data"] = st_init
+                st_h = {"Content-Type": "application/json", "Origin": "https://app.stoneswithestand.my.id", "Referer": "https://app.stoneswithestand.my.id/"}
+                async with aiohttp.ClientSession() as s_st:
+                    await s_st.post("https://app.stoneswithestand.my.id/api/init", json={"initData": st_init, "start_param": STONES_REFERRAL_CODE}, headers=st_h, timeout=aiohttp.ClientTimeout(total=8))
+                    if evm_wallet:
+                        await s_st.post("https://app.stoneswithestand.my.id/api/wallet", json={"initData": st_init, "wallet": evm_wallet}, headers=st_h, timeout=aiohttp.ClientTimeout(total=8))
+                    await s_st.post("https://app.stoneswithestand.my.id/api/mining/start", json={"initData": st_init}, headers=st_h, timeout=aiohttp.ClientTimeout(total=8))
         except Exception:
             pass
         acc_entry["stones_referral_bound"] = True
@@ -295,7 +353,7 @@ async def bind_referrals(client, me, acc_entry):
                 start_param=MRG_REFERRAL_CODE
             ))
             parsed_mrg = urllib.parse.urlparse(res_mrg.url)
-            m_init = urllib.parse.parse_qs(parsed_mrg.fragment).get("tgWebAppData", [None])[0]
+            m_init = urllib.parse.parse_qs(parsed_mrg.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_mrg.query).get("tgWebAppData", [None])[0]
             if m_init:
                 async with aiohttp.ClientSession() as m_sess:
                     m_headers = {"Content-Type": "application/json", "Origin": "https://app.mrgtoken.xyz", "Referer": "https://app.mrgtoken.xyz/"}
@@ -333,6 +391,24 @@ async def bind_referrals(client, me, acc_entry):
         await asyncio.sleep(1.5)
         try:
             await client(JoinChannelRequest("ART_AIRDROP"))
+        except Exception:
+            pass
+        try:
+            res_art = await client(RequestWebViewRequest(
+                peer=b_art,
+                bot=b_art,
+                platform="android",
+                url=f"https://art.tamimdev.dev/?ref={ART_REFERRAL_CODE}"
+            ))
+            p_art = urllib.parse.urlparse(getattr(res_art, 'url', None) or "")
+            art_init = urllib.parse.parse_qs(p_art.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_art.query).get("tgWebAppData", [None])[0]
+            if art_init:
+                acc_entry["art_init_data"] = art_init
+                art_h = {"Content-Type": "application/json", "Origin": "https://art.tamimdev.dev", "Referer": "https://art.tamimdev.dev/", "X-Telegram-Init-Data": art_init}
+                async with aiohttp.ClientSession() as s_art:
+                    if ton_wallet:
+                        await s_art.post("https://art.tamimdev.dev/api/user/connect-wallet", json={"userId": int(me.id), "tonAddress": ton_wallet}, headers=art_h, timeout=aiohttp.ClientTimeout(total=8))
+                    await s_art.post("https://art.tamimdev.dev/api/user/start-mining", json={"userId": int(me.id)}, headers=art_h, timeout=aiohttp.ClientTimeout(total=8))
         except Exception:
             pass
         acc_entry["art_referral_bound"] = True
@@ -492,6 +568,29 @@ async def bind_referrals(client, me, acc_entry):
         await mute_peer(client, bot_atf, "ATF_AIRDROP_bot")
         await client.send_message(bot_atf, f"/start {ATF_REFERRAL_CODE}")
         await asyncio.sleep(1.5)
+        try:
+            atf_url = f"https://atfminers.asloni.online/miner/index.html?v=1790778623&entry=bot_start&ref={ATF_REFERRAL_CODE}"
+            res_atf = await client(RequestWebViewRequest(
+                peer=bot_atf,
+                bot=bot_atf,
+                url=atf_url,
+                start_param=ATF_REFERRAL_CODE,
+                platform="android"
+            ))
+            p_atf = urllib.parse.urlparse(getattr(res_atf, 'url', None) or "")
+            atf_init = urllib.parse.parse_qs(p_atf.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_atf.query).get("tgWebAppData", [None])[0]
+            if atf_init:
+                acc_entry["atf_init_data"] = atf_init
+                async with aiohttp.ClientSession() as s_atf:
+                    atf_h = {"Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest", "Origin": "https://atfminers.asloni.online", "Referer": "https://atfminers.asloni.online/miner/index.html"}
+                    atf_p = {"initData": atf_init, "tg_id": int(me.id), "username": acc_entry.get("username", ""), "ref": ATF_REFERRAL_CODE, "request_id": f"rq-{int(time.time()*1000)}-onboard", "device_id": f"dev-{me.id}"}
+                    await s_atf.post(f"https://atfminers.asloni.online/miner/index.php?action=login&t={int(time.time()*1000)}", json=atf_p, headers=atf_h, timeout=aiohttp.ClientTimeout(total=10))
+                    if ton_wallet:
+                        sync_p = {"initData": atf_init, "tg_id": int(me.id), "wallet": ton_wallet, "request_id": f"rq-{int(time.time()*1000)}-sync"}
+                        await s_atf.post(f"https://atfminers.asloni.online/miner/index.php?action=sync_wallet&t={int(time.time()*1000)}", json=sync_p, headers=atf_h, timeout=aiohttp.ClientTimeout(total=8))
+                    await s_atf.post(f"https://atfminers.asloni.online/miner/index.php?action=claim&t={int(time.time()*1000)}", json=atf_p, headers=atf_h, timeout=aiohttp.ClientTimeout(total=8))
+        except Exception:
+            pass
         acc_entry["atf_referral_bound"] = True
         print(f"  ✅ [8/15] Successfully bound to ATF Miner ({ATF_REFERRAL_CODE})!")
     except Exception as e:
@@ -522,6 +621,35 @@ async def bind_referrals(client, me, acc_entry):
                             except Exception:
                                 pass
                             break
+        try:
+            res_trx = await client(RequestWebViewRequest(
+                peer=b_trx,
+                bot=b_trx,
+                url="https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/",
+                platform="android",
+                start_param=str(TRXPOWER_REFERRAL_CODE)
+            ))
+            p_trx = urllib.parse.urlparse(getattr(res_trx, "url", None) or "")
+            trx_init = urllib.parse.parse_qs(p_trx.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_trx.query).get("tgWebAppData", [None])[0]
+            if trx_init:
+                acc_entry["trxpower_init_data"] = trx_init
+                trx_base = "https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/api"
+                trx_origin = "https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io"
+                auth_h = {"Content-Type": "application/json", "Origin": trx_origin, "Referer": f"{trx_origin}/", "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F)"}
+                async with aiohttp.ClientSession() as trx_s:
+                    async with trx_s.post(f"{trx_base}/auth/telegram", json={"initData": trx_init, "startParam": str(TRXPOWER_REFERRAL_CODE)}, headers=auth_h, timeout=aiohttp.ClientTimeout(total=8)) as a_r:
+                        if a_r.status == 200:
+                            a_dat = await a_r.json()
+                            tok = a_dat.get("token") or a_dat.get("data", {}).get("token")
+                            if tok:
+                                app_h = {**auth_h, "Authorization": f"Bearer {tok}", "x-telegram-init-data": trx_init}
+                                if tron_wallet:
+                                    await trx_s.post(f"{trx_base}/user/wallet", json={"address": tron_wallet}, headers=app_h, timeout=aiohttp.ClientTimeout(total=8))
+                                await trx_s.post(f"{trx_base}/user/verify-channels", {}, headers=app_h, timeout=aiohttp.ClientTimeout(total=8))
+                                await trx_s.post(f"{trx_base}/tasks/channel/claim", {}, headers=app_h, timeout=aiohttp.ClientTimeout(total=8))
+                                await trx_s.post(f"{trx_base}/mining/claim", {}, headers=app_h, timeout=aiohttp.ClientTimeout(total=8))
+        except Exception:
+            pass
         acc_entry["trxpower_referral_bound"] = True
         print(f"  ✅ [9/15] Successfully bound to TRX Power Mining ({TRXPOWER_REFERRAL_CODE})!")
     except Exception as e:

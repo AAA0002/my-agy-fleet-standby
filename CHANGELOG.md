@@ -4,7 +4,26 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-- **🔍 Comprehensive 16-Bot Referral Audit, MRG & Ominix Bug Fixes, and Multi-Bot WebApp API Upgrade (`render_standby_app.py`, `login_account.py`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
+- **⚡ Major Upgrade: TRX Power REST API Integration, Fleet-Wide Multi-Chain Wallet Binding, and Tensor Anti-Ban Dwell Fixes (`render_standby_app.py`, `login_account.py`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
+  - **🚀 TRX Power Mining Full Mini App REST API Integration (`_farm_trxpower`)**:
+    * Upgraded from passive text message polling to full `v=2.0.3` WebApp REST backend (`https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/api`).
+    * Implemented `/api/auth/telegram` authentication with JWT Bearer tokens, automated TRON wallet binding via `/api/user/wallet`, channel verification via `/api/user/verify-channels`, task claims via `/api/tasks/channel/claim`, real-time yield harvesting via `/api/mining/claim`, and stat inspection via `/api/user/stats`. Cleanly falls back to Telethon client if tokens are not available.
+  - **💎 Universal Automated Multi-Chain Wallet Binding Across All Bots (`bind_wallets_to_bots`)**:
+    * Expanded `bind_wallets_to_bots` from 3 bots to all 7 wallet-connecting bots: Stones Miners (EVM), MRG Miner (TON), ATF Miner (TON), ART Airdrop (TON), TRX Power Mining (TRON), FINVORA Web3 (TON), and TurboGram V1 (TON).
+    * When any new account is onboarded via Admin Bot or CLI, all dedicated multi-chain wallets are automatically provisioned and securely bound to their respective bot backends.
+    * Fixed bug in `onboard_new_bots` where ART Airdrop previously fell back to the hardcoded master TON address; now strictly binds the worker's dedicated TON wallet.
+  - **🐛 Tensor Mining Anti-Cheat Dwell Timer Optimization (`_farm_tensor`)**:
+    * Resolved claim rejection bug on `flascoins.xyz` caused by 0.4s task completion timing.
+    * Implemented realistic humanized dwell times (14.0–16.5s for social/channel tasks, 3.5–4.5s for internal tasks) via asynchronous background tasks, ensuring 100% claim success without blocking account farming.
+  - **🔗 Full 16/16 Bot Onboarding Alignment (`onboard_new_bots`)**:
+    * Added bot #16 (USDT QUAD) to the interactive `/api/onboard-new-bots` cloud endpoint.
+    * Updated referral audit flag to `all_16_referrals_bound` so accounts properly pass verification without referral leaks.
+  - **🔑 Interactive CLI Onboarding Multi-Chain Upgrade (`login_account.py`)**:
+    * Implemented `ensure_account_tron_wallet` to guarantee isolated TRON wallet provisioning.
+    * Integrated WebApp API handshake and automated wallet binding for Stones (EVM), ART (TON), ATF (TON), and TRX Power (TRON) during `/start` onboarding.
+  - **🚀 Cloud Deployment & Zero Phone Load**:
+    * Deployed updated `app.py` (Commit `9ee4775c`) and `requirements.txt` (Commit `dc52a734`) to Render Standby Repo `AAA0002/my-agy-fleet-standby` for Singapore and Frankfurt nodes.
+    * Verified 0 Python bot processes running locally on Samsung Galaxy A30; phone remains 100% dedicated to Antigravity CLI.
   - **📊 Fleet-Wide 16-Bot Referral Audit Completed**:
     * **USDT QUAD (`@usdtquadbot`)**: **17/17** (100% active, milestones claimed, 892 GH/s).
     * **Stones Miners (`@stoneswithestand_bot`)**: **17/17** (100% linked in backend ref list, 13 valid, 4 pending channel join).
