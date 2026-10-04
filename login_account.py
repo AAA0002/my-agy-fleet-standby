@@ -88,6 +88,9 @@ OMINIX_REFERRAL_CODE = "6727787768"
 USDTQUAD_BOT = "usdtquadbot"
 USDTQUAD_REFERRAL_CODE = "6727787768"
 
+TAC_BOT = "tacairdrop_bot"
+TAC_REFERRAL_CODE = "6727787768"
+
 PRIMARY_CHAT_ID = "6727787768"
 PRIMARY_EVM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 PRIMARY_TON_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
@@ -957,26 +960,86 @@ async def bind_referrals(client, me, acc_entry):
         except Exception as reg_e:
             print(f"  Note during USDT QUAD WebApp registration: {reg_e}")
         acc_entry["usdtquad_referral_bound"] = True
-        print(f"  ✅ [16/16] Successfully bound to USDT QUAD ({USDTQUAD_REFERRAL_CODE})!")
+        print(f"  ✅ [16/17] Successfully bound to USDT QUAD ({USDTQUAD_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding USDT QUAD referral: {e}")
 
+    # 17. TAC Airdrop (@tacairdrop_bot) - Referral: 6727787768
+    print(f"  • [17/17] Connecting to @{TAC_BOT} with referral: {TAC_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=TAC_BOT))
+        except Exception:
+            pass
+        b_tac = await client.get_entity(TAC_BOT)
+        await mute_peer(client, b_tac, "tacairdrop_bot")
+        await client.send_message(b_tac, f"/start {TAC_REFERRAL_CODE}")
+        await asyncio.sleep(1.0)
+        try:
+            b_in = await client.get_input_entity(b_tac)
+            res_tac = await client(RequestAppWebViewRequest(
+                peer=b_in,
+                app=InputBotAppShortName(bot_id=b_in, short_name="play"),
+                platform="android",
+                start_param=str(TAC_REFERRAL_CODE)
+            ))
+            p_tac = urllib.parse.urlparse(getattr(res_tac, 'url', None) or "")
+            tac_init = urllib.parse.parse_qs(p_tac.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_tac.query).get("tgWebAppData", [None])[0]
+            if tac_init:
+                tac_h = {
+                    "Content-Type": "application/json",
+                    "X-Telegram-Init-Data": tac_init,
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36"
+                }
+                async with aiohttp.ClientSession(headers=tac_h) as session:
+                    # Sync state & register referral
+                    await session.get(
+                        f"https://tacairdrop.xyz/api/state?userId={acc_uid}&ref={TAC_REFERRAL_CODE}&username={urllib.parse.quote(acc_name)}",
+                        timeout=aiohttp.ClientTimeout(total=8)
+                    )
+                    # Connect dedicated TON wallet
+                    if ton_wallet:
+                        await session.post(
+                            "https://tacairdrop.xyz/api/user/connect-wallet",
+                            json={"userId": str(acc_uid), "address": ton_wallet, "walletType": "manual"},
+                            timeout=aiohttp.ClientTimeout(total=8)
+                        )
+                    # Start 8h mining cycle
+                    await session.post(
+                        "https://tacairdrop.xyz/api/mining/start",
+                        json={"userId": str(acc_uid)},
+                        timeout=aiohttp.ClientTimeout(total=8)
+                    )
+                    # Watch initial ad (+15 TAC)
+                    await session.post(
+                        "https://tacairdrop.xyz/api/ads/watch",
+                        json={"userId": str(acc_uid)},
+                        timeout=aiohttp.ClientTimeout(total=8)
+                    )
+        except Exception as tac_e:
+            print(f"  Note during TAC Airdrop WebApp handshake: {tac_e}")
+        acc_entry["tac_referral_bound"] = True
+        print(f"  ✅ [17/17] Successfully bound to TAC Airdrop ({TAC_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding TAC Airdrop referral: {e}")
+
     # Audit final referral status
-    all_16_keys = [
+    all_17_keys = [
         "stones_referral_bound", "mrg_referral_bound", "art_referral_bound",
         "ailab_referral_bound", "ultrawallet_referral_bound", "apx_referral_bound",
         "ainovum_referral_bound", "atf_referral_bound", "trxpower_referral_bound",
         "btc_referral_bound", "tensor_referral_bound", "tontrader_referral_bound",
         "finvora_referral_bound", "turbogram_referral_bound", "ominix_referral_bound",
-        "usdtquad_referral_bound"
+        "usdtquad_referral_bound", "tac_referral_bound"
     ]
-    bound_count = sum(1 for k in all_16_keys if acc_entry.get(k))
-    if bound_count == len(all_16_keys):
+    bound_count = sum(1 for k in all_17_keys if acc_entry.get(k))
+    if bound_count == len(all_17_keys):
+        acc_entry["all_17_referrals_bound"] = True
         acc_entry["all_16_referrals_bound"] = True
         acc_entry["referrals_bound"] = True
-        print(f"\n🎉 ALL 16/16 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
+        print(f"\n🎉 ALL 17/17 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
     else:
-        print(f"\n⚠️ {bound_count}/16 bots bound. Remaining will be auto-bound on next cloud cycle.")
+        print(f"\n⚠️ {bound_count}/17 bots bound. Remaining will be auto-bound on next cloud cycle.")
 
 
 

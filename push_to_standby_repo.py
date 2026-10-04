@@ -75,7 +75,7 @@ def push_file(local_path: str, repo_path: str, commit_msg: str):
         print(f"❌ Error pushing {repo_path} to GitHub: {pe}")
 
 def push_app():
-    push_file(STANDBY_SRC, "app.py", "feat: auto wallet generation, bot binding, and farming for new accounts")
+    push_file(STANDBY_SRC, "app.py", "feat: integrate TAC Airdrop bot #17 with 8h mining, ads, wallet binding, and referral finish")
     req_file = os.path.join(BASE_DIR, "requirements.txt")
     if os.path.exists(req_file):
         push_file(req_file, "requirements.txt", "deps: add ecdsa and base58")

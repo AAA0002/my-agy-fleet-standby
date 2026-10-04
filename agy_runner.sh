@@ -6,7 +6,7 @@
 # =======================================================
 
 SESSION="antigravity_cli"
-AGY_BIN="/home/arif2743/.local/bin/agy"
+AGY_BIN="/data/data/com.termux/files/home/.local/bin/agy"
 
 # If already inside a tmux window, execute agy directly with remote control
 if [ -n "$TMUX" ]; then

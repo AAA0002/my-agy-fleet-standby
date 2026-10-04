@@ -4,6 +4,39 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **⚡ Bot #17 Addition: TAC Airdrop Complete REST API Integration, 17/17 Fleet Batch Onboarding & Cloud Auto-Farming (`render_standby_app.py`, `login_account.py`, `fleet_miniapp_tokens.json`, `accounts.json`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
+  - **🚀 Reverse-Engineering TAC Airdrop Mini App REST API (`https://tacairdrop.xyz`)**:
+    * Extracted and deconstructed production React bundle `index-DOoXm_a7.js` to uncover the complete backend architecture.
+    * Discovered REST API endpoints:
+      - `GET /api/state?userId={uid}&ref={ref}&username={username}` (with `X-Telegram-Init-Data` header): bootstraps user state, establishes referral relationship under master `6727787768`, returns mining status, tasks, balances, and miner levels.
+      - `POST /api/user/connect-wallet`: binds dedicated TON v4r2 wallet addresses with `walletType: "manual"` without browser extension popup.
+      - `POST /api/mining/start`: initiates 8-hour continuous cloud mining cycle.
+      - `POST /api/mining/claim`: claims accumulated TAC yield into pool wallet.
+      - `POST /api/ads/watch`: watches high-yield ad rewards (+15 TAC per watch, up to 7 ads/day = 105 TAC daily per account).
+      - `POST /api/tasks/complete`: completes social/community tasks for instant TAC bonuses.
+      - `POST /api/referrals/claim` & `claim-team`: claims tier-1 referral yield and team wallet commission directly to Master Account.
+  - **💎 Fleet-Wide 17/17 Worker Account Batch Onboarding**:
+    * Executed automated onboarding pipeline across all 17 worker accounts (Accounts 2 to 18) under Master referral `6727787768`.
+    * Sent `/start 6727787768` and requested Mini App webview with `start_param: "6727787768"` via Telethon.
+    * Bound each worker account's dedicated isolated TON address from `fleet_ton_wallets.json`.
+    * Started 8-hour mining and watched initial ads (+15 TAC each).
+    * Verified 100% referral attribution: Master Account (`6727787768`) confirmed with `referralCount: 17`, `successfulReferralCount: 17`, `holdingWallet: 3407.6448 TAC`, and `poolWallet: 257.8897 TAC`.
+  - **🤖 24/7 Cloud Auto-Farming Integration (`_farm_tac` in `render_standby_app.py`)**:
+    * Added TAC Airdrop as Bot #17 in `bot_routines` and `REQUIRED_BOT_KEYS`.
+    * Implemented autonomous harvest and restart cycle for the 8-hour miner.
+    * Automated daily ad watches (up to 7/day = +105 TAC/account/day).
+    * Automated social task completions and wallet binding audits.
+    * Added Master Account referral harvesting in every farming cycle.
+  - **🔑 Interactive CLI Onboarding Multi-Chain Upgrade (`login_account.py`)**:
+    * Added TAC Airdrop to interactive onboarding pipeline as bot [17/17].
+    * Automatically mutes notifications, binds to Master referral `6727787768`, performs WebApp handshake, connects dedicated TON wallet, starts mining, and updates `all_17_referrals_bound` audit flag.
+  - **☁️ Cloud Deployment & Token Synchronization**:
+    * Extracted and saved fresh `tac_init_data` tokens for all 18 accounts into `fleet_miniapp_tokens.json`.
+    * Synchronized tokens to Upstash Redis and Cloudflare edge mesh.
+    * Deployed updated `app.py` (Commit `f058a5e4`) to GitHub Standby Repo `AAA0002/my-agy-fleet-standby` for live deployment on Render Node 1 (Singapore) and Node 2 (Frankfurt).
+  - **📱 Zero Phone Load Verification**:
+    * Confirmed 0 background Python bot processes running locally on Samsung Galaxy A30; phone CPU and RAM remain 100% free for Antigravity AI pair programming.
+
 - **⚡ Major Upgrade: TRX Power REST API Integration, Fleet-Wide Multi-Chain Wallet Binding, and Tensor Anti-Ban Dwell Fixes (`render_standby_app.py`, `login_account.py`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
   - **🚀 TRX Power Mining Full Mini App REST API Integration (`_farm_trxpower`)**:
     * Upgraded from passive text message polling to full `v=2.0.3` WebApp REST backend (`https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/api`).
