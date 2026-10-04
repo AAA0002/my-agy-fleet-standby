@@ -4,6 +4,31 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **⚡ Cloudflare Edge Mesh 17-Bot Fleet Upgrade & Dead Endpoint Modernization (`deploy_both_cf_workers.py`, `render_standby_app.py`, `CHANGELOG.md`)**:
+  - **🌐 Unified 17-Bot Cloudflare Workers Engine Across All 5 Edge Nodes**:
+    * Overhauled Cloudflare Worker bot routines (`farmSingleAccountAllBots`) to add Bot #16 (USDT QUAD via `https://ustdquad.up.railway.app`) and Bot #17 (TAC Airdrop via `https://tacairdrop.xyz/api`).
+    * Expanded active routine shuffle pipeline (`botRoutines`) from 15 to all 17 bots per account session.
+    * Added `/usdt` and `/tac` dedicated command centers and status queries to Admin Bot (@myagyai).
+    * Upgraded `/harvest`, `/pools`, `/status`, and ecosystem executive summary to reflect the full 17-bot lineup.
+  - **🛠️ Production REST API Endpoint Modernization & Dead Domain Fixes**:
+    * Overhauled TRX Power Mining: replaced dead domain `trxpowermining.org` with live production IP gateway `https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/api`.
+    * Overhauled Tensor Mining Robot: replaced dead domain `tensormining.online` / `api.flascoins.xyz` with live endpoint `https://flascoins.xyz` using `Authorization: tma <tensor_init_data>` headers.
+    * Overhauled Ton Trader AI: replaced dead domain `tontrader.app` with live endpoint `https://api.tontraderai.com/api/v1` using `x-telegram-init-data`.
+    * Overhauled TurboGram V1: replaced dead domain `turbogram.xyz` with live endpoint `https://turbo.tamimdev.dev` with `Authorization: tma <turbogram_init_data>`.
+    * Overhauled Ominix AI Trade: replaced dead domain `api.ominix.trade` with live TanStack Start Seroval RPC `https://ominiaibot.lovable.app/_serverFn/...`.
+    * Overhauled Bitcoin Cloud Miners: resolved API call errors by recognizing MTProto inline callback mechanics.
+  - **🚀 Multi-Cloud 5-Node Edge Mesh Deployment**:
+    * Successfully deployed the updated 17-bot engine across all 5 Cloudflare Worker nodes:
+      - Node 1 (`aaaai2.workers.dev`)
+      - Node 2 (`aaa-bot.workers.dev`)
+      - Node 3 (`aaa222.workers.dev`)
+      - Node 4 (`agorameet.workers.dev`)
+      - Node 5 (`aaaai.workers.dev`)
+    * Synchronized all edge cron triggers (`*/15 * * * *`), webhooks, descriptions, short descriptions, menu buttons, and bot command lists for both `@myagyai` and `@AAAPREMIUMAPPSbot`.
+  - **🛡️ Render Standby Synchronization & Zero Phone Load**:
+    * Updated `render_standby_app.py` `bootstrap_account_mining` with the modernized endpoints and 17-bot bootstrap routines.
+    * Confirmed strictly 0 background Python bot processes on Samsung Galaxy A30 (RAM and CPU 100% free for Antigravity AI pair programming).
+
 - **⚡ Bot #17 Addition: TAC Airdrop Complete REST API Integration, 17/17 Fleet Batch Onboarding & Cloud Auto-Farming (`render_standby_app.py`, `login_account.py`, `fleet_miniapp_tokens.json`, `accounts.json`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
   - **🚀 Reverse-Engineering TAC Airdrop Mini App REST API (`https://tacairdrop.xyz`)**:
     * Extracted and deconstructed production React bundle `index-DOoXm_a7.js` to uncover the complete backend architecture.
