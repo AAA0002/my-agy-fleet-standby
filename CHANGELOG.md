@@ -4,6 +4,21 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🐧 Ubuntu PRoot Environment Migration, Bug Hardening & 18-Account Cloud Harvest Audit (`start-ubuntu.sh`, `ubuntu-agy`, `render_standby_app.py`, `fleet_miniapp_tokens.json`, `CHANGELOG.md`)**:
+  - **🐧 Full Ubuntu 26.04 LTS PRoot Environment & Antigravity Transfer**:
+    * Installed Ubuntu 26.04 container via `proot-distro` with native `glibc` 2.40 runtime.
+    * Solved Antigravity CLI freezing/scheduling bottlenecks caused by Android Bionic signal scheduling over large 6.6MB conversation trajectories.
+    * Linked `/root/.gemini` to shared host credentials and workspace to preserve all sessions, OAuth tokens, and brain memory seamlessly.
+    * Created high-efficiency launchers `start-ubuntu.sh`, `ubuntu-agy`, and aliases (`ubuntu`, `ubuntu-agy`, `uagy`) with auto-jump to `/root/workspace`.
+  - **🛠️ Bug Discovery, Defense Hardening & Dead Token Decommissioning**:
+    * **AI Lab Robot**: Resolved `AttributeError: 'list' object has no attribute 'get'` in `render_standby_app.py`. AI Lab API returns `{"result": []}` as a list on 401/unauthorized; added defensive `isinstance(..., dict)` guards before calling `.get()`.
+    * **UltraWallet Rate-Limit Handling**: Hardened error response handling where raw strings (`"Too many requests..."`) crashed dictionary `.get("message")`. Added string type checking and staggered jitter.
+    * **Dead Key Purge**: Fully removed 32 legacy MiningGRAM keys and residual code references from `fleet_miniapp_tokens.json` and `render_standby_app.py`.
+  - **🌾 Fleet-Wide 18-Account Cloud Harvest & TAC Auto-Leveling Audit**:
+    * Verified 100% token validity across all 18 accounts (15/15 active WebApp tokens per account, 270 total).
+    * Successfully auto-leveled Master Account (`6727787768`) to **Level 148** (Hold: 3,297 TAC, Pool: 623 TAC). Worker accounts leveled up to Levels 5–8 based on ATF thresholds.
+    * Cloudflare Edge Workers mesh and Render Standby confirmed running 100% in the cloud. Zero background Python bot processes on local Samsung Galaxy A30.
+
 - **🚨 Ominix AI Trade Scam Fleet-Wide Purge & TAC Airdrop Autonomous Miner Auto-Leveling System (`report_and_purge_ominix.py`, `deploy_both_cf_workers.py`, `render_standby_app.py`, `userbot_refresher.py`, `login_account.py`, `clean_all_accounts_channels.py`, `CHANGELOG.md`)**:
   - **🚫 Fleet-Wide Scam Reporting, Blocking & Channel Purge across all 18 Accounts**:
     * Created and executed `report_and_purge_ominix.py` across all 18 fleet accounts in `accounts.json`.
