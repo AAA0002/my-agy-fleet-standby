@@ -20,7 +20,8 @@ Guarantees:
   12. TON Trader AI (@TonTraderAIBot) -> /start REF_6727787768 + welcome & daily gifts
   13. FINVORA Web3 (@FINVORAWeb3bot) -> /start ref_TRX6727787768 + WebApp
   14. TurboGram V1 (@TurboGramV1_bot) -> /start r_3520c92b + WebApp
-  15. Ominix AI Trade (@OminixAiBot) -> /start 6727787768 + ServerFn profit claim
+  15. USDT QUAD (@usdtquadbot) -> /start 6727787768 + WebApp register
+  16. TAC Airdrop (@tacairdrop_bot) -> /start 6727787768 + WebApp claim & start
 """
 
 import os

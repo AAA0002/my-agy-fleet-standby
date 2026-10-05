@@ -4,6 +4,34 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🚨 Ominix AI Trade Scam Fleet-Wide Purge & TAC Airdrop Autonomous Miner Auto-Leveling System (`report_and_purge_ominix.py`, `deploy_both_cf_workers.py`, `render_standby_app.py`, `userbot_refresher.py`, `login_account.py`, `clean_all_accounts_channels.py`, `CHANGELOG.md`)**:
+  - **🚫 Fleet-Wide Scam Reporting, Blocking & Channel Purge across all 18 Accounts**:
+    * Created and executed `report_and_purge_ominix.py` across all 18 fleet accounts in `accounts.json`.
+    * Formally reported `@OminixAiBot` to Telegram Anti-Scam using `ReportPeerRequest` with `InputReportReasonFake` for fraudulent investment/trading claims and withholding withdrawals.
+    * Blocked `@OminixAiBot` on all 18 accounts (`BlockRequest`).
+    * Deleted and revoked entire chat history with the bot on all accounts (`DeleteHistoryRequest(revoke=True)`).
+    * Formally reported and left all associated scam channels across all 18 accounts:
+      - `@ominiai` (Ominix AI Announcement Channel)
+      - `@ominiaipayout` (Fake Payout Proofs Channel)
+    * Purged `ominix_referral_bound` flags from `accounts.json` and deleted `ominix_init_data` from `fleet_miniapp_tokens.json`.
+    * Removed `@ominiai` and `@ominiaipayout` from channel whitelists and added to `EXPLICIT_UNWANTED_USERNAMES` in `clean_all_accounts_channels.py`.
+  - **⚡ Complete Fleet Decommissioning of Ominix from All Codebases**:
+    * Cleaned `deploy_both_cf_workers.py`: removed `farmOminix` routine, deleted Ominix from `botRoutines`, updated command `/ominix` to display a scam alert & decommission warning, removed `/ominix` from admin bot commands menu, and adjusted active lineup to 16 legitimate bots.
+    * Cleaned `render_standby_app.py`: removed `_farm_ominix`, `complete_ominix_referral`, initial bootstrap claims, test queries, and study endpoints.
+    * Cleaned `userbot_refresher.py` and `login_account.py`: removed Ominix onboarding, channel joining, self-healing unblock loop, and updated referral binding verification to 16/16 bots.
+  - **🪂 TAC Airdrop Autonomous Sequential Miner Auto-Leveling**:
+    * Reverse-engineered `POST https://tacairdrop.xyz/api/miners/upgrade` (`{userId, targetLevel}`).
+    * Identified that TAC miner leveling is based on an ATF holding threshold (`requiredHoldingAtf`) rather than burning/spending balance: tokens remain 100% in user's holding and pool wallets.
+    * Executed sequential miner upgrade on Master account (`6727787768`), successfully upgrading from Level 4 all the way to **Level 147**, increasing mining hashrate from 0.20 TH/s to over 2.75 TH/s!
+    * Integrated sequential auto-leveling loops into both `deploy_both_cf_workers.py` (`farmTac`) and `render_standby_app.py` (`_farm_tac`): on every farming cycle, each account queries its eligible level and sequentially upgrades miner levels step-by-step up to the holding balance threshold.
+  - **🚀 Cloudflare Edge Mesh 5-Node & Render Standby Redeployment**:
+    * Deployed updated 16-bot engine across all 5 Cloudflare Worker Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with active 24/7 cron (`*/15 * * * *`).
+    * Synchronized bot commands, menu buttons, descriptions, and webhooks with Telegram Bot API.
+    * Pushed updated standby application to GitHub repository `AAA0002/my-agy-fleet-standby` for auto-deployment to Render Node 1 (Singapore) and Node 2 (Frankfurt).
+  - **📱 Rule #4 & #5 Compliance**:
+    * Zero background bot processes running on local Samsung Galaxy A30 (verified via `ps aux | grep python`).
+    * Multi-node cloud redundancy active across Cloudflare Edge and Render Standby.
+
 - **⚡ Cloudflare Edge Mesh 17-Bot Fleet Upgrade & Dead Endpoint Modernization (`deploy_both_cf_workers.py`, `render_standby_app.py`, `CHANGELOG.md`)**:
   - **🌐 Unified 17-Bot Cloudflare Workers Engine Across All 5 Edge Nodes**:
     * Overhauled Cloudflare Worker bot routines (`farmSingleAccountAllBots`) to add Bot #16 (USDT QUAD via `https://ustdquad.up.railway.app`) and Bot #17 (TAC Airdrop via `https://tacairdrop.xyz/api`).

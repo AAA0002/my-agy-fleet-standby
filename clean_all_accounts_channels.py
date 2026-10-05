@@ -44,7 +44,9 @@ EXPLICIT_UNWANTED_USERNAMES = {
     "rewards_lab",
     "earncraftnews",
     "airdropfindteam",
-    "mininggram_channel"
+    "mininggram_channel",
+    "ominiai",
+    "ominiaipayout"
 }
 
 # Whitelist: Channels that must NEVER be left under any circumstance
@@ -69,9 +71,7 @@ PROTECTED_USERNAMES = {
     "turbogrampayment",
     "tontraderai_official",
     "tontraderai_group",
-    "tensorcoinnews",
-    "ominiai",
-    "ominiaipayout"
+    "tensorcoinnews"
 }
 
 PROTECTED_CHANNEL_IDS = {

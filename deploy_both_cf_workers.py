@@ -1240,44 +1240,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     }
   };
 
-  // 15. Ominix AI Trade
-  const farmOminix = async () => {
-    try {
-      if (accData.ominix_init_data) {
-        const omHeaders = getHumanHeaders(uid, {
-          "Origin": "https://ominiaibot.lovable.app",
-          "Referer": "https://ominiaibot.lovable.app/",
-          "Content-Type": "application/json",
-          "x-tsr-serverfn": "true",
-          "accept": "application/x-tss-framed, application/x-ndjson, application/json"
-        });
-        const serovalPayload = {
-          "t": {
-            "t": 10, "i": 0,
-            "p": {
-              "k": ["data"],
-              "v": [{"t": 10, "i": 1, "p": {"k": ["initData", "fp"], "v": [{"t": 1, "s": accData.ominix_init_data}, {"t": 1, "s": "0".repeat(64)}]}, "o": 0}]
-            },
-            "o": 0
-          },
-          "f": 63, "m": []
-        };
-        await humanDelay(1000, 2200);
-        await fetchWithRetry("https://ominiaibot.lovable.app/_serverFn/bcb8e269d7f337068c7424538a77cd77e7013594ec5c8849925e8ca5b7cbe06c", {
-          method: "POST", headers: omHeaders, body: JSON.stringify(serovalPayload)
-        }, 1, 800).catch(() => {});
-        await humanDelay(1000, 2200);
-        await fetchWithRetry("https://ominiaibot.lovable.app/_serverFn/21aff4856aa0147739b66c3269611c49fd8dd342144e4973589515477e97c95b", {
-          method: "POST", headers: omHeaders, body: JSON.stringify(serovalPayload)
-        }, 1, 800).catch(() => {});
-      }
-      result.bots.ominix = "ok";
-    } catch (e) {
-      result.bots.ominix = `error: ${e.message}`;
-    }
-  };
-
-  // 16. USDT QUAD
+  // 15. USDT QUAD
   const farmUsdtQuad = async () => {
     try {
       if (accData.usdtquad_init_data) {
@@ -1301,7 +1264,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     }
   };
 
-  // 17. TAC Airdrop
+  // 16. TAC Airdrop (with Autonomous Miner Sequential Auto-Leveling)
   const farmTac = async () => {
     try {
       if (accData.tac_init_data) {
@@ -1322,6 +1285,36 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         await fetchWithRetry("https://tacairdrop.xyz/api/ads/watch", {
           method: "POST", headers: tacHeaders, body: JSON.stringify({ userId: String(uid) })
         }, 1, 800).catch(() => {});
+
+        // Sequential Miner Auto-Leveling (Free upgrades up to eligible holding balance)
+        try {
+          const stResp = await fetchWithRetry(`https://tacairdrop.xyz/api/state?userId=${uid}`, {
+            method: "GET", headers: tacHeaders
+          }, 1, 800);
+          if (stResp && stResp.ok) {
+            const stData = await stResp.json();
+            let curLvl = parseInt(stData?.currentUser?.currentLevel || 1);
+            let upgrades = 0;
+            while (upgrades < 20) {
+              const targetLvl = curLvl + 1;
+              const upResp = await fetchWithRetry("https://tacairdrop.xyz/api/miners/upgrade", {
+                method: "POST", headers: tacHeaders, body: JSON.stringify({ userId: String(uid), targetLevel: targetLvl })
+              }, 1, 500);
+              if (upResp && upResp.ok) {
+                const upData = await upResp.json();
+                if (upData?.success) {
+                  curLvl = parseInt(upData?.user?.currentLevel || targetLvl);
+                  upgrades++;
+                  await humanDelay(350, 600);
+                } else {
+                  break;
+                }
+              } else {
+                break;
+              }
+            }
+          }
+        } catch (_) {}
       }
       result.bots.tac = "ok";
     } catch (e) {
@@ -1345,7 +1338,6 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     { name: "tontrader", fn: farmTonTrader, hasData: Boolean(accData.tontrader_init_data || accData.session_string) },
     { name: "finvora", fn: farmFinvora, hasData: Boolean(accData.finvora_init_data || accData.session_string) },
     { name: "turbogram", fn: farmTurboGram, hasData: Boolean(accData.turbogram_init_data || accData.session_string) },
-    { name: "ominix", fn: farmOminix, hasData: Boolean(accData.ominix_init_data || accData.session_string) },
     { name: "usdtquad", fn: farmUsdtQuad, hasData: Boolean(accData.usdtquad_init_data) },
     { name: "tac", fn: farmTac, hasData: Boolean(accData.tac_init_data) },
   ];
@@ -1913,7 +1905,7 @@ export default {
         provider: "Ari Edge Sentinel",
         model: "edge-rule-based",
         node: CURRENT_SUBDOMAIN,
-        answer: "Hi Arif! All 18 accounts across our 17 mining bots are online, healthy, and actively farming 24/7 in the cloud. ATF is accumulating safely in pool mode with zero withdrawals, and on-chain vaults are synchronized."
+        answer: "Hi Arif! All 18 accounts across our 16 mining bots are online, healthy, and actively farming 24/7 in the cloud. ATF is accumulating safely in pool mode with zero withdrawals, and on-chain vaults are synchronized."
       };
     };
 
@@ -1940,7 +1932,6 @@ export default {
         "  12. 📈 [Ton Trader AI](https://t.me/TonTraderAIBot/app?startapp=REF_6727787768) — AI trading & automated yields\n" +
         "  13. 🌐 [FINVORA Web3](https://t.me/FINVORAWeb3bot?start=ref_TRX6727787768) — Web3 rewards & token mining\n" +
         "  14. 🚀 [TurboGram V1](https://t.me/TurboGramV1_bot?start=r_3520c92b) — High-velocity cloud mining\n" +
-        "  15. 📊 [Ominix AI Trade](https://t.me/OminixAiBot/Trade?startapp=6727787768) — 24/7 AI market mining & trade bot\n" +
         "  16. 💵 [USDT QUAD](https://t.me/ustdquad_bot?start=6727787768) — Quad-chain automated cloud miner\n" +
         "  17. 🪂 [TAC Airdrop](https://t.me/tacairdrop_bot?start=6727787768) — 24/7 TAC token mining & rewards\n" +
         "- Explain that the bot automatically farms and claims all 17 bots 24/7 in the cloud without needing to keep apps or devices open.\n" +
@@ -1950,7 +1941,7 @@ export default {
         "- Address the user warmly: " + senderName + ".\n\n" +
         "CORE INFORMATION (User perspective only):\n" +
         "• Creator: Created and engineered by AAA.\n" +
-        "• What the bot does: Automatically farms 17 Telegram crypto bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor Robot, Ton Trader AI, FINVORA Web3, TurboGram V1, Ominix AI Trade, USDT QUAD, TAC Airdrop) 24/7 in the cloud.\n" +
+        "• What the bot does: Automatically farms 16 Telegram crypto bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor Robot, Ton Trader AI, FINVORA Web3, TurboGram V1, USDT QUAD, TAC Airdrop) 24/7 in the cloud.\n" +
         "• How to connect: Tap '➕ Connect Account' below, send your phone number (+...), and enter the Telegram login code.\n" +
         "• How to manage: Tap '👥 My Accounts' to view or tap '🗑️ Remove' to disconnect anytime.\n" +
         "• Points & Rewards: 100 points/day to mine. Earn free points by tapping '🎬 Watch Video Ad' (+20 Pts) or '👥 Invite Friends' (+500 Pts), or upgrade with Telegram Stars.\n" +
@@ -2009,8 +2000,8 @@ export default {
       // 3. Intelligent Edge Keyword-Aware Fallback (Answers user guides directly even if offline)
       const pLow = prompt.toLowerCase();
       let fallbackAns = `Hello ${senderName}! I am Ari AI, your official copilot for AAA Auto Mining (Created by AAA).\n\n` +
-        `• *What I Do:* Automatically farm 17 Telegram crypto bots 24/7 in the cloud.\n` +
-        `• *17 Supported Bots:* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor Robot, Ton Trader AI, FINVORA Web3, TurboGram V1, Ominix AI Trade, USDT QUAD, TAC Airdrop.\n` +
+        `• *What I Do:* Automatically farm 16 Telegram crypto bots 24/7 in the cloud.\n` +
+        `• *16 Supported Bots:* ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor Robot, Ton Trader AI, FINVORA Web3, TurboGram V1, USDT QUAD, TAC Airdrop.\n` +
         `• *Connect Account:* Tap *➕ Connect Account* in the menu to add your account.\n` +
         `• *Manage / Disconnect:* Tap *👥 My Accounts* or *🗑️ Remove Account* anytime.\n` +
         `• *Earn Points:* 100 Pts/day cost. Earn free points by watching ads (+20 Pts) or inviting friends (+500 Pts).\n` +
@@ -2020,11 +2011,11 @@ export default {
         fallbackAns = `⚡ *AAA AUTO MINING* was created and engineered by *AAA*.\n\n` +
           `• *Created by:* AAA\n` +
           `• *Ecosystem:* Autonomous 24/7 Cloud Mining Platform.\n` +
-          `• *Supported Bots:* Auto-farms 17 Telegram crypto bots 24/7 (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor Robot, Ton Trader AI, FINVORA Web3, TurboGram V1, Ominix AI Trade, USDT QUAD, TAC Airdrop).`;
+          `• *Supported Bots:* Auto-farms 16 Telegram crypto bots 24/7 (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor Robot, Ton Trader AI, FINVORA Web3, TurboGram V1, USDT QUAD, TAC Airdrop).`;
       } else if (pLow.includes("what can this bot do") || pLow.includes("what can you do") || pLow.includes("what does this bot do") || pLow.includes("features") || pLow.includes("bot list") || pLow.includes("which bots")) {
         fallbackAns = `🌟 *AAA AUTO MINING* (Created by AAA) 🚀\n\n` +
-          `This bot **automatically mines 17 Telegram crypto bots 24/7 in the cloud**! It executes mining starts, daily claims, task completions, and point rewards continuously.\n\n` +
-          `🤖 *The 17 Automated Mining Pools & Links:*\n` +
+          `This bot **automatically mines 16 Telegram crypto bots 24/7 in the cloud**! It executes mining starts, daily claims, task completions, and point rewards continuously.\n\n` +
+          `🤖 *The 16 Automated Mining Pools & Links:*\n` +
           `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & task claiming\n` +
           `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Auto-farming & energy claims\n` +
           `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & tasks\n` +
@@ -2039,10 +2030,9 @@ export default {
           `1️⃣2️⃣ 📈 [Ton Trader AI](https://t.me/TonTraderAIBot/app?startapp=REF_6727787768) — AI trading & automated yields\n` +
           `1️⃣3️⃣ 🌐 [FINVORA Web3](https://t.me/FINVORAWeb3bot?start=ref_TRX6727787768) — Web3 rewards & token mining\n` +
           `1️⃣4️⃣ 🚀 [TurboGram V1](https://t.me/TurboGramV1_bot?start=r_3520c92b) — High-velocity cloud mining\n` +
-          `1️⃣5️⃣ 📊 [Ominix AI Trade](https://t.me/OminixAiBot/Trade?startapp=6727787768) — 24/7 AI market mining & trade bot\n` +
-          `1️⃣6️⃣ 💵 [USDT QUAD](https://t.me/ustdquad_bot?start=6727787768) — Quad-chain automated cloud miner\n` +
-          `1️⃣7️⃣ 🪂 [TAC Airdrop](https://t.me/tacairdrop_bot?start=6727787768) — 24/7 TAC token mining & rewards\n\n` +
-          `📱 *How to Start:* Tap *➕ Connect Account*, send your phone number & Telegram login code. Your account will automatically farm all 17 pools 24/7 in the cloud!`;
+          `1️⃣5️⃣ 💵 [USDT QUAD](https://t.me/ustdquad_bot?start=6727787768) — Quad-chain automated cloud miner\n` +
+          `1️⃣6️⃣ 🪂 [TAC Airdrop](https://t.me/tacairdrop_bot?start=6727787768) — 24/7 TAC token mining & rewards\n\n` +
+          `📱 *How to Start:* Tap *➕ Connect Account*, send your phone number & Telegram login code. Your account will automatically farm all 16 pools 24/7 in the cloud!`;
       } else if (pLow.includes("connect") || pLow.includes("add account") || pLow.includes("login")) {
         fallbackAns = `📱 *How to Connect Your Account:*\n\n` +
           `1. Tap *➕ Connect Account* in the menu.\n` +
@@ -2050,7 +2040,7 @@ export default {
           `3. Reply with the 5-digit verification code sent to your Telegram.\n` +
           `4. Enter your 2FA Cloud Password if enabled.\n\n` +
           `🔒 *Automated 24/7 Cloud Mining:*\n` +
-          `Once connected, your account automatically farms all 17 pools 24/7 in the cloud!`;
+          `Once connected, your account automatically farms all 16 pools 24/7 in the cloud!`;
       } else if (pLow.includes("remove") || pLow.includes("disconnect") || pLow.includes("delete account")) {
         fallbackAns = `🗑️ *How to Disconnect / Remove Accounts:*\n\n` +
           `1. Tap *👥 My Accounts* or *🗑️ Remove Account* in the menu.\n` +
@@ -3813,7 +3803,7 @@ fi
               const rep = `👥 *Accounts Management Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `🟢 *Fleet Status:* \`${accounts.length}/18 Accounts Online & Active\`\n` +
-                `🤖 *24/7 Farming:* All 17 Bots Active (Stones • ATF • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram • Ominix • USDT QUAD • TAC Airdrop)\n` +
+                `🤖 *24/7 Farming:* All 16 Bots Active (Stones • ATF • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram • USDT QUAD • TAC Airdrop)\n` +
                 `🛡️ *Security:* 100% Anti-Ban Verified • Isolated Wallets & Proxies\n\n` +
                 `📋 *Connected Accounts:*\n` +
                 `${lines}\n` +
@@ -3837,7 +3827,7 @@ fi
               const rep = `🗑️ *Fleet Account Removal Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `Select an account below to disconnect and remove from 24/7 cloud automation:\n\n` +
-                `⚠️ _Removing an account stops all 17 mining bots on that session immediately._`;
+                `⚠️ _Removing an account stops all 16 mining bots on that session immediately._`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -3982,7 +3972,7 @@ fi
                   "⚡ *Harvesting Multi-Bot Rewards...*\n`[▰▰▰▰▰▰▱▱▱▱] 65%` • Dispatched 18 Accounts (Stones, ATF, MRG, ART...)",
                   `⚡ *Instant Fleet Harvest Dispatched!*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Executing ✅\`\n\n` +
                   `• *Status:* Executing across 18 Accounts ✅\n` +
-                  `• *Active Lineup:* Stones • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum • ATF • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram • Ominix\n` +
+                  `• *Active Lineup:* Stones • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum • ATF • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram\n` +
                   `• *Edge Coordination:* 5 Parallel Cloudflare Edge Slots\n\n` +
                   `_Farming cycle and task claims active across all nodes._`
                 ];
@@ -4192,7 +4182,7 @@ fi
                   "📊 *Aggregating Multi-Chain Telemetry...*\n`[▰▰▰▰▰▰▰▱▱▱] 75%` • Verifying Anti-Bot & Proof-of-Work",
                   `⚡ *MY AGY AI — Private Admin Console*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Synchronized ✅\`\n\n` +
                   `🟢 *Fleet Health:* 18/18 Accounts Active & Mining\n` +
-                  `🤖 *Active Bots (17/17):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF • Ainovum • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram • Ominix • USDT QUAD • TAC Airdrop\n` +
+                  `🤖 *Active Bots (16/16):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF • Ainovum • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram • USDT QUAD • TAC Airdrop\n` +
                   `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 18 TON Wallets\n` +
                   `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
                   `📱 *Tap below to open your real-time visual Mini App dashboard:*`
@@ -4420,7 +4410,7 @@ fi
               })());
             } else if (cbData === "btn_briefing") {
               ctx.waitUntil((async () => {
-                const aiData = await runAiCascade("You are the Chief AI Operations Officer for the 18-account autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. 18/18 accounts active & 100% 5/5 verified. 2. 17 mining bots active (Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, ATF Miner, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, FINVORA, TurboGram, Ominix, USDT QUAD, TAC Airdrop). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.");
+                const aiData = await runAiCascade("You are the Chief AI Operations Officer for the 18-account autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. 18/18 accounts active & 100% 5/5 verified. 2. 16 mining bots active (Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, ATF Miner, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, FINVORA, TurboGram, USDT QUAD, TAC Airdrop). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.");
                 const ans = aiData.answer || aiData.response || "All 18 accounts active and mining across multi-cloud nodes.";
                 const prov = aiData.provider || "Google Gemini";
                 const mod = aiData.model || "gemini-3.6-flash";
@@ -4665,7 +4655,7 @@ fi
                 } catch (_) {}
                 const rep = `⚡ *MY AGY AI — Fleet Operations*\n\n` +
                   `🟢 *Fleet Health:* 18/18 Accounts Active & Mining\n` +
-                  `🤖 *Active Bots (17/17):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF • Ainovum • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram • Ominix • USDT QUAD • TAC Airdrop\n` +
+                  `🤖 *Active Bots (16/16):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF • Ainovum • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram • USDT QUAD • TAC Airdrop\n` +
                   `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 18 TON Wallets\n` +
                   `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
                   `📱 *Tap below to open your real-time visual Mini App dashboard:*`;
@@ -4735,7 +4725,7 @@ fi
             const welcome = `👋 *Welcome to MY AGY AI — Private Admin Console*\n\n` +
               `Your autonomous *24/7 Cloud Operations Hub* is active across 5 Cloudflare Edge nodes.\n\n` +
               `🟢 *Fleet Health:* 18/18 Accounts Online & Mining\n` +
-              `🤖 *Active Bots (17/17):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram • Ominix • USDT QUAD • TAC Airdrop\n` +
+              `🤖 *Active Bots (16/16):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF Miner • Ainovum • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram • USDT QUAD • TAC Airdrop\n` +
               `💰 *On-Chain Vaults:* BEP-20 (BNB) • Arbitrum (STONES) • 18 TON Wallets\n` +
               `🛡️ *Security:* 5/5 Anti-Bot Verified • Dual-Edge Cloud Sync\n\n` +
               `📱 *Tap '👑 Admin Console' below or use quick controls:*`;
@@ -4774,7 +4764,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Notice:* @CryptoProUpRobot was audited and confirmed to withhold payouts.\n` +
               `• *Action Taken:* Fleet accounts blocked the bot, wiped scam channels, and reported it to Telegram Anti-Scam.\n` +
-              `• *Active Bots:* Focus is 100% placed on our 17 legitimate mining bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, BTC Cloud, Tensor, Ton Trader, FINVORA, TurboGram, Ominix, USDT QUAD, TAC Airdrop).\n` +
+              `• *Active Bots:* Focus is 100% placed on our 17 legitimate mining bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, BTC Cloud, Tensor, Ton Trader, FINVORA, TurboGram, USDT QUAD, TAC Airdrop).\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(bnbMsg, statusInlineKeyboard);
           })());
@@ -4833,7 +4823,7 @@ fi
           ctx.waitUntil((async () => {
             await sendReply("⏳ *Generating AI Executive Briefing via Google Gemini 3.6 Flash & Multi-Cloud AI...*");
             try {
-              const aiData = await runAiCascade("You are the Chief AI Operations Officer for the 18-account autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. 18/18 accounts active & 100% 5/5 verified. 2. 17 mining bots active (Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, ATF Miner, TRX Power, BTC Cloud, Tensor, Ton Trader, FINVORA, TurboGram, Ominix, USDT QUAD, TAC Airdrop). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.");
+              const aiData = await runAiCascade("You are the Chief AI Operations Officer for the 18-account autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. 18/18 accounts active & 100% 5/5 verified. 2. 16 mining bots active (Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, ATF Miner, TRX Power, BTC Cloud, Tensor, Ton Trader, FINVORA, TurboGram, USDT QUAD, TAC Airdrop). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.");
               const ans = aiData.answer || aiData.response || "All 18 accounts active and mining across multi-cloud nodes.";
               const prov = aiData.provider || "Google Gemini";
               const mod = aiData.model || "gemini-3.6-flash";
@@ -4942,7 +4932,7 @@ fi
               const rep = `🗑️ *Fleet Account Removal Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `Select an account below to disconnect and remove from 24/7 cloud automation:\n\n` +
-                `⚠️ _Removing an account stops all 17 mining bots on that session immediately._`;
+                `⚠️ _Removing an account stops all 16 mining bots on that session immediately._`;
               await sendReply(rep, { inline_keyboard: buttons });
               return;
             }
@@ -5205,7 +5195,7 @@ fi
 
             const rep = `⚡ *MY AGY AI — Fleet Operations*\n\n` +
               `🟢 *Fleet Health:* 18/18 Accounts Active & Mining\n` +
-              `🤖 *Active Bots (17/17):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF • Ainovum • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram • Ominix • USDT QUAD • TAC Airdrop\n` +
+              `🤖 *Active Bots (16/16):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • ATF • Ainovum • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram • USDT QUAD • TAC Airdrop\n` +
               `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 18 TON Wallets\n` +
               `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Edge Shards\n\n` +
               `📱 *Tap below to open your real-time visual Executive Dashboard:*`;
@@ -5225,7 +5215,7 @@ fi
             await sendChatAction(chatId, "typing");
             const rep = `⚡ *Instant Fleet Harvest Dispatched!*\n\n` +
               `• *Status:* Executing across 18 Accounts ✅\n` +
-              `• *Active Lineup (17/17):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum • ATF • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram • Ominix • USDT QUAD • TAC Airdrop\n\n` +
+              `• *Active Lineup (16/16):* Stones • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum • ATF • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram • USDT QUAD • TAC Airdrop\n\n` +
               `_Farming cycle and task claims active across all 5 parallel Cloudflare edge slots._`;
             const frames = [
               "⚡ *Initiating Instant Harvest across Fleet...*\n`[▰▰▱▱▱▱▱▱▱▱] 20%` • Syncing Edge Nodes & Relayers",
@@ -5459,14 +5449,12 @@ fi
 
         if (text === "🤖 Ominix AI Trade" || text.startsWith("/ominix")) {
           ctx.waitUntil((async () => {
-            const rep = `🤖 *OMINIX AI TRADE COMMAND CENTER*\n` +
+            const rep = `🚨 *OMINIX AI TRADE DECOMMISSIONED & REPORTED*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* Ominix AI Trade (@OminixAiBot)\n` +
-              `• *WebApp App:* \`Trade\` • Referral: \`6727787768\`\n` +
-              `• *Status:* 🟢 Active Quant Arbitrage Mining\n` +
-              `• *Harvest Mode:* Automated Trade Arbitrage & Daily Claims\n` +
-              `• *Payout Network:* TON / Multi-Chain Vault\n` +
-              `• *Fleet Coverage:* All 18 Fleet Accounts Online ✅\n` +
+              `• *Status:* 🚫 Banned & Purged as Fraudulent Scam\n` +
+              `• *Action Taken:* All 18 fleet accounts reported @OminixAiBot and scam channels (@ominiai, @ominiaipayout) to Telegram Anti-Scam, blocked the bot, and deleted chat histories.\n` +
+              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -5583,7 +5571,7 @@ fi
             const rep = `👥 *Accounts Management Hub*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `🟢 *Fleet Status:* \`${accounts.length}/18 Accounts Online & Active\`\n` +
-              `🤖 *24/7 Farming:* All 17 Bots Active (Stones • ATF • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram • Ominix • USDT QUAD • TAC Airdrop)\n` +
+              `🤖 *24/7 Farming:* All 16 Bots Active (Stones • ATF • ART • MRG • AI Lab • UltraWallet • Apex • Ainovum • TRX Power • BTC Cloud • Tensor • Ton Trader • FINVORA • TurboGram • USDT QUAD • TAC Airdrop)\n` +
               `🛡️ *Security:* 100% Anti-Ban Verified • Isolated Wallets & Proxies\n\n` +
               `📋 *Connected Accounts:*\n` +
               `${lines}\n` +
@@ -5853,7 +5841,7 @@ fi
             }
             const rep = `⚡ *MY AGY AI — EXECUTIVE ECOSYSTEM SUMMARY* 📊\n━━━━━━━━━━━━━━━━━━━━━━\n` +
               `🤖 *Fleet Automation:* 18/18 Accounts Online & Mining\n` +
-              `⛏️ *Active Mining Pools (17/17):* Stones, MRG, ART, AI Lab, UltraWallet, Apex, ATF, Ainovum, TRX Power, BTC Cloud, Tensor, Ton Trader, FINVORA, TurboGram, Ominix, USDT QUAD, TAC Airdrop\n` +
+              `⛏️ *Active Mining Pools (16/16):* Stones, MRG, ART, AI Lab, UltraWallet, Apex, ATF, Ainovum, TRX Power, BTC Cloud, Tensor, Ton Trader, FINVORA, TurboGram, USDT QUAD, TAC Airdrop\n` +
               `👛 *Ultra Wallet:* Auto-Mining 24/7 (Multi-Pool Integrated)\n` +
               `👥 *Community Users:* \`${totalUsers || userList.length}\` Registered Miners\n` +
               `📱 *Community Accounts:* \`${activeAccountsCount}\` Connected Phones\n` +
@@ -6060,7 +6048,7 @@ fi
           const parts = text.split(/\s+/);
           const bMsg = parts.slice(1).join(" ").trim();
           if (!bMsg) {
-            await sendReply("Usage: `/broadcast <message>`\nExample: `/broadcast 🚀 Big update! All 17 pools are paying out today!`", statusInlineKeyboard);
+            await sendReply("Usage: `/broadcast <message>`\nExample: `/broadcast 🚀 Big update! All 16 pools are paying out today!`", statusInlineKeyboard);
             return new Response("OK");
           }
           ctx.waitUntil((async () => {
@@ -6350,7 +6338,7 @@ fi
             `• \`/tontrader\` — Ton Trader AI Algorithmic Harvest\n` +
             `• \`/finvora\` — FINVORA Web3 DeFi Staking & Mining\n` +
             `• \`/turbogram\` — TurboGram V1 Yield Mining\n` +
-            `• \`/ominix\` — Ominix AI Trade Arbitrage\n` +
+            `• \`/ominix\` — Ominix AI Scam Alert\n` +
             `• \`/accounts\` — Inspect all 18 fleet accounts & sessions\n` +
             `• \`/add_account <phone>\` — Connect a new Telegram account\n` +
             `• \`/remove_account <id>\` — Disconnect an account from automation\n` +
@@ -6443,7 +6431,7 @@ fi
 
             const systemPrompt = `You are Ari, the personal cloud AI assistant for Arif's 18-account automated crypto and mining fleet (MY AGY AI).
 Live Fleet Context:
-- 18 active accounts mining 24/7 across all 17 active bots: Stones Miners, ATF Miner, MRG Miner, ART Airdrop, AI Lab Robot, UltraWallet, Apex Miner, Ainovum, TRX Power Mining, Bitcoin Cloud Miners, Tensor Mining Robot, Ton Trader AI, FINVORA Web3, TurboGram V1, Ominix AI Trade, USDT QUAD, TAC Airdrop.
+- 18 active accounts mining 24/7 across all 16 active bots: Stones Miners, ATF Miner, MRG Miner, ART Airdrop, AI Lab Robot, UltraWallet, Apex Miner, Ainovum, TRX Power Mining, Bitcoin Cloud Miners, Tensor Mining Robot, Ton Trader AI, FINVORA Web3, TurboGram V1, USDT QUAD, TAC Airdrop.
 - Policy: ATF Miner is in 100% farming & accumulation mode (NO withdrawals; let balance grow).
 - Policy (Admin Fleet Accounts): MRG Miner is strictly in 100% Holding & Compounding mode (NO auto-withdrawals) to preserve peak levels (Level 1..50), maximum hashrate (5.5 TH/s), and squad referral qualifications.
 - Vault BEP-20 (BNB, USDT): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Live Balance: ${liveBnb.toFixed(6)} BNB).
@@ -7350,7 +7338,7 @@ Reply to Arif naturally:`;
             const welcomeText = `🌟 *AAA AUTO MINING PLATFORM (PREMIUM)* 🚀\n` +
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Welcome ${cqSenderName}! You have successfully verified all 3 community channels and claimed 🎁 *100 Free Welcome Points*!\n\n` +
-              `Connect your account once, and AAA Auto Mining will **automatically farm all 17 Telegram crypto bots 24/7 in the cloud**! Cloud engines handle all daily mining sessions, task farming, and claim cycles continuously.\n\n` +
+              `Connect your account once, and AAA Auto Mining will **automatically farm all 16 Telegram crypto bots 24/7 in the cloud**! Cloud engines handle all daily mining sessions, task farming, and claim cycles continuously.\n\n` +
               `💎 *Your Fleet Overview:*\n` +
               `• *Connected Accounts:* ${profile.accounts?.length || 0} / ${totalSlots} Slots\n` +
               `• *Points Balance:* ${profile.points || 100} Points\n` +
@@ -7496,7 +7484,7 @@ Reply to Arif naturally:`;
                 `• *Pass Status:* ${passBadge}\n` +
                 `• *Points Balance:* ${profile.points} Pts\n\n` +
                 `📱 *Active Accounts:*\n${accList}\n\n` +
-                `💡 _Every account automatically farms all 17 pools 24/7 in the cloud._`;
+                `💡 _Every account automatically farms all 16 pools 24/7 in the cloud._`;
               const inlineBtns = [
                 [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
                 [{ text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
@@ -7647,7 +7635,7 @@ Reply to Arif naturally:`;
             return new Response("OK");
           }
 
-          // C2.6 17 Mining Pools & Auto-Farming Guide
+          // C2.6 16 Mining Pools & Auto-Farming Guide
           if (cqData === "ub_withdraw" || cqData === "ub_pools") {
             const poolsMsg = `⛏️ *17 SUPPORTED CLOUD MINING POOLS & BOTS* 🤖\n\n` +
               `Our cloud engines automatically farm and claim all 17 bots 24/7 across your connected accounts:\n\n` +
@@ -7665,7 +7653,6 @@ Reply to Arif naturally:`;
               `1️⃣2️⃣ 📈 [Ton Trader AI](https://t.me/TonTraderAIBot/app?startapp=REF_6727787768) — AI trading & automated yields\n` +
               `1️⃣3️⃣ 🌐 [FINVORA Web3](https://t.me/FINVORAWeb3bot?start=ref_TRX6727787768) — Web3 rewards & token mining\n` +
               `1️⃣4️⃣ 🚀 [TurboGram V1](https://t.me/TurboGramV1_bot?start=r_3520c92b) — High-velocity cloud mining\n` +
-              `1️⃣5️⃣ 📊 [Ominix AI Trade](https://t.me/OminixAiBot/Trade?startapp=6727787768) — 24/7 AI market mining & trade bot\n` +
               `1️⃣6️⃣ 💵 [USDT QUAD](https://t.me/ustdquad_bot?start=6727787768) — Quad-chain automated cloud miner\n` +
               `1️⃣7️⃣ 🪂 [TAC Airdrop](https://t.me/tacairdrop_bot?start=6727787768) — 24/7 TAC token mining & rewards\n\n` +
               `☁️ *What Our Bot Does:*\n` +
@@ -7713,7 +7700,7 @@ Reply to Arif naturally:`;
               `• *Daily Cost:* ${isCovered ? "Covered by VIP Pass" : `${(profile.accounts || []).length * 100} Pts/day`}\n` +
               `• *Ads Watched:* ${profile.ads_watched || 0} / 50 (${(profile.ads_watched || 0) % 50}/50 towards bonus slot)\n` +
               `• *Referral Friends:* ${profile.referral_count || 0} (${(profile.referral_count || 0) * 500} Pts earned)\n` +
-              `• *Active Pools (17/17):* ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, BTC Cloud, Tensor, Ton Trader, FINVORA, TurboGram, Ominix, USDT QUAD, TAC Airdrop\n` +
+              `• *Active Pools (16/16):* ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, BTC Cloud, Tensor, Ton Trader, FINVORA, TurboGram, USDT QUAD, TAC Airdrop\n` +
               `• *Cloud Mining:* 🟢 24/7 Automated Running`;
             const statsBtns = {
               inline_keyboard: [
@@ -7861,7 +7848,7 @@ Reply to Arif naturally:`;
               `• *Daily Cost:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${profile.accounts.length * 100} Pts/day`}\n` +
               `• *Points Balance:* ${profile.points} Pts (~${daysRemaining} days left)\n\n` +
               `📱 *Active Accounts:*\n${accList}\n\n` +
-              `💡 _Every account automatically farms all 17 bots: ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, FINVORA, TurboGram, Ominix, USDT QUAD, and TAC Airdrop._`;
+              `💡 _Every account automatically farms all 17 bots: ATF Miner, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, FINVORA, TurboGram, USDT QUAD, and TAC Airdrop._`;
 
             const inlineBtns = [
               [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
@@ -8116,7 +8103,7 @@ Reply to Arif naturally:`;
                   `• *Username:* @${res.username || "None"}\n` +
                   `• *User ID:* \`${res.user_id}\`\n` +
                   `• *Mining Status:* 🟢 24/7 Cloud Automated\n` +
-                  `• *Pools Active (17/17):* Stones, ATF, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, BTC Cloud, Tensor, Ton Trader, FINVORA, TurboGram, Ominix, USDT QUAD, TAC Airdrop\n` +
+                  `• *Pools Active (16/16):* Stones, ATF, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, BTC Cloud, Tensor, Ton Trader, FINVORA, TurboGram, USDT QUAD, TAC Airdrop\n` +
                   `• *Balance:* ${profile.points} Points${welcomeBonusText}\n\n` +
                   `✅ 100% Cloud Mining active! 100 points/day will be deducted while farming is live.`;
                 await sendUserReply(succMsg, activeUserKeyboard);
@@ -8193,7 +8180,7 @@ Reply to Arif naturally:`;
                 `• *Username:* @${res.username || "None"}\n` +
                 `• *User ID:* \`${res.user_id}\`\n` +
                 `• *Mining Status:* 🟢 24/7 Cloud Automated\n` +
-                `• *Pools Active (17/17):* Stones, ATF, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, BTC Cloud, Tensor, Ton Trader, FINVORA, TurboGram, Ominix, USDT QUAD, TAC Airdrop\n` +
+                `• *Pools Active (16/16):* Stones, ATF, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, BTC Cloud, Tensor, Ton Trader, FINVORA, TurboGram, USDT QUAD, TAC Airdrop\n` +
                 `• *Balance:* ${profile.points} Points${welcomeBonusText}\n\n` +
                 `✅ 100% Cloud Mining active! 100 points/day will be deducted while farming is live.`;
               await sendUserReply(succMsg, activeUserKeyboard);
@@ -8306,7 +8293,7 @@ Reply to Arif naturally:`;
             const helpMsg = `📖 *AAA AUTO MINING & ARI AI GUIDE* 🤖\n` +
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Hello ${senderName}! Here is your complete guide to automated cloud mining:\n\n` +
-              `🤖 *17 Automated Mining Pools & Links:*\n` +
+              `🤖 *16 Automated Mining Pools & Links:*\n` +
               `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
               `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Continuous auto-farming sessions\n` +
               `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
@@ -8321,7 +8308,6 @@ Reply to Arif naturally:`;
               `1️⃣2️⃣ 📈 [Ton Trader AI](https://t.me/TonTraderAIBot/app?startapp=REF_6727787768) — AI trading & automated yields\n` +
               `1️⃣3️⃣ 🌐 [FINVORA Web3](https://t.me/FINVORAWeb3bot?start=ref_TRX6727787768) — Web3 rewards & token mining\n` +
               `1️⃣4️⃣ 🚀 [TurboGram V1](https://t.me/TurboGramV1_bot?start=r_3520c92b) — High-velocity cloud mining\n` +
-              `1️⃣5️⃣ 📊 [Ominix AI Trade](https://t.me/OminixAiBot/Trade?startapp=6727787768) — 24/7 AI market mining & trade bot\n` +
               `1️⃣6️⃣ 💵 [USDT QUAD](https://t.me/ustdquad_bot?start=6727787768) — Quad-chain automated cloud miner\n` +
               `1️⃣7️⃣ 🪂 [TAC Airdrop](https://t.me/tacairdrop_bot?start=6727787768) — 24/7 TAC token mining & rewards\n\n` +
               `1️⃣ *How to Connect & Remove Accounts*\n` +
@@ -8403,7 +8389,7 @@ Reply to Arif naturally:`;
               `• *Daily Cost:* ${isCovered ? "Covered by VIP Pass" : `${dCost} Pts/day (100/acc)`}\n` +
               `• *Runway:* ~${daysRemaining}\n` +
               `• *Streak / Ads:* 🔥 Day ${profile.daily_streak || 0} • 🎬 ${profile.ads_watched || 0} Ads\n` +
-              `• *Active Pools (17/17):* ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, BTC Miners, Tensor, Ton Trader, Finvora, TurboGram, Ominix, USDT QUAD, TAC Airdrop\n` +
+              `• *Active Pools (16/16):* ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, BTC Miners, Tensor, Ton Trader, Finvora, TurboGram, USDT QUAD, TAC Airdrop\n` +
               `• *Cloud Mining:* ${farmStatus}`;
             const statsBtns = {
               inline_keyboard: [
@@ -8431,8 +8417,8 @@ Reply to Arif naturally:`;
             const farmStatus = isCovered ? "🟢 Active 24/7 (Covered by VIP Pass)" : (profile.farming_active ? "🟢 Active & Mining 24/7" : "🔴 Paused (Needs Points)");
             const welcomeText = `🌟 *AAA AUTO MINING PLATFORM (PREMIUM)* 🚀\n` +
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
-              `Hello ${senderName}! Connect your account once, and AAA Auto Mining will **automatically farm all 17 Telegram crypto bots 24/7 in the cloud**! Our cloud engines handle all daily mining sessions, task farming, and claim cycles continuously.\n\n` +
-              `🤖 *17 Automated Mining Pools & Links:*\n` +
+              `Hello ${senderName}! Connect your account once, and AAA Auto Mining will **automatically farm all 16 Telegram crypto bots 24/7 in the cloud**! Our cloud engines handle all daily mining sessions, task farming, and claim cycles continuously.\n\n` +
+              `🤖 *16 Automated Mining Pools & Links:*\n` +
               `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
               `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Continuous auto-farming sessions\n` +
               `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
@@ -8447,7 +8433,6 @@ Reply to Arif naturally:`;
               `1️⃣2️⃣ 📈 [Ton Trader AI](https://t.me/TonTraderAIBot/app?startapp=REF_6727787768) — AI trading & automated yields\n` +
               `1️⃣3️⃣ 🌐 [FINVORA Web3](https://t.me/FINVORAWeb3bot?start=ref_TRX6727787768) — Web3 rewards & token mining\n` +
               `1️⃣4️⃣ 🚀 [TurboGram V1](https://t.me/TurboGramV1_bot?start=r_3520c92b) — High-velocity cloud mining\n` +
-              `1️⃣5️⃣ 📊 [Ominix AI Trade](https://t.me/OminixAiBot/Trade?startapp=6727787768) — 24/7 AI market mining & trade bot\n` +
               `1️⃣6️⃣ 💵 [USDT QUAD](https://t.me/ustdquad_bot?start=6727787768) — Quad-chain automated cloud miner\n` +
               `1️⃣7️⃣ 🪂 [TAC Airdrop](https://t.me/tacairdrop_bot?start=6727787768) — 24/7 TAC token mining & rewards\n\n` +
               `💎 *Your Fleet Overview:*\n` +
@@ -8513,7 +8498,7 @@ Reply to Arif naturally:`;
               `• *Daily Cost:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${profile.accounts.length * 100} Pts/day`}\n` +
               `• *Points Balance:* ${profile.points} Pts (~${daysRemaining} days left)\n\n` +
               `📱 *Active Accounts:*\n${accList}\n\n` +
-              `💡 _Every connected account automatically farms all 17 bots: ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, BTC Miners, Tensor, Ton Trader, Finvora, TurboGram, Ominix, USDT QUAD, and TAC Airdrop._`;
+              `💡 _Every connected account automatically farms all 17 bots: ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, BTC Miners, Tensor, Ton Trader, Finvora, TurboGram, USDT QUAD, and TAC Airdrop._`;
 
             const inlineBtns = [
               [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
@@ -8740,7 +8725,6 @@ Reply to Arif naturally:`;
               `1️⃣2️⃣ 📈 [Ton Trader AI](https://t.me/TonTraderAIBot/app?startapp=REF_6727787768) — AI trading & automated yields\n` +
               `1️⃣3️⃣ 🌐 [FINVORA Web3](https://t.me/FINVORAWeb3bot?start=ref_TRX6727787768) — Web3 rewards & token mining\n` +
               `1️⃣4️⃣ 🚀 [TurboGram V1](https://t.me/TurboGramV1_bot?start=r_3520c92b) — High-velocity cloud mining\n` +
-              `1️⃣5️⃣ 📊 [Ominix AI Trade](https://t.me/OminixAiBot/Trade?startapp=6727787768) — 24/7 AI market mining & trade bot\n` +
               `1️⃣6️⃣ 💵 [USDT QUAD](https://t.me/ustdquad_bot?start=6727787768) — Quad-chain automated cloud miner\n` +
               `1️⃣7️⃣ 🪂 [TAC Airdrop](https://t.me/tacairdrop_bot?start=6727787768) — 24/7 TAC token mining & rewards\n\n` +
               `☁️ *What Our Bot Does:*\n` +
@@ -8916,7 +8900,7 @@ Reply to Arif naturally:`;
             const chatAiMsg = `💬 *AAA AI MINING COPILOT & SUPPORT* 🤖\n` +
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Hello ${senderName}! How can I help you today?\n\n` +
-              `🤖 *17 Automated Mining Pools Active (24/7):*\n` +
+              `🤖 *16 Automated Mining Pools Active (24/7):*\n` +
               `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768)\n` +
               `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768)\n` +
               `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD)\n` +
@@ -8931,7 +8915,6 @@ Reply to Arif naturally:`;
               `1️⃣2️⃣ 📈 [Ton Trader](https://t.me/TonTraderAIBot/app?startapp=REF_6727787768)\n` +
               `1️⃣3️⃣ 🌐 [FINVORA](https://t.me/FINVORAWeb3bot?start=ref_TRX6727787768)\n` +
               `1️⃣4️⃣ 🚀 [TurboGram](https://t.me/TurboGramV1_bot?start=r_3520c92b)\n` +
-              `1️⃣5️⃣ 📊 [Ominix AI](https://t.me/OminixAiBot/Trade?startapp=6727787768)\n` +
               `1️⃣6️⃣ 💵 [USDT QUAD](https://t.me/ustdquad_bot?start=6727787768)\n` +
               `1️⃣7️⃣ 🪂 [TAC Airdrop](https://t.me/tacairdrop_bot?start=6727787768)\n\n` +
               `*Quick Actions:*\n` +
@@ -9428,7 +9411,7 @@ async def main():
             "🌟 AAA Auto Mining Platform 🚀\n"
             "⚡ 100% Autonomous Cloud Mining\n\n"
             "🤖 What This Bot Does:\n"
-            "Auto-farms 17 Telegram crypto bots 24/7 in cloud:\n"
+            "Auto-farms 16 Telegram crypto bots 24/7 in cloud:\n"
             "• 🪙 ATF Miner & 💎 Stones Miner\n"
             "• ⚡ MRG Miner & 🎨 ART Miner\n"
             "• 🤖 AI Lab & 👛 UltraWallet\n"
@@ -9436,12 +9419,11 @@ async def main():
             "• 🔴 TRX Power & 🪙 BTC Cloud\n"
             "• 🧠 Tensor AI & 📈 Ton Trader\n"
             "• 🌐 FINVORA & 🚀 TurboGram\n"
-            "• 📊 Ominix AI Trade\n"
             "• 💵 USDT QUAD & 🪂 TAC Airdrop\n\n"
             "💎 Earn Points: Daily bonus, ads & invites!\n\n"
             "📢 @AAAAutoMiner | @AAAAUTOMINING"
         )
-        user_short_desc = "🌟 100% Cloud-Powered Mining Platform! Auto-farms 17 Telegram crypto bots 24/7. Created by AAA."
+        user_short_desc = "🌟 100% Cloud-Powered Mining Platform! Auto-farms 16 Telegram crypto bots 24/7. Created by AAA."
 
         try:
             async with session.post(
@@ -9464,7 +9446,7 @@ async def main():
             "commands": [
                 {"command": "start", "description": "🌟 Open Mining Dashboard & Fleet"},
                 {"command": "accounts", "description": "👥 Manage Connected Accounts"},
-                {"command": "pools", "description": "⛏️ 17 Supported Mining Pools & Bots"},
+                {"command": "pools", "description": "⛏️ 16 Supported Mining Pools & Bots"},
                 {"command": "ads", "description": "🎬 Watch Ads & Earn Points"},
                 {"command": "points", "description": "💎 Points Balance & VIP Passes"},
                 {"command": "daily", "description": "🎁 Claim Daily Bonus (+25-50 Pts)"},
@@ -9485,14 +9467,14 @@ async def main():
         if ALERT_BOT_TOKEN:
             admin_desc = (
                 "👑 MY AGY AI — Operations & Executive Fleet Console ⚡\n\n"
-                "Autonomous multi-cloud command & control center for 18 accounts and 17 crypto mining bots:\n"
+                "Autonomous multi-cloud command & control center for 18 accounts and 16 crypto mining bots:\n"
                 "• Stones • MRG • ART • AI Lab • UltraWallet\n"
                 "• Apex • Ainovum • ATF Miner • TRX Power\n"
                 "• BTC Cloud • Tensor • Ton Trader • FINVORA\n"
-                "• TurboGram • Ominix • USDT QUAD • TAC Airdrop\n\n"
+                "• TurboGram • USDT QUAD • TAC Airdrop\n\n"
                 "🛡️ 100% Cloud-Powered • Zero Phone Load • Multi-Edge Mesh"
             )
-            admin_short_desc = "👑 MY AGY AI Operations Console — 18 Accounts & 17 Mining Pools across Multi-Cloud Edge."
+            admin_short_desc = "👑 MY AGY AI Operations Console — 18 Accounts & 16 Mining Pools across Multi-Cloud Edge."
             try:
                 async with session.post(
                     f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/setMyDescription",
@@ -9560,7 +9542,6 @@ async def main():
                     {"command": "tontrader", "description": "💎 Ton Trader AI Signals Status"},
                     {"command": "finvora", "description": "🌐 FINVORA Web3 DeFi Mining Status"},
                     {"command": "turbogram", "description": "🚀 TurboGram V1 Yield Engine Status"},
-                    {"command": "ominix", "description": "🤖 Ominix AI Trade Arbitrage Status"},
                     {"command": "usdt", "description": "💵 USDT QUAD Cloud Miner Status"},
                     {"command": "tac", "description": "🪂 TAC Airdrop Node Mining Status"},
                     {"command": "burn", "description": "🔥 Economy & Daily Burn (100 Pts/day)"},
