@@ -4461,16 +4461,28 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 ai_login_p["ref"] = "296852"
             _, ld = await safe_post(f"{ai_base}/users/auth/login", ai_login_p, req_headers=ai_default_h)
             if ld and isinstance(ld, dict):
-                tok = ld.get("result", {}).get("bearer") or ld.get("user_info", {}).get("session_id")
+                res_obj = ld.get("result")
+                tok = res_obj.get("bearer") if isinstance(res_obj, dict) else None
+                if not tok:
+                    u_info = ld.get("user_info")
+                    if isinstance(u_info, dict):
+                        tok = u_info.get("session_id")
+
                 if tok:
                     ai_auth = {**ai_default_h, "Authorization": f"Bearer {tok}"}
                     # Check miner
                     try:
                         _, md = await safe_get(f"{ai_base}/miner", ai_auth)
                         if md and isinstance(md, dict):
-                            cur_m = md.get("result", {}).get("miner", {}).get("current_miner", {})
+                            m_res = md.get("result")
+                            cur_m = {}
+                            h_bal = 0.0
+                            if isinstance(m_res, dict):
+                                miner_dict = m_res.get("miner")
+                                if isinstance(miner_dict, dict):
+                                    cur_m = miner_dict.get("current_miner", {})
+                                    h_bal = float(miner_dict.get("hashes_balance", 0) or 0)
                             is_running = cur_m.get("is_running") and (cur_m.get("time_left", 0) > 0)
-                            h_bal = float(md.get("result", {}).get("miner", {}).get("hashes_balance", 0) or 0)
                             if not is_running:
                                 await jitter(1.0, 2.0)
                                 await safe_post(f"{ai_base}/miner-start_mining", {"start_mining": True}, ai_auth)
@@ -4484,14 +4496,14 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     try:
                         _, td = await safe_get(f"{ai_base}/tasks", ai_auth)
                         if td and isinstance(td, dict):
-                            res_obj = td.get("result", {})
+                            t_res = td.get("result")
                             tasks = []
-                            if isinstance(res_obj, list):
-                                tasks = res_obj
-                            elif isinstance(res_obj, dict):
-                                for v in res_obj.values():
+                            if isinstance(t_res, list):
+                                tasks = [item for item in t_res if isinstance(item, dict)]
+                            elif isinstance(t_res, dict):
+                                for v in t_res.values():
                                     if isinstance(v, list):
-                                        tasks.extend(v)
+                                        tasks.extend([item for item in v if isinstance(item, dict)])
                             for t in tasks:
                                 tid = t.get("id")
                                 if tid and t.get("status") not in ["completed", "claimed"] and not t.get("is_claimed"):
@@ -4513,7 +4525,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         try:
                             _, cod = await safe_get(f"{ai_base}/cashout", ai_auth)
                             if cod and isinstance(cod, dict):
-                                usd_bal = float(cod.get("user_info", {}).get("balance", 0) or 0)
+                                c_info = cod.get("user_info")
+                                usd_bal = float(c_info.get("balance", 0) or 0) if isinstance(c_info, dict) else 0.0
                                 if usd_bal >= 0.02:
                                     wd_usd = round(int(usd_bal * 100) / 100.0, 2)
                                     w_evm = (acc.get("evm_wallet") or {}).get("address") or "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
@@ -4639,7 +4652,13 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
                 status["bots"]["ultrawallet"] = "farmed"
             else:
-                err_msg = ud.get("error", {}).get("message") if (ud and isinstance(ud, dict)) else "session verification failed"
+                err_data = ud.get("error") if (ud and isinstance(ud, dict)) else None
+                if isinstance(err_data, str):
+                    err_msg = err_data
+                elif isinstance(err_data, dict):
+                    err_msg = err_data.get("message") or err_data.get("error") or "session verification failed"
+                else:
+                    err_msg = "session verification failed"
                 status["bots"]["ultrawallet"] = f"auth_failed: {err_msg}"
         except Exception as e:
             status["bots"]["ultrawallet"] = f"error: {format_error(e)}"
