@@ -203,8 +203,6 @@ APX_BOT = "ApxMinerBot"
 APX_REFERRAL_CODE = "6727787768"
 AINOVUM_BOT = "ainovum_bot"
 AINOVUM_REFERRAL_CODE = "ref_6727787768"
-MININGGRAM_BOT = "MiningGRAM_Bot"
-MININGGRAM_REFERRAL_CODE = "339JU9K"
 TRXPOWER_BOT = "trxpowermining_bot"
 TRXPOWER_REFERRAL_CODE = "ref_TRX6727787768"
 BTC_BOT = "BitcoinCloudMinersBot"
@@ -364,22 +362,6 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
             tokens["ainovum_init_data"] = an_init
     except Exception as ane:
         logger.debug(f"[{name}] Ainovum error: {ane}")
-
-    # 9. MiningGRAM Bot WebApp initData
-    try:
-        bot_mg = await client.get_input_entity(MININGGRAM_BOT)
-        res_mg = await client(RequestAppWebViewRequest(
-            peer=bot_mg,
-            app=InputBotAppShortName(bot_id=bot_mg, short_name="mine"),
-            platform="android",
-            start_param=MININGGRAM_REFERRAL_CODE
-        ))
-        parsed_mg = urllib.parse.urlparse(res_mg.url)
-        mg_init = urllib.parse.parse_qs(parsed_mg.fragment).get("tgWebAppData", [None])[0]
-        if mg_init:
-            tokens["mininggram_init_data"] = mg_init
-    except Exception as mge:
-        logger.debug(f"[{name}] MiningGRAM error: {mge}")
 
     # 10. ATF Miner WebApp initData (@ATF_AIRDROP_bot)
     try:
