@@ -1,0 +1,265 @@
+{
+  "master": {
+    "account": "Master (UID: 6727787768)",
+    "is_master": true,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 11320698"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {
+          "claim": "HTTP 401 - ok"
+        },
+        "side_tasks": []
+      },
+      "3. ART Airdrop": {
+        "core": {
+          "claim": "HTTP 200",
+          "start_mining": "HTTP 200",
+          "balance": "Pool: 778.93 ART, Hold: 0.00 ART"
+        },
+        "side_tasks": [
+          "Daily High-Yield Ad: HTTP 404 (claimed)",
+          "Miner Hardware Levels: [1, 2, 3, 4, 5, 6, 7, 8] (Top Level: 8/8)",
+          "TON Wallet: Not bound"
+        ]
+      },
+      "6. Apex Mining": {
+        "core": {
+          "claim": "HTTP 401",
+          "restart_mining": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 401",
+          "Ad Boost Activation: HTTP 401",
+          "Ad Watch Reward: HTTP 401",
+          "Daily Task 'telegram': HTTP 401",
+          "Daily Task 'checkin': HTTP 400"
+        ]
+      },
+      "8. Ainovum AI": {
+        "core": {
+          "balance": "0.0000 AINOVUM",
+          "claim": "HTTP 403",
+          "start_mining": "HTTP 200"
+        },
+        "side_tasks": [
+          "Daily Streak Bonus: HTTP 200",
+          "Official Channel Bonus: HTTP 200",
+          "Mystery Gift Box Open: HTTP 400"
+        ]
+      },
+      "9. TRX Power": {
+        "core": {
+          "claim": "HTTP 200 (+0.3235090222222223 TRX)",
+          "balance": "0.0000 TRX"
+        },
+        "side_tasks": [
+          "Channel Verification: HTTP 200",
+          "Channel Task Claim: HTTP 400",
+          "TRON Wallet Binding (TZ6LY4Qw...): HTTP 200"
+        ]
+      },
+      "11. Tensor Mining": {
+        "core": {
+          "tap_mining": "HTTP 401 (+0 ORCA)"
+        },
+        "side_tasks": [
+          "Daily Login Reward: HTTP 401 (ok)"
+        ]
+      },
+      "12. Ton Trader AI": {
+        "core": {
+          "claim_yield": "HTTP 400 (+0.0000 TON)"
+        },
+        "side_tasks": [
+          "Daily Streak Gift: HTTP 400 (Reward: 0 coins)",
+          "Mystery Gift Box: HTTP 200 (Remaining: 0)"
+        ]
+      },
+      "13. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 400 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 400 (ok)",
+          "TON Wallet Connect (UQBPZiSv...): HTTP 200"
+        ]
+      },
+      "14. TurboGram V1": {
+        "core": {
+          "balance": "0.37 GRAM"
+        },
+        "side_tasks": [
+          "Partner Tasks: 9/12 Completed (Referral Tier Active)",
+          "TON Wallet Connect: HTTP 200"
+        ]
+      },
+      "15. USDT QUAD": {
+        "core": {
+          "balance": "Balance: 45.0244 USDT (Pending: 0.2093 USDT)",
+          "claim": "HTTP 200 - ok"
+        },
+        "side_tasks": [
+          "Hourly Hashrate Boost (+1 GH/s): HTTP 200 (You can claim this reward only once per hour.)"
+        ]
+      },
+      "16. TAC Airdrop": {
+        "core": {
+          "balance": "Pool: 629.26 TAC, Holding: 3293.86 TAC",
+          "miner_status": "8-Hour Continuous Miner: Running",
+          "claim": "HTTP 200 (+0.0000 TAC)",
+          "start_mining": "HTTP 200"
+        },
+        "side_tasks": [
+          "High-Yield Ad Watch: 7/7 Max Daily Limit Reached (+105 TAC claimed today)",
+          "Autonomous Sequential Miner Level: Level 1/200 (Hashrate: 0.05 TH/s)",
+          "Community Tasks: 7/30 Completed",
+          "Dedicated TON Wallet: UQBPZiSv...",
+          "Master Tier-1 Referral Claim: HTTP 400",
+          "Master Team Wallet Commission Claim: HTTP 400"
+        ]
+      }
+    }
+  },
+  "worker": {
+    "account": "Worker 1 (UID: 8881914294)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 11320817"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {
+          "claim": "HTTP 401 - ok"
+        },
+        "side_tasks": []
+      },
+      "3. ART Airdrop": {
+        "core": {
+          "claim": "HTTP 200",
+          "start_mining": "HTTP 200",
+          "balance": "Pool: 357.69 ART, Hold: 0.00 ART"
+        },
+        "side_tasks": [
+          "Daily High-Yield Ad: HTTP 404 (claimed)",
+          "Miner Hardware Levels: [1, 2, 3, 4, 5, 6, 7, 8] (Top Level: 8/8)",
+          "TON Wallet: Not bound"
+        ]
+      },
+      "6. Apex Mining": {
+        "core": {
+          "claim": "HTTP 401",
+          "restart_mining": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 401",
+          "Ad Boost Activation: HTTP 401",
+          "Ad Watch Reward: HTTP 401",
+          "Daily Task 'telegram': HTTP 401",
+          "Daily Task 'checkin': HTTP 400"
+        ]
+      },
+      "8. Ainovum AI": {
+        "core": {
+          "balance": "0.0000 AINOVUM",
+          "claim": "HTTP 403",
+          "start_mining": "HTTP 200"
+        },
+        "side_tasks": [
+          "Daily Streak Bonus: HTTP 200",
+          "Official Channel Bonus: HTTP 200",
+          "Mystery Gift Box Open: HTTP 400"
+        ]
+      },
+      "9. TRX Power": {
+        "core": {
+          "claim": "HTTP 200 (+0.6125165891203704 TRX)",
+          "balance": "0.0000 TRX"
+        },
+        "side_tasks": [
+          "Channel Verification: HTTP 200",
+          "Channel Task Claim: HTTP 200",
+          "TRON Wallet Binding (TQjrF4JN...): HTTP 200"
+        ]
+      },
+      "11. Tensor Mining": {
+        "core": {
+          "tap_mining": "HTTP 401 (+0 ORCA)"
+        },
+        "side_tasks": [
+          "Daily Login Reward: HTTP 401 (ok)"
+        ]
+      },
+      "12. Ton Trader AI": {
+        "core": {
+          "claim_yield": "HTTP 400 (+0.0000 TON)"
+        },
+        "side_tasks": [
+          "Daily Streak Gift: HTTP 400 (Reward: 0 coins)",
+          "Mystery Gift Box: HTTP 400 (Remaining: 0)"
+        ]
+      },
+      "13. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 200 (Claimed: 0.6125 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 400 (ok)",
+          "TON Wallet Connect (UQA0aO4Y...): HTTP 200"
+        ]
+      },
+      "14. TurboGram V1": {
+        "core": {
+          "balance": "0.00 GRAM"
+        },
+        "side_tasks": [
+          "Partner Tasks: 0/12 Completed (Referral Tier Active)",
+          "TON Wallet Connect: HTTP 200"
+        ]
+      },
+      "15. USDT QUAD": {
+        "core": {
+          "balance": "Balance: 0.0000 USDT (Pending: 0.0000 USDT)",
+          "claim": "HTTP 200 - ok"
+        },
+        "side_tasks": [
+          "Hourly Hashrate Boost (+1 GH/s): HTTP 200 (Task completed successfully!)",
+          "Automated Policy: Auto-Reinvest under 10 USDT, Auto-Withdraw to BSC BEP20 >= 10 USDT"
+        ]
+      },
+      "16. TAC Airdrop": {
+        "core": {
+          "balance": "Pool: 30.39 TAC, Holding: 9.66 TAC",
+          "miner_status": "8-Hour Continuous Miner: Running",
+          "claim": "HTTP 200 (+0.0000 TAC)",
+          "start_mining": "HTTP 200"
+        },
+        "side_tasks": [
+          "High-Yield Ad Watch: HTTP 200 (+15 TAC, 1/7 today)",
+          "Autonomous Sequential Miner Level: Level 1/200 (Hashrate: 0.05 TH/s)",
+          "Community Tasks: 0/30 Completed",
+          "Dedicated TON Wallet: UQA0aO4Y..."
+        ]
+      }
+    }
+  }
+}
