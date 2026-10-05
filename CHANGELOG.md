@@ -4,6 +4,19 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **📖 Master Architecture Bible Creation, Fleet-Wide 24h Session Collection & 16-Bot Audit (`PROJECT_BIBLE.md`, `README.md`, `AGENTS.md`, `audit_bots_and_sidetasks.py`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
+  - **📖 Creation of `PROJECT_BIBLE.md` Universal Onboarding & Architecture Bible**:
+    * Created comprehensive living master document detailing the full system architecture, topology, 16-bot automation matrix, 24-hour token lifecycle, multi-chain non-custodial wallet mapping, disaster recovery protocols, and operator cheat sheet.
+    * Linked `PROJECT_BIBLE.md` prominently in `README.md` and `AGENTS.md` so future Antigravity sessions and any other AI model (Claude, GPT, Gemini, Llama) immediately understand the entire ecosystem, working conventions, and operational directives.
+  - **🔄 Fleet-Wide 24h Session Collection via Render Standby**:
+    * Dispatched all 18 accounts across 5 batches to Render Standby (`/collect-tokens`).
+    * Render used Telethon MTProto in the cloud to extract brand-new 24-hour WebApp tokens (`initData`) for all bots.
+    * Synced updated tokens to Upstash Redis (`fleet:tokens:<uid>`) and Cloudflare KV.
+    * Verified that bots with strict `auth_date` validation (ATF, Tensor, MRG, Apex) transformed from HTTP 401 to **HTTP 200 OK**, with Tensor mining +27 ORCA tokens per account.
+  - **🚀 Multi-Cloud Standby Deployment**:
+    * Pushed updated `render_standby_app.py` as `app.py` to GitHub deployment repo `AAA0002/my-agy-fleet-standby` (Commit `b9719a3d`) for automated rollout on Render Node 1 (Singapore) and Node 2 (Frankfurt).
+    * Maintained Zero Phone Load Directive: verified strictly 0 background Python bot daemons on local Samsung Galaxy A30.
+
 - **🐧 Ubuntu PRoot Environment Migration, Bug Hardening & 18-Account Cloud Harvest Audit (`start-ubuntu.sh`, `ubuntu-agy`, `render_standby_app.py`, `fleet_miniapp_tokens.json`, `CHANGELOG.md`)**:
   - **🐧 Full Ubuntu 26.04 LTS PRoot Environment & Antigravity Transfer**:
     * Installed Ubuntu 26.04 container via `proot-distro` with native `glibc` 2.40 runtime.

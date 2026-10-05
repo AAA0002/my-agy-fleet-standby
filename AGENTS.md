@@ -1,5 +1,10 @@
 # Antigravity Rules & Directives for AAA AUTO
 
+> 📖 **MANDATORY PROJECT REFERENCE**:
+> Before executing ANY plan, modifying code, or starting a new session, **every AI agent must read [PROJECT_BIBLE.md](./PROJECT_BIBLE.md)** for full system architecture, active 16 bots, 24h Render session collector workflows, and operational protocols. Whenever you build or modify features, you MUST update `PROJECT_BIBLE.md` and `CHANGELOG.md`.
+
+---
+
 ## 1. 🛡️ Strict Project Isolation
 - **No Cross-Project Contamination**: Never mix code, configurations, packages, or context from `/root/projects/AAA` or other projects into this workspace.
 - **Separate Bot Isolation**: `@AAATelegramIdBot` (repository `AAA2743/AA`) is a completely distinct project and must never be touched, modified, or merged into `AAA_AUTO`.
