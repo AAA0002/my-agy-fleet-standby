@@ -71,7 +71,10 @@ PROTECTED_USERNAMES = {
     "turbogrampayment",
     "tontraderai_official",
     "tontraderai_group",
-    "tensorcoinnews"
+    "tensorcoinnews",
+    "tacairdrop_official",
+    "tacairdrop",
+    "tac_airdrop"
 }
 
 PROTECTED_CHANNEL_IDS = {
@@ -92,16 +95,16 @@ def is_protected(channel_name: str, username: str, channel_id: int) -> bool:
         return True
     return False
 
-async def clean_account(acc_index: int, acc: dict):
+async def clean_account(acc_index: int, acc: dict, total_count: int = 18):
     name = acc.get("name", f"Account #{acc_index+1}")
     uid = str(acc.get("user_id"))
     sess_str = acc.get("session_string") or acc.get("session")
     if not sess_str:
-        print(f"[{acc_index+1}/13] Skipping {name} (No session string)")
+        print(f"[{acc_index+1}/{total_count}] Skipping {name} (No session string)")
         return 0
 
     print(f"\n=======================================================")
-    print(f"[{acc_index+1}/13] Cleaning channels for: {name} (UID: {uid})")
+    print(f"[{acc_index+1}/{total_count}] Cleaning channels for: {name} (UID: {uid})")
     print(f"=======================================================")
 
     client = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
@@ -172,8 +175,9 @@ async def main():
         accounts = json.load(f)
 
     total_left = 0
+    total_accs = len(accounts)
     for idx, acc in enumerate(accounts):
-        left = await clean_account(idx, acc)
+        left = await clean_account(idx, acc, total_count=total_accs)
         total_left += left
         await asyncio.sleep(2.0)
 

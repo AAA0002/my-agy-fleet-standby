@@ -6384,8 +6384,20 @@ async def refresh_tokens_via_relayer(session: aiohttp.ClientSession, acc_uid: st
                             key_candidates.insert(0, "ailab_init_data")
                         elif "atf" in b_clean:
                             key_candidates.insert(0, "atf_init_data")
-                        elif "mininggram" in b_clean:
-                            key_candidates.insert(0, "mininggram_init_data")
+                        elif "tac" in b_clean:
+                            key_candidates.insert(0, "tac_init_data")
+                        elif "usdtquad" in b_clean or "quad" in b_clean:
+                            key_candidates.insert(0, "usdtquad_init_data")
+                        elif "trx" in b_clean or "trxpower" in b_clean:
+                            key_candidates.insert(0, "trxpower_init_data")
+                        elif "finvora" in b_clean:
+                            key_candidates.insert(0, "finvora_init_data")
+                        elif "turbo" in b_clean or "turbogram" in b_clean:
+                            key_candidates.insert(0, "turbogram_init_data")
+                        elif "tensor" in b_clean:
+                            key_candidates.insert(0, "tensor_init_data")
+                        elif "tontrader" in b_clean or "trader" in b_clean:
+                            key_candidates.insert(0, "tontrader_init_data")
                         
                         for kc in key_candidates:
                             if acc_tokens.get(kc):
