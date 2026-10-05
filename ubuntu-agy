@@ -1,0 +1,3 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# Launches Antigravity CLI directly inside Ubuntu container with full glibc support
+proot-distro login ubuntu --bind /data/data/com.termux/files/home:/root/workspace --work-dir /root/workspace -- /usr/local/bin/agy "$@"
