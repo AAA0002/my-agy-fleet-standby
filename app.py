@@ -217,8 +217,6 @@ FINVORA_BOT = "FINVORAWeb3bot"
 FINVORA_REFERRAL_CODE = "ref_TRX6727787768"
 TURBOGRAM_BOT = "TurboGramV1_bot"
 TURBOGRAM_REFERRAL_CODE = "r_3520c92b"
-OMINIX_BOT = "OminixAiBot"
-OMINIX_REFERRAL_CODE = "6727787768"
 USDTQUAD_BOT = "usdtquadbot"
 USDTQUAD_REFERRAL_CODE = "6727787768"
 TAC_BOT = "tacairdrop_bot"
@@ -432,23 +430,7 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     except Exception as tt_e:
         logger.debug(f"[{name}] Ton Trader error: {tt_e}")
 
-    # 13. Ominix AI Trade WebApp initData (@OminixAiBot)
-    try:
-        bot_om = await client.get_input_entity("OminixAiBot")
-        res_om = await client(RequestAppWebViewRequest(
-            peer=bot_om,
-            app=InputBotAppShortName(bot_id=bot_om, short_name="Trade"),
-            platform="android",
-            start_param=REPORT_CHAT_ID
-        ))
-        parsed_om = urllib.parse.urlparse(res_om.url)
-        om_init = urllib.parse.parse_qs(parsed_om.fragment).get("tgWebAppData", [None])[0]
-        if om_init:
-            tokens["ominix_init_data"] = om_init
-    except Exception as om_e:
-        logger.debug(f"[{name}] Ominix error: {om_e}")
-
-    # 14. USDT QUAD WebApp initData (@usdtquadbot)
+    # 13. USDT QUAD WebApp initData (@usdtquadbot)
     try:
         bot_uq = await client.get_entity(USDTQUAD_BOT)
         res_uq = await client(RequestWebViewRequest(
@@ -1695,34 +1677,6 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             except Exception as e:
                 logger.debug(f"[{name}] TurboGram bootstrap note: {e}")
 
-        # 15. Ominix AI Trade
-        if tokens.get("ominix_init_data"):
-            try:
-                om_init = tokens["ominix_init_data"]
-                om_h = {
-                    "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
-                    "Referer": "https://ominiaibot.lovable.app/",
-                    "Origin": "https://ominiaibot.lovable.app",
-                    "Content-Type": "application/json",
-                    "x-tsr-serverfn": "true",
-                    "accept": "application/x-tss-framed, application/x-ndjson, application/json"
-                }
-                seroval_payload = {
-                    "t": {
-                        "t": 10, "i": 0,
-                        "p": {
-                            "k": ["data"],
-                            "v": [{"t": 10, "i": 1, "p": {"k": ["initData", "fp"], "v": [{"t": 1, "s": om_init}, {"t": 1, "s": "0" * 64}]}, "o": 0}]
-                        },
-                        "o": 0
-                    },
-                    "f": 63, "m": []
-                }
-                await http.post("https://ominiaibot.lovable.app/_serverFn/bcb8e269d7f337068c7424538a77cd77e7013594ec5c8849925e8ca5b7cbe06c", json=seroval_payload, headers=om_h, timeout=aiohttp.ClientTimeout(total=8))
-                await http.post("https://ominiaibot.lovable.app/_serverFn/21aff4856aa0147739b66c3269611c49fd8dd342144e4973589515477e97c95b", json=seroval_payload, headers=om_h, timeout=aiohttp.ClientTimeout(total=8))
-                logger.info(f"[{name}] ✅ Ominix AI Trade initial bootstrap claim completed")
-            except Exception as e:
-                logger.debug(f"[{name}] Ominix bootstrap note: {e}")
 
         # 16. USDT QUAD
         try:
@@ -1784,7 +1738,6 @@ def is_account_referrals_bound(acc_entry: dict) -> bool:
         acc_entry.get("tontrader_referral_bound") and
         acc_entry.get("finvora_referral_bound") and
         acc_entry.get("turbogram_referral_bound") and
-        acc_entry.get("ominix_referral_bound") and
         acc_entry.get("usdtquad_referral_bound") and
         acc_entry.get("tac_referral_bound")
     )
@@ -2100,58 +2053,6 @@ async def complete_tontrader_referral(client: TelegramClient, name: str, ref_cod
         logger.warning(f"[{name}] TonTrader referral completion note: {e}")
     return False
 
-
-async def complete_ominix_referral(client: TelegramClient, name: str, ref_code: str = "6727787768"):
-    try:
-        await join_tg_target(client, "ominiai", name)
-        await join_tg_target(client, "ominiaipayout", name)
-        b_om = await client.get_entity(OMINIX_BOT)
-        await mute_peer(client, b_om, name)
-        await client.send_message(b_om, f"/start {ref_code}")
-        await asyncio.sleep(1.0)
-
-        b_om_in = await client.get_input_entity(OMINIX_BOT)
-        wv_res = await client(RequestAppWebViewRequest(
-            peer=b_om_in,
-            app=InputBotAppShortName(bot_id=b_om_in, short_name="Trade"),
-            platform="android",
-            start_param=str(ref_code)
-        ))
-        om_init = _extract_tg_init_data(getattr(wv_res, 'url', None))
-        if om_init:
-            om_h = {
-                "Origin": "https://ominiaibot.lovable.app",
-                "Referer": "https://ominiaibot.lovable.app/",
-                "Content-Type": "application/json",
-                "x-tsr-serverfn": "true",
-                "accept": "application/json",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
-            }
-            seroval_payload = {
-                "t": {
-                    "t": 10,
-                    "i": 0,
-                    "p": {
-                        "k": ["data"],
-                        "v": [{"t": 10, "i": 1, "p": {"k": ["initData", "fp"], "v": [{"t": 1, "s": om_init}, {"t": 1, "s": "0" * 64}]}, "o": 0}]
-                    },
-                    "o": 0
-                },
-                "f": 127,
-                "m": []
-            }
-            async with aiohttp.ClientSession() as s:
-                # 1. Register user profile with referral start_param
-                await s.post("https://ominiaibot.lovable.app/_serverFn/0d9e2e371b4bab4da7a71b5a2efcd0149c27f48dc15192cfdee2a995d5f6947e", json=seroval_payload, headers=om_h, timeout=aiohttp.ClientTimeout(total=8))
-                # 2. Claim starting profit
-                await s.post("https://ominiaibot.lovable.app/_serverFn/bcb8e269d7f337068c7424538a77cd77e7013594ec5c8849925e8ca5b7cbe06c", json=seroval_payload, headers=om_h, timeout=aiohttp.ClientTimeout(total=8))
-                # 3. Open mystery gift box
-                await s.post("https://ominiaibot.lovable.app/_serverFn/21aff4856aa0147739b66c3269611c49fd8dd342144e4973589515477e97c95b", json=seroval_payload, headers=om_h, timeout=aiohttp.ClientTimeout(total=8))
-            logger.info(f"[{name}] ✅ Ominix completed referral & profit activation on lovable.app")
-            return True
-    except Exception as e:
-        logger.warning(f"[{name}] Ominix referral completion note: {e}")
-    return False
 
 
 async def complete_btc_referral(client: TelegramClient, name: str, ref_code: str = "6727787768"):
@@ -2662,19 +2563,13 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
             acc_entry["turbogram_referral_bound"] = True
         await asyncio.sleep(1.0)
 
-    # 15. Ominix AI Trade (TanStack ServerFn Claim Profit + Mystery Box)
-    if not acc_entry.get("ominix_referral_bound"):
-        if await complete_ominix_referral(client, name, OMINIX_REFERRAL_CODE):
-            acc_entry["ominix_referral_bound"] = True
-        await asyncio.sleep(1.0)
-
-    # 16. USDT QUAD (Railway WebApp + Start 6727787768)
+    # 15. USDT QUAD (Railway WebApp + Start 6727787768)
     if not acc_entry.get("usdtquad_referral_bound"):
         if await complete_usdtquad_referral(client, name, USDTQUAD_REFERRAL_CODE):
             acc_entry["usdtquad_referral_bound"] = True
         await asyncio.sleep(1.0)
 
-    # 17. TAC Airdrop (tacairdrop.xyz WebApp + Start 6727787768)
+    # 16. TAC Airdrop (tacairdrop.xyz WebApp + Start 6727787768)
     if not acc_entry.get("tac_referral_bound"):
         if await complete_tac_referral(client, name, TAC_REFERRAL_CODE):
             acc_entry["tac_referral_bound"] = True
@@ -2682,9 +2577,8 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
 
     if is_account_referrals_bound(acc_entry):
         acc_entry["referrals_bound"] = True
-        acc_entry["all_17_referrals_bound"] = True
         acc_entry["all_16_referrals_bound"] = True
-        logger.info(f"[{name}] ✅ All 17 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
+        logger.info(f"[{name}] ✅ All 16 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
     else:
         logger.warning(f"[{name}] ⚠️ Some referrals could not be bound immediately. Will retry on next cycle.")
 
@@ -2712,7 +2606,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
         "stones_init_data", "mrg_init_data", "art_init_data", "ailab_init_data",
         "ultrawallet_init_data", "apx_init_data", "atf_init_data", "ainovum_init_data",
         "trxpower_init_data", "finvora_init_data", "turbogram_init_data",
-        "tensor_init_data", "tontrader_init_data", "ominix_init_data",
+        "tensor_init_data", "tontrader_init_data",
         "usdtquad_init_data", "tac_init_data"
     ]
     if not tokens or any(not tokens.get(k) for k in req_keys):
@@ -5337,53 +5231,6 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         except Exception as tb_e:
             status["bots"]["turbogram"] = f"farmed (note: {format_error(tb_e)})"
 
-    # 15. Ominix AI Trade (@OminixAiBot - ominiaibot.lovable.app)
-    async def _farm_ominix():
-        if not tokens.get("ominix_init_data"):
-            status["bots"]["ominix"] = "farmed"
-            return
-        try:
-            om_init = tokens["ominix_init_data"]
-            om_h = {
-                **headers,
-                "Origin": "https://ominiaibot.lovable.app",
-                "Referer": "https://ominiaibot.lovable.app/",
-                "Content-Type": "application/json",
-                "x-tsr-serverfn": "true",
-                "accept": "application/x-tss-framed, application/x-ndjson, application/json"
-            }
-            await jitter(0.5, 1.5)
-            seroval_payload = {
-                "t": {
-                    "t": 10,
-                    "i": 0,
-                    "p": {
-                        "k": ["data"],
-                        "v": [{"t": 10, "i": 1, "p": {"k": ["initData", "fp"], "v": [{"t": 1, "s": om_init}, {"t": 1, "s": "0" * 64}]}, "o": 0}]
-                    },
-                    "o": 0
-                },
-                "f": 63,
-                "m": []
-            }
-            # 1. Claim profit (server function bcb8e269d7f337068c7424538a77cd77e7013594ec5c8849925e8ca5b7cbe06c)
-            st_cl, res_cl = await safe_post(
-                "https://ominiaibot.lovable.app/_serverFn/bcb8e269d7f337068c7424538a77cd77e7013594ec5c8849925e8ca5b7cbe06c",
-                seroval_payload,
-                om_h
-            )
-            # 2. Open any mystery gift boxes (server function 21aff4856aa0147739b66c3269611c49fd8dd342144e4973589515477e97c95b)
-            await safe_post(
-                "https://ominiaibot.lovable.app/_serverFn/21aff4856aa0147739b66c3269611c49fd8dd342144e4973589515477e97c95b",
-                seroval_payload,
-                om_h
-            )
-            claim_info = ""
-            if st_cl == 200 and isinstance(res_cl, dict) and res_cl.get("amount"):
-                claim_info = f" (+{res_cl.get('amount'):.6f} USDT)"
-            status["bots"]["ominix"] = f"farmed{claim_info}"
-        except Exception as e:
-            status["bots"]["ominix"] = f"error: {format_error(e)}"
 
     # 16. USDT QUAD (@usdtquadbot - ustdquad.up.railway.app)
     async def _farm_usdtquad():
@@ -5570,7 +5417,25 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             if not cur_u.get("walletAddress") and target_ton:
                 await safe_post("https://tacairdrop.xyz/api/user/connect-wallet", {"userId": uid, "address": target_ton, "walletType": "manual"}, req_headers=tac_headers)
 
-            status["bots"]["tac"] = f"farmed (pool: {pool_bal:.2f} TAC, mining: {is_mining}){claimed_txt}{ad_txt}"
+            # 8. Autonomous Sequential Miner Auto-Leveling (Free Upgrades up to Holding Threshold)
+            cur_lvl = int(cur_u.get("currentLevel") or 1)
+            upgraded_levels = 0
+            while upgraded_levels < 25:
+                target_lvl = cur_lvl + 1
+                await asyncio.sleep(0.35)
+                u_code, u_res = await safe_post(
+                    "https://tacairdrop.xyz/api/miners/upgrade",
+                    {"userId": str(uid), "targetLevel": target_lvl},
+                    req_headers=tac_headers
+                )
+                if u_code == 200 and isinstance(u_res, dict) and u_res.get("success"):
+                    cur_lvl = int(u_res.get("user", {}).get("currentLevel") or target_lvl)
+                    upgraded_levels += 1
+                else:
+                    break
+
+            lvl_txt = f" (lvl: {cur_lvl})" if cur_lvl > 1 else ""
+            status["bots"]["tac"] = f"farmed (pool: {pool_bal:.2f} TAC{lvl_txt}, mining: {is_mining}){claimed_txt}{ad_txt}"
         except Exception as e:
             status["bots"]["tac"] = f"error: {format_error(e)}"
 
@@ -5590,7 +5455,6 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "tontrader", "fn": _farm_tontrader, "has_data": True},
         {"name": "finvora", "fn": _farm_finvora, "has_data": True},
         {"name": "turbogram", "fn": _farm_turbogram, "has_data": True},
-        {"name": "ominix", "fn": _farm_ominix, "has_data": True},
         {"name": "usdtquad", "fn": _farm_usdtquad, "has_data": True},
         {"name": "tac", "fn": _farm_tac, "has_data": bool(tokens.get("tac_init_data"))},
     ]
@@ -5613,7 +5477,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
 
 async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, accounts: list = None, tokens_map: dict = None) -> dict:
-    """Executes full autonomous cloud farming and task completions across all 8 bots for all fleet accounts."""
+    """Executes full autonomous cloud farming and task completions across all 16 bots for all fleet accounts."""
     created_session = False
     if session is None:
         session = aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
@@ -5633,7 +5497,6 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
         "turbogram_init_data",
         "tensor_init_data",
         "tontrader_init_data",
-        "ominix_init_data",
         "usdtquad_init_data",
         "tac_init_data"
     ]
@@ -5788,8 +5651,7 @@ async def inspect_referrals_master(request: Request):
         ("finvora", "FINVORAWeb3bot", ["/referral", "/start", "/balance"]),
         ("turbogram", "TurboGramV1_bot", ["/referral", "/start", "/balance"]),
         ("tensor", "TensorMiningRobot", ["/start", "/referral"]),
-        ("tontrader", "TonTraderAIBot", ["/start", "/ref"]),
-        ("ominix", "OminixAiBot", ["/start", "/ref"])
+        ("tontrader", "TonTraderAIBot", ["/start", "/ref"])
     ]
     results = {}
     try:
@@ -6131,7 +5993,7 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
 async def study_bot_endpoint(bot_key: str, request: Request):
     """
     Studies one or all bots in depth using the Master account (6727787768).
-    bot_key can be: trxpower, btc, finvora, turbogram, tensor, tontrader, ominix, or all.
+    bot_key can be: trxpower, btc, finvora, turbogram, tensor, tontrader, usdtquad, tac, or all.
     """
     auth = request.headers.get("Authorization") or ""
     req_secret = request.query_params.get("secret", "")
@@ -6150,7 +6012,8 @@ async def study_bot_endpoint(bot_key: str, request: Request):
         "turbogram": "TurboGramV1_bot",
         "tensor": "TensorMiningRobot",
         "tontrader": "TonTraderAIBot",
-        "ominix": "OminixAiBot"
+        "usdtquad": "usdtquadbot",
+        "tac": "tacairdrop_bot"
     }
 
     target_bots = list(bot_map.items()) if bot_key == "all" else [(bot_key, bot_map[bot_key])] if bot_key in bot_map else None
@@ -6261,8 +6124,7 @@ async def inspect_bot_chat(uid: str, request: Request):
         ("finvora", "FINVORAWeb3bot"),
         ("turbogram", "TurboGramV1_bot"),
         ("tensor", "TensorMiningRobot"),
-        ("tontrader", "TonTraderAIBot"),
-        ("ominix", "OminixAiBot")
+        ("tontrader", "TonTraderAIBot")
     ]
     chats = {}
     try:
@@ -6425,15 +6287,6 @@ async def onboard_new_bots(request: Request):
                 except Exception as e:
                     acc_res["bots"]["tontrader"] = str(e)
 
-                # 7. Ominix AI Trade (TanStack ServerFn Claim Profit + Mystery Box)
-                try:
-                    if await complete_ominix_referral(cl, name, OMINIX_REFERRAL_CODE):
-                        acc["ominix_referral_bound"] = True
-                        acc_res["bots"]["ominix"] = "verified"
-                    else:
-                        acc_res["bots"]["ominix"] = "pending"
-                except Exception as e:
-                    acc_res["bots"]["ominix"] = str(e)
 
                 # 8. Stones Miners (@stoneswithestand_bot)
                 try:
