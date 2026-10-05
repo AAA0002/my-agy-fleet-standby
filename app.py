@@ -72,6 +72,8 @@ SECRET_KEY = os.getenv("SECRET_KEY", "agy_cf_secret_7d36994e_2026")
 API_ID = int(os.getenv("TELEGRAM_API_ID", "37321306"))
 API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")
 REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
+# USER DIRECTIVE: Permanently disable all automated withdrawals to prevent wrong address routing
+ENABLE_AUTO_WITHDRAWALS = False
 
 CF_WORKER_URLS = [
     "https://restore-agy.aaaai2.workers.dev",
@@ -809,6 +811,8 @@ async def ai_classify_bot_prompt(bot_text: str) -> str:
     return "UNKNOWN"
 
 async def check_and_auto_withdraw_cloud(acc: dict) -> dict:
+    if not ENABLE_AUTO_WITHDRAWALS:
+        return {"user_id": str(acc.get("user_id")), "name": acc.get("name", "User"), "balance": 0.0, "withdrawn": False, "status": "disabled_by_policy", "ok": True}
     name = acc.get("name", "User")
     uid = str(acc.get("user_id"))
     sess_str = acc.get("session_string") or acc.get("session")
@@ -3459,6 +3463,8 @@ async def check_and_withdraw_ailab(session: aiohttp.ClientSession, acc: dict, to
     """Checks and executes auto-withdrawal for AI Lab Robot (Threshold: $0.02 for master, $1.00 for workers)."""
     uid = str(acc.get("user_id"))
     name = acc.get("name", uid)
+    if not ENABLE_AUTO_WITHDRAWALS:
+        return {"uid": uid, "name": name, "status": "disabled_by_policy", "balance": 0.0}
     is_master = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
     init_data = tokens.get(uid, {}).get("ailab_init_data")
     if not init_data:
@@ -3503,6 +3509,8 @@ async def check_and_withdraw_ainovum(session: aiohttp.ClientSession, acc: dict, 
     """Checks and executes auto-withdrawal for Ainovum (Threshold: 0.10 USDT for master, 1.00 USDT for workers)."""
     uid = str(acc.get("user_id"))
     name = acc.get("name", uid)
+    if not ENABLE_AUTO_WITHDRAWALS:
+        return {"uid": uid, "name": name, "status": "disabled_by_policy", "available": 0.0}
     is_master = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
     init_data = tokens.get(uid, {}).get("ainovum_init_data")
     if not init_data:
@@ -3571,6 +3579,8 @@ async def check_and_withdraw_stones(session: aiohttp.ClientSession, acc: dict, t
     """Checks balance and executes automated withdrawal for Stones Miners (Threshold: >= 500 STONES)."""
     uid = str(acc.get("user_id"))
     name = acc.get("name", uid)
+    if not ENABLE_AUTO_WITHDRAWALS:
+        return {"uid": uid, "name": name, "status": "disabled_by_policy"}
     if uid == "6727787768":
         return {"uid": uid, "name": name, "status": "compounding_mode"}
 
@@ -4271,8 +4281,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 w_evm = (acc.get("evm_wallet") or {}).get("address") or ("0xfda4182001672b9f0f09e2118242e543e35ed5ce" if is_owner else None)
                 if w_evm:
                     await safe_post("https://app.stoneswithestand.my.id/api/wallet", {"initData": s_init, "wallet": w_evm}, req_headers=s_headers)
-                # Auto-withdrawal check (Worker accounts only; Master account strictly compounds)
-                if not is_owner and w_evm:
+                # Auto-withdrawal check: DISABLED to prevent wrong-address routing; fleet is in 100% accumulation mode
+                if ENABLE_AUTO_WITHDRAWALS and not is_owner and w_evm:
                     _, pc = await safe_post("https://app.stoneswithestand.my.id/api/wd/ad/precheck", {"initData": s_init, "amount": 500, "wallet": w_evm, "currency": "stones"}, req_headers=s_headers)
                     if pc and pc.get("ok") and (not pc.get("need_ad") or (pc.get("boarded", 0) >= pc.get("required", 4))):
                         await safe_post("https://app.stoneswithestand.my.id/api/withdraw", {"initData": s_init, "amount": 500, "wallet": w_evm, "currency": "stones"}, req_headers=s_headers)
@@ -4432,7 +4442,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                 pool_bal -= cost
                                 unlocked.add(lvl)
                     has_lvl8 = (8 in unlocked or int(user_info.get("level", 1) or 1) >= 8)
-                    if has_lvl8 and pool_bal >= 1000:
+                    # Auto-withdrawal check: DISABLED to prevent wrong-address routing; fleet is in 100% accumulation mode
+                    if ENABLE_AUTO_WITHDRAWALS and has_lvl8 and pool_bal >= 1000:
                         wd_amt = min(30000, int(pool_bal))
                         await safe_post("https://art.tamimdev.dev/api/withdraw", {"userId": int(uid), "amount": wd_amt}, art_h)
             except Exception:
@@ -4843,39 +4854,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             await jitter(1.0, 2.0)
             await safe_post(f"{ain_base}/api/gift-box/open", {}, req_h)
 
-            # Auto-withdrawal check (Worker accounts only)
-            if not is_owner:
-                try:
-                    _, cfg_d = await safe_get(f"{ain_base}/api/withdraws/usdt/config", req_h)
-                    if cfg_d and isinstance(cfg_d, dict):
-                        avail = float(cfg_d.get("freeze", {}).get("available", 0) or 0)
-                        if avail >= 0.1:
-                            wd_amt = round(avail, 4)
-                            isolated_evm_map = {
-                                "8881914294": "0xA203269B8a970d5b74361B406345e1BBF5A0623B",
-                                "7648254021": "0x65DB0FA942144a2A89630c4975FA5f5469f97411",
-                                "8826375659": "0x24718F037aA61e3873073098D121ba3ced8C9daB",
-                                "8450010161": "0x0c649480FC33DfB9216756cB28e2e2efd6b0725D",
-                                "8782429452": "0xC3afc38b8E59E529174fbE4ff7f0CE053A89B8F3",
-                                "7734849205": "0x0262A7E950A9dd872FeB5CF8aD99d6a28Df053f0",
-                                "8025472383": "0xc3Cbd377872bCB69Fa01F5945eADFDFf053E1Bd4",
-                                "8851426148": "0x996292A277E5038efB413247dc7B58AC5209812C",
-                                "8203342513": "0x017841f26d5b79cc8c5eb20c65367bb645cc2610",
-                                "8190649727": "0x91B5cd7EfCBd5bc552479f5Eb70221C5E026228A",
-                                "7487048946": "0x3129386b118892238EF48428e2e5d19B9F7D8215",
-                                "8741547543": "0xE27Df3117501e3a46cf29848Df3414C4542E6A5c",
-                                "8727040932": "0x117a66bf79f63E5cC1dAB047047d62c651Eae335",
-                                "7749125802": "0xC54F4e10f7b09287DDF95E1eC4eEdA8A88d82719",
-                                "7954290138": "0xDCd79258596291a4071b88303D919218bfF087B9",
-                                "8841038141": "0xFb5450C077B0956ae3e7Efa8cfa017dA6e99F940",
-                                "8975442879": "0x349C1c924E556dc7694aA6e0c5d773414b83d241"
-                            }
-                            tgt_wallet = (acc.get("evm_wallet") or {}).get("address") or isolated_evm_map.get(str(uid), "0xfda4182001672b9f0f09e2118242e543e35ed5ce")
-                            await safe_post(f"{ain_base}/api/withdraws/usdt/create", {
-                                "amount": wd_amt, "wallet": tgt_wallet, "network": "bep20"
-                            }, req_h)
-                except Exception:
-                    pass
+            # Auto-withdrawal check: DISABLED to prevent wrong-address routing; fleet is in 100% accumulation mode
+            if ENABLE_AUTO_WITHDRAWALS and not is_owner:
+                pass
 
             status["bots"]["ainovum"] = "farmed"
         except Exception as e:
@@ -5323,8 +5304,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             if not is_owner:
                 m_bal = re.search(r"const initialBalance = ([0-9\.]+);", miner_html) if miner_html else None
                 cur_bal = float(m_bal.group(1)) if m_bal else 0.0
-                worker_evm = (acc.get("evm_wallet") or {}).get("address")
-                if cur_bal >= 10.0 and worker_evm:
+                # Auto-withdrawal DISABLED: workers strictly auto-reinvest to compound hashrate
+                if ENABLE_AUTO_WITHDRAWALS and cur_bal >= 10.0 and worker_evm:
                     await safe_post("https://ustdquad.up.railway.app/process-withdrawal", {
                         "walletAddress": worker_evm,
                         "amount": round(cur_bal, 2),
@@ -6535,37 +6516,18 @@ async def onboard_new_bots(request: Request):
 
 @app.post("/api/withdraw/auto-cycle")
 async def api_withdraw_auto_cycle(request: Request):
-    """Executes automated withdrawal cycles across AI Lab, Ainovum, and Stones concurrently."""
-    accounts = await fetch_accounts_from_cloud()
-    if not accounts:
-        return {"ok": False, "message": "No accounts found"}
-
-    async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as session:
-        tokens = await fetch_cloud_miniapp_tokens(session)
-
-        async def process_account(acc):
-            a_res = await check_and_withdraw_ailab(session, acc, tokens)
-            an_res = await check_and_withdraw_ainovum(session, acc, tokens)
-            st_res = await check_and_withdraw_stones(session, acc, tokens)
-            return a_res, an_res, st_res
-
-        results = await asyncio.gather(*[process_account(acc) for acc in accounts], return_exceptions=True)
-        ailab_res = [r[0] for r in results if isinstance(r, tuple)]
-        ainovum_res = [r[1] for r in results if isinstance(r, tuple)]
-        stones_res = [r[2] for r in results if isinstance(r, tuple)]
-
+    """Auto-withdrawals permanently disabled by user directive."""
     return {
         "ok": True,
-        "ailab": ailab_res,
-        "ainovum": ainovum_res,
-        "stones": stones_res,
+        "disabled": True,
+        "message": "Automated withdrawals are permanently disabled to prevent wrong-address routing. All fleet accounts are in 100% accumulation and compounding mode.",
         "timestamp": time.time()
     }
 
 
 async def cloud_wealth_automation_watchdog():
-    """24/7 background watchdog executing scheduled cloud farming, auto-withdrawals & wallet sweeps in the cloud."""
-    logger.info("[Cloud Wealth Watchdog] Initialized 24/7 autonomous farming, withdrawal & on-chain sweeper scheduler...")
+    """24/7 background watchdog executing scheduled cloud farming in the cloud."""
+    logger.info("[Cloud Wealth Watchdog] Initialized 24/7 autonomous farming scheduler (Auto-withdrawals disabled)...")
     await asyncio.sleep(60)
     cycle_count = 0
     while True:
@@ -6577,26 +6539,15 @@ async def cloud_wealth_automation_watchdog():
                 async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as session:
                     tokens = await fetch_cloud_miniapp_tokens(session)
 
-                    # 1. Full 8-Bot Fleet Farming Cycle
+                    # 1. Full Fleet Farming Cycle
                     try:
                         farm_res = await run_cloud_fleet_farming_cycle(session, accounts, tokens)
                         logger.info(f"[Cloud Wealth Watchdog] Fleet farming cycle #{cycle_count} finished: {farm_res.get('farmed_count', 0)} accounts")
                     except Exception as fe:
                         logger.error(f"[Cloud Wealth Watchdog] Farming error: {fe}")
 
-                    # 2. Automated Withdrawals (AI Lab, Ainovum, Stones)
-                    async def process_acc(acc):
-                        try:
-                            await check_and_withdraw_ailab(session, acc, tokens)
-                            await check_and_withdraw_ainovum(session, acc, tokens)
-                            await check_and_withdraw_stones(session, acc, tokens)
-                        except Exception as e:
-                            logger.error(f"Process acc withdrawal error: {e}")
-
-                    await asyncio.gather(*[process_acc(acc) for acc in accounts], return_exceptions=True)
-
-                    # 3. Dedicated On-Chain Vault Sweep
-                    await execute_cloud_onchain_sweeper(session, execute_sweep=True, notify=False)
+                    # 2. Automated Withdrawals & Sweepers Permanently Disabled by User Directive
+                    pass
 
         except Exception as e:
             logger.error(f"[Cloud Wealth Watchdog] Cycle error: {e}")
