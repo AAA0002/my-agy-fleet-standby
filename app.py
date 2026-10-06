@@ -432,14 +432,29 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
 
     # 15. TurboGram V1 WebApp initData (@TurboGramV1_bot)
     try:
-        bot_tb = await client.get_entity(TURBOGRAM_BOT)
-        res_tb = await client(RequestWebViewRequest(
-            peer=bot_tb,
-            bot=bot_tb,
-            platform="android",
-            url="https://turbo.tamimdev.dev/"
-        ))
-        parsed_tb = urllib.parse.urlparse(res_tb.url)
+        b_tb_in = await client.get_input_entity(TURBOGRAM_BOT)
+        res_tb = None
+        for sn in ["app", "miniapp", "bot"]:
+            try:
+                res_tb = await client(RequestAppWebViewRequest(
+                    peer=b_tb_in,
+                    app=InputBotAppShortName(bot_id=b_tb_in, short_name=sn),
+                    platform="android",
+                    start_param=REPORT_CHAT_ID
+                ))
+                if res_tb and getattr(res_tb, "url", None):
+                    break
+            except Exception:
+                pass
+        if not res_tb:
+            bot_tb = await client.get_entity(TURBOGRAM_BOT)
+            res_tb = await client(RequestWebViewRequest(
+                peer=bot_tb,
+                bot=bot_tb,
+                platform="android",
+                url="https://turbo.tamimdev.dev/"
+            ))
+        parsed_tb = urllib.parse.urlparse(getattr(res_tb, "url", "") or "")
         tb_init = urllib.parse.parse_qs(parsed_tb.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_tb.query).get("tgWebAppData", [None])[0]
         if tb_init:
             tokens["turbogram_init_data"] = tb_init
@@ -4531,22 +4546,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     except Exception:
                         pass
 
-                    # Worker accounts auto-cashout (Master account strictly protected)
-                    if not is_owner:
-                        try:
-                            _, cod = await safe_get(f"{ai_base}/cashout", ai_auth)
-                            if cod and isinstance(cod, dict):
-                                c_info = cod.get("user_info")
-                                usd_bal = float(c_info.get("balance", 0) or 0) if isinstance(c_info, dict) else 0.0
-                                if usd_bal >= 0.02:
-                                    wd_usd = round(int(usd_bal * 100) / 100.0, 2)
-                                    w_evm = (acc.get("evm_wallet") or {}).get("address") or "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
-                                    await safe_post(f"{ai_base}/cashout-pay", {
-                                        "ps_id": 5, "amount_usd": wd_usd,
-                                        "wallet": w_evm, "dest_tag": ""
-                                    }, ai_auth)
-                        except Exception:
-                            pass
+                    # AI Lab auto-cashout permanently DISABLED to prevent wrong-address routing
+                    # All fleet accounts accumulate USD and compute hashes safely in compounding mode
 
             status["bots"]["ailab"] = "farmed"
         except Exception as e:
@@ -4567,17 +4568,23 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             cached_entry = UW_ID_TOKENS.get(str(uid))
             id_tok = cached_entry[0] if (cached_entry and time.time() < cached_entry[1] - 120) else None
             if not id_tok:
-                await jitter(1.0, 2.5)
-                _, ud = await safe_post(f"{uw_base}/telegramLogin", {"initData": uw_init, "refBy": "6727787768"}, req_headers=uw_origin_h)
-                if ud and isinstance(ud, dict):
-                    cust_tok = ud.get("token")
-                    if cust_tok:
-                        fb_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyAIKTCEFqC5LFRc89nuOLhTGPHIZTIjEsU"
-                        _, fbd = await safe_post(fb_url, {"token": cust_tok, "returnSecureToken": True}, req_headers=uw_origin_h)
-                        if fbd and isinstance(fbd, dict):
-                            id_tok = fbd.get("idToken")
-                            if id_tok:
-                                UW_ID_TOKENS[str(uid)] = (id_tok, time.time() + 3300)
+                for uw_att in range(3):
+                    await jitter(1.0 + uw_att * 2.0, 2.5 + uw_att * 2.5)
+                    st_lg, ud = await safe_post(f"{uw_base}/telegramLogin", {"initData": uw_init, "refBy": "6727787768"}, req_headers=uw_origin_h)
+                    if ud and isinstance(ud, dict):
+                        cust_tok = ud.get("token")
+                        if cust_tok:
+                            fb_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyAIKTCEFqC5LFRc89nuOLhTGPHIZTIjEsU"
+                            _, fbd = await safe_post(fb_url, {"token": cust_tok, "returnSecureToken": True}, req_headers=uw_origin_h)
+                            if fbd and isinstance(fbd, dict):
+                                id_tok = fbd.get("idToken")
+                                if id_tok:
+                                    UW_ID_TOKENS[str(uid)] = (id_tok, time.time() + 3300)
+                                    break
+                        err_str = str(ud.get("error", "")).lower()
+                        if "too many" in err_str or "slow down" in err_str or st_lg == 429:
+                            await asyncio.sleep(random.uniform(4.0, 7.5))
+                            continue
 
             if id_tok:
                 uw_h = {**uw_origin_h, "Authorization": f"Bearer {id_tok}"}
@@ -5493,6 +5500,13 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
             tokens_map = await fetch_cloud_miniapp_tokens(session)
 
         farm_tasks = []
+        farm_sem = asyncio.Semaphore(2)
+
+        async def _farm_with_sem(a_dict, t_dict):
+            async with farm_sem:
+                await asyncio.sleep(random.uniform(1.2, 2.8))
+                return await farm_single_account_bots(session, a_dict, t_dict)
+
         for acc in accounts:
             uid = str(acc.get("user_id"))
             acc_tok = tokens_map.get(uid, {})
@@ -5511,7 +5525,7 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                     logger.warning(f"[Farm Cycle] On-the-fly token extraction note for {uid}: {ex_e}")
 
             if acc_tok:
-                farm_tasks.append(farm_single_account_bots(session, acc, acc_tok))
+                farm_tasks.append(_farm_with_sem(acc, acc_tok))
 
         results = await asyncio.gather(*farm_tasks, return_exceptions=True)
         valid_res = [r for r in results if isinstance(r, dict)]
