@@ -250,30 +250,63 @@ async def root():
 async def health():
     return {"ok": True, "status": "healthy"}
 
-def is_token_data_expired(t_dict: dict, max_age_hours: float = 18.0) -> bool:
-    """Checks whether token data is missing, incomplete, or older than max_age_hours (default: 18h)."""
+def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
+    """
+    Checks whether token data is missing, incomplete, or any key bot token is older than max_age_hours.
+    Inspects internal auth_date from WebApp initData query strings for true expiration detection.
+    """
     if not t_dict or not isinstance(t_dict, dict):
         return True
+    now_ts = time.time()
     s_at = t_dict.get("synced_at")
     if not s_at:
         return True
     try:
         if isinstance(s_at, (int, float)):
-            age_s = time.time() - (s_at / 1000.0 if s_at > 1e11 else float(s_at))
+            age_s = now_ts - (s_at / 1000.0 if s_at > 1e11 else float(s_at))
         elif isinstance(s_at, str):
             clean_s = s_at.strip()
             if clean_s.replace(".", "", 1).isdigit():
                 val = float(clean_s)
-                age_s = time.time() - (val / 1000.0 if val > 1e11 else val)
+                age_s = now_ts - (val / 1000.0 if val > 1e11 else val)
             else:
                 from datetime import datetime
                 dt = datetime.fromisoformat(clean_s.replace("Z", "+00:00"))
-                age_s = time.time() - dt.timestamp()
+                age_s = now_ts - dt.timestamp()
         else:
             return True
-        return age_s > (max_age_hours * 3600.0)
+        if age_s > (max_age_hours * 3600.0):
+            return True
     except Exception:
         return True
+
+    # Check individual token auth_date signatures
+    key_tokens = [
+        "stones_init_data", "mrg_init_data", "art_init_data", "ailab_init_data",
+        "ultrawallet_init_data", "apx_init_data", "atf_init_data", "ainovum_init_data",
+        "tac_init_data", "tensor_init_data", "tontrader_init_data", "finvora_init_data",
+        "turbogram_init_data", "trxpower_init_data"
+    ]
+    missing_cnt = 0
+    expired_cnt = 0
+    for kt in key_tokens:
+        tok_val = t_dict.get(kt)
+        if not tok_val:
+            missing_cnt += 1
+            continue
+        try:
+            parsed = urllib.parse.parse_qs(str(tok_val))
+            ad = parsed.get("auth_date", [None])[0]
+            if ad and ad.isdigit():
+                tok_age = now_ts - float(ad)
+                if tok_age > (max_age_hours * 3600.0):
+                    expired_cnt += 1
+        except Exception:
+            pass
+
+    if expired_cnt > 0 or missing_cnt > 4:
+        return True
+    return False
 
 async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, start_param: str = "", default_url: str = "", candidate_short_names: list = None) -> str:
     """
@@ -351,12 +384,13 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
 
     # Strategy C: Inline Keyboard buttons in recent bot messages
     try:
-        msgs = await client.get_messages(bot_ent, limit=4)
-        if not msgs:
+        msgs = await client.get_messages(bot_ent, limit=5)
+        has_any_btn = any(m.buttons for m in msgs) if msgs else False
+        if not msgs or not has_any_btn:
             try:
                 await client.send_message(bot_ent, f"/start {start_param}" if start_param else "/start")
-                await asyncio.sleep(1.8)
-                msgs = await client.get_messages(bot_ent, limit=4)
+                await asyncio.sleep(2.0)
+                msgs = await client.get_messages(bot_ent, limit=5)
             except Exception:
                 pass
         for m in msgs:
@@ -364,13 +398,15 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                 for row in m.buttons:
                     for b in row:
                         raw_b = getattr(b, "button", b)
-                        if hasattr(raw_b, "web_app") and getattr(raw_b.web_app, "url", None):
+                        # 1. Direct web_app attribute
+                        w_url = getattr(getattr(raw_b, "web_app", None), "url", None) or getattr(raw_b, "url", None)
+                        if w_url:
                             try:
                                 req_p = {
                                     "peer": bot_ent,
                                     "bot": bot_ent,
                                     "platform": "android",
-                                    "url": raw_b.web_app.url
+                                    "url": w_url
                                 }
                                 if start_param:
                                     req_p["start_param"] = str(start_param)
@@ -536,9 +572,11 @@ async def extract_tokens_for_account(acc: dict) -> dict:
             pass
 
 @app.post("/collect-tokens")
+@app.get("/collect-tokens")
 async def collect_tokens(request: Request):
     auth = request.headers.get("Authorization") or ""
-    if auth != f"Bearer {SECRET_KEY}":
+    req_secret = request.query_params.get("secret", "")
+    if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     body = {}
@@ -5046,7 +5084,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
     # 11. Tensor Mining Robot (@TensorMiningRobot - flascoins.xyz)
     async def _farm_tensor():
         if not tokens.get("tensor_init_data"):
-            status["bots"]["tensor"] = "farmed"
+            status["bots"]["tensor"] = "skipped (no initData)"
             return
         try:
             t_init = tokens["tensor_init_data"]
@@ -5059,7 +5097,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             }
             await jitter(0.5, 1.5)
             # 1. Auth check
-            await safe_post("https://flascoins.xyz/api/auth", {}, t_h)
+            st_a, a_res = await safe_post("https://flascoins.xyz/api/auth", {}, t_h)
+            if st_a == 401 or (a_res and "unauthorized" in json.dumps(a_res).lower()):
+                status["bots"]["tensor"] = "token_expired (needs 24h refresh)"
+                return
             # 2. Daily login reward claim
             st_d, res_d = await safe_post("https://flascoins.xyz/api/daily", {}, t_h)
             # 3. Tap mining (50 taps)
@@ -5080,6 +5121,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             tap_info = ""
             if st_t == 200 and isinstance(res_t, dict) and res_t.get("reward"):
                 tap_info = f" (+{res_t.get('reward')} ORCA)"
+            elif st_t == 200 and isinstance(res_t, dict) and res_t.get("user", {}).get("orcaBalance") is not None:
+                tap_info = f" (bal: {res_t['user']['orcaBalance']} ORCA)"
             status["bots"]["tensor"] = f"farmed{tap_info}"
         except Exception as e:
             status["bots"]["tensor"] = f"error: {format_error(e)}"
@@ -5087,7 +5130,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
     # 12. Ton Trader AI (@TonTraderAIBot - tontraderai.com)
     async def _farm_tontrader():
         if not tokens.get("tontrader_init_data"):
-            status["bots"]["tontrader"] = "farmed"
+            status["bots"]["tontrader"] = "skipped (no initData)"
             return
         try:
             tt_init = tokens["tontrader_init_data"]
@@ -5099,19 +5142,26 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 "Content-Type": "application/json"
             }
             await jitter(0.5, 1.5)
-            # 1. Claim daily streak gift
+            # 1. Profile / auth check
+            st_prof, prof_d = await safe_get("https://api.tontraderai.com/api/v1/user/profile", tt_h)
+            if st_prof == 401 or (prof_d and "unauthorized" in json.dumps(prof_d).lower()):
+                status["bots"]["tontrader"] = "token_expired (needs 24h refresh)"
+                return
+            # 2. Claim daily streak gift
             await safe_post("https://api.tontraderai.com/api/v1/user/claim-daily-gift", {}, tt_h)
-            # 2. Open any mystery gift boxes (up to 3 boxes)
+            # 3. Open any mystery gift boxes (up to 3 boxes)
             for _ in range(3):
                 st_b, res_b = await safe_post("https://api.tontraderai.com/api/v1/user/claim-gift-box", {}, tt_h)
                 if st_b != 200 or not isinstance(res_b, dict) or not res_b.get("success") or res_b.get("pendingGiftBoxes", 0) <= 0:
                     break
                 await asyncio.sleep(0.5)
-            # 3. Claim algorithmic yield
+            # 4. Claim algorithmic yield
             st_y, res_y = await safe_post("https://api.tontraderai.com/api/v1/finance/claim-yield", {}, tt_h)
             yield_info = ""
             if st_y == 200 and isinstance(res_y, dict) and res_y.get("claimedTon"):
                 yield_info = f" (+{res_y.get('claimedTon'):.4f} TON)"
+            elif prof_d and isinstance(prof_d, dict) and prof_d.get("user", {}).get("currentYieldTon") is not None:
+                yield_info = f" (yield: {prof_d['user']['currentYieldTon']:.4f} TON)"
             status["bots"]["tontrader"] = f"farmed{yield_info}"
         except Exception as e:
             status["bots"]["tontrader"] = f"error: {format_error(e)}"
@@ -5141,6 +5191,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 await safe_post("https://finvora-production.up.railway.app/api/mining/start", {}, fin_h)
                 await safe_post("https://finvora-production.up.railway.app/api/bonus/instant", {}, fin_h)
                 st_c, cl_d = await safe_post("https://finvora-production.up.railway.app/api/mining/claim", {}, fin_h)
+                if st_c == 401 or (cl_d and "unauthorized" in json.dumps(cl_d).lower()):
+                    status["bots"]["finvora"] = "token_expired (needs 24h refresh)"
+                    return
                 bal_txt = ""
                 if cl_d and isinstance(cl_d, dict):
                     if cl_d.get("claimed"):
@@ -5166,7 +5219,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36"
                 }
                 # 1. Sync user profile & bind dedicated TON wallet
-                _, me_d = await safe_get("https://turbo.tamimdev.dev/api/me", tb_h)
+                st_me, me_d = await safe_get("https://turbo.tamimdev.dev/api/me", tb_h)
+                if st_me == 401 or (me_d and "unauthorized" in json.dumps(me_d).lower()):
+                    status["bots"]["turbogram"] = "token_expired (needs 24h refresh)"
+                    return
                 target_ton = (acc.get("ton_wallet") or {}).get("address")
                 if target_ton:
                     await safe_post("https://turbo.tamimdev.dev/api/me/wallet", {"address": target_ton}, tb_h)
@@ -5304,6 +5360,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
     async def _farm_tac():
         tac_init = tokens.get("tac_init_data")
         if not tac_init:
+            status["bots"]["tac"] = "skipped (no initData)"
             return
         tac_headers = {
             "Content-Type": "application/json",
@@ -5315,6 +5372,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             # 1. State check
             st_url = f"https://tacairdrop.xyz/api/state?userId={uid}&username={urllib.parse.quote(name)}"
             st_code, state_data = await safe_get(st_url, req_headers=tac_headers)
+            if st_code == 401 or st_code == 403:
+                status["bots"]["tac"] = "token_expired (needs 24h refresh)"
+                return
             if st_code != 200 or not isinstance(state_data, dict):
                 status["bots"]["tac"] = f"state_error_{st_code}"
                 return
@@ -5412,15 +5472,19 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "apx", "fn": _farm_apex, "has_data": bool(tokens.get("apx_init_data"))},
         {"name": "atf", "fn": _farm_atf, "has_data": bool(tokens.get("atf_init_data"))},
         {"name": "ainovum", "fn": _farm_ainovum, "has_data": bool(tokens.get("ainovum_init_data"))},
-        {"name": "trxpower", "fn": _farm_trxpower, "has_data": True},
-        {"name": "btc", "fn": _farm_btc, "has_data": True},
-        {"name": "tensor", "fn": _farm_tensor, "has_data": True},
-        {"name": "tontrader", "fn": _farm_tontrader, "has_data": True},
-        {"name": "finvora", "fn": _farm_finvora, "has_data": True},
-        {"name": "turbogram", "fn": _farm_turbogram, "has_data": True},
+        {"name": "trxpower", "fn": _farm_trxpower, "has_data": bool(tokens.get("trxpower_init_data"))},
+        {"name": "btc", "fn": _farm_btc, "has_data": bool(acc.get("session_string") or acc.get("session"))},
+        {"name": "tensor", "fn": _farm_tensor, "has_data": bool(tokens.get("tensor_init_data"))},
+        {"name": "tontrader", "fn": _farm_tontrader, "has_data": bool(tokens.get("tontrader_init_data"))},
+        {"name": "finvora", "fn": _farm_finvora, "has_data": bool(tokens.get("finvora_init_data"))},
+        {"name": "turbogram", "fn": _farm_turbogram, "has_data": bool(tokens.get("turbogram_init_data"))},
         {"name": "usdtquad", "fn": _farm_usdtquad, "has_data": True},
-        {"name": "tac", "fn": _farm_tac, "has_data": True},
+        {"name": "tac", "fn": _farm_tac, "has_data": bool(tokens.get("tac_init_data"))},
     ]
+
+    for b in bot_routines:
+        if not b["has_data"]:
+            status["bots"][b["name"]] = "skipped (no initData)"
 
     active_routines = [b for b in bot_routines if b["has_data"]]
     random.shuffle(active_routines)
@@ -5946,7 +6010,7 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
 @app.post("/api/study-bot/{bot_key}")
 async def study_bot_endpoint(bot_key: str, request: Request):
     """
-    Studies one or all bots in depth using the Master account (6727787768).
+    Studies one or all bots in depth using specified account (?uid=) or active authorized worker account.
     bot_key can be: trxpower, btc, finvora, turbogram, tensor, tontrader, usdtquad, tac, or all.
     """
     auth = request.headers.get("Authorization") or ""
@@ -5955,9 +6019,10 @@ async def study_bot_endpoint(bot_key: str, request: Request):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     accounts = await fetch_accounts_from_cloud()
-    master_acc = next((a for a in accounts if str(a.get("user_id")) == "6727787768"), None)
-    if not master_acc:
-        raise HTTPException(status_code=404, detail="Master account not found")
+    req_uid = request.query_params.get("uid")
+    target_acc = None
+    if req_uid:
+        target_acc = next((a for a in accounts if str(a.get("user_id")) == str(req_uid)), None)
 
     bot_map = {
         "trxpower": "trxpowermining_bot",
@@ -5974,21 +6039,34 @@ async def study_bot_endpoint(bot_key: str, request: Request):
     if not target_bots:
         raise HTTPException(status_code=400, detail=f"Unknown bot_key: {bot_key}. Available: {list(bot_map.keys())} or 'all'")
 
-    sess_str = master_acc.get("session_string") or master_acc.get("session")
-    cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
-
+    # Try target account first, then fallback to any active worker account
+    ordered_accs = ([target_acc] if target_acc else []) + [a for a in accounts if a != target_acc and (a.get("session_string") or a.get("session"))]
     results = {}
-    try:
-        await cl.connect()
-        if not await cl.is_user_authorized():
-            return {"ok": False, "error": "Master session not authorized"}
+    used_uid = None
+    for acc in ordered_accs:
+        sess_str = acc.get("session_string") or acc.get("session")
+        if not sess_str:
+            continue
+        cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+        try:
+            await asyncio.wait_for(cl.connect(), timeout=8.0)
+            if not await cl.is_user_authorized():
+                await cl.disconnect()
+                continue
+            used_uid = str(acc.get("user_id"))
+            for b_key, b_user in target_bots:
+                results[b_key] = await study_bot_deep(cl, b_key, b_user)
+            break
+        except Exception as e:
+            logger.warning(f"Study bot attempt with UID {acc.get('user_id')} note: {e}")
+        finally:
+            try: await cl.disconnect()
+            except Exception: pass
 
-        for b_key, b_user in target_bots:
-            results[b_key] = await study_bot_deep(cl, b_key, b_user)
-    finally:
-        await cl.disconnect()
+    if not used_uid:
+        return {"ok": False, "error": "No authorized account session available for deep study"}
 
-    return {"ok": True, "master_id": "6727787768", "results": results}
+    return {"ok": True, "inspected_by_uid": used_uid, "results": results}
 
 
 @app.post("/api/mute-all-chats")
@@ -6095,7 +6173,22 @@ async def inspect_bot_chat(uid: str, request: Request):
                     btns = []
                     if m.buttons:
                         for row in m.buttons:
-                            btns.append([{"text": b.text, "url": getattr(b, 'url', None)} for b in row])
+                            row_btns = []
+                            for b in row:
+                                raw_b = getattr(b, "button", b)
+                                b_type = type(raw_b).__name__
+                                b_url = getattr(b, "url", None) or getattr(raw_b, "url", None) or getattr(getattr(raw_b, "web_app", None), "url", None)
+                                b_data = getattr(raw_b, "data", None)
+                                if isinstance(b_data, bytes):
+                                    try: b_data = b_data.decode()
+                                    except Exception: b_data = str(b_data)
+                                row_btns.append({
+                                    "text": b.text,
+                                    "type": b_type,
+                                    "url": b_url,
+                                    "data": b_data
+                                })
+                            btns.append(row_btns)
                     msg_list.append({"id": m.id, "out": m.out, "text": m.raw_text, "buttons": btns})
                 chats[name] = msg_list
             except Exception as ex:
@@ -6104,6 +6197,190 @@ async def inspect_bot_chat(uid: str, request: Request):
         await cl.disconnect()
 
     return {"ok": True, "uid": uid, "chats": chats}
+
+
+# Type B Channel & Subscription Engine Definitions
+CHANNEL_WHITELIST = {
+    "myagyai",
+    "stoneswithestand",
+    "mrgminer",
+    "mrgfun",
+    "art_airdrop",
+    "apexminer_official",
+    "apexminergroup",
+    "ailabrobotnews",
+    "ailabrobotpayouts",
+    "ultrawallet",
+    "ultrawalletofficial",
+    "novum_en",
+    "gramworkers",
+    "trxpowerminingofficial",
+    "trx_world_work",
+    "finvoraweb3",
+    "turbogramannouncements",
+    "turbogrampayment",
+    "tontraderai_official",
+    "tontraderai_group",
+    "tensorcoinnews",
+    "tacairdrop_official",
+    "tacairdrop",
+    "tac_airdrop"
+}
+
+MANDATORY_SPONSOR_CHANNELS = [
+    "trxpowerminingOfficial", "TRX_WORLD_WORK",
+    "finvoraweb3",
+    "TurboGramAnnouncements", "TurboGramPayment",
+    "stoneswithestand",
+    "mrgminer", "mrgfun",
+    "ART_AIRDROP",
+    "ApexMiner_Official", "ApexMinerGroup",
+    "ailabrobotnews",
+    "ultrawalletofficial",
+    "novum_en",
+    "tontraderai_official", "tontraderai_group",
+    "tacairdrop"
+]
+
+FLEET_LEGITIMATE_BOTS = [
+    "stoneswithestand_bot", "mrgminerbot", "ART_AIRDROP_BOT", "AiLab_robot",
+    "UltrawalletTrade_Bot", "ApxMinerBot", "ainovum_bot", "ATF_AIRDROP_bot",
+    "trxpowermining_bot", "BitcoinCloudMinersBot", "TensorMiningRobot",
+    "TonTraderAIBot", "FINVORAWeb3bot", "TurboGramV1_bot", "usdtquadbot", "tacairdrop_bot"
+]
+
+LAST_CHANNEL_SYNC_STATUS = {
+    "status": "idle",
+    "timestamp": 0,
+    "total_accounts": 0,
+    "results": []
+}
+
+@app.get("/api/channels/status")
+async def channel_status_endpoint(request: Request):
+    """Returns the latest Type B Channel & Subscription Engine status."""
+    return {"ok": True, "status": LAST_CHANNEL_SYNC_STATUS}
+
+
+@app.post("/api/channels/sync-and-verify")
+@app.get("/api/channels/sync-and-verify")
+async def sync_and_verify_channels_endpoint(request: Request):
+    """
+    Type B Channel & Bot Management Engine:
+    Ensures all fleet accounts join mandatory sponsor channels, unblock all 16 bots,
+    and permanently mute all channels/bots to prevent notification spam.
+    Protects against Telegram's 500-channel limit by leaving unwhitelisted spam channels if dialogs > 400.
+    """
+    auth = request.headers.get("Authorization") or ""
+    req_secret = request.query_params.get("secret", "")
+    if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    accounts = await fetch_accounts_from_cloud()
+    target_uid = request.query_params.get("uid")
+    if target_uid:
+        accounts = [a for a in accounts if str(a.get("user_id")) == str(target_uid)]
+
+    sync_mode = request.query_params.get("sync") == "1" or bool(target_uid)
+
+    async def _run_channel_sync():
+        LAST_CHANNEL_SYNC_STATUS["status"] = "running"
+        LAST_CHANNEL_SYNC_STATUS["timestamp"] = time.time()
+        LAST_CHANNEL_SYNC_STATUS["total_accounts"] = len(accounts)
+        LAST_CHANNEL_SYNC_STATUS["results"] = []
+        results = []
+
+        for acc in accounts:
+            uid = str(acc.get("user_id"))
+            name = acc.get("name", uid)
+            sess_str = acc.get("session_string") or acc.get("session")
+            if not sess_str:
+                res_item = {"uid": uid, "name": name, "status": "no_session"}
+                results.append(res_item)
+                LAST_CHANNEL_SYNC_STATUS["results"].append(res_item)
+                continue
+
+            cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+            acc_res = {"uid": uid, "name": name, "joined": [], "unblocked": [], "muted": 0, "pruned": 0}
+            try:
+                await asyncio.wait_for(cl.connect(), timeout=10.0)
+                if not await cl.is_user_authorized():
+                    acc_res["status"] = "unauthorized"
+                    results.append(acc_res)
+                    LAST_CHANNEL_SYNC_STATUS["results"].append(acc_res)
+                    continue
+
+                # 1. Unblock all 16 fleet bots
+                for b in FLEET_LEGITIMATE_BOTS:
+                    try:
+                        await cl(functions.contacts.UnblockRequest(id=b))
+                        acc_res["unblocked"].append(b)
+                    except Exception:
+                        pass
+
+                # 2. Join all mandatory sponsor channels
+                for ch in MANDATORY_SPONSOR_CHANNELS:
+                    try:
+                        await cl(JoinChannelRequest(ch))
+                        acc_res["joined"].append(ch)
+                        await asyncio.sleep(0.5)
+                    except Exception as ce:
+                        err_s = str(ce).lower()
+                        if "already" in err_s:
+                            acc_res["joined"].append(f"{ch} (already)")
+
+                # 3. Mute all channels, groups, and bots
+                muted_cnt = 0
+                dialogs = await cl.get_dialogs(limit=100)
+                for d in dialogs:
+                    if d.is_channel or d.is_group or getattr(d.entity, 'bot', False):
+                        try:
+                            await mute_peer(cl, d.input_entity, name)
+                            muted_cnt += 1
+                        except Exception:
+                            pass
+                acc_res["muted"] = muted_cnt
+
+                # 4. Channel limit protection: if total dialogs > 400, leave non-whitelisted channels
+                pruned_cnt = 0
+                if len(dialogs) > 400:
+                    for d in dialogs:
+                        if d.is_channel and not getattr(d.entity, 'megagroup', False):
+                            uname = (getattr(d.entity, 'username', '') or '').lower()
+                            title = (d.name or '').lower()
+                            if uname not in CHANNEL_WHITELIST and not uname.startswith("aaa") and "aaa" not in title and "my agy ai" not in title:
+                                try:
+                                    await cl(functions.channels.LeaveChannelRequest(d.input_entity))
+                                    pruned_cnt += 1
+                                    await asyncio.sleep(0.8)
+                                except Exception:
+                                    pass
+                acc_res["pruned"] = pruned_cnt
+                acc_res["status"] = "synced"
+                results.append(acc_res)
+                LAST_CHANNEL_SYNC_STATUS["results"].append(acc_res)
+            except Exception as e:
+                acc_res["status"] = f"error: {format_error(e)}"
+                results.append(acc_res)
+                LAST_CHANNEL_SYNC_STATUS["results"].append(acc_res)
+            finally:
+                try: await cl.disconnect()
+                except Exception: pass
+
+        LAST_CHANNEL_SYNC_STATUS["status"] = "completed"
+        return results
+
+    if sync_mode:
+        res = await _run_channel_sync()
+        return {"ok": True, "count": len(res), "results": res}
+    else:
+        asyncio.create_task(_run_channel_sync())
+        return {
+            "ok": True,
+            "status": "running_in_background",
+            "accounts_queued": len(accounts),
+            "message": "Type B Channel Sync & Muting running in background across all fleet accounts. Monitor via /api/channels/status"
+        }
 
 
 LAST_ONBOARD_STATUS = {
