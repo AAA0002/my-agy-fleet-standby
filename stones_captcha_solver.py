@@ -262,12 +262,11 @@ async def execute_stones_withdrawal_with_captcha(
     proxy: str = None
 ) -> Tuple[bool, str]:
     """
-    Executes a complete Stones Miner auto-withdrawal:
-    1. Checks captcha gate (/api/wd/captcha/issue).
-    2. If required, solves dynamic image challenge and obtains verification ticket.
-    3. Submits withdrawal to /api/withdraw with ticket.
+    Executes a complete Stones Miner auto-withdrawal.
+    Auto-withdrawals permanently disabled by user directive to prevent wrong-address routing.
     """
-    req_headers = dict(headers)
+    logger.info("[Stones Captcha] Auto-withdrawals disabled by policy. Fleet in 100% accumulation mode.")
+    return False, "disabled_by_policy"
     req_headers["Content-Type"] = "application/json"
 
     # Step 0: Pre-check withdrawal ad boarding requirements

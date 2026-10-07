@@ -4,6 +4,18 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🧩 Google Stitch MCP Integration & Deep Auto-Withdrawal Sweep Hardening (`mcp_config.json`, `deploy_both_cf_workers.py`, `userbot_refresher.py`, `stones_captcha_solver.py`, `batch_stones_withdraw.py`, `execute_ailab_ainovum_withdrawals.py`, `audit_bots_and_sidetasks.py`, `CHANGELOG.md`)**:
+  - **🧩 Google Stitch MCP Server Configuration**:
+    * Configured Google Stitch remote Model Context Protocol server at `https://stitch.googleapis.com/mcp` with `X-Goog-Api-Key` authentication in Antigravity global configuration (`~/.gemini/config/mcp_config.json` and `/root/.gemini/antigravity-cli/mcp_config.json`).
+  - **🛑 Full Codebase Purge of Residual Auto-Withdrawal Logic**:
+    * Audited every python script and edge template to eliminate residual auto-withdrawal triggers that targeted wrong/legacy addresses (such as `0xfda4182001672b9f0f09e2118242e543e35ed5ce`).
+    * Hardened `userbot_refresher.py`: disabled `execute_stones_fleet_sweep`, `execute_ailab_fleet_sweep`, `execute_ainovum_fleet_sweep`, `execute_mrg_fleet_sweep`, `automate_ainovum_cycle`, and `execute_mrg_withdrawal`.
+    * Neutralized `stones_captcha_solver.py` (`execute_stones_withdrawal_with_captcha`), `batch_stones_withdraw.py`, and `execute_ailab_ainovum_withdrawals.py` with immediate policy-disabled guards.
+    * Updated Cloudflare Edge Worker interactive command centers (`/sweep`, `/withdraw`, `/stones`, `/ainovum`, `/ailab`, `/ultra`, `/apx`) in `deploy_both_cf_workers.py` to confirm 100% accumulation & compounding mode without routing funds to old addresses.
+  - **🚀 Deployments**:
+    * Deployed updated 5-node Cloudflare Edge Worker mesh.
+    * Pushed updated standby code to GitHub repo `AAA0002/my-agy-fleet-standby` (Commit `f6800e39`).
+
 - **🛡️ Concurrency Throttling Resolution, Fleet-Wide Multi-Account Parity & Permanent Auto-Withdrawal Ban (`deploy_both_cf_workers.py`, `render_standby_app.py`, `userbot_refresher.py`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
   - **🛑 Permanent Auto-Withdrawal Ban across Fleet**:
     * Completely eliminated all legacy automated cashout / withdrawal logic across all bots (including legacy AI Lab hardcoded cashout to `0xfda4182001672b9f0f09e2118242e543e35ed5ce`, ART, Ainovum, and USDT QUAD).

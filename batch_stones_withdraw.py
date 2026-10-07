@@ -26,9 +26,8 @@ FLEET_EVM_FILE = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
 ALREADY_QUEUED = set()
 
 async def run_batch():
-    if not os.path.exists(TOKENS_FILE) or not os.path.exists(FLEET_EVM_FILE):
-        logger.error("Missing required config files.")
-        return
+    logger.info("Stones auto-withdrawals permanently disabled by user directive to prevent wrong-address routing. Fleet in 100% accumulation mode.")
+    return
 
     with open(TOKENS_FILE, "r", encoding="utf-8") as f:
         tokens_cache = json.load(f)

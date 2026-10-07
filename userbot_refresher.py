@@ -6955,86 +6955,11 @@ async def execute_mrg_withdrawal(
     is_primary: bool = False
 ):
     """
-    Executes automated slider captcha solving and withdrawal for MRG Miner:
-    1. Calls /api/captcha/create to receive captchaId and targetX
-    2. Simulates realistic slider puzzle completion
-    3. Calls /api/captcha/verify with sliderX = targetX to obtain captchaToken
-    4. Calls /api/user/withdraw with amount, destinationAddress, and captchaToken
-    5. Dispatches Telegram receipts on settlement
+    Executes automated slider captcha solving and withdrawal for MRG Miner.
+    Auto-withdrawals permanently disabled by user directive to prevent wrong-address routing.
     """
-    try:
-        # Step 1: Create Captcha
-        c_payload = {"initData": init_data}
-        async with session.post(f"{base_url}/api/captcha/create", json=c_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as cr:
-            if cr.status != 200:
-                logger.warning(f"[{acc_name}] ⛏️ [MRG Miner] Captcha create failed (HTTP {cr.status})")
-                return False, f"captcha_create_http_{cr.status}"
-            cd = await cr.json()
-            cid = cd.get("captchaId")
-            tx = cd.get("targetX")
-
-        if not cid or tx is None:
-            logger.warning(f"[{acc_name}] ⛏️ [MRG Miner] Captcha create missing captchaId or targetX")
-            return False, "missing_captcha_params"
-
-        # Realistic human jitter
-        await asyncio.sleep(round(random.uniform(1.2, 2.4), 2))
-
-        # Step 2: Verify Captcha
-        v_payload = {"initData": init_data, "captchaId": cid, "sliderX": tx}
-        async with session.post(f"{base_url}/api/captcha/verify", json=v_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as vr:
-            if vr.status != 200:
-                logger.warning(f"[{acc_name}] ⛏️ [MRG Miner] Captcha verify failed (HTTP {vr.status})")
-                return False, f"captcha_verify_http_{vr.status}"
-            vd = await vr.json()
-            ctoken = vd.get("captchaToken")
-
-        if not ctoken:
-            logger.warning(f"[{acc_name}] ⛏️ [MRG Miner] Captcha verification did not return token: {vd.get('error')}")
-            return False, vd.get("error", "no_captcha_token")
-
-        logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Captcha verified successfully! (Token: {ctoken[:16]}...)")
-        await asyncio.sleep(round(random.uniform(0.8, 1.6), 2))
-
-        # Step 3: Execute Withdrawal
-        wd_payload = {
-            "initData": init_data,
-            "amount": amount,
-            "destinationAddress": target_wallet,
-            "captchaToken": ctoken
-        }
-        async with session.post(f"{base_url}/api/user/withdraw", json=wd_payload, headers=headers, timeout=aiohttp.ClientTimeout(total=15)) as wr:
-            res_txt = await wr.text()
-            try:
-                wd_res = json.loads(res_txt)
-            except Exception:
-                wd_res = {"error": res_txt}
-
-            if wr.status == 200 and wd_res.get("success"):
-                logger.info(f"[{acc_name}] 🎉 [MRG Miner] Withdrawal of {amount} MRG submitted successfully to {target_wallet}!")
-                now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-                ch_sub = (
-                    f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
-                    f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                    f"⛏️ <b>Platform:</b> MRG Miner (@mrgminerbot)\n"
-                    f"👤 <b>Account:</b> {acc_name}\n"
-                    f"💰 <b>Amount:</b> <code>{amount} MRG</code>\n"
-                    f"🌐 <b>Destination Network:</b> TON (The Open Network)\n"
-                    f"💼 <b>Target Vault:</b> <code>{target_wallet}</code>\n"
-                    f"🛡️ <b>Anti-Bot & KYC:</b> <code>Verified & Passed</code> ✅\n"
-                    f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
-                    f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                    f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
-                )
-                safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_mrg_wd")
-                return True, wd_res
-            else:
-                err_msg = wd_res.get("error", f"HTTP {wr.status}")
-                logger.warning(f"[{acc_name}] ⛏️ [MRG Miner] Withdrawal note: {err_msg}")
-                return False, err_msg
-    except Exception as e:
-        logger.error(f"[{acc_name}] MRG withdrawal error: {e}")
-        return False, str(e)
+    logger.info(f"[{acc_name}] ⛏️ [MRG Miner] Auto-withdrawals disabled by policy. 100% accumulation active.")
+    return False, "disabled_by_policy"
 
 
 async def automate_mrg_cycle(session: aiohttp.ClientSession, acc_client, acc: dict):
@@ -8402,54 +8327,9 @@ async def automate_ainovum_cycle(session: aiohttp.ClientSession, acc_client, acc
         # 5. Auto-Withdrawal to BEP-20 Wallet (0.10 USDT Minimum)
         # Novum grants 1-2 free cashouts before requiring a deposit.
         # Accounts with is_withdraw_locked == 1 require deposit per Novum anti-sybil policy.
+        # Auto-Withdrawal permanently disabled by user directive to prevent wrong-address routing
         try:
-            if is_withdraw_locked == 1:
-                logger.debug(f"[{acc_name}] 🤖 [Ainovum] Account requires deposit / free quota used (is_withdraw_locked: 1). Skipping auto-withdrawal.")
-            else:
-                async with session.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cr:
-                    if cr.status == 200:
-                        cd = await cr.json()
-                        avail = float(cd.get("freeze", {}).get("available", 0) or 0)
-                        min_ainovum_thresh = 0.10 if is_primary else 1.00
-                        if avail >= min_ainovum_thresh:
-                            wd_amt = round(avail, 4)
-                            if acc_uid == "6727787768":
-                                target_evm_addr = BINANCE_WALLET_2_EVM  # Binance Web3 Wallet 2 (0x017841f26d5b79cc8c5eb20c65367bb645cc2610)
-                            elif acc_uid == "8203342513":
-                                target_evm_addr = EVM_VAULT_ADDRESS     # Node 10 (@AAlllAA2) holds Primary Binance Web3 (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
-                            else:
-                                target_evm_addr = FLEET_EVM_WALLETS.get(acc_uid) or EVM_VAULT_ADDRESS
-                            logger.info(f"[{acc_name}] 🤖 [Ainovum] Eligible for FREE withdrawal! Available {avail:.4f} USDT >= {min_ainovum_thresh:.2f} threshold. Submitting auto-withdrawal to BEP-20 {target_evm_addr}...")
-                            wd_payload = {"amount": wd_amt, "wallet": target_evm_addr, "network": "bep20"}
-                            for attempt in range(2):
-                                async with session.post(
-                                    f"{base_url}/api/withdraws/usdt/create",
-                                    json=wd_payload,
-                                    headers=auth_headers,
-                                    timeout=aiohttp.ClientTimeout(total=10),
-                                    proxy=proxy
-                                ) as wr:
-                                    wd = await wr.json()
-                                    if wr.status == 200 and not wd.get("access_denied") and not wd.get("error"):
-                                        logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal success: {wd}")
-                                        now_sub_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-                                        ch_sub = (
-                                            f"⏳ <b>NEW WITHDRAWAL SUBMISSION RECORDED</b>\n"
-                                            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                                            f"💎 <b>Platform:</b> Ainovum (@ainovumbot)\n"
-                                            f"👤 <b>Account:</b> {acc_name}\n"
-                                            f"💰 <b>Amount:</b> <code>{wd_amt} USDT</code> (BEP-20)\n"
-                                            f"🌐 <b>Destination Network:</b> BNB Smart Chain (BSC BEP-20)\n"
-                                            f"💼 <b>Target Vault:</b> <code>{target_evm_addr}</code>\n"
-                                            f"🕒 <b>Submitted At:</b> {now_sub_str}\n"
-                                            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                                            f"📡 <i>Status: IN-FLIGHT • Awaiting Blockchain Settlement</i>"
-                                        )
-                                        safe_create_task(broadcast_payout_channel_receipt(ch_sub), name="ch_ainovum_wd")
-                                        break
-                                    elif wd.get("code") == "busy":
-                                        logger.info(f"[{acc_name}] 🤖 [Ainovum] Withdrawal gateway busy (Server busy). Will retry next cycle.")
-                                        break
+            logger.debug(f"[{acc_name}] 🤖 [Ainovum] Auto-withdrawals disabled by policy. 100% accumulation active.")
         except Exception as we:
             logger.debug(f"[{acc_name}] Ainovum withdrawal check note: {we}")
 
@@ -9619,256 +9499,35 @@ async def autonomous_onchain_sweeper_loop():
 
 
 async def execute_stones_fleet_sweep(caller_chat_id=None):
-    """Executes Stones 500-withdrawal sweep across all eligible fleet accounts."""
+    """Auto-withdrawals permanently disabled by user directive."""
     target_chat = caller_chat_id or REPORT_CHAT_ID
-    logger.info("[Stones Sweep] 💎 Stones 500-Withdrawal Sweep triggered...")
-    accounts = load_accounts()
-    fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
-    isolated_map = {}
-    if os.path.exists(fleet_evm_file):
-        try:
-            with open(fleet_evm_file, "r", encoding="utf-8") as fef:
-                isolated_map = json.load(fef)
-        except Exception:
-            pass
-    swept_count = 0
-    for acc in accounts:
-        uid = str(acc.get("user_id"))
-        name = acc.get("name", "User")
-        coins = float(acc.get("stones_coins", 0) or 0)
-        target_wallet = ARBITRUM_WALLET  # Direct to Binance Web3 Master (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
-        if coins >= 500:
-            logger.info(f"[Stones Sweep] {name} ({uid}) eligible ({coins} STONES). Submitting 500 withdrawal to {target_wallet}...")
-            init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("stones_init_data")
-            if init_data:
-                try:
-                    from stones_captcha_solver import execute_stones_withdrawal_with_captcha
-                    proxy = acc.get("proxy")
-                    async with aiohttp.ClientSession() as sw_sess:
-                        # Pre-check AdsGram token freshness (<2h)
-                        try:
-                            p_qs = dict(urllib.parse.parse_qsl(init_data))
-                            if (time.time() - float(p_qs.get("auth_date", 0))) > 7200:
-                                fresh_init = await refresh_tokens_via_relayer(sw_sess, uid, "stones")
-                                if fresh_init:
-                                    init_data = fresh_init
-                        except Exception:
-                            pass
-                        headers = {"Content-Type": "application/json", "User-Agent": get_account_user_agent(uid)}
-                        ok_w, res_w = await execute_stones_withdrawal_with_captcha(
-                            session=sw_sess,
-                            base_url="https://app.stoneswithestand.my.id",
-                            headers=headers,
-                            init_data=init_data,
-                            amount=500,
-                            wallet=target_wallet,
-                            proxy=proxy
-                        )
-                        if ok_w:
-                            swept_count += 1
-                            await send_report_message(f"🎉 *Stones Sweep:* `{name}` withdrew 500 STONES to Arbitrum `{target_wallet}`! Result: {res_w}", chat_id=target_chat)
-                except Exception as swe:
-                    logger.debug(f"[Stones Sweep] Error for {name}: {swe}")
-    if swept_count == 0 and caller_chat_id:
-        await send_report_message("💎 *Stones Sweep:* No accounts currently meet the 500 STONES threshold or are off cooldown.", chat_id=target_chat)
+    logger.info("[Stones Sweep] Auto-withdrawals disabled by policy. Fleet in 100% accumulation mode.")
+    if caller_chat_id:
+        await send_report_message("💎 *Stones Policy:* Auto-withdrawals are permanently disabled by policy (fleet is in 100% accumulation mode).", chat_id=target_chat)
 
 
 async def execute_ailab_fleet_sweep(caller_chat_id=None):
-    """Executes AI Lab auto-cashout sweep (USDT BEP-20) across all eligible fleet accounts."""
+    """Auto-withdrawals permanently disabled by user directive."""
     target_chat = caller_chat_id or REPORT_CHAT_ID
-    logger.info("[AI Lab Sweep] 🧪 AI Lab Auto-Withdrawal Sweep triggered...")
-    accounts = load_accounts()
-    fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
-    isolated_map = {}
-    if os.path.exists(fleet_evm_file):
-        try:
-            with open(fleet_evm_file, "r", encoding="utf-8") as fef:
-                isolated_map = json.load(fef)
-        except Exception:
-            pass
-    swept_count = 0
-    for acc in accounts:
-        uid = str(acc.get("user_id"))
-        name = acc.get("name", "User")
-        is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
-        worker_evm = EVM_VAULT_ADDRESS  # Direct to Binance Web3 Master (0xfda4182001672b9f0f09e2118242e543e35ed5ce)
-        init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("ailab_init_data")
-        proxy = acc.get("proxy")
-        if init_data:
-            try:
-                base_url = "https://api.ailab-agent.online/api/v1"
-                async with aiohttp.ClientSession() as ai_sess:
-                    ai_headers = {"Content-Type": "application/json", "User-Agent": get_account_user_agent(uid)}
-                    async with ai_sess.post(f"{base_url}/users/auth/login", json={"user": init_data}, headers=ai_headers, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as lr:
-                        if lr.status != 200:
-                            continue
-                        ld = await lr.json()
-                        tok = ld.get("result", {}).get("bearer") or ld.get("user_info", {}).get("session_id")
-                        if not tok:
-                            continue
-                    auth_h = {**ai_headers, "Authorization": f"Bearer {tok}"}
-                    async with ai_sess.get(f"{base_url}/cashout", headers=auth_h, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cr:
-                        if cr.status == 200:
-                            cdata = await cr.json()
-                            ubal = float(cdata.get("user_info", {}).get("balance", 0) or 0)
-                            ailab_thresh = 0.02 if is_pri else 1.00
-                            if ubal >= ailab_thresh:
-                                wd_usd = round(int(ubal * 100) / 100.0, 2)
-                                target_dest = EVM_VAULT_ADDRESS if is_pri else worker_evm
-                                pay_payload = {
-                                    "ps_id": 5,  # USDT (BEP20)
-                                    "amount_usd": wd_usd,
-                                    "wallet": target_dest,
-                                    "dest_tag": ""
-                                }
-                                async with ai_sess.post(f"{base_url}/cashout-pay", json=pay_payload, headers=auth_h, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as wr:
-                                    wres = await wr.json()
-                                    if wres.get("request_info", {}).get("error_code") == 0 or wres.get("result"):
-                                        swept_count += 1
-                                        acc_role = "Main Host" if is_pri else "Worker"
-                                        await send_report_message(f"🎉 *AI Lab Sweep:* `{name}` ({acc_role}) withdrew `${wd_usd} USD` to BEP-20 `{target_dest}`!", chat_id=target_chat)
-            except Exception as aie:
-                logger.debug(f"[AI Lab Sweep] Error for {name}: {aie}")
-    if swept_count == 0 and caller_chat_id:
-        await send_report_message("🧪 *AI Lab Sweep:* No accounts currently meet the cashout threshold ($0.02 for Main, $1.00 for Workers).", chat_id=target_chat)
+    logger.info("[AI Lab Sweep] Auto-withdrawals disabled by policy. Fleet in 100% accumulation mode.")
+    if caller_chat_id:
+        await send_report_message("🧪 *AI Lab Policy:* Auto-withdrawals are permanently disabled by policy (fleet is in 100% accumulation mode).", chat_id=target_chat)
 
 
 async def execute_ainovum_fleet_sweep(caller_chat_id=None):
-    """Executes Ainovum 0.10 USDT sweep with isolated EVM routing across all eligible fleet accounts."""
+    """Auto-withdrawals permanently disabled by user directive."""
     target_chat = caller_chat_id or REPORT_CHAT_ID
-    logger.info("[Ainovum Sweep] 🤖 Ainovum 0.10 USDT Auto-Withdrawal Sweep triggered...")
-    accounts = load_accounts()
-    fleet_evm_file = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
-    isolated_map = {}
-    if os.path.exists(fleet_evm_file):
-        try:
-            with open(fleet_evm_file, "r", encoding="utf-8") as fef:
-                isolated_map = json.load(fef)
-        except Exception:
-            pass
-    base_url = "https://ainovum.biz"
-    swept_count = 0
-    async with aiohttp.ClientSession() as an_sess:
-        for acc in accounts:
-            if acc.get("ainovum_banned"):
-                continue
-            uid = str(acc.get("user_id"))
-            name = acc.get("name", "User")
-            is_pri = (uid == "6727787768" or acc.get("phone") in ("+8801317342850", "01317342850") or acc.get("is_primary"))
-            init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("ainovum_init_data")
-            if not init_data:
-                continue
-            proxy = acc.get("proxy")
-            acc_ua = get_account_user_agent(uid)
-            an_h = {"Content-Type": "application/json", "User-Agent": acc_ua}
-            try:
-                ref_code = "" if is_pri else AINOVUM_REFERRAL_CODE
-                boot_resp = await an_sess.post(f"{base_url}/api/bootstrap", json={"initData": init_data, "platform": "android", "referrer": ref_code, "timezone_offset_minutes": 0, "language_code": "en", "registration_duration_ms": 1500}, headers=an_h, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy)
-                if boot_resp.status != 200:
-                    continue
-                boot_d = await boot_resp.json()
-                u_locked = boot_d.get("user", {}).get("is_withdraw_locked")
-                if u_locked == 1:
-                    logger.debug(f"[Ainovum Sweep] {name} is locked/requires deposit (is_withdraw_locked: 1). Skipping.")
-                    continue
-                raw_cookies = boot_resp.headers.getall("Set-Cookie", [])
-                cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
-                auth_an_h = {**an_h, "Cookie": cookie_hdr}
-                async with an_sess.get(f"{base_url}/api/withdraws/usdt/config", headers=auth_an_h, timeout=aiohttp.ClientTimeout(total=8), proxy=proxy) as cfg_r:
-                    if cfg_r.status == 200:
-                        cfg_d = await cfg_r.json()
-                        avail = float(cfg_d.get("freeze", {}).get("available", 0) or 0)
-                        min_an_thresh = 0.10 if is_pri else 1.00
-                        if avail >= min_an_thresh:
-                            if uid == "6727787768":
-                                target_addr = BINANCE_WALLET_2_EVM
-                            elif uid == "8203342513":
-                                target_addr = EVM_VAULT_ADDRESS
-                            else:
-                                target_addr = isolated_map.get(uid, {}).get("address") or FLEET_EVM_WALLETS.get(uid)
-                            if not target_addr:
-                                logger.warning(f"[Ainovum Sweep] No isolated EVM found for {name}. Skipping to prevent wallet collision.")
-                                continue
-                            wd_amt = round(avail, 4)
-                            async with an_sess.post(f"{base_url}/api/withdraws/usdt/create", json={"amount": wd_amt, "wallet": target_addr, "network": "bep20"}, headers=auth_an_h, timeout=aiohttp.ClientTimeout(total=10), proxy=proxy) as wdr:
-                                wd_res = await wdr.json()
-                                if wdr.status == 200 and not wd_res.get("access_denied") and not wd_res.get("error"):
-                                    swept_count += 1
-                                    acc_role = "Main Host" if is_pri else "Worker"
-                                    await send_report_message(f"🎉 *Ainovum Sweep:* `{name}` ({acc_role}) withdrew `{wd_amt} USDT` to `{target_addr}`! Result: {wd_res}", chat_id=target_chat)
-            except Exception as ane:
-                logger.debug(f"[Ainovum Sweep] Error for {name}: {ane}")
-    if swept_count == 0 and caller_chat_id:
-        await send_report_message("🤖 *Ainovum Sweep:* No accounts currently meet the free withdrawal criteria (0.10 USDT for Main, 1.00 USDT for Workers).", chat_id=target_chat)
+    logger.info("[Ainovum Sweep] Auto-withdrawals disabled by policy. Fleet in 100% accumulation mode.")
+    if caller_chat_id:
+        await send_report_message("🤖 *Ainovum Policy:* Auto-withdrawals are permanently disabled by policy (fleet is in 100% accumulation mode).", chat_id=target_chat)
 
 
 async def execute_mrg_fleet_sweep(caller_chat_id=None, force=False):
-    """Executes MRG Miner automated withdrawal sweep across verified fleet accounts.
-    NOTE: Strictly disabled by default for admin fleet accounts to ensure balance holding,
-    preserving peak miner levels (Level 1..50), maximum hashrate (5.5 TH/s), and squad referral qualifications.
-    """
+    """Auto-withdrawals permanently disabled by user directive."""
     target_chat = caller_chat_id or REPORT_CHAT_ID
-    if not force:
-        logger.info("[MRG Sweep] ⛏️ MRG auto-withdrawal sweep skipped: Admin fleet accounts are in 100% Holding Mode to preserve peak levels and referral qualifications.")
-        await send_report_message("⛏️ *MRG Miner Policy:* Auto-withdrawals strictly disabled for admin fleet accounts to preserve peak miner levels (Level 1..50), hashrate, and squad referral qualifications.", chat_id=target_chat)
-        return
-    logger.info("[MRG Sweep] ⛏️ Forced MRG Miner Auto-Withdrawal Sweep triggered...")
-    accounts = load_accounts()
-    fleet_ton_file = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
-    fwallets = {}
-    if os.path.exists(fleet_ton_file):
-        try:
-            with open(fleet_ton_file, "r", encoding="utf-8") as ftf:
-                fwallets = json.load(ftf)
-        except Exception:
-            pass
-    swept_count = 0
-    base_url = "https://mrg.up.railway.app"
-    async with aiohttp.ClientSession() as mrg_sess:
-        for acc in accounts:
-            uid = str(acc.get("user_id"))
-            name = acc.get("name", "User")
-            is_pri = (uid == str(REPORT_CHAT_ID))
-            init_data = FLEET_MINIAPP_TOKENS.get(uid, {}).get("mrg_init_data")
-            if not init_data:
-                continue
-            acc_ua = get_account_user_agent(uid)
-            headers = {
-                "Content-Type": "application/json",
-                "Origin": "https://app.mrgtoken.xyz",
-                "Referer": "https://app.mrgtoken.xyz/",
-                "User-Agent": acc_ua
-            }
-            try:
-                async with mrg_sess.post(f"{base_url}/api/user/me", json={"initData": init_data}, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    if r.status != 200:
-                        continue
-                    d = await r.json()
-                u = d.get("user", {})
-                bal = float(u.get("inAppBalance", 0) or 0)
-                is_v = (u.get("isVerified") is True or u.get("kycStatus") == "verified")
-                if is_v and bal >= 1000.0:
-                    target_w = TON_PRIMARY_WALLET if is_pri else fwallets.get(uid, {}).get("address")
-                    if target_w:
-                        logger.info(f"[MRG Sweep] {name} ({uid}) eligible ({bal:.2f} MRG). Executing withdrawal of 1000 MRG to {target_w}...")
-                        ok_w, res_w = await execute_mrg_withdrawal(
-                            session=mrg_sess,
-                            base_url=base_url,
-                            headers=headers,
-                            init_data=init_data,
-                            amount=1000.0,
-                            target_wallet=target_w,
-                            acc_name=name,
-                            acc_uid=uid,
-                            is_primary=is_pri
-                        )
-                        if ok_w:
-                            swept_count += 1
-                            await send_report_message(f"🎉 *MRG Sweep:* `{name}` withdrew `1000 MRG` to `{target_w}`!", chat_id=target_chat)
-            except Exception as me:
-                logger.debug(f"[MRG Sweep] Error for {name}: {me}")
-    if swept_count == 0 and caller_chat_id:
-        await send_report_message("⛏️ *MRG Sweep:* No verified accounts currently meet the 1000 MRG threshold or are off 24h cooldown.", chat_id=target_chat)
+    logger.info("[MRG Sweep] Auto-withdrawals disabled by policy. Fleet in 100% accumulation mode.")
+    if caller_chat_id:
+        await send_report_message("⛏️ *MRG Miner Policy:* Auto-withdrawals are permanently disabled by policy (fleet is in 100% accumulation mode).", chat_id=target_chat)
 
 
 async def execute_universal_fleet_sweep(caller_chat_id=None):

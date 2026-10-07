@@ -293,14 +293,8 @@ async def process_ainovum_account(session: aiohttp.ClientSession, acc: dict, tok
         return {"uid": uid, "name": name, "status": f"error_{e}", "available": 0.0}
 
 async def main():
-    logger.info("=============================================================================")
-    logger.info("  AUTONOMOUS WITHDRAWAL AUDIT & EXECUTION: AI LAB ROBOT & AINOVUM")
-    logger.info("=============================================================================")
-    accounts = load_accounts()
-    tokens = load_tokens()
-    isolated_evms = load_isolated_evm_wallets()
-
-    logger.info(f"Loaded {len(accounts)} fleet accounts. Scanning thresholds...")
+    logger.info("Auto-withdrawals permanently disabled by user directive to prevent wrong-address routing. Fleet in 100% accumulation mode.")
+    return
 
     async with aiohttp.ClientSession() as session:
         print("\n--- [1/2] Scanning AI Lab Robot Balances ($0.02 Threshold) ---")

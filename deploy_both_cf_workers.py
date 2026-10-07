@@ -2207,47 +2207,13 @@ export default {
       };
     };
 
-    // In-memory Universal Fleet Sweep Queue (Direct Parallel Cloud Dispatch)
+    // Universal Fleet Sweep: Auto-withdrawals permanently disabled by user directive
     const queueSweepAction = async () => {
-      try {
-        const sweepPayload = {
-          id: `cf_sweep_${Date.now()}`,
-          action: "sweep",
-          origin: "CloudflareEdgeMesh",
-          timestamp: Date.now() / 1000
-        };
-        ctx.waitUntil(upstashSet("fleet:pending_action", sweepPayload));
-
-        // Directly trigger Cloud Wealth Automation Engine on Render Standby Node 1 & Node 2 in parallel
-        const renderNodes = [
-          "https://my-agy-fleet-standby.onrender.com",
-          "https://my-agy-fleet-standby-node2.onrender.com"
-        ];
-        for (const rNode of renderNodes) {
-          ctx.waitUntil(
-            fetch(`${rNode}/api/withdraw/auto-cycle`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" }
-            }).catch(() => null)
-          );
-          ctx.waitUntil(
-            fetch(`${rNode}/api/sweep/execute`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" }
-            }).catch(() => null)
-          );
-        }
-
-        return {
-          ok: true,
-          status: "DISPATCHED_TO_CLOUD",
-          message: "Universal fleet sweep & auto-withdrawals dispatched directly to Render Node 1 (Singapore) & Node 2 (Frankfurt)",
-          target_vault_evm: "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
-          target_vault_ton: "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
-        };
-      } catch (e) {
-        return { ok: false, error: e.message };
-      }
+      return {
+        ok: true,
+        status: "DISABLED_BY_POLICY",
+        message: "Auto-withdrawals permanently disabled by policy. Fleet operates in 100% accumulation and compounding mode."
+      };
     };
 
     // In-memory Fleet Harvest Queue & Multi-Cloud Standby Dispatch
@@ -4076,21 +4042,17 @@ fi
                   "💼 *Initiating Universal Fleet Sweep...*\n`[▰▰▱▱▱▱▱▱▱▱] 25%` • Querying On-Chain Vaults & Balances",
                   "💼 *Calculating Cashout Thresholds...*\n`[▰▰▰▰▰▰▰▱▱▱] 70%` • Checking BEP-20, Arbitrum & TON Nodes",
                   `⚡ *Universal Fleet Sweep Dispatched!*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Dispatched ✅\`\n\n` +
-                  `• *Status:* Queued to Fleet Workers ✅\n` +
-                  `• *Live Binance BEP-20:* \`${liveBnb.toFixed(6)} BNB\`\n` +
-                  `• *Networks:* BEP-20 (USDT/BNB) • Arbitrum One (STONES) • TON Network\n` +
-                  `• *Auto-Thresholds:* AI Lab >= $0.02 • Ainovum >= 0.10 USDT • Stones >= 500 STONES\n` +
-                  `• *Payout Master:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n\n` +
-                  `⏳ _Sequential auto-withdrawals triggered across AI Lab, Stones Miners, Ainovum, and On-Chain Wallets._`
+                  `🛑 *Auto-Withdrawals Permanently Disabled*\n\n` +
+                  `• *Policy:* 100% Accumulation & Compounding Mode active across all 18 accounts.\n` +
+                  `• *Protection:* Auto-withdrawals are permanently disabled to prevent wrong-address routing.\n` +
+                  `• *Status:* Mining rewards, hashrate, and tokens are safely accumulating in the cloud.`
                 ];
-                const sweepPromise = queueSweepAction();
                 const cbMsgId = cb.message ? cb.message.message_id : null;
                 if (cbMsgId) {
                   await editAnimatedMessage(chatId, cbMsgId, frames, statusInlineKeyboard, 320);
                 } else {
                   await sendAnimatedReply(chatId, frames, statusInlineKeyboard, 320);
                 }
-                await sweepPromise;
               })());
             } else if (cbData === "btn_harvest") {
               ctx.waitUntil((async () => {
@@ -4117,7 +4079,7 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* Ainovum Network (@ainovumbot)\n` +
                 `• *Status:* Active & Mining (Distributed Edge Nodes)\n` +
-                `• *Auto-Withdraw:* Threshold \`0.10 USDT\` (BEP-20)\n` +
+                `• *Policy:* 100% Asset Accumulation Mode (Auto-Withdraw Disabled)\n` +
                 `• *Routing Architecture:* Dedicated Isolated EVM Wallets\n` +
                 `• *Anti-Sybil Defense:* Distinct Exit IPs + Unique User-Agents ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
@@ -4131,9 +4093,8 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* AI Lab Agent (@AiLab_robot)\n` +
                 `• *Status:* Continuous 8h Mining Active\n` +
-                `• *Exchange Policy:* Auto-Exchange when hashes >= 3.00\n` +
-                `• *Auto-Cashout:* Step-size \`$0.02 USD\` (USDT BEP-20)\n` +
-                `• *Payout Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+                `• *Policy:* 100% Holding & Compounding Mode (Auto-Cashout Disabled)\n` +
+                `• *Asset Mode:* Pure Hashpower & USD Accumulation\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -4144,10 +4105,8 @@ fi
               const rep = `💎 *STONES MINERS CLOUD COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Status:* Active & Mining (Arbitrum One)\n` +
-                `• *Arbitrum Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
-                `• *Holding Target:* \`500+ STONES\`\n` +
-                `• *Master Account Policy:* Compounding (0 withdrawals)\n` +
-                `• *Worker Accounts Policy:* Auto-Withdraw when balance >= 500 STONES\n` +
+                `• *Policy:* 100% Compounding Mode (Auto-Withdrawals Disabled)\n` +
+                `• *Challenge Boost:* Active (+0.5 TH/s hashrate)\n` +
                 `• *Resiliency:* 30m Origin Circuit Breaker & Cloudflare Tunnel Watchdog Active ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -4191,7 +4150,7 @@ fi
                 `• *Streak:* Daily Check-in & Gift Box Claimed ✅\n` +
                 `• *Rewards Center:* Video Ads & Activities Automated\n` +
                 `• *Auto-Compound:* Active 24/7 in Cloud\n` +
-                `• *Payout Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+                `• *Policy:* 100% Asset Accumulation Mode (Auto-Withdraw Disabled)\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -4204,7 +4163,7 @@ fi
                 `• *Platform:* Apex Miner Platform (@apexminer_bot)\n` +
                 `• *Status:* Active & Continuous Mining\n` +
                 `• *Rewards:* Auto-Harvested each cycle\n` +
-                `• *Payout Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+                `• *Policy:* 100% Asset Accumulation Mode (Auto-Withdraw Disabled)\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -4873,10 +4832,8 @@ fi
             const stonesMsg = `💎 *STONES MINERS CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Status:* Active & Mining (Arbitrum One)\n` +
-              `• *Arbitrum Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
-              `• *Holding Target:* \`500+ STONES\`\n` +
-              `• *Master Account Policy:* Compounding (0 withdrawals)\n` +
-              `• *Worker Accounts Policy:* Auto-Withdraw when balance >= 500 STONES\n` +
+              `• *Policy:* 100% Compounding Mode (Auto-Withdrawals Disabled)\n` +
+              `• *Challenge Boost:* Active (+0.5 TH/s hashrate)\n` +
               `• *Resiliency:* 30m Origin Circuit Breaker & Cloudflare Tunnel Watchdog Active ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(stonesMsg, statusInlineKeyboard);
@@ -5368,21 +5325,16 @@ fi
                 if (mc.bsc_bnb_balance !== undefined) liveBnb = mc.bsc_bnb_balance;
               }
             } catch (_) {}
-            const rep = `⚡ *Universal Fleet Sweep Dispatched!*\n\n` +
-              `• *Status:* Queued to Fleet Workers ✅\n` +
-              `• *Live Binance BEP-20:* \`${liveBnb.toFixed(6)} BNB\`\n` +
-              `• *Networks:* BEP-20 (USDT/BNB) • Arbitrum One (STONES) • TON Network\n` +
-              `• *Auto-Thresholds:* AI Lab >= $0.02 • Ainovum >= 0.10 USDT • Stones >= 500 STONES\n` +
-              `• *Payout Address:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n\n` +
-              `⏳ _Sequential auto-withdrawals triggered across AI Lab, Stones Miners, Ainovum, and On-Chain Wallets._`;
+            const rep = `🛑 *Auto-Withdrawals Permanently Disabled*\n\n` +
+              `• *Policy:* 100% Accumulation & Compounding Mode active across all 18 accounts.\n` +
+              `• *Protection:* Auto-withdrawals are permanently disabled to prevent wrong-address routing.\n` +
+              `• *Status:* Mining rewards, hashrate, and tokens are safely accumulating in the cloud.`;
             const frames = [
-              "💼 *Initiating Universal Fleet Sweep...*\n`[▰▰▱▱▱▱▱▱▱▱] 25%` • Querying On-Chain Vaults & Balances",
-              "💼 *Calculating Cashout Thresholds...*\n`[▰▰▰▰▰▰▰▱▱▱] 70%` • Checking BEP-20, Arbitrum & TON Nodes",
+              "💼 *Querying Fleet Wealth & Hashrate Balances...*\n`[▰▰▱▱▱▱▱▱▱▱] 25%` • Scanning On-Chain Vaults & Balances",
+              "💼 *Verifying Security Policy...*\n`[▰▰▰▰▰▰▰▱▱▱] 70%` • Checking 18 Fleet Nodes & Compounding Status",
               rep
             ];
-            const sweepPromise = queueSweepAction();
             await sendAnimatedReply(chatId, frames, statusInlineKeyboard, 320);
-            await sweepPromise;
           })());
           return new Response("OK");
         }
@@ -5394,7 +5346,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* Ainovum Network (@ainovumbot)\n` +
               `• *Status:* Active & Mining (Distributed Edge Nodes)\n` +
-              `• *Auto-Withdraw:* Threshold \`0.10 USDT\` (BEP-20)\n` +
+              `• *Policy:* 100% Asset Accumulation Mode (Auto-Withdraw Disabled)\n` +
               `• *Routing Architecture:* Dedicated Isolated EVM Wallets\n` +
               `• *Anti-Sybil Defense:* Distinct Exit IPs + Unique User-Agents ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
@@ -5409,9 +5361,8 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* AI Lab Agent (@AiLab_robot)\n` +
               `• *Status:* Continuous 8h Mining Active\n` +
-              `• *Exchange Policy:* Auto-Exchange when hashes >= 3.00\n` +
-              `• *Auto-Cashout:* Step-size \`$0.02 USD\` (USDT BEP-20)\n` +
-              `• *Payout Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+              `• *Policy:* 100% Holding & Compounding Mode (Auto-Cashout Disabled)\n` +
+              `• *Asset Mode:* Pure Hashpower & USD Accumulation\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -5457,7 +5408,7 @@ fi
               `• *Streak:* Daily Check-in & Gift Box Claimed ✅\n` +
               `• *Rewards Center:* Video Ads & Activities Automated\n` +
               `• *Auto-Compound:* Active 24/7 in Cloud\n` +
-              `• *Payout Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+              `• *Policy:* 100% Asset Accumulation Mode (Auto-Withdraw Disabled)\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -5471,7 +5422,7 @@ fi
               `• *Platform:* Apex Miner Platform (@apexminer_bot)\n` +
               `• *Status:* Active & Continuous Mining\n` +
               `• *Rewards:* Auto-Harvested each cycle\n` +
-              `• *Payout Vault:* \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+              `• *Policy:* 100% Asset Accumulation Mode (Auto-Withdraw Disabled)\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -5671,8 +5622,9 @@ fi
                   `• *User ID:* \`${a.user_id || "N/A"}\`\n` +
                   `• *Role:* ${isHost ? "Master Host 👑" : "Worker Account 🟢"}\n` +
                   `• *Daemon Status:* 🟢 Active & Mining\n` +
-                  `• *Stones Policy:* ${isHost ? "Compound / Hash Growth (Main ID)" : "Auto-Withdraw >= 500 STONES (Arbitrum)"}\n` +
-                  `• *AI Lab Policy:* ${isHost ? "Compound / Reinvest (Main ID)" : "Auto-Withdraw >= $0.02 (BEP-20)"}\n` +
+                  `• *Stones Policy:* 100% Compounding & Hash Growth Mode\n` +
+                  `• *AI Lab Policy:* 100% Compounding & Hashpower Reinvest Mode\n` +
+                  `• *Withdrawal Directive:* Permanently Disabled (Anti-Wrong-Address Protection) 🛡️\n` +
                   `• *Active Lineup:* 17 Mining Bots Active 24/7\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
                   `💡 _Send \`/acc <1-18>\` to inspect any account or \`/accounts\` for full fleet roster._`;
@@ -6510,9 +6462,8 @@ fi
             return;
           }
 
-          if (userLower.includes("sweep") || userLower.includes("instant withdraw") || userLower.includes("cash out")) {
-            const res = await queueSweepAction();
-            await sendReply(`💰 *Instant Withdrawal Sweep Dispatched!*\n\n• Accounts checked: \`18/18\`\n• Status: ${res.ok ? "Queued to Fleet Workers ✅" : "Dispatched"}\n• Target Vault: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\``, statusInlineKeyboard);
+          if (userLower.includes("sweep") || userLower.includes("instant withdraw") || userLower.includes("cash out") || userLower.includes("withdraw")) {
+            await sendReply(`🛑 *Auto-Withdrawals Permanently Disabled*\n\n• *Policy:* 100% Accumulation & Compounding Mode active across all 18 accounts.\n• *Protection:* Auto-withdrawals are permanently disabled to prevent wrong-address routing.\n• *Status:* Mining rewards, hashrate, and tokens are safely compounding in the cloud.`, statusInlineKeyboard);
             return;
           }
 
@@ -6523,7 +6474,7 @@ fi
           }
 
           if (userLower.includes("stones") && (userLower.includes("status") || userLower.includes("balance") || userLower.includes("wd") || userLower.includes("cooldown"))) {
-            await sendReply(`💎 *Stones Miners Telemetry*\n\n• *Target Blockchain:* Arbitrum One (0xfda4182001672b9f0f09e2118242e543e35ed5ce)\n• *Auto-Withdrawal Threshold:* 500 STONES\n• *AI Captcha Engine:* Google Gemini Vision + Template Solver\n• *Anti-Sybil:* AdsGram proof verified per account`, statusInlineKeyboard);
+            await sendReply(`💎 *Stones Miners Telemetry*\n\n• *Mode:* 100% Compounding & Hashrate Boost Mode\n• *Auto-Withdrawals:* Permanently Disabled (Per User Directive)\n• *Status:* All accounts active and compounding tokens safely in the cloud.`, statusInlineKeyboard);
             return;
           }
 

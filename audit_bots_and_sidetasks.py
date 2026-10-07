@@ -389,9 +389,9 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                 t_res = await r.json() if r.status == 200 else {}
                 b_rep["side_tasks"].append(f"Hourly Hashrate Boost (+1 GH/s): HTTP {r.status} ({t_res.get('message', 'boosted')})")
 
-            # Side Task: Reinvest or Withdraw
+            # Side Task: Reinvest policy
             if not is_owner:
-                b_rep["side_tasks"].append(f"Automated Policy: Auto-Reinvest under 10 USDT, Auto-Withdraw to BSC BEP20 >= 10 USDT")
+                b_rep["side_tasks"].append(f"Automated Policy: 100% Auto-Reinvest into GH/s Hashrate (Auto-Withdrawals Disabled)")
         except Exception as e:
             b_rep["error"] = str(e)
         report["bots"]["15. USDT QUAD"] = b_rep
