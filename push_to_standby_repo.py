@@ -75,11 +75,25 @@ def push_file(local_path: str, repo_path: str, commit_msg: str):
         print(f"❌ Error pushing {repo_path} to GitHub: {pe}")
 
 def push_app():
-    push_file(STANDBY_SRC, "app.py", "feat: integrate TAC Airdrop bot #17 with 8h mining, ads, wallet binding, and referral finish")
+    push_file(STANDBY_SRC, "app.py", "feat: dual-type bot engine, accurate farming reporting, and Type B channel management")
     req_file = os.path.join(BASE_DIR, "requirements.txt")
     if os.path.exists(req_file):
         push_file(req_file, "requirements.txt", "deps: add ecdsa and base58")
-    print("🚀 Render Node 1 (Singapore) and Node 2 (Frankfurt) will auto-deploy.")
+    
+    # Trigger Render Node 2 deploy
+    node2_key = env.get("RENDER_API_KEY_2", "rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB")
+    srv_node2 = "srv-dan5q00ae00c73djummg"
+    try:
+        req_dep = urllib.request.Request(
+            f"https://api.render.com/v1/services/{srv_node2}/deploys",
+            data=json.dumps({"clearCache": "do_not_clear"}).encode(),
+            headers={"Authorization": f"Bearer {node2_key}", "Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req_dep, timeout=15) as d_resp:
+            d_data = json.loads(d_resp.read().decode())
+            print(f"🚀 Render Node 2 (Frankfurt) deployment triggered: {d_data.get('id')}")
+    except Exception as de:
+        print(f"Note triggering Render Node 2 deploy: {de}")
 
 if __name__ == "__main__":
     push_app()

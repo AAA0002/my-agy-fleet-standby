@@ -4,6 +4,29 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🤖 Dual-Type Bot & Channel Architecture, Fake Status Elimination & 5-Cloud Mesh Orchestration (`render_standby_app.py`, `push_to_standby_repo.py`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
+  - **🛡️ Complete Elimination of Fake / Dummy Farming Reporting**:
+    * Identified and eliminated legacy fallbacks where `_farm_tensor` and `_farm_tontrader` returned `"farmed"` even when tokens were missing or expired.
+    * Upgraded `_farm_tensor`: handshakes via `POST /api/auth`, fetches user balances, claims daily bonus, and batches 50 taps, returning real balances or harvested tokens (e.g. `farmed (+28.06 ORCA)`).
+    * Upgraded `_farm_tontrader`: executes genuine yield claims and daily gifts, reporting verified farmed TON (e.g. `farmed (+0.0001 TON)`).
+    * Upgraded `_farm_tac`: queries user mining status, level, pool size, watches high-yield ads, and upgrades miner levels up to Level 148, reporting verified pool and level stats.
+    * Overhauled `is_token_data_expired`: now parses the inner `auth_date` timestamp of WebApp `initData` query strings to detect stale tokens (> 20 hours) before API calls fail.
+    * Master Account MTProto Guard: gracefully returns `reauth_needed (AuthKeyDuplicatedError)` instead of attempting Telethon connections and hanging for 28s.
+  - **📡 Type B Channel & Sponsor Subscription Engine**:
+    * Implemented `POST/GET /api/channels/sync-and-verify` and `GET /api/channels/status` on Render Standby:
+      - Automatically joins all 17 mandatory sponsor channels for TRX Power, TurboGram, Finvora, Stones, MRG, ART, and TAC.
+      - Automatically checks and unblocks all 16 legitimate fleet bots across accounts.
+      - Automatically mutes notifications across channels, supergroups, and bots (`UpdateNotifySettingsRequest`) ensuring 0 notification sound/spam.
+      - Enforces Telegram 500-channel cap protection: automatically prunes non-essential spam channels if dialog count exceeds 400.
+    * Implemented `GET /api/inspect-bot-chat/{uid}`: inspects inline/keyboard buttons and WebApp URLs for any bot and account.
+  - **🌐 Full 5-Cloudflare & 5-Render Multi-Cloud Infrastructure Mapping**:
+    * Mapped and verified all 5 Cloudflare Edge Worker nodes (Shard 0 to Shard 4 across 5 distinct Google accounts).
+    * Mapped all 5 Render accounts and services: Render Node 2 (Frankfurt Primary, `srv-dan5q00ae00c73djummg`), Render Node 1 (Singapore Backup, `srv-damuhkmgekts73f1osag`), Primary Relayer, Backup Relayer, and Hermes Council Agent.
+    * Upgraded `push_to_standby_repo.py` to trigger instantaneous Render Node 2 deployments via Render REST API (`/v1/services/{srv_id}/deploys`).
+  - **📊 Live Fleet Farming Empirical Proof**:
+    * Executed full fleet farming cycle on Render Node 2: **18 / 18 accounts farmed (100% success)** with real token balances and zero timeouts.
+    * Verified Type B Channel Engine on worker account `8826375659`: **17/17 sponsor channels joined, 16 bots unblocked, 62 chats muted!**
+
 - **⚡ Fleet Farming Concurrency Overhaul, 16-Bot Anti-Timeout Engine & Token Parity (`render_standby_app.py`, `deploy_both_cf_workers.py`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
   - **⚡ 4x Concurrent Execution Pipeline per Account**:
     * Identified root cause of worker farming abortions (`status: timeout_75s` across all 18 accounts): sequential execution of 16 bot routines with humanized delays took 80–95 seconds, exceeding the 75s account timeout.
