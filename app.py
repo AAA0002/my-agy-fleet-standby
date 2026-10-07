@@ -35,11 +35,12 @@ except Exception:
         return DEVICE_POOL_UAS[seed % len(DEVICE_POOL_UAS)]
 
 from fastapi import FastAPI, HTTPException, Request
-from telethon import TelegramClient
+from telethon import TelegramClient, functions
 from telethon.sessions import StringSession
 from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest, ImportChatInviteRequest, GetBotCallbackAnswerRequest
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.functions.account import UpdateNotifySettingsRequest
+from telethon.tl.functions.bots import GetBotMenuButtonRequest
 from telethon.tl.types import InputBotAppShortName, InputNotifyPeer, InputPeerNotifySettings
 from telethon.errors import (
     SessionPasswordNeededError,
@@ -84,9 +85,9 @@ CF_WORKER_URLS = [
 ]
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://znbbaozpevurvbfkxakz.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
-UPSTASH_URL = os.getenv("UPSTASH_URL", "https://relaxing-starfish-285827.upstash.io")
-UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN", "")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_ANON_KEY") or "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYmJhb3pwZXZ1cnZiZmt4YWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTYxNTQsImV4cCI6MjEwNTM5MjE1NH0.ldgn0gCtOLEPUQyvTiG5RgKX6VY0LrS_4LkIKCf8NqM"
+UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://relaxing-starfish-285827.upstash.io"
+UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw"
 
 CACHED_GEMINI_KEYS = []
 
@@ -247,7 +248,143 @@ async def root():
 async def health():
     return {"ok": True, "status": "healthy"}
 
+async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, start_param: str = "", default_url: str = "", candidate_short_names: list = None) -> str:
+    """
+    Universal, resilient WebApp token extractor for Telegram bots.
+    Employs 4 strategic fallbacks:
+      1. RequestAppWebViewRequest with candidate short names (app, play, myapp, etc.)
+      2. Bot Menu Button (functions.bots.GetBotMenuButtonRequest)
+      3. Inline Keyboard buttons in recent messages (web_app.url, b.click(), tgWebApp url)
+      4. Direct RequestWebViewRequest with known default WebApp URL
+    """
+    if not bot_username:
+        return None
+
+    def extract_from_url(url_str):
+        if not url_str:
+            return None
+        try:
+            p = urllib.parse.urlparse(str(url_str))
+            frag = urllib.parse.parse_qs(p.fragment).get("tgWebAppData", [None])[0]
+            if frag:
+                return frag
+            query = urllib.parse.parse_qs(p.query).get("tgWebAppData", [None])[0]
+            if query:
+                return query
+        except Exception:
+            pass
+        return None
+
+    bot_ent = None
+    bot_in = None
+    try:
+        bot_ent = await client.get_entity(bot_username)
+        bot_in = await client.get_input_entity(bot_ent)
+    except Exception as e:
+        logger.debug(f"Entity resolution note for {bot_username}: {e}")
+        return None
+
+    # Strategy A: Try RequestAppWebViewRequest with candidate short names
+    names_to_try = candidate_short_names or ["app", "play", "myapp", "miniapp", "bot", "game"]
+    for sn in names_to_try:
+        try:
+            req_p = {
+                "peer": bot_in,
+                "app": InputBotAppShortName(bot_id=bot_in, short_name=sn),
+                "platform": "android"
+            }
+            if start_param:
+                req_p["start_param"] = str(start_param)
+            res = await client(RequestAppWebViewRequest(**req_p))
+            tok = extract_from_url(getattr(res, "url", None))
+            if tok:
+                return tok
+        except Exception:
+            continue
+
+    # Strategy B: Bot Menu Button (functions.bots.GetBotMenuButtonRequest)
+    try:
+        menu = await client(functions.bots.GetBotMenuButtonRequest(user_id=bot_in))
+        menu_btn = getattr(menu, "button", None)
+        if menu_btn and hasattr(menu_btn, "url") and menu_btn.url:
+            req_p = {
+                "peer": bot_ent,
+                "bot": bot_ent,
+                "platform": "android",
+                "url": menu_btn.url
+            }
+            if start_param:
+                req_p["start_param"] = str(start_param)
+            res = await client(RequestWebViewRequest(**req_p))
+            tok = extract_from_url(getattr(res, "url", None))
+            if tok:
+                return tok
+    except Exception:
+        pass
+
+    # Strategy C: Inline Keyboard buttons in recent bot messages
+    try:
+        msgs = await client.get_messages(bot_ent, limit=4)
+        for m in msgs:
+            if not m.out and m.buttons:
+                for row in m.buttons:
+                    for b in row:
+                        raw_b = getattr(b, "button", b)
+                        if hasattr(raw_b, "web_app") and getattr(raw_b.web_app, "url", None):
+                            try:
+                                req_p = {
+                                    "peer": bot_ent,
+                                    "bot": bot_ent,
+                                    "platform": "android",
+                                    "url": raw_b.web_app.url
+                                }
+                                if start_param:
+                                    req_p["start_param"] = str(start_param)
+                                res = await client(RequestWebViewRequest(**req_p))
+                                tok = extract_from_url(getattr(res, "url", None))
+                                if tok:
+                                    return tok
+                            except Exception:
+                                pass
+                        b_url = getattr(raw_b, "url", None)
+                        if b_url and "tgWebApp" in b_url:
+                            tok = extract_from_url(b_url)
+                            if tok:
+                                return tok
+                        if any(w in (b.text or "").lower() for w in ["play", "open", "launch", "app", "start", "mine"]):
+                            try:
+                                c_res = await b.click()
+                                tok = extract_from_url(getattr(c_res, "url", None))
+                                if tok:
+                                    return tok
+                            except Exception:
+                                pass
+    except Exception:
+        pass
+
+    # Strategy D: Direct RequestWebViewRequest with known default URL
+    if default_url:
+        try:
+            req_p = {
+                "peer": bot_ent,
+                "bot": bot_ent,
+                "platform": "android",
+                "url": default_url
+            }
+            if start_param:
+                req_p["start_param"] = str(start_param)
+            res = await client(RequestWebViewRequest(**req_p))
+            tok = extract_from_url(getattr(res, "url", None))
+            if tok:
+                return tok
+        except Exception:
+            pass
+
+    return None
+
+
 async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
+    """Extracts fresh WebApp session initData tokens across all 15 active MiniApp bots."""
     name = acc.get("name", "User")
     uid = str(acc.get("user_id"))
     tokens = {
@@ -256,280 +393,80 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
         "synced_at": time.time()
     }
 
-    # 1. Stones Miners WebApp initData
-    try:
-        bot = await client.get_entity(STONES_BOT)
-        res = await client(RequestWebViewRequest(
-            peer=bot,
-            bot=bot,
-            platform="android",
-            url="https://app.stoneswithestand.my.id/"
-        ))
-        parsed = urllib.parse.urlparse(res.url)
-        tokens["stones_init_data"] = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
-    except Exception as e:
-        logger.debug(f"[{name}] Stones error: {e}")
+    # 1. Stones Miners (@stoneswithestand_bot)
+    tok = await extract_bot_webapp_token(client, STONES_BOT, default_url="https://app.stoneswithestand.my.id/", candidate_short_names=["app", "miniapp"])
+    if tok:
+        tokens["stones_init_data"] = tok
 
-    # 2. MRG Miner WebApp initData
-    try:
-        bot_in = await client.get_input_entity(MRG_BOT)
-        res = await client(RequestAppWebViewRequest(
-            peer=bot_in,
-            app=InputBotAppShortName(bot_id=bot_in, short_name="app"),
-            platform="android",
-            start_param=MRG_REFERRAL_CODE
-        ))
-        parsed = urllib.parse.urlparse(res.url)
-        tokens["mrg_init_data"] = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
-    except Exception as e:
-        logger.debug(f"[{name}] MRG error: {e}")
+    # 2. MRG Miner (@mrgminerbot)
+    tok = await extract_bot_webapp_token(client, MRG_BOT, start_param=MRG_REFERRAL_CODE, default_url="https://app.mrgtoken.xyz/", candidate_short_names=["app", "miniapp"])
+    if tok:
+        tokens["mrg_init_data"] = tok
 
-    # 3. ART Airdrop WebApp initData
-    try:
-        bot = await client.get_entity(ART_BOT)
-        res = await client(RequestWebViewRequest(
-            peer=bot,
-            bot=bot,
-            platform="android",
-            url=f"https://art.tamimdev.dev/?ref={REPORT_CHAT_ID}"
-        ))
-        parsed = urllib.parse.urlparse(res.url)
-        tokens["art_init_data"] = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
-    except Exception as e:
-        logger.debug(f"[{name}] ART error: {e}")
+    # 3. ART Airdrop (@ART_AIRDROP_BOT)
+    tok = await extract_bot_webapp_token(client, ART_BOT, start_param=REPORT_CHAT_ID, default_url=f"https://art.tamimdev.dev/?ref={REPORT_CHAT_ID}", candidate_short_names=["app", "art"])
+    if tok:
+        tokens["art_init_data"] = tok
 
-    # 4. BNB Galaxy Webhook Link (Permanently disabled scammer bot)
-    # Excluded to avoid touching blocked bot and prevent Telegram rate limits
+    # 4. AI Lab Robot (@AiLab_robot)
+    tok = await extract_bot_webapp_token(client, AILAB_BOT, start_param="296852", default_url="https://ailab-agent.online/", candidate_short_names=["app", "agent"])
+    if tok:
+        tokens["ailab_init_data"] = tok
 
-    # 5. AI Lab Robot WebApp initData
-    try:
-        bot_ai = await client.get_entity(AILAB_BOT)
-        res_ai = await client(RequestWebViewRequest(
-            peer=bot_ai,
-            bot=bot_ai,
-            platform="android",
-            url="https://ailab-agent.online/"
-        ))
-        parsed_ai = urllib.parse.urlparse(res_ai.url)
-        ai_init = urllib.parse.parse_qs(parsed_ai.fragment).get("tgWebAppData", [None])[0]
-        if ai_init:
-            tokens["ailab_init_data"] = ai_init
-    except Exception as aie:
-        logger.debug(f"[{name}] AI Lab error: {aie}")
+    # 5. UltraWallet (@UltrawalletTrade_Bot)
+    tok = await extract_bot_webapp_token(client, ULTRAWALLET_BOT, start_param=str(ULTRAWALLET_REFERRAL_CODE), default_url="https://wallet.trxvault.top/", candidate_short_names=["app", "trade", "Trade"])
+    if tok:
+        tokens["ultrawallet_init_data"] = tok
 
-    # 6. UltraWallet WebApp initData
-    try:
-        bot_uw = await client.get_input_entity(ULTRAWALLET_BOT)
-        res_uw = await client(RequestAppWebViewRequest(
-            peer=bot_uw,
-            app=InputBotAppShortName(bot_id=bot_uw, short_name="app"),
-            platform="android",
-            start_param=str(ULTRAWALLET_REFERRAL_CODE)
-        ))
-        parsed_uw = urllib.parse.urlparse(res_uw.url)
-        uw_init = urllib.parse.parse_qs(parsed_uw.fragment).get("tgWebAppData", [None])[0]
-        if uw_init:
-            tokens["ultrawallet_init_data"] = uw_init
-    except Exception as uwe:
-        logger.debug(f"[{name}] UltraWallet error: {uwe}")
+    # 6. Apex Miner (@ApxMinerBot)
+    tok = await extract_bot_webapp_token(client, APX_BOT, start_param=str(APX_REFERRAL_CODE), default_url="https://apxn-miner-live.apxn-network.workers.dev/", candidate_short_names=["app", "mine"])
+    if tok:
+        tokens["apx_init_data"] = tok
 
-    # 7. Apex Miner WebApp initData
-    try:
-        bot_apx = await client.get_input_entity(APX_BOT)
-        res_apx = await client(RequestAppWebViewRequest(
-            peer=bot_apx,
-            app=InputBotAppShortName(bot_id=bot_apx, short_name="app"),
-            platform="android",
-            start_param=str(APX_REFERRAL_CODE)
-        ))
-        parsed_apx = urllib.parse.urlparse(res_apx.url)
-        apx_init = urllib.parse.parse_qs(parsed_apx.fragment).get("tgWebAppData", [None])[0]
-        if apx_init:
-            tokens["apx_init_data"] = apx_init
-    except Exception as apx_e:
-        logger.debug(f"[{name}] Apex Miner error: {apx_e}")
+    # 7. Ainovum AI (@ainovum_bot)
+    tok = await extract_bot_webapp_token(client, AINOVUM_BOT, start_param=AINOVUM_REFERRAL_CODE, default_url=f"https://ainovum.biz/?startapp={AINOVUM_REFERRAL_CODE}&ref={AINOVUM_REFERRAL_CODE}", candidate_short_names=["app", "ai"])
+    if tok:
+        tokens["ainovum_init_data"] = tok
 
-    # 8. Ainovum Bot WebApp initData
-    try:
-        bot_an = await client.get_entity(AINOVUM_BOT)
-        res_an = await client(RequestWebViewRequest(
-            peer=bot_an,
-            bot=bot_an,
-            platform="android",
-            url=f"https://ainovum.biz/?startapp={AINOVUM_REFERRAL_CODE}&ref={AINOVUM_REFERRAL_CODE}"
-        ))
-        parsed_an = urllib.parse.urlparse(res_an.url)
-        an_init = urllib.parse.parse_qs(parsed_an.fragment).get("tgWebAppData", [None])[0]
-        if an_init:
-            tokens["ainovum_init_data"] = an_init
-    except Exception as ane:
-        logger.debug(f"[{name}] Ainovum error: {ane}")
+    # 8. ATF Miner (@ATF_AIRDROP_bot)
+    tok = await extract_bot_webapp_token(client, "ATF_AIRDROP_bot", start_param=REPORT_CHAT_ID, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"])
+    if tok:
+        tokens["atf_init_data"] = tok
 
-    # 10. ATF Miner WebApp initData (@ATF_AIRDROP_bot)
-    try:
-        bot_atf = await client.get_entity("ATF_AIRDROP_bot")
-        res_atf = await client(RequestWebViewRequest(
-            peer=bot_atf,
-            bot=bot_atf,
-            platform="android",
-            url="https://atfminers.asloni.online/miner/index.html?entry=bot_start",
-            start_param=REPORT_CHAT_ID
-        ))
-        parsed_atf = urllib.parse.urlparse(res_atf.url)
-        atf_init = urllib.parse.parse_qs(parsed_atf.fragment).get("tgWebAppData", [None])[0]
-        if atf_init:
-            tokens["atf_init_data"] = atf_init
-    except Exception as atf_e:
-        logger.debug(f"[{name}] ATF Miner error: {atf_e}")
+    # 9. TRX Power Mining (@trxpowermining_bot)
+    tok = await extract_bot_webapp_token(client, TRXPOWER_BOT, start_param=TRXPOWER_REFERRAL_CODE, default_url="https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/", candidate_short_names=["app", "mine", "trx", "mining"])
+    if tok:
+        tokens["trxpower_init_data"] = tok
 
-    # 11. Tensor Mining Robot WebApp initData (@TensorMiningRobot)
-    try:
-        bot_tensor = await client.get_input_entity("TensorMiningRobot")
-        res_tensor = await client(RequestAppWebViewRequest(
-            peer=bot_tensor,
-            app=InputBotAppShortName(bot_id=bot_tensor, short_name="myapp"),
-            platform="android",
-            start_param=REPORT_CHAT_ID
-        ))
-        parsed_tensor = urllib.parse.urlparse(res_tensor.url)
-        tensor_init = urllib.parse.parse_qs(parsed_tensor.fragment).get("tgWebAppData", [None])[0]
-        if tensor_init:
-            tokens["tensor_init_data"] = tensor_init
-    except Exception as tensor_e:
-        logger.debug(f"[{name}] Tensor error: {tensor_e}")
+    # 10. Tensor Mining Robot (@TensorMiningRobot)
+    tok = await extract_bot_webapp_token(client, TENSOR_BOT, start_param=REPORT_CHAT_ID, default_url="https://flascoins.xyz/", candidate_short_names=["myapp", "app", "mine"])
+    if tok:
+        tokens["tensor_init_data"] = tok
 
-    # 12. Ton Trader AI WebApp initData (@TonTraderAIBot)
-    try:
-        bot_tt = await client.get_input_entity("TonTraderAIBot")
-        res_tt = await client(RequestAppWebViewRequest(
-            peer=bot_tt,
-            app=InputBotAppShortName(bot_id=bot_tt, short_name="app"),
-            platform="android",
-            start_param=f"REF_{REPORT_CHAT_ID}"
-        ))
-        parsed_tt = urllib.parse.urlparse(res_tt.url)
-        tt_init = urllib.parse.parse_qs(parsed_tt.fragment).get("tgWebAppData", [None])[0]
-        if tt_init:
-            tokens["tontrader_init_data"] = tt_init
-    except Exception as tt_e:
-        logger.debug(f"[{name}] Ton Trader error: {tt_e}")
+    # 11. Ton Trader AI (@TonTraderAIBot)
+    tok = await extract_bot_webapp_token(client, TONTRADER_BOT, start_param=f"REF_{REPORT_CHAT_ID}", default_url="https://tontraderai.com/", candidate_short_names=["app", "trade", "Trader"])
+    if tok:
+        tokens["tontrader_init_data"] = tok
 
-    # 13. USDT QUAD WebApp initData (@usdtquadbot)
-    try:
-        bot_uq = await client.get_entity(USDTQUAD_BOT)
-        res_uq = await client(RequestWebViewRequest(
-            peer=bot_uq,
-            bot=bot_uq,
-            platform="android",
-            url="https://ustdquad.up.railway.app/"
-        ))
-        parsed_uq = urllib.parse.urlparse(res_uq.url)
-        uq_init = urllib.parse.parse_qs(parsed_uq.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_uq.query).get("tgWebAppData", [None])[0]
-        if uq_init:
-            tokens["usdtquad_init_data"] = uq_init
-    except Exception as uq_e:
-        logger.debug(f"[{name}] USDT QUAD error: {uq_e}")
+    # 12. FINVORA Web3 (@FINVORAWeb3bot)
+    tok = await extract_bot_webapp_token(client, FINVORA_BOT, start_param=FINVORA_REFERRAL_CODE, default_url="https://finvora-production.up.railway.app/", candidate_short_names=["app", "finvora", "mine", "play"])
+    if tok:
+        tokens["finvora_init_data"] = tok
 
-    # 15. TurboGram V1 WebApp initData (@TurboGramV1_bot)
-    try:
-        b_tb_in = await client.get_input_entity(TURBOGRAM_BOT)
-        res_tb = None
-        for sn in ["app", "miniapp", "bot"]:
-            try:
-                res_tb = await client(RequestAppWebViewRequest(
-                    peer=b_tb_in,
-                    app=InputBotAppShortName(bot_id=b_tb_in, short_name=sn),
-                    platform="android",
-                    start_param=REPORT_CHAT_ID
-                ))
-                if res_tb and getattr(res_tb, "url", None):
-                    break
-            except Exception:
-                pass
-        if not res_tb:
-            bot_tb = await client.get_entity(TURBOGRAM_BOT)
-            res_tb = await client(RequestWebViewRequest(
-                peer=bot_tb,
-                bot=bot_tb,
-                platform="android",
-                url="https://turbo.tamimdev.dev/"
-            ))
-        parsed_tb = urllib.parse.urlparse(getattr(res_tb, "url", "") or "")
-        tb_init = urllib.parse.parse_qs(parsed_tb.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_tb.query).get("tgWebAppData", [None])[0]
-        if tb_init:
-            tokens["turbogram_init_data"] = tb_init
-    except Exception as tb_e:
-        logger.debug(f"[{name}] TurboGram error: {tb_e}")
+    # 13. TurboGram V1 (@TurboGramV1_bot)
+    tok = await extract_bot_webapp_token(client, TURBOGRAM_BOT, start_param=REPORT_CHAT_ID, default_url="https://turbo.tamimdev.dev/", candidate_short_names=["app", "miniapp", "bot", "turbo"])
+    if tok:
+        tokens["turbogram_init_data"] = tok
 
-    # 16. FINVORA Web3 WebApp initData (@FINVORAWeb3bot)
-    try:
-        bot_fin = await client.get_entity(FINVORA_BOT)
-        res_fin = await client(RequestWebViewRequest(
-            peer=bot_fin,
-            bot=bot_fin,
-            platform="android",
-            url="https://finvora-production.up.railway.app/"
-        ))
-        parsed_fin = urllib.parse.urlparse(res_fin.url)
-        fin_init = urllib.parse.parse_qs(parsed_fin.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_fin.query).get("tgWebAppData", [None])[0]
-        if fin_init:
-            tokens["finvora_init_data"] = fin_init
-    except Exception as fin_e:
-        logger.debug(f"[{name}] FINVORA error: {fin_e}")
+    # 14. USDT QUAD (@ustdquad_bot)
+    tok = await extract_bot_webapp_token(client, USDTQUAD_BOT, start_param=str(USDTQUAD_REFERRAL_CODE), default_url="https://ustdquad.up.railway.app/", candidate_short_names=["app", "quad", "miner", "play"])
+    if tok:
+        tokens["usdtquad_init_data"] = tok
 
-    # 17. TRX Power Mining WebApp initData (@trxpowermining_bot)
-    try:
-        bot_trx = await client.get_entity(TRXPOWER_BOT)
-        for t_url in ["https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/", "https://187.53.139.6.sslip.io/"]:
-            try:
-                res_trx = await client(RequestWebViewRequest(
-                    peer=bot_trx,
-                    bot=bot_trx,
-                    platform="android",
-                    url=t_url
-                ))
-                parsed_trx = urllib.parse.urlparse(res_trx.url)
-                trx_init = urllib.parse.parse_qs(parsed_trx.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_trx.query).get("tgWebAppData", [None])[0]
-                if trx_init:
-                    tokens["trxpower_init_data"] = trx_init
-                    break
-            except Exception:
-                pass
-    except Exception as trx_e:
-        logger.debug(f"[{name}] TRX Power error: {trx_e}")
-
-    # 18. TAC Airdrop WebApp initData (@tacairdrop_bot)
-    try:
-        tac_init = None
-        try:
-            bot_tac = await client.get_input_entity(TAC_BOT)
-            res_tac = await client(RequestAppWebViewRequest(
-                peer=bot_tac,
-                app=InputBotAppShortName(bot_id=bot_tac, short_name="play"),
-                platform="android",
-                start_param=str(TAC_REFERRAL_CODE)
-            ))
-            parsed_tac = urllib.parse.urlparse(getattr(res_tac, 'url', None) or "")
-            tac_init = urllib.parse.parse_qs(parsed_tac.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_tac.query).get("tgWebAppData", [None])[0]
-        except Exception:
-            pass
-        if not tac_init:
-            try:
-                bot_tac_ent = await client.get_entity(TAC_BOT)
-                res_tac = await client(RequestWebViewRequest(
-                    peer=bot_tac_ent,
-                    bot=bot_tac_ent,
-                    platform="android",
-                    url=f"https://tacairdrop.xyz/?ref={TAC_REFERRAL_CODE}"
-                ))
-                parsed_tac = urllib.parse.urlparse(getattr(res_tac, 'url', None) or "")
-                tac_init = urllib.parse.parse_qs(parsed_tac.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_tac.query).get("tgWebAppData", [None])[0]
-            except Exception:
-                pass
-        if tac_init:
-            tokens["tac_init_data"] = tac_init
-    except Exception as tac_e:
-        logger.debug(f"[{name}] TAC Airdrop error: {tac_e}")
+    # 15. TAC Airdrop (@tacairdrop_bot)
+    tok = await extract_bot_webapp_token(client, TAC_BOT, start_param=str(TAC_REFERRAL_CODE), default_url=f"https://tacairdrop.xyz/?ref={TAC_REFERRAL_CODE}", candidate_short_names=["play", "app", "airdrop"])
+    if tok:
+        tokens["tac_init_data"] = tok
 
     return tokens
 
@@ -743,15 +680,26 @@ async def fetch_accounts_from_cloud():
                     if ur.status == 200:
                         udata = await ur.json()
                         for k in udata.get("result", []):
-                            async with http.get(f"{UPSTASH_URL}/get/{k}", headers=up_h, timeout=aiohttp.ClientTimeout(total=4)) as gr:
-                                if gr.status == 200:
-                                    gdata = await gr.json()
-                                    rstr = gdata.get("result")
-                                    if rstr:
-                                        acc_obj = json.loads(rstr) if isinstance(rstr, str) else rstr
-                                        auid = str(acc_obj.get("user_id"))
-                                        if auid:
-                                            accounts_map[auid] = acc_obj
+                            try:
+                                async with http.get(f"{UPSTASH_URL}/get/{k}", headers=up_h, timeout=aiohttp.ClientTimeout(total=4)) as gr:
+                                    if gr.status == 200:
+                                        gdata = await gr.json()
+                                        rstr = gdata.get("result")
+                                        if rstr:
+                                            acc_obj = json.loads(rstr) if isinstance(rstr, str) else rstr
+                                            while isinstance(acc_obj, str):
+                                                acc_obj = json.loads(acc_obj)
+                                            if isinstance(acc_obj, dict):
+                                                auid = str(acc_obj.get("user_id"))
+                                                if auid and auid.isdigit():
+                                                    if auid not in accounts_map:
+                                                        accounts_map[auid] = acc_obj
+                                                    else:
+                                                        for f_k, f_v in acc_obj.items():
+                                                            if f_v is not None and (f_k not in accounts_map[auid] or not accounts_map[auid].get(f_k)):
+                                                                accounts_map[auid][f_k] = f_v
+                            except Exception as ke:
+                                logger.debug(f"Error parsing Upstash key {k}: {ke}")
             except Exception as ue:
                 logger.debug(f"Upstash account fetch note: {ue}")
 
@@ -764,14 +712,20 @@ async def fetch_accounts_from_cloud():
                         sdata = await sbr.json()
                         if isinstance(sdata, list):
                             for sa in sdata:
-                                suid = str(sa.get("user_id"))
-                                if suid:
-                                    accounts_map[suid] = sa
+                                if isinstance(sa, dict):
+                                    suid = str(sa.get("user_id"))
+                                    if suid and suid.isdigit():
+                                        if suid not in accounts_map:
+                                            accounts_map[suid] = sa
+                                        else:
+                                            for f_k, f_v in sa.items():
+                                                if f_v is not None and (f_k not in accounts_map[suid] or not accounts_map[suid].get(f_k)):
+                                                    accounts_map[suid][f_k] = f_v
             except Exception as se:
                 logger.debug(f"Supabase account fetch note: {se}")
 
-    merged = list(accounts_map.values())
-    FLEET_ACCOUNTS_CACHE = {str(a.get("user_id")): a for a in merged if a.get("user_id")}
+    merged = [a for a in accounts_map.values() if isinstance(a, dict) and a.get("user_id")]
+    FLEET_ACCOUNTS_CACHE = {str(a.get("user_id")): a for a in merged}
     return merged
 
 CACHED_GROQ_KEYS = []
@@ -5565,32 +5519,28 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
             tokens_map = await fetch_cloud_miniapp_tokens(session)
 
         farm_tasks = []
-        farm_sem = asyncio.Semaphore(2)
+        farm_sem = asyncio.Semaphore(4)
 
         async def _farm_with_sem(a_dict, t_dict):
             async with farm_sem:
-                await asyncio.sleep(random.uniform(1.2, 2.8))
+                uid_str = str(a_dict.get("user_id"))
+                missing_keys = [k for k in REQUIRED_BOT_KEYS if not t_dict.get(k)]
+                if missing_keys and (a_dict.get("session_string") or a_dict.get("session")):
+                    try:
+                        fresh_toks = await extract_tokens_for_account(a_dict)
+                        if fresh_toks:
+                            t_dict.update(fresh_toks)
+                            tokens_map[uid_str] = t_dict
+                            asyncio.create_task(sync_account_tokens_to_clouds(t_dict))
+                    except Exception as ex_e:
+                        logger.warning(f"[Farm Task] On-the-fly extraction note for {uid_str}: {ex_e}")
+                await asyncio.sleep(random.uniform(0.5, 1.5))
                 return await farm_single_account_bots(session, a_dict, t_dict)
 
         for acc in accounts:
             uid = str(acc.get("user_id"))
             acc_tok = tokens_map.get(uid, {})
-            # If account is missing any of the 8 active bot tokens, trigger cloud extraction & bootstrap
-            missing = [k for k in REQUIRED_BOT_KEYS if not acc_tok.get(k)]
-            if missing:
-                logger.info(f"[Farm Cycle] Account {uid} ({acc.get('name')}) missing {len(missing)} bot tokens ({missing}). Triggering cloud extraction & bootstrap...")
-                try:
-                    fresh = await extract_tokens_for_account(acc)
-                    if fresh:
-                        acc_tok.update(fresh)
-                        tokens_map[uid] = acc_tok
-                        await sync_account_tokens_to_clouds(acc_tok)
-                        await bootstrap_account_mining(acc, acc_tok)
-                except Exception as ex_e:
-                    logger.warning(f"[Farm Cycle] On-the-fly token extraction note for {uid}: {ex_e}")
-
-            if acc_tok:
-                farm_tasks.append(_farm_with_sem(acc, acc_tok))
+            farm_tasks.append(_farm_with_sem(acc, acc_tok))
 
         results = await asyncio.gather(*farm_tasks, return_exceptions=True)
         valid_res = [r for r in results if isinstance(r, dict)]
