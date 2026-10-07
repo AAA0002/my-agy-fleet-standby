@@ -11,7 +11,7 @@
 If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a new session, or a human operator taking over this workspace, **read this entire document first**. It provides the complete picture of this project, how every component works, where every secret and service lives, and how to operate and extend it without breaking production.
 
 ### What is this Project?
-**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **18 Telegram accounts** (1 Master Account + 17 Worker Accounts) that continuously farm yield, satoshis, and tokens across **16 legitimate Telegram WebApp Mini Apps and MTProto bots**, while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin).
+**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **18 Telegram accounts** (1 Master Account + 17 Worker Accounts) that continuously farm yield, satoshis, and tokens across **10 high-conviction legitimate Telegram WebApp Mini Apps and MTProto bots** (all scammer bots purged and blacklisted), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin).
 
 ### The Golden Directives (Non-Negotiable Rules)
 1. **🛡️ Strict Project Isolation**: Everything relating to this project must remain strictly within this repository (`AAA0002/ATL`). **NEVER** touch, import, mix, or merge context from `@AAATelegramIdBot` (`AAA2743/AA`) or other external projects.
@@ -26,7 +26,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 4. **🛑 Permanent Auto-Withdrawal Ban (100% Accumulation & Compounding Mode)**:
    - **NEVER trigger automatic withdrawals** from ANY bot under any circumstance.
    - Prevents wrong-address routing, sybil blacklisting, or draining into outdated/test wallets.
-   - All bots operate in pure asset accumulation and auto-reinvest mode (e.g. USDT QUAD reinvests 100% into hashrate, ART compounds hardware, Stones & TAC upgrade miners).
+   - All bots operate in pure asset accumulation and auto-reinvest mode (e.g. ART compounds hardware, Stones & MRG upgrade miners).
 5. **📝 Living Memory & Changelog**:
    - Whenever any file, function, bot, or architecture decision is modified, added, or removed, **always document it immediately** in `CHANGELOG.md` and update this `PROJECT_BIBLE.md`.
 
@@ -121,7 +121,7 @@ To prevent Sybil detection, anti-farming bans, and wallet clustering, each accou
 
 ---
 
-## 🤖 5. The Complete 16-Bot Fleet Catalog & Automation Matrix
+### 🤖 5. The Complete 10-Bot Fleet Catalog & Automation Matrix
 
 | # | Type | Bot Name | Telegram Handle | Backend URL / Host | Network | Core Farming Mechanism | Automated Side Tasks |
 |---|---|---|---|---|---|---|---|
@@ -130,19 +130,24 @@ To prevent Sybil detection, anti-farming bans, and wallet clustering, each accou
 | **3** | **Type A** | **ART Airdrop** | `@artairdrop_bot` | `https://art.tamimdev.dev` | TON | • `/api/user/claim-mining`<br>• `/api/user/start-mining` (8-hr) | • Daily High-Yield Ad watch (`/api/ads/claim`)<br>• **Hardware Buying**: Auto-buys Levels 2 through 8 hardware<br>• Dedicated TON wallet connection (Isolated per account)<br>• 100% Compounding Mode (auto-withdrawal disabled) |
 | **4** | **Type A** | **AI Lab Robot** | `@ailabrobot_bot` | `https://api.ailab-agent.online` | USDT / Cloud | • `/api/v1/miner/claim`<br>• `/api/v1/miner/start` | • Partner task discovery & claims<br>• Daily check-in bonus<br>• Defensive empty-list error handling<br>• Safe accumulation mode (legacy cashout permanently eliminated) |
 | **5** | **Type A** | **UltraWallet** | `@ultrawallet_bot` | `https://wallet.trxvault.top` | TRX / Cloud | • `/api/v1/mining/claim` | • Firebase custom token exchange via Google Identity Toolkit<br>• Daily check-in streak<br>• Staggered jitter rate-limit backoff (Asyncio Semaphore shield) |
-| **6** | **Type A** | **Apex Mining** | `@apexminer_bot` | `https://apxn-miner-live.apxn-network.workers.dev` | APXN | • `/api/mining/claim`<br>• `/api/mining/restart` | • Daily check-in (`/api/checkin`)<br>• Ad boost & reward (`/api/ads/boost`, `/api/ads/reward`)<br>• Social & partner tasks (Telegram, Twitter, Discord) |
-| **7** | **Type A** | **ATF Miner** | `@atf_miner_bot` | `https://atfminers.asloni.online` | TON | • `?action=claim`<br>• `?action=start_mine` | • **Automated Math Challenge Solver**: Solves arithmetic captcha<br>• Hashrate Boost (`?action=activate_boost`)<br>• 8x Cooldown Tasks (YouTube, Twitter, Channel joins)<br>• Dedicated TON wallet sync (`?action=sync_wallet`)<br>• Team wallet claims |
-| **8** | **Type A** | **Ainovum AI** | `@ainovum_bot` | `https://ainovum.biz` | USDT BEP20 | • `/api/mining/start`<br>• `/api/mining/claim` | • Daily streak bonus (`/api/daily-bonus/claim`)<br>• Official channel bonus (`/api/channel-bonus/claim`)<br>• Mystery gift box open (`/api/gift-box/open`)<br>• 100% Asset accumulation mode (auto-withdraw disabled) |
-| **9** | **Type A** | **TRX Power** | `@trxpowermining_bot` | `https://187.53.139.6.sslip.io/api` | TRON (TRX) | • `/api/mining/claim` | • Telegram WebApp v2.0.3 JWT authentication (`/auth/telegram`)<br>• Channel verification (`/api/user/verify-channels`)<br>• Channel task claim (`/api/tasks/channel/claim`)<br>• Dedicated TRON wallet connection (`/api/user/wallet`)<br>• Real-time stats audit |
-| **10** | **Type B** | **Bitcoin Cloud** | `@Bitcoin_Cloud_Mining_bot` | MTProto Inline Callbacks | Bitcoin (BTC) | • Inline button `⛏ Mine` (`claim_mine`) | • Scheduled 4-hour anti-spam rate limiter<br>• Master account milestone satoshi rewards (`claim_task_3`, `4`, `5` once every 24h)<br>• Real BTC satoshis accumulated directly |
-| **11** | **Type A** | **Tensor Mining** | `@tensormining_bot` | `https://flascoins.xyz` | ORCA Token | • 50-tap cloud batch (`/api/tap`) | • Full TMA Bearer handshake (`POST /api/auth`)<br>• Daily login reward (`/api/daily`)<br>• Dynamic partner tasks with dwell timers<br>• ORCA yield accumulation |
-| **12** | **Type A** | **Ton Trader AI** | `@tontrader_bot` | `https://api.tontraderai.com` | TON | • Algorithmic yield claim (`/api/v1/finance/claim-yield`) | • Daily streak gift (`/api/v1/user/claim-daily-gift`)<br>• Mystery gift boxes (Opens up to 3 boxes via `/api/v1/user/claim-gift-box`) |
-| **13** | **Type A** | **FINVORA Web3** | `@finvora_bot` | `https://finvora-production.up.railway.app` | GRAM / TON | • `/api/mining/claim` | • Instant bonus (`/api/bonus/instant`)<br>• Dedicated TON wallet connection (`/api/wallet/connect`) |
-| **14** | **Type A** | **TurboGram V1** | `@turbogram_bot` | `https://turbo.tamimdev.dev` | GRAM / TON | • Balance & user state tracking (`/api/me`) | • Dynamic task discovery & completion (maintains **ACTIVE** referral tier)<br>• Dedicated TON wallet binding (`/api/me/wallet`) |
-| **15** | **Type A** | **USDT QUAD** | `@usdtquadbot` | `https://ustdquad.up.railway.app` | USDT (BSC) | • Pending balance claim (`/claim-balance`) | • Hourly Hashrate Boost (+1 GH/s boost via `hourly_watch_ad`)<br>• Referral milestone rewards (`invite3` to `invite1000`)<br>• 100% Auto-reinvest into hashrate (`/reinvest-balance`) |
-| **16** | **Type A** | **TAC Airdrop** | `@tacairdrop_bot` | `https://tacairdrop.xyz` | TAC / TON | • 8-hr continuous miner start & claim (`/api/mining/start`, `/api/mining/claim`) | • High-yield ad watches (up to 7 ads/day = **+105 TAC daily**)<br>• **Autonomous Sequential Miner Leveling**: Auto-upgrades miner up to **Level 148** based on holding balance<br>• Community & social tasks (`/api/tasks/complete`)<br>• Dedicated TON wallet connection<br>• Master referral & team wallet claims |
+| **6** | **Type A** | **ATF Miner** | `@atf_miner_bot` | `https://atfminers.asloni.online` | TON | • `?action=claim`<br>• `?action=start_mine` | • **Automated Math Challenge Solver**: Solves arithmetic captcha<br>• Hashrate Boost (`?action=activate_boost`)<br>• 8x Cooldown Tasks (YouTube, Twitter, Channel joins)<br>• Dedicated TON wallet sync (`?action=sync_wallet`)<br>• Team wallet claims |
+| **7** | **Type A** | **TRX Power** | `@trxpowermining_bot` | `https://187.53.139.6.sslip.io/api` | TRON (TRX) | • `/api/mining/claim` | • Telegram WebApp v2.0.3 JWT authentication (`/auth/telegram`)<br>• Channel verification (`/api/user/verify-channels`)<br>• Channel task claim (`/api/tasks/channel/claim`)<br>• Dedicated TRON wallet connection (`/api/user/wallet`)<br>• Real-time stats audit |
+| **8** | **Type B** | **Bitcoin Cloud** | `@Bitcoin_Cloud_Mining_bot` | MTProto Inline Callbacks | Bitcoin (BTC) | • Inline button `⛏ Mine` (`claim_mine`) | • Scheduled 4-hour anti-spam rate limiter<br>• Master account milestone satoshi rewards (`claim_task_3`, `4`, `5` once every 24h)<br>• Real BTC satoshis accumulated directly |
+| **9** | **Type A** | **FINVORA Web3** | `@finvora_bot` | `https://finvora-production.up.railway.app` | GRAM / TON | • `/api/mining/claim` | • Instant bonus (`/api/bonus/instant`)<br>• Dedicated TON wallet connection (`/api/wallet/connect`) |
+| **10** | **Type A** | **TurboGram V1** | `@turbogram_bot` | `https://turbo.tamimdev.dev` | GRAM / TON | • Balance & user state tracking (`/api/me`) | • Dynamic task discovery & completion (maintains **ACTIVE** referral tier)<br>• Dedicated TON wallet binding (`/api/me/wallet`) |
 
-*(Note: Scam bot `@OminixAiBot` was formally reported to Telegram Anti-Scam, blocked on all 18 accounts, and purged from all codebases).*
+---
+
+### 🚫 Purged & Blacklisted Scammer Bots & Channels (October 7, 2026)
+Following operator directive and verified evidence of fraudulent schemes, the following bots and channels were **permanently purged from codebase routines, blacklisted, blocked across all 18 accounts, and all related channels/groups were abandoned**:
+
+1. **Ainovum AI** (`@ainovum_bot` / channels: `@novum_en`, `@ainovum_channel`): Fraudulent non-paying backend with fake yield claims.
+2. **Tensor Mining Robot** (`@tensormining_bot`, `TensorMiningRobot` / channel: `https://t.me/TensorCoinNews`): Unbacked fake ORCA token, sybil baiting.
+3. **Ton Trader AI** (`@TonTraderAIBot`, `@tontrader_bot` / channels: `@tontraderai_official`, `@tontraderai_group`): Fake algorithmic yield simulation.
+4. **TAC Airdrop** (`@tacairdrop_bot` / channels: `@tacairdrop`, `@tacairdrop_official`, `@tac_airdrop`): Fake mining contract, deceptive advertising.
+5. **USDT QUAD** (`@usdtquadbot` / channel: `@usdtquad_channel`): Fraudulent cloud hashrate simulation, fake investment scheme.
+6. **Apex Mining** (`@ApxMinerBot`, `@apexminer_bot` / channels: `@ApexMiner_Official`, `@ApexMinerGroup`): Unbacked token, suspicious anti-sybil bait.
+7. **Ominix AI** (`@OminixAiBot`): Phishing & credential harvester (previously reported to Telegram Anti-Scam).
 
 ---
 
@@ -201,10 +206,10 @@ During thorough auditing of `/api/farm/cloud-all`, an investigation revealed why
 ## ⚡ 6.2 Dual-Type Bot Architecture, Channel Engine & Elimination of Fake Farming (October 7, 2026)
 
 ### 1. The Dual-Type Bot & Channel Architecture
-The fleet's 16 active bots and channels are fundamentally divided into two technical architectures:
+The fleet's 10 active high-conviction bots and channels are fundamentally divided into two technical architectures:
 
-#### Type A: WebApp Mini-Apps / REST Bots (15 Bots)
-- **Bots Included**: Stones Miners (`@stonesminers_bot`), MRG Miner (`@mrg_miner_bot`), ART Airdrop (`@artairdrop_bot`), AI Lab (`@ailabrobot_bot`), UltraWallet (`@ultrawallet_bot`), Apex Mining (`@apexminer_bot`), ATF Miner (`@atf_miner_bot`), Ainovum AI (`@ainovum_bot`), TRX Power (`@trxpowermining_bot`), Tensor Mining (`@tensormining_bot`), Ton Trader AI (`@tontrader_bot`), FINVORA Web3 (`@finvora_bot`), TurboGram (`@turbogram_bot`), USDT QUAD (`@usdtquadbot`), TAC Airdrop (`@tacairdrop_bot`).
+#### Type A: WebApp Mini-Apps / REST Bots (9 Bots)
+- **Bots Included**: Stones Miners (`@stonesminers_bot`), MRG Miner (`@mrg_miner_bot`), ART Airdrop (`@artairdrop_bot`), AI Lab (`@ailabrobot_bot`), UltraWallet (`@ultrawallet_bot`), ATF Miner (`@atf_miner_bot`), TRX Power (`@trxpowermining_bot`), FINVORA Web3 (`@finvora_bot`), TurboGram (`@turbogram_bot`).
 - **Mechanism**:
   - Authenticated via Telegram WebApp `initData` (HMAC SHA-256 query string signed by Telegram bot tokens) or Bearer JWT tokens.
   - Executed 100% via asynchronous HTTP REST calls with zero MTProto connection overhead.
@@ -215,11 +220,13 @@ The fleet's 16 active bots and channels are fundamentally divided into two techn
 - **Bots & Channels Included**:
   1. **Inline Chat Bot**: `@Bitcoin_Cloud_Mining_bot` — Interacts via raw MTProto inline keyboard button callbacks (`claim_mine`, `claim_task_3`, etc.) with strict anti-spam timing and session collision isolation.
   2. **Automated Sponsor Channel & Community Subscription Engine**:
-     - Automatically joins and verifies all 17 official sponsor channels required for task validations and farming multipliers:
-       `trxpowerminingOfficial`, `TRX_WORLD_WORK`, `TurboGramAnnouncements`, `finvoraweb3`, `stoneswithestand`, `mrgminer`, `ART_AIRDROP`, `tacairdrop_channel`, and community hubs.
-     - **Auto-Unblocker**: Automatically checks and unblocks all 16 fleet bots if accidentally blocked.
+     - Automatically joins and verifies all 11 official sponsor channels required for task validations and farming multipliers:
+       `trxpowerminingOfficial`, `TRX_WORLD_WORK`, `finvoraweb3`, `TurboGramAnnouncements`, `TurboGramPayment`, `stoneswithestand`, `mrgminer`, `mrgfun`, `ART_AIRDROP`, `ailabrobotnews`, `ultrawalletofficial`.
+     - **Auto-Blocker**: Automatically and permanently blocks blacklisted scammer bots (`@ainovum_bot`, `@tensormining_bot`, `@TonTraderAIBot`, `@tacairdrop_bot`, `@usdtquadbot`, `@ApxMinerBot`, `@OminixAiBot`) across all accounts.
+     - **Scam Channel Purger**: Automatically detects and leaves all scammer channels (`TensorCoinNews`, `tontraderai_official`, `tacairdrop`, `novum_en`, `apexminer_official`, `usdtquad_channel`, etc.).
+     - **Unblock Sentinel**: Automatically checks and unblocks the 10 legitimate fleet bots.
      - **Mute Sentinel**: Automatically mutes notifications across all channels, supergroups, and bots (`UpdateNotifySettingsRequest`) to ensure 0 notification noise.
-     - **Telegram 500-Channel Limit Protection**: Audits total account dialogs. If dialogs exceed 400, automatically prunes non-essential spam channels while preserving the 17 core sponsor channels and fleet bots.
+     - **Telegram 500-Channel Limit Protection**: Audits total account dialogs. If dialogs exceed 400, automatically prunes non-essential spam channels while preserving the 11 core sponsor channels and fleet bots.
      - **Cloud Endpoints**: `POST/GET /api/channels/sync-and-verify` and `GET /api/channels/status` on Render Standby.
 
 ### 2. Elimination of Fake / Dummy Farming Reporting

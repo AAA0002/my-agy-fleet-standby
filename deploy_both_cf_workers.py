@@ -1449,24 +1449,18 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     }
   };
 
-  // Humanized Execution Pipeline: Randomize the order of bot executions per account session
+  // Humanized Execution Pipeline: 10 Active Legitimate Bots (Scammers purged)
   const botRoutines = [
     { name: "stones", fn: farmStones, hasData: Boolean(accData.stones_init_data) },
     { name: "mrg", fn: farmMrg, hasData: Boolean(accData.mrg_init_data) },
     { name: "art", fn: farmArt, hasData: Boolean(accData.art_init_data) },
     { name: "ailab", fn: farmAiLab, hasData: Boolean(accData.ailab_init_data) },
     { name: "ultrawallet", fn: farmUltra, hasData: Boolean(accData.ultrawallet_init_data) },
-    { name: "apx", fn: farmApex, hasData: Boolean(accData.apx_init_data) },
     { name: "atf", fn: farmAtf, hasData: Boolean(accData.atf_init_data) },
-    { name: "ainovum", fn: farmAinovum, hasData: Boolean(accData.ainovum_init_data) },
     { name: "trxpower", fn: farmTrxPower, hasData: Boolean(accData.trxpower_init_data || accData.session_string) },
     { name: "bitcoincloud", fn: farmBitcoinCloud, hasData: Boolean(accData.bitcoincloud_init_data || accData.session_string) },
-    { name: "tensor", fn: farmTensor, hasData: Boolean(accData.tensor_init_data || accData.session_string) },
-    { name: "tontrader", fn: farmTonTrader, hasData: Boolean(accData.tontrader_init_data || accData.session_string) },
     { name: "finvora", fn: farmFinvora, hasData: Boolean(accData.finvora_init_data || accData.session_string) },
     { name: "turbogram", fn: farmTurboGram, hasData: Boolean(accData.turbogram_init_data || accData.session_string) },
-    { name: "usdtquad", fn: farmUsdtQuad, hasData: Boolean(accData.usdtquad_init_data) },
-    { name: "tac", fn: farmTac, hasData: Boolean(accData.tac_init_data) },
   ];
 
   const activeRoutines = botRoutines.filter(b => b.hasData);

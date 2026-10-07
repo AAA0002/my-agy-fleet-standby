@@ -4,6 +4,36 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🚫 Scammer Bots & Channels Purge, Auto-Block Protocol & 10-Bot Legitimate Fleet Consolidation (`render_standby_app.py`, `deploy_both_cf_workers.py`, `audit_bots_and_sidetasks.py`, `push_to_standby_repo.py`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
+  - **🛑 Complete Decommissioning of 6 Scammer Bots & Associated Channels**:
+    * Per operator directive and fraud audit, permanently purged 6 scammer bots and all their community/announcement channels:
+      1. `@ainovum_bot` (Ainovum AI) & channels: non-paying fake yield scheme.
+      2. `@tensormining_bot` / `TensorMiningRobot` & channel `https://t.me/TensorCoinNews`: unbacked fake ORCA token.
+      3. `@TonTraderAIBot` / `@tontrader_bot` & channels: simulated fake yield algorithm.
+      4. `@tacairdrop_bot` (TAC Airdrop) & channels: deceptive ads & fake mining contract.
+      5. `@usdtquadbot` (USDT QUAD) & channels: fraudulent cloud hashrate scheme.
+      6. `@ApxMinerBot` / `@apexminer_bot` (Apex Mining) & channels: unbacked token & phishing bait.
+  - **🛡️ Auto-Block & Auto-Leave Protocol in Type B Channel Engine**:
+    * Defined `FLEET_BANNED_SCAMMERS` and `SCAM_CHANNELS_TO_LEAVE` in `render_standby_app.py`.
+    * In `/api/channels/sync-and-verify`: automatically issues `BlockRequest` against all 6 scammer bots across all accounts.
+    * Automatically inspects dialogs and issues `LeaveChannelRequest` for all scammer channels (`TensorCoinNews`, `tontraderai_official`, `tacairdrop`, `novum_en`, `apexminer_official`, `usdtquad_channel`, etc.).
+  - **💎 10 High-Conviction Legitimate Bots Catalog Consolidation**:
+    * Consolidated the active fleet to the 10 genuine, high-conviction bots:
+      1. Stones Miners (`@stonesminers_bot`, Type A)
+      2. MRG Miner (`@mrg_miner_bot`, Type A)
+      3. ART Airdrop (`@artairdrop_bot`, Type A)
+      4. AI Lab Robot (`@ailabrobot_bot`, Type A)
+      5. UltraWallet (`@ultrawallet_bot`, Type A)
+      6. ATF Miner (`@atf_miner_bot`, Type A)
+      7. TRX Power Mining (`@trxpowermining_bot`, Type A)
+      8. Bitcoin Cloud Mining (`@Bitcoin_Cloud_Mining_bot`, Type B)
+      9. FINVORA Web3 (`@finvora_bot`, Type A)
+      10. TurboGram V1 (`@turbogram_bot`, Type A)
+  - **🚀 Multi-Cloud Deployments & Clean State**:
+    * Removed all 6 scammer bot routines, tokens, and extractions from `render_standby_app.py`, `deploy_both_cf_workers.py`, and `audit_bots_and_sidetasks.py`.
+    * Pushed commit `5972719a` to `AAA0002/my-agy-fleet-standby` triggering Render Node 2 deployment `dep-db39t360tbcc73849p1g`.
+    * Deployed updated 10-bot farming routines across all 5 Cloudflare Edge Worker nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **🤖 Dual-Type Bot & Channel Architecture, Fake Status Elimination & 5-Cloud Mesh Orchestration (`render_standby_app.py`, `push_to_standby_repo.py`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
   - **🛡️ Complete Elimination of Fake / Dummy Farming Reporting**:
     * Identified and eliminated legacy fallbacks where `_farm_tensor` and `_farm_tontrader` returned `"farmed"` even when tokens were missing or expired.
