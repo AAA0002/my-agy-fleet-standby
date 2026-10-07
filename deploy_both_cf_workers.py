@@ -1881,8 +1881,8 @@ export default {
     }
 
     const RENDER_LOGIN_URLS = [
-      "https://my-agy-fleet-standby.onrender.com",
-      "https://my-agy-fleet-standby-node2.onrender.com"
+      "https://my-agy-fleet-standby-node2.onrender.com",
+      "https://my-agy-fleet-standby.onrender.com"
     ];
 
     const cloudLoginSendCode = async (phone, targetChatId) => {
@@ -2247,8 +2247,8 @@ export default {
         })());
 
         const renderNodes = [
-          "https://my-agy-fleet-standby.onrender.com",
-          "https://my-agy-fleet-standby-node2.onrender.com"
+          "https://my-agy-fleet-standby-node2.onrender.com",
+          "https://my-agy-fleet-standby.onrender.com"
         ];
         for (const rNode of renderNodes) {
           ctx.waitUntil(
@@ -3256,13 +3256,13 @@ fi
     if (path === "/api/tokens/refresh" || path === "/api/miniapp/tokens/refresh") {
       try {
         ctx.waitUntil((async () => {
-          const r1 = await fetch("https://my-agy-fleet-standby.onrender.com/collect-tokens", {
+          const r1 = await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
             method: "POST",
             headers: { "Authorization": `Bearer ${env.SECRET_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({ source: "api_tokens_refresh_trigger" })
           }).catch(() => null);
           if (!r1 || !r1.ok) {
-            await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
+            await fetch("https://my-agy-fleet-standby.onrender.com/collect-tokens", {
               method: "POST",
               headers: { "Authorization": `Bearer ${env.SECRET_KEY}`, "Content-Type": "application/json" },
               body: JSON.stringify({ source: "api_tokens_refresh_fallback" })
@@ -3459,8 +3459,8 @@ fi
     // 12.48 Cloud Standby Farm Proxy (Status, Cloud-All, Single Account)
     if (path === "/api/farm/status" || path === "/api/farm/cloud-all" || path.startsWith("/api/farm/account/") || path === "/api/pools" || path === "/api/mining-pools") {
       const renderNodes = [
-        "https://my-agy-fleet-standby.onrender.com",
-        "https://my-agy-fleet-standby-node2.onrender.com"
+        "https://my-agy-fleet-standby-node2.onrender.com",
+        "https://my-agy-fleet-standby.onrender.com"
       ];
       for (const rNode of renderNodes) {
         try {
@@ -9186,8 +9186,9 @@ Reply to Arif naturally:`;
         const tokens = JSON.parse(rawTokens);
 
         // Periodically trigger full 8-bot cloud farming run on Render Standby
+        // Periodically trigger full 8-bot cloud farming run on Render Standby Node 2
         if (CURRENT_SUBDOMAIN === "aaaai2") {
-          fetch("https://my-agy-fleet-standby.onrender.com/api/farm/cloud-all", {
+          fetch("https://my-agy-fleet-standby-node2.onrender.com/api/farm/cloud-all", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -9208,9 +9209,9 @@ Reply to Arif naturally:`;
         }
 
 
-        // 3.4 Ping Render Cloud Standby (Singapore & Frankfurt) health check
-        fetch("https://my-agy-fleet-standby.onrender.com/health", { method: "GET" }).catch(() => {});
+        // 3.4 Ping Render Cloud Standby (Frankfurt Node 2 & Singapore Node 1) health check
         fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => {});
+        fetch("https://my-agy-fleet-standby.onrender.com/health", { method: "GET" }).catch(() => {});
 
         // 3.5 Token Expiry Watcher: If tokens have <= 4 hours remaining (age >= 20h), wake up Render to collect batch
         const nowMs = Date.now();
@@ -9228,18 +9229,18 @@ Reply to Arif naturally:`;
 
         if (needBatchRefresh) {
           // Render takes ~30-50s to wake from cold sleep on Free Tier; Cloudflare waits gracefully in waitUntil
-          // Try Render Node 1 (Singapore), automatic fallback to Render Node 2 (Frankfurt)
-          const r1 = await fetch("https://my-agy-fleet-standby.onrender.com/collect-tokens", {
+          // Try Render Node 2 (Frankfurt), automatic fallback to Render Node 1 (Singapore)
+          const r1 = await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
             method: "POST",
             headers: {
               "Authorization": `Bearer ${env.SECRET_KEY}`,
               "Content-Type": "application/json"
             },
-            body: JSON.stringify({ source: "cf_cron_expiry_check_node1" })
+            body: JSON.stringify({ source: "cf_cron_expiry_check_node2" })
           }).catch(() => null);
 
           if (!r1 || !r1.ok) {
-            await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
+            await fetch("https://my-agy-fleet-standby.onrender.com/collect-tokens", {
               method: "POST",
               headers: {
                 "Authorization": `Bearer ${env.SECRET_KEY}`,

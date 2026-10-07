@@ -4,6 +4,38 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **⚡ Fleet Farming Concurrency Overhaul, 16-Bot Anti-Timeout Engine & Token Parity (`render_standby_app.py`, `deploy_both_cf_workers.py`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
+  - **⚡ 4x Concurrent Execution Pipeline per Account**:
+    * Identified root cause of worker farming abortions (`status: timeout_75s` across all 18 accounts): sequential execution of 16 bot routines with humanized delays took 80–95 seconds, exceeding the 75s account timeout.
+    * Refactored `farm_single_account_bots` to run active bot routines concurrently using `sem_bot = asyncio.Semaphore(4)`, plummeting execution time per account from 85s to 12–16s.
+  - **🕒 Detached Asynchronous Dwell Execution**:
+    * Removed blocking `asyncio.wait_for(asyncio.gather(*bg_tasks), timeout=15.0)` from the account return path. All channel verification and ad timer dwells are now spawned as non-blocking event loop tasks.
+  - **🛡️ Isolated MTProto Chat Bot Safe Execution**:
+    * Hardened `BitcoinCloudMinersBot` with a strict 5.0s connection guard, graceful `AuthKeyDuplicatedError` handling, and immediate cleanup, preventing MTProto session glitches from crashing or delaying WebApp farming.
+  - **🚀 Pure WebApp REST Execution (Eliminated Blocking Telethon Fallbacks)**:
+    * Removed slow synchronous Telethon client fallbacks from TRX Power, FINVORA, and TurboGram routines inside HTTP handlers. Missing tokens now log clean `skipped (no initData)` notes without stalling the cloud server.
+  - **🎯 Elimination of Redundant On-The-Fly Extraction Loops**:
+    * Fixed `REQUIRED_BOT_KEYS` which erroneously included `usdtquad_init_data` (which operates via cookie authentication), preventing false "token missing" triggers from launching heavy Telethon extractions on every farming cycle.
+  - **🔧 ATF Bot Referral Constant Fix**:
+    * Defined missing `ATF_BOT = "ATF_AIRDROP_bot"` and `ATF_REFERRAL_CODE = "6727787768"` constants, resolving `NameError: name 'ATF_REFERRAL_CODE' is not defined`.
+  - **🌐 Token Synchronization Across Cloudflare KV and Upstash Redis**:
+    * Synchronized complete, fresh 24h WebApp tokens across all 18 accounts into Upstash Redis (`relaxing-starfish-285827.upstash.io`) and all 5 Cloudflare Edge Worker nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+  - **📊 Live Empirical Proof (100% Success Across All 18 Accounts)**:
+    * Executed full fleet farming cycle on Render Node 2 (`https://my-agy-fleet-standby-node2.onrender.com/api/farm/cloud-all`):
+      - **Total Accounts Farmed**: **18 / 18 (100% Success)**.
+      - **Average Bots Farmed per Account**: **15.3 out of 16 bots**.
+      - **Total Fleet Actions**: **275+ bot cycles executed in 65 seconds**.
+      - **Nancy (`8881914294`)**: 16/16 bots farmed!
+      - **Koram Shah (`7648254021`)**: 16/16 bots farmed!
+      - **Arif (`8826375659`)**: 16/16 bots farmed!
+      - **Abid Hasan (`7734849205`)**: 16/16 bots farmed!
+      - **Abid Hasan 2 (`8025472383`)**: 16/16 bots farmed!
+      - **Node 9 (`8851426148`)**: 16/16 bots farmed!
+      - **Master (`6727787768`)**: 15/16 bots farmed!
+  - **🚀 Multi-Cloud Deployments**:
+    * Deployed commit `c79ff804` live to Render Node 2 Frankfurt (`srv-dan5q00ae00c73djummg`).
+    * Synchronized commit `f866f8a` to Render Node 1 repo `AAA2743/my-agy-fleet-standby`.
+
 - **🧩 Google Stitch MCP Integration & Deep Auto-Withdrawal Sweep Hardening (`mcp_config.json`, `deploy_both_cf_workers.py`, `userbot_refresher.py`, `stones_captcha_solver.py`, `batch_stones_withdraw.py`, `execute_ailab_ainovum_withdrawals.py`, `audit_bots_and_sidetasks.py`, `CHANGELOG.md`)**:
   - **🧩 Google Stitch MCP Server Configuration**:
     * Configured Google Stitch remote Model Context Protocol server at `https://stitch.googleapis.com/mcp` with `X-Goog-Api-Key` authentication in Antigravity global configuration (`~/.gemini/config/mcp_config.json` and `/root/.gemini/antigravity-cli/mcp_config.json`).

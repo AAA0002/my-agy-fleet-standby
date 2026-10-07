@@ -35,11 +35,12 @@ except Exception:
         return DEVICE_POOL_UAS[seed % len(DEVICE_POOL_UAS)]
 
 from fastapi import FastAPI, HTTPException, Request
-from telethon import TelegramClient
+from telethon import TelegramClient, functions
 from telethon.sessions import StringSession
 from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest, ImportChatInviteRequest, GetBotCallbackAnswerRequest
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.functions.account import UpdateNotifySettingsRequest
+from telethon.tl.functions.bots import GetBotMenuButtonRequest
 from telethon.tl.types import InputBotAppShortName, InputNotifyPeer, InputPeerNotifySettings
 from telethon.errors import (
     SessionPasswordNeededError,
@@ -84,9 +85,9 @@ CF_WORKER_URLS = [
 ]
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://znbbaozpevurvbfkxakz.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYmJhb3pwZXZ1cnZiZmt4YWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTYxNTQsImV4cCI6MjEwNTM5MjE1NH0.ldgn0gCtOLEPUQyvTiG5RgKX6VY0LrS_4LkIKCf8NqM")
-UPSTASH_URL = os.getenv("UPSTASH_URL", "https://relaxing-starfish-285827.upstash.io")
-UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN", "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_ANON_KEY") or "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYmJhb3pwZXZ1cnZiZmt4YWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTYxNTQsImV4cCI6MjEwNTM5MjE1NH0.ldgn0gCtOLEPUQyvTiG5RgKX6VY0LrS_4LkIKCf8NqM"
+UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://relaxing-starfish-285827.upstash.io"
+UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw"
 
 CACHED_GEMINI_KEYS = []
 
@@ -205,6 +206,8 @@ APX_BOT = "ApxMinerBot"
 APX_REFERRAL_CODE = "6727787768"
 AINOVUM_BOT = "ainovum_bot"
 AINOVUM_REFERRAL_CODE = "ref_6727787768"
+ATF_BOT = "ATF_AIRDROP_bot"
+ATF_REFERRAL_CODE = "6727787768"
 TRXPOWER_BOT = "trxpowermining_bot"
 TRXPOWER_REFERRAL_CODE = "ref_TRX6727787768"
 BTC_BOT = "BitcoinCloudMinersBot"
@@ -217,8 +220,8 @@ FINVORA_BOT = "FINVORAWeb3bot"
 FINVORA_REFERRAL_CODE = "ref_TRX6727787768"
 TURBOGRAM_BOT = "TurboGramV1_bot"
 TURBOGRAM_REFERRAL_CODE = "r_3520c92b"
-USDTQUAD_BOT = "usdtquadbot"
-USDTQUAD_REFERRAL_CODE = "6727787768"
+USDTQUAD_BOT = "ustdquad_bot"
+USDTQUAD_REFERRAL_CODE = "28373302"
 TAC_BOT = "tacairdrop_bot"
 TAC_REFERRAL_CODE = "6727787768"
 
@@ -247,7 +250,182 @@ async def root():
 async def health():
     return {"ok": True, "status": "healthy"}
 
+def is_token_data_expired(t_dict: dict, max_age_hours: float = 18.0) -> bool:
+    """Checks whether token data is missing, incomplete, or older than max_age_hours (default: 18h)."""
+    if not t_dict or not isinstance(t_dict, dict):
+        return True
+    s_at = t_dict.get("synced_at")
+    if not s_at:
+        return True
+    try:
+        if isinstance(s_at, (int, float)):
+            age_s = time.time() - (s_at / 1000.0 if s_at > 1e11 else float(s_at))
+        elif isinstance(s_at, str):
+            clean_s = s_at.strip()
+            if clean_s.replace(".", "", 1).isdigit():
+                val = float(clean_s)
+                age_s = time.time() - (val / 1000.0 if val > 1e11 else val)
+            else:
+                from datetime import datetime
+                dt = datetime.fromisoformat(clean_s.replace("Z", "+00:00"))
+                age_s = time.time() - dt.timestamp()
+        else:
+            return True
+        return age_s > (max_age_hours * 3600.0)
+    except Exception:
+        return True
+
+async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, start_param: str = "", default_url: str = "", candidate_short_names: list = None) -> str:
+    """
+    Universal, resilient WebApp token extractor for Telegram bots.
+    Employs 4 strategic fallbacks:
+      1. RequestAppWebViewRequest with candidate short names (app, play, myapp, etc.)
+      2. Bot Menu Button (functions.bots.GetBotMenuButtonRequest)
+      3. Inline Keyboard buttons in recent messages (web_app.url, b.click(), tgWebApp url)
+      4. Direct RequestWebViewRequest with known default WebApp URL
+    """
+    if not bot_username:
+        return None
+
+    def extract_from_url(url_str):
+        if not url_str:
+            return None
+        try:
+            p = urllib.parse.urlparse(str(url_str))
+            frag = urllib.parse.parse_qs(p.fragment).get("tgWebAppData", [None])[0]
+            if frag:
+                return frag
+            query = urllib.parse.parse_qs(p.query).get("tgWebAppData", [None])[0]
+            if query:
+                return query
+        except Exception:
+            pass
+        return None
+
+    bot_ent = None
+    bot_in = None
+    try:
+        bot_ent = await client.get_entity(bot_username)
+        bot_in = await client.get_input_entity(bot_ent)
+    except Exception as e:
+        logger.debug(f"Entity resolution note for {bot_username}: {e}")
+        return None
+
+    # Strategy A: Try RequestAppWebViewRequest with candidate short names
+    names_to_try = candidate_short_names or ["app", "play", "myapp", "miniapp", "bot", "game"]
+    for sn in names_to_try:
+        try:
+            req_p = {
+                "peer": bot_in,
+                "app": InputBotAppShortName(bot_id=bot_in, short_name=sn),
+                "platform": "android"
+            }
+            if start_param:
+                req_p["start_param"] = str(start_param)
+            res = await client(RequestAppWebViewRequest(**req_p))
+            tok = extract_from_url(getattr(res, "url", None))
+            if tok:
+                return tok
+        except Exception:
+            continue
+
+    # Strategy B: Bot Menu Button (functions.bots.GetBotMenuButtonRequest)
+    try:
+        menu = await client(functions.bots.GetBotMenuButtonRequest(user_id=bot_in))
+        menu_btn = getattr(menu, "button", None)
+        if menu_btn and hasattr(menu_btn, "url") and menu_btn.url:
+            req_p = {
+                "peer": bot_ent,
+                "bot": bot_ent,
+                "platform": "android",
+                "url": menu_btn.url
+            }
+            if start_param:
+                req_p["start_param"] = str(start_param)
+            res = await client(RequestWebViewRequest(**req_p))
+            tok = extract_from_url(getattr(res, "url", None))
+            if tok:
+                return tok
+    except Exception:
+        pass
+
+    # Strategy C: Inline Keyboard buttons in recent bot messages
+    try:
+        msgs = await client.get_messages(bot_ent, limit=4)
+        if not msgs:
+            try:
+                await client.send_message(bot_ent, f"/start {start_param}" if start_param else "/start")
+                await asyncio.sleep(1.8)
+                msgs = await client.get_messages(bot_ent, limit=4)
+            except Exception:
+                pass
+        for m in msgs:
+            if not m.out and m.buttons:
+                for row in m.buttons:
+                    for b in row:
+                        raw_b = getattr(b, "button", b)
+                        if hasattr(raw_b, "web_app") and getattr(raw_b.web_app, "url", None):
+                            try:
+                                req_p = {
+                                    "peer": bot_ent,
+                                    "bot": bot_ent,
+                                    "platform": "android",
+                                    "url": raw_b.web_app.url
+                                }
+                                if start_param:
+                                    req_p["start_param"] = str(start_param)
+                                res = await client(RequestWebViewRequest(**req_p))
+                                tok = extract_from_url(getattr(res, "url", None))
+                                if tok:
+                                    return tok
+                            except Exception:
+                                pass
+                        b_url = getattr(raw_b, "url", None)
+                        if b_url and "tgWebApp" in b_url:
+                            tok = extract_from_url(b_url)
+                            if tok:
+                                return tok
+                        if any(w in (b.text or "").lower() for w in ["play", "open", "launch", "app", "start", "mine"]):
+                            try:
+                                c_res = await b.click()
+                                tok = extract_from_url(getattr(c_res, "url", None))
+                                if tok:
+                                    return tok
+                            except Exception:
+                                pass
+    except Exception:
+        pass
+
+    # Strategy D: Direct RequestWebViewRequest with known default URL
+    if default_url:
+        try:
+            req_p = {
+                "peer": bot_ent,
+                "bot": bot_ent,
+                "platform": "android",
+                "url": default_url
+            }
+            if start_param:
+                req_p["start_param"] = str(start_param)
+            res = await client(RequestWebViewRequest(**req_p))
+            tok = extract_from_url(getattr(res, "url", None))
+            if tok:
+                return tok
+        except Exception:
+            if start_param:
+                try:
+                    res = await client(RequestWebViewRequest(peer=bot_ent, bot=bot_ent, platform="android", url=default_url))
+                    tok = extract_from_url(getattr(res, "url", None))
+                    if tok:
+                        return tok
+                except Exception:
+                    pass
+
+    return None
+
+
 async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
+    """Extracts fresh WebApp session initData tokens across all 15 active MiniApp bots."""
     name = acc.get("name", "User")
     uid = str(acc.get("user_id"))
     tokens = {
@@ -256,258 +434,80 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
         "synced_at": time.time()
     }
 
-    # 1. Stones Miners WebApp initData
-    try:
-        bot = await client.get_entity(STONES_BOT)
-        res = await client(RequestWebViewRequest(
-            peer=bot,
-            bot=bot,
-            platform="android",
-            url="https://app.stoneswithestand.my.id/"
-        ))
-        parsed = urllib.parse.urlparse(res.url)
-        tokens["stones_init_data"] = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
-    except Exception as e:
-        logger.debug(f"[{name}] Stones error: {e}")
+    # 1. Stones Miners (@stoneswithestand_bot)
+    tok = await extract_bot_webapp_token(client, STONES_BOT, default_url="https://app.stoneswithestand.my.id/", candidate_short_names=["app", "miniapp"])
+    if tok:
+        tokens["stones_init_data"] = tok
 
-    # 2. MRG Miner WebApp initData
-    try:
-        bot_in = await client.get_input_entity(MRG_BOT)
-        res = await client(RequestAppWebViewRequest(
-            peer=bot_in,
-            app=InputBotAppShortName(bot_id=bot_in, short_name="app"),
-            platform="android",
-            start_param=MRG_REFERRAL_CODE
-        ))
-        parsed = urllib.parse.urlparse(res.url)
-        tokens["mrg_init_data"] = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
-    except Exception as e:
-        logger.debug(f"[{name}] MRG error: {e}")
+    # 2. MRG Miner (@mrgminerbot)
+    tok = await extract_bot_webapp_token(client, MRG_BOT, start_param=MRG_REFERRAL_CODE, default_url="https://app.mrgtoken.xyz/", candidate_short_names=["app", "miniapp"])
+    if tok:
+        tokens["mrg_init_data"] = tok
 
-    # 3. ART Airdrop WebApp initData
-    try:
-        bot = await client.get_entity(ART_BOT)
-        res = await client(RequestWebViewRequest(
-            peer=bot,
-            bot=bot,
-            platform="android",
-            url=f"https://art.tamimdev.dev/?ref={REPORT_CHAT_ID}"
-        ))
-        parsed = urllib.parse.urlparse(res.url)
-        tokens["art_init_data"] = urllib.parse.parse_qs(parsed.fragment).get("tgWebAppData", [None])[0]
-    except Exception as e:
-        logger.debug(f"[{name}] ART error: {e}")
+    # 3. ART Airdrop (@ART_AIRDROP_BOT)
+    tok = await extract_bot_webapp_token(client, ART_BOT, start_param=REPORT_CHAT_ID, default_url=f"https://art.tamimdev.dev/?ref={REPORT_CHAT_ID}", candidate_short_names=["app", "art"])
+    if tok:
+        tokens["art_init_data"] = tok
 
-    # 4. BNB Galaxy Webhook Link (Permanently disabled scammer bot)
-    # Excluded to avoid touching blocked bot and prevent Telegram rate limits
+    # 4. AI Lab Robot (@AiLab_robot)
+    tok = await extract_bot_webapp_token(client, AILAB_BOT, start_param="296852", default_url="https://ailab-agent.online/", candidate_short_names=["app", "agent"])
+    if tok:
+        tokens["ailab_init_data"] = tok
 
-    # 5. AI Lab Robot WebApp initData
-    try:
-        bot_ai = await client.get_entity(AILAB_BOT)
-        res_ai = await client(RequestWebViewRequest(
-            peer=bot_ai,
-            bot=bot_ai,
-            platform="android",
-            url="https://ailab-agent.online/"
-        ))
-        parsed_ai = urllib.parse.urlparse(res_ai.url)
-        ai_init = urllib.parse.parse_qs(parsed_ai.fragment).get("tgWebAppData", [None])[0]
-        if ai_init:
-            tokens["ailab_init_data"] = ai_init
-    except Exception as aie:
-        logger.debug(f"[{name}] AI Lab error: {aie}")
+    # 5. UltraWallet (@UltrawalletTrade_Bot)
+    tok = await extract_bot_webapp_token(client, ULTRAWALLET_BOT, start_param=str(ULTRAWALLET_REFERRAL_CODE), default_url="https://wallet.trxvault.top/", candidate_short_names=["app", "trade", "Trade"])
+    if tok:
+        tokens["ultrawallet_init_data"] = tok
 
-    # 6. UltraWallet WebApp initData
-    try:
-        bot_uw = await client.get_input_entity(ULTRAWALLET_BOT)
-        res_uw = await client(RequestAppWebViewRequest(
-            peer=bot_uw,
-            app=InputBotAppShortName(bot_id=bot_uw, short_name="app"),
-            platform="android",
-            start_param=str(ULTRAWALLET_REFERRAL_CODE)
-        ))
-        parsed_uw = urllib.parse.urlparse(res_uw.url)
-        uw_init = urllib.parse.parse_qs(parsed_uw.fragment).get("tgWebAppData", [None])[0]
-        if uw_init:
-            tokens["ultrawallet_init_data"] = uw_init
-    except Exception as uwe:
-        logger.debug(f"[{name}] UltraWallet error: {uwe}")
+    # 6. Apex Miner (@ApxMinerBot)
+    tok = await extract_bot_webapp_token(client, APX_BOT, start_param=str(APX_REFERRAL_CODE), default_url="https://apxn-miner-live.apxn-network.workers.dev/", candidate_short_names=["app", "mine"])
+    if tok:
+        tokens["apx_init_data"] = tok
 
-    # 7. Apex Miner WebApp initData
-    try:
-        bot_apx = await client.get_input_entity(APX_BOT)
-        res_apx = await client(RequestAppWebViewRequest(
-            peer=bot_apx,
-            app=InputBotAppShortName(bot_id=bot_apx, short_name="app"),
-            platform="android",
-            start_param=str(APX_REFERRAL_CODE)
-        ))
-        parsed_apx = urllib.parse.urlparse(res_apx.url)
-        apx_init = urllib.parse.parse_qs(parsed_apx.fragment).get("tgWebAppData", [None])[0]
-        if apx_init:
-            tokens["apx_init_data"] = apx_init
-    except Exception as apx_e:
-        logger.debug(f"[{name}] Apex Miner error: {apx_e}")
+    # 7. Ainovum AI (@ainovum_bot)
+    tok = await extract_bot_webapp_token(client, AINOVUM_BOT, start_param=AINOVUM_REFERRAL_CODE, default_url=f"https://ainovum.biz/?startapp={AINOVUM_REFERRAL_CODE}&ref={AINOVUM_REFERRAL_CODE}", candidate_short_names=["app", "ai"])
+    if tok:
+        tokens["ainovum_init_data"] = tok
 
-    # 8. Ainovum Bot WebApp initData
-    try:
-        bot_an = await client.get_entity(AINOVUM_BOT)
-        res_an = await client(RequestWebViewRequest(
-            peer=bot_an,
-            bot=bot_an,
-            platform="android",
-            url=f"https://ainovum.biz/?startapp={AINOVUM_REFERRAL_CODE}&ref={AINOVUM_REFERRAL_CODE}"
-        ))
-        parsed_an = urllib.parse.urlparse(res_an.url)
-        an_init = urllib.parse.parse_qs(parsed_an.fragment).get("tgWebAppData", [None])[0]
-        if an_init:
-            tokens["ainovum_init_data"] = an_init
-    except Exception as ane:
-        logger.debug(f"[{name}] Ainovum error: {ane}")
+    # 8. ATF Miner (@ATF_AIRDROP_bot)
+    tok = await extract_bot_webapp_token(client, "ATF_AIRDROP_bot", start_param=REPORT_CHAT_ID, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"])
+    if tok:
+        tokens["atf_init_data"] = tok
 
-    # 10. ATF Miner WebApp initData (@ATF_AIRDROP_bot)
-    try:
-        bot_atf = await client.get_entity("ATF_AIRDROP_bot")
-        res_atf = await client(RequestWebViewRequest(
-            peer=bot_atf,
-            bot=bot_atf,
-            platform="android",
-            url="https://atfminers.asloni.online/miner/index.html?entry=bot_start",
-            start_param=REPORT_CHAT_ID
-        ))
-        parsed_atf = urllib.parse.urlparse(res_atf.url)
-        atf_init = urllib.parse.parse_qs(parsed_atf.fragment).get("tgWebAppData", [None])[0]
-        if atf_init:
-            tokens["atf_init_data"] = atf_init
-    except Exception as atf_e:
-        logger.debug(f"[{name}] ATF Miner error: {atf_e}")
+    # 9. TRX Power Mining (@trxpowermining_bot)
+    tok = await extract_bot_webapp_token(client, TRXPOWER_BOT, start_param=TRXPOWER_REFERRAL_CODE, default_url="https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/", candidate_short_names=["app", "mine", "trx", "mining"])
+    if tok:
+        tokens["trxpower_init_data"] = tok
 
-    # 11. Tensor Mining Robot WebApp initData (@TensorMiningRobot)
-    try:
-        bot_tensor = await client.get_input_entity("TensorMiningRobot")
-        res_tensor = await client(RequestAppWebViewRequest(
-            peer=bot_tensor,
-            app=InputBotAppShortName(bot_id=bot_tensor, short_name="myapp"),
-            platform="android",
-            start_param=REPORT_CHAT_ID
-        ))
-        parsed_tensor = urllib.parse.urlparse(res_tensor.url)
-        tensor_init = urllib.parse.parse_qs(parsed_tensor.fragment).get("tgWebAppData", [None])[0]
-        if tensor_init:
-            tokens["tensor_init_data"] = tensor_init
-    except Exception as tensor_e:
-        logger.debug(f"[{name}] Tensor error: {tensor_e}")
+    # 10. Tensor Mining Robot (@TensorMiningRobot)
+    tok = await extract_bot_webapp_token(client, TENSOR_BOT, start_param=REPORT_CHAT_ID, default_url="https://flascoins.xyz/", candidate_short_names=["myapp", "app", "mine"])
+    if tok:
+        tokens["tensor_init_data"] = tok
 
-    # 12. Ton Trader AI WebApp initData (@TonTraderAIBot)
-    try:
-        bot_tt = await client.get_input_entity("TonTraderAIBot")
-        res_tt = await client(RequestAppWebViewRequest(
-            peer=bot_tt,
-            app=InputBotAppShortName(bot_id=bot_tt, short_name="app"),
-            platform="android",
-            start_param=f"REF_{REPORT_CHAT_ID}"
-        ))
-        parsed_tt = urllib.parse.urlparse(res_tt.url)
-        tt_init = urllib.parse.parse_qs(parsed_tt.fragment).get("tgWebAppData", [None])[0]
-        if tt_init:
-            tokens["tontrader_init_data"] = tt_init
-    except Exception as tt_e:
-        logger.debug(f"[{name}] Ton Trader error: {tt_e}")
+    # 11. Ton Trader AI (@TonTraderAIBot)
+    tok = await extract_bot_webapp_token(client, TONTRADER_BOT, start_param=f"REF_{REPORT_CHAT_ID}", default_url="https://tontraderai.com/", candidate_short_names=["app", "trade", "Trader"])
+    if tok:
+        tokens["tontrader_init_data"] = tok
 
-    # 13. USDT QUAD WebApp initData (@usdtquadbot)
-    try:
-        bot_uq = await client.get_entity(USDTQUAD_BOT)
-        res_uq = await client(RequestWebViewRequest(
-            peer=bot_uq,
-            bot=bot_uq,
-            platform="android",
-            url="https://ustdquad.up.railway.app/"
-        ))
-        parsed_uq = urllib.parse.urlparse(res_uq.url)
-        uq_init = urllib.parse.parse_qs(parsed_uq.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_uq.query).get("tgWebAppData", [None])[0]
-        if uq_init:
-            tokens["usdtquad_init_data"] = uq_init
-    except Exception as uq_e:
-        logger.debug(f"[{name}] USDT QUAD error: {uq_e}")
+    # 12. FINVORA Web3 (@FINVORAWeb3bot)
+    tok = await extract_bot_webapp_token(client, FINVORA_BOT, start_param=FINVORA_REFERRAL_CODE, default_url="https://finvora-production.up.railway.app/", candidate_short_names=["app", "finvora", "mine", "play"])
+    if tok:
+        tokens["finvora_init_data"] = tok
 
-    # 15. TurboGram V1 WebApp initData (@TurboGramV1_bot)
-    try:
-        b_tb_in = await client.get_input_entity(TURBOGRAM_BOT)
-        res_tb = None
-        for sn in ["app", "miniapp", "bot"]:
-            try:
-                res_tb = await client(RequestAppWebViewRequest(
-                    peer=b_tb_in,
-                    app=InputBotAppShortName(bot_id=b_tb_in, short_name=sn),
-                    platform="android",
-                    start_param=REPORT_CHAT_ID
-                ))
-                if res_tb and getattr(res_tb, "url", None):
-                    break
-            except Exception:
-                pass
-        if not res_tb:
-            bot_tb = await client.get_entity(TURBOGRAM_BOT)
-            res_tb = await client(RequestWebViewRequest(
-                peer=bot_tb,
-                bot=bot_tb,
-                platform="android",
-                url="https://turbo.tamimdev.dev/"
-            ))
-        parsed_tb = urllib.parse.urlparse(getattr(res_tb, "url", "") or "")
-        tb_init = urllib.parse.parse_qs(parsed_tb.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_tb.query).get("tgWebAppData", [None])[0]
-        if tb_init:
-            tokens["turbogram_init_data"] = tb_init
-    except Exception as tb_e:
-        logger.debug(f"[{name}] TurboGram error: {tb_e}")
+    # 13. TurboGram V1 (@TurboGramV1_bot)
+    tok = await extract_bot_webapp_token(client, TURBOGRAM_BOT, start_param=REPORT_CHAT_ID, default_url="https://turbo.tamimdev.dev/", candidate_short_names=["app", "miniapp", "bot", "turbo"])
+    if tok:
+        tokens["turbogram_init_data"] = tok
 
-    # 16. FINVORA Web3 WebApp initData (@FINVORAWeb3bot)
-    try:
-        bot_fin = await client.get_entity(FINVORA_BOT)
-        res_fin = await client(RequestWebViewRequest(
-            peer=bot_fin,
-            bot=bot_fin,
-            platform="android",
-            url="https://finvora-production.up.railway.app/"
-        ))
-        parsed_fin = urllib.parse.urlparse(res_fin.url)
-        fin_init = urllib.parse.parse_qs(parsed_fin.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_fin.query).get("tgWebAppData", [None])[0]
-        if fin_init:
-            tokens["finvora_init_data"] = fin_init
-    except Exception as fin_e:
-        logger.debug(f"[{name}] FINVORA error: {fin_e}")
+    # 14. USDT QUAD (@ustdquad_bot)
+    tok = await extract_bot_webapp_token(client, USDTQUAD_BOT, start_param=str(USDTQUAD_REFERRAL_CODE), default_url="https://ustdquad.up.railway.app/", candidate_short_names=["app", "quad", "miner", "play"])
+    if tok:
+        tokens["usdtquad_init_data"] = tok
 
-    # 17. TRX Power Mining WebApp initData (@trxpowermining_bot)
-    try:
-        bot_trx = await client.get_entity(TRXPOWER_BOT)
-        res_trx = await client(RequestWebViewRequest(
-            peer=bot_trx,
-            bot=bot_trx,
-            platform="android",
-            url="https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/"
-        ))
-        parsed_trx = urllib.parse.urlparse(res_trx.url)
-        trx_init = urllib.parse.parse_qs(parsed_trx.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_trx.query).get("tgWebAppData", [None])[0]
-        if trx_init:
-            tokens["trxpower_init_data"] = trx_init
-    except Exception as trx_e:
-        logger.debug(f"[{name}] TRX Power error: {trx_e}")
-
-    # 18. TAC Airdrop WebApp initData (@tacairdrop_bot)
-    try:
-        bot_tac = await client.get_input_entity(TAC_BOT)
-        res_tac = await client(RequestAppWebViewRequest(
-            peer=bot_tac,
-            app=InputBotAppShortName(bot_id=bot_tac, short_name="play"),
-            platform="android",
-            start_param=TAC_REFERRAL_CODE
-        ))
-        parsed_tac = urllib.parse.urlparse(getattr(res_tac, 'url', None) or "")
-        tac_init = urllib.parse.parse_qs(parsed_tac.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(parsed_tac.query).get("tgWebAppData", [None])[0]
-        if tac_init:
-            tokens["tac_init_data"] = tac_init
-    except Exception as tac_e:
-        logger.debug(f"[{name}] TAC Airdrop error: {tac_e}")
+    # 15. TAC Airdrop (@tacairdrop_bot)
+    tok = await extract_bot_webapp_token(client, TAC_BOT, start_param=str(TAC_REFERRAL_CODE), default_url=f"https://tacairdrop.xyz/?ref={TAC_REFERRAL_CODE}", candidate_short_names=["play", "app", "airdrop"])
+    if tok:
+        tokens["tac_init_data"] = tok
 
     return tokens
 
@@ -572,97 +572,76 @@ async def collect_tokens(request: Request):
     if not accounts:
         return {"ok": True, "message": "No accounts with sessions found in backup archive or body", "collected": 0}
 
-    LAST_BATCH_RUN["status"] = "running"
-    LAST_BATCH_RUN["timestamp"] = time.time()
+    sync_mode = request.query_params.get("sync") == "1" or len(accounts) <= 2
 
-    collected_batch = {}
-    for acc in accounts:
-        uid = str(acc.get("user_id"))
-        sess_str = acc.get("session_string") or acc.get("session")
-        if sess_str and not is_account_referrals_bound(acc) and uid != "6727787768":
-            try:
-                cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
-                await cl.connect()
-                if await cl.is_user_authorized():
-                    await bind_account_master_referrals(cl, acc)
+    async def _run_batch_collection(target_accounts):
+        LAST_BATCH_RUN["status"] = "running"
+        LAST_BATCH_RUN["timestamp"] = time.time()
+        LAST_BATCH_RUN["total"] = len(target_accounts)
+        LAST_BATCH_RUN["collected"] = 0
+        collected_batch = {}
+        sem = asyncio.Semaphore(3)
+
+        async def _collect_single(acc):
+            async with sem:
+                uid = str(acc.get("user_id"))
+                sess_str = acc.get("session_string") or acc.get("session")
+                if sess_str and not is_account_referrals_bound(acc) and uid != "6727787768":
+                    try:
+                        cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+                        await cl.connect()
+                        if await cl.is_user_authorized():
+                            await bind_account_master_referrals(cl, acc)
+                        try:
+                            await cl.disconnect()
+                        except Exception:
+                            pass
+                    except Exception as be:
+                        logger.warning(f"[{acc.get('name', uid)}] Referral binding in collect_tokens note: {be}")
+
+                tokens = await extract_tokens_for_account(acc)
+                if tokens:
+                    collected_batch[uid] = tokens
+                    LAST_BATCH_RUN["collected"] = len(collected_batch)
+                    await sync_account_tokens_to_clouds(tokens)
+
+        tasks = [_collect_single(a) for a in target_accounts]
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Trigger Cloudflare Edge Autonomous Cloud Farming for ALL bots
+        async with aiohttp.ClientSession() as http:
+            for idx, cf_url in enumerate(CF_WORKER_URLS):
                 try:
-                    await cl.disconnect()
+                    await http.post(
+                        f"{cf_url}/api/farm/all",
+                        json={"all": True, "bot": "all"},
+                        headers={"Authorization": f"Bearer {SECRET_KEY}", "Content-Type": "application/json"},
+                        timeout=aiohttp.ClientTimeout(total=8)
+                    )
                 except Exception:
                     pass
-            except Exception as be:
-                logger.warning(f"[{acc.get('name', uid)}] Referral binding in collect_tokens note: {be}")
 
-        tokens = await extract_tokens_for_account(acc)
-        if tokens:
-            collected_batch[uid] = tokens
-            async with aiohttp.ClientSession() as http:
-                # 1. Sync to 3x Cloudflare KV
-                for cf_url in CF_WORKER_URLS:
-                    try:
-                        await http.post(
-                            f"{cf_url}/api/miniapp/tokens/sync",
-                            json=tokens,
-                            headers={
-                                "Authorization": f"Bearer {SECRET_KEY}",
-                                "Content-Type": "application/json",
-                                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                            },
-                            timeout=aiohttp.ClientTimeout(total=5)
-                        )
-                    except Exception as se:
-                        logger.warning(f"Sync error to {cf_url}: {se}")
+        LAST_BATCH_RUN["status"] = "completed"
+        LAST_BATCH_RUN["collected"] = len(collected_batch)
+        LAST_BATCH_RUN["timestamp"] = time.time()
 
-                # 2. Sync to Upstash Redis
-                if UPSTASH_URL and UPSTASH_TOKEN:
-                    try:
-                        await http.post(
-                            f"{UPSTASH_URL}/set/fleet:tokens:{uid}",
-                            data=json.dumps(tokens),
-                            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
-                            timeout=aiohttp.ClientTimeout(total=4)
-                        )
-                    except Exception as ue:
-                        logger.warning(f"Upstash token sync note: {ue}")
-
-                # 3. Sync to Supabase Postgres
-                if SUPABASE_URL and SUPABASE_KEY:
-                    try:
-                        await http.patch(
-                            f"{SUPABASE_URL}/rest/v1/fleet_accounts?id=eq.{uid}",
-                            json={"data": tokens},
-                            headers={
-                                "apikey": SUPABASE_KEY,
-                                "Authorization": f"Bearer {SUPABASE_KEY}",
-                                "Content-Type": "application/json"
-                            },
-                            timeout=aiohttp.ClientTimeout(total=4)
-                        )
-                    except Exception as sbe:
-                        logger.warning(f"Supabase account update note: {sbe}")
-
-    # Trigger Cloudflare Edge Autonomous Cloud Farming for ALL bots
-    async with aiohttp.ClientSession() as http:
-        for idx, cf_url in enumerate(CF_WORKER_URLS):
-            try:
-                await http.post(
-                    f"{cf_url}/api/farm/all",
-                    json={"all": True, "bot": "all"},
-                    headers={"Authorization": f"Bearer {SECRET_KEY}", "Content-Type": "application/json"},
-                    timeout=aiohttp.ClientTimeout(total=10)
-                )
-            except Exception:
-                pass
-
-    LAST_BATCH_RUN["status"] = "completed"
-    LAST_BATCH_RUN["collected"] = len(collected_batch)
-    LAST_BATCH_RUN["timestamp"] = time.time()
-
-    return {
-        "ok": True,
-        "collected": len(collected_batch),
-        "timestamp": time.time(),
-        "message": "Batch session links collected and synced to 3x Cloudflare KV nodes. Cloud farming dispatched. Standby node entering sleep."
-    }
+    if not sync_mode:
+        asyncio.create_task(_run_batch_collection(accounts))
+        return {
+            "ok": True,
+            "status": "BATCH_DISPATCHED",
+            "accounts_queued": len(accounts),
+            "timestamp": time.time(),
+            "message": f"Parallel batch token collection running in background across {len(accounts)} accounts with live sync."
+        }
+    else:
+        await _run_batch_collection(accounts)
+        return {
+            "ok": True,
+            "collected": LAST_BATCH_RUN.get("collected", 0),
+            "timestamp": LAST_BATCH_RUN.get("timestamp", time.time()),
+            "message": "Batch session links collected and synced to 5x Cloudflare KV nodes and Upstash Redis."
+        }
 
 # ============================================================================
 # CLOUD BNB GALAXY AUTONOMOUS ENGINE (Balance Checks & Auto-Withdrawals)
@@ -714,15 +693,26 @@ async def fetch_accounts_from_cloud():
                     if ur.status == 200:
                         udata = await ur.json()
                         for k in udata.get("result", []):
-                            async with http.get(f"{UPSTASH_URL}/get/{k}", headers=up_h, timeout=aiohttp.ClientTimeout(total=4)) as gr:
-                                if gr.status == 200:
-                                    gdata = await gr.json()
-                                    rstr = gdata.get("result")
-                                    if rstr:
-                                        acc_obj = json.loads(rstr) if isinstance(rstr, str) else rstr
-                                        auid = str(acc_obj.get("user_id"))
-                                        if auid:
-                                            accounts_map[auid] = acc_obj
+                            try:
+                                async with http.get(f"{UPSTASH_URL}/get/{k}", headers=up_h, timeout=aiohttp.ClientTimeout(total=4)) as gr:
+                                    if gr.status == 200:
+                                        gdata = await gr.json()
+                                        rstr = gdata.get("result")
+                                        if rstr:
+                                            acc_obj = json.loads(rstr) if isinstance(rstr, str) else rstr
+                                            while isinstance(acc_obj, str):
+                                                acc_obj = json.loads(acc_obj)
+                                            if isinstance(acc_obj, dict):
+                                                auid = str(acc_obj.get("user_id"))
+                                                if auid and auid.isdigit():
+                                                    if auid not in accounts_map:
+                                                        accounts_map[auid] = acc_obj
+                                                    else:
+                                                        for f_k, f_v in acc_obj.items():
+                                                            if f_v is not None and (f_k not in accounts_map[auid] or not accounts_map[auid].get(f_k)):
+                                                                accounts_map[auid][f_k] = f_v
+                            except Exception as ke:
+                                logger.debug(f"Error parsing Upstash key {k}: {ke}")
             except Exception as ue:
                 logger.debug(f"Upstash account fetch note: {ue}")
 
@@ -735,14 +725,20 @@ async def fetch_accounts_from_cloud():
                         sdata = await sbr.json()
                         if isinstance(sdata, list):
                             for sa in sdata:
-                                suid = str(sa.get("user_id"))
-                                if suid:
-                                    accounts_map[suid] = sa
+                                if isinstance(sa, dict):
+                                    suid = str(sa.get("user_id"))
+                                    if suid and suid.isdigit():
+                                        if suid not in accounts_map:
+                                            accounts_map[suid] = sa
+                                        else:
+                                            for f_k, f_v in sa.items():
+                                                if f_v is not None and (f_k not in accounts_map[suid] or not accounts_map[suid].get(f_k)):
+                                                    accounts_map[suid][f_k] = f_v
             except Exception as se:
                 logger.debug(f"Supabase account fetch note: {se}")
 
-    merged = list(accounts_map.values())
-    FLEET_ACCOUNTS_CACHE = {str(a.get("user_id")): a for a in merged if a.get("user_id")}
+    merged = [a for a in accounts_map.values() if isinstance(a, dict) and a.get("user_id")]
+    FLEET_ACCOUNTS_CACHE = {str(a.get("user_id")): a for a in merged}
     return merged
 
 CACHED_GROQ_KEYS = []
@@ -1214,12 +1210,20 @@ async def sync_account_tokens_to_clouds(tokens: dict):
             except Exception as se:
                 logger.warning(f"Tokens sync error to {cf_url}: {se}")
 
-        # 2. Upstash Redis
+        # 2. Upstash Redis (Safely merge with existing tokens to preserve valid keys)
         if UPSTASH_URL and UPSTASH_TOKEN:
             try:
+                ex_toks = {}
+                async with s.get(f"{UPSTASH_URL}/get/fleet:tokens:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=4)) as r_ex:
+                    if r_ex.status == 200:
+                        ex_d = await r_ex.json()
+                        raw_res = ex_d.get("result")
+                        if raw_res:
+                            ex_toks = json.loads(raw_res) if isinstance(raw_res, str) else raw_res
+                merged = {**ex_toks, **tokens}
                 await s.post(
                     f"{UPSTASH_URL}/set/fleet:tokens:{uid}",
-                    data=json.dumps(tokens),
+                    data=json.dumps(merged),
                     headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
                     timeout=aiohttp.ClientTimeout(total=5)
                 )
@@ -4113,9 +4117,12 @@ async def fetch_cloud_miniapp_tokens(session: aiohttp.ClientSession) -> dict:
                                             if acc_id not in tokens_map:
                                                 tokens_map[acc_id] = t_obj
                                             else:
-                                                for tk, tv in t_obj.items():
-                                                    if tk not in tokens_map[acc_id] or not tokens_map[acc_id][tk]:
-                                                        tokens_map[acc_id][tk] = tv
+                                                if is_token_data_expired(tokens_map[acc_id]) and not is_token_data_expired(t_obj):
+                                                    tokens_map[acc_id] = {**tokens_map[acc_id], **t_obj}
+                                                else:
+                                                    for tk, tv in t_obj.items():
+                                                        if tk not in tokens_map[acc_id] or not tokens_map[acc_id][tk]:
+                                                            tokens_map[acc_id][tk] = tv
                                     except Exception:
                                         pass
         except Exception as ue:
@@ -4567,23 +4574,39 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             }
             cached_entry = UW_ID_TOKENS.get(str(uid))
             id_tok = cached_entry[0] if (cached_entry and time.time() < cached_entry[1] - 120) else None
+            if not id_tok and UPSTASH_URL and UPSTASH_TOKEN:
+                try:
+                    async with session.get(f"{UPSTASH_URL}/get/fleet:uw_id_token:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3)) as ur:
+                        if ur.status == 200:
+                            udata = await ur.json()
+                            if udata.get("result"):
+                                id_tok = udata["result"]
+                                UW_ID_TOKENS[str(uid)] = (id_tok, time.time() + 1800)
+                except Exception:
+                    pass
+
             if not id_tok:
                 for uw_att in range(3):
-                    await jitter(1.0 + uw_att * 2.0, 2.5 + uw_att * 2.5)
+                    await jitter(1.5 + uw_att * 2.0, 3.5 + uw_att * 2.5)
                     st_lg, ud = await safe_post(f"{uw_base}/telegramLogin", {"initData": uw_init, "refBy": "6727787768"}, req_headers=uw_origin_h)
                     if ud and isinstance(ud, dict):
                         cust_tok = ud.get("token")
                         if cust_tok:
                             fb_url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyAIKTCEFqC5LFRc89nuOLhTGPHIZTIjEsU"
-                            _, fbd = await safe_post(fb_url, {"token": cust_tok, "returnSecureToken": True}, req_headers=uw_origin_h)
+                            _, fbd = await safe_post(fb_url, {"token": cust_tok, "returnSecureToken": True}, req_headers=headers)
                             if fbd and isinstance(fbd, dict):
                                 id_tok = fbd.get("idToken")
                                 if id_tok:
                                     UW_ID_TOKENS[str(uid)] = (id_tok, time.time() + 3300)
+                                    if UPSTASH_URL and UPSTASH_TOKEN:
+                                        try:
+                                            await safe_post(f"{UPSTASH_URL}/set/fleet:uw_id_token:{uid}?EX=3300", id_tok, req_headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
+                                        except Exception:
+                                            pass
                                     break
                         err_str = str(ud.get("error", "")).lower()
                         if "too many" in err_str or "slow down" in err_str or st_lg == 429:
-                            await asyncio.sleep(random.uniform(4.0, 7.5))
+                            await asyncio.sleep(random.uniform(5.0, 9.0))
                             continue
 
             if id_tok:
@@ -4693,27 +4716,27 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 "Origin": "https://apxn-miner-live.apxn-network.workers.dev",
                 "Referer": "https://apxn-miner-live.apxn-network.workers.dev/"
             }
-            await jitter(1.0, 2.0)
+            await asyncio.sleep(0.4)
             await safe_post(f"{apx_base}/auth/telegram", {"initData": apx_init}, req_headers=apx_h)
-            await jitter(1.0, 2.0)
+            await asyncio.sleep(0.3)
             _, bd = await safe_post(f"{apx_base}/bootstrap", {"initData": apx_init}, req_headers=apx_h)
             if bd and (not bd.get("exists") or not bd.get("user")):
                 await safe_post(f"{apx_base}/register", {"initData": apx_init}, req_headers=apx_h)
-            await jitter(1.0, 2.0)
+            await asyncio.sleep(0.3)
             await safe_post(f"{apx_base}/checkin", {"initData": apx_init, "clientV2": True}, req_headers=apx_h)
-            await jitter(1.0, 2.0)
+            await asyncio.sleep(0.3)
             await safe_post(f"{apx_base}/mining/claim", {"initData": apx_init}, req_headers=apx_h)
-            await jitter(1.0, 2.0)
+            await asyncio.sleep(0.3)
             await safe_post(f"{apx_base}/mining/restart", {"initData": apx_init}, req_headers=apx_h)
             for t in ["telegram", "twitter", "discord", "checkin"]:
-                await jitter(0.8, 1.6)
+                await asyncio.sleep(0.25)
                 await safe_post(f"{apx_base}/tasks/daily", {"initData": apx_init, "task": t}, req_headers=apx_h)
             for s in ["channel", "group", "twitter", "partner"]:
-                await jitter(0.8, 1.6)
+                await asyncio.sleep(0.25)
                 await safe_post(f"{apx_base}/tasks/social", {"initData": apx_init, "task": s}, req_headers=apx_h)
-            await jitter(1.0, 2.0)
+            await asyncio.sleep(0.3)
             await safe_post(f"{apx_base}/ads/boost", {"initData": apx_init}, req_headers=apx_h)
-            await jitter(1.0, 2.0)
+            await asyncio.sleep(0.3)
             await safe_post(f"{apx_base}/ads/reward", {"initData": apx_init}, req_headers=apx_h)
             status["bots"]["apx"] = "farmed"
         except Exception as e:
@@ -4927,7 +4950,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                     await safe_post(f"{trx_base}/tasks/{tid}/claim", {}, req_headers=trx_h)
                                     await asyncio.sleep(0.5)
 
-                    # 5. Claim mining rewards
+                    # 5. Start and claim mining rewards
+                    await safe_post(f"{trx_base}/mining/start", {}, req_headers=trx_h)
                     st_cl, cl_res = await safe_post(f"{trx_base}/mining/claim", {}, req_headers=trx_h)
                     claimed_val = 0.0
                     if cl_res and isinstance(cl_res, dict):
@@ -4945,39 +4969,16 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     status["bots"]["trxpower"] = f"farmed{bal_str}"
                     return
             except Exception as e:
-                logger.debug(f"[{name}] TRX Power API farm note: {e}")
-
-        sess_str = acc.get("session_string") or acc.get("session")
-        if not sess_str:
-            status["bots"]["trxpower"] = "farmed"
-            return
-        try:
-            trx_cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
-            await trx_cl.connect()
-            if not await trx_cl.is_user_authorized():
-                await trx_cl.disconnect()
-                status["bots"]["trxpower"] = "farmed"
+                status["bots"]["trxpower"] = f"api_error: {format_error(e)}"
                 return
-            b_ent = await trx_cl.get_entity("trxpowermining_bot")
-            await trx_cl.send_message(b_ent, "📊 My Balance")
-            await asyncio.sleep(2.0)
-            msgs = await trx_cl.get_messages(b_ent, limit=2)
-            bal_txt = ""
-            for m in msgs:
-                if not m.out and "Balance:" in m.raw_text:
-                    m_match = re.search(r"Balance:\s*([0-9\.]+\s*TRX)", m.raw_text)
-                    if m_match:
-                        bal_txt = f" (bal: {m_match.group(1)})"
-            await trx_cl.disconnect()
-            status["bots"]["trxpower"] = f"farmed{bal_txt}"
-        except Exception as trx_e:
-            status["bots"]["trxpower"] = f"farmed (note: {format_error(trx_e)})"
+
+        status["bots"]["trxpower"] = "skipped (no initData)"
 
     # 10. Bitcoin Cloud Miners (@BitcoinCloudMinersBot)
     async def _farm_btc():
         sess_str = acc.get("session_string") or acc.get("session")
         if not sess_str:
-            status["bots"]["btc"] = "farmed"
+            status["bots"]["btc"] = "no_session"
             return
 
         now_ts = time.time()
@@ -4987,19 +4988,19 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             status["bots"]["btc"] = f"farmed (cooldown: {int((14400 - (now_ts - last_mine))/60)}m left)"
             return
 
+        btc_cl = None
         try:
             btc_cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
-            await btc_cl.connect()
+            await asyncio.wait_for(btc_cl.connect(), timeout=5.0)
             if not await btc_cl.is_user_authorized():
-                await btc_cl.disconnect()
-                status["bots"]["btc"] = "farmed"
+                status["bots"]["btc"] = "session_unauthorized"
                 return
             b_ent = await btc_cl.get_entity("BitcoinCloudMinersBot")
 
             # Send ONLY Mine command - NEVER send Tasks at the same time!
             await btc_cl.send_message(b_ent, "⛏ Mine")
             LAST_BTC_MINE_TIMES[uid] = now_ts
-            await asyncio.sleep(2.5)
+            await asyncio.sleep(1.8)
             msgs = await btc_cl.get_messages(b_ent, limit=3)
             claimed_txt = ""
             for m in msgs:
@@ -5017,10 +5018,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             # Only Master account checks milestone tasks, and ONLY once every 24 hours (86400s)
             last_tasks = LAST_BTC_TASKS_TIMES.get(uid, 0)
             if is_owner and (now_ts - last_tasks > 86400):
-                await asyncio.sleep(3.5)
+                await asyncio.sleep(2.0)
                 await btc_cl.send_message(b_ent, "📋 Tasks")
                 LAST_BTC_TASKS_TIMES[uid] = now_ts
-                await asyncio.sleep(2.0)
+                await asyncio.sleep(1.5)
                 t_msgs = await btc_cl.get_messages(b_ent, limit=2)
                 for m in t_msgs:
                     if not m.out and m.buttons:
@@ -5032,10 +5033,15 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                     except Exception:
                                         pass
 
-            await btc_cl.disconnect()
             status["bots"]["btc"] = f"farmed{claimed_txt}"
         except Exception as btc_e:
-            status["bots"]["btc"] = f"farmed (note: {format_error(btc_e)})"
+            status["bots"]["btc"] = f"chat_note: {format_error(btc_e)}"
+        finally:
+            if btc_cl:
+                try:
+                    await btc_cl.disconnect()
+                except Exception:
+                    pass
 
     # 11. Tensor Mining Robot (@TensorMiningRobot - flascoins.xyz)
     async def _farm_tensor():
@@ -5122,9 +5128,17 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 }
                 # 1. Connect dedicated TON wallet if not yet linked
                 target_ton = (acc.get("ton_wallet") or {}).get("address")
+                if not target_ton:
+                    try:
+                        if os.path.exists(os.path.join(BASE_DIR, "fleet_ton_wallets.json")):
+                            with open(os.path.join(BASE_DIR, "fleet_ton_wallets.json"), "r", encoding="utf-8") as tf:
+                                target_ton = json.load(tf).get(uid)
+                    except Exception:
+                        pass
                 if target_ton:
                     await safe_post("https://finvora-production.up.railway.app/api/wallet/connect", {"address": target_ton, "walletType": "manual"}, fin_h)
-                # 2. Claim instant bonus & regular mining claim
+                # 2. Start mining, claim instant bonus & regular mining claim
+                await safe_post("https://finvora-production.up.railway.app/api/mining/start", {}, fin_h)
                 await safe_post("https://finvora-production.up.railway.app/api/bonus/instant", {}, fin_h)
                 st_c, cl_d = await safe_post("https://finvora-production.up.railway.app/api/mining/claim", {}, fin_h)
                 bal_txt = ""
@@ -5136,34 +5150,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 status["bots"]["finvora"] = f"farmed{bal_txt}"
                 return
             except Exception as e:
-                logger.debug(f"[{name}] FINVORA API farm note: {e}")
-
-        # Fallback to Telegram client if initData is not present
-        sess_str = acc.get("session_string") or acc.get("session")
-        if not sess_str:
-            status["bots"]["finvora"] = "farmed"
-            return
-        try:
-            fin_cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
-            await fin_cl.connect()
-            if not await fin_cl.is_user_authorized():
-                await fin_cl.disconnect()
-                status["bots"]["finvora"] = "farmed"
+                status["bots"]["finvora"] = f"api_error: {format_error(e)}"
                 return
-            b_ent = await fin_cl.get_entity("FINVORAWeb3bot")
-            await fin_cl.send_message(b_ent, "/start")
-            await asyncio.sleep(2.0)
-            msgs = await fin_cl.get_messages(b_ent, limit=2)
-            bal_txt = ""
-            for m in msgs:
-                if not m.out and "Available" in m.raw_text:
-                    m_match = re.search(r"Available\s+([0-9\.]+\s*GRAM)", m.raw_text)
-                    if m_match:
-                        bal_txt = f" (avail: {m_match.group(1)})"
-            await fin_cl.disconnect()
-            status["bots"]["finvora"] = f"farmed{bal_txt}"
-        except Exception as fin_e:
-            status["bots"]["finvora"] = f"farmed (note: {format_error(fin_e)})"
+
+        status["bots"]["finvora"] = "skipped (no initData)"
 
     # 14. TurboGram V1 (@TurboGramV1_bot)
     async def _farm_turbogram():
@@ -5199,26 +5189,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 status["bots"]["turbogram"] = f"farmed{bal_txt}"
                 return
             except Exception as e:
-                logger.debug(f"[{name}] TurboGram API farm note: {e}")
-
-        sess_str = acc.get("session_string") or acc.get("session")
-        if not sess_str:
-            status["bots"]["turbogram"] = "farmed"
-            return
-        try:
-            tb_cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
-            await tb_cl.connect()
-            if not await tb_cl.is_user_authorized():
-                await tb_cl.disconnect()
-                status["bots"]["turbogram"] = "farmed"
+                status["bots"]["turbogram"] = f"api_error: {format_error(e)}"
                 return
-            b_ent = await tb_cl.get_entity("TurboGramV1_bot")
-            await tb_cl.send_message(b_ent, "/start")
-            await asyncio.sleep(2.0)
-            await tb_cl.disconnect()
-            status["bots"]["turbogram"] = "farmed"
-        except Exception as tb_e:
-            status["bots"]["turbogram"] = f"farmed (note: {format_error(tb_e)})"
+
+        status["bots"]["turbogram"] = "skipped (no initData)"
 
 
     # 16. USDT QUAD (@usdtquadbot - ustdquad.up.railway.app)
@@ -5365,7 +5339,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
             # 3. Start mining if not running
             if not is_mining:
-                await jitter(1.0, 2.0)
+                await asyncio.sleep(0.3)
                 s_code, s_res = await safe_post("https://tacairdrop.xyz/api/mining/start", {"userId": uid}, req_headers=tac_headers)
                 if s_code == 200:
                     is_mining = True
@@ -5374,7 +5348,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             ad_txt = ""
             ads_today = cur_u.get("adsWatchedToday", 0)
             if ads_today < 7:
-                await jitter(1.0, 2.2)
+                await asyncio.sleep(0.3)
                 a_code, a_res = await safe_post("https://tacairdrop.xyz/api/ads/watch", {"userId": uid}, req_headers=tac_headers)
                 if a_code == 200 and isinstance(a_res, dict):
                     rew = a_res.get("reward", 15)
@@ -5389,7 +5363,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 if tid and tid not in completed_ids and not t.get("isCompleted") and not t.get("completed"):
                     try:
                         await safe_post("https://tacairdrop.xyz/api/tasks/complete", {"userId": uid, "taskId": tid}, req_headers=tac_headers)
-                        await asyncio.sleep(0.5)
+                        await asyncio.sleep(0.2)
                     except Exception:
                         pass
 
@@ -5409,9 +5383,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             # 8. Autonomous Sequential Miner Auto-Leveling (Free Upgrades up to Holding Threshold)
             cur_lvl = int(cur_u.get("currentLevel") or 1)
             upgraded_levels = 0
-            while upgraded_levels < 25:
+            while upgraded_levels < 5:
                 target_lvl = cur_lvl + 1
-                await asyncio.sleep(0.35)
+                await asyncio.sleep(0.2)
                 u_code, u_res = await safe_post(
                     "https://tacairdrop.xyz/api/miners/upgrade",
                     {"userId": str(uid), "targetLevel": target_lvl},
@@ -5428,7 +5402,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         except Exception as e:
             status["bots"]["tac"] = f"error: {format_error(e)}"
 
-    # Humanized Execution Pipeline: Randomize the order of bot executions per account session
+    # Humanized Concurrent Execution Pipeline: 4 bots per account session
     bot_routines = [
         {"name": "stones", "fn": _farm_stones, "has_data": bool(tokens.get("stones_init_data"))},
         {"name": "mrg", "fn": _farm_mrg, "has_data": bool(tokens.get("mrg_init_data"))},
@@ -5445,23 +5419,25 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "finvora", "fn": _farm_finvora, "has_data": True},
         {"name": "turbogram", "fn": _farm_turbogram, "has_data": True},
         {"name": "usdtquad", "fn": _farm_usdtquad, "has_data": True},
-        {"name": "tac", "fn": _farm_tac, "has_data": bool(tokens.get("tac_init_data"))},
+        {"name": "tac", "fn": _farm_tac, "has_data": True},
     ]
 
     active_routines = [b for b in bot_routines if b["has_data"]]
     random.shuffle(active_routines)
 
-    for b in active_routines:
-        try:
-            await b["fn"]()
-            await jitter(1.2, 3.0)
-        except Exception as err:
-            status["bots"][b["name"]] = f"error: {format_error(err)}"
+    sem_bot = asyncio.Semaphore(4)
 
-    # Await all background dwell/retry tasks for this account before completing
-    if bg_tasks:
-        await asyncio.gather(*bg_tasks, return_exceptions=True)
+    async def _run_single_routine(b):
+        async with sem_bot:
+            try:
+                await jitter(0.2, 0.6)
+                await asyncio.wait_for(b["fn"](), timeout=28.0)
+            except asyncio.TimeoutError:
+                status["bots"][b["name"]] = "timeout (28s)"
+            except Exception as err:
+                status["bots"][b["name"]] = f"error: {format_error(err)}"
 
+    await asyncio.gather(*[_run_single_routine(b) for b in active_routines], return_exceptions=True)
     return status
 
 
@@ -5471,24 +5447,6 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
     if session is None:
         session = aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
         created_session = True
-
-    REQUIRED_BOT_KEYS = [
-        "stones_init_data",
-        "mrg_init_data",
-        "art_init_data",
-        "ailab_init_data",
-        "ultrawallet_init_data",
-        "apx_init_data",
-        "atf_init_data",
-        "ainovum_init_data",
-        "trxpower_init_data",
-        "finvora_init_data",
-        "turbogram_init_data",
-        "tensor_init_data",
-        "tontrader_init_data",
-        "usdtquad_init_data",
-        "tac_init_data"
-    ]
 
     try:
         if accounts is None:
@@ -5500,32 +5458,31 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
             tokens_map = await fetch_cloud_miniapp_tokens(session)
 
         farm_tasks = []
-        farm_sem = asyncio.Semaphore(2)
+        farm_sem = asyncio.Semaphore(4)
 
         async def _farm_with_sem(a_dict, t_dict):
             async with farm_sem:
-                await asyncio.sleep(random.uniform(1.2, 2.8))
-                return await farm_single_account_bots(session, a_dict, t_dict)
+                uid_str = str(a_dict.get("user_id"))
+                has_any_token = any(k.endswith("_init_data") and bool(v) for k, v in t_dict.items())
+                all_expired = is_token_data_expired(t_dict, max_age_hours=22.0)
+                if (not has_any_token or all_expired) and (a_dict.get("session_string") or a_dict.get("session")) and uid_str != "6727787768":
+                    try:
+                        fresh_toks = await asyncio.wait_for(extract_tokens_for_account(a_dict), timeout=25.0)
+                        if fresh_toks:
+                            t_dict.update(fresh_toks)
+                            tokens_map[uid_str] = t_dict
+                            asyncio.create_task(sync_account_tokens_to_clouds(t_dict))
+                    except Exception as ex_e:
+                        logger.warning(f"[Farm Task] On-the-fly extraction note for {uid_str}: {ex_e}")
+                try:
+                    return await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict), timeout=60.0)
+                except asyncio.TimeoutError:
+                    return {"uid": uid_str, "name": a_dict.get("name", uid_str), "bots": {"status": "timeout_60s"}}
 
         for acc in accounts:
             uid = str(acc.get("user_id"))
             acc_tok = tokens_map.get(uid, {})
-            # If account is missing any of the 8 active bot tokens, trigger cloud extraction & bootstrap
-            missing = [k for k in REQUIRED_BOT_KEYS if not acc_tok.get(k)]
-            if missing:
-                logger.info(f"[Farm Cycle] Account {uid} ({acc.get('name')}) missing {len(missing)} bot tokens ({missing}). Triggering cloud extraction & bootstrap...")
-                try:
-                    fresh = await extract_tokens_for_account(acc)
-                    if fresh:
-                        acc_tok.update(fresh)
-                        tokens_map[uid] = acc_tok
-                        await sync_account_tokens_to_clouds(acc_tok)
-                        await bootstrap_account_mining(acc, acc_tok)
-                except Exception as ex_e:
-                    logger.warning(f"[Farm Cycle] On-the-fly token extraction note for {uid}: {ex_e}")
-
-            if acc_tok:
-                farm_tasks.append(_farm_with_sem(acc, acc_tok))
+            farm_tasks.append(_farm_with_sem(acc, acc_tok))
 
         results = await asyncio.gather(*farm_tasks, return_exceptions=True)
         valid_res = [r for r in results if isinstance(r, dict)]
@@ -5610,11 +5567,12 @@ async def api_farm_single_account(uid: str, request: Request):
         tokens_map = await fetch_cloud_miniapp_tokens(session)
         acc_tok = tokens_map.get(str(uid), {})
         if not acc_tok or not any(k.endswith("_init_data") for k in acc_tok.keys()):
-            fresh = await extract_tokens_for_account(target_acc)
-            if fresh:
-                acc_tok = fresh
-                await sync_account_tokens_to_clouds(fresh)
-                await bootstrap_account_mining(target_acc, fresh)
+            if str(uid) != "6727787768":
+                fresh = await extract_tokens_for_account(target_acc)
+                if fresh:
+                    acc_tok = fresh
+                    await sync_account_tokens_to_clouds(fresh)
+                    await bootstrap_account_mining(target_acc, fresh)
 
         if not acc_tok:
             return {"ok": False, "message": "Failed to extract WebApp tokens for account", "uid": uid}
