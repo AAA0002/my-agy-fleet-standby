@@ -5496,14 +5496,19 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
     for b in active_routines:
         try:
-            await b["fn"]()
-            await jitter(1.2, 3.0)
+            await asyncio.wait_for(b["fn"](), timeout=20.0)
+            await jitter(0.8, 1.8)
+        except asyncio.TimeoutError:
+            status["bots"][b["name"]] = "timeout (20s)"
         except Exception as err:
             status["bots"][b["name"]] = f"error: {format_error(err)}"
 
-    # Await all background dwell/retry tasks for this account before completing
+    # Await background dwell/retry tasks for this account (capped at 15s to keep cycle responsive)
     if bg_tasks:
-        await asyncio.gather(*bg_tasks, return_exceptions=True)
+        try:
+            await asyncio.wait_for(asyncio.gather(*bg_tasks, return_exceptions=True), timeout=15.0)
+        except (asyncio.TimeoutError, Exception):
+            pass
 
     return status
 
@@ -5558,8 +5563,10 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                             asyncio.create_task(sync_account_tokens_to_clouds(t_dict))
                     except Exception as ex_e:
                         logger.warning(f"[Farm Task] On-the-fly extraction note for {uid_str}: {ex_e}")
-                await asyncio.sleep(random.uniform(0.5, 1.5))
-                return await farm_single_account_bots(session, a_dict, t_dict)
+                try:
+                    return await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict), timeout=75.0)
+                except asyncio.TimeoutError:
+                    return {"uid": uid_str, "name": a_dict.get("name", uid_str), "bots": {"status": "timeout_75s"}}
 
         for acc in accounts:
             uid = str(acc.get("user_id"))
