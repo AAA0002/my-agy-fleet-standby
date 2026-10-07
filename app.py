@@ -4716,27 +4716,27 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 "Origin": "https://apxn-miner-live.apxn-network.workers.dev",
                 "Referer": "https://apxn-miner-live.apxn-network.workers.dev/"
             }
-            await jitter(1.0, 2.0)
+            await asyncio.sleep(0.4)
             await safe_post(f"{apx_base}/auth/telegram", {"initData": apx_init}, req_headers=apx_h)
-            await jitter(1.0, 2.0)
+            await asyncio.sleep(0.3)
             _, bd = await safe_post(f"{apx_base}/bootstrap", {"initData": apx_init}, req_headers=apx_h)
             if bd and (not bd.get("exists") or not bd.get("user")):
                 await safe_post(f"{apx_base}/register", {"initData": apx_init}, req_headers=apx_h)
-            await jitter(1.0, 2.0)
+            await asyncio.sleep(0.3)
             await safe_post(f"{apx_base}/checkin", {"initData": apx_init, "clientV2": True}, req_headers=apx_h)
-            await jitter(1.0, 2.0)
+            await asyncio.sleep(0.3)
             await safe_post(f"{apx_base}/mining/claim", {"initData": apx_init}, req_headers=apx_h)
-            await jitter(1.0, 2.0)
+            await asyncio.sleep(0.3)
             await safe_post(f"{apx_base}/mining/restart", {"initData": apx_init}, req_headers=apx_h)
             for t in ["telegram", "twitter", "discord", "checkin"]:
-                await jitter(0.8, 1.6)
+                await asyncio.sleep(0.25)
                 await safe_post(f"{apx_base}/tasks/daily", {"initData": apx_init, "task": t}, req_headers=apx_h)
             for s in ["channel", "group", "twitter", "partner"]:
-                await jitter(0.8, 1.6)
+                await asyncio.sleep(0.25)
                 await safe_post(f"{apx_base}/tasks/social", {"initData": apx_init, "task": s}, req_headers=apx_h)
-            await jitter(1.0, 2.0)
+            await asyncio.sleep(0.3)
             await safe_post(f"{apx_base}/ads/boost", {"initData": apx_init}, req_headers=apx_h)
-            await jitter(1.0, 2.0)
+            await asyncio.sleep(0.3)
             await safe_post(f"{apx_base}/ads/reward", {"initData": apx_init}, req_headers=apx_h)
             status["bots"]["apx"] = "farmed"
         except Exception as e:
@@ -5339,7 +5339,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
             # 3. Start mining if not running
             if not is_mining:
-                await jitter(1.0, 2.0)
+                await asyncio.sleep(0.3)
                 s_code, s_res = await safe_post("https://tacairdrop.xyz/api/mining/start", {"userId": uid}, req_headers=tac_headers)
                 if s_code == 200:
                     is_mining = True
@@ -5348,7 +5348,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             ad_txt = ""
             ads_today = cur_u.get("adsWatchedToday", 0)
             if ads_today < 7:
-                await jitter(1.0, 2.2)
+                await asyncio.sleep(0.3)
                 a_code, a_res = await safe_post("https://tacairdrop.xyz/api/ads/watch", {"userId": uid}, req_headers=tac_headers)
                 if a_code == 200 and isinstance(a_res, dict):
                     rew = a_res.get("reward", 15)
@@ -5363,7 +5363,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 if tid and tid not in completed_ids and not t.get("isCompleted") and not t.get("completed"):
                     try:
                         await safe_post("https://tacairdrop.xyz/api/tasks/complete", {"userId": uid, "taskId": tid}, req_headers=tac_headers)
-                        await asyncio.sleep(0.5)
+                        await asyncio.sleep(0.2)
                     except Exception:
                         pass
 
@@ -5431,9 +5431,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         async with sem_bot:
             try:
                 await jitter(0.2, 0.6)
-                await asyncio.wait_for(b["fn"](), timeout=18.0)
+                await asyncio.wait_for(b["fn"](), timeout=28.0)
             except asyncio.TimeoutError:
-                status["bots"][b["name"]] = "timeout (18s)"
+                status["bots"][b["name"]] = "timeout (28s)"
             except Exception as err:
                 status["bots"][b["name"]] = f"error: {format_error(err)}"
 
