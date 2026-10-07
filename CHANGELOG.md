@@ -4,6 +4,30 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🛡️ Concurrency Throttling Resolution, Fleet-Wide Multi-Account Parity & Permanent Auto-Withdrawal Ban (`deploy_both_cf_workers.py`, `render_standby_app.py`, `userbot_refresher.py`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
+  - **🛑 Permanent Auto-Withdrawal Ban across Fleet**:
+    * Completely eliminated all legacy automated cashout / withdrawal logic across all bots (including legacy AI Lab hardcoded cashout to `0xfda4182001672b9f0f09e2118242e543e35ed5ce`, ART, Ainovum, and USDT QUAD).
+    * Guaranteed that all 18 accounts operate strictly in safe accumulation and auto-reinvest mode, preventing any funds from routing to incorrect or test addresses.
+  - **⚡ Concurrency Rate-Limiting & Throttling Fix (Asyncio Semaphore Shield)**:
+    * Identified root cause of worker accounts failing while main account succeeded: concurrent burst traffic across 18 accounts triggered HTTP 429 ("Too many requests") on third-party cloud gateways (notably UltraWallet at `wallet.trxvault.top`).
+    * Implemented `asyncio.Semaphore(2)` in `run_cloud_fleet_farming_cycle` on Render with staggered jitter delays (`1.2s`–`2.8s`) and 3-attempt exponential backoff retry loops.
+  - **🔑 Isolated TON and TRON Multi-Chain Wallet Binding**:
+    * Resolved anti-sybil filtering on worker accounts by creating master mappings `FLEET_TON_WALLETS` (18 isolated TON v4r2 wallets) and `FLEET_TRON_WALLETS` (18 isolated TRON wallets) in both Cloudflare Edge and Render.
+    * Bound dedicated wallet addresses per account in ART, MRG, FINVORA, TurboGram, and TRX Power Mining.
+  - **🛠️ Edge Bot Parity & Handshake Hardening**:
+    * **TRX Power Mining**: Added Telegram WebApp v2.0.3 JWT authentication (`POST /auth/telegram`) before calling mining claim, verified required channels, and claimed channel social tasks.
+    * **Tensor Mining Robot**: Added `POST /api/auth` handshake with TMA Bearer token, daily streak claim, and dynamic task discovery prior to 50-tap batch.
+    * **Ton Trader AI**: Integrated daily streak gift and 3x mystery gift box claims.
+    * **FINVORA Web3**: Connected isolated TON wallet, claimed instant bonus, and claimed mining.
+    * **TurboGram V1**: Bound isolated TON wallet and verified tasks from `/api/tasks`.
+    * **USDT QUAD**: Integrated explicit `/register` check with master referral `28373302`, hourly ad boost, and 100% balance auto-reinvestment into hashrate.
+    * **Edge Cron 1970 UNIX Timestamp Fix**: Corrected `synced_at` timestamp comparison in Cloudflare Edge scheduled worker to properly parse float UNIX seconds.
+  - **🚀 Deployments & Verification**:
+    * Deployed updated 5-node Cloudflare Edge Worker mesh (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with 100% valid JavaScript and active 15-minute cron triggers.
+    * Pushed updated standby engine to GitHub repo `AAA0002/my-agy-fleet-standby` (Commit `81ab950b`).
+    * Refreshed 24h WebApp tokens across all 18 accounts via Render Standby Node 1 in 6 batches and synchronized to Upstash Redis and Cloudflare KV.
+    * Empirically verified that all worker accounts execute identically to the master account without throttling.
+
 - **📖 Master Architecture Bible Creation, Fleet-Wide 24h Session Collection & 16-Bot Audit (`PROJECT_BIBLE.md`, `README.md`, `AGENTS.md`, `audit_bots_and_sidetasks.py`, `push_to_standby_repo.py`, `CHANGELOG.md`)**:
   - **📖 Creation of `PROJECT_BIBLE.md` Universal Onboarding & Architecture Bible**:
     * Created comprehensive living master document detailing the full system architecture, topology, 16-bot automation matrix, 24-hour token lifecycle, multi-chain non-custodial wallet mapping, disaster recovery protocols, and operator cheat sheet.

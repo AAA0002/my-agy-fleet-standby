@@ -182,6 +182,48 @@ function getHumanHeaders(uid, extra = {}) {
   };
 }
 
+const FLEET_TON_WALLETS = {
+  "6727787768": "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT",
+  "8881914294": "UQA0aO4Ybdg76l2ewtiGxA7vtk8CHbVaGvrcpA0G1kionhsP",
+  "7648254021": "UQC8xeCT2LQHUOceVFozYqRR8xEnxdZeo4Hsy_B9_jrkpp-1",
+  "8826375659": "UQAOfjJtPFrKKWVqHGF0Fmo6BkTLyTTmE3Oq0vABlQYZoPBD",
+  "8450010161": "UQBrmX45swcSdxBfgg4vQUjoaBxD-_48zwqvofbpndAsMOBQ",
+  "8782429452": "UQAid8oL7Qm8TFhLMhQAk-BjL39iqQW4Zfik77XCMqjhjk9q",
+  "7734849205": "UQAtcq_XsUwbFXGV23EZTOYibfvV5DhP70GAXuJLRSXRfVXU",
+  "8025472383": "UQCIPXAV-BxflwdqW43gAm98CL3_cIbxmbQwv9_hLFvBLydV",
+  "8851426148": "UQDF-a-AcQ_A3vn4nLQ5KlVPHr0NO5fvTchJNczOPLBucweI",
+  "8203342513": "UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH",
+  "8190649727": "UQBgy3ImJtesjl7-R8g6hOEAUHGV2SdB2jBx7IOpEWoRVHrB",
+  "7487048946": "UQBOdyZlFAsbI9aW0ExiRSo-MATOU076H39bP139WaHIBMQo",
+  "8741547543": "UQAy5w840mgWqZwlUEIKLnCBVNrh9t4KlZ2EpRijeHw0fDkN",
+  "8727040932": "UQCbqkSPVKS2aNWkk_LZ2r98aorh4O-1OuPCarCpsVIPUsLo",
+  "7749125802": "UQBhpe9uI3JXldv_pfVYqmjs8dtB6H6za8rctPSZB0rekcaR",
+  "7954290138": "UQANs0f0XTPPfIXW27MxyqUChFsvNmi9Y3zulAB5InKs0gYH",
+  "8841038141": "UQCDqlebQ9GGXwocS-afgknJq6JAuYw3enYi0MKYRi4kdY5j",
+  "8975442879": "UQBcHzN-pIk6WEy1pV_g4LkcJ4ePuzcJ-iwcw5ltOjC-49fL"
+};
+
+const FLEET_TRON_WALLETS = {
+  "6727787768": "TZ6LY4QwiJr8WXN6W1HjiUCbkvFxq1vmUJ",
+  "8881914294": "TQjrF4JNZLBXTH64Vrs9P5ZLGdqM8UdrTY",
+  "7648254021": "TKFmg55vVkbHGLNznmh5vXq3hgbmj5b4qk",
+  "8826375659": "TDHuNA7ma8YmdTWZyTShAvdQsg6NKeuyxP",
+  "8450010161": "TB6jbngGfmtLGG3CrAAYF8kDt1w7UEp1Wn",
+  "8782429452": "TTouKkaeynFqAcK8Gp7ESQgToMrmBtdsg9",
+  "7734849205": "TABpYB74SSLdNrCYmomgYg2YJxNrphPSVN",
+  "8025472383": "TTpUwYiYbeRoSBXZb2BVgcjQAwYEkdaxdQ",
+  "8851426148": "TPxEUNDmkmHFeBx5ZAvHuCWB4amavPYyPb",
+  "8203342513": "TA6yjtuWh6Sz5uE8RywLZxFQBBvhHYP9FP",
+  "8190649727": "TPFemkP8B5TusgAFEL42eesTborpNUTTJ5",
+  "7487048946": "TET9VW2ANNS4P1VhMpdv3rexNXS7PR6rbE",
+  "8741547543": "TWcnbY4RmCxbBoiKPC6BjExJ58VSR259xa",
+  "8727040932": "TBZd7v4VomGZv8sk4Qp17o6YA4xUoYCvPm",
+  "7749125802": "TTxV845U4yrJRSJhgGK5HSkcJjKrxW3VjX",
+  "7954290138": "TW6uuSfN7p824Cqvg6UKf6UBA35dvFd2ye",
+  "8841038141": "TYt7cYigHyd88JQrSXrVdoAEV64ReayQhY",
+  "8975442879": "TEmP9rmLeZAFog8eqnrvZhXFPABnyGxGMb"
+};
+
 async function farmSingleAccountAllBots(uid, accData, env, ctx) {
   const result = { user_id: uid, bots: {} };
   const isOwner = String(uid) === (env.OWNER_ID || "6727787768");
@@ -333,19 +375,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
       // Bind Arbitrum Wallet & Auto-Withdraw Check (Worker Accounts Only; Master account strictly compounds)
       if (!isOwner) {
         try {
-          await fetchWithRetry("https://app.stoneswithestand.my.id/api/wallet", {
-            method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce" })
-          }).catch(() => {});
-
-          const pc = await fetchWithRetry("https://app.stoneswithestand.my.id/api/wd/ad/precheck", {
-            method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, amount: 500, wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce", currency: "stones" })
-          }).then(r => r.json()).catch(() => ({}));
-
-          if (pc && pc.ok && (!pc.need_ad || (pc.boarded || 0) >= (pc.required || 4))) {
-            await fetchWithRetry("https://app.stoneswithestand.my.id/api/withdraw", {
-              method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, amount: 500, wallet: "0xfda4182001672b9f0f09e2118242e543e35ed5ce", currency: "stones" })
-            }).catch(() => {});
-          }
+        // Stones auto-withdrawal permanently DISABLED to prevent wrong-address routing
+        // All fleet accounts accumulate STONES safely in compounding mode
         } catch (_) {}
       }
       result.bots.stones = "ok";
@@ -396,6 +427,12 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
 
       if (meResp && meResp.ok) {
         const meD = await meResp.json().catch(() => ({}));
+        const targetTonW = FLEET_TON_WALLETS[String(uid)];
+        if (targetTonW && (!meD.user?.isTonConnected || meD.user?.tonWalletAddress !== targetTonW)) {
+          await fetchWithRetry("https://mrg.up.railway.app/api/user/connect-wallet", {
+            method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data, address: targetTonW, balance: 0 })
+          }, 1, 600).catch(() => {});
+        }
         const tasks = meD.tasks || [];
         const completed = new Set(meD.completedTaskIds || []);
         for (const t of tasks) {
@@ -546,9 +583,9 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
 
       // TON wallet connection & auto-withdraw check
       try {
-        const tonPrimary = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT";
+        const targetTon = FLEET_TON_WALLETS[String(uid)] || "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT";
         await fetchWithRetry("https://art.tamimdev.dev/api/user/connect-wallet", {
-          method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid), tonAddress: tonPrimary })
+          method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid), tonAddress: targetTon })
         }, 1, 500).catch(() => {});
 
         const uResp = await fetchWithRetry(`https://art.tamimdev.dev/api/user/${uid}`, { headers: artHeaders }, 2, 800).catch(() => null);
@@ -570,13 +607,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
               }
             }
           }
-          const hasLvl8 = unlockedMiners.has(8) || (uData.user?.level || 1) >= 8;
-          if (hasLvl8 && poolBal >= 1000) {
-            const wdAmt = Math.min(30000, Math.floor(poolBal));
-            await fetchWithRetry("https://art.tamimdev.dev/api/withdraw", {
-              method: "POST", headers: artHeaders, body: JSON.stringify({ userId: parseInt(uid), amount: wdAmt })
-            }, 2, 1000).catch(() => {});
-          }
+          // ART auto-withdrawal permanently DISABLED to prevent wrong-address routing
+          // All fleet accounts accumulate ART safely in compounding mode
         }
       } catch (_) {}
       result.bots.art = "ok";
@@ -677,27 +709,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
             }
           } catch (_) {}
 
-          // Worker Accounts auto-cashout (Master account strictly protected)
-          if (!isOwner) {
-            try {
-              const coResp = await fetch(`${aiBase}/cashout`, { headers: aiAuth });
-              if (coResp.ok) {
-                const coData = await coResp.json();
-                const usdBal = parseFloat(coData.user_info?.balance || 0);
-                if (usdBal >= 0.02) {
-                  const targetEvm = "0xfda4182001672b9f0f09e2118242e543e35ed5ce";
-                  await fetch(`${aiBase}/cashout-pay`, {
-                    method: "POST", headers: aiAuth, body: JSON.stringify({
-                      ps_id: 5,
-                      amount_usd: Math.floor(usdBal * 100) / 100,
-                      wallet: targetEvm,
-                      dest_tag: ""
-                    })
-                  }).catch(() => {});
-                }
-              }
-            } catch (_) {}
-          }
+          // AI Lab auto-cashout permanently DISABLED to prevent wrong-address routing
+          // All fleet accounts accumulate USD and compute hashes safely in compounding mode
         }
       }
       result.bots.ailab = "ok";
@@ -1074,46 +1087,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
           method: "POST", headers: reqHeaders, body: JSON.stringify({})
         }, 1, 500).catch(() => {});
 
-        // Auto-Withdrawal check (Worker Accounts Only)
-        if (!isOwner) {
-          try {
-            const cfgResp = await fetchWithRetry(`${anBase}/api/withdraws/usdt/config`, {
-              headers: reqHeaders
-            }, 2, 800).catch(() => null);
-            if (cfgResp && cfgResp.ok) {
-              const cfgData = await cfgResp.json().catch(() => ({}));
-              const avail = parseFloat(cfgData.freeze?.available || 0);
-              if (avail >= 0.1) {
-                const wdAmt = Math.round(avail * 10000) / 10000;
-                const isolatedEvmMap = {
-                  "8881914294": "0xA203269B8a970d5b74361B406345e1BBF5A0623B",
-                  "7648254021": "0x65DB0FA942144a2A89630c4975FA5f5469f97411",
-                  "8826375659": "0x24718F037aA61e3873073098D121ba3ced8C9daB",
-                  "8450010161": "0x0c649480FC33DfB9216756cB28e2e2efd6b0725D",
-                  "8782429452": "0xC3afc38b8E59E529174fbE4ff7f0CE053A89B8F3",
-                  "7734849205": "0x0262A7E950A9dd872FeB5CF8aD99d6a28Df053f0",
-                  "8025472383": "0xc3Cbd377872bCB69Fa01F5945eADFDFf053E1Bd4",
-                  "8851426148": "0x996292A277E5038efB413247dc7B58AC5209812C",
-                  "8203342513": "0x017841f26d5b79cc8c5eb20c65367bb645cc2610",
-                  "8190649727": "0x91B5cd7EfCBd5bc552479f5Eb70221C5E026228A",
-                  "7487048946": "0x3129386b118892238EF48428e2e5d19B9F7D8215",
-                  "8741547543": "0xE27Df3117501e3a46cf29848Df3414C4542E6A5c",
-                  "8727040932": "0x117a66bf79f63E5cC1dAB047047d62c651Eae335",
-                  "7749125802": "0xC54F4e10f7b09287DDF95E1eC4eEdA8A88d82719",
-                  "7954290138": "0xDCd79258596291a4071b88303D919218bfF087B9",
-                  "8841038141": "0xFb5450C077B0956ae3e7Efa8cfa017dA6e99F940",
-                  "8975442879": "0x349C1c924E556dc7694aA6e0c5d773414b83d241"
-                };
-                const targetWallet = isolatedEvmMap[String(uid)] || "0xfda4182001672b9f0f09e2118242e543e35ed5ce";
-                await fetchWithRetry(`${anBase}/api/withdraws/usdt/create`, {
-                  method: "POST", headers: reqHeaders, body: JSON.stringify({
-                    amount: wdAmt, wallet: targetWallet, network: "bep20"
-                  })
-                }, 2, 1000).catch(() => {});
-              }
-            }
-          } catch (_) {}
-        }
+        // Ainovum auto-withdrawal permanently DISABLED to prevent wrong-address routing
+        // All fleet accounts accumulate USDT safely in compounding mode
       }
       result.bots.ainovum = "ok";
     } catch (e) {
@@ -1125,13 +1100,69 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
   const farmTrxPower = async () => {
     try {
       if (accData.trxpower_init_data) {
-        const trxHeaders = getHumanHeaders(uid, {
+        const trxOrigin = "https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io";
+        const trxBase = `${trxOrigin}/api`;
+        const trxAuthHeaders = getHumanHeaders(uid, {
           "Content-Type": "application/json",
-          "Origin": "https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io",
-          "Referer": "https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/"
+          "Origin": trxOrigin,
+          "Referer": `${trxOrigin}/`
         });
         await humanDelay(1000, 2200);
-        await fetchWithRetry("https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/api/mining/claim", {
+        // 1. Authenticate with initData to obtain Bearer JWT
+        const authResp = await fetchWithRetry(`${trxBase}/auth/telegram`, {
+          method: "POST", headers: trxAuthHeaders, body: JSON.stringify({ initData: accData.trxpower_init_data, startParam: "ref_TRX6727787768" })
+        }, 2, 800).catch(() => null);
+
+        let jwtToken = null;
+        if (authResp && authResp.ok) {
+          const authData = await authResp.json().catch(() => ({}));
+          jwtToken = authData.token || authData.data?.token;
+        }
+
+        const trxHeaders = getHumanHeaders(uid, {
+          "Content-Type": "application/json",
+          "Origin": trxOrigin,
+          "Referer": `${trxOrigin}/`,
+          ...(jwtToken ? { "Authorization": `Bearer ${jwtToken}` } : {}),
+          "x-telegram-init-data": accData.trxpower_init_data
+        });
+
+        // 2. Connect isolated TRON wallet
+        const tronWallet = FLEET_TRON_WALLETS[String(uid)];
+        if (tronWallet) {
+          await fetchWithRetry(`${trxBase}/user/wallet`, {
+            method: "POST", headers: trxHeaders, body: JSON.stringify({ address: tronWallet })
+          }, 1, 500).catch(() => {});
+        }
+
+        // 3. Verify channels & claim channel tasks
+        await fetchWithRetry(`${trxBase}/user/verify-channels`, {
+          method: "POST", headers: trxHeaders, body: JSON.stringify({})
+        }, 1, 500).catch(() => {});
+        await fetchWithRetry(`${trxBase}/tasks/channel/claim`, {
+          method: "POST", headers: trxHeaders, body: JSON.stringify({})
+        }, 1, 500).catch(() => {});
+
+        // 4. Discover and claim available tasks
+        try {
+          const tasksResp = await fetchWithRetry(`${trxBase}/tasks`, { headers: trxHeaders }, 1, 800).catch(() => null);
+          if (tasksResp && tasksResp.ok) {
+            const tasksData = await tasksResp.json().catch(() => ({}));
+            const rawTasks = tasksData.tasks || tasksData.data || [];
+            for (const t of rawTasks) {
+              const tid = t.id || t.taskId;
+              if (tid && !t.isCompleted && !t.completed) {
+                await fetchWithRetry(`${trxBase}/tasks/${tid}/claim`, {
+                  method: "POST", headers: trxHeaders, body: JSON.stringify({})
+                }, 1, 500).catch(() => {});
+              }
+            }
+          }
+        } catch (_) {}
+
+        // 5. Claim mining rewards
+        await humanDelay(1000, 2200);
+        await fetchWithRetry(`${trxBase}/mining/claim`, {
           method: "POST", headers: trxHeaders, body: JSON.stringify({ initData: accData.trxpower_init_data, ref: "ref_TRX6727787768" })
         }, 1, 800).catch(() => {});
       }
@@ -1157,13 +1188,41 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
           "Authorization": `tma ${accData.tensor_init_data}`
         });
         await humanDelay(1000, 2200);
+        await fetchWithRetry("https://flascoins.xyz/api/auth", {
+          method: "POST", headers: tensorHeaders, body: JSON.stringify({})
+        }, 1, 600).catch(() => {});
+        await humanDelay(800, 1800);
         await fetchWithRetry("https://flascoins.xyz/api/daily", {
           method: "POST", headers: tensorHeaders, body: JSON.stringify({})
         }, 1, 800).catch(() => {});
-        await humanDelay(1200, 2400);
+        await humanDelay(1000, 2200);
         await fetchWithRetry("https://flascoins.xyz/api/tap", {
           method: "POST", headers: tensorHeaders, body: JSON.stringify({ taps: 50 })
         }, 1, 800).catch(() => {});
+
+        // Task discovery and dwell timers
+        try {
+          const tResp = await fetchWithRetry("https://flascoins.xyz/api/tasks", { headers: tensorHeaders }, 1, 800).catch(() => null);
+          if (tResp && tResp.ok) {
+            const tData = await tResp.json().catch(() => ({}));
+            for (const t of (tData.tasks || []).slice(0, 3)) {
+              if (t.id && !t.completed && !t.isCompleted) {
+                await fetchWithRetry("https://flascoins.xyz/api/tasks/start", {
+                  method: "POST", headers: tensorHeaders, body: JSON.stringify({ taskId: t.id })
+                }, 1, 500).catch(() => {});
+                if (ctx && ctx.waitUntil) {
+                  ctx.waitUntil(new Promise(async (resolve) => {
+                    await humanDelay(15000, 17000);
+                    await fetchWithRetry("https://flascoins.xyz/api/tasks/claim", {
+                      method: "POST", headers: tensorHeaders, body: JSON.stringify({ taskId: t.id })
+                    }, 1, 600).catch(() => {});
+                    resolve();
+                  }));
+                }
+              }
+            }
+          }
+        } catch (_) {}
       }
       result.bots.tensor = "ok";
     } catch (e) {
@@ -1185,6 +1244,18 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         await fetchWithRetry("https://api.tontraderai.com/api/v1/user/claim-daily-gift", {
           method: "POST", headers: ttHeaders, body: JSON.stringify({})
         }, 1, 800).catch(() => {});
+        for (let b = 0; b < 3; b++) {
+          await humanDelay(600, 1200);
+          const bResp = await fetchWithRetry("https://api.tontraderai.com/api/v1/user/claim-gift-box", {
+            method: "POST", headers: ttHeaders, body: JSON.stringify({})
+          }, 1, 600).catch(() => null);
+          if (bResp && bResp.ok) {
+            const bData = await bResp.json().catch(() => ({}));
+            if (!bData.success || (bData.pendingGiftBoxes || 0) <= 0) break;
+          } else {
+            break;
+          }
+        }
         await humanDelay(1000, 2200);
         await fetchWithRetry("https://api.tontraderai.com/api/v1/finance/claim-yield", {
           method: "POST", headers: ttHeaders, body: JSON.stringify({})
@@ -1205,6 +1276,12 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
           "X-Telegram-Init-Data": accData.finvora_init_data,
           "Referer": "https://finvora-production.up.railway.app/"
         });
+        const tonWallet = FLEET_TON_WALLETS[String(uid)];
+        if (tonWallet) {
+          await fetchWithRetry("https://finvora-production.up.railway.app/api/wallet/connect", {
+            method: "POST", headers: finHeaders, body: JSON.stringify({ address: tonWallet, walletType: "manual" })
+          }, 1, 600).catch(() => {});
+        }
         await humanDelay(1000, 2200);
         await fetchWithRetry("https://finvora-production.up.railway.app/api/bonus/instant", {
           method: "POST", headers: finHeaders, body: JSON.stringify({})
@@ -1229,10 +1306,32 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
           "Authorization": `tma ${accData.turbogram_init_data}`,
           "Referer": "https://turbo.tamimdev.dev/"
         });
+        const tonWallet = FLEET_TON_WALLETS[String(uid)];
+        if (tonWallet) {
+          await fetchWithRetry("https://turbo.tamimdev.dev/api/me/wallet", {
+            method: "POST", headers: tbHeaders, body: JSON.stringify({ address: tonWallet })
+          }, 1, 600).catch(() => {});
+        }
         await humanDelay(1000, 2200);
         await fetchWithRetry("https://turbo.tamimdev.dev/api/me", {
           method: "GET", headers: tbHeaders
         }, 1, 800).catch(() => {});
+        // Task discovery and completion
+        try {
+          const tasksResp = await fetchWithRetry("https://turbo.tamimdev.dev/api/tasks", { headers: tbHeaders }, 1, 800).catch(() => null);
+          if (tasksResp && tasksResp.ok) {
+            const tasksData = await tasksResp.json().catch(() => []);
+            if (Array.isArray(tasksData)) {
+              for (const t of tasksData) {
+                if (t.id && !t.isCompleted) {
+                  await fetchWithRetry(`https://turbo.tamimdev.dev/api/tasks/${t.id}/start`, { method: "POST", headers: tbHeaders, body: JSON.stringify({}) }, 1, 500).catch(() => {});
+                  await humanDelay(1200, 2000);
+                  await fetchWithRetry(`https://turbo.tamimdev.dev/api/tasks/${t.id}/complete`, { method: "POST", headers: tbHeaders, body: JSON.stringify({}) }, 1, 500).catch(() => {});
+                }
+              }
+            }
+          }
+        } catch (_) {}
       }
       result.bots.turbogram = "ok";
     } catch (e) {
@@ -1250,6 +1349,26 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
           "Referer": "https://ustdquad.up.railway.app/"
         });
         await humanDelay(1000, 2200);
+        // Registration check if session uninitialized
+        const minerResp = await fetchWithRetry("https://ustdquad.up.railway.app/miner", { headers: uqHeaders }, 1, 1000).catch(() => null);
+        let minerHtml = "";
+        if (minerResp && minerResp.ok) {
+          minerHtml = await minerResp.text().catch(() => "");
+        }
+        if (!minerHtml || !minerHtml.includes("userGHS")) {
+          const regBody = new URLSearchParams({
+            referralCode: isOwner ? "" : "28373302",
+            wallet: "/img/doggo.mp4",
+            tgcode: String(uid),
+            userName: accData.name || `User_${uid}`
+          }).toString();
+          await fetchWithRetry("https://ustdquad.up.railway.app/register", {
+            method: "POST",
+            headers: { ...uqHeaders, "Content-Type": "application/x-www-form-urlencoded" },
+            body: regBody
+          }, 1, 800).catch(() => {});
+        }
+
         await fetchWithRetry("https://ustdquad.up.railway.app/claim-balance", {
           method: "POST", headers: uqHeaders, body: JSON.stringify({})
         }, 1, 800).catch(() => {});
@@ -1257,6 +1376,14 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         await fetchWithRetry("https://ustdquad.up.railway.app/complete-task", {
           method: "POST", headers: uqHeaders, body: JSON.stringify({ taskId: "hourly_watch_ad", reward: 1 })
         }, 1, 800).catch(() => {});
+
+        // Compounding auto-reinvest for workers
+        if (!isOwner) {
+          await humanDelay(800, 1600);
+          await fetchWithRetry("https://ustdquad.up.railway.app/reinvest-balance", {
+            method: "POST", headers: uqHeaders, body: JSON.stringify({ amount: 1.0 })
+          }, 1, 600).catch(() => {});
+        }
       }
       result.bots.usdtquad = "ok";
     } catch (e) {
@@ -9139,8 +9266,9 @@ Reply to Arif naturally:`;
 
         let needBatchRefresh = false;
         for (const [_, tData] of Object.entries(tokens)) {
-          const syncedAt = new Date(tData.synced_at || 0).getTime();
-          const ageHours = (nowMs - syncedAt) / 3600000;
+          const rawSynced = tData.synced_at;
+          const syncedMs = typeof rawSynced === "number" ? (rawSynced > 1e11 ? rawSynced : rawSynced * 1000) : new Date(rawSynced || 0).getTime();
+          const ageHours = (nowMs - syncedMs) / 3600000;
           if (ageHours >= 14) { // 24h - 14h = 10 hours safety buffer before expiry
             needBatchRefresh = true;
             break;
@@ -9275,9 +9403,13 @@ async def deploy_account(acc):
     form.add_field("metadata", json.dumps(metadata), content_type="application/json", filename="metadata.json")
     form.add_field("index.js", worker_code, content_type="application/javascript+module", filename="index.js")
 
-    async with aiohttp.ClientSession() as session:
-        async with session.put(url, headers=headers, data=form) as resp:
-            res = await resp.json()
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
+        try:
+            async with session.put(url, headers=headers, data=form) as resp:
+                res = await resp.json()
+        except Exception as up_err:
+            print(f"❌ [{acc['name']}] Upload network error: {up_err}")
+            return False
 
         if not res.get("success"):
             print(f"❌ [{acc['name']}] Deployment failed: {res.get('errors')}")
@@ -9285,21 +9417,27 @@ async def deploy_account(acc):
 
         print(f"✅ [{acc['name']}] Script uploaded successfully!")
 
-        subdomain_url = f"https://api.cloudflare.com/client/v4/accounts/{acc['account_id']}/workers/scripts/{WORKER_NAME}/subdomain"
-        async with session.post(subdomain_url, headers=headers, json={"enabled": True}) as resp_sub:
-            res_sub = await resp_sub.json()
+        try:
+            subdomain_url = f"https://api.cloudflare.com/client/v4/accounts/{acc['account_id']}/workers/scripts/{WORKER_NAME}/subdomain"
+            async with session.post(subdomain_url, headers=headers, json={"enabled": True}) as resp_sub:
+                res_sub = await resp_sub.json()
 
-        if res_sub.get("success"):
-            print(f"🎉 [{acc['name']}] Live URL: https://{WORKER_NAME}.{acc['subdomain']}.workers.dev")
-        else:
-            print(f"⚠️ [{acc['name']}] Subdomain note: {res_sub.get('errors')}")
+            if res_sub.get("success"):
+                print(f"🎉 [{acc['name']}] Live URL: https://{WORKER_NAME}.{acc['subdomain']}.workers.dev")
+            else:
+                print(f"⚠️ [{acc['name']}] Subdomain note: {res_sub.get('errors')}")
+        except Exception as sub_err:
+            print(f"⚠️ [{acc['name']}] Subdomain error: {sub_err}")
 
         # Ensure 15-minute Edge Cron Trigger is provisioned on Cloudflare
-        sched_url = f"https://api.cloudflare.com/client/v4/accounts/{acc['account_id']}/workers/scripts/{WORKER_NAME}/schedules"
-        async with session.put(sched_url, headers=headers, json=[{"cron": "*/15 * * * *"}]) as resp_sched:
-            res_sched = await resp_sched.json()
-            if res_sched.get("success"):
-                print(f"⏰ [{acc['name']}] 24/7 Cloudflare Edge Cron Trigger active (*/15 * * * *)")
+        try:
+            sched_url = f"https://api.cloudflare.com/client/v4/accounts/{acc['account_id']}/workers/scripts/{WORKER_NAME}/schedules"
+            async with session.put(sched_url, headers=headers, json=[{"cron": "*/15 * * * *"}]) as resp_sched:
+                res_sched = await resp_sched.json()
+                if res_sched.get("success"):
+                    print(f"⏰ [{acc['name']}] 24/7 Cloudflare Edge Cron Trigger active (*/15 * * * *)")
+        except Exception as sched_err:
+            print(f"⚠️ [{acc['name']}] Schedules error: {sched_err}")
 
     return True
 

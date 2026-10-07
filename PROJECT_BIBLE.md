@@ -1,7 +1,7 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
 > **Universal Onboarding, System Architecture, 16-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
-> *Last Updated: October 5, 2026*
+> *Last Updated: October 7, 2026*
 > *Classification: Mission-Critical Living Technical Documentation*
 
 ---
@@ -23,7 +23,11 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
    - Assume any local machine, container, or VPS can die, expire, or get wiped at any moment.
    - Disaster recovery archives continuously flow to the Telegram vault (`@myagyai`) via `backup_manager.py`.
    - The 1-click restore mechanism (`restore.sh`) must always work out-of-the-box anywhere.
-4. **📝 Living Memory & Changelog**:
+4. **🛑 Permanent Auto-Withdrawal Ban (100% Accumulation & Compounding Mode)**:
+   - **NEVER trigger automatic withdrawals** from ANY bot under any circumstance.
+   - Prevents wrong-address routing, sybil blacklisting, or draining into outdated/test wallets.
+   - All bots operate in pure asset accumulation and auto-reinvest mode (e.g. USDT QUAD reinvests 100% into hashrate, ART compounds hardware, Stones & TAC upgrade miners).
+5. **📝 Living Memory & Changelog**:
    - Whenever any file, function, bot, or architecture decision is modified, added, or removed, **always document it immediately** in `CHANGELOG.md` and update this `PROJECT_BIBLE.md`.
 
 ---
@@ -118,26 +122,47 @@ To prevent Sybil detection, anti-farming bans, and wallet clustering, each accou
 |---|---|---|---|---|---|---|
 | **1** | **Stones Miners** | `@stonesminers_bot` | `https://app.stoneswithestand.my.id` | EVM / BSC | • `/api/claim`<br>• `/api/mining/start` | • Daily Check-in (`/api/task/complete`)<br>• Stone Breaker Minigame (Capped 50/50 STONES/day)<br>• Hashrate Boost Challenge (+0.5 TH/s)<br>• Dynamic task discovery from `/api/state`<br>• Dedicated EVM wallet binding |
 | **2** | **MRG Miner** | `@mrg_miner_bot` | `https://mrg.up.railway.app` | TON | • `/api/user/claim-mining` | • Link tasks with 15s human dwell<br>• **Autonomous Level Upgrader**: Auto-unlocks levels up to **Level 203**<br>• Dedicated TON wallet connection (`/api/user/connect-wallet`)<br>• Master referral commission & team bonus claims |
-| **3** | **ART Airdrop** | `@artairdrop_bot` | `https://art.tamimdev.dev` | TON | • `/api/user/claim-mining`<br>• `/api/user/start-mining` (8-hr) | • Daily High-Yield Ad watch (`/api/ads/claim`)<br>• **Hardware Buying**: Auto-buys Levels 2 through 8 hardware<br>• Dedicated TON wallet connection<br>• Auto-withdraw when Level 8 is reached |
-| **4** | **AI Lab Robot** | `@ailabrobot_bot` | `https://api.ailab-agent.online` | USDT / Cloud | • `/api/v1/miner/claim`<br>• `/api/v1/miner/start` | • Partner task discovery & claims<br>• Daily check-in bonus<br>• Defensive empty-list error handling<br>• Auto-withdrawal precheck |
-| **5** | **UltraWallet** | `@ultrawallet_bot` | `https://wallet.trxvault.top` | TRX / Cloud | • `/api/v1/mining/claim` | • Firebase custom token exchange via Google Identity Toolkit<br>• Daily check-in streak<br>• Staggered jitter rate-limit backoff |
+| **3** | **ART Airdrop** | `@artairdrop_bot` | `https://art.tamimdev.dev` | TON | • `/api/user/claim-mining`<br>• `/api/user/start-mining` (8-hr) | • Daily High-Yield Ad watch (`/api/ads/claim`)<br>• **Hardware Buying**: Auto-buys Levels 2 through 8 hardware<br>• Dedicated TON wallet connection (Isolated per account)<br>• 100% Compounding Mode (auto-withdrawal disabled) |
+| **4** | **AI Lab Robot** | `@ailabrobot_bot` | `https://api.ailab-agent.online` | USDT / Cloud | • `/api/v1/miner/claim`<br>• `/api/v1/miner/start` | • Partner task discovery & claims<br>• Daily check-in bonus<br>• Defensive empty-list error handling<br>• Safe accumulation mode (legacy cashout permanently eliminated) |
+| **5** | **UltraWallet** | `@ultrawallet_bot` | `https://wallet.trxvault.top` | TRX / Cloud | • `/api/v1/mining/claim` | • Firebase custom token exchange via Google Identity Toolkit<br>• Daily check-in streak<br>• Staggered jitter rate-limit backoff (Asyncio Semaphore shield) |
 | **6** | **Apex Mining** | `@apexminer_bot` | `https://apxn-miner-live.apxn-network.workers.dev` | APXN | • `/api/mining/claim`<br>• `/api/mining/restart` | • Daily check-in (`/api/checkin`)<br>• Ad boost & reward (`/api/ads/boost`, `/api/ads/reward`)<br>• Social & partner tasks (Telegram, Twitter, Discord) |
 | **7** | **ATF Miner** | `@atf_miner_bot` | `https://atfminers.asloni.online` | TON | • `?action=claim`<br>• `?action=start_mine` | • **Automated Math Challenge Solver**: Solves arithmetic captcha<br>• Hashrate Boost (`?action=activate_boost`)<br>• 8x Cooldown Tasks (YouTube, Twitter, Channel joins)<br>• Dedicated TON wallet sync (`?action=sync_wallet`)<br>• Team wallet claims |
-| **8** | **Ainovum AI** | `@ainovum_bot` | `https://ainovum.biz` | USDT BEP20 | • `/api/mining/start`<br>• `/api/mining/claim` | • Daily streak bonus (`/api/daily-bonus/claim`)<br>• Official channel bonus (`/api/channel-bonus/claim`)<br>• Mystery gift box open (`/api/gift-box/open`)<br>• Auto-withdrawal to dedicated BEP20 wallet (≥0.1 USDT) |
-| **9** | **TRX Power** | `@trxpowermining_bot` | `https://187.53.139.6.sslip.io/api` | TRON (TRX) | • `/api/mining/claim` | • Telegram WebApp v2.0.3 JWT authentication<br>• Channel verification (`/api/user/verify-channels`)<br>• Channel task claim (`/api/tasks/channel/claim`)<br>• Dedicated TRON wallet connection (`/api/user/wallet`)<br>• Real-time stats audit |
+| **8** | **Ainovum AI** | `@ainovum_bot` | `https://ainovum.biz` | USDT BEP20 | • `/api/mining/start`<br>• `/api/mining/claim` | • Daily streak bonus (`/api/daily-bonus/claim`)<br>• Official channel bonus (`/api/channel-bonus/claim`)<br>• Mystery gift box open (`/api/gift-box/open`)<br>• 100% Asset accumulation mode (auto-withdraw disabled) |
+| **9** | **TRX Power** | `@trxpowermining_bot` | `https://187.53.139.6.sslip.io/api` | TRON (TRX) | • `/api/mining/claim` | • Telegram WebApp v2.0.3 JWT authentication (`/auth/telegram`)<br>• Channel verification (`/api/user/verify-channels`)<br>• Channel task claim (`/api/tasks/channel/claim`)<br>• Dedicated TRON wallet connection (`/api/user/wallet`)<br>• Real-time stats audit |
 | **10** | **Bitcoin Cloud** | `@Bitcoin_Cloud_Mining_bot` | MTProto Inline Callbacks | Bitcoin (BTC) | • Inline button `⛏ Mine` (`claim_mine`) | • Scheduled 4-hour anti-spam rate limiter<br>• Master account milestone satoshi rewards (`claim_task_3`, `4`, `5` once every 24h)<br>• Real BTC satoshis accumulated directly |
-| **11** | **Tensor Mining** | `@tensormining_bot` | `https://flascoins.xyz` | ORCA Token | • 50-tap cloud batch (`/api/tap`) | • Daily login reward (`/api/daily`)<br>• Dynamic partner tasks with dwell timers<br>• ORCA yield accumulation |
+| **11** | **Tensor Mining** | `@tensormining_bot` | `https://flascoins.xyz` | ORCA Token | • 50-tap cloud batch (`/api/tap`) | • Full TMA Bearer handshake (`POST /api/auth`)<br>• Daily login reward (`/api/daily`)<br>• Dynamic partner tasks with dwell timers<br>• ORCA yield accumulation |
 | **12** | **Ton Trader AI** | `@tontrader_bot` | `https://api.tontraderai.com` | TON | • Algorithmic yield claim (`/api/v1/finance/claim-yield`) | • Daily streak gift (`/api/v1/user/claim-daily-gift`)<br>• Mystery gift boxes (Opens up to 3 boxes via `/api/v1/user/claim-gift-box`) |
 | **13** | **FINVORA Web3** | `@finvora_bot` | `https://finvora-production.up.railway.app` | GRAM / TON | • `/api/mining/claim` | • Instant bonus (`/api/bonus/instant`)<br>• Dedicated TON wallet connection (`/api/wallet/connect`) |
 | **14** | **TurboGram V1** | `@turbogram_bot` | `https://turbo.tamimdev.dev` | GRAM / TON | • Balance & user state tracking (`/api/me`) | • Dynamic task discovery & completion (maintains **ACTIVE** referral tier)<br>• Dedicated TON wallet binding (`/api/me/wallet`) |
-| **15** | **USDT QUAD** | `@usdtquadbot` | `https://ustdquad.up.railway.app` | USDT (BSC) | • Pending balance claim (`/claim-balance`) | • Hourly Hashrate Boost (+1 GH/s boost via `hourly_watch_ad`)<br>• Referral milestone rewards (`invite3` to `invite1000`)<br>• Auto-reinvest under 10 USDT, auto-withdraw to BSC BEP20 ≥ 10 USDT |
+| **15** | **USDT QUAD** | `@usdtquadbot` | `https://ustdquad.up.railway.app` | USDT (BSC) | • Pending balance claim (`/claim-balance`) | • Hourly Hashrate Boost (+1 GH/s boost via `hourly_watch_ad`)<br>• Referral milestone rewards (`invite3` to `invite1000`)<br>• 100% Auto-reinvest into hashrate (`/reinvest-balance`) |
 | **16** | **TAC Airdrop** | `@tacairdrop_bot` | `https://tacairdrop.xyz` | TAC / TON | • 8-hr continuous miner start & claim (`/api/mining/start`, `/api/mining/claim`) | • High-yield ad watches (up to 7 ads/day = **+105 TAC daily**)<br>• **Autonomous Sequential Miner Leveling**: Auto-upgrades miner up to **Level 148** based on holding balance<br>• Community & social tasks (`/api/tasks/complete`)<br>• Dedicated TON wallet connection<br>• Master referral & team wallet claims |
 
 *(Note: Scam bot `@OminixAiBot` was formally reported to Telegram Anti-Scam, blocked on all 18 accounts, and purged from all codebases).*
 
 ---
 
-## 🛠️ 6. Operator & AI Cheat Sheet
+## ⚡ 6. Fleet-Wide Parity & Anti-Throttling Architecture
+
+### Why Did Worker Accounts Previously Fail While Master Succeeded?
+During fleet operations, an investigation revealed why some bots worked on the master account but failed on worker accounts:
+1. **Concurrent Request Throttling (HTTP 429)**:
+   - When all 18 accounts hit bot APIs at the exact same millisecond, third-party edge gateways (notably Cloudflare rate limits on UltraWallet and others) throttled requests.
+   - Because Account 1 was first in line, it succeeded, while Accounts 2–18 received HTTP 429 ("Too many requests").
+   - **Solution Implemented**: An `asyncio.Semaphore(2)` was added with randomized jitter delays (`1.2s`–`2.8s`) between account dispatches and 3-attempt exponential backoff retry loops.
+2. **Shared / Colliding Wallet Addresses (Anti-Sybil Flags)**:
+   - ART and others previously used the master wallet for worker accounts, causing anti-sybil filtering on backends.
+   - **Solution Implemented**: Full wallet isolation across all 18 accounts using master dictionaries `FLEET_TON_WALLETS` and `FLEET_TRON_WALLETS` provisioned in both Cloudflare Edge and Render.
+3. **Missing Auth / Registration Handshakes on Workers**:
+   - Bots like TRX Power Mining required a Telegram WebApp JWT handshake (`POST /auth/telegram`) before calling `/api/mining/claim`.
+   - Tensor Mining required `POST /api/auth` with `Authorization: tma <initData>` prior to tapping.
+   - USDT QUAD required an explicit `/register` call with referral `28373302`.
+   - **Solution Implemented**: Full auth, verification, and registration lifecycle handshakes are now executed for all worker accounts across both Cloudflare Edge Workers and Render Standby.
+4. **Permanent Auto-Withdrawal Ban**:
+   - All auto-cashouts (including legacy AI Lab addresses) have been completely eliminated. All accounts strictly compound and accumulate hashpower/tokens.
+
+---
+
+## 🛠️ 7. Operator & AI Cheat Sheet
 
 Here are the exact commands to run for everyday operations:
 
@@ -204,7 +229,7 @@ ps aux | grep python
 
 ---
 
-## 🔒 7. Living Changelog Protocol
+## 🔒 8. Living Changelog Protocol
 
 Whenever you perform work in this repository:
 1. **Never delete existing working features** without explicit user request or confirmed scam decommissioning.

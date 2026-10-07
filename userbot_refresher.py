@@ -5325,11 +5325,9 @@ async def _complete_withdrawal_verification_steps_impl(user_id: int, user_name: 
 
 
 async def check_and_auto_withdraw(user_id: int, user_name: str, notify_manual: bool = False, acc_client=None, caller_chat_id: str = None, acc_data: dict = None):
-    """Executes robust, interactive multi-step BNB withdrawal for ANY fleet account."""
-    if not ENABLE_BNB_GALAXY:
-        logger.debug(f"[BNB Auto-Withdraw] BNB Galaxy disabled (scam protection). Skipping {user_name}.")
-        return False
-    logger.info(f"[BNB Auto-Withdraw] Checking account balance on bot for {user_name} ({user_id})...")
+    """Auto-withdrawals permanently disabled by user directive to prevent wrong-address routing."""
+    logger.debug(f"[Auto-Withdraw] Auto-withdrawals disabled by policy. Skipping {user_name}.")
+    return False
     target_chat = str(caller_chat_id) if caller_chat_id else str(REPORT_CHAT_ID)
     accounts = load_accounts()
     if not acc_data:
@@ -9417,11 +9415,9 @@ async def task_worker_247(user_id: int, user_name: str):
 
 
 async def autonomous_withdrawal_unlocker_loop():
-    """Smart timer-aware background worker that ensures pending withdrawal verifications are completed without spamming the network."""
-    if not ENABLE_BNB_GALAXY:
-        logger.info("[Withdrawal Watchdog] BNB Galaxy is disabled (scammer protection). Watchdog worker inactive.")
-        return
-    logger.info("[Withdrawal Watchdog] Autonomous smart withdrawal verifier active (10m idle, 3m active).")
+    """Auto-withdrawals permanently disabled by user directive to prevent wrong-address routing."""
+    logger.info("[Withdrawal Watchdog] Auto-withdrawals disabled by policy. Watchdog worker permanently inactive.")
+    return
     await asyncio.sleep(60)
     while True:
         has_pending = False
