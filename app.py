@@ -4969,48 +4969,16 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     status["bots"]["trxpower"] = f"farmed{bal_str}"
                     return
             except Exception as e:
-                logger.debug(f"[{name}] TRX Power API farm note: {e}")
-
-        sess_str = acc.get("session_string") or acc.get("session")
-        if not sess_str:
-            status["bots"]["trxpower"] = "farmed"
-            return
-        try:
-            trx_cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
-            await trx_cl.connect()
-            if not await trx_cl.is_user_authorized():
-                await trx_cl.disconnect()
-                status["bots"]["trxpower"] = "farmed"
+                status["bots"]["trxpower"] = f"api_error: {format_error(e)}"
                 return
-            b_ent = await trx_cl.get_entity("trxpowermining_bot")
-            for ch in ["trxpowerminingOfficial", "TRX_WORLD_WORK"]:
-                try:
-                    await trx_cl(JoinChannelRequest(ch))
-                except Exception:
-                    pass
-            await trx_cl.send_message(b_ent, "/start ref_TRX6727787768")
-            await asyncio.sleep(1.0)
-            await trx_cl.send_message(b_ent, "⛏ Start Mining")
-            await asyncio.sleep(1.0)
-            await trx_cl.send_message(b_ent, "📊 My Balance")
-            await asyncio.sleep(2.0)
-            msgs = await trx_cl.get_messages(b_ent, limit=3)
-            bal_txt = ""
-            for m in msgs:
-                if not m.out and "Balance:" in m.raw_text:
-                    m_match = re.search(r"Balance:\s*([0-9\.]+\s*TRX)", m.raw_text)
-                    if m_match:
-                        bal_txt = f" (bal: {m_match.group(1)})"
-            await trx_cl.disconnect()
-            status["bots"]["trxpower"] = f"farmed{bal_txt}"
-        except Exception as trx_e:
-            status["bots"]["trxpower"] = f"farmed (note: {format_error(trx_e)})"
+
+        status["bots"]["trxpower"] = "skipped (no initData)"
 
     # 10. Bitcoin Cloud Miners (@BitcoinCloudMinersBot)
     async def _farm_btc():
         sess_str = acc.get("session_string") or acc.get("session")
         if not sess_str:
-            status["bots"]["btc"] = "farmed"
+            status["bots"]["btc"] = "no_session"
             return
 
         now_ts = time.time()
@@ -5020,19 +4988,19 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             status["bots"]["btc"] = f"farmed (cooldown: {int((14400 - (now_ts - last_mine))/60)}m left)"
             return
 
+        btc_cl = None
         try:
             btc_cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
-            await btc_cl.connect()
+            await asyncio.wait_for(btc_cl.connect(), timeout=5.0)
             if not await btc_cl.is_user_authorized():
-                await btc_cl.disconnect()
-                status["bots"]["btc"] = "farmed"
+                status["bots"]["btc"] = "session_unauthorized"
                 return
             b_ent = await btc_cl.get_entity("BitcoinCloudMinersBot")
 
             # Send ONLY Mine command - NEVER send Tasks at the same time!
             await btc_cl.send_message(b_ent, "⛏ Mine")
             LAST_BTC_MINE_TIMES[uid] = now_ts
-            await asyncio.sleep(2.5)
+            await asyncio.sleep(1.8)
             msgs = await btc_cl.get_messages(b_ent, limit=3)
             claimed_txt = ""
             for m in msgs:
@@ -5050,10 +5018,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             # Only Master account checks milestone tasks, and ONLY once every 24 hours (86400s)
             last_tasks = LAST_BTC_TASKS_TIMES.get(uid, 0)
             if is_owner and (now_ts - last_tasks > 86400):
-                await asyncio.sleep(3.5)
+                await asyncio.sleep(2.0)
                 await btc_cl.send_message(b_ent, "📋 Tasks")
                 LAST_BTC_TASKS_TIMES[uid] = now_ts
-                await asyncio.sleep(2.0)
+                await asyncio.sleep(1.5)
                 t_msgs = await btc_cl.get_messages(b_ent, limit=2)
                 for m in t_msgs:
                     if not m.out and m.buttons:
@@ -5065,10 +5033,15 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                     except Exception:
                                         pass
 
-            await btc_cl.disconnect()
             status["bots"]["btc"] = f"farmed{claimed_txt}"
         except Exception as btc_e:
-            status["bots"]["btc"] = f"farmed (note: {format_error(btc_e)})"
+            status["bots"]["btc"] = f"chat_note: {format_error(btc_e)}"
+        finally:
+            if btc_cl:
+                try:
+                    await btc_cl.disconnect()
+                except Exception:
+                    pass
 
     # 11. Tensor Mining Robot (@TensorMiningRobot - flascoins.xyz)
     async def _farm_tensor():
@@ -5177,36 +5150,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 status["bots"]["finvora"] = f"farmed{bal_txt}"
                 return
             except Exception as e:
-                logger.debug(f"[{name}] FINVORA API farm note: {e}")
-
-        # Fallback to Telegram client if initData is not present
-        sess_str = acc.get("session_string") or acc.get("session")
-        if not sess_str:
-            status["bots"]["finvora"] = "farmed"
-            return
-        try:
-            fin_cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
-            await fin_cl.connect()
-            if not await fin_cl.is_user_authorized():
-                await fin_cl.disconnect()
-                status["bots"]["finvora"] = "farmed"
+                status["bots"]["finvora"] = f"api_error: {format_error(e)}"
                 return
-            b_ent = await fin_cl.get_entity("FINVORAWeb3bot")
-            await fin_cl.send_message(b_ent, "/start ref_TRX6727787768")
-            await asyncio.sleep(1.0)
-            await fin_cl.send_message(b_ent, "⛏ Start Mining")
-            await asyncio.sleep(2.0)
-            msgs = await fin_cl.get_messages(b_ent, limit=3)
-            bal_txt = ""
-            for m in msgs:
-                if not m.out and "Available" in m.raw_text:
-                    m_match = re.search(r"Available\s+([0-9\.]+\s*GRAM)", m.raw_text)
-                    if m_match:
-                        bal_txt = f" (avail: {m_match.group(1)})"
-            await fin_cl.disconnect()
-            status["bots"]["finvora"] = f"farmed{bal_txt}"
-        except Exception as fin_e:
-            status["bots"]["finvora"] = f"farmed (note: {format_error(fin_e)})"
+
+        status["bots"]["finvora"] = "skipped (no initData)"
 
     # 14. TurboGram V1 (@TurboGramV1_bot)
     async def _farm_turbogram():
@@ -5242,26 +5189,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 status["bots"]["turbogram"] = f"farmed{bal_txt}"
                 return
             except Exception as e:
-                logger.debug(f"[{name}] TurboGram API farm note: {e}")
-
-        sess_str = acc.get("session_string") or acc.get("session")
-        if not sess_str:
-            status["bots"]["turbogram"] = "farmed"
-            return
-        try:
-            tb_cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
-            await tb_cl.connect()
-            if not await tb_cl.is_user_authorized():
-                await tb_cl.disconnect()
-                status["bots"]["turbogram"] = "farmed"
+                status["bots"]["turbogram"] = f"api_error: {format_error(e)}"
                 return
-            b_ent = await tb_cl.get_entity("TurboGramV1_bot")
-            await tb_cl.send_message(b_ent, "/start")
-            await asyncio.sleep(2.0)
-            await tb_cl.disconnect()
-            status["bots"]["turbogram"] = "farmed"
-        except Exception as tb_e:
-            status["bots"]["turbogram"] = f"farmed (note: {format_error(tb_e)})"
+
+        status["bots"]["turbogram"] = "skipped (no initData)"
 
 
     # 16. USDT QUAD (@usdtquadbot - ustdquad.up.railway.app)
@@ -5452,9 +5383,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             # 8. Autonomous Sequential Miner Auto-Leveling (Free Upgrades up to Holding Threshold)
             cur_lvl = int(cur_u.get("currentLevel") or 1)
             upgraded_levels = 0
-            while upgraded_levels < 25:
+            while upgraded_levels < 5:
                 target_lvl = cur_lvl + 1
-                await asyncio.sleep(0.35)
+                await asyncio.sleep(0.2)
                 u_code, u_res = await safe_post(
                     "https://tacairdrop.xyz/api/miners/upgrade",
                     {"userId": str(uid), "targetLevel": target_lvl},
@@ -5471,7 +5402,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         except Exception as e:
             status["bots"]["tac"] = f"error: {format_error(e)}"
 
-    # Humanized Execution Pipeline: Randomize the order of bot executions per account session
+    # Humanized Concurrent Execution Pipeline: 4 bots per account session
     bot_routines = [
         {"name": "stones", "fn": _farm_stones, "has_data": bool(tokens.get("stones_init_data"))},
         {"name": "mrg", "fn": _farm_mrg, "has_data": bool(tokens.get("mrg_init_data"))},
@@ -5494,22 +5425,19 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
     active_routines = [b for b in bot_routines if b["has_data"]]
     random.shuffle(active_routines)
 
-    for b in active_routines:
-        try:
-            await asyncio.wait_for(b["fn"](), timeout=20.0)
-            await jitter(0.8, 1.8)
-        except asyncio.TimeoutError:
-            status["bots"][b["name"]] = "timeout (20s)"
-        except Exception as err:
-            status["bots"][b["name"]] = f"error: {format_error(err)}"
+    sem_bot = asyncio.Semaphore(4)
 
-    # Await background dwell/retry tasks for this account (capped at 15s to keep cycle responsive)
-    if bg_tasks:
-        try:
-            await asyncio.wait_for(asyncio.gather(*bg_tasks, return_exceptions=True), timeout=15.0)
-        except (asyncio.TimeoutError, Exception):
-            pass
+    async def _run_single_routine(b):
+        async with sem_bot:
+            try:
+                await jitter(0.2, 0.6)
+                await asyncio.wait_for(b["fn"](), timeout=18.0)
+            except asyncio.TimeoutError:
+                status["bots"][b["name"]] = "timeout (18s)"
+            except Exception as err:
+                status["bots"][b["name"]] = f"error: {format_error(err)}"
 
+    await asyncio.gather(*[_run_single_routine(b) for b in active_routines], return_exceptions=True)
     return status
 
 
@@ -5519,24 +5447,6 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
     if session is None:
         session = aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
         created_session = True
-
-    REQUIRED_BOT_KEYS = [
-        "stones_init_data",
-        "mrg_init_data",
-        "art_init_data",
-        "ailab_init_data",
-        "ultrawallet_init_data",
-        "apx_init_data",
-        "atf_init_data",
-        "ainovum_init_data",
-        "trxpower_init_data",
-        "finvora_init_data",
-        "turbogram_init_data",
-        "tensor_init_data",
-        "tontrader_init_data",
-        "usdtquad_init_data",
-        "tac_init_data"
-    ]
 
     try:
         if accounts is None:
@@ -5553,10 +5463,11 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
         async def _farm_with_sem(a_dict, t_dict):
             async with farm_sem:
                 uid_str = str(a_dict.get("user_id"))
-                missing_keys = [k for k in REQUIRED_BOT_KEYS if not t_dict.get(k)]
-                if (missing_keys or is_token_data_expired(t_dict, max_age_hours=18.0)) and (a_dict.get("session_string") or a_dict.get("session")):
+                has_any_token = any(k.endswith("_init_data") and bool(v) for k, v in t_dict.items())
+                all_expired = is_token_data_expired(t_dict, max_age_hours=22.0)
+                if (not has_any_token or all_expired) and (a_dict.get("session_string") or a_dict.get("session")) and uid_str != "6727787768":
                     try:
-                        fresh_toks = await extract_tokens_for_account(a_dict)
+                        fresh_toks = await asyncio.wait_for(extract_tokens_for_account(a_dict), timeout=25.0)
                         if fresh_toks:
                             t_dict.update(fresh_toks)
                             tokens_map[uid_str] = t_dict
@@ -5564,9 +5475,9 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                     except Exception as ex_e:
                         logger.warning(f"[Farm Task] On-the-fly extraction note for {uid_str}: {ex_e}")
                 try:
-                    return await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict), timeout=75.0)
+                    return await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict), timeout=60.0)
                 except asyncio.TimeoutError:
-                    return {"uid": uid_str, "name": a_dict.get("name", uid_str), "bots": {"status": "timeout_75s"}}
+                    return {"uid": uid_str, "name": a_dict.get("name", uid_str), "bots": {"status": "timeout_60s"}}
 
         for acc in accounts:
             uid = str(acc.get("user_id"))
@@ -5656,11 +5567,12 @@ async def api_farm_single_account(uid: str, request: Request):
         tokens_map = await fetch_cloud_miniapp_tokens(session)
         acc_tok = tokens_map.get(str(uid), {})
         if not acc_tok or not any(k.endswith("_init_data") for k in acc_tok.keys()):
-            fresh = await extract_tokens_for_account(target_acc)
-            if fresh:
-                acc_tok = fresh
-                await sync_account_tokens_to_clouds(fresh)
-                await bootstrap_account_mining(target_acc, fresh)
+            if str(uid) != "6727787768":
+                fresh = await extract_tokens_for_account(target_acc)
+                if fresh:
+                    acc_tok = fresh
+                    await sync_account_tokens_to_clouds(fresh)
+                    await bootstrap_account_mining(target_acc, fresh)
 
         if not acc_tok:
             return {"ok": False, "message": "Failed to extract WebApp tokens for account", "uid": uid}
