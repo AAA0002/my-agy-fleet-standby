@@ -5017,6 +5017,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         sess_str = acc.get("session_string") or acc.get("session")
         if not sess_str:
             status["bots"]["btc"] = "no_session"
+        if is_owner:
+            status["bots"]["btc"] = "reauth_needed (AuthKeyDuplicatedError)"
             return
 
         now_ts = time.time()
