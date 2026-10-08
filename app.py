@@ -194,7 +194,7 @@ def solve_atf_math(question_text: str) -> str:
             return str(nums[0] // nums[1])
     return "0"
 
-# 7 Active Legitimate Fleet Bots (100% REST Mini-Apps)
+# 9 Active Legitimate Fleet Bots (100% REST Mini-Apps)
 STONES_BOT = "stoneswithestand_bot"
 STONES_REFERRAL_CODE = "r6727787768"
 MRG_BOT = "mrgminerbot"
@@ -209,6 +209,10 @@ FINVORA_BOT = "FINVORAWeb3bot"
 FINVORA_REFERRAL_CODE = "ref_TRX6727787768"
 TURBOGRAM_BOT = "TurboGramV1_bot"
 TURBOGRAM_REFERRAL_CODE = "r_3520c92b"
+VICTORS_BOT = "VictorsCompanybot"
+VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
+VYRO_BOT = "vyrodrop_bot"
+VYRO_REFERRAL_CODE = "ref_myFjrqqE4WN_"
 BNB_BOT = "CryptoProUpRobot"
 
 UW_ID_TOKENS = {}
@@ -496,6 +500,26 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     tok = await extract_bot_webapp_token(client, TURBOGRAM_BOT, start_param=REPORT_CHAT_ID, default_url="https://turbo.tamimdev.dev/", candidate_short_names=["app", "miniapp", "bot", "turbo"])
     if tok:
         tokens["turbogram_init_data"] = tok
+
+    # 8. Victor's Company (@VictorsCompanybot)
+    try:
+        b_vic = await client.get_entity(VICTORS_BOT)
+        await client.send_message(b_vic, f"/start {VICTORS_REFERRAL_CODE}")
+    except Exception:
+        pass
+    tok = await extract_bot_webapp_token(client, VICTORS_BOT, start_param=VICTORS_REFERRAL_CODE, default_url="https://app.victors.company/", candidate_short_names=["app", "play"])
+    if tok:
+        tokens["victors_init_data"] = tok
+
+    # 9. VyroDrop (@vyrodrop_bot)
+    try:
+        b_vy = await client.get_entity(VYRO_BOT)
+        await client.send_message(b_vy, f"/start {VYRO_REFERRAL_CODE}")
+    except Exception:
+        pass
+    tok = await extract_bot_webapp_token(client, VYRO_BOT, start_param=VYRO_REFERRAL_CODE, default_url="https://vyro.run.place/", candidate_short_names=["app", "vyro", "play", "mine"])
+    if tok:
+        tokens["vyro_init_data"] = tok
 
     return tokens
 
@@ -4211,8 +4235,171 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
         status["bots"]["turbogram"] = "skipped (no initData)"
 
+        # 8. Victor's Company (@VictorsCompanybot)
+        async def _farm_victors():
+            if tokens.get("victors_init_data"):
+                try:
+                    v_init = tokens["victors_init_data"]
+                    v_h = {
+                        **headers,
+                        "Authorization": f"tma {v_init}",
+                        "Origin": "https://app.victors.company",
+                        "Referer": "https://app.victors.company/"
+                    }
+                    # 1. Login with startParam to bind referral code
+                    l_code, l_d = await safe_post(
+                        "https://server.victors.company/api/auth/login",
+                        json_data={"startParam": VICTORS_REFERRAL_CODE, "turnstileToken": None},
+                        req_headers=v_h
+                    )
+                    if l_d and isinstance(l_d, dict):
+                        hp = l_d.get("humanPass") or (l_d.get("data", {}).get("humanPass") if isinstance(l_d.get("data"), dict) else None)
+                        if hp:
+                            v_h["x-human-pass"] = str(hp)
 
-    # Humanized Concurrent Execution Pipeline: 4 bots per account session (7 Active Legitimate Bots)
+                    # 2. Me profile
+                    await jitter(0.5, 1.2)
+                    m_code, m_d = await safe_get("https://server.victors.company/api/me", req_headers=v_h)
+                    me = (m_d.get("user") or m_d) if (m_d and isinstance(m_d, dict)) else {}
+                    lvl = me.get("level", 1)
+
+                    if me and not me.get("tutorialCompleted"):
+                        await safe_post("https://server.victors.company/api/me/tutorial", json_data={}, req_headers=v_h)
+
+                    # 3. Daily checkin
+                    await jitter(0.6, 1.5)
+                    await safe_post("https://server.victors.company/api/checkin", json_data={}, req_headers=v_h)
+
+                    # 4. Mining claim
+                    await jitter(0.8, 1.8)
+                    await safe_post("https://server.victors.company/api/mining/claim", json_data={}, req_headers=v_h)
+
+                    # 5. Levels unlock
+                    unlocked = me.get("unlockedLevel", lvl)
+                    if unlocked > lvl:
+                        await jitter(0.5, 1.2)
+                        await safe_post("https://server.victors.company/api/levels/unlock", json_data={"level": unlocked}, req_headers=v_h)
+
+                    # 6. Tasks
+                    await jitter(0.8, 1.6)
+                    _, t_d = await safe_get("https://server.victors.company/api/tasks", req_headers=v_h)
+                    if t_d and isinstance(t_d, dict):
+                        tasks = t_d.get("tasks", [])
+                        if isinstance(tasks, list):
+                            for t in tasks:
+                                if isinstance(t, dict) and t.get("id") and not t.get("claimed"):
+                                    await jitter(0.4, 0.9)
+                                    await safe_post("https://server.victors.company/api/tasks/claim", json_data={"taskId": t["id"]}, req_headers=v_h)
+
+                    # 7. Referral claim bonus & commission
+                    await jitter(0.6, 1.4)
+                    await safe_post("https://server.victors.company/api/referral/claim-bonus", json_data={}, req_headers=v_h)
+                    await safe_post("https://server.victors.company/api/referral/claim-commission", json_data={}, req_headers=v_h)
+
+                    # 8. Arcade Minigame Mining (Play 1 run)
+                    try:
+                        _, a_d = await safe_get("https://server.victors.company/api/arcade", req_headers=v_h)
+                        if a_d and isinstance(a_d, dict) and a_d.get("runsLeft", 0) > 0:
+                            st_c, _ = await safe_post("https://server.victors.company/api/arcade/mine/start", json_data={"tool": "pickaxe", "items": []}, req_headers=v_h)
+                            if st_c in (200, 201):
+                                for d in range(4):
+                                    await jitter(0.4, 0.9)
+                                    _, d_res = await safe_post("https://server.victors.company/api/arcade/mine/dig", json_data={"x": 4, "y": d}, req_headers=v_h)
+                                    if not d_res or (isinstance(d_res, dict) and d_res.get("result") == "bust"):
+                                        break
+                                await safe_post("https://server.victors.company/api/arcade/mine/end", json_data={}, req_headers=v_h)
+                    except Exception:
+                        pass
+
+                    bal_str = f" (lvl: {lvl}, bal: {me.get('miningBalance', 0)})" if me else " (ok)"
+                    status["bots"]["victors"] = f"farmed{bal_str}"
+                    return
+                except Exception as e:
+                    status["bots"]["victors"] = f"api_error: {format_error(e)}"
+                    return
+
+            status["bots"]["victors"] = "skipped (no initData)"
+
+        # 9. VyroDrop (@vyrodrop_bot)
+        async def _farm_vyro():
+            if tokens.get("vyro_init_data"):
+                try:
+                    vy_init = tokens["vyro_init_data"]
+                    vy_h = {
+                        **headers,
+                        "Authorization": f"tma {vy_init}",
+                        "X-Vyro-UI-Contract": "claim-inactivity-v1",
+                        "X-Vyro-Market-Balances": "2",
+                        "X-Vyro-Dex": "1",
+                        "Referer": "https://vyro.run.place/"
+                    }
+                    import uuid
+
+                    # 1. Bootstrap
+                    b_code, b_d = await safe_get("https://vyro.run.place/api/bootstrap", req_headers=vy_h)
+                    if not b_d or not isinstance(b_d, dict):
+                        status["bots"]["vyro"] = f"skipped (bootstrap {b_code or 'error'})"
+                        return
+
+                    u_obj = b_d.get("user", {})
+                    m_obj = b_d.get("miner", {})
+                    mining = b_d.get("mining") or {}
+                    lvl = m_obj.get("level", 1)
+
+                    # 2. Mining claim / start
+                    sess_id = mining.get("sessionId")
+                    if sess_id:
+                        await jitter(0.8, 1.8)
+                        c_code, c_d = await safe_post(
+                            "https://vyro.run.place/api/mining/claim",
+                            json_data={"sessionId": sess_id, "idempotencyKey": str(uuid.uuid4())},
+                            req_headers=vy_h
+                        )
+                        if c_code in (200, 201) or (c_d and isinstance(c_d, dict) and c_d.get("error", {}).get("code") == "MINING_SESSION_ALREADY_CLAIMED"):
+                            await jitter(0.8, 1.6)
+                            await safe_post(
+                                "https://vyro.run.place/api/mining/start",
+                                json_data={"idempotencyKey": str(uuid.uuid4())},
+                                req_headers=vy_h
+                            )
+                    else:
+                        await jitter(0.8, 1.8)
+                        await safe_post(
+                            "https://vyro.run.place/api/mining/start",
+                            json_data={"idempotencyKey": str(uuid.uuid4())},
+                            req_headers=vy_h
+                        )
+
+                    # 3. Tasks
+                    await jitter(0.8, 1.6)
+                    t_headers = {**vy_h, "x-vyro-tasks-protocol": "2"}
+                    _, t_d = await safe_get("https://vyro.run.place/api/tasks?limit=8", req_headers=t_headers)
+                    if t_d and isinstance(t_d, dict):
+                        tasks = t_d.get("tasks", [])
+                        if isinstance(tasks, list):
+                            for t in tasks:
+                                if isinstance(t, dict) and t.get("id") and not t.get("completed"):
+                                    tid = t["id"]
+                                    await jitter(0.4, 0.9)
+                                    await safe_post(f"https://vyro.run.place/api/tasks/{tid}/start", json_data={"idempotencyKey": str(uuid.uuid4())}, req_headers=t_headers)
+                                    await jitter(1.0, 2.0)
+                                    await safe_post(f"https://vyro.run.place/api/tasks/{tid}/claim", json_data={"idempotencyKey": str(uuid.uuid4())}, req_headers=t_headers)
+
+                    # 4. Referral claims
+                    await jitter(0.6, 1.4)
+                    await safe_post("https://vyro.run.place/api/referrals/claim", json_data={"kind": "DIRECT", "idempotencyKey": str(uuid.uuid4())}, req_headers=vy_h)
+                    await safe_post("https://vyro.run.place/api/referrals/claim", json_data={"kind": "MINING", "idempotencyKey": str(uuid.uuid4())}, req_headers=vy_h)
+
+                    bal_str = f" (lvl: {lvl}, speed: {m_obj.get('currentSpeed', 0)})" if m_obj else " (ok)"
+                    status["bots"]["vyro"] = f"farmed{bal_str}"
+                    return
+                except Exception as e:
+                    status["bots"]["vyro"] = f"api_error: {format_error(e)}"
+                    return
+
+            status["bots"]["vyro"] = "skipped (no initData)"
+
+    # Humanized Concurrent Execution Pipeline: 4 bots per account session (9 Active Legitimate Bots)
     bot_routines = [
         {"name": "stones", "fn": _farm_stones, "has_data": bool(tokens.get("stones_init_data"))},
         {"name": "mrg", "fn": _farm_mrg, "has_data": bool(tokens.get("mrg_init_data"))},
@@ -4221,6 +4408,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "atf", "fn": _farm_atf, "has_data": bool(tokens.get("atf_init_data"))},
         {"name": "finvora", "fn": _farm_finvora, "has_data": bool(tokens.get("finvora_init_data"))},
         {"name": "turbogram", "fn": _farm_turbogram, "has_data": bool(tokens.get("turbogram_init_data"))},
+        {"name": "victors", "fn": _farm_victors, "has_data": bool(tokens.get("victors_init_data"))},
+        {"name": "vyro", "fn": _farm_vyro, "has_data": bool(tokens.get("vyro_init_data"))},
     ]
 
     for b in bot_routines:
