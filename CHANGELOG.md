@@ -4,6 +4,18 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🔧 9-Bot Referral Binding & Token Extraction Hardening: Victor's Company & VyroDrop Diagnosis and Fixes (`refresh_cloud_tokens.py`, `render_standby_app.py`, `render_app_latest.py`, `push_to_standby_repo.py`)**:
+  - **🔍 Root Cause Analysis for Victor's Company (`@VictorsCompanybot`)**:
+    * **Token Extraction RPC Error**: Discovered that in `refresh_cloud_tokens.py`, `RequestAppWebViewRequest` threw `RPCError 400: BOT_APP_BOT_INVALID` because `b_vic` entity was passed directly instead of an `InputUser`. The unhandled exception bypassed the fallback `RequestWebViewRequest` to `https://app.victors.company/`. Consequently, 0 fresh tokens were collected during the GitHub Actions run, causing all worker logins to return `401 Session expired`.
+    * **Hardened Multi-Strategy Extractor**: Refactored `refresh_cloud_tokens.py` to wrap `RequestAppWebViewRequest` with `get_input_entity`, followed by an independent fallback to `RequestWebViewRequest`, followed by inline keyboard button scanning.
+  - **🔍 Root Cause Analysis for VyroDrop (`@vyrodrop_bot`)**:
+    * **Referral Binding Verified**: Verified that the user's referral code `ref_myFjrqqE4WN_` successfully bound the worker accounts to the user's Master UUID (`738aee88-2e37-4a70-8b3b-dd1819395130`) via `/start` parameter injection.
+    * **Mining Blocked by `MINING_WALLET_REQUIRED`**: Discovered that `/api/mining/start` on VyroDrop returned `HTTP 409: {"error": {"code": "MINING_WALLET_REQUIRED", "message": "Request rejected"}}`. In VyroDrop, mining sessions cannot start and referrals remain pending until a verified TON wallet is connected via TonConnect.
+  - **⚙️ Standby Node 2 Expansion to Full 9-Bot Referrals**:
+    * **`bind_account_master_referrals`**: Added Bot 8 (`VictorsCompanybot`, referral `ref_A20AA96F18`) and Bot 9 (`vyrodrop_bot`, referral `ref_myFjrqqE4WN_`) into the master registration pipeline.
+    * **`is_account_referrals_bound`**: Updated logic to verify all 9 bots (`all_9_referrals_bound`) rather than early-exiting on the legacy 7-bot flag, allowing existing fleet accounts to properly bind newly integrated bots.
+    * **Live Deployment to Render Node 2**: Pushed updated code to `AAA0002/my-agy-fleet-standby` (Commit `6c29cb13`) and triggered live deployment `dep-db3ujqaj9qps73fh1lng`.
+
 - **🛡️ Strict Telegram Bot & Channel Segregation: Admin Infrastructure vs. Normal User Platform (`AGENTS.md`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
   - **👑 Admin Telegram Ecosystem Documented**:
     * Admin Bot: `@myagyai` (`8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8`) for operational alerts, harvest notifications, and AI natural language commands.

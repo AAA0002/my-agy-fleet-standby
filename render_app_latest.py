@@ -1552,8 +1552,8 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
 
 
 def is_account_referrals_bound(acc_entry: dict) -> bool:
-    """Checks whether an account already has its master referrals bound across all 7 active legitimate bots."""
-    if acc_entry.get("all_7_referrals_bound") or acc_entry.get("all_10_referrals_bound") or acc_entry.get("referrals_bound"):
+    """Checks whether an account already has its master referrals bound across all 9 active legitimate bots."""
+    if acc_entry.get("all_9_referrals_bound"):
         return True
     return bool(
         acc_entry.get("atf_referral_bound") and
@@ -1562,7 +1562,9 @@ def is_account_referrals_bound(acc_entry: dict) -> bool:
         acc_entry.get("ailab_referral_bound") and
         acc_entry.get("ultrawallet_referral_bound") and
         acc_entry.get("finvora_referral_bound") and
-        acc_entry.get("turbogram_referral_bound")
+        acc_entry.get("turbogram_referral_bound") and
+        acc_entry.get("victors_referral_bound") and
+        acc_entry.get("vyro_referral_bound")
     )
 
 
@@ -2073,10 +2075,30 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
             acc_entry["turbogram_referral_bound"] = True
         await asyncio.sleep(1.0)
 
+    # 8. Victor's Company (@VictorsCompanybot)
+    if not acc_entry.get("victors_referral_bound"):
+        try:
+            b_vic = await client.get_entity(VICTORS_BOT)
+            await client.send_message(b_vic, f"/start {VICTORS_REFERRAL_CODE}")
+            acc_entry["victors_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] Victor's Company referral bind note: {e}")
+
+    # 9. VyroDrop (@vyrodrop_bot)
+    if not acc_entry.get("vyro_referral_bound"):
+        try:
+            b_vy = await client.get_entity(VYRO_BOT)
+            await client.send_message(b_vy, f"/start {VYRO_REFERRAL_CODE}")
+            acc_entry["vyro_referral_bound"] = True
+            await asyncio.sleep(0.8)
+        except Exception as e:
+            logger.warning(f"[{name}] VyroDrop referral bind note: {e}")
+
     if is_account_referrals_bound(acc_entry):
         acc_entry["referrals_bound"] = True
-        acc_entry["all_7_referrals_bound"] = True
-        logger.info(f"[{name}] ✅ All 7 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
+        acc_entry["all_9_referrals_bound"] = True
+        logger.info(f"[{name}] ✅ All 9 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
     else:
         logger.warning(f"[{name}] ⚠️ Some referrals could not be bound immediately. Will retry on next cycle.")
 
@@ -2099,11 +2121,12 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
     except Exception:
         pass
 
-    # Fallback: if tokens is missing required bot keys, re-extract with fresh standalone client (7 Legitimate WebApp Bots)
+    # Fallback: if tokens is missing required bot keys, re-extract with fresh standalone client (9 Legitimate WebApp Bots)
     req_keys = [
         "stones_init_data", "mrg_init_data", "ailab_init_data",
         "ultrawallet_init_data", "atf_init_data",
-        "finvora_init_data", "turbogram_init_data"
+        "finvora_init_data", "turbogram_init_data",
+        "victors_init_data", "vyro_init_data"
     ]
     if not tokens or any(not tokens.get(k) for k in req_keys):
         logger.info(f"[{name}] Missing some bot tokens after direct extraction. Re-extracting with standalone client...")

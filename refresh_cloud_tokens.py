@@ -245,23 +245,53 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
                 await cl.send_message(b_vic, f"/start {VICTORS_REF}")
             except Exception:
                 pass
-            r_vic = await cl(RequestAppWebViewRequest(
-                peer=b_vic,
-                app=InputBotAppShortName(bot_id=b_vic, short_name="app"),
-                platform="android",
-                start_param=VICTORS_REF
-            ))
-            init_vic = urllib.parse.parse_qs(urllib.parse.urlparse(r_vic.url).fragment).get("tgWebAppData", [None])[0]
-            if not init_vic:
-                r_vic2 = await cl(RequestWebViewRequest(
-                    peer=b_vic, bot=b_vic, platform="android",
-                    url="https://app.victors.company/",
+            init_vic = None
+            try:
+                b_vic_in = await cl.get_input_entity(b_vic)
+                r_vic = await cl(RequestAppWebViewRequest(
+                    peer=b_vic_in,
+                    app=InputBotAppShortName(bot_id=b_vic_in, short_name="app"),
+                    platform="android",
                     start_param=VICTORS_REF
                 ))
-                init_vic = urllib.parse.parse_qs(urllib.parse.urlparse(r_vic2.url).fragment).get("tgWebAppData", [None])[0]
+                init_vic = urllib.parse.parse_qs(urllib.parse.urlparse(r_vic.url).fragment).get("tgWebAppData", [None])[0]
+            except Exception:
+                pass
+            if not init_vic:
+                try:
+                    r_vic2 = await cl(RequestWebViewRequest(
+                        peer=b_vic, bot=b_vic, platform="android",
+                        url="https://app.victors.company/",
+                        start_param=VICTORS_REF
+                    ))
+                    init_vic = urllib.parse.parse_qs(urllib.parse.urlparse(r_vic2.url).fragment).get("tgWebAppData", [None])[0]
+                except Exception:
+                    pass
+            if not init_vic:
+                try:
+                    msgs = await cl.get_messages(b_vic, limit=3)
+                    for m in msgs:
+                        if m.buttons:
+                            for row in m.buttons:
+                                for b in row:
+                                    raw_b = getattr(b, "button", b)
+                                    w_url = getattr(getattr(raw_b, "web_app", None), "url", None) or getattr(raw_b, "url", None)
+                                    if w_url:
+                                        res = await cl(RequestWebViewRequest(peer=b_vic, bot=b_vic, platform="android", url=w_url, start_param=VICTORS_REF))
+                                        init_vic = urllib.parse.parse_qs(urllib.parse.urlparse(res.url).fragment).get("tgWebAppData", [None])[0]
+                                        if init_vic:
+                                            break
+                                if init_vic:
+                                    break
+                        if init_vic:
+                            break
+                except Exception:
+                    pass
             if init_vic:
                 tokens["victors_init_data"] = init_vic
                 print(f"  🏢 Victor's Company: Collected")
+            else:
+                print(f"  ⚠️ Victor's Company: could not extract initData")
         except Exception as e:
             print(f"  ⚠️ Victor's Company error: {e}")
 
