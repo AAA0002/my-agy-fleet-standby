@@ -315,9 +315,13 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
             p = urllib.parse.urlparse(str(url_str))
             frag = urllib.parse.parse_qs(p.fragment).get("tgWebAppData", [None])[0]
             if frag:
+                if frag.startswith("user%3D") or "%257B" in frag or "%2522" in frag:
+                    frag = urllib.parse.unquote(frag)
                 return frag
             query = urllib.parse.parse_qs(p.query).get("tgWebAppData", [None])[0]
             if query:
+                if query.startswith("user%3D") or "%257B" in query or "%2522" in query:
+                    query = urllib.parse.unquote(query)
                 return query
         except Exception:
             pass
@@ -3658,6 +3662,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             return
         try:
             m_init = tokens["mrg_init_data"]
+            if m_init.startswith("user%3D") or "%257B" in m_init or "%2522" in m_init:
+                m_init = urllib.parse.unquote(m_init)
             m_headers = {
                 **headers,
                 "Origin": "https://app.mrgtoken.xyz",
@@ -3739,7 +3745,13 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 if fr_d and (fr_d.get("teamStats", {}).get("unclaimedOneTimeBonusMRG", 0) or 0) > 0:
                     await safe_post("https://mrg.up.railway.app/api/user/claim-one-time-bonus", {"initData": m_init}, req_headers=m_headers)
 
-            status["bots"]["mrg"] = "farmed"
+            bal_str = ""
+            if me_d and isinstance(me_d, dict) and me_d.get("user"):
+                u_m = me_d["user"]
+                b_val = float(u_m.get("inAppBalance", 0) or 0)
+                l_val = u_m.get("peakLevel") or u_m.get("manualUnlockedLevel") or 1
+                bal_str = f" (lvl: {l_val}, bal: {b_val:.1f} MRG)"
+            status["bots"]["mrg"] = f"farmed{bal_str}"
         except Exception as e:
             status["bots"]["mrg"] = f"error: {format_error(e)}"
 
