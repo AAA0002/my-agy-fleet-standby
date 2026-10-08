@@ -3690,7 +3690,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             if not is_owner:
                 await safe_post("https://mrg.up.railway.app/api/auth/verify", {"initData": m_init, "startParam": "ref_IRN1G3XD", "start_param": "ref_IRN1G3XD", "deviceInfo": device_info}, req_headers=m_headers)
             await jitter(1.2, 2.5)
-            await safe_post("https://mrg.up.railway.app/api/user/claim-mining", {"initData": m_init, "deviceInfo": device_info}, req_headers=m_headers)
+            _, claim_d = await safe_post("https://mrg.up.railway.app/api/user/claim-mining", {"initData": m_init, "deviceInfo": device_info}, req_headers=m_headers)
 
             # Task completion & level auto-unlock
             await jitter(1.2, 2.6)
@@ -3730,7 +3730,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 # Auto-unlock level up to 203
                 u_obj = me_d.get("user", {})
                 in_bal = float(u_obj.get("inAppBalance", 0) or 0)
-                cur_lvl = int(u_obj.get("peakLevel") or u_obj.get("manualUnlockedLevel") or 1)
+                cur_lvl = int(u_obj.get("manualUnlockedLevel") or 0)
                 if in_bal >= 100:
                     def wp_calc(e):
                         if e <= 0: return 0
@@ -3758,9 +3758,15 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             if me_d and isinstance(me_d, dict) and me_d.get("user"):
                 u_m = me_d["user"]
                 b_val = float(u_m.get("inAppBalance", 0) or 0)
-                l_val = u_m.get("peakLevel") or u_m.get("manualUnlockedLevel") or 1
+                l_val = u_m.get("manualUnlockedLevel") or u_m.get("peakLevel") or 1
                 bal_str = f" (lvl: {l_val}, bal: {b_val:.1f} MRG)"
-            status["bots"]["mrg"] = f"farmed{bal_str}"
+            claim_stat = "farmed"
+            if claim_d and isinstance(claim_d, dict):
+                if claim_d.get("code") == "HUMAN_CHECK_REQUIRED":
+                    claim_stat = "farmed (claim: human_check)"
+                elif claim_d.get("success"):
+                    claim_stat = f"farmed (claimed {claim_d.get('claimedAmount', 'reward')})"
+            status["bots"]["mrg"] = f"{claim_stat}{bal_str}"
         except Exception as e:
             status["bots"]["mrg"] = f"error: {format_error(e)}"
 

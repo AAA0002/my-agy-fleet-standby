@@ -389,48 +389,60 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
   const farmMrg = async () => {
     if (!accData.mrg_init_data) return;
     try {
+      let mrgInit = accData.mrg_init_data;
+      if (typeof mrgInit === "string" && (mrgInit.startsWith("user%3D") || mrgInit.includes("%257B") || mrgInit.includes("%2522"))) {
+        try { mrgInit = decodeURIComponent(mrgInit); } catch (_) {}
+      }
       const mrgHeaders = getHumanHeaders(uid, {
         "Content-Type": "application/json",
         "Origin": "https://app.mrgtoken.xyz",
         "Referer": "https://app.mrgtoken.xyz/"
       });
       const fp = getDeterministicDevice(uid);
+      const devInfo = {
+        platform: "android",
+        deviceName: fp.model,
+        ram: "8 GB",
+        cpuCores: 8,
+        screenResolution: "1080x2400",
+        userAgent: fp.ua,
+        timezone: "UTC",
+        language: "en"
+      };
 
       await humanDelay(1000, 2400);
       await fetchWithRetry("https://mrg.up.railway.app/api/auth/verify", {
         method: "POST", headers: mrgHeaders, body: JSON.stringify({
-          initData: accData.mrg_init_data,
+          initData: mrgInit,
           startParam: "ref_IRN1G3XD",
           start_param: "ref_IRN1G3XD",
-          deviceInfo: {
-            platform: "android",
-            deviceName: fp.model,
-            ram: "8 GB",
-            cpuCores: 8,
-            screenResolution: "1080x2400",
-            userAgent: fp.ua,
-            timezone: "UTC",
-            language: "en"
-          }
+          deviceInfo: devInfo
         })
       }, 2, 800).catch(() => {});
 
       await humanDelay(1200, 2600);
-      await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-mining", {
-        method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
-      }).catch(() => {});
+      let claimMiningRes = null;
+      try {
+        const cResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-mining", {
+          method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit, deviceInfo: devInfo })
+        }, 1, 600);
+        if (cResp) {
+          claimMiningRes = await cResp.json().catch(() => null);
+        }
+      } catch (_) {}
 
       await humanDelay(1200, 2800);
       const meResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/me", {
-        method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
+        method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit })
       }, 2, 1000).catch(() => null);
 
+      let curBalStr = "";
       if (meResp && meResp.ok) {
         const meD = await meResp.json().catch(() => ({}));
         const targetTonW = FLEET_TON_WALLETS[String(uid)];
         if (targetTonW && (!meD.user?.isTonConnected || meD.user?.tonWalletAddress !== targetTonW)) {
           await fetchWithRetry("https://mrg.up.railway.app/api/user/connect-wallet", {
-            method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data, address: targetTonW, balance: 0 })
+            method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit, address: targetTonW, balance: 0 })
           }, 1, 600).catch(() => {});
         }
         const tasks = meD.tasks || [];
@@ -446,13 +458,13 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
                 try {
                   await humanDelay(waitTime, waitTime + 2000);
                   const clResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
-                    method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: tid })
+                    method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit, taskId: tid })
                   }, 2, 600);
                   const clD = await clResp.json().catch(() => ({}));
                   if (!clD.success && (JSON.stringify(clD).toLowerCase().includes("wait") || JSON.stringify(clD).toLowerCase().includes("second"))) {
                     await humanDelay(12000, 15000);
                     await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-task", {
-                      method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data, taskId: tid })
+                      method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit, taskId: tid })
                     }, 1, 600).catch(() => {});
                   }
                 } catch (_) {}
@@ -462,10 +474,11 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
           }
         }
 
-        // Level Unlock
+        // Level Unlock (compare against manualUnlockedLevel so unboosted accounts get upgraded)
         const uObj = meD.user || {};
         const inBal = parseFloat(uObj.inAppBalance || 0);
-        const curLvl = parseInt(uObj.peakLevel || uObj.manualUnlockedLevel || 1, 10);
+        const curLvl = parseInt(uObj.manualUnlockedLevel || 0, 10);
+        curBalStr = ` (bal: ${inBal.toFixed(1)} MRG, lvl: ${uObj.manualUnlockedLevel || uObj.peakLevel || 1})`;
         if (inBal >= 100) {
           const calcReqMRG = (lvl) => {
             if (lvl <= 0) return 0;
@@ -480,7 +493,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
           }
           if (targetLvl > curLvl) {
             await fetchWithRetry("https://mrg.up.railway.app/api/user/unlock-level", {
-              method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data, level: targetLvl })
+              method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit, level: targetLvl })
             }, 1, 600).catch(() => {});
           }
         }
@@ -488,28 +501,34 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
 
       // Claim One-Time Bonus (Available to all fleet accounts)
       await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-one-time-bonus", {
-        method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
+        method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit })
       }, 1, 600).catch(() => {});
 
       if (isOwner) {
         await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-commission", {
-          method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
+          method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit })
         }).catch(() => {});
 
         const frResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/friends", {
-          method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
+          method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit })
         }, 1, 800).catch(() => null);
         if (frResp && frResp.ok) {
           const frD = await frResp.json().catch(() => ({}));
           const tStats = frD.teamStats || {};
           if ((tStats.unclaimedOneTimeBonusMRG || 0) > 0) {
             await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-one-time-bonus", {
-              method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: accData.mrg_init_data })
+              method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit })
             }, 1, 600).catch(() => {});
           }
         }
       }
-      result.bots.mrg = "ok";
+      let claimSummary = "ok";
+      if (claimMiningRes && claimMiningRes.code === "HUMAN_CHECK_REQUIRED") {
+        claimSummary = "ok (claim: human_check)";
+      } else if (claimMiningRes && claimMiningRes.success) {
+        claimSummary = `ok (claimed ${claimMiningRes.claimedAmount || "reward"})`;
+      }
+      result.bots.mrg = `${claimSummary}${curBalStr}`;
     } catch (e) {
       result.bots.mrg = `error: ${e.message}`;
     }

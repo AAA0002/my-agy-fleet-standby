@@ -4,6 +4,41 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **💎 Fleet-Wide MRG Mining Overhaul, Cryptographic TON Proof Binding (18/18 Accounts) & Hashrate Max-Level Unlock (`deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`, `fleet_ton_wallets.json`, `CHANGELOG.md`, `PROJECT_BIBLE.md`)**:
+  - **🔍 Deep Fleet Root-Cause Audit (All 18 Accounts Verified)**:
+    * Identified why MRG mining rewards appeared uncollected: Railway backend returned HTTP 403 `HUMAN_CHECK_REQUIRED` (Cloudflare Turnstile challenge) which was silently swallowed by client `.catch(() => {})` handlers that masked failed claims as "ok".
+    * Discovered that Accounts 15 to 18 (`7749125802`, `7954290138`, `8841038141`, `8975442879`) had `isTonConnected: False` because MRG updated its `/api/user/connect-wallet` API to strictly mandate cryptographic TON Connect 2.0 wallet ownership proofs.
+    * Discovered accounts were stuck at low levels (0 to 2) because level unlock logic previously compared against `peakLevel` instead of `manualUnlockedLevel`, preventing automatic level upgrades.
+  - **🔐 Cryptographic TON Connect 2.0 Proof Generation & Binding (18/18 Accounts Active)**:
+    * Installed `tonsdk` and `pynacl` to build standard TON Connect 2.0 cryptographic signatures (`ton-proof-item-v2`, sha256 domain digest, Ed25519 signature of wallet state init).
+    * Executed cryptographic challenge-response binding for Accounts 15, 16, 17, and 18:
+      - Account 15 (`7749125802` Tiffany): TON Wallet connected (`UQBhpe...`) ✅
+      - Account 16 (`7954290138` Roger): TON Wallet connected (`UQANs0...`) ✅
+      - Account 17 (`8841038141` Kevin): TON Wallet connected (`UQCDql...`) ✅
+      - Account 18 (`8975442879` Mary): TON Wallet connected (`UQBcHz...`) ✅
+    * **100% of fleet worker accounts (Accounts 2 to 18) now have `isTonConnected: True` and active mining**.
+  - **⚡ Fleet-Wide Maximum Level Unlock (Hashrate Optimization)**:
+    * Executed level auto-unlock across all fleet accounts based on true balances:
+      - Node 9 (`8851426148`): Upgraded Level 2 ➔ **Level 79**
+      - Node 10 (`8203342513`): Upgraded Level 2 ➔ **Level 28**
+      - MD. Arif Hossain (`8190649727`): Upgraded Level 2 ➔ **Level 84**
+      - Sanzida Shimu (`7487048946`): Upgraded Level 2 ➔ **Level 85**
+      - Arif (`8826375659`): Upgraded Level 0 ➔ **Level 95**
+      - Kaitlyn (`8782429452`): Upgraded Level 2 ➔ **Level 79**
+      - Nadim (`8450010161`): Upgraded Level 2 ➔ **Level 83**
+      - Koram Shah (`7648254021`): Upgraded Level 2 ➔ **Level 83**
+      - Abid Hasan (`7734849205`): Upgraded Level 2 ➔ **Level 79**
+      - Nancy (`8881914294`): Upgraded Level 2 ➔ **Level 90**
+      - Abid (3) (`8741547543`): Upgraded Level 2 ➔ **Level 82**
+      - Raj Thakur (`8727040932`): Upgraded Level 0 ➔ **Level 49**
+      - Roger, Kevin, Mary, Tiffany: Upgraded to **Level 36**
+  - **🛠️ Cloud Engine Hardening (`deploy_both_cf_workers.py` & `render_standby_app.py`)**:
+    * Added defensive unquoting guard to prevent double-URI-encoded `initData` failures.
+    * Added full device fingerprint payload (`deviceInfo`) to `claim-mining`.
+    * Upgraded claim response parser: Accurately reports `ok (claim: human_check)` vs `ok (claimed X MRG)` to eliminate false positives on the dashboard.
+    * Verified live: Nancy (`8881914294`) successfully claimed mining reward (`0.1621 MRG`, `unclaimedMiningBalance: 0`).
+    * Deployed updated workers across all 5 Cloudflare edge nodes and synchronized with Standby Node 2 on Render.
+
 - **⚡ Centralized D1-First Token Engine Deployment, Scam File Purge & 7-Bot Console Alignment (`deploy_both_cf_workers.py`, `batch_art_airdrop.py`, `dashboard.html`, `public/admin.html`, `public_admin/admin.html`, `clean_all_accounts_channels.py`, `userbot_refresher.py`, `CHANGELOG.md`, `PROJECT_BIBLE.md`)**:
   - **🚀 Centralized `getFleetTokens(env)` Edge Architecture Across All 5 Cloudflare Nodes**:
     * Created and integrated a unified `getFleetTokens(env)` asynchronous engine across all edge routes (`/api/miniapp/tokens`, `/api/farm`, `/api/fleet/tokens`, `scheduled` crons, and harvest queuing).
