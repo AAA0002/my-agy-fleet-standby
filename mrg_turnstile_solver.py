@@ -3,7 +3,7 @@
 MY AGY AI — 100% Cloud MRG Auto-Farming & Turnstile Solver Engine
 Runs 100% in Cloud (GitHub Actions / Cloud VMs) — Zero Phone Load.
 
-Solves Cloudflare Turnstile invisibly using Playwright Chromium,
+Solves Cloudflare Turnstile invisibly using Patchright Chromium stealth,
 refreshes `humanVerifiedUntil` pass across all 18 accounts,
 claims accumulated mining rewards, and compounds miner levels.
 """
@@ -205,120 +205,136 @@ def auto_unlock_mrg_level(init_data: str, current_level: int, balance: float):
     return current_level
 
 
-async def acquire_turnstile_tokens_batch(needed_count: int) -> list:
+async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
     """
-    Launches headless Chromium using Playwright in the cloud,
-    navigates to app.mrgtoken.xyz, and generates fresh Turnstile tokens.
+    Opens app.mrgtoken.xyz with account's actual Telegram initData in stealth browser.
+    Allows the app to mount the Turnstile component, solve it, and invoke verify-human.
     """
-    if needed_count <= 0:
-        return []
+    uid = acc_info["uid"]
+    m_init = acc_info["init_data"]
 
-    try:
-        from playwright.async_api import async_playwright
-    except ImportError:
-        logger.error("Playwright is not installed. Run: pip install playwright && playwright install chromium")
-        return []
+    context = await browser.new_context(
+        user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36",
+        viewport={"width": 412, "height": 915},
+        locale="en-US",
+        timezone_id="UTC"
+    )
 
-    logger.info(f"🌐 Launching Cloud Headless Chromium for {needed_count} Turnstile challenge(s)...")
-    tokens = []
+    page = await context.new_page()
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=True,
-            args=[
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-blink-features=AutomationControlled",
-                "--window-size=1280,800"
-            ]
-        )
+    # Pass the real initData via Telegram WebApp mock and URL hash
+    encoded_init = urllib.parse.quote(m_init)
+    target_url = f"{APP_ORIGIN}/#tgWebAppData={encoded_init}"
 
-        context = await browser.new_context(
-            user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36",
-            viewport={"width": 412, "height": 915},
-            locale="en-US",
-            timezone_id="UTC"
-        )
+    await page.add_init_script(f"""
+        Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
+        window.Telegram = {{
+            WebApp: {{
+                initData: '{m_init}',
+                initDataUnsafe: {{}},
+                ready: () => {{}},
+                expand: () => {{}},
+                close: () => {{}},
+                colorScheme: 'dark',
+                themeParams: {{}}
+            }}
+        }};
+    """)
 
-        page = await context.new_page()
+    verified_event = asyncio.Event()
+    acquired_token = {"token": None}
 
-        # Stealth script injections
-        await page.add_init_script("""
-            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-            window.Telegram = {
-                WebApp: {
-                    initData: '',
-                    initDataUnsafe: {},
-                    ready: () => {},
-                    expand: () => {},
-                    close: () => {},
-                    colorScheme: 'dark',
-                    themeParams: {}
-                }
-            };
-        """)
-
-        logger.info(f"⏳ Navigating to {APP_ORIGIN}...")
+    # Intercept network requests and responses
+    async def handle_response(response):
         try:
-            await page.goto(APP_ORIGIN, wait_until="networkidle", timeout=30000)
-        except Exception as e:
-            logger.warning(f"Navigation note: {e}")
+            if "verify-human" in response.url:
+                res_json = await response.json()
+                if res_json.get("success"):
+                    logger.info(f"🎉 UID {uid}: Real app received 200 OK from verify-human!")
+                    verified_event.set()
+        except Exception:
+            pass
 
-        # Solve sequentially for the required number of tokens
-        for i in range(needed_count):
-            logger.info(f"🔄 Solving Cloudflare Turnstile token [{i+1}/{needed_count}]...")
-            solve_js = f"""
-                async () => {{
-                    return new Promise((resolve) => {{
-                        let interval = setInterval(() => {{
-                            if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                                clearInterval(interval);
-                                try {{
-                                    let container = document.getElementById('cf-turnstile-slot-{i}');
-                                    if (!container) {{
-                                        container = document.createElement('div');
-                                        container.id = 'cf-turnstile-slot-{i}';
-                                        document.body.appendChild(container);
-                                    }}
-                                    window.turnstile.render(container, {{
-                                        sitekey: '{SITE_KEY}',
-                                        callback: function(tok) {{
-                                            resolve({{ success: true, token: tok }});
-                                        }},
-                                        'error-callback': function(err) {{
-                                            resolve({{ success: false, error: String(err) }});
-                                        }},
-                                        'expired-callback': function() {{
-                                            resolve({{ success: false, error: 'expired' }});
-                                        }}
-                                    }});
-                                }} catch (e) {{
-                                    resolve({{ success: false, error: String(e) }});
-                                }}
+    async def handle_request(request):
+        try:
+            if "verify-human" in request.url:
+                post_data = request.post_data_json
+                if post_data and post_data.get("turnstileToken"):
+                    acquired_token["token"] = post_data["turnstileToken"]
+        except Exception:
+            pass
+
+    page.on("response", handle_response)
+    page.on("request", handle_request)
+
+    logger.info(f"⏳ Navigating to {APP_ORIGIN} for UID {uid}...")
+    try:
+        await page.goto(target_url, wait_until="load", timeout=25000)
+    except Exception as e:
+        logger.warning(f"UID {uid} navigation note: {e}")
+
+    # Wait for the app's native verify-human call or manually render Turnstile if not auto-fired
+    try:
+        await asyncio.wait_for(verified_event.wait(), timeout=12.0)
+        logger.info(f"✅ UID {uid}: Turnstile successfully solved natively by MiniApp!")
+        await context.close()
+        return True
+    except asyncio.TimeoutError:
+        logger.info(f"ℹ️ UID {uid}: Native verify-human did not fire in 12s. Attempting programmatic render...")
+
+    # Fallback: manually invoke Turnstile render on page
+    solve_js = f"""
+        async () => {{
+            return new Promise((resolve) => {{
+                let checkInt = setInterval(() => {{
+                    if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                        clearInterval(checkInt);
+                        try {{
+                            let container = document.getElementById('cf-manual-slot');
+                            if (!container) {{
+                                container = document.createElement('div');
+                                container.id = 'cf-manual-slot';
+                                document.body.appendChild(container);
                             }}
-                        }}, 250);
+                            window.turnstile.render(container, {{
+                                sitekey: '{SITE_KEY}',
+                                callback: function(tok) {{
+                                    resolve({{ success: true, token: tok }});
+                                }},
+                                'error-callback': function(err) {{
+                                    resolve({{ success: false, error: String(err) }});
+                                }}
+                            }});
+                        }} catch (e) {{
+                            resolve({{ success: false, error: String(e) }});
+                        }}
+                    }}
+                }}, 250);
 
-                        setTimeout(() => {{
-                            clearInterval(interval);
-                            resolve({{ success: false, error: 'timeout_25s' }});
-                        }}, 25000);
-                    }});
-                }}
-            """
-            result = await page.evaluate(solve_js)
-            if result.get("success") and result.get("token"):
-                tok = result["token"]
-                tokens.append(tok)
-                logger.info(f"✅ Acquired Turnstile Token #{i+1}: {tok[:18]}... (len: {len(tok)})")
+                setTimeout(() => {{
+                    clearInterval(checkInt);
+                    resolve({{ success: false, error: 'timeout_15s' }});
+                }}, 15000);
+            }});
+        }}
+    """
+    try:
+        render_res = await page.evaluate(solve_js)
+        if render_res.get("success") and render_res.get("token"):
+            tok = render_res["token"]
+            logger.info(f"✅ UID {uid}: Programmatic Turnstile token acquired: {tok[:16]}...")
+            ver_res = verify_human_token(m_init, tok)
+            if ver_res.get("success"):
+                logger.info(f"🎉 UID {uid}: Programmatic verify-human succeeded!")
+                await context.close()
+                return True
             else:
-                logger.error(f"❌ Failed to acquire Turnstile Token #{i+1}: {result.get('error')}")
+                logger.error(f"❌ UID {uid}: Programmatic verify-human rejected: {ver_res}")
+    except Exception as e:
+        logger.warning(f"UID {uid} evaluate note: {e}")
 
-            await asyncio.sleep(1.5)
-
-        await browser.close()
-
-    return tokens
+    await context.close()
+    return False
 
 
 async def run_mrg_auto_solver():
@@ -372,42 +388,52 @@ async def run_mrg_auto_solver():
     needed_count = len(accounts_needing_solver)
     logger.info(f"📊 Audit Summary: {len(accounts_data)} accounts connected. {needed_count} accounts require Turnstile solving.")
 
-    # 2. Acquire fresh Turnstile tokens in headless browser if needed
-    fresh_tokens = []
-    if needed_count > 0:
-        fresh_tokens = await acquire_turnstile_tokens_batch(needed_count)
-
-    # 3. Process accounts needing verification
+    # 2. Launch stealth browser and process accounts needing verification
     solved_count = 0
     total_claimed_mrg = 0.0
 
-    for i, acc in enumerate(accounts_needing_solver):
-        uid = acc["uid"]
-        m_init = acc["init_data"]
+    if needed_count > 0:
+        # Import patchright (or fallback to playwright)
+        try:
+            from patchright.async_api import async_playwright
+            logger.info("🛡️ Using Patchright stealth browser engine.")
+        except ImportError:
+            from playwright.async_api import async_playwright
+            logger.info("🌐 Using Playwright browser engine.")
 
-        if i < len(fresh_tokens):
-            turnstile_token = fresh_tokens[i]
-            # Call /api/user/verify-human
-            ver_res = verify_human_token(m_init, turnstile_token)
-            if ver_res.get("success"):
-                logger.info(f"🎉 UID {uid}: verify-human succeeded! Human pass unlocked for 8 hours.")
-                solved_count += 1
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(
+                headless=True,
+                args=[
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-blink-features=AutomationControlled",
+                    "--window-size=1280,800"
+                ]
+            )
 
-                # Claim accumulated mining rewards
-                claim_res = claim_mining_reward(m_init, turnstile_token)
-                claimed_amt = float(claim_res.get("claimedAmount") or acc["stat"]["unclaimed"])
-                total_claimed_mrg += claimed_amt
-                logger.info(f"⛏️ UID {uid}: Successfully claimed {claimed_amt:.2f} MRG! Miner restarted.")
+            for acc in accounts_needing_solver:
+                uid = acc["uid"]
+                m_init = acc["init_data"]
+                success = await solve_turnstile_for_account(browser, acc)
+                if success:
+                    solved_count += 1
+                    # Claim accumulated mining rewards
+                    claim_res = claim_mining_reward(m_init)
+                    claimed_amt = float(claim_res.get("claimedAmount") or acc["stat"]["unclaimed"])
+                    total_claimed_mrg += claimed_amt
+                    logger.info(f"⛏️ UID {uid}: Successfully claimed {claimed_amt:.2f} MRG! Miner restarted.")
 
-                # Auto-upgrade level if balance allows
-                new_bal = acc["stat"]["inAppBalance"] + claimed_amt
-                auto_unlock_mrg_level(m_init, acc["stat"]["manualUnlockedLevel"], new_bal)
-            else:
-                logger.error(f"❌ UID {uid}: verify-human rejected: {ver_res}")
-        else:
-            logger.warning(f"⚠️ UID {uid}: No fresh token available to solve challenge.")
+                    # Auto-upgrade level if balance allows
+                    new_bal = acc["stat"]["inAppBalance"] + claimed_amt
+                    auto_unlock_mrg_level(m_init, acc["stat"]["manualUnlockedLevel"], new_bal)
 
-    # 4. Also claim rewards for accounts that already had an active pass
+                await asyncio.sleep(1.5)
+
+            await browser.close()
+
+    # 3. Also claim rewards for accounts that already had an active pass
     for acc in accounts_data:
         if acc["has_active_pass"]:
             uid = acc["uid"]
@@ -421,7 +447,7 @@ async def run_mrg_auto_solver():
                     new_bal = acc["stat"]["inAppBalance"] + claimed_amt
                     auto_unlock_mrg_level(m_init, acc["stat"]["manualUnlockedLevel"], new_bal)
 
-    # 5. Master Account Referral Sweep
+    # 4. Master Account Referral Sweep
     master_acc = next((a for a in accounts_data if a["uid"] == 6727787768), None)
     if master_acc:
         m_init = master_acc["init_data"]
@@ -429,7 +455,7 @@ async def run_mrg_auto_solver():
         safe_post(f"{API_BASE}/api/user/claim-one-time-bonus", {"initData": m_init})
         logger.info("👑 Master Account referral commission and team bonus claimed.")
 
-    # 6. Telegram Telemetry Notification
+    # 5. Telegram Telemetry Notification
     report_msg = (
         f"🚀 <b>MRG 100% Cloud Auto-Farming Report</b>\n\n"
         f"• <b>Total Fleet Accounts:</b> 18\n"
