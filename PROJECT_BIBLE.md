@@ -131,9 +131,38 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * Script: `mrg_turnstile_solver.py` (Headless Patchright stealth engine, real Telegram `initData` simulation, native claim button clicker, Turnstile iframe solver, and auto-compounder).
     * Zero Phone Load: Runs 100% inside Microsoft/GitHub's cloud runner environment (Ubuntu 22.04, 7GB RAM).
 
-- **Telegram Vaults**:
-  - Admin & Backup Channel: `@myagyai` (Bot: `@myagyai`)
-  - Secondary Bot: `@AAAPREMIUMAPPSbot`
+- **Telegram Vaults & Community Channels**:
+  - Admin & Vault Channel: `@myagyai` (Bot: `@myagyai`, UID `6727787768`)
+  - Community Supergroup: `-1003684868577`
+  - Announcements Channel: `-1004255751168`
+  - Activity Channel: `-1004332544939`
+  - Payout Vault Channel: `-1004402765950`
+  - Secondary Identity Bot: `@AAAPREMIUMAPPSbot` (Bot ID: `8167732110`)
+
+### 🛰️ The Complete Master Catalog of Cloud Infrastructure & Verified APIs (from `.env`)
+
+| Infrastructure Layer | Service / Provider | Endpoint / Host / Resource | Status & Verified Capabilities |
+| :--- | :--- | :--- | :--- |
+| **Serverless Edge Web** | **Vercel Cloud** | `https://agy-aaa000.vercel.app` | 🟢 **HTTP 200 OK** — Edge deployment (`team_C2l6j4UJ0x8Cwu7xvYtxBn02`) |
+| **Serverless Edge Web** | **Deno Deploy (Node 1)** | `https://my-agy-fleet-deno.aaa222.deno.net` | 🟢 **HTTP 200 OK** — TypeScript Edge serverless runner |
+| **Serverless Edge Web** | **Deno Deploy (Node 2)** | `https://my-agy-fleet-deno2.aaasupporta.deno.net` | 🟢 **HTTP 200 OK** — Secondary TypeScript Edge runner |
+| **Cloudflare Pages** | **ATF WebApp** | `https://atf-miner-app.pages.dev` | 🟢 **HTTP 200 OK** — Global static and edge WebApp frontend |
+| **Decentralized Storage** | **Pinata IPFS** | `api.pinata.cloud` | 🟢 **AUTHENTICATED** — Latest CID: `QmUSX7XHwMcq3muCnZBaDzvk3D9ohXnJpe9iiQikbms8mn` |
+| **Serverless Database** | **Upstash Redis** | `relaxing-starfish-285827.upstash.io` | 🟢 **HTTP 200 OK** — Real-time token storage across all 18 accounts |
+| **Serverless Database** | **Turso LibSQL** | `my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io` | 🟢 **HTTP 200 OK** — Distributed SQLite edge database |
+| **Cloud Postgres** | **Supabase Cloud** | `znbbaozpevurvbfkxakz.supabase.co` | 🟢 **HTTP 200 OK** — Managed PostgreSQL database via Service Role Key |
+| **AI Inference Engine** | **Google Gemini** | `generativelanguage.googleapis.com` | 🟢 **14/14 KEYS ACTIVE** — Rotating multi-key pool for Ari AI reasoning |
+| **Edge AI Inference** | **Workers AI (Cloudflare)** | Global Edge Mesh (Llama 3.2 3B Instruct) | 🟢 **ACTIVE** — Zero API keys required across 5 Cloudflare nodes |
+| **Web3 Infrastructure** | **Alchemy Ethereum** | `eth-mainnet.g.alchemy.com/v2/...` | 🟢 **HTTP 200 OK** — Live block height queries verified |
+| **Web3 Infrastructure** | **Toncenter Official** | `https://toncenter.com/api/v2` | 🟢 **HTTP 200 OK** — High-speed TON masterchain RPC |
+| **Web3 Infrastructure** | **TonAPI Key** | `https://tonapi.io` | 🟢 **ACTIVE** — Jetton transfers and account audits |
+| **Web3 Infrastructure** | **Etherscan API** | `api.etherscan.io` | 🟢 **ACTIVE** — EVM on-chain verification key |
+| **Rotating Proxy Pool** | **Webshare Proxies** | `proxy.webshare.io` | 🟢 **20 ACTIVE PROXIES** — Residential/datacenter proxy pool across 2 keys |
+| **Cloud Scheduler** | **Cron-Job.org** | `api.cron-job.org` | 🟢 **HTTP 200 OK** — External heartbeat trigger for cloud worker wakeups |
+| **Uptime & Dead-Man** | **Better Stack** | `uptime.betterstack.com/api/v1/heartbeat/...` | 🟢 **HTTP 200 OK** — Dead-man's switch 24/7 heartbeat monitor |
+| **Crash Interception** | **Sentry Monitoring** | `ingest.us.sentry.io` | 🟢 **ACTIVE** — 2 Projects configured for real-time exception trapping |
+| **IP Telemetry** | **ipinfo.io** | `ipinfo.io/json` | 🟢 **ACTIVE** — Autonomous geolocation & ASN validation |
+| **Permanent Memory** | **Walrus Memory** | Protocol Key: `11162bafeb85...` | 🟢 **ACTIVE** — Permanent system state sync across restarts |
 
 ---
 
