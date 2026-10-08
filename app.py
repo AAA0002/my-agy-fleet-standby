@@ -453,7 +453,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
 
 
 async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
-    """Extracts fresh WebApp session initData tokens across all 15 active MiniApp bots."""
+    """Extracts fresh WebApp session initData tokens across all 7 active MiniApp bots."""
     name = acc.get("name", "User")
     uid = str(acc.get("user_id"))
     tokens = {
@@ -2567,10 +2567,11 @@ async def notify_admin_new_account_onboarded(acc_entry: dict):
         f"• ATF Miner: TON Connected ✅\n"
         f"• Stones Miner: EVM Bound ✅\n"
         f"• MRG Miner: TON Connected ✅\n"
-        f"• AI Lab: Dedicated EVM Target ✅\n"
-        f"• Ainovum: Dedicated EVM Target ✅\n"
-        f"• UltraWallet: TRON Bound ✅\n\n"
-        f"🚀 <b>Auto-Farming Status:</b> Active across all 15 bots in the cloud!"
+        f"• AI Lab: Active Hashes & Balance ✅\n"
+        f"• UltraWallet: Active USDT & LT ✅\n"
+        f"• FINVORA Web3: TON Connected ✅\n"
+        f"• TurboGram V1: TON Connected ✅\n\n"
+        f"🚀 <b>Auto-Farming Status:</b> Active across all 7 legitimate bots in the cloud!"
     )
     async with aiohttp.ClientSession() as s:
         try:
@@ -3567,6 +3568,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             bg_tasks.append(asyncio.create_task(_stones_complete_channel()))
 
             # Dynamic task discovery from /api/state
+            st_data = None
             try:
                 _, st_data = await safe_post("https://app.stoneswithestand.my.id/api/state", {"initData": s_init}, req_headers=s_headers)
                 if st_data and isinstance(st_data, dict):
@@ -3652,7 +3654,14 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             except Exception:
                 pass
 
-            status["bots"]["stones"] = "farmed"
+            bal_str = ""
+            if st_data and isinstance(st_data, dict):
+                st_u = st_data.get("user", {})
+                coins = st_u.get("coins")
+                lvl = st_u.get("level")
+                if coins is not None:
+                    bal_str = f" (lvl: {lvl}, bal: {coins} STONES)" if lvl is not None else f" (bal: {coins} STONES)"
+            status["bots"]["stones"] = f"farmed{bal_str}"
         except Exception as e:
             status["bots"]["stones"] = f"error: {format_error(e)}"
 
@@ -3774,13 +3783,19 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 ai_login_p["invite_code"] = "296852"
                 ai_login_p["ref"] = "296852"
             _, ld = await safe_post(f"{ai_base}/users/auth/login", ai_login_p, req_headers=ai_default_h)
+            cur_bal = None
+            h_bal = 0.0
             if ld and isinstance(ld, dict):
                 res_obj = ld.get("result")
                 tok = res_obj.get("bearer") if isinstance(res_obj, dict) else None
+                if isinstance(res_obj, dict):
+                    cur_bal = res_obj.get("balance")
                 if not tok:
                     u_info = ld.get("user_info")
                     if isinstance(u_info, dict):
                         tok = u_info.get("session_id")
+                        if cur_bal is None:
+                            cur_bal = u_info.get("balance")
 
                 if tok:
                     ai_auth = {**ai_default_h, "Authorization": f"Bearer {tok}"}
@@ -3790,7 +3805,6 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         if md and isinstance(md, dict):
                             m_res = md.get("result")
                             cur_m = {}
-                            h_bal = 0.0
                             if isinstance(m_res, dict):
                                 miner_dict = m_res.get("miner")
                                 if isinstance(miner_dict, dict):
@@ -3837,7 +3851,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     # AI Lab auto-cashout permanently DISABLED to prevent wrong-address routing
                     # All fleet accounts accumulate USD and compute hashes safely in compounding mode
 
-            status["bots"]["ailab"] = "farmed"
+            bal_str = ""
+            if cur_bal is not None:
+                bal_str = f" (bal: ${float(cur_bal):.4f}{f', {h_bal:.1f} hashes' if h_bal else ''})"
+            status["bots"]["ailab"] = f"farmed{bal_str}"
         except Exception as e:
             status["bots"]["ailab"] = f"error: {format_error(e)}"
 
@@ -3892,6 +3909,14 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
             if id_tok:
                 uw_h = {**uw_origin_h, "Authorization": f"Bearer {id_tok}"}
+                uw_usdt = 0.0
+                pend_lt = 0.0
+                try:
+                    _, ms_d = await safe_get(f"{uw_base}/mining/status", uw_h)
+                    if ms_d and isinstance(ms_d, dict):
+                        pend_lt = float(ms_d.get("mining", {}).get("pendingAmount", 0) or 0)
+                except Exception:
+                    pass
                 await jitter(1.0, 2.0)
                 await safe_post(f"{uw_base}/checkin/claim", {}, uw_h)
                 await jitter(1.0, 2.0)
@@ -3905,6 +3930,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 try:
                     _, spi = await safe_get(f"{uw_base}/spin/status", uw_h)
                     if spi and isinstance(spi, dict):
+                        uw_usdt = float(spi.get("walletCoinBalances", {}).get("USDT", 0) or spi.get("coinBalances", {}).get("USDT", 0) or 0)
                         watch_info = spi.get("watchAdSpins", {})
                         used_ad_spins = watch_info.get("used", 0) or 0
                         max_ad_spins = watch_info.get("max", 10) or 10
@@ -3916,6 +3942,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                 break
                         # Fetch updated tickets and spin the wheel
                         _, spi_after = await safe_get(f"{uw_base}/spin/status", uw_h)
+                        if spi_after and isinstance(spi_after, dict):
+                            uw_usdt = float(spi_after.get("walletCoinBalances", {}).get("USDT", 0) or spi_after.get("coinBalances", {}).get("USDT", 0) or uw_usdt)
                         spins = ((spi_after.get("tickets", 0) or 0) + (spi_after.get("freeSpinsRemaining", 0) or 0)) if (spi_after and isinstance(spi_after, dict)) else ((spi.get("tickets", 0) or 0) + (spi.get("freeSpinsRemaining", 0) or 0))
                         for _ in range(min(spins, 5)):
                             await jitter(1.2, 2.5)
@@ -3972,7 +4000,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 if is_owner:
                     await safe_post(f"{uw_base}/referral/milestones/claim", {}, uw_h)
 
-                status["bots"]["ultrawallet"] = "farmed"
+                bal_str = ""
+                if uw_usdt > 0 or pend_lt > 0:
+                    bal_str = f" (bal: ${uw_usdt:.2f} USDT, pend: {pend_lt:.1f} LT)"
+                status["bots"]["ultrawallet"] = f"farmed{bal_str}"
             else:
                 err_data = ud.get("error") if (ud and isinstance(ud, dict)) else None
                 if isinstance(err_data, str):
@@ -4081,7 +4112,13 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 except Exception:
                     pass
 
-            status["bots"]["atf"] = "farmed"
+            bal_str = ""
+            if log_data and isinstance(log_data, dict):
+                u_obj = log_data.get("user", {})
+                lvl = u_obj.get("miner_level", 1)
+                bal = float(u_obj.get("mined_balance", 0) or 0)
+                bal_str = f" (lvl: {lvl}, bal: {bal:.1f} ATF)"
+            status["bots"]["atf"] = f"farmed{bal_str}"
         except Exception as e:
             status["bots"]["atf"] = f"error: {format_error(e)}"
 
@@ -4194,9 +4231,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         async with sem_bot:
             try:
                 await jitter(0.2, 0.6)
-                await asyncio.wait_for(b["fn"](), timeout=28.0)
+                await asyncio.wait_for(b["fn"](), timeout=45.0)
             except asyncio.TimeoutError:
-                status["bots"][b["name"]] = "timeout (28s)"
+                status["bots"][b["name"]] = "timeout (45s)"
             except Exception as err:
                 status["bots"][b["name"]] = f"error: {format_error(err)}"
 
@@ -4205,7 +4242,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
 
 async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, accounts: list = None, tokens_map: dict = None) -> dict:
-    """Executes full autonomous cloud farming and task completions across all 16 bots for all fleet accounts."""
+    """Executes full autonomous cloud farming and task completions across all 7 legitimate bots for all fleet accounts."""
     created_session = False
     if session is None:
         session = aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
@@ -4230,7 +4267,7 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                 all_expired = is_token_data_expired(t_dict, max_age_hours=22.0)
                 if (not has_any_token or all_expired) and (a_dict.get("session_string") or a_dict.get("session")) and uid_str != "6727787768":
                     try:
-                        fresh_toks = await asyncio.wait_for(extract_tokens_for_account(a_dict), timeout=25.0)
+                        fresh_toks = await asyncio.wait_for(extract_tokens_for_account(a_dict), timeout=45.0)
                         if fresh_toks:
                             t_dict.update(fresh_toks)
                             tokens_map[uid_str] = t_dict
@@ -4238,9 +4275,9 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                     except Exception as ex_e:
                         logger.warning(f"[Farm Task] On-the-fly extraction note for {uid_str}: {ex_e}")
                 try:
-                    return await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict), timeout=60.0)
+                    return await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict), timeout=75.0)
                 except asyncio.TimeoutError:
-                    return {"uid": uid_str, "name": a_dict.get("name", uid_str), "bots": {"status": "timeout_60s"}}
+                    return {"uid": uid_str, "name": a_dict.get("name", uid_str), "bots": {"status": "timeout_75s"}}
 
         for acc in accounts:
             uid = str(acc.get("user_id"))
