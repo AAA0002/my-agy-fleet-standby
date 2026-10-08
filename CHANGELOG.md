@@ -4,6 +4,13 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🤖 100% Cloud MRG Turnstile Auto-Solver & Dual GitHub Compute Mesh (`mrg_turnstile_solver.py`, `.github/workflows/mrg_turnstile_solver.yml`, `koramshah2/AAA_AUTO`)**:
+  - **🛡️ 100% Cloud Turnstile Solver**: Implemented `mrg_turnstile_solver.py` using Playwright Chromium in headless stealth mode. Silently executes Cloudflare Turnstile (`sitekey: 0x4AAAAAAFI-XXL7bFNbLU_J`) on `app.mrgtoken.xyz` in the cloud without loading phone RAM/CPU (Zero Phone Load Directive).
+  - **🔄 Automatic Human Pass Renewal**: Calls `POST /api/user/verify-human` with acquired tokens, renewing `humanVerifiedUntil` for 8 hours across all 18 fleet accounts so miners never hit the 24-hour storage cap or stop.
+  - **⛏️ Auto-Claim & Level Compounding**: Automatically harvests accumulated MRG rewards, resets mining timers, compounds miner levels up to 203, and claims master account referral commissions and team bonuses.
+  - **⏰ GitHub Actions Scheduled Cloud Cron**: Added `.github/workflows/mrg_turnstile_solver.yml` triggering every 3 hours (`15 */3 * * *`) in Microsoft/GitHub's cloud runner environment (Ubuntu 22.04 with 7GB RAM).
+  - **🚀 Dual GitHub Account Mesh Expansion**: Added user's second GitHub account `koramshah2` (`Koramshah2@gmail.com`). Created private cloud repository `koramshah2/AAA_AUTO` providing a combined 4,000 free minutes/month across `AAA0002` and `koramshah2`.
+
 - **🚀 9-Bot Fleet Expansion: Victor's Company & VyroDrop Autonomous Integration, Referral Binding & Scoping Hardening (`deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`, `push_to_standby_repo.py`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
   - **🔍 Reverse-Engineering & Full Integration of Victor's Company (`@VictorsCompanybot`)**:
     * Analyzed backend API at `https://server.victors.company/api`.

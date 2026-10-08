@@ -97,9 +97,11 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   - Service 3: **Primary MTProto Relayer**: `https://atf-mtproto-relayer.onrender.com` (Online, authenticated session bridge)
   - Service 4: **Backup MTProto Relayer**: `https://atf-mtproto-relayer-backup.onrender.com` (Online, authenticated fallback session bridge)
   - Service 5: **Hermes Council Agent**: `https://hermes-grok-cloud-agent.onrender.com` (Service Key: `rnd_PqsurfX5D9blSaEEuEDDAUcl393y`)
-- **Git Standby Repositories**:
-  - Primary Standby: `AAA0002/my-agy-fleet-standby` (`app.py`)
-  - Secondary Standby: `AAA2743/my-agy-fleet-standby` (`app.py`)
+- **Git Standby Repositories & Cloud CI/CD Runners**:
+  - Primary Fleet Repo: `AAA0002/ATL` (GitHub Actions: 2,000 free min/mo)
+  - Standby Mirror Repo: `koramshah2/AAA_AUTO` (`Koramshah2@gmail.com`, GitHub Actions: 2,000 free min/mo)
+  - Standby Cloud Compute: `AAA0002/my-agy-fleet-standby` (`app.py`), `AAA2743/my-agy-fleet-standby` (`app.py`)
+  - **MRG Turnstile Solver Workflow**: `.github/workflows/mrg_turnstile_solver.yml` (Runs `mrg_turnstile_solver.py` via Playwright Chromium every 3 hours in GitHub Cloud, keeping all 18 accounts continuously verified with zero phone load)
 - **Telegram Vaults**:
   - Admin & Backup Channel: `@myagyai` (Bot: `@myagyai`)
   - Secondary Bot: `@AAAPREMIUMAPPSbot`
