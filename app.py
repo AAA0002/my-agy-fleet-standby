@@ -3778,17 +3778,19 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     await safe_post("https://mrg.up.railway.app/api/user/claim-one-time-bonus", {"initData": m_init}, req_headers=m_headers)
 
             bal_str = ""
+            unclaimed_val = 0.0
             if me_d and isinstance(me_d, dict) and me_d.get("user"):
                 u_m = me_d["user"]
                 b_val = float(u_m.get("inAppBalance", 0) or 0)
                 l_val = u_m.get("manualUnlockedLevel") or u_m.get("peakLevel") or 1
+                unclaimed_val = float(u_m.get("unclaimedMiningBalance", 0) or 0)
                 bal_str = f" (lvl: {l_val}, bal: {b_val:.1f} MRG)"
             claim_stat = "farmed"
             if claim_d and isinstance(claim_d, dict):
                 if claim_d.get("code") == "HUMAN_CHECK_REQUIRED":
-                    claim_stat = "farmed (claim: human_check)"
+                    claim_stat = f"farmed (security_check_needed: {unclaimed_val:.1f} MRG)"
                 elif claim_d.get("success"):
-                    claim_stat = f"farmed (claimed {claim_d.get('claimedAmount', 'reward')})"
+                    claim_stat = f"farmed (auto-claimed {claim_d.get('claimedAmount', 'reward')} MRG)"
             status["bots"]["mrg"] = f"{claim_stat}{bal_str}"
         except Exception as e:
             status["bots"]["mrg"] = f"error: {format_error(e)}"
