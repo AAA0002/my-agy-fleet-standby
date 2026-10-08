@@ -5107,9 +5107,9 @@ async def sync_and_verify_channels_endpoint(request: Request):
                             pass
                 acc_res["muted"] = muted_cnt
 
-                # 4. Channel limit protection: if total dialogs > 400, leave non-whitelisted channels
+                # 4. Channel limit protection: if total dialogs > 400, leave non-whitelisted channels (workers only)
                 pruned_cnt = 0
-                if len(dialogs) > 400:
+                if uid != "6727787768" and len(dialogs) > 400:
                     for d in dialogs:
                         if d.is_channel and not getattr(d.entity, 'megagroup', False):
                             uname = (getattr(d.entity, 'username', '') or '').lower()
