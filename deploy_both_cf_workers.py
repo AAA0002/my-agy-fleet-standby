@@ -523,10 +523,11 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         }
       }
       let claimSummary = "ok";
+      const unclaimedMRG = parseFloat((meD && meD.user && meD.user.unclaimedMiningBalance) || 0);
       if (claimMiningRes && claimMiningRes.code === "HUMAN_CHECK_REQUIRED") {
-        claimSummary = "ok (claim: human_check)";
+        claimSummary = `ok (security_check_needed: ${unclaimedMRG.toFixed(1)} MRG)`;
       } else if (claimMiningRes && claimMiningRes.success) {
-        claimSummary = `ok (claimed ${claimMiningRes.claimedAmount || "reward"})`;
+        claimSummary = `ok (auto-claimed ${claimMiningRes.claimedAmount || "reward"} MRG)`;
       }
       result.bots.mrg = `${claimSummary}${curBalStr}`;
     } catch (e) {
