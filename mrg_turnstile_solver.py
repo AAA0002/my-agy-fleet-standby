@@ -273,7 +273,43 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
     except Exception as e:
         logger.warning(f"UID {uid} navigation note: {e}")
 
-    # Wait for the app's native verify-human call or manually render Turnstile if not auto-fired
+    # Allow React hydration
+    await asyncio.sleep(2.5)
+
+    # 1. Click the 'Claim' button in the MRG UI to trigger the claim & security verification modal
+    try:
+        clicked = await page.evaluate("""
+            () => {
+                const btns = Array.from(document.querySelectorAll('button'));
+                const claimBtn = btns.find(b => b.innerText && b.innerText.toLowerCase().includes('claim'));
+                if (claimBtn) {
+                    claimBtn.click();
+                    return true;
+                }
+                return false;
+            }
+        """)
+        if clicked:
+            logger.info(f"🖱️ Clicked Claim button for UID {uid}.")
+    except Exception as e:
+        logger.warning(f"UID {uid} click note: {e}")
+
+    # 2. Check for Turnstile iframe and click checkbox if present
+    for _ in range(8):
+        if verified_event.is_set():
+            break
+        try:
+            ts_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
+            checkbox = ts_frame.locator("input[type='checkbox'], #challenge-stage, .ctp-checkbox-label, body")
+            if await checkbox.count() > 0:
+                logger.info(f"🖱️ Found Turnstile iframe checkbox for UID {uid}! Clicking...")
+                await checkbox.first.click(timeout=3000)
+                break
+        except Exception:
+            pass
+        await asyncio.sleep(1.0)
+
+    # Wait for the app's native verify-human call
     try:
         await asyncio.wait_for(verified_event.wait(), timeout=12.0)
         logger.info(f"✅ UID {uid}: Turnstile successfully solved natively by MiniApp!")
@@ -319,7 +355,23 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
         }}
     """
     try:
-        render_res = await page.evaluate(solve_js)
+        render_task = asyncio.create_task(page.evaluate(solve_js))
+        # Look for iframe during programmatic render and click checkbox if needed
+        for _ in range(6):
+            if render_task.done():
+                break
+            try:
+                ts_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
+                checkbox = ts_frame.locator("input[type='checkbox'], #challenge-stage, .ctp-checkbox-label, body")
+                if await checkbox.count() > 0:
+                    logger.info(f"🖱️ Clicking programmatic Turnstile checkbox for UID {uid}...")
+                    await checkbox.first.click(timeout=3000)
+                    break
+            except Exception:
+                pass
+            await asyncio.sleep(1.0)
+
+        render_res = await render_task
         if render_res.get("success") and render_res.get("token"):
             tok = render_res["token"]
             logger.info(f"✅ UID {uid}: Programmatic Turnstile token acquired: {tok[:16]}...")
