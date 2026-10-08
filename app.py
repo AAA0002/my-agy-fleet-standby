@@ -280,11 +280,11 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
     except Exception:
         return True
 
-    # Check individual token auth_date signatures (9 Legitimate WebApp Bots)
+    # Check individual token auth_date signatures (7 Legitimate WebApp Bots)
     key_tokens = [
-        "stones_init_data", "mrg_init_data", "art_init_data", "ailab_init_data",
+        "stones_init_data", "mrg_init_data", "ailab_init_data",
         "ultrawallet_init_data", "atf_init_data", "finvora_init_data",
-        "turbogram_init_data", "trxpower_init_data"
+        "turbogram_init_data"
     ]
     missing_cnt = 0
     expired_cnt = 0
@@ -479,37 +479,27 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     if tok:
         tokens["mrg_init_data"] = tok
 
-    # 3. ART Airdrop (@ART_AIRDROP_BOT)
-    tok = await extract_bot_webapp_token(client, ART_BOT, start_param=REPORT_CHAT_ID, default_url=f"https://art.tamimdev.dev/?ref={REPORT_CHAT_ID}", candidate_short_names=["app", "art"])
-    if tok:
-        tokens["art_init_data"] = tok
-
-    # 4. AI Lab Robot (@AiLab_robot)
+    # 3. AI Lab Robot (@AiLab_robot)
     tok = await extract_bot_webapp_token(client, AILAB_BOT, start_param="296852", default_url="https://ailab-agent.online/", candidate_short_names=["app", "agent"])
     if tok:
         tokens["ailab_init_data"] = tok
 
-    # 5. UltraWallet (@UltrawalletTrade_Bot)
+    # 4. UltraWallet (@UltrawalletTrade_Bot)
     tok = await extract_bot_webapp_token(client, ULTRAWALLET_BOT, start_param=str(ULTRAWALLET_REFERRAL_CODE), default_url="https://wallet.trxvault.top/", candidate_short_names=["app", "trade", "Trade"])
     if tok:
         tokens["ultrawallet_init_data"] = tok
 
-    # 6. ATF Miner (@ATF_AIRDROP_bot)
+    # 5. ATF Miner (@ATF_AIRDROP_bot)
     tok = await extract_bot_webapp_token(client, "ATF_AIRDROP_bot", start_param=REPORT_CHAT_ID, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"])
     if tok:
         tokens["atf_init_data"] = tok
 
-    # 7. TRX Power Mining (@trxpowermining_bot)
-    tok = await extract_bot_webapp_token(client, TRXPOWER_BOT, start_param=TRXPOWER_REFERRAL_CODE, default_url="https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/", candidate_short_names=["app", "mine", "trx", "mining"])
-    if tok:
-        tokens["trxpower_init_data"] = tok
-
-    # 8. FINVORA Web3 (@FINVORAWeb3bot)
+    # 6. FINVORA Web3 (@FINVORAWeb3bot)
     tok = await extract_bot_webapp_token(client, FINVORA_BOT, start_param=FINVORA_REFERRAL_CODE, default_url="https://finvora-production.up.railway.app/", candidate_short_names=["app", "finvora", "mine", "play"])
     if tok:
         tokens["finvora_init_data"] = tok
 
-    # 9. TurboGram V1 (@TurboGramV1_bot)
+    # 7. TurboGram V1 (@TurboGramV1_bot)
     tok = await extract_bot_webapp_token(client, TURBOGRAM_BOT, start_param=REPORT_CHAT_ID, default_url="https://turbo.tamimdev.dev/", candidate_short_names=["app", "miniapp", "bot", "turbo"])
     if tok:
         tokens["turbogram_init_data"] = tok
@@ -1376,32 +1366,7 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             except Exception as e:
                 logger.debug(f"[{name}] MRG bootstrap note: {e}")
 
-        # 3. ART Airdrop
-        if tokens.get("art_init_data"):
-            try:
-                art_init = tokens["art_init_data"]
-                art_h = {"X-Telegram-Init-Data": art_init, "Content-Type": "application/json", "User-Agent": headers["User-Agent"]}
-                await http.post("https://art.tamimdev.dev/api/user/start-mining", json={"userId": uid}, headers=art_h, timeout=aiohttp.ClientTimeout(total=8))
-                await http.post("https://art.tamimdev.dev/api/user/claim-mining", json={"userId": uid}, headers=art_h, timeout=aiohttp.ClientTimeout(total=8))
-                await http.post("https://art.tamimdev.dev/api/ads/claim", json={"userId": uid}, headers=art_h, timeout=aiohttp.ClientTimeout(total=6))
-                try:
-                    async with http.get(f"https://art.tamimdev.dev/api/tasks/{uid}", headers=art_h, timeout=aiohttp.ClientTimeout(total=6)) as tr:
-                        if tr.status == 200:
-                            td = await tr.json()
-                            for t in td.get("tasks", []):
-                                if not t.get("isCompleted") and t.get("id"):
-                                    await http.post("https://art.tamimdev.dev/api/tasks/start", json={"userId": uid, "taskId": t["id"]}, headers=art_h, timeout=aiohttp.ClientTimeout(total=4))
-                                    await http.post("https://art.tamimdev.dev/api/tasks/claim", json={"userId": uid, "taskId": t["id"]}, headers=art_h, timeout=aiohttp.ClientTimeout(total=4))
-                except Exception:
-                    pass
-                if uid == "6727787768":
-                    await http.post("https://art.tamimdev.dev/api/referrals/claim-team", json={"userId": uid}, headers=art_h, timeout=aiohttp.ClientTimeout(total=4))
-                    await http.post("https://art.tamimdev.dev/api/referrals/claim-bonus", json={"userId": uid}, headers=art_h, timeout=aiohttp.ClientTimeout(total=4))
-                logger.info(f"[{name}] ✅ ART initial mining started & tasks claimed")
-            except Exception as e:
-                logger.debug(f"[{name}] ART bootstrap note: {e}")
-
-        # 4. AI Lab Robot
+        # 3. AI Lab Robot
         if tokens.get("ailab_init_data"):
             try:
                 ai_init = tokens["ailab_init_data"]
@@ -1557,104 +1522,7 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                 logger.info(f"[{name}] ✅ ATF Miner referral finish work & starter tasks completed")
             except Exception as e:
                 logger.debug(f"[{name}] ATF Miner bootstrap note: {e}")
-
-        # 8. Ainovum Bot
-        if tokens.get("ainovum_init_data"):
-            try:
-                ain_init = tokens["ainovum_init_data"]
-                ain_base = "https://ainovum.biz"
-                ain_h = {
-                    "Content-Type": "application/json",
-                    "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
-                    "Referer": "https://ainovum.biz/",
-                    "Origin": "https://ainovum.biz"
-                }
-                async with http.post(f"{ain_base}/api/bootstrap", json={
-                    "initData": ain_init,
-                    "platform": "android",
-                    "referrer": "ref_6727787768",
-                    "timezone_offset_minutes": 0,
-                    "language_code": "en",
-                    "registration_duration_ms": 1500
-                }, headers=ain_h, timeout=aiohttp.ClientTimeout(total=8)) as br:
-                    if br.status == 200:
-                        raw_cookies = br.headers.getall("Set-Cookie", [])
-                        cookie_hdr = "; ".join([c.split(";")[0] for c in raw_cookies])
-                        if not cookie_hdr and "set-cookie" in br.headers:
-                            cookie_hdr = br.headers.get("set-cookie")
-                        req_h = {**ain_h}
-                        if cookie_hdr:
-                            req_h["Cookie"] = cookie_hdr
-                        await http.post(f"{ain_base}/api/mining/start", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=6))
-                        await http.post(f"{ain_base}/api/mining/claim", json={"action": "claim_cycle"}, headers=req_h, timeout=aiohttp.ClientTimeout(total=6))
-                        await http.post(f"{ain_base}/api/daily-bonus/claim", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=6))
-                        await http.post(f"{ain_base}/api/channel-bonus/claim", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=6))
-                        await http.post(f"{ain_base}/api/gift-box/open", json={}, headers=req_h, timeout=aiohttp.ClientTimeout(total=6))
-                        logger.info(f"[{name}] ✅ Ainovum initial mining started")
-            except Exception as e:
-                logger.debug(f"[{name}] Ainovum bootstrap note: {e}")
-
-        # 9. TRX Power Mining
-        if tokens.get("trxpower_init_data"):
-            try:
-                trx_init = tokens["trxpower_init_data"]
-                trx_base = "https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/api"
-                trx_origin = "https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io"
-                auth_h = {"Content-Type": "application/json", "Origin": trx_origin, "Referer": f"{trx_origin}/"}
-                async with http.post(f"{trx_base}/auth/telegram", json={"initData": trx_init, "startParam": TRXPOWER_REFERRAL_CODE}, headers=auth_h, timeout=aiohttp.ClientTimeout(total=8)) as tr_r:
-                    if tr_r.status == 200:
-                        tr_d = await tr_r.json()
-                        tok = tr_d.get("token") or tr_d.get("data", {}).get("token")
-                        if tok:
-                            app_h = {**auth_h, "Authorization": f"Bearer {tok}", "x-telegram-init-data": trx_init}
-                            target_tron = (acc_entry.get("tron_wallet") or {}).get("address")
-                            if target_tron:
-                                await http.post(f"{trx_base}/user/wallet", json={"address": target_tron}, headers=app_h, timeout=aiohttp.ClientTimeout(total=6))
-                            await http.post(f"{trx_base}/mining/claim", json={}, headers=app_h, timeout=aiohttp.ClientTimeout(total=6))
-                logger.info(f"[{name}] ✅ TRX Power Mining initial bootstrap claim completed")
-            except Exception as e:
-                logger.debug(f"[{name}] TRX Power bootstrap note: {e}")
-
-        # 10. Bitcoin Cloud Miners
-        logger.info(f"[{name}] ℹ️ Bitcoin Cloud Miners active via MTProto /start & inline buttons")
-
-        # 11. Tensor Mining Robot
-        if tokens.get("tensor_init_data"):
-            try:
-                tns_init = tokens["tensor_init_data"]
-                tns_h = {
-                    "Content-Type": "application/json",
-                    "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0",
-                    "Referer": "https://flascoins.xyz/",
-                    "Origin": "https://flascoins.xyz",
-                    "Authorization": f"tma {tns_init}"
-                }
-                await http.post("https://flascoins.xyz/api/auth", json={}, headers=tns_h, timeout=aiohttp.ClientTimeout(total=6))
-                await http.post("https://flascoins.xyz/api/daily", json={}, headers=tns_h, timeout=aiohttp.ClientTimeout(total=6))
-                await http.post("https://flascoins.xyz/api/tap", json={"taps": 50}, headers=tns_h, timeout=aiohttp.ClientTimeout(total=6))
-                logger.info(f"[{name}] ✅ Tensor Mining Robot initial bootstrap claim completed")
-            except Exception as e:
-                logger.debug(f"[{name}] Tensor Mining bootstrap note: {e}")
-
-        # 12. Ton Trader AI
-        if tokens.get("tontrader_init_data"):
-            try:
-                tt_init = tokens["tontrader_init_data"]
-                tt_h = {
-                    "Content-Type": "application/json",
-                    "x-telegram-init-data": tt_init,
-                    "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36",
-                    "Referer": "https://tontraderai.com/",
-                    "Origin": "https://tontraderai.com"
-                }
-                await http.post("https://api.tontraderai.com/api/v1/user/claim-welcome-gift", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
-                await http.post("https://api.tontraderai.com/api/v1/user/claim-daily-gift", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
-                await http.post("https://api.tontraderai.com/api/v1/finance/claim-yield", json={}, headers=tt_h, timeout=aiohttp.ClientTimeout(total=8))
-                logger.info(f"[{name}] ✅ Ton Trader AI initial bootstrap claim completed")
-            except Exception as e:
-                logger.debug(f"[{name}] Ton Trader bootstrap note: {e}")
-
-        # 13. FINVORA Web3
+        # 6. FINVORA Web3
         if tokens.get("finvora_init_data"):
             try:
                 fin_init = tokens["finvora_init_data"]
@@ -1672,7 +1540,7 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             except Exception as e:
                 logger.debug(f"[{name}] FINVORA bootstrap note: {e}")
 
-        # 14. TurboGram V1
+        # 7. TurboGram V1
         if tokens.get("turbogram_init_data"):
             try:
                 tb_init = tokens["turbogram_init_data"]
@@ -1690,60 +1558,16 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
                 logger.debug(f"[{name}] TurboGram bootstrap note: {e}")
 
 
-        # 16. USDT QUAD
-        try:
-            uq_headers = {"User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro)", "Cookie": f"userId={uid}"}
-            ref_code = "" if uid == "6727787768" else USDTQUAD_REFERRAL_CODE
-            uq_init = tokens.get("usdtquad_init_data")
-            photo_url = "/img/doggo.mp4"
-            if uq_init:
-                user_json = urllib.parse.parse_qs(uq_init).get("user", [None])[0]
-                if user_json:
-                    try:
-                        photo_url = json.loads(user_json).get("photo_url", photo_url)
-                    except Exception:
-                        pass
-            reg_body = urllib.parse.urlencode({"referralCode": ref_code, "wallet": photo_url, "tgcode": str(uid), "userName": name})
-            await http.post("https://ustdquad.up.railway.app/register", data=reg_body, headers={**uq_headers, "Content-Type": "application/x-www-form-urlencoded"}, timeout=aiohttp.ClientTimeout(total=8))
-            await http.post("https://ustdquad.up.railway.app/claim-balance", json={}, headers={**uq_headers, "Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=8))
-            await http.post("https://ustdquad.up.railway.app/complete-task", json={"taskId": "hourly_watch_ad", "reward": 1}, headers={**uq_headers, "Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=8))
-            logger.info(f"[{name}] ✅ USDT QUAD initial bootstrap claim completed")
-        except Exception as uqe:
-            logger.debug(f"[{name}] USDT QUAD bootstrap note: {uqe}")
-
-        # 17. TAC Airdrop
-        if tokens.get("tac_init_data"):
-            try:
-                tac_init = tokens["tac_init_data"]
-                tac_h = {
-                    "Content-Type": "application/json",
-                    "X-Telegram-Init-Data": tac_init,
-                    "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F) AppleWebKit/537.36"
-                }
-                await http.get(f"https://tacairdrop.xyz/api/state?userId={uid}&ref={TAC_REFERRAL_CODE}", headers=tac_h, timeout=aiohttp.ClientTimeout(total=8))
-                target_ton = (acc_entry.get("ton_wallet") or {}).get("address")
-                if target_ton:
-                    await http.post("https://tacairdrop.xyz/api/user/connect-wallet", json={"userId": uid, "address": target_ton, "walletType": "manual"}, headers=tac_h, timeout=aiohttp.ClientTimeout(total=8))
-                await http.post("https://tacairdrop.xyz/api/mining/start", json={"userId": uid}, headers=tac_h, timeout=aiohttp.ClientTimeout(total=8))
-                await http.post("https://tacairdrop.xyz/api/ads/watch", json={"userId": uid}, headers=tac_h, timeout=aiohttp.ClientTimeout(total=8))
-                logger.info(f"[{name}] ✅ TAC Airdrop initial bootstrap & mining started")
-            except Exception as e:
-                logger.debug(f"[{name}] TAC bootstrap note: {e}")
-
-
 def is_account_referrals_bound(acc_entry: dict) -> bool:
-    """Checks whether an account already has its master referrals bound across all 10 active legitimate bots."""
-    if acc_entry.get("all_10_referrals_bound") or acc_entry.get("referrals_bound"):
+    """Checks whether an account already has its master referrals bound across all 7 active legitimate bots."""
+    if acc_entry.get("all_7_referrals_bound") or acc_entry.get("all_10_referrals_bound") or acc_entry.get("referrals_bound"):
         return True
     return bool(
         acc_entry.get("atf_referral_bound") and
         acc_entry.get("stones_referral_bound") and
         acc_entry.get("mrg_referral_bound") and
-        acc_entry.get("art_referral_bound") and
         acc_entry.get("ailab_referral_bound") and
         acc_entry.get("ultrawallet_referral_bound") and
-        acc_entry.get("trxpower_referral_bound") and
-        acc_entry.get("btc_referral_bound") and
         acc_entry.get("finvora_referral_bound") and
         acc_entry.get("turbogram_referral_bound")
     )
@@ -2362,15 +2186,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
     """
     Guarantees master referral codes are registered ONCE per account for 1st-time newly added accounts,
     extracts WebApp session tokens, syncs to 5x Cloudflare KV + Upstash,
-    and executes referral finish work across all 8 bots:
+    and executes referral finish work across all 7 legitimate bots:
     1. Stones: r6727787768
     2. MRG: ref_IRN1G3XD
-    3. ART: 6727787768
-    4. AI Lab: 296852
-    5. UltraWallet: 6727787768
-    6. Apex: 6727787768
-    7. Ainovum: ref_6727787768
-    8. ATF Miner: 6727787768
+    3. AI Lab: 296852
+    4. UltraWallet: 6727787768
+    5. ATF Miner: 6727787768
+    6. FINVORA: ref_TRX6727787768
+    7. TurboGram: 6727787768
     """
     name = acc_entry.get("name", "User")
     uid = acc_entry.get("user_id")
@@ -2389,7 +2212,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
             await sync_account_tokens_to_clouds(tokens)
         return
 
-    logger.info(f"[{name}] 🚀 Initiating 1st-time 8-bot master referral binding (Master ID: 6727787768)...")
+    logger.info(f"[{name}] 🚀 Initiating 1st-time 7-bot master referral binding (Master ID: 6727787768)...")
 
     # 1. Stones Miner
     if not acc_entry.get("stones_referral_bound"):
@@ -2436,17 +2259,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
         except Exception as e:
             logger.warning(f"[{name}] MRG referral bind note: {e}")
 
-    # 3. ART Airdrop
-    if not acc_entry.get("art_referral_bound"):
-        try:
-            b_art = await client.get_entity(ART_BOT)
-            await client.send_message(b_art, f"/start {REPORT_CHAT_ID}")
-            acc_entry["art_referral_bound"] = True
-            await asyncio.sleep(0.8)
-        except Exception as e:
-            logger.warning(f"[{name}] ART referral bind note: {e}")
-
-    # 4. AI Lab Robot
+    # 3. AI Lab Robot
     if not acc_entry.get("ailab_referral_bound"):
         try:
             b_ai = await client.get_entity(AILAB_BOT)
@@ -2456,7 +2269,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
         except Exception as e:
             logger.warning(f"[{name}] AI Lab referral bind note: {e}")
 
-    # 5. UltraWallet (Strict WebApp initData + refBy Handshake)
+    # 4. UltraWallet (Strict WebApp initData + refBy Handshake)
     if not acc_entry.get("ultrawallet_referral_bound"):
         try:
             b_uw = await client.get_entity(ULTRAWALLET_BOT)
@@ -2481,43 +2294,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
         except Exception as e:
             logger.warning(f"[{name}] UltraWallet referral bind note: {e}")
 
-    # 6. Apex Miner (Strict WebApp initData + Register Referrer Handshake)
-    if not acc_entry.get("apx_referral_bound"):
-        try:
-            b_apx = await client.get_entity(APX_BOT)
-            await client.send_message(b_apx, f"/start {APX_REFERRAL_CODE}")
-            try:
-                b_apx_in = await client.get_input_entity(APX_BOT)
-                res_apx = await client(RequestAppWebViewRequest(
-                    peer=b_apx_in,
-                    app=InputBotAppShortName(bot_id=b_apx_in, short_name="app"),
-                    platform="android",
-                    start_param=str(APX_REFERRAL_CODE)
-                ))
-                p_apx = urllib.parse.urlparse(res_apx.url)
-                apx_init = urllib.parse.parse_qs(p_apx.fragment).get("tgWebAppData", [None])[0]
-                if apx_init:
-                    async with aiohttp.ClientSession() as hs:
-                        await hs.post("https://apxn-miner-live.apxn-network.workers.dev/api/auth/telegram", json={"initData": apx_init}, timeout=aiohttp.ClientTimeout(total=8))
-                        await hs.post("https://apxn-miner-live.apxn-network.workers.dev/api/register", json={"initData": apx_init, "referrer": str(APX_REFERRAL_CODE)}, timeout=aiohttp.ClientTimeout(total=8))
-            except Exception as apxe:
-                logger.debug(f"[{name}] Apex direct app verify note: {apxe}")
-            acc_entry["apx_referral_bound"] = True
-            await asyncio.sleep(0.8)
-        except Exception as e:
-            logger.warning(f"[{name}] Apex referral bind note: {e}")
-
-    # 7. Ainovum Bot
-    if not acc_entry.get("ainovum_referral_bound"):
-        try:
-            b_ain = await client.get_entity(AINOVUM_BOT)
-            await client.send_message(b_ain, f"/start {AINOVUM_REFERRAL_CODE}")
-            acc_entry["ainovum_referral_bound"] = True
-            await asyncio.sleep(0.8)
-        except Exception as e:
-            logger.warning(f"[{name}] Ainovum referral bind note: {e}")
-
-    # 8. ATF Miner
+    # 5. ATF Miner
     if not acc_entry.get("atf_referral_bound"):
         try:
             b_atf = await client.get_entity("ATF_AIRDROP_bot")
@@ -2527,64 +2304,22 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
         except Exception as e:
             logger.warning(f"[{name}] ATF referral bind note: {e}")
 
-    # 9. TRX Power Mining
-    if not acc_entry.get("trxpower_referral_bound"):
-        try:
-            await join_tg_target(client, "trxpowerminingOfficial", f"{name} trxpower")
-            await join_tg_target(client, "TRX_WORLD_WORK", f"{name} trxpower")
-            await asyncio.sleep(1.0)
-            await interact_and_verify_bot(client, TRXPOWER_BOT, f"/start {TRXPOWER_REFERRAL_CODE}", name, required_channels=["trxpowerminingOfficial", "TRX_WORLD_WORK"], click_buttons=["✅ Check / Verify", "Check / Verify", "Verify"])
-            acc_entry["trxpower_referral_bound"] = True
-            await asyncio.sleep(1.0)
-        except Exception as e:
-            logger.warning(f"[{name}] TRX Power referral bind note: {e}")
-
-    # 10. Bitcoin Cloud Miners (Start Play + Active Mining Claim)
-    if not acc_entry.get("btc_referral_bound"):
-        if await complete_btc_referral(client, name, BTC_REFERRAL_CODE):
-            acc_entry["btc_referral_bound"] = True
-        await asyncio.sleep(1.0)
-
-    # 11. Tensor Mining Robot (flascoins.xyz WebApp Auth + Daily + Tap)
-    if not acc_entry.get("tensor_referral_bound"):
-        if await complete_tensor_referral(client, name, TENSOR_REFERRAL_CODE):
-            acc_entry["tensor_referral_bound"] = True
-        await asyncio.sleep(1.0)
-
-    # 12. Ton Trader AI (api.tontraderai.com Profile + Daily Gift + Yield Claim)
-    if not acc_entry.get("tontrader_referral_bound"):
-        if await complete_tontrader_referral(client, name, TONTRADER_REFERRAL_CODE):
-            acc_entry["tontrader_referral_bound"] = True
-        await asyncio.sleep(1.0)
-
-    # 13. FINVORA Web3 (Channel join + WebApp handshake)
+    # 6. FINVORA Web3 (Channel join + WebApp handshake)
     if not acc_entry.get("finvora_referral_bound"):
         if await complete_finvora_referral(client, name, FINVORA_REFERRAL_CODE):
             acc_entry["finvora_referral_bound"] = True
         await asyncio.sleep(1.0)
 
-    # 14. TurboGram V1 (Announcement channels + WebApp handshake)
+    # 7. TurboGram V1 (Announcement channels + WebApp handshake)
     if not acc_entry.get("turbogram_referral_bound"):
         if await complete_turbogram_referral(client, name, TURBOGRAM_REFERRAL_CODE):
             acc_entry["turbogram_referral_bound"] = True
         await asyncio.sleep(1.0)
 
-    # 15. USDT QUAD (Railway WebApp + Start 6727787768)
-    if not acc_entry.get("usdtquad_referral_bound"):
-        if await complete_usdtquad_referral(client, name, USDTQUAD_REFERRAL_CODE):
-            acc_entry["usdtquad_referral_bound"] = True
-        await asyncio.sleep(1.0)
-
-    # 16. TAC Airdrop (tacairdrop.xyz WebApp + Start 6727787768)
-    if not acc_entry.get("tac_referral_bound"):
-        if await complete_tac_referral(client, name, TAC_REFERRAL_CODE):
-            acc_entry["tac_referral_bound"] = True
-        await asyncio.sleep(1.0)
-
     if is_account_referrals_bound(acc_entry):
         acc_entry["referrals_bound"] = True
-        acc_entry["all_16_referrals_bound"] = True
-        logger.info(f"[{name}] ✅ All 16 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
+        acc_entry["all_7_referrals_bound"] = True
+        logger.info(f"[{name}] ✅ All 7 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
     else:
         logger.warning(f"[{name}] ⚠️ Some referrals could not be bound immediately. Will retry on next cycle.")
 
@@ -2607,11 +2342,11 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
     except Exception:
         pass
 
-    # Fallback: if tokens is missing required bot keys, re-extract with fresh standalone client (9 Legitimate WebApp Bots)
+    # Fallback: if tokens is missing required bot keys, re-extract with fresh standalone client (7 Legitimate WebApp Bots)
     req_keys = [
-        "stones_init_data", "mrg_init_data", "art_init_data", "ailab_init_data",
+        "stones_init_data", "mrg_init_data", "ailab_init_data",
         "ultrawallet_init_data", "atf_init_data",
-        "trxpower_init_data", "finvora_init_data", "turbogram_init_data"
+        "finvora_init_data", "turbogram_init_data"
     ]
     if not tokens or any(not tokens.get(k) for k in req_keys):
         logger.info(f"[{name}] Missing some bot tokens after direct extraction. Re-extracting with standalone client...")
@@ -3038,45 +2773,7 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
         except Exception as ae:
             logger.debug(f"[{name}] ATF wallet bind note: {ae}")
 
-    # 4. ART Airdrop TON Binding
-    if tokens.get("art_init_data") and target_ton:
-        try:
-            art_init = tokens["art_init_data"]
-            art_h = {
-                "Content-Type": "application/json",
-                "Origin": "https://art.tamimdev.dev",
-                "Referer": "https://art.tamimdev.dev/",
-                "X-Telegram-Init-Data": art_init
-            }
-            await http_session.post(
-                "https://art.tamimdev.dev/api/user/connect-wallet",
-                json={"userId": int(uid), "tonAddress": target_ton},
-                headers=art_h,
-                timeout=aiohttp.ClientTimeout(total=8)
-            )
-            logger.info(f"[{name}] 💎 Bound ART Airdrop TON wallet: {target_ton[:12]}...")
-        except Exception as ae:
-            logger.debug(f"[{name}] ART wallet bind note: {ae}")
-
-    # 5. TRX Power Mining TRON Binding
-    if tokens.get("trxpower_init_data") and target_tron:
-        try:
-            trx_init = tokens["trxpower_init_data"]
-            trx_base = "https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/api"
-            trx_origin = "https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io"
-            auth_h = {"Content-Type": "application/json", "Origin": trx_origin, "Referer": f"{trx_origin}/"}
-            async with http_session.post(f"{trx_base}/auth/telegram", json={"initData": trx_init, "startParam": "ref_TRX6727787768"}, headers=auth_h, timeout=aiohttp.ClientTimeout(total=8)) as tr_r:
-                if tr_r.status == 200:
-                    tr_d = await tr_r.json()
-                    tok = tr_d.get("token") or tr_d.get("data", {}).get("token")
-                    if tok:
-                        app_h = {**auth_h, "Authorization": f"Bearer {tok}", "x-telegram-init-data": trx_init}
-                        await http_session.post(f"{trx_base}/user/wallet", json={"address": target_tron}, headers=app_h, timeout=aiohttp.ClientTimeout(total=8))
-                        logger.info(f"[{name}] 💎 Bound TRX Power TRON wallet: {target_tron[:12]}...")
-        except Exception as te:
-            logger.debug(f"[{name}] TRX Power wallet bind note: {te}")
-
-    # 6. FINVORA Web3 TON Binding
+    # 4. FINVORA Web3 TON Binding
     if tokens.get("finvora_init_data") and target_ton:
         try:
             fin_init = tokens["finvora_init_data"]
@@ -3091,7 +2788,7 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
         except Exception as fe:
             logger.debug(f"[{name}] FINVORA wallet bind note: {fe}")
 
-    # 7. TurboGram V1 TON Binding
+    # 5. TurboGram V1 TON Binding
     if tokens.get("turbogram_init_data") and target_ton:
         try:
             tb_init = tokens["turbogram_init_data"]
@@ -5425,16 +5122,13 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         except Exception as e:
             status["bots"]["tac"] = f"error: {format_error(e)}"
 
-    # Humanized Concurrent Execution Pipeline: 4 bots per account session (10 Active Legitimate Bots)
+    # Humanized Concurrent Execution Pipeline: 4 bots per account session (7 Active Legitimate Bots)
     bot_routines = [
         {"name": "stones", "fn": _farm_stones, "has_data": bool(tokens.get("stones_init_data"))},
         {"name": "mrg", "fn": _farm_mrg, "has_data": bool(tokens.get("mrg_init_data"))},
-        {"name": "art", "fn": _farm_art, "has_data": bool(tokens.get("art_init_data"))},
         {"name": "ailab", "fn": _farm_ailab, "has_data": bool(tokens.get("ailab_init_data"))},
         {"name": "ultrawallet", "fn": _farm_ultra, "has_data": bool(tokens.get("ultrawallet_init_data"))},
         {"name": "atf", "fn": _farm_atf, "has_data": bool(tokens.get("atf_init_data"))},
-        {"name": "trxpower", "fn": _farm_trxpower, "has_data": bool(tokens.get("trxpower_init_data"))},
-        {"name": "btc", "fn": _farm_btc, "has_data": bool(acc.get("session_string") or acc.get("session"))},
         {"name": "finvora", "fn": _farm_finvora, "has_data": bool(tokens.get("finvora_init_data"))},
         {"name": "turbogram", "fn": _farm_turbogram, "has_data": bool(tokens.get("turbogram_init_data"))},
     ]
@@ -5621,12 +5315,8 @@ async def inspect_referrals_master(request: Request):
     sess_str = master_acc.get("session_string") or master_acc.get("session")
     cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
     bots_to_query = [
-        ("trxpower", "trxpowermining_bot", ["/referral", "/referrals", "/account", "👥 Referral"]),
-        ("btc", "BitcoinCloudMinersBot", ["/referral", "/referrals", "/account", "👥 Referral"]),
         ("finvora", "FINVORAWeb3bot", ["/referral", "/start", "/balance"]),
-        ("turbogram", "TurboGramV1_bot", ["/referral", "/start", "/balance"]),
-        ("tensor", "TensorMiningRobot", ["/start", "/referral"]),
-        ("tontrader", "TonTraderAIBot", ["/start", "/ref"])
+        ("turbogram", "TurboGramV1_bot", ["/referral", "/start", "/balance"])
     ]
     results = {}
     try:
@@ -5682,8 +5372,6 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
         "error": None
     }
     channel_deps = {
-        "trxpower": ["trxpowerminingOfficial", "TRX_WORLD_WORK"],
-        "btc": ["https://t.me/+I1HZjvoqu942MjZl"],
         "finvora": ["finvoraweb3"],
         "turbogram": ["TurboGramAnnouncements", "TurboGramPayment"]
     }
@@ -5982,14 +5670,13 @@ async def study_bot_endpoint(bot_key: str, request: Request):
         target_acc = next((a for a in accounts if str(a.get("user_id")) == str(req_uid)), None)
 
     bot_map = {
-        "trxpower": "trxpowermining_bot",
-        "btc": "BitcoinCloudMinersBot",
+        "stones": "stoneswithestand_bot",
+        "mrg": "mrgminerbot",
+        "ailab": "AiLab_robot",
+        "ultrawallet": "UltrawalletTrade_Bot",
+        "atf": "ATF_AIRDROP_bot",
         "finvora": "FINVORAWeb3bot",
-        "turbogram": "TurboGramV1_bot",
-        "tensor": "TensorMiningRobot",
-        "tontrader": "TonTraderAIBot",
-        "usdtquad": "usdtquadbot",
-        "tac": "tacairdrop_bot"
+        "turbogram": "TurboGramV1_bot"
     }
 
     target_bots = list(bot_map.items()) if bot_key == "all" else [(bot_key, bot_map[bot_key])] if bot_key in bot_map else None
@@ -6040,13 +5727,13 @@ async def mute_all_chats_endpoint(request: Request):
 
     accounts = await fetch_accounts_from_cloud()
     all_targets_to_mute = [
-        "trxpowermining_bot", "trxpowerminingOfficial", "TRX_WORLD_WORK",
-        "BitcoinCloudMinersBot",
+        "stoneswithestand_bot", "stoneswithestand",
+        "mrgminerbot", "mrgminer", "mrgfun",
+        "AiLab_robot", "ailabrobotnews",
+        "UltrawalletTrade_Bot", "ultrawalletofficial",
+        "ATF_AIRDROP_bot",
         "FINVORAWeb3bot", "finvoraweb3",
-        "TurboGramV1_bot", "TurboGramAnnouncements", "TurboGramPayment",
-        "TensorMiningRobot",
-        "TonTraderAIBot", "tontraderai_official", "tontraderai_supportbot", "tontraderai_group",
-        "OminixAiBot", "ominiai", "ominiaipayout"
+        "TurboGramV1_bot", "TurboGramAnnouncements", "TurboGramPayment"
     ]
     results = []
     for acc in accounts:
@@ -6108,12 +5795,13 @@ async def inspect_bot_chat(uid: str, request: Request):
     sess_str = target_acc.get("session_string") or target_acc.get("session")
     cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
     bots_to_check = [
-        ("trxpower", "trxpowermining_bot"),
-        ("btc", "BitcoinCloudMinersBot"),
+        ("stones", "stoneswithestand_bot"),
+        ("mrg", "mrgminerbot"),
+        ("ailab", "AiLab_robot"),
+        ("ultrawallet", "UltrawalletTrade_Bot"),
+        ("atf", "ATF_AIRDROP_bot"),
         ("finvora", "FINVORAWeb3bot"),
-        ("turbogram", "TurboGramV1_bot"),
-        ("tensor", "TensorMiningRobot"),
-        ("tontrader", "TonTraderAIBot")
+        ("turbogram", "TurboGramV1_bot")
     ]
     chats = {}
     try:
@@ -6170,34 +5858,37 @@ CHANNEL_WHITELIST = {
     "ultrawallet",
     "ultrawalletofficial",
     "gramworkers",
-    "trxpowerminingofficial",
-    "trx_world_work",
     "finvoraweb3",
     "turbogramannouncements",
     "turbogrampayment"
 }
 
-# 10 Active Legitimate Sponsor Channels (Scammer channels purged)
+# 8 Active Legitimate Sponsor Channels (Scammers, TRX Power & ART purged)
 MANDATORY_SPONSOR_CHANNELS = [
-    "trxpowerminingOfficial", "TRX_WORLD_WORK",
     "finvoraweb3",
     "TurboGramAnnouncements", "TurboGramPayment",
     "stoneswithestand",
     "mrgminer", "mrgfun",
-    "ART_AIRDROP",
     "ailabrobotnews",
     "ultrawalletofficial"
 ]
 
-# 10 High-Conviction Legitimate Fleet Bots (Scammers purged)
+# 7 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
 FLEET_LEGITIMATE_BOTS = [
-    "stoneswithestand_bot", "mrgminerbot", "ART_AIRDROP_BOT", "AiLab_robot",
-    "UltrawalletTrade_Bot", "ATF_AIRDROP_bot", "trxpowermining_bot",
-    "BitcoinCloudMinersBot", "FINVORAWeb3bot", "TurboGramV1_bot"
+    "stoneswithestand_bot", "mrgminerbot", "AiLab_robot",
+    "UltrawalletTrade_Bot", "ATF_AIRDROP_bot",
+    "FINVORAWeb3bot", "TurboGramV1_bot"
 ]
 
-# Blacklisted Scammer Bots to permanently block across all fleet accounts
+# Blacklisted & Purged Bots to permanently block and delete from Telegram dialogs
 FLEET_BANNED_SCAMMERS = [
+    # Newly purged per user directive
+    "trxpowermining_bot",
+    "BitcoinCloudMinersBot",
+    "Bitcoin_Cloud_Mining_bot",
+    "ART_AIRDROP_BOT",
+    "artairdrop_bot",
+    # Previously blacklisted scammers
     "ainovum_bot",
     "tensormining_bot",
     "TensorMiningRobot",
@@ -6210,14 +5901,23 @@ FLEET_BANNED_SCAMMERS = [
     "OminixAiBot"
 ]
 
-# Scammer Channels to permanently leave across all fleet accounts
+# Channels & Groups to permanently leave and delete from Telegram dialogs
 SCAM_CHANNELS_TO_LEAVE = [
+    # Newly purged per user directive
+    "trxpowerminingofficial",
+    "trx_world_work",
+    "trxpowermining",
+    "art_airdrop",
+    "artairdrop",
+    # Previously blacklisted scam channels
     "tensorcoinnews",
     "tontraderai_official",
     "tontraderai_group",
+    "tontraderai_reviews",
     "tacairdrop",
     "tacairdrop_official",
     "tac_airdrop",
+    "tacairdropen",
     "novum_en",
     "apexminer_official",
     "apexminergroup",
@@ -6276,8 +5976,7 @@ async def sync_and_verify_channels_endpoint(request: Request):
                 LAST_CHANNEL_SYNC_STATUS["results"].append(res_item)
                 continue
 
-            cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
-            acc_res = {"uid": uid, "name": name, "joined": [], "unblocked": [], "blocked_scammers": [], "left_scam_channels": [], "muted": 0, "pruned": 0}
+            acc_res = {"uid": uid, "name": name, "joined": [], "unblocked": [], "blocked_scammers": [], "deleted_dialogs": [], "left_scam_channels": [], "muted": 0, "pruned": 0}
             try:
                 await asyncio.wait_for(cl.connect(), timeout=10.0)
                 if not await cl.is_user_authorized():
@@ -6286,15 +5985,29 @@ async def sync_and_verify_channels_endpoint(request: Request):
                     LAST_CHANNEL_SYNC_STATUS["results"].append(acc_res)
                     continue
 
-                # 1. Permanently Block All Blacklisted Scammer Bots
+                # 1. Permanently Block and DELETE chat history for all blacklisted bots
                 for sb in FLEET_BANNED_SCAMMERS:
                     try:
-                        await cl(functions.contacts.BlockRequest(id=sb))
+                        b_ent = await cl.get_input_entity(sb)
+                        await cl(functions.contacts.BlockRequest(id=b_ent))
+                        await cl(functions.messages.DeleteHistoryRequest(peer=b_ent, max_id=0, just_clear=False, revoke=True))
+                        await cl.delete_dialog(b_ent)
                         acc_res["blocked_scammers"].append(sb)
+                        acc_res["deleted_dialogs"].append(sb)
                     except Exception:
                         pass
 
-                # 2. Unblock all 10 legitimate fleet bots
+                # 2. Leave and DELETE dialogs for all scammer channels
+                for sc in SCAM_CHANNELS_TO_LEAVE:
+                    try:
+                        ch_ent = await cl.get_input_entity(sc)
+                        await cl(functions.channels.LeaveChannelRequest(ch_ent))
+                        await cl.delete_dialog(ch_ent)
+                        acc_res["left_scam_channels"].append(sc)
+                    except Exception:
+                        pass
+
+                # 3. Unblock all 7 legitimate fleet bots
                 for b in FLEET_LEGITIMATE_BOTS:
                     try:
                         await cl(functions.contacts.UnblockRequest(id=b))
@@ -6302,7 +6015,7 @@ async def sync_and_verify_channels_endpoint(request: Request):
                     except Exception:
                         pass
 
-                # 3. Join all mandatory legitimate sponsor channels
+                # 4. Join all mandatory legitimate sponsor channels
                 for ch in MANDATORY_SPONSOR_CHANNELS:
                     try:
                         await cl(JoinChannelRequest(ch))
@@ -6313,26 +6026,46 @@ async def sync_and_verify_channels_endpoint(request: Request):
                         if "already" in err_s:
                             acc_res["joined"].append(f"{ch} (already)")
 
-                # 4. Leave all scammer channels & chats, and mute all remaining channels, groups, and bots
+                # 5. Scan ALL dialogs: Erase and delete dialogs for any scammer bot, channel, or group
                 muted_cnt = 0
-                dialogs = await cl.get_dialogs(limit=150)
+                dialogs = await cl.get_dialogs(limit=200)
                 for d in dialogs:
                     uname = (getattr(d.entity, 'username', '') or '').lower()
                     title = (d.name or '').lower()
                     is_scam = (
                         uname in SCAM_CHANNELS_TO_LEAVE or
                         uname in [b.lower() for b in FLEET_BANNED_SCAMMERS] or
-                        any(s in uname for s in ["tensorcoin", "tontrader", "tacairdrop", "usdtquad", "apexminer", "ainovum"]) or
-                        any(s in title for s in ["tensorcoin", "ton trader", "tac airdrop", "usdt quad", "apex miner", "ainovum"])
+                        any(s in uname for s in ["tensorcoin", "tontrader", "tacairdrop", "usdtquad", "apexminer", "ainovum", "trxpower", "bitcoincloud", "artairdrop", "art_airdrop"]) or
+                        any(s in title for s in ["tensorcoin", "ton trader", "tac airdrop", "usdt quad", "apex miner", "ainovum", "trx power", "bitcoin cloud", "art airdrop"])
                     )
-                    if is_scam and (d.is_channel or d.is_group):
-                        try:
-                            await cl(functions.channels.LeaveChannelRequest(d.input_entity))
-                            acc_res["left_scam_channels"].append(uname or d.name)
-                            await asyncio.sleep(0.5)
-                            continue
-                        except Exception:
-                            pass
+                    if is_scam:
+                        if d.is_channel or d.is_group:
+                            try:
+                                await cl(functions.channels.LeaveChannelRequest(d.input_entity))
+                            except Exception:
+                                pass
+                            try:
+                                await cl.delete_dialog(d.input_entity)
+                                acc_res["left_scam_channels"].append(uname or d.name)
+                            except Exception:
+                                pass
+                        else:
+                            # Bot or user
+                            try:
+                                await cl(functions.contacts.BlockRequest(id=d.input_entity))
+                            except Exception:
+                                pass
+                            try:
+                                await cl(functions.messages.DeleteHistoryRequest(peer=d.input_entity, max_id=0, just_clear=False, revoke=True))
+                            except Exception:
+                                pass
+                            try:
+                                await cl.delete_dialog(d.input_entity)
+                                acc_res["deleted_dialogs"].append(uname or d.name)
+                            except Exception:
+                                pass
+                        await asyncio.sleep(0.3)
+                        continue
 
                     if d.is_channel or d.is_group or getattr(d.entity, 'bot', False):
                         try:
