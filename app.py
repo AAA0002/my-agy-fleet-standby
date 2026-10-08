@@ -234,6 +234,11 @@ async def root():
 async def health():
     return {"ok": True, "status": "healthy"}
 
+def format_error(e: Exception) -> str:
+    """Helper for formatted error string (never returns empty string)."""
+    msg = str(e).strip()
+    return f"{type(e).__name__}: {msg}" if msg else type(e).__name__
+
 def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
     """
     Checks whether token data is missing, incomplete, or any key bot token is older than max_age_hours.
