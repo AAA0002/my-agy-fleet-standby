@@ -2079,6 +2079,30 @@ fi
       }
     }
 
+    // 7.05 D1 Relational Fleet & Balances Live Telemetry Query
+    if (path === "/api/d1/fleet" || path === "/api/d1/balances") {
+      try {
+        if (!env.DB) {
+          return new Response(JSON.stringify({ ok: false, error: "D1 database not bound on this node" }), { status: 503, headers: corsHeaders });
+        }
+        const bRows = await env.DB.prepare("SELECT user_id, bot_name, balance, level, raw_status, updated_at FROM fleet_balances ORDER BY user_id, bot_name").all();
+        const tRows = await env.DB.prepare("SELECT user_id, bot_name, auth_date, expires_at, updated_at FROM fleet_tokens ORDER BY user_id, bot_name").all();
+        const mRows = await env.DB.prepare("SELECT filename, size_bytes, uploaded_at FROM disaster_recovery_meta ORDER BY uploaded_at DESC LIMIT 10").all();
+        return new Response(JSON.stringify({
+          ok: true,
+          node: CURRENT_SUBDOMAIN,
+          balances: bRows ? bRows.results : [],
+          tokens_meta: tRows ? tRows.results : [],
+          disaster_recovery_snapshots: mRows ? mRows.results : [],
+          timestamp: Math.floor(Date.now() / 1000)
+        }), {
+          headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=10", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
     // 7.1 Multichain Live Balances Sync (In-Memory + Upstash Redis + 30-min KV Throttle)
     if (path === "/api/multichain/sync" && request.method === "POST") {
       const auth = request.headers.get("Authorization");
