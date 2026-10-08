@@ -3081,7 +3081,7 @@ fi
       return new Response(JSON.stringify({ ok: false, error: "Standby mesh unavailable" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // 12.5 Autonomous Cloud Farming Engine (Stones, MRG, ART, AI Lab, UltraWallet, Apex Miner, Ainovum, ATF)
+    // 12.5 Autonomous Cloud Farming Engine (7 Legitimate Bots: Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, TurboGram)
     if (path === "/api/farm/all" || path === "/api/fleet/claim-all" || path === "/api/farm/bnb" || path === "/api/farm/execute" || path === "/api/fleet/harvest" || path === "/api/harvest") {
       try {
         const body = await request.json().catch(() => ({}));
@@ -4077,7 +4077,7 @@ fi
               })());
             } else if (cbData === "btn_briefing") {
               ctx.waitUntil((async () => {
-                const aiData = await runAiCascade("You are the Chief AI Operations Officer for the 18-account autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. 18/18 accounts active & 100% 5/5 verified. 2. 16 mining bots active (Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, ATF Miner, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, FINVORA, TurboGram, USDT QUAD, TAC Airdrop). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.");
+                const aiData = await runAiCascade("You are the Chief AI Operations Officer for the 18-account autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. 18/18 accounts active & 100% 5/5 verified. 2. 7 legitimate mining bots active (Stones, MRG, AI Lab, UltraWallet, ATF Miner, FINVORA, TurboGram). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.");
                 const ans = aiData.answer || aiData.response || "All 18 accounts active and mining across multi-cloud nodes.";
                 const prov = aiData.provider || "Google Gemini";
                 const mod = aiData.model || "gemini-3.6-flash";
@@ -4429,7 +4429,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Notice:* @CryptoProUpRobot was audited and confirmed to withhold payouts.\n` +
               `• *Action Taken:* Fleet accounts blocked the bot, wiped scam channels, and reported it to Telegram Anti-Scam.\n` +
-              `• *Active Bots:* Focus is 100% placed on our 17 legitimate mining bots (ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, TRX Power, BTC Cloud, Tensor, Ton Trader, FINVORA, TurboGram, USDT QUAD, TAC Airdrop).\n` +
+              `• *Active Bots:* Focus is 100% placed on our 7 legitimate mining bots (Stones, MRG, AI Lab, UltraWallet, ATF Miner, FINVORA, TurboGram).\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(bnbMsg, statusInlineKeyboard);
           })());
@@ -5153,7 +5153,7 @@ fi
               `🟡 *Binance BEP-20 (All 18 Fleet Accounts):*\n` +
               `• Address: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
               `• Balance: \`${liveBnb.toFixed(6)} BNB\` (~$${(liveBnb * 764.5).toFixed(2)} USD)\n` +
-              `• Direct Payouts: AI Lab (>= $0.02) • Ainovum (>= 0.10 USDT)\n\n` +
+              `• Direct Payouts: AI Lab (>= $0.02) • Safe Compounding Mode Active\n\n` +
               `🔵 *Arbitrum One (STONES Miner):*\n` +
               `• Address: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
               `• Deposited: \`500+ STONES\` (Auto-claimed to wallet)\n\n` +
@@ -5161,7 +5161,7 @@ fi
               `• Address: \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
               `• Network: TON Blockchain (The Open Network)\n\n` +
               `🛡️ *Worker TON Wallets (Accounts 2–18):*\n` +
-              `• 17 Dedicated TON v4r2 Wallets bound for MRG, ART, and ATF pools.\n\n` +
+              `• 17 Dedicated TON v4r2 Wallets cryptographically bound for MRG, ATF, FINVORA, and TurboGram pools.\n\n` +
               `📱 _Tap '🚀 Open Executive Dashboard' below for interactive wallet explorer._`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -6071,7 +6071,7 @@ fi
 
             const systemPrompt = `You are Ari, the personal cloud AI assistant for Arif's 18-account automated crypto and mining fleet (MY AGY AI).
 Live Fleet Context:
-- 18 active accounts mining 24/7 across all 16 active bots: Stones Miners, ATF Miner, MRG Miner, ART Airdrop, AI Lab Robot, UltraWallet, Apex Miner, Ainovum, TRX Power Mining, Bitcoin Cloud Miners, Tensor Mining Robot, Ton Trader AI, FINVORA Web3, TurboGram V1, USDT QUAD, TAC Airdrop.
+- 18 active accounts mining 24/7 across all 7 legitimate bots: Stones Miners, ATF Miner, MRG Miner, AI Lab Robot, UltraWallet, FINVORA Web3, and TurboGram V1. All 10 legacy scammer bots (ART, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, USDT QUAD, TAC, Ominix) have been permanently purged and blocked.
 - Policy: ATF Miner is in 100% farming & accumulation mode (NO withdrawals; let balance grow).
 - Policy (Admin Fleet Accounts): MRG Miner is strictly in 100% Holding & Compounding mode (NO auto-withdrawals) to preserve peak levels (Level 1..50), maximum hashrate (5.5 TH/s), and squad referral qualifications.
 - Vault BEP-20 (BNB, USDT): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Live Balance: ${liveBnb.toFixed(6)} BNB).
