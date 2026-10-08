@@ -4,6 +4,23 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🛡️ Strict Telegram Bot & Channel Segregation: Admin Infrastructure vs. Normal User Platform (`AGENTS.md`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
+  - **👑 Admin Telegram Ecosystem Documented**:
+    * Admin Bot: `@myagyai` (`8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8`) for operational alerts, harvest notifications, and AI natural language commands.
+    * Admin Chat: `6727787768` (`@Arif2743aaa`, phone `+8801317342850`) for executive telemetry and 1-click disaster restore execution.
+    * Admin Disaster Recovery Vault Channel: `@myagyai` (`-1004453515167`) for automated encrypted `.zip` backups and IPFS CIDs.
+    * Admin Payouts & Daily Accounting Channel: `-1004402765950` for on-chain withdrawal and deposit receipts.
+    * Admin Internal Fleet Supergroup: `-1003973231307` (*AAA T Wallet Supergroup*) for internal fleet heartbeat and node failover alerts.
+  - **👥 Normal User Telegram Ecosystem Documented & Guarded**:
+    * User Bot: `@AAAPREMIUMAPPSbot` (`8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8`) on webhook `https://atf-miner-worker.agorameet.workers.dev/`.
+    * User Community Supergroup: `-1003684868577` (*AAA Auto Miner*, `https://t.me/+8xTmE28Up9U5YWQ1`).
+    * User Official Announcements Channel: `-1004255751168` (`@AAAATFAUTOMINING`).
+    * User Live Miner Activity Stream: `-1004332544939` (`@AAAATF_ACTIVITY`).
+    * User Frontend & Engine: `https://atf-miner-app.pages.dev` and `https://atf-mining-engine.aaaai.workers.dev`.
+  - **🛑 Strict User Bot Immutability Directive ("DO NOT TOUCH USER BOT")**:
+    * Codified in [`AGENTS.md`](file:///data/data/com.termux/files/home/AGENTS.md) and [`PROJECT_BIBLE.md`](file:///data/data/com.termux/files/home/PROJECT_BIBLE.md) that all AI agents must NEVER modify, edit, redeploy, or touch the User Bot (`@AAAPREMIUMAPPSbot`) or its community channels under any circumstances.
+    * The User Bot remains permanently isolated and dedicated to serving public users in autonomous mode.
+
 - **💎 Full Fleet Audit, All 5 Cloudflare & 5 Render Nodes Live Verification, and Complete Infrastructure Documentation (`PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
   - **🟢 5 Render Services 100% Online & Verified**:
     * Render Node 1 (Singapore, `srv-damuhkmgekts73f1osag`, `coz1gameh1@gmail.com`): Verified HTTP 200 OK (`https://my-agy-fleet-standby.onrender.com/health`).

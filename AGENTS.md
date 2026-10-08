@@ -5,9 +5,10 @@
 
 ---
 
-## 1. 🛡️ Strict Project Isolation
+## 1. 🛡️ Strict Project Isolation & Bot Boundary
 - **No Cross-Project Contamination**: Never mix code, configurations, packages, or context from `/root/projects/AAA` or other projects into this workspace.
 - **Separate Bot Isolation**: `@AAATelegramIdBot` (repository `AAA2743/AA`) is a completely distinct project and must never be touched, modified, or merged into `AAA_AUTO`.
+- **User Bot Strict Immutability ("DO NOT TOUCH USER BOT")**: The User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`, webhook `atf-miner-worker.agorameet.workers.dev`) and its community channels (`-1003684868577`, `@AAAATFAUTOMINING`, `@AAAATF_ACTIVITY`) are exclusively for end-users and must **NEVER** be modified, redeployed, or tampered with. Keep all admin operations strictly on the Admin Bot (`@myagyai`) and admin channels.
 - **Self-Contained**: Everything relating to this project must remain strictly within `/root/projects/AAA_AUTO`.
 - **Clean Boundaries**: Never modify system or other workspace files unless explicitly requested.
 

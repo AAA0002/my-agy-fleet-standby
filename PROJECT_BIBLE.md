@@ -131,13 +131,42 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * Script: `mrg_turnstile_solver.py` (Headless Patchright stealth engine, real Telegram `initData` simulation, native claim button clicker, Turnstile iframe solver, and auto-compounder).
     * Zero Phone Load: Runs 100% inside Microsoft/GitHub's cloud runner environment (Ubuntu 22.04, 7GB RAM).
 
-- **Telegram Vaults & Community Channels**:
-  - Admin & Vault Channel: `@myagyai` (Bot: `@myagyai`, UID `6727787768`)
-  - Community Supergroup: `-1003684868577`
-  - Announcements Channel: `-1004255751168`
-  - Activity Channel: `-1004332544939`
-  - Payout Vault Channel: `-1004402765950`
-  - Secondary Identity Bot: `@AAAPREMIUMAPPSbot` (Bot ID: `8167732110`)
+- **Telegram Dual Bot & Channel Ecosystem (Admin Infrastructure vs. Normal User Platform)**:
+
+  #### 🛡️ System 1: Admin Telegram Ecosystem (Control, Telemetry, Vault, Disaster Recovery)
+  *Dedicated exclusively to system administrators, automated disaster recovery, on-chain telemetry, and AI command execution.*
+  - **Admin Bot**: `@myagyai` (Bot ID: `8858823950`, Token: `REPORT_BOT_TOKEN: 8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8`)
+    - Purpose: Autonomous execution reporting, harvest alerts, AI natural language commands, Better Stack dead-man pings, and automated backup broadcasts.
+  - **Admin Direct Control Chat**: `REPORT_CHAT_ID: 6727787768` (`@Arif2743aaa`, Phone: `+8801317342850`)
+    - Purpose: High-priority operational alerts, Turnstile solver telemetry, and 1-click disaster restore execution.
+    - Authorized Admin UIDs: `["6727787768", "8741547543", "7648254021"]`.
+  - **Disaster Recovery Vault Channel**: `@myagyai` (Channel ID: `-1004453515167`, Env: `BACKUP_CHANNEL: @myagyai`)
+    - Purpose: Immutable off-machine repository for AES-encrypted `.zip` disaster recovery backups, MTProto session strings snapshot, and Pinata IPFS gateway CIDs.
+  - **Payouts & Daily Ledger Channel**: Channel ID: `-1004402765950` (Env: `PAYOUT_CHANNEL_ID: -1004402765950`)
+    - Purpose: On-chain withdrawal receipts, daily profit statements, Jetton gas refuel notifications, and accounting audit trail.
+  - **Fleet Internal Supergroup**: Channel ID: `-1003973231307` (*AAA T Wallet Supergroup*)
+    - Purpose: Internal fleet sync telemetry, multi-wallet heartbeat checks, and node failover alerts.
+
+  ---
+
+  #### 👥 System 2: Normal User Telegram Ecosystem (Public Mining Platform & Community)
+  > 🛑 **MANDATORY DIRECTIVE — DO NOT TOUCH THE USER BOT**:
+  > Under NO circumstances should any AI agent (Antigravity, Claude, GPT, Gemini) modify, edit, redeploy, reconfigure, or tamper with the User Bot (`@AAAPREMIUMAPPSbot`), its Cloudflare edge webhook, its database bindings, or its user-facing community channels. It is strictly dedicated to public end-users and operates in 100% autonomous serving mode.
+
+  - **User Bot Identity**: `@AAAPREMIUMAPPSbot` (Bot ID: `8167732110`, Token: `USER_BOT_TOKEN: 8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8`)
+    - Name: *AAA AUTO MINING*
+    - Live Webhook: `https://atf-miner-worker.agorameet.workers.dev/` (Cloudflare Worker Node 4)
+    - Role: User onboarding, public mining slot dashboard, referral tree rewards, in-bot ad rewards, and point tracking.
+  - **User WebApp Frontend**: `https://atf-miner-app.pages.dev` (Cloudflare Pages)
+  - **User Distributed Mining Engine**: `https://atf-mining-engine.aaaai.workers.dev` (Cloudflare Worker Node 5)
+  - **User Database & Cache**: Cloudflare D1 `atf-miner-db` (`2659c73b-8144-4f2a-9a06-ef2368a1ce7f`) + KV `atf-cache-kv` (`c712104ed5744835add7e97384da8c82`)
+  - **User Session Security Key**: `USER_BOT_SESSION_ENCRYPTION_KEY: edf824a8b2d05d039839fdfcef84108c555459779f2d4ea3fca6e66a21ec056e`
+  - **User Community Group**: Chat ID: `-1003684868577` (*AAA Auto Miner*, `https://t.me/+8xTmE28Up9U5YWQ1`)
+    - Purpose: Public end-user community discussion, miner support, and questions.
+  - **Official Public Announcements**: Channel ID: `-1004255751168` (`@AAAATFAUTOMINING`, `https://t.me/AAAATFAUTOMINING`)
+    - Purpose: Official broadcasts, platform updates, airdrop news, and system maintenance alerts for end-users.
+  - **Live Public Miner Activity Stream**: Channel ID: `-1004332544939` (`@AAAATF_ACTIVITY`, `https://t.me/AAAATF_ACTIVITY`)
+    - Purpose: Real-time public user claims, level achievements, and active mining transactions stream.
 
 ### 🛰️ The Complete Master Catalog of Cloud Infrastructure & Verified APIs (from `.env`)
 
