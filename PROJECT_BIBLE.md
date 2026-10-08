@@ -203,31 +203,32 @@ During thorough auditing of `/api/farm/cloud-all`, an investigation revealed why
 
 ---
 
-## ⚡ 6.2 Dual-Type Bot Architecture, Channel Engine & Elimination of Fake Farming (October 7, 2026)
+## ⚡ 6.2 Dual-Type Bot Architecture, Channel Engine & Dialog Purge Protocol (October 8, 2026)
 
 ### 1. The Dual-Type Bot & Channel Architecture
-The fleet's 10 active high-conviction bots and channels are fundamentally divided into two technical architectures:
+The fleet's 7 active high-conviction legitimate bots and channels are fundamentally divided into two technical architectures:
 
-#### Type A: WebApp Mini-Apps / REST Bots (9 Bots)
-- **Bots Included**: Stones Miners (`@stonesminers_bot`), MRG Miner (`@mrg_miner_bot`), ART Airdrop (`@artairdrop_bot`), AI Lab (`@ailabrobot_bot`), UltraWallet (`@ultrawallet_bot`), ATF Miner (`@atf_miner_bot`), TRX Power (`@trxpowermining_bot`), FINVORA Web3 (`@finvora_bot`), TurboGram (`@turbogram_bot`).
+#### Type A: WebApp Mini-Apps / REST Bots (7 Genuine Bots)
+- **Bots Included**: Stones Miners (`@stonesminers_bot` / `@stoneswithestand_bot`), MRG Miner (`@mrg_miner_bot` / `@mrgminerbot`), AI Lab (`@ailabrobot_bot` / `@AiLab_robot`), UltraWallet (`@ultrawallet_bot` / `@UltrawalletTrade_Bot`), ATF Miner (`@atf_miner_bot` / `@ATF_AIRDROP_bot`), FINVORA Web3 (`@finvora_bot` / `@FINVORAWeb3bot`), TurboGram (`@turbogram_bot` / `@TurboGramV1_bot`).
 - **Mechanism**:
   - Authenticated via Telegram WebApp `initData` (HMAC SHA-256 query string signed by Telegram bot tokens) or Bearer JWT tokens.
   - Executed 100% via asynchronous HTTP REST calls with zero MTProto connection overhead.
   - Multi-account parallelized via `asyncio.Semaphore(4)` with per-bot rate-limiting and exponential backoff.
-  - Pure cloud execution across Render Standby and Cloudflare Workers.
+  - Pure cloud execution across Render Standby Node 2 and Cloudflare Workers 5-node mesh.
 
-#### Type B: MTProto Chat & Channel Bots (1 Bot + Automated Channel & Sponsor Verification Engine)
-- **Bots & Channels Included**:
-  1. **Inline Chat Bot**: `@Bitcoin_Cloud_Mining_bot` — Interacts via raw MTProto inline keyboard button callbacks (`claim_mine`, `claim_task_3`, etc.) with strict anti-spam timing and session collision isolation.
+#### Type B: MTProto Dialog Purge, Token Collector & Sponsor Channel Sentinel Engine
+- **Core Operations**:
+  1. **Permanent Dialog Deletion & Chat Purge Protocol**:
+     - *Why Bots Remained in Telegram Interface*: Previously, calling `contacts.BlockRequest` only blocked future messages from bots; Telegram intentionally keeps chat threads visible in the user's chat list.
+     - *The Complete Eradication Fix*: Implemented `functions.messages.DeleteHistoryRequest(peer=..., max_id=0, just_clear=False, revoke=True)` and `client.delete_dialog(...)`. This permanently purges conversation history from Telegram servers and deletes the chat tile from the Telegram client interface across all accounts.
+     - *Deep Dialog Scanner*: Sweeps up to 200 dialogs per account to block and delete dialogs for any blacklisted bots (`trxpowermining_bot`, `BitcoinCloudMinersBot`, `ART_AIRDROP_BOT`, `ainovum_bot`, `tensormining_bot`, `TonTraderAIBot`, `tacairdrop_bot`, `usdtquadbot`, `ApxMinerBot`, `OminixAiBot`) and leave/delete dialogs for scam channels (`trxpowerminingofficial`, `trx_world_work`, `trxpowermining`, `art_airdrop`, `tensorcoinnews`, etc.).
   2. **Automated Sponsor Channel & Community Subscription Engine**:
-     - Automatically joins and verifies all 11 official sponsor channels required for task validations and farming multipliers:
-       `trxpowerminingOfficial`, `TRX_WORLD_WORK`, `finvoraweb3`, `TurboGramAnnouncements`, `TurboGramPayment`, `stoneswithestand`, `mrgminer`, `mrgfun`, `ART_AIRDROP`, `ailabrobotnews`, `ultrawalletofficial`.
-     - **Auto-Blocker**: Automatically and permanently blocks blacklisted scammer bots (`@ainovum_bot`, `@tensormining_bot`, `@TonTraderAIBot`, `@tacairdrop_bot`, `@usdtquadbot`, `@ApxMinerBot`, `@OminixAiBot`) across all accounts.
-     - **Scam Channel Purger**: Automatically detects and leaves all scammer channels (`TensorCoinNews`, `tontraderai_official`, `tacairdrop`, `novum_en`, `apexminer_official`, `usdtquad_channel`, etc.).
-     - **Unblock Sentinel**: Automatically checks and unblocks the 10 legitimate fleet bots.
+     - Automatically joins and verifies all 8 legitimate sponsor channels:
+       `finvoraweb3`, `TurboGramAnnouncements`, `TurboGramPayment`, `stoneswithestand`, `mrgminer`, `mrgfun`, `ailabrobotnews`, `ultrawalletofficial`.
+     - **Unblock Sentinel**: Automatically unblocks the 7 legitimate fleet bots across all accounts.
      - **Mute Sentinel**: Automatically mutes notifications across all channels, supergroups, and bots (`UpdateNotifySettingsRequest`) to ensure 0 notification noise.
-     - **Telegram 500-Channel Limit Protection**: Audits total account dialogs. If dialogs exceed 400, automatically prunes non-essential spam channels while preserving the 11 core sponsor channels and fleet bots.
-     - **Cloud Endpoints**: `POST/GET /api/channels/sync-and-verify` and `GET /api/channels/status` on Render Standby.
+     - **Telegram 500-Channel Cap Guard**: Audits total dialogs and prunes non-essential spam if dialog count exceeds 400.
+     - **Cloud Endpoints**: `POST/GET /api/channels/sync-and-verify` and `GET /api/channels/status` on Render Standby Node 2.
 
 ### 2. Elimination of Fake / Dummy Farming Reporting
 - **The Problem**: Previous iterations had legacy fallbacks where missing tokens or failed API calls returned `farmed` to prevent UI pipeline breaks, masking genuine token expirations or auth errors.

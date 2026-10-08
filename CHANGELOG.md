@@ -4,6 +4,32 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🚫 Telegram Dialog & Chat Purge Protocol, 3 Additional Bots Purged & Consolidation to 7 High-Conviction Legitimate Bots (`render_standby_app.py`, `deploy_both_cf_workers.py`, `audit_bots_and_sidetasks.py`, `push_to_standby_repo.py`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
+  - **🔍 Deep Solution to Telegram Chat Dialog Visibility**:
+    * Identified root cause: Calling `contacts.BlockRequest` only blocks future incoming messages; Telegram intentionally leaves chat threads visible in the client's dialog tile list.
+    * Resolution: Implemented `functions.messages.DeleteHistoryRequest(peer=..., max_id=0, just_clear=False, revoke=True)` and `client.delete_dialog(...)`. This completely eradicates message histories on Telegram servers and deletes the chat dialog tile from the user's interface across all accounts.
+    * Added comprehensive Dialog Scanner in `/api/channels/sync-and-verify`: sweeps up to 200 dialogs per account to block and delete dialogs for all blacklisted bots and leave/delete dialogs for scam channels.
+  - **🛑 Complete Decommissioning of 3 Additional Bots & Channels**:
+    * Removed from auto-farming, token extraction, and channel verification per operator directive:
+      1. `@trxpowermining_bot` (`https://t.me/trxpowerminingOfficial`, `TRX_WORLD_WORK`)
+      2. `@BitcoinCloudMinersBot` (`@Bitcoin_Cloud_Mining_bot`)
+      3. `@ART_AIRDROP_BOT` (`@artairdrop_bot`, `@ART_AIRDROP`)
+  - **💎 7 High-Conviction Legitimate Bots Catalog (100% REST WebApp Mini-Apps)**:
+    1. Stones Miners (`@stonesminers_bot` / `@stoneswithestand_bot`)
+    2. MRG Miner (`@mrg_miner_bot` / `@mrgminerbot`)
+    3. AI Lab Robot (`@ailabrobot_bot` / `@AiLab_robot`)
+    4. UltraWallet (`@ultrawallet_bot` / `@UltrawalletTrade_Bot`)
+    5. ATF Miner (`@atf_miner_bot` / `@ATF_AIRDROP_bot`)
+    6. FINVORA Web3 (`@finvora_bot` / `@FINVORAWeb3bot`)
+    7. TurboGram V1 (`@turbogram_bot` / `@TurboGramV1_bot`)
+    * 100% REST WebApp Mini-Apps: Eliminates all MTProto session contention during auto-farming.
+  - **📡 Type B Engine Realignment**:
+    * Focuses on: Dialog & Chat Purge, Automated Sponsor Channel Subscription (8 legitimate channels), 24h WebApp token extraction via `/collect-tokens`, and notification silencing.
+  - **🚀 Multi-Cloud Deployments & Empirical Verification**:
+    * Pushed to `AAA0002/my-agy-fleet-standby` (Commit `243c1555`) triggering Render Node 2 deployment `dep-db3fa78m7kps73eemkgg` (Status: live).
+    * Deployed updated routines to 5-Node Cloudflare Edge Mesh (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Empirical Verification: Tested `/api/farm/account/8826375659` on Render Node 2: all 7 legitimate bots farmed with 100% success (`ailab`, `mrg`, `finvora`, `turbogram`, `stones`, `atf`, `ultrawallet`).
+
 - **🚫 Scammer Bots & Channels Purge, Auto-Block Protocol & 10-Bot Legitimate Fleet Consolidation (`render_standby_app.py`, `deploy_both_cf_workers.py`, `audit_bots_and_sidetasks.py`, `push_to_standby_repo.py`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
   - **🛑 Complete Decommissioning of 6 Scammer Bots & Associated Channels**:
     * Per operator directive and fraud audit, permanently purged 6 scammer bots and all their community/announcement channels:
