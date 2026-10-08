@@ -4277,25 +4277,16 @@ async def join_tg_target(client, link_or_username: str, name: str = ""):
 
 def is_account_referrals_bound(acc: dict) -> bool:
     """Checks whether an account has all 15 master referrals bound."""
-    if acc.get("all_16_referrals_bound") or acc.get("all_15_referrals_bound"):
+    if acc.get("all_7_referrals_bound") or acc.get("all_16_referrals_bound") or acc.get("all_15_referrals_bound"):
         return True
     return bool(
         acc.get("atf_referral_bound") and
         acc.get("stones_referral_bound") and
         acc.get("mrg_referral_bound") and
-        acc.get("art_referral_bound") and
         acc.get("ailab_referral_bound") and
         acc.get("ultrawallet_referral_bound") and
-        acc.get("apx_referral_bound") and
-        acc.get("ainovum_referral_bound") and
-        acc.get("trxpower_referral_bound") and
-        acc.get("btc_referral_bound") and
-        acc.get("tensor_referral_bound") and
-        acc.get("tontrader_referral_bound") and
         acc.get("finvora_referral_bound") and
-        acc.get("turbogram_referral_bound") and
-        acc.get("usdtquad_referral_bound") and
-        acc.get("tac_referral_bound")
+        acc.get("turbogram_referral_bound")
     )
 
 async def ensure_referral_bound(acc_client, acc: dict):
@@ -4931,8 +4922,8 @@ async def self_heal_account_channels_and_bots(acc_client, acc: dict):
         return
 
     logger.info(f"[{acc_name}] 🛡️ Running Self-Healing Channel & Bot Guard...")
-    # 1. Ensure target legitimate bots are unblocked (BNB_BOT and Ominix excluded - scammer bots blocked)
-    for b in [STONES_BOT, MRG_BOT, ART_BOT, AILAB_BOT, ULTRAWALLET_BOT, APX_BOT, AINOVUM_BOT, "ATF_AIRDROP_bot", TRXPOWER_BOT, BTC_BOT, TENSOR_BOT, TONTRADER_BOT, FINVORA_BOT, TURBOGRAM_BOT, "usdtquadbot", "tacairdrop_bot"]:
+    # 1. Ensure target legitimate bots are unblocked (Scammer bots blocked and excluded)
+    for b in [STONES_BOT, MRG_BOT, AILAB_BOT, ULTRAWALLET_BOT, "ATF_AIRDROP_bot", FINVORA_BOT, TURBOGRAM_BOT]:
         try:
             await acc_client(UnblockRequest(id=b))
         except Exception:
@@ -4940,9 +4931,7 @@ async def self_heal_account_channels_and_bots(acc_client, acc: dict):
 
     # 2. Verify and re-join mandatory channels if left (skipping any excluded channels)
     extra_channels = [
-        "trxpowerminingOfficial", "TRX_WORLD_WORK", "tontraderai_official",
-        "tontraderai_group", "finvoraweb3", "TurboGramAnnouncements",
-        "TurboGramPayment"
+        "finvoraweb3", "TurboGramAnnouncements", "TurboGramPayment"
     ]
     all_chans = list(dict.fromkeys(MANDATORY_OFFICIAL_CHANNELS + extra_channels))
     for ch in all_chans:
@@ -4982,26 +4971,17 @@ async def run_background_referral_binding(temp_cl, acc_entry: dict, chat_id: str
             except Exception as cte:
                 logger.debug(f"[{acc_name}] Token collection during onboarding note: {cte}")
 
-        all_16_bots = [
+        all_7_bots = [
             ("Stones Miners", "stones_referral_bound", "@stoneswithestand_bot"),
             ("MRG Miner", "mrg_referral_bound", "@mrgminerbot"),
-            ("ART Airdrop", "art_referral_bound", "@ART_AIRDROP_BOT"),
             ("AI Lab Robot", "ailab_referral_bound", "@AiLab_robot"),
             ("UltraWallet", "ultrawallet_referral_bound", "@UltrawalletTrade_Bot"),
-            ("Apex Miner", "apx_referral_bound", "@ApxMinerBot"),
-            ("Ainovum Bot", "ainovum_referral_bound", "@ainovum_bot"),
             ("ATF Miner", "atf_referral_bound", "@ATF_AIRDROP_bot"),
-            ("TRX Power Mining", "trxpower_referral_bound", "@trxpowermining_bot"),
-            ("Bitcoin Cloud Miners", "btc_referral_bound", "@BitcoinCloudMinersBot"),
-            ("Tensor Mining Robot", "tensor_referral_bound", "@TensorMiningRobot"),
-            ("Ton Trader AI", "tontrader_referral_bound", "@TonTraderAIBot"),
             ("FINVORA Web3", "finvora_referral_bound", "@FINVORAWeb3bot"),
-            ("TurboGram V1", "turbogram_referral_bound", "@TurboGramV1_bot"),
-            ("USDT QUAD", "usdtquad_referral_bound", "@usdtquadbot"),
-            ("TAC Airdrop", "tac_referral_bound", "@tacairdrop_bot")
+            ("TurboGram V1", "turbogram_referral_bound", "@TurboGramV1_bot")
         ]
-        bound_count = sum(1 for _, flag, _ in all_16_bots if acc_entry.get(flag))
-        all_bound = (bound_count == len(all_16_bots))
+        bound_count = sum(1 for _, flag, _ in all_7_bots if acc_entry.get(flag))
+        all_bound = (bound_count == len(all_7_bots))
 
         update_dict = {
             "last_healed_at": time.time(),
@@ -5015,12 +4995,12 @@ async def run_background_referral_binding(temp_cl, acc_entry: dict, chat_id: str
         await update_account_safely(acc_uid, update_dict)
 
         bot_lines = []
-        for name, flag, handle in all_15_bots:
+        for name, flag, handle in all_7_bots:
             status_icon = "✅" if acc_entry.get(flag) else "⏳"
             bot_lines.append(f"  {status_icon} {name} ({handle})")
 
         ref_msg = (
-            f"🔗 *Referral Binding Status ({bound_count}/15 Bots)*\n\n"
+            f"🔗 *Referral Binding Status ({bound_count}/7 Bots)*\n\n"
             f"• *Account:* {acc_name} (`{acc_uid}`)\n"
             f"• *Master Referral ID:* `6727787768`\n"
             f"• *Fleet Bots:*\n" +

@@ -1,27 +1,18 @@
 #!/usr/bin/env python3
 """
 batch_referral_onboard.py
-Universal 15-Bot Referral Onboarding Runner for All Worker Accounts in accounts.json.
+Universal 7-Bot Referral Onboarding Runner for All Worker Accounts in accounts.json.
 Guarantees:
 - Skips master account 6727787768
 - Connects each worker account
-- Automatically executes full 15-bot referral binding pipeline via login_account.bind_referrals:
+- Automatically executes full 7-bot referral binding pipeline via login_account.bind_referrals:
   1. Stones Miners (@stoneswithestand_bot) -> /start r6727787768
   2. MRG Miner (@mrgminerbot) -> /start ref_IRN1G3XD + WebApp verify + connect TON wallet
-  3. ART Airdrop (@ART_AIRDROP_BOT) -> /start 6727787768
-  4. AI Lab Robot (@AiLab_robot) -> /start 296852 + WebApp login
-  5. Ultra Wallet (@UltrawalletTrade_Bot) -> /start 6727787768 + WebApp login
-  6. Apex Miner (@ApxMinerBot) -> /start 6727787768 + WebApp register
-  7. Ainovum Bot (@ainovum_bot) -> /start ref_6727787768 + bootstrap
-  8. ATF Miner (@ATF_AIRDROP_bot) -> /start 6727787768
-  9. TRX Power Mining (@trxpowermining_bot) -> /start ref_TRX6727787768 + channel verify
-  10. Bitcoin Cloud Miners (@BitcoinCloudMinersBot) -> join channel + /start 6727787768 + check_join + claim_mine
-  11. Tensor Mining Robot (@TensorMiningRobot) -> /start 6727787768 + WebApp auth
-  12. TON Trader AI (@TonTraderAIBot) -> /start REF_6727787768 + welcome & daily gifts
-  13. FINVORA Web3 (@FINVORAWeb3bot) -> /start ref_TRX6727787768 + WebApp
-  14. TurboGram V1 (@TurboGramV1_bot) -> /start r_3520c92b + WebApp
-  15. USDT QUAD (@usdtquadbot) -> /start 6727787768 + WebApp register
-  16. TAC Airdrop (@tacairdrop_bot) -> /start 6727787768 + WebApp claim & start
+  3. AI Lab Robot (@AiLab_robot) -> /start 296852 + WebApp login
+  4. Ultra Wallet (@UltrawalletTrade_Bot) -> /start 6727787768 + WebApp login
+  5. ATF Miner (@ATF_AIRDROP_bot) -> /start 6727787768
+  6. FINVORA Web3 (@FINVORAWeb3bot) -> /start ref_TRX6727787768 + WebApp
+  7. TurboGram V1 (@TurboGramV1_bot) -> /start r_3520c92b + WebApp
 """
 
 import os
@@ -45,7 +36,7 @@ async def run_batch():
         accounts = json.load(f)
 
     print(f"\n============================================================")
-    print(f"🚀 Universal 15-Bot Referral Onboarding across {len(accounts)} Accounts")
+    print(f"🚀 Universal 7-Bot Referral Onboarding across {len(accounts)} Accounts")
     print(f"============================================================\n")
 
     for idx, acc in enumerate(accounts):
@@ -62,8 +53,8 @@ async def run_batch():
             print(f"[{idx+1}/{len(accounts)}] ⚠️ No session string for {name}, skipping.")
             continue
 
-        if acc.get("all_15_referrals_bound"):
-            print(f"[{idx+1}/{len(accounts)}] ✅ {name} ({phone}) is ALREADY 15/15 BOUND. Skipping.")
+        if acc.get("all_7_referrals_bound"):
+            print(f"[{idx+1}/{len(accounts)}] ✅ {name} ({phone}) is ALREADY 7/7 BOUND. Skipping.")
             continue
 
         print(f"\n[{idx+1}/{len(accounts)}] Onboarding Worker: {name} ({phone}, ID: {uid})...")

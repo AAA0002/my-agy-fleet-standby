@@ -50,15 +50,13 @@ class AdminFleetVault:
     ADMIN_BINANCE_TON = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
 
     ADMIN_REFERRAL_CODES = {
-        "bnb_galaxy": "Bot46893407",
-        "stones_miners": "6727787768",
-        "mrg_miner": "6727787768",
-        "art_airdrop": "6727787768",
+        "stones_miners": "r6727787768",
+        "mrg_miner": "ref_IRN1G3XD",
         "ailab_robot": "296852",
         "ultrawallet": "6727787768",
-        "apex_miner": "6727787768",
-        "ainovum": "ref_6727787768",
-        "atf_miner": "6727787768"
+        "atf_miner": "6727787768",
+        "finvora": "ref_TRX6727787768",
+        "turbogram": "r_3520c92b"
     }
 
     # Standard platform margin on customer operations (20% default)
@@ -131,7 +129,7 @@ class CommercialUserManager:
                 "ton": 0.0,
                 "mrg": 0.0,
                 "stones": 0.0,
-                "art": 0.0
+                "atf": 0.0
             },
             "stats": {
                 "total_earned_usd": 0.0,
@@ -215,7 +213,7 @@ class MarginEngine:
             "gross_amount": gross_amount,
             "admin_margin_collected": margin_amount,
             "destination_wallet": (
-                AdminFleetVault.ADMIN_BINANCE_TON if currency.upper() in ("TON", "ART")
+                AdminFleetVault.ADMIN_BINANCE_TON if currency.upper() in ("TON", "ATF")
                 else AdminFleetVault.ADMIN_BINANCE_EVM
             ),
             "type": tx_type

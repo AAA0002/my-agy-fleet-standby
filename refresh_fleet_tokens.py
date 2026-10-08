@@ -2,19 +2,18 @@
 """
 refresh_fleet_tokens.py
 Automated Multi-Account Telegram MiniApp Token Refresher
-- Connects to all 13 Fleet Accounts via Telethon (MTProto)
-- Acquires fresh tgWebAppData (initData) for all 8 fleet MiniApps:
+- Connects to Fleet Accounts via Telethon (MTProto)
+- Acquires fresh tgWebAppData (initData) for all 7 fleet MiniApps:
   1. Stones Miners (@stoneswithestand_bot)
   2. MRG Miner (@mrgminerbot)
-  3. ART Airdrop (@ART_AIRDROP_BOT)
-  4. AI Lab Robot (@AiLab_robot)
-  5. UltraWallet (@UltrawalletTrade_Bot)
-  6. Apex Miner (@ApxMinerBot)
-  7. ATF Miner (@ATF_AIRDROP_bot)
-  8. Ainovum Bot (@ainovum_bot)
+  3. AI Lab Robot (@AiLab_robot)
+  4. UltraWallet (@UltrawalletTrade_Bot)
+  5. ATF Miner (@ATF_AIRDROP_bot)
+  6. FINVORA Web3 (@FINVORAWeb3bot)
+  7. TurboGram V1 (@TurboGramV1_bot)
 - Preserves BNB Galaxy static webhooks
 - Saves refreshed tokens to fleet_miniapp_tokens.json
-- Syncs tokens to all 3 Cloudflare Edge Workers via /api/miniapp/tokens/sync
+- Syncs tokens to all 5 Cloudflare Edge Workers via /api/miniapp/tokens/sync
 """
 
 import asyncio
@@ -38,7 +37,9 @@ PRIMARY_ID = "6727787768"
 CF_WORKERS = [
     "https://restore-agy.aaaai2.workers.dev",
     "https://restore-agy.aaa-bot.workers.dev",
-    "https://restore-agy.aaa222.workers.dev"
+    "https://restore-agy.aaa222.workers.dev",
+    "https://restore-agy.agorameet.workers.dev",
+    "https://restore-agy.aaaai.workers.dev"
 ]
 CF_SECRET = "agy_cf_secret_7d36994e_2026"
 
@@ -46,12 +47,11 @@ CF_SECRET = "agy_cf_secret_7d36994e_2026"
 REFERRALS = {
     "stones": "r6727787768",
     "mrg": "ref_IRN1G3XD",
-    "art": PRIMARY_ID,
     "ailab": "296852",
     "ultrawallet": PRIMARY_ID,
-    "apx": PRIMARY_ID,
     "atf": PRIMARY_ID,
-    "ainovum": f"ref_{PRIMARY_ID}"
+    "finvora": f"ref_TRX{PRIMARY_ID}",
+    "turbogram": "r_3520c92b"
 }
 
 STATIC_BNB_WEBHOOKS = {
@@ -143,30 +143,15 @@ async def fetch_tokens_for_account(acc: dict, index: int, total: int) -> dict:
         except Exception as e:
             print(f"    ⚠️ MRG note: {e}")
 
-        # 3. ART Airdrop (@ART_AIRDROP_BOT)
-        try:
-            bot_art = await client.get_entity("ART_AIRDROP_BOT")
-            res_art = await client(functions.messages.RequestWebViewRequest(
-                peer=bot_art,
-                bot=bot_art,
-                platform="android",
-                url=f"https://art.tamimdev.dev/?ref={PRIMARY_ID}"
-            ))
-            art_init = extract_web_app_data(res_art.url)
-            if art_init:
-                account_tokens["art_init_data"] = art_init
-                print("    ✅ ART Airdrop token OK")
-        except Exception as e:
-            print(f"    ⚠️ ART note: {e}")
-
-        # 4. AI Lab Robot (@AiLab_robot)
+        # 3. AI Lab Robot (@AiLab_robot)
         try:
             bot_ai = await client.get_entity("AiLab_robot")
             res_ai = await client(functions.messages.RequestWebViewRequest(
                 peer=bot_ai,
                 bot=bot_ai,
                 platform="android",
-                url="https://ailab-agent.online/"
+                url=f"https://api.ailab-agent.online/?ref={REFERRALS['ailab']}",
+                start_param=REFERRALS['ailab'] if uid != PRIMARY_ID else None
             ))
             ai_init = extract_web_app_data(res_ai.url)
             if ai_init:
@@ -175,14 +160,14 @@ async def fetch_tokens_for_account(acc: dict, index: int, total: int) -> dict:
         except Exception as e:
             print(f"    ⚠️ AI Lab note: {e}")
 
-        # 5. UltraWallet (@UltrawalletTrade_Bot)
+        # 4. UltraWallet (@UltrawalletTrade_Bot)
         try:
             bot_uw = await client.get_input_entity("UltrawalletTrade_Bot")
             res_uw = await client(functions.messages.RequestAppWebViewRequest(
                 peer=bot_uw,
                 app=InputBotAppShortName(bot_id=bot_uw, short_name="app"),
                 platform="android",
-                start_param=PRIMARY_ID
+                start_param=REFERRALS["ultrawallet"]
             ))
             uw_init = extract_web_app_data(res_uw.url)
             if uw_init:
@@ -191,31 +176,15 @@ async def fetch_tokens_for_account(acc: dict, index: int, total: int) -> dict:
         except Exception as e:
             print(f"    ⚠️ UltraWallet note: {e}")
 
-        # 6. Apex Miner (@ApxMinerBot)
-        try:
-            bot_apx = await client.get_input_entity("ApxMinerBot")
-            res_apx = await client(functions.messages.RequestAppWebViewRequest(
-                peer=bot_apx,
-                app=InputBotAppShortName(bot_id=bot_apx, short_name="app"),
-                platform="android",
-                start_param=PRIMARY_ID
-            ))
-            apx_init = extract_web_app_data(res_apx.url)
-            if apx_init:
-                account_tokens["apx_init_data"] = apx_init
-                print("    ✅ Apex Miner token OK")
-        except Exception as e:
-            print(f"    ⚠️ Apex note: {e}")
-
-        # 7. ATF Miner (@ATF_AIRDROP_bot)
+        # 5. ATF Miner (@ATF_AIRDROP_bot)
         try:
             bot_atf = await client.get_entity("ATF_AIRDROP_bot")
             res_atf = await client(functions.messages.RequestWebViewRequest(
                 peer=bot_atf,
                 bot=bot_atf,
                 platform="android",
-                url=f"https://atfminers.asloni.online/miner/index.html?v=1789502294&entry=bot_start&ref={PRIMARY_ID}",
-                start_param=PRIMARY_ID
+                url=f"https://atfminers.asloni.online/miner/index.html?entry=bot_start&ref={REFERRALS['atf']}",
+                start_param=REFERRALS['atf'] if uid != PRIMARY_ID else None
             ))
             atf_init = extract_web_app_data(res_atf.url)
             if atf_init:
@@ -224,21 +193,39 @@ async def fetch_tokens_for_account(acc: dict, index: int, total: int) -> dict:
         except Exception as e:
             print(f"    ⚠️ ATF note: {e}")
 
-        # 8. Ainovum Bot (@ainovum_bot)
+        # 6. FINVORA Web3 (@FINVORAWeb3bot)
         try:
-            bot_an = await client.get_entity("ainovum_bot")
-            res_an = await client(functions.messages.RequestWebViewRequest(
-                peer=bot_an,
-                bot=bot_an,
+            bot_fin = await client.get_entity("FINVORAWeb3bot")
+            res_fin = await client(functions.messages.RequestWebViewRequest(
+                peer=bot_fin,
+                bot=bot_fin,
                 platform="android",
-                url=f"https://ainovum.biz/?startapp={REFERRALS['ainovum']}&ref={REFERRALS['ainovum']}"
+                url=f"https://finvora-production.up.railway.app/?ref={REFERRALS['finvora']}",
+                start_param=REFERRALS['finvora'] if uid != PRIMARY_ID else None
             ))
-            an_init = extract_web_app_data(res_an.url)
-            if an_init:
-                account_tokens["ainovum_init_data"] = an_init
-                print("    ✅ Ainovum token OK")
+            fin_init = extract_web_app_data(res_fin.url)
+            if fin_init:
+                account_tokens["finvora_init_data"] = fin_init
+                print("    ✅ FINVORA Web3 token OK")
         except Exception as e:
-            print(f"    ⚠️ Ainovum note: {e}")
+            print(f"    ⚠️ FINVORA note: {e}")
+
+        # 7. TurboGram V1 (@TurboGramV1_bot)
+        try:
+            bot_tb = await client.get_entity("TurboGramV1_bot")
+            res_tb = await client(functions.messages.RequestWebViewRequest(
+                peer=bot_tb,
+                bot=bot_tb,
+                platform="android",
+                url=f"https://turbo.tamimdev.dev/?ref={REFERRALS['turbogram']}",
+                start_param=REFERRALS['turbogram'] if uid != PRIMARY_ID else None
+            ))
+            tb_init = extract_web_app_data(res_tb.url)
+            if tb_init:
+                account_tokens["turbogram_init_data"] = tb_init
+                print("    ✅ TurboGram V1 token OK")
+        except Exception as e:
+            print(f"    ⚠️ TurboGram note: {e}")
 
     finally:
         try:

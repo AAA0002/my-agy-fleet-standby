@@ -633,14 +633,13 @@ function App() {
   }, [adminUsers, userSearchQuery, usersFilter]);
 
   const POOLS_LIST = [
-    { name: "ATF Miner", key: "atf", icon: "🪙", cadence: "Auto-Claiming" },
-    { name: "Stones", key: "stones", icon: "💎", cadence: "Compounding STONES" },
-    { name: "MRG", key: "mrg", icon: "⚡", cadence: "Hashrate Active" },
-    { name: "ART Coin", key: "art", icon: "🎨", cadence: "Auto-Harvest" },
+    { name: "Stones Miners", key: "stones", icon: "💎", cadence: "Compounding STONES" },
+    { name: "MRG Miner", key: "mrg", icon: "⚡", cadence: "Hashrate Active" },
     { name: "AI Lab", key: "ailab", icon: "🤖", cadence: "Compounding" },
     { name: "UltraWallet", key: "ultrawallet", icon: "👛", cadence: "Syncing" },
-    { name: "Apex", key: "apex", icon: "🏔️", cadence: "Auto-Claim" },
-    { name: "Ainovum", key: "ainovum", icon: "🌐", cadence: "Active" }
+    { name: "ATF Miner", key: "atf", icon: "🪙", cadence: "Auto-Claiming" },
+    { name: "FINVORA Web3", key: "finvora", icon: "🌐", cadence: "Daily Mining" },
+    { name: "TurboGram V1", key: "turbogram", icon: "🚀", cadence: "Active Mining" }
   ];
 
   if (isDenied) {

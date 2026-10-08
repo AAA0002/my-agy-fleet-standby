@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 extract_all_missing_fleet_tokens.py
-Batch-extracts missing WebApp initData tokens (TRX Power, FINVORA, TurboGram, USDT QUAD)
+Batch-extracts missing WebApp initData tokens across 7 legitimate bots
 across all 18 fleet accounts in accounts.json and updates fleet_miniapp_tokens.json.
 Synchronizes fresh tokens across all 5 Cloudflare Edge Worker nodes.
 """
@@ -26,10 +26,34 @@ API_HASH = "5cd9e5c464c1e4c76b911c750ba42cbb"
 
 TARGET_BOTS = [
     {
-        "key": "trxpower_init_data",
-        "bot": "trxpowermining_bot",
-        "url": "https://eb0frexrmrfl9pgywxd8ebxo.187.53.139.6.sslip.io/",
-        "name": "TRX Power Mining"
+        "key": "stones_init_data",
+        "bot": "stoneswithestand_bot",
+        "url": "https://miners.stones.digital/",
+        "name": "Stones Miners"
+    },
+    {
+        "key": "mrg_init_data",
+        "bot": "mrgminerbot",
+        "url": "https://miner.mrg.fun/",
+        "name": "MRG Miner"
+    },
+    {
+        "key": "ailab_init_data",
+        "bot": "AiLab_robot",
+        "url": "https://ailabrobot.com/",
+        "name": "AI Lab Robot"
+    },
+    {
+        "key": "ultrawallet_init_data",
+        "bot": "UltrawalletTrade_Bot",
+        "url": "https://ultrawallet.site/",
+        "name": "UltraWallet"
+    },
+    {
+        "key": "atf_init_data",
+        "bot": "ATF_AIRDROP_bot",
+        "url": "https://atfminers.asloni.online/miner/index.php",
+        "name": "ATF Miner"
     },
     {
         "key": "finvora_init_data",
@@ -42,12 +66,6 @@ TARGET_BOTS = [
         "bot": "TurboGramV1_bot",
         "url": "https://turbo.tamimdev.dev/",
         "name": "TurboGram V1"
-    },
-    {
-        "key": "usdtquad_init_data",
-        "bot": "usdtquadbot",
-        "url": "https://ustdquad.up.railway.app/",
-        "name": "USDT QUAD"
     }
 ]
 

@@ -46,7 +46,26 @@ EXPLICIT_UNWANTED_USERNAMES = {
     "airdropfindteam",
     "mininggram_channel",
     "ominiai",
-    "ominiaipayout"
+    "ominiaipayout",
+    # Scam channels purged per user directive
+    "trxpowerminingofficial",
+    "trx_world_work",
+    "trxpowermining",
+    "art_airdrop",
+    "artairdrop",
+    "tensorcoinnews",
+    "tontraderai_official",
+    "tontraderai_group",
+    "tontraderai_reviews",
+    "tacairdrop",
+    "tacairdrop_official",
+    "tac_airdrop",
+    "tacairdropen",
+    "novum_en",
+    "apexminer_official",
+    "apexminergroup",
+    "usdtquad_channel",
+    "usdtquad",
 }
 
 # Whitelist: Channels that must NEVER be left under any circumstance
@@ -55,26 +74,11 @@ PROTECTED_USERNAMES = {
     "stoneswithestand",
     "mrgminer",
     "mrgfun",
-    "art_airdrop",
-    "apexminer_official",
-    "apexminergroup",
     "ailabrobotnews",
-    "ailabrobotpayouts",
-    "ultrawallet",
     "ultrawalletofficial",
-    "novum_en",
-    "gramworkers",
-    "trxpowerminingofficial",
-    "trx_world_work",
     "finvoraweb3",
     "turbogramannouncements",
     "turbogrampayment",
-    "tontraderai_official",
-    "tontraderai_group",
-    "tensorcoinnews",
-    "tacairdrop_official",
-    "tacairdrop",
-    "tac_airdrop"
 }
 
 PROTECTED_CHANNEL_IDS = {

@@ -1014,17 +1014,16 @@ function App() {
             )
           ),
 
-          // 8-Bot Mining Matrix in Drawer
+          // 7-Bot Mining Matrix in Drawer
           React.createElement("div", { className: "grid grid-cols-2 gap-1.5" },
             [
               { name: "Stones (Arbitrum)", status: selectedAccount.stones_coins >= 500 ? `💎 ${selectedAccount.stones_coins} (Ready)` : `💎 ${selectedAccount.stones_coins || 0} STONES` },
               { name: "ATF Miner (TON)", status: `🪙 ${parseFloat(selectedAccount.atf_balance || 0).toFixed(1)} ATF (Accumulating)` },
               { name: "MRG Miner (TON)", status: "Level 1 (3h Mining)" },
-              { name: "ART Airdrop (TON)", status: "8h Active (21.3/h)" },
               { name: "AI Lab (BEP-20)", status: "Tasks #1-#20 Active" },
               { name: "UltraWallet", status: "Daily Streak OK" },
-              { name: "Apex Miner", status: "Mining Active" },
-              { name: "Ainovum (USDT)", status: selectedAccount.ainovum_balance >= 0.1 ? `🤖 $${parseFloat(selectedAccount.ainovum_balance).toFixed(2)} (Auto-WD)` : "Active (0.1 Threshold)" }
+              { name: "FINVORA Web3", status: "⚡ Active" },
+              { name: "TurboGram V1", status: "⚡ Active" }
             ].map((b, idx) => React.createElement("div", {
               key: idx,
               className: "bg-slate-50 dark:bg-slate-900/60 rounded-lg p-2 border border-slate-100 dark:border-white/5"

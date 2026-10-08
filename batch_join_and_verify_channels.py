@@ -19,7 +19,6 @@ ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
 CHANNELS = [
     "stoneswithestand",
     "mrgminer",
-    "ART_AIRDROP",
     "ultrawallet"
 ]
 
@@ -101,18 +100,6 @@ def main():
             except Exception as se:
                 print(f"  ⚠️ Stones error for {name}: {se}")
 
-            # 3. ART Airdrop: Claim Telegram Channel task
-            try:
-                req_art = urllib.request.Request(
-                    "https://art.tamimdev.dev/api/tasks/claim",
-                    data=json.dumps({"userId": uid, "taskId": "task-1789490151516"}).encode(),
-                    headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}
-                )
-                with urllib.request.urlopen(req_art, timeout=10) as r_art:
-                    ad = json.loads(r_art.read())
-                    print(f"  🚀 [ART Airdrop] Channel task claimed: {ad.get('success')}")
-            except Exception as ae:
-                print(f"  Note ART: {ae}")
 
             # 4. MRG Miner: Claim Telegram Channel task
             try:

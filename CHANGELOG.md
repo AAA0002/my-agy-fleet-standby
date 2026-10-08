@@ -4,6 +4,29 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🛡️ Full-Fleet Scam Bot & Channel Eradication, Codebase Hardening & 7-Bot Ecosystem Consolidation (`render_standby_app.py`, `userbot_refresher.py`, `autonomous_cloud_agent.py`, `extract_all_missing_fleet_tokens.py`, `update_dashboard_compact.py`, `push_to_standby_repo.py`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
+  - **🧹 Total Removal of All 10 Scam Bots & Associated Scam Channels**:
+    * Cleaned all remaining scam farming code, token extractions, referral bindings, and bootstrapping routines across the entire codebase:
+      - Purged Apex Miner bootstrap leftovers from `render_standby_app.py`.
+      - Purged Ainovum action definitions from `autonomous_cloud_agent.py`.
+      - Rewrote `extract_all_missing_fleet_tokens.py` to target strictly the 7 legitimate bots (purged `trxpowermining_bot` and `usdtquadbot`).
+      - Updated `update_dashboard_compact.py` drawer mining matrix to strictly feature the 7 legitimate bots (purged ART Airdrop, Apex Miner, and Ainovum; added FINVORA Web3 and TurboGram V1).
+      - Hardened `userbot_refresher.py` self-healing guard, referral binders, and bot lists to 7 legitimate bots (`all_7_bots`).
+  - **🚀 Render Standby Node 2 Overhaul & Instant Deployment**:
+    * Resolved GitHub Contents API large-file size constraint in `push_to_standby_repo.py` by integrating Git Trees API (`git/trees/main`) for instantaneous SHA resolution.
+    * Pushed updated `render_standby_app.py` as `app.py` (Commit `285e1d02`) and triggered Render Node 2 deploy (`dep-db3i3efavr4c739t6t2g`, Status: `live`).
+    * Validated live health (`/health` -> `{"ok": true, "status": "healthy"}`) and farming endpoint (`/api/farm/account/8826375659` -> 7/7 bots farmed successfully).
+  - **⚡ Cloudflare 5-Node Edge Mesh Synchronization**:
+    * Deployed and synchronized all 5 Cloudflare Worker accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with 24/7 Edge Cron Triggers (`*/15 * * * *`).
+    * Synchronized global and owner Telegram menu buttons, commands, and bot descriptions.
+  - **🚫 1-Time Permanent Server-Side Scam Dialog & Channel Purge across 18 Accounts**:
+    * Initiated Type B Cloud Purge across all 18 accounts on Render Node 2:
+      - Calls `contacts.BlockRequest` for all 10 scam bots.
+      - Calls `messages.DeleteHistoryRequest(revoke=True)` and `delete_dialog()` to physically delete conversations from Telegram clients.
+      - Calls `channels.LeaveChannelRequest` for all scam announcement & proof channels.
+      - Unblocks and verifies all 7 legitimate fleet bots.
+      - Automatically mutes all chats and protects primary account from channel limits.
+
 - **🚫 Telegram Dialog & Chat Purge Protocol, 3 Additional Bots Purged & Consolidation to 7 High-Conviction Legitimate Bots (`render_standby_app.py`, `deploy_both_cf_workers.py`, `audit_bots_and_sidetasks.py`, `push_to_standby_repo.py`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
   - **🔍 Deep Solution to Telegram Chat Dialog Visibility**:
     * Identified root cause: Calling `contacts.BlockRequest` only blocks future incoming messages; Telegram intentionally leaves chat threads visible in the client's dialog tile list.

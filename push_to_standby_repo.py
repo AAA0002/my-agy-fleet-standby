@@ -43,14 +43,28 @@ def push_file(local_path: str, repo_path: str, commit_msg: str):
         "Accept": "application/vnd.github.v3+json"
     }
 
-    req = urllib.request.Request(get_url, headers=headers)
     current_sha = None
+    # 1. Fetch sha via git tree for efficiency and reliability on large files
     try:
-        with urllib.request.urlopen(req) as resp:
-            data = json.loads(resp.read().decode())
-            current_sha = data.get("sha")
-    except Exception as e:
+        tree_req = urllib.request.Request(f"https://api.github.com/repos/{REPO}/git/trees/main", headers=headers)
+        with urllib.request.urlopen(tree_req, timeout=15) as resp:
+            tree_data = json.loads(resp.read().decode())
+            for item in tree_data.get("tree", []):
+                if item.get("path") == repo_path:
+                    current_sha = item.get("sha")
+                    break
+    except Exception:
         pass
+
+    # 2. Fallback to contents API if tree lookup did not find it
+    if not current_sha:
+        try:
+            req = urllib.request.Request(get_url, headers=headers)
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode())
+                current_sha = data.get("sha")
+        except Exception:
+            pass
 
     put_data = {
         "message": commit_msg,
@@ -67,10 +81,13 @@ def push_file(local_path: str, repo_path: str, commit_msg: str):
     )
 
     try:
-        with urllib.request.urlopen(req_put) as put_resp:
+        with urllib.request.urlopen(req_put, timeout=30) as put_resp:
             res = json.loads(put_resp.read().decode())
             new_commit = res.get("commit", {}).get("sha", "")[:8]
             print(f"✅ Pushed {repo_path} to {REPO} (Commit: {new_commit})!")
+    except urllib.error.HTTPError as pe:
+        err_body = pe.read().decode() if hasattr(pe, "read") else ""
+        print(f"❌ Error pushing {repo_path} to GitHub: {pe} - {err_body}")
     except Exception as pe:
         print(f"❌ Error pushing {repo_path} to GitHub: {pe}")
 
@@ -80,16 +97,31 @@ def push_app():
     if os.path.exists(req_file):
         push_file(req_file, "requirements.txt", "deps: add ecdsa and base58")
     
-    # Trigger Render Node 2 deploy
+    # Trigger Render Node 1 deploy (Singapore)
+    node1_key = env.get("RENDER_API_KEY", "rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1")
+    srv_node1 = "srv-damuhkmgekts73f1osag"
+    try:
+        req_dep1 = urllib.request.Request(
+            f"https://api.render.com/v1/services/{srv_node1}/deploys",
+            data=json.dumps({"clearCache": "do_not_clear"}).encode(),
+            headers={"Authorization": f"Bearer {node1_key}", "Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req_dep1, timeout=15) as d_resp:
+            d_data = json.loads(d_resp.read().decode())
+            print(f"🚀 Render Node 1 (Singapore) deployment triggered: {d_data.get('id')}")
+    except Exception as de:
+        print(f"Note triggering Render Node 1 deploy: {de}")
+
+    # Trigger Render Node 2 deploy (Frankfurt)
     node2_key = env.get("RENDER_API_KEY_2", "rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB")
     srv_node2 = "srv-dan5q00ae00c73djummg"
     try:
-        req_dep = urllib.request.Request(
+        req_dep2 = urllib.request.Request(
             f"https://api.render.com/v1/services/{srv_node2}/deploys",
             data=json.dumps({"clearCache": "do_not_clear"}).encode(),
             headers={"Authorization": f"Bearer {node2_key}", "Content-Type": "application/json"}
         )
-        with urllib.request.urlopen(req_dep, timeout=15) as d_resp:
+        with urllib.request.urlopen(req_dep2, timeout=15) as d_resp:
             d_data = json.loads(d_resp.read().decode())
             print(f"🚀 Render Node 2 (Frankfurt) deployment triggered: {d_data.get('id')}")
     except Exception as de:

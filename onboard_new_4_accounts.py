@@ -1,23 +1,14 @@
 #!/usr/bin/env python3
 """
 Dedicated Onboarding Runner for the 4 newly added accounts.
-Executes the full 15-bot referral binding pipeline:
+Executes the full 7-bot referral binding pipeline:
 1. Stones Miners (@stoneswithestand_bot) -> /start r6727787768
 2. Mine Rare Gram - MRG (@mrgminerbot) -> /start ref_IRN1G3XD + WebApp verify + connect TON wallet
-3. ART Airdrop (@ART_AIRDROP_BOT) -> /start 6727787768 + channel join
-4. AI Lab Robot (@AiLab_robot) -> /start 296852 + WebApp login
-5. Ultra Wallet (@UltrawalletTrade_Bot) -> /start 6727787768 + telegramLogin refBy
-6. Apex Miner (@ApxMinerBot) -> /start 6727787768 + api/register referrer
-7. Ainovum Bot (@ainovum_bot) -> /start ref_6727787768 + api/bootstrap referrer
-8. ATF Miner (@ATF_AIRDROP_bot) -> /start 6727787768
-9. TRX Power Mining (@trxpowermining_bot) -> /start ref_TRX6727787768 + channel join + verify
-10. Bitcoin Cloud Miners (@BitcoinCloudMinersBot) -> join channel + /start 6727787768 + start_play + check_join + ⛏ Mine + claim_mine
-11. Tensor Mining Robot (@TensorMiningRobot) -> /start 6727787768 + WebApp auth
-12. TON Trader AI (@TonTraderAIBot) -> /start REF_6727787768 + WebApp profile + welcome gifts
-13. FINVORA Web3 (@FINVORAWeb3bot) -> /start ref_TRX6727787768 + WebApp
-14. TurboGram V1 (@TurboGramV1_bot) -> /start r_3520c92b + WebApp
-15. USDT QUAD (@usdtquadbot) -> /start 6727787768 + WebApp register
-16. TAC Airdrop (@tacairdrop_bot) -> /start 6727787768 + WebApp claim & start
+3. AI Lab Robot (@AiLab_robot) -> /start 296852 + WebApp login
+4. Ultra Wallet (@UltrawalletTrade_Bot) -> /start 6727787768 + telegramLogin refBy
+5. ATF Miner (@ATF_AIRDROP_bot) -> /start 6727787768
+6. FINVORA Web3 (@FINVORAWeb3bot) -> /start ref_TRX6727787768 + WebApp
+7. TurboGram V1 (@TurboGramV1_bot) -> /start r_3520c92b + WebApp
 """
 
 import asyncio
@@ -64,7 +55,7 @@ async def run_onboard():
         accounts = json.load(f)
 
     target_accs = [a for a in accounts if str(a.get("user_id")) in NEW_ACCOUNT_IDS]
-    print(f"\n🚀 Starting full 15-bot referral onboarding for {len(target_accs)} target accounts...\n")
+    print(f"\n🚀 Starting full 7-bot referral onboarding for {len(target_accs)} target accounts...\n")
 
     for idx, acc in enumerate(target_accs, start=1):
         uid = str(acc.get("user_id"))

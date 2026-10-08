@@ -6,17 +6,16 @@ refresh_cloud_tokens.py
 =============================================================================
 Runs on GitHub Actions, Render, Deno, or ephemeral cloud runners.
 Connects briefly (3-5s per account) via MTProto to extract fresh 24h WebApp
-initData session tokens for all 8 active bots:
+initData session tokens for all 7 active bots:
   1. Stones Miners (@stoneswithestand_bot)
   2. MRG Miner (@mrgminerbot)
-  3. ART Airdrop (@ART_AIRDROP_BOT)
-  4. AI Lab Robot (@AiLab_robot)
-  5. UltraWallet (@UltrawalletTrade_Bot)
-  6. Apex Miner (@ApxMinerBot)
-  7. ATF Miner (@ATF_AIRDROP_bot)
-  8. Ainovum (@ainovum_bot)
+  3. AI Lab Robot (@AiLab_robot)
+  4. UltraWallet (@UltrawalletTrade_Bot)
+  5. ATF Miner (@ATF_AIRDROP_bot)
+  6. FINVORA Web3 (@FINVORAWeb3bot)
+  7. TurboGram V1 (@TurboGramV1_bot)
 
-Pushes the extracted tokens directly to 3x Cloudflare Edge Workers & KV.
+Pushes the extracted tokens directly to 5x Cloudflare Edge Workers & KV.
 Eliminates ALL dependence on local VPS uptime!
 """
 
@@ -50,19 +49,19 @@ CF_NODES = [
 # Bot Usernames & Referral Codes
 STONES_BOT = "stoneswithestand_bot"
 MRG_BOT = "mrgminerbot"
-ART_BOT = "ART_AIRDROP_BOT"
 AILAB_BOT = "AiLab_robot"
 ULTRAWALLET_BOT = "UltrawalletTrade_Bot"
-APX_BOT = "ApxMinerBot"
-AINOVUM_BOT = "ainovum_bot"
+ATF_BOT = "ATF_AIRDROP_bot"
+FINVORA_BOT = "FINVORAWeb3bot"
+TURBOGRAM_BOT = "TurboGramV1_bot"
 
 STONES_REF = "r6727787768"
 MRG_REF = "ref_IRN1G3XD"
-ART_REF = "6727787768"
 AILAB_REF = "296852"
 ULTRAWALLET_REF = "6727787768"
-APX_REF = "6727787768"
-AINOVUM_REF = "ref_6727787768"
+ATF_REF = "6727787768"
+FINVORA_REF = "ref_TRX6727787768"
+TURBOGRAM_REF = "r_3520c92b"
 
 
 def load_accounts():
@@ -160,22 +159,7 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
         except Exception as e:
             print(f"  ⚠️ MRG error: {e}")
 
-        # 3. ART Airdrop
-        try:
-            b_art = await cl.get_entity(ART_BOT)
-            r_art = await cl(RequestWebViewRequest(
-                peer=b_art, bot=b_art, platform="android",
-                url=f"https://art.tamimdev.dev/?ref={ART_REF}",
-                start_param=ART_REF if acc_uid != str(REPORT_CHAT_ID) else None
-            ))
-            init_art = urllib.parse.parse_qs(urllib.parse.urlparse(r_art.url).fragment).get("tgWebAppData", [None])[0]
-            if init_art:
-                tokens["art_init_data"] = init_art
-                print(f"  🚀 ART Airdrop: Collected")
-        except Exception as e:
-            print(f"  ⚠️ ART error: {e}")
-
-        # 4. AI Lab Robot
+        # 3. AI Lab Robot
         try:
             b_ai = await cl.get_entity(AILAB_BOT)
             r_ai = await cl(RequestWebViewRequest(
@@ -190,7 +174,7 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
         except Exception as e:
             print(f"  ⚠️ AI Lab error: {e}")
 
-        # 6. UltraWallet
+        # 4. UltraWallet
         try:
             b_uw = await cl.get_entity(ULTRAWALLET_BOT)
             r_uw = await cl(RequestWebViewRequest(
@@ -205,29 +189,13 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
         except Exception as e:
             print(f"  ⚠️ UltraWallet error: {e}")
 
-        # 7. Apex Miner
+        # 5. ATF Miner
         try:
-            b_apx = await cl.get_input_entity(APX_BOT)
-            r_apx = await cl(RequestAppWebViewRequest(
-                peer=b_apx,
-                app=InputBotAppShortName(bot_id=b_apx, short_name="app"),
-                platform="android",
-                start_param=APX_REF if acc_uid != str(REPORT_CHAT_ID) else None
-            ))
-            init_apx = urllib.parse.parse_qs(urllib.parse.urlparse(r_apx.url).fragment).get("tgWebAppData", [None])[0]
-            if init_apx:
-                tokens["apx_init_data"] = init_apx
-                print(f"  ⚡ Apex Miner: Collected")
-        except Exception as e:
-            print(f"  ⚠️ Apex error: {e}")
-
-        # 8. ATF Miner
-        try:
-            b_atf = await cl.get_entity("ATF_AIRDROP_bot")
+            b_atf = await cl.get_entity(ATF_BOT)
             r_atf = await cl(RequestWebViewRequest(
                 peer=b_atf, bot=b_atf, platform="android",
-                url=f"https://atfminers.asloni.online/miner/index.html?v=1789502294&entry=bot_start&ref={REPORT_CHAT_ID}",
-                start_param=str(REPORT_CHAT_ID)
+                url=f"https://atfminers.asloni.online/miner/index.html?entry=bot_start&ref={ATF_REF}",
+                start_param=ATF_REF if acc_uid != str(REPORT_CHAT_ID) else None
             ))
             init_atf = urllib.parse.parse_qs(urllib.parse.urlparse(r_atf.url).fragment).get("tgWebAppData", [None])[0]
             if init_atf:
@@ -236,20 +204,35 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
         except Exception as e:
             print(f"  ⚠️ ATF error: {e}")
 
-        # 9. Ainovum
+        # 6. FINVORA Web3
         try:
-            b_an = await cl.get_entity(AINOVUM_BOT)
-            r_an = await cl(RequestWebViewRequest(
-                peer=b_an, bot=b_an, platform="android",
-                url=f"https://ainovum.biz/?startapp={AINOVUM_REF}&ref={AINOVUM_REF}",
-                start_param=AINOVUM_REF if acc_uid != str(REPORT_CHAT_ID) else None
+            b_fin = await cl.get_entity(FINVORA_BOT)
+            r_fin = await cl(RequestWebViewRequest(
+                peer=b_fin, bot=b_fin, platform="android",
+                url=f"https://finvora-production.up.railway.app/?ref={FINVORA_REF}",
+                start_param=FINVORA_REF if acc_uid != str(REPORT_CHAT_ID) else None
             ))
-            init_an = urllib.parse.parse_qs(urllib.parse.urlparse(r_an.url).fragment).get("tgWebAppData", [None])[0]
-            if init_an:
-                tokens["ainovum_init_data"] = init_an
-                print(f"  🤖 Ainovum: Collected")
+            init_fin = urllib.parse.parse_qs(urllib.parse.urlparse(r_fin.url).fragment).get("tgWebAppData", [None])[0]
+            if init_fin:
+                tokens["finvora_init_data"] = init_fin
+                print(f"  🌐 FINVORA Web3: Collected")
         except Exception as e:
-            print(f"  ⚠️ Ainovum error: {e}")
+            print(f"  ⚠️ FINVORA error: {e}")
+
+        # 7. TurboGram V1
+        try:
+            b_tb = await cl.get_entity(TURBOGRAM_BOT)
+            r_tb = await cl(RequestWebViewRequest(
+                peer=b_tb, bot=b_tb, platform="android",
+                url=f"https://turbo.tamimdev.dev/?ref={TURBOGRAM_REF}",
+                start_param=TURBOGRAM_REF if acc_uid != str(REPORT_CHAT_ID) else None
+            ))
+            init_tb = urllib.parse.parse_qs(urllib.parse.urlparse(r_tb.url).fragment).get("tgWebAppData", [None])[0]
+            if init_tb:
+                tokens["turbogram_init_data"] = init_tb
+                print(f"  🚀 TurboGram V1: Collected")
+        except Exception as e:
+            print(f"  ⚠️ TurboGram error: {e}")
 
         # Sync to Cloudflare Edge KV
         await sync_tokens_to_edge(session, acc_uid, acc_name, tokens)

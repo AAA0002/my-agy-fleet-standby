@@ -224,14 +224,13 @@
     }
   },
   "active_mining_bots": [
-    { "name": "Stones Miners", "bot": "stoneswithestand_bot", "policy": "Master account accumulation only (0 withdrawals); worker accounts 500 STONES auto-withdrawal with CF error 1033 cooldown" },
+    { "name": "Stones Miners", "bot": "stoneswithestand_bot", "policy": "Farming, task claiming, and daily check-in" },
     { "name": "MRG Miner", "bot": "mrgminerbot", "policy": "Mining claims, task reaction claims, hash rate upgrades" },
-    { "name": "ART Airdrop", "bot": "ART_AIRDROP_BOT", "policy": "8h mining renewal, task claims, level priority up to Lvl 8" },
-    { "name": "AI Lab Robot", "bot": "AiLab_robot", "policy": "Master account accumulation only (0 withdrawals); worker accounts >= $0.02 USD auto-withdrawal to BEP-20" },
+    { "name": "AI Lab Robot", "bot": "AiLab_robot", "policy": "Accumulation mode; automated task claims and daily check-ins" },
     { "name": "UltraWallet", "bot": "UltrawalletTrade_Bot", "policy": "Daily streak claim, 10/h mining cycle" },
-    { "name": "Apex Miner", "bot": "ApxMinerBot", "policy": "Mined points collection" },
     { "name": "ATF Miner", "bot": "ATF_AIRDROP_bot", "policy": "FARMING AND ACCUMULATION ONLY - NO WITHDRAWALS" },
-    { "name": "Ainovum", "bot": "ainovum_bot", "policy": "Mining collection, USDT auto-withdrawal >= 0.1 to BEP-20 (isolated worker wallets)" }
+    { "name": "FINVORA Web3", "bot": "FINVORAWeb3bot", "policy": "Daily mining claim, instant bonus activation" },
+    { "name": "TurboGram V1", "bot": "TurboGramV1_bot", "policy": "Mining streak, automated profile & wallet sync" }
   ],
   "cron_job_org_jobs": [
     { "id": 8484430, "title": "Ari AI Agent Keep-Alive (Render)", "interval": "Every 10 min" },
