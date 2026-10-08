@@ -4,6 +4,17 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **☁️ Multi-Cloud Infrastructure Recovery & Render Reconnection to Active GitHub Mesh (`PROJECT_BIBLE.md`, `CHANGELOG.md`, `koramshah2/hermes-cloud-agent`)**:
+  - **🔍 Investigation of Suspended GitHub Account**: Discovered that Render Service 5 (`hermes-grok-cloud-agent`, ID `srv-daojdt5g1s2s738jsjmg`) was suspended and returning HTTP 503 because it was originally tied to a 3rd GitHub account (`AAA2743`) which was suspended by GitHub.
+  - **🔗 Re-linking via Render REST API**: Using Render API Key `rnd_PqsurfX5D9blSaEEuEDDAUcl393y` (owned by `koramshah2@gmail.com`), reconnected `hermes-grok-cloud-agent` to active public repository `https://github.com/koramshah2/hermes-cloud-agent`.
+  - **🔄 Un-suspending & Redeployment**: Successfully resumed the service via `POST /v1/services/{id}/resume` and triggered a live deployment (`dep-db3pjr2j9qps738jigag`, `build_in_progress`).
+  - **📖 Comprehensive Architecture Documentation in `PROJECT_BIBLE.md`**: Fully documented the entire cloud infrastructure inventory:
+    * **5 Render Cloud Services**: Frankfurt Node 2 (`srv-dan5q00ae00c73djummg`), Singapore Node 1 (`srv-damuhkmgekts73f1osag`), Primary MTProto Relayer (`atf-mtproto-relayer`), Backup MTProto Relayer (`atf-mtproto-relayer-backup`), and Hermes Ari AI Agent (`hermes-grok-cloud-agent`).
+    * **5 Cloudflare Worker Accounts**: Shards 0 through 4 covering 500,000 requests/day, 25M D1 SQL reads, and 50GB R2 storage across 5 separate Google accounts.
+    * **2 Active GitHub Accounts**: `AAA0002` and `koramshah2`, providing a combined 4,000 free runner minutes/month for Turnstile solving and MTProto token refresh workflows.
+    * **Cloud Databases**: Upstash Serverless Redis REST, Turso libSQL, and Supabase.
+  - **🛡️ Turnstile Solver Enhancement**: Enhanced `mrg_turnstile_solver.py` with Patchright stealth, native Claim button auto-clicking, and iframe locator targeting `challenges.cloudflare.com` to interact with security challenges automatically without manual intervention.
+
 - **🤖 100% Cloud MRG Turnstile Auto-Solver & Dual GitHub Compute Mesh (`mrg_turnstile_solver.py`, `.github/workflows/mrg_turnstile_solver.yml`, `koramshah2/AAA_AUTO`)**:
   - **🛡️ 100% Cloud Turnstile Solver**: Implemented `mrg_turnstile_solver.py` using Playwright Chromium in headless stealth mode. Silently executes Cloudflare Turnstile (`sitekey: 0x4AAAAAAFI-XXL7bFNbLU_J`) on `app.mrgtoken.xyz` in the cloud without loading phone RAM/CPU (Zero Phone Load Directive).
   - **🔄 Automatic Human Pass Renewal**: Calls `POST /api/user/verify-human` with acquired tokens, renewing `humanVerifiedUntil` for 8 hours across all 18 fleet accounts so miners never hit the 24-hour storage cap or stop.

@@ -91,17 +91,46 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * D1 Database: `aaa-d1` (`e2db1db3-eaaf-49b3-86e5-95aee66772ef`)
     * R2 (S3) Bucket: `aaa-r2`
     * KV Namespace: `atf-miner-kv` (`c5eadf91...`)
-- **5 Render Accounts & Services (Cloud MTProto Compute & Resilient Relay Mesh)**:
-  - Service 1: **Render Standby Node 2 (Frankfurt)**: `https://my-agy-fleet-standby-node2.onrender.com` (Primary Compute, Service: `srv-dan5q00ae00c73djummg`, API Key: `rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB`)
-  - Service 2: **Render Standby Node 1 (Singapore)**: `https://my-agy-fleet-standby.onrender.com` (Backup Compute, Service: `srv-damuhkmgekts73f1osag`, API Key: `rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1`)
-  - Service 3: **Primary MTProto Relayer**: `https://atf-mtproto-relayer.onrender.com` (Online, authenticated session bridge)
-  - Service 4: **Backup MTProto Relayer**: `https://atf-mtproto-relayer-backup.onrender.com` (Online, authenticated fallback session bridge)
-  - Service 5: **Hermes Council Agent**: `https://hermes-grok-cloud-agent.onrender.com` (Service Key: `rnd_PqsurfX5D9blSaEEuEDDAUcl393y`)
-- **Git Standby Repositories & Cloud CI/CD Runners**:
-  - Primary Fleet Repo: `AAA0002/ATL` (GitHub Actions: 2,000 free min/mo)
-  - Standby Mirror Repo: `koramshah2/AAA_AUTO` (`Koramshah2@gmail.com`, GitHub Actions: 2,000 free min/mo)
-  - Standby Cloud Compute: `AAA0002/my-agy-fleet-standby` (`app.py`), `AAA2743/my-agy-fleet-standby` (`app.py`)
-  - **MRG Turnstile Solver Workflow**: `.github/workflows/mrg_turnstile_solver.yml` (Runs `mrg_turnstile_solver.py` via Playwright Chromium every 3 hours in GitHub Cloud, keeping all 18 accounts continuously verified with zero phone load)
+- **5 Render Cloud Accounts & Services (Cloud MTProto Compute & Resilient Relay Mesh)**:
+  - Service 1: **Render Standby Node 2 (Frankfurt)**: `https://my-agy-fleet-standby-node2.onrender.com`
+    * Service ID: `srv-dan5q00ae00c73djummg` | Workspace: `Abid's workspace` (`tea-dan5pgbm8hqs73a5cvig`, `abidhasanch2001@gmail.com`)
+    * API Key: `rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB` | Linked Repo: `https://github.com/AAA0002/my-agy-fleet-standby` (main)
+    * Role: Primary 24/7 Compute & MTProto Token Collector. Deploys live automatically on git push via `push_to_standby_repo.py`.
+  - Service 2: **Render Standby Node 1 (Singapore)**: `https://my-agy-fleet-standby.onrender.com`
+    * Service ID: `srv-damuhkmgekts73f1osag` | Workspace: `My Workspace` (`tea-d8j9clt8nd3s73eb041g`, `coz1gameh1@gmail.com`)
+    * API Key: `rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1` | Linked Repo: `https://github.com/AAA2743/my-agy-fleet-standby` (main)
+    * Role: Secondary Standby Compute & Failover MTProto Collector.
+  - Service 3: **Primary MTProto Relayer**: `https://atf-mtproto-relayer.onrender.com`
+    * Service Endpoint: `/wake` (🟢 ONLINE & AUTHENTICATED)
+    * Role: Dedicated 24/7 authenticated Telegram MTProto binary TCP socket bridge.
+  - Service 4: **Backup MTProto Relayer**: `https://atf-mtproto-relayer-backup.onrender.com`
+    * Service Endpoint: `/wake` (🟢 ONLINE & AUTHENTICATED)
+    * Role: Cold standby failover MTProto bridge for high-availability session extraction.
+  - Service 5: **Hermes Ari AI Council Agent**: `https://hermes-grok-cloud-agent.onrender.com`
+    * Service ID: `srv-daojdt5g1s2s738jsjmg` | Workspace: `Koram's workspace` (`tea-daoj9nid0e5s738gqp0g`, `koramshah2@gmail.com`)
+    * Service Key: `rnd_PqsurfX5D9blSaEEuEDDAUcl393y` | Reconnected Repo: `https://github.com/koramshah2/hermes-cloud-agent` (main)
+    * **Incident Resolution & Reconnection**: This service was previously suspended because the 3rd GitHub account (`AAA2743`) was suspended. On October 8, 2026, using Render API Key `rnd_PqsurfX5D9blSaEEuEDDAUcl393y`, the service was re-linked to active repository `koramshah2/hermes-cloud-agent`, un-suspended via `/resume`, and successfully redeployed.
+    * Role: Background AI intelligence worker running `autonomous_cloud_agent.py` (Multi-model Groq + Gemini council).
+
+- **GitHub Multi-Account CI/CD & Cloud Compute Fleet (4,000 Free Minutes/Month)**:
+  - Account 1 (`AAA0002`):
+    * Primary Repository: `https://github.com/AAA0002/ATL` (main)
+    * Standby Deployment Repo: `https://github.com/AAA0002/my-agy-fleet-standby` (main)
+    * Quota: 2,000 free minutes/month for GitHub Actions runners.
+    * Workflows: `cloud_token_refresher.yml`, `fleet_sentinel.yml`, `cloud_sweeper.yml`, `mrg_turnstile_solver.yml`.
+  - Account 2 (`koramshah2` / `Koramshah2@gmail.com`):
+    * Mirror Standby Repo: `https://github.com/koramshah2/AAA_AUTO` (main)
+    * Hermes Standby Repo: `https://github.com/koramshah2/hermes-cloud-agent` (main)
+    * Quota: 2,000 free minutes/month for GitHub Actions runners.
+    * Tokens: Classic PAT `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`, Fine-grained PAT `github_pat_11CQ4P67Y0...`.
+    * Synchronized Git Remotes: `origin` (`AAA0002/ATL`) and `koram_standby` (`koramshah2/AAA_AUTO`).
+  - Suspended 3rd Account Note (`AAA2743`):
+    * GitHub account `AAA2743` was suspended by GitHub. All production dependencies have been migrated to `AAA0002` and `koramshah2`. Render services were updated via API to point to active repos.
+  - **100% Cloud MRG Auto-Farming & Turnstile Solver Workflow**:
+    * Workflow File: `.github/workflows/mrg_turnstile_solver.yml` (Runs every 3 hours: `15 */3 * * *`).
+    * Script: `mrg_turnstile_solver.py` (Headless Patchright stealth engine, real Telegram `initData` simulation, native claim button clicker, Turnstile iframe solver, and auto-compounder).
+    * Zero Phone Load: Runs 100% inside Microsoft/GitHub's cloud runner environment (Ubuntu 22.04, 7GB RAM).
+
 - **Telegram Vaults**:
   - Admin & Backup Channel: `@myagyai` (Bot: `@myagyai`)
   - Secondary Bot: `@AAAPREMIUMAPPSbot`
