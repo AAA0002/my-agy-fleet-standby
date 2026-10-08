@@ -4378,12 +4378,15 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         tasks = t_d.get("tasks", [])
                         if isinstance(tasks, list):
                             for t in tasks:
-                                if isinstance(t, dict) and t.get("id") and not t.get("completed"):
+                                if isinstance(t, dict) and t.get("id") and t.get("state") != "CLAIMED":
                                     tid = t["id"]
                                     await jitter(0.4, 0.9)
-                                    await safe_post(f"https://vyro.run.place/api/tasks/{tid}/start", json_data={"idempotencyKey": str(uuid.uuid4())}, req_headers=t_headers)
-                                    await jitter(1.0, 2.0)
-                                    await safe_post(f"https://vyro.run.place/api/tasks/{tid}/claim", json_data={"idempotencyKey": str(uuid.uuid4())}, req_headers=t_headers)
+                                    await safe_post(f"https://vyro.run.place/api/tasks/{tid}/open", json_data={}, req_headers=t_headers)
+                                    await jitter(1.0, 1.8)
+                                    _, v_d = await safe_post(f"https://vyro.run.place/api/tasks/{tid}/verify", json_data={}, req_headers=t_headers)
+                                    if v_d and isinstance(v_d, dict) and v_d.get("task", {}).get("canClaim"):
+                                        await jitter(0.8, 1.5)
+                                        await safe_post(f"https://vyro.run.place/api/tasks/{tid}/claim", json_data={"idempotencyKey": str(uuid.uuid4())}, req_headers=t_headers)
 
                     # 4. Referral claims
                     await jitter(0.6, 1.4)
