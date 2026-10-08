@@ -70,12 +70,27 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 ```
 
 ### Cloud Nodes Directory (5 Cloudflare Accounts & 5 Render Services)
-- **5 Cloudflare Edge Accounts & Workers (Serverless 24/7 Farming Mesh)**:
+- **5 Cloudflare Edge Accounts & Workers (Serverless 24/7 Farming Mesh & 25M D1 Reads / 50GB R2)**:
   - Account 1 (`korimhaji210@gmail.com`): `https://restore-agy.aaaai2.workers.dev` (Shard 0)
+    * D1 Database: `agy_fleet_db` (`c29cc72d-3813-4aa2-859a-8cdfd929825c`)
+    * R2 (S3) Bucket: `agy-fleet-backups`
+    * KV Namespace: `MY_AGY_VAULT` (`315ff9ee...`)
   - Account 2 (`Koramshah2@gmail.com`): `https://restore-agy.aaa-bot.workers.dev` (Shard 1)
+    * D1 Database: `agy_fleet_db` (`9456e01a-77f1-49fa-b22b-d8b930e19bf2`)
+    * R2 (S3) Bucket: `agy-fleet-backups`
+    * KV Namespace: `BOT_KV` (`44d6b1ac...`)
   - Account 3 (`coz1gameh3@gmail.com`): `https://restore-agy.aaa222.workers.dev` (Shard 2)
+    * D1 Database: `agy_fleet_db` (`6b0c8fc4-5ead-44fe-88c4-e660a4b95fef`)
+    * R2 (S3) Bucket: `agy-fleet-backups`
+    * KV Namespace: `restore-agy-kv` (`f5c5b2dc...`)
   - Account 4 (`aaafreeai@gmail.com`): `https://restore-agy.agorameet.workers.dev` (Shard 3)
+    * D1 Database: `atf-miner-db` (`2659c73b-8144-4f2a-9a06-ef2368a1ce7f`)
+    * R2 (S3) Buckets: `atf-db-backups`, `aaa-r2`
+    * KV Namespace: `atf-cache-kv` (`c712104e...`)
   - Account 5 (`da98cfb7cca333391bb349333f294d0f`): `https://restore-agy.aaaai.workers.dev` (Shard 4)
+    * D1 Database: `aaa-d1` (`e2db1db3-eaaf-49b3-86e5-95aee66772ef`)
+    * R2 (S3) Bucket: `aaa-r2`
+    * KV Namespace: `atf-miner-kv` (`c5eadf91...`)
 - **5 Render Accounts & Services (Cloud MTProto Compute & Resilient Relay Mesh)**:
   - Service 1: **Render Standby Node 2 (Frankfurt)**: `https://my-agy-fleet-standby-node2.onrender.com` (Primary Compute, Service: `srv-dan5q00ae00c73djummg`, API Key: `rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB`)
   - Service 2: **Render Standby Node 1 (Singapore)**: `https://my-agy-fleet-standby.onrender.com` (Backup Compute, Service: `srv-damuhkmgekts73f1osag`, API Key: `rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1`)

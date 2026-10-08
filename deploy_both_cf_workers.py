@@ -94,8 +94,8 @@ ACCOUNTS = [
         "account_id": "da98cfb7cca333391bb349333f294d0f",
         "subdomain": "aaaai",
         "kv_id": "c5eadf91ae4543edab3943789e2d3ccb",
-        "d1_uuid": None,
-        "r2_bucket": None,
+        "d1_uuid": "e2db1db3-eaaf-49b3-86e5-95aee66772ef",
+        "r2_bucket": "aaa-r2",
         "sibling_urls": [
             "https://restore-agy.aaaai2.workers.dev",
             "https://restore-agy.aaa-bot.workers.dev",
@@ -982,6 +982,19 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     } catch (err) {
       result.bots[b.name] = `error: ${err.message}`;
     }
+  }
+
+  if (env.DB) {
+    try {
+      const nowSec = Math.floor(Date.now() / 1000);
+      for (const [bName, bStatus] of Object.entries(result.bots)) {
+        if (ctx && ctx.waitUntil) {
+          ctx.waitUntil(env.DB.prepare(
+            "INSERT OR REPLACE INTO fleet_balances (user_id, bot_name, balance, level, raw_status, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
+          ).bind(String(uid), bName, 0, 1, String(bStatus), nowSec).run().catch(() => {}));
+        }
+      }
+    } catch (_) {}
   }
 
   return result;
@@ -1881,6 +1894,13 @@ fi
         if (env.FLEET_R2) {
           try {
             await env.FLEET_R2.put("latest_backup.zip", body);
+            const tsName = `backup_${new Date().toISOString().replace(/[:.]/g, "-")}.zip`;
+            await env.FLEET_R2.put(tsName, body);
+            if (env.DB) {
+              ctx.waitUntil(env.DB.prepare(
+                "INSERT OR REPLACE INTO disaster_recovery_meta (filename, size_bytes, sha256) VALUES (?, ?, ?)"
+              ).bind(tsName, body.byteLength, "r2_auto_snapshot").run().catch(() => {}));
+            }
           } catch (_) {}
         }
         await env.BACKUP_KV.put("latest_backup_zip", body);
@@ -2695,6 +2715,25 @@ fi
         try {
           await env.BACKUP_KV.put("miniapp_tokens", JSON.stringify(current));
         } catch (_) {}
+        if (env.DB) {
+          try {
+            const nowSec = Math.floor(Date.now() / 1000);
+            for (const [uId, bToks] of Object.entries(current)) {
+              if (typeof bToks === "object" && bToks !== null) {
+                for (const [k, v] of Object.entries(bToks)) {
+                  if (k.endsWith("_init_data") && typeof v === "string" && v) {
+                    const bName = k.replace("_init_data", "");
+                    if (ctx && ctx.waitUntil) {
+                      ctx.waitUntil(env.DB.prepare(
+                        "INSERT OR REPLACE INTO fleet_tokens (user_id, bot_name, init_data, auth_date, expires_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
+                      ).bind(String(uId), bName, v, nowSec, nowSec + 86400, nowSec).run().catch(() => {}));
+                    }
+                  }
+                }
+              }
+            }
+          } catch (_) {}
+        }
         try {
           await upstashSet("miniapp_tokens", current);
           await upstashSet("fleet_miniapp_tokens", current);
@@ -2705,16 +2744,32 @@ fi
       }
     }
 
-    // 9.6 MiniApp Tokens Status (In-Memory First)
+    // 9.6 MiniApp Tokens Status (In-Memory First, then D1, then KV)
     if (path === "/api/miniapp/tokens" || path === "/api/fleet/tokens" || path === "/api/tokens") {
       try {
         if (memTokens && Object.keys(memTokens).length > 0) {
           return new Response(JSON.stringify(memTokens), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
         }
         let raw = null;
-        try {
-          raw = await env.BACKUP_KV.get("miniapp_tokens");
-        } catch (_) {}
+        if (env.DB) {
+          try {
+            const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens").all();
+            if (dbRows && dbRows.results && dbRows.results.length > 0) {
+              const recon = {};
+              for (const r of dbRows.results) {
+                recon[r.user_id] = recon[r.user_id] || { account_id: r.user_id };
+                recon[r.user_id][r.bot_name + "_init_data"] = r.init_data;
+              }
+              memTokens = recon;
+              raw = JSON.stringify(recon);
+            }
+          } catch (_) {}
+        }
+        if (!raw) {
+          try {
+            raw = await env.BACKUP_KV.get("miniapp_tokens");
+          } catch (_) {}
+        }
         if (!raw) {
           for (const sUrl of SIBLING_URLS) {
             const sib = await fetch(`${sUrl}/api/miniapp/tokens`).catch(() => null);
@@ -8567,6 +8622,20 @@ Reply to Arif naturally:`;
     ctx.waitUntil((async () => {
       try {
         let rawTokens = await env.BACKUP_KV.get("miniapp_tokens");
+        if (!rawTokens && env.DB) {
+          try {
+            const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens").all();
+            if (dbRows && dbRows.results && dbRows.results.length > 0) {
+              const recon = {};
+              for (const r of dbRows.results) {
+                recon[r.user_id] = recon[r.user_id] || { account_id: r.user_id };
+                recon[r.user_id][r.bot_name + "_init_data"] = r.init_data;
+              }
+              rawTokens = JSON.stringify(recon);
+              await env.BACKUP_KV.put("miniapp_tokens", rawTokens).catch(() => {});
+            }
+          } catch (_) {}
+        }
         if (!rawTokens) {
           for (const sUrl of SIBLING_URLS) {
             try {

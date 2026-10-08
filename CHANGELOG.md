@@ -4,6 +4,26 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **☁️ 5-Node Cloudflare Mesh Overhaul: Full Free Tier D1 SQL (25M reads/day) & R2 Object Storage (50GB free) Activation (`deploy_both_cf_workers.py`, `backup_manager.py`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
+  - **🗄️ Universal Cloudflare D1 SQL Database Migration (5 Nodes)**:
+    * Created and applied structured relational schemas (`fleet_tokens`, `fleet_balances`, `fleet_logs`, `disaster_recovery_meta`) across all 5 Cloudflare D1 databases:
+      - Node 1 (`korimhaji`): `c29cc72d-3813-4aa2-859a-8cdfd929825c`
+      - Node 2 (`koramshah`): `9456e01a-77f1-49fa-b22b-d8b930e19bf2`
+      - Node 3 (`coz1gameh3`): `6b0c8fc4-5ead-44fe-88c4-e660a4b95fef`
+      - Node 4 (`aaafreeai`): `2659c73b-8144-4f2a-9a06-ef2368a1ce7f`
+      - Node 5 (`aaaai-engine`): `e2db1db3-eaaf-49b3-86e5-95aee66772ef` (bound for the first time).
+    * Seeded 126 active token records across all 5 databases (18 accounts x 7 legitimate bots).
+    * Upgraded token retrieval engine: Edge workers now query D1 for strongly-consistent SQL tokens (instant edge resolution, bypassing the 60s KV replication delay and 1,000 writes/day quota).
+    * Persisted real-time farming results and bot balances directly into D1 `fleet_balances`.
+  - **📦 50 GB R2 (S3-Compatible) Multi-Cloud Backup Vault ($0 Egress Bandwidth)**:
+    * Bound R2 storage across all 5 accounts (`agy-fleet-backups`, `atf-db-backups`, `aaa-r2`).
+    * Configured automatic timestamped snapshot archiving (`backup_YYYY-MM-DDTHH-MM-SS.zip`) in R2 alongside `latest_backup.zip`.
+    * Recorded all snapshot metadata (file size, timestamp, verification hash) in D1 table `disaster_recovery_meta`.
+    * Verified 1-click restore delivery (`/backup.zip`) directly from R2 across all 5 nodes (1.76 MB archive verified live on Node 1 and Node 5).
+  - **🚀 5-Node Edge Mesh Deployment**:
+    * Successfully deployed updated worker bundle to all 5 Cloudflare accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Synchronized all Telegram bot webhooks, menus, descriptions, and commands across both User and Admin bots.
+
 - **📊 High-Precision Real-Time Balances & Telemetry Engine for All 7 Legitimate Fleet Bots (`render_standby_app.py`, `render_app_latest.py`, `update_dashboard_compact.py`, `push_to_standby_repo.py`, `CHANGELOG.md`, `PROJECT_BIBLE.md`)**:
   - **💎 Real-Time Balances & Level Reporting Across All 7 Legitimate Bots**:
     * **Stones Miners** (`@stonesminers_bot`): Dynamically captures `user.coins` and `user.level` from `/api/state`, outputting live telemetry (e.g. `farmed (lvl: 1, bal: 6602 STONES)`).
