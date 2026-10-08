@@ -1240,19 +1240,18 @@ async def sync_account_tokens_to_clouds(tokens: dict):
 async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
     """
     Kicks off initial WebApp mining, completes referral onboarding finish work,
-    and runs first-cycle claims across all 8 bots:
+    and runs first-cycle claims across all 7 legitimate bots:
     1. Stones Miners (/api/mining/start, /api/claim, dynamic tasks, stone breaker, boost)
     2. MRG Miner (/api/user/claim-mining, /api/user/claim-task, referral commission)
-    3. ART Airdrop (/api/user/start-mining, /api/user/claim-mining, /api/ads/claim, tasks, miner upgrade)
-    4. AI Lab Robot (/users/auth/login, /miner-start_mining, /miner-exchange_hashes, tasks)
-    5. UltraWallet (/telegramLogin, /mining/start, /checkin/claim, lucky spins, tasks, ads, gift box)
-    6. Apex Miner (/bootstrap, /register, /checkin, /mining/restart, tasks, boost)
-    7. ATF Miner (login, math challenge -> /start_mine, speed boost, tasks, referral claim)
-    8. Ainovum (/api/bootstrap, /api/mining/claim, /api/daily-bonus, /api/channel-bonus, /api/gift-box)
+    3. AI Lab Robot (/users/auth/login, /miner-start_mining, /miner-exchange_hashes, tasks)
+    4. UltraWallet (/telegramLogin, /mining/start, /checkin/claim, lucky spins, tasks, ads, gift box)
+    5. ATF Miner (login, math challenge -> /start_mine, speed boost, tasks, referral claim)
+    6. FINVORA Web3 (/api/bonus/instant, /api/mining/claim)
+    7. TurboGram V1 (/api/me, /api/tasks)
     """
     uid = str(acc_entry.get("user_id"))
     name = acc_entry.get("name", "User")
-    logger.info(f"[{name}] ⚡ Bootstrapping initial cloud mining & completing referral finish work across all 8 bots...")
+    logger.info(f"[{name}] ⚡ Bootstrapping initial cloud mining & completing referral finish work across all 7 legitimate bots...")
     headers = {
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.0.0"
@@ -2100,19 +2099,19 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
                 await bind_wallets_to_bots(s, acc_entry, tokens)
         except Exception as wbe:
             logger.warning(f"[{name}] Wallet binding note: {wbe}")
-        # Bootstrap initial WebApp mining across all 15 bots (completes referral onboarding finish work)
+        # Bootstrap initial WebApp mining across all 7 legitimate bots (completes referral onboarding finish work)
         await bootstrap_account_mining(acc_entry, tokens)
-        # Immediately execute complete 15-bot farming (all tasks, claims, spins, ads, math challenges)
+        # Immediately execute complete 7-bot farming (all tasks, claims, spins, ads, math challenges)
         try:
             async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as s:
                 await farm_single_account_bots(s, acc_entry, tokens)
-                logger.info(f"[{name}] ✅ Complete initial 15-bot farming & referral finish work finished!")
+                logger.info(f"[{name}] ✅ Complete initial 7-bot farming & referral finish work finished!")
         except Exception as fse:
             logger.error(f"[{name}] Initial farming note: {fse}")
 
     # Save updated referrals_bound flags across clouds
     await sync_new_account_to_clouds(acc_entry)
-    logger.info(f"[{name}] 🚀 Master Fleet Onboarding & Referral Finish Work Active (15/15 Bots) for account {uid}")
+    logger.info(f"[{name}] 🚀 Master Fleet Onboarding & Referral Finish Work Active (7/7 Legitimate Bots) for account {uid}")
 
 
 def keccak_256(data: bytes) -> bytes:
@@ -3475,7 +3474,7 @@ async def fetch_cloud_miniapp_tokens(session: aiohttp.ClientSession) -> dict:
 
 async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, acc_tokens: dict) -> dict:
     """
-    Farms all 8 active bots (Stones, MRG, ART, AI Lab, UltraWallet, Apex, ATF, Ainovum) for a single account.
+    Farms all 7 legitimate active bots (Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, TurboGram) for a single account.
     Engineered with:
       - Deterministic mobile device fingerprinting per account (eliminates bot signatures)
       - Realistic human jitter delays
@@ -5034,7 +5033,7 @@ async def channel_status_endpoint(request: Request):
 async def sync_and_verify_channels_endpoint(request: Request):
     """
     Type B Channel & Bot Management Engine:
-    Ensures all fleet accounts join mandatory sponsor channels, unblock all 16 bots,
+    Ensures all fleet accounts join mandatory sponsor channels, unblock all 7 legitimate bots,
     and permanently mute all channels/bots to prevent notification spam.
     Protects against Telegram's 500-channel limit by leaving unwhitelisted spam channels if dialogs > 400.
     """
