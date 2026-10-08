@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
       - Rewrote `extract_all_missing_fleet_tokens.py` to target strictly the 7 legitimate bots (purged `trxpowermining_bot` and `usdtquadbot`).
       - Updated `update_dashboard_compact.py` drawer mining matrix to strictly feature the 7 legitimate bots (purged ART Airdrop, Apex Miner, and Ainovum; added FINVORA Web3 and TurboGram V1).
       - Hardened `userbot_refresher.py` self-healing guard, referral binders, and bot lists to 7 legitimate bots (`all_7_bots`).
+      - Upgraded MRG Miner (`@mrgminerbot`) farming engine with defensive double-encoding unquote guard and real-time level & balance telemetry reporting (e.g. `farmed (lvl: 95, bal: 2637.3 MRG)`).
   - **🚀 Render Standby Node 2 Overhaul & Instant Deployment**:
     * Resolved GitHub Contents API large-file size constraint in `push_to_standby_repo.py` by integrating Git Trees API (`git/trees/main`) for instantaneous SHA resolution.
     * Pushed updated `render_standby_app.py` as `app.py` (Commit `285e1d02`) and triggered Render Node 2 deploy (`dep-db3i3efavr4c739t6t2g`, Status: `live`).
