@@ -4235,172 +4235,172 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
         status["bots"]["turbogram"] = "skipped (no initData)"
 
-        # 8. Victor's Company (@VictorsCompanybot)
-        async def _farm_victors():
-            if tokens.get("victors_init_data"):
-                try:
-                    v_init = tokens["victors_init_data"]
-                    v_h = {
-                        **headers,
-                        "Authorization": f"tma {v_init}",
-                        "Origin": "https://app.victors.company",
-                        "Referer": "https://app.victors.company/"
-                    }
-                    # 1. Login with startParam to bind referral code
-                    l_code, l_d = await safe_post(
-                        "https://server.victors.company/api/auth/login",
-                        json_data={"startParam": VICTORS_REFERRAL_CODE, "turnstileToken": None},
-                        req_headers=v_h
-                    )
-                    if l_d and isinstance(l_d, dict):
-                        hp = l_d.get("humanPass") or (l_d.get("data", {}).get("humanPass") if isinstance(l_d.get("data"), dict) else None)
-                        if hp:
-                            v_h["x-human-pass"] = str(hp)
+    # 8. Victor's Company (@VictorsCompanybot)
+    async def _farm_victors():
+        if tokens.get("victors_init_data"):
+            try:
+                v_init = tokens["victors_init_data"]
+                v_h = {
+                    **headers,
+                    "Authorization": f"tma {v_init}",
+                    "Origin": "https://app.victors.company",
+                    "Referer": "https://app.victors.company/"
+                }
+                # 1. Login with startParam to bind referral code
+                l_code, l_d = await safe_post(
+                    "https://server.victors.company/api/auth/login",
+                    json_data={"startParam": VICTORS_REFERRAL_CODE, "turnstileToken": None},
+                    req_headers=v_h
+                )
+                if l_d and isinstance(l_d, dict):
+                    hp = l_d.get("humanPass") or (l_d.get("data", {}).get("humanPass") if isinstance(l_d.get("data"), dict) else None)
+                    if hp:
+                        v_h["x-human-pass"] = str(hp)
 
-                    # 2. Me profile
+                # 2. Me profile
+                await jitter(0.5, 1.2)
+                m_code, m_d = await safe_get("https://server.victors.company/api/me", req_headers=v_h)
+                me = (m_d.get("user") or m_d) if (m_d and isinstance(m_d, dict)) else {}
+                lvl = me.get("level", 1)
+
+                if me and not me.get("tutorialCompleted"):
+                    await safe_post("https://server.victors.company/api/me/tutorial", json_data={}, req_headers=v_h)
+
+                # 3. Daily checkin
+                await jitter(0.6, 1.5)
+                await safe_post("https://server.victors.company/api/checkin", json_data={}, req_headers=v_h)
+
+                # 4. Mining claim
+                await jitter(0.8, 1.8)
+                await safe_post("https://server.victors.company/api/mining/claim", json_data={}, req_headers=v_h)
+
+                # 5. Levels unlock
+                unlocked = me.get("unlockedLevel", lvl)
+                if unlocked > lvl:
                     await jitter(0.5, 1.2)
-                    m_code, m_d = await safe_get("https://server.victors.company/api/me", req_headers=v_h)
-                    me = (m_d.get("user") or m_d) if (m_d and isinstance(m_d, dict)) else {}
-                    lvl = me.get("level", 1)
+                    await safe_post("https://server.victors.company/api/levels/unlock", json_data={"level": unlocked}, req_headers=v_h)
 
-                    if me and not me.get("tutorialCompleted"):
-                        await safe_post("https://server.victors.company/api/me/tutorial", json_data={}, req_headers=v_h)
+                # 6. Tasks
+                await jitter(0.8, 1.6)
+                _, t_d = await safe_get("https://server.victors.company/api/tasks", req_headers=v_h)
+                if t_d and isinstance(t_d, dict):
+                    tasks = t_d.get("tasks", [])
+                    if isinstance(tasks, list):
+                        for t in tasks:
+                            if isinstance(t, dict) and t.get("id") and not t.get("claimed"):
+                                await jitter(0.4, 0.9)
+                                await safe_post("https://server.victors.company/api/tasks/claim", json_data={"taskId": t["id"]}, req_headers=v_h)
 
-                    # 3. Daily checkin
-                    await jitter(0.6, 1.5)
-                    await safe_post("https://server.victors.company/api/checkin", json_data={}, req_headers=v_h)
+                # 7. Referral claim bonus & commission
+                await jitter(0.6, 1.4)
+                await safe_post("https://server.victors.company/api/referral/claim-bonus", json_data={}, req_headers=v_h)
+                await safe_post("https://server.victors.company/api/referral/claim-commission", json_data={}, req_headers=v_h)
 
-                    # 4. Mining claim
-                    await jitter(0.8, 1.8)
-                    await safe_post("https://server.victors.company/api/mining/claim", json_data={}, req_headers=v_h)
-
-                    # 5. Levels unlock
-                    unlocked = me.get("unlockedLevel", lvl)
-                    if unlocked > lvl:
-                        await jitter(0.5, 1.2)
-                        await safe_post("https://server.victors.company/api/levels/unlock", json_data={"level": unlocked}, req_headers=v_h)
-
-                    # 6. Tasks
-                    await jitter(0.8, 1.6)
-                    _, t_d = await safe_get("https://server.victors.company/api/tasks", req_headers=v_h)
-                    if t_d and isinstance(t_d, dict):
-                        tasks = t_d.get("tasks", [])
-                        if isinstance(tasks, list):
-                            for t in tasks:
-                                if isinstance(t, dict) and t.get("id") and not t.get("claimed"):
-                                    await jitter(0.4, 0.9)
-                                    await safe_post("https://server.victors.company/api/tasks/claim", json_data={"taskId": t["id"]}, req_headers=v_h)
-
-                    # 7. Referral claim bonus & commission
-                    await jitter(0.6, 1.4)
-                    await safe_post("https://server.victors.company/api/referral/claim-bonus", json_data={}, req_headers=v_h)
-                    await safe_post("https://server.victors.company/api/referral/claim-commission", json_data={}, req_headers=v_h)
-
-                    # 8. Arcade Minigame Mining (Play 1 run)
-                    try:
-                        _, a_d = await safe_get("https://server.victors.company/api/arcade", req_headers=v_h)
-                        if a_d and isinstance(a_d, dict) and a_d.get("runsLeft", 0) > 0:
-                            st_c, _ = await safe_post("https://server.victors.company/api/arcade/mine/start", json_data={"tool": "pickaxe", "items": []}, req_headers=v_h)
-                            if st_c in (200, 201):
-                                for d in range(4):
-                                    await jitter(0.4, 0.9)
-                                    _, d_res = await safe_post("https://server.victors.company/api/arcade/mine/dig", json_data={"x": 4, "y": d}, req_headers=v_h)
-                                    if not d_res or (isinstance(d_res, dict) and d_res.get("result") == "bust"):
-                                        break
-                                await safe_post("https://server.victors.company/api/arcade/mine/end", json_data={}, req_headers=v_h)
-                    except Exception:
-                        pass
-
-                    bal_str = f" (lvl: {lvl}, bal: {me.get('miningBalance', 0)})" if me else " (ok)"
-                    status["bots"]["victors"] = f"farmed{bal_str}"
-                    return
-                except Exception as e:
-                    status["bots"]["victors"] = f"api_error: {format_error(e)}"
-                    return
-
-            status["bots"]["victors"] = "skipped (no initData)"
-
-        # 9. VyroDrop (@vyrodrop_bot)
-        async def _farm_vyro():
-            if tokens.get("vyro_init_data"):
+                # 8. Arcade Minigame Mining (Play 1 run)
                 try:
-                    vy_init = tokens["vyro_init_data"]
-                    vy_h = {
-                        **headers,
-                        "Authorization": f"tma {vy_init}",
-                        "X-Vyro-UI-Contract": "claim-inactivity-v1",
-                        "X-Vyro-Market-Balances": "2",
-                        "X-Vyro-Dex": "1",
-                        "Referer": "https://vyro.run.place/"
-                    }
-                    import uuid
+                    _, a_d = await safe_get("https://server.victors.company/api/arcade", req_headers=v_h)
+                    if a_d and isinstance(a_d, dict) and a_d.get("runsLeft", 0) > 0:
+                        st_c, _ = await safe_post("https://server.victors.company/api/arcade/mine/start", json_data={"tool": "pickaxe", "items": []}, req_headers=v_h)
+                        if st_c in (200, 201):
+                            for d in range(4):
+                                await jitter(0.4, 0.9)
+                                _, d_res = await safe_post("https://server.victors.company/api/arcade/mine/dig", json_data={"x": 4, "y": d}, req_headers=v_h)
+                                if not d_res or (isinstance(d_res, dict) and d_res.get("result") == "bust"):
+                                    break
+                            await safe_post("https://server.victors.company/api/arcade/mine/end", json_data={}, req_headers=v_h)
+                except Exception:
+                    pass
 
-                    # 1. Bootstrap
-                    b_code, b_d = await safe_get("https://vyro.run.place/api/bootstrap", req_headers=vy_h)
-                    if not b_d or not isinstance(b_d, dict):
-                        status["bots"]["vyro"] = f"skipped (bootstrap {b_code or 'error'})"
-                        return
+                bal_str = f" (lvl: {lvl}, bal: {me.get('miningBalance', 0)})" if me else " (ok)"
+                status["bots"]["victors"] = f"farmed{bal_str}"
+                return
+            except Exception as e:
+                status["bots"]["victors"] = f"api_error: {format_error(e)}"
+                return
 
-                    u_obj = b_d.get("user", {})
-                    m_obj = b_d.get("miner", {})
-                    mining = b_d.get("mining") or {}
-                    lvl = m_obj.get("level", 1)
+        status["bots"]["victors"] = "skipped (no initData)"
 
-                    # 2. Mining claim / start
-                    sess_id = mining.get("sessionId")
-                    if sess_id:
-                        await jitter(0.8, 1.8)
-                        c_code, c_d = await safe_post(
-                            "https://vyro.run.place/api/mining/claim",
-                            json_data={"sessionId": sess_id, "idempotencyKey": str(uuid.uuid4())},
-                            req_headers=vy_h
-                        )
-                        if c_code in (200, 201) or (c_d and isinstance(c_d, dict) and c_d.get("error", {}).get("code") == "MINING_SESSION_ALREADY_CLAIMED"):
-                            await jitter(0.8, 1.6)
-                            await safe_post(
-                                "https://vyro.run.place/api/mining/start",
-                                json_data={"idempotencyKey": str(uuid.uuid4())},
-                                req_headers=vy_h
-                            )
-                    else:
-                        await jitter(0.8, 1.8)
+    # 9. VyroDrop (@vyrodrop_bot)
+    async def _farm_vyro():
+        if tokens.get("vyro_init_data"):
+            try:
+                vy_init = tokens["vyro_init_data"]
+                vy_h = {
+                    **headers,
+                    "Authorization": f"tma {vy_init}",
+                    "X-Vyro-UI-Contract": "claim-inactivity-v1",
+                    "X-Vyro-Market-Balances": "2",
+                    "X-Vyro-Dex": "1",
+                    "Referer": "https://vyro.run.place/"
+                }
+                import uuid
+
+                # 1. Bootstrap
+                b_code, b_d = await safe_get("https://vyro.run.place/api/bootstrap", req_headers=vy_h)
+                if not b_d or not isinstance(b_d, dict):
+                    status["bots"]["vyro"] = f"skipped (bootstrap {b_code or 'error'})"
+                    return
+
+                u_obj = b_d.get("user", {})
+                m_obj = b_d.get("miner", {})
+                mining = b_d.get("mining") or {}
+                lvl = m_obj.get("level", 1)
+
+                # 2. Mining claim / start
+                sess_id = mining.get("sessionId")
+                if sess_id:
+                    await jitter(0.8, 1.8)
+                    c_code, c_d = await safe_post(
+                        "https://vyro.run.place/api/mining/claim",
+                        json_data={"sessionId": sess_id, "idempotencyKey": str(uuid.uuid4())},
+                        req_headers=vy_h
+                    )
+                    if c_code in (200, 201) or (c_d and isinstance(c_d, dict) and c_d.get("error", {}).get("code") == "MINING_SESSION_ALREADY_CLAIMED"):
+                        await jitter(0.8, 1.6)
                         await safe_post(
                             "https://vyro.run.place/api/mining/start",
                             json_data={"idempotencyKey": str(uuid.uuid4())},
                             req_headers=vy_h
                         )
+                else:
+                    await jitter(0.8, 1.8)
+                    await safe_post(
+                        "https://vyro.run.place/api/mining/start",
+                        json_data={"idempotencyKey": str(uuid.uuid4())},
+                        req_headers=vy_h
+                    )
 
-                    # 3. Tasks
-                    await jitter(0.8, 1.6)
-                    t_headers = {**vy_h, "x-vyro-tasks-protocol": "2"}
-                    _, t_d = await safe_get("https://vyro.run.place/api/tasks?limit=8", req_headers=t_headers)
-                    if t_d and isinstance(t_d, dict):
-                        tasks = t_d.get("tasks", [])
-                        if isinstance(tasks, list):
-                            for t in tasks:
-                                if isinstance(t, dict) and t.get("id") and t.get("state") != "CLAIMED":
-                                    tid = t["id"]
-                                    await jitter(0.4, 0.9)
-                                    await safe_post(f"https://vyro.run.place/api/tasks/{tid}/open", json_data={}, req_headers=t_headers)
-                                    await jitter(1.0, 1.8)
-                                    _, v_d = await safe_post(f"https://vyro.run.place/api/tasks/{tid}/verify", json_data={}, req_headers=t_headers)
-                                    if v_d and isinstance(v_d, dict) and v_d.get("task", {}).get("canClaim"):
-                                        await jitter(0.8, 1.5)
-                                        await safe_post(f"https://vyro.run.place/api/tasks/{tid}/claim", json_data={"idempotencyKey": str(uuid.uuid4())}, req_headers=t_headers)
+                # 3. Tasks
+                await jitter(0.8, 1.6)
+                t_headers = {**vy_h, "x-vyro-tasks-protocol": "2"}
+                _, t_d = await safe_get("https://vyro.run.place/api/tasks?limit=8", req_headers=t_headers)
+                if t_d and isinstance(t_d, dict):
+                    tasks = t_d.get("tasks", [])
+                    if isinstance(tasks, list):
+                        for t in tasks:
+                            if isinstance(t, dict) and t.get("id") and t.get("state") != "CLAIMED":
+                                tid = t["id"]
+                                await jitter(0.4, 0.9)
+                                await safe_post(f"https://vyro.run.place/api/tasks/{tid}/open", json_data={}, req_headers=t_headers)
+                                await jitter(1.0, 1.8)
+                                _, v_d = await safe_post(f"https://vyro.run.place/api/tasks/{tid}/verify", json_data={}, req_headers=t_headers)
+                                if v_d and isinstance(v_d, dict) and v_d.get("task", {}).get("canClaim"):
+                                    await jitter(0.8, 1.5)
+                                    await safe_post(f"https://vyro.run.place/api/tasks/{tid}/claim", json_data={"idempotencyKey": str(uuid.uuid4())}, req_headers=t_headers)
 
-                    # 4. Referral claims
-                    await jitter(0.6, 1.4)
-                    await safe_post("https://vyro.run.place/api/referrals/claim", json_data={"kind": "DIRECT", "idempotencyKey": str(uuid.uuid4())}, req_headers=vy_h)
-                    await safe_post("https://vyro.run.place/api/referrals/claim", json_data={"kind": "MINING", "idempotencyKey": str(uuid.uuid4())}, req_headers=vy_h)
+                # 4. Referral claims
+                await jitter(0.6, 1.4)
+                await safe_post("https://vyro.run.place/api/referrals/claim", json_data={"kind": "DIRECT", "idempotencyKey": str(uuid.uuid4())}, req_headers=vy_h)
+                await safe_post("https://vyro.run.place/api/referrals/claim", json_data={"kind": "MINING", "idempotencyKey": str(uuid.uuid4())}, req_headers=vy_h)
 
-                    bal_str = f" (lvl: {lvl}, speed: {m_obj.get('currentSpeed', 0)})" if m_obj else " (ok)"
-                    status["bots"]["vyro"] = f"farmed{bal_str}"
-                    return
-                except Exception as e:
-                    status["bots"]["vyro"] = f"api_error: {format_error(e)}"
-                    return
+                bal_str = f" (lvl: {lvl}, speed: {m_obj.get('currentSpeed', 0)})" if m_obj else " (ok)"
+                status["bots"]["vyro"] = f"farmed{bal_str}"
+                return
+            except Exception as e:
+                status["bots"]["vyro"] = f"api_error: {format_error(e)}"
+                return
 
-            status["bots"]["vyro"] = "skipped (no initData)"
+        status["bots"]["vyro"] = "skipped (no initData)"
 
     # Humanized Concurrent Execution Pipeline: 4 bots per account session (9 Active Legitimate Bots)
     bot_routines = [
@@ -4555,27 +4555,33 @@ async def api_farm_status():
 @app.post("/api/farm/account/{uid}")
 async def api_farm_single_account(uid: str, request: Request):
     """Executes on-demand cloud farming & token bootstrap for a single account in the fleet."""
-    accounts = await fetch_accounts_from_cloud()
-    target_acc = next((a for a in accounts if str(a.get("user_id")) == str(uid)), None)
-    if not target_acc:
-        raise HTTPException(status_code=404, detail=f"Account {uid} not found in fleet")
+    try:
+        accounts = await fetch_accounts_from_cloud()
+        target_acc = next((a for a in accounts if str(a.get("user_id")) == str(uid)), None)
+        if not target_acc:
+            raise HTTPException(status_code=404, detail=f"Account {uid} not found in fleet")
 
-    async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as session:
-        tokens_map = await fetch_cloud_miniapp_tokens(session)
-        acc_tok = tokens_map.get(str(uid), {})
-        if not acc_tok or not any(k.endswith("_init_data") for k in acc_tok.keys()):
-            if str(uid) != "6727787768":
-                fresh = await extract_tokens_for_account(target_acc)
-                if fresh:
-                    acc_tok = fresh
-                    await sync_account_tokens_to_clouds(fresh)
-                    await bootstrap_account_mining(target_acc, fresh)
+        async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as session:
+            tokens_map = await fetch_cloud_miniapp_tokens(session)
+            acc_tok = tokens_map.get(str(uid), {})
+            if not acc_tok or not any(k.endswith("_init_data") for k in acc_tok.keys()):
+                if str(uid) != "6727787768":
+                    fresh = await extract_tokens_for_account(target_acc)
+                    if fresh:
+                        acc_tok = fresh
+                        await sync_account_tokens_to_clouds(fresh)
+                        await bootstrap_account_mining(target_acc, fresh)
 
-        if not acc_tok:
-            return {"ok": False, "message": "Failed to extract WebApp tokens for account", "uid": uid}
+            if not acc_tok:
+                return {"ok": False, "message": "Failed to extract WebApp tokens for account", "uid": uid}
 
-        res = await farm_single_account_bots(session, target_acc, acc_tok)
-        return {"ok": True, "result": res}
+            res = await farm_single_account_bots(session, target_acc, acc_tok)
+            return {"ok": True, "result": res}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[Farm Single Account] Error for {uid}: {traceback.format_exc()}")
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc(), "uid": uid}
 
 
 @app.get("/api/inspect-referrals-master")
