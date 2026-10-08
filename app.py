@@ -1438,30 +1438,7 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             except Exception as e:
                 logger.debug(f"[{name}] UltraWallet bootstrap note: {e}")
 
-        # 6. Apex Miner
-        if tokens.get("apx_init_data"):
-            try:
-                apx_init = tokens["apx_init_data"]
-                apx_base = "https://apxn-miner-live.apxn-network.workers.dev/api"
-                await http.post(f"{apx_base}/auth/telegram", json={"initData": apx_init}, timeout=aiohttp.ClientTimeout(total=8))
-                async with http.post(f"{apx_base}/bootstrap", json={"initData": apx_init}, timeout=aiohttp.ClientTimeout(total=8)) as b_r:
-                    if b_r.status == 200:
-                        b_data = await b_r.json()
-                        if not b_data.get("exists") or not b_data.get("user"):
-                            await http.post(f"{apx_base}/register", json={"initData": apx_init}, timeout=aiohttp.ClientTimeout(total=8))
-                await http.post(f"{apx_base}/checkin", json={"initData": apx_init, "clientV2": True}, timeout=aiohttp.ClientTimeout(total=8))
-                await http.post(f"{apx_base}/mining/claim", json={"initData": apx_init}, timeout=aiohttp.ClientTimeout(total=8))
-                await http.post(f"{apx_base}/mining/restart", json={"initData": apx_init}, timeout=aiohttp.ClientTimeout(total=8))
-                for t in ["telegram", "twitter", "discord", "checkin"]:
-                    await http.post(f"{apx_base}/tasks/daily", json={"initData": apx_init, "task": t}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
-                for s in ["channel", "group", "twitter", "partner"]:
-                    await http.post(f"{apx_base}/tasks/social", json={"initData": apx_init, "task": s}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
-                await http.post(f"{apx_base}/ads/boost", json={"initData": apx_init}, headers=headers, timeout=aiohttp.ClientTimeout(total=4))
-                logger.info(f"[{name}] ✅ Apex Miner initial mining & tasks started")
-            except Exception as e:
-                logger.debug(f"[{name}] Apex Miner bootstrap note: {e}")
-
-        # 7. ATF Miner (Comprehensive Referral Finish Work: Login, Math Challenge Solve, Start Mine, Tasks, Boost)
+        # 5. ATF Miner (Comprehensive Referral Finish Work: Login, Math Challenge Solve, Start Mine, Tasks, Boost)
         if tokens.get("atf_init_data"):
             try:
                 atf_init = tokens["atf_init_data"]
