@@ -656,18 +656,18 @@ function App() {
       setAiLoading(false);
       haptic("success");
     } else if (lower.includes("pool") || lower.includes("mining")) {
-      const reply = "🤖 8 Automated Cloud Mining Pools (24/7 Active):\n1. ATF Miner (Auto-Claim)\n2. Stones Miner (Arbitrum One)\n3. MRG Miner (TON Network)\n4. ART Coin (Compound L8)\n5. AI Lab Robot (BEP-20 >= $0.02)\n6. UltraWallet (Multi-Chain)\n7. Apex Miner (Node Farming)\n8. Ainovum (BSC >= 0.10 USDT)";
+      const reply = "🤖 7 Automated Cloud Mining Pools (24/7 Active):\n1. ATF Miner (Auto-Claim)\n2. Stones Miner (Arbitrum One)\n3. MRG Miner (TON Network)\n4. AI Lab Robot (BEP-20)\n5. UltraWallet (Multi-Chain)\n6. FINVORA Web3 (TON Network)\n7. TurboGram V1 (TON Network)";
       setAiMessages(prev => [...prev, { sender: "ai", text: reply }]);
       setAiLoading(false);
       haptic("success");
     } else if (lower.includes("sweep") || lower.includes("withdraw")) {
-      const reply = "⚡ Dispatched Universal Sweep to Binance Vault (0xfda418...d5ce). Checking thresholds across Arbitrum One (500 STONES), BEP-20 (0.02 USDT), and TON network.";
+      const reply = "⚡ Dispatched Universal Sweep check to Binance Vault (0xfda418...d5ce). (Fleet in 100% accumulation mode per user directive).";
       handleUniversalSweep();
       setAiMessages(prev => [...prev, { sender: "ai", text: reply }]);
       setAiLoading(false);
       haptic("success");
     } else if (lower.includes("harvest") || lower.includes("farm") || lower.includes("claim")) {
-      const reply = "🌾 Dispatched Instant 8-Pool Harvest across all 14 fleet accounts! Automated claim cycles queued on Cloudflare Edge mesh.";
+      const reply = "🌾 Dispatched Instant 7-Pool Harvest across all 18 fleet accounts! Automated claim cycles queued on Cloudflare Edge mesh.";
       handleInstantHarvest();
       setAiMessages(prev => [...prev, { sender: "ai", text: reply }]);
       setAiLoading(false);
@@ -675,7 +675,7 @@ function App() {
     } else if (lower.includes("status") || lower.includes("fleet") || lower.includes("account")) {
       const totalStones = fleet.reduce((sum, a) => sum + (a.stones_coins || 0), 0);
       const totalAtf = fleet.reduce((sum, a) => sum + (a.atf_balance || 0), 0);
-      const reply = `📊 Executive Fleet Telemetry:\n• Active Accounts: 14/14 Online (100% Cloud-First)\n• Vault Balance: ${bnbBalance.toFixed(6)} BNB (≈ $${(bnbBalance * rates.bnb_usd).toFixed(2)})\n• Total Mined: ${totalStones.toLocaleString()} STONES • ${totalAtf.toFixed(1)} ATF\n• Active Pools (8/8): ATF, Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum\n• 5 Edge Nodes: All Online (100% Cloud-Powered).`;
+      const reply = `📊 Executive Fleet Telemetry:\n• Active Accounts: ${fleet.length || 18}/${fleet.length || 18} Online (100% Cloud-First)\n• Vault Balance: ${bnbBalance.toFixed(6)} BNB (≈ $${(bnbBalance * rates.bnb_usd).toFixed(2)})\n• Total Mined: ${totalStones.toLocaleString()} STONES • ${totalAtf.toFixed(1)} ATF\n• Active Pools (7/7): ATF, Stones, MRG, AI Lab, UltraWallet, FINVORA, TurboGram\n• 5 Edge Nodes: All Online (100% Cloud-Powered).`;
       setAiMessages(prev => [...prev, { sender: "ai", text: reply }]);
       setAiLoading(false);
       haptic("success");
@@ -934,13 +934,12 @@ function App() {
         React.createElement("div", { className: "grid grid-cols-2 gap-1.5" },
           [
             { name: "ATF Miner", chain: "TON", status: "Auto-Claim & Math", icon: "🪙" },
-            { name: "Stones Miner", chain: "Arbitrum", status: "500+ STONES Auto-WD", icon: "💎" },
+            { name: "Stones Miner", chain: "Arbitrum", status: "Farming (Accumulation)", icon: "💎" },
             { name: "MRG Miner", chain: "TON", status: "Peak Tier Hashrate", icon: "⚡" },
-            { name: "ART Coin", chain: "TON", status: "Level 8 Compound", icon: "🎨" },
-            { name: "AI Lab Robot", chain: "BSC / BEP-20", status: "0.02 USDT Cashout", icon: "🤖" },
+            { name: "AI Lab Robot", chain: "BSC / BEP-20", status: "Auto Mining Active", icon: "🤖" },
             { name: "UltraWallet", chain: "Multi-Chain", status: "Auto-Mining 24/7", icon: "👛" },
-            { name: "Apex Miner", chain: "APX Node", status: "Auto Checkin & Boost", icon: "🏔️" },
-            { name: "Ainovum", chain: "BSC / BEP-20", status: "0.10 USDT Threshold", icon: "🌐" }
+            { name: "FINVORA Web3", chain: "TON", status: "Daily Auto-Claim", icon: "🌟" },
+            { name: "TurboGram V1", chain: "TON", status: "Mining Active", icon: "🚀" }
           ].map((pool, pIdx) => React.createElement("div", {
             key: pIdx,
             className: "p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between"
@@ -1023,11 +1022,11 @@ function App() {
               )
             ),
 
-            // 8 Mining Pools Matrix
+            // 7 Mining Pools Matrix
             React.createElement("div", { className: "grid grid-cols-4 gap-1 text-[9px] font-medium" },
               [
-                "🪙 ATF", "💎 Stones", "⚡ MRG", "🎨 ART",
-                "🤖 AI Lab", "👛 Ultra", "🏔️ Apex", "🌐 Ainovum"
+                "🪙 ATF", "💎 Stones", "⚡ MRG", "🤖 AI Lab",
+                "👛 Ultra", "🌟 FINVORA", "🚀 Turbo"
               ].map((pName, pIdx) => React.createElement("div", {
                 key: pIdx,
                 className: "bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-center text-slate-700 flex items-center justify-center gap-1"
@@ -1093,19 +1092,19 @@ function App() {
             React.createElement("div", { className: "text-[9px] text-slate-400" }, `≈ $${(bnbBalance * rates.bnb_usd).toFixed(2)} USD`)
           ),
           React.createElement("div", { className: "p-2 bg-slate-50 rounded-xl border border-slate-100" },
-            React.createElement("div", { className: "text-[10px] text-slate-400" }, "Auto-Withdraw"),
-            React.createElement("div", { className: "font-black text-xs text-emerald-600" }, "Active 24/7"),
-            React.createElement("div", { className: "text-[9px] text-slate-400" }, "AI Lab & Ainovum")
+            React.createElement("div", { className: "text-[10px] text-slate-400" }, "Fleet Mode"),
+            React.createElement("div", { className: "font-black text-xs text-emerald-600" }, "100% Accumulation"),
+            React.createElement("div", { className: "text-[9px] text-slate-400" }, "Auto-WD Muted (Zero Risk)")
           )
         ),
         React.createElement("div", { className: "text-[11px] text-slate-500 space-y-1 mb-3 pt-2 border-t border-slate-100 font-medium" },
           React.createElement("div", { className: "flex items-center gap-1.5" },
             React.createElement("span", { className: "text-emerald-500 font-bold" }, "✓"),
-            React.createElement("span", null, "AI Lab Robot: Auto-converted & paid to BEP-20 (threshold >= $0.02)")
+            React.createElement("span", null, "AI Lab Robot: Auto-farming active to compound computing hashes")
           ),
           React.createElement("div", { className: "flex items-center gap-1.5" },
             React.createElement("span", { className: "text-emerald-500 font-bold" }, "✓"),
-            React.createElement("span", null, "Ainovum Miner: Direct BSC withdrawals (threshold >= 0.10 USDT)")
+            React.createElement("span", null, "100% Accumulation Mode: Auto-withdrawals disabled per user directive")
           )
         ),
         React.createElement("button", {
@@ -1433,17 +1432,16 @@ function App() {
               )
             ),
             React.createElement("div", null,
-              React.createElement("span", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5" }, "8 Mining Pools Active"),
+              React.createElement("span", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5" }, "7 Mining Pools Active"),
               React.createElement("div", { className: "grid grid-cols-2 gap-1.5 text-[10px] font-mono" },
                 [
                   { name: "ATF Miner", status: "Auto-Claim" },
                   { name: "Stones Miner", status: "Arbitrum One" },
                   { name: "MRG Miner", status: "Peak Tier" },
-                  { name: "ART Coin", status: "Compound L8" },
-                  { name: "AI Lab Robot", status: "BEP-20 (0.02)" },
+                  { name: "AI Lab Robot", status: "BEP-20 Active" },
                   { name: "UltraWallet", status: "Auto-Mining" },
-                  { name: "Apex Miner", status: "Auto Boost" },
-                  { name: "Ainovum", status: "BSC (0.10)" }
+                  { name: "FINVORA Web3", status: "Daily Auto-Claim" },
+                  { name: "TurboGram V1", status: "Mining Active" }
                 ].map((p, pIdx) => React.createElement("div", {
                   key: pIdx,
                   className: "p-1.5 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-between"

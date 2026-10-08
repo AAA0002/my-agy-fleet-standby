@@ -4,6 +4,31 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **⚡ Centralized D1-First Token Engine Deployment, Scam File Purge & 7-Bot Console Alignment (`deploy_both_cf_workers.py`, `batch_art_airdrop.py`, `dashboard.html`, `public/admin.html`, `public_admin/admin.html`, `clean_all_accounts_channels.py`, `userbot_refresher.py`, `CHANGELOG.md`, `PROJECT_BIBLE.md`)**:
+  - **🚀 Centralized `getFleetTokens(env)` Edge Architecture Across All 5 Cloudflare Nodes**:
+    * Created and integrated a unified `getFleetTokens(env)` asynchronous engine across all edge routes (`/api/miniapp/tokens`, `/api/farm`, `/api/fleet/tokens`, `scheduled` crons, and harvest queuing).
+    * Guaranteed **D1-First SQL retrieval**: Directly queries `fleet_tokens` on all 5 nodes (100k writes/day, 5M reads/day per account) before falling back to KV or Upstash, eliminating edge staleness and 60-second replication latency.
+    * Successfully deployed to all 5 Cloudflare nodes:
+      - Node 1 (`aaaai2.workers.dev`): `Live, 18 accounts loaded`
+      - Node 2 (`aaa-bot.workers.dev`): `Live, 18 accounts loaded`
+      - Node 3 (`aaa222.workers.dev`): `Live, 18 accounts loaded`
+      - Node 4 (`agorameet.workers.dev`): `Live, 18 accounts loaded`
+      - Node 5 (`aaaai.workers.dev`): `Live, 18 accounts loaded`
+  - **🧹 Residual Scam Bot Purge (`batch_art_airdrop.py`)**:
+    * Permanently deleted obsolete file `batch_art_airdrop.py` from repository tracking via `git rm`.
+    * Cleaned channel preservation docstrings in `clean_all_accounts_channels.py` to strictly feature the 7 legitimate fleet bots.
+    * Neutralized residual `build_art_details_report` in `userbot_refresher.py` with an explicit permanent ban notice.
+    * Removed scam channels from `MANDATORY_OFFICIAL_CHANNELS` in `userbot_refresher.py`.
+  - **🖥️ Full 7-Bot Alignment Across All Admin & Dashboard Consoles**:
+    * **`dashboard.html`**:
+      - Updated ticker to 7 legitimate active bots: ATF Miner, Stones, MRG Miner, AI Lab, UltraWallet, FINVORA, TurboGram.
+      - Updated drawer modal mining matrix to display live status for all 7 legitimate bots.
+      - Updated AI copilot quick actions to report harvest status across 7 platforms and 18 accounts.
+    * **`public/admin.html` & `public_admin/` consoles**:
+      - Replaced legacy 8-pool references with the 7 legitimate pools and 18/18 active account fleet status.
+      - Aligned Vault Sweep panel with 100% accumulation mode (auto-withdrawals disabled to prevent address misrouting).
+      - Synchronized `public_admin/admin.html` and `public_admin/admin/index.html` with `public/admin.html`.
+
 - **☁️ 5-Node Cloudflare Mesh Overhaul: Full Free Tier D1 SQL (25M reads/day) & R2 Object Storage (50GB free) Activation (`deploy_both_cf_workers.py`, `backup_manager.py`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
   - **🗄️ Universal Cloudflare D1 SQL Database Migration (5 Nodes)**:
     * Created and applied structured relational schemas (`fleet_tokens`, `fleet_balances`, `fleet_logs`, `disaster_recovery_meta`) across all 5 Cloudflare D1 databases:

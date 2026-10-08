@@ -198,8 +198,7 @@ TON_PRIMARY_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
 # Binance Web3 Wallet 2 (AAA) - Dedicated for Main Account on @ainovum_bot
 BINANCE_WALLET_2_EVM = "0x017841f26d5b79cc8c5eb20c65367bb645cc2610"
 BINANCE_WALLET_2_TON = "UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH"
-MIN_WITHDRAWAL = float(os.getenv("MIN_WITHDRAWAL", "0.00005"))
-MANDATORY_OFFICIAL_CHANNELS = ["stoneswithestand", "mrgminer", "ART_AIRDROP", "ApexMiner_Official"]
+MANDATORY_OFFICIAL_CHANNELS = ["stoneswithestand", "mrgminer", "mrgfun", "ailabrobotnews", "ultrawalletofficial", "finvoraweb3", "TurboGramAnnouncements", "TurboGramPayment"]
 
 # Payout Ledger & Live Fleet Balance Cache
 PAYOUTS_FILE = os.path.join(BASE_DIR, "payouts.json")
@@ -2233,44 +2232,11 @@ async def build_bnb_details_report(user_id: int):
 
 
 async def build_art_details_report(user_id: int):
-    """Detailed ART Airdrop report."""
-    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-    try:
-        url = f"https://art.tamimdev.dev/api/user/{user_id}"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=8)) as resp:
-                if resp.status == 200:
-                    d = await resp.json()
-                    u = d.get("user", {})
-                    st = d.get("miningState", {})
-                    bal = float(u.get("poolWallet") or u.get("balance") or 0.0)
-                    rate = float(st.get("hourlyRate") or u.get("hourlyRate") or 21.3)
-                    lvl = int(u.get("level") or 1)
-                    wallet = u.get("tonWalletAddress", "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT")
-                    refs = int(u.get("referralCount", 10))
-                    return (
-                        f"🚀 *ART Airdrop Cloud Mining (@ART_AIRDROP_BOT)*\n"
-                        f"🕒 _{now_str}_\n\n"
-                        f"• *Miner Level:* `Level {lvl}` (+{rate} ART/hr 24/7)\n"
-                        f"• *Compounding Pool:* `{bal:.2f} ART` (Reinvesting to Next Level)\n"
-                        f"• *Destination TON Wallet:* `{wallet}`\n"
-                        f"• *Active Referrals:* `{refs} Verified Fleet Members`\n"
-                        f"• *Official Channel:* `@ART_AIRDROP` ✅ (Joined)\n\n"
-                        f"💡 _Auto-leveling engine reinvests 100% of mining rewards into upgrades._"
-                    )
-    except Exception:
-        pass
+    """ART Airdrop scam bot eradicated per user directive."""
     return (
-        f"🚀 *ART Airdrop Cloud Mining (@ART_AIRDROP_BOT)*\n"
-        f"🕒 _{now_str}_\n\n"
-        f"• *Mining Speed:* `+21.3 ART/hr` (Active 24/7)\n"
-        f"• *Available Pool:* `90.4 ART`\n"
-        f"• *Pending Withdrawal:* `800 ART` ($2.56 USD / ~৳312 BDT) ⏳\n"
-        f"• *Ticket ID:* `w-1789742197512-xibbn` (Status: PENDING queue)\n"
-        f"• *Destination TON Wallet:* `UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`\n"
-        f"• *Active Referrals:* `10 Verified Fleet Members`\n"
-        f"• *Official Channel:* `@ART_AIRDROP` ✅ (Joined)\n\n"
-        f"💡 _Passive mining runs 24/7 on the VPS cloud worker._"
+        "🚫 *ART Airdrop (@ART_AIRDROP_BOT) — Banned & Eradicated*\n\n"
+        "• *Status:* Permanently Blocked & Deleted\n"
+        "• *Policy:* Fleet consolidated to 7 legitimate bots (Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, TurboGram)."
     )
 
 async def build_atf_details_report(user_id: int):

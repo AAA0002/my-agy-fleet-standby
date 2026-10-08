@@ -1010,6 +1010,53 @@ let lastHeartbeatKvWrite = 0;
 let memRecentPayouts = null;
 let memTokens = null;
 
+async function getFleetTokens(env) {
+  if (memTokens && Object.keys(memTokens).length > 0) {
+    return memTokens;
+  }
+  // 1. Primary: Cloudflare D1 SQL (Strongly Consistent, 25M Reads/day, 0 edge latency)
+  if (env.DB) {
+    try {
+      const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens").all();
+      if (dbRows && dbRows.results && dbRows.results.length > 0) {
+        const recon = {};
+        for (const r of dbRows.results) {
+          recon[r.user_id] = recon[r.user_id] || { account_id: r.user_id };
+          recon[r.user_id][r.bot_name + "_init_data"] = r.init_data;
+        }
+        memTokens = recon;
+        return recon;
+      }
+    } catch (_) {}
+  }
+  // 2. Secondary: Cloudflare KV
+  try {
+    const raw = await env.BACKUP_KV.get("miniapp_tokens");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Object.keys(parsed).length > 0) {
+        memTokens = parsed;
+        return parsed;
+      }
+    }
+  } catch (_) {}
+  // 3. Tertiary: Upstash Redis
+  try {
+    const uResp = await fetch(`${UPSTASH_URL}/get/miniapp_tokens`, { headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` } }).catch(() => null);
+    if (uResp && uResp.ok) {
+      const uD = await uResp.json().catch(() => ({}));
+      if (uD.result) {
+        const parsed = typeof uD.result === "string" ? JSON.parse(uD.result) : uD.result;
+        if (parsed && Object.keys(parsed).length > 0) {
+          memTokens = parsed;
+          return parsed;
+        }
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
 const DEFAULT_FLEET_DATA = {
   ok: true,
   count: 18,
@@ -1724,16 +1771,8 @@ export default {
         // Execute local edge farm for all accounts with anti-ban humanized engine
         ctx.waitUntil((async () => {
           try {
-            let rawTokens = (memTokens && Object.keys(memTokens).length > 0) ? JSON.stringify(memTokens) : await env.BACKUP_KV.get("miniapp_tokens");
-            if (!rawTokens) {
-              const uResp = await fetch(`${UPSTASH_URL}/get/miniapp_tokens`, { headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` } }).catch(() => null);
-              if (uResp && uResp.ok) {
-                const uD = await uResp.json().catch(() => ({}));
-                if (uD.result) rawTokens = uD.result;
-              }
-            }
-            if (rawTokens) {
-              const tokens = JSON.parse(rawTokens);
+            const tokens = await getFleetTokens(env);
+            if (tokens) {
               for (const [uid, accData] of Object.entries(tokens)) {
                 await farmSingleAccountAllBots(uid, accData, env, ctx);
               }
@@ -2771,41 +2810,17 @@ fi
     // 9.6 MiniApp Tokens Status (In-Memory First, then D1, then KV)
     if (path === "/api/miniapp/tokens" || path === "/api/fleet/tokens" || path === "/api/tokens") {
       try {
-        if (memTokens && Object.keys(memTokens).length > 0) {
-          return new Response(JSON.stringify(memTokens), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
+        const tokens = await getFleetTokens(env);
+        if (tokens) {
+          return new Response(JSON.stringify(tokens), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
         }
-        let raw = null;
-        if (env.DB) {
-          try {
-            const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens").all();
-            if (dbRows && dbRows.results && dbRows.results.length > 0) {
-              const recon = {};
-              for (const r of dbRows.results) {
-                recon[r.user_id] = recon[r.user_id] || { account_id: r.user_id };
-                recon[r.user_id][r.bot_name + "_init_data"] = r.init_data;
-              }
-              memTokens = recon;
-              raw = JSON.stringify(recon);
-            }
-          } catch (_) {}
-        }
-        if (!raw) {
-          try {
-            raw = await env.BACKUP_KV.get("miniapp_tokens");
-          } catch (_) {}
-        }
-        if (!raw) {
-          for (const sUrl of SIBLING_URLS) {
-            const sib = await fetch(`${sUrl}/api/miniapp/tokens`).catch(() => null);
-            if (sib && sib.ok) {
-              raw = await sib.text();
-              break;
-            }
+        for (const sUrl of SIBLING_URLS) {
+          const sib = await fetch(`${sUrl}/api/miniapp/tokens`).catch(() => null);
+          if (sib && sib.ok) {
+            const raw = await sib.text();
+            try { memTokens = JSON.parse(raw); } catch (_) {}
+            return new Response(raw, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
           }
-        }
-        if (raw) {
-          try { memTokens = JSON.parse(raw); } catch (_) {}
-          return new Response(raw, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
         }
         return new Response(JSON.stringify({ ok: true, tokens: {} }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (e) {
@@ -3131,20 +3146,8 @@ fi
         if (isAllBots) {
           ctx.waitUntil((async () => {
             try {
-              let rawTokens = (memTokens && Object.keys(memTokens).length > 0) ? JSON.stringify(memTokens) : await env.BACKUP_KV.get("miniapp_tokens");
-              if (!rawTokens) {
-                try {
-                  const upstashResp = await fetch(`${UPSTASH_URL}/get/miniapp_tokens`, {
-                    headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
-                  });
-                  if (upstashResp.ok) {
-                    const uData = await upstashResp.json();
-                    if (uData.result) rawTokens = uData.result;
-                  }
-                } catch (_) {}
-              }
-              if (!rawTokens) return;
-              const tokens = JSON.parse(rawTokens);
+              const tokens = await getFleetTokens(env);
+              if (!tokens) return;
               for (const uid of targetUids) {
                 const accData = tokens[String(uid)] || {};
                 await farmSingleAccountAllBots(uid, accData, env, ctx);
@@ -8642,25 +8645,11 @@ Reply to Arif naturally:`;
       } catch (_) {}
     })());
 
-    // 3. Mini-App Automated Edge Claims (All 8 Active Bots: Stones, MRG, ART, AI Lab, UltraWallet, Apex Miner, ATF Miner, Ainovum)
+    // 3. Mini-App Automated Edge Claims (7 Legitimate Bots)
     ctx.waitUntil((async () => {
       try {
-        let rawTokens = await env.BACKUP_KV.get("miniapp_tokens");
-        if (!rawTokens && env.DB) {
-          try {
-            const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens").all();
-            if (dbRows && dbRows.results && dbRows.results.length > 0) {
-              const recon = {};
-              for (const r of dbRows.results) {
-                recon[r.user_id] = recon[r.user_id] || { account_id: r.user_id };
-                recon[r.user_id][r.bot_name + "_init_data"] = r.init_data;
-              }
-              rawTokens = JSON.stringify(recon);
-              await env.BACKUP_KV.put("miniapp_tokens", rawTokens).catch(() => {});
-            }
-          } catch (_) {}
-        }
-        if (!rawTokens) {
+        let tokens = await getFleetTokens(env);
+        if (!tokens) {
           for (const sUrl of SIBLING_URLS) {
             try {
               const sResp = await fetch(`${sUrl}/api/miniapp/tokens`, {
@@ -8669,33 +8658,16 @@ Reply to Arif naturally:`;
               if (sResp && sResp.ok) {
                 const sText = await sResp.text();
                 if (sText && sText.length > 50) {
-                  rawTokens = sText;
-                  await env.BACKUP_KV.put("miniapp_tokens", sText).catch(() => {});
+                  tokens = JSON.parse(sText);
                   break;
                 }
               }
             } catch (_) {}
           }
         }
-        if (!rawTokens) {
-          try {
-            const upstashResp = await fetch(`${UPSTASH_URL}/get/miniapp_tokens`, {
-              headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
-            }).catch(() => null);
-            if (upstashResp && upstashResp.ok) {
-              const uData = await upstashResp.json().catch(() => ({}));
-              if (uData.result) {
-                rawTokens = uData.result;
-                await env.BACKUP_KV.put("miniapp_tokens", rawTokens).catch(() => {});
-              }
-            }
-          } catch (_) {}
-        }
-        if (!rawTokens) return;
-        const tokens = JSON.parse(rawTokens);
+        if (!tokens) return;
 
-        // Periodically trigger full 8-bot cloud farming run on Render Standby
-        // Periodically trigger full 8-bot cloud farming run on Render Standby Node 2
+        // Periodically trigger full 7-bot cloud farming run on Render Standby Node 2
         if (CURRENT_SUBDOMAIN === "aaaai2") {
           fetch("https://my-agy-fleet-standby-node2.onrender.com/api/farm/cloud-all", {
             method: "POST",
