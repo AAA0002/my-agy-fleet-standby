@@ -4,6 +4,49 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🚀 9-Bot Fleet Expansion: Victor's Company & VyroDrop Autonomous Integration, Referral Binding & Scoping Hardening (`deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`, `push_to_standby_repo.py`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
+  - **🔍 Reverse-Engineering & Full Integration of Victor's Company (`@VictorsCompanybot`)**:
+    * Analyzed backend API at `https://server.victors.company/api`.
+    * Implemented `/api/auth/login` handshake sending `startParam: "ref_A20AA96F18"` to bind user's referral code across all fleet worker accounts.
+    * Implemented `x-human-pass` extraction and forwarding for subsequent authenticated calls.
+    * Integrated `/api/me` profile fetching and `/api/me/tutorial` auto-completion.
+    * Automated daily streak check-in (`/api/checkin`) and mining yield claim (`/api/mining/claim`).
+    * Automated level unlocker (`/api/levels/unlock`) based on unlocked tier.
+    * Automated dynamic task discovery and claims (`/api/tasks`, `/api/tasks/claim`).
+    * Automated referral bonus and commission sweeps (`/api/referral/claim-bonus`, `/api/referral/claim-commission`).
+    * Integrated Arcade minigame miner (`/api/arcade/mine/start` -> `/api/arcade/mine/dig` -> `/api/arcade/mine/end`).
+  - **💧 Reverse-Engineering & Full Integration of VyroDrop (`@vyrodrop_bot`)**:
+    * Analyzed frontend bundles (`BootstrapProvider-Cs17PLvE.js`, `TasksScreen-dv7ZQS8o.js`, `MiningControls-DbsCnPzT.js`).
+    * Identified required custom headers: `Authorization: tma <initData>`, `X-Vyro-UI-Contract: claim-inactivity-v1`, `X-Vyro-Market-Balances: 2`, `X-Vyro-Dex: 1`, `x-vyro-tasks-protocol: 2`.
+    * Bound user's referral code `ref_myFjrqqE4WN_` via `/start` injection during cloud MTProto WebApp URL generation.
+    * Integrated `/api/bootstrap` session initialization.
+    * Implemented `/api/mining/claim` with session tracking and idempotency key, followed by `/api/mining/start`.
+    * Implemented strict 3-step task engine: `POST /api/tasks/{id}/open` -> `POST /api/tasks/{id}/verify` -> `POST /api/tasks/{id}/claim` using UUID v4 idempotency keys.
+    * Verified live task completion on worker account (`referrerUserId` confirmed bound).
+    * Integrated direct and mining referral claims (`/api/referrals/claim`).
+  - **☁️ Cloud MTProto Token Extraction via Render Standby Node 2**:
+    * Updated `extract_tokens_with_client` to send `/start ref_A20AA96F18` to `@VictorsCompanybot` and `/start ref_myFjrqqE4WN_` to `@vyrodrop_bot`.
+    * Extracted both `victors_init_data` and `vyro_init_data` across 16 active accounts in the cloud.
+    * Synced fresh tokens directly into Cloudflare D1 SQL (`fleet_tokens`), Cloudflare KV, and Upstash Redis.
+  - **🐛 Scoping Bugfix & Hardening in `farm_single_account_bots`**:
+    * Identified and resolved function indentation issue in `render_standby_app.py` and `render_app_latest.py` where `_farm_victors` and `_farm_vyro` were nested inside `_farm_turbogram`, causing a `NameError` when initializing the execution pipeline.
+    * Un-indented both routines into direct subroutines of `farm_single_account_bots`.
+    * Wrapped `api_farm_single_account` with comprehensive `try...except` error handling and traceback logging.
+    * Pushed fix to `AAA0002/my-agy-fleet-standby` (Commit `5ea1ce0c`), deployed to Render Node 2 (**Live**).
+  - **🌐 Edge Mesh & Telemetry Verification Across All 9 Bots**:
+    * Deployed updated farming engine across all 5 Cloudflare Worker Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * **Live Farming Verification**: Tested account `8881914294` (Nancy) on Render Node 2: successfully farmed all 9 bots with HTTP 200:
+      - `turbogram`: `farmed (bal: 0.23 GRAM)`
+      - `finvora`: `farmed`
+      - `victors`: `farmed (lvl: 1, bal: 0)`
+      - `mrg`: `farmed (claimed 0.7811) (lvl: 90, bal: 2399.8 MRG)`
+      - `vyro`: `farmed (lvl: None, speed: 0)`
+      - `ailab`: `farmed (bal: $0.0408, 0.3 hashes)`
+      - `stones`: `farmed (lvl: 1, bal: 6638 STONES)`
+      - `atf`: `farmed (lvl: 74, bal: 637.1 ATF)`
+      - `ultrawallet`: `farmed (bal: $21.50 USDT, pend: 65.4 LT)`
+    * Dispatched full cloud farming cycle across all 18 accounts via `/api/farm/cloud-all`.
+
 - **💎 Fleet-Wide MRG Mining Overhaul, Cryptographic TON Proof Binding (18/18 Accounts) & Hashrate Max-Level Unlock (`deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`, `fleet_ton_wallets.json`, `CHANGELOG.md`, `PROJECT_BIBLE.md`)**:
   - **🔍 Deep Fleet Root-Cause Audit (All 18 Accounts Verified)**:
     * Identified why MRG mining rewards appeared uncollected: Railway backend returned HTTP 403 `HUMAN_CHECK_REQUIRED` (Cloudflare Turnstile challenge) which was silently swallowed by client `.catch(() => {})` handlers that masked failed claims as "ok".

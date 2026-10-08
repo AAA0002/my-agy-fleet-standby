@@ -92,7 +92,7 @@ def push_file(local_path: str, repo_path: str, commit_msg: str):
         print(f"❌ Error pushing {repo_path} to GitHub: {pe}")
 
 def push_app():
-    push_file(STANDBY_SRC, "app.py", "feat: purge 6 scammer bots and channels, auto-block and leave scam channels, retain 10 legitimate bots")
+    push_file(STANDBY_SRC, "app.py", "fix: resolve farm_single_account_bots scoping for victors and vyro, add robust error handling")
     req_file = os.path.join(BASE_DIR, "requirements.txt")
     if os.path.exists(req_file):
         push_file(req_file, "requirements.txt", "deps: add ecdsa and base58")

@@ -1,5 +1,5 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
-> **Universal Onboarding, System Architecture, 7-Bot Fleet Engine & Operational Manual**
+> **Universal Onboarding, System Architecture, 9-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
 > *Last Updated: October 8, 2026*
 > *Classification: Mission-Critical Living Technical Documentation*
@@ -11,7 +11,7 @@
 If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a new session, or a human operator taking over this workspace, **read this entire document first**. It provides the complete picture of this project, how every component works, where every secret and service lives, and how to operate and extend it without breaking production.
 
 ### What is this Project?
-**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **18 Telegram accounts** (1 Master Account + 17 Worker Accounts) that continuously farm yield, satoshis, and tokens across **10 high-conviction legitimate Telegram WebApp Mini Apps and MTProto bots** (all scammer bots purged and blacklisted), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin).
+**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **18 Telegram accounts** (1 Master Account + 17 Worker Accounts) that continuously farm yield, satoshis, and tokens across **9 high-conviction legitimate Telegram WebApp Mini Apps** (all scammer bots purged and blacklisted), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin).
 
 ### The Golden Directives (Non-Negotiable Rules)
 1. **🛡️ Strict Project Isolation**: Everything relating to this project must remain strictly within this repository (`AAA0002/ATL`). **NEVER** touch, import, mix, or merge context from `@AAATelegramIdBot` (`AAA2743/AA`) or other external projects.
@@ -55,7 +55,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 │  │  - Connects 18 Telegram sessions       │  │                                      │  │
 │  │  - Extracts fresh 24h WebApp initData  │  │  Role: 24/7 Edge Autonomous Farming   │  │
 │  │  - Syncs tokens to D1, Upstash & KV     │  │  - Runs cron every 15 mins           │  │
-│  │  - Endpoint: POST /collect-tokens      │  │  - Farms all 7 legitimate bots        │  │
+│  │  - Endpoint: POST /collect-tokens      │  │  - Farms all 9 legitimate bots        │  │
 │  └───────────────────┬────────────────────┘  │  - Executes side tasks & check-ins   │  │
 │                      │                       │  - Fast, serverless, zero ban risk   │  │
 │                      │ Syncs Fresh Tokens    └──────────────────▲───────────────────┘  │
@@ -136,7 +136,7 @@ To prevent Sybil detection, anti-farming bans, and wallet clustering, each accou
 
 ---
 
-### 🤖 5. The Complete 7-Bot Fleet Catalog & Automation Matrix
+### 🤖 5. The Complete 9-Bot Fleet Catalog & Automation Matrix
 
 | # | Type | Bot Name | Telegram Handle | Backend URL / Host | Network | Core Farming Mechanism | Automated Side Tasks |
 |---|---|---|---|---|---|---|---|
@@ -147,6 +147,8 @@ To prevent Sybil detection, anti-farming bans, and wallet clustering, each accou
 | **5** | **Type A** | **ATF Miner** | `@atf_miner_bot` | `https://atfminers.asloni.online` | TON | • `?action=claim`<br>• `?action=start_mine`<br>• **Telemetry:** `farmed (lvl: {lvl}, bal: {bal} ATF)` | • **Automated Math Challenge Solver**: Solves arithmetic captcha<br>• Hashrate Boost (`?action=activate_boost`)<br>• 8x Cooldown Tasks (YouTube, Twitter, Channel joins)<br>• Dedicated TON wallet sync (`?action=sync_wallet`)<br>• Team wallet claims |
 | **6** | **Type A** | **FINVORA Web3** | `@finvora_bot` | `https://finvora-production.up.railway.app` | GRAM / TON | • `/api/mining/claim`<br>• **Telemetry:** `farmed (avail: {bal} GRAM)` | • Instant bonus (`/api/bonus/instant`)<br>• Dedicated TON wallet connection (`/api/wallet/connect`) |
 | **7** | **Type A** | **TurboGram V1** | `@turbogram_bot` | `https://turbo.tamimdev.dev` | GRAM / TON | • `/api/me`<br>• **Telemetry:** `farmed (bal: {bal} GRAM)` | • Dynamic task discovery & completion (maintains **ACTIVE** referral tier)<br>• Dedicated TON wallet binding (`/api/me/wallet`) |
+| **8** | **Type A** | **Victor's Company** | `@VictorsCompanybot` | `https://server.victors.company/api` | TON / GameFi | • `/api/mining/claim`<br>• `/api/arcade/mine/start` + `dig` + `end`<br>• **Telemetry:** `farmed (lvl: {lvl}, bal: {bal})` | • Referral binding to `ref_A20AA96F18` via `/api/auth/login`<br>• Daily check-in (`/api/checkin`)<br>• Tutorial completion (`/api/me/tutorial`)<br>• Auto-level upgrader (`/api/levels/unlock`)<br>• Task discovery & claim (`/api/tasks/claim`)<br>• Referral bonus sweep (`/api/referral/claim-bonus`) |
+| **9** | **Type A** | **VyroDrop** | `@vyrodrop_bot` | `https://vyro.run.place/api` | VYRO / DEX | • `/api/mining/claim`<br>• `/api/mining/start`<br>• **Telemetry:** `farmed (lvl: {lvl}, speed: {spd})` | • Referral binding to `ref_myFjrqqE4WN_`<br>• Bootstrap sync (`/api/bootstrap`)<br>• 3-step task engine: `/api/tasks/{id}/open` -> `/api/tasks/{id}/verify` -> `/api/tasks/{id}/claim`<br>• Direct & mining referral claims (`/api/referrals/claim`) |
 
 ---
 
@@ -218,8 +220,8 @@ During thorough auditing of `/api/farm/cloud-all`, an investigation revealed why
 ### 1. The Dual-Type Bot & Channel Architecture
 The fleet's 7 active high-conviction legitimate bots and channels are fundamentally divided into two technical architectures:
 
-#### Type A: WebApp Mini-Apps / REST Bots (7 Genuine Bots)
-- **Bots Included**: Stones Miners (`@stonesminers_bot` / `@stoneswithestand_bot`), MRG Miner (`@mrg_miner_bot` / `@mrgminerbot`), AI Lab (`@ailabrobot_bot` / `@AiLab_robot`), UltraWallet (`@ultrawallet_bot` / `@UltrawalletTrade_Bot`), ATF Miner (`@atf_miner_bot` / `@ATF_AIRDROP_bot`), FINVORA Web3 (`@finvora_bot` / `@FINVORAWeb3bot`), TurboGram (`@turbogram_bot` / `@TurboGramV1_bot`).
+#### Type A: WebApp Mini-Apps / REST Bots (9 Genuine Bots)
+- **Bots Included**: Stones Miners (`@stonesminers_bot` / `@stoneswithestand_bot`), MRG Miner (`@mrg_miner_bot` / `@mrgminerbot`), AI Lab (`@ailabrobot_bot` / `@AiLab_robot`), UltraWallet (`@ultrawallet_bot` / `@UltrawalletTrade_Bot`), ATF Miner (`@atf_miner_bot` / `@ATF_AIRDROP_bot`), FINVORA Web3 (`@finvora_bot` / `@FINVORAWeb3bot`), TurboGram (`@turbogram_bot` / `@TurboGramV1_bot`), Victor's Company (`@VictorsCompanybot`), VyroDrop (`@vyrodrop_bot`).
 - **Mechanism**:
   - Authenticated via Telegram WebApp `initData` (HMAC SHA-256 query string signed by Telegram bot tokens) or Bearer JWT tokens.
   - Executed 100% via asynchronous HTTP REST calls with zero MTProto connection overhead.
@@ -251,6 +253,8 @@ The fleet's 7 active high-conviction legitimate bots and channels are fundamenta
     * `_farm_atf`: Solves arithmetic math captcha dynamically, activates speed boost, claims referral yield and team wallet, and cycles cooldown tasks.
     * `_farm_finvora`: Connects dedicated TON wallet, claims instant bonus, and harvests mining yield.
     * `_farm_turbogram`: Connects dedicated TON wallet, discovers pending tasks, starts and completes tasks to maintain active referral tier.
+    * `_farm_victors`: Authenticates via `/api/auth/login` binding referral `ref_A20AA96F18`, acquires `x-human-pass`, completes daily check-in, claims mining yield, auto-unlocks levels, discovers and claims tasks, sweeps referral bonus, and plays arcade minigame.
+    * `_farm_vyro`: Bootstraps session with custom protocol headers, starts/claims mining session, discovers tasks, executes strict 3-step task protocol (`/open` -> `/verify` -> `/claim` with UUID idempotency key) binding referral `ref_myFjrqqE4WN_`, and claims direct/mining referral rewards.
   - **Internal `auth_date` Token Age Auditing**: `is_token_data_expired()` now inspects the inner `auth_date` timestamp of WebApp `initData` query strings, accurately flagging tokens approaching the 20-hour mark.
 
 ---

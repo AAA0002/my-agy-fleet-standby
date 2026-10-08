@@ -54,6 +54,8 @@ ULTRAWALLET_BOT = "UltrawalletTrade_Bot"
 ATF_BOT = "ATF_AIRDROP_bot"
 FINVORA_BOT = "FINVORAWeb3bot"
 TURBOGRAM_BOT = "TurboGramV1_bot"
+VICTORS_BOT = "VictorsCompanybot"
+VYRO_BOT = "vyrodrop_bot"
 
 STONES_REF = "r6727787768"
 MRG_REF = "ref_IRN1G3XD"
@@ -62,6 +64,8 @@ ULTRAWALLET_REF = "6727787768"
 ATF_REF = "6727787768"
 FINVORA_REF = "ref_TRX6727787768"
 TURBOGRAM_REF = "r_3520c92b"
+VICTORS_REF = "ref_A20AA96F18"
+VYRO_REF = "ref_myFjrqqE4WN_"
 
 
 def load_accounts():
@@ -233,6 +237,52 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
                 print(f"  🚀 TurboGram V1: Collected")
         except Exception as e:
             print(f"  ⚠️ TurboGram error: {e}")
+
+        # 8. Victor's Company
+        try:
+            b_vic = await cl.get_entity(VICTORS_BOT)
+            try:
+                await cl.send_message(b_vic, f"/start {VICTORS_REF}")
+            except Exception:
+                pass
+            r_vic = await cl(RequestAppWebViewRequest(
+                peer=b_vic,
+                app=InputBotAppShortName(bot_id=b_vic, short_name="app"),
+                platform="android",
+                start_param=VICTORS_REF
+            ))
+            init_vic = urllib.parse.parse_qs(urllib.parse.urlparse(r_vic.url).fragment).get("tgWebAppData", [None])[0]
+            if not init_vic:
+                r_vic2 = await cl(RequestWebViewRequest(
+                    peer=b_vic, bot=b_vic, platform="android",
+                    url="https://app.victors.company/",
+                    start_param=VICTORS_REF
+                ))
+                init_vic = urllib.parse.parse_qs(urllib.parse.urlparse(r_vic2.url).fragment).get("tgWebAppData", [None])[0]
+            if init_vic:
+                tokens["victors_init_data"] = init_vic
+                print(f"  🏢 Victor's Company: Collected")
+        except Exception as e:
+            print(f"  ⚠️ Victor's Company error: {e}")
+
+        # 9. VyroDrop
+        try:
+            b_vy = await cl.get_entity(VYRO_BOT)
+            try:
+                await cl.send_message(b_vy, f"/start {VYRO_REF}")
+            except Exception:
+                pass
+            r_vy = await cl(RequestWebViewRequest(
+                peer=b_vy, bot=b_vy, platform="android",
+                url="https://vyro.run.place/",
+                start_param=VYRO_REF
+            ))
+            init_vy = urllib.parse.parse_qs(urllib.parse.urlparse(r_vy.url).fragment).get("tgWebAppData", [None])[0]
+            if init_vy:
+                tokens["vyro_init_data"] = init_vy
+                print(f"  💎 VyroDrop: Collected")
+        except Exception as e:
+            print(f"  ⚠️ VyroDrop error: {e}")
 
         # Sync to Cloudflare Edge KV
         await sync_tokens_to_edge(session, acc_uid, acc_name, tokens)
