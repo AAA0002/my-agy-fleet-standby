@@ -4,6 +4,25 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **📊 High-Precision Real-Time Balances & Telemetry Engine for All 7 Legitimate Fleet Bots (`render_standby_app.py`, `render_app_latest.py`, `update_dashboard_compact.py`, `push_to_standby_repo.py`, `CHANGELOG.md`, `PROJECT_BIBLE.md`)**:
+  - **💎 Real-Time Balances & Level Reporting Across All 7 Legitimate Bots**:
+    * **Stones Miners** (`@stonesminers_bot`): Dynamically captures `user.coins` and `user.level` from `/api/state`, outputting live telemetry (e.g. `farmed (lvl: 1, bal: 6602 STONES)`).
+    * **MRG Miner** (`@mrgminerbot`): Robust URL-decoding unquote normalizer and real-time peak level & MRG balance output (e.g. `farmed (lvl: 95, bal: 2637.3 MRG)`).
+    * **AI Lab Robot** (`@AiLab_robot`): Extracts real-time USD balance and compute hashes from `/users/auth/login` and `/miner` (e.g. `farmed (bal: $0.0438, 1.0 hashes)`).
+    * **UltraWallet** (`@UltrawalletTrade_Bot`): Fetches live USDT wallet balance from `/spin/status` and pending mined LT from `/mining/status` (e.g. `farmed (bal: $7.65 USDT, pend: 273.4 LT)`).
+    * **ATF Miner** (`@ATF_AIRDROP_bot`): Captures miner level and mined ATF balance from `/miner/index.php?action=login` (e.g. `farmed (lvl: 113, bal: 1707.2 ATF)`).
+    * **FINVORA Web3** (`@FINVORAWeb3bot`): Returns withdrawable and newly claimed GRAM telemetry (e.g. `farmed (avail: 0.0400 GRAM)`).
+    * **TurboGram V1** (`@TurboGramV1_bot`): Reports live GRAM balance and completed task count (e.g. `farmed (bal: 0.23 GRAM)`).
+  - **🛡️ Latency Protection & Resilient Execution Limits**:
+    * Extended per-bot execution timeout from 28.0s to 45.0s, preventing false timeouts during slow external backend responses.
+    * Extended single account cloud farming timeout from 60.0s to 75.0s.
+    * Extended on-the-fly token extraction timeout from 25.0s to 45.0s.
+  - **🚀 Live Verification on Render Node 2 (Frankfurt)**:
+    * Deployed commit `d5e8cf50` to `AAA0002/my-agy-fleet-standby` (Deploy `dep-db3kih7lk1mc73bu57n0`, status `live`).
+    * Tested live farming on worker `8826375659`: verified 100% farming success with full real-time telemetry across all 7 bots.
+  - **🧹 Dashboard Compact Cleaning**:
+    * Purged residual references to old scam/dead bots (ART Airdrop, Apex, Ainovum) in `update_dashboard_compact.py` ticker and AI prompt, ensuring consistent 7-bot representation.
+
 - **🛡️ Full-Fleet Scam Bot & Channel Eradication, Codebase Hardening & 7-Bot Ecosystem Consolidation (`render_standby_app.py`, `userbot_refresher.py`, `autonomous_cloud_agent.py`, `extract_all_missing_fleet_tokens.py`, `update_dashboard_compact.py`, `push_to_standby_repo.py`, `PROJECT_BIBLE.md`, `CHANGELOG.md`)**:
   - **🧹 Total Removal of All 10 Scam Bots & Associated Scam Channels**:
     * Cleaned all remaining scam farming code, token extractions, referral bindings, and bootstrapping routines across the entire codebase:

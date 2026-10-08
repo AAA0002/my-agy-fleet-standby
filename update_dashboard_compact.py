@@ -537,7 +537,7 @@ function App() {
       const res = await fetch("/ai", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: `You are Ari, the personal cloud AI copilot for Arif's 13-account automated mining fleet (MY AGY AI). Fleet state: 13 active accounts across all 8 active bots, ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Stones vault: 500+ STONES on Arbitrum One. Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
+          prompt: `You are Ari, the personal cloud AI copilot for Arif's 13-account automated mining fleet (MY AGY AI). Fleet state: 13 active accounts across all 7 legitimate bots, ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Stones vault: 500+ STONES on Arbitrum One. Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
         })
       });
       const d = await res.json();
@@ -635,17 +635,16 @@ function App() {
       currencySymbol: currencyConfig[currency].symbol, currencyRate: currencyConfig[currency].rate
     }),
 
-    // 8-Bot Status Ticker (1 Compact Line)
+    // 7-Bot Status Ticker (1 Compact Line)
     React.createElement("div", { className: "flex items-center gap-2 overflow-x-auto py-1 px-1 mb-3 text-[10px] font-semibold text-slate-600 dark:text-slate-300 no-scrollbar" },
       [
         { name: "ATF Miner", token: totalAtfMined > 0 ? `${totalAtfMined.toFixed(0)} ATF (Farming)` : "ATF (Farming)" },
         { name: "Stones", token: "Arbitrum" },
         { name: "MRG Miner", token: "TON" },
-        { name: "ART Airdrop", token: "TON" },
-        { name: "AI Lab", token: "BEP-20" },
-        { name: "UltraWallet", token: "USDT" },
-        { name: "Apex", token: "APX" },
-        { name: "Ainovum", token: "USDT" }
+        { name: "AI Lab", token: "USDT" },
+        { name: "UltraWallet", token: "USDT/LT" },
+        { name: "FINVORA", token: "TON" },
+        { name: "TurboGram", token: "TON" }
       ].map((b, i) => React.createElement("div", {
         key: i,
         className: "flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-white/5 shrink-0"
@@ -838,11 +837,11 @@ function App() {
         [
           {
             title: "⚡ Auto-Harvest All",
-            desc: "Trigger 8-bot harvest",
+            desc: "Trigger 7-bot harvest",
             action: async () => {
               showToast("AI: Dispatched harvest across all bots!", "info");
               await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "harvest" }) });
-              setAiMessages(prev => [...prev, { sender: "user", text: "⚡ Trigger fleet harvest" }, { sender: "ai", text: "✅ Dispatched instant harvest across all 8 mining platforms (Stones, MRG, ART, AI Lab, UltraWallet, Apex, Ainovum, ATF). WebApp tokens and sessions are active." }]);
+              setAiMessages(prev => [...prev, { sender: "user", text: "⚡ Trigger fleet harvest" }, { sender: "ai", text: "✅ Dispatched instant harvest across all 7 legitimate mining platforms (Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, TurboGram). WebApp tokens and sessions are active." }]);
             }
           },
           {
