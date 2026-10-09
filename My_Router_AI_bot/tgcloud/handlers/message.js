@@ -28,7 +28,8 @@ export default async function (message, ctx) {
             { text: '📊 Live Status', callback_data: 'cmd_status' }
           ],
           [
-            { text: '💼 Multichain Wallets', callback_data: 'cmd_wallets' }
+            { text: '💼 Multichain Wallets', callback_data: 'cmd_wallets' },
+            { text: '🧹 Clean Up Fleet', callback_data: 'cmd_cleanup' }
           ]
         ]
       }
@@ -125,10 +126,24 @@ export default async function (message, ctx) {
     return;
   }
 
+  if (text.startsWith('/cleanup') || text.startsWith('/clean')) {
+    await api.sendMessage({
+      chat_id: chatId,
+      text: '🧹 *Autonomous Multi-Tier Clean-Up System*\n\n' +
+        '• *Tier 1: Disk Hygiene* — Pruning __pycache__, rotating logs, capping local backup zips\n' +
+        '• *Tier 2: Phone Guardrail* — Enforcing 0 background bots on phone (Rule 4)\n' +
+        '• *Tier 3: Upstash Hygiene* — Trimming lists (fleet:payouts capped to 100) and purging expired security passes\n' +
+        '• *Tier 4: CI/CD Hygiene* — Pruning stale GitHub Actions workflow runs older than 7 days\n\n' +
+        '⚡ Clean-up runs automatically every 12 hours via Sentinel and on-demand via `python clean_up_system.py`.',
+      parse_mode: 'Markdown'
+    });
+    return;
+  }
+
   // Fallback default message
   await api.sendMessage({
     chat_id: chatId,
-    text: `Command not recognized. Use /status, /farm, /wallets, or open the dashboard below.`,
+    text: `Command not recognized. Use /status, /farm, /wallets, /cleanup, or open the dashboard below.`,
     reply_markup: {
       inline_keyboard: [
         [{ text: '📱 Open Fleet Dashboard', web_app: { url: `https://app${ctx.bot?.id || '8858823950'}.tgcloud.ai/` } }]

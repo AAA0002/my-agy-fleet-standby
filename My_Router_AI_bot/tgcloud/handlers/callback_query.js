@@ -51,4 +51,18 @@ export default async function (query, ctx) {
     });
     return;
   }
+
+  if (data === 'cmd_cleanup') {
+    await api.sendMessage({
+      chat_id: chatId,
+      text: '🧹 *Autonomous Multi-Tier Clean-Up System Active*\n\n' +
+        '• *Tier 1: Disk Hygiene* — Pruning __pycache__, rotating logs, capping local backup zips\n' +
+        '• *Tier 2: Phone Guardrail* — Enforcing 0 background bots on phone (Rule 4)\n' +
+        '• *Tier 3: Upstash Hygiene* — Trimming lists (fleet:payouts capped to 100) and purging expired security passes\n' +
+        '• *Tier 4: CI/CD Hygiene* — Pruning stale GitHub Actions workflow runs older than 7 days\n\n' +
+        '⚡ Clean-up runs automatically every 12 hours via Sentinel and on-demand via `python clean_up_system.py`.',
+      parse_mode: 'Markdown'
+    });
+    return;
+  }
 }

@@ -343,3 +343,11 @@ jobs:
           print("=" * 65)
           print("Audit complete.")
           EOF
+
+      - name: Run Autonomous Multi-Tier Sanitation & Maintenance Engine
+        env:
+          UPSTASH_URL: "https://relaxing-starfish-285827.upstash.io"
+          UPSTASH_TOKEN: "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw"
+        run: |
+          python clean_up_system.py
+

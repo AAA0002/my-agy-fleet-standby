@@ -4,6 +4,24 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🧹 Autonomous Multi-Tier Sanitation & Maintenance Engine (`clean_up_system.py`, `.github/workflows/fleet_sentinel.yml`, `My_Router_AI_bot/tgcloud/`)**:
+  - **📁 Tier 1: Local Disk & Ephemeral Workspace Hygiene**:
+    * Recursively prunes Python bytecode (`__pycache__`, `*.pyc`, `.pytest_cache`) while intelligently skipping vendor/large directories (`.git`, `.gemini`, `node_modules`).
+    * Automatically rotates and truncates oversized log files ($>2$ MB), preserving the most recent 1,500 lines.
+    * Retains only the 2 most recent encrypted backup archives (`my_agy_ai_backup_*.zip`), removing older local zips to prevent disk ballooning.
+    * Purges stale browser scraps (`/tmp/*chrome*`, `/tmp/*xvfb*`, `/tmp/*selenium*`).
+  - **📱 Tier 2: Zero Phone Load Guardrail Enforcement (Rule 4)**:
+    * Scans local OS processes on the Samsung Galaxy A30 and automatically terminates any unauthorized background Python scrapers, daemon loops, or bots (`render_app`, `mrg_turnstile_solver`, `victors_sb_solver`, `bot_supervisor.sh`).
+    * Guarantees 100% of phone RAM and CPU are reserved exclusively for the Antigravity AI pair-programming session.
+  - **⚡ Tier 3: Upstash Redis Serverless Quota & Storage Hygiene**:
+    * Trims unbounded transaction lists (`fleet:payouts` capped to 100 entries via atomic `LTRIM`).
+    * Audits Turnstile security passes (`*:pass:*`) and purges expired entries ($>48$ hours old) via `/pipeline` batching.
+  - **🐙 Tier 4: GitHub Actions CI/CD History Pruning**:
+    * Automatically deletes old completed and canceled workflow runs older than 7 days via the GitHub API, preventing repository clutter and storage quota waste.
+  - **📱 Telegram Serverless Control Integration (`My_Router_AI_bot`)**:
+    * Added `/cleanup` command and a clean-up quick action button to the Telegram Serverless bot inline keyboard.
+    * Integrated autonomous clean-up execution into the 12-hour Sentinel workflow (`.github/workflows/fleet_sentinel.yml`).
+
 - **🛡️ Free-Tier Limits Resolution, Quota Engineering & Cloud Turnstile Solver Hardening (`refresh_cloud_tokens.py`, `render_app_latest.py`, `render_standby_app.py`, `victors_sb_solver.py`, `.github/workflows/`)**:
   - **⏱️ GitHub Actions Runner Quota Optimization (<1,410 min/mo / 70.5% of 2,000 min Free Tier)**:
     * Rescheduled `mrg_turnstile_solver.yml` and `victors_sb_solver.yml` from 3h to 12h intervals (`15 */12 * * *` and `30 */12 * * *`).

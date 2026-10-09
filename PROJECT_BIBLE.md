@@ -463,6 +463,37 @@ To permanently resolve resource exhaustion across free cloud tiers without payin
 
 ---
 
+## 🧹 6.6 Autonomous Multi-Tier Sanitation & Maintenance Engine (October 9, 2026)
+
+To prevent resource leakages, unbounded database list growth, and local disk ballooning on ephemeral and mobile environments, the fleet runs an autonomous multi-tier clean-up system ([`clean_up_system.py`](file:///root/workspace/clean_up_system.py)):
+
+### 1. Tier 1: Local Disk & Ephemeral Workspace Sanitation
+- **Bytecode Pruning**: Recursively removes all `__pycache__`, `*.pyc`, and `.pytest_cache` while skipping large vendor directories (`.git`, `.gemini`, `node_modules`).
+- **Backup Retention Policy**: Retains only the 2 most recent `my_agy_ai_backup_*.zip` archives locally (all archives are durably mirrored to the Telegram vault `@myagyai`), pruning older archives to conserve disk space.
+- **Log Rotation**: Automatically rotates and truncates log files $>2$ MB, keeping the most recent 1,500 lines.
+- **Temporary Scrap Cleaning**: Purges headless browser scraps (`/tmp/*chrome*`, `/tmp/*xvfb*`, `/tmp/*selenium*`).
+
+### 2. Tier 2: Process Sanitation & Mobile Resource Guardrail (Rule 4)
+- Enforces the **Zero Phone Load Directive** on the Samsung Galaxy A30:
+  - Scans active OS processes.
+  - Automatically terminates any rogue background bot or scraper processes (`render_app`, `mrg_turnstile_solver`, `victors_sb_solver`, `batch_atf_miner`, `bot_supervisor.sh`).
+  - Guarantees 0 CPU/RAM overhead on the phone for Antigravity AI pair programming.
+
+### 3. Tier 3: Upstash Redis Serverless Quota & Storage Hygiene
+- **Transaction List Capping**: Automatically executes `LTRIM fleet:payouts 0 99` to cap the payout history to the 100 most recent items, preventing unbounded Redis memory growth.
+- **Stale Pass Pruning**: Audits security pass keys (`*:pass:*`) and purges entries older than 48 hours via atomic `/pipeline` batching.
+
+### 4. Tier 4: GitHub Actions CI/CD History Pruning
+- Queries GitHub Actions runs and automatically deletes completed/canceled workflow runs older than 7 days via the GitHub REST API (`DELETE /repos/{repo}/actions/runs/{run_id}`).
+- Keeps repository run history lean and protects organization storage limits.
+
+### 5. Automated Execution & Operator Controls
+- **Automated Sentinel**: Integrated into `.github/workflows/fleet_sentinel.yml` running every 12 hours.
+- **Telegram Serverless Cockpit**: Integrated into `@My_Router_AI_bot` (`/cleanup` command and inline clean button).
+- **Manual CLI Execution**: `python3 clean_up_system.py [--dry-run|--disk-only|--cloud-only|--proc-only]`.
+
+---
+
 ## 🛠️ 7. Operator & AI Cheat Sheet
 
 Here are the exact commands to run for everyday operations:
