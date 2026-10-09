@@ -49,6 +49,10 @@ VYRO_SITEKEY = "0x4AAAAAAFMSnxZaI2W86NOg"
 VYRO_ORIGIN = "https://vyro.run.place"
 VYRO_API = "https://vyro.run.place/api"
 
+ATF_SITEKEY = "0x4AAAAAAEbiOQ5xhVRMXGgt"
+ATF_ORIGIN = "https://atfminers.asloni.online"
+ATF_API = "https://atfminers.asloni.online/miner/index.php"
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FLEET_TON_WALLETS_FILE = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
 
@@ -1416,6 +1420,106 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
     return True
 
 
+async def solve_atf_turnstile(browser, uid: int, atf_init: str) -> bool:
+    """
+    Solves Cloudflare Turnstile entry captcha for ATF Miner (5-day cycle or new accounts).
+    Submits verified captcha_token to index.php?action=verify_entry_captcha, and saves pass to Upstash.
+    """
+    acquired_token = solve_turnstile_via_api(ATF_SITEKEY, ATF_ORIGIN, action="verify_entry_captcha")
+    if not acquired_token and browser:
+        try:
+            context = await browser.new_context(
+                user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
+                viewport={"width": 412, "height": 915},
+                is_mobile=True,
+                has_touch=True
+            )
+            page = await context.new_page()
+            target_url = f"{ATF_ORIGIN}/miner/index.html?entry=bot_start#tgWebAppData={urllib.parse.quote(atf_init)}"
+            json_atf_init = json.dumps(atf_init)
+            await page.add_init_script(f"""
+                Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
+                try {{
+                    sessionStorage.setItem('__telegram__initParams', JSON.stringify({{ tgWebAppData: {json_atf_init} }}));
+                    sessionStorage.setItem('initParams', JSON.stringify({{ tgWebAppData: {json_atf_init} }}));
+                }} catch(e) {{}}
+                const mockWebApp = {{
+                    initData: {json_atf_init},
+                    initDataUnsafe: {{ user: {{ id: {uid} }} }},
+                    version: '8.0', platform: 'android',
+                    ready: () => {{}}, expand: () => {{}}, close: () => {{}},
+                    onEvent: () => {{}}, offEvent: () => {{}}, sendData: () => {{}}
+                }};
+                window.Telegram = {{ WebApp: mockWebApp }};
+                window.__atfSolvedToken = null;
+            """)
+
+            try:
+                await page.goto(target_url, wait_until="domcontentloaded", timeout=18000)
+            except Exception:
+                pass
+
+            await page.evaluate("""
+                () => {
+                    const origCb = window.__atfEntryCaptchaCallback;
+                    window.__atfEntryCaptchaCallback = (token) => {
+                        window.__atfSolvedToken = token;
+                        if (typeof origCb === 'function') origCb(token);
+                    };
+                }
+            """)
+
+            for _ in range(12):
+                if await page.evaluate("() => Boolean(window.__atfSolvedToken)"):
+                    acquired_token = await page.evaluate("() => window.__atfSolvedToken")
+                    break
+                for f in page.frames:
+                    if "cloudflare" in f.url or "turnstile" in f.url:
+                        try:
+                            box = await f.query_selector('input[type="checkbox"], body, .checkbox')
+                            if box:
+                                await box.click()
+                        except Exception:
+                            pass
+                await asyncio.sleep(1.5)
+
+            await context.close()
+        except Exception as e:
+            logger.warning(f"[ATF Turnstile] Browser solve error for UID {uid}: {e}")
+
+    if acquired_token:
+        logger.info(f"🎉 [ATF] Turnstile token acquired for UID {uid}: {acquired_token[:16]}...")
+        p = {
+            "initData": atf_init,
+            "tg_id": uid,
+            "username": "",
+            "captcha_token": acquired_token
+        }
+        atf_h = {
+            "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36",
+            "X-Requested-With": "XMLHttpRequest",
+            "Content-Type": "application/json",
+            "Referer": f"{ATF_ORIGIN}/miner/index.html",
+            "Origin": ATF_ORIGIN
+        }
+        v_code, v_data = safe_post(f"{ATF_API}?action=verify_entry_captcha&t={int(time.time()*1000)}", p, extra_headers=atf_h)
+        if (v_code in (200, 201)) or (isinstance(v_data, dict) and v_data.get("status") == "success"):
+            logger.info(f"✅ [ATF] Verified entry captcha for UID {uid} on ATF server!")
+            try:
+                req_up = urllib.request.Request(
+                    f"{UPSTASH_URL}/set/atf:pass:{uid}",
+                    data=json.dumps({"captcha_token": acquired_token, "updated_at": time.time()}).encode(),
+                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"},
+                    method="POST"
+                )
+                with urllib.request.urlopen(req_up, timeout=8):
+                    pass
+            except Exception:
+                pass
+            return True
+    return False
+
+
 async def run_mrg_auto_solver():
     """Main workflow: audits all 18 accounts, solves needed challenges, connects wallets, and auto-claims."""
     logger.info("====================================================================")
@@ -1428,13 +1532,21 @@ async def run_mrg_auto_solver():
     accounts_needing_solver = []
     victors_accounts = []
     vyro_accounts = []
+    atf_accounts = []
 
     # 1. Fetch tokens and inspect account states
     for idx, uid in enumerate(FLEET_UIDS, 1):
         tok_dict = get_token_from_upstash(uid, miniapp_cache=miniapp_cache)
         mrg_init = tok_dict.get("mrg_init_data")
+        atf_init = tok_dict.get("atf_init_data")
         vic_init = tok_dict.get("victors_init_data")
         vyro_init = tok_dict.get("vyro_init_data")
+
+        if atf_init:
+            atf_accounts.append({
+                "uid": uid,
+                "init_data": atf_init
+            })
 
         if vic_init:
             victors_accounts.append({
@@ -1487,7 +1599,8 @@ async def run_mrg_auto_solver():
         f"📊 Audit Summary: {len(accounts_data)} accounts connected. "
         f"{needed_count} accounts require MRG Turnstile. "
         f"{len(victors_accounts)} accounts found with Victor's Company. "
-        f"{len(vyro_accounts)} accounts found with VyroDrop."
+        f"{len(vyro_accounts)} accounts found with VyroDrop. "
+        f"{len(atf_accounts)} accounts found with ATF Miner."
     )
 
     # 2. Launch stealth browser and process accounts needing verification
@@ -1495,8 +1608,9 @@ async def run_mrg_auto_solver():
     total_claimed_mrg = 0.0
     victors_solved = 0
     vyro_wallets_connected = 0
+    atf_solved = 0
 
-    if needed_count > 0 or len(victors_accounts) > 0 or len(vyro_accounts) > 0:
+    if needed_count > 0 or len(victors_accounts) > 0 or len(vyro_accounts) > 0 or len(atf_accounts) > 0:
         # Import patchright (or fallback to playwright)
         try:
             from patchright.async_api import async_playwright
@@ -1509,6 +1623,7 @@ async def run_mrg_auto_solver():
         accounts_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
         victors_accounts.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
         vyro_accounts.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
+        atf_accounts.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
 
         is_xvfb = bool(os.getenv("DISPLAY") or os.getenv("CI"))
         headless_flag = False if is_xvfb else True
@@ -1620,6 +1735,47 @@ async def run_mrg_auto_solver():
                     logger.warning(f"VyroDrop onboarding exception for UID {vy_uid}: {vye}")
                 await asyncio.sleep(1.0)
 
+            # D. Solve ATF Miner entry captcha passes (5-day security check & new accounts)
+            for atf_acc in atf_accounts:
+                a_uid = atf_acc["uid"]
+                a_init = atf_acc["init_data"]
+                # Fast pre-check: Check if login requires captcha
+                p_chk = {
+                    "initData": a_init,
+                    "tg_id": a_uid,
+                    "username": "",
+                    "request_id": f"rq-chk-{a_uid}",
+                    "device_id": f"dev-chk-{a_uid}"
+                }
+                atf_h = {
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Content-Type": "application/json",
+                    "Referer": f"{ATF_ORIGIN}/miner/index.html",
+                    "Origin": ATF_ORIGIN
+                }
+                chk_code, chk_d = safe_post(f"{ATF_API}?action=login&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
+                needs_atf_captcha = (chk_code == 403) or (isinstance(chk_d, dict) and chk_d.get("reason") in ("entry_captcha_required", "captcha_required"))
+                if needs_atf_captcha:
+                    logger.info(f"⚠️ [ATF] UID {a_uid} requires entry captcha. Solving Turnstile (0x4AAAAAAEbiOQ5xhVRMXGgt)...")
+                    try:
+                        atf_res = await asyncio.wait_for(
+                            solve_atf_turnstile(browser, a_uid, a_init),
+                            timeout=55.0
+                        )
+                        if atf_res:
+                            atf_solved += 1
+                            # Immediately login & start mining post-solve
+                            safe_post(f"{ATF_API}?action=login&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
+                            safe_post(f"{ATF_API}?action=claim&t={int(time.time()*1000)}", p_chk, extra_headers=atf_h)
+                    except asyncio.TimeoutError:
+                        logger.warning(f"ATF solve timed out (55s) for UID {a_uid}")
+                    except Exception as ae:
+                        logger.warning(f"ATF solve exception for UID {a_uid}: {ae}")
+                    await asyncio.sleep(1.0)
+                else:
+                    logger.info(f"✅ [ATF] UID {a_uid}: Login valid without captcha. Skipping.")
+
             await browser.close()
 
     # 3. Also claim rewards for accounts that already had an active pass
@@ -1646,9 +1802,10 @@ async def run_mrg_auto_solver():
 
     # 5. Telegram Telemetry Notification
     report_msg = (
-        f"🚀 <b>MRG, Victor's & Vyro Cloud Turnstile Engine Report</b>\n\n"
+        f"🚀 <b>4-Bot Fleet Cloud Turnstile Engine Report</b>\n\n"
         f"• <b>Total Fleet Accounts:</b> 18\n"
         f"• <b>MRG Pass Solved:</b> {solved_count}/{needed_count}\n"
+        f"• <b>ATF Captcha Solved:</b> {atf_solved}/{len(atf_accounts)}\n"
         f"• <b>Victor's Pass Solved:</b> {victors_solved}/{len(victors_accounts)}\n"
         f"• <b>VyroDrop Wallets & Mining:</b> {vyro_wallets_connected}/{len(vyro_accounts)}\n"
         f"• <b>Total MRG Harvested:</b> {total_claimed_mrg:.2f} MRG\n"
@@ -1657,6 +1814,7 @@ async def run_mrg_auto_solver():
     )
     logger.info(
         f"📢 Telemetry: MRG Solved {solved_count}/{needed_count}, "
+        f"ATF Solved {atf_solved}/{len(atf_accounts)}, "
         f"Victor's Solved {victors_solved}/{len(victors_accounts)}, "
         f"Vyro Connected {vyro_wallets_connected}/{len(vyro_accounts)}, "
         f"Claimed {total_claimed_mrg:.2f} MRG."

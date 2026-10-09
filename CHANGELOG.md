@@ -4,6 +4,25 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **⚙️ Complete 4-Bot Fleet Farm Fix: ATF Cloudflare Turnstile Solver, VyroDrop 401 Guard, Background Tasks Await & Cloudflare Worker Legacy Bot Purge**:
+  - **🪙 ATF Miner Cloudflare Turnstile Auto-Solving (0x4AAAAAAEbiOQ5xhVRMXGgt)**:
+    * Discovered and resolved root cause for 0.0 ATF balance on worker accounts: ATF Miner requires Cloudflare Turnstile verification (`entry_captcha_required`) on new accounts and every 5 days.
+    * Engineered `solve_atf_turnstile` in `mrg_turnstile_solver.py` using Chromium stealth & API fallback, verifying via `POST /miner/index.php?action=verify_entry_captcha` and caching pass in Upstash Redis with 5-day TTL.
+    * Integrated cached captcha pass submission directly into `_farm_atf` across `render_standby_app.py` and `render_app_latest.py`.
+  - **💧 VyroDrop 401 Expiration Detection & Accurate Status Reporting**:
+    * Fixed silent bug where 401 `TELEGRAM_AUTH_INVALID` errors were masked as `farmed (ok)`. Added explicit status check returning `token_expired (auth 401 - needs MTProto refresh)` and preventing false success reports.
+    * Updated `is_token_data_expired` with dynamic TTL: 1.5h for fast-expiring VyroDrop WebApp tokens and 20h for MRG, ATF, and Victor's Company.
+  - **⛏️ MRG Miner Background Tasks Awaiting**:
+    * Fixed bug where background channel and link claim tasks in `bg_tasks` were abandoned upon routine exit when session closed. Added `asyncio.wait_for(asyncio.gather(*bg_tasks), timeout=18.0)` ensuring all social and link tasks complete.
+  - **🏢 Victor's Company TON Wallet Connection & Task Claiming**:
+    * Added automated TON wallet connection (`POST /api/wallet/connect`) and `connect-wallet` task claim to `_farm_victors` in Render engine, mirroring edge worker logic.
+  - **🚫 Complete Purge of Legacy Bots in Cloudflare Workers (`deploy_both_cf_workers.py`)**:
+    * Excised Stones, AI Lab, UltraWallet, and FINVORA from `botRoutines` execution pipeline. Farm loop now runs strictly on the 4 active legitimate bots.
+  - **🧹 Upstash Redis Fleet Tokens Sanitization**:
+    * Stripped 15 obsolete dead bot keys (`stones_init_data`, `ailab_init_data`, `ultrawallet_init_data`, `finvora_init_data`, etc.) across all 18 `fleet:tokens:*` objects in Upstash Redis.
+  - **⚡ Cloud Deployments**:
+    * Synchronized updated `app.py` to `AAA0002/my-agy-fleet-standby` (Commit `3d7158d2`) and `koramshah2/my-agy-fleet-standby` (Commit `e35649df`), triggering automated deploys on Render Frankfurt Node 2 (`dep-db4hg4dg1s2s739eq9jg`) and Oregon Node 3 (`dep-db4hg4jbc2fs73bq9ujg`).
+
 - **⚡ System-Wide Overhaul, Full 4-Bot Fleet Parity, Turnstile Fast-Path & Complete Legacy Purge**:
   - **🪙 ATF Miner Token Extraction Restoration**:
     * Fixed critical omission in `extract_tokens_with_client` across `render_app_latest.py` and `render_standby_app.py` by adding native ATF WebApp token extraction via `RequestWebViewRequest` with `ATF_REFERRAL_CODE` and `default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start"`.

@@ -1211,14 +1211,10 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     }
   };
 
-  // Humanized Execution Pipeline: 9 Active Legitimate Bots (Scammers purged)
+  // Humanized Execution Pipeline: 4 Active Legitimate Bots (MRG, ATF, Victor's Company, VyroDrop)
   const botRoutines = [
-    { name: "stones", fn: farmStones, hasData: Boolean(accData.stones_init_data) },
     { name: "mrg", fn: farmMrg, hasData: Boolean(accData.mrg_init_data) },
-    { name: "ailab", fn: farmAiLab, hasData: Boolean(accData.ailab_init_data) },
-    { name: "ultrawallet", fn: farmUltra, hasData: Boolean(accData.ultrawallet_init_data) },
     { name: "atf", fn: farmAtf, hasData: Boolean(accData.atf_init_data) },
-    { name: "finvora", fn: farmFinvora, hasData: Boolean(accData.finvora_init_data || accData.session_string) },
     { name: "victors", fn: farmVictors, hasData: Boolean(accData.victors_init_data) },
     { name: "vyro", fn: farmVyro, hasData: Boolean(accData.vyro_init_data) },
   ];

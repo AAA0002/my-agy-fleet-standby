@@ -5,7 +5,7 @@ Leaves and removes all unwanted third-party promotional channels from all 13 fle
 Preserves:
 - @myagyai (Disaster Recovery Vault)
 - All official fleet channels (AAA*)
-- Verified official farming bot channels (Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, TurboGram)
+- Verified official farming bot channels (MRG, ATF, Victor's Company, VyroDrop)
 - All personal chats, groups, and contacts
 """
 
