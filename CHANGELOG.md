@@ -20,7 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     * **Total Monthly GitHub Actions Consumption**: Down from >3,500 min/mo to **~450 minutes/month** (only ~22% of the free 2,000-minute quota). Free tier users will never exceed limits!
   - **🛡️ Turnstile URL Hash Encoding & Truncation Elimination (`mrg_turnstile_solver.py`)**:
     * Implemented strict URL encoding `urllib.parse.quote(m_init, safe='')` and `sessionStorage` pre-population across MRG Miner, VyroDrop, and ATF Miner, preventing parameter truncation and 401 Unauthorized errors.
-    * Replaced fragile in-DOM script append loops with native Playwright `page.add_script_tag(url="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit")` and awaited `window.turnstile.render`, eliminating `turnstile_load_timeout`.
+    * Replaced fragile in-DOM script append loops with native Playwright `page.add_script_tag(url="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit")` and awaited `window.turnstile.render`.
+    * Extended proxy script load intervals from 5s (50 attempts) to 20s (200 attempts), eliminating premature `turnstile_load_timeout` drops when loading over Webshare proxy in cloud runners.
 
 - **🛡️ Cloud Turnstile Render Guard, 2-Hour VyroDrop Token Pipeline & Auto-Dispatch Architecture**:
   - **⚡ Turnstile `render undefined` Race Condition Elimination (`mrg_turnstile_solver.py`)**:

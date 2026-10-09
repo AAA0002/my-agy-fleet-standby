@@ -609,7 +609,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                         if (window.turnstile && typeof window.turnstile.render === 'function') {{
                             clearInterval(iv);
                             renderWidget();
-                        }} else if (attempts > 50) {{
+                        }} else if (attempts > 200) {{
                             clearInterval(iv);
                             resolve({{ success: false, error: 'turnstile_load_timeout' }});
                         }}
@@ -1045,7 +1045,7 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                                 if (window.turnstile && typeof window.turnstile.render === 'function') {{
                                     clearInterval(iv);
                                     renderWidget();
-                                }} else if (attempts > 50) {{
+                                }} else if (attempts > 200) {{
                                     clearInterval(iv);
                                     resolve({{ success: false, error: 'turnstile_load_timeout' }});
                                 }}
@@ -1481,7 +1481,7 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                                 if (window.turnstile && typeof window.turnstile.render === 'function') {{
                                     clearInterval(iv);
                                     renderWidget();
-                                }} else if (attempts > 50) {{
+                                }} else if (attempts > 200) {{
                                     clearInterval(iv);
                                     resolve({{ success: false, error: 'turnstile_load_timeout' }});
                                 }}
@@ -1724,7 +1724,7 @@ async def solve_atf_turnstile(browser, uid: int, atf_init: str) -> bool:
                                     if (window.turnstile && typeof window.turnstile.render === 'function') {{
                                         clearInterval(iv);
                                         renderWidget();
-                                    }} else if (attempts > 50) {{
+                                    }} else if (attempts > 200) {{
                                         clearInterval(iv);
                                         resolve({{ success: false, error: 'turnstile_load_timeout' }});
                                     }}
