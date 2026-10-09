@@ -164,7 +164,10 @@ def load_all_miniapp_tokens() -> dict:
             data = json.loads(resp.read().decode())
             res = data.get("result")
             if res:
-                return json.loads(res) if isinstance(res, str) else res
+                parsed = json.loads(res) if isinstance(res, str) else res
+                while isinstance(parsed, str):
+                    parsed = json.loads(parsed)
+                return parsed if isinstance(parsed, dict) else {}
     except Exception as e:
         logger.warning(f"Error fetching miniapp_tokens: {e}")
     return {}
@@ -182,15 +185,20 @@ def get_token_from_upstash(uid: int, miniapp_cache: dict = None) -> dict:
             data = json.loads(resp.read().decode())
             res = data.get("result")
             if res:
-                res_dict = json.loads(res) if isinstance(res, str) else res
+                parsed = json.loads(res) if isinstance(res, str) else res
+                while isinstance(parsed, str):
+                    parsed = json.loads(parsed)
+                if isinstance(parsed, dict):
+                    res_dict = parsed
     except Exception:
         pass
 
-    if miniapp_cache and str(uid) in miniapp_cache:
+    if isinstance(miniapp_cache, dict) and str(uid) in miniapp_cache:
         m_entry = miniapp_cache[str(uid)]
-        for k, v in m_entry.items():
-            if k not in res_dict or not res_dict[k]:
-                res_dict[k] = v
+        if isinstance(m_entry, dict):
+            for k, v in m_entry.items():
+                if k not in res_dict or not res_dict[k]:
+                    res_dict[k] = v
     return res_dict
 
 
