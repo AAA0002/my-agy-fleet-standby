@@ -319,6 +319,90 @@ def probe_account(uid: int, v_init: str) -> tuple:
     return "UNKNOWN", body
 
 
+def play_deep_mine_sync(uid: int, v_headers: dict, max_runs: int = 2):
+    """Executes safe Deep Mine expeditions synchronously (Rows 0-1 safe mining)."""
+    try:
+        # Check current balance
+        m_code, m_res = safe_get(f"{VICTORS_API}/me", extra_headers=v_headers)
+        if m_code != 200 or not isinstance(m_res, dict):
+            return
+        bal = m_res.get("state", {}).get("user", {}).get("inAppBalance", 0)
+
+        for _ in range(max_runs):
+            a_code, a_res = safe_get(f"{VICTORS_API}/arcade", extra_headers=v_headers)
+            if a_code != 200 or not isinstance(a_res, dict):
+                break
+            active_run = a_res.get("mine")
+            mine_meta = next((g for g in a_res.get("games", []) if isinstance(g, dict) and g.get("id") == "mine"), None)
+            plays_left = mine_meta.get("playsLeft", 0) if mine_meta else 0
+
+            if not active_run:
+                if plays_left <= 0 or bal < 25:
+                    break
+                s_code, s_res = safe_post(f"{VICTORS_API}/arcade/mine/start", {"tool": "shovel", "items": {}}, extra_headers=v_headers)
+                if s_code not in (200, 201) or not isinstance(s_res, dict) or not s_res.get("success"):
+                    break
+                active_run = s_res.get("run")
+                bal -= 25
+
+            if not active_run or active_run.get("status") != "active":
+                break
+
+            run = active_run
+            while run.get("status") == "active":
+                open_s = run.get("open", "0" * 360)
+                rock_s = run.get("rock", "0" * 360)
+                hint_s = run.get("hint", "0" * 360)
+                energy = run.get("energy", 0)
+                bag = run.get("bag", 0.0)
+
+                if energy <= 1 or bag >= 28.5:
+                    break
+
+                # Safe candidate tiles in row 0 & 1
+                cands = []
+                for y in range(2):
+                    for x in range(9):
+                        idx = y * 9 + x
+                        if idx >= len(open_s) or open_s[idx] == "1":
+                            continue
+                        if y == 1 and open_s[x] != "1":
+                            continue
+                        is_rock = (idx < len(rock_s) and rock_s[idx] == "1")
+                        cost = 2 if is_rock else 1
+                        if energy < cost:
+                            continue
+                        hint_val = int(hint_s[idx]) if idx < len(hint_s) and hint_s[idx].isdigit() else 0
+                        prio = (100 if (hint_val & 1) else 50) - (25 if is_rock else 0)
+                        cands.append({"x": x, "y": y, "priority": prio})
+
+                if not cands:
+                    break
+
+                cands.sort(key=lambda c: c["priority"], reverse=True)
+                pick = cands[0]
+                time.sleep(0.15)
+                d_code, d_res = safe_post(f"{VICTORS_API}/arcade/mine/dig", {"x": pick["x"], "y": pick["y"]}, extra_headers=v_headers)
+                if d_code not in (200, 201) or not isinstance(d_res, dict) or not d_res.get("success"):
+                    break
+                run = d_res.get("run") or run
+                if d_res.get("result"):
+                    res_obj = d_res.get("result", {})
+                    bal = d_res.get("state", {}).get("user", {}).get("inAppBalance", bal + res_obj.get("paid", 0))
+                    logger.info(f"🏆 UID {uid}: Deep Mine auto-concluded: Paid={res_obj.get('paid', 0)} VIC (Net: {res_obj.get('net', 0):+.1f} VIC), New Bal: {bal} VIC")
+                    run["status"] = "ended"
+                    break
+
+            if run.get("status") == "active":
+                e_code, e_res = safe_post(f"{VICTORS_API}/arcade/mine/end", {}, extra_headers=v_headers)
+                if e_code in (200, 201) and isinstance(e_res, dict) and e_res.get("success"):
+                    res_obj = e_res.get("result", {})
+                    bal = e_res.get("state", {}).get("user", {}).get("inAppBalance", bal + res_obj.get("paid", 0))
+                    logger.info(f"🏆 UID {uid}: Deep Mine cashed out: Paid={res_obj.get('paid', 0)} VIC (Net: {res_obj.get('net', 0):+.1f} VIC), New Bal: {bal} VIC")
+    except Exception as e:
+        logger.warning(f"UID {uid} arcade execution note: {e}")
+
+
 def run_pipeline_for_account(uid: int, v_init: str, human_pass: str, is_master: bool, ton_wallets: dict):
     """Executes the full recruitment qualification pipeline."""
     v_headers = {
@@ -352,14 +436,23 @@ def run_pipeline_for_account(uid: int, v_init: str, human_pass: str, is_master: 
                     w_code, w_res = safe_post(f"{VICTORS_API}/wallet/connect", conn_body, extra_headers=v_headers)
                     logger.info(f"💎 UID {uid}: TON wallet {friendly_addr[:10]}... connected ({w_code}) -> walletOwned=True!")
 
-        # 3. Claim Free Social Tasks
-        for tid in ["follow-victors-company-on-x", "like-retweet-comment-on-x", "subscribe-vic-on-youtube"]:
-            t_code, t_res = safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": tid}, extra_headers=v_headers)
-            if t_code in (200, 201) and isinstance(t_res, dict) and t_res.get("success"):
-                logger.info(f"🎁 UID {uid}: Claimed task {tid} (+{t_res.get('reward')} VIC)")
+        # 3. Dynamic Task Discovery & Claims
+        t_code, t_res = safe_get(f"{VICTORS_API}/tasks", extra_headers=v_headers)
+        if t_code == 200 and isinstance(t_res, dict):
+            for t in t_res.get("tasks", []):
+                if isinstance(t, dict) and t.get("status") == "open":
+                    tid = t.get("taskId") or t.get("id")
+                    if tid:
+                        time.sleep(0.3)
+                        c_code, c_res = safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": tid}, extra_headers=v_headers)
+                        if c_code in (200, 201) and isinstance(c_res, dict) and c_res.get("success"):
+                            logger.info(f"🎁 UID {uid}: Claimed task {tid} (+{c_res.get('reward', t.get('reward', 0))} VIC)")
 
         # 4. Mining claim
         safe_post(f"{VICTORS_API}/mining/claim", {}, extra_headers=v_headers)
+
+        # 5. Autonomous Deep Mine Arcade Solver (Rows 0-1 safe mining)
+        play_deep_mine_sync(uid, v_headers)
     except Exception as e:
         logger.error(f"UID {uid} pipeline execution exception: {e}")
 

@@ -4287,6 +4287,15 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 await safe_post("https://server.victors.company/api/referral/claim-bonus", json_data={}, req_headers=v_h)
                 await safe_post("https://server.victors.company/api/referral/claim-commission", json_data={}, req_headers=v_h)
 
+                # 7. Deep Mine Arcade Minigame Solver
+                try:
+                    from victors_arcade_solver import solve_deep_mine_expeditions
+                    arc_stats = await solve_deep_mine_expeditions(session, v_h, name, max_runs=2)
+                    if arc_stats.get("runs_played", 0) > 0 and arc_stats.get("final_balance") is not None:
+                        in_app_bal = arc_stats["final_balance"]
+                except Exception as arc_e:
+                    logger.debug(f"[{name}] [Victors Arcade] note: {arc_e}")
+
                 bal_str = f" (lvl: {lvl}, bal: {in_app_bal} VIC)"
                 status["bots"]["victors"] = f"farmed{bal_str}"
                 return

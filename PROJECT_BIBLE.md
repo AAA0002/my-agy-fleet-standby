@@ -394,6 +394,38 @@ The fleet's 8 active high-conviction legitimate bots and channels are fundamenta
 
 ---
 
+## ⛏️ 6.4 Victor's Company Deep Mine Arcade Minigame Engine & Mathematical Solver (October 9, 2026)
+
+### 1. Reverse-Engineered Arcade Protocol (`/api/arcade/mine/*`)
+- **Grid Architecture**: 9 columns x 40 rows (`width: 9`, `depth: 40`, total 360 blocks).
+- **Gear Costs & Stats**:
+  - `shovel`: Cost 25 VIC, Power 1, Energy 25, Hearts 3.
+  - `pickaxe`: Cost 44 VIC, Power 2, Energy 30, Hearts 3.
+  - `drill`: Cost 55 VIC, Power 3, Energy 32, Hearts 3.
+- **Safe Row Discovery (`Ue.safeRows = 2`)**:
+  - Rows `y = 0` and `y = 1` have strictly ZERO hazards (`hazard = 0`). No rockfall, no gas, no lava.
+  - Row `y = 0` is reachable directly from the surface; Row `y = 1` is reachable once the block directly above (`x, 0`) is opened.
+- **Block Costs & Loot Hints**:
+  - Soft dirt costs 1 energy; boulders cost 2 energy.
+  - The server returns bitmask `hint`: bit 0 (`hint & 1`) indicates loot sparkle (+1.1 to +4.5 VIC).
+- **Payout & Refund Mechanics**:
+  - `bagCap = 1.15` (max 28.75 VIC bag for shovel), `refundRate = 0.9` (90% unused energy refunded).
+  - Payout on completion: `paid = bag + refund`. If player busts (`hearts <= 0`), server wipes 100% of bag and refund (`bustKeep = 0`).
+  - Cash-out (`POST /api/arcade/mine/end`) guarantees 100% bag retention + 90% energy refund credited directly to `inAppBalance`.
+
+### 2. Autonomous Safe Solver Implementation (`victors_arcade_solver.py`)
+- Digs only reachable blocks in safe rows (0 and 1), prioritizing loot sparkle soft dirt (1 energy) over boulders.
+- Handles server auto-conclusion when energy reaches 0 (returning `result` in `/api/arcade/mine/dig`), or calls `/api/arcade/mine/end` when safe rows are exhausted or bag reaches cap (~28.5 VIC).
+- **Live Production Results**:
+  - Verified on Nancy (`8881914294`): completed 14 digs, collected 18.9 VIC in loot, cashed out with +3.70 VIC NET PROFIT (balance jumped from 40.23 to 43.93 VIC).
+  - Verified on Arif (`8826375659`): completed 18 digs, collected 15.4 VIC in loot with zero damage taken.
+- **Fleet Task Claim Breakthrough**:
+  - All 16 accounts joined `@victors_company`, `@VICWithdrawals`, and `@TheBoss_Victor` via cloud MTProto refresher (GitHub Actions Run `37933864463`).
+  - Claimed all 4 sponsor tasks across all 11 authenticated sub-accounts, elevating balances from ~20.15 to ~40.25 VIC (11/11 accounts qualified for Deep Mine).
+- **Cloud Farming Integration**: Integrated into `render_app_latest.py`, `render_standby_app.py`, and `victors_sb_solver.py` for continuous 24/7 cloud execution (Zero Phone Load, Rule 4).
+
+---
+
 ## 🛠️ 7. Operator & AI Cheat Sheet
 
 Here are the exact commands to run for everyday operations:

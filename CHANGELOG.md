@@ -4,6 +4,29 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **⛏️ Victor's Company (`@VictorsCompanybot`) Deep Mine Arcade Solver, Minigame Automation & Fleet Sponsor Task Qualification (`victors_arcade_solver.py`, `victors_sb_solver.py`, `render_app_latest.py`, `render_standby_app.py`, `check_fleet_victors_balances.py`)**:
+  - **🔍 Deep Mine Minigame Reverse-Engineering (`/api/arcade/mine/*`)**:
+    * Extracted the full arcade game engine from `https://app.victors.company/assets/index-7o8fKOLT.js`.
+    * Uncovered grid architecture: 9 columns x 40 rows (`width = 9`, `depth = 40`).
+    * Gear mechanics: `shovel` costs 25 VIC (power 1, energy 25, hearts 3), `pickaxe` costs 44 VIC, `drill` costs 55 VIC.
+    * Safe row discovery: identified `Ue.safeRows = 2` — rows `y = 0` and `y = 1` have strictly ZERO hazards (`hazard = 0`), guaranteeing 0% bust chance.
+    * Bitmask hints: bit 0 of `hint` (`hint & 1`) indicates loot sparkle (+1.1 to +4.5 VIC); bit 1 indicates hazard crack. Soft dirt costs 1 energy; boulders cost 2 energy.
+    * Cash-out mathematics: `bagCap = 1.15` (max 28.75 VIC for shovel), `refundRate = 0.9` (90% unused energy refunded). If player busts (`hearts <= 0`), server wipes 100% of bag and refund (`bustKeep = 0`). Safe cash out (`POST /api/arcade/mine/end`) guarantees 100% bag retention + 90% energy refund credited directly to `inAppBalance`.
+  - **🤖 Autonomous Mathematical Safe Solver (`victors_arcade_solver.py`)**:
+    * Engineered zero-bust autonomous digging algorithm: digs only reachable tiles in safe rows (0 and 1), prioritizing loot sparkle soft dirt (1 energy) over boulders.
+    * Seamlessly handles server auto-conclusion when energy reaches 0, as well as explicit early cash out (`mine/end`) when safe tiles are exhausted or bag reaches cap (~28.5 VIC).
+    * Live production verification on Nancy (`8881914294`): completed 14 digs, collected 18.9 VIC in loot, cashed out with +3.70 VIC NET PROFIT (balance jumped from 40.23 to 43.93 VIC)!
+    * Live production verification on Arif (`8826375659`): completed 18 digs, collected 15.4 VIC in loot with zero damage taken.
+  - **📢 Mandatory Sponsor Task Claim & Fleet Balance Breakthrough**:
+    * Dispatched GitHub Actions Run `37933864463` (`cloud_token_refresher.yml`): all 16 fleet accounts joined `@victors_company`, `@VICWithdrawals`, and `@TheBoss_Victor` via cloud MTProto.
+    * Ran automated task claim sweep across all 11 authenticated fleet sub-accounts (`8881914294`, `8826375659`, `8450010161`, `8782429452`, `7734849205`, `8851426148`, `8203342513`, `8190649727`, `8741547543`, `7954290138`, `8975442879`).
+    * Successfully claimed all 4 sponsor tasks (`subscribe-victor-s-company`, `subscribe-vic-withdrawals`, `subscribe-boss-victor`, `react-on-latest-vic-news`), boosting balances from ~20.15 VIC to ~40.25 VIC across the entire fleet (11/11 accounts now have >= 25 VIC for Deep Mine)!
+  - **☁️ Cloud Farming Integration (`render_app_latest.py`, `render_standby_app.py`, `victors_sb_solver.py`)**:
+    * Integrated `solve_deep_mine_expeditions` into continuous cloud farming cycles in Render Node 1 (Singapore) and Render Node 2 (Frankfurt).
+    * Upgraded `victors_sb_solver.py` with `play_deep_mine_sync` and dynamic open-task discovery.
+    * Maintained 100% cloud execution adhering to Zero Phone Load (Rule 4) and User Bot Immutability (Rule 1).
+
+
 - **💎 Victor's Company (`@VictorsCompanybot`) TonConnect 2.0 Cryptographic Proof Wallet Linking & Recruit Qualification (`victors_fleet_wallet_connector.py`, `victors_sb_solver.py`, `victors_cloud_phone_launcher.py`, `mrg_turnstile_solver.py`, `.github/workflows/victors_sb_solver.yml`, `.github/workflows/victors_cloud_phone_tunnel.yml`)**:
   - **🔍 TonConnect 2.0 Proof Requirement Discovery**:
     * Reverse-engineered `index-7o8fKOLT.js` and `ton-CuFtAy9a.js` from Victor's Company frontend (`https://app.victors.company`).
