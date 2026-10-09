@@ -275,8 +275,8 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
     m_init = acc_info["init_data"]
 
     context = await browser.new_context(
-        user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36",
-        viewport={"width": 412, "height": 915},
+        user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+        viewport={"width": 1280, "height": 800},
         locale="en-US",
         timezone_id="UTC"
     )
@@ -363,21 +363,42 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
             ts_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
             checkbox = ts_frame.locator("input[type='checkbox'], span.mark, .ctp-checkbox-label, label")
             if await checkbox.count() > 0:
-                logger.info(f"🖱️ Found Turnstile iframe checkbox for UID {uid}! Clicking...")
-                await checkbox.first.click(timeout=3000)
-                # Wait up to 14s for Turnstile to finish and inject token into DOM or trigger app call
-                for _ in range(14):
+                logger.info(f"🖱️ Found Turnstile iframe checkbox for UID {uid}! Simulating human motion & clicking...")
+                try:
+                    box = await checkbox.first.bounding_box()
+                    if box:
+                        target_x = box["x"] + box["width"] / 2
+                        target_y = box["y"] + box["height"] / 2
+                        await page.mouse.move(target_x, target_y, steps=12)
+                        await asyncio.sleep(0.35)
+                        await page.mouse.down()
+                        await asyncio.sleep(0.15)
+                        await page.mouse.up()
+                    else:
+                        await checkbox.first.click(delay=120)
+                except Exception:
+                    await checkbox.first.click(timeout=3000)
+
+                # Wait up to 18s for Turnstile to finish and check both window.turnstile.getResponse and DOM
+                for _ in range(18):
                     if verified_event.is_set():
                         break
                     tok = await page.evaluate("""() => {
+                        try {
+                            if (window.turnstile && typeof window.turnstile.getResponse === 'function') {
+                                const resp = window.turnstile.getResponse();
+                                if (resp && resp.length > 20) return resp;
+                            }
+                        } catch (e) {}
                         const el = document.querySelector('input[name="cf-turnstile-response"]') || 
-                                   document.querySelector('input[name="turnstileToken"]');
+                                   document.querySelector('input[name="turnstileToken"]') ||
+                                   document.querySelector('[name="cf-turnstile-response"]');
                         if (el && el.value && el.value.length > 20) return el.value;
                         return null;
                     }""")
                     if tok:
                         acquired_token["token"] = tok
-                        logger.info(f"🔑 UID {uid}: Turnstile token extracted from DOM: {tok[:16]}...")
+                        logger.info(f"🔑 UID {uid}: Turnstile token extracted: {tok[:16]}...")
                         break
                     await asyncio.sleep(1.0)
                 break
@@ -512,8 +533,8 @@ def save_victors_pass_to_upstash(uid: int, human_pass: str):
 async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: bool) -> bool:
     """Solves Turnstile for Victor's Company, logs in, binds referral, and saves humanPass."""
     context = await browser.new_context(
-        user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36",
-        viewport={"width": 412, "height": 915},
+        user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+        viewport={"width": 1280, "height": 800},
         locale="en-US",
         timezone_id="UTC"
     )
@@ -561,21 +582,42 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
             ts_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
             checkbox = ts_frame.locator("input[type='checkbox'], span.mark, .ctp-checkbox-label, label")
             if await checkbox.count() > 0:
-                logger.info(f"🖱️ [Victor's] Found Turnstile iframe for UID {uid}! Clicking...")
-                await checkbox.first.click(timeout=3000)
-                # Wait up to 14s for Turnstile to finish and inject token into DOM or trigger app call
-                for _ in range(14):
+                logger.info(f"🖱️ [Victor's] Found Turnstile iframe for UID {uid}! Simulating human motion & clicking...")
+                try:
+                    box = await checkbox.first.bounding_box()
+                    if box:
+                        target_x = box["x"] + box["width"] / 2
+                        target_y = box["y"] + box["height"] / 2
+                        await page.mouse.move(target_x, target_y, steps=12)
+                        await asyncio.sleep(0.35)
+                        await page.mouse.down()
+                        await asyncio.sleep(0.15)
+                        await page.mouse.up()
+                    else:
+                        await checkbox.first.click(delay=120)
+                except Exception:
+                    await checkbox.first.click(timeout=3000)
+
+                # Wait up to 18s for Turnstile to finish and check both window.turnstile.getResponse and DOM
+                for _ in range(18):
                     if acquired_token["token"]:
                         break
                     tok = await page.evaluate("""() => {
+                        try {
+                            if (window.turnstile && typeof window.turnstile.getResponse === 'function') {
+                                const resp = window.turnstile.getResponse();
+                                if (resp && resp.length > 20) return resp;
+                            }
+                        } catch (e) {}
                         const el = document.querySelector('input[name="cf-turnstile-response"]') || 
-                                   document.querySelector('input[name="turnstileToken"]');
+                                   document.querySelector('input[name="turnstileToken"]') ||
+                                   document.querySelector('[name="cf-turnstile-response"]');
                         if (el && el.value && el.value.length > 20) return el.value;
                         return null;
                     }""")
                     if tok:
                         acquired_token["token"] = tok
-                        logger.info(f"🔑 [Victor's] UID {uid}: Turnstile token extracted from DOM: {tok[:16]}...")
+                        logger.info(f"🔑 [Victor's] UID {uid}: Turnstile token extracted: {tok[:16]}...")
                         break
                     await asyncio.sleep(1.0)
                 break
@@ -808,8 +850,8 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
 
     user_id = boot_data.get("user", {}).get("id") or ""
     context = await browser.new_context(
-        user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36",
-        viewport={"width": 412, "height": 915},
+        user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+        viewport={"width": 1280, "height": 800},
         locale="en-US",
         timezone_id="UTC"
     )
@@ -858,8 +900,44 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
             ts_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
             checkbox = ts_frame.locator("input[type='checkbox'], span.mark, .ctp-checkbox-label, label")
             if await checkbox.count() > 0:
-                logger.info(f"🖱️ [VyroDrop] Found Turnstile iframe for UID {uid}! Clicking...")
-                await checkbox.first.click(timeout=3000)
+                logger.info(f"🖱️ [VyroDrop] Found Turnstile iframe for UID {uid}! Simulating human motion & clicking...")
+                try:
+                    box = await checkbox.first.bounding_box()
+                    if box:
+                        target_x = box["x"] + box["width"] / 2
+                        target_y = box["y"] + box["height"] / 2
+                        await page.mouse.move(target_x, target_y, steps=12)
+                        await asyncio.sleep(0.35)
+                        await page.mouse.down()
+                        await asyncio.sleep(0.15)
+                        await page.mouse.up()
+                    else:
+                        await checkbox.first.click(delay=120)
+                except Exception:
+                    await checkbox.first.click(timeout=3000)
+
+                # Wait up to 18s for Turnstile to finish and check both window.turnstile.getResponse and DOM
+                for _ in range(18):
+                    if acquired_token["token"]:
+                        break
+                    tok = await page.evaluate("""() => {
+                        try {
+                            if (window.turnstile && typeof window.turnstile.getResponse === 'function') {
+                                const resp = window.turnstile.getResponse();
+                                if (resp && resp.length > 20) return resp;
+                            }
+                        } catch (e) {}
+                        const el = document.querySelector('input[name="cf-turnstile-response"]') || 
+                                   document.querySelector('input[name="turnstileToken"]') ||
+                                   document.querySelector('[name="cf-turnstile-response"]');
+                        if (el && el.value && el.value.length > 20) return el.value;
+                        return null;
+                    }""")
+                    if tok:
+                        acquired_token["token"] = tok
+                        logger.info(f"🔑 [VyroDrop] UID {uid}: Turnstile token extracted: {tok[:16]}...")
+                        break
+                    await asyncio.sleep(1.0)
                 break
         except Exception:
             pass
