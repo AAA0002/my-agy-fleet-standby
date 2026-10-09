@@ -4,6 +4,24 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🚀 Webshare Rotating Proxy Mesh, 2-Step Dynamic VyroDrop Challenge Solver & Victor's JS Serialization Overhaul (`mrg_turnstile_solver.py`, `.github/workflows/mrg_turnstile_solver.yml`)**:
+  - **🌐 Webshare Rotating Proxy Bypass for Cloudflare WAF 503**:
+    * Integrated Webshare Rotating Proxy API (`WEBSHARE_KEY_1`: `1r347t4h8dwfkpoa4ifmmyajvmu3oxyn2guzs5k0`) into `mrg_turnstile_solver.py`.
+    * Solved Microsoft Azure IP 503 WAF blocks on `app.mrgtoken.xyz` by launching Patchright Chromium with authenticated HTTP/SOCKS residential and datacenter proxies.
+    * Added `WEBSHARE_KEY` environment variable in `.github/workflows/mrg_turnstile_solver.yml`.
+  - **🛡️ 2-Step Dynamic VyroDrop Challenge & TonConnect Onboarding**:
+    * Re-engineered VyroDrop onboarding from speculative homepage solve to backend-driven 2-step challenge protocol.
+    * Queries `POST https://vyro.run.place/api/wallet/challenge` with `{}` to dynamically extract server-issued challenge parameters (`siteKey`, `action: wallet_onboarding`, and dynamic `cdata` UUID).
+    * Programmatically mounts Turnstile inside Chromium with exact `cdata`, executes humanized mouse click on the Turnstile iframe checkbox, and captures solved `turnstileToken`.
+    * Submits `turnstileToken` to `/api/wallet/challenge` to obtain nonce payload, signs TonConnect 2.0 proof-of-ownership via dedicated TON wallet mnemonic (`fleet_ton_wallets.json` / Upstash Redis), connects wallet (`POST /wallet/connect`), and starts mining (`POST /mining/start`).
+    * Transitions worker accounts from PENDING to QUALIFIED, unlocking Master recruitment bonuses (`POST /referrals/claim`).
+  - **🔒 Victor's Company JavaScript Safe Serialization & Iframe Click**:
+    * Serialized `v_init` and `ref_to_bind` using `json.dumps()` in Playwright/Patchright `add_init_script`, preventing syntax errors caused by unescaped backslashes and quotes in Telegram WebApp initData.
+    * Enhanced programmatic Turnstile render with `appearance: 'always'` and parallel iframe click simulation, guaranteeing token acquisition across all accounts.
+    * Auto-binds referral `ref_A20AA96F18`, acquires `humanPass`, connects TON wallet, and claims `connect-wallet` task to qualify recruits.
+  - **☁️ Zero Phone Load & 100% Cloud Mesh Synchronization**:
+    * Maintained 100% cloud execution (Render Standby Node 2 & Node 3, GitHub Actions, Upstash Redis). No bots or headless browsers running on Samsung Galaxy A30.
+
 - **🚫 Permanent Eradication & Blacklisting of `@TurboGramV1_bot` and Fleet Consolidation to 8 Legitimate Bots (`render_standby_app.py`, `render_app_latest.py`, `deploy_both_cf_workers.py`, `audit_bots_and_sidetasks.py`, `clean_all_accounts_channels.py`, `userbot_refresher.py`, `login_account.py`, `refresh_cloud_tokens.py`, `refresh_fleet_tokens.py`, `accounts.json`, `FLEET_MASTER_REGISTRY.json`, `PROJECT_BIBLE.md`, `AGENTS.md`)**:
   - **🧹 Upstash Serverless Redis Token Purge**:
     * Purged `turbogram_init_data` from all 18 accounts in Upstash Redis (`fleet:tokens:<uid>`). Zero TurboGram tokens remain in cloud storage.

@@ -74,6 +74,39 @@ def load_fleet_ton_wallets() -> dict:
         logger.warning(f"Error fetching ton wallets from Upstash Redis: {e}")
     return {}
 
+
+def get_webshare_proxy() -> dict | None:
+    """
+    Fetches an active high-speed proxy from Webshare to bypass Cloudflare WAF
+    datacenter blocks in GitHub Actions and cloud runner environments.
+    """
+    webshare_keys = [
+        os.getenv("WEBSHARE_KEY") or "1r347t4h8dwfkpoa4ifmmyajvmu3oxyn2guzs5k0",
+        "e9lkjm26eqqah0s5zg26lk8tuiuxr9deznbp0aql"
+    ]
+    for key in webshare_keys:
+        if not key:
+            continue
+        try:
+            req = urllib.request.Request(
+                "https://proxy.webshare.io/api/v2/proxy/list/?mode=direct&page=1&page_size=5",
+                headers={"Authorization": f"Token {key}"}
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode())
+                results = data.get("results", [])
+                for p in results:
+                    if p.get("valid", True):
+                        return {
+                            "server": f"http://{p['proxy_address']}:{p['port']}",
+                            "username": p.get("username", "Arif2743"),
+                            "password": p.get("password", "Arif2743")
+                        }
+        except Exception as e:
+            logger.warning(f"Webshare proxy fetch warning: {e}")
+    return None
+
+
 FLEET_UIDS = [
     6727787768,  # Master (Arif Hossain)
     8881914294,  # Nancy
@@ -285,14 +318,18 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
 
     page = await context.new_page()
 
-    encoded_init = urllib.parse.quote(m_init)
-    target_url = f"{APP_ORIGIN}/#tgWebAppData={encoded_init}"
+    if "%7B" in m_init or "%22" in m_init:
+        target_url = f"{APP_ORIGIN}/#tgWebAppData={m_init}"
+    else:
+        target_url = f"{APP_ORIGIN}/#tgWebAppData={urllib.parse.quote(m_init)}"
+
+    json_m_init = json.dumps(m_init)
 
     await page.add_init_script(f"""
         Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
 
         const mockWebApp = {{
-            initData: '{m_init}',
+            initData: {json_m_init},
             initDataUnsafe: {{ user: {{ id: {uid} }} }},
             version: '8.0',
             platform: 'android',
@@ -309,17 +346,21 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
             sendData: () => {{}}
         }};
         let _tg = {{ WebApp: mockWebApp }};
-        Object.defineProperty(window, 'Telegram', {{
-            configurable: true,
-            get: () => _tg,
-            set: (v) => {{
-                if (v && v.WebApp) {{
-                    Object.assign(v.WebApp, mockWebApp);
-                    v.WebApp.initData = mockWebApp.initData;
+        try {{
+            Object.defineProperty(window, 'Telegram', {{
+                configurable: true,
+                enumerable: true,
+                get: () => _tg,
+                set: (v) => {{
+                    _tg = v || {{}};
+                    if (!_tg.WebApp) {{
+                        _tg.WebApp = mockWebApp;
+                    }} else {{
+                        _tg.WebApp.initData = {json_m_init};
+                    }}
                 }}
-                _tg = v;
-            }}
-        }});
+            }});
+        }} catch(e) {{}}
 
         window.__mrgTurnstileToken = null;
         let _ts = undefined;
@@ -490,7 +531,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                     window.turnstile.render(container, {{
                         sitekey: '{SITE_KEY}',
                         theme: 'light',
-                        appearance: 'interaction-only',
+                        appearance: 'always',
                         callback: function(tok) {{
                             window.__mrgTurnstileToken = tok;
                             resolve({{ success: true, token: tok }});
@@ -502,12 +543,29 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                 }} catch (e) {{
                     resolve({{ success: false, error: String(e) }});
                 }}
-                setTimeout(() => resolve({{ success: false, error: 'timeout_12s' }}), 12000);
+                setTimeout(() => resolve({{ success: false, error: 'timeout_15s' }}), 15000);
             }});
         }}
     """
     try:
-        render_res = await page.evaluate(solve_js)
+        solve_task = asyncio.create_task(page.evaluate(solve_js))
+        for _ in range(6):
+            ts_iframe = page.locator("#cf-manual-slot iframe, iframe[src*='challenges.cloudflare.com']").first
+            if await ts_iframe.count() > 0:
+                box = await ts_iframe.bounding_box()
+                if box and box["width"] > 0 and box["height"] > 0:
+                    click_x = box["x"] + min(32.0, box["width"] / 3)
+                    click_y = box["y"] + box["height"] / 2
+                    logger.info(f"🖱️ Clicking MRG programmatic Turnstile iframe at ({click_x:.1f}, {click_y:.1f})...")
+                    await page.mouse.move(click_x, click_y, steps=8)
+                    await asyncio.sleep(0.15)
+                    await page.mouse.down()
+                    await asyncio.sleep(0.1)
+                    await page.mouse.up()
+                    break
+            await asyncio.sleep(0.5)
+
+        render_res = await asyncio.wait_for(solve_task, timeout=16.0)
         if render_res and render_res.get("success") and render_res.get("token"):
             tok = render_res["token"]
             logger.info(f"✅ UID {uid}: Programmatic MRG token acquired: {tok[:16]}...")
@@ -569,19 +627,24 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
         timezone_id="UTC"
     )
     page = await context.new_page()
-    encoded_init = urllib.parse.quote(v_init)
-    target_url = f"{VICTORS_ORIGIN}/#tgWebAppData={encoded_init}"
+    
+    if "%7B" in v_init or "%22" in v_init:
+        target_url = f"{VICTORS_ORIGIN}/#tgWebAppData={v_init}"
+    else:
+        target_url = f"{VICTORS_ORIGIN}/#tgWebAppData={urllib.parse.quote(v_init)}"
 
     ref_to_bind = "" if is_master else VICTORS_REF
+    json_v_init = json.dumps(v_init)
+    json_ref_to_bind = json.dumps(ref_to_bind)
 
     await page.add_init_script(f"""
         Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
 
         // 1. Hook Telegram WebApp object
         const mockWebApp = {{
-            initData: '{v_init}',
+            initData: {json_v_init},
             initDataUnsafe: {{
-                start_param: '{ref_to_bind}',
+                start_param: {json_ref_to_bind},
                 user: {{ id: {uid} }}
             }},
             version: '8.0',
@@ -599,51 +662,61 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
             sendData: () => {{}}
         }};
         let _tg = {{ WebApp: mockWebApp }};
-        Object.defineProperty(window, 'Telegram', {{
-            configurable: true,
-            get: () => _tg,
-            set: (v) => {{
-                if (v && v.WebApp) {{
-                    Object.assign(v.WebApp, mockWebApp);
-                    v.WebApp.initData = mockWebApp.initData;
-                    v.WebApp.initDataUnsafe = mockWebApp.initDataUnsafe;
+        try {{
+            Object.defineProperty(window, 'Telegram', {{
+                configurable: true,
+                enumerable: true,
+                get: () => _tg,
+                set: (v) => {{
+                    _tg = v || {{}};
+                    if (!_tg.WebApp) {{
+                        _tg.WebApp = mockWebApp;
+                    }} else {{
+                        _tg.WebApp.initData = {json_v_init};
+                        _tg.WebApp.initDataUnsafe = {{
+                            start_param: {json_ref_to_bind},
+                            user: {{ id: {uid} }}
+                        }};
+                    }}
                 }}
-                _tg = v;
-            }}
-        }});
+            }});
+        }} catch(e) {{}}
 
         // 2. Hook window.turnstile globally to intercept render callback
         window.__victorsTurnstileToken = null;
         window.__victorsHumanPass = null;
         window.__victorsTurnstileError = null;
         let _ts = undefined;
-        Object.defineProperty(window, 'turnstile', {{
-            configurable: true,
-            get: () => _ts,
-            set: (val) => {{
-                _ts = val;
-                if (val && typeof val.render === 'function' && !val.__hooked) {{
-                    val.__hooked = true;
-                    const origRender = val.render.bind(val);
-                    val.render = function(container, params) {{
-                        console.log('[CF-HOOK] turnstile.render called! action=' + (params.action || 'none'));
-                        const origCb = params.callback;
-                        params.callback = function(tok) {{
-                            console.log('[CF-HOOK] Turnstile token acquired: ' + tok.substring(0, 16) + '...');
-                            window.__victorsTurnstileToken = tok;
-                            if (typeof origCb === 'function') origCb(tok);
+        try {{
+            Object.defineProperty(window, 'turnstile', {{
+                configurable: true,
+                enumerable: true,
+                get: () => _ts,
+                set: (val) => {{
+                    _ts = val;
+                    if (val && typeof val.render === 'function' && !val.__hooked) {{
+                        val.__hooked = true;
+                        const origRender = val.render.bind(val);
+                        val.render = function(container, params) {{
+                            console.log('[CF-HOOK] turnstile.render called! action=' + (params.action || 'none'));
+                            const origCb = params.callback;
+                            params.callback = function(tok) {{
+                                console.log('[CF-HOOK] Turnstile token acquired: ' + tok.substring(0, 16) + '...');
+                                window.__victorsTurnstileToken = tok;
+                                if (typeof origCb === 'function') origCb(tok);
+                            }};
+                            const origErr = params['error-callback'];
+                            params['error-callback'] = function(err) {{
+                                console.error('[CF-HOOK] Turnstile error: ' + err);
+                                window.__victorsTurnstileError = String(err);
+                                if (typeof origErr === 'function') origErr(err);
+                            }};
+                            return origRender(container, params);
                         }};
-                        const origErr = params['error-callback'];
-                        params['error-callback'] = function(err) {{
-                            console.error('[CF-HOOK] Turnstile error: ' + err);
-                            window.__victorsTurnstileError = String(err);
-                            if (typeof origErr === 'function') origErr(err);
-                        }};
-                        return origRender(container, params);
-                    }};
+                    }}
                 }}
-            }}
-        }});
+            }});
+        }} catch(e) {{}}
 
         // 3. Hook fetch to intercept /auth/login payload & response directly
         const origFetch = window.fetch;
@@ -706,10 +779,10 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                     click_x = box["x"] + min(32.0, box["width"] / 3)
                     click_y = box["y"] + box["height"] / 2
                     logger.info(f"🖱️ [Victor's] Found Turnstile iframe for UID {uid}! Humanized click at ({click_x:.1f}, {click_y:.1f})...")
-                    await page.mouse.move(click_x, click_y, steps=10)
-                    await asyncio.sleep(0.2)
+                    await page.mouse.move(click_x, click_y, steps=8)
+                    await asyncio.sleep(0.15)
                     await page.mouse.down()
-                    await asyncio.sleep(0.12)
+                    await asyncio.sleep(0.1)
                     await page.mouse.up()
                 else:
                     ts_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
@@ -759,7 +832,7 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                             sitekey: '{VICTORS_SITEKEY}',
                             action: 'login',
                             theme: 'light',
-                            appearance: 'interaction-only',
+                            appearance: 'always',
                             callback: function(tok) {{
                                 window.__victorsTurnstileToken = tok;
                                 resolve({{ success: true, token: tok }});
@@ -771,12 +844,29 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                     }} catch (e) {{
                         resolve({{ success: false, error: String(e) }});
                     }}
-                    setTimeout(() => resolve({{ success: false, error: 'timeout_12s' }}), 12000);
+                    setTimeout(() => resolve({{ success: false, error: 'timeout_15s' }}), 15000);
                 }});
             }}
         """
         try:
-            render_res = await page.evaluate(solve_js)
+            solve_task = asyncio.create_task(page.evaluate(solve_js))
+            for _ in range(6):
+                ts_iframe = page.locator("#cf-vic-slot iframe, iframe[src*='challenges.cloudflare.com']").first
+                if await ts_iframe.count() > 0:
+                    box = await ts_iframe.bounding_box()
+                    if box and box["width"] > 0 and box["height"] > 0:
+                        click_x = box["x"] + min(32.0, box["width"] / 3)
+                        click_y = box["y"] + box["height"] / 2
+                        logger.info(f"🖱️ [Victor's] Clicking programmatic Turnstile iframe at ({click_x:.1f}, {click_y:.1f})...")
+                        await page.mouse.move(click_x, click_y, steps=8)
+                        await asyncio.sleep(0.15)
+                        await page.mouse.down()
+                        await asyncio.sleep(0.1)
+                        await page.mouse.up()
+                        break
+                await asyncio.sleep(0.5)
+
+            render_res = await asyncio.wait_for(solve_task, timeout=16.0)
             if render_res and render_res.get("success") and render_res.get("token"):
                 acquired_token = render_res["token"]
         except Exception as re:
@@ -987,215 +1077,186 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
         logger.error(f"❌ [VyroDrop] UID {uid}: No dedicated TON wallet / mnemonic found in fleet_ton_wallets.json!")
         return False
 
-    user_id = boot_data.get("user", {}).get("id") or ""
-    context = await browser.new_context(
-        user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
-        viewport={"width": 412, "height": 915},
-        is_mobile=True,
-        has_touch=True,
-        locale="en-US",
-        timezone_id="UTC"
-    )
-    page = await context.new_page()
-    encoded_init = urllib.parse.quote(vyro_init)
-    target_url = f"{VYRO_ORIGIN}/#tgWebAppData={encoded_init}"
+    # 3. Request challenge first to determine if human verification is required
+    ch_code, ch_body = safe_post(f"{VYRO_API}/wallet/challenge", {}, extra_headers=v_headers)
+    nonce = None
 
-    await page.add_init_script(f"""
-        Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
+    if ch_code in (200, 201) and isinstance(ch_body, dict) and ch_body.get("payload"):
+        nonce = ch_body["payload"]
+        logger.info(f"🔑 [VyroDrop] UID {uid}: Challenge nonce received directly: {nonce[:12]}...")
+    elif ch_code == 403 and isinstance(ch_body, dict):
+        ts_info = ch_body.get("error", {}).get("turnstile", {})
+        ts_sitekey = ts_info.get("siteKey") or VYRO_SITEKEY
+        ts_action = ts_info.get("action") or "wallet_onboarding"
+        ts_cdata = ts_info.get("cdata") or ""
+        logger.info(f"🛡️ [VyroDrop] UID {uid}: Turnstile challenge requested (siteKey={ts_sitekey}, action={ts_action}, cdata={ts_cdata[:12]}...). Solving...")
 
-        const mockWebApp = {{
-            initData: '{vyro_init}',
-            initDataUnsafe: {{ user: {{ id: {uid} }} }},
-            version: '8.0',
-            platform: 'android',
-            colorScheme: 'dark',
-            themeParams: {{}},
-            isExpanded: true,
-            viewportHeight: 915,
-            viewportStableHeight: 915,
-            ready: () => {{}},
-            expand: () => {{}},
-            close: () => {{}},
-            onEvent: () => {{}},
-            offEvent: () => {{}},
-            sendData: () => {{}}
-        }};
-        let _tg = {{ WebApp: mockWebApp }};
-        Object.defineProperty(window, 'Telegram', {{
-            configurable: true,
-            get: () => _tg,
-            set: (v) => {{
-                if (v && v.WebApp) {{
-                    Object.assign(v.WebApp, mockWebApp);
-                    v.WebApp.initData = mockWebApp.initData;
-                }}
-                _tg = v;
-            }}
-        }});
+        context = await browser.new_context(
+            user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
+            viewport={"width": 412, "height": 915},
+            is_mobile=True,
+            has_touch=True,
+            locale="en-US",
+            timezone_id="UTC"
+        )
+        page = await context.new_page()
+        
+        json_vyro_init = json.dumps(vyro_init)
+        if "%7B" in vyro_init or "%22" in vyro_init:
+            target_url = f"{VYRO_ORIGIN}/#tgWebAppData={vyro_init}"
+        else:
+            target_url = f"{VYRO_ORIGIN}/#tgWebAppData={urllib.parse.quote(vyro_init)}"
 
-        window.__vyroTurnstileToken = null;
-        let _ts = undefined;
-        Object.defineProperty(window, 'turnstile', {{
-            configurable: true,
-            get: () => _ts,
-            set: (val) => {{
-                _ts = val;
-                if (val && typeof val.render === 'function' && !val.__hooked) {{
-                    val.__hooked = true;
-                    const origRender = val.render.bind(val);
-                    val.render = function(container, params) {{
-                        console.log('[VYRO-HOOK] turnstile.render called! action=' + (params.action || 'none'));
-                        const origCb = params.callback;
-                        params.callback = function(tok) {{
-                            console.log('[VYRO-HOOK] Turnstile token acquired: ' + tok.substring(0, 16) + '...');
-                            window.__vyroTurnstileToken = tok;
-                            if (typeof origCb === 'function') origCb(tok);
-                        }};
-                        return origRender(container, params);
-                    }};
-                }}
-            }}
-        }});
-
-        const origFetch = window.fetch;
-        window.fetch = async function(...args) {{
-            const url = String(args[0] || '');
-            if (url.includes('wallet/challenge')) {{
-                try {{
-                    const body = JSON.parse(args[1]?.body || '{{}}');
-                    if (body.turnstileToken) {{
-                        window.__vyroTurnstileToken = body.turnstileToken;
+        await page.add_init_script(f"""
+            Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
+            const mockWebApp = {{
+                initData: {json_vyro_init},
+                initDataUnsafe: {{ user: {{ id: {uid} }} }},
+                version: '8.0',
+                platform: 'android',
+                colorScheme: 'dark',
+                themeParams: {{}},
+                isExpanded: true,
+                viewportHeight: 915,
+                viewportStableHeight: 915,
+                ready: () => {{}},
+                expand: () => {{}},
+                close: () => {{}},
+                onEvent: () => {{}},
+                offEvent: () => {{}},
+                sendData: () => {{}}
+            }};
+            let _tg = {{ WebApp: mockWebApp }};
+            try {{
+                Object.defineProperty(window, 'Telegram', {{
+                    configurable: true,
+                    enumerable: true,
+                    get: () => _tg,
+                    set: (v) => {{
+                        _tg = v || {{}};
+                        if (!_tg.WebApp) {{
+                            _tg.WebApp = mockWebApp;
+                        }} else {{
+                            _tg.WebApp.initData = {json_vyro_init};
+                        }}
                     }}
-                }} catch(e) {{}}
-            }}
-            return await origFetch.apply(this, args);
-        }};
-    """)
+                }});
+            }} catch(e) {{}}
+            window.__vyroTurnstileToken = null;
+        """)
 
-    acquired_token = {"token": None}
-
-    async def handle_request(request):
         try:
-            if "wallet/challenge" in request.url:
-                post_data = request.post_data_json
-                if post_data and post_data.get("turnstileToken"):
-                    acquired_token["token"] = post_data["turnstileToken"]
-        except Exception:
-            pass
+            await page.goto(target_url, wait_until="domcontentloaded", timeout=18000)
+        except Exception as e:
+            logger.warning(f"[VyroDrop] UID {uid} navigation note: {e}")
 
-    page.on("request", handle_request)
-    page.on("console", lambda msg: logger.info(f"[Vyro Console UID {uid}] {msg.text}"))
+        await asyncio.sleep(2.0)
 
-    try:
-        await page.goto(target_url, wait_until="domcontentloaded", timeout=18000)
-    except Exception as e:
-        logger.warning(f"[VyroDrop] UID {uid} navigation note: {e}")
-
-    await asyncio.sleep(2.5)
-
-    # 1. Passive / auto-solve check
-    for _ in range(8):
-        tok = await page.evaluate("() => window.__vyroTurnstileToken || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null")
-        if tok and len(tok) > 20:
-            acquired_token["token"] = tok
-            break
-        await asyncio.sleep(1.0)
-
-    # 2. Check for native Turnstile iframe and simulate click
-    if not acquired_token["token"]:
-        try:
-            ts_iframe = page.locator("iframe[src*='challenges.cloudflare.com']").first
-            if await ts_iframe.count() > 0:
-                box = await ts_iframe.bounding_box()
-                if box and box["width"] > 0 and box["height"] > 0:
-                    click_x = box["x"] + min(32.0, box["width"] / 3)
-                    click_y = box["y"] + box["height"] / 2
-                    logger.info(f"🖱️ [VyroDrop] Found Turnstile iframe for UID {uid}! Humanized click at ({click_x:.1f}, {click_y:.1f})...")
-                    await page.mouse.move(click_x, click_y, steps=10)
-                    await asyncio.sleep(0.2)
-                    await page.mouse.down()
-                    await asyncio.sleep(0.12)
-                    await page.mouse.up()
-                else:
-                    ts_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
-                    click_target = ts_frame.locator("#challenge-stage, .ctp-checkbox-label, .mark").first
-                    if await click_target.count() > 0:
-                        await click_target.click(timeout=3000)
-        except Exception as ce:
-            logger.warning(f"[VyroDrop] UID {uid} iframe click note: {ce}")
-
-        for _ in range(15):
-            tok = await page.evaluate("() => window.__vyroTurnstileToken || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null")
-            if tok and len(tok) > 20:
-                acquired_token["token"] = tok
-                break
-            await asyncio.sleep(1.0)
-
-    # 3. Fallback: programmatic render of Turnstile for Vyro
-    if not acquired_token["token"]:
         solve_js = f"""
             async () => {{
                 return new Promise((resolve) => {{
                     if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
-                        return resolve({{ success: false, error: 'no_turnstile' }});
-                    }}
-                    try {{
-                        let container = document.getElementById('cf-vyro-slot');
-                        if (!container) {{
-                            container = document.createElement('div');
-                            container.id = 'cf-vyro-slot';
-                            container.style.position = 'fixed';
-                            container.style.top = '50%';
-                            container.style.left = '50%';
-                            container.style.transform = 'translate(-50%, -50%)';
-                            container.style.width = '300px';
-                            container.style.height = '65px';
-                            container.style.zIndex = '9999999';
-                            container.style.background = '#18181b';
-                            document.body.appendChild(container);
-                        }}
-                        window.turnstile.render(container, {{
-                            sitekey: '{VYRO_SITEKEY}',
-                            action: 'wallet_onboarding',
-                            cdata: '{user_id}',
-                            theme: 'light',
-                            appearance: 'interaction-only',
-                            callback: function(tok) {{
-                                window.__vyroTurnstileToken = tok;
-                                resolve({{ success: true, token: tok }});
-                            }},
-                            'error-callback': function(err) {{
-                                resolve({{ success: false, error: String(err) }});
+                        const s = document.createElement('script');
+                        s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                        s.async = true;
+                        s.defer = true;
+                        document.head.appendChild(s);
+                        let checkCount = 0;
+                        const waitInterval = setInterval(() => {{
+                            checkCount++;
+                            if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                                clearInterval(waitInterval);
+                                doRender();
+                            }} else if (checkCount > 50) {{
+                                clearInterval(waitInterval);
+                                resolve({{ success: false, error: 'turnstile_load_timeout' }});
                             }}
-                        }});
-                    }} catch (e) {{
-                        resolve({{ success: false, error: String(e) }});
+                        }}, 150);
+                    }} else {{
+                        doRender();
                     }}
-                    setTimeout(() => resolve({{ success: false, error: 'Turnstile timeout' }}), 12000);
+
+                    function doRender() {{
+                        try {{
+                            let container = document.getElementById('cf-vyro-slot');
+                            if (!container) {{
+                                container = document.createElement('div');
+                                container.id = 'cf-vyro-slot';
+                                container.style.position = 'fixed';
+                                container.style.top = '50%';
+                                container.style.left = '50%';
+                                container.style.transform = 'translate(-50%, -50%)';
+                                container.style.width = '300px';
+                                container.style.height = '65px';
+                                container.style.zIndex = '9999999';
+                                container.style.background = '#18181b';
+                                document.body.appendChild(container);
+                            }}
+                            window.turnstile.render(container, {{
+                                sitekey: '{ts_sitekey}',
+                                action: '{ts_action}',
+                                cdata: '{ts_cdata}',
+                                theme: 'light',
+                                appearance: 'always',
+                                callback: function(tok) {{
+                                    window.__vyroTurnstileToken = tok;
+                                    resolve({{ success: true, token: tok }});
+                                }},
+                                'error-callback': function(err) {{
+                                    resolve({{ success: false, error: String(err) }});
+                                }}
+                            }});
+                        }} catch (e) {{
+                            resolve({{ success: false, error: String(e) }});
+                        }}
+                    }}
+                    setTimeout(() => resolve({{ success: false, error: 'timeout_15s' }}), 15000);
                 }});
             }}
         """
+
         try:
-            res = await page.evaluate(solve_js)
-            if res and res.get("success") and res.get("token"):
-                acquired_token["token"] = res["token"]
-        except Exception as e:
-            logger.warning(f"[VyroDrop] UID {uid} manual solve error: {e}")
+            solve_task = asyncio.create_task(page.evaluate(solve_js))
+            for _ in range(8):
+                try:
+                    ts_iframe = page.locator("#cf-vyro-slot iframe, iframe[src*='challenges.cloudflare.com']").first
+                    if await ts_iframe.count() > 0:
+                        box = await ts_iframe.bounding_box()
+                        if box and box["width"] > 0 and box["height"] > 0:
+                            click_x = box["x"] + min(32.0, box["width"] / 3)
+                            click_y = box["y"] + box["height"] / 2
+                            logger.info(f"🖱️ [VyroDrop] Click Turnstile iframe for UID {uid} at ({click_x:.1f}, {click_y:.1f})...")
+                            await page.mouse.move(click_x, click_y, steps=8)
+                            await asyncio.sleep(0.15)
+                            await page.mouse.down()
+                            await asyncio.sleep(0.1)
+                            await page.mouse.up()
+                            break
+                except Exception:
+                    pass
+                await asyncio.sleep(0.5)
 
-    await context.close()
+            render_res = await asyncio.wait_for(solve_task, timeout=16.0)
+            if render_res and render_res.get("success") and render_res.get("token"):
+                tok = render_res["token"]
+                logger.info(f"✅ [VyroDrop] UID {uid}: Turnstile solved: {tok[:16]}...")
+                ch_code2, ch_body2 = safe_post(f"{VYRO_API}/wallet/challenge", {"turnstileToken": tok}, extra_headers=v_headers)
+                if ch_code2 in (200, 201) and isinstance(ch_body2, dict) and ch_body2.get("payload"):
+                    nonce = ch_body2["payload"]
+                    logger.info(f"🔑 [VyroDrop] UID {uid}: Nonce received via solved challenge: {nonce[:12]}...")
+                else:
+                    logger.error(f"❌ [VyroDrop] UID {uid}: Challenge submit failed: {ch_code2} {ch_body2}")
+        except Exception as se:
+            logger.warning(f"[VyroDrop] UID {uid} solve note: {se}")
 
-    # 3. Submit challenge to get nonce payload
-    challenge_payload = {}
-    if acquired_token["token"]:
-        challenge_payload["turnstileToken"] = acquired_token["token"]
-
-    ch_code, ch_body = safe_post(f"{VYRO_API}/wallet/challenge", challenge_payload, extra_headers=v_headers)
-    if ch_code not in (200, 201) or not isinstance(ch_body, dict) or not ch_body.get("payload"):
-        logger.error(f"❌ [VyroDrop] UID {uid}: Challenge rejected: {ch_code} {ch_body}")
+        await context.close()
+    else:
+        logger.error(f"❌ [VyroDrop] UID {uid}: Unexpected challenge response: {ch_code} {ch_body}")
         return False
 
-    nonce = ch_body["payload"]
-    logger.info(f"🔑 [VyroDrop] UID {uid}: Challenge nonce received: {nonce[:12]}...")
+    if not nonce:
+        logger.error(f"❌ [VyroDrop] UID {uid}: Could not acquire challenge nonce.")
+        return False
 
     # 4. Sign TonConnect 2.0 proof
     try:
@@ -1322,17 +1383,23 @@ async def run_mrg_auto_solver():
         headless_flag = False if is_xvfb else True
         logger.info(f"🖥️ Launching Chromium (headless={headless_flag}, DISPLAY={os.getenv('DISPLAY')}, CI={os.getenv('CI')})...")
 
+        ws_proxy = get_webshare_proxy()
+        launch_kwargs = {
+            "headless": headless_flag,
+            "args": [
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-blink-features=AutomationControlled",
+                "--window-size=1280,800"
+            ]
+        }
+        if ws_proxy:
+            logger.info(f"🌐 Routing browser through Webshare proxy: {ws_proxy['server']}")
+            launch_kwargs["proxy"] = ws_proxy
+
         async with async_playwright() as p:
-            browser = await p.chromium.launch(
-                headless=headless_flag,
-                args=[
-                    "--no-sandbox",
-                    "--disable-setuid-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--disable-blink-features=AutomationControlled",
-                    "--window-size=1280,800"
-                ]
-            )
+            browser = await p.chromium.launch(**launch_kwargs)
 
             # A. Solve MRG passes
             for acc in accounts_needing_solver:
