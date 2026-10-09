@@ -210,22 +210,6 @@ async def fetch_tokens_for_account(acc: dict, index: int, total: int) -> dict:
         except Exception as e:
             print(f"    ⚠️ FINVORA note: {e}")
 
-        # 7. TurboGram V1 (@TurboGramV1_bot)
-        try:
-            bot_tb = await client.get_entity("TurboGramV1_bot")
-            res_tb = await client(functions.messages.RequestWebViewRequest(
-                peer=bot_tb,
-                bot=bot_tb,
-                platform="android",
-                url=f"https://turbo.tamimdev.dev/?ref={REFERRALS['turbogram']}",
-                start_param=REFERRALS['turbogram'] if uid != PRIMARY_ID else None
-            ))
-            tb_init = extract_web_app_data(res_tb.url)
-            if tb_init:
-                account_tokens["turbogram_init_data"] = tb_init
-                print("    ✅ TurboGram V1 token OK")
-        except Exception as e:
-            print(f"    ⚠️ TurboGram note: {e}")
 
     finally:
         try:

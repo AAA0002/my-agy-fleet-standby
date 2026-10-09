@@ -171,7 +171,7 @@ BTC_BOT = "BitcoinCloudMinersBot"
 TENSOR_BOT = "TensorMiningRobot"
 TONTRADER_BOT = "TonTraderAIBot"
 FINVORA_BOT = "FINVORAWeb3bot"
-TURBOGRAM_BOT = "TurboGramV1_bot"
+# TURBOGRAM_BOT purged & blacklisted
 
 BNB_REFERRAL_CODE = "Bot46893407"
 BNB_REFERRAL_URL = "https://t.me/CryptoProUpRobot?start=Bot46893407"
@@ -187,7 +187,6 @@ BTC_REFERRAL_CODE = "6727787768"
 TENSOR_REFERRAL_CODE = "6727787768"
 TONTRADER_REFERRAL_CODE = "REF_6727787768"
 FINVORA_REFERRAL_CODE = "ref_TRX6727787768"
-TURBOGRAM_REFERRAL_CODE = "r_3520c92b"
 
 BNB_WEBHOOK_FALLBACK = "https://api.bots.business/v1/bots/2985029/new-webhook?&command=%2FonWebhook&public_user_token=3d1ed3e6a9bb948436a55057c6e87b59&user_id=46893407"
 WALLET_ADDRESS = os.getenv("WALLET_ADDRESS", "0xfda4182001672b9f0f09e2118242e543e35ed5ce")
@@ -198,7 +197,7 @@ TON_PRIMARY_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
 # Binance Web3 Wallet 2 (AAA) - Dedicated for Main Account on @ainovum_bot
 BINANCE_WALLET_2_EVM = "0x017841f26d5b79cc8c5eb20c65367bb645cc2610"
 BINANCE_WALLET_2_TON = "UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH"
-MANDATORY_OFFICIAL_CHANNELS = ["stoneswithestand", "mrgminer", "mrgfun", "ailabrobotnews", "ultrawalletofficial", "finvoraweb3", "TurboGramAnnouncements", "TurboGramPayment"]
+MANDATORY_OFFICIAL_CHANNELS = ["stoneswithestand", "mrgminer", "mrgfun", "ailabrobotnews", "ultrawalletofficial", "finvoraweb3", "VictorsCompany", "vyrodrop"]
 
 # Payout Ledger & Live Fleet Balance Cache
 PAYOUTS_FILE = os.path.join(BASE_DIR, "payouts.json")
@@ -2236,7 +2235,7 @@ async def build_art_details_report(user_id: int):
     return (
         "🚫 *ART Airdrop (@ART_AIRDROP_BOT) — Banned & Eradicated*\n\n"
         "• *Status:* Permanently Blocked & Deleted\n"
-        "• *Policy:* Fleet consolidated to 7 legitimate bots (Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, TurboGram)."
+        "• *Policy:* Fleet consolidated to 8 legitimate bots (Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, Victor's Company, VyroDrop)."
     )
 
 async def build_atf_details_report(user_id: int):
@@ -4252,7 +4251,8 @@ def is_account_referrals_bound(acc: dict) -> bool:
         acc.get("ailab_referral_bound") and
         acc.get("ultrawallet_referral_bound") and
         acc.get("finvora_referral_bound") and
-        acc.get("turbogram_referral_bound")
+        acc.get("victors_referral_bound") and
+        acc.get("vyro_referral_bound")
     )
 
 async def ensure_referral_bound(acc_client, acc: dict):
@@ -4834,39 +4834,6 @@ async def ensure_referral_bound(acc_client, acc: dict):
         except Exception as e:
             logger.warning(f"[{acc_name}] FINVORA referral notice: {e}")
 
-    # 15. TurboGram V1 (@TurboGramV1_bot) - Referral: r_3520c92b
-    if not acc.get("turbogram_referral_bound") and str(acc_uid) != str(REPORT_CHAT_ID):
-        try:
-            logger.info(f"[{acc_name}] Onboarding TurboGram V1 with referral {TURBOGRAM_REFERRAL_CODE}...")
-            try:
-                await acc_client(UnblockRequest(id=TURBOGRAM_BOT))
-            except Exception:
-                pass
-            for ch in ["TurboGramAnnouncements", "TurboGramPayment"]:
-                try:
-                    await acc_client(JoinChannelRequest(ch))
-                    await asyncio.sleep(0.8)
-                except Exception:
-                    pass
-            b_tb = await acc_client.get_entity(TURBOGRAM_BOT)
-            await mute_peer(acc_client, b_tb, acc_name)
-            await acc_client.send_message(b_tb, f"/start {TURBOGRAM_REFERRAL_CODE}")
-            await asyncio.sleep(1.5)
-            try:
-                await acc_client(RequestWebViewRequest(
-                    peer=b_tb,
-                    bot=b_tb,
-                    url="https://turbo.tamimdev.dev/",
-                    platform="android",
-                    start_param=str(TURBOGRAM_REFERRAL_CODE)
-                ))
-            except Exception:
-                pass
-            acc["turbogram_referral_bound"] = True
-            await update_account_safely(acc_uid, {"turbogram_referral_bound": True})
-            logger.info(f"[{acc_name}] ✅ TurboGram V1 successfully bound to referral {TURBOGRAM_REFERRAL_CODE}!")
-        except Exception as e:
-            logger.warning(f"[{acc_name}] TurboGram referral notice: {e}")
 
 
 
@@ -4889,7 +4856,7 @@ async def self_heal_account_channels_and_bots(acc_client, acc: dict):
 
     logger.info(f"[{acc_name}] 🛡️ Running Self-Healing Channel & Bot Guard...")
     # 1. Ensure target legitimate bots are unblocked (Scammer bots blocked and excluded)
-    for b in [STONES_BOT, MRG_BOT, AILAB_BOT, ULTRAWALLET_BOT, "ATF_AIRDROP_bot", FINVORA_BOT, TURBOGRAM_BOT]:
+    for b in [STONES_BOT, MRG_BOT, AILAB_BOT, ULTRAWALLET_BOT, "ATF_AIRDROP_bot", FINVORA_BOT]:
         try:
             await acc_client(UnblockRequest(id=b))
         except Exception:
@@ -4897,7 +4864,7 @@ async def self_heal_account_channels_and_bots(acc_client, acc: dict):
 
     # 2. Verify and re-join mandatory channels if left (skipping any excluded channels)
     extra_channels = [
-        "finvoraweb3", "TurboGramAnnouncements", "TurboGramPayment"
+        "finvoraweb3"
     ]
     all_chans = list(dict.fromkeys(MANDATORY_OFFICIAL_CHANNELS + extra_channels))
     for ch in all_chans:
@@ -4944,7 +4911,7 @@ async def run_background_referral_binding(temp_cl, acc_entry: dict, chat_id: str
             ("UltraWallet", "ultrawallet_referral_bound", "@UltrawalletTrade_Bot"),
             ("ATF Miner", "atf_referral_bound", "@ATF_AIRDROP_bot"),
             ("FINVORA Web3", "finvora_referral_bound", "@FINVORAWeb3bot"),
-            ("TurboGram V1", "turbogram_referral_bound", "@TurboGramV1_bot")
+
         ]
         bound_count = sum(1 for _, flag, _ in all_7_bots if acc_entry.get(flag))
         all_bound = (bound_count == len(all_7_bots))

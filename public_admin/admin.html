@@ -656,7 +656,8 @@ function App() {
       setAiLoading(false);
       haptic("success");
     } else if (lower.includes("pool") || lower.includes("mining")) {
-      const reply = "🤖 7 Automated Cloud Mining Pools (24/7 Active):\n1. ATF Miner (Auto-Claim)\n2. Stones Miner (Arbitrum One)\n3. MRG Miner (TON Network)\n4. AI Lab Robot (BEP-20)\n5. UltraWallet (Multi-Chain)\n6. FINVORA Web3 (TON Network)\n7. TurboGram V1 (TON Network)";
+      const reply = "🤖 7 Automated Cloud Mining Pools (24/7 Active):\n1. ATF Miner (Auto-Claim)\n2. Stones Miner (Arbitrum One)\n3. MRG Miner (TON Network)\n4. AI Lab Robot (BEP-20)\n5. UltraWallet (Multi-Chain)\n6. FINVORA Web3 (TON Network)\n7. Victor's Company (TON Network)
+8. VyroDrop (TON Network)";
       setAiMessages(prev => [...prev, { sender: "ai", text: reply }]);
       setAiLoading(false);
       haptic("success");
@@ -675,7 +676,7 @@ function App() {
     } else if (lower.includes("status") || lower.includes("fleet") || lower.includes("account")) {
       const totalStones = fleet.reduce((sum, a) => sum + (a.stones_coins || 0), 0);
       const totalAtf = fleet.reduce((sum, a) => sum + (a.atf_balance || 0), 0);
-      const reply = `📊 Executive Fleet Telemetry:\n• Active Accounts: ${fleet.length || 18}/${fleet.length || 18} Online (100% Cloud-First)\n• Vault Balance: ${bnbBalance.toFixed(6)} BNB (≈ $${(bnbBalance * rates.bnb_usd).toFixed(2)})\n• Total Mined: ${totalStones.toLocaleString()} STONES • ${totalAtf.toFixed(1)} ATF\n• Active Pools (7/7): ATF, Stones, MRG, AI Lab, UltraWallet, FINVORA, TurboGram\n• 5 Edge Nodes: All Online (100% Cloud-Powered).`;
+      const reply = `📊 Executive Fleet Telemetry:\n• Active Accounts: ${fleet.length || 18}/${fleet.length || 18} Online (100% Cloud-First)\n• Vault Balance: ${bnbBalance.toFixed(6)} BNB (≈ $${(bnbBalance * rates.bnb_usd).toFixed(2)})\n• Total Mined: ${totalStones.toLocaleString()} STONES • ${totalAtf.toFixed(1)} ATF\n• Active Pools (7/7): ATF, Stones, MRG, AI Lab, UltraWallet, FINVORA, Victor's, VyroDrop\n• 5 Edge Nodes: All Online (100% Cloud-Powered).`;
       setAiMessages(prev => [...prev, { sender: "ai", text: reply }]);
       setAiLoading(false);
       haptic("success");
@@ -939,7 +940,7 @@ function App() {
             { name: "AI Lab Robot", chain: "BSC / BEP-20", status: "Auto Mining Active", icon: "🤖" },
             { name: "UltraWallet", chain: "Multi-Chain", status: "Auto-Mining 24/7", icon: "👛" },
             { name: "FINVORA Web3", chain: "TON", status: "Daily Auto-Claim", icon: "🌟" },
-            { name: "TurboGram V1", chain: "TON", status: "Mining Active", icon: "🚀" }
+            { name: "Victor's Company", chain: "TON", status: "Mining Active", icon: "🏢" }
           ].map((pool, pIdx) => React.createElement("div", {
             key: pIdx,
             className: "p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between"
@@ -1441,7 +1442,7 @@ function App() {
                   { name: "AI Lab Robot", status: "BEP-20 Active" },
                   { name: "UltraWallet", status: "Auto-Mining" },
                   { name: "FINVORA Web3", status: "Daily Auto-Claim" },
-                  { name: "TurboGram V1", status: "Mining Active" }
+                  { name: "Victor's Company", status: "Mining Active" }
                 ].map((p, pIdx) => React.createElement("div", {
                   key: pIdx,
                   className: "p-1.5 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-between"

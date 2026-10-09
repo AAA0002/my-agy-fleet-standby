@@ -77,8 +77,8 @@ PROTECTED_USERNAMES = {
     "ailabrobotnews",
     "ultrawalletofficial",
     "finvoraweb3",
-    "turbogramannouncements",
-    "turbogrampayment",
+    "VictorsCompany",
+    "vyrodrop",
 }
 
 PROTECTED_CHANNEL_IDS = {

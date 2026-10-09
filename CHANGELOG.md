@@ -4,6 +4,25 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🚫 Permanent Eradication & Blacklisting of `@TurboGramV1_bot` and Fleet Consolidation to 8 Legitimate Bots (`render_standby_app.py`, `render_app_latest.py`, `deploy_both_cf_workers.py`, `audit_bots_and_sidetasks.py`, `clean_all_accounts_channels.py`, `userbot_refresher.py`, `login_account.py`, `refresh_cloud_tokens.py`, `refresh_fleet_tokens.py`, `accounts.json`, `FLEET_MASTER_REGISTRY.json`, `PROJECT_BIBLE.md`, `AGENTS.md`)**:
+  - **🧹 Upstash Serverless Redis Token Purge**:
+    * Purged `turbogram_init_data` from all 18 accounts in Upstash Redis (`fleet:tokens:<uid>`). Zero TurboGram tokens remain in cloud storage.
+  - **🖥️ Render Standby Compute Mesh (`render_standby_app.py`, `render_app_latest.py`)**:
+    * Removed `TURBOGRAM_BOT`, `TURBOGRAM_REFERRAL_CODE`, `turbogram_init_data`, and all TurboGram farming routines (`_farm_turbogram()`, `complete_turbogram_referral()`, wallet binding).
+    * Removed TurboGram from `bot_routines`, `bots_to_query`, `channel_deps`, and `bot_map`.
+    * Removed `TurboGramAnnouncements` and `TurboGramPayment` from channels whitelist.
+    * Added `TurboGramV1_bot` to `FLEET_BANNED_SCAMMERS` so all worker accounts automatically block the bot, revoke dialog history, and leave scam channels.
+    * Pushed directly to both standby repos (`AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`), triggering automated redeployment on Render Node 2 (`dep-db47oujtqb8s73ecknpg`) and Node 3 (`dep-db47ouu0tbcc73dela2g`).
+  - **⚡ Cloudflare Edge Worker Mesh (`deploy_both_cf_workers.py`)**:
+    * Removed `farmTurboGram` from cron routines and `botRoutines`.
+    * Decommissioned `/turbogram` command with permanent deprecation notice.
+    * Fixed JavaScript template string concatenation syntax error and redeployed all 5 Cloudflare Worker nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with HTTP 200 OK.
+  - **📦 Core Registries & Tooling Cleaned**:
+    * Cleaned `audit_bots_and_sidetasks.py`, `clean_all_accounts_channels.py`, `userbot_refresher.py`, `login_account.py`, `refresh_cloud_tokens.py`, `refresh_fleet_tokens.py`.
+    * Cleaned `accounts.json`, `FLEET_MASTER_REGISTRY.json`, `My_Router_AI_bot/`, and `public_admin/`.
+    * Consolidated fleet cleanly to 8 active legitimate bots: 1. Stones Miners, 2. MRG Miner, 3. AI Lab Robot, 4. UltraWallet, 5. ATF Miner, 6. FINVORA Web3, 7. Victor's Company, 8. VyroDrop.
+  - **🛡️ 100% Rule Compliance**: Rule 1 (User Bot `@AAAPREMIUMAPPSbot` untouched), Rule 4 (Zero Phone Load - 100% cloud execution), Rule 5 (Continuous disaster recovery backup to `@myagyai`).
+
 - **🛡️ Victor's Company Turnstile & HumanPass Solver Overhaul, Mobile Stealth Context & Fleet-Wide Referral Qualification Pipeline (`mrg_turnstile_solver.py`, `render_standby_app.py`, `render_app_latest.py`, `deploy_both_cf_workers.py`, `audit_bots_and_sidetasks.py`)**:
   - **✨ Victor's Company Stealth Mobile Turnstile Engine**:
     * Resolved Turnstile solver failure (`Victor's Solved 0/16`) by upgrading context from desktop Linux to mobile Android Chrome (`SM-S928B`, `viewport: 412x915`, `is_mobile=True`, `has_touch=True`).

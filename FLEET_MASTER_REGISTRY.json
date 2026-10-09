@@ -224,21 +224,77 @@
     }
   },
   "active_mining_bots": [
-    { "name": "Stones Miners", "bot": "stoneswithestand_bot", "policy": "Farming, task claiming, and daily check-in" },
-    { "name": "MRG Miner", "bot": "mrgminerbot", "policy": "Mining claims, task reaction claims, hash rate upgrades" },
-    { "name": "AI Lab Robot", "bot": "AiLab_robot", "policy": "Accumulation mode; automated task claims and daily check-ins" },
-    { "name": "UltraWallet", "bot": "UltrawalletTrade_Bot", "policy": "Daily streak claim, 10/h mining cycle" },
-    { "name": "ATF Miner", "bot": "ATF_AIRDROP_bot", "policy": "FARMING AND ACCUMULATION ONLY - NO WITHDRAWALS" },
-    { "name": "FINVORA Web3", "bot": "FINVORAWeb3bot", "policy": "Daily mining claim, instant bonus activation" },
-    { "name": "TurboGram V1", "bot": "TurboGramV1_bot", "policy": "Mining streak, automated profile & wallet sync" }
+    {
+      "name": "Stones Miners",
+      "bot": "stoneswithestand_bot",
+      "policy": "Farming, task claiming, and daily check-in"
+    },
+    {
+      "name": "MRG Miner",
+      "bot": "mrgminerbot",
+      "policy": "Mining claims, task reaction claims, hash rate upgrades"
+    },
+    {
+      "name": "AI Lab Robot",
+      "bot": "AiLab_robot",
+      "policy": "Accumulation mode; automated task claims and daily check-ins"
+    },
+    {
+      "name": "UltraWallet",
+      "bot": "UltrawalletTrade_Bot",
+      "policy": "Daily streak claim, 10/h mining cycle"
+    },
+    {
+      "name": "ATF Miner",
+      "bot": "ATF_AIRDROP_bot",
+      "policy": "FARMING AND ACCUMULATION ONLY - NO WITHDRAWALS"
+    },
+    {
+      "name": "FINVORA Web3",
+      "bot": "FINVORAWeb3bot",
+      "policy": "Daily mining claim, instant bonus activation"
+    },
+    {
+      "name": "TurboGram V1",
+      "bot": "TurboGramV1_bot",
+      "policy": "Mining streak, automated profile & wallet sync"
+    }
   ],
   "cron_job_org_jobs": [
-    { "id": 8484430, "title": "Ari AI Agent Keep-Alive (Render)", "interval": "Every 10 min" },
-    { "id": 8472437, "title": "Render Node 1 (Singapore) Keep-Alive", "interval": "Every 10 min" },
-    { "id": 8472438, "title": "Render Node 2 (Frankfurt) Keep-Alive", "interval": "Every 10 min" },
-    { "id": 8472440, "title": "Cloudflare Edge 3x Mesh Sentinel & Health", "interval": "Every 15 min" },
-    { "id": 8472538, "title": "Deno Deploy Edge Sentinel Keep-Alive", "interval": "Every 10 min" },
-    { "id": 8472711, "title": "Vercel Edge Cloud Node Keep-Alive", "interval": "Every 10 min" },
-    { "id": 8472441, "title": "Autonomous 6h Session Link Collector", "interval": "Every 6 hours" }
+    {
+      "id": 8484430,
+      "title": "Ari AI Agent Keep-Alive (Render)",
+      "interval": "Every 10 min"
+    },
+    {
+      "id": 8472437,
+      "title": "Render Node 1 (Singapore) Keep-Alive",
+      "interval": "Every 10 min"
+    },
+    {
+      "id": 8472438,
+      "title": "Render Node 2 (Frankfurt) Keep-Alive",
+      "interval": "Every 10 min"
+    },
+    {
+      "id": 8472440,
+      "title": "Cloudflare Edge 3x Mesh Sentinel & Health",
+      "interval": "Every 15 min"
+    },
+    {
+      "id": 8472538,
+      "title": "Deno Deploy Edge Sentinel Keep-Alive",
+      "interval": "Every 10 min"
+    },
+    {
+      "id": 8472711,
+      "title": "Vercel Edge Cloud Node Keep-Alive",
+      "interval": "Every 10 min"
+    },
+    {
+      "id": 8472441,
+      "title": "Autonomous 6h Session Link Collector",
+      "interval": "Every 6 hours"
+    }
   ]
 }

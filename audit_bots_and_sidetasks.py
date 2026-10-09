@@ -309,37 +309,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                 b_rep["error"] = str(e)
             report["bots"]["6. FINVORA Web3"] = b_rep
 
-        # 7. TurboGram V1
-        tb_init = tokens.get("turbogram_init_data")
-        if tb_init:
-            tb_h = {**headers, "Authorization": f"tma {tb_init}"}
-            b_rep = {"core": {}, "side_tasks": []}
-            try:
-                # Core: Balance & User State
-                async with session.get("https://turbo.tamimdev.dev/api/me", headers=tb_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    if r.status == 200:
-                        med = await r.json()
-                        w_addr = med.get("walletAddress")
-                        b_rep["core"]["balance"] = f"{med.get('balance', 0):.2f} GRAM (Tasks: {med.get('tasksCompleted', 0)})"
-                        if w_addr:
-                            b_rep["side_tasks"].append(f"TON Wallet: Bound ({w_addr[:8]}...) ✅")
-
-                # Side Task: Task Discovery & Completion
-                async with session.get("https://turbo.tamimdev.dev/api/tasks", headers=tb_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    if r.status == 200:
-                        tasks = await r.json()
-                        completed = len([t for t in tasks if t.get("isCompleted")])
-                        b_rep["side_tasks"].append(f"Partner Tasks: {completed}/{len(tasks)} Completed (100% Active) ✅")
-
-                # Side Task: TON Wallet Binding if not bound
-                target_ton = (acc_info.get("ton_wallet") or {}).get("address")
-                if target_ton:
-                    b_rep["side_tasks"].append(f"TON Wallet Synced: {target_ton[:8]}... ✅")
-            except Exception as e:
-                b_rep["error"] = str(e)
-            report["bots"]["7. TurboGram V1"] = b_rep
-
-        # 8. Victor's Company
+        # 7. Victor's Company
         vic_init = tokens.get("victors_init_data")
         if vic_init:
             v_h = {
@@ -383,9 +353,9 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
 
             except Exception as e:
                 b_rep["error"] = str(e)
-            report["bots"]["8. Victor's Company"] = b_rep
+            report["bots"]["7. Victor's Company"] = b_rep
 
-        # 9. VyroDrop
+        # 8. VyroDrop
         vyro_init = tokens.get("vyro_init_data")
         if vyro_init:
             import uuid
@@ -419,7 +389,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                         b_rep["side_tasks"].append(f"Tasks: {len(tasks)} available")
             except Exception as e:
                 b_rep["error"] = str(e)
-            report["bots"]["9. VyroDrop"] = b_rep
+            report["bots"]["8. VyroDrop"] = b_rep
 
     return report
 

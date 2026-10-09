@@ -58,8 +58,7 @@ ATF_REFERRAL_CODE = "6727787768"
 FINVORA_BOT = "FINVORAWeb3bot"
 FINVORA_REFERRAL_CODE = "ref_TRX6727787768"
 
-TURBOGRAM_BOT = "TurboGramV1_bot"
-TURBOGRAM_REFERRAL_CODE = "r_3520c92b"
+# TurboGram purged
 
 VICTORS_BOT = "VictorsCompanybot"
 VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
@@ -500,41 +499,6 @@ async def bind_referrals(client, me, acc_entry):
     except Exception as e:
         print(f"  ❌ Warning binding FINVORA referral: {e}")
 
-    # 7. TurboGram V1 (@TurboGramV1_bot) - Referral: r_3520c92b
-    print(f"  • [7/7] Connecting to @{TURBOGRAM_BOT} with referral: {TURBOGRAM_REFERRAL_CODE}...")
-    try:
-        try:
-            await client(UnblockRequest(id=TURBOGRAM_BOT))
-        except Exception:
-            pass
-        await join_tg_target(client, "TurboGramAnnouncements", acc_name)
-        await join_tg_target(client, "TurboGramPayment", acc_name)
-        b_tb = await client.get_entity(TURBOGRAM_BOT)
-        await mute_peer(client, b_tb, "TurboGramV1_bot")
-        await client.send_message(b_tb, f"/start {TURBOGRAM_REFERRAL_CODE}")
-        await asyncio.sleep(1.5)
-        try:
-            res_tb = await client(RequestWebViewRequest(
-                peer=b_tb,
-                bot=b_tb,
-                url="https://turbo.tamimdev.dev/",
-                platform="android",
-                start_param=str(TURBOGRAM_REFERRAL_CODE)
-            ))
-            p_tb = urllib.parse.urlparse(getattr(res_tb, 'url', None) or "")
-            tb_init = urllib.parse.parse_qs(p_tb.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_tb.query).get("tgWebAppData", [None])[0]
-            if tb_init:
-                tb_h = {"Authorization": f"tma {tb_init}", "Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F)"}
-                async with aiohttp.ClientSession() as tb_s:
-                    await tb_s.get("https://turbo.tamimdev.dev/api/me", headers=tb_h, timeout=aiohttp.ClientTimeout(total=8))
-                    if ton_wallet:
-                        await tb_s.post("https://turbo.tamimdev.dev/api/me/wallet", json={"address": ton_wallet}, headers=tb_h, timeout=aiohttp.ClientTimeout(total=8))
-        except Exception:
-            pass
-        acc_entry["turbogram_referral_bound"] = True
-        print(f"  ✅ [7/9] Successfully bound to TurboGram V1 ({TURBOGRAM_REFERRAL_CODE})!")
-    except Exception as e:
-        print(f"  ❌ Warning binding TurboGram referral: {e}")
 
     # 8. Victor's Company (@VictorsCompanybot) - Referral: ref_A20AA96F18
     print(f"  • [8/9] Connecting to @{VICTORS_BOT} with referral: {VICTORS_REFERRAL_CODE}...")
@@ -607,7 +571,7 @@ async def bind_referrals(client, me, acc_entry):
         "stones_referral_bound", "mrg_referral_bound",
         "ailab_referral_bound", "ultrawallet_referral_bound",
         "atf_referral_bound", "finvora_referral_bound",
-        "turbogram_referral_bound", "victors_referral_bound",
+        "victors_referral_bound",
         "vyro_referral_bound"
     ]
     bound_count = sum(1 for k in all_9_keys if acc_entry.get(k))

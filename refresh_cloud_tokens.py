@@ -53,7 +53,6 @@ AILAB_BOT = "AiLab_robot"
 ULTRAWALLET_BOT = "UltrawalletTrade_Bot"
 ATF_BOT = "ATF_AIRDROP_bot"
 FINVORA_BOT = "FINVORAWeb3bot"
-TURBOGRAM_BOT = "TurboGramV1_bot"
 VICTORS_BOT = "VictorsCompanybot"
 VYRO_BOT = "vyrodrop_bot"
 
@@ -63,13 +62,11 @@ AILAB_REF = "296852"
 ULTRAWALLET_REF = "6727787768"
 ATF_REF = "6727787768"
 FINVORA_REF = "ref_TRX6727787768"
-TURBOGRAM_REF = "r_3520c92b"
 VICTORS_REF = "ref_A20AA96F18"
 VYRO_REF = "ref_myFjrqqE4WN_"
 
 MANDATORY_SPONSOR_CHANNELS = [
     "finvoraweb3",
-    "TurboGramAnnouncements",
     "stoneswithestand",
     "mrgminer", "mrgwithdrawal", "DurovKidney",
     "ailabrobotnews",
@@ -364,12 +361,6 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
             tokens["finvora_init_data"] = tok
             print(f"  🌐 FINVORA Web3: Collected")
 
-        # 7. TurboGram V1
-        turb_p = None if is_master else TURBOGRAM_REF
-        tok = await extract_bot_webapp_token(cl, TURBOGRAM_BOT, start_param=turb_p, default_url="https://turbo.tamimdev.dev/", candidate_short_names=["app", "miniapp", "bot", "turbo"])
-        if tok:
-            tokens["turbogram_init_data"] = tok
-            print(f"  🚀 TurboGram V1: Collected")
 
         # 8. Victor's Company
         vic_p = None if is_master else VICTORS_REF
