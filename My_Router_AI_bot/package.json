@@ -1,0 +1,9 @@
+{
+  "name": "My_Router_AI_bot",
+  "private": true,
+  "scripts": {
+    "deploy": "tgcloud push",
+    "status": "tgcloud status",
+    "run": "tgcloud run"
+  }
+}
