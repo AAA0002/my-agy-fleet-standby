@@ -10,7 +10,7 @@ Guarantees:
 2. Pure Python bit-exact cryptographic derivations (Zero C compilation required).
 3. Immediate atomic persistence into accounts.json, fleet_*_wallets.json,
    FLEET_WALLETS_SECRETS_MASTER_VAULT.txt, and Upstash Redis.
-4. Autonomous bot wallet binding across Stones, MRG, ATF, AI Lab, Ainovum, UltraWallet.
+4. Autonomous bot wallet binding across MRG, ATF, Victor's Company, VyroDrop.
 =============================================================================
 """
 
@@ -336,20 +336,20 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
     target_ton = (acc_entry.get("ton_wallet") or {}).get("address")
     target_evm = (acc_entry.get("evm_wallet") or {}).get("address")
     
-    # 1. Stones Miner EVM Binding
-    if tokens.get("stones_init_data") and target_evm:
+    # 1. Victor's Company TON Binding
+    if tokens.get("victors_init_data") and target_ton:
         try:
-            s_init = tokens["stones_init_data"]
-            s_headers = {"Content-Type": "application/json", "Origin": "https://app.stoneswithestand.my.id"}
+            v_init = tokens["victors_init_data"]
+            v_headers = {"Content-Type": "application/json", "Authorization": f"tma {v_init}", "Origin": "https://app.victors.company"}
             await http_session.post(
-                "https://app.stoneswithestand.my.id/api/wallet",
-                json={"initData": s_init, "wallet": target_evm},
-                headers=s_headers,
+                "https://server.victors.company/api/wallet/connect",
+                json={"address": target_ton},
+                headers=v_headers,
                 timeout=aiohttp.ClientTimeout(total=8) if hasattr(aiohttp, "ClientTimeout") else 8
             )
-            logger.info(f"[{name}] 💎 Bound Stones Miner EVM wallet: {target_evm[:12]}...")
-        except Exception as se:
-            logger.debug(f"[{name}] Stones wallet bind note: {se}")
+            logger.info(f"[{name}] 💎 Bound Victor's Company TON wallet: {target_ton[:12]}...")
+        except Exception as ve:
+            logger.debug(f"[{name}] Victor's wallet bind note: {ve}")
 
     # 2. MRG Miner TON Binding
     if tokens.get("mrg_init_data") and target_ton:

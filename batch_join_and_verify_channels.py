@@ -15,13 +15,11 @@ API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")
 ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
 
 CHANNELS = [
-    "stoneswithestand",
     "mrgminer",
     "mrgfun",
-    "ultrawalletofficial",
-    "finvoraweb3",
-    "TurboGramAnnouncements",
-    "TurboGramPayment"
+    "VictorsCompany",
+    "vyrodrop",
+    "atfminers"
 ]
 
 def main():
@@ -55,55 +53,7 @@ def main():
                     print(f"  Note @{ch}: {e}")
                 time.sleep(1.2)
 
-            # 2. Stones Miners: WebApp auth + task verify
-            try:
-                bot_stones = client.get_entity("stoneswithestand_bot")
-                res_s = client(RequestWebViewRequest(
-                    peer=bot_stones,
-                    bot=bot_stones,
-                    platform="android",
-                    url="https://app.stoneswithestand.my.id/"
-                ))
-                parsed_s = urllib.parse.urlparse(res_s.url)
-                init_data_s = urllib.parse.parse_qs(parsed_s.fragment).get("tgWebAppData", [None])[0]
-
-                if init_data_s:
-                    hdrs = {"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}
-                    base_s = "https://app.stoneswithestand.my.id"
-
-                    # Start & verify join_channel
-                    req_start = urllib.request.Request(
-                        base_s + "/api/task/start",
-                        data=json.dumps({"initData": init_data_s, "slug": "join_channel"}).encode(),
-                        headers=hdrs
-                    )
-                    urllib.request.urlopen(req_start, timeout=10)
-                    time.sleep(2.5)
-
-                    req_v = urllib.request.Request(
-                        base_s + "/api/task/verify",
-                        data=json.dumps({"initData": init_data_s, "slug": "join_channel"}).encode(),
-                        headers=hdrs
-                    )
-                    with urllib.request.urlopen(req_v, timeout=10) as resp_v:
-                        vd = json.loads(resp_v.read())
-                        print(f"  💎 [Stones] Channel verified: {vd.get('ok')} (+{vd.get('reward')} STONES)")
-
-                    # Daily checkin
-                    try:
-                        req_c = urllib.request.Request(
-                            base_s + "/api/task/complete",
-                            data=json.dumps({"initData": init_data_s, "slug": "daily_checkin"}).encode(),
-                            headers=hdrs
-                        )
-                        urllib.request.urlopen(req_c, timeout=10)
-                    except:
-                        pass
-            except Exception as se:
-                print(f"  ⚠️ Stones error for {name}: {se}")
-
-
-            # 4. MRG Miner: Claim Telegram Channel task
+            # 2. MRG Miner: Claim Telegram Channel task
             try:
                 bot_mrg = client.get_input_entity("mrgminerbot")
                 res_m = client(RequestAppWebViewRequest(

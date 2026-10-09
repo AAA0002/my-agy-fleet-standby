@@ -103,7 +103,7 @@ jobs:
               print("⚠️ Warning: fleet_evm_wallets.json could not be restored. Audit may be incomplete.")
           EOF
 
-      - name: Trigger Cloudflare Edge Autonomous Cashouts (AI Lab & Stones)
+      - name: Trigger Cloudflare Edge Autonomous Fleet Sweeps
         env:
           CF_SECRET_KEY: "agy_cf_secret_7d36994e_2026"
         run: |

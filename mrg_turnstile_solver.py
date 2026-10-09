@@ -601,7 +601,7 @@ def save_mrg_pass_to_upstash(uid: int, turnstile_token: str):
         logger.warning(f"Error saving MRG pass to Redis for UID {uid}: {e}")
 
 
-def solve_turnstile_via_api(sitekey: str, page_url: str, action: str = "login") -> str | None:
+def solve_turnstile_via_api(sitekey: str, page_url: str, action: str = "login", cdata: str = None) -> str | None:
     """
     Solves Cloudflare Turnstile using CapSolver or 2Captcha REST APIs if credentials are provided.
     Returns the Turnstile token string or None if unconfigured / failed.
@@ -609,14 +609,17 @@ def solve_turnstile_via_api(sitekey: str, page_url: str, action: str = "login") 
     if CAPSOLVER_KEY:
         try:
             logger.info(f"🧩 Solving Turnstile via CapSolver API for {page_url}...")
+            task_dict = {
+                "type": "AntiTurnstileTaskProxyLess",
+                "websiteURL": page_url,
+                "websiteKey": sitekey,
+                "action": action
+            }
+            if cdata:
+                task_dict["cdata"] = cdata
             create_payload = {
                 "clientKey": CAPSOLVER_KEY,
-                "task": {
-                    "type": "AntiTurnstileTaskProxyLess",
-                    "websiteURL": page_url,
-                    "websiteKey": sitekey,
-                    "action": action
-                }
+                "task": task_dict
             }
             req = urllib.request.Request(
                 "https://api.capsolver.com/createTask",
@@ -1206,7 +1209,17 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
         ts_cdata = ts_info.get("cdata") or ""
         logger.info(f"🛡️ [VyroDrop] UID {uid}: Turnstile challenge requested (siteKey={ts_sitekey}, action={ts_action}, cdata={ts_cdata[:12]}...). Solving...")
 
-        context = await browser.new_context(
+        # 0. Check API solver first (instant, proxy-less)
+        api_token = solve_turnstile_via_api(ts_sitekey, VYRO_ORIGIN, action=ts_action, cdata=ts_cdata)
+        if api_token:
+            logger.info(f"✅ [VyroDrop] UID {uid}: Turnstile solved via API: {api_token[:16]}...")
+            ch_code2, ch_body2 = safe_post(f"{VYRO_API}/wallet/challenge", {"turnstileToken": api_token}, extra_headers=v_headers)
+            if ch_code2 in (200, 201) and isinstance(ch_body2, dict) and ch_body2.get("payload"):
+                nonce = ch_body2["payload"]
+                logger.info(f"🔑 [VyroDrop] UID {uid}: Nonce received via API solved challenge: {nonce[:12]}...")
+
+        if not nonce:
+            context = await browser.new_context(
             user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
             viewport={"width": 412, "height": 915},
             is_mobile=True,
@@ -1364,8 +1377,9 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                     logger.error(f"❌ [VyroDrop] UID {uid}: Challenge submit failed: {ch_code2} {ch_body2}")
         except Exception as se:
             logger.warning(f"[VyroDrop] UID {uid} solve note: {se}")
-
-        await context.close()
+        finally:
+            if 'context' in locals():
+                await context.close()
     else:
         logger.error(f"❌ [VyroDrop] UID {uid}: Unexpected challenge response: {ch_code} {ch_body}")
         return False
@@ -1549,6 +1563,32 @@ async def run_mrg_auto_solver():
             for v_acc in victors_accounts:
                 v_uid = v_acc["uid"]
                 v_init = v_acc["init_data"]
+
+                # Fast pre-check: If account already has a working humanPass in Upstash Redis, test it and skip heavy browser launch!
+                cached_pass = None
+                try:
+                    c_resp = safe_get(f"{UPSTASH_URL}/get/victors:pass:{v_uid}", extra_headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
+                    if c_resp and isinstance(c_resp[1], dict) and c_resp[1].get("result"):
+                        raw_r = c_resp[1]["result"]
+                        parsed_r = json.loads(raw_r) if isinstance(raw_r, str) else raw_r
+                        cached_pass = parsed_r.get("humanPass")
+                except Exception:
+                    pass
+
+                if cached_pass:
+                    test_h = {
+                        "Authorization": f"tma {v_init}",
+                        "Origin": VICTORS_ORIGIN,
+                        "Referer": f"{VICTORS_ORIGIN}/",
+                        "x-human-pass": str(cached_pass)
+                    }
+                    t_code, t_d = safe_get(f"{VICTORS_API}/me", extra_headers=test_h)
+                    if t_code == 200 and isinstance(t_d, dict) and (t_d.get("success") is True or "state" in t_d or "user" in t_d):
+                        logger.info(f"✅ [Victor's] UID {v_uid}: Human pass already active and valid in Upstash Redis! Skipping browser solve.")
+                        safe_post(f"{VICTORS_API}/mining/claim", {}, extra_headers=test_h)
+                        victors_solved += 1
+                        continue
+
                 try:
                     v_res = await asyncio.wait_for(
                         solve_victors_turnstile(browser, v_uid, v_init, is_master=(v_uid == 6727787768)),

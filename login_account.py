@@ -39,26 +39,12 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 API_ID = os.getenv("TELEGRAM_API_ID")
 API_HASH = os.getenv("TELEGRAM_API_HASH")
 
-# All 9 Verified Legitimate Fleet Bots & Referral Codes
-STONES_BOT = "stoneswithestand_bot"
-STONES_REFERRAL_CODE = "r6727787768"
-
+# All 4 Verified Legitimate Fleet Bots & Referral Codes
 MRG_BOT = "mrgminerbot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
 
-AILAB_BOT = "AiLab_robot"
-AILAB_REFERRAL_CODE = "296852"
-
-ULTRAWALLET_BOT = "UltrawalletTrade_Bot"
-ULTRAWALLET_REFERRAL_CODE = "6727787768"
-
 ATF_BOT = "ATF_AIRDROP_bot"
 ATF_REFERRAL_CODE = "6727787768"
-
-FINVORA_BOT = "FINVORAWeb3bot"
-FINVORA_REFERRAL_CODE = "ref_TRX6727787768"
-
-# TurboGram purged
 
 VICTORS_BOT = "VictorsCompanybot"
 VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
@@ -270,49 +256,10 @@ async def bind_referrals(client, me, acc_entry):
         acc_entry["is_referral_host"] = True
         return
 
-    print(f"\n🔗 Automatically binding account to all 7 verified fleet bots with wallet isolation...")
+    print(f"\n🔗 Automatically binding account to all 4 verified fleet bots with wallet isolation...")
 
-    # 1. Stones Miners (@stoneswithestand_bot) - Referral: r6727787768
-    print(f"  • [1/7] Connecting to @{STONES_BOT} with referral: {STONES_REFERRAL_CODE}...")
-    try:
-        try:
-            await client(UnblockRequest(id=STONES_BOT))
-        except Exception:
-            pass
-        b_stones = await client.get_entity(STONES_BOT)
-        await mute_peer(client, b_stones, "stoneswithestand_bot")
-        await client.send_message(b_stones, f"/start {STONES_REFERRAL_CODE}")
-        await asyncio.sleep(1.5)
-        try:
-            await client(JoinChannelRequest("stoneswithestand"))
-        except Exception:
-            pass
-        try:
-            res_st = await client(RequestWebViewRequest(
-                peer=b_stones,
-                bot=b_stones,
-                platform="android",
-                url="https://app.stoneswithestand.my.id/"
-            ))
-            p_st = urllib.parse.urlparse(getattr(res_st, 'url', None) or "")
-            st_init = urllib.parse.parse_qs(p_st.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_st.query).get("tgWebAppData", [None])[0]
-            if st_init:
-                acc_entry["stones_init_data"] = st_init
-                st_h = {"Content-Type": "application/json", "Origin": "https://app.stoneswithestand.my.id", "Referer": "https://app.stoneswithestand.my.id/"}
-                async with aiohttp.ClientSession() as s_st:
-                    await s_st.post("https://app.stoneswithestand.my.id/api/init", json={"initData": st_init, "start_param": STONES_REFERRAL_CODE}, headers=st_h, timeout=aiohttp.ClientTimeout(total=8))
-                    if evm_wallet:
-                        await s_st.post("https://app.stoneswithestand.my.id/api/wallet", json={"initData": st_init, "wallet": evm_wallet}, headers=st_h, timeout=aiohttp.ClientTimeout(total=8))
-                    await s_st.post("https://app.stoneswithestand.my.id/api/mining/start", json={"initData": st_init}, headers=st_h, timeout=aiohttp.ClientTimeout(total=8))
-        except Exception:
-            pass
-        acc_entry["stones_referral_bound"] = True
-        print(f"  ✅ [1/7] Successfully bound to Stones Miners ({STONES_REFERRAL_CODE})!")
-    except Exception as e:
-        print(f"  ❌ Warning binding Stones Miners referral: {e}")
-
-    # 2. MRG Miner (@mrgminerbot) - Referral: ref_IRN1G3XD
-    print(f"  • [2/7] Connecting to @{MRG_BOT} with referral: {MRG_REFERRAL_CODE}...")
+    # 1. MRG Miner (@mrgminerbot) - Referral: ref_IRN1G3XD
+    print(f"  • [1/4] Connecting to @{MRG_BOT} with referral: {MRG_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=MRG_BOT))
@@ -356,76 +303,8 @@ async def bind_referrals(client, me, acc_entry):
     except Exception as e:
         print(f"  ❌ Warning binding MRG Miner referral: {e}")
 
-    # 3. AI Lab Robot (@AiLab_robot) - Referral: 296852
-    print(f"  • [3/7] Connecting to @{AILAB_BOT} with referral: {AILAB_REFERRAL_CODE}...")
-    try:
-        try:
-            await client(UnblockRequest(id=AILAB_BOT))
-        except Exception:
-            pass
-        bot_ai = await client.get_entity(AILAB_BOT)
-        await mute_peer(client, bot_ai, "AiLab_robot")
-        await client.send_message(bot_ai, f"/start {AILAB_REFERRAL_CODE}")
-        await asyncio.sleep(2.0)
-        try:
-            res_ai = await client(RequestWebViewRequest(
-                peer=bot_ai,
-                bot=bot_ai,
-                platform="android",
-                url=f"https://api.ailab-agent.online/?ref={AILAB_REFERRAL_CODE}"
-            ))
-            parsed_ai = urllib.parse.urlparse(res_ai.url)
-            init_ai = urllib.parse.parse_qs(parsed_ai.fragment).get("tgWebAppData", [None])[0]
-            if init_ai:
-                acc_entry["ailab_init_data"] = init_ai
-                async with aiohttp.ClientSession() as ai_sess:
-                    await ai_sess.post(
-                        "https://api.ailab-agent.online/api/v1/users/auth/login",
-                        json={"user": init_ai},
-                        headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (Linux; Android 14)"},
-                        timeout=aiohttp.ClientTimeout(total=8)
-                    )
-        except Exception:
-            pass
-        acc_entry["ailab_referral_bound"] = True
-        print(f"  ✅ [3/7] Successfully bound to AI Lab Robot ({AILAB_REFERRAL_CODE})!")
-    except Exception as e:
-        print(f"  ❌ Warning binding AI Lab referral: {e}")
-
-    # 4. Ultra Wallet (@UltrawalletTrade_Bot) - Referral: 6727787768
-    print(f"  • [4/7] Connecting to @{ULTRAWALLET_BOT} with referral: {ULTRAWALLET_REFERRAL_CODE}...")
-    try:
-        try:
-            await client(UnblockRequest(id=ULTRAWALLET_BOT))
-        except Exception:
-            pass
-        bot_uw = await client.get_entity(ULTRAWALLET_BOT)
-        await mute_peer(client, bot_uw, "UltrawalletTrade_Bot")
-        bot_uw_in = await client.get_input_entity(ULTRAWALLET_BOT)
-        res_uw = await client(RequestAppWebViewRequest(
-            peer=bot_uw_in,
-            app=InputBotAppShortName(bot_id=bot_uw_in, short_name="app"),
-            platform="android",
-            start_param=ULTRAWALLET_REFERRAL_CODE
-        ))
-        parsed_uw = urllib.parse.urlparse(res_uw.url)
-        init_uw = urllib.parse.parse_qs(parsed_uw.fragment).get("tgWebAppData", [None])[0]
-        if init_uw:
-            acc_entry["ultrawallet_init_data"] = init_uw
-            async with aiohttp.ClientSession() as uw_sess:
-                await uw_sess.post(
-                    "https://wallet.trxvault.top/api/telegramLogin",
-                    json={"initData": init_uw, "refBy": ULTRAWALLET_REFERRAL_CODE},
-                    headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (Linux; Android 14)"},
-                    timeout=aiohttp.ClientTimeout(total=8)
-                )
-        acc_entry["ultrawallet_referral_bound"] = True
-        print(f"  ✅ [4/7] Successfully bound to Ultra Wallet ({ULTRAWALLET_REFERRAL_CODE})!")
-    except Exception as e:
-        print(f"  ❌ Warning binding Ultra Wallet referral: {e}")
-
-    # 5. ATF Miner (@ATF_AIRDROP_bot) - Referral: 6727787768
-    print(f"  • [5/7] Connecting to @{ATF_BOT} with referral: {ATF_REFERRAL_CODE}...")
+    # 2. ATF Miner (@ATF_AIRDROP_bot) - Referral: 6727787768
+    print(f"  • [2/4] Connecting to @{ATF_BOT} with referral: {ATF_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=ATF_BOT))
@@ -459,49 +338,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["atf_referral_bound"] = True
-        print(f"  ✅ [5/7] Successfully bound to ATF Miner ({ATF_REFERRAL_CODE})!")
+        print(f"  ✅ [2/4] Successfully bound to ATF Miner ({ATF_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding ATF referral: {e}")
 
-    # 6. FINVORA Web3 (@FINVORAWeb3bot) - Referral: ref_TRX6727787768
-    print(f"  • [6/7] Connecting to @{FINVORA_BOT} with referral: {FINVORA_REFERRAL_CODE}...")
-    try:
-        try:
-            await client(UnblockRequest(id=FINVORA_BOT))
-        except Exception:
-            pass
-        await join_tg_target(client, "finvoraweb3", acc_name)
-        b_fin = await client.get_entity(FINVORA_BOT)
-        await mute_peer(client, b_fin, "FINVORAWeb3bot")
-        await client.send_message(b_fin, f"/start {FINVORA_REFERRAL_CODE}")
-        await asyncio.sleep(1.5)
-        try:
-            res_fin = await client(RequestWebViewRequest(
-                peer=b_fin,
-                bot=b_fin,
-                url="https://finvora-production.up.railway.app/",
-                platform="android",
-                start_param=str(FINVORA_REFERRAL_CODE)
-            ))
-            p_fin = urllib.parse.urlparse(getattr(res_fin, 'url', None) or "")
-            fin_init = urllib.parse.parse_qs(p_fin.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_fin.query).get("tgWebAppData", [None])[0]
-            if fin_init:
-                fin_h = {"Content-Type": "application/json", "X-Telegram-Init-Data": fin_init, "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A305F)"}
-                async with aiohttp.ClientSession() as fin_s:
-                    if ton_wallet:
-                        await fin_s.post("https://finvora-production.up.railway.app/api/wallet/connect", json={"address": ton_wallet, "walletType": "manual"}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=8))
-                    await fin_s.post("https://finvora-production.up.railway.app/api/bonus/instant", json={}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=8))
-                    await fin_s.post("https://finvora-production.up.railway.app/api/mining/claim", json={}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=8))
-        except Exception:
-            pass
-        acc_entry["finvora_referral_bound"] = True
-        print(f"  ✅ [6/7] Successfully bound to FINVORA Web3 ({FINVORA_REFERRAL_CODE})!")
-    except Exception as e:
-        print(f"  ❌ Warning binding FINVORA referral: {e}")
-
-
-    # 8. Victor's Company (@VictorsCompanybot) - Referral: ref_A20AA96F18
-    print(f"  • [8/9] Connecting to @{VICTORS_BOT} with referral: {VICTORS_REFERRAL_CODE}...")
+    # 3. Victor's Company (@VictorsCompanybot) - Referral: ref_A20AA96F18
+    print(f"  • [3/4] Connecting to @{VICTORS_BOT} with referral: {VICTORS_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=VICTORS_BOT))
@@ -529,12 +371,12 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["victors_referral_bound"] = True
-        print(f"  ✅ [8/9] Successfully bound to Victor's Company ({VICTORS_REFERRAL_CODE})!")
+        print(f"  ✅ [3/4] Successfully bound to Victor's Company ({VICTORS_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding Victor's Company referral: {e}")
 
-    # 9. VyroDrop (@vyrodrop_bot) - Referral: ref_myFjrqqE4WN_
-    print(f"  • [9/9] Connecting to @{VYRO_BOT} with referral: {VYRO_REFERRAL_CODE}...")
+    # 4. VyroDrop (@vyrodrop_bot) - Referral: ref_myFjrqqE4WN_
+    print(f"  • [4/4] Connecting to @{VYRO_BOT} with referral: {VYRO_REFERRAL_CODE}...")
     try:
         try:
             await client(UnblockRequest(id=VYRO_BOT))
@@ -562,26 +404,25 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["vyro_referral_bound"] = True
-        print(f"  ✅ [9/9] Successfully bound to VyroDrop ({VYRO_REFERRAL_CODE})!")
+        print(f"  ✅ [4/4] Successfully bound to VyroDrop ({VYRO_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding VyroDrop referral: {e}")
 
     # Audit final referral status
-    all_9_keys = [
-        "stones_referral_bound", "mrg_referral_bound",
-        "ailab_referral_bound", "ultrawallet_referral_bound",
-        "atf_referral_bound", "finvora_referral_bound",
+    all_4_keys = [
+        "mrg_referral_bound",
+        "atf_referral_bound",
         "victors_referral_bound",
         "vyro_referral_bound"
     ]
-    bound_count = sum(1 for k in all_9_keys if acc_entry.get(k))
-    if bound_count == len(all_9_keys):
-        acc_entry["all_9_referrals_bound"] = True
-        acc_entry["all_7_referrals_bound"] = True
+    bound_count = sum(1 for k in all_4_keys if acc_entry.get(k))
+    if bound_count == len(all_4_keys):
+        acc_entry["all_4_referrals_bound"] = True
+        acc_entry["all_17_referrals_bound"] = True
         acc_entry["referrals_bound"] = True
-        print(f"\n🎉 ALL 9/9 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
+        print(f"\n🎉 ALL 4/4 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
     else:
-        print(f"\n⚠️ {bound_count}/9 bots bound. Remaining will be auto-bound on next cloud cycle.")
+        print(f"\n⚠️ {bound_count}/4 bots bound. Remaining will be auto-bound on next cloud cycle.")
 
 
 

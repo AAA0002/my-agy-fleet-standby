@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 """
 batch_referral_onboard.py
-Universal 7-Bot Referral Onboarding Runner for All Worker Accounts in accounts.json.
+Universal 4-Bot Referral Onboarding Runner for All Worker Accounts in accounts.json.
 Guarantees:
 - Skips master account 6727787768
 - Connects each worker account
-- Automatically executes full 7-bot referral binding pipeline via login_account.bind_referrals:
-  1. Stones Miners (@stoneswithestand_bot) -> /start r6727787768
-  2. MRG Miner (@mrgminerbot) -> /start ref_IRN1G3XD + WebApp verify + connect TON wallet
-  3. AI Lab Robot (@AiLab_robot) -> /start 296852 + WebApp login
-  4. Ultra Wallet (@UltrawalletTrade_Bot) -> /start 6727787768 + WebApp login
-  5. ATF Miner (@ATF_AIRDROP_bot) -> /start 6727787768
-  6. FINVORA Web3 (@FINVORAWeb3bot) -> /start ref_TRX6727787768 + WebApp
-  7. TurboGram V1 (@TurboGramV1_bot) -> /start r_3520c92b + WebApp
+- Automatically executes full 4-bot referral binding pipeline via login_account.bind_referrals:
+  1. MRG Miner (@mrgminerbot) -> /start ref_IRN1G3XD + WebApp verify + connect TON wallet
+  2. ATF Miner (@ATF_AIRDROP_bot) -> /start 6727787768 + WebApp login + sync TON wallet + claim
+  3. Victor's Company (@VictorsCompanybot) -> /start ref_A20AA96F18 + WebApp login
+  4. VyroDrop (@vyrodrop_bot) -> /start ref_myFjrqqE4WN_ + WebApp bootstrap
 """
 
 import os
@@ -36,7 +33,7 @@ async def run_batch():
         accounts = json.load(f)
 
     print(f"\n============================================================")
-    print(f"🚀 Universal 7-Bot Referral Onboarding across {len(accounts)} Accounts")
+    print(f"🚀 Universal 4-Bot Referral Onboarding across {len(accounts)} Accounts")
     print(f"============================================================\n")
 
     for idx, acc in enumerate(accounts):
@@ -53,8 +50,8 @@ async def run_batch():
             print(f"[{idx+1}/{len(accounts)}] ⚠️ No session string for {name}, skipping.")
             continue
 
-        if acc.get("all_7_referrals_bound"):
-            print(f"[{idx+1}/{len(accounts)}] ✅ {name} ({phone}) is ALREADY 7/7 BOUND. Skipping.")
+        if acc.get("all_4_referrals_bound") or acc.get("all_7_referrals_bound"):
+            print(f"[{idx+1}/{len(accounts)}] ✅ {name} ({phone}) is ALREADY 4/4 BOUND. Skipping.")
             continue
 
         print(f"\n[{idx+1}/{len(accounts)}] Onboarding Worker: {name} ({phone}, ID: {uid})...")

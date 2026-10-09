@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 """
-Dedicated Onboarding Runner for the 4 newly added accounts.
-Executes the full 7-bot referral binding pipeline:
-1. Stones Miners (@stoneswithestand_bot) -> /start r6727787768
-2. Mine Rare Gram - MRG (@mrgminerbot) -> /start ref_IRN1G3XD + WebApp verify + connect TON wallet
-3. AI Lab Robot (@AiLab_robot) -> /start 296852 + WebApp login
-4. Ultra Wallet (@UltrawalletTrade_Bot) -> /start 6727787768 + telegramLogin refBy
-5. ATF Miner (@ATF_AIRDROP_bot) -> /start 6727787768
-6. FINVORA Web3 (@FINVORAWeb3bot) -> /start ref_TRX6727787768 + WebApp
-7. TurboGram V1 (@TurboGramV1_bot) -> /start r_3520c92b + WebApp
+Dedicated Onboarding Runner for newly added accounts.
+Executes the full 4-bot referral binding pipeline via login_account.bind_referrals:
+1. MRG Miner (@mrgminerbot) -> /start ref_IRN1G3XD + WebApp verify + connect TON wallet
+2. ATF Miner (@ATF_AIRDROP_bot) -> /start 6727787768 + WebApp login + sync TON wallet + claim
+3. Victor's Company (@VictorsCompanybot) -> /start ref_A20AA96F18 + WebApp login
+4. VyroDrop (@vyrodrop_bot) -> /start ref_myFjrqqE4WN_ + WebApp bootstrap
 """
 
 import asyncio

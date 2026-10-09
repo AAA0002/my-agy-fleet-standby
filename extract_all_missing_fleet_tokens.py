@@ -29,46 +29,16 @@ API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")
 
 TARGET_BOTS = [
     {
-        "key": "stones_init_data",
-        "bot": "stoneswithestand_bot",
-        "url": "https://app.stoneswithestand.my.id/",
-        "name": "Stones Miners"
-    },
-    {
         "key": "mrg_init_data",
         "bot": "mrgminerbot",
         "url": "https://app.mrgtoken.xyz/",
         "name": "MRG Miner"
     },
     {
-        "key": "ailab_init_data",
-        "bot": "AiLab_robot",
-        "url": "https://api.ailab-agent.online/",
-        "name": "AI Lab Robot"
-    },
-    {
-        "key": "ultrawallet_init_data",
-        "bot": "UltrawalletTrade_Bot",
-        "url": "https://wallet.trxvault.top/",
-        "name": "UltraWallet"
-    },
-    {
         "key": "atf_init_data",
         "bot": "ATF_AIRDROP_bot",
         "url": "https://atfminers.asloni.online/miner/index.php",
         "name": "ATF Miner"
-    },
-    {
-        "key": "finvora_init_data",
-        "bot": "FINVORAWeb3bot",
-        "url": "https://finvora-production.up.railway.app/",
-        "name": "FINVORA Web3"
-    },
-    {
-        "key": "turbogram_init_data",
-        "bot": "TurboGramV1_bot",
-        "url": "https://turbo.tamimdev.dev/",
-        "name": "TurboGram V1"
     },
     {
         "key": "victors_init_data",

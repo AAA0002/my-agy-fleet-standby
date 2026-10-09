@@ -62,7 +62,6 @@
   },
   "vault_wallets": {
     "bep20_bnb_usdt": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
-    "arbitrum_one_stones": "0xfda4182001672b9f0f09e2118242e543e35ed5ce",
     "ton_main_binance": "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT",
     "solana_main_binance": "2EKCkj6RSgMHomtTPigoVfaLa5x4RaXq9qrxv2roi5Fu",
     "btc_taproot_main_binance": "bc1peg8n6rv7lnzpdwgqqktcyxvrw7we60c780l2yh48pvqvgpj2p7gsvecjdg",
@@ -225,39 +224,24 @@
   },
   "active_mining_bots": [
     {
-      "name": "Stones Miners",
-      "bot": "stoneswithestand_bot",
-      "policy": "Farming, task claiming, and daily check-in"
-    },
-    {
       "name": "MRG Miner",
       "bot": "mrgminerbot",
-      "policy": "Mining claims, task reaction claims, hash rate upgrades"
-    },
-    {
-      "name": "AI Lab Robot",
-      "bot": "AiLab_robot",
-      "policy": "Accumulation mode; automated task claims and daily check-ins"
-    },
-    {
-      "name": "UltraWallet",
-      "bot": "UltrawalletTrade_Bot",
-      "policy": "Daily streak claim, 10/h mining cycle"
+      "policy": "Mining claims, task reaction claims, hash rate upgrades, TON wallet verification"
     },
     {
       "name": "ATF Miner",
       "bot": "ATF_AIRDROP_bot",
-      "policy": "FARMING AND ACCUMULATION ONLY - NO WITHDRAWALS"
+      "policy": "FARMING AND ACCUMULATION ONLY - NO WITHDRAWALS, auto math solver"
     },
     {
-      "name": "FINVORA Web3",
-      "bot": "FINVORAWeb3bot",
-      "policy": "Daily mining claim, instant bonus activation"
+      "name": "Victor's Company",
+      "bot": "VictorsCompanybot",
+      "policy": "GameFi continuous revenue, Cloudflare Turnstile humanPass, recruit bonus compounding"
     },
     {
-      "name": "TurboGram V1",
-      "bot": "TurboGramV1_bot",
-      "policy": "Mining streak, automated profile & wallet sync"
+      "name": "VyroDrop",
+      "bot": "vyrodrop_bot",
+      "policy": "DEX liquidity speed miner, TonConnect 2.0 signed proof, mining session cycles"
     }
   ],
   "cron_job_org_jobs": [

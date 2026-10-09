@@ -41,9 +41,9 @@ def sync_accounts():
             "data": {
                 "name": acc.get("name", ""),
                 "username": acc.get("username", ""),
-                "stones_wallet": acc.get("stones_wallet", ""),
-                "mrg_wallet": acc.get("mrg_wallet", ""),
-                "art_wallet": acc.get("art_wallet", "")
+                "ton_wallet": (acc.get("ton_wallet") or {}).get("address", "") if isinstance(acc.get("ton_wallet"), dict) else str(acc.get("ton_wallet") or ""),
+                "evm_wallet": (acc.get("evm_wallet") or {}).get("address", "") if isinstance(acc.get("evm_wallet"), dict) else str(acc.get("evm_wallet") or ""),
+                "tron_wallet": (acc.get("tron_wallet") or {}).get("address", "") if isinstance(acc.get("tron_wallet"), dict) else str(acc.get("tron_wallet") or "")
             }
         })
 

@@ -45,13 +45,10 @@ CF_SECRET = "agy_cf_secret_7d36994e_2026"
 
 # Referral codes
 REFERRALS = {
-    "stones": "r6727787768",
     "mrg": "ref_IRN1G3XD",
-    "ailab": "296852",
-    "ultrawallet": PRIMARY_ID,
     "atf": PRIMARY_ID,
-    "finvora": f"ref_TRX{PRIMARY_ID}",
-    "turbogram": "r_3520c92b"
+    "victors": "ref_A20AA96F18",
+    "vyro": "ref_myFjrqqE4WN_"
 }
 
 STATIC_BNB_WEBHOOKS = {
@@ -111,30 +108,14 @@ async def fetch_tokens_for_account(acc: dict, index: int, total: int) -> dict:
             print(f"    ❌ Unauthorized session for {name}")
             return {}
 
-        # 1. Stones Miners (@stoneswithestand_bot)
-        try:
-            bot_stones = await client.get_entity("stoneswithestand_bot")
-            res_stones = await client(functions.messages.RequestWebViewRequest(
-                peer=bot_stones,
-                bot=bot_stones,
-                platform="android",
-                url="https://app.stoneswithestand.my.id/"
-            ))
-            s_init = extract_web_app_data(res_stones.url)
-            if s_init:
-                account_tokens["stones_init_data"] = s_init
-                print("    ✅ Stones Miner token OK")
-        except Exception as e:
-            print(f"    ⚠️ Stones note: {e}")
-
-        # 2. MRG Miner (@mrgminerbot)
+        # 1. MRG Miner (@mrgminerbot)
         try:
             bot_mrg = await client.get_input_entity("mrgminerbot")
             res_mrg = await client(functions.messages.RequestAppWebViewRequest(
                 peer=bot_mrg,
                 app=InputBotAppShortName(bot_id=bot_mrg, short_name="app"),
                 platform="android",
-                start_param=REFERRALS["mrg"]
+                start_param=REFERRALS["mrg"] if uid != PRIMARY_ID else None
             ))
             m_init = extract_web_app_data(res_mrg.url)
             if m_init:
@@ -143,40 +124,7 @@ async def fetch_tokens_for_account(acc: dict, index: int, total: int) -> dict:
         except Exception as e:
             print(f"    ⚠️ MRG note: {e}")
 
-        # 3. AI Lab Robot (@AiLab_robot)
-        try:
-            bot_ai = await client.get_entity("AiLab_robot")
-            res_ai = await client(functions.messages.RequestWebViewRequest(
-                peer=bot_ai,
-                bot=bot_ai,
-                platform="android",
-                url=f"https://api.ailab-agent.online/?ref={REFERRALS['ailab']}",
-                start_param=REFERRALS['ailab'] if uid != PRIMARY_ID else None
-            ))
-            ai_init = extract_web_app_data(res_ai.url)
-            if ai_init:
-                account_tokens["ailab_init_data"] = ai_init
-                print("    ✅ AI Lab token OK")
-        except Exception as e:
-            print(f"    ⚠️ AI Lab note: {e}")
-
-        # 4. UltraWallet (@UltrawalletTrade_Bot)
-        try:
-            bot_uw = await client.get_input_entity("UltrawalletTrade_Bot")
-            res_uw = await client(functions.messages.RequestAppWebViewRequest(
-                peer=bot_uw,
-                app=InputBotAppShortName(bot_id=bot_uw, short_name="app"),
-                platform="android",
-                start_param=REFERRALS["ultrawallet"]
-            ))
-            uw_init = extract_web_app_data(res_uw.url)
-            if uw_init:
-                account_tokens["ultrawallet_init_data"] = uw_init
-                print("    ✅ UltraWallet token OK")
-        except Exception as e:
-            print(f"    ⚠️ UltraWallet note: {e}")
-
-        # 5. ATF Miner (@ATF_AIRDROP_bot)
+        # 2. ATF Miner (@ATF_AIRDROP_bot)
         try:
             bot_atf = await client.get_entity("ATF_AIRDROP_bot")
             res_atf = await client(functions.messages.RequestWebViewRequest(
@@ -193,22 +141,39 @@ async def fetch_tokens_for_account(acc: dict, index: int, total: int) -> dict:
         except Exception as e:
             print(f"    ⚠️ ATF note: {e}")
 
-        # 6. FINVORA Web3 (@FINVORAWeb3bot)
+        # 3. Victor's Company (@VictorsCompanybot)
         try:
-            bot_fin = await client.get_entity("FINVORAWeb3bot")
-            res_fin = await client(functions.messages.RequestWebViewRequest(
-                peer=bot_fin,
-                bot=bot_fin,
+            bot_vic = await client.get_entity("VictorsCompanybot")
+            bot_vic_in = await client.get_input_entity(bot_vic)
+            res_vic = await client(functions.messages.RequestAppWebViewRequest(
+                peer=bot_vic_in,
+                app=InputBotAppShortName(bot_id=bot_vic_in, short_name="app"),
                 platform="android",
-                url=f"https://finvora-production.up.railway.app/?ref={REFERRALS['finvora']}",
-                start_param=REFERRALS['finvora'] if uid != PRIMARY_ID else None
+                start_param=REFERRALS["victors"] if uid != PRIMARY_ID else None
             ))
-            fin_init = extract_web_app_data(res_fin.url)
-            if fin_init:
-                account_tokens["finvora_init_data"] = fin_init
-                print("    ✅ FINVORA Web3 token OK")
+            vic_init = extract_web_app_data(res_vic.url)
+            if vic_init:
+                account_tokens["victors_init_data"] = vic_init
+                print("    ✅ Victor's Company token OK")
         except Exception as e:
-            print(f"    ⚠️ FINVORA note: {e}")
+            print(f"    ⚠️ Victor's note: {e}")
+
+        # 4. VyroDrop (@vyrodrop_bot)
+        try:
+            bot_vy = await client.get_entity("vyrodrop_bot")
+            res_vy = await client(functions.messages.RequestWebViewRequest(
+                peer=bot_vy,
+                bot=bot_vy,
+                platform="android",
+                url="https://vyro.run.place/",
+                start_param=REFERRALS["vyro"] if uid != PRIMARY_ID else None
+            ))
+            vy_init = extract_web_app_data(res_vy.url)
+            if vy_init:
+                account_tokens["vyro_init_data"] = vy_init
+                print("    ✅ VyroDrop token OK")
+        except Exception as e:
+            print(f"    ⚠️ VyroDrop note: {e}")
 
 
     finally:
