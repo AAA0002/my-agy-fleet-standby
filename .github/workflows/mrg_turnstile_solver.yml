@@ -39,5 +39,7 @@ jobs:
           ALERT_BOT_TOKEN: "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8"
           OWNER_ID: "6727787768"
           WEBSHARE_KEY: "1r347t4h8dwfkpoa4ifmmyajvmu3oxyn2guzs5k0"
+          CAPSOLVER_KEY: ${{ secrets.CAPSOLVER_KEY }}
+          TWOCAPTCHA_KEY: ${{ secrets.TWOCAPTCHA_KEY }}
         run: |
           xvfb-run -a --server-args="-screen 0 1280x800x24" python mrg_turnstile_solver.py

@@ -4,6 +4,25 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🏢 Victor's Company (`@VictorsCompanybot`) Focused Resolution, Telemetry Truth Guard & Dual-Engine Turnstile Solver (`render_standby_app.py`, `render_app_latest.py`, `mrg_turnstile_solver.py`, `.github/workflows/mrg_turnstile_solver.yml`, `push_to_standby_repo.py`)**:
+  - **🛡️ 100% Elimination of False "Farmed" Telemetry**:
+    * Diagnosed root cause of misleading status: when `GET https://server.victors.company/api/me` returned 401 `{"success": false, "error": "Please reopen the app"}`, the fallback expression `me = (m_d.get("user") or m_d)` resulted in a non-empty dictionary, bypassing the `if not me` check and falling into the default `farmed (lvl: 1, bal: 0)` branch.
+    * Refactored `_farm_victors()` across `render_standby_app.py` and `render_app_latest.py`: now strictly checks `is_auth_ok = (m_code == 200 and m_d.get("success") is True)`. If unauthenticated, it immediately halts further requests and accurately outputs `human_pass_required (Turnstile needed)` or `auth_failed (code {m_code})`.
+  - **🧩 Dual-Engine Turnstile Solver (Instant API + Headless Patchright Stealth)**:
+    * Integrated CapSolver (`CAPSOLVER_KEY`) and 2Captcha (`TWOCAPTCHA_KEY`) REST API handlers into `mrg_turnstile_solver.py` for instant, proxy-less Cloudflare Turnstile token resolution.
+    * Added `CAPSOLVER_KEY` and `TWOCAPTCHA_KEY` secret mappings in `.github/workflows/mrg_turnstile_solver.yml`.
+    * Upgraded browser stealth engine in `solve_victors_turnstile`: cleaned `target_url` hash parameter to prevent double-encoding corruption, implemented native frame-locator checkbox targeting (`ts_frame.locator("#challenge-stage, .ctp-checkbox-label, .mark")`), and switched programmatic fallback render to `appearance: 'interaction-only'` matching Victor's official `index-BVrfE8qP.js` bundle.
+  - **💼 Recruitment & TON Wallet Qualification Pipeline**:
+    * Verified that sub-accounts in Upstash Redis submit `startParam: ref_A20AA96F18` during `POST /api/auth/login`.
+    * Sub-accounts connect their dedicated cloud TON wallet (`POST /api/wallet/connect`) and claim `connect-wallet` task (`POST /api/tasks/claim`), qualifying the recruit and unlocking Level 1 Miner (+100 V/day).
+    * Master Account (`6727787768`) sweeps recruitment hiring bonus (+100 V per qualified recruit) via `POST /api/referral/claim-bonus` and mining commissions via `POST /api/referral/claim-commission`.
+  - **🚀 Render Standby Rollout**:
+    * Deployed updated `app.py` via `push_to_standby_repo.py` to `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`.
+    * Triggered live deployments on Render Node 2 (`dep-db4bjd3l550s73b7vasg`) and Render Node 3 (`dep-db4bjdijnfac73as89ig`).
+  - **📱 Zero Phone Load & Strict Bot Isolation**:
+    * All operations executed 100% in the cloud. Samsung Galaxy A30 remains dedicated solely to pair programming CLI (Rule 4).
+    * User Bot `@AAAPREMIUMAPPSbot` completely untouched (Rule 1).
+
 - **⚡ Cloudflare Turnstile Anti-Tamper Removal, Vyro `cData` Case Fix & Render Upstash Wallet Cloud Integration (`mrg_turnstile_solver.py`, `render_standby_app.py`, `render_app_latest.py`, `push_to_standby_repo.py`)**:
   - **🛡️ Cloudflare Turnstile Anti-Tamper & Native Initialization**:
     * Diagnosed and eliminated root cause of silent Turnstile solver timeouts: removed `Object.defineProperty(window, 'turnstile')` getter/setter hooks in `mrg_turnstile_solver.py` that tripped Cloudflare Turnstile's client-side anti-tamper detection.
