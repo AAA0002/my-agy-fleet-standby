@@ -363,28 +363,6 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
         }} catch(e) {{}}
 
         window.__mrgTurnstileToken = null;
-        let _ts = undefined;
-        Object.defineProperty(window, 'turnstile', {{
-            configurable: true,
-            get: () => _ts,
-            set: (val) => {{
-                _ts = val;
-                if (val && typeof val.render === 'function' && !val.__hooked) {{
-                    val.__hooked = true;
-                    const origRender = val.render.bind(val);
-                    val.render = function(container, params) {{
-                        console.log('[MRG-HOOK] turnstile.render called! action=' + (params.action || 'none'));
-                        const origCb = params.callback;
-                        params.callback = function(tok) {{
-                            console.log('[MRG-HOOK] Turnstile token acquired: ' + tok.substring(0, 16) + '...');
-                            window.__mrgTurnstileToken = tok;
-                            if (typeof origCb === 'function') origCb(tok);
-                        }};
-                        return origRender(container, params);
-                    }};
-                }}
-            }}
-        }});
 
         const origFetch = window.fetch;
         window.fetch = async function(...args) {{
@@ -682,41 +660,9 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
             }});
         }} catch(e) {{}}
 
-        // 2. Hook window.turnstile globally to intercept render callback
+        // 2. State containers
         window.__victorsTurnstileToken = null;
         window.__victorsHumanPass = null;
-        window.__victorsTurnstileError = null;
-        let _ts = undefined;
-        try {{
-            Object.defineProperty(window, 'turnstile', {{
-                configurable: true,
-                enumerable: true,
-                get: () => _ts,
-                set: (val) => {{
-                    _ts = val;
-                    if (val && typeof val.render === 'function' && !val.__hooked) {{
-                        val.__hooked = true;
-                        const origRender = val.render.bind(val);
-                        val.render = function(container, params) {{
-                            console.log('[CF-HOOK] turnstile.render called! action=' + (params.action || 'none'));
-                            const origCb = params.callback;
-                            params.callback = function(tok) {{
-                                console.log('[CF-HOOK] Turnstile token acquired: ' + tok.substring(0, 16) + '...');
-                                window.__victorsTurnstileToken = tok;
-                                if (typeof origCb === 'function') origCb(tok);
-                            }};
-                            const origErr = params['error-callback'];
-                            params['error-callback'] = function(err) {{
-                                console.error('[CF-HOOK] Turnstile error: ' + err);
-                                window.__victorsTurnstileError = String(err);
-                                if (typeof origErr === 'function') origErr(err);
-                            }};
-                            return origRender(container, params);
-                        }};
-                    }}
-                }}
-            }});
-        }} catch(e) {{}}
 
         // 3. Hook fetch to intercept /auth/login payload & response directly
         const origFetch = window.fetch;
@@ -745,6 +691,31 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
         }};
     """)
 
+    acquired_token_dict = {"token": None}
+    acquired_pass_dict = {"pass": None}
+
+    async def handle_victors_response(response):
+        try:
+            if "/auth/login" in response.url:
+                data = await response.json()
+                hp = data.get("humanPass") or (data.get("data", {}).get("humanPass") if isinstance(data.get("data"), dict) else None)
+                if hp:
+                    logger.info(f"🎉 [Victor's] Captured humanPass from /auth/login: {str(hp)[:16]}...")
+                    acquired_pass_dict["pass"] = str(hp)
+        except Exception:
+            pass
+
+    async def handle_victors_request(request):
+        try:
+            if "/auth/login" in request.url:
+                post_data = request.post_data_json
+                if post_data and post_data.get("turnstileToken"):
+                    acquired_token_dict["token"] = post_data["turnstileToken"]
+        except Exception:
+            pass
+
+    page.on("response", handle_victors_response)
+    page.on("request", handle_victors_request)
     page.on("console", lambda msg: logger.info(f"[Victor's Console UID {uid}] {msg.text}"))
 
     try:
@@ -760,12 +731,12 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
     # Step 1: Check if Turnstile solved passively / automatically
     for _ in range(8):
         tok = await page.evaluate("() => window.__victorsTurnstileToken || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null")
-        if tok and len(tok) > 20:
-            acquired_token = tok
+        acquired_token = tok or acquired_token_dict.get("token")
+        if acquired_token and len(acquired_token) > 20:
             break
         hp = await page.evaluate("() => window.__victorsHumanPass || null")
-        if hp:
-            acquired_pass = hp
+        acquired_pass = hp or acquired_pass_dict.get("pass")
+        if acquired_pass:
             break
         await asyncio.sleep(1.0)
 
@@ -795,12 +766,12 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
         # Wait up to 15s after click for token or humanPass
         for _ in range(15):
             tok = await page.evaluate("() => window.__victorsTurnstileToken || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null")
-            if tok and len(tok) > 20:
-                acquired_token = tok
+            acquired_token = tok or acquired_token_dict.get("token")
+            if acquired_token and len(acquired_token) > 20:
                 break
             hp = await page.evaluate("() => window.__victorsHumanPass || null")
-            if hp:
-                acquired_pass = hp
+            acquired_pass = hp or acquired_pass_dict.get("pass")
+            if acquired_pass:
                 break
             await asyncio.sleep(1.0)
 
@@ -873,6 +844,9 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
             logger.warning(f"[Victor's] UID {uid} programmatic render note: {re}")
 
     await context.close()
+
+    acquired_pass = acquired_pass or acquired_pass_dict.get("pass")
+    acquired_token = acquired_token or acquired_token_dict.get("token")
 
     # Step 4: Exchange acquired Turnstile token for humanPass via POST /api/auth/login
     if not acquired_pass and acquired_token:
@@ -1103,9 +1077,9 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
         
         json_vyro_init = json.dumps(vyro_init)
         if "%7B" in vyro_init or "%22" in vyro_init:
-            target_url = f"{VYRO_ORIGIN}/#tgWebAppData={vyro_init}"
+            target_url = f"{VYRO_ORIGIN}/profile/wallet#tgWebAppData={vyro_init}"
         else:
-            target_url = f"{VYRO_ORIGIN}/#tgWebAppData={urllib.parse.quote(vyro_init)}"
+            target_url = f"{VYRO_ORIGIN}/profile/wallet#tgWebAppData={urllib.parse.quote(vyro_init)}"
 
         await page.add_init_script(f"""
             Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
@@ -1196,7 +1170,8 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                                 sitekey: '{ts_sitekey}',
                                 action: '{ts_action}',
                                 cdata: '{ts_cdata}',
-                                theme: 'light',
+                                cData: '{ts_cdata}',
+                                theme: 'dark',
                                 appearance: 'always',
                                 callback: function(tok) {{
                                     window.__vyroTurnstileToken = tok;

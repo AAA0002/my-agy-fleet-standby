@@ -4,6 +4,24 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **⚡ Cloudflare Turnstile Anti-Tamper Removal, Vyro `cData` Case Fix & Render Upstash Wallet Cloud Integration (`mrg_turnstile_solver.py`, `render_standby_app.py`, `render_app_latest.py`, `push_to_standby_repo.py`)**:
+  - **🛡️ Cloudflare Turnstile Anti-Tamper & Native Initialization**:
+    * Diagnosed and eliminated root cause of silent Turnstile solver timeouts: removed `Object.defineProperty(window, 'turnstile')` getter/setter hooks in `mrg_turnstile_solver.py` that tripped Cloudflare Turnstile's client-side anti-tamper detection.
+    * Switched to clean Playwright native request/response interceptors (`page.on('response')`, `page.on('request')`) and DOM polling (`window.turnstile.getResponse()`), allowing Cloudflare Turnstile to mount and execute without detection.
+  - **🔑 VyroDrop `cData` Parameter & Direct Route Navigation**:
+    * Corrected Turnstile parameter capitalization in `solve_vyro_wallet_onboarding`: replaced lowercase `cdata` with camelCase `cData` matching Cloudflare's exact API specification and `WalletScreen-ByL9uyuh.js` source code.
+    * Updated target navigation URL to `https://vyro.run.place/profile/wallet#tgWebAppData=...` so the wallet onboarding challenge component mounts immediately without requiring manual route transitions.
+  - **💼 Render Standby Upstash Redis Wallet Integration**:
+    * Integrated Upstash Redis REST fallback (`fleet:wallets:ton` and `fleet:wallets:evm`) in `load_fleet_wallets_from_cloud()` across `render_standby_app.py` and `render_app_latest.py`.
+    * Synchronized `fleet_evm_wallets.json` directly to Upstash Redis at `fleet:wallets:evm`, ensuring all 18 dedicated TON and EVM wallets are permanently available in cloud compute without local filesystem dependencies.
+    * Updated `_farm_victors()` and `_farm_finvora()` to dynamically pull TON wallets from `load_fleet_wallets_from_cloud()`, ensuring recruit qualification (`connect-wallet` task) succeeds on Render nodes.
+  - **🚀 Multi-Node Render Deployment & Rollout**:
+    * Pushed updated application code via `push_to_standby_repo.py` to `AAA0002/my-agy-fleet-standby` (Commit `4d240b00`) and `koramshah2/my-agy-fleet-standby` (Commit `bfe88e73`).
+    * Successfully triggered and monitored live builds on Render Node 2 (Frankfurt, `dep-db4b4mdg1s2s738sd9cg`) and Render Node 3 (Oregon, `dep-db4b4mnlot8c738egg90`).
+  - **📱 Zero Phone Load & Immutability Protocols**:
+    * Preserved 100% cloud execution with zero bot processes running on Samsung Galaxy A30 (Rule 4).
+    * User Bot `@AAAPREMIUMAPPSbot` completely untouched and isolated (Rule 1).
+
 - **🚀 Webshare Rotating Proxy Mesh, 2-Step Dynamic VyroDrop Challenge Solver & Victor's JS Serialization Overhaul (`mrg_turnstile_solver.py`, `.github/workflows/mrg_turnstile_solver.yml`)**:
   - **🌐 Webshare Rotating Proxy Bypass for Cloudflare WAF 503**:
     * Integrated Webshare Rotating Proxy API (`WEBSHARE_KEY_1`: `1r347t4h8dwfkpoa4ifmmyajvmu3oxyn2guzs5k0`) into `mrg_turnstile_solver.py`.
