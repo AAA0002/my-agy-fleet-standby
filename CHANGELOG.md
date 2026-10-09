@@ -20,6 +20,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     * Triggered mining yield accrual claims (`/api/mining/claim`).
   - **☁️ Unified Cloud Pipeline & Dependency Hardening**:
     * Integrated `create_victors_ton_proof` and miniapp fallback loading into `victors_sb_solver.py`, `victors_cloud_phone_launcher.py`, and `mrg_turnstile_solver.py`.
+    * Added Victor's official community channels (`victors_company`, `VICWithdrawals`, `TheBoss_Victor`) to `MANDATORY_SPONSOR_CHANNELS` and `CHANNEL_WHITELIST` in `refresh_cloud_tokens.py`, `render_standby_app.py`, and `render_app_latest.py`.
+    * Hardened `sweep_master_bonuses` across solvers to prevent unauthenticated 401 calls and ensure clean token checking.
+    * Upgraded `_farm_victors` across Render standby runners to extract live balances directly from `state.user.inAppBalance`.
     * Added `tonsdk` and `pynacl` dependencies to GitHub Actions workflows (`.github/workflows/victors_sb_solver.yml` and `.github/workflows/victors_cloud_phone_tunnel.yml`).
     * Maintained strict Zero Phone Load (Rule 4) and User Bot Immutability (Rule 1).
 

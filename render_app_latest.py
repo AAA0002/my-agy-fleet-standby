@@ -5131,6 +5131,9 @@ CHANNEL_WHITELIST = {
     "gramworkers",
     "finvoraweb3",
     "VictorsCompany",
+    "victors_company",
+    "VICWithdrawals",
+    "TheBoss_Victor",
     "vyrodrop",
     "atfminers"
 }
@@ -5142,7 +5145,7 @@ MANDATORY_SPONSOR_CHANNELS = [
     "mrgminer", "mrgfun", "mrgwithdrawal", "DurovKidney",
     "ailabrobotnews",
     "ultrawalletofficial",
-    "VictorsCompany",
+    "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor",
     "vyrodrop",
     "atfminers"
 ]

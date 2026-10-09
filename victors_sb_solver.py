@@ -366,12 +366,28 @@ def run_pipeline_for_account(uid: int, v_init: str, human_pass: str, is_master: 
 
 def sweep_master_bonuses(master_uid: int):
     """Sweeps recruitment hiring bonus (+100 V per qualified recruit) for Master Account."""
+    tok_dict = get_token_from_upstash(master_uid)
+    v_init = tok_dict.get("victors_init_data")
+    if not v_init:
+        miniapp_all = load_all_miniapp_tokens()
+        if str(master_uid) in miniapp_all:
+            v_init = miniapp_all[str(master_uid)].get("victors_init_data")
+
+    if not v_init:
+        logger.info(f"👑 Master UID {master_uid}: Referral link {VICTORS_REF} is active. Workers qualified in cloud; Master can claim hiring rewards (+100 VIC/recruit) in Telegram.")
+        return
+
+    hp = get_victors_pass_from_upstash(master_uid)
     headers = {
         "Content-Type": "application/json",
+        "Authorization": f"tma {v_init}",
         "Origin": VICTORS_ORIGIN,
         "Referer": f"{VICTORS_ORIGIN}/",
         "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Mobile"
     }
+    if hp:
+        headers["x-human-pass"] = str(hp)
+
     b_code, b_res = safe_post(f"{VICTORS_API}/referral/claim-bonus", {}, extra_headers=headers)
     c_code, c_res = safe_post(f"{VICTORS_API}/referral/claim-commission", {}, extra_headers=headers)
     logger.info(f"👑 Master recruitment bonus swept: {b_code} {b_res}, commissions: {c_code} {c_res}")

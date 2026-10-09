@@ -149,21 +149,45 @@ def send_tg_alert(text: str):
         logger.warning(f"Telegram notification warning: {e}")
 
 
-def get_token_from_upstash(uid: int) -> dict:
-    """Fetch tokens from Upstash Redis REST."""
+def load_all_miniapp_tokens() -> dict:
+    """Fetch miniapp_tokens master dictionary from Upstash Redis."""
     try:
         req = urllib.request.Request(
-            f"{UPSTASH_URL}/get/fleet:tokens:{uid}",
+            f"{UPSTASH_URL}/get/miniapp_tokens",
             headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=12) as resp:
             data = json.loads(resp.read().decode())
             res = data.get("result")
             if res:
                 return json.loads(res) if isinstance(res, str) else res
     except Exception as e:
-        logger.warning(f"Upstash fetch warning for UID {uid}: {e}")
+        logger.warning(f"Error fetching miniapp_tokens: {e}")
     return {}
+
+
+def get_token_from_upstash(uid: int, miniapp_cache: dict = None) -> dict:
+    """Fetch tokens from Upstash Redis REST, falling back to miniapp_tokens."""
+    res_dict = {}
+    try:
+        req = urllib.request.Request(
+            f"{UPSTASH_URL}/get/fleet:tokens:{uid}",
+            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        )
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode())
+            res = data.get("result")
+            if res:
+                res_dict = json.loads(res) if isinstance(res, str) else res
+    except Exception:
+        pass
+
+    if miniapp_cache and str(uid) in miniapp_cache:
+        m_entry = miniapp_cache[str(uid)]
+        for k, v in m_entry.items():
+            if k not in res_dict or not res_dict[k]:
+                res_dict[k] = v
+    return res_dict
 
 
 def safe_post(url: str, json_data: dict, extra_headers: dict = None) -> tuple:
@@ -1385,6 +1409,7 @@ async def run_mrg_auto_solver():
     logger.info("====================================================================")
 
     fleet_ton_wallets = load_fleet_ton_wallets()
+    miniapp_cache = load_all_miniapp_tokens()
     accounts_data = []
     accounts_needing_solver = []
     victors_accounts = []
@@ -1392,7 +1417,7 @@ async def run_mrg_auto_solver():
 
     # 1. Fetch tokens and inspect account states
     for idx, uid in enumerate(FLEET_UIDS, 1):
-        tok_dict = get_token_from_upstash(uid)
+        tok_dict = get_token_from_upstash(uid, miniapp_cache=miniapp_cache)
         mrg_init = tok_dict.get("mrg_init_data")
         vic_init = tok_dict.get("victors_init_data")
         vyro_init = tok_dict.get("vyro_init_data")

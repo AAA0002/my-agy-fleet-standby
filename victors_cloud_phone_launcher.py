@@ -382,8 +382,22 @@ def sweep_master_bonuses(master_uid: int, v_init: str = None, human_pass: str = 
         "Referer": f"{VICTORS_ORIGIN}/",
         "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Mobile"
     }
-    if v_init:
-        headers["Authorization"] = f"tma {v_init}"
+    if not v_init:
+        tok_dict = get_token_from_upstash(master_uid)
+        v_init = tok_dict.get("victors_init_data")
+        if not v_init:
+            miniapp_all = load_all_miniapp_tokens()
+            if str(master_uid) in miniapp_all:
+                v_init = miniapp_all[str(master_uid)].get("victors_init_data")
+
+    if not v_init:
+        logger.info(f"👑 Master UID {master_uid}: Referral link {VICTORS_REF} is active. Workers qualified in cloud; Master can claim hiring rewards (+100 VIC/recruit) in Telegram.")
+        return None, None
+
+    if not human_pass:
+        human_pass = get_victors_pass_from_upstash(master_uid)
+
+    headers["Authorization"] = f"tma {v_init}"
     if human_pass:
         headers["x-human-pass"] = str(human_pass)
 

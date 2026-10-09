@@ -71,7 +71,7 @@ MANDATORY_SPONSOR_CHANNELS = [
     "mrgminer", "mrgwithdrawal", "DurovKidney",
     "ailabrobotnews",
     "ultrawalletofficial",
-    "VictorsCompany",
+    "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor",
     "vyrodrop",
     "atfminers"
 ]
