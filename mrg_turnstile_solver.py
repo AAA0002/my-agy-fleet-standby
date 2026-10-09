@@ -1224,89 +1224,91 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
 
         if not nonce:
             context = await browser.new_context(
-            user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
-            viewport={"width": 412, "height": 915},
-            is_mobile=True,
-            has_touch=True,
-            locale="en-US",
-            timezone_id="UTC"
-        )
-        page = await context.new_page()
-        
-        json_vyro_init = json.dumps(vyro_init)
-        if "%7B" in vyro_init or "%22" in vyro_init:
-            target_url = f"{VYRO_ORIGIN}/profile/wallet#tgWebAppData={vyro_init}"
-        else:
-            target_url = f"{VYRO_ORIGIN}/profile/wallet#tgWebAppData={urllib.parse.quote(vyro_init)}"
+                bypass_csp=True,
+                user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
+                viewport={"width": 412, "height": 915},
+                is_mobile=True,
+                has_touch=True,
+                locale="en-US",
+                timezone_id="UTC"
+            )
+            page = await context.new_page()
+            
+            json_vyro_init = json.dumps(vyro_init)
+            if "%7B" in vyro_init or "%22" in vyro_init:
+                target_url = f"{VYRO_ORIGIN}/profile/wallet#tgWebAppData={vyro_init}"
+            else:
+                target_url = f"{VYRO_ORIGIN}/profile/wallet#tgWebAppData={urllib.parse.quote(vyro_init)}"
 
-        await page.add_init_script(f"""
-            Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
-            const mockWebApp = {{
-                initData: {json_vyro_init},
-                initDataUnsafe: {{ user: {{ id: {uid} }} }},
-                version: '8.0',
-                platform: 'android',
-                colorScheme: 'dark',
-                themeParams: {{}},
-                isExpanded: true,
-                viewportHeight: 915,
-                viewportStableHeight: 915,
-                ready: () => {{}},
-                expand: () => {{}},
-                close: () => {{}},
-                onEvent: () => {{}},
-                offEvent: () => {{}},
-                sendData: () => {{}}
-            }};
-            let _tg = {{ WebApp: mockWebApp }};
-            try {{
-                Object.defineProperty(window, 'Telegram', {{
-                    configurable: true,
-                    enumerable: true,
-                    get: () => _tg,
-                    set: (v) => {{
-                        _tg = v || {{}};
-                        if (!_tg.WebApp) {{
-                            _tg.WebApp = mockWebApp;
-                        }} else {{
-                            _tg.WebApp.initData = {json_vyro_init};
-                        }}
-                    }}
-                }});
-            }} catch(e) {{}}
-            window.__vyroTurnstileToken = null;
-        """)
-
-        try:
-            await page.goto(target_url, wait_until="domcontentloaded", timeout=18000)
-        except Exception as e:
-            logger.warning(f"[VyroDrop] UID {uid} navigation note: {e}")
-
-        await asyncio.sleep(2.0)
-
-        solve_js = f"""
-            async () => {{
-                return new Promise((resolve) => {{
-                    if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
-                        const s = document.createElement('script');
-                        s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-                        s.async = true;
-                        s.defer = true;
-                        document.head.appendChild(s);
-                        let checkCount = 0;
-                        const waitInterval = setInterval(() => {{
-                            checkCount++;
-                            if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                                clearInterval(waitInterval);
-                                doRender();
-                            }} else if (checkCount > 50) {{
-                                clearInterval(waitInterval);
-                                resolve({{ success: false, error: 'turnstile_load_timeout' }});
+            await page.add_init_script(f"""
+                Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
+                const mockWebApp = {{
+                    initData: {json_vyro_init},
+                    initDataUnsafe: {{ user: {{ id: {uid} }} }},
+                    version: '8.0',
+                    platform: 'android',
+                    colorScheme: 'dark',
+                    themeParams: {{}},
+                    isExpanded: true,
+                    viewportHeight: 915,
+                    viewportStableHeight: 915,
+                    ready: () => {{}},
+                    expand: () => {{}},
+                    close: () => {{}},
+                    onEvent: () => {{}},
+                    offEvent: () => {{}},
+                    sendData: () => {{}}
+                }};
+                let _tg = {{ WebApp: mockWebApp }};
+                try {{
+                    Object.defineProperty(window, 'Telegram', {{
+                        configurable: true,
+                        enumerable: true,
+                        get: () => _tg,
+                        set: (v) => {{
+                            _tg = v || {{}};
+                            if (!_tg.WebApp) {{
+                                _tg.WebApp = mockWebApp;
+                            }} else {{
+                                _tg.WebApp.initData = {json_vyro_init};
                             }}
-                        }}, 150);
-                    }} else {{
-                        doRender();
-                    }}
+                        }}
+                    }});
+                }} catch(e) {{}}
+                window.__vyroTurnstileToken = null;
+            """)
+
+            try:
+                await page.goto(target_url, wait_until="domcontentloaded", timeout=18000)
+            except Exception as e:
+                logger.warning(f"[VyroDrop] UID {uid} navigation note: {e}")
+
+            await asyncio.sleep(2.0)
+
+            solve_js = f"""
+                async () => {{
+                    return new Promise((resolve) => {{
+                        if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
+                            const s = document.createElement('script');
+                            s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                            s.async = true;
+                            s.defer = true;
+                            s.onload = () => {{ doRender(); }};
+                            document.head.appendChild(s);
+                            let checkCount = 0;
+                            const waitInterval = setInterval(() => {{
+                                checkCount++;
+                                if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                                    clearInterval(waitInterval);
+                                    doRender();
+                                }} else if (checkCount > 80) {{
+                                    clearInterval(waitInterval);
+                                    resolve({{ success: false, error: 'turnstile_load_timeout' }});
+                                }}
+                            }}, 100);
+                        }} else {{
+                            doRender();
+                        }}
 
                     function doRender() {{
                         try {{
