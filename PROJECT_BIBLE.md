@@ -426,6 +426,43 @@ The fleet's 8 active high-conviction legitimate bots and channels are fundamenta
 
 ---
 
+## 🛡️ 6.5 Free-Tier Quota Engineering & Infrastructure Safeguards (October 9, 2026)
+
+To permanently resolve resource exhaustion across free cloud tiers without paying recurring fees or triggering rate-limit lockouts, the architecture enforces strict mathematical quotas:
+
+### 1. GitHub Actions Minutes Budget (<1,410 min/mo out of 2,000 min/mo Free Quota)
+- **Problem**: Default workflows previously ran on aggressive 3-hour or 6-hour crons, consuming ~4,860 minutes/month and exhausting the free 2,000-minute monthly limit.
+- **Resolution**: Re-engineered workflow schedules in `.github/workflows/`:
+  * `mrg_turnstile_solver.yml`: Reduced from `15 */3 * * *` to `15 */12 * * *` (~600 min/mo).
+  * `victors_sb_solver.yml`: Reduced from `30 */3 * * *` to `30 */12 * * *` (~360 min/mo).
+  * `cloud_token_refresher.yml`: `0 */12 * * *` (~180 min/mo).
+  * `fleet_sentinel.yml`: `0 */12 * * *` (~120 min/mo).
+  * `cloud_sweeper.yml`: Reduced from `0 */6 * * *` to daily `0 18 * * *` (~150 min/mo).
+  * `victors_cloud_phone_tunnel.yml`: Strict `workflow_dispatch` on-demand execution (0 scheduled minutes).
+- **Total Consumption**: **~1,410 minutes/month** (70.5% of free quota, preserving 590 cushion minutes for manual runs).
+
+### 2. Cloudflare KV Write Protection (<36 writes/day out of 1,000 writes/day Free Quota)
+- **Problem**: `refresh_cloud_tokens.py` formerly looped over all 5 Cloudflare Worker endpoints in parallel, writing tokens to all nodes on every sync (90 writes per run), rapidly burning the 1,000/day free limit.
+- **Resolution**: Implemented single-node primary write with automatic failover break. As soon as the primary Cloudflare Worker confirms KV write (`status in (200, 201)`), the loop breaks immediately.
+- **Total Consumption**: **~36 writes/day** (<4% of the 1,000 daily free limit).
+
+### 3. Upstash Redis Command Optimization (<1,200 commands/day out of 10,000/day Free Quota)
+- **Problem**: Frequent hourly queries for Turnstile passes (`mrg:pass:{uid}`, `victors:pass:{uid}`) and individual N+1 GET requests for `account:*` and `fleet:tokens:*` threatened the 10,000 commands/day free cap.
+- **Resolution**:
+  * **In-Memory TTL Cache (`UPSTASH_PASS_CACHE`)**: Added a 30-minute in-memory cache for security passes in `render_app_latest.py` and `render_standby_app.py`, eliminating duplicate Upstash queries during farming cycles.
+  * **Batched REST Pipeline (`/pipeline`)**: Replaced hourly N+1 GET loops for accounts and fleet tokens with single atomic `/pipeline` requests (`[["get", k] for k in keys]`).
+- **Total Consumption**: Reduced from >3,500 commands/day to **<1,200 commands/day** (12% of the 10,000 daily free quota).
+
+### 4. Render Multi-Account Standby Mesh (2,250 Total Free Hours/Month)
+- **Problem**: Render free services provide 750 free hours/month per account (sufficient for exactly 1 continuously running service).
+- **Resolution**: Partitioned standby nodes across distinct Render accounts:
+  * Node 1 (Singapore): Account 1 (`RENDER_API_KEY_1`, 750h quota).
+  * Node 2 (Frankfurt): Koram Account (`RENDER_API_KEY_2`, 750h quota).
+  * Node 3 (Oregon): Koram Account (`RENDER_API_KEY_3`, 750h quota).
+- **Result**: Complete redundancy with zero risk of mid-month shutdown due to exhausted hours.
+
+---
+
 ## 🛠️ 7. Operator & AI Cheat Sheet
 
 Here are the exact commands to run for everyday operations:

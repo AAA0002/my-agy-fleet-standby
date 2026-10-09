@@ -566,7 +566,7 @@ def solve_victors_with_seleniumbase():
             try:
                 sb.uc_open(target_url)
 
-                # Inject Telegram mock object & sessionStorage
+                # 1. Inject Telegram mock object & sessionStorage
                 sb.execute_script(f"""
                     try {{
                         sessionStorage.setItem('__telegram__initParams', JSON.stringify({{
@@ -580,40 +580,80 @@ def solve_victors_with_seleniumbase():
                             tgWebAppVersion: '8.0'
                         }}));
                     }} catch(e) {{}}
+                """)
+                sb.sleep(0.5)
 
+                # 2. Refresh page so React bundle immediately detects valid Telegram WebApp session
+                sb.refresh()
+                sb.sleep(2.0)
+
+                # 3. Mount programmatic Turnstile slot with appearance: 'always'
+                sb.execute_script(f"""
                     window.__victorsTurnstileToken = null;
-                    window.Telegram = window.Telegram || {{}};
-                    const mockWebApp = {{
-                        initData: {json.dumps(v_init)},
-                        initDataUnsafe: {{
-                            start_param: {json.dumps(ref_to_bind)},
-                            user: {{ id: {uid} }}
-                        }},
-                        version: '8.0',
-                        platform: 'android',
-                        ready: () => {{}},
-                        expand: () => {{}},
-                        close: () => {{}}
-                    }};
-                    Object.defineProperty(window.Telegram, 'WebApp', {{
-                        get: () => mockWebApp,
-                        set: (v) => {{ Object.assign(mockWebApp, v); mockWebApp.initData = {json.dumps(v_init)}; }},
-                        configurable: true
-                    }});
+                    window.__victorsTurnstileError = null;
+
+                    function mountTurnstile() {{
+                        if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                            let container = document.getElementById('cf-victors-manual-slot');
+                            if (!container) {{
+                                container = document.createElement('div');
+                                container.id = 'cf-victors-manual-slot';
+                                container.style.position = 'fixed';
+                                container.style.top = '50%';
+                                container.style.left = '50%';
+                                container.style.transform = 'translate(-50%, -50%)';
+                                container.style.zIndex = '9999999';
+                                container.style.background = '#1a1147';
+                                container.style.padding = '12px';
+                                container.style.borderRadius = '10px';
+                                container.style.boxShadow = '0 0 20px rgba(0,0,0,0.8)';
+                                document.body.appendChild(container);
+                            }}
+                            try {{
+                                window.turnstile.render(container, {{
+                                    sitekey: '0x4AAAAAAFD0KRgPRFVwDvgn',
+                                    action: 'login',
+                                    theme: 'light',
+                                    appearance: 'always',
+                                    callback: function(tok) {{
+                                        window.__victorsTurnstileToken = tok;
+                                    }},
+                                    'error-callback': function(err) {{
+                                        window.__victorsTurnstileError = String(err);
+                                    }}
+                                }});
+                            }} catch(e) {{}}
+                        }}
+                    }}
+
+                    if (window.turnstile) {{
+                        mountTurnstile();
+                    }} else {{
+                        setTimeout(mountTurnstile, 1500);
+                    }}
                 """)
 
-                # Attempt Turnstile solve
+                # 4. Attempt native or GUI solve
                 sb.sleep(2.0)
                 try:
                     sb.solve_captcha()
                 except Exception:
                     pass
 
-                # Poll for Turnstile token
+                for _ in range(3):
+                    try:
+                        if sb.is_element_present("iframe[src*='challenges.cloudflare.com']"):
+                            sb.uc_gui_click_captcha()
+                            break
+                    except Exception:
+                        pass
+                    sb.sleep(0.5)
+
+                # 5. Poll for Turnstile token
                 token = None
-                for _ in range(15):
+                for _ in range(20):
                     token = sb.execute_script("""
-                        return (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || window.__victorsTurnstileToken || null;
+                        return window.__victorsTurnstileToken || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null;
                     """)
                     if token and len(token) > 20:
                         break

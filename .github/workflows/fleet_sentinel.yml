@@ -2,7 +2,8 @@ name: "MY AGY AI — Multi-Cloud 24/7 Autonomous Sentinel & Fleet Audit"
 
 on:
   schedule:
-    - cron: '0 */6 * * *'
+    # Runs every 12 hours (06:00 & 18:00 UTC) to conserve GitHub Actions free-tier minutes
+    - cron: '0 */12 * * *'
   workflow_dispatch:
 
 jobs:

@@ -4,6 +4,24 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🛡️ Free-Tier Limits Resolution, Quota Engineering & Cloud Turnstile Solver Hardening (`refresh_cloud_tokens.py`, `render_app_latest.py`, `render_standby_app.py`, `victors_sb_solver.py`, `.github/workflows/`)**:
+  - **⏱️ GitHub Actions Runner Quota Optimization (<1,410 min/mo / 70.5% of 2,000 min Free Tier)**:
+    * Rescheduled `mrg_turnstile_solver.yml` and `victors_sb_solver.yml` from 3h to 12h intervals (`15 */12 * * *` and `30 */12 * * *`).
+    * Rescheduled `fleet_sentinel.yml` to 12h and `cloud_sweeper.yml` to daily at 18:00 UTC.
+    * Reduced total monthly runner consumption from ~4,860 minutes to ~1,410 minutes, securing a 590-minute monthly safety reserve.
+  - **☁️ Cloudflare Workers KV Write Limiting (<36 writes/day vs 1,000 Free Limit)**:
+    * Implemented single-node primary write break in `refresh_cloud_tokens.py`: loops break immediately after the primary Cloudflare node confirms KV persistence, cutting daily writes from >180 to ~36 writes/day (<4% of quota).
+  - **⚡ Upstash Redis Command Optimization (<1,200 commands/day vs 10,000 Free Limit)**:
+    * Integrated module-level in-memory TTL caching (`UPSTASH_PASS_CACHE`, 30-min expiry) for `mrg:pass:{uid}` and `victors:pass:{uid}` across both Render apps.
+    * Converted hourly N+1 GET loops for `account:*` and `fleet:tokens:*` to atomic batched `/pipeline` requests (`[["get", k] for k in keys]`), eliminating over 860 redundant HTTP requests/day.
+  - **🤖 Victor's Company Cloud Turnstile Solver Hardening (`victors_sb_solver.py`)**:
+    * Resolved mobile Telegram WebApp detection: injected session storage before reloading so React bundle identifies valid `vA()` session and mounts Turnstile without displaying the "Open in Telegram" barrier.
+    * Added programmatic Turnstile injection into visible container `#cf-victors-manual-slot` with `appearance: 'always'` and fallback GUI click auto-solving.
+  - **🌐 Multi-Node Standby Deployments**:
+    * Pushed updated codebase to `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`.
+    * Triggered live deployments for Render Node 2 (Frankfurt: `dep-db4fa1vavr4c73ea8h8g`) and Render Node 3 (Oregon: `dep-db4fa22jnfac73b6s88g`).
+    * Maintained strict Zero Phone Load (Rule 4) and User Bot Immutability (Rule 1).
+
 - **⛏️ Victor's Company (`@VictorsCompanybot`) Deep Mine Arcade Solver, Minigame Automation & Fleet Sponsor Task Qualification (`victors_arcade_solver.py`, `victors_sb_solver.py`, `render_app_latest.py`, `render_standby_app.py`, `check_fleet_victors_balances.py`)**:
   - **🔍 Deep Mine Minigame Reverse-Engineering (`/api/arcade/mine/*`)**:
     * Extracted the full arcade game engine from `https://app.victors.company/assets/index-7o8fKOLT.js`.

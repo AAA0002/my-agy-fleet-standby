@@ -108,7 +108,7 @@ async def sync_tokens_to_edge_and_upstash(session: aiohttp.ClientSession, uid: s
         **tokens
     }
 
-    # 1. Cloudflare Edge Workers
+    # 1. Cloudflare Edge Workers (Sync to primary node with failover; break on success to prevent KV 1000/day write limit)
     headers = {
         "Authorization": f"Bearer {CF_SECRET_KEY}",
         "Content-Type": "application/json"
@@ -118,55 +118,20 @@ async def sync_tokens_to_edge_and_upstash(session: aiohttp.ClientSession, uid: s
             async with session.post(f"{cf_url}/api/tokens", json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
                 if r.status in (200, 201):
                     print(f"  ✅ Synced to {cf_url.split('//')[1].split('.')[0]}")
+                    break  # Primary sync succeeded! Avoid burning KV writes on secondary nodes.
         except Exception as e:
             print(f"  ⚠️ Sync note for {cf_url}: {e}")
 
-    # 2. Upstash Redis REST
+    # 2. Upstash Redis REST (Atomic single-key set)
     if UPSTASH_URL and UPSTASH_TOKEN:
         try:
-            ex_toks = {}
-            async with session.get(
-                f"{UPSTASH_URL}/get/fleet:tokens:{uid}",
-                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
-                timeout=aiohttp.ClientTimeout(total=5)
-            ) as r_ex:
-                if r_ex.status == 200:
-                    ex_d = await r_ex.json()
-                    raw_res = ex_d.get("result")
-                    if raw_res:
-                        ex_toks = json.loads(raw_res) if isinstance(raw_res, str) else raw_res
-
-            merged = {**ex_toks, **payload}
             await session.post(
                 f"{UPSTASH_URL}/set/fleet:tokens:{uid}",
-                data=json.dumps(merged),
+                data=json.dumps(payload),
                 headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
                 timeout=aiohttp.ClientTimeout(total=5)
             )
             print(f"  ✅ Synced to Upstash Redis (fleet:tokens:{uid})")
-
-            # Also update batch fleet_miniapp_tokens dictionary
-            try:
-                batch_dict = {}
-                async with session.get(
-                    f"{UPSTASH_URL}/get/fleet_miniapp_tokens",
-                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
-                    timeout=aiohttp.ClientTimeout(total=5)
-                ) as r_b:
-                    if r_b.status == 200:
-                        bd = await r_b.json()
-                        raw_b = bd.get("result")
-                        if raw_b:
-                            batch_dict = json.loads(raw_b) if isinstance(raw_b, str) else raw_b
-                batch_dict[str(uid)] = merged
-                await session.post(
-                    f"{UPSTASH_URL}/set/fleet_miniapp_tokens",
-                    data=json.dumps(batch_dict),
-                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
-                    timeout=aiohttp.ClientTimeout(total=5)
-                )
-            except Exception:
-                pass
         except Exception as ue:
             print(f"  ⚠️ Upstash sync note: {ue}")
 

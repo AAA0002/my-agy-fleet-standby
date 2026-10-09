@@ -2,7 +2,8 @@ name: "Victor's Company — 100% Cloud Turnstile Solver & Referral Pipeline"
 
 on:
   schedule:
-    - cron: '30 */3 * * *'
+    # Runs every 12 hours (04:30 & 16:30 UTC) to conserve GitHub Actions free-tier minutes while keeping human passes fresh
+    - cron: '30 */12 * * *'
   workflow_dispatch:
 
 jobs:
