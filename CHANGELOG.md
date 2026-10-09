@@ -22,6 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - **💼 Victor's TON Wallet Dynamic Lookup Fix in Render Apps**:
     * Fixed `NameError: name 'FLEET_TON_WALLETS' is not defined` in `_farm_victors()` across `render_standby_app.py` and `render_app_latest.py`.
     * Switched to dynamic TON wallet lookup from account profile and `fleet_ton_wallets.json`, allowing automated wallet linking and `connect-wallet` recruitment task claims to succeed smoothly on Render Standby Nodes.
+  - **📱 Phone Detector & Multi-Account Login Resiliency**:
+    * Added graceful fallback to regex and heuristic country detection in `phone_detector.py` when `phonenumbers` is not installed, preventing import crashes in `login_account.py` across diverse cloud and mobile environments.
   - **☁️ Zero Phone Load & 100% Cloud Mesh Synchronization**:
     * Maintained 100% cloud execution (Render Standby Node 2 & Node 3, GitHub Actions, Upstash Redis). No bots or headless browsers running on Samsung Galaxy A30.
 

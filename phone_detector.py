@@ -6,8 +6,14 @@ Supports Bangladesh local prefixes (01..., 1...), Pakistan (03...), India (98...
 as well as international numbers with or without leading '+'.
 """
 
-import phonenumbers
-from phonenumbers import geocoder
+try:
+    import phonenumbers
+    from phonenumbers import geocoder
+    HAVE_PHONENUMBERS = True
+except ImportError:
+    phonenumbers = None
+    geocoder = None
+    HAVE_PHONENUMBERS = False
 
 
 def get_country_flag(country_code_str: str) -> str:
@@ -53,28 +59,30 @@ def detect_and_normalize_phone(raw_input: str, default_region: str = "BD"):
         cleaned = "+91" + digits
     elif not cleaned.startswith("+"):
         # If digits might already contain international code (e.g. 880..., 1..., 44...)
-        try:
-            p = phonenumbers.parse("+" + digits, None)
-            if phonenumbers.is_valid_number(p):
-                cleaned = "+" + digits
-        except Exception:
-            pass
+        if HAVE_PHONENUMBERS:
+            try:
+                p = phonenumbers.parse("+" + digits, None)
+                if phonenumbers.is_valid_number(p):
+                    cleaned = "+" + digits
+            except Exception:
+                pass
 
     # Parse with phonenumbers
-    try:
-        if cleaned.startswith("+"):
-            parsed = phonenumbers.parse(cleaned, None)
-        else:
-            parsed = phonenumbers.parse(cleaned, default_region)
+    if HAVE_PHONENUMBERS:
+        try:
+            if cleaned.startswith("+"):
+                parsed = phonenumbers.parse(cleaned, None)
+            else:
+                parsed = phonenumbers.parse(cleaned, default_region)
 
-        if phonenumbers.is_valid_number(parsed):
-            region = phonenumbers.region_code_for_number(parsed) or ""
-            flag = get_country_flag(region)
-            country = geocoder.country_name_for_number(parsed, "en") or "International"
-            formatted = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
-            return formatted, f"{flag} {country}"
-    except Exception:
-        pass
+            if phonenumbers.is_valid_number(parsed):
+                region = phonenumbers.region_code_for_number(parsed) or ""
+                flag = get_country_flag(region)
+                country = geocoder.country_name_for_number(parsed, "en") or "International"
+                formatted = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+                return formatted, f"{flag} {country}"
+        except Exception:
+            pass
 
     if not cleaned.startswith("+"):
         cleaned = "+" + digits
