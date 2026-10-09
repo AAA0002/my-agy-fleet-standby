@@ -4,8 +4,22 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-- **⚡ Render-First Cloud Architecture & GitHub Actions Free-Tier Conservation**:
-  - **🗑️ Decommissioned & Removed Killercoda (`killercoda_runner.sh`)**:
+- **🔑 MTProto Session Renewal, Dual-IP Collision Elimination & Auto-Mining/Task Verification**:
+  - **✨ Renewed Revoked StringSessions for Main Account & Account 8**:
+    * Identified root cause of `AuthKeyDuplicatedError` (dual-IP concurrent connections from overlapping cloud nodes).
+    * Created `session_refresher.py` providing clean, stateful 2-step Telegram login code request and verification.
+    * Successfully generated fresh `StringSession`s for **Main Account** (`6727787768` — Arif Hossain) and **Account 8** (`8025472383` — Abid Hasan 2).
+    * Updated `accounts.json`, `.env`, and Upstash Redis with fresh session keys.
+  - **🛡️ Eliminated Dual-IP Collisions & Fixed Render Session Sync (`render_standby_app.py`)**:
+    * Disabled legacy Cron-Job.org job `8472441` (Singapore Node 1 collector), consolidating all MTProto token harvesting exclusively to Frankfurt Node 2 (Job `8614259`).
+    * Fixed bug in `fetch_accounts_from_cloud()` where Upstash Redis live `session_string` was not overwriting cached in-memory entries.
+    * Added `/api/debug-account-session/{uid}` deep diagnostics endpoint for instant session health verification in the cloud.
+  - **⛏️ 100% Live Auto-Mining & Task Completion Verified Across Bots**:
+    * **MRG Miner**: 100% of tasks completed (7/7 tasks `[✅ DONE]`). Live auto-mining claimed. Main Account balance: `3,067.71 MRG` (Level 104, KYC verified). Account 8 balance: `2,177.93 MRG` (Level 85).
+    * **ATF Miner**: Live auto-mining active. Main Account: `4,258.2 ATF` (Level 149). Account 8: `787.4 ATF` (Level 83).
+    * **VyroDrop**: 100% of tasks completed (`[CLAIMED]`). Bootstrap active.
+    * Dispatched Cloudflare Turnstile Solver workflow `37990383326` in GitHub Actions for fresh passes.
+
     * Permanently removed temporary 60-minute Killercoda runner and workflows per user directive. Fragile manual browser playground sessions completely replaced by automated, perpetual cloud infrastructure.
   - **☁️ 100% Cloud Token Harvesting Offloaded to Render Standby Mesh**:
     * Created automated Cron-Job.org job `8614259` triggering Render Node 2 (Frankfurt) via POST `/collect-tokens` every 4 hours (`[1, 5, 9, 13, 17, 21]:05 UTC`).
