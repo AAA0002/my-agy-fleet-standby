@@ -19,6 +19,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     * Serialized `v_init` and `ref_to_bind` using `json.dumps()` in Playwright/Patchright `add_init_script`, preventing syntax errors caused by unescaped backslashes and quotes in Telegram WebApp initData.
     * Enhanced programmatic Turnstile render with `appearance: 'always'` and parallel iframe click simulation, guaranteeing token acquisition across all accounts.
     * Auto-binds referral `ref_A20AA96F18`, acquires `humanPass`, connects TON wallet, and claims `connect-wallet` task to qualify recruits.
+  - **💼 Victor's TON Wallet Dynamic Lookup Fix in Render Apps**:
+    * Fixed `NameError: name 'FLEET_TON_WALLETS' is not defined` in `_farm_victors()` across `render_standby_app.py` and `render_app_latest.py`.
+    * Switched to dynamic TON wallet lookup from account profile and `fleet_ton_wallets.json`, allowing automated wallet linking and `connect-wallet` recruitment task claims to succeed smoothly on Render Standby Nodes.
   - **☁️ Zero Phone Load & 100% Cloud Mesh Synchronization**:
     * Maintained 100% cloud execution (Render Standby Node 2 & Node 3, GitHub Actions, Upstash Redis). No bots or headless browsers running on Samsung Galaxy A30.
 
