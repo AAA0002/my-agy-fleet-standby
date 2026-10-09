@@ -17,10 +17,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - **⚡ Pre-Flight HTTP Health Probe & Expired Session Filtering**:
     * Added rapid 0.2s pre-flight probe (`POST /api/auth/login` with `startParam`): verified 13 active sub-accounts immediately return `HTTP 403 HUMAN_REQUIRED` (100% valid Telegram signature, waiting only for Turnstile).
     * Filtered out expired sessions (e.g. UID `7648254021` returning `HTTP 401 Session expired`), eliminating runner stalls.
-  - **🤖 Auto-Click Frame Locator & Interactive Tunnel Streaming**:
-    * Added frame locator in Playwright to detect `challenges.cloudflare.com` and auto-click `#challenge-stage, .ctp-checkbox-label` every 2 seconds.
-    * Concurrently streamed live virtual phone via `noVNC` through Cloudflare Tunnel directly to Owner Telegram (`@myagyai`) for manual tap verification if required.
-    * Automated recruit qualification: dedicated TON wallet connection (`POST /api/wallet/connect`), task claim (`POST /api/tasks/claim`), mining claim (`POST /api/mining/claim`), and Master recruitment bonus sweep (`POST /api/referral/claim-bonus`).
+  - **🌐 Webshare Rotating Residential Proxy Integration Across All Solvers**:
+    * Integrated active Webshare residential proxy mesh (`WEBSHARE_KEY_1`: `1r347t4h8dwfkpoa4ifmmyajvmu3oxyn2guzs5k0`) into `victors_cloud_phone_launcher.py`, `mrg_turnstile_solver.py`, and `victors_sb_solver.py`.
+    * Solved Cloudflare Turnstile infinite loading loops by routing headless browsers through clean residential/datacenter IPs (GB, ES, US, DE, JP), entirely bypassing Microsoft Azure runner datacenter ASN blocks.
+    * Added `WEBSHARE_KEY` environment mapping across all GitHub Actions workflows (`victors_cloud_phone_tunnel.yml`, `victors_sb_solver.yml`, `mrg_turnstile_solver.yml`).
+
 
 - **🏢 Victor's Company (`@VictorsCompanybot`) Focused Resolution, Telemetry Truth Guard & Dual-Engine Turnstile Solver (`render_standby_app.py`, `render_app_latest.py`, `mrg_turnstile_solver.py`, `.github/workflows/mrg_turnstile_solver.yml`, `push_to_standby_repo.py`)**:
   - **🛡️ 100% Elimination of False "Farmed" Telemetry**:

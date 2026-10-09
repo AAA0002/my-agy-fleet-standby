@@ -56,6 +56,35 @@ FLEET_UIDS = [
 ]
 
 
+def get_webshare_proxy() -> dict | None:
+    """Fetches active residential/datacenter proxy from Webshare."""
+    webshare_keys = [
+        os.getenv("WEBSHARE_KEY") or "1r347t4h8dwfkpoa4ifmmyajvmu3oxyn2guzs5k0",
+        "e9lkjm26eqqah0s5zg26lk8tuiuxr9deznbp0aql"
+    ]
+    for key in webshare_keys:
+        if not key:
+            continue
+        try:
+            req = urllib.request.Request(
+                "https://proxy.webshare.io/api/v2/proxy/list/?mode=direct&page=1&page_size=10",
+                headers={"Authorization": f"Token {key}"}
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode())
+                results = data.get("results", [])
+                for p in results:
+                    if p.get("valid", True):
+                        return {
+                            "server": f"http://{p['proxy_address']}:{p['port']}",
+                            "username": p.get("username", "Arif2743"),
+                            "password": p.get("password", "Arif2743")
+                        }
+        except Exception as e:
+            logger.warning(f"Webshare proxy fetch warning: {e}")
+    return None
+
+
 def send_tg_alert(text: str):
     """Sends notification to Owner Telegram."""
     if not ALERT_BOT_TOKEN or not OWNER_ID:
@@ -331,16 +360,22 @@ def main():
     qualified_count = len(already_qualified)
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=False,
-            args=[
+        ws_proxy = get_webshare_proxy()
+        launch_args = {
+            "headless": False,
+            "args": [
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
                 "--window-size=450,950",
                 "--window-position=0,0",
                 "--disable-blink-features=AutomationControlled"
             ]
-        )
+        }
+        if ws_proxy:
+            logger.info(f"🌐 Routing Virtual Phone through Webshare proxy: {ws_proxy['server']}")
+            launch_args["proxy"] = ws_proxy
+
+        browser = p.chromium.launch(**launch_args)
         context = browser.new_context(
             viewport={"width": 430, "height": 932},
             is_mobile=True,

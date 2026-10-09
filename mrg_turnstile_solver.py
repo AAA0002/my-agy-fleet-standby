@@ -687,7 +687,13 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
         )
         page = await context.new_page()
 
-        target_url = f"{VICTORS_ORIGIN}/#tgWebAppData={v_init}"
+        encoded_init = urllib.parse.quote(v_init)
+        target_url = (
+            f"{VICTORS_ORIGIN}/#tgWebAppData={encoded_init}"
+            f"&tgWebAppPlatform=android"
+            f"&tgWebAppVersion=8.0"
+            f"&tgWebAppThemeParams=%7B%22bg_color%22%3A%22%231a1147%22%2C%22text_color%22%3A%22%23ffffff%22%7D"
+        )
 
         ref_to_bind = "" if is_master else VICTORS_REF
         json_v_init = json.dumps(v_init)
@@ -696,6 +702,20 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
         await page.add_init_script(f"""
             Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
     
+            // 0. Pre-fill sessionStorage so telegram-web-app.js parses valid initData
+            try {{
+                sessionStorage.setItem('__telegram__initParams', JSON.stringify({{
+                    tgWebAppData: {json_v_init},
+                    tgWebAppPlatform: 'android',
+                    tgWebAppVersion: '8.0'
+                }}));
+                sessionStorage.setItem('initParams', JSON.stringify({{
+                    tgWebAppData: {json_v_init},
+                    tgWebAppPlatform: 'android',
+                    tgWebAppVersion: '8.0'
+                }}));
+            }} catch(e) {{}}
+
             // 1. Hook Telegram WebApp object
             const mockWebApp = {{
                 initData: {json_v_init},
@@ -706,7 +726,14 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                 version: '8.0',
                 platform: 'android',
                 colorScheme: 'dark',
-                themeParams: {{}},
+                themeParams: {{
+                    bg_color: '#1a1147',
+                    text_color: '#ffffff',
+                    hint_color: '#8b8b8b',
+                    link_color: '#ffd700',
+                    button_color: '#ffd700',
+                    button_text_color: '#000000'
+                }},
                 isExpanded: true,
                 viewportHeight: 915,
                 viewportStableHeight: 915,

@@ -54,6 +54,33 @@ FLEET_UIDS = [
 ]
 
 
+def get_webshare_proxy() -> str | None:
+    """Fetches active proxy string from Webshare in user:pass@host:port format."""
+    webshare_keys = [
+        os.getenv("WEBSHARE_KEY") or "1r347t4h8dwfkpoa4ifmmyajvmu3oxyn2guzs5k0",
+        "e9lkjm26eqqah0s5zg26lk8tuiuxr9deznbp0aql"
+    ]
+    for key in webshare_keys:
+        if not key:
+            continue
+        try:
+            req = urllib.request.Request(
+                "https://proxy.webshare.io/api/v2/proxy/list/?mode=direct&page=1&page_size=10",
+                headers={"Authorization": f"Token {key}"}
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode())
+                results = data.get("results", [])
+                for p in results:
+                    if p.get("valid", True):
+                        u = p.get("username", "Arif2743")
+                        pw = p.get("password", "Arif2743")
+                        return f"{u}:{pw}@{p['proxy_address']}:{p['port']}"
+        except Exception as e:
+            logger.warning(f"Webshare proxy fetch warning: {e}")
+    return None
+
+
 def send_tg_alert(text: str):
     """Sends notification to Owner Telegram."""
     if not ALERT_BOT_TOKEN or not OWNER_ID:
@@ -306,7 +333,13 @@ def solve_victors_with_seleniumbase():
         sweep_master_bonuses(6727787768)
         return
 
-    with SB(uc=True, test=True, xvfb=True, locale="en") as sb:
+    ws_proxy = get_webshare_proxy()
+    sb_kwargs = {"uc": True, "test": True, "xvfb": True, "locale": "en"}
+    if ws_proxy:
+        logger.info(f"🌐 Routing SeleniumBase through Webshare proxy: {ws_proxy.split('@')[-1]}")
+        sb_kwargs["proxy"] = ws_proxy
+
+    with SB(**sb_kwargs) as sb:
         for acc in active_accounts:
             uid = acc["uid"]
             name = acc["name"]
