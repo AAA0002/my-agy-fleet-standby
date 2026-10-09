@@ -360,7 +360,7 @@ The fleet's 7 active high-conviction legitimate bots and channels are fundamenta
     * `_farm_ailab`: Logs in, queries `/miner`, starts hashrate mining, exchanges hashes if balance >= 3.0, and completes partner tasks.
     * `_farm_ultra`: Signs in with custom Firebase token via Google Identity Toolkit, claims check-in streak, mining pool, energy, and executes lucky wheel spins.
     * `_farm_atf`: Solves arithmetic math captcha dynamically, activates speed boost, claims referral yield and team wallet, and cycles cooldown tasks.
-    * `_farm_finvora`: Connects dedicated TON wallet, claims instant bonus, and harvests mining yield.
+    * `_farm_finvora`: Connects dedicated TON wallet, queries `/api/me`, verifies mandatory sponsor channels via `/api/channels/verify` (side-task bonus), claims instant bonus, and harvests mining yield when claimable >= 0.05 GRAM.
     * `_farm_turbogram`: Connects dedicated TON wallet, discovers pending tasks, starts and completes tasks to maintain active referral tier.
     * `_farm_victors`: Authenticates via `/api/auth/login` binding referral `ref_A20AA96F18`, acquires `x-human-pass`, completes daily check-in, claims mining yield, auto-unlocks levels, discovers and claims tasks, sweeps referral bonus, and plays arcade minigame.
     * `_farm_vyro`: Bootstraps session with custom protocol headers, starts/claims mining session, discovers tasks, executes strict 3-step task protocol (`/open` -> `/verify` -> `/claim` with UUID idempotency key) binding referral `ref_myFjrqqE4WN_`, and claims direct/mining referral rewards.

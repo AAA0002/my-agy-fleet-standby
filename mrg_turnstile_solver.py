@@ -489,6 +489,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
             ver_res = verify_human_token(m_init, tok)
             if ver_res.get("success"):
                 logger.info(f"🎉 UID {uid}: Programmatic verify-human succeeded!")
+                save_mrg_pass_to_upstash(uid, tok)
                 await context.close()
                 return True
             else:

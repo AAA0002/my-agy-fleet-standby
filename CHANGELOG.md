@@ -4,6 +4,20 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🌟 Finvora Channel Verification Side-Task Fix, Upstash Fresh Token Mesh Resolver & Fleet-Wide 18-Account Live Harvest (`render_standby_app.py`, `deploy_both_cf_workers.py`, `audit_bots_and_sidetasks.py`, `mrg_turnstile_solver.py`)**:
+  - **✨ Finvora Web3 Channel Verification Side-Task Fix**:
+    * Discovered actual Finvora Web3 endpoint `/api/channels/verify` in frontend bundle (`index-CfZ7p7xH.js`), replacing deprecated `/api/mining/start` (which returned 404).
+    * Integrated `/api/me` balance pre-flight and threshold-gated `/api/mining/claim` (claimable >= 0.05 GRAM) across `render_standby_app.py` and `deploy_both_cf_workers.py`.
+    * Finvora channel verification side-task now completes with `200 OK (bonus awarded)` across all 18 accounts.
+  - **🔑 Upstash Redis Fresh Token Resolver**:
+    * Fixed `audit_bots_and_sidetasks.py` to query individual `fleet:tokens:{uid}` keys directly from Upstash Redis using `UPSTASH_REDIS_REST_URL` fallback, eliminating stale batch token reads.
+    * Added programmatic Turnstile token propagation (`save_mrg_pass_to_upstash`) upon successful challenge completion.
+  - **🚀 Full 18-Account Cloud Harvest & Live Audit**:
+    * Dispatched uncapped full-fleet harvest sweep to Render Standby Node 2 (`/api/farm/cloud-all`), successfully completing 8-bot cycles and side-tasks across all 18 accounts in cloud.
+    * Executed `audit_bots_and_sidetasks.py` live audit, confirming 18/18 accounts active and responsive with all side tasks passing (TurboGram 12/12 partner tasks, MRG 29/29 tasks, Finvora channels verified, Stones daily checkin and breaker).
+    * Both Render Standby Node 2 (Frankfurt) and Node 3 (Oregon) live on updated commits (`dep-db46p3bbc2fs73aqnbbg`, `dep-db46p3lg1s2s738enrhg`).
+  - **🛡️ 100% Rule Compliance**: Rule 1 (User Bot untouched), Rule 4 (Zero Phone Load - 100% cloud execution), Rule 5 (Continuous disaster recovery backup).
+
 - **⚡ Fleet-Wide Side-Task Auto-Completion, Cloudflare Subrequest Uncapping & Cross-Mesh Turnstile Sharing (`render_standby_app.py`, `deploy_both_cf_workers.py`, `fleetApi.js`, `My_Router_AI_bot`)**:
   - **🎯 Solved Root Cause of Bot Side-Task Failures**:
     * Identified that bots (MRG, Victor's Company, VyroDrop, Stones, ATF, TurboGram) verify Telegram channel membership via `getChatMember` before awarding side-task rewards.

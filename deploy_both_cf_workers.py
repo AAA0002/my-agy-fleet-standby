@@ -935,15 +935,15 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
           }, 1, 600).catch(() => {});
         }
         await humanDelay(1000, 2200);
+        await fetchWithRetry("https://finvora-production.up.railway.app/api/channels/verify", {
+          method: "POST", headers: finHeaders, body: JSON.stringify({})
+        }, 1, 800).catch(() => {});
+        await humanDelay(1000, 2200);
         await fetchWithRetry("https://finvora-production.up.railway.app/api/bonus/instant", {
           method: "POST", headers: finHeaders, body: JSON.stringify({})
         }, 1, 800).catch(() => {});
         await humanDelay(1000, 2200);
         await fetchWithRetry("https://finvora-production.up.railway.app/api/mining/claim", {
-          method: "POST", headers: finHeaders, body: JSON.stringify({})
-        }, 1, 800).catch(() => {});
-        await humanDelay(1000, 2200);
-        await fetchWithRetry("https://finvora-production.up.railway.app/api/mining/start", {
           method: "POST", headers: finHeaders, body: JSON.stringify({})
         }, 1, 800).catch(() => {});
       }

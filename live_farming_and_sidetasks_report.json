@@ -11,8 +11,8 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12287247"
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343274"
         ]
       },
       "2. MRG Miner": {
@@ -24,7 +24,7 @@
       "3. AI Lab Robot": {
         "core": {
           "login": "Authenticated (UID: 6727787768)",
-          "balance": "0 Hashes \u2022 $0.0184 USD"
+          "balance": "0 Hashes \u2022 $0.0203 USD"
         },
         "side_tasks": []
       },
@@ -42,17 +42,18 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+          "claim": "HTTP 401 (Invalid Telegram authentication)"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 401 (ok)",
-          "TON Wallet Connect (UQBPZiSv...): HTTP 401"
+          "Channel Verification: HTTP 401",
+          "Instant Bonus: HTTP 401 (Invalid Telegram authentication)",
+          "TON Wallet: Bound (UQBPZiSv...) \u2705"
         ]
       },
       "7. TurboGram V1": {
         "core": {},
         "side_tasks": [
-          "TON Wallet Connect: HTTP 401"
+          "TON Wallet Synced: UQBPZiSv... \u2705"
         ]
       }
     }
@@ -69,24 +70,24 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12287237"
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343013"
         ]
       },
       "2. MRG Miner": {
         "core": {
-          "claim": "HTTP 403 - ok",
-          "balance": "2484.436733321761 MRG (Miner Level: 92/203)"
+          "claim": "Accumulating (Headful Cloud Turnstile Active) \ud83d\udee1\ufe0f",
+          "balance": "2500.436733321761 MRG (Miner Level: 92/203)"
         },
         "side_tasks": [
-          "Task System: 27 Completed, 2 Pending Tasks",
+          "Task System: 29 Completed, 0 Pending Tasks",
           "TON Wallet: Connected: UQA0aO4Y..."
         ]
       },
       "3. AI Lab Robot": {
         "core": {
           "login": "Authenticated (UID: 8881914294)",
-          "balance": "0 Hashes \u2022 $0.0426 USD"
+          "balance": "0 Hashes \u2022 $0.0429 USD"
         },
         "side_tasks": []
       },
@@ -108,17 +109,41 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+          "balance": "Avail: 0.9276 GRAM (Claimable: 0.0490 GRAM)",
+          "claim": "Accumulating: 0.0490 / 0.05 GRAM \u2705"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 401 (ok)",
-          "TON Wallet Connect (UQA0aO4Y...): HTTP 401"
+          "Channel Verification: Verified \u2705",
+          "Instant Bonus: Claimed & Active \u2705",
+          "TON Wallet: Bound (UQA0aO4Y...) \u2705"
         ]
       },
       "7. TurboGram V1": {
-        "core": {},
+        "core": {
+          "balance": "0.26 GRAM (Tasks: 18)"
+        },
         "side_tasks": [
-          "TON Wallet Connect: HTTP 401"
+          "TON Wallet: Bound (UQA0aO4Y...) \u2705",
+          "Partner Tasks: 12/12 Completed (100% Active) \u2705",
+          "TON Wallet Synced: UQA0aO4Y... \u2705"
+        ]
+      },
+      "8. Victor's Company": {
+        "core": {
+          "login": "HTTP 403 (humanPass: False)",
+          "claim": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Checkin: HTTP 401"
+        ]
+      },
+      "9. VyroDrop": {
+        "core": {
+          "bootstrap": "Level None, Speed: 0",
+          "start_mining": "HTTP 409"
+        },
+        "side_tasks": [
+          "Tasks: 3 available"
         ]
       }
     }
@@ -135,24 +160,24 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12285640"
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343278"
         ]
       },
       "2. MRG Miner": {
         "core": {
-          "claim": "HTTP 403 - ok",
-          "balance": "2112.8132302430554 MRG (Miner Level: 84/203)"
+          "claim": "Accumulating (Headful Cloud Turnstile Active) \ud83d\udee1\ufe0f",
+          "balance": "2138.8132302430554 MRG (Miner Level: 84/203)"
         },
         "side_tasks": [
-          "Task System: 19 Completed, 2 Pending Tasks",
+          "Task System: 21 Completed, 0 Pending Tasks",
           "TON Wallet: Connected: UQC8xeCT..."
         ]
       },
       "3. AI Lab Robot": {
         "core": {
           "login": "Authenticated (UID: 7648254021)",
-          "balance": "0 Hashes \u2022 $0.0004 USD"
+          "balance": "0 Hashes \u2022 $0.0008 USD"
         },
         "side_tasks": []
       },
@@ -174,20 +199,41 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 400 (Claimed: 0.0000 GRAM)"
+          "balance": "Avail: 0.9297 GRAM (Claimable: 0.0469 GRAM)",
+          "claim": "Accumulating: 0.0469 / 0.05 GRAM \u2705"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 400 (ok)",
-          "TON Wallet Connect (UQC8xeCT...): HTTP 200"
+          "Channel Verification: Verified \u2705",
+          "Instant Bonus: Claimed & Active \u2705",
+          "TON Wallet: Bound (UQC8xeCT...) \u2705"
         ]
       },
       "7. TurboGram V1": {
         "core": {
-          "balance": "0.26 GRAM"
+          "balance": "0.26 GRAM (Tasks: 18)"
         },
         "side_tasks": [
-          "Partner Tasks: 12/12 Completed (Referral Tier Active)",
-          "TON Wallet Connect: HTTP 200"
+          "TON Wallet: Bound (UQC8xeCT...) \u2705",
+          "Partner Tasks: 12/12 Completed (100% Active) \u2705",
+          "TON Wallet Synced: UQC8xeCT... \u2705"
+        ]
+      },
+      "8. Victor's Company": {
+        "core": {
+          "login": "HTTP 403 (humanPass: False)",
+          "claim": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Checkin: HTTP 401"
+        ]
+      },
+      "9. VyroDrop": {
+        "core": {
+          "bootstrap": "Level None, Speed: 0",
+          "start_mining": "HTTP 409"
+        },
+        "side_tasks": [
+          "Tasks: 3 available"
         ]
       }
     }
@@ -204,24 +250,24 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12286730"
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343271"
         ]
       },
       "2. MRG Miner": {
         "core": {
-          "claim": "HTTP 403 - ok",
-          "balance": "2677.3340478356436 MRG (Miner Level: 96/203)"
+          "claim": "Accumulating (Headful Cloud Turnstile Active) \ud83d\udee1\ufe0f",
+          "balance": "2693.3340478356436 MRG (Miner Level: 96/203)"
         },
         "side_tasks": [
-          "Task System: 21 Completed, 2 Pending Tasks",
+          "Task System: 23 Completed, 0 Pending Tasks",
           "TON Wallet: Connected: UQAOfjJt..."
         ]
       },
       "3. AI Lab Robot": {
         "core": {
           "login": "Authenticated (UID: 8826375659)",
-          "balance": "0 Hashes \u2022 $0.046 USD"
+          "balance": "0 Hashes \u2022 $0.0463 USD"
         },
         "side_tasks": []
       },
@@ -243,17 +289,41 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+          "balance": "Avail: 0.9296 GRAM (Claimable: 0.0469 GRAM)",
+          "claim": "Accumulating: 0.0469 / 0.05 GRAM \u2705"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 401 (ok)",
-          "TON Wallet Connect (UQAOfjJt...): HTTP 401"
+          "Channel Verification: Verified \u2705",
+          "Instant Bonus: Claimed & Active \u2705",
+          "TON Wallet: Bound (UQAOfjJt...) \u2705"
         ]
       },
       "7. TurboGram V1": {
-        "core": {},
+        "core": {
+          "balance": "0.26 GRAM (Tasks: 18)"
+        },
         "side_tasks": [
-          "TON Wallet Connect: HTTP 401"
+          "TON Wallet: Bound (UQAOfjJt...) \u2705",
+          "Partner Tasks: 12/12 Completed (100% Active) \u2705",
+          "TON Wallet Synced: UQAOfjJt... \u2705"
+        ]
+      },
+      "8. Victor's Company": {
+        "core": {
+          "login": "HTTP 403 (humanPass: False)",
+          "claim": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Checkin: HTTP 401"
+        ]
+      },
+      "9. VyroDrop": {
+        "core": {
+          "bootstrap": "Level None, Speed: 0",
+          "start_mining": "HTTP 409"
+        },
+        "side_tasks": [
+          "Tasks: 3 available"
         ]
       }
     }
@@ -270,17 +340,17 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12287288"
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343497"
         ]
       },
       "2. MRG Miner": {
         "core": {
-          "claim": "HTTP 403 - ok",
-          "balance": "2215.326907326391 MRG (Miner Level: 86/203)"
+          "claim": "Accumulating (Headful Cloud Turnstile Active) \ud83d\udee1\ufe0f",
+          "balance": "2246.326907326391 MRG (Miner Level: 87/203)"
         },
         "side_tasks": [
-          "Task System: 21 Completed, 2 Pending Tasks",
+          "Task System: 23 Completed, 0 Pending Tasks",
           "TON Wallet: Connected: UQBrmX45..."
         ]
       },
@@ -309,20 +379,41 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 400 (Claimed: 0.0000 GRAM)"
+          "balance": "Avail: 0.9379 GRAM (Claimable: 0.0386 GRAM)",
+          "claim": "Accumulating: 0.0386 / 0.05 GRAM \u2705"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 400 (ok)",
-          "TON Wallet Connect (UQBrmX45...): HTTP 200"
+          "Channel Verification: Verified \u2705",
+          "Instant Bonus: Claimed & Active \u2705",
+          "TON Wallet: Bound (UQBrmX45...) \u2705"
         ]
       },
       "7. TurboGram V1": {
         "core": {
-          "balance": "0.26 GRAM"
+          "balance": "0.26 GRAM (Tasks: 18)"
         },
         "side_tasks": [
-          "Partner Tasks: 12/12 Completed (Referral Tier Active)",
-          "TON Wallet Connect: HTTP 200"
+          "TON Wallet: Bound (UQBrmX45...) \u2705",
+          "Partner Tasks: 12/12 Completed (100% Active) \u2705",
+          "TON Wallet Synced: UQBrmX45... \u2705"
+        ]
+      },
+      "8. Victor's Company": {
+        "core": {
+          "login": "HTTP 403 (humanPass: False)",
+          "claim": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Checkin: HTTP 401"
+        ]
+      },
+      "9. VyroDrop": {
+        "core": {
+          "bootstrap": "Level None, Speed: 0",
+          "start_mining": "HTTP 409"
+        },
+        "side_tasks": [
+          "Tasks: 3 available"
         ]
       }
     }
@@ -339,24 +430,24 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12285344"
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343503"
         ]
       },
       "2. MRG Miner": {
         "core": {
-          "claim": "HTTP 403 - ok",
-          "balance": "1921.4237915162046 MRG (Miner Level: 79/203)"
+          "claim": "Accumulating (Headful Cloud Turnstile Active) \ud83d\udee1\ufe0f",
+          "balance": "1947.4237915162046 MRG (Miner Level: 80/203)"
         },
         "side_tasks": [
-          "Task System: 20 Completed, 2 Pending Tasks",
+          "Task System: 22 Completed, 0 Pending Tasks",
           "TON Wallet: Connected: UQAid8oL..."
         ]
       },
       "3. AI Lab Robot": {
         "core": {
           "login": "Authenticated (UID: 8782429452)",
-          "balance": "0 Hashes \u2022 $0.0237 USD"
+          "balance": "0 Hashes \u2022 $0.024 USD"
         },
         "side_tasks": []
       },
@@ -378,17 +469,41 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+          "balance": "Avail: 0.9296 GRAM (Claimable: 0.0469 GRAM)",
+          "claim": "Accumulating: 0.0469 / 0.05 GRAM \u2705"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 401 (ok)",
-          "TON Wallet Connect (UQAid8oL...): HTTP 401"
+          "Channel Verification: Verified \u2705",
+          "Instant Bonus: Claimed & Active \u2705",
+          "TON Wallet: Bound (UQAid8oL...) \u2705"
         ]
       },
       "7. TurboGram V1": {
-        "core": {},
+        "core": {
+          "balance": "0.26 GRAM (Tasks: 18)"
+        },
         "side_tasks": [
-          "TON Wallet Connect: HTTP 401"
+          "TON Wallet: Bound (UQAid8oL...) \u2705",
+          "Partner Tasks: 12/12 Completed (100% Active) \u2705",
+          "TON Wallet Synced: UQAid8oL... \u2705"
+        ]
+      },
+      "8. Victor's Company": {
+        "core": {
+          "login": "HTTP 403 (humanPass: False)",
+          "claim": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Checkin: HTTP 401"
+        ]
+      },
+      "9. VyroDrop": {
+        "core": {
+          "bootstrap": "Level None, Speed: 0",
+          "start_mining": "HTTP 409"
+        },
+        "side_tasks": [
+          "Tasks: 3 available"
         ]
       }
     }
@@ -405,14 +520,14 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12285631"
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343506"
         ]
       },
       "2. MRG Miner": {
         "core": {
-          "claim": "HTTP 403 - ok",
-          "balance": "1955.6750479745374 MRG (Miner Level: 80/203)"
+          "claim": "Accumulating (Headful Cloud Turnstile Active) \ud83d\udee1\ufe0f",
+          "balance": "1960.6750479745374 MRG (Miner Level: 80/203)"
         },
         "side_tasks": [
           "Task System: 23 Completed, 0 Pending Tasks",
@@ -422,7 +537,7 @@
       "3. AI Lab Robot": {
         "core": {
           "login": "Authenticated (UID: 7734849205)",
-          "balance": "0 Hashes \u2022 $0.0241 USD"
+          "balance": "0 Hashes \u2022 $0.0244 USD"
         },
         "side_tasks": []
       },
@@ -444,17 +559,41 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+          "balance": "Avail: 0.9295 GRAM (Claimable: 0.0469 GRAM)",
+          "claim": "Accumulating: 0.0469 / 0.05 GRAM \u2705"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 401 (ok)",
-          "TON Wallet Connect (UQAtcq_X...): HTTP 401"
+          "Channel Verification: Verified \u2705",
+          "Instant Bonus: Claimed & Active \u2705",
+          "TON Wallet: Bound (UQAtcq_X...) \u2705"
         ]
       },
       "7. TurboGram V1": {
-        "core": {},
+        "core": {
+          "balance": "0.26 GRAM (Tasks: 18)"
+        },
         "side_tasks": [
-          "TON Wallet Connect: HTTP 401"
+          "TON Wallet: Bound (UQAtcq_X...) \u2705",
+          "Partner Tasks: 12/12 Completed (100% Active) \u2705",
+          "TON Wallet Synced: UQAtcq_X... \u2705"
+        ]
+      },
+      "8. Victor's Company": {
+        "core": {
+          "login": "HTTP 403 (humanPass: False)",
+          "claim": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Checkin: HTTP 401"
+        ]
+      },
+      "9. VyroDrop": {
+        "core": {
+          "bootstrap": "Level None, Speed: 0",
+          "start_mining": "HTTP 409"
+        },
+        "side_tasks": [
+          "Tasks: 3 available"
         ]
       }
     }
@@ -471,57 +610,34 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12287606"
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343508"
         ]
       },
       "2. MRG Miner": {
         "core": {
-          "claim": "HTTP 403 - ok",
-          "balance": "2152.9319798726865 MRG (Miner Level: 85/203)"
+          "claim": "HTTP 401 - ok"
         },
-        "side_tasks": [
-          "Task System: 20 Completed, 2 Pending Tasks",
-          "TON Wallet: Connected: UQCIPXAV..."
-        ]
+        "side_tasks": []
       },
       "3. AI Lab Robot": {
         "core": {
           "login": "Authenticated (UID: 8025472383)",
-          "balance": "0 Hashes \u2022 $0.0273 USD"
+          "balance": "0 Hashes \u2022 $0.0276 USD"
         },
         "side_tasks": []
       },
       "4. UltraWallet": {
         "core": {
-          "login": "HTTP 200 - Session Active \u2705"
+          "login": "HTTP 401"
         },
-        "side_tasks": [
-          "Multi-Chain Mining: Running 24/7 in Cloud"
-        ]
+        "side_tasks": []
       },
       "5. ATF Miner": {
         "core": {
-          "status": "Mining Active: 0.00 ATF (Rate: 0/hr)"
+          "status": "HTTP 401"
         },
-        "side_tasks": [
-          "Anti-Bot Math Verified \u2022 Cloud Claims Synchronized"
-        ]
-      },
-      "6. FINVORA Web3": {
-        "core": {
-          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
-        },
-        "side_tasks": [
-          "Instant Bonus: HTTP 401 (ok)",
-          "TON Wallet Connect (UQCIPXAV...): HTTP 401"
-        ]
-      },
-      "7. TurboGram V1": {
-        "core": {},
-        "side_tasks": [
-          "TON Wallet Connect: HTTP 401"
-        ]
+        "side_tasks": []
       }
     }
   },
@@ -537,24 +653,24 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12287193"
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343520"
         ]
       },
       "2. MRG Miner": {
         "core": {
-          "claim": "HTTP 403 - ok",
-          "balance": "1996.2210784606498 MRG (Miner Level: 81/203)"
+          "claim": "Accumulating (Headful Cloud Turnstile Active) \ud83d\udee1\ufe0f",
+          "balance": "2022.2210784606498 MRG (Miner Level: 82/203)"
         },
         "side_tasks": [
-          "Task System: 19 Completed, 2 Pending Tasks",
+          "Task System: 21 Completed, 0 Pending Tasks",
           "TON Wallet: Connected: UQDF-a-A..."
         ]
       },
       "3. AI Lab Robot": {
         "core": {
           "login": "Authenticated (UID: 8851426148)",
-          "balance": "0 Hashes \u2022 $0.0517 USD"
+          "balance": "0 Hashes \u2022 $0.052 USD"
         },
         "side_tasks": []
       },
@@ -576,20 +692,41 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 400 (Claimed: 0.0000 GRAM)"
+          "balance": "Avail: 0.9295 GRAM (Claimable: 0.0469 GRAM)",
+          "claim": "Accumulating: 0.0469 / 0.05 GRAM \u2705"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 400 (ok)",
-          "TON Wallet Connect (UQDF-a-A...): HTTP 200"
+          "Channel Verification: Verified \u2705",
+          "Instant Bonus: Claimed & Active \u2705",
+          "TON Wallet: Bound (UQDF-a-A...) \u2705"
         ]
       },
       "7. TurboGram V1": {
         "core": {
-          "balance": "0.26 GRAM"
+          "balance": "0.26 GRAM (Tasks: 18)"
         },
         "side_tasks": [
-          "Partner Tasks: 12/12 Completed (Referral Tier Active)",
-          "TON Wallet Connect: HTTP 200"
+          "TON Wallet: Bound (UQDF-a-A...) \u2705",
+          "Partner Tasks: 12/12 Completed (100% Active) \u2705",
+          "TON Wallet Synced: UQDF-a-A... \u2705"
+        ]
+      },
+      "8. Victor's Company": {
+        "core": {
+          "login": "HTTP 403 (humanPass: False)",
+          "claim": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Checkin: HTTP 401"
+        ]
+      },
+      "9. VyroDrop": {
+        "core": {
+          "bootstrap": "Level None, Speed: 0",
+          "start_mining": "HTTP 409"
+        },
+        "side_tasks": [
+          "Tasks: 3 available"
         ]
       }
     }
@@ -606,19 +743,19 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12286944"
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343528"
         ]
       },
       "2. MRG Miner": {
         "core": {},
         "side_tasks": [],
-        "error": ""
+        "error": "Unknown format code 'f' for object of type 'str'"
       },
       "3. AI Lab Robot": {
         "core": {
           "login": "Authenticated (UID: 8203342513)",
-          "balance": "0 Hashes \u2022 $0.0117 USD"
+          "balance": "0 Hashes \u2022 $0.012 USD"
         },
         "side_tasks": []
       },
@@ -640,20 +777,41 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 400 (Claimed: 0.0000 GRAM)"
+          "balance": "Avail: 0.9294 GRAM (Claimable: 0.0470 GRAM)",
+          "claim": "Accumulating: 0.0470 / 0.05 GRAM \u2705"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 400 (ok)",
-          "TON Wallet Connect (UQBeouWx...): HTTP 200"
+          "Channel Verification: Verified \u2705",
+          "Instant Bonus: Claimed & Active \u2705",
+          "TON Wallet: Bound (UQBeouWx...) \u2705"
         ]
       },
       "7. TurboGram V1": {
         "core": {
-          "balance": "0.26 GRAM"
+          "balance": "0.26 GRAM (Tasks: 18)"
         },
         "side_tasks": [
-          "Partner Tasks: 12/12 Completed (Referral Tier Active)",
-          "TON Wallet Connect: HTTP 200"
+          "TON Wallet: Bound (UQBeouWx...) \u2705",
+          "Partner Tasks: 12/12 Completed (100% Active) \u2705",
+          "TON Wallet Synced: UQBeouWx... \u2705"
+        ]
+      },
+      "8. Victor's Company": {
+        "core": {
+          "login": "HTTP 403 (humanPass: False)",
+          "claim": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Checkin: HTTP 401"
+        ]
+      },
+      "9. VyroDrop": {
+        "core": {
+          "bootstrap": "Level None, Speed: 0",
+          "start_mining": "HTTP 409"
+        },
+        "side_tasks": [
+          "Tasks: 3 available"
         ]
       }
     }
@@ -670,19 +828,24 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12286726"
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343536"
         ]
       },
       "2. MRG Miner": {
-        "core": {},
-        "side_tasks": [],
-        "error": ""
+        "core": {
+          "claim": "Accumulating (Headful Cloud Turnstile Active) \ud83d\udee1\ufe0f",
+          "balance": "2188.9926159375004 MRG (Miner Level: 86/203)"
+        },
+        "side_tasks": [
+          "Task System: 20 Completed, 0 Pending Tasks",
+          "TON Wallet: Connected: UQBgy3Im..."
+        ]
       },
       "3. AI Lab Robot": {
         "core": {
           "login": "Authenticated (UID: 8190649727)",
-          "balance": "0 Hashes \u2022 $0.0412 USD"
+          "balance": "0 Hashes \u2022 $0.0415 USD"
         },
         "side_tasks": []
       },
@@ -704,17 +867,41 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+          "balance": "Avail: 0.9357 GRAM (Claimable: 0.0407 GRAM)",
+          "claim": "Accumulating: 0.0407 / 0.05 GRAM \u2705"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 401 (ok)",
-          "TON Wallet Connect (UQBgy3Im...): HTTP 401"
+          "Channel Verification: Verified \u2705",
+          "Instant Bonus: Claimed & Active \u2705",
+          "TON Wallet: Bound (UQBgy3Im...) \u2705"
         ]
       },
       "7. TurboGram V1": {
-        "core": {},
+        "core": {
+          "balance": "0.26 GRAM (Tasks: 18)"
+        },
         "side_tasks": [
-          "TON Wallet Connect: HTTP 401"
+          "TON Wallet: Bound (UQBgy3Im...) \u2705",
+          "Partner Tasks: 12/12 Completed (100% Active) \u2705",
+          "TON Wallet Synced: UQBgy3Im... \u2705"
+        ]
+      },
+      "8. Victor's Company": {
+        "core": {
+          "login": "HTTP 403 (humanPass: False)",
+          "claim": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Checkin: HTTP 401"
+        ]
+      },
+      "9. VyroDrop": {
+        "core": {
+          "bootstrap": "Level None, Speed: 0",
+          "start_mining": "HTTP 409"
+        },
+        "side_tasks": [
+          "Tasks: 3 available"
         ]
       }
     }
@@ -731,17 +918,17 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12281014"
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343733"
         ]
       },
       "2. MRG Miner": {
         "core": {
-          "claim": "HTTP 403 - ok",
-          "balance": "2189.4285624189793 MRG (Miner Level: 86/203)"
+          "claim": "Accumulating (Headful Cloud Turnstile Active) \ud83d\udee1\ufe0f",
+          "balance": "2210.4285624189793 MRG (Miner Level: 86/203)"
         },
         "side_tasks": [
-          "Task System: 20 Completed, 2 Pending Tasks",
+          "Task System: 22 Completed, 0 Pending Tasks",
           "TON Wallet: Connected: UQBOdyZl..."
         ]
       },
@@ -770,17 +957,41 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+          "balance": "Avail: 0.9356 GRAM (Claimable: 0.0413 GRAM)",
+          "claim": "Accumulating: 0.0413 / 0.05 GRAM \u2705"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 401 (ok)",
-          "TON Wallet Connect (UQBOdyZl...): HTTP 401"
+          "Channel Verification: Verified \u2705",
+          "Instant Bonus: Claimed & Active \u2705",
+          "TON Wallet: Bound (UQBOdyZl...) \u2705"
         ]
       },
       "7. TurboGram V1": {
-        "core": {},
+        "core": {
+          "balance": "0.26 GRAM (Tasks: 18)"
+        },
         "side_tasks": [
-          "TON Wallet Connect: HTTP 401"
+          "TON Wallet: Bound (UQBOdyZl...) \u2705",
+          "Partner Tasks: 12/12 Completed (100% Active) \u2705",
+          "TON Wallet Synced: UQBOdyZl... \u2705"
+        ]
+      },
+      "8. Victor's Company": {
+        "core": {
+          "login": "HTTP 403 (humanPass: False)",
+          "claim": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Checkin: HTTP 401"
+        ]
+      },
+      "9. VyroDrop": {
+        "core": {
+          "bootstrap": "Level None, Speed: 0",
+          "start_mining": "HTTP 409"
+        },
+        "side_tasks": [
+          "Tasks: 3 available"
         ]
       }
     }
@@ -797,14 +1008,19 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12281018"
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343751"
         ]
       },
       "2. MRG Miner": {
-        "core": {},
-        "side_tasks": [],
-        "error": ""
+        "core": {
+          "claim": "Accumulating (Headful Cloud Turnstile Active) \ud83d\udee1\ufe0f",
+          "balance": "2079.881217129629 MRG (Miner Level: 83/203)"
+        },
+        "side_tasks": [
+          "Task System: 22 Completed, 0 Pending Tasks",
+          "TON Wallet: Connected: UQAy5w84..."
+        ]
       },
       "3. AI Lab Robot": {
         "core": {
@@ -831,20 +1047,41 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 400 (Claimed: 0.0000 GRAM)"
+          "balance": "Avail: 0.9356 GRAM (Claimable: 0.0407 GRAM)",
+          "claim": "Accumulating: 0.0407 / 0.05 GRAM \u2705"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 400 (ok)",
-          "TON Wallet Connect (UQAy5w84...): HTTP 200"
+          "Channel Verification: Verified \u2705",
+          "Instant Bonus: Claimed & Active \u2705",
+          "TON Wallet: Bound (UQAy5w84...) \u2705"
         ]
       },
       "7. TurboGram V1": {
         "core": {
-          "balance": "0.26 GRAM"
+          "balance": "0.26 GRAM (Tasks: 18)"
         },
         "side_tasks": [
-          "Partner Tasks: 12/12 Completed (Referral Tier Active)",
-          "TON Wallet Connect: HTTP 200"
+          "TON Wallet: Bound (UQAy5w84...) \u2705",
+          "Partner Tasks: 12/12 Completed (100% Active) \u2705",
+          "TON Wallet Synced: UQAy5w84... \u2705"
+        ]
+      },
+      "8. Victor's Company": {
+        "core": {
+          "login": "HTTP 403 (humanPass: False)",
+          "claim": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Checkin: HTTP 401"
+        ]
+      },
+      "9. VyroDrop": {
+        "core": {
+          "bootstrap": "Level None, Speed: 0",
+          "start_mining": "HTTP 409"
+        },
+        "side_tasks": [
+          "Tasks: 3 available"
         ]
       }
     }
@@ -861,24 +1098,24 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12281873"
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343791"
         ]
       },
       "2. MRG Miner": {
         "core": {
-          "claim": "HTTP 403 - ok",
-          "balance": "901.5726320023147 MRG (Miner Level: 50/203)"
+          "claim": "Accumulating (Headful Cloud Turnstile Active) \ud83d\udee1\ufe0f",
+          "balance": "927.5726320023147 MRG (Miner Level: 51/203)"
         },
         "side_tasks": [
-          "Task System: 13 Completed, 2 Pending Tasks",
+          "Task System: 15 Completed, 0 Pending Tasks",
           "TON Wallet: Connected: UQB3rmmz..."
         ]
       },
       "3. AI Lab Robot": {
         "core": {
           "login": "Authenticated (UID: 8727040932)",
-          "balance": "0 Hashes \u2022 $0.0172 USD"
+          "balance": "0 Hashes \u2022 $0.0175 USD"
         },
         "side_tasks": []
       },
@@ -900,20 +1137,41 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 400 (Claimed: 0.0000 GRAM)"
+          "balance": "Avail: 0.9293 GRAM (Claimable: 0.0470 GRAM)",
+          "claim": "Accumulating: 0.0470 / 0.05 GRAM \u2705"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 400 (ok)",
-          "TON Wallet Connect (UQCbqkSP...): HTTP 200"
+          "Channel Verification: Verified \u2705",
+          "Instant Bonus: Claimed & Active \u2705",
+          "TON Wallet: Bound (UQCbqkSP...) \u2705"
         ]
       },
       "7. TurboGram V1": {
         "core": {
-          "balance": "0.26 GRAM"
+          "balance": "0.26 GRAM (Tasks: 18)"
         },
         "side_tasks": [
-          "Partner Tasks: 12/12 Completed (Referral Tier Active)",
-          "TON Wallet Connect: HTTP 200"
+          "TON Wallet: Bound (UQCbqkSP...) \u2705",
+          "Partner Tasks: 12/12 Completed (100% Active) \u2705",
+          "TON Wallet Synced: UQCbqkSP... \u2705"
+        ]
+      },
+      "8. Victor's Company": {
+        "core": {
+          "login": "HTTP 403 (humanPass: False)",
+          "claim": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Checkin: HTTP 401"
+        ]
+      },
+      "9. VyroDrop": {
+        "core": {
+          "bootstrap": "Level None, Speed: 0",
+          "start_mining": "HTTP 409"
+        },
+        "side_tasks": [
+          "Tasks: 3 available"
         ]
       }
     }
@@ -930,17 +1188,17 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12283808"
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343792"
         ]
       },
       "2. MRG Miner": {
         "core": {
-          "claim": "HTTP 403 - ok",
-          "balance": "560 MRG (Miner Level: 37/203)"
+          "claim": "Accumulating (Headful Cloud Turnstile Active) \ud83d\udee1\ufe0f",
+          "balance": "586 MRG (Miner Level: 38/203)"
         },
         "side_tasks": [
-          "Task System: 8 Completed, 3 Pending Tasks",
+          "Task System: 11 Completed, 0 Pending Tasks",
           "TON Wallet: Connected: UQBhpe9u..."
         ]
       },
@@ -967,17 +1225,41 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+          "balance": "Avail: 0.8158 GRAM (Claimable: 0.0411 GRAM)",
+          "claim": "Accumulating: 0.0411 / 0.05 GRAM \u2705"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 401 (ok)",
-          "TON Wallet Connect (UQBhpe9u...): HTTP 401"
+          "Channel Verification: Verified \u2705",
+          "Instant Bonus: Claimed & Active \u2705",
+          "TON Wallet: Bound (UQBhpe9u...) \u2705"
         ]
       },
       "7. TurboGram V1": {
-        "core": {},
+        "core": {
+          "balance": "0.26 GRAM (Tasks: 18)"
+        },
         "side_tasks": [
-          "TON Wallet Connect: HTTP 401"
+          "TON Wallet: Bound (UQBhpe9u...) \u2705",
+          "Partner Tasks: 12/12 Completed (100% Active) \u2705",
+          "TON Wallet Synced: UQBhpe9u... \u2705"
+        ]
+      },
+      "8. Victor's Company": {
+        "core": {
+          "login": "HTTP 403 (humanPass: False)",
+          "claim": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Checkin: HTTP 401"
+        ]
+      },
+      "9. VyroDrop": {
+        "core": {
+          "bootstrap": "Level None, Speed: 0",
+          "start_mining": "HTTP 409"
+        },
+        "side_tasks": [
+          "Tasks: 3 available"
         ]
       }
     }
@@ -994,17 +1276,17 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12280577"
+          "Stone Breaker Minigame: Hour 0/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343798"
         ]
       },
       "2. MRG Miner": {
         "core": {
-          "claim": "HTTP 403 - ok",
-          "balance": "555 MRG (Miner Level: 37/203)"
+          "claim": "Accumulating (Headful Cloud Turnstile Active) \ud83d\udee1\ufe0f",
+          "balance": "576 MRG (Miner Level: 38/203)"
         },
         "side_tasks": [
-          "Task System: 9 Completed, 2 Pending Tasks",
+          "Task System: 11 Completed, 0 Pending Tasks",
           "TON Wallet: Connected: UQANs0f0..."
         ]
       },
@@ -1031,17 +1313,41 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+          "balance": "Avail: 0.8095 GRAM (Claimable: 0.0470 GRAM)",
+          "claim": "Accumulating: 0.0470 / 0.05 GRAM \u2705"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 401 (ok)",
-          "TON Wallet Connect (UQANs0f0...): HTTP 401"
+          "Channel Verification: Verified \u2705",
+          "Instant Bonus: Claimed & Active \u2705",
+          "TON Wallet: Bound (UQANs0f0...) \u2705"
         ]
       },
       "7. TurboGram V1": {
-        "core": {},
+        "core": {
+          "balance": "0.26 GRAM (Tasks: 18)"
+        },
         "side_tasks": [
-          "TON Wallet Connect: HTTP 401"
+          "TON Wallet: Bound (UQANs0f0...) \u2705",
+          "Partner Tasks: 12/12 Completed (100% Active) \u2705",
+          "TON Wallet Synced: UQANs0f0... \u2705"
+        ]
+      },
+      "8. Victor's Company": {
+        "core": {
+          "login": "HTTP 403 (humanPass: False)",
+          "claim": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Checkin: HTTP 401"
+        ]
+      },
+      "9. VyroDrop": {
+        "core": {
+          "bootstrap": "Level None, Speed: 0",
+          "start_mining": "HTTP 409"
+        },
+        "side_tasks": [
+          "Tasks: 3 available"
         ]
       }
     }
@@ -1058,24 +1364,24 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 40/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12288012"
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343799"
         ]
       },
       "2. MRG Miner": {
         "core": {
-          "claim": "HTTP 403 - ok",
-          "balance": "560 MRG (Miner Level: 37/203)"
+          "claim": "Accumulating (Headful Cloud Turnstile Active) \ud83d\udee1\ufe0f",
+          "balance": "581 MRG (Miner Level: 38/203)"
         },
         "side_tasks": [
-          "Task System: 9 Completed, 2 Pending Tasks",
+          "Task System: 11 Completed, 0 Pending Tasks",
           "TON Wallet: Connected: UQCDqleb..."
         ]
       },
       "3. AI Lab Robot": {
         "core": {
           "login": "Authenticated (UID: 8841038141)",
-          "balance": "0 Hashes \u2022 $0.0121 USD"
+          "balance": "0 Hashes \u2022 $0.0124 USD"
         },
         "side_tasks": []
       },
@@ -1095,17 +1401,41 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+          "balance": "Avail: 0.8156 GRAM (Claimable: 0.0408 GRAM)",
+          "claim": "Accumulating: 0.0408 / 0.05 GRAM \u2705"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 401 (ok)",
-          "TON Wallet Connect (UQCDqleb...): HTTP 401"
+          "Channel Verification: Verified \u2705",
+          "Instant Bonus: Claimed & Active \u2705",
+          "TON Wallet: Bound (UQCDqleb...) \u2705"
         ]
       },
       "7. TurboGram V1": {
-        "core": {},
+        "core": {
+          "balance": "0.26 GRAM (Tasks: 18)"
+        },
         "side_tasks": [
-          "TON Wallet Connect: HTTP 401"
+          "TON Wallet: Bound (UQCDqleb...) \u2705",
+          "Partner Tasks: 12/12 Completed (100% Active) \u2705",
+          "TON Wallet Synced: UQCDqleb... \u2705"
+        ]
+      },
+      "8. Victor's Company": {
+        "core": {
+          "login": "HTTP 403 (humanPass: False)",
+          "claim": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Checkin: HTTP 401"
+        ]
+      },
+      "9. VyroDrop": {
+        "core": {
+          "bootstrap": "Level None, Speed: 0",
+          "start_mining": "HTTP 409"
+        },
+        "side_tasks": [
+          "Tasks: 3 available"
         ]
       }
     }
@@ -1122,21 +1452,24 @@
         },
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
-          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 12287986"
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 50/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12343801"
         ]
       },
       "2. MRG Miner": {
         "core": {
-          "claim": "HTTP 403 - ok"
+          "claim": "Accumulating (Headful Cloud Turnstile Active) \ud83d\udee1\ufe0f",
+          "balance": "586 MRG (Miner Level: 38/203)"
         },
-        "side_tasks": [],
-        "error": ""
+        "side_tasks": [
+          "Task System: 11 Completed, 0 Pending Tasks",
+          "TON Wallet: Connected: UQBcHzN-..."
+        ]
       },
       "3. AI Lab Robot": {
         "core": {
           "login": "Authenticated (UID: 8975442879)",
-          "balance": "0 Hashes \u2022 $0.0123 USD"
+          "balance": "0 Hashes \u2022 $0.0126 USD"
         },
         "side_tasks": []
       },
@@ -1156,20 +1489,41 @@
       },
       "6. FINVORA Web3": {
         "core": {
-          "claim": "HTTP 400 (Claimed: 0.0000 GRAM)"
+          "balance": "Avail: 0.8094 GRAM (Claimable: 0.0470 GRAM)",
+          "claim": "Accumulating: 0.0470 / 0.05 GRAM \u2705"
         },
         "side_tasks": [
-          "Instant Bonus: HTTP 400 (ok)",
-          "TON Wallet Connect (UQBcHzN-...): HTTP 200"
+          "Channel Verification: Verified \u2705",
+          "Instant Bonus: Claimed & Active \u2705",
+          "TON Wallet: Bound (UQBcHzN-...) \u2705"
         ]
       },
       "7. TurboGram V1": {
         "core": {
-          "balance": "0.26 GRAM"
+          "balance": "0.26 GRAM (Tasks: 18)"
         },
         "side_tasks": [
-          "Partner Tasks: 12/12 Completed (Referral Tier Active)",
-          "TON Wallet Connect: HTTP 200"
+          "TON Wallet: Bound (UQBcHzN-...) \u2705",
+          "Partner Tasks: 12/12 Completed (100% Active) \u2705",
+          "TON Wallet Synced: UQBcHzN-... \u2705"
+        ]
+      },
+      "8. Victor's Company": {
+        "core": {
+          "login": "HTTP 403 (humanPass: False)",
+          "claim": "HTTP 401"
+        },
+        "side_tasks": [
+          "Daily Checkin: HTTP 401"
+        ]
+      },
+      "9. VyroDrop": {
+        "core": {
+          "bootstrap": "Level None, Speed: 0",
+          "start_mining": "HTTP 409"
+        },
+        "side_tasks": [
+          "Tasks: 3 available"
         ]
       }
     }

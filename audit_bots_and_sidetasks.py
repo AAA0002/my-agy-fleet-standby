@@ -14,38 +14,52 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 def load_tokens_db():
     tokens = {}
-    try:
-        upstash_url = os.getenv("UPSTASH_URL")
-        upstash_token = os.getenv("UPSTASH_TOKEN")
-        if upstash_url and upstash_token:
-            for key_name in ["fleet_miniapp_tokens", "miniapp_tokens"]:
-                req = urllib.request.Request(
-                    f"{upstash_url}/get/{key_name}",
-                    headers={"Authorization": f"Bearer {upstash_token}"}
-                )
-                try:
-                    with urllib.request.urlopen(req, timeout=10) as resp:
-                        data = json.loads(resp.read().decode())
-                        res = data.get("result")
-                        if res:
-                            parsed = json.loads(res) if isinstance(res, str) else res
-                            for k, v in parsed.items():
-                                if k not in tokens:
-                                    tokens[k] = v
-                                elif isinstance(v, dict):
-                                    tokens[k].update(v)
-                except Exception:
-                    pass
-    except Exception as e:
-        print(f"⚠️ Upstash fetch notice: {e}")
-    if not tokens:
-        tokens_path = os.path.join(BASE_DIR, "fleet_miniapp_tokens.json")
-        if os.path.exists(tokens_path):
-            try:
-                with open(tokens_path, "r", encoding="utf-8") as f:
-                    tokens = json.load(f)
-            except Exception:
-                pass
+    upstash_url = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://relaxing-starfish-285827.upstash.io"
+    upstash_token = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw"
+    if upstash_url and upstash_token:
+        try:
+            req = urllib.request.Request(
+                f"{upstash_url}/keys/fleet:tokens:*",
+                headers={"Authorization": f"Bearer {upstash_token}"}
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode())
+                keys = data.get("result", [])
+                for k in keys:
+                    uid = k.split(":")[-1]
+                    r_k = urllib.request.Request(
+                        f"{upstash_url}/get/{k}",
+                        headers={"Authorization": f"Bearer {upstash_token}"}
+                    )
+                    try:
+                        with urllib.request.urlopen(r_k, timeout=4) as kr:
+                            kd = json.loads(kr.read().decode())
+                            raw = kd.get("result")
+                            if raw:
+                                parsed = json.loads(raw) if isinstance(raw, str) else raw
+                                tokens[uid] = parsed
+                    except Exception:
+                        pass
+        except Exception as e:
+            print(f"⚠️ Upstash fleet:tokens:* fetch note: {e}")
+
+    if len(tokens) < 18 and upstash_url and upstash_token:
+        try:
+            req = urllib.request.Request(
+                f"{upstash_url}/get/fleet_miniapp_tokens",
+                headers={"Authorization": f"Bearer {upstash_token}"}
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode())
+                raw = data.get("result")
+                if raw:
+                    parsed = json.loads(raw) if isinstance(raw, str) else raw
+                    for k, v in parsed.items():
+                        if k not in tokens:
+                            tokens[k] = v
+        except Exception:
+            pass
+
     return tokens
 
 TOKENS_DB = load_tokens_db()
@@ -236,10 +250,29 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
         # 6. FINVORA Web3
         fin_init = tokens.get("finvora_init_data")
         if fin_init:
-            fin_h = {**headers, "X-Telegram-Init-Data": fin_init}
+            fin_h = {
+                **headers,
+                "Content-Type": "application/json",
+                "X-Telegram-Init-Data": fin_init,
+                "Referer": "https://finvora-production.up.railway.app/"
+            }
             b_rep = {"core": {}, "side_tasks": []}
             try:
-                # Core: Mining Claim
+                # User Profile & Balances
+                async with session.get("https://finvora-production.up.railway.app/api/me", headers=fin_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    if r.status == 200:
+                        med = await r.json()
+                        u_obj = med.get("user", {})
+                        withdr = u_obj.get("withdrawableBalance", 0)
+                        claimable = u_obj.get("claimableMined", 0)
+                        b_rep["core"]["balance"] = f"Avail: {withdr:.4f} GRAM (Claimable: {claimable:.4f} GRAM)"
+
+                # Side Task: Channel Verification
+                async with session.post("https://finvora-production.up.railway.app/api/channels/verify", json={}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    vcd = await r.json() if r.status in (200, 201) else {}
+                    b_rep["side_tasks"].append(f"Channel Verification: {'Verified ✅' if r.status == 200 else f'HTTP {r.status}'}")
+
+                # Core: Mining Claim (if threshold >= 0.05)
                 async with session.post("https://finvora-production.up.railway.app/api/mining/claim", json={}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
                     fcd = {}
                     try:
@@ -249,7 +282,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                     if r.status in (200, 201) and fcd.get("success"):
                         b_rep["core"]["claim"] = f"Claimed {fcd.get('claimed', 0):.4f} GRAM ✅"
                     elif fcd.get("error") == "below_minimum":
-                        b_rep["core"]["claim"] = f"Accumulating: {fcd.get('current', 0):.4f} / {fcd.get('minClaim', 0.05)} GRAM ✅"
+                        b_rep["core"]["claim"] = f"Accumulating: {fcd.get('current', 0):.4f} / 0.05 GRAM ✅"
                     else:
                         b_rep["core"]["claim"] = f"HTTP {r.status} ({fcd.get('error', 'ok')})"
 
