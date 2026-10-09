@@ -15,9 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     * Added `permissions: { contents: write, actions: write }` enabling automated workflow triggers.
     * Implemented automated pipeline dispatch: upon successful MTProto token harvesting, the workflow immediately dispatches `mrg_turnstile_solver.yml` via GitHub API with fresh tokens, eliminating stale token race conditions.
     * Added automated dispatch to Render Standby multi-node mesh (`/api/farm/cloud-all`) across Frankfurt and Oregon nodes upon token sync.
-  - **☁️ Multi-Bot Fleet Farming Verified**:
+  - **☁️ Multi-Bot Fleet Farming & Edge Keep-Alive Expansion**:
     * Confirmed active continuous farming on Render Frankfurt Node 2 (`/api/farm/status`) with 18/18 accounts executed.
     * Verified massive balances: Arif @ Level 116 (1,834.7 ATF), Arif @ Level 97 (2,718.3 MRG), Nancy @ Level 93 (2,525.4 MRG), Nadim (68.3 VIC), and active task/referral claims.
+    * Expanded Cloudflare Edge Worker scheduled crons (`deploy_both_cf_workers.py`) to keep Render Node 3 (Oregon) permanently warm and dispatch load-balanced farming between Frankfurt (Node 2) and Oregon (Node 3).
 
 - **🔒 Resilient MTProto Connection Retry Engine & Multi-Node Render Deployment**:
   - **⚡ MTProto TCP Connection Retries & Backoff (`refresh_cloud_tokens.py` & `render_standby_app.py`)**:

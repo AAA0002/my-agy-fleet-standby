@@ -8767,9 +8767,19 @@ Reply to Arif naturally:`;
         }
         if (!tokens) return;
 
-        // Periodically trigger full 9-bot cloud farming run on Render Standby Node 2
+        // Periodically trigger full cloud farming run on Render Standby Node 2 (Frankfurt) & Node 3 (Oregon)
         if (CURRENT_SUBDOMAIN === "aaaai2") {
           fetch("https://my-agy-fleet-standby-node2.onrender.com/api/farm/cloud-all", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${env.SECRET_KEY}`,
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            },
+            body: JSON.stringify({ origin: "cf_scheduled_cron" })
+          }).catch(() => null);
+        } else if (CURRENT_SUBDOMAIN === "aaa-bot" || CURRENT_SUBDOMAIN === "aaa222") {
+          fetch("https://my-agy-fleet-standby-node3.onrender.com/api/farm/cloud-all", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -8844,6 +8854,7 @@ Reply to Arif naturally:`;
       "https://my-agy-fleet-deno2.aaasupporta.deno.net/health",
       "https://my-agy-fleet-standby.onrender.com/health",
       "https://my-agy-fleet-standby-node2.onrender.com/health",
+      "https://my-agy-fleet-standby-node3.onrender.com/health",
       "https://hermes-grok-cloud-agent.onrender.com/health",
       "https://atf-mtproto-relayer.onrender.com/wake"
     ];
