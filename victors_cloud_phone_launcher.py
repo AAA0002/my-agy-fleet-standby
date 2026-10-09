@@ -13,6 +13,9 @@ import os
 import sys
 import json
 import time
+import struct
+import hashlib
+import base64
 import urllib.parse
 import urllib.request
 import logging
@@ -118,6 +121,78 @@ def load_fleet_ton_wallets() -> dict:
     except Exception as e:
         logger.warning(f"Error fetching TON wallets from Upstash: {e}")
     return {}
+
+
+def load_all_miniapp_tokens() -> dict:
+    """Fetch miniapp_tokens master dictionary from Upstash Redis."""
+    try:
+        req = urllib.request.Request(
+            f"{UPSTASH_URL}/get/miniapp_tokens",
+            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        )
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            data = json.loads(resp.read().decode())
+            res = data.get("result")
+            if res:
+                return json.loads(res) if isinstance(res, str) else res
+    except Exception as e:
+        logger.warning(f"Error fetching miniapp_tokens: {e}")
+    return {}
+
+
+def create_victors_ton_proof(wallet_entry: dict, nonce: str) -> tuple:
+    """Signs TonConnect 2.0 proof-of-ownership for Victor's Company."""
+    try:
+        from nacl.signing import SigningKey
+        from tonsdk.contract.wallet import Wallets, WalletVersionEnum
+    except ImportError:
+        logger.error("Missing tonsdk or pynacl. Cannot create TonConnect proof.")
+        return None, None, None, None
+
+    mnemonic = wallet_entry.get("mnemonic")
+    if not mnemonic:
+        return None, None, None, None
+
+    words = mnemonic.split() if isinstance(mnemonic, str) else mnemonic
+    _, pub_key_bytes, priv_key_bytes, wallet_contract = Wallets.from_mnemonics(
+        mnemonics=words, version=WalletVersionEnum.v4r2
+    )
+    state_init_res = wallet_contract.create_state_init()
+    state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
+
+    t_addr = wallet_contract.address
+    wc = t_addr.wc
+    addr_hash = t_addr.hash_part
+    friendly_addr = t_addr.to_string(is_user_friendly=True, is_bounceable=False, is_url_safe=True)
+    domain = "app.victors.company"
+    timestamp = int(time.time())
+
+    prefix = b"ton-proof-item-v2/"
+    wc_bytes = struct.pack(">i", wc)
+    domain_bytes = domain.encode("utf-8")
+    domain_len = struct.pack("<I", len(domain_bytes))
+    ts_bytes = struct.pack("<Q", timestamp)
+    payload_bytes = nonce.encode("utf-8")
+
+    msg = prefix + wc_bytes + addr_hash + domain_len + domain_bytes + ts_bytes + payload_bytes
+    msg_hash = hashlib.sha256(msg).digest()
+    full_msg = b"\xff\xff" + b"ton-connect" + msg_hash
+    digest = hashlib.sha256(full_msg).digest()
+
+    signing_key = SigningKey(priv_key_bytes[:32])
+    sig = signing_key.sign(digest).signature
+    sig_b64 = base64.b64encode(sig).decode("utf-8")
+
+    proof_item = {
+        "timestamp": timestamp,
+        "domain": {
+            "lengthBytes": len(domain_bytes),
+            "value": domain
+        },
+        "signature": sig_b64,
+        "payload": nonce
+    }
+    return proof_item, state_init_b64, pub_key_bytes.hex(), friendly_addr
 
 
 def get_token_from_upstash(uid: int) -> dict:
@@ -255,7 +330,7 @@ def probe_account(uid: int, v_init: str) -> tuple:
 
 
 def qualify_recruit(uid: int, v_init: str, human_pass: str, is_master: bool, ton_wallets: dict):
-    """Qualifies recruit: links dedicated TON wallet, claims task, triggers referral bonus."""
+    """Qualifies recruit: links dedicated TON wallet via TonConnect 2.0 proof, claims tasks, activates mining."""
     v_headers = {
         "Content-Type": "application/json",
         "Authorization": f"tma {v_init}",
@@ -265,23 +340,38 @@ def qualify_recruit(uid: int, v_init: str, human_pass: str, is_master: bool, ton
         "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Mobile"
     }
 
-    # 1. Complete tutorial & checkin
-    safe_post(f"{VICTORS_API}/me/tutorial", {}, extra_headers=v_headers)
-    safe_post(f"{VICTORS_API}/checkin", {}, extra_headers=v_headers)
+    try:
+        # 1. Complete tutorial & checkin
+        safe_post(f"{VICTORS_API}/me/tutorial", {}, extra_headers=v_headers)
+        safe_post(f"{VICTORS_API}/checkin", {}, extra_headers=v_headers)
 
-    # 2. Connect TON wallet & claim connect-wallet task (makes recruit QUALIFIED)
-    w_entry = ton_wallets.get(str(uid)) or ton_wallets.get(uid)
-    if w_entry and isinstance(w_entry, dict) and w_entry.get("address"):
-        ton_addr = w_entry["address"]
-        w_code, w_res = safe_post(f"{VICTORS_API}/wallet/connect", {"address": ton_addr}, extra_headers=v_headers)
-        logger.info(f"💎 UID {uid}: Linked TON wallet {ton_addr[:10]}... (code: {w_code})")
-        t_code, t_res = safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": "connect-wallet"}, extra_headers=v_headers)
-        logger.info(f"🎯 UID {uid}: Claimed connect-wallet task -> QUALIFIED: {t_code} {t_res}")
-    else:
-        logger.warning(f"⚠️ UID {uid}: No dedicated TON wallet found in Upstash!")
+        # 2. Connect TON wallet with TonConnect 2.0 proof
+        w_entry = ton_wallets.get(str(uid)) or ton_wallets.get(uid)
+        if w_entry and isinstance(w_entry, dict) and w_entry.get("mnemonic"):
+            np_code, np_res = safe_get(f"{VICTORS_API}/wallet/proof-payload", extra_headers=v_headers)
+            if np_code == 200 and isinstance(np_res, dict) and np_res.get("payload"):
+                nonce = np_res["payload"]
+                proof_item, state_init_b64, pub_key_hex, friendly_addr = create_victors_ton_proof(w_entry, nonce)
+                if proof_item:
+                    conn_body = {
+                        "address": friendly_addr,
+                        "proof": proof_item,
+                        "stateInit": state_init_b64,
+                        "publicKey": pub_key_hex
+                    }
+                    w_code, w_res = safe_post(f"{VICTORS_API}/wallet/connect", conn_body, extra_headers=v_headers)
+                    logger.info(f"💎 UID {uid}: TON wallet {friendly_addr[:10]}... connected ({w_code}) -> walletOwned=True!")
 
-    # 3. Mining claim
-    safe_post(f"{VICTORS_API}/mining/claim", {}, extra_headers=v_headers)
+        # 3. Claim Free Social Tasks
+        for tid in ["follow-victors-company-on-x", "like-retweet-comment-on-x", "subscribe-vic-on-youtube"]:
+            t_code, t_res = safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": tid}, extra_headers=v_headers)
+            if t_code in (200, 201) and isinstance(t_res, dict) and t_res.get("success"):
+                logger.info(f"🎁 UID {uid}: Claimed task {tid} (+{t_res.get('reward')} VIC)")
+
+        # 4. Mining claim
+        safe_post(f"{VICTORS_API}/mining/claim", {}, extra_headers=v_headers)
+    except Exception as e:
+        logger.error(f"UID {uid} qualify_recruit exception: {e}")
 
 
 def sweep_master_bonuses(master_uid: int, v_init: str = None, human_pass: str = None):
@@ -309,12 +399,17 @@ def main():
     logger.info("====================================================================")
 
     ton_wallets = load_fleet_ton_wallets()
+    miniapp_all = load_all_miniapp_tokens()
     raw_accounts = []
 
     for uid in FLEET_UIDS:
         tok_dict = get_token_from_upstash(uid)
         vic_init = tok_dict.get("victors_init_data")
-        name = tok_dict.get("name", f"UID {uid}")
+        name = tok_dict.get("name")
+        if not vic_init and str(uid) in miniapp_all:
+            vic_init = miniapp_all[str(uid)].get("victors_init_data")
+            name = miniapp_all[str(uid)].get("name")
+        name = name or f"UID {uid}"
         if vic_init:
             raw_accounts.append({
                 "uid": uid,

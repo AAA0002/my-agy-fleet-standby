@@ -4,6 +4,25 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **💎 Victor's Company (`@VictorsCompanybot`) TonConnect 2.0 Cryptographic Proof Wallet Linking & Recruit Qualification (`victors_fleet_wallet_connector.py`, `victors_sb_solver.py`, `victors_cloud_phone_launcher.py`, `mrg_turnstile_solver.py`, `.github/workflows/victors_sb_solver.yml`, `.github/workflows/victors_cloud_phone_tunnel.yml`)**:
+  - **🔍 TonConnect 2.0 Proof Requirement Discovery**:
+    * Reverse-engineered `index-7o8fKOLT.js` and `ton-CuFtAy9a.js` from Victor's Company frontend (`https://app.victors.company`).
+    * Discovered that raw address submission to `POST /api/wallet/connect` returned `HTTP 400 {"success": false, "error": "Confirm this wallet is yours: disconnect it, connect again and approve the request in your wallet."}`.
+    * Uncovered that Victor's Company requires the TonConnect 2.0 protocol standard: client requests challenge nonce from `GET /api/wallet/proof-payload`, signs the binary `ton-proof-item-v2` payload with the account's TON Ed25519 private key (specifying domain `app.victors.company`), and submits `{ address, proof, stateInit, publicKey }` to `POST /api/wallet/connect`.
+  - **🚀 100% Successful Verification Across All 11 Authenticated Fleet Accounts**:
+    * Executed `victors_fleet_wallet_connector.py` across all 11 sub-accounts with stored `humanPass` in Upstash Redis.
+    * Derived mathematical non-bounceable user-friendly addresses directly from each account's dedicated `wallet_contract` state init (`to_string(is_user_friendly=True, is_bounceable=False, is_url_safe=True)`), preventing CRC16 checksum parsing exceptions.
+    * All 11 fleet sub-accounts successfully verified ownership: `isWalletConnected: true, walletOwned: true`:
+      - `8881914294` (Nancy), `8826375659` (Arif), `8450010161` (Nadim), `8782429452` (Kaitlyn), `7734849205` (Abid Hasan), `8851426148` (Tg), `8203342513` (Girtt), `8190649727` (MD. Arif), `8741547543` (Abid 3), `7954290138` (Roger), `8975442879` (Mary).
+  - **🎁 Automated Reward Claims & Mining Yield Activation**:
+    * Automatically claimed daily check-in streak (`/api/checkin`) and completed onboarding tutorial (`/api/me/tutorial`).
+    * Automatically claimed free social tasks (`follow-victors-company-on-x`, `like-retweet-comment-on-x`, `subscribe-vic-on-youtube`) adding +15 VIC to each worker's in-app balance.
+    * Triggered mining yield accrual claims (`/api/mining/claim`).
+  - **☁️ Unified Cloud Pipeline & Dependency Hardening**:
+    * Integrated `create_victors_ton_proof` and miniapp fallback loading into `victors_sb_solver.py`, `victors_cloud_phone_launcher.py`, and `mrg_turnstile_solver.py`.
+    * Added `tonsdk` and `pynacl` dependencies to GitHub Actions workflows (`.github/workflows/victors_sb_solver.yml` and `.github/workflows/victors_cloud_phone_tunnel.yml`).
+    * Maintained strict Zero Phone Load (Rule 4) and User Bot Immutability (Rule 1).
+
 - **📱 Victor's Company (`@VictorsCompanybot`) Resolution: Eliminating "Only Accepts Phone" Lockout & Mobile WebApp Hash Repair (`victors_cloud_phone_launcher.py`, `victors_sb_solver.py`)**:
   - **🔍 Root Cause Discovery & Architectural Breakdown**:
     * Diagnosed user report: *"the main problem is not the casup it only acctp phone"*.

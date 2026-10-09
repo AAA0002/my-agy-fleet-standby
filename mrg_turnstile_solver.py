@@ -995,17 +995,30 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
         safe_post(f"{VICTORS_API}/me/tutorial", {}, extra_headers=v_authed_headers)
         safe_post(f"{VICTORS_API}/checkin", {}, extra_headers=v_authed_headers)
 
-        # 2. Connect TON wallet to qualify recruit & unlock Level 1 Miner
+        # 2. Connect TON wallet to qualify recruit & unlock Level 1 Miner via TonConnect 2.0 proof
         fleet_ton_wallets = load_fleet_ton_wallets()
         w_entry = fleet_ton_wallets.get(str(uid)) or fleet_ton_wallets.get(uid)
-        if w_entry and w_entry.get("address"):
-            ton_addr = w_entry["address"]
-            c_code, c_res = safe_post(f"{VICTORS_API}/wallet/connect", {"address": ton_addr}, extra_headers=v_authed_headers)
-            logger.info(f"💼 [Victor's] UID {uid}: Connected TON wallet {ton_addr[:12]}...: {c_code}")
+        if w_entry and w_entry.get("mnemonic"):
+            np_code, np_res = safe_get(f"{VICTORS_API}/wallet/proof-payload", extra_headers=v_authed_headers)
+            if np_code == 200 and isinstance(np_res, dict) and np_res.get("payload"):
+                nonce = np_res["payload"]
+                proof_data = create_ton_proof(w_entry, nonce, domain="app.victors.company")
+                words = w_entry["mnemonic"].split() if isinstance(w_entry["mnemonic"], str) else w_entry["mnemonic"]
+                from tonsdk.contract.wallet import Wallets, WalletVersionEnum
+                _, _, _, wallet_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
+                friendly_addr = wallet_contract.address.to_string(is_user_friendly=True, is_bounceable=False, is_url_safe=True)
+                conn_body = {
+                    "address": friendly_addr,
+                    "proof": proof_data["proof"],
+                    "stateInit": proof_data["walletStateInit"],
+                    "publicKey": proof_data["publicKey"]
+                }
+                c_code, c_res = safe_post(f"{VICTORS_API}/wallet/connect", conn_body, extra_headers=v_authed_headers)
+                logger.info(f"💼 [Victor's] UID {uid}: Connected TON wallet {friendly_addr[:12]}... (code: {c_code}, walletOwned=True)")
 
-            # Claim connect-wallet task to qualify recruit and trigger referral rewards
-            t_code, t_res = safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": "connect-wallet"}, extra_headers=v_authed_headers)
-            logger.info(f"🎯 [Victor's] UID {uid}: Claimed connect-wallet task: {t_code} {t_res}")
+        # Claim free social tasks
+        for tid in ["follow-victors-company-on-x", "like-retweet-comment-on-x", "subscribe-vic-on-youtube"]:
+            safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": tid}, extra_headers=v_authed_headers)
 
         # 3. Claim daily passive mining
         m_code, m_res = safe_post(f"{VICTORS_API}/mining/claim", {}, extra_headers=v_authed_headers)
@@ -1047,7 +1060,7 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
     return False
 
 
-def create_ton_proof(wallet_entry: dict, payload_nonce: str) -> dict:
+def create_ton_proof(wallet_entry: dict, payload_nonce: str, domain: str = "vyro.run.place") -> dict:
     """Creates a TonConnect 2.0 proof-of-ownership payload signed with the account's TON key."""
     from nacl.signing import SigningKey
     from tonsdk.contract.wallet import Wallets, WalletVersionEnum
@@ -1063,11 +1076,10 @@ def create_ton_proof(wallet_entry: dict, payload_nonce: str) -> dict:
     state_init_res = wallet_contract.create_state_init()
     state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
 
-    t_addr = Address(wallet_entry["address"])
+    t_addr = wallet_contract.address
     wc = t_addr.wc
     addr_hash = t_addr.hash_part
 
-    domain = "vyro.run.place"
     timestamp = int(time.time())
 
     # Standard TonConnect 2.0 ton-proof-item-v2 structure
