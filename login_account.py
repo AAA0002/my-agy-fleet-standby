@@ -39,7 +39,7 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 API_ID = os.getenv("TELEGRAM_API_ID")
 API_HASH = os.getenv("TELEGRAM_API_HASH")
 
-# All 7 Verified Legitimate Fleet Bots & Referral Codes
+# All 9 Verified Legitimate Fleet Bots & Referral Codes
 STONES_BOT = "stoneswithestand_bot"
 STONES_REFERRAL_CODE = "r6727787768"
 
@@ -60,6 +60,12 @@ FINVORA_REFERRAL_CODE = "ref_TRX6727787768"
 
 TURBOGRAM_BOT = "TurboGramV1_bot"
 TURBOGRAM_REFERRAL_CODE = "r_3520c92b"
+
+VICTORS_BOT = "VictorsCompanybot"
+VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
+
+VYRO_BOT = "vyrodrop_bot"
+VYRO_REFERRAL_CODE = "ref_myFjrqqE4WN_"
 
 PRIMARY_CHAT_ID = "6727787768"
 PRIMARY_EVM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
@@ -526,25 +532,92 @@ async def bind_referrals(client, me, acc_entry):
         except Exception:
             pass
         acc_entry["turbogram_referral_bound"] = True
-        print(f"  ✅ [7/7] Successfully bound to TurboGram V1 ({TURBOGRAM_REFERRAL_CODE})!")
+        print(f"  ✅ [7/9] Successfully bound to TurboGram V1 ({TURBOGRAM_REFERRAL_CODE})!")
     except Exception as e:
         print(f"  ❌ Warning binding TurboGram referral: {e}")
 
+    # 8. Victor's Company (@VictorsCompanybot) - Referral: ref_A20AA96F18
+    print(f"  • [8/9] Connecting to @{VICTORS_BOT} with referral: {VICTORS_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=VICTORS_BOT))
+        except Exception:
+            pass
+        b_vic = await client.get_entity(VICTORS_BOT)
+        await mute_peer(client, b_vic, "VictorsCompanybot")
+        await client.send_message(b_vic, f"/start {VICTORS_REFERRAL_CODE}")
+        await asyncio.sleep(1.5)
+        try:
+            b_vic_in = await client.get_input_entity(b_vic)
+            r_vic = await client(RequestAppWebViewRequest(
+                peer=b_vic_in,
+                app=InputBotAppShortName(bot_id=b_vic_in, short_name="app"),
+                platform="android",
+                start_param=VICTORS_REFERRAL_CODE
+            ))
+            p_vic = urllib.parse.urlparse(getattr(r_vic, 'url', None) or "")
+            vic_init = urllib.parse.parse_qs(p_vic.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_vic.query).get("tgWebAppData", [None])[0]
+            if vic_init:
+                acc_entry["victors_init_data"] = vic_init
+                vic_h = {"Authorization": f"tma {vic_init}", "Content-Type": "application/json", "Origin": "https://app.victors.company", "Referer": "https://app.victors.company/"}
+                async with aiohttp.ClientSession() as vic_s:
+                    await vic_s.post("https://server.victors.company/api/auth/login", json={"startParam": VICTORS_REFERRAL_CODE, "turnstileToken": None}, headers=vic_h, timeout=aiohttp.ClientTimeout(total=8))
+        except Exception:
+            pass
+        acc_entry["victors_referral_bound"] = True
+        print(f"  ✅ [8/9] Successfully bound to Victor's Company ({VICTORS_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding Victor's Company referral: {e}")
+
+    # 9. VyroDrop (@vyrodrop_bot) - Referral: ref_myFjrqqE4WN_
+    print(f"  • [9/9] Connecting to @{VYRO_BOT} with referral: {VYRO_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=VYRO_BOT))
+        except Exception:
+            pass
+        b_vy = await client.get_entity(VYRO_BOT)
+        await mute_peer(client, b_vy, "vyrodrop_bot")
+        await client.send_message(b_vy, f"/start {VYRO_REFERRAL_CODE}")
+        await asyncio.sleep(1.5)
+        try:
+            r_vy = await client(RequestWebViewRequest(
+                peer=b_vy,
+                bot=b_vy,
+                url="https://vyro.run.place/",
+                platform="android",
+                start_param=VYRO_REFERRAL_CODE
+            ))
+            p_vy = urllib.parse.urlparse(getattr(r_vy, 'url', None) or "")
+            vy_init = urllib.parse.parse_qs(p_vy.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_vy.query).get("tgWebAppData", [None])[0]
+            if vy_init:
+                acc_entry["vyro_init_data"] = vy_init
+                vy_h = {"Authorization": f"tma {vy_init}", "Content-Type": "application/json", "Referer": "https://vyro.run.place/"}
+                async with aiohttp.ClientSession() as vy_s:
+                    await vy_s.get("https://vyro.run.place/api/bootstrap", headers=vy_h, timeout=aiohttp.ClientTimeout(total=8))
+        except Exception:
+            pass
+        acc_entry["vyro_referral_bound"] = True
+        print(f"  ✅ [9/9] Successfully bound to VyroDrop ({VYRO_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding VyroDrop referral: {e}")
 
     # Audit final referral status
-    all_7_keys = [
+    all_9_keys = [
         "stones_referral_bound", "mrg_referral_bound",
         "ailab_referral_bound", "ultrawallet_referral_bound",
         "atf_referral_bound", "finvora_referral_bound",
-        "turbogram_referral_bound"
+        "turbogram_referral_bound", "victors_referral_bound",
+        "vyro_referral_bound"
     ]
-    bound_count = sum(1 for k in all_7_keys if acc_entry.get(k))
-    if bound_count == len(all_7_keys):
+    bound_count = sum(1 for k in all_9_keys if acc_entry.get(k))
+    if bound_count == len(all_9_keys):
+        acc_entry["all_9_referrals_bound"] = True
         acc_entry["all_7_referrals_bound"] = True
         acc_entry["referrals_bound"] = True
-        print(f"\n🎉 ALL 7/7 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
+        print(f"\n🎉 ALL 9/9 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
     else:
-        print(f"\n⚠️ {bound_count}/7 bots bound. Remaining will be auto-bound on next cloud cycle.")
+        print(f"\n⚠️ {bound_count}/9 bots bound. Remaining will be auto-bound on next cloud cycle.")
 
 
 

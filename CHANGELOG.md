@@ -4,6 +4,34 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🛠️ Fleet-Wide Bug Audit, Self-Referral Prevention, Multi-Bot Cloud Turnstile Solver, and Triple-Mesh Modernization (`refresh_cloud_tokens.py`, `render_standby_app.py`, `render_app_latest.py`, `login_account.py`, `extract_all_missing_fleet_tokens.py`, `audit_bots_and_sidetasks.py`, `mrg_turnstile_solver.py`, `batch_atf_miner.py`, `refresh_fleet_tokens.py`, `report_and_purge_bnb_galaxy.py`, `report_and_purge_ominix.py`, `batch_join_and_verify_channels.py`, `.github/workflows/mrg_turnstile_solver.yml`)**:
+  - **🐛 Bug 1: Master Self-Referral Parameter Injection Fixed**:
+    * In `refresh_cloud_tokens.py`, `render_standby_app.py`, and `render_app_latest.py`, `start_param=VICTORS_REF` and `start_param=VYRO_REF` were being passed unconditionally during token extraction and WebApp login, causing the Master Account (`6727787768`) to submit its own referral code to bot backends.
+    * Refactored to pass `start_param=None` for Master Account (`uid == REPORT_CHAT_ID` / `is_owner`), preventing self-referral rejection.
+    * Fixed TurboGram token extraction bug in `render_standby_app.py` and `render_app_latest.py` where `REPORT_CHAT_ID` (`6727787768`) was passed instead of `TURBOGRAM_REFERRAL_CODE` (`r_3520c92b`).
+  - **🐛 Bug 2: Hardcoded Incorrect `API_HASH` Fallback Eradicated Across 5 Files**:
+    * Corrected typo in fallback `API_HASH` (`5cd9e5c464c1e4c76b911c750ba42cbb` -> `5cd9e5bbfb572a4429a0c54774153b47`) and added `API_ID` (`24726207`) fallbacks across `batch_atf_miner.py`, `extract_all_missing_fleet_tokens.py`, `refresh_fleet_tokens.py`, `report_and_purge_bnb_galaxy.py`, and `report_and_purge_ominix.py`.
+  - **🐛 Bug 3: Unhandled `TypeError` in `batch_join_and_verify_channels.py`**:
+    * Replaced bare `int(os.getenv("TELEGRAM_API_ID"))` with safe `.env` loader and default fallbacks.
+    * Updated channel subscription list to include verified legitimate fleet channels (`stoneswithestand`, `mrgminer`, `mrgfun`, `ultrawalletofficial`, `finvoraweb3`, `TurboGramAnnouncements`, `TurboGramPayment`).
+  - **🐛 Bug 4: Incomplete Bot Onboarding in `login_account.py`**:
+    * Extended `login_account.py` from 7 bots to all 9 active fleet bots by adding Bot 8 (Victor's Company, referral `ref_A20AA96F18`) and Bot 9 (VyroDrop, referral `ref_myFjrqqE4WN_`) into `bind_referrals()`.
+    * Upgraded audit logic to enforce `all_9_referrals_bound`.
+  - **🐛 Bug 5: Dead URLs & Missing 9-Bot Parity in `extract_all_missing_fleet_tokens.py`**:
+    * Replaced deprecated dead URLs (`miners.stones.digital`, `miner.mrg.fun`, `ailabrobot.com`, `ultrawallet.site`) with active production endpoints (`app.stoneswithestand.my.id`, `app.mrgtoken.xyz`, `api.ailab-agent.online`, `wallet.trxvault.top`).
+    * Added Bot 8 (`victors_init_data`) and Bot 9 (`vyro_init_data`) to `TARGET_BOTS`.
+  - **🐛 Bug 6: Local-Only 7-Bot Limitation in `audit_bots_and_sidetasks.py`**:
+    * Upgraded token database loader to dynamically query Upstash Redis (`miniapp_tokens`) with local file fallback.
+    * Added full live auditing routines for Victor's Company (`@VictorsCompanybot`) and VyroDrop (`@vyrodrop_bot`).
+  - **🛡️ Multi-Bot Cloud Turnstile Solver Engine**:
+    * Extended `mrg_turnstile_solver.py` into a unified cloud solver for both MRG and Victor's Company (`0x4AAAAAAFD0KRgPRFVwDvgn`).
+    * Implemented `solve_victors_turnstile`: launches stealth Chromium headless, solves Turnstile challenge, executes `POST /api/auth/login`, extracts `humanPass`, and persists it to Upstash Redis (`victors:pass:{uid}`).
+    * Updated GitHub Actions workflow `.github/workflows/mrg_turnstile_solver.yml` to run every 3 hours with 0 phone load.
+  - **🚀 Triple Render Mesh Auto-Deployment**:
+    * Updated `push_to_standby_repo.py` to push clean `app.py` to `AAA0002/my-agy-fleet-standby` (Commit `74538b8b`) and `koramshah2/my-agy-fleet-standby` (Commit `c0ff4b7f`).
+    * Automatically triggered live deployments across Render Node 2 (`dep-db43luvlk1mc73emvckg`) and Render Node 3 (`dep-db43lv7lk1mc73emvd20`).
+    * Verified all 3 Render nodes and all 5 Cloudflare edge nodes return 🟢 200 OK.
+
 - **🚀 Triple Render Mesh Deployment, Victor's Company & VyroDrop Turnstile/Wallet Discovery, and Fleet Integrity Hardening (`PROJECT_BIBLE.md`, `CHANGELOG.md`, `push_to_standby_repo.py`, `deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`)**:
   - **🔍 Root Cause Discovery: Why New Bots Auto-Farming & Referrals Failed**:
     * **Victor's Company (`@VictorsCompanybot`)**:

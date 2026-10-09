@@ -30,8 +30,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
 FLEET_TOKENS_FILE = os.path.join(BASE_DIR, "fleet_miniapp_tokens.json")
 
-API_ID = int(os.getenv("TELEGRAM_API_ID", "37321306"))
-API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5c464c1e4c76b911c750ba42cbb")
+API_ID = int(os.getenv("TELEGRAM_API_ID", "24726207"))
+API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")
 PRIMARY_ID = "6727787768"
 
 CF_WORKERS = [

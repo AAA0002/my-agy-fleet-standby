@@ -7,9 +7,39 @@ import aiohttp
 import re
 import urllib.parse
 
+from dotenv import load_dotenv
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-with open(os.path.join(BASE_DIR, "fleet_miniapp_tokens.json"), "r") as f:
-    TOKENS_DB = json.load(f)
+load_dotenv(os.path.join(BASE_DIR, ".env"))
+
+def load_tokens_db():
+    tokens = {}
+    try:
+        upstash_url = os.getenv("UPSTASH_URL")
+        upstash_token = os.getenv("UPSTASH_TOKEN")
+        if upstash_url and upstash_token:
+            req = urllib.request.Request(
+                f"{upstash_url}/get/miniapp_tokens",
+                headers={"Authorization": f"Bearer {upstash_token}"}
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read().decode())
+                res = data.get("result")
+                if res:
+                    tokens = json.loads(res) if isinstance(res, str) else res
+    except Exception as e:
+        print(f"⚠️ Upstash fetch notice: {e}")
+    if not tokens:
+        tokens_path = os.path.join(BASE_DIR, "fleet_miniapp_tokens.json")
+        if os.path.exists(tokens_path):
+            try:
+                with open(tokens_path, "r", encoding="utf-8") as f:
+                    tokens = json.load(f)
+            except Exception:
+                pass
+    return tokens
+
+TOKENS_DB = load_tokens_db()
 
 with open(os.path.join(BASE_DIR, "accounts.json"), "r") as f:
     ACCOUNTS = json.load(f)
@@ -237,6 +267,83 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
             except Exception as e:
                 b_rep["error"] = str(e)
             report["bots"]["7. TurboGram V1"] = b_rep
+
+        # 8. Victor's Company
+        vic_init = tokens.get("victors_init_data")
+        if vic_init:
+            v_h = {
+                **headers,
+                "Authorization": f"tma {vic_init}",
+                "Origin": "https://app.victors.company",
+                "Referer": "https://app.victors.company/"
+            }
+            b_rep = {"core": {}, "side_tasks": []}
+            try:
+                # Login
+                log_p = {"turnstileToken": None}
+                if not is_owner:
+                    log_p["startParam"] = "ref_A20AA96F18"
+                async with session.post("https://server.victors.company/api/auth/login", json=log_p, headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    l_data = await r.json() if r.status in (200, 201) else {}
+                    hp = l_data.get("humanPass")
+                    if hp:
+                        v_h["x-human-pass"] = str(hp)
+                    b_rep["core"]["login"] = f"HTTP {r.status} (humanPass: {bool(hp)})"
+                
+                # Me
+                async with session.get("https://server.victors.company/api/me", headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    if r.status == 200:
+                        me = await r.json()
+                        u = me.get("user") or me
+                        b_rep["core"]["balance"] = f"Level {u.get('level', 1)}, Bal: {u.get('miningBalance', 0)}"
+
+                # Checkin
+                async with session.post("https://server.victors.company/api/checkin", json={}, headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    b_rep["side_tasks"].append(f"Daily Checkin: HTTP {r.status}")
+
+                # Mining claim
+                async with session.post("https://server.victors.company/api/mining/claim", json={}, headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    b_rep["core"]["claim"] = f"HTTP {r.status}"
+
+            except Exception as e:
+                b_rep["error"] = str(e)
+            report["bots"]["8. Victor's Company"] = b_rep
+
+        # 9. VyroDrop
+        vyro_init = tokens.get("vyro_init_data")
+        if vyro_init:
+            import uuid
+            vy_h = {
+                **headers,
+                "Authorization": f"tma {vyro_init}",
+                "X-Vyro-UI-Contract": "claim-inactivity-v1",
+                "Referer": "https://vyro.run.place/"
+            }
+            b_rep = {"core": {}, "side_tasks": []}
+            try:
+                # Bootstrap
+                async with session.get("https://vyro.run.place/api/bootstrap", headers=vy_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    if r.status == 200:
+                        bd = await r.json()
+                        m = bd.get("miner", {})
+                        b_rep["core"]["bootstrap"] = f"Level {m.get('level', 1)}, Speed: {m.get('currentSpeed', 0)}"
+                    else:
+                        b_rep["core"]["bootstrap"] = f"HTTP {r.status}"
+
+                # Mining claim / start
+                async with session.post("https://vyro.run.place/api/mining/start", json={"idempotencyKey": str(uuid.uuid4())}, headers=vy_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    b_rep["core"]["start_mining"] = f"HTTP {r.status}"
+
+                # Tasks
+                t_hdrs = {**vy_h, "x-vyro-tasks-protocol": "2"}
+                async with session.get("https://vyro.run.place/api/tasks?limit=5", headers=t_hdrs, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    if r.status == 200:
+                        td = await r.json()
+                        tasks = td.get("tasks", [])
+                        b_rep["side_tasks"].append(f"Tasks: {len(tasks)} available")
+            except Exception as e:
+                b_rep["error"] = str(e)
+            report["bots"]["9. VyroDrop"] = b_rep
 
     return report
 

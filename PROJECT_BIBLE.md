@@ -351,6 +351,29 @@ The fleet's 7 active high-conviction legitimate bots and channels are fundamenta
 
 ---
 
+## ⚡ 6.3 Multi-Bot Cloud Turnstile Engine & Self-Referral Prevention Protocol (October 9, 2026)
+
+### 1. Root-Cause Diagnosis: Why New Bots Farming Paused
+- **Victor's Company (`@VictorsCompanybot`)**:
+  - `POST /api/auth/login` is guarded by Cloudflare Turnstile (SiteKey `0x4AAAAAAFD0KRgPRFVwDvgn`).
+  - Calling login without Turnstile returns `403 HUMAN_REQUIRED`. Without successful login, the referral code was rejected, and `humanPass` was withheld.
+- **VyroDrop (`@vyrodrop_bot`)**:
+  - Referrals to Master UUID (`738aee88-2e37-4a70-8b3b-dd1819395130`) bound successfully via `ref_myFjrqqE4WN_`.
+  - `/api/mining/start` returned `409 MINING_WALLET_REQUIRED`. VyroDrop mining and referral activation are blocked until invited workers connect an isolated TON wallet and start their first mining session.
+
+### 2. Multi-Bot Cloud Turnstile Solver Engine (`mrg_turnstile_solver.py`)
+- Solves Cloudflare Turnstile in the cloud (GitHub Actions / Cloud VMs) via Patchright Chromium stealth:
+  - **MRG Miner**: Solves SiteKey `0x4AAAAAAFI-XXL7bFNbLU_J` on `app.mrgtoken.xyz`, refreshes `humanVerifiedUntil`, and claims mining rewards.
+  - **Victor's Company**: Solves SiteKey `0x4AAAAAAFD0KRgPRFVwDvgn` on `app.victors.company`, completes `/api/auth/login`, retrieves `humanPass`, and stores it into Upstash Redis (`victors:pass:{uid}`).
+  - **Zero Phone Load**: 100% cloud execution running every 3 hours (`.github/workflows/mrg_turnstile_solver.yml`). 0 local processes on Samsung Galaxy A30.
+
+### 3. Strict Master Account Self-Referral Immunity
+- Rejection was prevented across `refresh_cloud_tokens.py`, `render_standby_app.py`, and `render_app_latest.py`:
+  - When `acc_uid == REPORT_CHAT_ID` (`6727787768`), bots receive `start_param=None` instead of their own referral codes.
+  - Workers (Accounts 2–18) continue to submit master referral codes (`VICTORS_REF: ref_A20AA96F18`, `VYRO_REF: ref_myFjrqqE4WN_`).
+
+---
+
 ## 🛠️ 7. Operator & AI Cheat Sheet
 
 Here are the exact commands to run for everyday operations:

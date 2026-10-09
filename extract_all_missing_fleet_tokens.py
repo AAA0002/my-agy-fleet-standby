@@ -14,39 +14,42 @@ import asyncio
 import urllib.parse
 from telethon import TelegramClient
 from telethon.sessions import StringSession
-from telethon.tl.functions.messages import RequestWebViewRequest
+from dotenv import load_dotenv
+from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest
+from telethon.tl.types import InputBotAppShortName
 from proxy_manager import get_account_fingerprint
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
 TOKENS_FILE = os.path.join(BASE_DIR, "fleet_miniapp_tokens.json")
 
-API_ID = 37321306
-API_HASH = "5cd9e5c464c1e4c76b911c750ba42cbb"
+load_dotenv(os.path.join(BASE_DIR, ".env"))
+API_ID = int(os.getenv("TELEGRAM_API_ID", "24726207"))
+API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")
 
 TARGET_BOTS = [
     {
         "key": "stones_init_data",
         "bot": "stoneswithestand_bot",
-        "url": "https://miners.stones.digital/",
+        "url": "https://app.stoneswithestand.my.id/",
         "name": "Stones Miners"
     },
     {
         "key": "mrg_init_data",
         "bot": "mrgminerbot",
-        "url": "https://miner.mrg.fun/",
+        "url": "https://app.mrgtoken.xyz/",
         "name": "MRG Miner"
     },
     {
         "key": "ailab_init_data",
         "bot": "AiLab_robot",
-        "url": "https://ailabrobot.com/",
+        "url": "https://api.ailab-agent.online/",
         "name": "AI Lab Robot"
     },
     {
         "key": "ultrawallet_init_data",
         "bot": "UltrawalletTrade_Bot",
-        "url": "https://ultrawallet.site/",
+        "url": "https://wallet.trxvault.top/",
         "name": "UltraWallet"
     },
     {
@@ -66,6 +69,18 @@ TARGET_BOTS = [
         "bot": "TurboGramV1_bot",
         "url": "https://turbo.tamimdev.dev/",
         "name": "TurboGram V1"
+    },
+    {
+        "key": "victors_init_data",
+        "bot": "VictorsCompanybot",
+        "url": "https://app.victors.company/",
+        "name": "Victor's Company"
+    },
+    {
+        "key": "vyro_init_data",
+        "bot": "vyrodrop_bot",
+        "url": "https://vyro.run.place/",
+        "name": "VyroDrop"
     }
 ]
 

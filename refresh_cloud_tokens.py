@@ -241,8 +241,12 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
         # 8. Victor's Company
         try:
             b_vic = await cl.get_entity(VICTORS_BOT)
+            v_ref = VICTORS_REF if acc_uid != str(REPORT_CHAT_ID) else None
             try:
-                await cl.send_message(b_vic, f"/start {VICTORS_REF}")
+                if v_ref:
+                    await cl.send_message(b_vic, f"/start {v_ref}")
+                else:
+                    await cl.send_message(b_vic, "/start")
             except Exception:
                 pass
             init_vic = None
@@ -252,7 +256,7 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
                     peer=b_vic_in,
                     app=InputBotAppShortName(bot_id=b_vic_in, short_name="app"),
                     platform="android",
-                    start_param=VICTORS_REF
+                    start_param=v_ref
                 ))
                 init_vic = urllib.parse.parse_qs(urllib.parse.urlparse(r_vic.url).fragment).get("tgWebAppData", [None])[0]
             except Exception:
@@ -262,7 +266,7 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
                     r_vic2 = await cl(RequestWebViewRequest(
                         peer=b_vic, bot=b_vic, platform="android",
                         url="https://app.victors.company/",
-                        start_param=VICTORS_REF
+                        start_param=v_ref
                     ))
                     init_vic = urllib.parse.parse_qs(urllib.parse.urlparse(r_vic2.url).fragment).get("tgWebAppData", [None])[0]
                 except Exception:
@@ -277,7 +281,7 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
                                     raw_b = getattr(b, "button", b)
                                     w_url = getattr(getattr(raw_b, "web_app", None), "url", None) or getattr(raw_b, "url", None)
                                     if w_url:
-                                        res = await cl(RequestWebViewRequest(peer=b_vic, bot=b_vic, platform="android", url=w_url, start_param=VICTORS_REF))
+                                        res = await cl(RequestWebViewRequest(peer=b_vic, bot=b_vic, platform="android", url=w_url, start_param=v_ref))
                                         init_vic = urllib.parse.parse_qs(urllib.parse.urlparse(res.url).fragment).get("tgWebAppData", [None])[0]
                                         if init_vic:
                                             break
@@ -298,14 +302,18 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
         # 9. VyroDrop
         try:
             b_vy = await cl.get_entity(VYRO_BOT)
+            vy_ref = VYRO_REF if acc_uid != str(REPORT_CHAT_ID) else None
             try:
-                await cl.send_message(b_vy, f"/start {VYRO_REF}")
+                if vy_ref:
+                    await cl.send_message(b_vy, f"/start {vy_ref}")
+                else:
+                    await cl.send_message(b_vy, "/start")
             except Exception:
                 pass
             r_vy = await cl(RequestWebViewRequest(
                 peer=b_vy, bot=b_vy, platform="android",
                 url="https://vyro.run.place/",
-                start_param=VYRO_REF
+                start_param=vy_ref
             ))
             init_vy = urllib.parse.parse_qs(urllib.parse.urlparse(r_vy.url).fragment).get("tgWebAppData", [None])[0]
             if init_vy:

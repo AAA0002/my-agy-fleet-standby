@@ -8,18 +8,20 @@ from telethon.sessions import StringSession
 from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.functions.messages import RequestWebViewRequest, RequestAppWebViewRequest
 from telethon.tl.types import InputBotAppShortName
-from dotenv import load_dotenv
-
-load_dotenv()
-API_ID = int(os.getenv("TELEGRAM_API_ID"))
-API_HASH = os.getenv("TELEGRAM_API_HASH")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
+API_ID = int(os.getenv("TELEGRAM_API_ID", "24726207"))
+API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")
 ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
 
 CHANNELS = [
     "stoneswithestand",
     "mrgminer",
-    "ultrawallet"
+    "mrgfun",
+    "ultrawalletofficial",
+    "finvoraweb3",
+    "TurboGramAnnouncements",
+    "TurboGramPayment"
 ]
 
 def main():

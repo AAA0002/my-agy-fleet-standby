@@ -35,6 +35,11 @@ SITE_KEY = "0x4AAAAAAFI-XXL7bFNbLU_J"
 APP_ORIGIN = "https://app.mrgtoken.xyz"
 API_BASE = "https://mrg.up.railway.app"
 
+VICTORS_SITEKEY = "0x4AAAAAAFD0KRgPRFVwDvgn"
+VICTORS_ORIGIN = "https://app.victors.company"
+VICTORS_API = "https://server.victors.company/api"
+VICTORS_REF = "ref_A20AA96F18"
+
 FLEET_UIDS = [
     6727787768,  # Master (Arif Hossain)
     8881914294,  # Nancy
@@ -389,6 +394,149 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
     return False
 
 
+def save_victors_pass_to_upstash(uid: int, human_pass: str):
+    """Saves valid Victor's Company humanPass to Upstash Redis for edge nodes."""
+    try:
+        req = urllib.request.Request(
+            f"{UPSTASH_URL}/set/victors:pass:{uid}",
+            data=json.dumps({"humanPass": human_pass, "updated_at": time.time()}).encode(),
+            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            pass
+    except Exception as e:
+        logger.warning(f"Error saving Victor's pass to Redis for UID {uid}: {e}")
+
+
+async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: bool) -> bool:
+    """Solves Turnstile for Victor's Company, logs in, binds referral, and saves humanPass."""
+    context = await browser.new_context(
+        user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36",
+        viewport={"width": 412, "height": 915},
+        locale="en-US",
+        timezone_id="UTC"
+    )
+    page = await context.new_page()
+    encoded_init = urllib.parse.quote(v_init)
+    target_url = f"{VICTORS_ORIGIN}/#tgWebAppData={encoded_init}"
+
+    await page.add_init_script(f"""
+        Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
+        window.Telegram = {{
+            WebApp: {{
+                initData: '{v_init}',
+                initDataUnsafe: {{}},
+                ready: () => {{}},
+                expand: () => {{}},
+                close: () => {{}}
+            }}
+        }};
+    """)
+
+    acquired_token = {"token": None}
+
+    async def handle_request(request):
+        try:
+            if "auth/login" in request.url:
+                post_data = request.post_data_json
+                if post_data and post_data.get("turnstileToken"):
+                    acquired_token["token"] = post_data["turnstileToken"]
+        except Exception:
+            pass
+
+    page.on("request", handle_request)
+
+    try:
+        await page.goto(target_url, wait_until="load", timeout=25000)
+    except Exception as e:
+        logger.warning(f"[Victor's] UID {uid} navigation note: {e}")
+
+    await asyncio.sleep(2.5)
+
+    for _ in range(6):
+        if acquired_token["token"]:
+            break
+        try:
+            ts_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
+            checkbox = ts_frame.locator("input[type='checkbox'], #challenge-stage, .ctp-checkbox-label, body")
+            if await checkbox.count() > 0:
+                logger.info(f"🖱️ [Victor's] Found Turnstile iframe for UID {uid}! Clicking...")
+                await checkbox.first.click(timeout=3000)
+                break
+        except Exception:
+            pass
+        await asyncio.sleep(1.0)
+
+    if not acquired_token["token"]:
+        solve_js = f"""
+            async () => {{
+                return new Promise((resolve) => {{
+                    let checkInt = setInterval(() => {{
+                        if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                            clearInterval(checkInt);
+                            try {{
+                                let container = document.getElementById('cf-vic-slot');
+                                if (!container) {{
+                                    container = document.createElement('div');
+                                    container.id = 'cf-vic-slot';
+                                    document.body.appendChild(container);
+                                }}
+                                window.turnstile.render(container, {{
+                                    sitekey: '{VICTORS_SITEKEY}',
+                                    callback: function(tok) {{
+                                        resolve({{ success: true, token: tok }});
+                                    }},
+                                    'error-callback': function(err) {{
+                                        resolve({{ success: false, error: String(err) }});
+                                    }}
+                                }});
+                            }} catch (e) {{
+                                resolve({{ success: false, error: String(e) }});
+                            }}
+                        }}
+                    }}, 250);
+                    setTimeout(() => {{
+                        clearInterval(checkInt);
+                        resolve({{ success: false, error: 'Turnstile timeout' }});
+                    }}, 12000);
+                }});
+            }}
+        """
+        try:
+            res = await page.evaluate(solve_js)
+            if res and res.get("success") and res.get("token"):
+                acquired_token["token"] = res["token"]
+        except Exception as e:
+            logger.warning(f"[Victor's] UID {uid} manual solve error: {e}")
+
+    await context.close()
+
+    if acquired_token["token"]:
+        logger.info(f"✅ [Victor's] UID {uid}: Turnstile solved! Logging in...")
+        login_p = {
+            "turnstileToken": acquired_token["token"]
+        }
+        if not is_master:
+            login_p["startParam"] = VICTORS_REF
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"tma {v_init}",
+            "Origin": VICTORS_ORIGIN,
+            "Referer": f"{VICTORS_ORIGIN}/",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Mobile"
+        }
+        st_code, body = safe_post(f"{VICTORS_API}/auth/login", login_p, extra_headers=headers)
+        if st_code in (200, 201) and isinstance(body, dict):
+            hp = body.get("humanPass") or (body.get("data", {}).get("humanPass") if isinstance(body.get("data"), dict) else None)
+            if hp:
+                save_victors_pass_to_upstash(uid, str(hp))
+                logger.info(f"🎉 [Victor's] UID {uid}: Successfully obtained humanPass: {str(hp)[:12]}... (Saved to Redis)")
+                return True
+    return False
+
+
 async def run_mrg_auto_solver():
     """Main workflow: audits all 18 accounts, solves needed challenges, and auto-claims."""
     logger.info("====================================================================")
@@ -397,11 +545,18 @@ async def run_mrg_auto_solver():
 
     accounts_data = []
     accounts_needing_solver = []
+    victors_accounts = []
 
     # 1. Fetch tokens and inspect account states
     for idx, uid in enumerate(FLEET_UIDS, 1):
         tok_dict = get_token_from_upstash(uid)
         mrg_init = tok_dict.get("mrg_init_data")
+        vic_init = tok_dict.get("victors_init_data")
+        if vic_init:
+            victors_accounts.append({
+                "uid": uid,
+                "init_data": vic_init
+            })
 
         if not mrg_init:
             logger.warning(f"[{idx:02d}/18] UID {uid}: No mrg_init_data found in Upstash. Skipping.")
@@ -438,13 +593,14 @@ async def run_mrg_auto_solver():
             )
 
     needed_count = len(accounts_needing_solver)
-    logger.info(f"📊 Audit Summary: {len(accounts_data)} accounts connected. {needed_count} accounts require Turnstile solving.")
+    logger.info(f"📊 Audit Summary: {len(accounts_data)} accounts connected. {needed_count} accounts require MRG Turnstile. {len(victors_accounts)} accounts found with Victor's Company.")
 
     # 2. Launch stealth browser and process accounts needing verification
     solved_count = 0
     total_claimed_mrg = 0.0
+    victors_solved = 0
 
-    if needed_count > 0:
+    if needed_count > 0 or len(victors_accounts) > 0:
         # Import patchright (or fallback to playwright)
         try:
             from patchright.async_api import async_playwright
@@ -465,6 +621,7 @@ async def run_mrg_auto_solver():
                 ]
             )
 
+            # A. Solve MRG passes
             for acc in accounts_needing_solver:
                 uid = acc["uid"]
                 m_init = acc["init_data"]
@@ -481,6 +638,18 @@ async def run_mrg_auto_solver():
                     new_bal = acc["stat"]["inAppBalance"] + claimed_amt
                     auto_unlock_mrg_level(m_init, acc["stat"]["manualUnlockedLevel"], new_bal)
 
+                await asyncio.sleep(1.5)
+
+            # B. Solve Victor's Company passes
+            for v_acc in victors_accounts:
+                v_uid = v_acc["uid"]
+                v_init = v_acc["init_data"]
+                try:
+                    v_res = await solve_victors_turnstile(browser, v_uid, v_init, is_master=(v_uid == 6727787768))
+                    if v_res:
+                        victors_solved += 1
+                except Exception as ve:
+                    logger.warning(f"Victor's solve exception for UID {v_uid}: {ve}")
                 await asyncio.sleep(1.5)
 
             await browser.close()
@@ -509,15 +678,15 @@ async def run_mrg_auto_solver():
 
     # 5. Telegram Telemetry Notification
     report_msg = (
-        f"🚀 <b>MRG 100% Cloud Auto-Farming Report</b>\n\n"
+        f"🚀 <b>MRG & Victor's Cloud Turnstile Engine Report</b>\n\n"
         f"• <b>Total Fleet Accounts:</b> 18\n"
-        f"• <b>Active Accounts Checked:</b> {len(accounts_data)}\n"
-        f"• <b>Turnstile Passes Solved:</b> {solved_count}/{needed_count}\n"
+        f"• <b>MRG Pass Solved:</b> {solved_count}/{needed_count}\n"
+        f"• <b>Victor's Pass Solved:</b> {victors_solved}/{len(victors_accounts)}\n"
         f"• <b>Total MRG Harvested:</b> {total_claimed_mrg:.2f} MRG\n"
         f"• <b>Execution Time:</b> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}\n\n"
-        f"⚡ <i>Cloud Mining is ACTIVE across all nodes. Zero stops.</i>"
+        f"⚡ <i>100% Cloud Execution. Zero phone load.</i>"
     )
-    logger.info(f"📢 Telemetry: Solved {solved_count}/{needed_count}, Claimed {total_claimed_mrg:.2f} MRG.")
+    logger.info(f"📢 Telemetry: MRG Solved {solved_count}/{needed_count}, Victor's Solved {victors_solved}, Claimed {total_claimed_mrg:.2f} MRG.")
     send_tg_alert(report_msg)
 
 

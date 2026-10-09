@@ -1,4 +1,4 @@
-name: "MY AGY AI — 100% Cloud MRG Auto-Farming & Turnstile Solver"
+name: "MY AGY AI — 100% Cloud Turnstile Solver & Multi-Bot Auto-Farming"
 
 on:
   schedule:
@@ -18,8 +18,8 @@ jobs:
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-          cache: "pip"
+            python-version: "3.12"
+            cache: "pip"
 
       - name: Install Dependencies & Patchright Stealth Engine
         run: |
@@ -27,7 +27,7 @@ jobs:
           pip install patchright aiohttp requests
           patchright install --with-deps chromium
 
-      - name: Run 100% Cloud MRG Turnstile Solver & Farming Cycle
+      - name: Run 100% Cloud Turnstile Solver & Multi-Bot Farming Cycle
         env:
           UPSTASH_URL: "https://relaxing-starfish-285827.upstash.io"
           UPSTASH_TOKEN: "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw"

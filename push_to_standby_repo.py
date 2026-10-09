@@ -104,6 +104,21 @@ def push_app():
     if os.path.exists(req_file):
         push_file(req_file, "requirements.txt", "deps: update dependencies")
     
+    # Trigger Render Node 1 deploy (Singapore - Coz1)
+    node1_key = env.get("RENDER_API_KEY_1", "rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1")
+    srv_node1 = "srv-damuhkmgekts73f1osag"
+    try:
+        req_dep1 = urllib.request.Request(
+            f"https://api.render.com/v1/services/{srv_node1}/deploys",
+            data=json.dumps({"clearCache": "do_not_clear"}).encode(),
+            headers={"Authorization": f"Bearer {node1_key}", "Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req_dep1, timeout=15) as d_resp:
+            d_data = json.loads(d_resp.read().decode())
+            print(f"🚀 Render Node 1 (Singapore) deployment triggered: {d_data.get('id')}")
+    except Exception as de:
+        print(f"Note triggering Render Node 1 deploy: {de}")
+
     # Trigger Render Node 2 deploy (Frankfurt - Abid)
     node2_key = env.get("RENDER_API_KEY_2", "rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB")
     srv_node2 = "srv-dan5q00ae00c73djummg"
