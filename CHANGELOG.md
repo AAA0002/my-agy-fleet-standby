@@ -4,6 +4,25 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🔥 Fleet-Wide 18-Account Auto-Farming & Side-Task Unification, MRG ReferenceError Fix, Turnstile DOM Extraction & Master Token Refresh (`deploy_both_cf_workers.py`, `mrg_turnstile_solver.py`, `render_standby_app.py`, `audit_bots_and_sidetasks.py`)**:
+  - **🛠️ Fixed Cloudflare Edge Worker MRG Scoping Bug & Master Self-Referral (`deploy_both_cf_workers.py`)**:
+    * Fixed `ReferenceError: meD is not defined` at line 526 by scoping `let meD = {}` outside `if (meResp && meResp.ok)`, eliminating crashes on MRG edge farming cycles across all 5 nodes.
+    * Fixed Master Account self-referral: `startParam` set to `isOwner ? null : "ref_IRN1G3XD"` in MRG and `refBy: isOwner ? "" : "6727787768"` in UltraWallet.
+    * Added Upstash Redis fallback `victors:pass:{uid}` to `farmVictors` so human pass tokens from Turnstile solver propagate immediately to edge nodes.
+    * Added quaternary fallback to `fleet_miniapp_tokens` in `getFleetTokens(env)` to guarantee fresh token delivery across edge mesh.
+    * Successfully deployed updated worker to all 5 Cloudflare Edge Nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+  - **⚡ Turnstile Solver DOM Extraction & Timeout Optimization (`mrg_turnstile_solver.py`)**:
+    * Added active DOM polling for `input[name="cf-turnstile-response"]` and `input[name="turnstileToken"]` directly after clicking Turnstile checkbox in MRG and Victor's Company.
+    * Added `save_mrg_pass_to_upstash` to persist valid MRG tokens to Upstash Redis (`mrg:pass:{uid}`).
+    * Increased per-account timeout from 25.0s to 55.0s to accommodate headful Chromium rendering, challenge proof-of-work, and API verification without premature cancellation.
+  - **👑 Master Account Token Refresh Unlocked on Render Standby (`render_standby_app.py`)**:
+    * Removed accidental exclusionary checks (`uid_str != "6727787768"`) from token extraction loops in `render_standby_app.py`, allowing Master Account tokens to be refreshed automatically when expired.
+    * Pushed updates to both standby repositories (`AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`), triggering Render Node 2 (`dep-db44vhrl550s73aj5bbg`) and Node 3 (`dep-db44vi60tbcc73d55lbg`).
+  - **📊 Comprehensive 18-Account Live Audit & Side Tasks Suite (`audit_bots_and_sidetasks.py`)**:
+    * Expanded live audit to test and verify ALL 18 fleet accounts (not just 1-2 accounts), covering all 9 legitimate bots (Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, TurboGram, Victor's Company, VyroDrop).
+    * Enhanced token loader to merge `fleet_miniapp_tokens`, `miniapp_tokens`, and individual Upstash keys (`fleet:tokens:{uid}`).
+    * Added live verification of all side tasks (Stones breaker/boost/checkin, MRG level unlock/tasks/wallet, AI Lab miner/tasks, Ultra spins/tasks, ATF math challenge/cooldowns, FINVORA instant bonus/wallet, TurboGram tasks/wallet, Victor's checkin/tasks, VyroDrop bootstrap/tasks).
+
 - **🔥 Fleet-Wide MRG Farming Stoppage Fix, Xvfb Turnstile Headless Engine, Victor's & VyroDrop Referral Qualification & Reward Sweep (`mrg_turnstile_solver.py`, `.github/workflows/mrg_turnstile_solver.yml`, `render_standby_app.py`, `fleet_ton_wallets.json`)**:
   - **🛑 MRG 8-Hour Farming Stoppage Eradicated**:
     * Identified root cause: Cloudflare Turnstile in GitHub Actions runner was detecting `chrome-headless-shell` on Azure datacenter IP, causing Turnstile to withhold tokens (0/15 solved). Mining claims returned `HTTP 403 HUMAN_CHECK_REQUIRED`, leaving 31.82 MRG sitting unclaimed.

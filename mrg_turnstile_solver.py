@@ -365,19 +365,40 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
             if await checkbox.count() > 0:
                 logger.info(f"🖱️ Found Turnstile iframe checkbox for UID {uid}! Clicking...")
                 await checkbox.first.click(timeout=3000)
+                # Wait up to 14s for Turnstile to finish and inject token into DOM or trigger app call
+                for _ in range(14):
+                    if verified_event.is_set():
+                        break
+                    tok = await page.evaluate("""() => {
+                        const el = document.querySelector('input[name="cf-turnstile-response"]') || 
+                                   document.querySelector('input[name="turnstileToken"]');
+                        if (el && el.value && el.value.length > 20) return el.value;
+                        return null;
+                    }""")
+                    if tok:
+                        acquired_token["token"] = tok
+                        logger.info(f"🔑 UID {uid}: Turnstile token extracted from DOM: {tok[:16]}...")
+                        break
+                    await asyncio.sleep(1.0)
                 break
         except Exception:
             pass
         await asyncio.sleep(1.0)
 
-    # Wait for the app's native verify-human call
-    try:
-        await asyncio.wait_for(verified_event.wait(), timeout=10.0)
+    if acquired_token["token"]:
+        ver_res = verify_human_token(m_init, acquired_token["token"])
+        if ver_res.get("success"):
+            logger.info(f"🎉 UID {uid}: Turnstile verify-human succeeded via DOM token!")
+            save_mrg_pass_to_upstash(uid, acquired_token["token"])
+            await context.close()
+            return True
+
+    if verified_event.is_set():
         logger.info(f"✅ UID {uid}: Turnstile successfully solved natively by MiniApp!")
+        if acquired_token["token"]:
+            save_mrg_pass_to_upstash(uid, acquired_token["token"])
         await context.close()
         return True
-    except asyncio.TimeoutError:
-        logger.info(f"ℹ️ UID {uid}: Native verify-human did not fire in 10s. Attempting programmatic render...")
 
     # Fallback: manually invoke Turnstile render on page with styled viewport-centered slot
     solve_js = f"""
@@ -458,6 +479,21 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
     return False
 
 
+def save_mrg_pass_to_upstash(uid: int, turnstile_token: str):
+    """Saves valid MRG turnstile token to Upstash Redis for edge nodes."""
+    try:
+        req = urllib.request.Request(
+            f"{UPSTASH_URL}/set/mrg:pass:{uid}",
+            data=json.dumps({"turnstileToken": turnstile_token, "updated_at": time.time()}).encode(),
+            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            pass
+    except Exception as e:
+        logger.warning(f"Error saving MRG pass to Redis for UID {uid}: {e}")
+
+
 def save_victors_pass_to_upstash(uid: int, human_pass: str):
     """Saves valid Victor's Company humanPass to Upstash Redis for edge nodes."""
     try:
@@ -527,6 +563,21 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
             if await checkbox.count() > 0:
                 logger.info(f"🖱️ [Victor's] Found Turnstile iframe for UID {uid}! Clicking...")
                 await checkbox.first.click(timeout=3000)
+                # Wait up to 14s for Turnstile to finish and inject token into DOM or trigger app call
+                for _ in range(14):
+                    if acquired_token["token"]:
+                        break
+                    tok = await page.evaluate("""() => {
+                        const el = document.querySelector('input[name="cf-turnstile-response"]') || 
+                                   document.querySelector('input[name="turnstileToken"]');
+                        if (el && el.value && el.value.length > 20) return el.value;
+                        return null;
+                    }""")
+                    if tok:
+                        acquired_token["token"] = tok
+                        logger.info(f"🔑 [Victor's] UID {uid}: Turnstile token extracted from DOM: {tok[:16]}...")
+                        break
+                    await asyncio.sleep(1.0)
                 break
         except Exception:
             pass
@@ -1024,9 +1075,9 @@ async def run_mrg_auto_solver():
                 uid = acc["uid"]
                 m_init = acc["init_data"]
                 try:
-                    success = await asyncio.wait_for(solve_turnstile_for_account(browser, acc), timeout=25.0)
+                    success = await asyncio.wait_for(solve_turnstile_for_account(browser, acc), timeout=55.0)
                 except asyncio.TimeoutError:
-                    logger.warning(f"MRG Turnstile timed out (25s) for UID {uid}")
+                    logger.warning(f"MRG Turnstile timed out (55s) for UID {uid}")
                     success = False
                 except Exception as me:
                     logger.warning(f"MRG Turnstile exception for UID {uid}: {me}")
@@ -1053,12 +1104,12 @@ async def run_mrg_auto_solver():
                 try:
                     v_res = await asyncio.wait_for(
                         solve_victors_turnstile(browser, v_uid, v_init, is_master=(v_uid == 6727787768)),
-                        timeout=25.0
+                        timeout=55.0
                     )
                     if v_res:
                         victors_solved += 1
                 except asyncio.TimeoutError:
-                    logger.warning(f"Victor's solve timed out (25s) for UID {v_uid}")
+                    logger.warning(f"Victor's solve timed out (55s) for UID {v_uid}")
                 except Exception as ve:
                     logger.warning(f"Victor's solve exception for UID {v_uid}: {ve}")
                 await asyncio.sleep(1.0)
@@ -1071,12 +1122,12 @@ async def run_mrg_auto_solver():
                 try:
                     vy_res = await asyncio.wait_for(
                         solve_vyro_wallet_onboarding(browser, vy_uid, vy_init, w_entry),
-                        timeout=25.0
+                        timeout=55.0
                     )
                     if vy_res:
                         vyro_wallets_connected += 1
                 except asyncio.TimeoutError:
-                    logger.warning(f"VyroDrop solve timed out (25s) for UID {vy_uid}")
+                    logger.warning(f"VyroDrop solve timed out (55s) for UID {vy_uid}")
                 except Exception as vye:
                     logger.warning(f"VyroDrop onboarding exception for UID {vy_uid}: {vye}")
                 await asyncio.sleep(1.0)

@@ -18,15 +18,24 @@ def load_tokens_db():
         upstash_url = os.getenv("UPSTASH_URL")
         upstash_token = os.getenv("UPSTASH_TOKEN")
         if upstash_url and upstash_token:
-            req = urllib.request.Request(
-                f"{upstash_url}/get/miniapp_tokens",
-                headers={"Authorization": f"Bearer {upstash_token}"}
-            )
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                data = json.loads(resp.read().decode())
-                res = data.get("result")
-                if res:
-                    tokens = json.loads(res) if isinstance(res, str) else res
+            for key_name in ["fleet_miniapp_tokens", "miniapp_tokens"]:
+                req = urllib.request.Request(
+                    f"{upstash_url}/get/{key_name}",
+                    headers={"Authorization": f"Bearer {upstash_token}"}
+                )
+                try:
+                    with urllib.request.urlopen(req, timeout=10) as resp:
+                        data = json.loads(resp.read().decode())
+                        res = data.get("result")
+                        if res:
+                            parsed = json.loads(res) if isinstance(res, str) else res
+                            for k, v in parsed.items():
+                                if k not in tokens:
+                                    tokens[k] = v
+                                elif isinstance(v, dict):
+                                    tokens[k].update(v)
+                except Exception:
+                    pass
     except Exception as e:
         print(f"⚠️ Upstash fetch notice: {e}")
     if not tokens:
@@ -349,30 +358,49 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
 
 async def main():
     print("="*80)
-    print("🚀 FLEET-WIDE BOT FARMING & SIDE TASKS COMPREHENSIVE LIVE AUDIT")
+    print("🚀 FLEET-WIDE BOT FARMING & SIDE TASKS COMPREHENSIVE LIVE AUDIT (ALL 18 ACCOUNTS)")
     print("="*80)
     
-    # Audit Master Account 6727787768
-    master_tokens = TOKENS_DB.get(MASTER_UID, {})
-    master_acc = next((a for a in ACCOUNTS if str(a.get("user_id")) == MASTER_UID), {})
-    master_name = f"{master_acc.get('first_name', '')} {master_acc.get('last_name', '')}".strip() or "Master"
+    fleet_reports = {}
+    total = len(ACCOUNTS)
     
-    print(f"\n[1/2] Auditing Master Account: {master_name} (UID: {MASTER_UID})...")
-    res_master = await test_bot_farming_and_sidetasks(MASTER_UID, master_name, master_tokens, master_acc)
-    
-    # Audit Worker Account 8881914294
-    worker_uid = "8881914294"
-    worker_tokens = TOKENS_DB.get(worker_uid, {})
-    worker_acc = next((a for a in ACCOUNTS if str(a.get("user_id")) == worker_uid), {})
-    worker_name = f"{worker_acc.get('first_name', '')} {worker_acc.get('last_name', '')}".strip() or "Worker 1"
+    for idx, acc in enumerate(ACCOUNTS, 1):
+        uid = str(acc.get("user_id"))
+        name = f"{acc.get('first_name', '')} {acc.get('last_name', '')}".strip() or acc.get("name") or f"Account {idx}"
+        is_master = (uid == MASTER_UID)
+        tokens = TOKENS_DB.get(uid, {})
+        
+        # If tokens missing from batch, attempt individual Upstash fetch
+        if not tokens or not any(k.endswith("_init_data") for k in tokens.keys()):
+            try:
+                upstash_url = os.getenv("UPSTASH_URL")
+                upstash_token = os.getenv("UPSTASH_TOKEN")
+                if upstash_url and upstash_token:
+                    req = urllib.request.Request(
+                        f"{upstash_url}/get/fleet:tokens:{uid}",
+                        headers={"Authorization": f"Bearer {upstash_token}"}
+                    )
+                    with urllib.request.urlopen(req, timeout=5) as r:
+                        d = json.loads(r.read().decode())
+                        if d.get("result"):
+                            ind_tok = json.loads(d["result"]) if isinstance(d["result"], str) else d["result"]
+                            tokens.update(ind_tok)
+            except Exception:
+                pass
 
-    print(f"\n[2/2] Auditing Worker Account: {worker_name} (UID: {worker_uid})...")
-    res_worker = await test_bot_farming_and_sidetasks(worker_uid, worker_name, worker_tokens, worker_acc)
+        print(f"\n[{idx:02d}/{total}] Auditing {'👑 Master' if is_master else '👷 Worker'}: {name} (UID: {uid})...")
+        res = await test_bot_farming_and_sidetasks(uid, name, tokens, acc)
+        fleet_reports[uid] = res
+        
+        bots_ok = sum(1 for b, v in res.get("bots", {}).items() if not v.get("error"))
+        print(f"   -> {bots_ok}/{len(res.get('bots', {}))} bots active/responsive")
 
     with open(os.path.join(BASE_DIR, "live_farming_and_sidetasks_report.json"), "w") as rf:
-        json.dump({"master": res_master, "worker": res_worker}, rf, indent=2)
+        json.dump(fleet_reports, rf, indent=2)
 
-    print("\n✅ Audit Complete! Results saved to live_farming_and_sidetasks_report.json")
+    print("\n" + "="*80)
+    print(f"✅ Fleet-Wide Audit Complete! All {len(fleet_reports)} accounts saved to live_farming_and_sidetasks_report.json")
+    print("="*80)
 
 if __name__ == "__main__":
     asyncio.run(main())

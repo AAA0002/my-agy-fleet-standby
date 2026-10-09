@@ -414,8 +414,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
       await fetchWithRetry("https://mrg.up.railway.app/api/auth/verify", {
         method: "POST", headers: mrgHeaders, body: JSON.stringify({
           initData: mrgInit,
-          startParam: "ref_IRN1G3XD",
-          start_param: "ref_IRN1G3XD",
+          startParam: isOwner ? null : "ref_IRN1G3XD",
+          start_param: isOwner ? null : "ref_IRN1G3XD",
           deviceInfo: devInfo
         })
       }, 2, 800).catch(() => {});
@@ -437,8 +437,9 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
       }, 2, 1000).catch(() => null);
 
       let curBalStr = "";
+      let meD = {};
       if (meResp && meResp.ok) {
-        const meD = await meResp.json().catch(() => ({}));
+        meD = await meResp.json().catch(() => ({}));
         const targetTonW = FLEET_TON_WALLETS[String(uid)];
         if (targetTonW && (!meD.user?.isTonConnected || meD.user?.tonWalletAddress !== targetTonW)) {
           await fetchWithRetry("https://mrg.up.railway.app/api/user/connect-wallet", {
@@ -648,7 +649,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         "Referer": "https://wallet.trxvault.top/"
       });
       const loginResp = await fetchWithRetry(`${uwBase}/telegramLogin`, {
-        method: "POST", headers: uwInitHeaders, body: JSON.stringify({ initData: accData.ultrawallet_init_data, refBy: "6727787768" })
+        method: "POST", headers: uwInitHeaders, body: JSON.stringify({ initData: accData.ultrawallet_init_data, refBy: isOwner ? "" : "6727787768" })
       }).catch(() => null);
 
       if (loginResp && loginResp.ok) {
@@ -989,6 +990,13 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
 
         if (accData.victors_human_pass) {
           vHeaders["x-human-pass"] = String(accData.victors_human_pass);
+        } else {
+          try {
+            const upPass = await upstashGet(`victors:pass:${uid}`);
+            if (upPass) {
+              vHeaders["x-human-pass"] = String(upPass);
+            }
+          } catch (_) {}
         }
 
         // 1. Login with startParam to bind referral code
@@ -1314,7 +1322,7 @@ async function getFleetTokens(env) {
       }
     }
   } catch (_) {}
-  // 3. Tertiary: Upstash Redis
+  // 3. Tertiary: Upstash Redis (miniapp_tokens)
   try {
     const uResp = await fetch(`${UPSTASH_URL}/get/miniapp_tokens`, { headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` } }).catch(() => null);
     if (uResp && uResp.ok) {
@@ -1324,6 +1332,20 @@ async function getFleetTokens(env) {
         if (parsed && Object.keys(parsed).length > 0) {
           memTokens = parsed;
           return parsed;
+        }
+      }
+    }
+  } catch (_) {}
+  // 4. Quaternary: Upstash Redis (fleet_miniapp_tokens)
+  try {
+    const uResp2 = await fetch(`${UPSTASH_URL}/get/fleet_miniapp_tokens`, { headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` } }).catch(() => null);
+    if (uResp2 && uResp2.ok) {
+      const uD2 = await uResp2.json().catch(() => ({}));
+      if (uD2.result) {
+        const parsed2 = typeof uD2.result === "string" ? JSON.parse(uD2.result) : uD2.result;
+        if (parsed2 && Object.keys(parsed2).length > 0) {
+          memTokens = parsed2;
+          return parsed2;
         }
       }
     }
