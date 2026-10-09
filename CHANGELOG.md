@@ -4,6 +4,23 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **⚡ Automated TonConnect 2.0 Wallet Onboarding, Multi-Sitekey Turnstile Solver, and Cloud Wallet Sync (`mrg_turnstile_solver.py`, `deploy_both_cf_workers.py`, `requirements.txt`, `.github/workflows/mrg_turnstile_solver.yml`)**:
+  - **🔐 Automated TonConnect 2.0 Cryptographic Proof Engine (`create_ton_proof`)**:
+    * Implemented standard `ton-proof-item-v2` payload generation in `mrg_turnstile_solver.py` using `tonsdk` and `pynacl` Ed25519 signatures.
+    * Reconstructs standard binary message: `b"ton-connect" + sha256(b"ton-proof-item-v2/" + wc + addr_hash + domain_len + domain + timestamp + nonce)`.
+    * Signs the digest with the worker's dedicated 24-word mnemonic private key and formats the Base64 signature for `/api/wallet/connect`.
+  - **🛡️ Multi-Sitekey Cloudflare Turnstile Solver for VyroDrop & Victor's Company (`solve_vyro_wallet_onboarding`)**:
+    * Added automated challenge solving for VyroDrop SiteKey `0x4AAAAAAFMSnxZaI2W86NOg` (`action: wallet_onboarding`, `cdata: userId`).
+    * Obtains challenge nonce from `POST /api/wallet/challenge`, submits signed TonConnect 2.0 proof to `POST /api/wallet/connect`, and triggers `POST /api/mining/start`.
+    * Unlocks pending referrals on Master Account (`6727787768`) and activates 24/7 continuous mining across all fleet workers.
+  - **☁️ Zero-Trust Dual-Source Wallet Loader (`load_fleet_ton_wallets`) & Redis Sync**:
+    * Prevented silent failure in GitHub Actions caused by `.gitignore` excluding `fleet_*.json`.
+    * Synced all 18 dedicated TON wallets from `fleet_ton_wallets.json` to Upstash Redis at `fleet:wallets:ton`.
+    * Upgraded `load_fleet_ton_wallets()` to automatically fall back to Upstash Redis REST when running in fresh cloud runners.
+  - **🌐 Edge Mesh & Render Standby Synchronization**:
+    * Re-deployed all 5 Cloudflare edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with updated `farmVictors` human-pass propagation.
+    * Pushed updated code to `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`, triggering live deployments on Render Node 2 (`dep-db441kbtqb8s73e02kng`) and Node 3 (`dep-db441kjtqb8s73e02l90`).
+
 - **🛠️ Fleet-Wide Bug Audit, Self-Referral Prevention, Multi-Bot Cloud Turnstile Solver, and Triple-Mesh Modernization (`refresh_cloud_tokens.py`, `render_standby_app.py`, `render_app_latest.py`, `login_account.py`, `extract_all_missing_fleet_tokens.py`, `audit_bots_and_sidetasks.py`, `mrg_turnstile_solver.py`, `batch_atf_miner.py`, `refresh_fleet_tokens.py`, `report_and_purge_bnb_galaxy.py`, `report_and_purge_ominix.py`, `batch_join_and_verify_channels.py`, `.github/workflows/mrg_turnstile_solver.yml`)**:
   - **🐛 Bug 1: Master Self-Referral Parameter Injection Fixed**:
     * In `refresh_cloud_tokens.py`, `render_standby_app.py`, and `render_app_latest.py`, `start_param=VICTORS_REF` and `start_param=VYRO_REF` were being passed unconditionally during token extraction and WebApp login, causing the Master Account (`6727787768`) to submit its own referral code to bot backends.

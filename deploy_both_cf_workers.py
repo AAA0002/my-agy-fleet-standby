@@ -987,18 +987,26 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
           "Referer": "https://app.victors.company/"
         });
 
+        if (accData.victors_human_pass) {
+          vHeaders["x-human-pass"] = String(accData.victors_human_pass);
+        }
+
         // 1. Login with startParam to bind referral code
         let loginOk = false;
         let humanRequired = false;
+        const loginPayload = { turnstileToken: null };
+        if (!isOwner) {
+          loginPayload.startParam = "ref_A20AA96F18";
+        }
         const lResp = await fetchWithRetry("https://server.victors.company/api/auth/login", {
-          method: "POST", headers: vHeaders, body: JSON.stringify({ startParam: "ref_A20AA96F18", turnstileToken: null })
+          method: "POST", headers: vHeaders, body: JSON.stringify(loginPayload)
         }, 1, 800).catch(() => null);
         if (lResp) {
           if (lResp.ok) {
             loginOk = true;
             const lData = await lResp.json().catch(() => ({}));
             if (lData && lData.humanPass) {
-              vHeaders["x-human-pass"] = lData.humanPass;
+              vHeaders["x-human-pass"] = String(lData.humanPass);
             }
           } else if (lResp.status === 403) {
             humanRequired = true;

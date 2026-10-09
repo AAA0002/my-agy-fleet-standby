@@ -12,6 +12,9 @@ import os
 import sys
 import json
 import time
+import struct
+import hashlib
+import base64
 import asyncio
 import logging
 import urllib.parse
@@ -39,6 +42,37 @@ VICTORS_SITEKEY = "0x4AAAAAAFD0KRgPRFVwDvgn"
 VICTORS_ORIGIN = "https://app.victors.company"
 VICTORS_API = "https://server.victors.company/api"
 VICTORS_REF = "ref_A20AA96F18"
+
+VYRO_SITEKEY = "0x4AAAAAAFMSnxZaI2W86NOg"
+VYRO_ORIGIN = "https://vyro.run.place"
+VYRO_API = "https://vyro.run.place/api"
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FLEET_TON_WALLETS_FILE = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
+
+def load_fleet_ton_wallets() -> dict:
+    if os.path.exists(FLEET_TON_WALLETS_FILE):
+        try:
+            with open(FLEET_TON_WALLETS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if data:
+                    return data
+        except Exception:
+            pass
+    # Fallback to Upstash Redis for 100% cloud environments (GitHub Actions, VMs)
+    try:
+        req = urllib.request.Request(
+            f"{UPSTASH_URL}/get/fleet:wallets:ton",
+            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        )
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            data = json.loads(resp.read().decode())
+            res = data.get("result")
+            if res:
+                return json.loads(res) if isinstance(res, str) else res
+    except Exception as e:
+        logger.warning(f"Error fetching ton wallets from Upstash Redis: {e}")
+    return {}
 
 FLEET_UIDS = [
     6727787768,  # Master (Arif Hossain)
@@ -110,6 +144,28 @@ def safe_post(url: str, json_data: dict, extra_headers: dict = None) -> tuple:
 
     data_bytes = json.dumps(json_data).encode("utf-8")
     req = urllib.request.Request(url, data=data_bytes, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return resp.status, json.loads(resp.read().decode())
+    except urllib.error.HTTPError as he:
+        try:
+            body = json.loads(he.read().decode())
+            return he.code, body
+        except Exception:
+            return he.code, {"error": str(he)}
+    except Exception as e:
+        return 0, {"error": str(e)}
+
+
+def safe_get(url: str, extra_headers: dict = None) -> tuple:
+    """Synchronous GET request wrapper."""
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36"
+    }
+    if extra_headers:
+        headers.update(extra_headers)
+
+    req = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             return resp.status, json.loads(resp.read().decode())
@@ -537,25 +593,277 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
     return False
 
 
+def create_ton_proof(wallet_entry: dict, payload_nonce: str) -> dict:
+    """Creates a TonConnect 2.0 proof-of-ownership payload signed with the account's TON key."""
+    from nacl.signing import SigningKey
+    from tonsdk.contract.wallet import Wallets, WalletVersionEnum
+    from tonsdk.utils import Address
+
+    mnemonic = wallet_entry.get("mnemonic")
+    if not mnemonic:
+        raise ValueError("Missing mnemonic in wallet entry")
+    words = mnemonic.split() if isinstance(mnemonic, str) else mnemonic
+    _, pub_key_bytes, priv_key_bytes, wallet_contract = Wallets.from_mnemonics(
+        mnemonics=words, version=WalletVersionEnum.v4r2
+    )
+    state_init_res = wallet_contract.create_state_init()
+    state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
+
+    t_addr = Address(wallet_entry["address"])
+    wc = t_addr.wc
+    addr_hash = t_addr.hash_part
+
+    domain = "vyro.run.place"
+    timestamp = int(time.time())
+
+    # Standard TonConnect 2.0 ton-proof-item-v2 structure
+    prefix = b"ton-proof-item-v2/"
+    wc_bytes = struct.pack(">i", wc)
+    domain_bytes = domain.encode("utf-8")
+    domain_len = struct.pack("<I", len(domain_bytes))
+    ts_bytes = struct.pack("<Q", timestamp)
+    payload_bytes = payload_nonce.encode("utf-8")
+
+    msg = prefix + wc_bytes + addr_hash + domain_len + domain_bytes + ts_bytes + payload_bytes
+    msg_hash = hashlib.sha256(msg).digest()
+    full_msg = b"\xff\xff" + b"ton-connect" + msg_hash
+    digest = hashlib.sha256(full_msg).digest()
+
+    signing_key = SigningKey(priv_key_bytes[:32])
+    sig = signing_key.sign(digest).signature
+    sig_b64 = base64.b64encode(sig).decode("utf-8")
+
+    raw_addr = f"{wc}:{addr_hash.hex()}"
+
+    return {
+        "address": raw_addr,
+        "chain": "-239",
+        "publicKey": pub_key_bytes.hex(),
+        "walletStateInit": state_init_b64,
+        "proof": {
+            "timestamp": timestamp,
+            "domain": {
+                "lengthBytes": len(domain_bytes),
+                "value": domain
+            },
+            "signature": sig_b64,
+            "payload": payload_nonce
+        }
+    }
+
+
+async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet_entry: dict) -> bool:
+    """
+    Checks Vyro wallet status. If unconnected, solves Turnstile challenge,
+    signs TonConnect 2.0 proof with account's dedicated TON key, connects wallet,
+    and starts mining. If already connected, verifies and triggers mining start.
+    """
+    v_headers = {
+        "Authorization": f"tma {vyro_init}",
+        "Content-Type": "application/json",
+        "Origin": VYRO_ORIGIN,
+        "Referer": f"{VYRO_ORIGIN}/",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Mobile"
+    }
+
+    # 1. Check bootstrap status first
+    boot_status, boot_data = safe_get(f"{VYRO_API}/bootstrap", extra_headers=v_headers)
+    if not isinstance(boot_data, dict):
+        boot_data = {}
+
+    is_wallet_connected = boot_data.get("wallet", {}).get("connected", False)
+    mining_status = boot_data.get("mining", {}).get("status", "IDLE")
+
+    if is_wallet_connected:
+        logger.info(f"⚡ [VyroDrop] UID {uid}: Wallet already connected ({boot_data.get('wallet', {}).get('friendlyAddress')}).")
+        # If mining is IDLE, start mining
+        if mining_status == "IDLE":
+            st_code, m_res = safe_post(f"{VYRO_API}/mining/start", {}, extra_headers=v_headers)
+            if st_code in (200, 201):
+                logger.info(f"⛏️ [VyroDrop] UID {uid}: Mining successfully started: {m_res.get('mining', {}).get('status', 'ACTIVE')}")
+                return True
+            else:
+                logger.warning(f"[VyroDrop] UID {uid} mining/start response: {st_code} {m_res}")
+        return True
+
+    # 2. Wallet needs connection. Check if we have dedicated TON wallet
+    if not wallet_entry or not wallet_entry.get("mnemonic"):
+        logger.error(f"❌ [VyroDrop] UID {uid}: No dedicated TON wallet / mnemonic found in fleet_ton_wallets.json!")
+        return False
+
+    user_id = boot_data.get("user", {}).get("id") or ""
+    context = await browser.new_context(
+        user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36",
+        viewport={"width": 412, "height": 915},
+        locale="en-US",
+        timezone_id="UTC"
+    )
+    page = await context.new_page()
+    encoded_init = urllib.parse.quote(vyro_init)
+    target_url = f"{VYRO_ORIGIN}/#tgWebAppData={encoded_init}"
+
+    await page.add_init_script(f"""
+        Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
+        window.Telegram = {{
+            WebApp: {{
+                initData: '{vyro_init}',
+                initDataUnsafe: {{}},
+                ready: () => {{}},
+                expand: () => {{}},
+                close: () => {{}}
+            }}
+        }};
+    """)
+
+    acquired_token = {"token": None}
+
+    async def handle_request(request):
+        try:
+            if "wallet/challenge" in request.url:
+                post_data = request.post_data_json
+                if post_data and post_data.get("turnstileToken"):
+                    acquired_token["token"] = post_data["turnstileToken"]
+        except Exception:
+            pass
+
+    page.on("request", handle_request)
+
+    try:
+        await page.goto(target_url, wait_until="load", timeout=25000)
+    except Exception as e:
+        logger.warning(f"[VyroDrop] UID {uid} navigation note: {e}")
+
+    await asyncio.sleep(2.5)
+
+    # Check for native Turnstile iframe
+    for _ in range(6):
+        if acquired_token["token"]:
+            break
+        try:
+            ts_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
+            checkbox = ts_frame.locator("input[type='checkbox'], #challenge-stage, .ctp-checkbox-label, body")
+            if await checkbox.count() > 0:
+                logger.info(f"🖱️ [VyroDrop] Found Turnstile iframe for UID {uid}! Clicking...")
+                await checkbox.first.click(timeout=3000)
+                break
+        except Exception:
+            pass
+        await asyncio.sleep(1.0)
+
+    # Fallback: programmatic render of Turnstile for Vyro
+    if not acquired_token["token"]:
+        solve_js = f"""
+            async () => {{
+                return new Promise((resolve) => {{
+                    let checkInt = setInterval(() => {{
+                        if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                            clearInterval(checkInt);
+                            try {{
+                                let container = document.getElementById('cf-vyro-slot');
+                                if (!container) {{
+                                    container = document.createElement('div');
+                                    container.id = 'cf-vyro-slot';
+                                    document.body.appendChild(container);
+                                }}
+                                window.turnstile.render(container, {{
+                                    sitekey: '{VYRO_SITEKEY}',
+                                    action: 'wallet_onboarding',
+                                    cdata: '{user_id}',
+                                    callback: function(tok) {{
+                                        resolve({{ success: true, token: tok }});
+                                    }},
+                                    'error-callback': function(err) {{
+                                        resolve({{ success: false, error: String(err) }});
+                                    }}
+                                }});
+                            }} catch (e) {{
+                                resolve({{ success: false, error: String(e) }});
+                            }}
+                        }}
+                    }}, 250);
+                    setTimeout(() => {{
+                        clearInterval(checkInt);
+                        resolve({{ success: false, error: 'Turnstile timeout' }});
+                    }}, 12000);
+                }});
+            }}
+        """
+        try:
+            res = await page.evaluate(solve_js)
+            if res and res.get("success") and res.get("token"):
+                acquired_token["token"] = res["token"]
+        except Exception as e:
+            logger.warning(f"[VyroDrop] UID {uid} manual solve error: {e}")
+
+    await context.close()
+
+    # 3. Submit challenge to get nonce payload
+    challenge_payload = {}
+    if acquired_token["token"]:
+        challenge_payload["turnstileToken"] = acquired_token["token"]
+
+    ch_code, ch_body = safe_post(f"{VYRO_API}/wallet/challenge", challenge_payload, extra_headers=v_headers)
+    if ch_code not in (200, 201) or not isinstance(ch_body, dict) or not ch_body.get("payload"):
+        logger.error(f"❌ [VyroDrop] UID {uid}: Challenge rejected: {ch_code} {ch_body}")
+        return False
+
+    nonce = ch_body["payload"]
+    logger.info(f"🔑 [VyroDrop] UID {uid}: Challenge nonce received: {nonce[:12]}...")
+
+    # 4. Sign TonConnect 2.0 proof
+    try:
+        connect_payload = create_ton_proof(wallet_entry, nonce)
+    except Exception as pe:
+        logger.error(f"❌ [VyroDrop] UID {uid}: TonConnect proof generation failed: {pe}")
+        return False
+
+    # 5. Connect wallet
+    conn_code, conn_body = safe_post(f"{VYRO_API}/wallet/connect", connect_payload, extra_headers=v_headers)
+    if conn_code not in (200, 201):
+        logger.error(f"❌ [VyroDrop] UID {uid}: Wallet connect failed: {conn_code} {conn_body}")
+        return False
+
+    logger.info(f"🎉 [VyroDrop] UID {uid}: Wallet successfully connected! Bound address: {wallet_entry.get('address')[:12]}...")
+
+    # 6. Start mining
+    st_code, m_res = safe_post(f"{VYRO_API}/mining/start", {}, extra_headers=v_headers)
+    if st_code in (200, 201):
+        logger.info(f"⛏️ [VyroDrop] UID {uid}: Mining started successfully!")
+        return True
+    else:
+        logger.warning(f"[VyroDrop] UID {uid} mining/start post-connect note: {st_code} {m_res}")
+        return True
+
+
 async def run_mrg_auto_solver():
-    """Main workflow: audits all 18 accounts, solves needed challenges, and auto-claims."""
+    """Main workflow: audits all 18 accounts, solves needed challenges, connects wallets, and auto-claims."""
     logger.info("====================================================================")
-    logger.info("🚀 Starting 100% Cloud MRG Auto-Farming & Turnstile Solver Cycle")
+    logger.info("🚀 Starting 100% Cloud Fleet Auto-Farming & Turnstile Solver Cycle")
     logger.info("====================================================================")
 
+    fleet_ton_wallets = load_fleet_ton_wallets()
     accounts_data = []
     accounts_needing_solver = []
     victors_accounts = []
+    vyro_accounts = []
 
     # 1. Fetch tokens and inspect account states
     for idx, uid in enumerate(FLEET_UIDS, 1):
         tok_dict = get_token_from_upstash(uid)
         mrg_init = tok_dict.get("mrg_init_data")
         vic_init = tok_dict.get("victors_init_data")
+        vyro_init = tok_dict.get("vyro_init_data")
+
         if vic_init:
             victors_accounts.append({
                 "uid": uid,
                 "init_data": vic_init
+            })
+
+        if vyro_init:
+            vyro_accounts.append({
+                "uid": uid,
+                "init_data": vyro_init
             })
 
         if not mrg_init:
@@ -593,14 +901,20 @@ async def run_mrg_auto_solver():
             )
 
     needed_count = len(accounts_needing_solver)
-    logger.info(f"📊 Audit Summary: {len(accounts_data)} accounts connected. {needed_count} accounts require MRG Turnstile. {len(victors_accounts)} accounts found with Victor's Company.")
+    logger.info(
+        f"📊 Audit Summary: {len(accounts_data)} accounts connected. "
+        f"{needed_count} accounts require MRG Turnstile. "
+        f"{len(victors_accounts)} accounts found with Victor's Company. "
+        f"{len(vyro_accounts)} accounts found with VyroDrop."
+    )
 
     # 2. Launch stealth browser and process accounts needing verification
     solved_count = 0
     total_claimed_mrg = 0.0
     victors_solved = 0
+    vyro_wallets_connected = 0
 
-    if needed_count > 0 or len(victors_accounts) > 0:
+    if needed_count > 0 or len(victors_accounts) > 0 or len(vyro_accounts) > 0:
         # Import patchright (or fallback to playwright)
         try:
             from patchright.async_api import async_playwright
@@ -652,6 +966,19 @@ async def run_mrg_auto_solver():
                     logger.warning(f"Victor's solve exception for UID {v_uid}: {ve}")
                 await asyncio.sleep(1.5)
 
+            # C. Solve VyroDrop wallet onboarding & start mining
+            for vy_acc in vyro_accounts:
+                vy_uid = vy_acc["uid"]
+                vy_init = vy_acc["init_data"]
+                w_entry = fleet_ton_wallets.get(str(vy_uid)) or fleet_ton_wallets.get(vy_uid)
+                try:
+                    vy_res = await solve_vyro_wallet_onboarding(browser, vy_uid, vy_init, w_entry)
+                    if vy_res:
+                        vyro_wallets_connected += 1
+                except Exception as vye:
+                    logger.warning(f"VyroDrop onboarding exception for UID {vy_uid}: {vye}")
+                await asyncio.sleep(1.5)
+
             await browser.close()
 
     # 3. Also claim rewards for accounts that already had an active pass
@@ -678,15 +1005,21 @@ async def run_mrg_auto_solver():
 
     # 5. Telegram Telemetry Notification
     report_msg = (
-        f"🚀 <b>MRG & Victor's Cloud Turnstile Engine Report</b>\n\n"
+        f"🚀 <b>MRG, Victor's & Vyro Cloud Turnstile Engine Report</b>\n\n"
         f"• <b>Total Fleet Accounts:</b> 18\n"
         f"• <b>MRG Pass Solved:</b> {solved_count}/{needed_count}\n"
         f"• <b>Victor's Pass Solved:</b> {victors_solved}/{len(victors_accounts)}\n"
+        f"• <b>VyroDrop Wallets & Mining:</b> {vyro_wallets_connected}/{len(vyro_accounts)}\n"
         f"• <b>Total MRG Harvested:</b> {total_claimed_mrg:.2f} MRG\n"
         f"• <b>Execution Time:</b> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}\n\n"
         f"⚡ <i>100% Cloud Execution. Zero phone load.</i>"
     )
-    logger.info(f"📢 Telemetry: MRG Solved {solved_count}/{needed_count}, Victor's Solved {victors_solved}, Claimed {total_claimed_mrg:.2f} MRG.")
+    logger.info(
+        f"📢 Telemetry: MRG Solved {solved_count}/{needed_count}, "
+        f"Victor's Solved {victors_solved}/{len(victors_accounts)}, "
+        f"Vyro Connected {vyro_wallets_connected}/{len(vyro_accounts)}, "
+        f"Claimed {total_claimed_mrg:.2f} MRG."
+    )
     send_tg_alert(report_msg)
 
 

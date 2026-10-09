@@ -1,7 +1,7 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
 > **Universal Onboarding, System Architecture, 9-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
-> *Last Updated: October 8, 2026*
+> *Last Updated: October 9, 2026*
 > *Classification: Mission-Critical Living Technical Documentation*
 
 ---
@@ -46,24 +46,27 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 │                                 CLOUD ARCHITECTURE                                     │
 │                                                                                        │
 │  ┌────────────────────────────────────────┐  ┌──────────────────────────────────────┐  │
-│  │     Render Standby Cloud Containers    │  │      Cloudflare Edge Mesh (5 Nodes)  │  │
-│  │  • Node 1 (Singapore): app.py          │  │  • aaaai2.workers.dev (Shard 0)      │  │
-│  │  • Node 2 (Frankfurt): app.py          │  │  • aaa-bot.workers.dev (Shard 1)     │  │
-│  │                                        │  │  • aaa222.workers.dev (Shard 2)      │  │
-│  │  Role: MTProto Session Collector       │  │  • agorameet.workers.dev (Shard 3)   │  │
-│  │  - Runs Telethon in the cloud          │  │  • aaaai.workers.dev (Shard 4)       │  │
-│  │  - Connects 18 Telegram sessions       │  │                                      │  │
-│  │  - Extracts fresh 24h WebApp initData  │  │  Role: 24/7 Edge Autonomous Farming   │  │
-│  │  - Syncs tokens to D1, Upstash & KV     │  │  - Runs cron every 15 mins           │  │
-│  │  - Endpoint: POST /collect-tokens      │  │  - Farms all 9 legitimate bots        │  │
-│  └───────────────────┬────────────────────┘  │  - Executes side tasks & check-ins   │  │
-│                      │                       │  - Fast, serverless, zero ban risk   │  │
+│  │    Triple Render Standby Mesh (3 Nodes)│  │      Cloudflare Edge Mesh (5 Nodes)  │  │
+│  │  • Node 1 (Singapore - Coz1): app.py   │  │  • aaaai2.workers.dev (Shard 0)      │  │
+│  │  • Node 2 (Frankfurt - Abid): app.py   │  │  • aaa-bot.workers.dev (Shard 1)     │  │
+│  │  • Node 3 (Oregon - Koram): app.py     │  │  • aaa222.workers.dev (Shard 2)      │  │
+│  │                                        │  │  • agorameet.workers.dev (Shard 3)   │  │
+│  │  Role: MTProto Session Collector       │  │  • aaaai.workers.dev (Shard 4)       │  │
+│  │  - Runs Telethon in the cloud          │  │                                      │  │
+│  │  - Connects 18 Telegram sessions       │  │  Role: 24/7 Edge Autonomous Farming   │  │
+│  │  - Extracts fresh 24h WebApp initData  │  │  - Runs cron every 15 mins           │  │
+│  │  - Syncs tokens to D1, Upstash & KV     │  │  - Farms all 9 legitimate bots        │  │
+│  │  - Endpoint: POST /collect-tokens      │  │  - Executes side tasks & check-ins   │  │
+│  └───────────────────┬────────────────────┘  │  - Fast, serverless, zero ban risk   │  │
+│                      │                       │  - Propagates cached Turnstile passes │  │
 │                      │ Syncs Fresh Tokens    └──────────────────▲───────────────────┘  │
 │                      ▼                                          │ Reads Fresh Tokens   │
 │  ┌──────────────────────────────────────────────────────────────┴───────────────────┐  │
 │  │                        Upstash Serverless Redis REST                             │  │
 │  │  • URL: https://relaxing-starfish-285827.upstash.io                              │  │
 │  │  • Key: fleet:tokens:<uid> (Contains active WebApp initData for each account)    │  │
+│  │  • Key: fleet:wallets:ton (Contains isolated TON wallets & recovery mnemonics)   │  │
+│  │  • Key: victors:pass:<uid> (Contains fresh Cloudflare Turnstile humanPass)       │  │
 │  │  • Key: fleet:live_state (Contains latest real-time farming results)             │  │
 │  └──────────────────────────────────────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────────────────────────────────────┘
