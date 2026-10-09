@@ -284,9 +284,29 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
     print(f"\n🚀 [{acc_name} (ID: {acc_uid}{' - 👑 Master' if is_master else ''})] Connecting MTProto...")
     cl = TelegramClient(StringSession(acc_sess), API_ID, API_HASH)
     try:
-        await cl.connect()
-        if not await cl.is_user_authorized():
-            print(f"[{acc_name}] Session not authorized or revoked.")
+        connected = False
+        for attempt in range(1, 4):
+            try:
+                await cl.connect()
+                if await cl.is_user_authorized():
+                    connected = True
+                    break
+                else:
+                    print(f"[{acc_name}] Session not authorized or revoked.")
+                    return
+            except Exception as conn_err:
+                err_str = str(conn_err)
+                if "used under two different IP addresses" in err_str or "AUTH_KEY_DUPLICATED" in err_str:
+                    print(f"[{acc_name}] MTProto key duplicated/revoked.")
+                    return
+                if attempt < 3:
+                    print(f"[{acc_name}] Connection attempt {attempt} failed ({conn_err}), retrying in {attempt * 2}s...")
+                    await asyncio.sleep(attempt * 2.0)
+                else:
+                    print(f"[{acc_name}] Could not connect after 3 attempts: {conn_err}")
+                    return
+
+        if not connected:
             return
 
         tokens = {}

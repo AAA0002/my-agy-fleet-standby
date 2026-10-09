@@ -4,6 +4,16 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🔒 Resilient MTProto Connection Retry Engine & Multi-Node Render Deployment**:
+  - **⚡ MTProto TCP Connection Retries & Backoff (`refresh_cloud_tokens.py` & `render_standby_app.py`)**:
+    * Implemented 3-attempt connection retry loop with exponential backoff (2s, 4s, 6s) to smoothly handle transient Telegram server disconnects (`Server closed the connection: 0 bytes read on a total of 8 expected bytes`).
+    * Explicitly separated transient TCP resets from fatal `AUTH_KEY_DUPLICATED` security errors, ensuring valid sessions are never abandoned due to network hops.
+  - **🚀 Triple Standby Mesh Cloud Synchronization**:
+    * Pushed updated standby engines to `AAA0002/my-agy-fleet-standby` (commit `24e4b997`) and `koramshah2/my-agy-fleet-standby` (commit `cf9ec335`).
+    * Triggered live deployments on Render Frankfurt Node 2 (`dep-db4j56c9v7es73a44fog`) and Oregon Node 3 (`dep-db4j56jncjis73fnrqag`).
+  - **☁️ 100% Cloud Execution Verified**:
+    * GitHub Actions workflows `mrg_turnstile_solver.yml` (run `37971396015`) and `cloud_token_refresher.yml` (run `37971415199`) completed with `success`.
+
 - **⚡ Full Fleet Auto-Mining Telemetry Verification & Turnstile Race Condition Fix**:
   - **📊 Live 18-Account Auto-Mining Audit Results**:
     * **ATF Miner**: 100% operational across all accounts, accumulating massive yield (e.g. Arif `8826375659`: **1,833.5 ATF** @ Level 116, Nadim: **810.5 ATF** @ Level 84, Abid: **838.7 ATF** @ Level 85). All 18 accounts authenticated cleanly with 0 captcha blocks.
