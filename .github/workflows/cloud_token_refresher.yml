@@ -2,8 +2,9 @@ name: "MY AGY AI — 100% Cloud MTProto Token Refresher (Zero VPS Reliance)"
 
 on:
   schedule:
-    # Runs every 2 hours to keep VyroDrop (2h TTL) and all bot tokens 100% fresh 24/7
-    - cron: '0 */2 * * *'
+    # Runs once a day (04:00 UTC) as a safety-net backup.
+    # Continuous token collection is handled 100% by Render standby mesh via Cron-Job.org (zero GitHub minutes)
+    - cron: '0 4 * * *'
   workflow_dispatch:
 
 permissions:
@@ -102,18 +103,6 @@ jobs:
           CF_SECRET_KEY: "agy_cf_secret_7d36994e_2026"
         run: |
           python refresh_cloud_tokens.py
-
-      - name: Dispatch Cloud Turnstile Solver & Multi-Bot Auto-Farming
-        if: success()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "🚀 Tokens refreshed successfully! Dispatching Turnstile Solver & Auto-Farming workflow..."
-          curl -s -X POST \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/mrg_turnstile_solver.yml/dispatches" \
-            -d '{"ref":"main"}' || true
 
       - name: Dispatch Render Standby Multi-Node Cloud Farming
         if: success()

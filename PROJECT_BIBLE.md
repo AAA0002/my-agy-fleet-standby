@@ -588,21 +588,17 @@ ps aux | grep python
 ```
 *(Should only show one-shot commands, never continuous daemons or pollers).*
 
-### 9. Disposable Cloud VM Runner (Killercoda / Google Cloud Shell)
-For on-demand interactive tasks or manual Turnstile solving runs on disposable VMs (Killercoda 60-min playgrounds with no daily/monthly limits):
-- **1-Command Automatic Turnstile Solving (Use Case 2)**:
-  ```bash
-  curl -sSL https://raw.githubusercontent.com/AAA0002/ATL/main/killercoda_runner.sh | bash -s -- 2
-  ```
-- **1-Command Interactive Telegram Login (Use Case 1 - SMS / OTP)**:
-  ```bash
-  curl -sSL https://raw.githubusercontent.com/AAA0002/ATL/main/killercoda_runner.sh | bash -s -- 1
-  ```
-- **Interactive Multi-Choice Terminal Menu**:
-  ```bash
-  curl -sSL https://raw.githubusercontent.com/AAA0002/ATL/main/killercoda_runner.sh | bash
-  ```
-Automatically installs `xvfb`, `libgbm-dev`, Python virtualenv, and Patchright Chromium, restores `.env` from Cloudflare Edge Mesh / Upstash, and runs completely off-device with 0 phone load.
+### 9. Render-First Architecture & Free-Tier GitHub Actions Quota Protocol
+To strictly preserve GitHub Actions free-tier quotas (2,000 minutes/month cap for free users), all continuous 24/7 background workloads are offloaded to **Render Standby Mesh** and **Cron-Job.org** (100% free, 0 minute meter):
+- **Continuous 24/7 Multi-Bot Farming**: Handled 100% by Render Node 2 (Frankfurt) and Node 3 (Oregon) via POST `/api/farm/cloud-all` triggered every 15 minutes by Cron-Job.org (`8614058` & `8614059`). Consumes **0** GitHub Actions minutes.
+- **Continuous MTProto Token Harvesting**: Handled 100% by Render Node 2 (Frankfurt) via POST `/collect-tokens` triggered every 4 hours by Cron-Job.org (`8614259`). Consumes **0** GitHub Actions minutes.
+- **Conserved GitHub Actions Scheduling**:
+  * `mrg_turnstile_solver.yml`: Reduced to **twice daily** (`0 3,15 * * *` = ~300 min/mo total).
+  * `cloud_token_refresher.yml`: Reduced to **once daily** (`0 4 * * *` = ~90 min/mo total). Auto-dispatch removed.
+  * `fleet_sentinel.yml`: Reduced to **once daily** (`0 8 * * *` = ~60 min/mo total).
+  * `victors_sb_solver.yml`: Schedule disabled (workflow_dispatch only).
+  * **Total Monthly GitHub Actions Consumption**: **~450 minutes/month** (only ~22% of the free 2,000-minute quota, leaving >75% buffer).
+- **Killercoda Decommissioned**: Fragile 60-minute Killercoda sessions removed in favor of permanent, stable Render and Cloudflare infrastructure.
 
 ---
 

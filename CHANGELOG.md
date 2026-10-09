@@ -4,25 +4,23 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-- **🚀 Disposable Cloud VM Runner Architecture (`killercoda_runner.sh`) & Turnstile Parameter Encoding Fix**:
-  - **💻 Dedicated Killercoda & Cloud VM 1-Command Bootstrap Runner (`killercoda_runner.sh`)**:
-    * Created automated, self-contained cloud runner script executable via a single curl command on Killercoda disposable Ubuntu playgrounds (1h sessions) or any cloud VM:
-      `curl -sSL https://raw.githubusercontent.com/AAA0002/ATL/main/killercoda_runner.sh | bash`
-    * Supports automated execution arguments:
-      - `[Use Case 2]` (Primary Focus): `killercoda_runner.sh 2` or `killercoda_runner.sh solve` to launch headless Turnstile solving with Patchright Chromium in Xvfb.
-      - `[Use Case 1]`: `killercoda_runner.sh 1` or `killercoda_runner.sh login` for interactive Telegram account onboarding/login (SMS / OTP / 2FA).
-      - `[Use Case 3]`: `killercoda_runner.sh 3` or `killercoda_runner.sh audit` for live 18-account fleet balance, token, and level audit.
-      - `[Use Case 4]`: `killercoda_runner.sh 4` or `killercoda_runner.sh refresh` for MTProto token refreshing & edge mesh synchronization.
-      - `[Use Case 5]`: `killercoda_runner.sh 5` or `killercoda_runner.sh restore` for 1-click disaster recovery self-testing (`restore.sh`).
-    * Includes interactive colorized terminal menu with automatic environment bootstrapping, system dependency installation (`xvfb`, `libgbm-dev`, Python venv), automatic repository cloning, and Cloudflare Edge mesh backup extraction.
+- **⚡ Render-First Cloud Architecture & GitHub Actions Free-Tier Conservation**:
+  - **🗑️ Decommissioned & Removed Killercoda (`killercoda_runner.sh`)**:
+    * Permanently removed temporary 60-minute Killercoda runner and workflows per user directive. Fragile manual browser playground sessions completely replaced by automated, perpetual cloud infrastructure.
+  - **☁️ 100% Cloud Token Harvesting Offloaded to Render Standby Mesh**:
+    * Created automated Cron-Job.org job `8614259` triggering Render Node 2 (Frankfurt) via POST `/collect-tokens` every 4 hours (`[1, 5, 9, 13, 17, 21]:05 UTC`).
+    * Render loads `accounts.json` with StringSessions from Cloudflare Edge Mesh backup archive, executes parallel batch MTProto token harvesting in the cloud, and syncs live to Upstash Redis and Cloudflare.
+    * Multi-bot farming continues on Render Nodes 2 & 3 every 15 minutes via Cron-Job.org jobs `8614058` & `8614059`.
+    * **Zero GitHub Actions minutes used for continuous token harvesting and farming!**
+  - **📉 Drastic GitHub Actions Free-Tier Conservation (Saving >75% Quota)**:
+    * **`mrg_turnstile_solver.yml`**: Reduced schedule from every 4 hours (6 runs/day) to **twice daily** (`0 3,15 * * *` = ~300 min/mo total).
+    * **`cloud_token_refresher.yml`**: Reduced schedule from every 2 hours (12 runs/day) to **once daily** (`0 4 * * *` = ~90 min/mo total) as an emergency backup. Removed automated workflow dispatch of `mrg_turnstile_solver.yml`.
+    * **`fleet_sentinel.yml`**: Reduced schedule from every 12 hours to **once daily** (`0 8 * * *` = ~60 min/mo total).
+    * **`victors_sb_solver.yml`**: Schedule disabled completely (`workflow_dispatch` only), preventing redundant execution since `mrg_turnstile_solver.py` natively covers Victor's Company.
+    * **Total Monthly GitHub Actions Consumption**: Down from >3,500 min/mo to **~450 minutes/month** (only ~22% of the free 2,000-minute quota). Free tier users will never exceed limits!
   - **🛡️ Turnstile URL Hash Encoding & Truncation Elimination (`mrg_turnstile_solver.py`)**:
-    * Identified root cause of `401 Unauthorized` in MiniApps: URL hash `#tgWebAppData=` previously split parameters on raw `&` characters in `m_init`, causing Telegram SDK to truncate `initData` at the first parameter and discard `auth_date` and HMAC `hash`.
-    * Implemented strict URL encoding `urllib.parse.quote(m_init, safe='')` across MRG Miner, VyroDrop, and ATF Miner.
-    * Added proactive `sessionStorage` pre-population (`__telegram__initParams` and `initParams`) ensuring Telegram WebApp SDK loads the complete, untruncated `initData` before JavaScript execution.
-    * Locked `initData` property via `Object.defineProperty` to prevent script libraries from mutating or stripping authorization tokens.
-  - **⚡ Native Playwright Script Tag Injection (`mrg_turnstile_solver.py`)**:
-    * Replaced fragile in-DOM `<script>` append loops with native CDP-level `page.add_script_tag(url="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit")`.
-    * Awaited script readiness via `page.wait_for_function("() => typeof window.turnstile?.render === 'function'", timeout=12000)`, completely eliminating `turnstile_load_timeout` drops across MRG Miner, Victor's Company, VyroDrop, and ATF Miner.
+    * Implemented strict URL encoding `urllib.parse.quote(m_init, safe='')` and `sessionStorage` pre-population across MRG Miner, VyroDrop, and ATF Miner, preventing parameter truncation and 401 Unauthorized errors.
+    * Replaced fragile in-DOM script append loops with native Playwright `page.add_script_tag(url="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit")` and awaited `window.turnstile.render`, eliminating `turnstile_load_timeout`.
 
 - **🛡️ Cloud Turnstile Render Guard, 2-Hour VyroDrop Token Pipeline & Auto-Dispatch Architecture**:
   - **⚡ Turnstile `render undefined` Race Condition Elimination (`mrg_turnstile_solver.py`)**:
