@@ -588,6 +588,22 @@ ps aux | grep python
 ```
 *(Should only show one-shot commands, never continuous daemons or pollers).*
 
+### 9. Disposable Cloud VM Runner (Killercoda / Google Cloud Shell)
+For on-demand interactive tasks or manual Turnstile solving runs on disposable VMs (Killercoda 60-min playgrounds with no daily/monthly limits):
+- **1-Command Automatic Turnstile Solving (Use Case 2)**:
+  ```bash
+  curl -sSL https://raw.githubusercontent.com/AAA0002/ATL/main/killercoda_runner.sh | bash -s -- 2
+  ```
+- **1-Command Interactive Telegram Login (Use Case 1 - SMS / OTP)**:
+  ```bash
+  curl -sSL https://raw.githubusercontent.com/AAA0002/ATL/main/killercoda_runner.sh | bash -s -- 1
+  ```
+- **Interactive Multi-Choice Terminal Menu**:
+  ```bash
+  curl -sSL https://raw.githubusercontent.com/AAA0002/ATL/main/killercoda_runner.sh | bash
+  ```
+Automatically installs `xvfb`, `libgbm-dev`, Python virtualenv, and Patchright Chromium, restores `.env` from Cloudflare Edge Mesh / Upstash, and runs completely off-device with 0 phone load.
+
 ---
 
 ## 🔒 8. Living Changelog Protocol

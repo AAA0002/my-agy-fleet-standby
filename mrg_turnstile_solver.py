@@ -349,16 +349,29 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
 
     page = await context.new_page()
 
-    if "%7B" in m_init or "%22" in m_init:
-        target_url = f"{APP_ORIGIN}/#tgWebAppData={m_init}"
-    else:
-        target_url = f"{APP_ORIGIN}/#tgWebAppData={urllib.parse.quote(m_init)}"
+    # Always strictly URL-encode initData inside tgWebAppData hash to prevent & delimiter truncation
+    target_url = f"{APP_ORIGIN}/#tgWebAppData={urllib.parse.quote(m_init, safe='')}"
 
     json_m_init = json.dumps(m_init)
 
     await page.add_init_script(f"""
         Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
 
+        // 0. Pre-fill sessionStorage so telegram-web-app.js SDK initializes full initData
+        try {{
+            sessionStorage.setItem('__telegram__initParams', JSON.stringify({{
+                tgWebAppData: {json_m_init},
+                tgWebAppPlatform: 'android',
+                tgWebAppVersion: '8.0'
+            }}));
+            sessionStorage.setItem('initParams', JSON.stringify({{
+                tgWebAppData: {json_m_init},
+                tgWebAppPlatform: 'android',
+                tgWebAppVersion: '8.0'
+            }}));
+        }} catch(e) {{}}
+
+        // 1. Hook Telegram WebApp object and permanently protect initData
         const mockWebApp = {{
             initData: {json_m_init},
             initDataUnsafe: {{ user: {{ id: {uid} }} }},
@@ -376,6 +389,15 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
             offEvent: () => {{}},
             sendData: () => {{}}
         }};
+        try {{
+            Object.defineProperty(mockWebApp, 'initData', {{
+                configurable: true,
+                enumerable: true,
+                get: () => {json_m_init},
+                set: () => {{}}
+            }});
+        }} catch(e) {{}}
+
         let _tg = {{ WebApp: mockWebApp }};
         try {{
             Object.defineProperty(window, 'Telegram', {{
@@ -387,7 +409,16 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                     if (!_tg.WebApp) {{
                         _tg.WebApp = mockWebApp;
                     }} else {{
-                        _tg.WebApp.initData = {json_m_init};
+                        try {{
+                            Object.defineProperty(_tg.WebApp, 'initData', {{
+                                configurable: true,
+                                enumerable: true,
+                                get: () => {json_m_init},
+                                set: () => {{}}
+                            }});
+                        }} catch(e) {{
+                            _tg.WebApp.initData = {json_m_init};
+                        }}
                     }}
                 }}
             }});
@@ -415,6 +446,8 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
 
     async def handle_response(response):
         try:
+            if response.status == 401:
+                logger.warning(f"⚠️ [MRG 401] UID {uid} resource: {response.url}")
             if "verify-human" in response.url:
                 res_json = await response.json()
                 if res_json.get("success"):
@@ -516,39 +549,40 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
         return True
 
     # Fallback: programmatic Turnstile render
+    try:
+        has_ts = await page.evaluate("() => typeof window.turnstile?.render === 'function'")
+        if not has_ts:
+            logger.info(f"Adding Turnstile script tag via Playwright for MRG UID {uid}...")
+            await page.add_script_tag(url="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit")
+            try:
+                await page.wait_for_function("() => typeof window.turnstile?.render === 'function'", timeout=12000)
+            except Exception:
+                pass
+    except Exception as tse:
+        logger.warning(f"MRG Turnstile script tag note: {tse}")
+
     solve_js = f"""
         async () => {{
             return new Promise((resolve) => {{
-                let rendered = false;
-                let waitInterval = null;
+                let container = document.getElementById('cf-manual-slot');
+                if (!container) {{
+                    container = document.createElement('div');
+                    container.id = 'cf-manual-slot';
+                    container.style.position = 'fixed';
+                    container.style.top = '50%';
+                    container.style.left = '50%';
+                    container.style.transform = 'translate(-50%, -50%)';
+                    container.style.width = '300px';
+                    container.style.height = '65px';
+                    container.style.zIndex = '9999999';
+                    container.style.background = '#18181b';
+                    document.body.appendChild(container);
+                }} else {{
+                    container.innerHTML = '';
+                }}
 
-                function doRender() {{
-                    if (rendered) return;
-                    if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
-                        return;
-                    }}
-                    rendered = true;
-                    if (waitInterval) {{
-                        clearInterval(waitInterval);
-                        waitInterval = null;
-                    }}
+                function renderWidget() {{
                     try {{
-                        let container = document.getElementById('cf-manual-slot');
-                        if (!container) {{
-                            container = document.createElement('div');
-                            container.id = 'cf-manual-slot';
-                            container.style.position = 'fixed';
-                            container.style.top = '50%';
-                            container.style.left = '50%';
-                            container.style.transform = 'translate(-50%, -50%)';
-                            container.style.width = '300px';
-                            container.style.height = '65px';
-                            container.style.zIndex = '9999999';
-                            container.style.background = '#18181b';
-                            document.body.appendChild(container);
-                        }} else {{
-                            container.innerHTML = '';
-                        }}
                         window.turnstile.render(container, {{
                             sitekey: '{SITE_KEY}',
                             theme: 'dark',
@@ -558,48 +592,31 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                                 resolve({{ success: true, token: tok }});
                             }},
                             'error-callback': function(err) {{
-                                rendered = false;
                                 resolve({{ success: false, error: String(err) }});
                             }}
                         }});
                     }} catch (e) {{
-                        rendered = false;
                         resolve({{ success: false, error: String(e) }});
                     }}
                 }}
 
-                window.__cfMrgTurnstileLoaded = function() {{
-                    doRender();
-                }};
-
                 if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                    doRender();
+                    renderWidget();
                 }} else {{
-                    const s = document.createElement('script');
-                    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=__cfMrgTurnstileLoaded';
-                    s.async = true;
-                    s.defer = true;
-                    s.onload = () => {{
+                    let attempts = 0;
+                    const iv = setInterval(() => {{
+                        attempts++;
                         if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                            doRender();
-                        }}
-                    }};
-                    document.head.appendChild(s);
-
-                    let checkCount = 0;
-                    waitInterval = setInterval(() => {{
-                        checkCount++;
-                        if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                            doRender();
-                        }} else if (!rendered && checkCount > 200) {{
-                            clearInterval(waitInterval);
+                            clearInterval(iv);
+                            renderWidget();
+                        }} else if (attempts > 50) {{
+                            clearInterval(iv);
                             resolve({{ success: false, error: 'turnstile_load_timeout' }});
                         }}
                     }}, 100);
                 }}
 
                 setTimeout(() => {{
-                    if (waitInterval) clearInterval(waitInterval);
                     resolve({{ success: false, error: 'timeout_25s' }});
                 }}, 25000);
             }});
@@ -967,39 +984,40 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
         # Step 3: Programmatic fallback render with exact Turnstile parameters
         if not acquired_token and not acquired_pass:
             logger.info(f"⚡ [Victor's] UID {uid}: Attempting programmatic Turnstile render with action='login'...")
+            try:
+                has_ts = await page.evaluate("() => typeof window.turnstile?.render === 'function'")
+                if not has_ts:
+                    logger.info(f"Adding Turnstile script tag via Playwright for Victor's UID {uid}...")
+                    await page.add_script_tag(url="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit")
+                    try:
+                        await page.wait_for_function("() => typeof window.turnstile?.render === 'function'", timeout=12000)
+                    except Exception:
+                        pass
+            except Exception as tse:
+                logger.warning(f"Victor's Turnstile script tag note: {tse}")
+
             solve_js = f"""
                 async () => {{
                     return new Promise((resolve) => {{
-                        let rendered = false;
-                        let waitInterval = null;
+                        let container = document.getElementById('cf-vic-slot');
+                        if (!container) {{
+                            container = document.createElement('div');
+                            container.id = 'cf-vic-slot';
+                            container.style.position = 'fixed';
+                            container.style.top = '50%';
+                            container.style.left = '50%';
+                            container.style.transform = 'translate(-50%, -50%)';
+                            container.style.width = '300px';
+                            container.style.height = '65px';
+                            container.style.zIndex = '9999999';
+                            container.style.background = '#1a1147';
+                            document.body.appendChild(container);
+                        }} else {{
+                            container.innerHTML = '';
+                        }}
 
-                        function doRender() {{
-                            if (rendered) return;
-                            if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
-                                return;
-                            }}
-                            rendered = true;
-                            if (waitInterval) {{
-                                clearInterval(waitInterval);
-                                waitInterval = null;
-                            }}
+                        function renderWidget() {{
                             try {{
-                                let container = document.getElementById('cf-vic-slot');
-                                if (!container) {{
-                                    container = document.createElement('div');
-                                    container.id = 'cf-vic-slot';
-                                    container.style.position = 'fixed';
-                                    container.style.top = '50%';
-                                    container.style.left = '50%';
-                                    container.style.transform = 'translate(-50%, -50%)';
-                                    container.style.width = '300px';
-                                    container.style.height = '65px';
-                                    container.style.zIndex = '9999999';
-                                    container.style.background = '#1a1147';
-                                    document.body.appendChild(container);
-                                }} else {{
-                                    container.innerHTML = '';
-                                }}
                                 window.turnstile.render(container, {{
                                     sitekey: '{VICTORS_SITEKEY}',
                                     action: 'login',
@@ -1010,48 +1028,31 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                                         resolve({{ success: true, token: tok }});
                                     }},
                                     'error-callback': function(err) {{
-                                        rendered = false;
                                         resolve({{ success: false, error: String(err) }});
                                     }}
                                 }});
                             }} catch (e) {{
-                                rendered = false;
                                 resolve({{ success: false, error: String(e) }});
                             }}
                         }}
 
-                        window.__cfVicTurnstileLoaded = function() {{
-                            doRender();
-                        }};
-
                         if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                            doRender();
+                            renderWidget();
                         }} else {{
-                            const s = document.createElement('script');
-                            s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=__cfVicTurnstileLoaded';
-                            s.async = true;
-                            s.defer = true;
-                            s.onload = () => {{
+                            let attempts = 0;
+                            const iv = setInterval(() => {{
+                                attempts++;
                                 if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                                    doRender();
-                                }}
-                            }};
-                            document.head.appendChild(s);
-
-                            let checkCount = 0;
-                            waitInterval = setInterval(() => {{
-                                checkCount++;
-                                if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                                    doRender();
-                                }} else if (!rendered && checkCount > 200) {{
-                                    clearInterval(waitInterval);
+                                    clearInterval(iv);
+                                    renderWidget();
+                                }} else if (attempts > 50) {{
+                                    clearInterval(iv);
                                     resolve({{ success: false, error: 'turnstile_load_timeout' }});
                                 }}
                             }}, 100);
                         }}
 
                         setTimeout(() => {{
-                            if (waitInterval) clearInterval(waitInterval);
                             resolve({{ success: false, error: 'timeout_25s' }});
                         }}, 25000);
                     }});
@@ -1337,13 +1338,25 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
             page = await context.new_page()
             
             json_vyro_init = json.dumps(vyro_init)
-            if "%7B" in vyro_init or "%22" in vyro_init:
-                target_url = f"{VYRO_ORIGIN}/profile/wallet#tgWebAppData={vyro_init}"
-            else:
-                target_url = f"{VYRO_ORIGIN}/profile/wallet#tgWebAppData={urllib.parse.quote(vyro_init)}"
+            target_url = f"{VYRO_ORIGIN}/profile/wallet#tgWebAppData={urllib.parse.quote(vyro_init, safe='')}"
 
             await page.add_init_script(f"""
                 Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
+
+                // 0. Pre-fill sessionStorage for telegram-web-app.js SDK
+                try {{
+                    sessionStorage.setItem('__telegram__initParams', JSON.stringify({{
+                        tgWebAppData: {json_vyro_init},
+                        tgWebAppPlatform: 'android',
+                        tgWebAppVersion: '8.0'
+                    }}));
+                    sessionStorage.setItem('initParams', JSON.stringify({{
+                        tgWebAppData: {json_vyro_init},
+                        tgWebAppPlatform: 'android',
+                        tgWebAppVersion: '8.0'
+                    }}));
+                }} catch(e) {{}}
+
                 const mockWebApp = {{
                     initData: {json_vyro_init},
                     initDataUnsafe: {{ user: {{ id: {uid} }} }},
@@ -1361,6 +1374,15 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                     offEvent: () => {{}},
                     sendData: () => {{}}
                 }};
+                try {{
+                    Object.defineProperty(mockWebApp, 'initData', {{
+                        configurable: true,
+                        enumerable: true,
+                        get: () => {json_vyro_init},
+                        set: () => {{}}
+                    }});
+                }} catch(e) {{}}
+
                 let _tg = {{ WebApp: mockWebApp }};
                 try {{
                     Object.defineProperty(window, 'Telegram', {{
@@ -1372,7 +1394,16 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                             if (!_tg.WebApp) {{
                                 _tg.WebApp = mockWebApp;
                             }} else {{
-                                _tg.WebApp.initData = {json_vyro_init};
+                                try {{
+                                    Object.defineProperty(_tg.WebApp, 'initData', {{
+                                        configurable: true,
+                                        enumerable: true,
+                                        get: () => {json_vyro_init},
+                                        set: () => {{}}
+                                    }});
+                                }} catch(e) {{
+                                    _tg.WebApp.initData = {json_vyro_init};
+                                }}
                             }}
                         }}
                     }});
@@ -1387,39 +1418,41 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
 
             await asyncio.sleep(2.0)
 
+            # Ensure Turnstile script tag is loaded
+            try:
+                has_ts = await page.evaluate("() => typeof window.turnstile?.render === 'function'")
+                if not has_ts:
+                    logger.info(f"Adding Turnstile script tag via Playwright for VyroDrop UID {uid}...")
+                    await page.add_script_tag(url="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit")
+                    try:
+                        await page.wait_for_function("() => typeof window.turnstile?.render === 'function'", timeout=12000)
+                    except Exception:
+                        pass
+            except Exception as tse:
+                logger.warning(f"VyroDrop Turnstile script tag note: {tse}")
+
             solve_js = f"""
                 async () => {{
                     return new Promise((resolve) => {{
-                        let rendered = false;
-                        let waitInterval = null;
+                        let container = document.getElementById('cf-vyro-slot');
+                        if (!container) {{
+                            container = document.createElement('div');
+                            container.id = 'cf-vyro-slot';
+                            container.style.position = 'fixed';
+                            container.style.top = '50%';
+                            container.style.left = '50%';
+                            container.style.transform = 'translate(-50%, -50%)';
+                            container.style.width = '300px';
+                            container.style.height = '65px';
+                            container.style.zIndex = '9999999';
+                            container.style.background = '#18181b';
+                            document.body.appendChild(container);
+                        }} else {{
+                            container.innerHTML = '';
+                        }}
 
-                        function doRender() {{
-                            if (rendered) return;
-                            if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
-                                return;
-                            }}
-                            rendered = true;
-                            if (waitInterval) {{
-                                clearInterval(waitInterval);
-                                waitInterval = null;
-                            }}
+                        function renderWidget() {{
                             try {{
-                                let container = document.getElementById('cf-vyro-slot');
-                                if (!container) {{
-                                    container = document.createElement('div');
-                                    container.id = 'cf-vyro-slot';
-                                    container.style.position = 'fixed';
-                                    container.style.top = '50%';
-                                    container.style.left = '50%';
-                                    container.style.transform = 'translate(-50%, -50%)';
-                                    container.style.width = '300px';
-                                    container.style.height = '65px';
-                                    container.style.zIndex = '9999999';
-                                    container.style.background = '#18181b';
-                                    document.body.appendChild(container);
-                                }} else {{
-                                    container.innerHTML = '';
-                                }}
                                 window.turnstile.render(container, {{
                                     sitekey: '{ts_sitekey}',
                                     action: '{ts_action}',
@@ -1431,48 +1464,31 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                                         resolve({{ success: true, token: tok }});
                                     }},
                                     'error-callback': function(err) {{
-                                        rendered = false;
                                         resolve({{ success: false, error: String(err) }});
                                     }}
                                 }});
                             }} catch (e) {{
-                                rendered = false;
                                 resolve({{ success: false, error: String(e) }});
                             }}
                         }}
 
-                        window.__cfVyroTurnstileLoaded = function() {{
-                            doRender();
-                        }};
-
                         if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                            doRender();
+                            renderWidget();
                         }} else {{
-                            const s = document.createElement('script');
-                            s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=__cfVyroTurnstileLoaded';
-                            s.async = true;
-                            s.defer = true;
-                            s.onload = () => {{
+                            let attempts = 0;
+                            const iv = setInterval(() => {{
+                                attempts++;
                                 if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                                    doRender();
-                                }}
-                            }};
-                            document.head.appendChild(s);
-
-                            let checkCount = 0;
-                            waitInterval = setInterval(() => {{
-                                checkCount++;
-                                if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                                    doRender();
-                                }} else if (!rendered && checkCount > 200) {{
-                                    clearInterval(waitInterval);
+                                    clearInterval(iv);
+                                    renderWidget();
+                                }} else if (attempts > 50) {{
+                                    clearInterval(iv);
                                     resolve({{ success: false, error: 'turnstile_load_timeout' }});
                                 }}
                             }}, 100);
                         }}
 
                         setTimeout(() => {{
-                            if (waitInterval) clearInterval(waitInterval);
                             resolve({{ success: false, error: 'timeout_25s' }});
                         }}, 25000);
                     }});
@@ -1569,7 +1585,7 @@ async def solve_atf_turnstile(browser, uid: int, atf_init: str) -> bool:
                 has_touch=True
             )
             page = await context.new_page()
-            target_url = f"{ATF_ORIGIN}/miner/index.html?entry=bot_start#tgWebAppData={urllib.parse.quote(atf_init)}"
+            target_url = f"{ATF_ORIGIN}/miner/index.html?entry=bot_start#tgWebAppData={urllib.parse.quote(atf_init, safe='')}"
             json_atf_init = json.dumps(atf_init)
             await page.add_init_script(f"""
                 Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
@@ -1662,24 +1678,25 @@ async def solve_atf_turnstile(browser, uid: int, atf_init: str) -> bool:
             # Programmatic fallback render
             if not acquired_token:
                 logger.info(f"⚡ [ATF] UID {uid}: Attempting programmatic Turnstile render into #entryCaptchaBox...")
+                try:
+                    has_ts = await page.evaluate("() => typeof window.turnstile?.render === 'function'")
+                    if not has_ts:
+                        logger.info(f"Adding Turnstile script tag via Playwright for ATF UID {uid}...")
+                        await page.add_script_tag(url="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit")
+                        try:
+                            await page.wait_for_function("() => typeof window.turnstile?.render === 'function'", timeout=12000)
+                        except Exception:
+                            pass
+                except Exception as tse:
+                    logger.warning(f"ATF Turnstile script tag note: {tse}")
+
                 solve_js = f"""
                     async () => {{
                         return new Promise((resolve) => {{
-                            let rendered = false;
-                            let waitInterval = null;
+                            let box = document.getElementById('entryCaptchaBox') || document.body;
 
-                            function doRender() {{
-                                if (rendered) return;
-                                if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
-                                    return;
-                                }}
-                                rendered = true;
-                                if (waitInterval) {{
-                                    clearInterval(waitInterval);
-                                    waitInterval = null;
-                                }}
+                            function renderWidget() {{
                                 try {{
-                                    let box = document.getElementById('entryCaptchaBox') || document.body;
                                     window.turnstile.render(box, {{
                                         sitekey: '{ATF_SITEKEY}',
                                         size: 'normal',
@@ -1690,46 +1707,31 @@ async def solve_atf_turnstile(browser, uid: int, atf_init: str) -> bool:
                                             resolve({{ success: true, token: tok }});
                                         }},
                                         'error-callback': function(err) {{
-                                            rendered = false;
                                             resolve({{ success: false, error: String(err) }});
                                         }}
                                     }});
                                 }} catch(e) {{
-                                    rendered = false;
                                     resolve({{ success: false, error: String(e) }});
                                 }}
                             }}
 
-                            window.__cfAtfTurnstileLoaded = function() {{
-                                doRender();
-                            }};
-
                             if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                                doRender();
+                                renderWidget();
                             }} else {{
-                                const s = document.createElement('script');
-                                s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=__cfAtfTurnstileLoaded';
-                                s.async = true;
-                                s.defer = true;
-                                s.onload = () => {{
+                                let attempts = 0;
+                                const iv = setInterval(() => {{
+                                    attempts++;
                                     if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                                        doRender();
-                                    }}
-                                }};
-                                document.head.appendChild(s);
-                                let checkCount = 0;
-                                waitInterval = setInterval(() => {{
-                                    checkCount++;
-                                    if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                                        doRender();
-                                    }} else if (!rendered && checkCount > 200) {{
-                                        clearInterval(waitInterval);
+                                        clearInterval(iv);
+                                        renderWidget();
+                                    }} else if (attempts > 50) {{
+                                        clearInterval(iv);
                                         resolve({{ success: false, error: 'turnstile_load_timeout' }});
                                     }}
                                 }}, 100);
                             }}
+
                             setTimeout(() => {{
-                                if (waitInterval) clearInterval(waitInterval);
                                 resolve({{ success: false, error: 'timeout_20s' }});
                             }}, 20000);
                         }});
