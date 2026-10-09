@@ -1,0 +1,48 @@
+name: "Victor's Company — 100% Cloud Turnstile Solver & Referral Pipeline"
+
+on:
+  schedule:
+    - cron: '30 */3 * * *'
+  workflow_dispatch:
+
+jobs:
+  solve_and_qualify_victors:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install System Dependencies (Xvfb, Chrome & Audio)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgbm-dev wget gnupg
+          # Ensure Google Chrome is installed for SeleniumBase UC mode
+          if ! command -v google-chrome &> /dev/null; then
+            wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/google-chrome.gpg
+            sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
+            sudo apt-get update
+            sudo apt-get install -y google-chrome-stable
+          fi
+
+      - name: Install Python Dependencies & SeleniumBase
+        run: |
+          pip install --upgrade pip
+          pip install seleniumbase requests
+          sbase install chromedriver
+
+      - name: Run Dedicated Victor's Turnstile Solver & Referral Qualification
+        env:
+          UPSTASH_URL: "https://relaxing-starfish-285827.upstash.io"
+          UPSTASH_TOKEN: "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw"
+          ALERT_BOT_TOKEN: "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8"
+          OWNER_ID: "6727787768"
+        run: |
+          python victors_sb_solver.py
