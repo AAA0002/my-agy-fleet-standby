@@ -8,6 +8,7 @@ triggering automatic deployment on Render Node 1 (Singapore) and Node 2 (Frankfu
 import os
 import json
 import base64
+import hashlib
 import urllib.request
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -73,6 +74,11 @@ def push_file(local_path: str, repo_path: str, commit_msg: str):
             except Exception:
                 pass
 
+        local_blob_sha = hashlib.sha1(b"blob " + str(len(content_bytes)).encode() + b"\0" + content_bytes).hexdigest()
+        if current_sha and current_sha == local_blob_sha:
+            print(f"⏩ {repo_path} in {repo} is already up to date ({current_sha[:8]}).")
+            continue
+
         put_data = {
             "message": commit_msg,
             "content": b64_content
@@ -99,7 +105,7 @@ def push_file(local_path: str, repo_path: str, commit_msg: str):
             print(f"❌ Error pushing {repo_path} to {repo}: {pe}")
 
 def push_app():
-    push_file(STANDBY_SRC, "app.py", "feat: 9-bot fleet auto-farming, multi-node Render standby mesh")
+    push_file(STANDBY_SRC, "app.py", "feat: 8-bot fleet auto-farming, multi-node Render standby mesh")
     req_file = os.path.join(BASE_DIR, "requirements.txt")
     if os.path.exists(req_file):
         push_file(req_file, "requirements.txt", "deps: update dependencies")
