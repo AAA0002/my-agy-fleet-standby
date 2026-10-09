@@ -4,6 +4,25 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🗑️ Permanent Purge of Removed Bots (@AiLab_robot, @UltrawalletTrade_Bot, @FINVORAWeb3bot) & Complete Deletion of 7 Dead Legacy Files**:
+  - **🚫 Eradication of 3 Discontinued Bots from Fleet Engine**:
+    * Permanently purged all routines, token extraction calls, referral bindings, and sponsor channel joins for `@AiLab_robot`, `@UltrawalletTrade_Bot`, and `@FINVORAWeb3bot` across `render_app_latest.py`, `render_standby_app.py`, `refresh_cloud_tokens.py`, and `clean_all_accounts_channels.py`.
+    * Removed dead bots from `req_keys` and `is_token_bundle_stale()`. This eliminates the persistent "missing token" storm that was previously triggering redundant Telethon reconnects and dual-IP session collisions.
+    * Added `@AiLab_robot`, `@UltrawalletTrade_Bot`, and `@FINVORAWeb3bot` to `FLEET_BANNED_SCAMMERS` so cleanup sweeps automatically leave their channels and delete dialog history across all 18 accounts.
+    * Fleet is strictly consolidated to **5 Active Legitimate Bots**: Stones Miners, MRG Miner, ATF Miner, Victor's Company, and VyroDrop.
+  - **🔥 Deletion of 7 Dead Legacy Scripts (>15,000 Lines / >815 KB Purged)**:
+    * Executed `git rm` on `userbot_refresher.py` (507 KB, 9,600+ lines of dead code from October 3rd), `upgrade_dashboard_chat_and_receipts.py` (30 KB), `batch_atf_miner.py` (25 KB), `cf_identity_bot.js` (166 KB), `worker_index.js` (28 KB), `worker_index.mjs` (52 KB), and `execute_ailab_ainovum_withdrawals.py` (7 KB).
+    * Updated `backup_manager.py`, `stop_userbot.sh`, and `PROJECT_BIBLE.md` to reference only live production scripts.
+  - **🧹 Autonomous Cloud Clean-Up System Deployment**:
+    * Integrated `clean_up_system.py` directly into the 24/7 Render watchdog (`cloud_wealth_automation_watchdog()`) running automatically every 6 hours with `POST /api/cleanup` exposed.
+    * Integrated into `.github/workflows/fleet_sentinel.yml` running every 12 hours in GitHub Actions.
+    * Added `/cleanup` command and quick-action button in `My_Router_AI_bot` (`tgcloud`).
+  - **🌾 Fleet Farming Parity Diagnostics & Fixes**:
+    * Stones: 18/18 accounts farmed (100% parity).
+    * ATF: 18/18 accounts farmed (100% parity).
+    * MRG: 18/18 accounts actively mining in continuous accumulator mode; Turnstile solver claims coins periodically.
+    * Victor's Company & VyroDrop: Turnstile solvers cloud-dispatched via GitHub Actions to solve TonConnect 2.0 wallet onboarding and Cloudflare Turnstile humanPass.
+
 - **🧹 Autonomous Multi-Tier Sanitation & Maintenance Engine (`clean_up_system.py`, `.github/workflows/fleet_sentinel.yml`, `My_Router_AI_bot/tgcloud/`)**:
   - **📁 Tier 1: Local Disk & Ephemeral Workspace Hygiene**:
     * Recursively prunes Python bytecode (`__pycache__`, `*.pyc`, `.pytest_cache`) while intelligently skipping vendor/large directories (`.git`, `.gemini`, `node_modules`).

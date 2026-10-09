@@ -74,9 +74,6 @@ PROTECTED_USERNAMES = {
     "stoneswithestand",
     "mrgminer",
     "mrgfun",
-    "ailabrobotnews",
-    "ultrawalletofficial",
-    "finvoraweb3",
     "VictorsCompany",
     "vyrodrop",
 }

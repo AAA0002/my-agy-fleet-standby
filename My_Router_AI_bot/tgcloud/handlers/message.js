@@ -10,7 +10,7 @@ export default async function (message, ctx) {
     const welcome = `🤖 *AAA AUTO — Cloud Fleet Command Center*\n\n` +
       `⚡ *100% Cloud-Powered Architecture*\n` +
       `• *Fleet Accounts*: 18 Active Workers\n` +
-      `• *Active Bots*: 8 Bots (Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, Victor's, VyroDrop)\n` +
+      `• *Active Bots*: 5 Bots (Stones, MRG, ATF, Victor's, VyroDrop)\n` +
       `• *Cloud Nodes*: 5x Cloudflare Edge + 2x Render Standby\n\n` +
       `Tap below to launch the Mini App or control the fleet:`;
 
@@ -24,7 +24,7 @@ export default async function (message, ctx) {
             { text: '📱 Open Fleet Dashboard', web_app: { url: `https://app${ctx.bot?.id || '8858823950'}.tgcloud.ai/` } }
           ],
           [
-            { text: '⚡ Farm 9 Bots Now', callback_data: 'cmd_farm' },
+            { text: '⚡ Farm 5 Bots Now', callback_data: 'cmd_farm' },
             { text: '📊 Live Status', callback_data: 'cmd_status' }
           ],
           [

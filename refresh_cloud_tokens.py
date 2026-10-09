@@ -46,31 +46,22 @@ CF_NODES = [
     "https://restore-agy.aaaai.workers.dev"
 ]
 
-# Bot Usernames & Referral Codes
+# 5 Active Legitimate Fleet Bots & Referral Codes
 STONES_BOT = "stoneswithestand_bot"
 MRG_BOT = "mrgminerbot"
-AILAB_BOT = "AiLab_robot"
-ULTRAWALLET_BOT = "UltrawalletTrade_Bot"
 ATF_BOT = "ATF_AIRDROP_bot"
-FINVORA_BOT = "FINVORAWeb3bot"
 VICTORS_BOT = "VictorsCompanybot"
 VYRO_BOT = "vyrodrop_bot"
 
 STONES_REF = "r6727787768"
 MRG_REF = "ref_IRN1G3XD"
-AILAB_REF = "296852"
-ULTRAWALLET_REF = "6727787768"
 ATF_REF = "6727787768"
-FINVORA_REF = "ref_TRX6727787768"
 VICTORS_REF = "ref_A20AA96F18"
 VYRO_REF = "ref_myFjrqqE4WN_"
 
 MANDATORY_SPONSOR_CHANNELS = [
-    "finvoraweb3",
     "stoneswithestand",
     "mrgminer", "mrgwithdrawal", "DurovKidney",
-    "ailabrobotnews",
-    "ultrawalletofficial",
     "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor",
     "vyrodrop",
     "atfminers"
@@ -298,36 +289,14 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
             tokens["mrg_init_data"] = tok
             print(f"  ⛏️ MRG Miner: Collected")
 
-        # 3. AI Lab Robot
-        ai_p = None if is_master else AILAB_REF
-        tok = await extract_bot_webapp_token(cl, AILAB_BOT, start_param=ai_p, default_url="https://ailab-agent.online/", candidate_short_names=["app", "agent"])
-        if tok:
-            tokens["ailab_init_data"] = tok
-            print(f"  🧪 AI Lab: Collected")
-
-        # 4. UltraWallet
-        uw_p = None if is_master else ULTRAWALLET_REF
-        tok = await extract_bot_webapp_token(cl, ULTRAWALLET_BOT, start_param=uw_p, default_url="https://wallet.trxvault.top/", candidate_short_names=["app", "trade", "Trade"])
-        if tok:
-            tokens["ultrawallet_init_data"] = tok
-            print(f"  💳 UltraWallet: Collected")
-
-        # 5. ATF Miner
+        # 3. ATF Miner
         atf_p = None if is_master else str(REPORT_CHAT_ID)
         tok = await extract_bot_webapp_token(cl, ATF_BOT, start_param=atf_p, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"])
         if tok:
             tokens["atf_init_data"] = tok
             print(f"  🪙 ATF Miner: Collected")
 
-        # 6. FINVORA Web3
-        fin_p = None if is_master else FINVORA_REF
-        tok = await extract_bot_webapp_token(cl, FINVORA_BOT, start_param=fin_p, default_url="https://finvora-production.up.railway.app/", candidate_short_names=["app", "finvora", "mine", "play"])
-        if tok:
-            tokens["finvora_init_data"] = tok
-            print(f"  🌐 FINVORA Web3: Collected")
-
-
-        # 8. Victor's Company
+        # 4. Victor's Company
         vic_p = None if is_master else VICTORS_REF
         tok = await extract_bot_webapp_token(cl, VICTORS_BOT, start_param=vic_p, default_url="https://app.victors.company/", candidate_short_names=["app", "play"])
         if tok:
