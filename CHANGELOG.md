@@ -4,6 +4,29 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🚀 Triple Render Mesh Deployment, Victor's Company & VyroDrop Turnstile/Wallet Discovery, and Fleet Integrity Hardening (`PROJECT_BIBLE.md`, `CHANGELOG.md`, `push_to_standby_repo.py`, `deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`)**:
+  - **🔍 Root Cause Discovery: Why New Bots Auto-Farming & Referrals Failed**:
+    * **Victor's Company (`@VictorsCompanybot`)**:
+      - Discovered that `POST https://server.victors.company/api/auth/login` is protected by Cloudflare Turnstile with SiteKey `0x4AAAAAAFD0KRgPRFVwDvgn`.
+      - Calling login with `turnstileToken: null` returned `HTTP 403: {"success":false,"code":"HUMAN_REQUIRED","error":"Please complete the human verification"}`.
+      - Because `/api/auth/login` failed, the referral `ref_A20AA96F18` in `startParam` was never registered on the backend, and `humanPass` was not issued.
+      - ⚠️ **Paywall Detection**: Audited client bundle (`index-ByrAShKK.js`) revealing a 0.05 TON transfer requirement to treasury `UQD4t3lRBgtAg7U_dYlTAIYjqIPXRT6zHqAvoGgqTvYYWnRv` for "wallet verification" prior to withdrawals.
+    * **VyroDrop (`@vyrodrop_bot`)**:
+      - Verified worker accounts ARE successfully bound to Master UUID `738aee88-2e37-4a70-8b3b-dd1819395130` via `ref_myFjrqqE4WN_`.
+      - Calling `POST /api/mining/start` returned `HTTP 409 Conflict: {"error":{"code":"MINING_WALLET_REQUIRED","message":"Request rejected"}}`.
+      - VyroDrop strictly requires a connected TON wallet to start mining.
+      - Referrals remain pending until the invited worker connects a TON wallet and activates their first mining session.
+      - Wallet onboarding requires solving Turnstile `0x4AAAAAAFMSnxZaI2W86NOg` (`action: wallet_onboarding`) and signing TonConnect 2.0 proof payload with dedicated TON keypairs.
+  - **🚀 Triple-Node Render Standby Architecture Provisioned**:
+    * **Render Node 3 Created (Oregon)**: Created `my-agy-fleet-standby-node3` (`srv-db437o3tqb8s73dt4erg`) on Koram's Render account (`koramshah2@gmail.com`, `rnd_PqsurfX5D9blSaEEuEDDAUcl393y`) connected to `koramshah2/my-agy-fleet-standby`.
+    * **Multi-Repo Auto-Deployer**: Updated `push_to_standby_repo.py` to synchronize code across BOTH `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`, triggering deployments on Node 2 (Frankfurt) and Node 3 (Oregon) simultaneously.
+    * **Cloudflare Mesh Triple-Redundancy**: Added Node 3 (`https://my-agy-fleet-standby-node3.onrender.com`) to Cloudflare edge worker failover pool.
+  - **🛡️ Accurate Telemetry & Scam Channel Purge**:
+    * Updated `farmVictors` and `farmVyro` in `deploy_both_cf_workers.py`, `render_standby_app.py`, and `render_app_latest.py` to report `human_pass_required` and `wallet_required` honestly instead of masking errors.
+    * Purged obsolete scam channels (`art_airdrop`, `apexminer_official`, `apexminergroup`, `ailabrobotpayouts`) from `CHANNEL_WHITELIST`.
+  - **☁️ Cloudflare Mesh Deployment**:
+    * Re-deployed all 5 Cloudflare edge worker nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) — all 🟢 200 OK.
+
 - **🔧 9-Bot Referral Binding & Token Extraction Hardening: Victor's Company & VyroDrop Diagnosis and Fixes (`refresh_cloud_tokens.py`, `render_standby_app.py`, `render_app_latest.py`, `push_to_standby_repo.py`)**:
   - **🔍 Root Cause Analysis for Victor's Company (`@VictorsCompanybot`)**:
     * **Token Extraction RPC Error**: Discovered that in `refresh_cloud_tokens.py`, `RequestAppWebViewRequest` threw `RPCError 400: BOT_APP_BOT_INVALID` because `b_vic` entity was passed directly instead of an `InputUser`. The unhandled exception bypassed the fallback `RequestWebViewRequest` to `https://app.victors.company/`. Consequently, 0 fresh tokens were collected during the GitHub Actions run, causing all worker logins to return `401 Session expired`.

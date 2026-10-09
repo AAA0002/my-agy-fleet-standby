@@ -988,13 +988,20 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         });
 
         // 1. Login with startParam to bind referral code
+        let loginOk = false;
+        let humanRequired = false;
         const lResp = await fetchWithRetry("https://server.victors.company/api/auth/login", {
           method: "POST", headers: vHeaders, body: JSON.stringify({ startParam: "ref_A20AA96F18", turnstileToken: null })
         }, 1, 800).catch(() => null);
-        if (lResp && lResp.ok) {
-          const lData = await lResp.json().catch(() => ({}));
-          if (lData && lData.humanPass) {
-            vHeaders["x-human-pass"] = lData.humanPass;
+        if (lResp) {
+          if (lResp.ok) {
+            loginOk = true;
+            const lData = await lResp.json().catch(() => ({}));
+            if (lData && lData.humanPass) {
+              vHeaders["x-human-pass"] = lData.humanPass;
+            }
+          } else if (lResp.status === 403) {
+            humanRequired = true;
           }
         }
 
@@ -1096,7 +1103,11 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
           }
         } catch (_) {}
 
-        result.bots.victors = me ? `farmed (lvl: ${me.level || 1}, bal: ${me.miningBalance || 0})` : "ok";
+        if (humanRequired && !me) {
+          result.bots.victors = "human_pass_required (Turnstile needed)";
+        } else {
+          result.bots.victors = me ? `farmed (lvl: ${me.level || 1}, bal: ${me.miningBalance || 0})` : (loginOk ? "ok" : "auth_failed");
+        }
       } else {
         result.bots.victors = "skipped (no initData)";
       }
@@ -1130,6 +1141,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
           const mining = bData.mining || {};
 
           // 2. Mining Claim / Start
+          let walletRequired = false;
           if (mining.sessionId) {
             await humanDelay(800, 1600);
             const clResp = await fetchWithRetry("https://vyro.run.place/api/mining/claim", {
@@ -1137,15 +1149,17 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
             }, 1, 800).catch(() => null);
             if (clResp && clResp.ok) {
               await humanDelay(1000, 2000);
-              await fetchWithRetry("https://vyro.run.place/api/mining/start", {
+              const stResp = await fetchWithRetry("https://vyro.run.place/api/mining/start", {
                 method: "POST", headers: vyHeaders, body: JSON.stringify({ idempotencyKey: crypto.randomUUID() })
-              }, 1, 800).catch(() => {});
+              }, 1, 800).catch(() => null);
+              if (stResp && stResp.status === 409) walletRequired = true;
             }
           } else {
             await humanDelay(800, 1600);
-            await fetchWithRetry("https://vyro.run.place/api/mining/start", {
+            const stResp = await fetchWithRetry("https://vyro.run.place/api/mining/start", {
               method: "POST", headers: vyHeaders, body: JSON.stringify({ idempotencyKey: crypto.randomUUID() })
-            }, 1, 800).catch(() => {});
+            }, 1, 800).catch(() => null);
+            if (stResp && stResp.status === 409) walletRequired = true;
           }
 
           // 3. Tasks
@@ -1192,7 +1206,11 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
             method: "POST", headers: vyHeaders, body: JSON.stringify({ kind: "MINING", idempotencyKey: crypto.randomUUID() })
           }, 1, 600).catch(() => {});
 
-          result.bots.vyro = `farmed (lvl: ${mObj.level || 1}, speed: ${mObj.currentSpeed || 0})`;
+          if (walletRequired) {
+            result.bots.vyro = `wallet_required (TonConnect needed, lvl: ${mObj.level || 1})`;
+          } else {
+            result.bots.vyro = `farmed (lvl: ${mObj.level || 1}, speed: ${mObj.currentSpeed || 0})`;
+          }
         } else {
           result.bots.vyro = "skipped (bootstrap offline)";
         }
@@ -3288,6 +3306,7 @@ fi
     if (path === "/api/farm/status" || path === "/api/farm/cloud-all" || path.startsWith("/api/farm/account/") || path === "/api/pools" || path === "/api/mining-pools") {
       const renderNodes = [
         "https://my-agy-fleet-standby-node2.onrender.com",
+        "https://my-agy-fleet-standby-node3.onrender.com",
         "https://my-agy-fleet-standby.onrender.com"
       ];
       for (const rNode of renderNodes) {

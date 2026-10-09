@@ -91,26 +91,29 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * D1 Database: `aaa-d1` (`e2db1db3-eaaf-49b3-86e5-95aee66772ef`)
     * R2 (S3) Bucket: `aaa-r2`
     * KV Namespace: `atf-miner-kv` (`c5eadf91...`)
-- **5 Render Cloud Accounts & Services (Cloud MTProto Compute & Resilient Relay Mesh)**:
-  - Service 1: **Render Standby Node 2 (Frankfurt)**: `https://my-agy-fleet-standby-node2.onrender.com`
-    * Service ID: `srv-dan5q00ae00c73djummg` | Workspace: `Abid's workspace` (`tea-dan5pgbm8hqs73a5cvig`, `abidhasanch2001@gmail.com`)
-    * API Key: `rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB` | Linked Repo: `https://github.com/AAA0002/my-agy-fleet-standby` (main)
-    * Role: Primary 24/7 Compute & MTProto Token Collector. Deploys live automatically on git push via `push_to_standby_repo.py`.
-  - Service 2: **Render Standby Node 1 (Singapore)**: `https://my-agy-fleet-standby.onrender.com`
+- **Render Cloud Fleet (Multi-Account Cloud MTProto Compute & Resilient Relay Mesh)**:
+  - Node 1: **Render Standby Node 1 (Singapore)**: `https://my-agy-fleet-standby.onrender.com`
     * Service ID: `srv-damuhkmgekts73f1osag` | Workspace: `My Workspace` (`tea-d8j9clt8nd3s73eb041g`, `coz1gameh1@gmail.com`)
-    * API Key: `rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1` | Linked Repo: `https://github.com/AAA2743/my-agy-fleet-standby` (main)
-    * Role: Secondary Standby Compute & Failover MTProto Collector.
-  - Service 3: **Primary MTProto Relayer**: `https://atf-mtproto-relayer.onrender.com`
+    * API Key: `RENDER_API_KEY_1: rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1` | Linked Repo: `https://github.com/AAA2743/my-agy-fleet-standby` (main)
+    * Status: 🟢 200 OK — Immutable standby compute node & failover MTProto token collector.
+  - Node 2: **Render Standby Node 2 (Frankfurt)**: `https://my-agy-fleet-standby-node2.onrender.com`
+    * Service ID: `srv-dan5q00ae00c73djummg` | Workspace: `Abid's workspace` (`tea-dan5pgbm8hqs73a5cvig`, `abidhasanch2001@gmail.com`)
+    * API Key: `RENDER_API_KEY_2: rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB` | Linked Repo: `https://github.com/AAA0002/my-agy-fleet-standby` (main)
+    * Status: 🟢 200 OK — Primary 24/7 Compute & MTProto Token Collector. Deploys live automatically on git push via `push_to_standby_repo.py`.
+  - Node 3: **Render Standby Node 3 (Oregon)**: `https://my-agy-fleet-standby-node3.onrender.com`
+    * Service ID: `srv-db437o3tqb8s73dt4erg` | Workspace: `Koram's workspace` (`tea-daoj9nid0e5s738gqp0g`, `koramshah2@gmail.com`)
+    * API Key: `RENDER_API_KEY: rnd_PqsurfX5D9blSaEEuEDDAUcl393y` | Linked Repo: `https://github.com/koramshah2/my-agy-fleet-standby` (main)
+    * Status: 🟢 200 OK — High-availability secondary compute node. Deploys live automatically on git push via `push_to_standby_repo.py`.
+  - Service 4: **Primary MTProto Relayer**: `https://atf-mtproto-relayer.onrender.com`
     * Service Endpoint: `/wake` (🟢 ONLINE & AUTHENTICATED)
     * Role: Dedicated 24/7 authenticated Telegram MTProto binary TCP socket bridge.
-  - Service 4: **Backup MTProto Relayer**: `https://atf-mtproto-relayer-backup.onrender.com`
+  - Service 5: **Backup MTProto Relayer**: `https://atf-mtproto-relayer-backup.onrender.com`
     * Service Endpoint: `/wake` (🟢 ONLINE & AUTHENTICATED)
     * Role: Cold standby failover MTProto bridge for high-availability session extraction.
-  - Service 5: **Hermes Ari AI Council Agent**: `https://hermes-grok-cloud-agent.onrender.com`
+  - Service 6: **Hermes Ari AI Council Agent**: `https://hermes-grok-cloud-agent.onrender.com`
     * Service ID: `srv-daojdt5g1s2s738jsjmg` | Workspace: `Koram's workspace` (`tea-daoj9nid0e5s738gqp0g`, `koramshah2@gmail.com`)
-    * Service Key: `rnd_PqsurfX5D9blSaEEuEDDAUcl393y` | Reconnected Repo: `https://github.com/koramshah2/hermes-cloud-agent` (main)
-    * **Incident Resolution & Reconnection**: This service was previously suspended because the 3rd GitHub account (`AAA2743`) was suspended. On October 8, 2026, using Render API Key `rnd_PqsurfX5D9blSaEEuEDDAUcl393y`, the service was re-linked to active repository `koramshah2/hermes-cloud-agent`, un-suspended via `/resume`, and successfully redeployed.
-    * Role: Background AI intelligence worker running `autonomous_cloud_agent.py` (Multi-model Groq + Gemini council).
+    * Service Key: `rnd_PqsurfX5D9blSaEEuEDDAUcl393y` | Linked Repo: `https://github.com/koramshah2/hermes-cloud-agent` (main)
+    * Status: 🟢 200 OK — Background AI intelligence worker running `autonomous_cloud_agent.py` (Multi-model Groq + Gemini council).
 
 - **GitHub Multi-Account CI/CD & Cloud Compute Fleet (4,000 Free Minutes/Month)**:
   - Account 1 (`AAA0002`):
@@ -236,8 +239,8 @@ To prevent Sybil detection, anti-farming bans, and wallet clustering, each accou
 | **5** | **Type A** | **ATF Miner** | `@atf_miner_bot` | `https://atfminers.asloni.online` | TON | • `?action=claim`<br>• `?action=start_mine`<br>• **Telemetry:** `farmed (lvl: {lvl}, bal: {bal} ATF)` | • **Automated Math Challenge Solver**: Solves arithmetic captcha<br>• Hashrate Boost (`?action=activate_boost`)<br>• 8x Cooldown Tasks (YouTube, Twitter, Channel joins)<br>• Dedicated TON wallet sync (`?action=sync_wallet`)<br>• Team wallet claims |
 | **6** | **Type A** | **FINVORA Web3** | `@finvora_bot` | `https://finvora-production.up.railway.app` | GRAM / TON | • `/api/mining/claim`<br>• **Telemetry:** `farmed (avail: {bal} GRAM)` | • Instant bonus (`/api/bonus/instant`)<br>• Dedicated TON wallet connection (`/api/wallet/connect`) |
 | **7** | **Type A** | **TurboGram V1** | `@turbogram_bot` | `https://turbo.tamimdev.dev` | GRAM / TON | • `/api/me`<br>• **Telemetry:** `farmed (bal: {bal} GRAM)` | • Dynamic task discovery & completion (maintains **ACTIVE** referral tier)<br>• Dedicated TON wallet binding (`/api/me/wallet`) |
-| **8** | **Type A** | **Victor's Company** | `@VictorsCompanybot` | `https://server.victors.company/api` | TON / GameFi | • `/api/mining/claim`<br>• `/api/arcade/mine/start` + `dig` + `end`<br>• **Telemetry:** `farmed (lvl: {lvl}, bal: {bal})` | • Referral binding to `ref_A20AA96F18` via `/api/auth/login`<br>• Daily check-in (`/api/checkin`)<br>• Tutorial completion (`/api/me/tutorial`)<br>• Auto-level upgrader (`/api/levels/unlock`)<br>• Task discovery & claim (`/api/tasks/claim`)<br>• Referral bonus sweep (`/api/referral/claim-bonus`) |
-| **9** | **Type A** | **VyroDrop** | `@vyrodrop_bot` | `https://vyro.run.place/api` | VYRO / DEX | • `/api/mining/claim`<br>• `/api/mining/start`<br>• **Telemetry:** `farmed (lvl: {lvl}, speed: {spd})` | • Referral binding to `ref_myFjrqqE4WN_`<br>• Bootstrap sync (`/api/bootstrap`)<br>• 3-step task engine: `/api/tasks/{id}/open` -> `/api/tasks/{id}/verify` -> `/api/tasks/{id}/claim`<br>• Direct & mining referral claims (`/api/referrals/claim`) |
+| **8** | **Type A** | **Victor's Company** | `@VictorsCompanybot` | `https://server.victors.company/api` | TON / GameFi | • `/api/mining/claim`<br>• `/api/arcade/mine/start` + `dig` + `end`<br>• **Telemetry:** `farmed (lvl: {lvl}, bal: {bal})` | • **Cloudflare Turnstile Protected**: SiteKey `0x4AAAAAAFD0KRgPRFVwDvgn`<br>• Referral binding to `ref_A20AA96F18` via `POST /api/auth/login` with `turnstileToken` -> returns `humanPass`<br>• Daily check-in (`/api/checkin`)<br>• Tutorial completion (`/api/me/tutorial`)<br>• Auto-level upgrader (`/api/levels/unlock`)<br>• Task discovery & claim (`/api/tasks/claim`)<br>• Referral bonus sweep (`/api/referral/claim-bonus`)<br>• ⚠️ **Paywall Audit**: Frontend requires 0.05 TON transfer to treasury `UQD4t3lRBgtAg7U_dYlTAIYjqIPXRT6zHqAvoGgqTvYYWnRv` before withdrawals |
+| **9** | **Type A** | **VyroDrop** | `@vyrodrop_bot` | `https://vyro.run.place/api` | VYRO / DEX | • `/api/mining/claim`<br>• `/api/mining/start`<br>• **Telemetry:** `farmed (lvl: {lvl}, speed: {spd})` | • Referral binding to `ref_myFjrqqE4WN_` (`referrerUserId: 738aee88-2e37-4a70-8b3b-dd1819395130`)<br>• **Wallet Requirement**: `/api/mining/start` requires connected TON wallet (`409 MINING_WALLET_REQUIRED`). Referrals do not activate until invited account connects TON wallet and starts first mining session.<br>• **Wallet Onboarding Turnstile**: SiteKey `0x4AAAAAAFMSnxZaI2W86NOg` (`action: wallet_onboarding`)<br>• **TonConnect 2.0 Proof**: Signs challenge with dedicated TON keypair from `fleet_ton_wallets.json` and submits to `/api/wallet/connect`<br>• 3-step task engine: `/open` -> `/verify` -> `/claim`<br>• Direct & mining referral commission claims (`/api/referrals/claim`) |
 
 ---
 

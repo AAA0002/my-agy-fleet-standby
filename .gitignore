@@ -51,3 +51,7 @@ Thumbs.db
 .ssh/
 .termux/
 .npm/
+
+AAAPREMIUMAPPSbot/
+.bash_history
+.bashrc.bak
