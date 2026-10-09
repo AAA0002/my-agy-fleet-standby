@@ -112,6 +112,9 @@ def push_app():
     req_file = os.path.join(BASE_DIR, "requirements.txt")
     if os.path.exists(req_file):
         push_file(req_file, "requirements.txt", "deps: update dependencies")
+    clean_file = os.path.join(BASE_DIR, "clean_up_system.py")
+    if os.path.exists(clean_file):
+        push_file(clean_file, "clean_up_system.py", "feat: autonomous multi-tier clean up engine")
     
     # Trigger Render Node 1 deploy (Singapore - Coz1)
     node1_key = env.get("RENDER_API_KEY_1", "rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1")
