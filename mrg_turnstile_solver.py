@@ -330,12 +330,12 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
 
     logger.info(f"⏳ Navigating to {APP_ORIGIN} for UID {uid}...")
     try:
-        await page.goto(target_url, wait_until="load", timeout=25000)
+        await page.goto(target_url, wait_until="domcontentloaded", timeout=18000)
     except Exception as e:
         logger.warning(f"UID {uid} navigation note: {e}")
 
     # Allow React hydration
-    await asyncio.sleep(2.5)
+    await asyncio.sleep(2.0)
 
     # 1. Click the 'Claim' button in the MRG UI to trigger the claim & security verification modal
     try:
@@ -361,7 +361,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
             break
         try:
             ts_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
-            checkbox = ts_frame.locator("input[type='checkbox'], #challenge-stage, .ctp-checkbox-label, body")
+            checkbox = ts_frame.locator("input[type='checkbox'], span.mark, .ctp-checkbox-label, label")
             if await checkbox.count() > 0:
                 logger.info(f"🖱️ Found Turnstile iframe checkbox for UID {uid}! Clicking...")
                 await checkbox.first.click(timeout=3000)
@@ -372,14 +372,14 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
 
     # Wait for the app's native verify-human call
     try:
-        await asyncio.wait_for(verified_event.wait(), timeout=12.0)
+        await asyncio.wait_for(verified_event.wait(), timeout=10.0)
         logger.info(f"✅ UID {uid}: Turnstile successfully solved natively by MiniApp!")
         await context.close()
         return True
     except asyncio.TimeoutError:
-        logger.info(f"ℹ️ UID {uid}: Native verify-human did not fire in 12s. Attempting programmatic render...")
+        logger.info(f"ℹ️ UID {uid}: Native verify-human did not fire in 10s. Attempting programmatic render...")
 
-    # Fallback: manually invoke Turnstile render on page
+    # Fallback: manually invoke Turnstile render on page with styled viewport-centered slot
     solve_js = f"""
         async () => {{
             return new Promise((resolve) => {{
@@ -391,6 +391,14 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                             if (!container) {{
                                 container = document.createElement('div');
                                 container.id = 'cf-manual-slot';
+                                container.style.position = 'fixed';
+                                container.style.top = '40%';
+                                container.style.left = '50%';
+                                container.style.transform = 'translate(-50%, -50%)';
+                                container.style.width = '300px';
+                                container.style.height = '65px';
+                                container.style.zIndex = '9999999';
+                                container.style.background = '#18181b';
                                 document.body.appendChild(container);
                             }}
                             window.turnstile.render(container, {{
@@ -406,12 +414,12 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                             resolve({{ success: false, error: String(e) }});
                         }}
                     }}
-                }}, 250);
+                }}, 200);
 
                 setTimeout(() => {{
                     clearInterval(checkInt);
-                    resolve({{ success: false, error: 'timeout_15s' }});
-                }}, 15000);
+                    resolve({{ success: false, error: 'timeout_12s' }});
+                }}, 12000);
             }});
         }}
     """
@@ -423,7 +431,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                 break
             try:
                 ts_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
-                checkbox = ts_frame.locator("input[type='checkbox'], #challenge-stage, .ctp-checkbox-label, body")
+                checkbox = ts_frame.locator("input[type='checkbox'], span.mark, .ctp-checkbox-label, label")
                 if await checkbox.count() > 0:
                     logger.info(f"🖱️ Clicking programmatic Turnstile checkbox for UID {uid}...")
                     await checkbox.first.click(timeout=3000)
@@ -504,18 +512,18 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
     page.on("request", handle_request)
 
     try:
-        await page.goto(target_url, wait_until="load", timeout=25000)
+        await page.goto(target_url, wait_until="domcontentloaded", timeout=18000)
     except Exception as e:
         logger.warning(f"[Victor's] UID {uid} navigation note: {e}")
 
-    await asyncio.sleep(2.5)
+    await asyncio.sleep(2.0)
 
     for _ in range(6):
         if acquired_token["token"]:
             break
         try:
             ts_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
-            checkbox = ts_frame.locator("input[type='checkbox'], #challenge-stage, .ctp-checkbox-label, body")
+            checkbox = ts_frame.locator("input[type='checkbox'], span.mark, .ctp-checkbox-label, label")
             if await checkbox.count() > 0:
                 logger.info(f"🖱️ [Victor's] Found Turnstile iframe for UID {uid}! Clicking...")
                 await checkbox.first.click(timeout=3000)
@@ -536,6 +544,14 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                                 if (!container) {{
                                     container = document.createElement('div');
                                     container.id = 'cf-vic-slot';
+                                    container.style.position = 'fixed';
+                                    container.style.top = '40%';
+                                    container.style.left = '50%';
+                                    container.style.transform = 'translate(-50%, -50%)';
+                                    container.style.width = '300px';
+                                    container.style.height = '65px';
+                                    container.style.zIndex = '9999999';
+                                    container.style.background = '#18181b';
                                     document.body.appendChild(container);
                                 }}
                                 window.turnstile.render(container, {{
@@ -551,7 +567,7 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                                 resolve({{ success: false, error: String(e) }});
                             }}
                         }}
-                    }}, 250);
+                    }}, 200);
                     setTimeout(() => {{
                         clearInterval(checkInt);
                         resolve({{ success: false, error: 'Turnstile timeout' }});
@@ -589,6 +605,43 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
             if hp:
                 save_victors_pass_to_upstash(uid, str(hp))
                 logger.info(f"🎉 [Victor's] UID {uid}: Successfully obtained humanPass: {str(hp)[:12]}... (Saved to Redis)")
+
+                # Execute full recruit qualification pipeline
+                v_authed_headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"tma {v_init}",
+                    "x-human-pass": str(hp),
+                    "Origin": VICTORS_ORIGIN,
+                    "Referer": f"{VICTORS_ORIGIN}/",
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Mobile"
+                }
+
+                # 1. Complete tutorial & daily check-in
+                safe_post(f"{VICTORS_API}/me/tutorial", {}, extra_headers=v_authed_headers)
+                safe_post(f"{VICTORS_API}/checkin", {}, extra_headers=v_authed_headers)
+
+                # 2. Connect TON wallet to qualify recruit & unlock Level 1 Miner
+                fleet_ton_wallets = load_fleet_ton_wallets()
+                w_entry = fleet_ton_wallets.get(str(uid)) or fleet_ton_wallets.get(uid)
+                if w_entry and w_entry.get("address"):
+                    ton_addr = w_entry["address"]
+                    c_code, c_res = safe_post(f"{VICTORS_API}/wallet/connect", {"address": ton_addr}, extra_headers=v_authed_headers)
+                    logger.info(f"💼 [Victor's] UID {uid}: Connected TON wallet {ton_addr[:12]}...: {c_code}")
+
+                    # Claim connect-wallet task to qualify recruit and trigger referral rewards
+                    t_code, t_res = safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": "connect-wallet"}, extra_headers=v_authed_headers)
+                    logger.info(f"🎯 [Victor's] UID {uid}: Claimed connect-wallet task: {t_code} {t_res}")
+
+                # 3. Claim daily passive mining
+                m_code, m_res = safe_post(f"{VICTORS_API}/mining/claim", {}, extra_headers=v_authed_headers)
+                logger.info(f"⛏️ [Victor's] UID {uid}: Mining claim: {m_code} {m_res}")
+
+                # 4. If Master Account: sweep referral hiring bonuses & commissions
+                if is_master:
+                    b_code, b_res = safe_post(f"{VICTORS_API}/referral/claim-bonus", {}, extra_headers=v_authed_headers)
+                    c_code, c_res = safe_post(f"{VICTORS_API}/referral/claim-commission", {}, extra_headers=v_authed_headers)
+                    logger.info(f"👑 [Victor's] Master recruitment bonus: {b_code} {b_res}, commissions: {c_code} {c_res}")
+
                 return True
     return False
 
@@ -681,9 +734,20 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
             st_code, m_res = safe_post(f"{VYRO_API}/mining/start", {}, extra_headers=v_headers)
             if st_code in (200, 201):
                 logger.info(f"⛏️ [VyroDrop] UID {uid}: Mining successfully started: {m_res.get('mining', {}).get('status', 'ACTIVE')}")
-                return True
             else:
                 logger.warning(f"[VyroDrop] UID {uid} mining/start response: {st_code} {m_res}")
+
+        # Claim mining if active or ready
+        mining_obj = boot_data.get("mining", {})
+        session_id = mining_obj.get("sessionId")
+        if session_id and (mining_status in ("READY", "ACTIVE") or float(mining_obj.get("claimablePreviewRaw") or 0) > 0):
+            cl_code, cl_res = safe_post(f"{VYRO_API}/mining/claim", {"sessionId": session_id}, extra_headers=v_headers)
+            logger.info(f"⛏️ [VyroDrop] UID {uid}: Mining claimed: {cl_code} {cl_res}")
+
+        # If Master Account: sweep referral commission
+        if uid == 6727787768 or str(uid) == str(OWNER_ID):
+            ref_code, ref_res = safe_post(f"{VYRO_API}/referrals/claim", {}, extra_headers=v_headers)
+            logger.info(f"👑 [VyroDrop] Master referral sweep: {ref_code} {ref_res}")
         return True
 
     # 2. Wallet needs connection. Check if we have dedicated TON wallet
@@ -729,11 +793,11 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
     page.on("request", handle_request)
 
     try:
-        await page.goto(target_url, wait_until="load", timeout=25000)
+        await page.goto(target_url, wait_until="domcontentloaded", timeout=18000)
     except Exception as e:
         logger.warning(f"[VyroDrop] UID {uid} navigation note: {e}")
 
-    await asyncio.sleep(2.5)
+    await asyncio.sleep(2.0)
 
     # Check for native Turnstile iframe
     for _ in range(6):
@@ -741,7 +805,7 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
             break
         try:
             ts_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
-            checkbox = ts_frame.locator("input[type='checkbox'], #challenge-stage, .ctp-checkbox-label, body")
+            checkbox = ts_frame.locator("input[type='checkbox'], span.mark, .ctp-checkbox-label, label")
             if await checkbox.count() > 0:
                 logger.info(f"🖱️ [VyroDrop] Found Turnstile iframe for UID {uid}! Clicking...")
                 await checkbox.first.click(timeout=3000)
@@ -763,6 +827,14 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                                 if (!container) {{
                                     container = document.createElement('div');
                                     container.id = 'cf-vyro-slot';
+                                    container.style.position = 'fixed';
+                                    container.style.top = '40%';
+                                    container.style.left = '50%';
+                                    container.style.transform = 'translate(-50%, -50%)';
+                                    container.style.width = '300px';
+                                    container.style.height = '65px';
+                                    container.style.zIndex = '9999999';
+                                    container.style.background = '#18181b';
                                     document.body.appendChild(container);
                                 }}
                                 window.turnstile.render(container, {{
@@ -780,7 +852,7 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                                 resolve({{ success: false, error: String(e) }});
                             }}
                         }}
-                    }}, 250);
+                    }}, 200);
                     setTimeout(() => {{
                         clearInterval(checkInt);
                         resolve({{ success: false, error: 'Turnstile timeout' }});
@@ -829,10 +901,13 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
     st_code, m_res = safe_post(f"{VYRO_API}/mining/start", {}, extra_headers=v_headers)
     if st_code in (200, 201):
         logger.info(f"⛏️ [VyroDrop] UID {uid}: Mining started successfully!")
-        return True
-    else:
-        logger.warning(f"[VyroDrop] UID {uid} mining/start post-connect note: {st_code} {m_res}")
-        return True
+
+    # 7. If Master Account: sweep referral commission
+    if uid == 6727787768 or str(uid) == str(OWNER_ID):
+        ref_code, ref_res = safe_post(f"{VYRO_API}/referrals/claim", {}, extra_headers=v_headers)
+        logger.info(f"👑 [VyroDrop] Master referral sweep post-connect: {ref_code} {ref_res}")
+
+    return True
 
 
 async def run_mrg_auto_solver():
@@ -923,9 +998,18 @@ async def run_mrg_auto_solver():
             from playwright.async_api import async_playwright
             logger.info("🌐 Using Playwright browser engine.")
 
+        # Prioritize Master Account (6727787768) first in every queue
+        accounts_needing_solver.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
+        victors_accounts.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
+        vyro_accounts.sort(key=lambda a: 0 if a["uid"] == 6727787768 else 1)
+
+        is_xvfb = bool(os.getenv("DISPLAY") or os.getenv("CI"))
+        headless_flag = False if is_xvfb else True
+        logger.info(f"🖥️ Launching Chromium (headless={headless_flag}, DISPLAY={os.getenv('DISPLAY')}, CI={os.getenv('CI')})...")
+
         async with async_playwright() as p:
             browser = await p.chromium.launch(
-                headless=True,
+                headless=headless_flag,
                 args=[
                     "--no-sandbox",
                     "--disable-setuid-sandbox",
@@ -939,7 +1023,15 @@ async def run_mrg_auto_solver():
             for acc in accounts_needing_solver:
                 uid = acc["uid"]
                 m_init = acc["init_data"]
-                success = await solve_turnstile_for_account(browser, acc)
+                try:
+                    success = await asyncio.wait_for(solve_turnstile_for_account(browser, acc), timeout=25.0)
+                except asyncio.TimeoutError:
+                    logger.warning(f"MRG Turnstile timed out (25s) for UID {uid}")
+                    success = False
+                except Exception as me:
+                    logger.warning(f"MRG Turnstile exception for UID {uid}: {me}")
+                    success = False
+
                 if success:
                     solved_count += 1
                     # Claim accumulated mining rewards
@@ -952,19 +1044,24 @@ async def run_mrg_auto_solver():
                     new_bal = acc["stat"]["inAppBalance"] + claimed_amt
                     auto_unlock_mrg_level(m_init, acc["stat"]["manualUnlockedLevel"], new_bal)
 
-                await asyncio.sleep(1.5)
+                await asyncio.sleep(1.0)
 
-            # B. Solve Victor's Company passes
+            # B. Solve Victor's Company passes & qualify recruits
             for v_acc in victors_accounts:
                 v_uid = v_acc["uid"]
                 v_init = v_acc["init_data"]
                 try:
-                    v_res = await solve_victors_turnstile(browser, v_uid, v_init, is_master=(v_uid == 6727787768))
+                    v_res = await asyncio.wait_for(
+                        solve_victors_turnstile(browser, v_uid, v_init, is_master=(v_uid == 6727787768)),
+                        timeout=25.0
+                    )
                     if v_res:
                         victors_solved += 1
+                except asyncio.TimeoutError:
+                    logger.warning(f"Victor's solve timed out (25s) for UID {v_uid}")
                 except Exception as ve:
                     logger.warning(f"Victor's solve exception for UID {v_uid}: {ve}")
-                await asyncio.sleep(1.5)
+                await asyncio.sleep(1.0)
 
             # C. Solve VyroDrop wallet onboarding & start mining
             for vy_acc in vyro_accounts:
@@ -972,12 +1069,17 @@ async def run_mrg_auto_solver():
                 vy_init = vy_acc["init_data"]
                 w_entry = fleet_ton_wallets.get(str(vy_uid)) or fleet_ton_wallets.get(vy_uid)
                 try:
-                    vy_res = await solve_vyro_wallet_onboarding(browser, vy_uid, vy_init, w_entry)
+                    vy_res = await asyncio.wait_for(
+                        solve_vyro_wallet_onboarding(browser, vy_uid, vy_init, w_entry),
+                        timeout=25.0
+                    )
                     if vy_res:
                         vyro_wallets_connected += 1
+                except asyncio.TimeoutError:
+                    logger.warning(f"VyroDrop solve timed out (25s) for UID {vy_uid}")
                 except Exception as vye:
                     logger.warning(f"VyroDrop onboarding exception for UID {vy_uid}: {vye}")
-                await asyncio.sleep(1.5)
+                await asyncio.sleep(1.0)
 
             await browser.close()
 

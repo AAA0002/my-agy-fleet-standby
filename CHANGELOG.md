@@ -4,7 +4,32 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-- **⚡ Automated TonConnect 2.0 Wallet Onboarding, Multi-Sitekey Turnstile Solver, and Cloud Wallet Sync (`mrg_turnstile_solver.py`, `deploy_both_cf_workers.py`, `requirements.txt`, `.github/workflows/mrg_turnstile_solver.yml`)**:
+- **🔥 Fleet-Wide MRG Farming Stoppage Fix, Xvfb Turnstile Headless Engine, Victor's & VyroDrop Referral Qualification & Reward Sweep (`mrg_turnstile_solver.py`, `.github/workflows/mrg_turnstile_solver.yml`, `render_standby_app.py`, `fleet_ton_wallets.json`)**:
+  - **🛑 MRG 8-Hour Farming Stoppage Eradicated**:
+    * Identified root cause: Cloudflare Turnstile in GitHub Actions runner was detecting `chrome-headless-shell` on Azure datacenter IP, causing Turnstile to withhold tokens (0/15 solved). Mining claims returned `HTTP 403 HUMAN_CHECK_REQUIRED`, leaving 31.82 MRG sitting unclaimed.
+    * Container styling fix: Replaced unstyled 0x0 `cf-manual-slot` / `cf-vic-slot` / `cf-vyro-slot` elements with explicitly styled 300x65px fixed containers (`z-index: 9999999`), satisfying Turnstile's visibility and interaction heuristics.
+    * Checkbox locator fix: Eradicated accidental `body` and `#challenge-stage` matching from `locator("input[type='checkbox'], span.mark, .ctp-checkbox-label, label")`, ensuring genuine click dispatch to Turnstile checkbox elements.
+  - **🖥️ Xvfb Virtual Framebuffer Stealth Upgrade in GitHub Actions**:
+    * Updated `.github/workflows/mrg_turnstile_solver.yml` to install `xvfb libgbm-dev` and run via `xvfb-run -a --server-args="-screen 0 1280x800x24" python mrg_turnstile_solver.py`.
+    * Upgraded `mrg_turnstile_solver.py` to launch Chromium in real headful mode (`headless=False`) under Xvfb display, completely bypassing Cloudflare headless detection flags.
+    * Extended workflow timeout from 15 to 25 minutes with per-account 25s timeout guards to guarantee execution across all 18 accounts without job cancellation.
+  - **👑 Master Account (6727787768) Priority & Self-Referral Fix**:
+    * Enforced `is_master = (uid == str(REPORT_CHAT_ID) or uid == "6727787768")` across all 9 bots in `render_standby_app.py` with `start_param = None` for Master, preventing 401 self-referral rejections.
+    * In `mrg_turnstile_solver.py`, sorted queues so Master Account (`6727787768`) is processed FIRST for immediate MRG claim and referral sweep.
+    * Master sweeps all MRG referral commissions (`POST /api/user/claim-commission`) and one-time milestone bonuses (`POST /api/user/claim-one-time-bonus`).
+  - **💼 Victor's Company Full Referral Qualification Engine**:
+    * Reverse-engineered `server.victors.company` API client: all subsequent requests strictly require `x-human-pass: <token>` header returned from `POST /api/auth/login`.
+    * Solved "Koram: Lv 0 · 0 V/day, No wallet, Next: Verify their wallet" stoppage: recruits now automatically connect their dedicated TON wallet (`POST /api/wallet/connect`) and claim the `connect-wallet` task (`POST /api/tasks/claim`).
+    * This qualifies the recruit, unlocks the Level 1 Miner (+100 V/day), and awards Master the +100 V recruitment hiring bonus!
+    * Master automatically sweeps all hiring bonuses (`POST /api/referral/claim-bonus`) and mining commissions (`POST /api/referral/claim-commission`).
+  - **⛏️ VyroDrop Full Qualification & Referral Commission Sweep**:
+    * Recruits automatically connect their dedicated TON wallet via TonConnect 2.0 proof (`POST /api/wallet/connect`), start mining (`POST /api/mining/start`), and claim mining rewards (`POST /api/mining/claim`).
+    * Master automatically claims referral commissions (`POST /api/referrals/claim`).
+  - **👥 All 18 Accounts Audited in Upstash Redis**:
+    * Full fleet audit completed across all 18 UIDs (`6727787768` down to `8841038141`).
+    * Added Master Account TON wallet address (`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`) to `fleet_ton_wallets.json` and synced to Upstash Redis `fleet:wallets:ton`.
+    * Render Node 2 and Node 3 synchronized and deployed (`dep-db44htu0tbcc73d3jicg`, `dep-db44hvjtqb8s73e1t2c0`).
+
   - **🔐 Automated TonConnect 2.0 Cryptographic Proof Engine (`create_ton_proof`)**:
     * Implemented standard `ton-proof-item-v2` payload generation in `mrg_turnstile_solver.py` using `tonsdk` and `pynacl` Ed25519 signatures.
     * Reconstructs standard binary message: `b"ton-connect" + sha256(b"ton-proof-item-v2/" + wc + addr_hash + domain_len + domain + timestamp + nonce)`.
