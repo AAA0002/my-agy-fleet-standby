@@ -1452,6 +1452,33 @@ async def solve_atf_turnstile(browser, uid: int, atf_init: str) -> bool:
                 }};
                 window.Telegram = {{ WebApp: mockWebApp }};
                 window.__atfSolvedToken = null;
+
+                let _atfCb = null;
+                Object.defineProperty(window, '__atfEntryCaptchaCallback', {{
+                    configurable: true,
+                    enumerable: true,
+                    get: () => _atfCb,
+                    set: (fn) => {{
+                        _atfCb = async (tok) => {{
+                            window.__atfSolvedToken = tok;
+                            if (typeof fn === 'function') {{
+                                try {{ return await fn(tok); }} catch(e) {{}}
+                            }}
+                        }};
+                    }}
+                }});
+
+                const origFetch = window.fetch;
+                window.fetch = async function(...args) {{
+                    const url = String(args[0] || '');
+                    if (url.includes('verify_entry_captcha')) {{
+                        try {{
+                            const b = JSON.parse(args[1]?.body || '{{}}');
+                            if (b.captcha_token) window.__atfSolvedToken = b.captcha_token;
+                        }} catch(e) {{}}
+                    }}
+                    return await origFetch.apply(this, args);
+                }};
             """)
 
             try:
@@ -1459,29 +1486,98 @@ async def solve_atf_turnstile(browser, uid: int, atf_init: str) -> bool:
             except Exception:
                 pass
 
-            await page.evaluate("""
-                () => {
-                    const origCb = window.__atfEntryCaptchaCallback;
-                    window.__atfEntryCaptchaCallback = (token) => {
-                        window.__atfSolvedToken = token;
-                        if (typeof origCb === 'function') origCb(token);
-                    };
-                }
+            await asyncio.sleep(2.0)
+
+            # Trigger gate if frontend did not auto-open
+            await page.evaluate(f"""
+                () => {{
+                    try {{
+                        if (typeof showEntryCaptchaGate === 'function') showEntryCaptchaGate(true);
+                        if (typeof ensureEntryCaptchaBeforeLogin === 'function') ensureEntryCaptchaBeforeLogin({{ id: {uid} }}, true);
+                    }} catch(e) {{}}
+                }}
             """)
 
-            for _ in range(12):
-                if await page.evaluate("() => Boolean(window.__atfSolvedToken)"):
-                    acquired_token = await page.evaluate("() => window.__atfSolvedToken")
+            # Fast check: wait for token or click iframe
+            for _ in range(15):
+                tok = await page.evaluate("() => window.__atfSolvedToken || null")
+                if tok and len(tok) > 20:
+                    acquired_token = tok
                     break
-                for f in page.frames:
-                    if "cloudflare" in f.url or "turnstile" in f.url:
+                try:
+                    ts_iframe = page.locator("#entryCaptchaBox iframe, iframe[src*='challenges.cloudflare.com']").first
+                    if await ts_iframe.count() > 0:
+                        box = await ts_iframe.bounding_box()
+                        if box and box["width"] > 0 and box["height"] > 0:
+                            click_x = box["x"] + min(32.0, box["width"] / 3)
+                            click_y = box["y"] + box["height"] / 2
+                            await page.mouse.move(click_x, click_y, steps=6)
+                            await asyncio.sleep(0.12)
+                            await page.mouse.down()
+                            await asyncio.sleep(0.08)
+                            await page.mouse.up()
+                        else:
+                            ts_frame = page.frame_locator("#entryCaptchaBox iframe, iframe[src*='challenges.cloudflare.com']")
+                            click_target = ts_frame.locator("#challenge-stage, .ctp-checkbox-label, .mark").first
+                            if await click_target.count() > 0:
+                                await click_target.click(timeout=2500)
+                except Exception:
+                    pass
+                await asyncio.sleep(1.2)
+
+            # Programmatic fallback render
+            if not acquired_token:
+                logger.info(f"⚡ [ATF] UID {uid}: Attempting programmatic Turnstile render into #entryCaptchaBox...")
+                solve_js = f"""
+                    async () => {{
+                        return new Promise((resolve) => {{
+                            if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
+                                return resolve({{ success: false, error: 'no_turnstile' }});
+                            }}
+                            try {{
+                                let box = document.getElementById('entryCaptchaBox') || document.body;
+                                window.turnstile.render(box, {{
+                                    sitekey: '{ATF_SITEKEY}',
+                                    size: 'normal',
+                                    theme: 'dark',
+                                    callback: function(tok) {{
+                                        window.__atfSolvedToken = tok;
+                                        resolve({{ success: true, token: tok }});
+                                    }},
+                                    'error-callback': function(err) {{
+                                        resolve({{ success: false, error: String(err) }});
+                                    }}
+                                }});
+                            }} catch(e) {{
+                                resolve({{ success: false, error: String(e) }});
+                            }}
+                        }});
+                    }}
+                """
+                try:
+                    solve_task = asyncio.create_task(page.evaluate(solve_js))
+                    for _ in range(6):
                         try:
-                            box = await f.query_selector('input[type="checkbox"], body, .checkbox')
-                            if box:
-                                await box.click()
+                            ts_iframe = page.locator("#entryCaptchaBox iframe, iframe[src*='challenges.cloudflare.com']").first
+                            if await ts_iframe.count() > 0:
+                                box = await ts_iframe.bounding_box()
+                                if box and box["width"] > 0 and box["height"] > 0:
+                                    click_x = box["x"] + min(32.0, box["width"] / 3)
+                                    click_y = box["y"] + box["height"] / 2
+                                    await page.mouse.move(click_x, click_y, steps=6)
+                                    await asyncio.sleep(0.12)
+                                    await page.mouse.down()
+                                    await asyncio.sleep(0.08)
+                                    await page.mouse.up()
+                                    break
                         except Exception:
                             pass
-                await asyncio.sleep(1.5)
+                        await asyncio.sleep(0.8)
+                    render_res = await asyncio.wait_for(solve_task, timeout=12.0)
+                    if render_res and render_res.get("success") and render_res.get("token"):
+                        acquired_token = render_res["token"]
+                except Exception as pe:
+                    logger.warning(f"[ATF] UID {uid} programmatic render note: {pe}")
 
             await context.close()
         except Exception as e:

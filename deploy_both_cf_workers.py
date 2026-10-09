@@ -228,162 +228,9 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
   const result = { user_id: uid, bots: {} };
   const isOwner = String(uid) === (env.OWNER_ID || "6727787768");
 
-  // 1. Stones Miners Edge Claim & Tasks
-  const farmStones = async () => {
-    if (!accData.stones_init_data) return;
-    try {
-      const stonesHeaders = getHumanHeaders(uid, {
-        "Content-Type": "application/json",
-        "Origin": "https://app.stoneswithestand.my.id",
-        "Referer": "https://app.stoneswithestand.my.id/"
-      });
+  // 1. Stones Miners permanently decommissioned & purged per operator directive
 
-      await humanDelay(1000, 2200);
-      await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
-        method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: "daily_checkin" })
-      }, 2, 800).catch(() => {});
 
-      await humanDelay(1200, 2500);
-      await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/start", {
-        method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
-      }, 2, 800).catch(() => {});
-      if (ctx && ctx.waitUntil) {
-        ctx.waitUntil(new Promise(async (resolve) => {
-          try {
-            await humanDelay(15000, 17000);
-            await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
-              method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
-            }, 2, 800);
-            await humanDelay(1500, 3000);
-            await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
-              method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: "join_channel" })
-            }, 2, 800);
-          } catch (_) {}
-          resolve();
-        }));
-      }
-
-      // Dynamic task discovery from /api/state
-      try {
-        const stResp = await fetchWithRetry("https://app.stoneswithestand.my.id/api/state", {
-          method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
-        }, 2, 800).catch(() => null);
-        if (stResp && stResp.ok) {
-          const stData = await stResp.json().catch(() => ({}));
-          const rawTasks = stData.tasks;
-          const taskEntries = Array.isArray(rawTasks) ?
-            rawTasks.map(t => ({ slug: t.slug || t.id, completed: t.completed || t.is_completed })) :
-            (typeof rawTasks === "object" && rawTasks !== null ?
-              Object.entries(rawTasks).map(([slug, status]) => ({ slug, completed: status === "completed" })) : []);
-
-          for (const t of taskEntries) {
-            if (t.slug && !t.completed && t.slug !== "daily_checkin" && t.slug !== "join_channel") {
-              const isExternal = ["sponsor", "channel", "tg", "telegram", "twitter", "youtube", "sub", "follow", "visit"].some(k => t.slug.toLowerCase().includes(k));
-              await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/start", {
-                method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
-              }, 1, 500).catch(() => {});
-
-              if (isExternal && ctx && ctx.waitUntil) {
-                ctx.waitUntil(new Promise(async (resolve) => {
-                  try {
-                    await humanDelay(14500, 16500);
-                    await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
-                      method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
-                    }, 2, 800).catch(() => {});
-                    await humanDelay(1500, 2800);
-                    await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
-                      method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
-                    }, 2, 800).catch(() => {});
-                  } catch (_) {}
-                  resolve();
-                }));
-              } else {
-                await humanDelay(2500, 4000);
-                await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/complete", {
-                  method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
-                }, 1, 500).catch(() => {});
-                await humanDelay(1500, 2800);
-                await fetchWithRetry("https://app.stoneswithestand.my.id/api/task/verify", {
-                  method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, slug: t.slug })
-                }, 1, 500).catch(() => {});
-              }
-              await humanDelay(1000, 2000);
-            }
-          }
-        }
-      } catch (_) {}
-
-      await humanDelay(1200, 2500);
-      await fetchWithRetry("https://app.stoneswithestand.my.id/api/claim", {
-        method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
-      }).catch(() => {});
-
-      await humanDelay(1000, 2200);
-      await fetchWithRetry("https://app.stoneswithestand.my.id/api/mining/start", {
-        method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
-      }).catch(() => {});
-
-      // Stone Breaker Play & Earn (+10 STONES/hr, +100 STONES/day)
-      try {
-        const sbr = await fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/status", {
-          method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
-        }).then(r => r.json()).catch(() => ({}));
-        if (sbr.ok && (sbr.hour_got || 0) < (sbr.hourly_cap || 10) && (sbr.day_got || 0) < (sbr.daily_cap || 100)) {
-          const sbs = await fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/start", {
-            method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
-          }).then(r => r.json()).catch(() => ({}));
-          if (sbs.ok && sbs.session && sbs.session.session_id) {
-            const dur = (sbs.session.duration || 30) + 1;
-            const finishPromise = new Promise(resolve => setTimeout(resolve, dur * 1000)).then(() => {
-              const sc = Math.floor(142 + Math.random() * 24);
-              return fetchWithRetry("https://app.stoneswithestand.my.id/api/sb/finish", {
-                method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, session_id: sbs.session.session_id, score: sc })
-              });
-            }).catch(() => {});
-            if (ctx && ctx.waitUntil) ctx.waitUntil(finishPromise);
-          }
-        }
-      } catch (_) {}
-
-      // Mining Boost (+0.5 TH/s for 5 min)
-      try {
-        const abc = await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/boost/challenge", {
-          method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data })
-        }).then(r => r.json()).catch(() => ({}));
-        if (abc.ok && abc.challenge && abc.challenge.challenge_id) {
-          const cid = abc.challenge.challenge_id;
-          await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/beat", {
-            method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, scope: "boost", challenge_id: cid })
-          }, 1, 500).catch(() => {});
-          if (ctx && ctx.waitUntil) {
-            ctx.waitUntil(new Promise(async (resolve) => {
-              try {
-                await humanDelay(15500, 17500);
-                await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/beat", {
-                  method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, scope: "boost", challenge_id: cid })
-                }, 1, 500);
-                await fetchWithRetry("https://app.stoneswithestand.my.id/api/ad/boost/reward", {
-                  method: "POST", headers: stonesHeaders, body: JSON.stringify({ initData: accData.stones_init_data, challenge_id: cid })
-                });
-              } catch (_) {}
-              resolve();
-            }));
-          }
-        }
-      } catch (_) {}
-
-      // Bind Arbitrum Wallet & Auto-Withdraw Check (Worker Accounts Only; Master account strictly compounds)
-      if (!isOwner) {
-        try {
-        // Stones auto-withdrawal permanently DISABLED to prevent wrong-address routing
-        // All fleet accounts accumulate STONES safely in compounding mode
-        } catch (_) {}
-      }
-      result.bots.stones = "ok";
-    } catch (e) {
-      result.bots.stones = `error: ${e.message}`;
-    }
-  };
 
   // 2. MRG Miner
   const farmMrg = async () => {
@@ -1868,16 +1715,12 @@ export default {
       const userSystemPrompt = "You are 'Ari AI', the friendly assistant for AAA Auto Mining (@AAAPREMIUMAPPSbot).\n" +
         "CRITICAL RULES:\n" +
         "- KEEP RESPONSES SHORT, CLEAR, AND SIMPLE.\n" +
-        "- When asked what this bot can do, how it works, or what bots are supported, ALWAYS showcase the 9 verified mining pools with their names and links:\n" +
-        "  1. 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & task claiming\n" +
-        "  2. 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Auto-farming & reward collection\n" +
-        "  3. ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON rewards\n" +
-        "  4. 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — 24/7 autonomous farming & token accumulation\n" +
-        "  5. 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Multi-chain cloud mining\n" +
-        "  6. 🌐 [FINVORA Web3](https://t.me/FINVORAWeb3bot?start=ref_TRX6727787768) — Web3 rewards & token mining\n" +
-        "  7. 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & minigame\n" +
-        "  8. 💎 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n" +
-        "- Explain that the bot automatically farms and claims all 8 bots 24/7 in the cloud without needing to keep apps or devices open.\n" +
+        "- When asked what this bot can do, how it works, or what bots are supported, ALWAYS showcase the 4 verified mining pools with their names and links:\n" +
+        "  1. ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n" +
+        "  2. 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n" +
+        "  3. 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade minigame\n" +
+        "  4. 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n" +
+        "- Explain that the bot automatically farms and claims all 4 bots 24/7 in the cloud without needing to keep apps or devices open.\n" +
         "- BRANDING: This bot was created and engineered by 'AAA'. When asked who created or made this bot, state clearly that it was created and engineered by AAA.\n" +
         "- NEVER mention internal developer terms like 'Zero Phone Load', 'serverless MTProto', 'Samsung Galaxy', Termux, or system architecture.\n" +
         "- NEVER show personal admin names (like 'Arif'). Always refer to the team simply as 'Support' or 'Support Team'.\n" +
@@ -1957,17 +1800,13 @@ export default {
           `• *Supported Bots:* Auto-farms 8 Telegram crypto bots 24/7 (ATF Miner, Stones, MRG, AI Lab, UltraWallet, FINVORA Web3, Victor's Company, VyroDrop).`;
       } else if (pLow.includes("what can this bot do") || pLow.includes("what can you do") || pLow.includes("what does this bot do") || pLow.includes("features") || pLow.includes("bot list") || pLow.includes("which bots")) {
         fallbackAns = `🌟 *AAA AUTO MINING* (Created by AAA) 🚀\n\n` +
-          `This bot **automatically mines 8 Telegram crypto bots 24/7 in the cloud**! It executes mining starts, daily claims, task completions, and point rewards continuously.\n\n` +
-          `🤖 *The 8 Automated Mining Pools & Links:*\n` +
-          `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & task claiming\n` +
-          `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Auto-farming & energy claims\n` +
-          `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & tasks\n` +
-          `4️⃣ 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — 24/7 hash exchange & mining cycles\n` +
-          `5️⃣ 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Daily check-ins, spins & energy\n` +
-          `6️⃣ 🌐 [FINVORA Web3](https://t.me/FINVORAWeb3bot?start=ref_TRX6727787768) — Web3 rewards & token mining\n` +
-          `7️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & minigame\n` +
-          `8️⃣ 💎 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n\n` +
-          `📱 *How to Start:* Tap *➕ Connect Account*, send your phone number & Telegram login code. Your account will automatically farm all 8 pools 24/7 in the cloud!`;
+          `This bot **automatically mines 4 Telegram crypto bots 24/7 in the cloud**! It executes mining starts, daily claims, task completions, and point rewards continuously.\n\n` +
+          `🤖 *The 4 Automated Mining Pools & Links:*\n` +
+          `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
+          `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
+          `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade minigame\n` +
+          `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n\n` +
+          `📱 *How to Start:* Tap *➕ Connect Account*, send your phone number & Telegram login code. Your account will automatically farm all 4 pools 24/7 in the cloud!`;
       } else if (pLow.includes("connect") || pLow.includes("add account") || pLow.includes("login")) {
         fallbackAns = `📱 *How to Connect Your Account:*\n\n` +
           `1. Tap *➕ Connect Account* in the menu.\n` +
@@ -3934,12 +3773,12 @@ fi
                 body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
               }).catch(() => {});
             } else if (cbData === "btn_ailab") {
-              const rep = `🧪 *AI LAB ROBOT COMMAND CENTER*\n` +
+              const rep = `🚫 *AI LAB ROBOT DECOMMISSIONED & PURGED*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* AI Lab Agent (@AiLab_robot)\n` +
-                `• *Status:* Continuous 8h Mining Active\n` +
-                `• *Policy:* 100% Holding & Compounding Mode (Auto-Cashout Disabled)\n` +
-                `• *Asset Mode:* Pure Hashpower & USD Accumulation\n` +
+                `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
+                `• *Action Taken:* All 18 fleet accounts permanently blocked @AiLab_robot, purged keys, and deleted dialog history.\n` +
+                `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -3947,12 +3786,12 @@ fi
                 body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
               }).catch(() => {});
             } else if (cbData === "btn_stones") {
-              const rep = `💎 *STONES MINERS CLOUD COMMAND CENTER*\n` +
+              const rep = `🚫 *STONES MINERS DECOMMISSIONED & PURGED*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `• *Status:* Active & Mining (Arbitrum One / BSC)\n` +
-                `• *Policy:* 100% Compounding Mode (Auto-Withdrawals Disabled)\n` +
-                `• *Challenge Boost:* Active (+0.5 TH/s hashrate)\n` +
-                `• *Resiliency:* 30m Origin Circuit Breaker & Cloudflare Tunnel Watchdog Active ✅\n` +
+                `• *Platform:* Stones Miners (@stoneswithestand_bot)\n` +
+                `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
+                `• *Action Taken:* All 18 fleet accounts permanently blocked @stoneswithestand_bot, left @stoneswithestand channel, and deleted dialog history.\n` +
+                `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -5243,14 +5082,12 @@ fi
 
         if (text === "💳 UltraWallet" || text.startsWith("/ultra") || text.startsWith("/ultrawallet")) {
           ctx.waitUntil((async () => {
-            const rep = `💳 *ULTRAWALLET COMMAND CENTER*\n` +
+            const rep = `🚫 *ULTRAWALLET DECOMMISSIONED & PURGED*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* UltraWallet (@UltrawalletTrade_Bot)\n` +
-              `• *Status:* 🟢 Active & Mining 24/7 (10 Hash/h)\n` +
-              `• *Streak:* Daily Check-in & Gift Box Claimed ✅\n` +
-              `• *Rewards Center:* Video Ads & Activities Automated\n` +
-              `• *Auto-Compound:* Active 24/7 in Cloud\n` +
-              `• *Policy:* 100% Asset Accumulation Mode (Auto-Withdraw Disabled)\n` +
+              `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
+              `• *Action Taken:* All 18 fleet accounts permanently blocked @UltrawalletTrade_Bot, purged keys, and deleted dialog history.\n` +
+              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -5329,14 +5166,12 @@ fi
 
         if (text === "🌐 FINVORA Web3" || text.startsWith("/finvora")) {
           ctx.waitUntil((async () => {
-            const rep = `🌐 *FINVORA WEB3 COMMAND CENTER*\n` +
+            const rep = `🚫 *FINVORA WEB3 DECOMMISSIONED & PURGED*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* FINVORA Web3 (@FINVORAWeb3bot)\n` +
-              `• *Status:* 🟢 Active DeFi Mining & Staking\n` +
-              `• *Referral Binding:* \`ref_TRX6727787768\` (Master Account)\n` +
-              `• *Harvest Mode:* Automated Web3 Staking & Reward Sweeps\n` +
-              `• *Payout Asset:* Multi-Chain Crypto (TRX / DeFi Yield)\n` +
-              `• *Fleet Coverage:* All 18 Fleet Accounts Online ✅\n` +
+              `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
+              `• *Action Taken:* All 18 fleet accounts permanently blocked @FINVORAWeb3bot, purged keys, and deleted dialog history.\n` +
+              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -5350,7 +5185,7 @@ fi
               `• *Platform:* TurboGram V1 (@TurboGramV1_bot)\n` +
               `• *Status:* 🚫 Permanently removed and blacklisted from fleet per user directive\n` +
               `• *Action Taken:* Purged from cloud farm routines, unsubscribed channels, and sessions isolated.\n` +
-              `• *Active Legitimate Fleet:* Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, Victor's Company, and VyroDrop.\n` +
+              `• *Active Legitimate Fleet:* MRG Miner, ATF Miner, Victor's Company, and VyroDrop.\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -6332,7 +6167,7 @@ fi
 
             const systemPrompt = `You are Ari, the personal cloud AI assistant for Arif's 18-account automated crypto and mining fleet (MY AGY AI).
 Live Fleet Context:
-- 18 active accounts mining 24/7 across all 9 legitimate bots: Stones Miners, ATF Miner, MRG Miner, AI Lab Robot, UltraWallet, FINVORA Web3, Victor's Company, and VyroDrop. All 10 legacy scammer bots (ART, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, USDT QUAD, TAC, Ominix) have been permanently purged and blocked.
+- 18 active accounts mining 24/7 across the 4 active legitimate bots: MRG Miner, ATF Miner, Victor's Company, and VyroDrop. All discontinued & scammer bots (Stones, AI Lab, UltraWallet, FINVORA, ART, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, USDT QUAD, TAC, Ominix) have been permanently purged and blocked.
 - Policy: ATF Miner is in 100% farming & accumulation mode (NO withdrawals; let balance grow).
 - Policy (Admin Fleet Accounts): MRG Miner is strictly in 100% Holding & Compounding mode (NO auto-withdrawals) to preserve peak levels (Level 1..50), maximum hashrate (5.5 TH/s), and squad referral qualifications.
 - Vault BEP-20 (BNB, USDT): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Live Balance: ${liveBnb.toFixed(6)} BNB).
@@ -7536,20 +7371,16 @@ Reply to Arif naturally:`;
             return new Response("OK");
           }
 
-          // C2.6 9 Mining Pools & Auto-Farming Guide
+          // C2.6 4 Mining Pools & Auto-Farming Guide
           if (cqData === "ub_withdraw" || cqData === "ub_pools") {
-            const poolsMsg = `⛏️ *9 SUPPORTED CLOUD MINING POOLS & BOTS* 🤖\n\n` +
-              `Our cloud engines automatically farm and claim all 9 bots 24/7 across your connected accounts:\n\n` +
-              `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
-              `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Continuous auto-farming sessions\n` +
-              `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
-              `4️⃣ 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — Automated hash generation & daily bonuses\n` +
-              `5️⃣ 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Multi-pool automated cloud mining\n` +
-              `6️⃣ 🌐 [FINVORA Web3](https://t.me/FINVORAWeb3bot?start=ref_TRX6727787768) — Web3 rewards & token mining\n` +
-              `7️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade minigame\n` +
-              `8️⃣ 💎 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n\n` +
+            const poolsMsg = `⛏️ *4 SUPPORTED CLOUD MINING POOLS & BOTS* 🤖\n\n` +
+              `Our cloud engines automatically farm and claim all 4 bots 24/7 across your connected accounts:\n\n` +
+              `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
+              `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
+              `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade minigame\n` +
+              `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n\n` +
               `☁️ *What Our Bot Does:*\n` +
-              `• Automatically runs 24/7 cloud auto-farming across all 8 bots for your connected accounts.\n` +
+              `• Automatically runs 24/7 cloud auto-farming across all 4 bots for your connected accounts.\n` +
               `• Executes daily claims, starts, tasks, and point rewards without keeping your phone or app open.\n` +
               `• All mined tokens accumulate directly in your accounts inside each respective official bot.`;
             ctx.waitUntil(sendCqReply(poolsMsg, {
@@ -8186,13 +8017,11 @@ Reply to Arif naturally:`;
             const helpMsg = `📖 *AAA AUTO MINING & ARI AI GUIDE* 🤖\n` +
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Hello ${senderName}! Here is your complete guide to automated cloud mining:\n\n` +
-              `🤖 *7 Automated Mining Pools & Links:*\n` +
-              `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
-              `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Continuous auto-farming sessions\n` +
-              `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
-              `4️⃣ 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — Automated hash generation & daily bonuses\n` +
-              `5️⃣ 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Multi-pool automated cloud mining\n` +
-              `6️⃣ 🌐 [FINVORA Web3](https://t.me/FINVORAWeb3bot?start=ref_TRX6727787768) — Web3 rewards & token mining\n` +
+              `🤖 *4 Automated Mining Pools & Links:*\n` +
+              `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
+              `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
+              `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade minigame\n` +
+              `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n\n` +
               `1️⃣ *How to Connect & Remove Accounts*\n` +
               `• *Connect:* Tap *➕ Connect Account*, send phone number & 5-digit Telegram code.\n` +
               `• *Remove:* Tap *👥 My Accounts* in the menu and tap *🗑️ Remove* next to any account, or type \`/remove\` anytime!\n` +
@@ -8300,14 +8129,12 @@ Reply to Arif naturally:`;
             const farmStatus = isCovered ? "🟢 Active 24/7 (Covered by VIP Pass)" : (profile.farming_active ? "🟢 Active & Mining 24/7" : "🔴 Paused (Needs Points)");
             const welcomeText = `🌟 *AAA AUTO MINING PLATFORM (PREMIUM)* 🚀\n` +
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
-              `Hello ${senderName}! Connect your account once, and AAA Auto Mining will **automatically farm all 7 Telegram crypto bots 24/7 in the cloud**! Our cloud engines handle all daily mining sessions, task farming, and claim cycles continuously.\n\n` +
-              `🤖 *7 Automated Mining Pools & Links:*\n` +
-              `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
-              `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Continuous auto-farming sessions\n` +
-              `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
-              `4️⃣ 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — Automated hash generation & daily bonuses\n` +
-              `5️⃣ 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Multi-pool automated cloud mining\n` +
-              `6️⃣ 🌐 [FINVORA Web3](https://t.me/FINVORAWeb3bot?start=ref_TRX6727787768) — Web3 rewards & token mining\n` +
+              `Hello ${senderName}! Connect your account once, and AAA Auto Mining will **automatically farm all 4 Telegram crypto bots 24/7 in the cloud**! Our cloud engines handle all daily mining sessions, task farming, and claim cycles continuously.\n\n` +
+              `🤖 *4 Automated Mining Pools & Links:*\n` +
+              `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
+              `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
+              `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade minigame\n` +
+              `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n` +
               `💎 *Your Fleet Overview:*\n` +
               `• *Connected Accounts:* ${profile.accounts.length} / ${totalSlots} Slots\n` +
               `• *Points Balance:* ${profile.points} Points\n` +
@@ -8579,21 +8406,17 @@ Reply to Arif naturally:`;
             return;
           }
 
-          // 4.2 ⛏️ 9 Supported Mining Pools & Bots (/pools, /bots, /farm, "⛏️ Farming Bots")
+          // 4.2 ⛏️ 4 Supported Mining Pools & Bots (/pools, /bots, /farm, "⛏️ Farming Bots")
           if (text === "⛏️ Farming Bots" || text === "⛏️ Mining Pools" || text === "🤖 Farming Bots" || text.startsWith("/pools") || text.startsWith("/bots") || text.startsWith("/farm") || text.startsWith("/farming") || text.startsWith("/withdraw")) {
-            const poolsMsg = `⛏️ *9 SUPPORTED CLOUD MINING POOLS & BOTS* 🤖\n` +
+            const poolsMsg = `⛏️ *4 SUPPORTED CLOUD MINING POOLS & BOTS* 🤖\n` +
               `_⚡ Created by AAA — 100% Autonomous Cloud Mining_\n\n` +
-              `Our cloud engines automatically farm and claim all 9 high-conviction legitimate bots 24/7 across your connected accounts:\n\n` +
-              `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
-              `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768) — Continuous auto-farming sessions\n` +
-              `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
-              `4️⃣ 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852) — Automated hash generation & daily bonuses\n` +
-              `5️⃣ 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768) — Multi-pool automated cloud mining\n` +
-              `6️⃣ 🌐 [FINVORA Web3](https://t.me/FINVORAWeb3bot?start=ref_TRX6727787768) — Web3 rewards & token mining\n` +
-              `7️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade minigame\n` +
-              `8️⃣ 💎 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n\n` +
+              `Our cloud engines automatically farm and claim all 4 high-conviction legitimate bots 24/7 across your connected accounts:\n\n` +
+              `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
+              `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
+              `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade minigame\n` +
+              `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n\n` +
               `☁️ *What Our Bot Does:*\n` +
-              `• Automatically runs 24/7 cloud auto-farming across all 8 bots for your connected accounts.\n` +
+              `• Automatically runs 24/7 cloud auto-farming across all 4 bots for your connected accounts.\n` +
               `• Executes daily claims, starts, tasks, and point rewards without keeping your phone or app open.\n` +
               `• All mined tokens accumulate directly in your accounts inside each respective official bot.`;
             await sendUserReply(poolsMsg, {
@@ -8765,13 +8588,11 @@ Reply to Arif naturally:`;
             const chatAiMsg = `💬 *AAA AI MINING COPILOT & SUPPORT* 🤖\n` +
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Hello ${senderName}! How can I help you today?\n\n` +
-              `🤖 *7 Automated Mining Pools Active (24/7):*\n` +
-              `1️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768)\n` +
-              `2️⃣ 💎 [Stones Miner](https://t.me/stoneswithestand_bot?start=r6727787768)\n` +
-              `3️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD)\n` +
-              `4️⃣ 🤖 [AI Lab Robot](https://t.me/AiLab_robot?start=296852)\n` +
-              `5️⃣ 👛 [UltraWallet](https://t.me/UltrawalletTrade_Bot/app?startapp=6727787768)\n` +
-              `6️⃣ 🌐 [FINVORA](https://t.me/FINVORAWeb3bot?start=ref_TRX6727787768)\n` +
+              `🤖 *4 Automated Mining Pools Active (24/7):*\n` +
+              `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD)\n` +
+              `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768)\n` +
+              `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18)\n` +
+              `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_)\n` +
               `*Quick Actions:*\n` +
               `• *Ask Questions:* Simply type any question in this chat!\n` +
               `• *Manage Accounts:* Tap *👥 My Accounts* or *🗑️ Remove Account* anytime.\n` +
@@ -9261,15 +9082,14 @@ async def main():
             "🌟 AAA Auto Mining Platform 🚀\n"
             "⚡ 100% Autonomous Cloud Mining\n\n"
             "🤖 What This Bot Does:\n"
-            "Auto-farms 7 Telegram crypto bots 24/7 in cloud:\n"
-            "• 🪙 ATF Miner & 💎 Stones Miner\n"
-            "• ⚡ MRG Miner & 🤖 AI Lab Robot\n"
-            "• 👛 UltraWallet & 🌐 FINVORA Web3\n"
+            "Auto-farms 4 Telegram crypto bots 24/7 in cloud:\n"
+            "• ⚡ MRG Miner & 🪙 ATF Miner\n"
+            "• 🏢 Victor's Company & 💧 VyroDrop\n"
             "\n"
             "💎 Earn Points: Daily bonus, ads & invites!\n\n"
             "📢 @AAAAutoMiner | @AAAAUTOMINING"
         )
-        user_short_desc = "🌟 100% Cloud-Powered Mining Platform! Auto-farms 7 Telegram crypto bots 24/7. Created by AAA."
+        user_short_desc = "🌟 100% Cloud-Powered Mining Platform! Auto-farms 4 Telegram crypto bots 24/7. Created by AAA."
 
         try:
             async with session.post(
@@ -9292,7 +9112,7 @@ async def main():
             "commands": [
                 {"command": "start", "description": "🌟 Open Mining Dashboard & Fleet"},
                 {"command": "accounts", "description": "👥 Manage Connected Accounts"},
-                {"command": "pools", "description": "⛏️ 7 Supported Mining Pools & Bots"},
+                {"command": "pools", "description": "⛏️ 4 Supported Mining Pools & Bots"},
                 {"command": "ads", "description": "🎬 Watch Ads & Earn Points"},
                 {"command": "points", "description": "💎 Points Balance & VIP Passes"},
                 {"command": "daily", "description": "🎁 Claim Daily Bonus (+25-50 Pts)"},

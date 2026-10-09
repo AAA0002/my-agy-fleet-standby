@@ -4,6 +4,19 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🌟 4-Bot Fleet Parity Across All 5 Cloudflare Edge Nodes & ATF Turnstile Robust Hook Architecture**:
+  - **📱 User Bot (@AAAPREMIUMAPPSbot) Complete 4-Bot Synchronization**:
+    * Updated official bot description, short description, and menu commands across all 5 Cloudflare Worker nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) to feature exclusively the 4 active legitimate bots: ⚡ MRG Miner, 🪙 ATF Miner, 🏢 Victor's Company, and 💧 VyroDrop.
+    * Completely removed all lingering references, links, and guides for legacy/discontinued bots (`@stoneswithestand_bot`, `@AiLab_robot`, `@UltrawalletTrade_Bot`, `@FINVORAWeb3bot`) from `/pools`, `/help`, `/start`, Ari AI Copilot system prompt, and fallback replies.
+    * Excised dead `farmStones` function from Cloudflare Edge Worker execution pipeline.
+  - **🛡️ ATF Cloudflare Turnstile Solver Robust Hook Architecture (`mrg_turnstile_solver.py`)**:
+    * Solved frontend race condition where the ATF web application was overwriting `window.__atfEntryCaptchaCallback`. Implemented a dynamic JavaScript getter/setter property descriptor that preserves our token capture callback regardless of frontend reassignment.
+    * Added `window.fetch` payload interceptor to capture verified `captcha_token` submissions in real-time.
+    * Integrated programmatic Turnstile render fallback into `#entryCaptchaBox` (`sitekey: 0x4AAAAAAEbiOQ5xhVRMXGgt`) with humanized mouse click simulation for unattended 100% cloud solving in GitHub Actions.
+  - **🚀 Cloudflare Edge Mesh Deployment**:
+    * Deployed synchronized edge scripts across all 5 Cloudflare Worker nodes with 24/7 cron triggers (`*/15 * * * *`) and live Telegram menu button / command synchronization.
+
+
 - **⚙️ Complete 4-Bot Fleet Farm Fix: ATF Cloudflare Turnstile Solver, VyroDrop 401 Guard, Background Tasks Await & Cloudflare Worker Legacy Bot Purge**:
   - **🪙 ATF Miner Cloudflare Turnstile Auto-Solving (0x4AAAAAAEbiOQ5xhVRMXGgt)**:
     * Discovered and resolved root cause for 0.0 ATF balance on worker accounts: ATF Miner requires Cloudflare Turnstile verification (`entry_captcha_required`) on new accounts and every 5 days.
