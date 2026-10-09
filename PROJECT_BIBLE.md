@@ -211,7 +211,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 | **Web3 Infrastructure** | **TonAPI Key** | `https://tonapi.io` | 🟢 **ACTIVE** — Jetton transfers and account audits |
 | **Web3 Infrastructure** | **Etherscan API** | `api.etherscan.io` | 🟢 **ACTIVE** — EVM on-chain verification key |
 | **Rotating Proxy Pool** | **Webshare Proxies** | `proxy.webshare.io` | 🟢 **20 ACTIVE PROXIES** — Residential/datacenter proxy pool across 2 keys |
-| **Cloud Scheduler** | **Cron-Job.org** | `api.cron-job.org` | 🟢 **HTTP 200 OK** — External heartbeat trigger for cloud worker wakeups |
+| **Cloud Scheduler** | **Cron-Job.org** | `api.cron-job.org` | 🟢 **ACTIVE (8 JOBS)** — Keep-alives for Render Node 1/2/3 & Deno; 30m autonomous cloud farming sweeps on Node 2 (8614058) & Node 3 (8614059) |
 | **Uptime & Dead-Man** | **Better Stack** | `uptime.betterstack.com/api/v1/heartbeat/...` | 🟢 **HTTP 200 OK** — Dead-man's switch 24/7 heartbeat monitor |
 | **Crash Interception** | **Sentry Monitoring** | `ingest.us.sentry.io` | 🟢 **ACTIVE** — 2 Projects configured for real-time exception trapping |
 | **IP Telemetry** | **ipinfo.io** | `ipinfo.io/json` | 🟢 **ACTIVE** — Autonomous geolocation & ASN validation |
