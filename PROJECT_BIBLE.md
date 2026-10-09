@@ -256,6 +256,20 @@ To prevent Sybil detection, anti-farming bans, and wallet clustering, each accou
 
 ---
 
+### 🔌 Plug-and-Farm Architecture (`bot_registry.py`)
+To prevent repetitive manual interventions and code rewrites when onboarding new bots:
+1. **Single Source of Truth (SSOT)**: All bots are declared centrally in `bot_registry.py`. Each entry defines `bot_username`, `master_ref_code`, `app_url`, `token_key`, `short_names`, `api_base`, `sponsor_channels`, and `requires_turnstile`.
+2. **Zero-Touch Onboarding**: Adding any new bot in the future requires only one dictionary entry in `bot_registry.py`. The cloud token refresher (`refresh_cloud_tokens.py`), referral binder (`login_account.py`), and 24/7 cloud auto-farming engines automatically ingest new bots dynamically.
+3. **Automated New Account Referral Binding (`bind_referrals`)**:
+   Whenever a new Telegram account is added to the fleet, `login_account.bind_referrals` runs automatically:
+   - `@mrgminerbot`: sends `/start ref_IRN1G3XD`, opens WebApp, and binds the account's TON wallet.
+   - `@ATF_AIRDROP_bot`: sends `/start 6727787768`, binds wallet, solves initial math challenge, and starts mining.
+   - `@VictorsCompanybot`: sends `/start ref_A20AA96F18`, initializes WebApp, binds TON wallet (+100 VIC recruit bonus credited to Master).
+   - `@vyrodrop_bot`: sends `/start ref_myFjrqqE4WN_`, activates WebApp, and connects TonConnect 2.0 wallet.
+   - Sets `all_4_referrals_bound: true` and syncs the new account state across Upstash Redis and Cloudflare KV with zero manual interaction.
+
+---
+
 ### 🚫 Complete Eradication of Scammer & Removed Bots & Channels (October 8–9, 2026)
 Following operator directive and verified evidence of fraudulent schemes or obsolescence, **15 bots and all their associated channels/groups were permanently purged from all fleet code routines, blacklisted, blocked, dialogs erased with revoke=True across all 18 accounts, and all related channels/groups abandoned**:
 

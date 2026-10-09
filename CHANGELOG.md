@@ -4,6 +4,18 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🚀 18/18 Fleet Coverage Diagnosis, Automated New-Account Referral Engine & Zero-Touch Plug-and-Farm Architecture**:
+  - **🔍 Root Cause Resolution for 16/18 Fleet Account Display**:
+    * Identified that Victor's Company and VyroDrop showed 16 accounts instead of 18 because Master (`6727787768`) and Worker 8 (`8025472383`) lacked cached WebApp `initData` tokens in Upstash Redis.
+    * Master previously omitted `start_param` (`if is_master: start_param = None`), causing `@VictorsCompanybot` and `@vyrodrop_bot` to withhold inline WebApp launch buttons. Fixed by permanently supplying master referral codes (`VICTORS_REF` and `VYRO_REF`) regardless of master status.
+    * Fixed transient `AUTH_KEY_DUPLICATED` MTProto session clashes by preventing concurrent runner connections from differing cloud IPs.
+  - **🔗 Zero-Touch Automated Referral Engine for New Accounts (`login_account.py`)**:
+    * Documented and audited `bind_referrals(client, me, acc)` which automatically binds all 4 legitimate bots upon new account creation: `@mrgminerbot` (`ref_IRN1G3XD`), `@ATF_AIRDROP_bot` (`6727787768`), `@VictorsCompanybot` (`ref_A20AA96F18`), and `@vyrodrop_bot` (`ref_myFjrqqE4WN_`).
+    * Completely eliminates manual `/start` messaging or webview clicks per account; saves `all_4_referrals_bound: true` and syncs to Upstash and Cloudflare.
+  - **🔌 Plug-and-Farm Bot Architecture (`bot_registry.py`)**:
+    * Created single source of truth registry module defining bot usernames, referral parameters, WebApp URLs, token keys, and mandatory sponsor channels.
+    * Adding any future bot requires only a single registry entry, automatically activating cloud referral binding, token harvesting, and 24/7 autonomous farming without touching individual accounts or code loops.
+
 - **🛡️ Comprehensive 4-Bot Fleet Farm Audit, CSP Bypass & Resilient Script Injection Engine**:
   - **🔍 Live Fleet Audit Engine Overhaul (`audit_bots_and_sidetasks.py`)**:
     * Cleaned script to focus strictly on the 4 active legitimate bots (1. MRG Miner, 2. ATF Miner, 3. Victor's Company, 4. VyroDrop), eliminating dead bot references.

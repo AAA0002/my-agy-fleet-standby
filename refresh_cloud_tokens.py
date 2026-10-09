@@ -306,14 +306,14 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
             print(f"  🪙 ATF Miner: Collected")
 
         # 4. Victor's Company
-        vic_p = None if is_master else VICTORS_REF
+        vic_p = VICTORS_REF
         tok = await extract_bot_webapp_token(cl, VICTORS_BOT, start_param=vic_p, default_url="https://app.victors.company/", candidate_short_names=["app", "play"])
         if tok:
             tokens["victors_init_data"] = tok
             print(f"  🏢 Victor's Company: Collected")
 
         # 9. VyroDrop
-        vy_p = None if is_master else VYRO_REF
+        vy_p = VYRO_REF
         tok = await extract_bot_webapp_token(cl, VYRO_BOT, start_param=vy_p, default_url="https://vyro.run.place/", candidate_short_names=["app", "vyro", "play", "mine"])
         if tok:
             tokens["vyro_init_data"] = tok
