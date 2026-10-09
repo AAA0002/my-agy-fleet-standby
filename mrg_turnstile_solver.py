@@ -338,6 +338,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
     m_init = acc_info["init_data"]
 
     context = await browser.new_context(
+        bypass_csp=True,
         user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
         viewport={"width": 412, "height": 915},
         is_mobile=True,
@@ -518,46 +519,82 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
     solve_js = f"""
         async () => {{
             return new Promise((resolve) => {{
-                if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
-                    return resolve({{ success: false, error: 'no_turnstile' }});
-                }}
-                try {{
-                    let container = document.getElementById('cf-manual-slot');
-                    if (!container) {{
-                        container = document.createElement('div');
-                        container.id = 'cf-manual-slot';
-                        container.style.position = 'fixed';
-                        container.style.top = '50%';
-                        container.style.left = '50%';
-                        container.style.transform = 'translate(-50%, -50%)';
-                        container.style.width = '300px';
-                        container.style.height = '65px';
-                        container.style.zIndex = '9999999';
-                        container.style.background = '#18181b';
-                        document.body.appendChild(container);
+                let rendered = false;
+                let waitInterval = null;
+
+                function doRender() {{
+                    if (rendered) return;
+                    rendered = true;
+                    if (waitInterval) {{
+                        clearInterval(waitInterval);
+                        waitInterval = null;
                     }}
-                    window.turnstile.render(container, {{
-                        sitekey: '{SITE_KEY}',
-                        theme: 'light',
-                        appearance: 'always',
-                        callback: function(tok) {{
-                            window.__mrgTurnstileToken = tok;
-                            resolve({{ success: true, token: tok }});
-                        }},
-                        'error-callback': function(err) {{
-                            resolve({{ success: false, error: String(err) }});
+                    try {{
+                        let container = document.getElementById('cf-manual-slot');
+                        if (!container) {{
+                            container = document.createElement('div');
+                            container.id = 'cf-manual-slot';
+                            container.style.position = 'fixed';
+                            container.style.top = '50%';
+                            container.style.left = '50%';
+                            container.style.transform = 'translate(-50%, -50%)';
+                            container.style.width = '300px';
+                            container.style.height = '65px';
+                            container.style.zIndex = '9999999';
+                            container.style.background = '#18181b';
+                            document.body.appendChild(container);
+                        }} else {{
+                            container.innerHTML = '';
                         }}
-                    }});
-                }} catch (e) {{
-                    resolve({{ success: false, error: String(e) }});
+                        window.turnstile.render(container, {{
+                            sitekey: '{SITE_KEY}',
+                            theme: 'dark',
+                            appearance: 'always',
+                            callback: function(tok) {{
+                                window.__mrgTurnstileToken = tok;
+                                resolve({{ success: true, token: tok }});
+                            }},
+                            'error-callback': function(err) {{
+                                resolve({{ success: false, error: String(err) }});
+                            }}
+                        }});
+                    }} catch (e) {{
+                        resolve({{ success: false, error: String(e) }});
+                    }}
                 }}
-                setTimeout(() => resolve({{ success: false, error: 'timeout_15s' }}), 15000);
+
+                if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                    doRender();
+                }} else {{
+                    const s = document.createElement('script');
+                    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                    s.async = true;
+                    s.defer = true;
+                    s.onload = () => {{ doRender(); }};
+                    document.head.appendChild(s);
+
+                    let checkCount = 0;
+                    waitInterval = setInterval(() => {{
+                        checkCount++;
+                        if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                            doRender();
+                        }} else if (!rendered && checkCount > 150) {{
+                            clearInterval(waitInterval);
+                            resolve({{ success: false, error: 'turnstile_load_timeout' }});
+                        }}
+                    }}, 100);
+                }}
+
+                setTimeout(() => {{
+                    if (waitInterval) clearInterval(waitInterval);
+                    resolve({{ success: false, error: 'timeout_25s' }});
+                }}, 25000);
             }});
         }}
     """
     try:
         solve_task = asyncio.create_task(page.evaluate(solve_js))
-        for _ in range(6):
+        for _ in range(16):
             ts_iframe = page.locator("#cf-manual-slot iframe, iframe[src*='challenges.cloudflare.com']").first
             if await ts_iframe.count() > 0:
                 box = await ts_iframe.bounding_box()
@@ -571,9 +608,9 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                     await asyncio.sleep(0.1)
                     await page.mouse.up()
                     break
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.6)
 
-        render_res = await asyncio.wait_for(solve_task, timeout=16.0)
+        render_res = await asyncio.wait_for(solve_task, timeout=28.0)
         if render_res and render_res.get("success") and render_res.get("token"):
             tok = render_res["token"]
             logger.info(f"✅ UID {uid}: Programmatic MRG token acquired: {tok[:16]}...")
@@ -583,6 +620,8 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                 save_mrg_pass_to_upstash(uid, tok)
                 await context.close()
                 return True
+        else:
+            logger.warning(f"UID {uid} MRG programmatic note: {render_res}")
     except Exception as e:
         logger.warning(f"UID {uid} evaluate note: {e}")
 
@@ -918,7 +957,16 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
             solve_js = f"""
                 async () => {{
                     return new Promise((resolve) => {{
+                        let rendered = false;
+                        let waitInterval = null;
+
                         function doRender() {{
+                            if (rendered) return;
+                            rendered = true;
+                            if (waitInterval) {{
+                                clearInterval(waitInterval);
+                                waitInterval = null;
+                            }}
                             try {{
                                 let container = document.getElementById('cf-vic-slot');
                                 if (!container) {{
@@ -933,6 +981,8 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                                     container.style.zIndex = '9999999';
                                     container.style.background = '#1a1147';
                                     document.body.appendChild(container);
+                                }} else {{
+                                    container.innerHTML = '';
                                 }}
                                 window.turnstile.render(container, {{
                                     sitekey: '{VICTORS_SITEKEY}',
@@ -952,34 +1002,38 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                             }}
                         }}
 
-                        if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
+                        if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                            doRender();
+                        }} else {{
                             const s = document.createElement('script');
                             s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
                             s.async = true;
                             s.defer = true;
                             s.onload = () => {{ doRender(); }};
                             document.head.appendChild(s);
+
                             let checkCount = 0;
-                            const waitInterval = setInterval(() => {{
+                            waitInterval = setInterval(() => {{
                                 checkCount++;
                                 if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                                    clearInterval(waitInterval);
                                     doRender();
-                                }} else if (checkCount > 80) {{
+                                }} else if (!rendered && checkCount > 150) {{
                                     clearInterval(waitInterval);
                                     resolve({{ success: false, error: 'turnstile_load_timeout' }});
                                 }}
                             }}, 100);
-                        }} else {{
-                            doRender();
                         }}
-                        setTimeout(() => resolve({{ success: false, error: 'timeout_15s' }}), 15000);
+
+                        setTimeout(() => {{
+                            if (waitInterval) clearInterval(waitInterval);
+                            resolve({{ success: false, error: 'timeout_25s' }});
+                        }}, 25000);
                     }});
                 }}
             """
             try:
                 solve_task = asyncio.create_task(page.evaluate(solve_js))
-                for _ in range(6):
+                for _ in range(16):
                     ts_iframe = page.locator("#cf-vic-slot iframe, iframe[src*='challenges.cloudflare.com']").first
                     if await ts_iframe.count() > 0:
                         box = await ts_iframe.bounding_box()
@@ -993,9 +1047,9 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                             await asyncio.sleep(0.1)
                             await page.mouse.up()
                             break
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(0.6)
     
-                render_res = await asyncio.wait_for(solve_task, timeout=16.0)
+                render_res = await asyncio.wait_for(solve_task, timeout=28.0)
                 if render_res and render_res.get("success") and render_res.get("token"):
                     acquired_token = render_res["token"]
             except Exception as re:
@@ -1310,104 +1364,120 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
             solve_js = f"""
                 async () => {{
                     return new Promise((resolve) => {{
-                        if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
+                        let rendered = false;
+                        let waitInterval = null;
+
+                        function doRender() {{
+                            if (rendered) return;
+                            rendered = true;
+                            if (waitInterval) {{
+                                clearInterval(waitInterval);
+                                waitInterval = null;
+                            }}
+                            try {{
+                                let container = document.getElementById('cf-vyro-slot');
+                                if (!container) {{
+                                    container = document.createElement('div');
+                                    container.id = 'cf-vyro-slot';
+                                    container.style.position = 'fixed';
+                                    container.style.top = '50%';
+                                    container.style.left = '50%';
+                                    container.style.transform = 'translate(-50%, -50%)';
+                                    container.style.width = '300px';
+                                    container.style.height = '65px';
+                                    container.style.zIndex = '9999999';
+                                    container.style.background = '#18181b';
+                                    document.body.appendChild(container);
+                                }} else {{
+                                    container.innerHTML = '';
+                                }}
+                                window.turnstile.render(container, {{
+                                    sitekey: '{ts_sitekey}',
+                                    action: '{ts_action}',
+                                    cdata: '{ts_cdata}',
+                                    theme: 'dark',
+                                    appearance: 'always',
+                                    callback: function(tok) {{
+                                        window.__vyroTurnstileToken = tok;
+                                        resolve({{ success: true, token: tok }});
+                                    }},
+                                    'error-callback': function(err) {{
+                                        resolve({{ success: false, error: String(err) }});
+                                    }}
+                                }});
+                            }} catch (e) {{
+                                resolve({{ success: false, error: String(e) }});
+                            }}
+                        }}
+
+                        if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                            doRender();
+                        }} else {{
                             const s = document.createElement('script');
                             s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
                             s.async = true;
                             s.defer = true;
                             s.onload = () => {{ doRender(); }};
                             document.head.appendChild(s);
+
                             let checkCount = 0;
-                            const waitInterval = setInterval(() => {{
+                            waitInterval = setInterval(() => {{
                                 checkCount++;
                                 if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                                    clearInterval(waitInterval);
                                     doRender();
-                                }} else if (checkCount > 80) {{
+                                }} else if (!rendered && checkCount > 150) {{
                                     clearInterval(waitInterval);
                                     resolve({{ success: false, error: 'turnstile_load_timeout' }});
                                 }}
                             }}, 100);
-                        }} else {{
-                            doRender();
                         }}
 
-                    function doRender() {{
-                        try {{
-                            let container = document.getElementById('cf-vyro-slot');
-                            if (!container) {{
-                                container = document.createElement('div');
-                                container.id = 'cf-vyro-slot';
-                                container.style.position = 'fixed';
-                                container.style.top = '50%';
-                                container.style.left = '50%';
-                                container.style.transform = 'translate(-50%, -50%)';
-                                container.style.width = '300px';
-                                container.style.height = '65px';
-                                container.style.zIndex = '9999999';
-                                container.style.background = '#18181b';
-                                document.body.appendChild(container);
-                            }}
-                            window.turnstile.render(container, {{
-                                sitekey: '{ts_sitekey}',
-                                action: '{ts_action}',
-                                cdata: '{ts_cdata}',
-                                cData: '{ts_cdata}',
-                                theme: 'dark',
-                                appearance: 'always',
-                                callback: function(tok) {{
-                                    window.__vyroTurnstileToken = tok;
-                                    resolve({{ success: true, token: tok }});
-                                }},
-                                'error-callback': function(err) {{
-                                    resolve({{ success: false, error: String(err) }});
-                                }}
-                            }});
-                        }} catch (e) {{
-                            resolve({{ success: false, error: String(e) }});
-                        }}
-                    }}
-                    setTimeout(() => resolve({{ success: false, error: 'timeout_15s' }}), 15000);
-                }});
-            }}
-        """
+                        setTimeout(() => {{
+                            if (waitInterval) clearInterval(waitInterval);
+                            resolve({{ success: false, error: 'timeout_25s' }});
+                        }}, 25000);
+                    }});
+                }}
+            """
 
-        try:
-            solve_task = asyncio.create_task(page.evaluate(solve_js))
-            for _ in range(8):
-                try:
-                    ts_iframe = page.locator("#cf-vyro-slot iframe, iframe[src*='challenges.cloudflare.com']").first
-                    if await ts_iframe.count() > 0:
-                        box = await ts_iframe.bounding_box()
-                        if box and box["width"] > 0 and box["height"] > 0:
-                            click_x = box["x"] + min(32.0, box["width"] / 3)
-                            click_y = box["y"] + box["height"] / 2
-                            logger.info(f"🖱️ [VyroDrop] Click Turnstile iframe for UID {uid} at ({click_x:.1f}, {click_y:.1f})...")
-                            await page.mouse.move(click_x, click_y, steps=8)
-                            await asyncio.sleep(0.15)
-                            await page.mouse.down()
-                            await asyncio.sleep(0.1)
-                            await page.mouse.up()
-                            break
-                except Exception:
-                    pass
-                await asyncio.sleep(0.5)
+            try:
+                solve_task = asyncio.create_task(page.evaluate(solve_js))
+                for _ in range(16):
+                    try:
+                        ts_iframe = page.locator("#cf-vyro-slot iframe, iframe[src*='challenges.cloudflare.com']").first
+                        if await ts_iframe.count() > 0:
+                            box = await ts_iframe.bounding_box()
+                            if box and box["width"] > 0 and box["height"] > 0:
+                                click_x = box["x"] + min(32.0, box["width"] / 3)
+                                click_y = box["y"] + box["height"] / 2
+                                logger.info(f"🖱️ [VyroDrop] Click Turnstile iframe for UID {uid} at ({click_x:.1f}, {click_y:.1f})...")
+                                await page.mouse.move(click_x, click_y, steps=8)
+                                await asyncio.sleep(0.15)
+                                await page.mouse.down()
+                                await asyncio.sleep(0.1)
+                                await page.mouse.up()
+                                break
+                    except Exception:
+                        pass
+                    await asyncio.sleep(0.6)
 
-            render_res = await asyncio.wait_for(solve_task, timeout=16.0)
-            if render_res and render_res.get("success") and render_res.get("token"):
-                tok = render_res["token"]
-                logger.info(f"✅ [VyroDrop] UID {uid}: Turnstile solved: {tok[:16]}...")
-                ch_code2, ch_body2 = safe_post(f"{VYRO_API}/wallet/challenge", {"turnstileToken": tok}, extra_headers=v_headers)
-                if ch_code2 in (200, 201) and isinstance(ch_body2, dict) and ch_body2.get("payload"):
-                    nonce = ch_body2["payload"]
-                    logger.info(f"🔑 [VyroDrop] UID {uid}: Nonce received via solved challenge: {nonce[:12]}...")
+                render_res = await asyncio.wait_for(solve_task, timeout=28.0)
+                if render_res and render_res.get("success") and render_res.get("token"):
+                    tok = render_res["token"]
+                    logger.info(f"✅ [VyroDrop] UID {uid}: Turnstile solved: {tok[:16]}...")
+                    ch_code2, ch_body2 = safe_post(f"{VYRO_API}/wallet/challenge", {"turnstileToken": tok}, extra_headers=v_headers)
+                    if ch_code2 in (200, 201) and isinstance(ch_body2, dict) and ch_body2.get("payload"):
+                        nonce = ch_body2["payload"]
+                        logger.info(f"🔑 [VyroDrop] UID {uid}: Nonce received via solved challenge: {nonce[:12]}...")
+                    else:
+                        logger.error(f"❌ [VyroDrop] UID {uid}: Challenge submit failed: {ch_code2} {ch_body2}")
                 else:
-                    logger.error(f"❌ [VyroDrop] UID {uid}: Challenge submit failed: {ch_code2} {ch_body2}")
-        except Exception as se:
-            logger.warning(f"[VyroDrop] UID {uid} solve note: {se}")
-        finally:
-            if 'context' in locals():
-                await context.close()
+                    logger.warning(f"[VyroDrop] UID {uid} solve note: {render_res}")
+            except Exception as se:
+                logger.warning(f"[VyroDrop] UID {uid} solve note: {se}")
+            finally:
+                if 'context' in locals():
+                    await context.close()
     else:
         logger.error(f"❌ [VyroDrop] UID {uid}: Unexpected challenge response: {ch_code} {ch_body}")
         return False

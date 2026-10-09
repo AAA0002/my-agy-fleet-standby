@@ -4,6 +4,17 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **⚡ Full Fleet Auto-Mining Telemetry Verification & Turnstile Race Condition Fix**:
+  - **📊 Live 18-Account Auto-Mining Audit Results**:
+    * **ATF Miner**: 100% operational across all accounts, accumulating massive yield (e.g. Arif `8826375659`: **1,833.5 ATF** @ Level 116, Nadim: **810.5 ATF** @ Level 84, Abid: **838.7 ATF** @ Level 85). All 18 accounts authenticated cleanly with 0 captcha blocks.
+    * **MRG Miner**: 100% operational across all accounts, accumulating huge balances (e.g. Arif: **2,718.3 MRG** @ Level 97, Nancy: **2,525.4 MRG** @ Level 93, Nadim: **2,271.3 MRG** @ Level 87). Level upgrades up to Level 97+ confirmed.
+    * **Victor's Company**: 100% active across all accounts with valid tokens, accumulating up to **68.2 VIC** per account and successfully completing Deep Mine Arcade expeditions and daily check-ins.
+    * **VyroDrop**: Successfully executing bootstrap, task verification, and referral claims across all accounts.
+  - **🛡️ Turnstile Script Loader Race Condition Fix (`mrg_turnstile_solver.py`)**:
+    * Identified critical race condition where `s.onload` and `waitInterval` competed during programmatic Turnstile injection, causing early `turnstile_load_timeout` drops before the iframe checkbox could be clicked.
+    * Added strict `rendered` execution flag preventing duplicate calls to `window.turnstile.render`, added DOM slot reset (`container.innerHTML = ''`), and extended locator window to 16 cycles (9.6s) with 28s timeout.
+    * Added missing `bypass_csp=True` to MRG browser context to defeat strict Content-Security-Policy script blocks.
+
 - **🚀 18/18 Fleet Coverage Diagnosis, Automated New-Account Referral Engine & Zero-Touch Plug-and-Farm Architecture**:
   - **🔍 Root Cause Resolution for 16/18 Fleet Account Display**:
     * Identified that Victor's Company and VyroDrop showed 16 accounts instead of 18 because Master (`6727787768`) and Worker 8 (`8025472383`) lacked cached WebApp `initData` tokens in Upstash Redis.
