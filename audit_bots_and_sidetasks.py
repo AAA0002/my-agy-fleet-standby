@@ -350,19 +350,24 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
             }
             b_rep = {"core": {}, "side_tasks": []}
             try:
-                # Login
-                log_p = {"turnstileToken": None}
-                if not is_owner:
-                    log_p["startParam"] = "ref_A20AA96F18"
-                async with session.post("https://server.victors.company/api/auth/login", json=log_p, headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    l_data = await r.json() if r.status in (200, 201) else {}
-                    hp = l_data.get("humanPass")
-                    if hp:
-                        v_h["x-human-pass"] = str(hp)
-                    b_rep["core"]["login"] = f"HTTP {r.status} (humanPass: {bool(hp)})"
-                
+                # Query Upstash Redis for Victor's Company humanPass
+                vic_pass = None
+                if UPSTASH_URL and UPSTASH_TOKEN:
+                    try:
+                        async with session.get(f"{UPSTASH_URL}/get/victors:pass:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=4)) as vr:
+                            if vr.status == 200:
+                                vd = await vr.json()
+                                if vd.get("result"):
+                                    parsed_v = json.loads(vd["result"]) if isinstance(vd["result"], str) else vd["result"]
+                                    vic_pass = parsed_v.get("humanPass") if isinstance(parsed_v, dict) else parsed_v
+                    except Exception:
+                        pass
+                if vic_pass:
+                    v_h["x-human-pass"] = str(vic_pass)
+
                 # Me
                 async with session.get("https://server.victors.company/api/me", headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                    b_rep["core"]["login"] = f"HTTP {r.status} (humanPass: {bool(vic_pass)})"
                     if r.status == 200:
                         me = await r.json()
                         u = me.get("user") or me

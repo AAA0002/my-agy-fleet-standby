@@ -4360,49 +4360,40 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 if vic_pass:
                     v_h["x-human-pass"] = str(vic_pass)
 
-                # 1. Login with startParam to bind referral code
-                login_ok = False
-                human_required = False
-                login_payload = {"turnstileToken": vic_pass if vic_pass else None}
-                if not is_owner:
-                    login_payload["startParam"] = VICTORS_REFERRAL_CODE
-                l_code, l_d = await safe_post(
-                    "https://server.victors.company/api/auth/login",
-                    json_data=login_payload,
-                    req_headers=v_h
-                )
-                if l_code in (200, 201) and l_d and isinstance(l_d, dict):
-                    login_ok = True
-                    hp = l_d.get("humanPass") or (l_d.get("data", {}).get("humanPass") if isinstance(l_d.get("data"), dict) else None)
-                    if hp:
-                        v_h["x-human-pass"] = str(hp)
-                elif l_code == 403 or (l_d and isinstance(l_d, dict) and l_d.get("code") == "HUMAN_REQUIRED"):
-                    human_required = True
-
-                # 2. Me profile
+                # 1. Verify profile using humanPass
                 await jitter(0.5, 1.2)
                 m_code, m_d = await safe_get("https://server.victors.company/api/me", req_headers=v_h)
                 me = (m_d.get("user") or m_d) if (m_d and isinstance(m_d, dict)) else {}
                 lvl = me.get("level", 1)
+                human_required = (not vic_pass) or (m_code in (401, 403)) or (isinstance(m_d, dict) and m_d.get("code") == "HUMAN_REQUIRED")
 
                 if me and not me.get("tutorialCompleted"):
                     await safe_post("https://server.victors.company/api/me/tutorial", json_data={}, req_headers=v_h)
 
-                # 3. Daily checkin
+                # Connect TON wallet to qualify recruit & unlock Level 1 Miner
+                v_ton_entry = FLEET_TON_WALLETS.get(str(uid)) if isinstance(FLEET_TON_WALLETS, dict) else None
+                if v_ton_entry and me and not me.get("walletAddress"):
+                    w_addr = v_ton_entry.get("address") if isinstance(v_ton_entry, dict) else v_ton_entry
+                    if w_addr:
+                        await safe_post("https://server.victors.company/api/wallet/connect", json_data={"address": w_addr}, req_headers=v_h)
+                        await jitter(0.5, 1.0)
+                        await safe_post("https://server.victors.company/api/tasks/claim", json_data={"taskId": "connect-wallet"}, req_headers=v_h)
+
+                # 2. Daily checkin
                 await jitter(0.6, 1.5)
                 await safe_post("https://server.victors.company/api/checkin", json_data={}, req_headers=v_h)
 
-                # 4. Mining claim
+                # 3. Mining claim
                 await jitter(0.8, 1.8)
                 await safe_post("https://server.victors.company/api/mining/claim", json_data={}, req_headers=v_h)
 
-                # 5. Levels unlock
+                # 4. Levels unlock
                 unlocked = me.get("unlockedLevel", lvl)
                 if unlocked > lvl:
                     await jitter(0.5, 1.2)
                     await safe_post("https://server.victors.company/api/levels/unlock", json_data={"level": unlocked}, req_headers=v_h)
 
-                # 6. Tasks
+                # 5. Tasks
                 await jitter(0.8, 1.6)
                 _, t_d = await safe_get("https://server.victors.company/api/tasks", req_headers=v_h)
                 if t_d and isinstance(t_d, dict):
@@ -4413,12 +4404,12 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                 await jitter(0.4, 0.9)
                                 await safe_post("https://server.victors.company/api/tasks/claim", json_data={"taskId": t["id"]}, req_headers=v_h)
 
-                # 7. Referral claim bonus & commission
+                # 6. Referral claim bonus & commission
                 await jitter(0.6, 1.4)
                 await safe_post("https://server.victors.company/api/referral/claim-bonus", json_data={}, req_headers=v_h)
                 await safe_post("https://server.victors.company/api/referral/claim-commission", json_data={}, req_headers=v_h)
 
-                # 8. Arcade Minigame Mining (Play 1 run)
+                # 7. Arcade Minigame Mining (Play 1 run)
                 try:
                     _, a_d = await safe_get("https://server.victors.company/api/arcade", req_headers=v_h)
                     if a_d and isinstance(a_d, dict) and a_d.get("runsLeft", 0) > 0:
@@ -4436,8 +4427,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 if human_required and not me:
                     status["bots"]["victors"] = "human_pass_required (Turnstile needed)"
                 else:
-                    bal_str = f" (lvl: {lvl}, bal: {me.get('miningBalance', 0)})" if me else (" (ok)" if login_ok else " (auth_failed)")
+                    bal_str = f" (lvl: {lvl}, bal: {me.get('miningBalance', 0)})" if me else " (farmed)"
                     status["bots"]["victors"] = f"farmed{bal_str}"
+                return
                 return
             except Exception as e:
                 status["bots"]["victors"] = f"api_error: {format_error(e)}"

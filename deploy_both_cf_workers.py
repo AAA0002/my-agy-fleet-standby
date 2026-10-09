@@ -1012,42 +1012,25 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
           try {
             const upPass = await upstashGet(`victors:pass:${uid}`);
             if (upPass) {
-              vHeaders["x-human-pass"] = String(upPass);
+              const parsed = typeof upPass === "string" && upPass.startsWith("{") ? JSON.parse(upPass) : upPass;
+              const hp = (parsed && parsed.humanPass) ? parsed.humanPass : parsed;
+              if (hp) vHeaders["x-human-pass"] = String(hp);
             }
           } catch (_) {}
         }
 
-        // 1. Login with startParam to bind referral code
-        let loginOk = false;
-        let humanRequired = false;
-        const loginPayload = { turnstileToken: null };
-        if (!isOwner) {
-          loginPayload.startParam = "ref_A20AA96F18";
-        }
-        const lResp = await fetchWithRetry("https://server.victors.company/api/auth/login", {
-          method: "POST", headers: vHeaders, body: JSON.stringify(loginPayload)
-        }, 1, 800).catch(() => null);
-        if (lResp) {
-          if (lResp.ok) {
-            loginOk = true;
-            const lData = await lResp.json().catch(() => ({}));
-            if (lData && lData.humanPass) {
-              vHeaders["x-human-pass"] = String(lData.humanPass);
-            }
-          } else if (lResp.status === 403) {
-            humanRequired = true;
-          }
-        }
-
-        await humanDelay(800, 1500);
-        // 2. Fetch Profile
+        await humanDelay(500, 1000);
+        // 1. Fetch Profile using humanPass
         const meResp = await fetchWithRetry("https://server.victors.company/api/me", {
           method: "GET", headers: vHeaders
         }, 1, 800).catch(() => null);
         let me = null;
+        let humanRequired = false;
         if (meResp && meResp.ok) {
           const mData = await meResp.json().catch(() => ({}));
           me = mData.user || mData;
+        } else if (!vHeaders["x-human-pass"] || (meResp && (meResp.status === 401 || meResp.status === 403))) {
+          humanRequired = true;
         }
 
         // Complete tutorial if pending

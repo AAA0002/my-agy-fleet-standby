@@ -381,7 +381,7 @@ The fleet's 7 active high-conviction legitimate bots and channels are fundamenta
 ### 2. Multi-Bot Cloud Turnstile Solver Engine (`mrg_turnstile_solver.py`)
 - Solves Cloudflare Turnstile in the cloud (GitHub Actions / Cloud VMs) via Patchright Chromium stealth:
   - **MRG Miner**: Solves SiteKey `0x4AAAAAAFI-XXL7bFNbLU_J` on `app.mrgtoken.xyz`, refreshes `humanVerifiedUntil`, and claims mining rewards.
-  - **Victor's Company**: Solves SiteKey `0x4AAAAAAFD0KRgPRFVwDvgn` on `app.victors.company`, completes `/api/auth/login`, retrieves `humanPass`, and stores it into Upstash Redis (`victors:pass:{uid}`).
+  - **Victor's Company**: Solves SiteKey `0x4AAAAAAFD0KRgPRFVwDvgn` on `app.victors.company` using Android Chrome mobile stealth context (`viewport: 412x915`), global JS hooks on `window.turnstile` & `window.fetch`, and center-left iframe clicking (`box.x + 32, box.y + box.height / 2`). Completes `/api/auth/login` with `action: "login"`, retrieves `humanPass`, and stores it into Upstash Redis (`victors:pass:{uid}`). Executes recruit qualification (TON wallet connection, `connect-wallet` task claim, daily check-in, mining claim, arcade minigame, and master commission sweep).
   - **Zero Phone Load**: 100% cloud execution running every 3 hours (`.github/workflows/mrg_turnstile_solver.yml`). 0 local processes on Samsung Galaxy A30.
 
 ### 3. Strict Master Account Self-Referral Immunity
