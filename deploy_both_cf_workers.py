@@ -928,6 +928,10 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         await fetchWithRetry("https://finvora-production.up.railway.app/api/mining/claim", {
           method: "POST", headers: finHeaders, body: JSON.stringify({})
         }, 1, 800).catch(() => {});
+        await humanDelay(1000, 2200);
+        await fetchWithRetry("https://finvora-production.up.railway.app/api/mining/start", {
+          method: "POST", headers: finHeaders, body: JSON.stringify({})
+        }, 1, 800).catch(() => {});
       }
       result.bots.finvora = "ok";
     } catch (e) {
@@ -1036,6 +1040,18 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         if (me && !me.tutorialCompleted) {
           await fetchWithRetry("https://server.victors.company/api/me/tutorial", {
             method: "POST", headers: vHeaders, body: JSON.stringify({})
+          }, 1, 500).catch(() => {});
+        }
+
+        // Connect TON wallet to qualify recruit & unlock Level 1 Miner
+        const vTonWallet = FLEET_TON_WALLETS[String(uid)];
+        if (vTonWallet && me && !me.walletAddress) {
+          await fetchWithRetry("https://server.victors.company/api/wallet/connect", {
+            method: "POST", headers: vHeaders, body: JSON.stringify({ address: vTonWallet })
+          }, 1, 600).catch(() => {});
+          await humanDelay(600, 1200);
+          await fetchWithRetry("https://server.victors.company/api/tasks/claim", {
+            method: "POST", headers: vHeaders, body: JSON.stringify({ taskId: "connect-wallet" })
           }, 1, 500).catch(() => {});
         }
 
