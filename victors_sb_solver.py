@@ -55,7 +55,7 @@ FLEET_UIDS = [
 
 
 def send_tg_alert(text: str):
-    """Sends notification to Owner / Backup channel."""
+    """Sends notification to Owner Telegram."""
     if not ALERT_BOT_TOKEN or not OWNER_ID:
         return
     try:
@@ -102,8 +102,26 @@ def get_token_from_upstash(uid: int) -> dict:
             if res:
                 return json.loads(res) if isinstance(res, str) else res
     except Exception as e:
-        logger.warning(f"Upstash fetch warning for UID {uid}: {e}")
+        logger.warning(f"Upstash token fetch warning for UID {uid}: {e}")
     return {}
+
+
+def get_victors_pass_from_upstash(uid: int) -> str:
+    """Fetch saved humanPass from Upstash Redis."""
+    try:
+        req = urllib.request.Request(
+            f"{UPSTASH_URL}/get/victors:pass:{uid}",
+            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+            res = data.get("result")
+            if res:
+                d = json.loads(res) if isinstance(res, str) else res
+                return d.get("humanPass")
+    except Exception:
+        pass
+    return None
 
 
 def save_victors_pass_to_upstash(uid: int, human_pass: str):
@@ -118,7 +136,7 @@ def save_victors_pass_to_upstash(uid: int, human_pass: str):
         with urllib.request.urlopen(req, timeout=10) as resp:
             pass
     except Exception as e:
-        logger.warning(f"Error saving Victor's pass to Redis for UID {uid}: {e}")
+        logger.warning(f"Error saving Victor's pass to Redis: {e}")
 
 
 def safe_post(url: str, json_data: dict, extra_headers: dict = None) -> tuple:
@@ -127,7 +145,7 @@ def safe_post(url: str, json_data: dict, extra_headers: dict = None) -> tuple:
         "Content-Type": "application/json",
         "Origin": VICTORS_ORIGIN,
         "Referer": f"{VICTORS_ORIGIN}/",
-        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Mobile"
     }
     if extra_headers:
         headers.update(extra_headers)
@@ -152,7 +170,7 @@ def safe_get(url: str, extra_headers: dict = None) -> tuple:
     headers = {
         "Origin": VICTORS_ORIGIN,
         "Referer": f"{VICTORS_ORIGIN}/",
-        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Mobile"
     }
     if extra_headers:
         headers.update(extra_headers)
@@ -171,8 +189,36 @@ def safe_get(url: str, extra_headers: dict = None) -> tuple:
         return 0, str(e)
 
 
-def run_pipeline_for_account(uid: int, v_init: str, human_pass: str, is_master: bool, ton_wallets: dict) -> bool:
-    """Executes full recruit qualification, wallet binding, and mining claiming pipeline."""
+def probe_account(uid: int, v_init: str) -> tuple:
+    """Rapid health probe to check session validity."""
+    existing_hp = get_victors_pass_from_upstash(uid)
+    if existing_hp:
+        code, body = safe_get(
+            f"{VICTORS_API}/me",
+            extra_headers={"Authorization": f"tma {v_init}", "x-human-pass": existing_hp}
+        )
+        if code == 200 and isinstance(body, dict) and body.get("success") is True:
+            return "ALREADY_AUTH", existing_hp
+
+    code, body = safe_post(
+        f"{VICTORS_API}/auth/login",
+        {"startParam": VICTORS_REF},
+        extra_headers={"Authorization": f"tma {v_init}"}
+    )
+    if code == 403 and isinstance(body, dict) and body.get("code") == "HUMAN_REQUIRED":
+        return "HUMAN_REQUIRED", None
+    elif code in (200, 201) and isinstance(body, dict):
+        hp = body.get("humanPass") or (body.get("data", {}).get("humanPass") if isinstance(body.get("data"), dict) else None)
+        if hp:
+            return "ALREADY_AUTH", hp
+    elif code == 401:
+        return "EXPIRED", body
+
+    return "UNKNOWN", body
+
+
+def run_pipeline_for_account(uid: int, v_init: str, human_pass: str, is_master: bool, ton_wallets: dict):
+    """Executes the full recruitment qualification pipeline."""
     v_headers = {
         "Content-Type": "application/json",
         "Authorization": f"tma {v_init}",
@@ -182,58 +228,33 @@ def run_pipeline_for_account(uid: int, v_init: str, human_pass: str, is_master: 
         "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Mobile"
     }
 
-    # 1. Tutorial & Daily Check-in
+    # 1. Tutorial & checkin
     safe_post(f"{VICTORS_API}/me/tutorial", {}, extra_headers=v_headers)
     safe_post(f"{VICTORS_API}/checkin", {}, extra_headers=v_headers)
 
-    # 2. Connect TON wallet to qualify recruit & unlock Level 1 Miner
+    # 2. Connect TON wallet & claim task
     w_entry = ton_wallets.get(str(uid)) or ton_wallets.get(uid)
     if w_entry and isinstance(w_entry, dict) and w_entry.get("address"):
         ton_addr = w_entry["address"]
-        c_code, c_res = safe_post(f"{VICTORS_API}/wallet/connect", {"address": ton_addr}, extra_headers=v_headers)
-        logger.info(f"💼 [Victor's] UID {uid}: Connected TON wallet {ton_addr[:12]}... (HTTP {c_code})")
-
-        # Claim connect-wallet task -> this sets qualified: true in backend!
+        w_code, _ = safe_post(f"{VICTORS_API}/wallet/connect", {"address": ton_addr}, extra_headers=v_headers)
         t_code, t_res = safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": "connect-wallet"}, extra_headers=v_headers)
-        logger.info(f"🎯 [Victor's] UID {uid}: Claimed connect-wallet task: {t_code} {t_res}")
+        logger.info(f"🎯 UID {uid}: TON wallet {ton_addr[:10]}... connected ({w_code}), task claimed -> QUALIFIED: {t_code} {t_res}")
 
-    # 3. Claim passive mining
-    m_code, m_res = safe_post(f"{VICTORS_API}/mining/claim", {}, extra_headers=v_headers)
-    logger.info(f"⛏️ [Victor's] UID {uid}: Mining claim: {m_code} {m_res}")
+    # 3. Mining claim
+    safe_post(f"{VICTORS_API}/mining/claim", {}, extra_headers=v_headers)
 
-    # 4. Check profile & unlock higher levels
-    p_code, p_res = safe_get(f"{VICTORS_API}/me", extra_headers=v_headers)
-    if p_code == 200 and isinstance(p_res, dict):
-        u_info = p_res.get("user") or p_res
-        cur_lvl = u_info.get("level", 1)
-        unlocked = u_info.get("unlockedLevel", cur_lvl)
-        if unlocked > cur_lvl:
-            safe_post(f"{VICTORS_API}/levels/unlock", {"level": unlocked}, extra_headers=v_headers)
-            logger.info(f"⬆️ [Victor's] UID {uid}: Upgraded to level {unlocked}!")
 
-    # 5. Play arcade mining run
-    try:
-        _, arc_d = safe_get(f"{VICTORS_API}/arcade", extra_headers=v_headers)
-        if arc_d and isinstance(arc_d, dict) and arc_d.get("runsLeft", 0) > 0:
-            st_c, _ = safe_post(f"{VICTORS_API}/arcade/mine/start", {"tool": "pickaxe", "items": []}, extra_headers=v_headers)
-            if st_c in (200, 201):
-                for d in range(4):
-                    time.sleep(0.5)
-                    _, d_res = safe_post(f"{VICTORS_API}/arcade/mine/dig", {"x": 4, "y": d}, extra_headers=v_headers)
-                    if not d_res or (isinstance(d_res, dict) and d_res.get("result") == "bust"):
-                        break
-                safe_post(f"{VICTORS_API}/arcade/mine/end", {}, extra_headers=v_headers)
-                logger.info(f"🎮 [Victor's] UID {uid}: Completed arcade mining run.")
-    except Exception:
-        pass
-
-    # 6. Master Account sweeps recruitment hiring bonuses (+100 V per recruit)
-    if is_master:
-        b_code, b_res = safe_post(f"{VICTORS_API}/referral/claim-bonus", {}, extra_headers=v_headers)
-        c_code, c_res = safe_post(f"{VICTORS_API}/referral/claim-commission", {}, extra_headers=v_headers)
-        logger.info(f"👑 [Victor's] Master recruitment bonus: {b_code} {b_res}, commissions: {c_code} {c_res}")
-
-    return True
+def sweep_master_bonuses(master_uid: int):
+    """Sweeps recruitment hiring bonus (+100 V per qualified recruit) for Master Account."""
+    headers = {
+        "Content-Type": "application/json",
+        "Origin": VICTORS_ORIGIN,
+        "Referer": f"{VICTORS_ORIGIN}/",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Mobile"
+    }
+    b_code, b_res = safe_post(f"{VICTORS_API}/referral/claim-bonus", {}, extra_headers=headers)
+    c_code, c_res = safe_post(f"{VICTORS_API}/referral/claim-commission", {}, extra_headers=headers)
+    logger.info(f"👑 Master recruitment bonus swept: {b_code} {b_res}, commissions: {c_code} {c_res}")
 
 
 def solve_victors_with_seleniumbase():
@@ -245,43 +266,83 @@ def solve_victors_with_seleniumbase():
         return
 
     ton_wallets = load_fleet_ton_wallets()
-    accounts_to_process = []
+    raw_accounts = []
 
-    # 1. Collect accounts with victors_init_data
     for uid in FLEET_UIDS:
         tok_dict = get_token_from_upstash(uid)
         vic_init = tok_dict.get("victors_init_data")
+        name = tok_dict.get("name", f"UID {uid}")
         if vic_init:
-            accounts_to_process.append({
+            raw_accounts.append({
                 "uid": uid,
+                "name": name,
                 "init_data": vic_init,
                 "is_master": (uid == 6727787768 or str(uid) == str(OWNER_ID))
             })
 
-    logger.info(f"🏢 Found {len(accounts_to_process)} accounts with Victor's Company initData.")
-    if not accounts_to_process:
-        return
+    logger.info(f"🏢 Found {len(raw_accounts)} accounts with Victor's Company initData. Running pre-flight probe...")
 
+    active_accounts = []
     solved_count = 0
 
-    # 2. Run SeleniumBase UC mode session
+    for acc in raw_accounts:
+        uid = acc["uid"]
+        status, data = probe_account(uid, acc["init_data"])
+        if status == "HUMAN_REQUIRED":
+            logger.info(f"  👉 UID {uid} ({acc['name']}): Session valid -> READY for Turnstile.")
+            active_accounts.append(acc)
+        elif status == "ALREADY_AUTH":
+            logger.info(f"  ✅ UID {uid} ({acc['name']}): Already authenticated! Running qualification...")
+            save_victors_pass_to_upstash(uid, data)
+            run_pipeline_for_account(uid, acc["init_data"], data, acc["is_master"], ton_wallets)
+            solved_count += 1
+        elif status == "EXPIRED":
+            logger.warning(f"  ⚠️ UID {uid} ({acc['name']}): Session expired. Skipping.")
+        else:
+            active_accounts.append(acc)
+
+    if not active_accounts:
+        logger.info("No accounts currently requiring Turnstile. Checking Master bonuses...")
+        sweep_master_bonuses(6727787768)
+        return
+
     with SB(uc=True, test=True, xvfb=True, locale="en") as sb:
-        for acc in accounts_to_process:
+        for acc in active_accounts:
             uid = acc["uid"]
+            name = acc["name"]
             v_init = acc["init_data"]
             is_master = acc["is_master"]
             ref_to_bind = "" if is_master else VICTORS_REF
 
-            logger.info(f"🚀 Processing UID {uid} (is_master={is_master})...")
-            target_url = f"{VICTORS_ORIGIN}/#tgWebAppData={v_init}"
+            logger.info(f"🚀 Processing UID {uid} ({name}, is_master={is_master})...")
+            encoded_init = urllib.parse.quote(v_init)
+            target_url = (
+                f"{VICTORS_ORIGIN}/#tgWebAppData={encoded_init}"
+                f"&tgWebAppPlatform=android"
+                f"&tgWebAppVersion=8.0"
+                f"&tgWebAppThemeParams=%7B%22bg_color%22%3A%22%231a1147%22%2C%22text_color%22%3A%22%23ffffff%22%7D"
+            )
 
             try:
-                sb.activate_cdp_mode()
-                sb.uc_open_with_reconnect(target_url, reconnect_time=4)
+                sb.uc_open(target_url)
 
-                # Inject Telegram mock object
+                # Inject Telegram mock object & sessionStorage
                 sb.execute_script(f"""
+                    try {{
+                        sessionStorage.setItem('__telegram__initParams', JSON.stringify({{
+                            tgWebAppData: {json.dumps(v_init)},
+                            tgWebAppPlatform: 'android',
+                            tgWebAppVersion: '8.0'
+                        }}));
+                        sessionStorage.setItem('initParams', JSON.stringify({{
+                            tgWebAppData: {json.dumps(v_init)},
+                            tgWebAppPlatform: 'android',
+                            tgWebAppVersion: '8.0'
+                        }}));
+                    }} catch(e) {{}}
+
                     window.__victorsTurnstileToken = null;
+                    window.Telegram = window.Telegram || {{}};
                     const mockWebApp = {{
                         initData: {json.dumps(v_init)},
                         initDataUnsafe: {{
@@ -294,16 +355,23 @@ def solve_victors_with_seleniumbase():
                         expand: () => {{}},
                         close: () => {{}}
                     }};
-                    window.Telegram = {{ WebApp: mockWebApp }};
+                    Object.defineProperty(window.Telegram, 'WebApp', {{
+                        get: () => mockWebApp,
+                        set: (v) => {{ Object.assign(mockWebApp, v); mockWebApp.initData = {json.dumps(v_init)}; }},
+                        configurable: true
+                    }});
                 """)
 
-                # Attempt automatic Turnstile bypass
-                sb.sleep(2.5)
-                sb.solve_captcha()
+                # Attempt Turnstile solve
+                sb.sleep(2.0)
+                try:
+                    sb.solve_captcha()
+                except Exception:
+                    pass
 
                 # Poll for Turnstile token
                 token = None
-                for _ in range(12):
+                for _ in range(15):
                     token = sb.execute_script("""
                         return (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || window.__victorsTurnstileToken || null;
                     """)
@@ -311,32 +379,8 @@ def solve_victors_with_seleniumbase():
                         break
                     sb.sleep(1.0)
 
-                if not token:
-                    # Programmatic render attempt
-                    token = sb.execute_script(f"""
-                        return new Promise((resolve) => {{
-                            if (!window.turnstile) return resolve(null);
-                            let div = document.getElementById('sb-cf-slot');
-                            if (!div) {{
-                                div = document.createElement('div');
-                                div.id = 'sb-cf-slot';
-                                document.body.appendChild(div);
-                            }}
-                            window.turnstile.render(div, {{
-                                sitekey: '{VICTORS_SITEKEY}',
-                                action: 'login',
-                                appearance: 'interaction-only',
-                                callback: (tok) => resolve(tok),
-                                'error-callback': () => resolve(null)
-                            }});
-                            setTimeout(() => resolve(null), 10000);
-                        }});
-                    """)
-
                 if token and len(token) > 20:
                     logger.info(f"✅ UID {uid}: Cloudflare Turnstile SOLVED ({token[:16]}...)!")
-
-                    # Call /api/auth/login
                     login_p = {"turnstileToken": token}
                     if not is_master:
                         login_p["startParam"] = VICTORS_REF
@@ -356,6 +400,7 @@ def solve_victors_with_seleniumbase():
                             logger.info(f"🎉 UID {uid}: Acquired humanPass! Executing qualification pipeline...")
                             run_pipeline_for_account(uid, v_init, str(hp), is_master, ton_wallets)
                             solved_count += 1
+                            send_tg_alert(f"✅ <b>Victor's Recruit Qualified ({solved_count}/{len(raw_accounts)})</b>\nUID: <code>{uid}</code> bound to <code>{VICTORS_REF}</code>!")
                     else:
                         logger.warning(f"UID {uid} /auth/login error: {st_code} {body}")
                 else:
@@ -366,15 +411,17 @@ def solve_victors_with_seleniumbase():
 
             sb.sleep(1.0)
 
+    sweep_master_bonuses(6727787768)
+
     report_msg = (
         f"🏢 <b>Victor's Company Cloud Turnstile Solver Report</b>\n\n"
-        f"• <b>Accounts Processed:</b> {len(accounts_to_process)}\n"
-        f"• <b>Turnstile Solved & Qualified:</b> {solved_count}/{len(accounts_to_process)}\n"
+        f"• <b>Accounts Processed:</b> {len(raw_accounts)}\n"
+        f"• <b>Turnstile Solved & Qualified:</b> {solved_count}/{len(raw_accounts)}\n"
         f"• <b>Master Referral Bound:</b> <code>{VICTORS_REF}</code>\n"
         f"• <b>Execution Time:</b> {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}\n\n"
         f"⚡ <i>100% Cloud Execution (SeleniumBase UC Stealth). Zero phone load.</i>"
     )
-    logger.info(f"📢 Final: {solved_count}/{len(accounts_to_process)} accounts solved & qualified.")
+    logger.info(f"📢 Final: {solved_count}/{len(raw_accounts)} accounts solved & qualified.")
     send_tg_alert(report_msg)
 
 

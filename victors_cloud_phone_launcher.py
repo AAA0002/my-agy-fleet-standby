@@ -4,8 +4,9 @@ victors_cloud_phone_launcher.py
 Interactive Cloud Virtual Phone Runner for Victor's Company (@VictorsCompanybot).
 Runs in GitHub Actions alongside Xvfb, noVNC, and Cloudflare Tunnel.
 Streams interactive mobile browser to the user's phone via Cloudflare Tunnel.
-As the user taps Turnstile on the virtual screen, it captures tokens and automatically
-executes the full recruitment qualification pipeline across all 16 fleet accounts.
+As the user taps Turnstile on the virtual screen (or auto-clicked by engine),
+it captures tokens and automatically executes the full recruitment qualification
+pipeline across all fleet accounts under Master referral ref_A20AA96F18.
 """
 
 import os
@@ -15,7 +16,6 @@ import time
 import urllib.parse
 import urllib.request
 import logging
-import subprocess
 
 logging.basicConfig(
     level=logging.INFO,
@@ -57,7 +57,7 @@ FLEET_UIDS = [
 
 
 def send_tg_alert(text: str):
-    """Sends notification to Owner / Backup channel."""
+    """Sends notification to Owner Telegram."""
     if not ALERT_BOT_TOKEN or not OWNER_ID:
         return
     try:
@@ -108,6 +108,24 @@ def get_token_from_upstash(uid: int) -> dict:
     return {}
 
 
+def get_victors_pass_from_upstash(uid: int) -> str:
+    """Fetch saved humanPass from Upstash Redis."""
+    try:
+        req = urllib.request.Request(
+            f"{UPSTASH_URL}/get/victors:pass:{uid}",
+            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+            res = data.get("result")
+            if res:
+                d = json.loads(res) if isinstance(res, str) else res
+                return d.get("humanPass")
+    except Exception:
+        pass
+    return None
+
+
 def save_victors_pass_to_upstash(uid: int, human_pass: str):
     """Saves valid Victor's Company humanPass to Upstash Redis."""
     try:
@@ -149,8 +167,66 @@ def safe_post(url: str, json_data: dict, extra_headers: dict = None) -> tuple:
         return 0, str(e)
 
 
+def safe_get(url: str, extra_headers: dict = None) -> tuple:
+    """Synchronous GET request wrapper."""
+    headers = {
+        "Origin": VICTORS_ORIGIN,
+        "Referer": f"{VICTORS_ORIGIN}/",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Mobile"
+    }
+    if extra_headers:
+        headers.update(extra_headers)
+    try:
+        req = urllib.request.Request(url, headers=headers, method="GET")
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            body = resp.read().decode("utf-8")
+            return resp.status, json.loads(body) if body.startswith("{") or body.startswith("[") else body
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode("utf-8") if e.fp else ""
+        try:
+            return e.code, json.loads(err_body)
+        except Exception:
+            return e.code, err_body
+    except Exception as e:
+        return 0, str(e)
+
+
+def probe_account(uid: int, v_init: str) -> tuple:
+    """
+    Rapid 0.2s health probe to check Telegram signature validity.
+    Returns: ('HUMAN_REQUIRED', None) | ('ALREADY_AUTH', humanPass) | ('EXPIRED', err)
+    """
+    # 1. First check if existing humanPass in Redis is still valid
+    existing_hp = get_victors_pass_from_upstash(uid)
+    if existing_hp:
+        code, body = safe_get(
+            f"{VICTORS_API}/me",
+            extra_headers={"Authorization": f"tma {v_init}", "x-human-pass": existing_hp}
+        )
+        if code == 200 and isinstance(body, dict) and body.get("success") is True:
+            return "ALREADY_AUTH", existing_hp
+
+    # 2. Probe /auth/login without token
+    code, body = safe_post(
+        f"{VICTORS_API}/auth/login",
+        {"startParam": VICTORS_REF},
+        extra_headers={"Authorization": f"tma {v_init}"}
+    )
+    if code == 403:
+        if isinstance(body, dict) and body.get("code") == "HUMAN_REQUIRED":
+            return "HUMAN_REQUIRED", None
+    elif code in (200, 201) and isinstance(body, dict):
+        hp = body.get("humanPass") or (body.get("data", {}).get("humanPass") if isinstance(body.get("data"), dict) else None)
+        if hp:
+            return "ALREADY_AUTH", hp
+    elif code == 401:
+        return "EXPIRED", body
+
+    return "UNKNOWN", body
+
+
 def qualify_recruit(uid: int, v_init: str, human_pass: str, is_master: bool, ton_wallets: dict):
-    """Qualifies sub-account: links TON wallet, claims task, sweeps master bonus."""
+    """Qualifies recruit: links dedicated TON wallet, claims task, triggers referral bonus."""
     v_headers = {
         "Content-Type": "application/json",
         "Authorization": f"tma {v_init}",
@@ -160,26 +236,42 @@ def qualify_recruit(uid: int, v_init: str, human_pass: str, is_master: bool, ton
         "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Mobile"
     }
 
-    # 1. Tutorial & checkin
+    # 1. Complete tutorial & checkin
     safe_post(f"{VICTORS_API}/me/tutorial", {}, extra_headers=v_headers)
     safe_post(f"{VICTORS_API}/checkin", {}, extra_headers=v_headers)
 
-    # 2. Connect TON wallet & claim task
+    # 2. Connect TON wallet & claim connect-wallet task (makes recruit QUALIFIED)
     w_entry = ton_wallets.get(str(uid)) or ton_wallets.get(uid)
     if w_entry and isinstance(w_entry, dict) and w_entry.get("address"):
         ton_addr = w_entry["address"]
-        safe_post(f"{VICTORS_API}/wallet/connect", {"address": ton_addr}, extra_headers=v_headers)
+        w_code, w_res = safe_post(f"{VICTORS_API}/wallet/connect", {"address": ton_addr}, extra_headers=v_headers)
+        logger.info(f"💎 UID {uid}: Linked TON wallet {ton_addr[:10]}... (code: {w_code})")
         t_code, t_res = safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": "connect-wallet"}, extra_headers=v_headers)
         logger.info(f"🎯 UID {uid}: Claimed connect-wallet task -> QUALIFIED: {t_code} {t_res}")
+    else:
+        logger.warning(f"⚠️ UID {uid}: No dedicated TON wallet found in Upstash!")
 
     # 3. Mining claim
     safe_post(f"{VICTORS_API}/mining/claim", {}, extra_headers=v_headers)
 
-    # 4. Master sweeps referral hiring bonus (+100 V per recruit)
-    if is_master:
-        b_code, b_res = safe_post(f"{VICTORS_API}/referral/claim-bonus", {}, extra_headers=v_headers)
-        c_code, c_res = safe_post(f"{VICTORS_API}/referral/claim-commission", {}, extra_headers=v_headers)
-        logger.info(f"👑 Master recruitment bonus swept: {b_code} {b_res}, commissions: {c_code} {c_res}")
+
+def sweep_master_bonuses(master_uid: int, v_init: str = None, human_pass: str = None):
+    """Sweeps recruitment hiring bonus (+100 V per qualified recruit) for Master Account."""
+    headers = {
+        "Content-Type": "application/json",
+        "Origin": VICTORS_ORIGIN,
+        "Referer": f"{VICTORS_ORIGIN}/",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Mobile"
+    }
+    if v_init:
+        headers["Authorization"] = f"tma {v_init}"
+    if human_pass:
+        headers["x-human-pass"] = str(human_pass)
+
+    b_code, b_res = safe_post(f"{VICTORS_API}/referral/claim-bonus", {}, extra_headers=headers)
+    c_code, c_res = safe_post(f"{VICTORS_API}/referral/claim-commission", {}, extra_headers=headers)
+    logger.info(f"👑 Master recruitment bonus swept: {b_code} {b_res}, commissions: {c_code} {c_res}")
+    return b_res, c_res
 
 
 def main():
@@ -188,30 +280,55 @@ def main():
     logger.info("====================================================================")
 
     ton_wallets = load_fleet_ton_wallets()
-    accounts_to_process = []
+    raw_accounts = []
 
     for uid in FLEET_UIDS:
         tok_dict = get_token_from_upstash(uid)
         vic_init = tok_dict.get("victors_init_data")
+        name = tok_dict.get("name", f"UID {uid}")
         if vic_init:
-            accounts_to_process.append({
+            raw_accounts.append({
                 "uid": uid,
+                "name": name,
                 "init_data": vic_init,
                 "is_master": (uid == 6727787768 or str(uid) == str(OWNER_ID))
             })
 
-    logger.info(f"Loaded {len(accounts_to_process)} fleet accounts for Victor's Company.")
-    if not accounts_to_process:
-        logger.error("No accounts found with victors_init_data.")
+    logger.info(f"Found {len(raw_accounts)} accounts with victors_init_data. Running pre-flight probe...")
+
+    active_accounts = []
+    already_qualified = []
+
+    for acc in raw_accounts:
+        uid = acc["uid"]
+        status, data = probe_account(uid, acc["init_data"])
+        if status == "HUMAN_REQUIRED":
+            logger.info(f"  👉 UID {uid} ({acc['name']}): Session valid -> READY for Turnstile.")
+            active_accounts.append(acc)
+        elif status == "ALREADY_AUTH":
+            logger.info(f"  ✅ UID {uid} ({acc['name']}): Already authenticated! Running qualification...")
+            save_victors_pass_to_upstash(uid, data)
+            qualify_recruit(uid, acc["init_data"], data, acc["is_master"], ton_wallets)
+            already_qualified.append(uid)
+        elif status == "EXPIRED":
+            logger.warning(f"  ⚠️ UID {uid} ({acc['name']}): Session expired. Skipping.")
+        else:
+            logger.warning(f"  ❓ UID {uid} ({acc['name']}): Status {status} {data}. Proceeding.")
+            active_accounts.append(acc)
+
+    logger.info(f"Pre-flight summary: {len(active_accounts)} need Turnstile, {len(already_qualified)} already authenticated.")
+
+    if not active_accounts:
+        logger.info("No accounts currently requiring Turnstile. Checking Master bonuses...")
+        sweep_master_bonuses(6727787768)
         return
 
-    # Use SeleniumBase or Playwright in headful mode attached to DISPLAY=:99
     try:
         from patchright.sync_api import sync_playwright
     except ImportError:
         from playwright.sync_api import sync_playwright
 
-    qualified_count = 0
+    qualified_count = len(already_qualified)
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -220,7 +337,8 @@ def main():
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
                 "--window-size=450,950",
-                "--window-position=0,0"
+                "--window-position=0,0",
+                "--disable-blink-features=AutomationControlled"
             ]
         )
         context = browser.new_context(
@@ -229,20 +347,62 @@ def main():
             has_touch=True,
             user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36"
         )
-        page = context.new_page()
 
-        for idx, acc in enumerate(accounts_to_process, 1):
+        for idx, acc in enumerate(active_accounts, 1):
             uid = acc["uid"]
+            name = acc["name"]
             v_init = acc["init_data"]
             is_master = acc["is_master"]
             ref_to_bind = "" if is_master else VICTORS_REF
 
-            logger.info(f"[{idx}/{len(accounts_to_process)}] 📲 Loading UID {uid} onto Virtual Phone screen...")
-            target_url = f"{VICTORS_ORIGIN}/#tgWebAppData={v_init}"
+            logger.info(f"\n[{idx}/{len(active_accounts)}] 📲 Loading UID {uid} ({name}) onto Virtual Phone screen...")
 
-            # Mock Telegram WebApp object
+            # 1. PROPERLY URL-ENCODE v_init in the hash so telegram-web-app.js parses full initData
+            encoded_init = urllib.parse.quote(v_init)
+            target_url = (
+                f"{VICTORS_ORIGIN}/#tgWebAppData={encoded_init}"
+                f"&tgWebAppPlatform=android"
+                f"&tgWebAppVersion=8.0"
+                f"&tgWebAppThemeParams=%7B%22bg_color%22%3A%22%231a1147%22%2C%22text_color%22%3A%22%23ffffff%22%7D"
+            )
+
+            page = context.new_page()
+
+            captured_token = {"token": None, "human_pass": None}
+
+            # Intercept response to capture /auth/login humanPass directly
+            def handle_response(response):
+                if "/api/auth/login" in response.url:
+                    try:
+                        res_json = response.json()
+                        hp = res_json.get("humanPass") or (res_json.get("data", {}).get("humanPass") if isinstance(res_json.get("data"), dict) else None)
+                        if hp:
+                            captured_token["human_pass"] = str(hp)
+                            logger.info(f"🎯 Intercepted humanPass from /auth/login response for UID {uid}!")
+                    except Exception:
+                        pass
+
+            page.on("response", handle_response)
+
+            # Pre-inject authentic Telegram Mobile WebApp environment
             page.add_init_script(f"""
+                // 1. Pre-fill sessionStorage so telegram-web-app.js finds valid params immediately
+                try {{
+                    sessionStorage.setItem('__telegram__initParams', JSON.stringify({{
+                        tgWebAppData: {json.dumps(v_init)},
+                        tgWebAppPlatform: 'android',
+                        tgWebAppVersion: '8.0'
+                    }}));
+                    sessionStorage.setItem('initParams', JSON.stringify({{
+                        tgWebAppData: {json.dumps(v_init)},
+                        tgWebAppPlatform: 'android',
+                        tgWebAppVersion: '8.0'
+                    }}));
+                }} catch(e) {{}}
+
+                // 2. Define window.Telegram.WebApp with getter/setter protecting initData
                 window.__capturedTurnstileToken = null;
+                window.Telegram = window.Telegram || {{}};
                 const mockWebApp = {{
                     initData: {json.dumps(v_init)},
                     initDataUnsafe: {{
@@ -251,13 +411,37 @@ def main():
                     }},
                     version: '8.0',
                     platform: 'android',
+                    colorScheme: 'dark',
+                    themeParams: {{
+                        bg_color: '#1a1147',
+                        text_color: '#ffffff',
+                        hint_color: '#8b8b8b',
+                        link_color: '#ffd700',
+                        button_color: '#ffd700',
+                        button_text_color: '#000000'
+                    }},
+                    isExpanded: true,
+                    viewportHeight: 932,
+                    viewportStableHeight: 932,
+                    headerColor: '#1a1147',
+                    backgroundColor: '#1a1147',
+                    BackButton: {{ isVisible: false, onClick: () => {{}}, offClick: () => {{}}, show: () => {{}}, hide: () => {{}} }},
+                    MainButton: {{ isVisible: false, onClick: () => {{}}, offClick: () => {{}}, show: () => {{}}, hide: () => {{}}, setText: () => {{}}, enable: () => {{}}, disable: () => {{}} }},
+                    HapticFeedback: {{ impactOccurred: () => {{}}, notificationOccurred: () => {{}}, selectionChanged: () => {{}} }},
                     ready: () => {{}},
                     expand: () => {{}},
-                    close: () => {{}}
+                    close: () => {{}},
+                    openLink: (url) => window.open(url, '_blank'),
+                    openTelegramLink: (url) => window.open(url, '_blank')
                 }};
-                window.Telegram = {{ WebApp: mockWebApp }};
 
-                // Intercept Turnstile callback
+                Object.defineProperty(window.Telegram, 'WebApp', {{
+                    get: () => mockWebApp,
+                    set: (v) => {{ Object.assign(mockWebApp, v); mockWebApp.initData = {json.dumps(v_init)}; }},
+                    configurable: true
+                }});
+
+                // 3. Intercept fetch to capture turnstileToken and humanPass
                 const origFetch = window.fetch;
                 window.fetch = async function(...args) {{
                     const url = String(args[0] || '');
@@ -269,30 +453,74 @@ def main():
                             }}
                         }} catch(e) {{}}
                     }}
-                    return origFetch.apply(this, args);
+                    const res = await origFetch.apply(this, args);
+                    if (url.includes('/auth/login')) {{
+                        try {{
+                            const clone = res.clone();
+                            clone.json().then(d => {{
+                                if (d && d.humanPass) {{
+                                    window.__capturedHumanPass = d.humanPass;
+                                }}
+                            }}).catch(() => {{}});
+                        }} catch(e) {{}}
+                    }}
+                    return res;
                 }};
             """)
 
-            page.goto(target_url, timeout=30000)
-            logger.info(f"⏳ Waiting for Turnstile interaction for UID {uid} (up to 45 seconds)...")
+            try:
+                page.goto(target_url, timeout=30000)
+            except Exception as e:
+                logger.warning(f"Page load warning for UID {uid}: {e}")
+
+            logger.info(f"⏳ Virtual screen ready for UID {uid} ({name}). Monitoring Turnstile (up to 75 seconds)...")
 
             token = None
-            for _ in range(45):
+            human_pass = None
+
+            for sec in range(75):
                 time.sleep(1.0)
+
+                # Check if humanPass already captured
+                if captured_token["human_pass"]:
+                    human_pass = captured_token["human_pass"]
+                    break
+
+                # Check window variables
                 try:
-                    tok = page.evaluate("""() => {
-                        return window.__capturedTurnstileToken ||
-                               (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) ||
-                               null;
+                    js_data = page.evaluate("""() => {
+                        return {
+                            tok: window.__capturedTurnstileToken ||
+                                 (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null),
+                            pass: window.__capturedHumanPass || null
+                        };
                     }""")
-                    if tok and len(tok) > 20:
-                        token = tok
-                        break
+                    if js_data:
+                        if js_data.get("pass"):
+                            human_pass = js_data["pass"]
+                            break
+                        if js_data.get("tok") and len(js_data["tok"]) > 20:
+                            token = js_data["tok"]
+                            break
                 except Exception:
                     pass
 
-            if token:
-                logger.info(f"🎉 UID {uid}: Turnstile solved ({token[:16]}...)! Logging in...")
+                # Try auto-clicking Turnstile checkbox iframe if present
+                if sec % 2 == 0:
+                    try:
+                        for frame in page.frames:
+                            if "challenges.cloudflare.com" in frame.url:
+                                cb = frame.locator('input[type="checkbox"], #challenge-stage, .ctp-checkbox-label, div[id*="cf-stage"]')
+                                if cb.count() > 0:
+                                    logger.info(f"👉 Found Cloudflare checkbox for UID {uid}. Auto-clicking...")
+                                    cb.first.click(timeout=1000)
+                                    break
+                    except Exception:
+                        pass
+
+            # If token captured, call /auth/login
+            if not human_pass and token:
+                logger.info(f"🎉 UID {uid}: Turnstile token acquired ({token[:16]}...)! Calling /auth/login...")
                 login_p = {"turnstileToken": token}
                 if not is_master:
                     login_p["startParam"] = VICTORS_REF
@@ -305,22 +533,39 @@ def main():
                 if st_code in (200, 201) and isinstance(body, dict):
                     hp = body.get("humanPass") or (body.get("data", {}).get("humanPass") if isinstance(body.get("data"), dict) else None)
                     if hp:
-                        save_victors_pass_to_upstash(uid, str(hp))
-                        logger.info(f"✅ UID {uid}: humanPass saved. Qualifying recruit...")
-                        qualify_recruit(uid, v_init, str(hp), is_master, ton_wallets)
-                        qualified_count += 1
-                        send_tg_alert(f"✅ <b>Victor's Recruit Qualified ({qualified_count}/{len(accounts_to_process)})</b>\nUID: <code>{uid}</code> bound to <code>{VICTORS_REF}</code>!")
+                        human_pass = str(hp)
+
+            if human_pass:
+                save_victors_pass_to_upstash(uid, human_pass)
+                logger.info(f"✅ UID {uid} ({name}): humanPass successfully acquired & saved to Upstash!")
+                qualify_recruit(uid, v_init, human_pass, is_master, ton_wallets)
+                qualified_count += 1
+                send_tg_alert(
+                    f"✅ <b>Victor's Recruit Qualified ({qualified_count}/{len(raw_accounts)})</b>\n\n"
+                    f"• <b>Account:</b> {name} (<code>{uid}</code>)\n"
+                    f"• <b>Bound to Master:</b> <code>{VICTORS_REF}</code>\n"
+                    f"• <b>Status:</b> Wallet Connected & Task Claimed!"
+                )
             else:
-                logger.warning(f"⚠️ UID {uid}: No token captured within timeout. Proceeding...")
+                logger.warning(f"⚠️ UID {uid} ({name}): No token/pass captured in 75s. Proceeding to next...")
+
+            try:
+                page.close()
+            except Exception:
+                pass
 
         browser.close()
 
+    # Master bonus sweep
+    logger.info("👑 Finalizing session: Sweeping Master recruitment bonuses...")
+    sweep_master_bonuses(6727787768)
+
     final_msg = (
         f"👑 <b>Victor's Company Virtual Phone Session Finished</b>\n\n"
-        f"• <b>Total Qualified Recruits:</b> {qualified_count}/{len(accounts_to_process)}\n"
+        f"• <b>Total Qualified Recruits:</b> {qualified_count}/{len(raw_accounts)}\n"
         f"• <b>Master Referral:</b> <code>{VICTORS_REF}</code>\n"
         f"• <b>Time:</b> {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}\n\n"
-        f"⚡ <i>100% Cloud Execution via Cloudflare Tunnel.</i>"
+        f"⚡ <i>100% Cloud Execution via Cloudflare Tunnel. Zero Phone Load.</i>"
     )
     logger.info(final_msg)
     send_tg_alert(final_msg)
