@@ -1,0 +1,90 @@
+name: "Victor's Company — Cloud Virtual Phone & Cloudflare Tunnel"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  virtual_phone_session:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install System Dependencies (Xvfb, x11vnc, noVNC & Openbox)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb x11vnc novnc websockify openbox wget curl jq libgbm-dev
+
+      - name: Install Cloudflare Tunnel (cloudflared)
+        run: |
+          curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared.deb
+          rm cloudflared.deb
+
+      - name: Install Python Dependencies & Patchright Stealth Engine
+        run: |
+          pip install --upgrade pip
+          pip install patchright playwright requests
+          patchright install --with-deps chromium
+
+      - name: Start Cloud Virtual Phone & Cloudflare Tunnel
+        env:
+          UPSTASH_URL: "https://relaxing-starfish-285827.upstash.io"
+          UPSTASH_TOKEN: "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw"
+          ALERT_BOT_TOKEN: "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8"
+          OWNER_ID: "6727787768"
+        run: |
+          # 1. Start Xvfb display on :99 with mobile phone resolution (450x950)
+          Xvfb :99 -screen 0 450x950x24 &
+          export DISPLAY=:99
+          sleep 2
+
+          # 2. Start Openbox window manager
+          openbox --sm-disable &
+
+          # 3. Start x11vnc on port 5900
+          x11vnc -display :99 -nopw -forever -shared -rfbport 5900 &
+          sleep 2
+
+          # 4. Start noVNC web server on port 6080
+          websockify --web /usr/share/novnc 6080 localhost:5900 &
+          sleep 2
+
+          # 5. Start Cloudflare Tunnel
+          cloudflared tunnel --url http://localhost:6080 > tunnel.log 2>&1 &
+
+          # 6. Wait for trycloudflare.com URL and send to Telegram
+          TUNNEL_URL=""
+          for i in {1..30}; do
+            TUNNEL_URL=$(grep -oE "https://[a-zA-Z0-9-]+\.trycloudflare\.com" tunnel.log | head -n 1 || true)
+            if [ -n "$TUNNEL_URL" ]; then
+              break
+            fi
+            sleep 1
+          done
+
+          if [ -n "$TUNNEL_URL" ]; then
+            VNC_LINK="${TUNNEL_URL}/vnc.html?autoconnect=true&resize=scale"
+            echo "========================================================="
+            echo "🚀 CLOUDFLARE TUNNEL LIVE: ${VNC_LINK}"
+            echo "========================================================="
+            
+            # Send link to Owner Telegram
+            curl -s -X POST "https://api.telegram.org/bot${ALERT_BOT_TOKEN}/sendMessage" \
+              -H "Content-Type: application/json" \
+              -d "{\"chat_id\": \"${OWNER_ID}\", \"text\": \"📱 <b>Cloud Virtual Phone Ready!</b>\n\nTap this link to open your live cloud virtual phone in your mobile browser:\n👉 <a href='${VNC_LINK}'>Open Cloud Virtual Phone</a>\n\nVictor's Company is loaded. Simply tap Turnstile on your screen!\", \"parse_mode\": \"HTML\", \"disable_web_page_preview\": false}"
+          else
+            echo "⚠️ Could not retrieve Cloudflare Tunnel URL. Check tunnel.log:"
+            cat tunnel.log
+          fi
+
+          # 7. Run Victor's Cloud Phone Launcher
+          python victors_cloud_phone_launcher.py
