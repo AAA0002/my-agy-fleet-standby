@@ -4,6 +4,24 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **📱 Victor's Company (`@VictorsCompanybot`) Resolution: Eliminating "Only Accepts Phone" Lockout & Mobile WebApp Hash Repair (`victors_cloud_phone_launcher.py`, `victors_sb_solver.py`)**:
+  - **🔍 Root Cause Discovery & Architectural Breakdown**:
+    * Diagnosed user report: *"the main problem is not the casup it only acctp phone"*.
+    * Reverse-engineered `index-7o8fKOLT.js` from `app.victors.company`: uncovered that the root component conditionally checks `qb = !be.isDemo && !vA() && !0` where `vA = () => !!(window.Telegram?.WebApp?.initData)`.
+    * When `qb` evaluated to `true`, the React app bypassed Turnstile entirely and rendered component `$C` (`gate.runsInTelegram`), showing *"Victor's Company runs inside Telegram. Open it there to start mining."* with a button *"Open in Telegram"*, locking the user out and preventing the Turnstile captcha from ever rendering.
+    * Root Cause Identified: when the automated browser loaded `https://app.victors.company/#tgWebAppData={v_init}`, raw ampersands (`&`) inside `v_init` caused Telegram's `urlParseHashParams` to split on `&`. As a result, `tgWebAppData` only received `user={"id":...}`, dropping `chat_instance`, `start_param`, `auth_date`, and `hash`. `vA()` returned `false`, triggering the *"only runs inside Telegram / mobile"* screen.
+  - **🛠️ Mobile WebApp Environment & URL Hash Encoding**:
+    * Implemented full URL encoding `urllib.parse.quote(v_init)` inside the hash: `#tgWebAppData={encoded}&tgWebAppPlatform=android&tgWebAppVersion=8.0&tgWebAppThemeParams=...`.
+    * Pre-injected `sessionStorage` with `initParams` and defined `window.Telegram.WebApp` with custom property getters/setters guaranteeing that `initData` is perpetually preserved as the authentic `v_init` and `platform` is reported as `android`.
+    * Verified that with `vA()` returning `true`, `qb` is `false`, and component `YC` immediately mounts Cloudflare Turnstile (`0x4AAAAAAFD0KRgPRFVwDvgn`) on screen.
+  - **⚡ Pre-Flight HTTP Health Probe & Expired Session Filtering**:
+    * Added rapid 0.2s pre-flight probe (`POST /api/auth/login` with `startParam`): verified 13 active sub-accounts immediately return `HTTP 403 HUMAN_REQUIRED` (100% valid Telegram signature, waiting only for Turnstile).
+    * Filtered out expired sessions (e.g. UID `7648254021` returning `HTTP 401 Session expired`), eliminating runner stalls.
+  - **🤖 Auto-Click Frame Locator & Interactive Tunnel Streaming**:
+    * Added frame locator in Playwright to detect `challenges.cloudflare.com` and auto-click `#challenge-stage, .ctp-checkbox-label` every 2 seconds.
+    * Concurrently streamed live virtual phone via `noVNC` through Cloudflare Tunnel directly to Owner Telegram (`@myagyai`) for manual tap verification if required.
+    * Automated recruit qualification: dedicated TON wallet connection (`POST /api/wallet/connect`), task claim (`POST /api/tasks/claim`), mining claim (`POST /api/mining/claim`), and Master recruitment bonus sweep (`POST /api/referral/claim-bonus`).
+
 - **🏢 Victor's Company (`@VictorsCompanybot`) Focused Resolution, Telemetry Truth Guard & Dual-Engine Turnstile Solver (`render_standby_app.py`, `render_app_latest.py`, `mrg_turnstile_solver.py`, `.github/workflows/mrg_turnstile_solver.yml`, `push_to_standby_repo.py`)**:
   - **🛡️ 100% Elimination of False "Farmed" Telemetry**:
     * Diagnosed root cause of misleading status: when `GET https://server.victors.company/api/me` returned 401 `{"success": false, "error": "Please reopen the app"}`, the fallback expression `me = (m_d.get("user") or m_d)` resulted in a non-empty dictionary, bypassing the `if not me` check and falling into the default `farmed (lvl: 1, bal: 0)` branch.
