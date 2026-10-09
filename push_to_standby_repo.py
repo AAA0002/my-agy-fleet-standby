@@ -106,6 +106,9 @@ def push_file(local_path: str, repo_path: str, commit_msg: str):
 
 def push_app():
     push_file(STANDBY_SRC, "app.py", "feat: 8-bot fleet auto-farming, multi-node Render standby mesh")
+    arc_file = os.path.join(BASE_DIR, "victors_arcade_solver.py")
+    if os.path.exists(arc_file):
+        push_file(arc_file, "victors_arcade_solver.py", "feat: Victor's Company Deep Mine arcade solver engine")
     req_file = os.path.join(BASE_DIR, "requirements.txt")
     if os.path.exists(req_file):
         push_file(req_file, "requirements.txt", "deps: update dependencies")
