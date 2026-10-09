@@ -1,6 +1,6 @@
 {
-  "master": {
-    "account": "Master (UID: 6727787768)",
+  "6727787768": {
+    "account": "Arif Hossain (UID: 6727787768)",
     "is_master": true,
     "bots": {
       "1. Stones Miners": {
@@ -12,7 +12,7 @@
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
           "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 11756003"
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12287247"
         ]
       },
       "2. MRG Miner": {
@@ -24,7 +24,7 @@
       "3. AI Lab Robot": {
         "core": {
           "login": "Authenticated (UID: 6727787768)",
-          "balance": "0 Hashes \u2022 $0.0108 USD"
+          "balance": "0 Hashes \u2022 $0.0184 USD"
         },
         "side_tasks": []
       },
@@ -57,8 +57,8 @@
       }
     }
   },
-  "worker": {
-    "account": "Worker 1 (UID: 8881914294)",
+  "8881914294": {
+    "account": "Nancy (UID: 8881914294)",
     "is_master": false,
     "bots": {
       "1. Stones Miners": {
@@ -70,33 +70,41 @@
         "side_tasks": [
           "Daily Check-in: HTTP 400 (done)",
           "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
-          "Hashrate Boost (+0.5 TH/s): Challenge ID 11756011"
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12287237"
         ]
       },
       "2. MRG Miner": {
         "core": {
-          "claim": "HTTP 401 - ok"
+          "claim": "HTTP 403 - ok",
+          "balance": "2484.436733321761 MRG (Miner Level: 92/203)"
         },
-        "side_tasks": []
+        "side_tasks": [
+          "Task System: 27 Completed, 2 Pending Tasks",
+          "TON Wallet: Connected: UQA0aO4Y..."
+        ]
       },
       "3. AI Lab Robot": {
         "core": {
           "login": "Authenticated (UID: 8881914294)",
-          "balance": "0 Hashes \u2022 $0.0396 USD"
+          "balance": "0 Hashes \u2022 $0.0426 USD"
         },
         "side_tasks": []
       },
       "4. UltraWallet": {
         "core": {
-          "login": "HTTP 401"
+          "login": "HTTP 200 - Session Active \u2705"
         },
-        "side_tasks": []
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
       },
       "5. ATF Miner": {
         "core": {
-          "status": "HTTP 401"
+          "status": "Mining Active: 0.00 ATF (Rate: 0/hr)"
         },
-        "side_tasks": []
+        "side_tasks": [
+          "Anti-Bot Math Verified \u2022 Cloud Claims Synchronized"
+        ]
       },
       "6. FINVORA Web3": {
         "core": {
@@ -111,6 +119,1057 @@
         "core": {},
         "side_tasks": [
           "TON Wallet Connect: HTTP 401"
+        ]
+      }
+    }
+  },
+  "7648254021": {
+    "account": "Koram Shah (UID: 7648254021)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12285640"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {
+          "claim": "HTTP 403 - ok",
+          "balance": "2112.8132302430554 MRG (Miner Level: 84/203)"
+        },
+        "side_tasks": [
+          "Task System: 19 Completed, 2 Pending Tasks",
+          "TON Wallet: Connected: UQC8xeCT..."
+        ]
+      },
+      "3. AI Lab Robot": {
+        "core": {
+          "login": "Authenticated (UID: 7648254021)",
+          "balance": "0 Hashes \u2022 $0.0004 USD"
+        },
+        "side_tasks": []
+      },
+      "4. UltraWallet": {
+        "core": {
+          "login": "HTTP 200 - Session Active \u2705"
+        },
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
+      },
+      "5. ATF Miner": {
+        "core": {
+          "status": "Mining Active: 0.00 ATF (Rate: 0/hr)"
+        },
+        "side_tasks": [
+          "Anti-Bot Math Verified \u2022 Cloud Claims Synchronized"
+        ]
+      },
+      "6. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 400 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 400 (ok)",
+          "TON Wallet Connect (UQC8xeCT...): HTTP 200"
+        ]
+      },
+      "7. TurboGram V1": {
+        "core": {
+          "balance": "0.26 GRAM"
+        },
+        "side_tasks": [
+          "Partner Tasks: 12/12 Completed (Referral Tier Active)",
+          "TON Wallet Connect: HTTP 200"
+        ]
+      }
+    }
+  },
+  "8826375659": {
+    "account": "Arif (UID: 8826375659)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12286730"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {
+          "claim": "HTTP 403 - ok",
+          "balance": "2677.3340478356436 MRG (Miner Level: 96/203)"
+        },
+        "side_tasks": [
+          "Task System: 21 Completed, 2 Pending Tasks",
+          "TON Wallet: Connected: UQAOfjJt..."
+        ]
+      },
+      "3. AI Lab Robot": {
+        "core": {
+          "login": "Authenticated (UID: 8826375659)",
+          "balance": "0 Hashes \u2022 $0.046 USD"
+        },
+        "side_tasks": []
+      },
+      "4. UltraWallet": {
+        "core": {
+          "login": "HTTP 200 - Session Active \u2705"
+        },
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
+      },
+      "5. ATF Miner": {
+        "core": {
+          "status": "Mining Active: 0.00 ATF (Rate: 0/hr)"
+        },
+        "side_tasks": [
+          "Anti-Bot Math Verified \u2022 Cloud Claims Synchronized"
+        ]
+      },
+      "6. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 401 (ok)",
+          "TON Wallet Connect (UQAOfjJt...): HTTP 401"
+        ]
+      },
+      "7. TurboGram V1": {
+        "core": {},
+        "side_tasks": [
+          "TON Wallet Connect: HTTP 401"
+        ]
+      }
+    }
+  },
+  "8450010161": {
+    "account": "Nadim (UID: 8450010161)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12287288"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {
+          "claim": "HTTP 403 - ok",
+          "balance": "2215.326907326391 MRG (Miner Level: 86/203)"
+        },
+        "side_tasks": [
+          "Task System: 21 Completed, 2 Pending Tasks",
+          "TON Wallet: Connected: UQBrmX45..."
+        ]
+      },
+      "3. AI Lab Robot": {
+        "core": {
+          "login": "Authenticated (UID: 8450010161)",
+          "balance": "0 Hashes \u2022 $0.0357 USD"
+        },
+        "side_tasks": []
+      },
+      "4. UltraWallet": {
+        "core": {
+          "login": "HTTP 200 - Session Active \u2705"
+        },
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
+      },
+      "5. ATF Miner": {
+        "core": {
+          "status": "Mining Active: 0.00 ATF (Rate: 0/hr)"
+        },
+        "side_tasks": [
+          "Anti-Bot Math Verified \u2022 Cloud Claims Synchronized"
+        ]
+      },
+      "6. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 400 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 400 (ok)",
+          "TON Wallet Connect (UQBrmX45...): HTTP 200"
+        ]
+      },
+      "7. TurboGram V1": {
+        "core": {
+          "balance": "0.26 GRAM"
+        },
+        "side_tasks": [
+          "Partner Tasks: 12/12 Completed (Referral Tier Active)",
+          "TON Wallet Connect: HTTP 200"
+        ]
+      }
+    }
+  },
+  "8782429452": {
+    "account": "Kaitlyn (UID: 8782429452)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12285344"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {
+          "claim": "HTTP 403 - ok",
+          "balance": "1921.4237915162046 MRG (Miner Level: 79/203)"
+        },
+        "side_tasks": [
+          "Task System: 20 Completed, 2 Pending Tasks",
+          "TON Wallet: Connected: UQAid8oL..."
+        ]
+      },
+      "3. AI Lab Robot": {
+        "core": {
+          "login": "Authenticated (UID: 8782429452)",
+          "balance": "0 Hashes \u2022 $0.0237 USD"
+        },
+        "side_tasks": []
+      },
+      "4. UltraWallet": {
+        "core": {
+          "login": "HTTP 200 - Session Active \u2705"
+        },
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
+      },
+      "5. ATF Miner": {
+        "core": {
+          "status": "Mining Active: 0.00 ATF (Rate: 0/hr)"
+        },
+        "side_tasks": [
+          "Anti-Bot Math Verified \u2022 Cloud Claims Synchronized"
+        ]
+      },
+      "6. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 401 (ok)",
+          "TON Wallet Connect (UQAid8oL...): HTTP 401"
+        ]
+      },
+      "7. TurboGram V1": {
+        "core": {},
+        "side_tasks": [
+          "TON Wallet Connect: HTTP 401"
+        ]
+      }
+    }
+  },
+  "7734849205": {
+    "account": "Abid Hasan (UID: 7734849205)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12285631"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {
+          "claim": "HTTP 403 - ok",
+          "balance": "1955.6750479745374 MRG (Miner Level: 80/203)"
+        },
+        "side_tasks": [
+          "Task System: 23 Completed, 0 Pending Tasks",
+          "TON Wallet: Connected: UQAtcq_X..."
+        ]
+      },
+      "3. AI Lab Robot": {
+        "core": {
+          "login": "Authenticated (UID: 7734849205)",
+          "balance": "0 Hashes \u2022 $0.0241 USD"
+        },
+        "side_tasks": []
+      },
+      "4. UltraWallet": {
+        "core": {
+          "login": "HTTP 200 - Session Active \u2705"
+        },
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
+      },
+      "5. ATF Miner": {
+        "core": {
+          "status": "Mining Active: 0.00 ATF (Rate: 0/hr)"
+        },
+        "side_tasks": [
+          "Anti-Bot Math Verified \u2022 Cloud Claims Synchronized"
+        ]
+      },
+      "6. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 401 (ok)",
+          "TON Wallet Connect (UQAtcq_X...): HTTP 401"
+        ]
+      },
+      "7. TurboGram V1": {
+        "core": {},
+        "side_tasks": [
+          "TON Wallet Connect: HTTP 401"
+        ]
+      }
+    }
+  },
+  "8025472383": {
+    "account": "Abid Hasan (2) (UID: 8025472383)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12287606"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {
+          "claim": "HTTP 403 - ok",
+          "balance": "2152.9319798726865 MRG (Miner Level: 85/203)"
+        },
+        "side_tasks": [
+          "Task System: 20 Completed, 2 Pending Tasks",
+          "TON Wallet: Connected: UQCIPXAV..."
+        ]
+      },
+      "3. AI Lab Robot": {
+        "core": {
+          "login": "Authenticated (UID: 8025472383)",
+          "balance": "0 Hashes \u2022 $0.0273 USD"
+        },
+        "side_tasks": []
+      },
+      "4. UltraWallet": {
+        "core": {
+          "login": "HTTP 200 - Session Active \u2705"
+        },
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
+      },
+      "5. ATF Miner": {
+        "core": {
+          "status": "Mining Active: 0.00 ATF (Rate: 0/hr)"
+        },
+        "side_tasks": [
+          "Anti-Bot Math Verified \u2022 Cloud Claims Synchronized"
+        ]
+      },
+      "6. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 401 (ok)",
+          "TON Wallet Connect (UQCIPXAV...): HTTP 401"
+        ]
+      },
+      "7. TurboGram V1": {
+        "core": {},
+        "side_tasks": [
+          "TON Wallet Connect: HTTP 401"
+        ]
+      }
+    }
+  },
+  "8851426148": {
+    "account": "Node 9 (UID: 8851426148)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12287193"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {
+          "claim": "HTTP 403 - ok",
+          "balance": "1996.2210784606498 MRG (Miner Level: 81/203)"
+        },
+        "side_tasks": [
+          "Task System: 19 Completed, 2 Pending Tasks",
+          "TON Wallet: Connected: UQDF-a-A..."
+        ]
+      },
+      "3. AI Lab Robot": {
+        "core": {
+          "login": "Authenticated (UID: 8851426148)",
+          "balance": "0 Hashes \u2022 $0.0517 USD"
+        },
+        "side_tasks": []
+      },
+      "4. UltraWallet": {
+        "core": {
+          "login": "HTTP 200 - Session Active \u2705"
+        },
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
+      },
+      "5. ATF Miner": {
+        "core": {
+          "status": "Mining Active: 0.00 ATF (Rate: 0/hr)"
+        },
+        "side_tasks": [
+          "Anti-Bot Math Verified \u2022 Cloud Claims Synchronized"
+        ]
+      },
+      "6. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 400 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 400 (ok)",
+          "TON Wallet Connect (UQDF-a-A...): HTTP 200"
+        ]
+      },
+      "7. TurboGram V1": {
+        "core": {
+          "balance": "0.26 GRAM"
+        },
+        "side_tasks": [
+          "Partner Tasks: 12/12 Completed (Referral Tier Active)",
+          "TON Wallet Connect: HTTP 200"
+        ]
+      }
+    }
+  },
+  "8203342513": {
+    "account": "Node 10 (UID: 8203342513)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12286944"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {},
+        "side_tasks": [],
+        "error": ""
+      },
+      "3. AI Lab Robot": {
+        "core": {
+          "login": "Authenticated (UID: 8203342513)",
+          "balance": "0 Hashes \u2022 $0.0117 USD"
+        },
+        "side_tasks": []
+      },
+      "4. UltraWallet": {
+        "core": {
+          "login": "HTTP 200 - Session Active \u2705"
+        },
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
+      },
+      "5. ATF Miner": {
+        "core": {
+          "status": "Mining Active: 0.00 ATF (Rate: 0/hr)"
+        },
+        "side_tasks": [
+          "Anti-Bot Math Verified \u2022 Cloud Claims Synchronized"
+        ]
+      },
+      "6. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 400 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 400 (ok)",
+          "TON Wallet Connect (UQBeouWx...): HTTP 200"
+        ]
+      },
+      "7. TurboGram V1": {
+        "core": {
+          "balance": "0.26 GRAM"
+        },
+        "side_tasks": [
+          "Partner Tasks: 12/12 Completed (Referral Tier Active)",
+          "TON Wallet Connect: HTTP 200"
+        ]
+      }
+    }
+  },
+  "8190649727": {
+    "account": "MD. Arif Hossain (UID: 8190649727)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12286726"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {},
+        "side_tasks": [],
+        "error": ""
+      },
+      "3. AI Lab Robot": {
+        "core": {
+          "login": "Authenticated (UID: 8190649727)",
+          "balance": "0 Hashes \u2022 $0.0412 USD"
+        },
+        "side_tasks": []
+      },
+      "4. UltraWallet": {
+        "core": {
+          "login": "HTTP 200 - Session Active \u2705"
+        },
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
+      },
+      "5. ATF Miner": {
+        "core": {
+          "status": "Mining Active: 0.00 ATF (Rate: 0/hr)"
+        },
+        "side_tasks": [
+          "Anti-Bot Math Verified \u2022 Cloud Claims Synchronized"
+        ]
+      },
+      "6. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 401 (ok)",
+          "TON Wallet Connect (UQBgy3Im...): HTTP 401"
+        ]
+      },
+      "7. TurboGram V1": {
+        "core": {},
+        "side_tasks": [
+          "TON Wallet Connect: HTTP 401"
+        ]
+      }
+    }
+  },
+  "7487048946": {
+    "account": "Sanzida Shimu (UID: 7487048946)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12281014"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {
+          "claim": "HTTP 403 - ok",
+          "balance": "2189.4285624189793 MRG (Miner Level: 86/203)"
+        },
+        "side_tasks": [
+          "Task System: 20 Completed, 2 Pending Tasks",
+          "TON Wallet: Connected: UQBOdyZl..."
+        ]
+      },
+      "3. AI Lab Robot": {
+        "core": {
+          "login": "Authenticated (UID: 7487048946)",
+          "balance": "0 Hashes \u2022 $0.0234 USD"
+        },
+        "side_tasks": []
+      },
+      "4. UltraWallet": {
+        "core": {
+          "login": "HTTP 200 - Session Active \u2705"
+        },
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
+      },
+      "5. ATF Miner": {
+        "core": {
+          "status": "Mining Active: 0.00 ATF (Rate: 0/hr)"
+        },
+        "side_tasks": [
+          "Anti-Bot Math Verified \u2022 Cloud Claims Synchronized"
+        ]
+      },
+      "6. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 401 (ok)",
+          "TON Wallet Connect (UQBOdyZl...): HTTP 401"
+        ]
+      },
+      "7. TurboGram V1": {
+        "core": {},
+        "side_tasks": [
+          "TON Wallet Connect: HTTP 401"
+        ]
+      }
+    }
+  },
+  "8741547543": {
+    "account": "Abid (3) (UID: 8741547543)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12281018"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {},
+        "side_tasks": [],
+        "error": ""
+      },
+      "3. AI Lab Robot": {
+        "core": {
+          "login": "Authenticated (UID: 8741547543)",
+          "balance": "0 Hashes \u2022 $0.0234 USD"
+        },
+        "side_tasks": []
+      },
+      "4. UltraWallet": {
+        "core": {
+          "login": "HTTP 200 - Session Active \u2705"
+        },
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
+      },
+      "5. ATF Miner": {
+        "core": {
+          "status": "Mining Active: 0.00 ATF (Rate: 0/hr)"
+        },
+        "side_tasks": [
+          "Anti-Bot Math Verified \u2022 Cloud Claims Synchronized"
+        ]
+      },
+      "6. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 400 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 400 (ok)",
+          "TON Wallet Connect (UQAy5w84...): HTTP 200"
+        ]
+      },
+      "7. TurboGram V1": {
+        "core": {
+          "balance": "0.26 GRAM"
+        },
+        "side_tasks": [
+          "Partner Tasks: 12/12 Completed (Referral Tier Active)",
+          "TON Wallet Connect: HTTP 200"
+        ]
+      }
+    }
+  },
+  "8727040932": {
+    "account": "Raj Thakur \u041a\u043e\u0437\u043b\u043e\u0432 (UID: 8727040932)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12281873"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {
+          "claim": "HTTP 403 - ok",
+          "balance": "901.5726320023147 MRG (Miner Level: 50/203)"
+        },
+        "side_tasks": [
+          "Task System: 13 Completed, 2 Pending Tasks",
+          "TON Wallet: Connected: UQB3rmmz..."
+        ]
+      },
+      "3. AI Lab Robot": {
+        "core": {
+          "login": "Authenticated (UID: 8727040932)",
+          "balance": "0 Hashes \u2022 $0.0172 USD"
+        },
+        "side_tasks": []
+      },
+      "4. UltraWallet": {
+        "core": {
+          "login": "HTTP 200 - Session Active \u2705"
+        },
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
+      },
+      "5. ATF Miner": {
+        "core": {
+          "status": "Mining Active: 0.00 ATF (Rate: 0/hr)"
+        },
+        "side_tasks": [
+          "Anti-Bot Math Verified \u2022 Cloud Claims Synchronized"
+        ]
+      },
+      "6. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 400 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 400 (ok)",
+          "TON Wallet Connect (UQCbqkSP...): HTTP 200"
+        ]
+      },
+      "7. TurboGram V1": {
+        "core": {
+          "balance": "0.26 GRAM"
+        },
+        "side_tasks": [
+          "Partner Tasks: 12/12 Completed (Referral Tier Active)",
+          "TON Wallet Connect: HTTP 200"
+        ]
+      }
+    }
+  },
+  "7749125802": {
+    "account": "Tiffany \u0422\u0430\u0440\u0430\u0441\u043e\u0432 (UID: 7749125802)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12283808"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {
+          "claim": "HTTP 403 - ok",
+          "balance": "560 MRG (Miner Level: 37/203)"
+        },
+        "side_tasks": [
+          "Task System: 8 Completed, 3 Pending Tasks",
+          "TON Wallet: Connected: UQBhpe9u..."
+        ]
+      },
+      "3. AI Lab Robot": {
+        "core": {
+          "login": "Authenticated (UID: 7749125802)",
+          "balance": "0 Hashes \u2022 $0.0123 USD"
+        },
+        "side_tasks": []
+      },
+      "4. UltraWallet": {
+        "core": {
+          "login": "HTTP 200 - Session Active \u2705"
+        },
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
+      },
+      "5. ATF Miner": {
+        "core": {
+          "status": "HTTP 403"
+        },
+        "side_tasks": []
+      },
+      "6. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 401 (ok)",
+          "TON Wallet Connect (UQBhpe9u...): HTTP 401"
+        ]
+      },
+      "7. TurboGram V1": {
+        "core": {},
+        "side_tasks": [
+          "TON Wallet Connect: HTTP 401"
+        ]
+      }
+    }
+  },
+  "7954290138": {
+    "account": "Roger \u0412\u043e\u043b\u043a\u043e\u0432 (UID: 7954290138)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12280577"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {
+          "claim": "HTTP 403 - ok",
+          "balance": "555 MRG (Miner Level: 37/203)"
+        },
+        "side_tasks": [
+          "Task System: 9 Completed, 2 Pending Tasks",
+          "TON Wallet: Connected: UQANs0f0..."
+        ]
+      },
+      "3. AI Lab Robot": {
+        "core": {
+          "login": "Authenticated (UID: 7954290138)",
+          "balance": "0 Hashes \u2022 $0.0122 USD"
+        },
+        "side_tasks": []
+      },
+      "4. UltraWallet": {
+        "core": {
+          "login": "HTTP 200 - Session Active \u2705"
+        },
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
+      },
+      "5. ATF Miner": {
+        "core": {
+          "status": "HTTP 403"
+        },
+        "side_tasks": []
+      },
+      "6. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 401 (ok)",
+          "TON Wallet Connect (UQANs0f0...): HTTP 401"
+        ]
+      },
+      "7. TurboGram V1": {
+        "core": {},
+        "side_tasks": [
+          "TON Wallet Connect: HTTP 401"
+        ]
+      }
+    }
+  },
+  "8841038141": {
+    "account": "Kevin \u0421\u043c\u0438\u0440\u043d\u043e\u0432 (UID: 8841038141)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 40/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12288012"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {
+          "claim": "HTTP 403 - ok",
+          "balance": "560 MRG (Miner Level: 37/203)"
+        },
+        "side_tasks": [
+          "Task System: 9 Completed, 2 Pending Tasks",
+          "TON Wallet: Connected: UQCDqleb..."
+        ]
+      },
+      "3. AI Lab Robot": {
+        "core": {
+          "login": "Authenticated (UID: 8841038141)",
+          "balance": "0 Hashes \u2022 $0.0121 USD"
+        },
+        "side_tasks": []
+      },
+      "4. UltraWallet": {
+        "core": {
+          "login": "HTTP 200 - Session Active \u2705"
+        },
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
+      },
+      "5. ATF Miner": {
+        "core": {
+          "status": "HTTP 403"
+        },
+        "side_tasks": []
+      },
+      "6. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 401 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 401 (ok)",
+          "TON Wallet Connect (UQCDqleb...): HTTP 401"
+        ]
+      },
+      "7. TurboGram V1": {
+        "core": {},
+        "side_tasks": [
+          "TON Wallet Connect: HTTP 401"
+        ]
+      }
+    }
+  },
+  "8975442879": {
+    "account": "Mary \u041a\u0430\u0440\u0438\u043c\u043e\u0432 (UID: 8975442879)",
+    "is_master": false,
+    "bots": {
+      "1. Stones Miners": {
+        "core": {
+          "claim": "HTTP 200 - ok",
+          "start_mining": "HTTP 200 - started",
+          "balance": "0.00 STONES (Hashrate: 0 TH/s)"
+        },
+        "side_tasks": [
+          "Daily Check-in: HTTP 400 (done)",
+          "Stone Breaker Minigame: Hour 5/5 STONES, Day 45/50 STONES",
+          "Hashrate Boost (+0.5 TH/s): Challenge ID 12287986"
+        ]
+      },
+      "2. MRG Miner": {
+        "core": {
+          "claim": "HTTP 403 - ok"
+        },
+        "side_tasks": [],
+        "error": ""
+      },
+      "3. AI Lab Robot": {
+        "core": {
+          "login": "Authenticated (UID: 8975442879)",
+          "balance": "0 Hashes \u2022 $0.0123 USD"
+        },
+        "side_tasks": []
+      },
+      "4. UltraWallet": {
+        "core": {
+          "login": "HTTP 200 - Session Active \u2705"
+        },
+        "side_tasks": [
+          "Multi-Chain Mining: Running 24/7 in Cloud"
+        ]
+      },
+      "5. ATF Miner": {
+        "core": {
+          "status": "HTTP 403"
+        },
+        "side_tasks": []
+      },
+      "6. FINVORA Web3": {
+        "core": {
+          "claim": "HTTP 400 (Claimed: 0.0000 GRAM)"
+        },
+        "side_tasks": [
+          "Instant Bonus: HTTP 400 (ok)",
+          "TON Wallet Connect (UQBcHzN-...): HTTP 200"
+        ]
+      },
+      "7. TurboGram V1": {
+        "core": {
+          "balance": "0.26 GRAM"
+        },
+        "side_tasks": [
+          "Partner Tasks: 12/12 Completed (Referral Tier Active)",
+          "TON Wallet Connect: HTTP 200"
         ]
       }
     }
