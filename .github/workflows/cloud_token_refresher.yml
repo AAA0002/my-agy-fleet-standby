@@ -2,9 +2,13 @@ name: "MY AGY AI — 100% Cloud MTProto Token Refresher (Zero VPS Reliance)"
 
 on:
   schedule:
-    # Runs every 12 hours (00:00 & 12:00 UTC) to ensure tokens never expire
-    - cron: '0 */12 * * *'
+    # Runs every 2 hours to keep VyroDrop (2h TTL) and all bot tokens 100% fresh 24/7
+    - cron: '0 */2 * * *'
   workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
 
 jobs:
   refresh_tokens:
@@ -98,6 +102,36 @@ jobs:
           CF_SECRET_KEY: "agy_cf_secret_7d36994e_2026"
         run: |
           python refresh_cloud_tokens.py
+
+      - name: Dispatch Cloud Turnstile Solver & Multi-Bot Auto-Farming
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🚀 Tokens refreshed successfully! Dispatching Turnstile Solver & Auto-Farming workflow..."
+          curl -s -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/mrg_turnstile_solver.yml/dispatches" \
+            -d '{"ref":"main"}' || true
+
+      - name: Dispatch Render Standby Multi-Node Cloud Farming
+        if: success()
+        run: |
+          python - << 'EOF'
+          import urllib.request, json
+          nodes = [
+              "https://my-agy-fleet-standby-node2.onrender.com/api/farm/cloud-all",
+              "https://my-agy-fleet-standby-node3.onrender.com/api/farm/cloud-all"
+          ]
+          for url in nodes:
+              try:
+                  req = urllib.request.Request(url, data=b"{}", headers={"Content-Type": "application/json"})
+                  with urllib.request.urlopen(req, timeout=10) as r:
+                      print(f"Triggered Render node: {url} -> {r.status}")
+              except Exception as e:
+                  print(f"Note on {url}: {e}")
+          EOF
 
       - name: Failover to Render Standby Mesh if GitHub Actions Fails
         if: failure()

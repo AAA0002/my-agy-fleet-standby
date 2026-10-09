@@ -132,10 +132,14 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * Synchronized Git Remotes: `origin` (`AAA0002/ATL`) and `koram_standby` (`koramshah2/AAA_AUTO`).
   - Suspended 3rd Account Note (`AAA2743`):
     * GitHub account `AAA2743` was suspended by GitHub. All production dependencies have been migrated to `AAA0002` and `koramshah2`. Render services were updated via API to point to active repos.
-  - **100% Cloud MRG Auto-Farming & Turnstile Solver Workflow**:
-    * Workflow File: `.github/workflows/mrg_turnstile_solver.yml` (Runs every 3 hours: `15 */3 * * *`).
-    * Script: `mrg_turnstile_solver.py` (Headless Patchright stealth engine, real Telegram `initData` simulation, native claim button clicker, Turnstile iframe solver, and auto-compounder).
-    * Zero Phone Load: Runs 100% inside Microsoft/GitHub's cloud runner environment (Ubuntu 22.04, 7GB RAM).
+  - **100% Cloud MTProto Token Refresher & Auto-Farming Pipeline**:
+    * Workflow File: `.github/workflows/cloud_token_refresher.yml` (Runs every 2 hours: `0 */2 * * *`).
+    * Script: `refresh_cloud_tokens.py` (Connects MTProto in cloud, harvests fresh 24h WebApp `initData`, syncs to 5x Cloudflare Nodes and Upstash Redis).
+    * Auto-Dispatch Pipeline: Automatically triggers `.github/workflows/mrg_turnstile_solver.yml` and Render Standby multi-node farming upon completion.
+  - **100% Cloud Multi-Bot Turnstile Solver & Auto-Farming Workflow**:
+    * Workflow File: `.github/workflows/mrg_turnstile_solver.yml` (Runs every 4 hours: `15 */4 * * *` as safety net, and event-driven via token refresher).
+    * Script: `mrg_turnstile_solver.py` (Patchright Chromium stealth engine, Turnstile script loader race guard, real Telegram `initData` simulation, TonConnect 2.0 wallet onboarding, Turnstile iframe solver, and auto-compounder).
+    * Zero Phone Load: Runs 100% inside GitHub's cloud runner environment (Ubuntu 24.04, 7GB RAM).
 
 - **Native Telegram Serverless Platform (`My_Router_AI_bot` / `tgcloud` / App ID `app8858823950`)**:
   - Live Mini App URL: `https://app8858823950.tgcloud.ai/`

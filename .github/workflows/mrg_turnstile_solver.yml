@@ -2,8 +2,8 @@ name: "MY AGY AI — 100% Cloud Turnstile Solver & Multi-Bot Auto-Farming"
 
 on:
   schedule:
-    # Runs every 12 hours (03:15 & 15:15 UTC) to conserve GitHub Actions free-tier minutes while keeping human passes fresh
-    - cron: '15 */12 * * *'
+    # Runs every 4 hours (and auto-dispatched by Token Refresher every 2h) to keep Turnstile human passes permanently fresh
+    - cron: '15 */4 * * *'
   workflow_dispatch:
 
 jobs:

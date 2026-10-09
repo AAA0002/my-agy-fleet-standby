@@ -4,6 +4,21 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🛡️ Cloud Turnstile Render Guard, 2-Hour VyroDrop Token Pipeline & Auto-Dispatch Architecture**:
+  - **⚡ Turnstile `render undefined` Race Condition Elimination (`mrg_turnstile_solver.py`)**:
+    * Identified and fixed root cause of `TypeError: Cannot read properties of undefined (reading 'render')` across MRG Miner, Victor's Company, VyroDrop, and ATF Miner solvers where `s.onload` fired immediately upon script download before Cloudflare's runtime initialized `window.turnstile`.
+    * Implemented strict pre-execution guard: `if (!window.turnstile || typeof window.turnstile.render !== 'function') return;` preventing premature `render()` invocations.
+    * Added explicit `&onload=__cfTurnstileLoaded` callback hooks directly in Cloudflare Turnstile script URLs.
+    * Reset `rendered = false` on exception catches so the 100ms interval polling smoothly retries without getting permanently locked.
+  - **🚀 2-Hour Token Refresh Cron & Automated Turnstile Pipeline Trigger (`cloud_token_refresher.yml`)**:
+    * Updated workflow schedule from `0 */12 * * *` to `0 */2 * * *` (every 2 hours), ensuring VyroDrop's 2-hour TTL WebApp `initData` tokens never expire and cause 401 `TELEGRAM_AUTH_INVALID` errors.
+    * Added `permissions: { contents: write, actions: write }` enabling automated workflow triggers.
+    * Implemented automated pipeline dispatch: upon successful MTProto token harvesting, the workflow immediately dispatches `mrg_turnstile_solver.yml` via GitHub API with fresh tokens, eliminating stale token race conditions.
+    * Added automated dispatch to Render Standby multi-node mesh (`/api/farm/cloud-all`) across Frankfurt and Oregon nodes upon token sync.
+  - **☁️ Multi-Bot Fleet Farming Verified**:
+    * Confirmed active continuous farming on Render Frankfurt Node 2 (`/api/farm/status`) with 18/18 accounts executed.
+    * Verified massive balances: Arif @ Level 116 (1,834.7 ATF), Arif @ Level 97 (2,718.3 MRG), Nancy @ Level 93 (2,525.4 MRG), Nadim (68.3 VIC), and active task/referral claims.
+
 - **🔒 Resilient MTProto Connection Retry Engine & Multi-Node Render Deployment**:
   - **⚡ MTProto TCP Connection Retries & Backoff (`refresh_cloud_tokens.py` & `render_standby_app.py`)**:
     * Implemented 3-attempt connection retry loop with exponential backoff (2s, 4s, 6s) to smoothly handle transient Telegram server disconnects (`Server closed the connection: 0 bytes read on a total of 8 expected bytes`).

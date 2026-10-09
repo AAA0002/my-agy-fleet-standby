@@ -524,6 +524,9 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
 
                 function doRender() {{
                     if (rendered) return;
+                    if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
+                        return;
+                    }}
                     rendered = true;
                     if (waitInterval) {{
                         clearInterval(waitInterval);
@@ -555,22 +558,32 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                                 resolve({{ success: true, token: tok }});
                             }},
                             'error-callback': function(err) {{
+                                rendered = false;
                                 resolve({{ success: false, error: String(err) }});
                             }}
                         }});
                     }} catch (e) {{
+                        rendered = false;
                         resolve({{ success: false, error: String(e) }});
                     }}
                 }}
+
+                window.__cfMrgTurnstileLoaded = function() {{
+                    doRender();
+                }};
 
                 if (window.turnstile && typeof window.turnstile.render === 'function') {{
                     doRender();
                 }} else {{
                     const s = document.createElement('script');
-                    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=__cfMrgTurnstileLoaded';
                     s.async = true;
                     s.defer = true;
-                    s.onload = () => {{ doRender(); }};
+                    s.onload = () => {{
+                        if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                            doRender();
+                        }}
+                    }};
                     document.head.appendChild(s);
 
                     let checkCount = 0;
@@ -578,7 +591,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                         checkCount++;
                         if (window.turnstile && typeof window.turnstile.render === 'function') {{
                             doRender();
-                        }} else if (!rendered && checkCount > 150) {{
+                        }} else if (!rendered && checkCount > 200) {{
                             clearInterval(waitInterval);
                             resolve({{ success: false, error: 'turnstile_load_timeout' }});
                         }}
@@ -962,6 +975,9 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
 
                         function doRender() {{
                             if (rendered) return;
+                            if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
+                                return;
+                            }}
                             rendered = true;
                             if (waitInterval) {{
                                 clearInterval(waitInterval);
@@ -994,22 +1010,32 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                                         resolve({{ success: true, token: tok }});
                                     }},
                                     'error-callback': function(err) {{
+                                        rendered = false;
                                         resolve({{ success: false, error: String(err) }});
                                     }}
                                 }});
                             }} catch (e) {{
+                                rendered = false;
                                 resolve({{ success: false, error: String(e) }});
                             }}
                         }}
+
+                        window.__cfVicTurnstileLoaded = function() {{
+                            doRender();
+                        }};
 
                         if (window.turnstile && typeof window.turnstile.render === 'function') {{
                             doRender();
                         }} else {{
                             const s = document.createElement('script');
-                            s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                            s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=__cfVicTurnstileLoaded';
                             s.async = true;
                             s.defer = true;
-                            s.onload = () => {{ doRender(); }};
+                            s.onload = () => {{
+                                if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                                    doRender();
+                                }}
+                            }};
                             document.head.appendChild(s);
 
                             let checkCount = 0;
@@ -1017,7 +1043,7 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                                 checkCount++;
                                 if (window.turnstile && typeof window.turnstile.render === 'function') {{
                                     doRender();
-                                }} else if (!rendered && checkCount > 150) {{
+                                }} else if (!rendered && checkCount > 200) {{
                                     clearInterval(waitInterval);
                                     resolve({{ success: false, error: 'turnstile_load_timeout' }});
                                 }}
@@ -1369,6 +1395,9 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
 
                         function doRender() {{
                             if (rendered) return;
+                            if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
+                                return;
+                            }}
                             rendered = true;
                             if (waitInterval) {{
                                 clearInterval(waitInterval);
@@ -1402,22 +1431,32 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                                         resolve({{ success: true, token: tok }});
                                     }},
                                     'error-callback': function(err) {{
+                                        rendered = false;
                                         resolve({{ success: false, error: String(err) }});
                                     }}
                                 }});
                             }} catch (e) {{
+                                rendered = false;
                                 resolve({{ success: false, error: String(e) }});
                             }}
                         }}
+
+                        window.__cfVyroTurnstileLoaded = function() {{
+                            doRender();
+                        }};
 
                         if (window.turnstile && typeof window.turnstile.render === 'function') {{
                             doRender();
                         }} else {{
                             const s = document.createElement('script');
-                            s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                            s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=__cfVyroTurnstileLoaded';
                             s.async = true;
                             s.defer = true;
-                            s.onload = () => {{ doRender(); }};
+                            s.onload = () => {{
+                                if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                                    doRender();
+                                }}
+                            }};
                             document.head.appendChild(s);
 
                             let checkCount = 0;
@@ -1425,7 +1464,7 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                                 checkCount++;
                                 if (window.turnstile && typeof window.turnstile.render === 'function') {{
                                     doRender();
-                                }} else if (!rendered && checkCount > 150) {{
+                                }} else if (!rendered && checkCount > 200) {{
                                     clearInterval(waitInterval);
                                     resolve({{ success: false, error: 'turnstile_load_timeout' }});
                                 }}
@@ -1626,7 +1665,19 @@ async def solve_atf_turnstile(browser, uid: int, atf_init: str) -> bool:
                 solve_js = f"""
                     async () => {{
                         return new Promise((resolve) => {{
+                            let rendered = false;
+                            let waitInterval = null;
+
                             function doRender() {{
+                                if (rendered) return;
+                                if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
+                                    return;
+                                }}
+                                rendered = true;
+                                if (waitInterval) {{
+                                    clearInterval(waitInterval);
+                                    waitInterval = null;
+                                }}
                                 try {{
                                     let box = document.getElementById('entryCaptchaBox') || document.body;
                                     window.turnstile.render(box, {{
@@ -1639,36 +1690,48 @@ async def solve_atf_turnstile(browser, uid: int, atf_init: str) -> bool:
                                             resolve({{ success: true, token: tok }});
                                         }},
                                         'error-callback': function(err) {{
+                                            rendered = false;
                                             resolve({{ success: false, error: String(err) }});
                                         }}
                                     }});
                                 }} catch(e) {{
+                                    rendered = false;
                                     resolve({{ success: false, error: String(e) }});
                                 }}
                             }}
 
-                            if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
+                            window.__cfAtfTurnstileLoaded = function() {{
+                                doRender();
+                            }};
+
+                            if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                                doRender();
+                            }} else {{
                                 const s = document.createElement('script');
-                                s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                                s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=__cfAtfTurnstileLoaded';
                                 s.async = true;
                                 s.defer = true;
-                                s.onload = () => {{ doRender(); }};
+                                s.onload = () => {{
+                                    if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                                        doRender();
+                                    }}
+                                }};
                                 document.head.appendChild(s);
                                 let checkCount = 0;
-                                const waitInterval = setInterval(() => {{
+                                waitInterval = setInterval(() => {{
                                     checkCount++;
                                     if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                                        clearInterval(waitInterval);
                                         doRender();
-                                    }} else if (checkCount > 80) {{
+                                    }} else if (!rendered && checkCount > 200) {{
                                         clearInterval(waitInterval);
                                         resolve({{ success: false, error: 'turnstile_load_timeout' }});
                                     }}
                                 }}, 100);
-                            }} else {{
-                                doRender();
                             }}
-                            setTimeout(() => resolve({{ success: false, error: 'timeout_15s' }}), 15000);
+                            setTimeout(() => {{
+                                if (waitInterval) clearInterval(waitInterval);
+                                resolve({{ success: false, error: 'timeout_20s' }});
+                            }}, 20000);
                         }});
                     }}
                 """
