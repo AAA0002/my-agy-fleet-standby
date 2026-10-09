@@ -47,7 +47,12 @@ EXPLICIT_UNWANTED_USERNAMES = {
     "mininggram_channel",
     "ominiai",
     "ominiaipayout",
-    # Scam channels purged per user directive
+    # Discontinued & scam channels purged per user directive
+    "stoneswithestand",
+    "ailabrobotnews",
+    "ultrawalletofficial",
+    "ultrawallet",
+    "finvoraweb3",
     "trxpowerminingofficial",
     "trx_world_work",
     "trxpowermining",
@@ -71,7 +76,6 @@ EXPLICIT_UNWANTED_USERNAMES = {
 # Whitelist: Channels that must NEVER be left under any circumstance
 PROTECTED_USERNAMES = {
     "myagyai",
-    "stoneswithestand",
     "mrgminer",
     "mrgfun",
     "VictorsCompany",
@@ -99,6 +103,10 @@ def is_protected(channel_name: str, username: str, channel_id: int) -> bool:
 async def clean_account(acc_index: int, acc: dict, total_count: int = 18):
     name = acc.get("name", f"Account #{acc_index+1}")
     uid = str(acc.get("user_id"))
+    if acc.get("dead_bots_purged_v2"):
+        print(f"[{acc_index+1}/{total_count}] Skipping {name} (Already purged dead bots & channels v2)")
+        return 0
+
     sess_str = acc.get("session_string") or acc.get("session")
     if not sess_str:
         print(f"[{acc_index+1}/{total_count}] Skipping {name} (No session string)")

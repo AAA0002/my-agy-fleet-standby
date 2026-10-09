@@ -46,21 +46,18 @@ CF_NODES = [
     "https://restore-agy.aaaai.workers.dev"
 ]
 
-# 5 Active Legitimate Fleet Bots & Referral Codes
-STONES_BOT = "stoneswithestand_bot"
+# 4 Active Legitimate Fleet Bots & Referral Codes
 MRG_BOT = "mrgminerbot"
 ATF_BOT = "ATF_AIRDROP_bot"
 VICTORS_BOT = "VictorsCompanybot"
 VYRO_BOT = "vyrodrop_bot"
 
-STONES_REF = "r6727787768"
 MRG_REF = "ref_IRN1G3XD"
 ATF_REF = "6727787768"
 VICTORS_REF = "ref_A20AA96F18"
 VYRO_REF = "ref_myFjrqqE4WN_"
 
 MANDATORY_SPONSOR_CHANNELS = [
-    "stoneswithestand",
     "mrgminer", "mrgwithdrawal", "DurovKidney",
     "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor",
     "vyrodrop",
@@ -276,13 +273,7 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
 
         tokens = {}
 
-        # 1. Stones Miners
-        tok = await extract_bot_webapp_token(cl, STONES_BOT, default_url="https://app.stoneswithestand.my.id/", candidate_short_names=["app", "miniapp"])
-        if tok:
-            tokens["stones_init_data"] = tok
-            print(f"  💎 Stones Miners: Collected")
-
-        # 2. MRG Miner
+        # 1. MRG Miner
         mrg_p = None if is_master else MRG_REF
         tok = await extract_bot_webapp_token(cl, MRG_BOT, start_param=mrg_p, default_url="https://app.mrgtoken.xyz/", candidate_short_names=["app", "miniapp"])
         if tok:

@@ -4,6 +4,32 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **💎 Permanent Purge of Stones Miners (@stoneswithestand_bot), 1-Time Userbot Sanitation & 4-Bot Fleet Consolidation**:
+  - **🚫 Full Eradication of Stones Miners Across Fleet Engine**:
+    * Permanently purged all routines, token extraction calls, referral bindings, EVM wallet bindings, and sponsor channel joins for `@stoneswithestand_bot` / `@stonesminers_bot` across `render_app_latest.py`, `render_standby_app.py`, and `refresh_cloud_tokens.py`.
+    * Removed Stones from `req_keys`, `is_token_bundle_stale()`, and Token Watchdog staleness checks. This prevents false token staleness alarms and redundant MTProto reconnects.
+    * Added `stoneswithestand_bot` to `FLEET_BANNED_SCAMMERS` and `stoneswithestand` to `SCAM_CHANNELS_TO_LEAVE`.
+    * Fleet is strictly consolidated to **4 Active Legitimate Bots**:
+      1. ⛏️ MRG Miner (`@mrgminerbot`)
+      2. 🪙 ATF Miner (`@ATF_AIRDROP_bot`)
+      3. 🏢 Victor's Company (`@VictorsCompanybot`)
+      4. 💧 VyroDrop (`@vyrodrop_bot`)
+  - **🔥 Deletion of Stones Dead Scripts & Template Files (>3.6 MB Purged)**:
+    * Executed `git rm` on `stones_captcha_templates.json` (3.56 MB of legacy image templates), `stones_captcha_solver.py` (26 KB), and `batch_stones_withdraw.py` (7 KB).
+    * Updated `backup_manager.py` and `clean_all_accounts_channels.py` to remove deleted files from disaster recovery archives and whitelists.
+  - **🛡️ Strict 1-Time Userbot Account Sanitation Protocol**:
+    * Implemented persistent 1-time guard: `if acc.get("dead_bots_purged_v2"): continue` in both `/api/channels/sync-and-verify` and `/api/cleanup-purged-bots-once`.
+    * Upon execution on each of the 18 Telegram user accounts:
+      - Blocks all discontinued/banned bots (`stoneswithestand_bot`, `AiLab_robot`, `UltrawalletTrade_Bot`, `FINVORAWeb3bot`, and legacy scammers).
+      - Deletes conversation history with `functions.messages.DeleteHistoryRequest(peer=..., max_id=0, just_clear=False, revoke=True)` and `client.delete_dialog(...)`.
+      - Leaves discontinued channels (`stoneswithestand`, `ailabrobotnews`, `ultrawalletofficial`, `ultrawallet`, `finvoraweb3`, etc.).
+      - Marks `dead_bots_purged_v2 = True` in memory, saves to `accounts.json`, and records key `fleet:purged_v2:{uid} = 1` in Upstash Redis.
+    * Guarantees dialog deletion runs **EXACTLY ONCE** per account, eliminating repetitive FloodWait rate limits and dual-IP session collisions.
+  - **🌐 Multi-Node Standby Deployments**:
+    * Pushed updated codebase (`app.py`) to `AAA0002/my-agy-fleet-standby` (commit `d1206ad9`) and `koramshah2/my-agy-fleet-standby` (commit `f2c44950`).
+    * Render Node 2 (Frankfurt: `dep-db4gfh49v7es73aiffkg`) and Node 3 (Oregon: `dep-db4gfhdg1s2s739bvm10`) deployments triggered.
+    * Maintained strict Zero Phone Load (Rule 4) and User Bot Immutability (Rule 1).
+
 - **🗑️ Permanent Purge of Removed Bots (@AiLab_robot, @UltrawalletTrade_Bot, @FINVORAWeb3bot) & Complete Deletion of 7 Dead Legacy Files**:
   - **🚫 Eradication of 3 Discontinued Bots from Fleet Engine**:
     * Permanently purged all routines, token extraction calls, referral bindings, and sponsor channel joins for `@AiLab_robot`, `@UltrawalletTrade_Bot`, and `@FINVORAWeb3bot` across `render_app_latest.py`, `render_standby_app.py`, `refresh_cloud_tokens.py`, and `clean_all_accounts_channels.py`.

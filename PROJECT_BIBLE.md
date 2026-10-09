@@ -1,5 +1,5 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
-> **Universal Onboarding, System Architecture, 5-Bot Fleet Engine & Operational Manual**
+> **Universal Onboarding, System Architecture, 4-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
 > *Last Updated: October 9, 2026*
 > *Classification: Mission-Critical Living Technical Documentation*
@@ -11,7 +11,7 @@
 If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a new session, or a human operator taking over this workspace, **read this entire document first**. It provides the complete picture of this project, how every component works, where every secret and service lives, and how to operate and extend it without breaking production.
 
 ### What is this Project?
-**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **18 Telegram accounts** (1 Master Account + 17 Worker Accounts) that continuously farm yield, satoshis, and tokens across **8 high-conviction legitimate Telegram WebApp Mini Apps** (all scammer bots purged and blacklisted), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin).
+**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **18 Telegram accounts** (1 Master Account + 17 Worker Accounts) that continuously farm yield, satoshis, and tokens across **4 high-conviction legitimate Telegram WebApp Mini Apps** (MRG Miner, ATF Miner, Victor's Company, VyroDrop — all scammer and discontinued bots purged and blacklisted), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin).
 
 ### The Golden Directives (Non-Negotiable Rules)
 1. **🛡️ Strict Project Isolation**: Everything relating to this project must remain strictly within this repository (`AAA0002/ATL`). **NEVER** touch, import, mix, or merge context from `@AAATelegramIdBot` (`AAA2743/AA`) or other external projects.
@@ -245,35 +245,35 @@ To prevent Sybil detection, anti-farming bans, and wallet clustering, each accou
 
 ---
 
-### 🤖 5. The Complete 5-Bot Fleet Catalog & Automation Matrix
+### 🤖 5. The Complete 4-Bot Fleet Catalog & Automation Matrix
 
 | # | Type | Bot Name | Telegram Handle | Backend URL / Host | Network | Core Farming Mechanism | Automated Side Tasks |
 |---|---|---|---|---|---|---|---|
-| **1** | **Type A** | **Stones Miners** | `@stonesminers_bot` | `https://app.stoneswithestand.my.id` | EVM / BSC | • `/api/claim`<br>• `/api/mining/start`<br>• **Telemetry:** `farmed (lvl: {lvl}, bal: {coins} STONES)` | • Daily Check-in (`/api/task/complete`)<br>• Stone Breaker Minigame (Capped 50/50 STONES/day)<br>• Hashrate Boost Challenge (+0.5 TH/s)<br>• Dynamic task discovery from `/api/state`<br>• Dedicated EVM wallet binding |
-| **2** | **Type A** | **MRG Miner** | `@mrg_miner_bot` | `https://mrg.up.railway.app` | TON | • `/api/user/claim-mining`<br>• **Telemetry:** `farmed (lvl: {lvl}, bal: {bal} MRG)` | • Link tasks with 15s human dwell<br>• **Autonomous Level Upgrader**: Auto-unlocks levels up to **Level 95+** (synchronized with `manualUnlockedLevel`)<br>• **Cryptographic TON Connect 2.0 Proof**: Full Ed25519 wallet ownership verification bound across all 18 accounts (`isTonConnected: True`)<br>• Accurate claim telemetry distinguishing human check challenge from completed claims<br>• Master referral commission & team bonus claims |
-| **3** | **Type A** | **ATF Miner** | `@atf_miner_bot` | `https://atfminers.asloni.online` | TON | • `?action=claim`<br>• `?action=start_mine`<br>• **Telemetry:** `farmed (lvl: {lvl}, bal: {bal} ATF)` | • **Automated Math Challenge Solver**: Solves arithmetic captcha<br>• Hashrate Boost (`?action=activate_boost`)<br>• 8x Cooldown Tasks (YouTube, Twitter, Channel joins)<br>• Dedicated TON wallet sync (`?action=sync_wallet`)<br>• Team wallet claims |
-| **4** | **Type A** | **Victor's Company** | `@VictorsCompanybot` | `https://server.victors.company/api` | TON / GameFi | • `/api/mining/claim`<br>• `/api/arcade/mine/start` + `dig` + `end`<br>• **Telemetry:** `farmed (lvl: {lvl}, bal: {bal})` | • **Cloudflare Turnstile Protected**: SiteKey `0x4AAAAAAFD0KRgPRFVwDvgn`<br>• Solved via 100% Cloud Xvfb Headful Browser (`mrg_turnstile_solver.py`)<br>• Submits `turnstileToken` to `POST /api/auth/login` with `startParam: ref_A20AA96F18` -> returns `humanPass`<br>• **Mandatory Header**: All subsequent API calls require `x-human-pass: <humanPass>`<br>• **Recruit Qualification**: Sub-accounts connect dedicated TON wallet (`POST /api/wallet/connect`) and claim task `connect-wallet` (`POST /api/tasks/claim`). This unlocks Level 1 Miner (+100 V/day) and qualifies recruit!<br>• **Master Bonus Sweep**: Master sweeps recruitment hiring bonus (+100 V per recruit) via `POST /api/referral/claim-bonus` and mining commissions via `POST /api/referral/claim-commission`<br>• Daily check-in (`/api/checkin`) & tutorial completion (`/api/me/tutorial`)<br>• ⚠️ **Paywall Audit**: Frontend requires 0.05 TON transfer to treasury `UQD4t3lRBgtAg7U_dYlTAIYjqIPXRT6zHqAvoGgqTvYYWnRv` before withdrawals |
-| **5** | **Type A** | **VyroDrop** | `@vyrodrop_bot` | `https://vyro.run.place/api` | VYRO / DEX | • `/api/mining/claim`<br>• `/api/mining/start`<br>• **Telemetry:** `farmed (lvl: {lvl}, speed: {spd})` | • Referral binding to `ref_myFjrqqE4WN_` (`referrerUserId: 738aee88-2e37-4a70-8b3b-dd1819395130`)<br>• **Wallet Requirement**: `/api/mining/start` requires connected TON wallet (`409 MINING_WALLET_REQUIRED`). Referrals do not activate until invited account connects TON wallet and starts first mining session.<br>• **Wallet Onboarding Turnstile**: SiteKey `0x4AAAAAAFMSnxZaI2W86NOg` (`action: wallet_onboarding`) solved via 100% Cloud Xvfb Headful Browser<br>• **TonConnect 2.0 Proof**: Signs challenge with dedicated TON keypair from `fleet_ton_wallets.json` and submits to `/api/wallet/connect`<br>• Automatic mining cycle start (`/api/mining/start`) and yield claims (`/api/mining/claim`)<br>• **Master Sweep**: Master Account claims referral commissions via `POST /api/referrals/claim` |
+| **1** | **Type A** | **MRG Miner** | `@mrg_miner_bot` | `https://mrg.up.railway.app` | TON | • `/api/user/claim-mining`<br>• **Telemetry:** `farmed (lvl: {lvl}, bal: {bal} MRG)` | • Link tasks with 15s human dwell<br>• **Autonomous Level Upgrader**: Auto-unlocks levels up to **Level 95+** (synchronized with `manualUnlockedLevel`)<br>• **Cryptographic TON Connect 2.0 Proof**: Full Ed25519 wallet ownership verification bound across all 18 accounts (`isTonConnected: True`)<br>• Accurate claim telemetry distinguishing human check challenge from completed claims<br>• Master referral commission & team bonus claims |
+| **2** | **Type A** | **ATF Miner** | `@atf_miner_bot` | `https://atfminers.asloni.online` | TON | • `?action=claim`<br>• `?action=start_mine`<br>• **Telemetry:** `farmed (lvl: {lvl}, bal: {bal} ATF)` | • **Automated Math Challenge Solver**: Solves arithmetic captcha<br>• Hashrate Boost (`?action=activate_boost`)<br>• 8x Cooldown Tasks (YouTube, Twitter, Channel joins)<br>• Dedicated TON wallet sync (`?action=sync_wallet`)<br>• Team wallet claims |
+| **3** | **Type A** | **Victor's Company** | `@VictorsCompanybot` | `https://server.victors.company/api` | TON / GameFi | • `/api/mining/claim`<br>• `/api/arcade/mine/start` + `dig` + `end`<br>• **Telemetry:** `farmed (lvl: {lvl}, bal: {bal})` | • **Cloudflare Turnstile Protected**: SiteKey `0x4AAAAAAFD0KRgPRFVwDvgn`<br>• Solved via 100% Cloud Xvfb Headful Browser (`mrg_turnstile_solver.py`)<br>• Submits `turnstileToken` to `POST /api/auth/login` with `startParam: ref_A20AA96F18` -> returns `humanPass`<br>• **Mandatory Header**: All subsequent API calls require `x-human-pass: <humanPass>`<br>• **Recruit Qualification**: Sub-accounts connect dedicated TON wallet (`POST /api/wallet/connect`) and claim task `connect-wallet` (`POST /api/tasks/claim`). This unlocks Level 1 Miner (+100 V/day) and qualifies recruit!<br>• **Master Bonus Sweep**: Master sweeps recruitment hiring bonus (+100 V per recruit) via `POST /api/referral/claim-bonus` and mining commissions via `POST /api/referral/claim-commission`<br>• Daily check-in (`/api/checkin`) & tutorial completion (`/api/me/tutorial`)<br>• ⚠️ **Paywall Audit**: Frontend requires 0.05 TON transfer to treasury `UQD4t3lRBgtAg7U_dYlTAIYjqIPXRT6zHqAvoGgqTvYYWnRv` before withdrawals |
+| **4** | **Type A** | **VyroDrop** | `@vyrodrop_bot` | `https://vyro.run.place/api` | VYRO / DEX | • `/api/mining/claim`<br>• `/api/mining/start`<br>• **Telemetry:** `farmed (lvl: {lvl}, speed: {spd})` | • Referral binding to `ref_myFjrqqE4WN_` (`referrerUserId: 738aee88-2e37-4a70-8b3b-dd1819395130`)<br>• **Wallet Requirement**: `/api/mining/start` requires connected TON wallet (`409 MINING_WALLET_REQUIRED`). Referrals do not activate until invited account connects TON wallet and starts first mining session.<br>• **Wallet Onboarding Turnstile**: SiteKey `0x4AAAAAAFMSnxZaI2W86NOg` (`action: wallet_onboarding`) solved via 100% Cloud Xvfb Headful Browser<br>• **TonConnect 2.0 Proof**: Signs challenge with dedicated TON keypair from `fleet_ton_wallets.json` and submits to `/api/wallet/connect`<br>• Automatic mining cycle start (`/api/mining/start`) and yield claims (`/api/mining/claim`)<br>• **Master Sweep**: Master Account claims referral commissions via `POST /api/referrals/claim` |
 
 ---
 
 ### 🚫 Complete Eradication of Scammer & Removed Bots & Channels (October 8–9, 2026)
-Following operator directive and verified evidence of fraudulent schemes or obsolescence, **14 bots and all their associated channels/groups were permanently purged from all fleet code routines, blacklisted, blocked, dialogs erased with revoke=True across all 18 accounts, and all related channels/groups abandoned**:
+Following operator directive and verified evidence of fraudulent schemes or obsolescence, **15 bots and all their associated channels/groups were permanently purged from all fleet code routines, blacklisted, blocked, dialogs erased with revoke=True across all 18 accounts, and all related channels/groups abandoned**:
 
-1. **AI Lab Robot** (`@AiLab_robot` / channels: `@ailabrobotnews`): Purged permanently per operator directive; all token extraction, routine farming, and whitelist channels removed.
-2. **UltraWallet** (`@UltrawalletTrade_Bot` / channels: `@ultrawalletofficial`, `@ultrawallet`): Purged permanently per operator directive; Firebase and task loops eradicated.
-3. **FINVORA Web3** (`@FINVORAWeb3bot` / channels: `@finvoraweb3`): Purged permanently per operator directive; Railway WebApp and bonus routines deleted.
-4. **Ainovum AI** (`@ainovum_bot` / channels: `@novum_en`, `@ainovum_channel`): Fraudulent non-paying backend with fake yield claims.
-5. **Tensor Mining Robot** (`@tensormining_bot`, `TensorMiningRobot` / channel: `https://t.me/TensorCoinNews`): Unbacked fake ORCA token, sybil baiting.
-6. **Ton Trader AI** (`@TonTraderAIBot`, `@tontrader_bot` / channels: `@tontraderai_official`, `@tontraderai_group`): Fake algorithmic yield simulation.
-7. **TAC Airdrop** (`@tacairdrop_bot` / channels: `@tacairdrop`, `@tacairdrop_official`, `@tac_airdrop`): Fake mining contract, deceptive advertising.
-8. **USDT QUAD** (`@usdtquadbot` / channel: `@usdtquad_channel`): Fraudulent cloud hashrate simulation, fake investment scheme.
-9. **Apex Mining** (`@ApxMinerBot`, `@apexminer_bot` / channels: `@ApexMiner_Official`, `@ApexMinerGroup`): Unbacked token, suspicious anti-sybil bait.
-10. **Ominix AI** (`@OminixAiBot`): Phishing & credential harvester (previously reported to Telegram Anti-Scam).
-11. **ART Airdrop** (`@ART_AIRDROP_BOT`, `@artairdrop_bot` / channels: `@ART_AIRDROP`, `@artairdrop`): Fake yield simulation with artificial paywalls.
-12. **TRX Power Mining** (`@trxpowermining_bot` / channels: `@trxpowerminingOfficial`, `@TRX_WORLD_WORK`, `@trxpowermining`): Unregulated fake cloud hashing Ponzi.
-13. **Bitcoin Cloud Miners** (`@BitcoinCloudMinersBot`, `@Bitcoin_Cloud_Mining_bot` / channels: private links): Fake cloud mining tap bot.
-14. **TurboGram V1** (`@TurboGramV1_bot` / channels: `@TurboGramAnnouncements`, `@TurboGramPayment`): Permanently purged and blacklisted, dialog history revoked and erased across all 18 accounts.
+1. **Stones Miners** (`@stonesminers_bot` / `@stoneswithestand_bot` / channels: `@stoneswithestand`): Purged permanently per operator directive; all token extraction, routine farming, captcha solver scripts/templates (`stones_captcha_solver.py`, `stones_captcha_templates.json`, `batch_stones_withdraw.py`), and whitelist channels removed.
+2. **AI Lab Robot** (`@AiLab_robot` / channels: `@ailabrobotnews`): Purged permanently per operator directive; all token extraction, routine farming, and whitelist channels removed.
+3. **UltraWallet** (`@UltrawalletTrade_Bot` / channels: `@ultrawalletofficial`, `@ultrawallet`): Purged permanently per operator directive; Firebase and task loops eradicated.
+4. **FINVORA Web3** (`@FINVORAWeb3bot` / channels: `@finvoraweb3`): Purged permanently per operator directive; Railway WebApp and bonus routines deleted.
+5. **Ainovum AI** (`@ainovum_bot` / channels: `@novum_en`, `@ainovum_channel`): Fraudulent non-paying backend with fake yield claims.
+6. **Tensor Mining Robot** (`@tensormining_bot`, `TensorMiningRobot` / channel: `https://t.me/TensorCoinNews`): Unbacked fake ORCA token, sybil baiting.
+7. **Ton Trader AI** (`@TonTraderAIBot`, `@tontrader_bot` / channels: `@tontraderai_official`, `@tontraderai_group`): Fake algorithmic yield simulation.
+8. **TAC Airdrop** (`@tacairdrop_bot` / channels: `@tacairdrop`, `@tacairdrop_official`, `@tac_airdrop`): Fake mining contract, deceptive advertising.
+9. **USDT QUAD** (`@usdtquadbot` / channel: `@usdtquad_channel`): Fraudulent cloud hashrate simulation, fake investment scheme.
+10. **Apex Mining** (`@ApxMinerBot`, `@apexminer_bot` / channels: `@ApexMiner_Official`, `@ApexMinerGroup`): Unbacked token, suspicious anti-sybil bait.
+11. **Ominix AI** (`@OminixAiBot`): Phishing & credential harvester (previously reported to Telegram Anti-Scam).
+12. **ART Airdrop** (`@ART_AIRDROP_BOT`, `@artairdrop_bot` / channels: `@ART_AIRDROP`, `@artairdrop`): Fake yield simulation with artificial paywalls.
+13. **TRX Power Mining** (`@trxpowermining_bot` / channels: `@trxpowerminingOfficial`, `@TRX_WORLD_WORK`, `@trxpowermining`): Unregulated fake cloud hashing Ponzi.
+14. **Bitcoin Cloud Miners** (`@BitcoinCloudMinersBot`, `@Bitcoin_Cloud_Mining_bot` / channels: private links): Fake cloud mining tap bot.
+15. **TurboGram V1** (`@TurboGramV1_bot` / channels: `@TurboGramAnnouncements`, `@TurboGramPayment`): Permanently purged and blacklisted, dialog history revoked and erased across all 18 accounts.
 
 ---
 
@@ -327,10 +327,10 @@ During thorough auditing of `/api/farm/cloud-all`, an investigation revealed why
 ## ⚡ 6.2 Dual-Type Bot Architecture, Channel Engine & Dialog Purge Protocol (October 8, 2026)
 
 ### 1. The Dual-Type Bot & Channel Architecture
-The fleet's 5 active high-conviction legitimate bots and channels are fundamentally divided into two technical architectures:
+The fleet's 4 active high-conviction legitimate bots and channels are fundamentally divided into two technical architectures:
 
-#### Type A: WebApp Mini-Apps / REST Bots (5 Genuine Bots)
-- **Bots Included**: Stones Miners (`@stonesminers_bot` / `@stoneswithestand_bot`), MRG Miner (`@mrg_miner_bot` / `@mrgminerbot`), ATF Miner (`@atf_miner_bot` / `@ATF_AIRDROP_bot`), Victor's Company (`@VictorsCompanybot`), VyroDrop (`@vyrodrop_bot`).
+#### Type A: WebApp Mini-Apps / REST Bots (4 Genuine Bots)
+- **Bots Included**: MRG Miner (`@mrg_miner_bot` / `@mrgminerbot`), ATF Miner (`@atf_miner_bot` / `@ATF_AIRDROP_bot`), Victor's Company (`@VictorsCompanybot`), VyroDrop (`@vyrodrop_bot`).
 - **Mechanism**:
   - Authenticated via Telegram WebApp `initData` (HMAC SHA-256 query string signed by Telegram bot tokens) or Bearer JWT tokens.
   - Executed 100% via asynchronous HTTP REST calls with zero MTProto connection overhead.
@@ -339,17 +339,18 @@ The fleet's 5 active high-conviction legitimate bots and channels are fundamenta
 
 #### Type B: MTProto Dialog Purge, Token Collector & Sponsor Channel Sentinel Engine
 - **Core Operations**:
-  1. **Permanent Dialog Deletion & Chat Purge Protocol**:
-     - *Why Bots Remained in Telegram Interface*: Previously, calling `contacts.BlockRequest` only blocked future messages from bots; Telegram intentionally keeps chat threads visible in the user's chat list.
-     - *The Complete Eradication Fix*: Implemented `functions.messages.DeleteHistoryRequest(peer=..., max_id=0, just_clear=False, revoke=True)` and `client.delete_dialog(...)`. This permanently purges conversation history from Telegram servers and deletes the chat tile from the Telegram client interface across all accounts.
-     - *Deep Dialog Scanner*: Sweeps up to 200 dialogs per account to block and delete dialogs for any blacklisted bots (`AiLab_robot`, `UltrawalletTrade_Bot`, `FINVORAWeb3bot`, `TurboGramV1_bot`, `trxpowermining_bot`, `BitcoinCloudMinersBot`, `ART_AIRDROP_BOT`, `ainovum_bot`, `tensormining_bot`, `TonTraderAIBot`, `tacairdrop_bot`, `usdtquadbot`, `ApxMinerBot`, `OminixAiBot`) and leave/delete dialogs for scam channels (`ailabrobotnews`, `ultrawalletofficial`, `finvoraweb3`, `TurboGramAnnouncements`, `TurboGramPayment`, `trxpowerminingofficial`, `trx_world_work`, `trxpowermining`, `art_airdrop`, `tensorcoinnews`, etc.).
+  1. **Strict 1-Time Userbot Account Sanitation Protocol**:
+     - *Operator Directive*: Sanitation (blocking discontinued bots, deleting conversation histories with `revoke=True`, and leaving discontinued channels) must execute **EXACTLY ONCE** per account, never repeated in routine farming cycles.
+     - *Implementation*: Guarded by `acc.get("dead_bots_purged_v2")` and Upstash Redis key `fleet:purged_v2:<uid> = 1`. Once processed, subsequent cycles permanently skip the intensive dialog deletion flow, preventing Telegram API FloodWait penalties.
+     - *Purged Bot Targets*: `@stoneswithestand_bot`, `@AiLab_robot`, `@UltrawalletTrade_Bot`, `@FINVORAWeb3bot`, `@TurboGramV1_bot`, `@trxpowermining_bot`, and all legacy scammers.
+     - *Purged Channel Targets*: `stoneswithestand`, `ailabrobotnews`, `ultrawalletofficial`, `ultrawallet`, `finvoraweb3`, `TurboGramAnnouncements`, `trxpowerminingofficial`, etc.
   2. **Automated Sponsor Channel & Community Subscription Engine**:
      - Automatically joins and verifies all legitimate sponsor channels:
-       `stoneswithestand`, `mrgminer`, `mrgfun`, `VictorsCompany`, `vyrodrop`, `atfminers`.
-     - **Unblock Sentinel**: Automatically unblocks the 5 legitimate fleet bots across all accounts.
+       `mrgminer`, `mrgfun`, `VictorsCompany`, `vyrodrop`, `atfminers`.
+     - **Unblock Sentinel**: Automatically unblocks the 4 legitimate fleet bots across all accounts.
      - **Mute Sentinel**: Automatically mutes notifications across all channels, supergroups, and bots (`UpdateNotifySettingsRequest`) to ensure 0 notification noise.
      - **Telegram 500-Channel Cap Guard**: Audits total dialogs and prunes non-essential spam if dialog count exceeds 400.
-     - **Cloud Endpoints**: `POST/GET /api/channels/sync-and-verify` and `GET /api/channels/status` on Render Standby Node 2.
+     - **Cloud Endpoints**: `POST/GET /api/channels/sync-and-verify`, `POST/GET /api/cleanup-purged-bots-once`, and `GET /api/channels/status` on Render Standby Node 2.
 
 ### 2. Elimination of Fake / Dummy Farming Reporting
 - **The Problem**: Previous iterations had legacy fallbacks where missing tokens or failed API calls returned `farmed` or `ok` to prevent UI pipeline breaks, masking genuine token expirations or auth errors.
