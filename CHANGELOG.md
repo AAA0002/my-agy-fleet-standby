@@ -4,7 +4,20 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-- **🌟 4-Bot Fleet Parity Across All 5 Cloudflare Edge Nodes & ATF Turnstile Robust Hook Architecture**:
+- **🛡️ Comprehensive 4-Bot Fleet Farm Audit, CSP Bypass & Resilient Script Injection Engine**:
+  - **🔍 Live Fleet Audit Engine Overhaul (`audit_bots_and_sidetasks.py`)**:
+    * Cleaned script to focus strictly on the 4 active legitimate bots (1. MRG Miner, 2. ATF Miner, 3. Victor's Company, 4. VyroDrop), eliminating dead bot references.
+    * Fixed `NameError: name 'UPSTASH_URL' is not defined` bug during Victor's Company `humanPass` cache retrieval by properly exporting top-level Upstash credentials.
+    * Fixed `ValueError: Unknown format code 'f' for object of type 'str'` crash by defensively typecasting `claimedAmount` and `mined_balance` to float before formatted string interpolation.
+  - **⚡ Turnstile Solver CSP Bypass & Robust Script Injection (`mrg_turnstile_solver.py`)**:
+    * Added `bypass_csp=True` across Victor's Company, VyroDrop, and ATF browser contexts, defeating strict Content-Security-Policy headers that blocked injected helper scripts.
+    * Added explicit `s.onload` callback execution and interval polling fallback for Cloudflare Turnstile script loading across all 4 bots.
+    * Updated Victor's Company programmatic render from `appearance: 'interaction-only'` to `appearance: 'always'`, ensuring instant Turnstile widget availability and eliminating 55s timeout drops.
+  - **🔒 Resilient Token Merge Engine (`refresh_cloud_tokens.py`)**:
+    * Updated `sync_tokens_to_edge_and_upstash` to fetch existing account tokens from Upstash Redis prior to writing, merging keys safely so temporary single-bot timeouts never wipe existing tokens.
+  - **🖥️ Render Cloud Engine Sync & Automated Deployment**:
+    * Enhanced `_farm_atf` balance and level parsing across `render_standby_app.py` and `render_app_latest.py` to inspect both root response and nested `user` payloads with safe float parsing.
+    * Synchronized changes across both standby repositories (`AAA0002/my-agy-fleet-standby` commit `d8704f7d` and `koramshah2/my-agy-fleet-standby` commit `4d996154`), triggering live deployments on Render Node 2 and Node 3.
   - **📱 User Bot (@AAAPREMIUMAPPSbot) Complete 4-Bot Synchronization**:
     * Updated official bot description, short description, and menu commands across all 5 Cloudflare Worker nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) to feature exclusively the 4 active legitimate bots: ⚡ MRG Miner, 🪙 ATF Miner, 🏢 Victor's Company, and 💧 VyroDrop.
     * Completely removed all lingering references, links, and guides for legacy/discontinued bots (`@stoneswithestand_bot`, `@AiLab_robot`, `@UltrawalletTrade_Bot`, `@FINVORAWeb3bot`) from `/pools`, `/help`, `/start`, Ari AI Copilot system prompt, and fallback replies.

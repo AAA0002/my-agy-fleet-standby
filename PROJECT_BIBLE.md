@@ -55,7 +55,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 │  │  - Runs Telethon in the cloud          │  │                                      │  │
 │  │  - Connects 18 Telegram sessions       │  │  Role: 24/7 Edge Autonomous Farming   │  │
 │  │  - Extracts fresh 24h WebApp initData  │  │  - Runs cron every 15 mins           │  │
-│  │  - Syncs tokens to D1, Upstash & KV     │  │  - Farms all 5 legitimate bots        │  │
+│  │  - Syncs tokens to D1, Upstash & KV     │  │  - Farms all 4 legitimate bots        │  │
 │  │  - Endpoint: POST /collect-tokens      │  │  - Executes side tasks & check-ins   │  │
 │  └───────────────────┬────────────────────┘  │  - Fast, serverless, zero ban risk   │  │
 │                      │                       │  - Propagates cached Turnstile passes │  │
@@ -225,7 +225,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
    - Render uses the 18 Telegram Telethon session strings stored in `accounts.json` to connect to Telegram via MTProto.
    - For each bot, it calls `RequestWebViewRequest` or `RequestAppWebViewRequest` to obtain fresh WebApp URLs and extract fresh `initData`.
    - Render syncs these brand-new tokens into Cloudflare D1 SQL (`fleet_tokens`), Upstash Redis (`fleet:tokens:<uid>`), and Cloudflare KV.
-    - Cloudflare Workers Edge Mesh reads these fresh tokens directly from strongly consistent D1 SQL and farms all 5 legitimate bots continuously every 15 minutes.
+   - Cloudflare Workers Edge Mesh reads these fresh tokens directly from strongly consistent D1 SQL and farms all 4 legitimate bots continuously every 15 minutes.
 
 ---
 

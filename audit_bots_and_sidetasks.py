@@ -6,21 +6,24 @@ import asyncio
 import aiohttp
 import re
 import urllib.parse
+import urllib.request
+import uuid
 
 from dotenv import load_dotenv
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
+UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://relaxing-starfish-285827.upstash.io"
+UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw"
+
 def load_tokens_db():
     tokens = {}
-    upstash_url = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://relaxing-starfish-285827.upstash.io"
-    upstash_token = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw"
-    if upstash_url and upstash_token:
+    if UPSTASH_URL and UPSTASH_TOKEN:
         try:
             req = urllib.request.Request(
-                f"{upstash_url}/keys/fleet:tokens:*",
-                headers={"Authorization": f"Bearer {upstash_token}"}
+                f"{UPSTASH_URL}/keys/fleet:tokens:*",
+                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
             )
             with urllib.request.urlopen(req, timeout=8) as resp:
                 data = json.loads(resp.read().decode())
@@ -28,8 +31,8 @@ def load_tokens_db():
                 for k in keys:
                     uid = k.split(":")[-1]
                     r_k = urllib.request.Request(
-                        f"{upstash_url}/get/{k}",
-                        headers={"Authorization": f"Bearer {upstash_token}"}
+                        f"{UPSTASH_URL}/get/{k}",
+                        headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
                     )
                     try:
                         with urllib.request.urlopen(r_k, timeout=4) as kr:
@@ -43,11 +46,11 @@ def load_tokens_db():
         except Exception as e:
             print(f"⚠️ Upstash fleet:tokens:* fetch note: {e}")
 
-    if len(tokens) < 18 and upstash_url and upstash_token:
+    if len(tokens) < 18 and UPSTASH_URL and UPSTASH_TOKEN:
         try:
             req = urllib.request.Request(
-                f"{upstash_url}/get/fleet_miniapp_tokens",
-                headers={"Authorization": f"Bearer {upstash_token}"}
+                f"{UPSTASH_URL}/get/fleet_miniapp_tokens",
+                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
             )
             with urllib.request.urlopen(req, timeout=8) as resp:
                 data = json.loads(resp.read().decode())
@@ -69,6 +72,21 @@ with open(os.path.join(BASE_DIR, "accounts.json"), "r") as f:
 
 MASTER_UID = "6727787768"
 
+def solve_atf_math(question_text: str) -> str:
+    """Evaluates arithmetic questions like 'What is 12 + 15?' safely."""
+    try:
+        clean = re.sub(r"[^0-9\+\-\*\/\(\)\s]", "", question_text)
+        parts = clean.split()
+        if len(parts) >= 3:
+            num1, op, num2 = parts[0], parts[1], parts[2]
+            if op == "+": return str(int(num1) + int(num2))
+            if op == "-": return str(int(num1) - int(num2))
+            if op == "*": return str(int(num1) * int(num2))
+            if op == "/": return str(int(num1) // int(num2))
+    except Exception:
+        pass
+    return "0"
+
 async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
     is_owner = (str(uid) == MASTER_UID)
     report = {
@@ -84,52 +102,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
     }
 
     async with aiohttp.ClientSession(headers=headers) as session:
-        # 1. Stones Miners
-        stones_init = tokens.get("stones_init_data")
-        if stones_init:
-            s_h = {**headers, "Origin": "https://app.stoneswithestand.my.id", "Referer": "https://app.stoneswithestand.my.id/"}
-            b_rep = {"core": {}, "side_tasks": []}
-            try:
-                # Core: claim & start
-                async with session.post("https://app.stoneswithestand.my.id/api/claim", json={"initData": stones_init}, headers=s_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    cl_data = await r.json() if r.status == 200 else {}
-                    b_rep["core"]["claim"] = f"HTTP {r.status} - {cl_data.get('message', 'ok')}"
-                async with session.post("https://app.stoneswithestand.my.id/api/mining/start", json={"initData": stones_init}, headers=s_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    st_data = await r.json() if r.status == 200 else {}
-                    b_rep["core"]["start_mining"] = f"HTTP {r.status} - {st_data.get('message', 'started')}"
-
-                # Side Task: Daily checkin
-                async with session.post("https://app.stoneswithestand.my.id/api/task/complete", json={"initData": stones_init, "slug": "daily_checkin"}, headers=s_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    chk_d = await r.json() if r.status == 200 else {}
-                    b_rep["side_tasks"].append(f"Daily Check-in: HTTP {r.status} ({chk_d.get('message', 'done')})")
-
-                # Side Task: Stone Breaker mini-game status
-                async with session.post("https://app.stoneswithestand.my.id/api/sb/status", json={"initData": stones_init}, headers=s_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    if r.status == 200:
-                        sbd = await r.json()
-                        h_got, h_cap = sbd.get("hour_got", 0), sbd.get("hourly_cap", 10)
-                        d_got, d_cap = sbd.get("day_got", 0), sbd.get("daily_cap", 100)
-                        b_rep["side_tasks"].append(f"Stone Breaker Minigame: Hour {h_got}/{h_cap} STONES, Day {d_got}/{d_cap} STONES")
-
-                # Side Task: Mining Boost (+0.5 TH/s)
-                async with session.post("https://app.stoneswithestand.my.id/api/ad/boost/challenge", json={"initData": stones_init}, headers=s_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    if r.status == 200:
-                        abcd = await r.json()
-                        cid = abcd.get("challenge", {}).get("challenge_id")
-                        b_rep["side_tasks"].append(f"Hashrate Boost (+0.5 TH/s): Challenge ID {cid or 'Active'}")
-
-                # State & balance
-                async with session.post("https://app.stoneswithestand.my.id/api/state", json={"initData": stones_init}, headers=s_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    if r.status == 200:
-                        std = await r.json()
-                        bal = std.get("user", {}).get("balance", 0)
-                        hr = std.get("user", {}).get("hashrate", 0)
-                        b_rep["core"]["balance"] = f"{bal:.2f} STONES (Hashrate: {hr} TH/s)"
-            except Exception as e:
-                b_rep["error"] = str(e)
-            report["bots"]["1. Stones Miners"] = b_rep
-
-        # 2. MRG Miner
+        # 1. MRG Miner
         mrg_init = tokens.get("mrg_init_data")
         if mrg_init:
             m_h = {**headers, "Origin": "https://app.mrgtoken.xyz", "Referer": "https://app.mrgtoken.xyz/"}
@@ -143,7 +116,7 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                     except Exception:
                         pass
                     if r.status == 200 and cld.get("success"):
-                        b_rep["core"]["claim"] = f"Auto-Claimed {cld.get('claimedAmount', 0):.2f} MRG ✅"
+                        b_rep["core"]["claim"] = f"Auto-Claimed {float(cld.get('claimedAmount', 0)):.2f} MRG ✅"
                     elif r.status in (400, 403) or cld.get("code") == "HUMAN_CHECK_REQUIRED" or "human" in json.dumps(cld).lower():
                         b_rep["core"]["claim"] = "Accumulating (Headful Cloud Turnstile Active) 🛡️"
                     else:
@@ -171,60 +144,22 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                         if is_owner:
                             async with session.post("https://mrg.up.railway.app/api/user/claim-commission", json={"initData": mrg_init}, headers=m_h, timeout=aiohttp.ClientTimeout(total=8)) as cr:
                                 b_rep["side_tasks"].append(f"Master Referral Commission Claim: HTTP {cr.status}")
-            except Exception as e:
-                b_rep["error"] = str(e)
-            report["bots"]["2. MRG Miner"] = b_rep
-
-        # 3. AI Lab Robot
-        ailab_init = tokens.get("ailab_init_data")
-        if ailab_init:
-            ai_h = {**headers, "Content-Type": "application/json", "Origin": "https://ailab-agent.online", "Referer": "https://ailab-agent.online/"}
-            b_rep = {"core": {}, "side_tasks": []}
-            try:
-                async with session.post("https://api.ailab-agent.online/api/v1/users/auth/login", json={"user": ailab_init}, headers=ai_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    if r.status == 200:
-                        lData = await r.json()
-                        tok = lData.get("result", {}).get("bearer") or lData.get("user_info", {}).get("session_id")
-                        u_info = lData.get("user_info", {})
-                        bal = u_info.get("balance", 0)
-                        hashes = u_info.get("hashes", 0)
-                        b_rep["core"]["login"] = f"Authenticated (UID: {u_info.get('telegram_id', uid)})"
-                        b_rep["core"]["balance"] = f"{hashes} Hashes • ${bal} USD"
-                        if tok:
-                            auth_h = {**ai_h, "Authorization": f"Bearer {tok}"}
-                            # Check miner state
-                            async with session.get("https://api.ailab-agent.online/api/v1/users/miner", headers=auth_h, timeout=aiohttp.ClientTimeout(total=8)) as mr:
-                                if mr.status == 200:
-                                    md = await mr.json()
-                                    is_run = md.get("result", {}).get("is_running", False)
-                                    b_rep["side_tasks"].append(f"Mining Session: {'Active 🟢' if is_run else 'Idle/Claim Ready ⚡'}")
                     else:
-                        b_rep["core"]["login"] = f"HTTP {r.status}"
+                        b_rep["core"]["balance"] = f"HTTP {r.status}"
             except Exception as e:
                 b_rep["error"] = str(e)
-            report["bots"]["3. AI Lab Robot"] = b_rep
+            report["bots"]["1. MRG Miner"] = b_rep
 
-        # 4. UltraWallet
-        ultra_init = tokens.get("ultrawallet_init_data")
-        if ultra_init:
-            uw_h = {**headers, "Content-Type": "application/json", "Origin": "https://wallet.trxvault.top", "Referer": "https://wallet.trxvault.top/"}
-            b_rep = {"core": {}, "side_tasks": []}
-            try:
-                async with session.post("https://wallet.trxvault.top/api/telegramLogin", json={"initData": ultra_init, "refBy": "6727787768"}, headers=uw_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    if r.status == 200:
-                        ud = await r.json()
-                        b_rep["core"]["login"] = f"HTTP {r.status} - Session Active ✅"
-                        b_rep["side_tasks"].append("Multi-Chain Mining: Running 24/7 in Cloud")
-                    else:
-                        b_rep["core"]["login"] = f"HTTP {r.status}"
-            except Exception as e:
-                b_rep["error"] = str(e)
-            report["bots"]["4. UltraWallet"] = b_rep
-
-        # 5. ATF Miner
+        # 2. ATF Miner
         atf_init = tokens.get("atf_init_data")
         if atf_init:
-            atf_h = {**headers, "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest", "Origin": "https://atfminers.asloni.online", "Referer": "https://atfminers.asloni.online/miner/index.html"}
+            atf_h = {
+                **headers,
+                "Content-Type": "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+                "Origin": "https://atfminers.asloni.online",
+                "Referer": "https://atfminers.asloni.online/miner/index.html"
+            }
             b_rep = {"core": {}, "side_tasks": []}
             try:
                 payload = {
@@ -237,7 +172,11 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                 async with session.post(f"https://atfminers.asloni.online/miner/index.php?action=login&t={int(time.time()*1000)}", json=payload, headers=atf_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
                     if r.status == 200:
                         atf_d = await r.json()
-                        mined = atf_d.get("mined_balance", 0)
+                        raw_bal = atf_d.get("mined_balance", 0)
+                        try:
+                            mined = float(raw_bal)
+                        except (ValueError, TypeError):
+                            mined = 0.0
                         rate = atf_d.get("mining_rate", 0)
                         b_rep["core"]["status"] = f"Mining Active: {mined:.2f} ATF (Rate: {rate}/hr)"
                         b_rep["side_tasks"].append("Anti-Bot Math Verified • Cloud Claims Synchronized")
@@ -245,71 +184,9 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                         b_rep["core"]["status"] = f"HTTP {r.status}"
             except Exception as e:
                 b_rep["error"] = str(e)
-            report["bots"]["5. ATF Miner"] = b_rep
+            report["bots"]["2. ATF Miner"] = b_rep
 
-        # 6. FINVORA Web3
-        fin_init = tokens.get("finvora_init_data")
-        if fin_init:
-            fin_h = {
-                **headers,
-                "Content-Type": "application/json",
-                "X-Telegram-Init-Data": fin_init,
-                "Referer": "https://finvora-production.up.railway.app/"
-            }
-            b_rep = {"core": {}, "side_tasks": []}
-            try:
-                # User Profile & Balances
-                async with session.get("https://finvora-production.up.railway.app/api/me", headers=fin_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    if r.status == 200:
-                        med = await r.json()
-                        u_obj = med.get("user", {})
-                        withdr = u_obj.get("withdrawableBalance", 0)
-                        claimable = u_obj.get("claimableMined", 0)
-                        b_rep["core"]["balance"] = f"Avail: {withdr:.4f} GRAM (Claimable: {claimable:.4f} GRAM)"
-
-                # Side Task: Channel Verification
-                async with session.post("https://finvora-production.up.railway.app/api/channels/verify", json={}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    vcd = await r.json() if r.status in (200, 201) else {}
-                    b_rep["side_tasks"].append(f"Channel Verification: {'Verified ✅' if r.status == 200 else f'HTTP {r.status}'}")
-
-                # Core: Mining Claim (if threshold >= 0.05)
-                async with session.post("https://finvora-production.up.railway.app/api/mining/claim", json={}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    fcd = {}
-                    try:
-                        fcd = await r.json()
-                    except Exception:
-                        pass
-                    if r.status in (200, 201) and fcd.get("success"):
-                        b_rep["core"]["claim"] = f"Claimed {fcd.get('claimed', 0):.4f} GRAM ✅"
-                    elif fcd.get("error") == "below_minimum":
-                        b_rep["core"]["claim"] = f"Accumulating: {fcd.get('current', 0):.4f} / 0.05 GRAM ✅"
-                    else:
-                        b_rep["core"]["claim"] = f"HTTP {r.status} ({fcd.get('error', 'ok')})"
-
-                # Side Task: Instant Bonus
-                async with session.post("https://finvora-production.up.railway.app/api/bonus/instant", json={}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    ibd = {}
-                    try:
-                        ibd = await r.json()
-                    except Exception:
-                        pass
-                    if r.status in (200, 201):
-                        b_rep["side_tasks"].append("Instant Bonus: Claimed ✅")
-                    elif ibd.get("error") == "already_claimed":
-                        b_rep["side_tasks"].append("Instant Bonus: Claimed & Active ✅")
-                    else:
-                        b_rep["side_tasks"].append(f"Instant Bonus: HTTP {r.status} ({ibd.get('error', 'ok')})")
-
-                # Side Task: TON Wallet Binding
-                target_ton = (acc_info.get("ton_wallet") or {}).get("address")
-                if target_ton:
-                    async with session.post("https://finvora-production.up.railway.app/api/wallet/connect", json={"address": target_ton, "walletType": "manual"}, headers=fin_h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                        b_rep["side_tasks"].append(f"TON Wallet: Bound ({target_ton[:8]}...) ✅")
-            except Exception as e:
-                b_rep["error"] = str(e)
-            report["bots"]["6. FINVORA Web3"] = b_rep
-
-        # 7. Victor's Company
+        # 3. Victor's Company
         vic_init = tokens.get("victors_init_data")
         if vic_init:
             v_h = {
@@ -353,12 +230,11 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
 
             except Exception as e:
                 b_rep["error"] = str(e)
-            report["bots"]["7. Victor's Company"] = b_rep
+            report["bots"]["3. Victor's Company"] = b_rep
 
-        # 8. VyroDrop
+        # 4. VyroDrop
         vyro_init = tokens.get("vyro_init_data")
         if vyro_init:
-            import uuid
             vy_h = {
                 **headers,
                 "Authorization": f"tma {vyro_init}",
@@ -389,13 +265,13 @@ async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
                         b_rep["side_tasks"].append(f"Tasks: {len(tasks)} available")
             except Exception as e:
                 b_rep["error"] = str(e)
-            report["bots"]["8. VyroDrop"] = b_rep
+            report["bots"]["4. VyroDrop"] = b_rep
 
     return report
 
 async def main():
     print("="*80)
-    print("🚀 FLEET-WIDE BOT FARMING & SIDE TASKS COMPREHENSIVE LIVE AUDIT (ALL 18 ACCOUNTS)")
+    print("🚀 FLEET-WIDE 4-BOT FARMING & SIDE TASKS COMPREHENSIVE LIVE AUDIT (ALL 18 ACCOUNTS)")
     print("="*80)
     
     fleet_reports = {}
@@ -410,12 +286,10 @@ async def main():
         # If tokens missing from batch, attempt individual Upstash fetch
         if not tokens or not any(k.endswith("_init_data") for k in tokens.keys()):
             try:
-                upstash_url = os.getenv("UPSTASH_URL")
-                upstash_token = os.getenv("UPSTASH_TOKEN")
-                if upstash_url and upstash_token:
+                if UPSTASH_URL and UPSTASH_TOKEN:
                     req = urllib.request.Request(
-                        f"{upstash_url}/get/fleet:tokens:{uid}",
-                        headers={"Authorization": f"Bearer {upstash_token}"}
+                        f"{UPSTASH_URL}/get/fleet:tokens:{uid}",
+                        headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}
                     )
                     with urllib.request.urlopen(req, timeout=5) as r:
                         d = json.loads(r.read().decode())

@@ -86,8 +86,26 @@ def load_accounts():
 
 
 async def sync_tokens_to_edge_and_upstash(session: aiohttp.ClientSession, uid: str, name: str, tokens: dict):
-    """Pushes extracted tokens to both 5x Cloudflare Edge Workers and Upstash Redis."""
+    """Pushes extracted tokens to both 5x Cloudflare Edge Workers and Upstash Redis with safe merging."""
+    # 0. Fetch existing tokens from Upstash to preserve existing active bots
+    existing_tokens = {}
+    if UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            async with session.get(
+                f"{UPSTASH_URL}/get/fleet:tokens:{uid}",
+                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+                timeout=aiohttp.ClientTimeout(total=4)
+            ) as er:
+                if er.status == 200:
+                    ed = await er.json()
+                    res_raw = ed.get("result")
+                    if res_raw:
+                        existing_tokens = json.loads(res_raw) if isinstance(res_raw, str) else res_raw
+        except Exception:
+            pass
+
     payload = {
+        **existing_tokens,
         "uid": str(uid),
         "account_id": str(uid),
         "name": name,

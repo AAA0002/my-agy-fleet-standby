@@ -709,6 +709,7 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
 
     if not acquired_token:
         context = await browser.new_context(
+            bypass_csp=True,
             user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
             viewport={"width": 412, "height": 915},
             is_mobile=True,
@@ -917,39 +918,60 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
             solve_js = f"""
                 async () => {{
                     return new Promise((resolve) => {{
-                        if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
-                            return resolve({{ success: false, error: 'no_turnstile' }});
-                        }}
-                        try {{
-                            let container = document.getElementById('cf-vic-slot');
-                            if (!container) {{
-                                container = document.createElement('div');
-                                container.id = 'cf-vic-slot';
-                                container.style.position = 'fixed';
-                                container.style.top = '50%';
-                                container.style.left = '50%';
-                                container.style.transform = 'translate(-50%, -50%)';
-                                container.style.width = '300px';
-                                container.style.height = '65px';
-                                container.style.zIndex = '9999999';
-                                container.style.background = '#1a1147';
-                                document.body.appendChild(container);
-                            }}
-                            window.turnstile.render(container, {{
-                                sitekey: '{VICTORS_SITEKEY}',
-                                action: 'login',
-                                theme: 'light',
-                                appearance: 'interaction-only',
-                                callback: function(tok) {{
-                                    window.__victorsTurnstileToken = tok;
-                                    resolve({{ success: true, token: tok }});
-                                }},
-                                'error-callback': function(err) {{
-                                    resolve({{ success: false, error: String(err) }});
+                        function doRender() {{
+                            try {{
+                                let container = document.getElementById('cf-vic-slot');
+                                if (!container) {{
+                                    container = document.createElement('div');
+                                    container.id = 'cf-vic-slot';
+                                    container.style.position = 'fixed';
+                                    container.style.top = '50%';
+                                    container.style.left = '50%';
+                                    container.style.transform = 'translate(-50%, -50%)';
+                                    container.style.width = '300px';
+                                    container.style.height = '65px';
+                                    container.style.zIndex = '9999999';
+                                    container.style.background = '#1a1147';
+                                    document.body.appendChild(container);
                                 }}
-                            }});
-                        }} catch (e) {{
-                            resolve({{ success: false, error: String(e) }});
+                                window.turnstile.render(container, {{
+                                    sitekey: '{VICTORS_SITEKEY}',
+                                    action: 'login',
+                                    theme: 'dark',
+                                    appearance: 'always',
+                                    callback: function(tok) {{
+                                        window.__victorsTurnstileToken = tok;
+                                        resolve({{ success: true, token: tok }});
+                                    }},
+                                    'error-callback': function(err) {{
+                                        resolve({{ success: false, error: String(err) }});
+                                    }}
+                                }});
+                            }} catch (e) {{
+                                resolve({{ success: false, error: String(e) }});
+                            }}
+                        }}
+
+                        if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
+                            const s = document.createElement('script');
+                            s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                            s.async = true;
+                            s.defer = true;
+                            s.onload = () => {{ doRender(); }};
+                            document.head.appendChild(s);
+                            let checkCount = 0;
+                            const waitInterval = setInterval(() => {{
+                                checkCount++;
+                                if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                                    clearInterval(waitInterval);
+                                    doRender();
+                                }} else if (checkCount > 80) {{
+                                    clearInterval(waitInterval);
+                                    resolve({{ success: false, error: 'turnstile_load_timeout' }});
+                                }}
+                            }}, 100);
+                        }} else {{
+                            doRender();
                         }}
                         setTimeout(() => resolve({{ success: false, error: 'timeout_15s' }}), 15000);
                     }});
@@ -1431,6 +1453,7 @@ async def solve_atf_turnstile(browser, uid: int, atf_init: str) -> bool:
     if not acquired_token and browser:
         try:
             context = await browser.new_context(
+                bypass_csp=True,
                 user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
                 viewport={"width": 412, "height": 915},
                 is_mobile=True,
@@ -1533,26 +1556,49 @@ async def solve_atf_turnstile(browser, uid: int, atf_init: str) -> bool:
                 solve_js = f"""
                     async () => {{
                         return new Promise((resolve) => {{
+                            function doRender() {{
+                                try {{
+                                    let box = document.getElementById('entryCaptchaBox') || document.body;
+                                    window.turnstile.render(box, {{
+                                        sitekey: '{ATF_SITEKEY}',
+                                        size: 'normal',
+                                        theme: 'dark',
+                                        appearance: 'always',
+                                        callback: function(tok) {{
+                                            window.__atfSolvedToken = tok;
+                                            resolve({{ success: true, token: tok }});
+                                        }},
+                                        'error-callback': function(err) {{
+                                            resolve({{ success: false, error: String(err) }});
+                                        }}
+                                    }});
+                                }} catch(e) {{
+                                    resolve({{ success: false, error: String(e) }});
+                                }}
+                            }}
+
                             if (!window.turnstile || typeof window.turnstile.render !== 'function') {{
-                                return resolve({{ success: false, error: 'no_turnstile' }});
-                            }}
-                            try {{
-                                let box = document.getElementById('entryCaptchaBox') || document.body;
-                                window.turnstile.render(box, {{
-                                    sitekey: '{ATF_SITEKEY}',
-                                    size: 'normal',
-                                    theme: 'dark',
-                                    callback: function(tok) {{
-                                        window.__atfSolvedToken = tok;
-                                        resolve({{ success: true, token: tok }});
-                                    }},
-                                    'error-callback': function(err) {{
-                                        resolve({{ success: false, error: String(err) }});
+                                const s = document.createElement('script');
+                                s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                                s.async = true;
+                                s.defer = true;
+                                s.onload = () => {{ doRender(); }};
+                                document.head.appendChild(s);
+                                let checkCount = 0;
+                                const waitInterval = setInterval(() => {{
+                                    checkCount++;
+                                    if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                                        clearInterval(waitInterval);
+                                        doRender();
+                                    }} else if (checkCount > 80) {{
+                                        clearInterval(waitInterval);
+                                        resolve({{ success: false, error: 'turnstile_load_timeout' }});
                                     }}
-                                }});
-                            }} catch(e) {{
-                                resolve({{ success: false, error: String(e) }});
+                                }}, 100);
+                            }} else {{
+                                doRender();
                             }}
+                            setTimeout(() => resolve({{ success: false, error: 'timeout_15s' }}), 15000);
                         }});
                     }}
                 """
