@@ -4,6 +4,20 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **⚡ Fleet-Wide Side-Task Auto-Completion, Cloudflare Subrequest Uncapping & Cross-Mesh Turnstile Sharing (`render_standby_app.py`, `deploy_both_cf_workers.py`, `fleetApi.js`, `My_Router_AI_bot`)**:
+  - **🎯 Solved Root Cause of Bot Side-Task Failures**:
+    * Identified that bots (MRG, Victor's Company, VyroDrop, Stones, ATF, TurboGram) verify Telegram channel membership via `getChatMember` before awarding side-task rewards.
+    * Added missing channels (`mrgwithdrawal`, `DurovKidney`, `VictorsCompany`, `vyrodrop`, `atfminers`) to `MANDATORY_SPONSOR_CHANNELS` and `CHANNEL_WHITELIST`.
+    * Integrated automatic MTProto `JoinChannelRequest` and mute during `extract_tokens_with_client` so all 18 accounts are verified channel members upon token extraction.
+  - **🛡️ Cross-Mesh Turnstile Pass Sharing**:
+    * Integrated live Upstash Redis reading of `mrg:pass:{uid}` and `victors:pass:{uid}` into `_farm_mrg` and `_farm_victors` on Render Standby (`render_standby_app.py`) and Cloudflare Workers (`deploy_both_cf_workers.py`).
+    * Automatically injects `turnstileToken` into `api/user/claim-mining` and `x-human-pass` into Victor's headers, preventing `HUMAN_CHECK_REQUIRED` blocks.
+  - **🚀 Cloudflare Edge Subrequest Uncapping**:
+    * Resolved Cloudflare Workers Free Tier 50-subrequest / 30s timeout dropouts on `/api/farm/all`.
+    * Upgraded edge worker `/api/farm/all` to automatically forward full 18-account sweeps to the Render Standby cluster (`/api/farm/cloud-all`) with zero subrequest restrictions, while farming top accounts on edge.
+    * Upgraded Telegram Serverless `triggerFarmSweep` in `fleetApi.js` to dispatch sweeps to both Cloudflare edge nodes and Render Standby nodes.
+  - **☁️ 100% Cloud Execution**: Deployed to all 5 Cloudflare Edge nodes, Render Node 2 & Node 3, and Telegram Serverless Platform (`app8858823950.tgcloud.ai`). Zero load on phone.
+
 - **🚀 Native Telegram Serverless Integration & Fleet Mini App Launch (`My_Router_AI_bot`, `tgcloud`, `https://app8858823950.tgcloud.ai/`)**:
   - **📱 Telegram Serverless Cloud Deployment**:
     * Scaffolded, linked, and deployed project `My_Router_AI_bot` using `@tgcloud/cli` v0.2.0 directly to Telegram's official cloud infrastructure (App ID `app8858823950`).

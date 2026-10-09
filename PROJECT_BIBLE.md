@@ -137,6 +137,20 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * Script: `mrg_turnstile_solver.py` (Headless Patchright stealth engine, real Telegram `initData` simulation, native claim button clicker, Turnstile iframe solver, and auto-compounder).
     * Zero Phone Load: Runs 100% inside Microsoft/GitHub's cloud runner environment (Ubuntu 22.04, 7GB RAM).
 
+- **Native Telegram Serverless Platform (`My_Router_AI_bot` / `tgcloud` / App ID `app8858823950`)**:
+  - Live Mini App URL: `https://app8858823950.tgcloud.ai/`
+  - Bot Handle: `@My_Router_AI_bot`
+  - CLI: `@tgcloud/cli` v0.2.0 (managed atomically in `My_Router_AI_bot/` directory)
+  - Cloud Infrastructure: Hosted 100% serverless on Telegram's official edge cloud data centers.
+  - Endpoints & Handlers:
+    * `tgcloud/handlers/message.js`: Instant command routing (`/start`, `/status`, `/farm`, `/wallets`).
+    * `tgcloud/handlers/callback_query.js`: Inline keyboard UI interactions.
+    * `tgcloud/endpoints/getFleetStatus.js`: Queries CF edge, Render, and Upstash via `Telegram.WebApp.Serverless.call`.
+    * `tgcloud/endpoints/triggerFarm.js`: 1-click dual-dispatch harvest sweep across 5 CF edge nodes and 2 Render nodes.
+    * `tgcloud/endpoints/collectTokens.js`: Triggers Render Standby MTProto batch collection.
+    * `tgcloud/endpoints/triggerTurnstile.js`: Dispatches GitHub Actions Turnstile solver workflow.
+  - Zero Phone Load: Runs 100% in Telegram's cloud. No daemon or poller on mobile.
+
 - **Telegram Dual Bot & Channel Ecosystem (Admin Infrastructure vs. Normal User Platform)**:
 
   #### 🛡️ System 1: Admin Telegram Ecosystem (Control, Telemetry, Vault, Disaster Recovery)

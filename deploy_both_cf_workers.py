@@ -423,8 +423,22 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
       await humanDelay(1200, 2600);
       let claimMiningRes = null;
       try {
+        let mrgTurnstileToken = null;
+        try {
+          const mrgPassRaw = await upstashGet(`mrg:pass:${uid}`);
+          if (mrgPassRaw) {
+            const parsedM = typeof mrgPassRaw === "string" ? JSON.parse(mrgPassRaw) : mrgPassRaw;
+            mrgTurnstileToken = parsedM.turnstileToken || parsedM;
+          }
+        } catch (_) {}
+
+        const claimPayload = { initData: mrgInit, deviceInfo: devInfo };
+        if (mrgTurnstileToken) {
+          claimPayload.turnstileToken = mrgTurnstileToken;
+        }
+
         const cResp = await fetchWithRetry("https://mrg.up.railway.app/api/user/claim-mining", {
-          method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit, deviceInfo: devInfo })
+          method: "POST", headers: mrgHeaders, body: JSON.stringify(claimPayload)
         }, 1, 600);
         if (cResp) {
           claimMiningRes = await cResp.json().catch(() => null);
@@ -3462,10 +3476,25 @@ fi
         const isAllBots = path === "/api/farm/all" || body.bot === "all" || url.searchParams.get("bot") === "all";
         if (isAllBots) {
           ctx.waitUntil((async () => {
+            // Forward full fleet sweep to Render Standby cluster (unlimited subrequests & persistent loop)
+            const standbyUrls = [
+              "https://my-agy-fleet-standby-2.onrender.com/api/farm/cloud-all",
+              "https://my-agy-fleet-standby-1.onrender.com/api/farm/cloud-all"
+            ];
+            for (const sUrl of standbyUrls) {
+              try {
+                await fetch(sUrl, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY || "YOUR_SHARED_SECRET_KEY"}` },
+                  body: JSON.stringify({ all: true, bot: "all" })
+                });
+                break;
+              } catch (_) {}
+            }
             try {
               const tokens = await getFleetTokens(env);
               if (!tokens) return;
-              for (const uid of targetUids) {
+              for (const uid of targetUids.slice(0, 4)) {
                 const accData = tokens[String(uid)] || {};
                 await farmSingleAccountAllBots(uid, accData, env, ctx);
               }

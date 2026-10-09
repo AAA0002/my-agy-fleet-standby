@@ -54,6 +54,24 @@ export async function triggerFarmSweep(bot = 'all') {
       }
     } catch (_) {}
   }
+
+  for (const rNode of RENDER_NODES) {
+    try {
+      const resp = await fetch(`${rNode}/api/farm/cloud-all`, {
+        method: 'POST',
+        headers: {
+          ...BROWSER_HEADERS,
+          'Authorization': `Bearer ${SECRET_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ all: true, bot })
+      });
+      if (resp.ok) {
+        dispatched.push(rNode);
+      }
+    } catch (_) {}
+  }
+
   return { ok: dispatched.length > 0, nodes_triggered: dispatched.length };
 }
 
