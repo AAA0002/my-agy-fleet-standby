@@ -1782,6 +1782,7 @@ export default {
 
         const renderNodes = [
           "https://my-agy-fleet-standby-node2.onrender.com",
+          "https://my-agy-fleet-standby-node3.onrender.com",
           "https://my-agy-fleet-standby.onrender.com"
         ];
         for (const rNode of renderNodes) {
@@ -3175,8 +3176,9 @@ fi
           ctx.waitUntil((async () => {
             // Forward full fleet sweep to Render Standby cluster (unlimited subrequests & persistent loop)
             const standbyUrls = [
-              "https://my-agy-fleet-standby-2.onrender.com/api/farm/cloud-all",
-              "https://my-agy-fleet-standby-1.onrender.com/api/farm/cloud-all"
+              "https://my-agy-fleet-standby-node2.onrender.com/api/farm/cloud-all",
+              "https://my-agy-fleet-standby-node3.onrender.com/api/farm/cloud-all",
+              "https://my-agy-fleet-standby.onrender.com/api/farm/cloud-all"
             ];
             for (const sUrl of standbyUrls) {
               try {
