@@ -4,6 +4,26 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🛡️ Victor's Perpetual Human-Pass Refresh, Account 3 2FA Sign-In & Fleet Auto-Mining Verification**:
+  - **✨ Victor's Company Turnstile Solver Permanent Solution (`mrg_turnstile_solver.py` & workflow)**:
+    * Root Cause Solved: Victor's Company humanPass has a strict server-side TTL (~6 to 8 hours). The solver was previously scheduled only twice daily (every 12 hours) and ran into a 25-minute workflow timeout when processing 18 accounts sequentially across 4 mini-apps, leaving passes expired for hours.
+    * Perpetual 4-Hour Schedule: Updated `.github/workflows/mrg_turnstile_solver.yml` cron to `0 */4 * * *` (every 4 hours), guaranteeing human passes are renewed well before their 6-8h expiration.
+    * Increased Timeout: Extended workflow timeout from 25 to 40 minutes (`timeout-minutes: 40`), preventing premature cancellation.
+    * Enhanced Frame Locator Clicking: Added dual-action targeted clicks on `#challenge-stage, .ctp-checkbox-label, .mark, body` and iframe element `position={"x": ..., "y": ...}`, overcoming cross-origin iframe security boundaries in Chromium.
+    * Full Pipeline Execution: Added check-in, tutorial, referral bonus, and tasks claiming directly inside the cached pass branch. In `render_standby_app.py`, added automatic invalidation of stale in-memory cached passes on `HUMAN_REQUIRED`.
+  - **🔑 Completed Account 3 (`7648254021` — Koram Shah) 2FA Authentication**:
+    * Authenticated Account 3 via Telethon using saved temporary credentials and 2FA password `Arif-Abid` following Telegram FloodWait expiry.
+    * Updated `accounts.json` and synced live StringSession to Upstash Redis (`account:7648254021` and `accounts`).
+    * Verified live on Render Node 2 (`/api/debug-account-session/7648254021`): 🟢 Connected, authorized, and extracted fresh tokens for MRG, ATF, Victor's, and VyroDrop.
+  - **⛏️ Live Auto-Mining & Task Arrays Fully Verified**:
+    * **MRG Miner**: 3,107.53 MRG total (317.53 in-app + 2,790 in TON wallet), Level 104, 100% of tasks completed.
+    * **ATF Miner**: Level 150 (MAX LEVEL), 4,302.22 ATF mined balance, all tasks completed (`telegram_join`, `telegram_join_fa`, `twitter_follow`, `youtube_subscribe`).
+    * **VyroDrop**: Status ACTIVE, earning through `2026-10-10T07:15:57Z`, 169.57 VYRO credited, tasks claimed.
+  - **🛡️ Strict User Bot vs Admin Bot Separation Confirmed**:
+    * User Bot (`@AAAPREMIUMAPPSbot`) isolated to `/user-bot-webhook` and community channel `-1004332544939` (`@AAA_ACTIVITY`).
+    * Admin Bot (`@myagyai`) isolated to `/telegram-webhook`. 0 pending updates on both.
+  - **📱 Zero Phone Load Directive**: 0 local Python bot processes running on Samsung Galaxy A30. All automation executes 100% in cloud.
+
 - **🔑 MTProto Session Renewal, Dual-IP Collision Elimination & Auto-Mining/Task Verification**:
   - **✨ Renewed Revoked StringSessions for Main Account & Account 8**:
     * Identified root cause of `AuthKeyDuplicatedError` (dual-IP concurrent connections from overlapping cloud nodes).
