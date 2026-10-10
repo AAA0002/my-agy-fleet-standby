@@ -4,6 +4,24 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🛡️ Full-Stack Legacy Bot Purge & 5-Bot Cloud Workflow Parity (October 10, 2026)**:
+  - **🧹 Deep Purge of All 15 Legacy Bot Fields Across Storage Layers**:
+    * Cleaned `accounts.json` locally, purging all 15 decommissioned scam bots (`stones`, `ailab`, `ultrawallet`, `finvora`, `apx`, `ainovum`, `turbogram`, `mininggram`, `usdtquad`, `tensor`, `tac`, `trxpower`, `tontrader`, `ominix`, `art`, `bnb`).
+    * Sanitized Upstash Redis `accounts` and all 18 `account:{uid}` keys, removing hundreds of stale legacy properties.
+    * Sanitized all 18 Upstash Redis `fleet:tokens:{uid}` keys to strictly retain only 8 authoritative fields:
+      `['account_id', 'atf_init_data', 'kynex_init_data', 'mrg_init_data', 'name', 'synced_at', 'victors_init_data', 'vyro_init_data']`.
+    * Hardened `render_app_latest.py` and `render_standby_app.py` token sync logic with an explicit `clean_merged` whitelist filter (`ALLOWED_KEYS`), permanently preventing MTProto collectors from resurrecting purged legacy keys.
+  - **🚀 5-Bot Cloud Automation & Turnstile Parity (`mrg_turnstile_solver.py`, `mrg_turnstile_solver.yml`)**:
+    * Integrated Kynex Network multi-account auto-farming into `mrg_turnstile_solver.py`, enabling the 4-hour scheduled GitHub Actions cloud runner (`ubuntu-latest`, 7GB RAM) to farm Kynex, MRG, Victor's, VyroDrop, and ATF simultaneously.
+    * Updated telemetry reporting to output 5-bot metrics including KNX claimed and mining status.
+    * Confirmed successful execution of GitHub Actions run `38021359944`.
+  - **🌐 Edge Mesh Dead Code Elimination (`deploy_both_cf_workers.py`)**:
+    * Removed dead `farmFinvora` code from `deploy_both_cf_workers.py`.
+    * Redeployed and synchronized all 5 Cloudflare Worker Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Verified `/api/fleet/harvest` executes cleanly without legacy dependencies.
+  - **📱 Rule 4 Compliance (Zero Phone Load)**:
+    * Verified 0 local Python bot background processes on Samsung Galaxy A30.
+
 - **⚡ Admin Bot 5-Bot Command Overhaul & Render App Parity (October 10, 2026)**:
   - **🎮 Admin Bot Slash Commands & Callback Queries Complete Overhaul (`deploy_both_cf_workers.py`)**:
     * Implemented dedicated slash commands `/kynex`, `/victors`, `/vyro`, and `/mrg` with real-time telemetry and inline action keyboards.

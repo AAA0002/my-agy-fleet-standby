@@ -526,41 +526,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     }
   };
 
-  // 6. FINVORA Web3
-  const farmFinvora = async () => {
-    try {
-      if (accData.finvora_init_data) {
-        const finHeaders = getHumanHeaders(uid, {
-          "Content-Type": "application/json",
-          "X-Telegram-Init-Data": accData.finvora_init_data,
-          "Referer": "https://finvora-production.up.railway.app/"
-        });
-        const tonWallet = FLEET_TON_WALLETS[String(uid)];
-        if (tonWallet) {
-          await fetchWithRetry("https://finvora-production.up.railway.app/api/wallet/connect", {
-            method: "POST", headers: finHeaders, body: JSON.stringify({ address: tonWallet, walletType: "manual" })
-          }, 1, 600).catch(() => {});
-        }
-        await humanDelay(1000, 2200);
-        await fetchWithRetry("https://finvora-production.up.railway.app/api/channels/verify", {
-          method: "POST", headers: finHeaders, body: JSON.stringify({})
-        }, 1, 800).catch(() => {});
-        await humanDelay(1000, 2200);
-        await fetchWithRetry("https://finvora-production.up.railway.app/api/bonus/instant", {
-          method: "POST", headers: finHeaders, body: JSON.stringify({})
-        }, 1, 800).catch(() => {});
-        await humanDelay(1000, 2200);
-        await fetchWithRetry("https://finvora-production.up.railway.app/api/mining/claim", {
-          method: "POST", headers: finHeaders, body: JSON.stringify({})
-        }, 1, 800).catch(() => {});
-      }
-      result.bots.finvora = "ok";
-    } catch (e) {
-      result.bots.finvora = `error: ${e.message}`;
-    }
-  };
-
-  // TurboGram V1: Purged & blacklisted per user directive
+  // Legacy Decommissioned Bots: Stones, AI Lab, UltraWallet, FINVORA permanently purged per operator directive
 
   // 8. Victor's Company (@VictorsCompanybot)
   const farmVictors = async () => {

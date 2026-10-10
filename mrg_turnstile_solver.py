@@ -1851,6 +1851,7 @@ async def run_mrg_auto_solver():
     victors_accounts = []
     vyro_accounts = []
     atf_accounts = []
+    kynex_accounts = []
 
     # 1. Fetch tokens and inspect account states
     for idx, uid in enumerate(FLEET_UIDS, 1):
@@ -1859,6 +1860,7 @@ async def run_mrg_auto_solver():
         atf_init = tok_dict.get("atf_init_data")
         vic_init = tok_dict.get("victors_init_data")
         vyro_init = tok_dict.get("vyro_init_data")
+        kynex_init = tok_dict.get("kynex_init_data")
 
         if atf_init:
             atf_accounts.append({
@@ -1876,6 +1878,12 @@ async def run_mrg_auto_solver():
             vyro_accounts.append({
                 "uid": uid,
                 "init_data": vyro_init
+            })
+
+        if kynex_init:
+            kynex_accounts.append({
+                "uid": uid,
+                "init_data": kynex_init
             })
 
         if not mrg_init:
@@ -1918,7 +1926,8 @@ async def run_mrg_auto_solver():
         f"{needed_count} accounts require MRG Turnstile. "
         f"{len(victors_accounts)} accounts found with Victor's Company. "
         f"{len(vyro_accounts)} accounts found with VyroDrop. "
-        f"{len(atf_accounts)} accounts found with ATF Miner."
+        f"{len(atf_accounts)} accounts found with ATF Miner. "
+        f"{len(kynex_accounts)} accounts found with Kynex Network."
     )
 
     # 2. Launch stealth browser and process accounts needing verification
@@ -2134,14 +2143,44 @@ async def run_mrg_auto_solver():
         safe_post(f"{API_BASE}/api/user/claim-one-time-bonus", {"initData": m_init})
         logger.info("👑 Master Account referral commission and team bonus claimed.")
 
-    # 5. Telegram Telemetry Notification
+    # 5. Kynex Network Multi-Account Cloud Auto-Farming
+    kynex_farmed = 0
+    total_claimed_knx = 0.0
+    if kynex_accounts:
+        logger.info(f"⚡ Starting Kynex Network Auto-Farming for {len(kynex_accounts)} accounts...")
+        try:
+            import aiohttp
+            from kynex_miner import farm_kynex_account
+
+            async with aiohttp.ClientSession() as kyn_session:
+                for k_acc in kynex_accounts:
+                    kuid = k_acc["uid"]
+                    kinit = k_acc["init_data"]
+                    try:
+                        k_res = await farm_kynex_account(
+                            kyn_session,
+                            kinit,
+                            {"user_id": kuid, "account_id": kuid},
+                            is_master=(kuid == 6727787768)
+                        )
+                        kynex_farmed += 1
+                        c_knx = k_res.get("claimed_knx") or 0.0
+                        total_claimed_knx += float(c_knx)
+                        logger.info(f"✅ [Kynex] UID {kuid}: {k_res.get('status')}")
+                    except Exception as ke:
+                        logger.warning(f"⚠️ [Kynex] UID {kuid} farm error: {ke}")
+        except Exception as kerr:
+            logger.warning(f"⚠️ Kynex fleet farm exception: {kerr}")
+
+    # 6. Telegram Telemetry Notification
     report_msg = (
-        f"🚀 <b>4-Bot Fleet Cloud Turnstile Engine Report</b>\n\n"
+        f"🚀 <b>5-Bot Fleet Cloud Turnstile & Multi-Farming Engine Report</b>\n\n"
         f"• <b>Total Fleet Accounts:</b> 18\n"
         f"• <b>MRG Pass Solved:</b> {solved_count}/{needed_count}\n"
         f"• <b>ATF Captcha Solved:</b> {atf_solved}/{len(atf_accounts)}\n"
         f"• <b>Victor's Pass Solved:</b> {victors_solved}/{len(victors_accounts)}\n"
         f"• <b>VyroDrop Wallets & Mining:</b> {vyro_wallets_connected}/{len(vyro_accounts)}\n"
+        f"• <b>Kynex Network Farmed:</b> {kynex_farmed}/{len(kynex_accounts)} (+{total_claimed_knx:.2f} KNX)\n"
         f"• <b>Total MRG Harvested:</b> {total_claimed_mrg:.2f} MRG\n"
         f"• <b>Execution Time:</b> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}\n\n"
         f"⚡ <i>100% Cloud Execution. Zero phone load.</i>"
@@ -2151,7 +2190,8 @@ async def run_mrg_auto_solver():
         f"ATF Solved {atf_solved}/{len(atf_accounts)}, "
         f"Victor's Solved {victors_solved}/{len(victors_accounts)}, "
         f"Vyro Connected {vyro_wallets_connected}/{len(vyro_accounts)}, "
-        f"Claimed {total_claimed_mrg:.2f} MRG."
+        f"Kynex Farmed {kynex_farmed}/{len(kynex_accounts)}, "
+        f"Claimed {total_claimed_mrg:.2f} MRG, {total_claimed_knx:.2f} KNX."
     )
     send_tg_alert(report_msg)
 
