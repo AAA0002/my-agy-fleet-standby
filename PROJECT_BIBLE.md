@@ -638,7 +638,25 @@ To strictly preserve GitHub Actions free-tier quotas (2,000 minutes/month cap fo
 
 ---
 
-## 🔒 8. Living Changelog Protocol
+## 🔐 8. Distributed Cloud Secrets Vault & Automated IMAP Engine
+
+To ensure zero-trust off-machine durability and seamless authentication automation:
+
+### 1. Distributed Secret Replicas Across 4 Cloud Tiers
+* **Cloudflare D1 SQL**: Table `fleet_vault_secrets` on Node 1 (`c29cc72d-3813-4aa2-859a-8cdfd929825c`). Stores `GMAIL_ADDRESS`, `GMAIL_APP_PASSWORD`, `FLEET_2FA_PASSWORD`, `FLEET_2FA_FALLBACK`, `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, and `RECOVERY_EMAIL`.
+* **Supabase Managed Postgres**: Record `id='system_fleet_vault'` in `fleet_accounts` table. Replicated across APAC edge with instant REST accessibility.
+* **Render Environment Mesh**: Synchronized via Render API (`PUT /v1/services/{id}/env-vars`) across all 3 active services (`my-agy-fleet-standby`, `my-agy-fleet-standby-node2`, `my-agy-fleet-standby-node3`).
+* **Local Master `.env`**: Complete local reference for Termux pair programming tools.
+
+### 2. Google App Password & IMAP Verification Engine (`auto_bind_login_emails.py`)
+* Google App Password (`kuqevwndvabevefx` for `aaa.support.a@gmail.com`) allows hands-free MTProto verification code extraction via Python standard `imaplib`.
+* **Login Email vs. 2FA Recovery Email**:
+  - **2FA Recovery Email**: Set via `account.UpdatePasswordSettingsRequest`. 100% active on all 10 purchased accounts with password `Arif216@` and recovery `aaa.support.a@gmail.com`.
+  - **Login Email (OTP)**: Bound via `account.SendVerifyEmailCodeRequest` + `account.VerifyEmailRequest`. Account #14 and #16 bound to `aaa.support.a+14@gmail.com` and `aaa.support.a+16@gmail.com`.
+
+---
+
+## 🔒 9. Living Changelog Protocol
 
 Whenever you perform work in this repository:
 1. **Never delete existing working features** without explicit user request or confirmed scam decommissioning.
