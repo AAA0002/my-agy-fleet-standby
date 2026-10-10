@@ -230,7 +230,13 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
    - Render uses the 18 Telegram Telethon session strings stored in `accounts.json` to connect to Telegram via MTProto.
    - For each bot, it calls `RequestWebViewRequest` or `RequestAppWebViewRequest` to obtain fresh WebApp URLs and extract fresh `initData`.
    - Render syncs these brand-new tokens into Cloudflare D1 SQL (`fleet_tokens`), Upstash Redis (`fleet:tokens:<uid>`), and Cloudflare KV.
-   - Cloudflare Workers Edge Mesh reads these fresh tokens directly from strongly consistent D1 SQL and farms all 5 legitimate bots continuously every 15 minutes.
+   - Cloudflare Workers Edge Mesh and Render Standby execute farming via an intelligent **Humanistic Per-Bot Cadence Engine**:
+     * **ATF Miner**: 2.0h – 3.0h (7,200s – 10,800s, avg 2.5h) — matches 2-hour task refresh cycle.
+     * **MRG Miner**: 3.0h – 4.0h (10,800s – 14,400s, avg 3.5h) — matches 3-4h hashrate claim cycle.
+     * **Victor's Company**: 4.0h – 5.0h (14,400s – 18,000s, avg 4.5h) — matches arcade energy & offline earnings accumulation.
+     * **VyroDrop**: 4.0h – 6.0h (14,400s – 21,600s, avg 5.0h) — matches mining session duration.
+     * **Kynex Network**: 6.0h – 8.0h (21,600s – 28,800s, avg 7.0h) — matches 12h energy bar replenishment.
+     * **Zero Chat Spam Rule**: Tokens are queried 100% silently via `RequestAppWebViewRequest`. ZERO `/start` or `mine` messages are sent into Telegram bot chats. Master Account (`6727787768`) is guarded against self-referrals.
 
 ---
 

@@ -212,10 +212,8 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
     except Exception:
         pass
 
-    # Strategy C: Send /start and inspect keyboard buttons
+    # Strategy C: Inspect existing keyboard buttons (silent, zero messages sent)
     try:
-        await client.send_message(bot_ent, f"/start {start_param}" if start_param else "/start")
-        await asyncio.sleep(1.8)
         msgs = await client.get_messages(bot_ent, limit=5)
         for m in msgs:
             if not m.out and m.buttons:

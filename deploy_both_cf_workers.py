@@ -895,6 +895,20 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
   };
 
   // Humanized Execution Pipeline: 5 Active Legitimate Bots (MRG, ATF, Victor's Company, VyroDrop, Kynex)
+  // Per-bot cooldowns matching real game economics and preventing repetitive API blitzing:
+  // - ATF: 2h task refresh cycle -> farm every 2.0h - 3.0h (7200s - 10800s)
+  // - MRG: 3h-4h hashrate claim cycle -> farm every 3.0h - 4.0h (10800s - 14400s)
+  // - Victor's: Arcade energy & offline earnings -> farm every 4.0h - 5.0h (14400s - 18000s)
+  // - Vyro: Mining session duration -> farm every 4.0h - 6.0h (14400s - 21600s)
+  // - Kynex: 12h energy bar replenishment -> farm every 6.0h - 8.0h (21600s - 28800s)
+  const BOT_COOLDOWNS = {
+    atf: { minSec: 7200, maxSec: 10800 },
+    mrg: { minSec: 10800, maxSec: 14400 },
+    victors: { minSec: 14400, maxSec: 18000 },
+    vyro: { minSec: 14400, maxSec: 21600 },
+    kynex: { minSec: 21600, maxSec: 28800 }
+  };
+
   const botRoutines = [
     { name: "mrg", fn: farmMrg, hasData: Boolean(accData.mrg_init_data) },
     { name: "atf", fn: farmAtf, hasData: Boolean(accData.atf_init_data) },
@@ -909,9 +923,34 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     [activeRoutines[i], activeRoutines[j]] = [activeRoutines[j], activeRoutines[i]];
   }
 
+  const nowSec = Math.floor(Date.now() / 1000);
   for (const b of activeRoutines) {
+    const cdConfig = BOT_COOLDOWNS[b.name] || { minSec: 7200, maxSec: 10800 };
+    let shouldFarm = true;
+    try {
+      const lastFarmRaw = await upstashGet(`fleet:last_farm:${b.name}:${uid}`);
+      if (lastFarmRaw) {
+        let lastFarm = typeof lastFarmRaw === "string" && lastFarmRaw.startsWith("{") ? JSON.parse(lastFarmRaw) : null;
+        let lastTime = lastFarm ? (lastFarm.timestamp || 0) : parseInt(lastFarmRaw);
+        let currentCooldown = lastFarm ? (lastFarm.cooldown || cdConfig.minSec) : cdConfig.minSec;
+        if (lastTime > 0 && (nowSec - lastTime) < currentCooldown) {
+          const remMin = Math.max(1, Math.round((currentCooldown - (nowSec - lastTime)) / 60));
+          result.bots[b.name] = `cooldown (${remMin}m remaining)`;
+          shouldFarm = false;
+        }
+      }
+    } catch (_) {}
+
+    if (!shouldFarm) continue;
+
     try {
       await b.fn();
+      const nextCooldown = Math.floor(Math.random() * (cdConfig.maxSec - cdConfig.minSec + 1)) + cdConfig.minSec;
+      if (ctx && ctx.waitUntil) {
+        ctx.waitUntil(upstashSet(`fleet:last_farm:${b.name}:${uid}`, JSON.stringify({ timestamp: nowSec, cooldown: nextCooldown })).catch(() => {}));
+      } else {
+        await upstashSet(`fleet:last_farm:${b.name}:${uid}`, JSON.stringify({ timestamp: nowSec, cooldown: nextCooldown })).catch(() => {});
+      }
       await humanDelay(1200, 3000);
     } catch (err) {
       result.bots[b.name] = `error: ${err.message}`;

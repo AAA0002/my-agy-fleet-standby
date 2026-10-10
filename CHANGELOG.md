@@ -4,6 +4,28 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **⏱️ Humanistic Per-Bot Cadence, Chat Spam Eradication & Complete Master Dialog Purge (October 10, 2026)**:
+  - **🚫 Zero Chat Message Spam Across MTProto Collectors (`render_standby_app.py`, `render_app_latest.py`, `refresh_cloud_tokens.py`)**:
+    * Root-caused repetitive `/start <ref>` and `mine` messages sent into bot chats: identified explicit `client.send_message` calls in `extract_tokens_for_account` (ATF, Victor's, Vyro, Kynex), Strategy C fallback in `extract_bot_webapp_token`, and ReplyKeyboard text triggers in `bind_account_master_referrals`.
+    * Eradicated all `send_message` calls: WebApp session tokens (`tgWebAppData`) are now collected 100% silently via `RequestAppWebViewRequest` without posting any message to Telegram chats.
+    * Added strict Master Account (`6727787768`) guard in `bind_account_master_referrals` preventing the master account from ever sending self-referral commands.
+    * Disabled ReplyKeyboard text triggers: bot farming is handled strictly via REST APIs on Cloudflare Workers and cloud runners, never Telegram chat commands.
+  - **🧹 Master Account Complete Dialog & Channel Purge (6727787768)**:
+    * Root-caused lingering legacy bots (FINVORA, TurboGram, AI Lab, Stones, UltraWallet) in master chat list: single `DeleteHistoryRequest` calls only erased 100 messages when `offset > 0` (FINVORA had 1,600+ messages), and channel peers threw invalid peer on `DeleteHistoryRequest`.
+    * Implemented multi-pass loop purge with `DeleteHistoryRequest(revoke=True)` until `offset == 0` for private bots, and `LeaveChannelRequest` + `delete_dialog` for broadcast channels.
+    * Completely purged all 10 discontinued bots & channels: AI Lab, FINVORA, TurboGram, Stones White Stand, Ultra Wallet, TRX Power Mining, Art Airdrop, Gold Keepers, Pepe, and EarnCraft. Verified 100% absence from master dialogs.
+  - **⏱️ Humanistic Per-Bot Cooldown Scheduler (`deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`)**:
+    * Replaced simultaneous 15-minute global blitzing with an intelligent, per-bot humanistic cooldown engine matching each bot's actual game economy:
+      - **ATF Miner**: 2.0h – 3.0h (7,200s – 10,800s, avg 2.5h) — matches 2-hour task refresh cadence.
+      - **MRG Miner**: 3.0h – 4.0h (10,800s – 14,400s, avg 3.5h) — matches hashrate claim cycle.
+      - **Victor's Company**: 4.0h – 5.0h (14,400s – 18,000s, avg 4.5h) — matches arcade energy recharge & offline storage capacity.
+      - **VyroDrop**: 4.0h – 6.0h (14,400s – 21,600s, avg 5.0h) — matches mining session lifetime.
+      - **Kynex Network**: 6.0h – 8.0h (21,600s – 28,800s, avg 7.0h) — matches 12h energy bar replenishment.
+    * State tracked in Upstash Redis (`fleet:last_farm:<bot>:<uid>`) with randomized human jitter on each harvest. Cloudflare Worker cron (`*/15 * * * *`) and cloud runners inspect cooldown and skip bots not yet due (`cooldown (...m remaining)`).
+    * Redeployed and verified live across all 5 Cloudflare Worker Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+  - **📱 Rule 4 Compliance (Zero Phone Load)**:
+    * Verified 0 local Python bot background processes running on Samsung Galaxy A30. All automation executes 100% in the cloud.
+
 - **🛡️ Legacy Bot UI Eradication, ATF Wallet Verification & 5-Bot Cloud Parity (October 10, 2026)**:
   - **🧹 Legacy Bot UI Text & Hallucination Elimination (`deploy_both_cf_workers.py`)**:
     * Root-caused user report of old removed bots appearing active: identified ~50 legacy template strings hardcoding `Stones • ATF • MRG • AI Lab • UltraWallet • FINVORA • Victor's • VyroDrop` across `/start`, `/accounts`, `/harvest`, `/status`, `/summary`, `/menu`, and userbot callbacks.
