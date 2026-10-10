@@ -4,6 +4,13 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🛡️ 100% 2FA Cloud Password & Gmail Recovery Binding Across All 10 Purchased Accounts (October 10, 2026)**:
+  - **🔐 Permanent Exclusive Ownership Lock (`setup_2fa_step.py`)**:
+    * Enabled 2FA Cloud Password (`Arif216@`) and bound user recovery email (`aaa.support.a@gmail.com`) via MTProto `UpdatePasswordSettingsRequest` and `ConfirmPasswordEmailRequest` across all remaining purchased worker accounts (#14 Rohan Sharma 14, #16 Rashedul Islam 16, #17 Kawsar Mahmud 17, and #18 Mehedi Hasan 18).
+    * Verified 10/10 purchased accounts now have `has_password=True` and `has_recovery=True`. No seller or third party can ever reclaim or access these virtual sessions.
+  - **📱 Rule 4 Compliance (Zero Phone Load)**:
+    * Zero bot daemons running locally on Samsung Galaxy A30.
+
 - **⚡ Upstash Redis 10,000 Command Quota Protection & Multi-Tier In-Memory Caching (October 10, 2026)**:
   - **📉 Slashed Cloudflare Edge Upstash Calls by 99% (`deploy_both_cf_workers.py`)**:
     * Root-caused rapid quota depletion: 5 Cloudflare Edge nodes triggered cron routines every 15 minutes, each executing 90 individual `upstashGet` and `upstashSet` calls per fleet account & bot (over 43,000 requests/day).
