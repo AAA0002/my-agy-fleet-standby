@@ -969,11 +969,20 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                         await page.mouse.down()
                         await asyncio.sleep(0.1)
                         await page.mouse.up()
-                    else:
+                        # Also dispatch targeted synthetic click on iframe element
+                        try:
+                            await ts_iframe.click(position={"x": min(32.0, box["width"] / 3), "y": box["height"] / 2}, timeout=2500)
+                        except Exception:
+                            pass
+                    
+                    # Direct click inside frame locator
+                    try:
                         ts_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
-                        click_target = ts_frame.locator("#challenge-stage, .ctp-checkbox-label, .mark").first
+                        click_target = ts_frame.locator("#challenge-stage, .ctp-checkbox-label, .mark, body").first
                         if await click_target.count() > 0:
                             await click_target.click(timeout=3000)
+                    except Exception:
+                        pass
             except Exception as ce:
                 logger.warning(f"[Victor's] UID {uid} iframe click note: {ce}")
     
@@ -1081,6 +1090,17 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                             await page.mouse.down()
                             await asyncio.sleep(0.1)
                             await page.mouse.up()
+                            try:
+                                await ts_iframe.click(position={"x": min(32.0, box["width"] / 3), "y": box["height"] / 2}, timeout=2000)
+                            except Exception:
+                                pass
+                            try:
+                                ts_f = page.frame_locator("#cf-vic-slot iframe, iframe[src*='challenges.cloudflare.com']")
+                                tgt = ts_f.locator("#challenge-stage, .ctp-checkbox-label, .mark, body").first
+                                if await tgt.count() > 0:
+                                    await tgt.click(timeout=2500)
+                            except Exception:
+                                pass
                             break
                     await asyncio.sleep(0.6)
     
@@ -1988,8 +2008,24 @@ async def run_mrg_auto_solver():
                     if t_code == 200 and isinstance(t_d, dict) and (t_d.get("success") is True or "state" in t_d or "user" in t_d):
                         logger.info(f"✅ [Victor's] UID {v_uid}: Human pass already active and valid in Upstash Redis! Skipping browser solve.")
                         safe_post(f"{VICTORS_API}/mining/claim", {}, extra_headers=test_h)
+                        safe_post(f"{VICTORS_API}/checkin", {}, extra_headers=test_h)
+                        safe_post(f"{VICTORS_API}/me/tutorial", {}, extra_headers=test_h)
+                        safe_post(f"{VICTORS_API}/referral/claim-bonus", {}, extra_headers=test_h)
+                        safe_post(f"{VICTORS_API}/referral/claim-commission", {}, extra_headers=test_h)
+                        # Fetch and claim pending tasks
+                        _, tk_data = safe_get(f"{VICTORS_API}/tasks", extra_headers=test_h)
+                        if isinstance(tk_data, dict):
+                            raw_tasks = tk_data.get("tasks") or (tk_data.get("data", {}).get("tasks") if isinstance(tk_data.get("data"), dict) else [])
+                            if isinstance(raw_tasks, list):
+                                for task_item in raw_tasks:
+                                    if isinstance(task_item, dict) and task_item.get("status") in ("READY_TO_CLAIM", "PENDING", "COMPLETED") and not task_item.get("claimed"):
+                                        tid = task_item.get("id") or task_item.get("taskId")
+                                        if tid:
+                                            safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": tid}, extra_headers=test_h)
                         victors_solved += 1
                         continue
+                    else:
+                        logger.info(f"⚠️ [Victor's] UID {v_uid}: Cached pass expired (HTTP {t_code}). Launching browser solver...")
 
                 try:
                     v_res = await asyncio.wait_for(

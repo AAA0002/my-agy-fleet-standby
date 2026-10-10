@@ -3372,6 +3372,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
                 if not is_auth_ok or not me:
                     if (not vic_pass) or m_code in (401, 403) or (isinstance(m_d, dict) and m_d.get("code") == "HUMAN_REQUIRED"):
+                        set_cached_upstash_pass(f"victors:pass:{uid}", None, ttl=1)
                         status["bots"]["victors"] = "human_pass_required (Turnstile needed)"
                     else:
                         status["bots"]["victors"] = f"auth_failed (code {m_code})"
