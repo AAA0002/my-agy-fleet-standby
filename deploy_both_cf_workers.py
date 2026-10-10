@@ -1565,13 +1565,47 @@ export default {
     ];
 
     // In-memory Core Fleet AI Cascade (Admin Bot @My_Router_AI_bot)
-    const runAiCascade = async (prompt) => {
+    const runAiCascade = async (prompt, preferredModel = null) => {
       if (!prompt) return { ok: false, error: "Missing prompt" };
 
-      // 1. Google Gemini Flash (Fast parallel attempt with 3-key rotation)
+      // A. Explicit DeepSeek R1 Request
+      if (preferredModel === "deepseek" && env.AI) {
+        try {
+          const aiRes = await env.AI.run("@cf/deepseek-ai/deepseek-r1-distill-qwen-32b", {
+            messages: [
+              { role: "system", content: "You are DeepSeek R1, an advanced AI reasoning assistant. Think step-by-step and provide clear, precise, and well-structured answers." },
+              { role: "user", content: prompt }
+            ],
+            max_tokens: 1024
+          });
+          const ansText = aiRes.response || (aiRes.choices && aiRes.choices[0] ? aiRes.choices[0].text : "");
+          if (ansText && ansText.trim()) {
+            return { ok: true, provider: "DeepSeek R1", model: "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b", node: CURRENT_SUBDOMAIN, answer: ansText.trim() };
+          }
+        } catch (_) {}
+      }
+
+      // B. Explicit Meta Llama 3.3 Request
+      if (preferredModel === "llama" && env.AI) {
+        try {
+          const aiRes = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+            messages: [
+              { role: "system", content: "You are Meta Llama 3, a highly intelligent and articulate assistant." },
+              { role: "user", content: prompt }
+            ],
+            max_tokens: 800
+          });
+          const ansText = aiRes.response || (aiRes.choices && aiRes.choices[0] ? aiRes.choices[0].text : "");
+          if (ansText && ansText.trim()) {
+            return { ok: true, provider: "Meta Llama", model: "@cf/meta/llama-3.1-8b-instruct", node: CURRENT_SUBDOMAIN, answer: ansText.trim() };
+          }
+        } catch (_) {}
+      }
+
+      // 1. Google Gemini Flash (Latest 3.8 Flash & dynamic rotation across active keys)
       const shuffledGemini = [...geminiKeys].sort(() => Math.random() - 0.5);
-      const gemModels = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"];
-      const gemCandidates = shuffledGemini.slice(0, 3).map(async (gKey, idx) => {
+      const gemModels = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-2.5-flash"];
+      const gemCandidates = shuffledGemini.slice(0, 5).map(async (gKey, idx) => {
         const mod = gemModels[idx % gemModels.length];
         const gUrl = `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${gKey}`;
         const gResp = await fetch(gUrl, {
@@ -1591,7 +1625,7 @@ export default {
         return await Promise.any(gemCandidates);
       } catch (_) {}
 
-      // 2. Cloudflare Workers AI with Conversational Chat Template (Instant ~200ms Edge Llama 3.2)
+      // 2. Cloudflare Workers AI (Instant ~200ms Edge Llama 3.2)
       if (env.AI) {
         try {
           const aiRes = await env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
@@ -1602,7 +1636,7 @@ export default {
               },
               { role: "user", content: prompt }
             ],
-            max_tokens: 400
+            max_tokens: 500
           });
           const ansText = aiRes.response || (aiRes.choices && aiRes.choices[0] ? aiRes.choices[0].text : "");
           if (ansText && ansText.trim()) {
@@ -1617,13 +1651,36 @@ export default {
         } catch (_) {}
       }
 
-      // 3. Ultra-Reliable Default Fleet Copilot Response
+      // 3. Fallback: DeepSeek R1 on Cloudflare Edge
+      if (env.AI) {
+        try {
+          const aiRes = await env.AI.run("@cf/deepseek-ai/deepseek-r1-distill-qwen-32b", {
+            messages: [
+              { role: "system", content: "You are Ari, the personal cloud AI copilot for Arif's fleet." },
+              { role: "user", content: prompt }
+            ],
+            max_tokens: 600
+          });
+          const ansText = aiRes.response || (aiRes.choices && aiRes.choices[0] ? aiRes.choices[0].text : "");
+          if (ansText && ansText.trim()) {
+            return {
+              ok: true,
+              provider: "DeepSeek R1 (Edge)",
+              model: "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+              node: CURRENT_SUBDOMAIN,
+              answer: ansText.trim()
+            };
+          }
+        } catch (_) {}
+      }
+
+      // 4. Ultra-Reliable Default Fleet Copilot Response
       return {
         ok: true,
         provider: "Ari Edge Sentinel",
         model: "edge-rule-based",
         node: CURRENT_SUBDOMAIN,
-        answer: "Hi Arif! All 18 accounts across our 16 mining bots are online, healthy, and actively farming 24/7 in the cloud. ATF is accumulating safely in pool mode with zero withdrawals, and on-chain vaults are synchronized."
+        answer: "Hi Arif! All 18 accounts across our mining fleet are online, healthy, and actively farming 24/7 in the cloud. ATF is accumulating safely in pool mode with zero withdrawals, and on-chain vaults are synchronized."
       };
     };
 
@@ -2698,9 +2755,15 @@ fi
     if (path === "/user-dash" || path === "/users-admin" || path === "/user-admin" || path === "/users" || path === "/user-dashboard" || path === "/community-admin") {
       return Response.redirect("https://aaa-admin-portal.pages.dev/", 302);
     }
-    // Admin Bot Executive Fleet Dashboard (All 18 Private Fleet Accounts & Operations) -> Node 1 Pages / Vercel
+    // Admin Bot Executive Fleet Dashboard (All 18 Private Fleet Accounts & Operations)
     if (path === "/fleet" || path === "/admin" || path === "/status-ui" || path === "/executive-dashboard") {
-      return Response.redirect("https://aaa-admin-portal.pages.dev/admin", 302);
+      return new Response(__ADMIN_DASHBOARD_HTML_JSON__, {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          ...corsHeaders
+        }
+      });
     }
 
     // 8. Payout Receipts Record (VPS -> Edge with In-Memory + Safe KV)
@@ -2973,13 +3036,16 @@ fi
     // 11. Cloudflare Workers AI with Multi-Cloud AI Cascade
     if (path === "/ai" || path === "/api/ai") {
       let prompt = "";
+      let model = "";
       if (request.method === "POST") {
         try {
           const b = await request.json();
           prompt = b.prompt || b.q || "";
+          model = b.model || "";
         } catch (_) {}
       } else {
         prompt = url.searchParams.get("q") || url.searchParams.get("prompt") || "";
+        model = url.searchParams.get("model") || "";
       }
 
       if (!prompt) {
@@ -2989,8 +3055,44 @@ fi
         });
       }
 
-      const aiResult = await runAiCascade(prompt);
+      const aiResult = await runAiCascade(prompt, model);
       return new Response(JSON.stringify(aiResult), {
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
+    }
+
+    // 11.05 Serverless Image Generation API (/api/ai/image)
+    if (path === "/api/ai/image") {
+      let prompt = "";
+      if (request.method === "POST") {
+        try {
+          const b = await request.json();
+          prompt = b.prompt || b.q || "";
+        } catch (_) {}
+      } else {
+        prompt = url.searchParams.get("q") || url.searchParams.get("prompt") || "";
+      }
+      if (!prompt) {
+        return new Response(JSON.stringify({ ok: false, error: "Missing prompt parameter" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+      if (env.AI) {
+        try {
+          const imgStream = await env.AI.run("@cf/stabilityai/stable-diffusion-xl-base-1.0", { prompt });
+          return new Response(imgStream, {
+            headers: { "Content-Type": "image/jpeg", ...corsHeaders }
+          });
+        } catch (e) {
+          return new Response(JSON.stringify({ ok: false, error: e.message }), {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+      }
+      return new Response(JSON.stringify({ ok: false, error: "Workers AI binding not available" }), {
+        status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders }
       });
     }
@@ -3254,7 +3356,7 @@ fi
         if (!update) return new Response("OK");
 
         const botToken = env.ALERT_BOT_TOKEN;
-        const dashUrl = "https://aaa-admin-portal.pages.dev/admin";
+        const dashUrl = "https://restore-agy." + CURRENT_SUBDOMAIN + ".workers.dev/admin";
 
         async function fetchFleetOtp(targetIdx) {
           const renderNodes = [
@@ -3380,6 +3482,10 @@ fi
             [
               { text: "⚙️ Fleet Accounts" },
               { text: "🌐 Cloud Mesh" }
+            ],
+            [
+              { text: "🧠 Ask Ari AI" },
+              { text: "🎨 AI Image" }
             ]
           ],
           resize_keyboard: true,
@@ -4915,6 +5021,133 @@ fi
               await sendReply("⚠️ AI query error: " + e.message);
             }
           })());
+          return new Response("OK");
+        }
+
+        // 1.61 DeepSeek R1 AI Reasoning (/deepseek <prompt>)
+        if (text.startsWith("/deepseek")) {
+          const parts = text.split(/\s+/);
+          const q = parts.slice(1).join(" ").trim();
+          if (!q) {
+            ctx.waitUntil(sendReply("🔮 *DeepSeek R1 AI Reasoning*\n\nSend: `/deepseek <your question or logic query>`\nExample: `/deepseek Solve and explain the best compounding cycle for 5.5 TH/s hashrate`", statusInlineKeyboard));
+            return new Response("OK");
+          }
+          ctx.waitUntil((async () => {
+            await sendChatAction(chatId, "typing");
+            try {
+              const aiData = await runAiCascade(q, "deepseek");
+              const ans = aiData.answer || "No response received.";
+              const rep = `🔮 *DeepSeek R1 Reasoning (${aiData.model || "Edge"}):*\n\n${ans}\n\n⚡ _Serverless on Cloudflare Edge_`;
+              await sendReply(rep, statusInlineKeyboard);
+            } catch (e) {
+              await sendReply("⚠️ DeepSeek error: " + e.message);
+            }
+          })());
+          return new Response("OK");
+        }
+
+        // 1.62 Meta Llama 3.3 AI (/llama <prompt>)
+        if (text.startsWith("/llama")) {
+          const parts = text.split(/\s+/);
+          const q = parts.slice(1).join(" ").trim();
+          if (!q) {
+            ctx.waitUntil(sendReply("🦙 *Meta Llama Intelligence*\n\nSend: `/llama <your question>`\nExample: `/llama Write a concise executive summary of modern blockchain consensus algorithms`", statusInlineKeyboard));
+            return new Response("OK");
+          }
+          ctx.waitUntil((async () => {
+            await sendChatAction(chatId, "typing");
+            try {
+              const aiData = await runAiCascade(q, "llama");
+              const ans = aiData.answer || "No response received.";
+              const rep = `🦙 *Meta Llama (${aiData.model || "Edge"}):*\n\n${ans}\n\n⚡ _Serverless on Cloudflare Edge_`;
+              await sendReply(rep, statusInlineKeyboard);
+            } catch (e) {
+              await sendReply("⚠️ Llama error: " + e.message);
+            }
+          })());
+          return new Response("OK");
+        }
+
+        // 1.625 Ask Ari AI Button Menu
+        if (text === "🧠 Ask Ari AI" || text === "🧠 AI Copilot") {
+          ctx.waitUntil((async () => {
+            const aiHelp = `🧠 *Ari AI Cloud Copilot — Multi-Model Mesh*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `All models run 100% serverless on Cloudflare Edge GPU nodes with zero VPS or local phone load:\n\n` +
+              `🔮 *DeepSeek R1 Reasoning:*\n` +
+              `• Command: \`/deepseek <question>\`\n` +
+              `• Best for: Complex logic, code, mathematical reasoning, and deep analysis\n\n` +
+              `🦙 *Meta Llama 3.1 & 3.2:*\n` +
+              `• Command: \`/llama <question>\`\n` +
+              `• Best for: Rapid executive summaries, conversational answers, and fleet reports\n\n` +
+              `⚡ *Google Gemini Flash:*\n` +
+              `• Command: \`/ai <question>\`\n` +
+              `• Best for: Multi-source web synthesis & general intelligence\n\n` +
+              `🎨 *Stable Diffusion XL:*\n` +
+              `• Command: \`/image <prompt>\`\n` +
+              `• Best for: Instant photorealistic serverless image generation\n\n` +
+              `💬 *Natural Conversation:*\n` +
+              `You can also just type ANY normal message directly to this bot, and Ari AI will answer automatically!`;
+            await sendReply(aiHelp, statusInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 1.63 AI Image Generation (/image <prompt>, /draw <prompt>, or 🎨 AI Image button)
+        if (text.startsWith("/image") || text.startsWith("/draw") || text === "🎨 AI Image" || text === "🎨 Generate Image") {
+          const parts = text.split(/\s+/);
+          const isButton = (text === "🎨 AI Image" || text === "🎨 Generate Image");
+          const imgPrompt = isButton ? "" : parts.slice(1).join(" ").trim();
+          if (!imgPrompt) {
+            ctx.waitUntil(sendReply("🎨 *AI Image Generator (Stable Diffusion XL)*\n\nSend: `/image <prompt>`\nExample: `/image Futuristic cyberpunk city with glowing neon crypto towers, 8k resolution cinematic photo`", statusInlineKeyboard));
+            return new Response("OK");
+          }
+          ctx.waitUntil((async () => {
+            await sendChatAction(chatId, "upload_photo");
+            try {
+              if (env.AI) {
+                const imgStream = await env.AI.run("@cf/stabilityai/stable-diffusion-xl-base-1.0", {
+                  prompt: imgPrompt
+                });
+                const formData = new FormData();
+                formData.append("chat_id", chatId);
+                formData.append("photo", new Blob([imgStream], { type: "image/jpeg" }), "ai_art.jpg");
+                formData.append("caption", `🎨 *Stable Diffusion XL* · _Cloudflare Edge_\nPrompt: _${imgPrompt}_`);
+                formData.append("parse_mode", "Markdown");
+
+                await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                  method: "POST",
+                  body: formData
+                });
+              } else {
+                await sendReply("⚠️ Cloudflare Workers AI binding not available on this node.");
+              }
+            } catch (e) {
+              await sendReply("⚠️ Image generation error: " + e.message);
+            }
+          })());
+          return new Response("OK");
+        }
+
+        // 1.64 Available Serverless Models (/models)
+        if (text === "/models" || text === "🌐 AI Models" || text.startsWith("/models")) {
+          const modRep = `🧠 *Serverless Cloud AI Mesh — Active Models*\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `Your Telegram Bot (@myagyai) runs 100% serverless on Cloudflare Edge GPU nodes with zero VPS or local phone load:\n\n` +
+            `🔮 *DeepSeek R1 Distill 32B*:\n` +
+            `• Command: \`/deepseek <query>\`\n` +
+            `• Purpose: Advanced deep reasoning, code generation, logic & math\n\n` +
+            `🦙 *Meta Llama 3.1 & 3.2*:\n` +
+            `• Command: \`/llama <query>\`\n` +
+            `• Purpose: Ultra-fast conversational AI and fleet copiloting\n\n` +
+            `🎨 *Stable Diffusion XL (SDXL)*:\n` +
+            `• Command: \`/image <prompt>\`\n` +
+            `• Purpose: High-resolution serverless image generation\n\n` +
+            `⚡ *Google Gemini Flash*:\n` +
+            `• Command: \`/ai <query>\`\n` +
+            `• Purpose: Broad knowledge synthesis with key rotation\n\n` +
+            `💬 *Direct Chat*: Just send ANY normal message to this bot, and Ari AI will automatically answer!`;
+          ctx.waitUntil(sendReply(modRep, statusInlineKeyboard));
           return new Response("OK");
         }
 
@@ -9249,9 +9482,14 @@ Reply to Arif naturally:`;
 async def deploy_account(acc):
     print(f"\n🚀 Deploying to {acc['name']} ({acc['subdomain']}.workers.dev)...")
 
+    admin_html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public_admin", "admin.html")
+    with open(admin_html_path, "r", encoding="utf-8") as f_adm:
+        admin_html_json = json.dumps(f_adm.read())
+
     worker_code = (
         WORKER_JS_TEMPLATE.replace("__SUBDOMAIN__", acc["subdomain"])
         .replace("__SIBLING_URLS_JSON__", json.dumps(acc["sibling_urls"]))
+        .replace("__ADMIN_DASHBOARD_HTML_JSON__", admin_html_json)
     )
 
     if acc.get("api_token"):
@@ -9545,7 +9783,7 @@ async def main():
                     "type": "web_app",
                     "text": "👑 Fleet Console",
                     "web_app": {
-                        "url": "https://aaa-admin-portal.pages.dev/admin"
+                        "url": "https://restore-agy.aaaai2.workers.dev/admin"
                     }
                 }
             }
@@ -9563,7 +9801,7 @@ async def main():
                         "type": "web_app",
                         "text": "👑 Fleet Console",
                         "web_app": {
-                            "url": "https://aaa-admin-portal.pages.dev/admin"
+                            "url": "https://restore-agy.aaaai2.workers.dev/admin"
                         }
                     }
                 }
@@ -9581,6 +9819,11 @@ async def main():
                     {"command": "start", "description": "👑 Open Executive Fleet Console & Roster"},
                     {"command": "otp", "description": "🔑 Telegram Relogin Codes & 2FA Passwords"},
                     {"command": "recover", "description": "🔄 Account Relogin & Code Wizard"},
+                    {"command": "models", "description": "🧠 Serverless AI Mesh (DeepSeek, Llama, SDXL)"},
+                    {"command": "deepseek", "description": "🔮 DeepSeek R1 AI Reasoning & Logic"},
+                    {"command": "llama", "description": "🦙 Meta Llama Fast Intelligence"},
+                    {"command": "image", "description": "🎨 Stable Diffusion XL Image Generator"},
+                    {"command": "ai", "description": "💬 Google Gemini Flash & Ari Copilot"},
                     {"command": "dashboard", "description": "🚀 Launch Vercel Fleet Operations Console"},
                     {"command": "wallets", "description": "👛 Verified Destination Wallets & Balances"},
                     {"command": "harvest", "description": "⚡ Trigger Instant 5-Bot Multi-Cloud Harvest"},

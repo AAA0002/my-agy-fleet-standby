@@ -165,7 +165,16 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   #### 🛡️ System 1: Admin Telegram Ecosystem (Control, Telemetry, Vault, Disaster Recovery)
   *Dedicated exclusively to system administrators, automated disaster recovery, on-chain telemetry, and AI command execution.*
   - **Admin Bot**: `@myagyai` (Bot ID: `8858823950`, Token: `REPORT_BOT_TOKEN: 8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8`)
-    - Purpose: Autonomous execution reporting, harvest alerts, AI natural language commands, Better Stack dead-man pings, and automated backup broadcasts.
+    - Purpose: Autonomous execution reporting, harvest alerts, multi-model AI copilot, Better Stack dead-man pings, and automated backup broadcasts.
+    - **Serverless Cloud AI Mesh**:
+      * `/deepseek <prompt>`: DeepSeek R1 32B reasoning on Cloudflare Edge GPUs.
+      * `/llama <prompt>`: Meta Llama 3.2 rapid edge copilot.
+      * `/image <prompt>` / `/draw <prompt>`: Stable Diffusion XL binary photo generator with direct Telegram photo upload.
+      * `/ai <prompt>`: Google Gemini 3.8 Flash with 5-key dynamic rotation & instant Llama edge fallback.
+      * `/models`: Directory of active edge AI models.
+    - **Executive Fleet Operations Console (`/admin`)**:
+      * Live URL: `https://restore-agy.aaaai2.workers.dev/admin` (embedded across all 5 Cloudflare Worker nodes).
+      * Features: All 18 accounts, Multi-Model Ari AI Studio, Dedicated OTP & Relogin Center (#1-18), Multi-Chain Treasury, 5-Node Edge Mesh latency matrix, Obsidian Dark & Clean Light theme.
   - **Admin Direct Control Chat**: `REPORT_CHAT_ID: 6727787768` (`@Arif2743aaa`, Phone: `+8801317342850`)
     - Purpose: High-priority operational alerts, Turnstile solver telemetry, and 1-click disaster restore execution.
     - Authorized Admin UIDs: `["6727787768", "8741547543", "7648254021"]`.

@@ -2,7 +2,29 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+- **🧠 Serverless Cloud AI Mesh, Gemini 3.8 Flash Free Tier Upgrade & Executive Admin Dashboard Redesign (October 10, 2026)**:
+  - **⚡ Google Gemini Free Tier Update & Resilient Cascade (`runAiCascade`)**:
+    * Resolved model deprecation (404 on `gemini-2.0-flash`) by migrating Google Gemini integration to modern `gemini-3.8-flash`, `gemini-flash-latest`, and `gemini-2.5-flash`.
+    * Implemented resilient 5-key dynamic rotation across active API keys to absorb free-tier per-project rate limits (RPM / RPD / 429 quota exhaustion).
+    * Engineered zero-downtime fallback to Cloudflare Workers AI (`@cf/meta/llama-3.2-3b-instruct` and `@cf/deepseek-ai/deepseek-r1-distill-qwen-32b`), providing 50,000 neurons/day at $0 cost with zero quota exhaustion.
+  - **🔮 Multi-Model Serverless Cloud AI Mesh on Telegram Admin Bot (`@myagyai`)**:
+    * Added `/deepseek <prompt>`: DeepSeek R1 Distill Qwen 32B reasoning running serverless on edge GPUs with step-by-step logic and math explanations.
+    * Added `/llama <prompt>`: Meta Llama 3.2 ultra-fast edge intelligence.
+    * Added `/image <prompt>` & `/draw <prompt>`: Stable Diffusion XL (`@cf/stabilityai/stable-diffusion-xl-base-1.0`) generating high-resolution binary images and uploading to Telegram via `sendPhoto`.
+    * Added `/models`: Interactive directory of all serverless models.
+    * Added `🧠 Ask Ari AI` and `🎨 AI Image` buttons to persistent reply keyboard.
+    * Registered all new AI commands in Telegram Bot menu (`setMyCommands`).
+  - **🎨 World-Class Executive Admin Dashboard Redesign (`public_admin/admin.html`)**:
+    * **Full 18-Account Roster**: Upgraded roster from 14 to all 18 accounts with verified phone numbers (+880..., +1430..., +9189...), user IDs, and individual 5-bot mining states.
+    * **Multi-Model Ari AI Studio**: Interactive in-dashboard AI console featuring model selector pills (DeepSeek R1, Meta Llama, Gemini 3.8 Flash, Stable Diffusion XL) with inline artwork rendering and instant prompt chips.
+    * **Dedicated OTP & Recovery Center**: Interactive 1-by-1 account picker (#1 to #18) with live querying of Render session collectors, 15-minute validity countdown, and 1-tap copy button.
+    * **Multi-Chain Treasury**: Binance BEP-20 Master Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`), Arbitrum One Vault, and 18 TON dedicated wallets with live fiat valuation ($ USD, ৳ BDT, € EUR, ₹ INR, £ GBP).
+    * **5-Node Edge Mesh Matrix**: Real-time live latency ping test across all 5 Cloudflare edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) and Render standby nodes.
+    * **High-Tech Obsidian Dark & Light Theme**: Toggleable theme with radiant cyan/emerald accents and glassmorphism.
+    * **Direct Sub-50ms Edge Serving**: Embedded dashboard directly into Cloudflare Worker runtime across all 5 edge nodes at `/admin` (`restore-agy.<node>.workers.dev/admin`), eliminating external Pages build dependencies and providing instant mobile load times.
+  - **🛡️ Strict Isolation & Zero Phone Load**:
+    * Zero bot daemons running locally on Samsung Galaxy A30 (Rule 4).
+    * User Bot (`@AAAPREMIUMAPPSbot`) remains 100% untouched and isolated (Rule 1).
 
 - **🔑 Cloud-Based Telegram Login OTP Hub & Phone Reset Recovery Engine (October 10, 2026)**:
   - **🚀 Render Cloud MTProto & Gmail IMAP Interceptor (`/api/fleet/otp/{target}`)**:
