@@ -11,9 +11,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
       2. **Supabase Managed Postgres**: Upserted `id='system_fleet_vault'` in `fleet_accounts` table.
       3. **Render Environment Mesh**: Updated all 3 active services (`my-agy-fleet-standby`, `my-agy-fleet-standby-node2`, `my-agy-fleet-standby-node3`) via Render API (`PUT /env-vars`).
       4. **Local Master `.env`**: Appended Gmail credentials and 2FA credentials.
-  - **📧 Google App Password & Automated IMAP Code Fetcher (`auto_bind_login_emails.py`)**:
-    * Built hands-free Python IMAP listener using Google App Password (`kuqevwndvabevefx` for `aaa.support.a@gmail.com`) to intercept Telegram OTP codes automatically.
-    * Successfully bound Telegram Login Email on **Account 14** (`aaa.support.a+14@gmail.com`) and **Account 16** (`aaa.support.a+16@gmail.com`).
+  - **📧 Google App Password & Automated IMAP Code Fetcher (`auto_bind_login_emails.py`, `bind_all_2fa_emails.py`)**:
+    * Built hands-free Python IMAP listener using Google App Password (`kuqevwndvabevefx` for `aaa.support.a@gmail.com`) to intercept Telegram OTP codes automatically with fresh SRP ID computation.
+    * Successfully bound and verified exclusive recovery email addresses across 100% of purchased accounts:
+      - Account #2: `aaa.support.a+2@gmail.com`
+      - Account #5: `aaa.support.a+5@gmail.com`
+      - Account #6: `aaa.support.a+6@gmail.com`
+      - Account #9: `aaa.support.a+9@gmail.com`
+      - Account #10: `aaa.support.a+10@gmail.com`
+      - Account #14: `aaa.support.a@gmail.com` (+ Login OTP: `aaa.support.a+14@gmail.com`)
+      - Account #15: `aaa.support.a@gmail.com`
+      - Account #16: `aaa.support.a@gmail.com` (+ Login OTP: `aaa.support.a+16@gmail.com`)
+      - Account #17: `aaa.support.a@gmail.com`
+      - Account #18: `aaa.support.a@gmail.com`
+    * Verified 10/10 purchased accounts are now 100% unified to the user's Gmail inbox `aaa.support.a@gmail.com`.
     * Generated master architecture document [`FLEET_SECURITY_SECRETS_AND_INFRASTRUCTURE.md`](file:///root/.gemini/antigravity-cli/brain/ab0db110-aa04-4d2f-808c-08e45816f8cd/FLEET_SECURITY_SECRETS_AND_INFRASTRUCTURE.md).
   - **📱 Rule 4 Compliance (Zero Phone Load)**:
     * Zero bot daemons running locally on Samsung Galaxy A30.
