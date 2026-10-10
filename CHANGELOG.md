@@ -4,6 +4,22 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🔑 Cloud-Based Telegram Login OTP Hub & Phone Reset Recovery Engine (October 10, 2026)**:
+  - **🚀 Render Cloud MTProto & Gmail IMAP Interceptor (`/api/fleet/otp/{target}`)**:
+    * Implemented dual-source Telegram login code interceptor in `render_app_latest.py` and `render_standby_app.py`.
+    * First checks live active cloud MTProto sessions for official Telegram service notifications (`peer=777000`: `Login code: XXXXX`).
+    * Automatically falls back to querying the user's Gmail IMAP inbox (`aaa.support.a@gmail.com`) using the Google App Password if Telegram dispatches the code via email.
+    * Returns account index, name, phone number, formatted copyable `code`, 2FA password (`Arif216@`), source, and code age in seconds.
+    * Fixed `accounts.json` loader and Cloudflare backup archive extraction fallback; deployed and live on Render Node 2 (Frankfurt: `srv-dan5q00ae00c73djummg`) and Node 3 (Oregon: `srv-db437o3tqb8s73dt4erg`).
+  - **📱 Telegram Admin Bot Relogin Hub (`@myagyai`)**:
+    * Added `🔑 OTP & Relogin` to persistent reply keyboard and inline keyboards across all 5 Cloudflare Worker Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Implemented interactive 18-account Grid Picker inline menu (`btn_otp_menu`) and 1-by-1 Wizard (`btn_otp_get_1` through `btn_otp_get_18`).
+    * Formats codes and 2FA passwords in Markdown `<code>` blocks for instant 1-tap copy on mobile screens.
+    * Registered `/otp <account_num>` and `/recover` commands with Telegram Bot API (`setMyCommands`).
+  - **🛡️ Strict Safety, Isolation & Zero Phone Load**:
+    * 100% of interceptor and bot operations run in the cloud (Render + Cloudflare Workers). 0% CPU/RAM load on Samsung Galaxy A30.
+    * User Bot (`@AAAPREMIUMAPPSbot`) remains completely untouched and isolated.
+
 - **🔐 Distributed Cloud Secrets Vault Replication & Automated IMAP Login Email Binding (October 10, 2026)**:
   - **☁️ 4-Tier Zero-Trust Secret Replication**:
     * Replicated all core secrets (`GMAIL_ADDRESS`, `GMAIL_APP_PASSWORD`, `FLEET_2FA_PASSWORD`, `FLEET_2FA_FALLBACK`, `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `RECOVERY_EMAIL`) across:

@@ -654,6 +654,19 @@ To ensure zero-trust off-machine durability and seamless authentication automati
   - **2FA Recovery Email**: Set via `account.UpdatePasswordSettingsRequest`. 100% active on all 10 purchased accounts with password `Arif216@` and recovery `aaa.support.a@gmail.com`.
   - **Login Email (OTP)**: Bound via `account.SendVerifyEmailCodeRequest` + `account.VerifyEmailRequest`. Account #14 and #16 bound to `aaa.support.a+14@gmail.com` and `aaa.support.a+16@gmail.com`.
 
+### 3. Telegram Admin Bot Relogin & OTP Hub (`@myagyai`)
+To facilitate seamless login on new devices (e.g., after phone resets) without SIM cards or SMS:
+* **Endpoint (`GET /api/fleet/otp/{target}`)**: Hosted on Render Standby Node 2 & Node 3.
+  - Queries Telegram official service notification messages (`peer=777000`: `Login code: XXXXX`) directly from active cloud MTProto sessions.
+  - Falls back to Gmail IMAP inbox extraction (`aaa.support.a@gmail.com`) if Telegram sends the code via email.
+  - Returns account name, phone number, formatted copyable `code`, 2FA password (`Arif216@`), source, and age in seconds.
+* **Telegram Admin Bot UI**:
+  - `🔑 OTP & Relogin` button in persistent reply keyboard and inline keyboards.
+  - Interactive 18-account Grid Picker (`btn_otp_menu`).
+  - 1-by-1 Wizard (`btn_otp_get_1` through `btn_otp_get_18`) with *🔄 Fetch Code Now*, *⏭️ Next / Skip*, and *⏮️ Prev*.
+  - Text commands `/otp <number>` and `/recover`.
+  - 1-tap copyable Markdown `<code>` blocks for phone, login code, and 2FA password.
+
 ---
 
 ## 🔒 9. Living Changelog Protocol

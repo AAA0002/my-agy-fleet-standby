@@ -3256,6 +3256,69 @@ fi
         const botToken = env.ALERT_BOT_TOKEN;
         const dashUrl = "https://aaa-admin-portal.pages.dev/admin";
 
+        async function fetchFleetOtp(targetIdx) {
+          const renderNodes = [
+            "https://my-agy-fleet-standby-node2.onrender.com",
+            "https://my-agy-fleet-standby-node3.onrender.com",
+            "https://my-agy-fleet-standby.onrender.com"
+          ];
+          for (const rUrl of renderNodes) {
+            try {
+              const res = await fetch(`${rUrl}/api/fleet/otp/${targetIdx}`, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+              });
+              if (res.ok) {
+                const data = await res.json();
+                return data;
+              }
+            } catch (_) {}
+          }
+          return { ok: false, found: false, error: "Standby cloud mesh unreachable" };
+        }
+
+        const buildOtpMenuKeyboard = () => ({
+          inline_keyboard: [
+            [
+              { text: "1. Arif 👑", callback_data: "btn_otp_get_1" },
+              { text: "2. Nancy 2", callback_data: "btn_otp_get_2" },
+              { text: "3. Koram", callback_data: "btn_otp_get_3" }
+            ],
+            [
+              { text: "4. Arif", callback_data: "btn_otp_get_4" },
+              { text: "5. Nathan 5", callback_data: "btn_otp_get_5" },
+              { text: "6. Kaitlyn 6", callback_data: "btn_otp_get_6" }
+            ],
+            [
+              { text: "7. Abid", callback_data: "btn_otp_get_7" },
+              { text: "8. Abid 2", callback_data: "btn_otp_get_8" },
+              { text: "9. Naimur 9", callback_data: "btn_otp_get_9" }
+            ],
+            [
+              { text: "10. Tanvir 10", callback_data: "btn_otp_get_10" },
+              { text: "11. Md. Arif", callback_data: "btn_otp_get_11" },
+              { text: "12. Sanzida", callback_data: "btn_otp_get_12" }
+            ],
+            [
+              { text: "13. Abid 3", callback_data: "btn_otp_get_13" },
+              { text: "14. Rohan 14", callback_data: "btn_otp_get_14" },
+              { text: "15. Tasnim 15", callback_data: "btn_otp_get_15" }
+            ],
+            [
+              { text: "16. Rashed 16", callback_data: "btn_otp_get_16" },
+              { text: "17. Kawsar 17", callback_data: "btn_otp_get_17" },
+              { text: "18. Mehedi 18", callback_data: "btn_otp_get_18" }
+            ],
+            [
+              { text: "▶️ Start 1-by-1 Wizard (#1)", callback_data: "btn_otp_get_1" }
+            ],
+            [
+              { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
+              { text: "📊 Fleet Status", callback_data: "btn_status" }
+            ]
+          ]
+        });
+
         const statusInlineKeyboard = {
           inline_keyboard: [
             [
@@ -3264,9 +3327,10 @@ fi
             ],
             [
               { text: "👥 Fleet Accounts (18)", callback_data: "btn_accounts" },
-              { text: "📊 Community Miners", callback_data: "btn_community" }
+              { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" }
             ],
             [
+              { text: "📊 Community Miners", callback_data: "btn_community" },
               { text: "🚀 Open Executive Dashboard", web_app: { url: dashUrl } }
             ]
           ]
@@ -3276,10 +3340,13 @@ fi
           inline_keyboard: [
             [
               { text: "➕ Add Account", callback_data: "btn_add_account" },
-              { text: "🗑️ Remove Account", callback_data: "btn_admin_remove_menu" }
+              { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" }
             ],
             [
-              { text: "🔄 Refresh Fleet Roster", callback_data: "btn_accounts" },
+              { text: "🗑️ Remove Account", callback_data: "btn_admin_remove_menu" },
+              { text: "🔄 Refresh Fleet Roster", callback_data: "btn_accounts" }
+            ],
+            [
               { text: "🚀 Open Admin Console", web_app: { url: dashUrl } }
             ]
           ]
@@ -3303,7 +3370,7 @@ fi
             ],
             [
               { text: "📊 Fleet Status" },
-              { text: "👥 Community Miners" }
+              { text: "🔑 OTP & Relogin" }
             ],
             [
               { text: "⚡ Instant Harvest" },
@@ -3602,6 +3669,98 @@ fi
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: repMarkup })
+              }).catch(() => {});
+            } else if (cbData === "btn_otp_menu") {
+              const rep = `🔑 *Telegram Login OTP & Relogin Hub*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `Select an account below to fetch its Telegram login code directly from your active 24/7 cloud sessions (Render & Gmail):\n\n` +
+                `👉 *How it works:*\n` +
+                `1. Tap the account number you are logging into.\n` +
+                `2. Enter the phone number in Telegram on your phone.\n` +
+                `3. The cloud session intercepts the code from Telegram (*777000*) or Gmail and provides 1-tap copy!\n\n` +
+                `_Or tap **▶️ Start 1-by-1 Wizard** to log into all accounts consecutively._`;
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: buildOtpMenuKeyboard() })
+              }).catch(() => {});
+            } else if (cbData.startsWith("btn_otp_get_")) {
+              const targetIdx = parseInt(cbData.replace("btn_otp_get_", ""), 10) || 1;
+              const nextIdx = targetIdx < 18 ? targetIdx + 1 : 1;
+              const prevIdx = targetIdx > 1 ? targetIdx - 1 : 18;
+
+              await fetch(`https://api.telegram.org/bot${botToken}/sendChatAction`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, action: "typing" })
+              }).catch(() => {});
+
+              const data = await fetchFleetOtp(targetIdx);
+              const nameStr = data.name || `Account #${targetIdx}`;
+              const phoneStr = data.phone || KNOWN_PHONES_BY_INDEX[targetIdx] || "N/A";
+              const pwdStr = data.password_2fa || "Arif216@";
+
+              let rep = "";
+              let markup = {};
+
+              if (data.ok && data.found) {
+                const srcStr = data.source === "telegram_777000" ? "Telegram Service Notification (777000) 📨" : "Gmail Inbox (aaa.support.a@gmail.com) 📧";
+                const ageSec = data.age_seconds || 15;
+                rep = `🎉 *Telegram Login Code Intercepted!*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `👤 *Account:* #${targetIdx} *${nameStr}*\n` +
+                  `📱 *Phone:* \`${phoneStr}\`\n\n` +
+                  `🔢 *Login OTP Code:*\n` +
+                  `\`${data.code}\`\n` +
+                  `_(Tap the code above to copy it instantly)_\n\n` +
+                  `🔒 *2FA Password:*\n` +
+                  `\`${pwdStr}\`\n` +
+                  `_(Tap the password above to copy it instantly)_\n\n` +
+                  `📡 *Source:* ${srcStr}\n` +
+                  `⏱️ *Code Age:* \`${ageSec}s ago\`\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━`;
+                markup = {
+                  inline_keyboard: [
+                    [
+                      { text: "🔄 Refresh Code", callback_data: `btn_otp_get_${targetIdx}` },
+                      { text: `⏭️ Next (#${nextIdx})`, callback_data: `btn_otp_get_${nextIdx}` }
+                    ],
+                    [
+                      { text: `⏮️ Prev (#${prevIdx})`, callback_data: `btn_otp_get_${prevIdx}` },
+                      { text: "📋 Account Grid", callback_data: "btn_otp_menu" }
+                    ]
+                  ]
+                };
+              } else {
+                rep = `⏳ *Waiting for Login Code — #${targetIdx}*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `👤 *Account:* #${targetIdx} *${nameStr}*\n` +
+                  `📱 *Phone:* \`${phoneStr}\`\n` +
+                  `🔒 *2FA Password:* \`${pwdStr}\`\n\n` +
+                  `👉 *Action Required:*\n` +
+                  `1. Open Telegram / TeleGraph on your phone.\n` +
+                  `2. Enter the phone number: \`${phoneStr}\`\n` +
+                  `3. Press "Next" in Telegram so Telegram dispatches the code.\n` +
+                  `4. Tap *🔄 Fetch Code Now* below!\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━`;
+                markup = {
+                  inline_keyboard: [
+                    [
+                      { text: "🔄 Fetch Code Now", callback_data: `btn_otp_get_${targetIdx}` },
+                      { text: `⏭️ Skip to #${nextIdx}`, callback_data: `btn_otp_get_${nextIdx}` }
+                    ],
+                    [
+                      { text: `⏮️ Prev (#${prevIdx})`, callback_data: `btn_otp_get_${prevIdx}` },
+                      { text: "📋 Account Grid", callback_data: "btn_otp_menu" }
+                    ]
+                  ]
+                };
+              }
+
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: markup })
               }).catch(() => {});
             } else if (cbData === "btn_mesh") {
               const rep = `🌐 *MY AGY AI — Multi-Cloud Unified Mesh*\n` +
@@ -5066,6 +5225,75 @@ fi
                 `*Error:* ${errDetail}\n\n` +
                 `Please tap ➕ Add Account to start connection.`;
               await sendAnimatedReply(chatId, [errMsg], mainKeyboard);
+            }
+          })());
+          return new Response("OK");
+        }
+
+        // 2.9 OTP & Relogin Command
+        if (text === "🔑 OTP & Relogin" || text.startsWith("/otp") || text.startsWith("/recover") || text === "/login") {
+          ctx.waitUntil((async () => {
+            const parts = text.split(" ").filter(Boolean);
+            if (parts.length > 1 && !isNaN(parseInt(parts[1], 10))) {
+              const reqIdx = parseInt(parts[1], 10);
+              const nextIdx = reqIdx < 18 ? reqIdx + 1 : 1;
+              const prevIdx = reqIdx > 1 ? reqIdx - 1 : 18;
+              await sendChatAction(chatId, "typing");
+              const data = await fetchFleetOtp(reqIdx);
+              const nameStr = data.name || `Account #${reqIdx}`;
+              const phoneStr = data.phone || KNOWN_PHONES_BY_INDEX[reqIdx] || "N/A";
+              const pwdStr = data.password_2fa || "Arif216@";
+              let rep = "";
+              let markup = {};
+              if (data.ok && data.found) {
+                rep = `🎉 *Telegram Login Code Intercepted!*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `👤 *Account:* #${reqIdx} *${nameStr}*\n` +
+                  `📱 *Phone:* \`${phoneStr}\`\n\n` +
+                  `🔢 *Login OTP Code:*\n` +
+                  `\`${data.code}\`\n\n` +
+                  `🔒 *2FA Password:*\n` +
+                  `\`${pwdStr}\`\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━`;
+                markup = {
+                  inline_keyboard: [
+                    [{ text: "🔄 Refresh Code", callback_data: `btn_otp_get_${reqIdx}` }, { text: `⏭️ Next (#${nextIdx})`, callback_data: `btn_otp_get_${nextIdx}` }],
+                    [{ text: "📋 Account Grid", callback_data: "btn_otp_menu" }]
+                  ]
+                };
+              } else {
+                rep = `⏳ *Waiting for Login Code — #${reqIdx}*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `👤 *Account:* #${reqIdx} *${nameStr}*\n` +
+                  `📱 *Phone:* \`${phoneStr}\`\n` +
+                  `🔒 *2FA Password:* \`${pwdStr}\`\n\n` +
+                  `Open Telegram on your phone, enter \`${phoneStr}\`, then tap *🔄 Fetch Code Now* below!`;
+                markup = {
+                  inline_keyboard: [
+                    [{ text: "🔄 Fetch Code Now", callback_data: `btn_otp_get_${reqIdx}` }, { text: `⏭️ Skip to #${nextIdx}`, callback_data: `btn_otp_get_${nextIdx}` }],
+                    [{ text: "📋 Account Grid", callback_data: "btn_otp_menu" }]
+                  ]
+                };
+              }
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: markup })
+              }).catch(() => {});
+            } else {
+              const rep = `🔑 *Telegram Login OTP & Relogin Hub*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `Select an account below to fetch its Telegram login code from active cloud sessions (Render & Gmail):\n\n` +
+                `👉 *How it works:*\n` +
+                `1. Tap the account number you are logging into.\n` +
+                `2. Enter the phone number in Telegram on your phone.\n` +
+                `3. The cloud session intercepts the code from Telegram (*777000*) or Gmail!\n\n` +
+                `_Or tap **▶️ Start 1-by-1 Wizard** to go in order._`;
+              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: buildOtpMenuKeyboard() })
+              }).catch(() => {});
             }
           })());
           return new Response("OK");
@@ -9321,6 +9549,8 @@ async def main():
             admin_commands_payload = {
                 "commands": [
                     {"command": "start", "description": "👑 Open Executive Fleet Console & Roster"},
+                    {"command": "otp", "description": "🔑 Telegram Relogin Codes & 2FA Passwords"},
+                    {"command": "recover", "description": "🔄 Account Relogin & Code Wizard"},
                     {"command": "dashboard", "description": "🚀 Launch Vercel Fleet Operations Console"},
                     {"command": "wallets", "description": "👛 Verified Destination Wallets & Balances"},
                     {"command": "harvest", "description": "⚡ Trigger Instant 5-Bot Multi-Cloud Harvest"},
