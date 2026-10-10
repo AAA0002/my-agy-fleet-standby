@@ -1,7 +1,7 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
 > **Universal Onboarding, System Architecture, 4-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
-> *Last Updated: October 9, 2026*
+> *Last Updated: October 10, 2026*
 > *Classification: Mission-Critical Living Technical Documentation*
 
 ---
@@ -137,8 +137,9 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * Script: `refresh_cloud_tokens.py` (Connects MTProto in cloud, harvests fresh 24h WebApp `initData`, syncs to 5x Cloudflare Nodes and Upstash Redis).
     * Auto-Dispatch Pipeline: Automatically triggers `.github/workflows/mrg_turnstile_solver.yml` and Render Standby multi-node farming upon completion.
   - **100% Cloud Multi-Bot Turnstile Solver & Auto-Farming Workflow**:
-    * Workflow File: `.github/workflows/mrg_turnstile_solver.yml` (Runs every 4 hours: `15 */4 * * *` as safety net, and event-driven via token refresher).
-    * Script: `mrg_turnstile_solver.py` (Patchright Chromium stealth engine, Turnstile script loader race guard, real Telegram `initData` simulation, TonConnect 2.0 wallet onboarding, Turnstile iframe solver, and auto-compounder).
+    * Workflow File: `.github/workflows/mrg_turnstile_solver.yml` (Runs every 4 hours: `0 */4 * * *`, ensuring Victor's Company and MRG human passes stay perpetually fresh before their 6–8h expiration).
+    * Timeout: 40 minutes (`timeout-minutes: 40`), preventing premature cancellation across 18 fleet accounts.
+    * Script: `mrg_turnstile_solver.py` (Patchright Chromium stealth engine, Turnstile script loader race guard, dual-action targeted iframe element and frame locator clicks on `#challenge-stage, .ctp-checkbox-label, .mark`, real Telegram `initData` simulation, TonConnect 2.0 wallet onboarding, Turnstile iframe solver, and full reward auto-compounder).
     * Zero Phone Load: Runs 100% inside GitHub's cloud runner environment (Ubuntu 24.04, 7GB RAM).
 
 - **Native Telegram Serverless Platform (`My_Router_AI_bot` / `tgcloud` / App ID `app8858823950`)**:
