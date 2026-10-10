@@ -9,11 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     * Implemented dual-source Telegram login code interceptor in `render_app_latest.py` and `render_standby_app.py`.
     * First checks live active cloud MTProto sessions for official Telegram service notifications (`peer=777000`: `Login code: XXXXX`).
     * Automatically falls back to querying the user's Gmail IMAP inbox (`aaa.support.a@gmail.com`) using the Google App Password if Telegram dispatches the code via email.
+    * **Precision Freshness & Recipient Validation**: Enforced strict 15-minute expiration check on email timestamps (`msg_age <= 900s`) and exact recipient alias matching (`+{target_idx}@`), completely eliminating false positives from historic confirmation emails.
     * Returns account index, name, phone number, formatted copyable `code`, 2FA password (`Arif216@`), source, and code age in seconds.
     * Fixed `accounts.json` loader and Cloudflare backup archive extraction fallback; deployed and live on Render Node 2 (Frankfurt: `srv-dan5q00ae00c73djummg`) and Node 3 (Oregon: `srv-db437o3tqb8s73dt4erg`).
   - **📱 Telegram Admin Bot Relogin Hub (`@myagyai`)**:
     * Added `🔑 OTP & Relogin` to persistent reply keyboard and inline keyboards across all 5 Cloudflare Worker Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
     * Implemented interactive 18-account Grid Picker inline menu (`btn_otp_menu`) and 1-by-1 Wizard (`btn_otp_get_1` through `btn_otp_get_18`).
+    * Added fuzzy phone number search in text commands (e.g., `/otp +8801943805617` or `/otp 2`).
+    * Equipped `fetchFleetOtp` with `AbortSignal.timeout(12000)` for sub-second failover across Render standby nodes.
     * Formats codes and 2FA passwords in Markdown `<code>` blocks for instant 1-tap copy on mobile screens.
     * Registered `/otp <account_num>` and `/recover` commands with Telegram Bot API (`setMyCommands`).
   - **🛡️ Strict Safety, Isolation & Zero Phone Load**:

