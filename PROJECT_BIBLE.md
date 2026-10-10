@@ -260,18 +260,18 @@ To protect against automated Telegram Sybil bans and wipe away seller artifacts,
   5. `Abid Hasan` (`+8801797795624`, UID `8025472383`)
   6. `Abid` (`+8801838268380`, `@Abid_300`, UID `8741547543`)
   7. `Sanzida Shimu` (`+8801774578536`, `@Sanzidashimu`, UID `7487048946`)
-- **Purchased Worker Accounts (11 Accounts — Hardened With Natural Authentic Names)**:
-  8. `Nancy Davis` (`+8801943805617`, `@nancydavis_24`, UID `8881914294`)
-  9. `Kamrul Hasan` (`+8801790208077`, `@kamrul_hasan735`, UID `7648254021`)
-  10. `Nathan Miller` (`+14302084365`, `@nathan_miller7`, UID `8450010161`)
-  11. `Kaitlyn Ross` (`+8801867539837`, `@kaitlyn_ross7`, UID `8782429452`)
-  12. `Naimur Rahman` (`+8801727651288`, `@naimur_rhmn7`, UID `8851426148`)
-  13. `Tanvir Ahmed` (`+8801729892810`, `@tanvir_ahmed785`, UID `8203342513`)
-  14. `Rohan Sharma` (`+918930504750`, `@rohan_sharma7`, UID `8727040932`)
-  15. `Tasnim Farhana` (`+8801906045479`, `@tasnim_farhana7`, UID `7749125802`)
-  16. `Rashedul Islam` (`+8801304151082`, `@rashedul_islam7`, UID `7954290138`)
-  17. `Kawsar Mahmud` (`+8801879273559`, `@kawsar_mahmud7`, UID `8841038141`)
-  18. `Mehedi Hasan` (`+8801839716506`, `@mehedi_hasan783`, UID `8975442879`)
+- **Purchased Worker Accounts (11 Accounts — Hardened With Numbered Natural Names & Wallet Parity)**:
+  8. `Nancy Davis 2` (`+8801943805617`, `@nancydavis_24`, UID `8881914294`) — Account #2
+  9. `Kamrul Hasan 3` (`+8801790208077`, `@kamrul_hasan735`, UID `7648254021`) — Account #3
+  10. `Nathan Miller 5` (`+14302084365`, `@nathan_miller7`, UID `8450010161`) — Account #5
+  11. `Kaitlyn Ross 6` (`+8801867539837`, `@kaitlyn_ross7`, UID `8782429452`) — Account #6
+  12. `Naimur Rahman 9` (`+8801727651288`, `@naimur_rhmn7`, UID `8851426148`) — Account #9
+  13. `Tanvir Ahmed 10` (`+8801729892810`, `@tanvir_ahmed785`, UID `8203342513`) — Account #10
+  14. `Rohan Sharma 14` (`+918930504750`, `@rohan_sharma7`, UID `8727040932`) — Account #14
+  15. `Tasnim Farhana 15` (`+8801906045479`, `@tasnim_farhana7`, UID `7749125802`) — Account #15
+  16. `Rashedul Islam 16` (`+8801304151082`, `@rashedul_islam7`, UID `7954290138`) — Account #16
+  17. `Kawsar Mahmud 17` (`+8801879273559`, `@kawsar_mahmud7`, UID `8841038141`) — Account #17
+  18. `Mehedi Hasan 18` (`+8801839716506`, `@mehedi_hasan783`, UID `8975442879`) — Account #18
 
 ### Non-Custodial Multi-Chain Wallet Isolation
 To prevent Sybil detection, anti-farming bans, and wallet clustering, each account is provisioned with **dedicated, isolated addresses** stored in JSON registries:

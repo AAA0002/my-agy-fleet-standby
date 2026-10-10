@@ -4,21 +4,22 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-- **🎭 Bought Accounts Anti-Ban Hardening & Natural Profile Normalization (October 10, 2026)**:
-  - **🛡️ Eradicated Seller Artifacts & Russian Surnames Across 11 Purchased Accounts**:
-    * Identified risk of automated Telegram Sybil bans caused by Russian seller surnames ("Козлов", "Волков", "Смирнов", "Каримов", "Кузнецов") and bot names ("Node 9").
-    * Renamed all 11 purchased accounts via MTProto `UpdateProfileRequest` and `UpdateUsernameRequest` to completely authentic, natural human profiles:
-      - `+8801943805617`: Nancy Davis (`@nancydavis_24`)
-      - `+8801790208077`: Kamrul Hasan (`@kamrul_hasan735`)
-      - `+14302084365`: Nathan Miller (`@nathan_miller7`)
-      - `+8801867539837`: Kaitlyn Ross (`@kaitlyn_ross7`)
-      - `+8801727651288`: Naimur Rahman (`@naimur_rhmn7`)
-      - `+8801729892810`: Tanvir Ahmed (`@tanvir_ahmed785`)
-      - `+918930504750`: Rohan Sharma (`@rohan_sharma7`)
-      - `+8801906045479`: Tasnim Farhana (`@tasnim_farhana7`)
-      - `+8801304151082`: Rashedul Islam (`@rashedul_islam7`)
-      - `+8801879273559`: Kawsar Mahmud (`@kawsar_mahmud7`)
-      - `+8801839716506`: Mehedi Hasan (`@mehedi_hasan783`)
+- **🎭 Numbered Account Profiles & Multi-Chain Wallet Parity Synchronization (October 10, 2026)**:
+  - **🔢 Appended Fleet Index Numbers Directly to Telegram Profiles & Registries (`update_names_with_numbers.py`)**:
+    * Updated all 11 purchased accounts on Telegram via MTProto `UpdateProfileRequest` to append their exact fleet account number to the last name for effortless account identification across Telegram and TeleGraph apps:
+      - Account #2: `Nancy Davis 2` (`+8801943805617`, `@nancydavis_24`)
+      - Account #3: `Kamrul Hasan 3` (`+8801790208077`, `@kamrul_hasan735`)
+      - Account #5: `Nathan Miller 5` (`+14302084365`, `@nathan_miller7`)
+      - Account #6: `Kaitlyn Ross 6` (`+8801867539837`, `@kaitlyn_ross7`)
+      - Account #9: `Naimur Rahman 9` (`+8801727651288`, `@naimur_rhmn7`)
+      - Account #10: `Tanvir Ahmed 10` (`+8801729892810`, `@tanvir_ahmed785`)
+      - Account #14: `Rohan Sharma 14` (`+918930504750`, `@rohan_sharma7`)
+      - Account #15: `Tasnim Farhana 15` (`+8801906045479`, `@tasnim_farhana7`)
+      - Account #16: `Rashedul Islam 16` (`+8801304151082`, `@rashedul_islam7`)
+      - Account #17: `Kawsar Mahmud 17` (`+8801879273559`, `@kawsar_mahmud7`)
+      - Account #18: `Mehedi Hasan 18` (`+8801839716506`, `@mehedi_hasan783`)
+  - **💼 1:1 Wallet Registry Name Synchronization Across All 5 Multi-Chain Registries**:
+    * Propagated the numbered names across all dedicated wallet files (`fleet_ton_wallets.json`, `fleet_evm_wallets.json`, `fleet_tron_wallets.json`, `fleet_solana_wallets.json`, `fleet_btc_wallets.json`), completely purging all legacy Russian names and ensuring 100% searchability across wallets and Tonkeeper recovery phrases.
   - **🔒 Strict Ownership Boundary (Personal Accounts Untouched)**:
     * 100% preserved the 7 personal accounts (`Arif Hossain`, `Arif`, `MD. ARIF HOSSAIN`, `Abid Hasan`, `Abid Hasan 2`, `Abid 3`, `Sanzida Shimu`).
   - **📱 Rule 4 Compliance (Zero Phone Load)**:
