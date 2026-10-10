@@ -18,15 +18,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
       - `claimDailyCheckin`: Automatically claims daily streak bonuses (+50 KNX daily).
       - `claimSocialTask`: Verifies membership in official sponsor channels (`kynex_mining`, `EarnVaulte`, `solanamemes001`, `Web3Primeteam`, +1,800 KNX).
       - `claimTasksAdReward`: Automatically sweeps daily rewarded ad tasks across 5 enabled networks (+2,200 KNX daily).
-  - **🌐 Full Mesh Integration (`render_standby_app.py`, `bot_registry.py`, `deploy_both_cf_workers.py`)**:
+  - **🌐 Full Mesh Integration (`render_standby_app.py`, `bot_registry.py`, `deploy_both_cf_workers.py`, `login_account.py`)**:
     * Registered Kynex in `bot_registry.py` as 5th legitimate fleet bot.
     * Integrated token extractor into `render_standby_app.py` under `KYNEX_BOT` with `start_param="6727787768"` for workers and `None` for Master.
-    * Added auto-joining for Kynex mandatory sponsor channels.
+    * Synchronized `login_account.py` with 5-bot referral onboarding (`all_5_referrals_bound`).
+    * Added auto-joining for Kynex mandatory sponsor channels (`CHANNEL_WHITELIST` & `MANDATORY_SPONSOR_CHANNELS`).
     * Added `_farm_kynex()` to 15-minute autonomous multi-bot farming routines.
-    * Added Kynex cloud farming handler to Cloudflare Workers edge nodes (`deploy_both_cf_workers.py`).
+    * Deployed Kynex autonomous edge farming across all 5 Cloudflare Worker nodes (`aaaai2.workers.dev`, `aaa-bot.workers.dev`, `aaa222.workers.dev`, `agorameet.workers.dev`, `aaaai.workers.dev`).
   - **✅ End-to-End Live Verification**:
     * **Master Account (`6727787768` Arif Hossain)**: Farmed successfully! Mined KNX claimed, mining active (43,133s energy remaining), ad tasks 0–4 claimed (+2,007.26 KNX), new balance: **6,309.11 KNX**.
     * **Worker Account 8 (`8025472383` Abid Hasan 2)**: Farmed successfully! Referral bound under Master `6727787768`, mining active (43,200s energy remaining), daily check-in and ads claimed (+2,250.0 KNX), new balance: **2,250.0 KNX**.
+    * **Cloudflare Edge Synchronizer**: All 5 Edge nodes live with cron triggers (`*/15 * * * *`). Telegram bot menu buttons, owner menus, descriptions, and commands verified.
 
 - **🌐 Webshare Proxy Pool Randomization & Interactive Cloud Virtual Phone Tunnel**:
   - **⚡ Webshare Pool Randomization (`mrg_turnstile_solver.py` & `victors_sb_solver.py`)**:

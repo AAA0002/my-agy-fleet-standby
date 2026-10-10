@@ -4137,7 +4137,8 @@ async def study_bot_endpoint(bot_key: str, request: Request):
         "mrg": "mrgminerbot",
         "atf": "ATF_AIRDROP_bot",
         "victors": "VictorsCompanybot",
-        "vyro": "vyrodrop_bot"
+        "vyro": "vyrodrop_bot",
+        "kynex": "Kynex_miningbot"
     }
 
     target_bots = list(bot_map.items()) if bot_key == "all" else [(bot_key, bot_map[bot_key])] if bot_key in bot_map else None
@@ -4260,7 +4261,8 @@ async def inspect_bot_chat(uid: str, request: Request):
         ("mrg", "mrgminerbot"),
         ("atf", "ATF_AIRDROP_bot"),
         ("victors", "VictorsCompanybot"),
-        ("vyro", "vyrodrop_bot")
+        ("vyro", "vyrodrop_bot"),
+        ("kynex", "Kynex_miningbot")
     ]
     chats = {}
     try:
@@ -4406,7 +4408,11 @@ CHANNEL_WHITELIST = {
     "VICWithdrawals",
     "TheBoss_Victor",
     "vyrodrop",
-    "atfminers"
+    "atfminers",
+    "kynex_mining",
+    "EarnVaulte",
+    "solanamemes001",
+    "Web3Primeteam"
 }
 
 # Active Legitimate Sponsor Channels (Scammers, TRX Power, ART, AI Lab, UltraWallet, FINVORA & Stones purged)
@@ -4414,13 +4420,18 @@ MANDATORY_SPONSOR_CHANNELS = [
     "mrgminer", "mrgfun", "mrgwithdrawal", "DurovKidney",
     "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor",
     "vyrodrop",
-    "atfminers"
+    "atfminers",
+    "kynex_mining",
+    "EarnVaulte",
+    "solanamemes001",
+    "Web3Primeteam"
 ]
 
-# 4 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
+# 5 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
 FLEET_LEGITIMATE_BOTS = [
     "mrgminerbot", "ATF_AIRDROP_bot",
-    "VictorsCompanybot", "vyrodrop_bot"
+    "VictorsCompanybot", "vyrodrop_bot",
+    "Kynex_miningbot"
 ]
 
 # Blacklisted & Purged Bots to permanently block and delete from Telegram dialogs

@@ -52,6 +52,9 @@ VICTORS_REFERRAL_CODE = "ref_A20AA96F18"
 VYRO_BOT = "vyrodrop_bot"
 VYRO_REFERRAL_CODE = "ref_myFjrqqE4WN_"
 
+KYNEX_BOT = "Kynex_miningbot"
+KYNEX_REFERRAL_CODE = "6727787768"
+
 PRIMARY_CHAT_ID = "6727787768"
 PRIMARY_EVM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 PRIMARY_TON_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
@@ -408,21 +411,60 @@ async def bind_referrals(client, me, acc_entry):
     except Exception as e:
         print(f"  ❌ Warning binding VyroDrop referral: {e}")
 
+    # 5. Kynex Network (@Kynex_miningbot) - Referral: 6727787768
+    print(f"  • [5/5] Connecting to @{KYNEX_BOT} with referral: {KYNEX_REFERRAL_CODE}...")
+    try:
+        try:
+            await client(UnblockRequest(id=KYNEX_BOT))
+        except Exception:
+            pass
+        b_ky = await client.get_entity(KYNEX_BOT)
+        await mute_peer(client, b_ky, "Kynex_miningbot")
+        await client.send_message(b_ky, f"/start {KYNEX_REFERRAL_CODE}")
+        await asyncio.sleep(1.5)
+        try:
+            from telethon.tl.types import InputBotAppShortName
+            from telethon.tl.functions.messages import RequestAppWebViewRequest
+            bot_in = await client.get_input_entity(b_ky)
+            r_ky = await client(RequestAppWebViewRequest(
+                peer=bot_in,
+                app=InputBotAppShortName(bot_id=bot_in, short_name="App"),
+                platform="android",
+                start_param=KYNEX_REFERRAL_CODE
+            ))
+            p_ky = urllib.parse.urlparse(getattr(r_ky, 'url', None) or "")
+            ky_init = urllib.parse.parse_qs(p_ky.fragment).get("tgWebAppData", [None])[0] or urllib.parse.parse_qs(p_ky.query).get("tgWebAppData", [None])[0]
+            if ky_init:
+                if ky_init.startswith("user%3D") or "%257B" in ky_init:
+                    ky_init = urllib.parse.unquote(ky_init)
+                acc_entry["kynex_init_data"] = ky_init
+                import kynex_miner
+                async with aiohttp.ClientSession() as ky_s:
+                    await kynex_miner.farm_kynex_account(ky_s, ky_init, acc_entry, is_master=False)
+        except Exception as ke:
+            pass
+        acc_entry["kynex_referral_bound"] = True
+        print(f"  ✅ [5/5] Successfully bound to Kynex Network ({KYNEX_REFERRAL_CODE})!")
+    except Exception as e:
+        print(f"  ❌ Warning binding Kynex Network referral: {e}")
+
     # Audit final referral status
-    all_4_keys = [
+    all_5_keys = [
         "mrg_referral_bound",
         "atf_referral_bound",
         "victors_referral_bound",
-        "vyro_referral_bound"
+        "vyro_referral_bound",
+        "kynex_referral_bound"
     ]
-    bound_count = sum(1 for k in all_4_keys if acc_entry.get(k))
-    if bound_count == len(all_4_keys):
+    bound_count = sum(1 for k in all_5_keys if acc_entry.get(k))
+    if bound_count == len(all_5_keys):
+        acc_entry["all_5_referrals_bound"] = True
         acc_entry["all_4_referrals_bound"] = True
         acc_entry["all_17_referrals_bound"] = True
         acc_entry["referrals_bound"] = True
-        print(f"\n🎉 ALL 4/4 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
+        print(f"\n🎉 ALL 5/5 BOTS SUCCESSFULLY BOUND TO MASTER REFERRAL ID {PRIMARY_CHAT_ID}!")
     else:
-        print(f"\n⚠️ {bound_count}/4 bots bound. Remaining will be auto-bound on next cloud cycle.")
+        print(f"\n⚠️ {bound_count}/5 bots bound. Remaining will be auto-bound on next cloud cycle.")
 
 
 
