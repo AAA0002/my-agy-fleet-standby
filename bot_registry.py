@@ -66,6 +66,19 @@ ACTIVE_BOTS: Dict[str, Dict[str, Any]] = {
         "requires_turnstile": True,
         "is_active": True,
     },
+    "kynex": {
+        "id": "kynex",
+        "name": "Kynex Network",
+        "bot_username": "Kynex_miningbot",
+        "master_ref_code": "6727787768",
+        "app_url": "https://kynex.top/telegram-auth.html",
+        "token_key": "kynex_init_data",
+        "short_names": ["App", "app"],
+        "api_base": "https://us-central1-keynex-e9511.cloudfunctions.net",
+        "sponsor_channels": ["kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam"],
+        "requires_turnstile": False,
+        "is_active": True,
+    },
 }
 
 def get_active_bots() -> Dict[str, Dict[str, Any]]:

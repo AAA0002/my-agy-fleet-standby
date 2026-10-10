@@ -1058,12 +1058,122 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     }
   };
 
-  // Humanized Execution Pipeline: 4 Active Legitimate Bots (MRG, ATF, Victor's Company, VyroDrop)
+  // 10. Kynex Network (@Kynex_miningbot)
+  const farmKynex = async () => {
+    try {
+      if (!accData.kynex_init_data) {
+        result.bots.kynex = "skipped (no initData)";
+        return;
+      }
+      let kyInit = accData.kynex_init_data;
+      if (typeof kyInit === "string" && (kyInit.startsWith("user%3D") || kyInit.includes("%257B"))) {
+        try { kyInit = decodeURIComponent(kyInit); } catch (_) {}
+      }
+      const authResp = await fetch("https://us-central1-keynex-e9511.cloudfunctions.net/verifyTelegramAuth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Origin": "https://kynex.top", "Referer": "https://kynex.top/telegram-auth.html" },
+        body: JSON.stringify({ data: { initData: kyInit } })
+      });
+      if (!authResp.ok) {
+        result.bots.kynex = `auth_error (${authResp.status})`;
+        return;
+      }
+      const authData = await authResp.json();
+      const customToken = authData.result?.customToken;
+      const kUid = authData.result?.uid;
+      if (!customToken) {
+        result.bots.kynex = "auth_failed (no customToken)";
+        return;
+      }
+
+      const tokResp = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyB5aYPcOrDXzMTBt5p5VCEFKZdmBBMGA9c", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: customToken, returnSecureToken: true })
+      });
+      const tokData = await tokResp.json();
+      const idToken = tokData.idToken;
+      if (!idToken) {
+        result.bots.kynex = "auth_failed (no idToken)";
+        return;
+      }
+
+      const kHeaders = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${idToken}`,
+        "Origin": "https://kynex.top",
+        "Referer": "https://kynex.top/telegram-auth.html"
+      };
+
+      await humanDelay(600, 1500);
+      let newBal = 0;
+      try {
+        const clResp = await fetch("https://us-central1-keynex-e9511.cloudfunctions.net/claimMining", {
+          method: "POST",
+          headers: kHeaders,
+          body: JSON.stringify({ data: {} })
+        });
+        if (clResp.ok) {
+          const clData = await clResp.json();
+          newBal = clData.result?.newBalance || 0;
+        }
+      } catch (_) {}
+
+      try {
+        const uResp = await fetch(`https://keynex-e9511-default-rtdb.europe-west1.firebasedatabase.app/users/${kUid}.json?auth=${idToken}`);
+        if (uResp.ok) {
+          const uDoc = await uResp.json();
+          if ((uDoc?.energySeconds || 0) <= 60) {
+            await fetch(`https://keynex-e9511-default-rtdb.europe-west1.firebasedatabase.app/users/${kUid}/energySeconds.json?auth=${idToken}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(43200)
+            });
+          }
+          if (!newBal) newBal = uDoc?.knxBalance || 0;
+        }
+      } catch (_) {}
+
+      await humanDelay(500, 1200);
+      let miningActive = false;
+      try {
+        const stResp = await fetch("https://us-central1-keynex-e9511.cloudfunctions.net/startMining", {
+          method: "POST",
+          headers: kHeaders,
+          body: JSON.stringify({ data: {} })
+        });
+        if (stResp.ok) {
+          const stData = await stResp.json();
+          miningActive = Boolean(stData.result?.started);
+        }
+      } catch (_) {}
+
+      await humanDelay(500, 1200);
+      try {
+        const chResp = await fetch("https://us-central1-keynex-e9511.cloudfunctions.net/claimDailyCheckin", {
+          method: "POST",
+          headers: kHeaders,
+          body: JSON.stringify({ data: {} })
+        });
+        if (chResp.ok) {
+          const chData = await chResp.json();
+          if (chData.result?.newBalance) newBal = chData.result.newBalance;
+        }
+      } catch (_) {}
+
+      result.bots.kynex = `farmed (bal: ${newBal.toFixed(1)} KNX, mining: ${miningActive ? 'ACTIVE' : 'IDLE'})`;
+    } catch (e) {
+      result.bots.kynex = `error: ${e.message}`;
+    }
+  };
+
+  // Humanized Execution Pipeline: 5 Active Legitimate Bots (MRG, ATF, Victor's Company, VyroDrop, Kynex)
   const botRoutines = [
     { name: "mrg", fn: farmMrg, hasData: Boolean(accData.mrg_init_data) },
     { name: "atf", fn: farmAtf, hasData: Boolean(accData.atf_init_data) },
     { name: "victors", fn: farmVictors, hasData: Boolean(accData.victors_init_data) },
     { name: "vyro", fn: farmVyro, hasData: Boolean(accData.vyro_init_data) },
+    { name: "kynex", fn: farmKynex, hasData: Boolean(accData.kynex_init_data) },
   ];
 
   const activeRoutines = botRoutines.filter(b => b.hasData);

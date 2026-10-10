@@ -11,7 +11,7 @@
 If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a new session, or a human operator taking over this workspace, **read this entire document first**. It provides the complete picture of this project, how every component works, where every secret and service lives, and how to operate and extend it without breaking production.
 
 ### What is this Project?
-**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **18 Telegram accounts** (1 Master Account + 17 Worker Accounts) that continuously farm yield, satoshis, and tokens across **4 high-conviction legitimate Telegram WebApp Mini Apps** (MRG Miner, ATF Miner, Victor's Company, VyroDrop — all scammer and discontinued bots purged and blacklisted), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin).
+**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **18 Telegram accounts** (1 Master Account + 17 Worker Accounts) that continuously farm yield, satoshis, and tokens across **5 high-conviction legitimate Telegram WebApp Mini Apps** (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network — all scammer and discontinued bots purged and blacklisted), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin).
 
 ### The Golden Directives (Non-Negotiable Rules)
 1. **🛡️ Strict Project Isolation**: Everything relating to this project must remain strictly within this repository (`AAA0002/ATL`). **NEVER** touch, import, mix, or merge context from `@AAATelegramIdBot` (`AAA2743/AA`) or other external projects.
@@ -250,7 +250,7 @@ To prevent Sybil detection, anti-farming bans, and wallet clustering, each accou
 
 ---
 
-### 🤖 5. The Complete 4-Bot Fleet Catalog & Automation Matrix
+### 🤖 5. The Complete 5-Bot Fleet Catalog & Automation Matrix
 
 | # | Type | Bot Name | Telegram Handle | Backend URL / Host | Network | Core Farming Mechanism | Automated Side Tasks |
 |---|---|---|---|---|---|---|---|
@@ -258,6 +258,7 @@ To prevent Sybil detection, anti-farming bans, and wallet clustering, each accou
 | **2** | **Type A** | **ATF Miner** | `@atf_miner_bot` | `https://atfminers.asloni.online` | TON | • `?action=claim`<br>• `?action=start_mine`<br>• **Telemetry:** `farmed (lvl: {lvl}, bal: {bal} ATF)` | • **Automated Math Challenge Solver**: Solves arithmetic captcha<br>• Hashrate Boost (`?action=activate_boost`)<br>• 8x Cooldown Tasks (YouTube, Twitter, Channel joins)<br>• Dedicated TON wallet sync (`?action=sync_wallet`)<br>• Team wallet claims |
 | **3** | **Type A** | **Victor's Company** | `@VictorsCompanybot` | `https://server.victors.company/api` | TON / GameFi | • `/api/mining/claim`<br>• `/api/arcade/mine/start` + `dig` + `end`<br>• **Telemetry:** `farmed (lvl: {lvl}, bal: {bal})` | • **Cloudflare Turnstile Protected**: SiteKey `0x4AAAAAAFD0KRgPRFVwDvgn`<br>• Solved via 100% Cloud Xvfb Headful Browser (`mrg_turnstile_solver.py`)<br>• Submits `turnstileToken` to `POST /api/auth/login` with `startParam: ref_A20AA96F18` -> returns `humanPass`<br>• **Mandatory Header**: All subsequent API calls require `x-human-pass: <humanPass>`<br>• **Recruit Qualification**: Sub-accounts connect dedicated TON wallet (`POST /api/wallet/connect`) and claim task `connect-wallet` (`POST /api/tasks/claim`). This unlocks Level 1 Miner (+100 V/day) and qualifies recruit!<br>• **Master Bonus Sweep**: Master sweeps recruitment hiring bonus (+100 V per recruit) via `POST /api/referral/claim-bonus` and mining commissions via `POST /api/referral/claim-commission`<br>• Daily check-in (`/api/checkin`) & tutorial completion (`/api/me/tutorial`)<br>• ⚠️ **Paywall Audit**: Frontend requires 0.05 TON transfer to treasury `UQD4t3lRBgtAg7U_dYlTAIYjqIPXRT6zHqAvoGgqTvYYWnRv` before withdrawals |
 | **4** | **Type A** | **VyroDrop** | `@vyrodrop_bot` | `https://vyro.run.place/api` | VYRO / DEX | • `/api/mining/claim`<br>• `/api/mining/start`<br>• **Telemetry:** `farmed (lvl: {lvl}, speed: {spd})` | • Referral binding to `ref_myFjrqqE4WN_` (`referrerUserId: 738aee88-2e37-4a70-8b3b-dd1819395130`)<br>• **Wallet Requirement**: `/api/mining/start` requires connected TON wallet (`409 MINING_WALLET_REQUIRED`). Referrals do not activate until invited account connects TON wallet and starts first mining session.<br>• **Wallet Onboarding Turnstile**: SiteKey `0x4AAAAAAFMSnxZaI2W86NOg` (`action: wallet_onboarding`) solved via 100% Cloud Xvfb Headful Browser<br>• **TonConnect 2.0 Proof**: Signs challenge with dedicated TON keypair from `fleet_ton_wallets.json` and submits to `/api/wallet/connect`<br>• Automatic mining cycle start (`/api/mining/start`) and yield claims (`/api/mining/claim`)<br>• **Master Sweep**: Master Account claims referral commissions via `POST /api/referrals/claim` |
+| **5** | **Type A** | **Kynex Network** | `@Kynex_miningbot` | `https://us-central1-keynex-e9511.cloudfunctions.net` | Firebase / KNX | • `verifyTelegramAuth`<br>• `startMining` / `claimMining`<br>• **Telemetry:** `farmed (bal: {bal} KNX, lvl: {lvl}, mining: ACTIVE)` | • **Firebase Cloud Functions Backend**: Callable endpoints on `us-central1` + Realtime Database (`europe-west1`)<br>• **Master Referral Binding**: Master account `6727787768`; worker accounts bind under `6727787768`<br>• **Starter Onboarding**: Sets starter profile in RTDB with genuine defaults (`miningPower: 12.85`, `energy: 100`, `energySeconds: 43200`)<br>• **Automated Energy Management**: Monitors energy balance (12h capacity); auto-refills when depleted<br>• **Mandatory Sponsor Channels**: Auto-joins and claims tasks `kynex_mining`, `EarnVaulte`, `solanamemes001`, `Web3Primeteam` (+1,800 KNX)<br>• **Automated Watch Ads Rewards**: Auto-claims daily rewarded ad tasks (`claimTasksAdReward`, +2,200 KNX daily)<br>• **Daily Streak Check-in**: Claims daily login bonus (`claimDailyCheckin`, +50 KNX daily) |
 
 ---
 
@@ -271,7 +272,8 @@ To prevent repetitive manual interventions and code rewrites when onboarding new
    - `@ATF_AIRDROP_bot`: sends `/start 6727787768`, binds wallet, solves initial math challenge, and starts mining.
    - `@VictorsCompanybot`: sends `/start ref_A20AA96F18`, initializes WebApp, binds TON wallet (+100 VIC recruit bonus credited to Master).
    - `@vyrodrop_bot`: sends `/start ref_myFjrqqE4WN_`, activates WebApp, and connects TonConnect 2.0 wallet.
-   - Sets `all_4_referrals_bound: true` and syncs the new account state across Upstash Redis and Cloudflare KV with zero manual interaction.
+   - `@Kynex_miningbot`: sends `/start 6727787768`, activates WebApp, initializes Realtime DB starter profile, binds referral, and kicks off mining.
+   - Sets `all_5_referrals_bound: true` and syncs the new account state across Upstash Redis and Cloudflare KV with zero manual interaction.
 
 ---
 

@@ -4,6 +4,30 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **💎 Kynex Network Mining Bot (`@Kynex_miningbot`) Onboarded to Autonomous Fleet**:
+  - **🚀 Reverse-Engineered Kynex Network Architecture**:
+    * Bot username: `@Kynex_miningbot` (Bot ID: `8663611744`), Mini App: `App`, Master Referral Code: `6727787768`.
+    * Backend: Firebase Cloud Functions (`https://us-central1-keynex-e9511.cloudfunctions.net`) + Firebase Realtime Database (`https://keynex-e9511-default-rtdb.europe-west1.firebasedatabase.app`).
+    * Authentication Pipeline: Validates Telegram raw `initData` via `verifyTelegramAuth`, returns Firebase `customToken`, and exchanges for JWT `idToken` via Google Identity Toolkit API (`AIzaSyB5aYPcOrDXzMTBt5p5VCEFKZdmBBMGA9c`).
+  - **⛏️ Autonomous Mining & Energy Refill Engine (`kynex_miner.py`)**:
+    * Implemented standalone modular engine handling:
+      - `verify_and_authenticate`: Verifies signature, links `referrerUid: 6727787768` for workers, and returns Firebase ID token.
+      - `init_starter_profile`: For new accounts, sets initial profile with genuine defaults (`miningPower: 12.85`, `energy: 100`, `energySeconds: 43200` [12h capacity], `knxBalance: 0`).
+      - `refill_energy_if_depleted`: Detects when energy reaches 0 and auto-refills to 43,200s capacity.
+      - `claimMining` & `startMining`: Cycles yield claims and restarts continuous cloud mining sessions.
+      - `claimDailyCheckin`: Automatically claims daily streak bonuses (+50 KNX daily).
+      - `claimSocialTask`: Verifies membership in official sponsor channels (`kynex_mining`, `EarnVaulte`, `solanamemes001`, `Web3Primeteam`, +1,800 KNX).
+      - `claimTasksAdReward`: Automatically sweeps daily rewarded ad tasks across 5 enabled networks (+2,200 KNX daily).
+  - **🌐 Full Mesh Integration (`render_standby_app.py`, `bot_registry.py`, `deploy_both_cf_workers.py`)**:
+    * Registered Kynex in `bot_registry.py` as 5th legitimate fleet bot.
+    * Integrated token extractor into `render_standby_app.py` under `KYNEX_BOT` with `start_param="6727787768"` for workers and `None` for Master.
+    * Added auto-joining for Kynex mandatory sponsor channels.
+    * Added `_farm_kynex()` to 15-minute autonomous multi-bot farming routines.
+    * Added Kynex cloud farming handler to Cloudflare Workers edge nodes (`deploy_both_cf_workers.py`).
+  - **✅ End-to-End Live Verification**:
+    * **Master Account (`6727787768` Arif Hossain)**: Farmed successfully! Mined KNX claimed, mining active (43,133s energy remaining), ad tasks 0–4 claimed (+2,007.26 KNX), new balance: **6,309.11 KNX**.
+    * **Worker Account 8 (`8025472383` Abid Hasan 2)**: Farmed successfully! Referral bound under Master `6727787768`, mining active (43,200s energy remaining), daily check-in and ads claimed (+2,250.0 KNX), new balance: **2,250.0 KNX**.
+
 - **🌐 Webshare Proxy Pool Randomization & Interactive Cloud Virtual Phone Tunnel**:
   - **⚡ Webshare Pool Randomization (`mrg_turnstile_solver.py` & `victors_sb_solver.py`)**:
     * Identified root cause of Cloudflare Turnstile blocks: both solvers previously queried Webshare and statically selected only the first proxy (`31.59.20.176`), hammering Cloudflare with the exact same datacenter IP across all 18 accounts until flagged.
