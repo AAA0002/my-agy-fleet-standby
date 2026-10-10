@@ -587,10 +587,18 @@ def solve_victors_with_seleniumbase():
                 sb.refresh()
                 sb.sleep(2.0)
 
-                # 3. Mount programmatic Turnstile slot with appearance: 'always'
+                # 3. Mount programmatic Turnstile slot with script injection
                 sb.execute_script(f"""
                     window.__victorsTurnstileToken = null;
                     window.__victorsTurnstileError = null;
+
+                    if (!document.getElementById('cf-turnstile-script')) {{
+                        const s = document.createElement('script');
+                        s.id = 'cf-turnstile-script';
+                        s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                        s.async = true;
+                        document.head.appendChild(s);
+                    }}
 
                     function mountTurnstile() {{
                         if (window.turnstile && typeof window.turnstile.render === 'function') {{
@@ -626,21 +634,31 @@ def solve_victors_with_seleniumbase():
                         }}
                     }}
 
-                    if (window.turnstile) {{
-                        mountTurnstile();
-                    }} else {{
-                        setTimeout(mountTurnstile, 1500);
-                    }}
+                    let attempts = 0;
+                    const iv = setInterval(() => {{
+                        attempts++;
+                        if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                            clearInterval(iv);
+                            mountTurnstile();
+                        }} else if (attempts > 50) {{
+                            clearInterval(iv);
+                        }}
+                    }}, 200);
                 """)
 
                 # 4. Attempt native or GUI solve
-                sb.sleep(2.0)
+                sb.sleep(2.5)
+                for _ in range(8):
+                    if sb.is_element_present("iframe[src*='challenges.cloudflare.com']"):
+                        break
+                    sb.sleep(0.5)
+
                 try:
                     sb.solve_captcha()
                 except Exception:
                     pass
 
-                for _ in range(3):
+                for _ in range(4):
                     try:
                         if sb.is_element_present("iframe[src*='challenges.cloudflare.com']"):
                             sb.uc_gui_click_captcha()
