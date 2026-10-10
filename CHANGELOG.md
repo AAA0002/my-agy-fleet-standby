@@ -4,6 +4,20 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🚫 Fleet-Wide Zero-Chat Policy Enforcement & Absolute Bot Chat Silence (October 10, 2026)**:
+  - **🔇 Eradicated All `send_message` / `/start` Commands Across Cloud & Local Runners (`render_standby_app.py`, `render_app_latest.py`, `login_account.py`)**:
+    * Root-caused user report of repetitive `/start` spam across bots: eliminated all residual `client.send_message(bot, "/start ...")` calls in `bind_account_master_referrals`, `interact_and_verify_bot`, `inspect_referrals_master`, `study_bot_deep`, and `login_account.py`.
+    * All 5 active fleet bots (`@mrgminerbot`, `@ATF_AIRDROP_bot`, `@VictorsCompanybot`, `@vyrodrop_bot`, `@Kynex_miningbot`) are now queried and referral-linked 100% silently using MTProto `RequestAppWebViewRequest(start_param=...)` and Mini App REST APIs.
+    * Existing fleet accounts NEVER send `/start` or chat text. Bot chats remain 100% silent and clean.
+  - **🚀 Render Cloud Deployments Synchronized**:
+    * Synchronized and pushed clean, zero-chat `app.py` to both GitHub standby repos (`AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`).
+    * Automatically triggered and verified deployments across Render Node 2 (Frankfurt) and Node 3 (Oregon).
+  - **🔍 Full ATF Miner 18-Account Wallet Audit**:
+    * Verified 17/18 fleet accounts have live TON wallets connected and verified (`wallet_verified: 1`) on ATF Miner.
+    * Isolated Nancy (`8881914294`) whose Telethon auth key was terminated by Telegram (`AuthKeyDuplicatedError`), requiring one-time OTP login to refresh.
+  - **📱 Rule 4 Compliance (Zero Phone Load)**:
+    * Samsung Galaxy A30 running 0 local background bot daemons. All workloads execute 100% in the cloud.
+
 - **⏱️ Humanistic Per-Bot Cadence, Chat Spam Eradication & Complete Master Dialog Purge (October 10, 2026)**:
   - **🚫 Zero Chat Message Spam Across MTProto Collectors (`render_standby_app.py`, `render_app_latest.py`, `refresh_cloud_tokens.py`)**:
     * Root-caused repetitive `/start <ref>` and `mine` messages sent into bot chats: identified explicit `client.send_message` calls in `extract_tokens_for_account` (ATF, Victor's, Vyro, Kynex), Strategy C fallback in `extract_bot_webapp_token`, and ReplyKeyboard text triggers in `bind_account_master_referrals`.

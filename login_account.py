@@ -270,7 +270,7 @@ async def bind_referrals(client, me, acc_entry):
             pass
         b_mrg = await client.get_entity(MRG_BOT)
         await mute_peer(client, b_mrg, "mrgminerbot")
-        await client.send_message(b_mrg, f"/start {MRG_REFERRAL_CODE}")
+        # Zero-chat: silently query WebApp with start_param
         await asyncio.sleep(1.5)
         try:
             bot_mrg_in = await client.get_input_entity(MRG_BOT)
@@ -315,7 +315,7 @@ async def bind_referrals(client, me, acc_entry):
             pass
         bot_atf = await client.get_entity(ATF_BOT)
         await mute_peer(client, bot_atf, "ATF_AIRDROP_bot")
-        await client.send_message(bot_atf, f"/start {ATF_REFERRAL_CODE}")
+        # Zero-chat: silently query WebApp with start_param
         await asyncio.sleep(1.5)
         try:
             atf_url = f"https://atfminers.asloni.online/miner/index.html?entry=bot_start&ref={ATF_REFERRAL_CODE}"
@@ -354,7 +354,7 @@ async def bind_referrals(client, me, acc_entry):
             pass
         b_vic = await client.get_entity(VICTORS_BOT)
         await mute_peer(client, b_vic, "VictorsCompanybot")
-        await client.send_message(b_vic, f"/start {VICTORS_REFERRAL_CODE}")
+        # Zero-chat: silently query WebApp with start_param
         await asyncio.sleep(1.5)
         try:
             b_vic_in = await client.get_input_entity(b_vic)
@@ -387,7 +387,7 @@ async def bind_referrals(client, me, acc_entry):
             pass
         b_vy = await client.get_entity(VYRO_BOT)
         await mute_peer(client, b_vy, "vyrodrop_bot")
-        await client.send_message(b_vy, f"/start {VYRO_REFERRAL_CODE}")
+        # Zero-chat: silently query WebApp with start_param
         await asyncio.sleep(1.5)
         try:
             r_vy = await client(RequestWebViewRequest(
@@ -420,7 +420,7 @@ async def bind_referrals(client, me, acc_entry):
             pass
         b_ky = await client.get_entity(KYNEX_BOT)
         await mute_peer(client, b_ky, "Kynex_miningbot")
-        await client.send_message(b_ky, f"/start {KYNEX_REFERRAL_CODE}")
+        # Zero-chat: silently query WebApp with start_param
         await asyncio.sleep(1.5)
         try:
             from telethon.tl.types import InputBotAppShortName

@@ -29,6 +29,10 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
    - All bots operate in pure asset accumulation and auto-reinvest mode (e.g. ART compounds hardware, Stones & MRG upgrade miners).
 5. **📝 Living Memory & Changelog**:
    - Whenever any file, function, bot, or architecture decision is modified, added, or removed, **always document it immediately** in `CHANGELOG.md` and update this `PROJECT_BIBLE.md`.
+6. **🔇 Absolute Zero-Chat Policy for Fleet Accounts**:
+   - All 18 fleet accounts interact exclusively through **Telegram Mini App REST APIs** (authenticating with signed `tgWebAppData` extracted silently via `RequestAppWebViewRequest`).
+   - **NEVER send `/start`, `/start <ref>`, `mine`, or text messages into Telegram bot chats**. Bot chats must remain 100% silent and clean.
+   - Referral binding is handled strictly via `start_param` in `RequestAppWebViewRequest` or directly in REST API authentication handshakes (e.g. MRG `/api/auth/verify`, ATF `action=login` `ref` parameter).
 
 ---
 
