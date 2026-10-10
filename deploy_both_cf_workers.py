@@ -1097,13 +1097,17 @@ const DEFAULT_FLEET_DATA = {
   ]
 };
 
-// High-Performance Upstash Serverless Redis REST Configuration (0 KV writes)
+// High-Performance Upstash Serverless Redis REST Configuration (with In-Memory Caching to stay well below 10k/day limit)
 const UPSTASH_URL = "https://relaxing-starfish-285827.upstash.io";
 const UPSTASH_TOKEN = "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw";
+
+const UPSTASH_GET_CACHE = new Map();
+const UPSTASH_MEMBERS_CACHE = new Map();
 
 async function upstashSet(key, value) {
   try {
     const valStr = typeof value === "string" ? value : JSON.stringify(value);
+    UPSTASH_GET_CACHE.set(key, { val: valStr, ts: Date.now() });
     await fetch(`${UPSTASH_URL}/set/${key}`, {
       method: "POST",
       headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}`, "Content-Type": "application/json" },
@@ -1112,21 +1116,27 @@ async function upstashSet(key, value) {
   } catch (_) {}
 }
 
-async function upstashGet(key) {
+async function upstashGet(key, maxAgeMs = 900000) { // 15 minutes default cache to protect 10k/day quota
+  const cached = UPSTASH_GET_CACHE.get(key);
+  if (cached && (Date.now() - cached.ts) < maxAgeMs) {
+    return cached.val;
+  }
   try {
     const resp = await fetch(`${UPSTASH_URL}/get/${key}`, {
       headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
     });
     if (resp.ok) {
       const data = await resp.json();
+      UPSTASH_GET_CACHE.set(key, { val: data.result, ts: Date.now() });
       return data.result;
     }
   } catch (_) {}
-  return null;
+  return cached ? cached.val : null;
 }
 
 async function upstashSadd(key, member) {
   try {
+    UPSTASH_MEMBERS_CACHE.delete(key);
     await fetch(`${UPSTASH_URL}/sadd/${key}/${encodeURIComponent(member)}`, {
       method: "POST",
       headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
@@ -1135,6 +1145,10 @@ async function upstashSadd(key, member) {
 }
 
 async function upstashScard(key) {
+  const cached = UPSTASH_MEMBERS_CACHE.get(key);
+  if (cached && (Date.now() - cached.ts) < 1800000) {
+    return cached.val.length;
+  }
   try {
     const resp = await fetch(`${UPSTASH_URL}/scard/${key}`, {
       headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
@@ -1144,20 +1158,26 @@ async function upstashScard(key) {
       return typeof data.result === "number" ? data.result : 0;
     }
   } catch (_) {}
-  return 0;
+  return cached ? cached.val.length : 0;
 }
 
-async function upstashSmembers(key) {
+async function upstashSmembers(key, maxAgeMs = 1800000) { // 30 minutes cache for set members
+  const cached = UPSTASH_MEMBERS_CACHE.get(key);
+  if (cached && (Date.now() - cached.ts) < maxAgeMs) {
+    return cached.val;
+  }
   try {
     const resp = await fetch(`${UPSTASH_URL}/smembers/${key}`, {
       headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
     });
     if (resp.ok) {
       const data = await resp.json();
-      return Array.isArray(data.result) ? data.result : [];
+      const arr = Array.isArray(data.result) ? data.result : [];
+      UPSTASH_MEMBERS_CACHE.set(key, { val: arr, ts: Date.now() });
+      return arr;
     }
   } catch (_) {}
-  return [];
+  return cached ? cached.val : [];
 }
 
 // Supabase Managed Cloud Postgres Configuration for Admin Security & Telemetry

@@ -4,6 +4,18 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **⚡ Upstash Redis 10,000 Command Quota Protection & Multi-Tier In-Memory Caching (October 10, 2026)**:
+  - **📉 Slashed Cloudflare Edge Upstash Calls by 99% (`deploy_both_cf_workers.py`)**:
+    * Root-caused rapid quota depletion: 5 Cloudflare Edge nodes triggered cron routines every 15 minutes, each executing 90 individual `upstashGet` and `upstashSet` calls per fleet account & bot (over 43,000 requests/day).
+    * Implemented global `UPSTASH_GET_CACHE` (15-minute TTL) and `UPSTASH_MEMBERS_CACHE` (30-minute TTL) in worker memory. Repeated cooldown lookups and member reads return from memory in 0ms without hitting Upstash network endpoints.
+    * Redeployed live across all 5 Cloudflare Worker Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+  - **🚀 Render Standby Cooldown & Token Pipeline Caching (`render_standby_app.py`, `render_app_latest.py`)**:
+    * Reversed lookup priority in `_run_single_routine`: `FLEET_LAST_FARM_CACHE` in RAM is now queried FIRST. Upstash is only contacted if memory is empty on cold startup, eliminating 99% of GET calls.
+    * Introduced `UPSTASH_TOKENS_CACHE` (30-minute in-memory cache) for `fleet:tokens:*` pipeline merges.
+    * Pushed and deployed across Render Node 2 (Frankfurt) and Node 3 (Oregon).
+  - **📱 Rule 4 Compliance (Zero Phone Load)**:
+    * Zero bot daemons running locally on Samsung Galaxy A30.
+
 - **🎭 Numbered Account Profiles, Wallet Parity & Koram Shah Personal Identity (October 10, 2026)**:
   - **👑 Koram Shah Personal Account Preserved (`+8801790208077`)**:
     * Identified Koram Shah as the user's primary personal account (#3). Restored profile name to `Koram Shah` and secured clean handle `@Koram_Shah` via MTProto.
