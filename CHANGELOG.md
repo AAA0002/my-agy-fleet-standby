@@ -4,6 +4,16 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🌐 Webshare Proxy Pool Randomization & Interactive Cloud Virtual Phone Tunnel**:
+  - **⚡ Webshare Pool Randomization (`mrg_turnstile_solver.py` & `victors_sb_solver.py`)**:
+    * Identified root cause of Cloudflare Turnstile blocks: both solvers previously queried Webshare and statically selected only the first proxy (`31.59.20.176`), hammering Cloudflare with the exact same datacenter IP across all 18 accounts until flagged.
+    * Implemented pool randomization: `get_webshare_proxy()` now fetches the full pool of 25 proxies and selects `random.choice(results)` across GB, ES, US, PL, JP, and DE nodes, preventing Cloudflare IP rate-limiting and managed challenge lockouts.
+  - **📱 Interactive Cloud Virtual Phone Tunnel Dispatched (`victors_cloud_phone_tunnel.yml`)**:
+    * Dispatched workflow run `38013649069` running Openbox + Chromium + noVNC + Cloudflare Tunnel in the cloud.
+    * Sends a 1-tap interactive virtual mobile browser link directly to the admin Telegram chat (`@myagyai` / `6727787768`), allowing instant 1-tap Turnstile solving on the cloud screen whenever needed.
+  - **💾 Disaster Recovery Vault Synchronized (`backup_manager.py`)**:
+    * Created and uploaded an updated AES-encrypted disaster recovery archive to `@myagyai` with freshly authenticated sessions for Accounts 1, 8, and 3.
+
 - **🛡️ Victor's Perpetual Human-Pass Refresh, Account 3 2FA Sign-In & Fleet Auto-Mining Verification**:
   - **✨ Victor's Company Turnstile Solver Permanent Solution (`mrg_turnstile_solver.py` & workflow)**:
     * Root Cause Solved: Victor's Company humanPass has a strict server-side TTL (~6 to 8 hours). The solver was previously scheduled only twice daily (every 12 hours) and ran into a 25-minute workflow timeout when processing 18 accounts sequentially across 4 mini-apps, leaving passes expired for hours.
