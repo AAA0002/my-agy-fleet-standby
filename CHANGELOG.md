@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🤖 Comprehensive Fleet Bot Bug Fixes, MTProto Session Resilience & Rule 1 Webhook Immutability (October 10, 2026)**:
+  - **🛡️ MTProto Session Clashing & Resilient Gmail IMAP Fallback**:
+    * Resolved unhandled `AuthKeyDuplicatedError` exception in `get_account_otp` inside `render_app_latest.py` and `render_standby_app.py` by wrapping `TelegramClient.connect()` inside the `try...except` block.
+    * Ensured that simultaneous multi-IP MTProto connections across standby nodes gracefully fail through to Gmail IMAP code interception (`aaa.support.a@gmail.com`) instead of escaping to top-level 500 error.
+    * Added fallback default for `GMAIL_APP_PASSWORD` (`"kuqevwndvabevefx"`), ensuring hands-free OTP interception even when environment variables are omitted.
+    * Pushed updates to standby deployment repos (`AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`), triggering and verifying live deployments on Render Node 2 (Frankfurt: `dep-db59j62jnfac739mvjj0`) and Node 3 (Oregon: `dep-db59j6flot8c73e6cvr0`).
+  - **👑 Admin Bot Webhook & Access Control Enhancements (`@myagyai`)**:
+    * Expanded `ADMIN_IDS` authorization in Cloudflare Worker `telegram-webhook` to include all three authorized administrators (`6727787768`, `8741547543`, `7648254021`).
+    * Added dedicated Telegram command handlers in the Admin Bot webhook for all 5 legitimate active bots: `/mrg` (MRG Miner), `/atf` (ATF Miner), `/victors` / `/victor` (Victor's Company), `/vyro` (VyroDrop), and `/kynex` / `/knx` (Kynex Network).
+    * Updated harvest telemetry messaging to accurately report the 5 active mining pools instead of legacy 15 platforms.
+  - **🛑 Strict User Bot Immutability Enforcement (Rule 1)**:
+    * Removed User Bot (`@AAAPREMIUMAPPSbot`, `8167732110`) webhook modification from `deploy_both_cf_workers.py`.
+    * Restored and verified the User Bot's dedicated live webhook to `https://atf-miner-worker.agorameet.workers.dev/` with 0 pending updates.
+  - **🌐 Cloudflare Edge Mesh Verification**:
+    * Deployed and synchronized all 5 Cloudflare Worker accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with HTTP 200 OK.
+    * Verified `/api/fleet/otp?index=1` responding in sub-second time from edge.
+    * Verified DeepSeek R1 reasoning, Meta Llama 3.2, and Gemini cascade responding with zero errors.
+
 - **🧠 Serverless Cloud AI Mesh, Gemini 3.8 Flash Free Tier Upgrade & Executive Admin Dashboard Redesign (October 10, 2026)**:
   - **⚡ Google Gemini Free Tier Update & Resilient Cascade (`runAiCascade`)**:
     * Resolved model deprecation (404 on `gemini-2.0-flash`) by migrating Google Gemini integration to modern `gemini-3.8-flash`, `gemini-flash-latest`, and `gemini-2.5-flash`.

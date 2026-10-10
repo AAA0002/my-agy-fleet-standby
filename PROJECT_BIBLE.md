@@ -171,6 +171,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
       * `/llama <prompt>`: Meta Llama 3.2 rapid edge copilot.
       * `/image <prompt>` / `/draw <prompt>`: Stable Diffusion XL binary photo generator with direct Telegram photo upload.
       * `/ai <prompt>`: Google Gemini 3.8 Flash with 5-key dynamic rotation & instant Llama edge fallback.
+      * `/mrg`, `/atf`, `/victors`, `/vyro`, `/kynex`: Dedicated telemetry & command centers for all 5 legitimate active bots.
       * `/models`: Directory of active edge AI models.
     - **Executive Fleet Operations Console (`/admin`)**:
       * Live URL: `https://restore-agy.aaaai2.workers.dev/admin` (embedded across all 5 Cloudflare Worker nodes).

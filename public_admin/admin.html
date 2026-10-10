@@ -354,7 +354,8 @@ function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnable
 function App() {
   const tg = window.Telegram?.WebApp;
   const webAppUserId = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : null;
-  const isDenied = Boolean(webAppUserId && webAppUserId !== "6727787768");
+  const ADMIN_UIDS = ["6727787768", "8741547543", "7648254021"];
+  const isDenied = Boolean(webAppUserId && !ADMIN_UIDS.includes(webAppUserId));
   
   // Theme state: dark / light
   const [isDark, setIsDark] = useState(() => {
@@ -856,16 +857,32 @@ function App() {
         }, chip.label))
       ),
 
-      React.createElement("div", { className: "relative mb-3" },
-        React.createElement("input", {
-          type: "text",
-          value: fleetSearchQuery,
-          onChange: (e) => setFleetSearchQuery(e.target.value),
-          placeholder: `Search 18 accounts by name, phone, or ID...`,
-          className: `w-full pl-8 pr-3 py-2 border rounded-xl text-xs font-medium outline-none transition ${isDark ? 'bg-dark-850 border-dark-700 text-white placeholder-slate-500 focus:border-cyan-400' : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-blue-500'}`
-        }),
-        React.createElement("div", { className: "absolute left-2.5 top-2.5 text-slate-400" },
-          React.createElement(Icon, { name: "search", className: "w-3.5 h-3.5" })
+      React.createElement("div", { className: "flex items-center gap-2 mb-3" },
+        React.createElement("div", { className: "relative flex-1" },
+          React.createElement("input", {
+            type: "text",
+            value: fleetSearchQuery,
+            onChange: (e) => setFleetSearchQuery(e.target.value),
+            placeholder: "Search 18 accounts by name, phone, or ID...",
+            className: `w-full pl-8 pr-3 py-2 border rounded-xl text-xs font-medium outline-none transition ${isDark ? 'bg-dark-850 border-dark-700 text-white placeholder-slate-500 focus:border-cyan-400' : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-blue-500'}`
+          }),
+          React.createElement("div", { className: "absolute left-2.5 top-2.5 text-slate-400" },
+            React.createElement(Icon, { name: "search", className: "w-3.5 h-3.5" })
+          )
+        ),
+        React.createElement("button", {
+          onClick: () => {
+            setAddStep("phone");
+            setPhoneInput("");
+            setCodeInput("");
+            setTwoFaInput("");
+            setModalMsg(null);
+            setIsAddModalOpen(true);
+          },
+          className: "py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-1 shadow-glow-blue transition active:scale-95 cursor-pointer shrink-0"
+        },
+          React.createElement(Icon, { name: "plus", className: "w-3.5 h-3.5" }),
+          "Add"
         )
       ),
 
@@ -1297,7 +1314,96 @@ function App() {
           }, "Close")
         )
       );
-    })()
+    })(),
+
+    // ==========================================================
+    // ADD TELEGRAM ACCOUNT MODAL
+    // ==========================================================
+    isAddModalOpen && React.createElement("div", {
+      className: "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4",
+      onClick: () => setIsAddModalOpen(false)
+    },
+      React.createElement("div", {
+        className: `w-full max-w-sm rounded-3xl p-5 shadow-2xl border animate-slide-up ${isDark ? 'bg-dark-900 border-dark-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`,
+        onClick: (e) => e.stopPropagation()
+      },
+        React.createElement("div", { className: "flex items-center justify-between pb-3 mb-3 border-b border-white/10" },
+          React.createElement("div", { className: "flex items-center gap-2" },
+            React.createElement("span", { className: "w-8 h-8 rounded-xl bg-blue-500/20 text-cyan-400 flex items-center justify-center text-sm font-black border border-blue-500/30" }, "➕"),
+            React.createElement("div", null,
+              React.createElement("h3", { className: "font-black text-sm" }, "Add Telegram Account"),
+              React.createElement("span", { className: "text-[10px] text-slate-400 font-mono" }, "Cloud MTProto Binding")
+            )
+          ),
+          React.createElement("button", {
+            onClick: () => setIsAddModalOpen(false),
+            className: "w-7 h-7 rounded-full bg-white/10 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
+          }, React.createElement(Icon, { name: "x", className: "w-4 h-4" }))
+        ),
+
+        modalMsg && React.createElement("div", { className: "mb-3 p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-cyan-300 text-xs font-semibold" }, modalMsg),
+
+        addStep === "phone" && React.createElement("form", { onSubmit: handleConnectPhone, className: "space-y-3" },
+          React.createElement("div", null,
+            React.createElement("label", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1" }, "Telegram Phone Number"),
+            React.createElement("input", {
+              type: "tel",
+              value: phoneInput,
+              onChange: (e) => setPhoneInput(e.target.value),
+              placeholder: "+8801700000000",
+              className: `w-full px-3 py-2.5 border rounded-xl text-xs font-mono font-bold outline-none ${isDark ? 'bg-dark-850 border-dark-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`
+            })
+          ),
+          React.createElement("button", {
+            type: "submit",
+            disabled: modalLoading || !phoneInput.trim(),
+            className: "w-full py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-glow-blue transition cursor-pointer"
+          }, modalLoading ? "Requesting Code..." : "Next: Request Verification Code")
+        ),
+
+        addStep === "code" && React.createElement("form", { onSubmit: handleVerifyCode, className: "space-y-3" },
+          React.createElement("div", null,
+            React.createElement("label", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1" }, "5-Digit Telegram OTP Code"),
+            React.createElement("input", {
+              type: "text",
+              value: codeInput,
+              onChange: (e) => setCodeInput(e.target.value),
+              placeholder: "12345",
+              className: `w-full px-3 py-2.5 border rounded-xl text-center text-lg font-mono font-black tracking-widest outline-none ${isDark ? 'bg-dark-850 border-dark-700 text-cyan-400' : 'bg-slate-50 border-slate-200 text-blue-600'}`
+            })
+          ),
+          React.createElement("button", {
+            type: "submit",
+            disabled: modalLoading || !codeInput.trim(),
+            className: "w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-glow-emerald transition cursor-pointer"
+          }, modalLoading ? "Verifying..." : "Verify Code")
+        ),
+
+        addStep === "2fa" && React.createElement("form", { onSubmit: handleVerify2FA, className: "space-y-3" },
+          React.createElement("div", null,
+            React.createElement("label", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1" }, "Two-Factor Cloud Password"),
+            React.createElement("input", {
+              type: "password",
+              value: twoFaInput,
+              onChange: (e) => setTwoFaInput(e.target.value),
+              placeholder: "Enter 2FA password...",
+              className: `w-full px-3 py-2.5 border rounded-xl text-xs font-mono font-bold outline-none ${isDark ? 'bg-dark-850 border-dark-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`
+            })
+          ),
+          React.createElement("button", {
+            type: "submit",
+            disabled: modalLoading || !twoFaInput.trim(),
+            className: "w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-glow-emerald transition cursor-pointer"
+          }, modalLoading ? "Verifying 2FA..." : "Submit 2FA Password")
+        ),
+
+        addStep === "success" && React.createElement("div", { className: "py-4 text-center space-y-2" },
+          React.createElement("div", { className: "text-3xl" }, "🎉"),
+          React.createElement("div", { className: "font-black text-sm text-emerald-400" }, "Account Bound Successfully!"),
+          React.createElement("p", { className: "text-xs text-slate-400" }, "Session active in cloud MTProto mesh. Autonomous 24/7 farming initiated.")
+        )
+      )
+    )
   );
 }
 
