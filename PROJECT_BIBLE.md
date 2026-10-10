@@ -252,17 +252,17 @@ The fleet consists of **18 Telegram accounts**:
 
 ### 👥 The 18 Fleet Accounts Roster & Ownership Classification
 To protect against automated Telegram Sybil bans and wipe away seller artifacts, all purchased accounts have been renamed with completely natural, human names and authentic usernames:
-- **Personal Accounts (7 Accounts — 100% Preserved & Immutable)**:
+- **Personal Accounts (8 Accounts — 100% Preserved & Immutable)**:
   1. `Arif Hossain` (`+8801317342850`, `@Arif2743aaa`, UID `6727787768`) — Primary Master Account
-  2. `Arif` (`+8801575842094`, `@Arif2743_a`, UID `8826375659`)
-  3. `MD. ARIF HOSSAIN` (`+8801571089931`, `@aaamah222`, UID `8190649727`)
-  4. `Abid Hasan` (`+8801718056423`, `@Abidhasan222`, UID `7734849205`)
-  5. `Abid Hasan` (`+8801797795624`, UID `8025472383`)
-  6. `Abid` (`+8801838268380`, `@Abid_300`, UID `8741547543`)
-  7. `Sanzida Shimu` (`+8801774578536`, `@Sanzidashimu`, UID `7487048946`)
-- **Purchased Worker Accounts (11 Accounts — Hardened With Numbered Natural Names & Wallet Parity)**:
-  8. `Nancy Davis 2` (`+8801943805617`, `@nancydavis_24`, UID `8881914294`) — Account #2
-  9. `Kamrul Hasan 3` (`+8801790208077`, `@kamrul_hasan735`, UID `7648254021`) — Account #3
+  2. `Koram Shah` (`+8801790208077`, `@Koram_Shah`, UID `7648254021`) — Account #3
+  3. `Arif` (`+8801575842094`, `@Arif2743_a`, UID `8826375659`) — Account #4
+  4. `MD. ARIF HOSSAIN` (`+8801571089931`, `@aaamah222`, UID `8190649727`) — Account #11
+  5. `Abid Hasan` (`+8801718056423`, `@Abidhasan222`, UID `7734849205`) — Account #7
+  6. `Abid Hasan` (`+8801797795624`, UID `8025472383`) — Account #8
+  7. `Abid` (`+8801838268380`, `@Abid_300`, UID `8741547543`) — Account #13
+  8. `Sanzida Shimu` (`+8801774578536`, `@Sanzidashimu`, UID `7487048946`) — Account #12
+- **Purchased Worker Accounts (10 Accounts — Hardened With Numbered Natural Names & Wallet Parity)**:
+  9. `Nancy Davis 2` (`+8801943805617`, `@nancydavis_24`, UID `8881914294`) — Account #2
   10. `Nathan Miller 5` (`+14302084365`, `@nathan_miller7`, UID `8450010161`) — Account #5
   11. `Kaitlyn Ross 6` (`+8801867539837`, `@kaitlyn_ross7`, UID `8782429452`) — Account #6
   12. `Naimur Rahman 9` (`+8801727651288`, `@naimur_rhmn7`, UID `8851426148`) — Account #9

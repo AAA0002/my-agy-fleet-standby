@@ -4,11 +4,13 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-- **🎭 Numbered Account Profiles & Multi-Chain Wallet Parity Synchronization (October 10, 2026)**:
+- **🎭 Numbered Account Profiles, Wallet Parity & Koram Shah Personal Identity (October 10, 2026)**:
+  - **👑 Koram Shah Personal Account Preserved (`+8801790208077`)**:
+    * Identified Koram Shah as the user's primary personal account (#3). Restored profile name to `Koram Shah` and secured clean handle `@Koram_Shah` via MTProto.
+    * Synchronized `Koram Shah` across all multi-chain wallet files and locked into personal accounts registry.
   - **🔢 Appended Fleet Index Numbers Directly to Telegram Profiles & Registries (`update_names_with_numbers.py`)**:
-    * Updated all 11 purchased accounts on Telegram via MTProto `UpdateProfileRequest` to append their exact fleet account number to the last name for effortless account identification across Telegram and TeleGraph apps:
+    * Updated all 10 purchased accounts on Telegram via MTProto `UpdateProfileRequest` to append their exact fleet account number to the last name for effortless account identification across Telegram and TeleGraph apps:
       - Account #2: `Nancy Davis 2` (`+8801943805617`, `@nancydavis_24`)
-      - Account #3: `Kamrul Hasan 3` (`+8801790208077`, `@kamrul_hasan735`)
       - Account #5: `Nathan Miller 5` (`+14302084365`, `@nathan_miller7`)
       - Account #6: `Kaitlyn Ross 6` (`+8801867539837`, `@kaitlyn_ross7`)
       - Account #9: `Naimur Rahman 9` (`+8801727651288`, `@naimur_rhmn7`)
@@ -20,8 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
       - Account #18: `Mehedi Hasan 18` (`+8801839716506`, `@mehedi_hasan783`)
   - **💼 1:1 Wallet Registry Name Synchronization Across All 5 Multi-Chain Registries**:
     * Propagated the numbered names across all dedicated wallet files (`fleet_ton_wallets.json`, `fleet_evm_wallets.json`, `fleet_tron_wallets.json`, `fleet_solana_wallets.json`, `fleet_btc_wallets.json`), completely purging all legacy Russian names and ensuring 100% searchability across wallets and Tonkeeper recovery phrases.
-  - **🔒 Strict Ownership Boundary (Personal Accounts Untouched)**:
-    * 100% preserved the 7 personal accounts (`Arif Hossain`, `Arif`, `MD. ARIF HOSSAIN`, `Abid Hasan`, `Abid Hasan 2`, `Abid 3`, `Sanzida Shimu`).
+  - **🔒 Strict Ownership Boundary (8 Personal Accounts Immutable)**:
+    * 100% preserved the 8 personal accounts (`Arif Hossain`, `Koram Shah`, `Arif`, `MD. ARIF HOSSAIN`, `Abid Hasan`, `Abid Hasan 2`, `Abid 3`, `Sanzida Shimu`).
   - **📱 Rule 4 Compliance (Zero Phone Load)**:
     * Zero bot daemons running locally on Samsung Galaxy A30.
 
