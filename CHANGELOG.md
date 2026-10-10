@@ -26,8 +26,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     * Added `_farm_kynex()` to 15-minute autonomous multi-bot farming routines.
     * Deployed Kynex autonomous edge farming across all 5 Cloudflare Worker nodes (`aaaai2.workers.dev`, `aaa-bot.workers.dev`, `aaa222.workers.dev`, `agorameet.workers.dev`, `aaaai.workers.dev`).
   - **✅ End-to-End Live Verification**:
-    * **Master Account (`6727787768` Arif Hossain)**: Farmed successfully! Mined KNX claimed, mining active (43,133s energy remaining), ad tasks 0–4 claimed (+2,007.26 KNX), new balance: **6,309.11 KNX**.
-    * **Worker Account 8 (`8025472383` Abid Hasan 2)**: Farmed successfully! Referral bound under Master `6727787768`, mining active (43,200s energy remaining), daily check-in and ads claimed (+2,250.0 KNX), new balance: **2,250.0 KNX**.
+    * **Full 18-Account Fleet Onboarding (`onboard_kynex_fleet.py`)**: 100% completed (18/18 Succeeded, 0 Failed). All 18 accounts connected via Telethon, bound under Master referral `6727787768`, starter profiles initialized in Firebase Realtime Database with 12h energy (43,200s), swept 4 mandatory sponsor channels (+1,800 KNX), and completed 5 rewarded ad networks (+2,200 KNX) totaling **4,050+ KNX each**.
+    * **Upstash Redis Token Distribution**: Verified 100% token coverage across all 18 accounts: MRG: 18/18, ATF: 18/18, Victor's: 18/18, Vyro: 18/18, Kynex: 18/18.
+    * **Cloud Standby Deployment (`push_to_standby_repo.py`)**: Synchronized `app.py`, `kynex_miner.py`, and `bot_registry.py` to `AAA0002/my-agy-fleet-standby` (Commit `38132f5f`) and `koramshah2/my-agy-fleet-standby` (Commit `2492403f`). Triggered live auto-deploys on Render Node 2 (`dep-db4q9jdckfvc73fsc7p0`) and Render Node 3 (`dep-db4q9jlckfvc73fsc88g`).
     * **Cloudflare Edge Synchronizer**: All 5 Edge nodes live with cron triggers (`*/15 * * * *`). Telegram bot menu buttons, owner menus, descriptions, and commands verified.
 
 - **🌐 Webshare Proxy Pool Randomization & Interactive Cloud Virtual Phone Tunnel**:

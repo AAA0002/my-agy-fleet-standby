@@ -105,7 +105,13 @@ def push_file(local_path: str, repo_path: str, commit_msg: str):
             print(f"❌ Error pushing {repo_path} to {repo}: {pe}")
 
 def push_app():
-    push_file(STANDBY_SRC, "app.py", "feat: 4-bot fleet auto-farming, purge stones, 1-time sanitation")
+    push_file(STANDBY_SRC, "app.py", "feat: 5-bot fleet auto-farming with Kynex, VyroDrop, Victors, ATF, MRG")
+    kynex_file = os.path.join(BASE_DIR, "kynex_miner.py")
+    if os.path.exists(kynex_file):
+        push_file(kynex_file, "kynex_miner.py", "feat: Kynex Network cloud mining engine")
+    reg_file = os.path.join(BASE_DIR, "bot_registry.py")
+    if os.path.exists(reg_file):
+        push_file(reg_file, "bot_registry.py", "feat: 5-bot fleet registry single source of truth")
     arc_file = os.path.join(BASE_DIR, "victors_arcade_solver.py")
     if os.path.exists(arc_file):
         push_file(arc_file, "victors_arcade_solver.py", "feat: Victor's Company Deep Mine arcade solver engine")
