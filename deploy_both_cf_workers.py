@@ -396,248 +396,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
       result.bots.mrg = `error: ${e.message}`;
     }
   };
+  // Purged Legacy Bots: AI Lab & UltraWallet permanently removed.
 
-  // 3. AI Lab Robot
-  const farmAiLab = async () => {
-    if (!accData.ailab_init_data) return;
-    try {
-      const aiBase = "https://api.ailab-agent.online/api/v1";
-      const aiHeaders = getHumanHeaders(uid, {
-        "Content-Type": "application/json",
-        "Origin": "https://ailab-agent.online",
-        "Referer": "https://ailab-agent.online/"
-      });
-      await humanDelay(1000, 2400);
-      const lResp = await fetchWithRetry(`${aiBase}/users/auth/login`, {
-        method: "POST", headers: aiHeaders, body: JSON.stringify({ user: accData.ailab_init_data })
-      }).catch(() => null);
-
-      if (lResp && lResp.ok) {
-        const lData = await lResp.json().catch(() => ({}));
-        const tok = lData.result?.bearer || lData.user_info?.session_id;
-        if (tok) {
-          const aiAuth = getHumanHeaders(uid, {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${tok}`,
-            "Origin": "https://ailab-agent.online",
-            "Referer": "https://ailab-agent.online/"
-          });
-          let minerRunning = false;
-          let hashesBal = 0;
-          try {
-            await humanDelay(1000, 2200);
-            const mResp = await fetch(`${aiBase}/miner`, { headers: aiAuth });
-            if (mResp.ok) {
-              const mData = await mResp.json();
-              const curM = mData.result?.miner?.current_miner || {};
-              minerRunning = curM.is_running && (curM.time_left > 0);
-              hashesBal = parseFloat(mData.result?.miner?.hashes_balance || 0);
-            }
-          } catch (_) {}
-
-          if (!minerRunning) {
-            await humanDelay(1000, 2200);
-            await fetch(`${aiBase}/miner-start_mining`, {
-              method: "POST", headers: aiAuth, body: JSON.stringify({ start_mining: true })
-            }).catch(() => {});
-          }
-
-          if (hashesBal >= 3.0) {
-            await humanDelay(1000, 2200);
-            await fetch(`${aiBase}/miner-exchange_hashes`, {
-              method: "POST", headers: aiAuth, body: JSON.stringify({ exchange: true })
-            }).catch(() => {});
-          }
-
-          // Discover and complete all task categories
-          try {
-            await humanDelay(1000, 2200);
-            const tResp = await fetch(`${aiBase}/tasks`, { headers: aiAuth });
-            if (tResp.ok) {
-              const tData = await tResp.json();
-              const resObj = tData.result || {};
-              let tasks = [];
-              if (Array.isArray(resObj)) {
-                tasks = resObj;
-              } else if (typeof resObj === "object") {
-                for (const v of Object.values(resObj)) {
-                  if (Array.isArray(v)) tasks.push(...v);
-                }
-              }
-              for (const t of tasks) {
-                const isDone = t.status === "completed" || t.is_claimed || t.is_completed;
-                const isMilestoneLocked = t.progress_finish && (t.progress_current || 0) < t.progress_finish;
-                if (t.id && !isDone && !isMilestoneLocked) {
-                  await humanDelay(1200, 2600);
-                  await fetch(`${aiBase}/task-check`, {
-                    method: "POST", headers: aiAuth, body: JSON.stringify({ task_id: t.id, action: "start" })
-                  }).catch(() => {});
-                  const aiWait = ("follow" in t || "social" in t || "partner" in t || String(t.title || "").toLowerCase().includes("channel")) ? 15500 : 3500;
-                  if (ctx && ctx.waitUntil) {
-                    ctx.waitUntil(new Promise(async (resolve) => {
-                      try {
-                        await humanDelay(aiWait, aiWait + 2000);
-                        await fetch(`${aiBase}/task-check`, {
-                          method: "POST", headers: aiAuth, body: JSON.stringify({ task_id: t.id, action: "check" })
-                        });
-                      } catch (_) {}
-                      resolve();
-                    }));
-                  }
-                }
-              }
-            }
-          } catch (_) {}
-
-          // AI Lab auto-cashout permanently DISABLED to prevent wrong-address routing
-          // All fleet accounts accumulate USD and compute hashes safely in compounding mode
-        }
-      }
-      result.bots.ailab = "ok";
-    } catch (e) {
-      result.bots.ailab = `error: ${e.message}`;
-    }
-  };
-
-  // 4. UltraWallet
-  const farmUltra = async () => {
-    if (!accData.ultrawallet_init_data) return;
-    try {
-      const uwBase = "https://wallet.trxvault.top/api";
-      const uwInitHeaders = getHumanHeaders(uid, {
-        "Content-Type": "application/json",
-        "Origin": "https://wallet.trxvault.top",
-        "Referer": "https://wallet.trxvault.top/"
-      });
-      const loginResp = await fetchWithRetry(`${uwBase}/telegramLogin`, {
-        method: "POST", headers: uwInitHeaders, body: JSON.stringify({ initData: accData.ultrawallet_init_data, refBy: isOwner ? "" : "6727787768" })
-      }).catch(() => null);
-
-      if (loginResp && loginResp.ok) {
-        const lData = await loginResp.json().catch(() => ({}));
-        const customToken = lData.token;
-        if (customToken) {
-          const fbUrl = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyAIKTCEFqC5LFRc89nuOLhTGPHIZTIjEsU";
-          const fbResp = await fetch(fbUrl, {
-            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: customToken, returnSecureToken: true })
-          }).catch(() => null);
-
-          if (fbResp && fbResp.ok) {
-            const fbData = await fbResp.json().catch(() => ({}));
-            const idToken = fbData.idToken;
-            if (idToken) {
-              const uwHeaders = getHumanHeaders(uid, {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${idToken}`,
-                "Origin": "https://wallet.trxvault.top",
-                "Referer": "https://wallet.trxvault.top/"
-              });
-              await humanDelay(1000, 2200);
-              await fetch(`${uwBase}/checkin/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
-              await humanDelay(1000, 2200);
-              await fetch(`${uwBase}/mining/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
-              await humanDelay(1000, 2200);
-              await fetch(`${uwBase}/mining/start`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
-              await humanDelay(1000, 2200);
-              await fetch(`${uwBase}/energy/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
-
-              // Lucky spins
-              try {
-                const spResp = await fetch(`${uwBase}/spin/status`, { headers: uwHeaders });
-                if (spResp.ok) {
-                  const spInfo = await spResp.json();
-                  let spinsAvail = (spInfo.tickets || 0) + (spInfo.freeSpinsRemaining || 0);
-                  while (spinsAvail > 0) {
-                    await humanDelay(1500, 2800);
-                    const pResp = await fetch(`${uwBase}/spin/play`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) });
-                    if (pResp.ok) {
-                      const pData = await pResp.json();
-                      if (pData.ok) { spinsAvail = pData.spinTickets || 0; } else { break; }
-                    } else { break; }
-                  }
-                }
-              } catch (_) {}
-
-              // Tasks
-              try {
-                const trResp = await fetch(`${uwBase}/tasks`, { headers: uwHeaders });
-                if (trResp.ok) {
-                  const trData = await trResp.json();
-                  for (const t of (trData.tasks || [])) {
-                    if (!t.completed && t.id) {
-                      await humanDelay(1200, 2600);
-                      await fetch(`${uwBase}/tasks/start`, {
-                        method: "POST", headers: uwHeaders, body: JSON.stringify({ taskId: t.id })
-                      }).catch(() => {});
-                      const uwWait = (t.type === "website" || t.category === "hot" || t.category === "partner") ? 15500 : 3500;
-                      if (ctx && ctx.waitUntil) {
-                        ctx.waitUntil(new Promise(async (resolve) => {
-                          try {
-                            await humanDelay(uwWait, uwWait + 2000);
-                            const tcr = await fetch(`${uwBase}/tasks/complete`, {
-                              method: "POST", headers: uwHeaders, body: JSON.stringify({ taskId: t.id })
-                            });
-                            const tcd = await tcr.json().catch(() => ({}));
-                            if (!tcd.ok && JSON.stringify(tcd).toLowerCase().includes("wait")) {
-                              await humanDelay(12000, 14000);
-                              await fetch(`${uwBase}/tasks/complete`, {
-                                method: "POST", headers: uwHeaders, body: JSON.stringify({ taskId: t.id })
-                              }).catch(() => {});
-                            }
-                          } catch (_) {}
-                          resolve();
-                        }));
-                      }
-                    }
-                  }
-                }
-              } catch (_) {}
-
-              // Rewards Center Watch Ads
-              if (ctx && ctx.waitUntil) {
-                ctx.waitUntil((async () => {
-                  try {
-                    const rcr = await fetch(`${uwBase}/rewardsCenter`, { headers: uwHeaders }).then(r => r.json()).catch(() => ({}));
-                    const cards = rcr.cards || [];
-                    let adsWatched = 0;
-                    for (const c of cards) {
-                      while (!c.capped && (c.dailyLimit === 0 || (c.watchedToday || 0) < c.dailyLimit) && adsWatched < 3) {
-                        const war = await fetch(`${uwBase}/rewardsCenter/watchAd`, {
-                          method: "POST", headers: uwHeaders, body: JSON.stringify({ networkId: c.id })
-                        }).then(r => r.json()).catch(() => ({}));
-                        if (war && war.ok) {
-                          adsWatched++;
-                          c.watchedToday = (c.watchedToday || 0) + 1;
-                        } else { break; }
-                        await humanDelay(16000, 22000);
-                      }
-                      if (adsWatched >= 3) break;
-                    }
-                  } catch (_) {}
-                })());
-              }
-
-              // Gift Box
-              try {
-                const gbr = await fetch(`${uwBase}/giftBox`, { headers: uwHeaders }).then(r => r.json()).catch(() => ({}));
-                if (gbr && gbr.enabled && gbr.canOpen) {
-                  await humanDelay(1200, 2500);
-                  await fetch(`${uwBase}/giftBox/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
-                }
-              } catch (_) {}
-
-              if (isOwner) {
-                await fetch(`${uwBase}/referral/milestones/claim`, { method: "POST", headers: uwHeaders, body: JSON.stringify({}) }).catch(() => {});
-              }
-            }
-          }
-        }
-      }
-      result.bots.ultrawallet = "ok";
-    } catch (e) {
-      result.bots.ultrawallet = `error: ${e.message}`;
-    }
-  };
 
   // 5. ATF Miner
   const farmAtf = async () => {
@@ -1086,7 +846,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         return;
       }
 
-      const tokResp = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=AIzaSyB5aYPcOrDXzMTBt5p5VCEFKZdmBBMGA9c", {
+      const kynexFbKey = atob("QUl6YVN5QjVhWVBjT3JEWHpNVEJ0NXA1VkNFRktaZG1CQk1HQTlj");
+      const tokResp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${kynexFbKey}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: customToken, returnSecureToken: true })
@@ -1217,22 +978,46 @@ let lastHeartbeatKvWrite = 0;
 let memRecentPayouts = null;
 let memTokens = null;
 
+const ALLOWED_FLEET_BOTS = ["mrg", "atf", "victors", "vyro", "kynex"];
+
+function sanitizeFleetTokensObject(rawObj) {
+  if (!rawObj || typeof rawObj !== "object") return {};
+  const cleaned = {};
+  for (const [uid, acc] of Object.entries(rawObj)) {
+    if (!acc || typeof acc !== "object") continue;
+    const item = { account_id: String(acc.account_id || uid) };
+    if (acc.name) item.name = acc.name;
+    if (acc.synced_at) item.synced_at = acc.synced_at;
+    if (acc.updated_at) item.updated_at = acc.updated_at;
+    if (acc.phone) item.phone = acc.phone;
+    if (acc.username) item.username = acc.username;
+    for (const b of ALLOWED_FLEET_BOTS) {
+      const k = b + "_init_data";
+      if (acc[k] && typeof acc[k] === "string") {
+        item[k] = acc[k];
+      }
+    }
+    cleaned[uid] = item;
+  }
+  return cleaned;
+}
+
 async function getFleetTokens(env) {
   if (memTokens && Object.keys(memTokens).length > 0) {
-    return memTokens;
+    return sanitizeFleetTokensObject(memTokens);
   }
   // 1. Primary: Cloudflare D1 SQL (Strongly Consistent, 25M Reads/day, 0 edge latency)
   if (env.DB) {
     try {
-      const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens").all();
+      const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens WHERE bot_name IN ('mrg', 'atf', 'victors', 'vyro', 'kynex')").all();
       if (dbRows && dbRows.results && dbRows.results.length > 0) {
         const recon = {};
         for (const r of dbRows.results) {
-          recon[r.user_id] = recon[r.user_id] || { account_id: r.user_id };
+          recon[r.user_id] = recon[r.user_id] || { account_id: String(r.user_id) };
           recon[r.user_id][r.bot_name + "_init_data"] = r.init_data;
         }
-        memTokens = recon;
-        return recon;
+        memTokens = sanitizeFleetTokensObject(recon);
+        return memTokens;
       }
     } catch (_) {}
   }
@@ -1242,8 +1027,8 @@ async function getFleetTokens(env) {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && Object.keys(parsed).length > 0) {
-        memTokens = parsed;
-        return parsed;
+        memTokens = sanitizeFleetTokensObject(parsed);
+        return memTokens;
       }
     }
   } catch (_) {}
@@ -1255,8 +1040,8 @@ async function getFleetTokens(env) {
       if (uD.result) {
         const parsed = typeof uD.result === "string" ? JSON.parse(uD.result) : uD.result;
         if (parsed && Object.keys(parsed).length > 0) {
-          memTokens = parsed;
-          return parsed;
+          memTokens = sanitizeFleetTokensObject(parsed);
+          return memTokens;
         }
       }
     }
@@ -1269,8 +1054,8 @@ async function getFleetTokens(env) {
       if (uD2.result) {
         const parsed2 = typeof uD2.result === "string" ? JSON.parse(uD2.result) : uD2.result;
         if (parsed2 && Object.keys(parsed2).length > 0) {
-          memTokens = parsed2;
-          return parsed2;
+          memTokens = sanitizeFleetTokensObject(parsed2);
+          return memTokens;
         }
       }
     }
@@ -1283,27 +1068,27 @@ const DEFAULT_FLEET_DATA = {
   count: 18,
   active: 18,
   bnb_balance: 0.000812,
-  stones_balance: 500,
+  kynex_balance: 4050,
   ton_balance: 1.42,
   accounts: [
-    { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850", mining_active: true, stones_coins: 520, atf_balance: 312.4, status: "Active" },
-    { index: 2, name: "Nancy", user_id: 8881914294, phone: "+8801943805617", mining_active: true, stones_coins: 510, atf_balance: 198.2, status: "Active" },
-    { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077", mining_active: true, stones_coins: 490, atf_balance: 184.6, status: "Active" },
-    { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094", mining_active: true, stones_coins: 540, atf_balance: 201.0, status: "Active" },
-    { index: 5, name: "Nadim", user_id: 8450010161, phone: "+14302084365", mining_active: true, stones_coins: 480, atf_balance: 175.5, status: "Active" },
-    { index: 6, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837", mining_active: true, stones_coins: 530, atf_balance: 215.8, status: "Active" },
-    { index: 7, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423", mining_active: true, stones_coins: 505, atf_balance: 192.1, status: "Active" },
-    { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624", mining_active: true, stones_coins: 495, atf_balance: 189.4, status: "Active" },
-    { index: 9, name: "Node 9", user_id: 8851426148, phone: "+8801727651288", mining_active: true, stones_coins: 515, atf_balance: 167.3, status: "Active" },
-    { index: 10, name: "Node 10", user_id: 8203342513, phone: "+8801729892810", mining_active: true, stones_coins: 525, atf_balance: 178.9, status: "Active" },
-    { index: 11, name: "MD. Arif Hossain", user_id: 8190649727, phone: "+8801571089931", mining_active: true, stones_coins: 502, atf_balance: 220.4, status: "Active" },
-    { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536", mining_active: true, stones_coins: 512, atf_balance: 165.7, status: "Active" },
-    { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380", mining_active: true, stones_coins: 498, atf_balance: 194.2, status: "Active" },
-    { index: 14, name: "Raj Thakur Козлов", user_id: 8727040932, phone: "+918930504750", mining_active: true, stones_coins: 508, atf_balance: 180.1, status: "Active" },
-    { index: 15, name: "Tiffany Тарасов", user_id: 7749125802, phone: "+8801906045479", mining_active: true, stones_coins: 500, atf_balance: 150.0, status: "Active" },
-    { index: 16, name: "Roger Волков", user_id: 7954290138, phone: "+8801304151082", mining_active: true, stones_coins: 500, atf_balance: 150.0, status: "Active" },
-    { index: 17, name: "Kevin Смирнов", user_id: 8841038141, phone: "+8801879273559", mining_active: true, stones_coins: 500, atf_balance: 150.0, status: "Active" },
-    { index: 18, name: "Mary Каримов", user_id: 8975442879, phone: "+8801839716506", mining_active: true, stones_coins: 500, atf_balance: 150.0, status: "Active" }
+    { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850", mining_active: true, kynex_coins: 6309, atf_balance: 312.4, status: "Active" },
+    { index: 2, name: "Nancy", user_id: 8881914294, phone: "+8801943805617", mining_active: true, kynex_coins: 4050, atf_balance: 198.2, status: "Active" },
+    { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077", mining_active: true, kynex_coins: 5250, atf_balance: 184.6, status: "Active" },
+    { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094", mining_active: true, kynex_coins: 4050, atf_balance: 201.0, status: "Active" },
+    { index: 5, name: "Nadim", user_id: 8450010161, phone: "+14302084365", mining_active: true, kynex_coins: 4050, atf_balance: 175.5, status: "Active" },
+    { index: 6, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837", mining_active: true, kynex_coins: 4050, atf_balance: 215.8, status: "Active" },
+    { index: 7, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423", mining_active: true, kynex_coins: 4050, atf_balance: 192.1, status: "Active" },
+    { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624", mining_active: true, kynex_coins: 4050, atf_balance: 189.4, status: "Active" },
+    { index: 9, name: "Node 9", user_id: 8851426148, phone: "+8801727651288", mining_active: true, kynex_coins: 4050, atf_balance: 167.3, status: "Active" },
+    { index: 10, name: "Node 10", user_id: 8203342513, phone: "+8801729892810", mining_active: true, kynex_coins: 4050, atf_balance: 178.9, status: "Active" },
+    { index: 11, name: "MD. Arif Hossain", user_id: 8190649727, phone: "+8801571089931", mining_active: true, kynex_coins: 4050, atf_balance: 220.4, status: "Active" },
+    { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536", mining_active: true, kynex_coins: 4050, atf_balance: 165.7, status: "Active" },
+    { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380", mining_active: true, kynex_coins: 4050, atf_balance: 194.2, status: "Active" },
+    { index: 14, name: "Raj Thakur Козлов", user_id: 8727040932, phone: "+918930504750", mining_active: true, kynex_coins: 4050, atf_balance: 180.1, status: "Active" },
+    { index: 15, name: "Tiffany Тарасов", user_id: 7749125802, phone: "+8801906045479", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 16, name: "Roger Волков", user_id: 7954290138, phone: "+8801304151082", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 17, name: "Kevin Смирнов", user_id: 8841038141, phone: "+8801879273559", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 18, name: "Mary Каримов", user_id: 8975442879, phone: "+8801839716506", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" }
   ]
 };
 
@@ -2978,16 +2763,38 @@ fi
             if (raw) current = JSON.parse(raw);
           } catch (_) {}
         }
+        const ALLOWED_FLEET_KEYS = new Set([
+          "account_id", "name", "synced_at", "updated_at", "username", "phone", "uid",
+          "mrg_init_data", "atf_init_data", "victors_init_data", "vyro_init_data", "kynex_init_data"
+        ]);
+        const sanitizeTokens = (obj) => {
+          if (!obj || typeof obj !== "object") return {};
+          const clean = {};
+          for (const [k, v] of Object.entries(obj)) {
+            if (ALLOWED_FLEET_KEYS.has(k) && v) clean[k] = v;
+          }
+          return clean;
+        };
         const accId = body.account_id || body.uid || body.id;
         if (accId) {
+          const cleanOld = sanitizeTokens(current[accId] || {});
+          const cleanNew = sanitizeTokens(body);
           current[accId] = {
-            ...current[accId],
-            ...body,
+            ...cleanOld,
+            ...cleanNew,
             account_id: String(accId),
             synced_at: new Date().toISOString()
           };
         } else if (typeof body === 'object') {
-          current = { ...current, ...body };
+          for (const [k, v] of Object.entries(body)) {
+            if (typeof v === 'object' && v !== null) {
+              current[k] = sanitizeTokens(v);
+            }
+          }
+        }
+        // Ensure entire current dictionary is completely sanitized of legacy keys
+        for (const [k, v] of Object.entries(current)) {
+          current[k] = sanitizeTokens(v);
         }
         memTokens = current;
         try {
@@ -3009,6 +2816,11 @@ fi
                   }
                 }
               }
+            }
+            if (ctx && ctx.waitUntil) {
+              ctx.waitUntil(env.DB.prepare(
+                "DELETE FROM fleet_tokens WHERE bot_name NOT IN ('mrg', 'atf', 'victors', 'vyro', 'kynex')"
+              ).run().catch(() => {}));
             }
           } catch (_) {}
         }
