@@ -4,6 +4,26 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🎭 Bought Accounts Anti-Ban Hardening & Natural Profile Normalization (October 10, 2026)**:
+  - **🛡️ Eradicated Seller Artifacts & Russian Surnames Across 11 Purchased Accounts**:
+    * Identified risk of automated Telegram Sybil bans caused by Russian seller surnames ("Козлов", "Волков", "Смирнов", "Каримов", "Кузнецов") and bot names ("Node 9").
+    * Renamed all 11 purchased accounts via MTProto `UpdateProfileRequest` and `UpdateUsernameRequest` to completely authentic, natural human profiles:
+      - `+8801943805617`: Nancy Davis (`@nancydavis_24`)
+      - `+8801790208077`: Kamrul Hasan (`@kamrul_hasan735`)
+      - `+14302084365`: Nathan Miller (`@nathan_miller7`)
+      - `+8801867539837`: Kaitlyn Ross (`@kaitlyn_ross7`)
+      - `+8801727651288`: Naimur Rahman (`@naimur_rhmn7`)
+      - `+8801729892810`: Tanvir Ahmed (`@tanvir_ahmed785`)
+      - `+918930504750`: Rohan Sharma (`@rohan_sharma7`)
+      - `+8801906045479`: Tasnim Farhana (`@tasnim_farhana7`)
+      - `+8801304151082`: Rashedul Islam (`@rashedul_islam7`)
+      - `+8801879273559`: Kawsar Mahmud (`@kawsar_mahmud7`)
+      - `+8801839716506`: Mehedi Hasan (`@mehedi_hasan783`)
+  - **🔒 Strict Ownership Boundary (Personal Accounts Untouched)**:
+    * 100% preserved the 7 personal accounts (`Arif Hossain`, `Arif`, `MD. ARIF HOSSAIN`, `Abid Hasan`, `Abid Hasan 2`, `Abid 3`, `Sanzida Shimu`).
+  - **📱 Rule 4 Compliance (Zero Phone Load)**:
+    * Zero bot daemons running locally on Samsung Galaxy A30.
+
 - **🎉 Complete 18/18 Fleet Re-Authentication & Zero-Disruption Session Recovery (October 10, 2026)**:
   - **🔐 100% Fleet Authorization Parity (18/18 Accounts Active)**:
     * Re-authenticated and refreshed active MTProto session strings for all 8 previously duplicated/locked accounts (`Arif Hossain`, `Nancy`, `Abid Hasan`, `Abid Hasan 2`, `Girtt / Node 10`, `MD. ARIF HOSSAIN`, `Abid (3)`, and `Mary Каримов`).
