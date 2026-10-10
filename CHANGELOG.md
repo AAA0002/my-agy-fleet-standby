@@ -4,6 +4,17 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **⚡ Admin Bot 5-Bot Command Overhaul & Render App Parity (October 10, 2026)**:
+  - **🎮 Admin Bot Slash Commands & Callback Queries Complete Overhaul (`deploy_both_cf_workers.py`)**:
+    * Implemented dedicated slash commands `/kynex`, `/victors`, `/vyro`, and `/mrg` with real-time telemetry and inline action keyboards.
+    * Converted `/stones` and `/bnb` to informative decommission notices confirming permanent purge per operator directive.
+    * Added callback query handlers for `btn_kynex` (`btn_kynex_mine`, `btn_kynex_claim`), `btn_victors`, and `btn_vyro`.
+    * Synchronized Admin Bot descriptions and commands list via Telegram Bot API (`setMyDescription`, `setMyCommands`).
+    * Updated Google Gemini AI executive briefing prompt (`/briefing`) and operations guide (`/help`) to strictly reflect the 5 legitimate bots.
+  - **🔄 Standby App Parity & Live Cloud Auto-Deploy (`render_app_latest.py`, `push_to_standby_repo.py`)**:
+    * Synchronized `render_app_latest.py` with `render_standby_app.py`, bringing 5-bot parity (Kynex Network) across both scripts.
+    * Triggered auto-deploys on Render Node 2 (Frankfurt: `dep-db4r1n2d0e5s73d6aeo0`) and Render Node 3 (Oregon: `dep-db4r1n942hec73em91g0`).
+
 - **🔒 GitHub Secret Scanning Resolution & Complete 15 Legacy Bot Token Purge (October 10, 2026)**:
   - **🛡️ GitHub Secret Scanning Alert Remediated**:
     * Identified secret scanner alert in `koramshah2/my-agy-fleet-standby` for plaintext Google API Key (`AIzaSy...`) in `kynex_miner.py`.
