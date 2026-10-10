@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     * Converted `/ailab` text command from returning active 8h status to explicit decommission and purge notice (same as `/stones`, `/ultra`, `/finvora`, `/turbogram`).
     * Converted all status texts, command fallbacks, AI system prompts, and rosters to strictly display the **5 Legitimate Bots**: `MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network` (`5/5 Active`).
     * Removed legacy Arbitrum One STONES vault text and AI Lab cashout policies; replaced with 18 Verified TON Wallets display.
-    * Sanitized `public_admin/admin/index.html`, `public_admin/admin.html`, and `update_dashboard_compact.py` ticker and telemetry to reflect the 5 legitimate bots.
+    * Sanitized `public/admin.html`, `public/user-admin.html`, `public_admin/admin/index.html`, `public_admin/admin.html`, `public_admin/user-admin.html`, `public_admin/index.html`, and `update_dashboard_compact.py` ticker and telemetry to strictly reflect the 5 legitimate bots.
   - **🪙 ATF Miner Cryptographic Wallet Binding Verified (18/18 Accounts)**:
     * Identified root cause of missing wallet connections on the 4 newest fleet accounts (`7749125802`, `7954290138`, `8841038141`, `8975442879`): ATF requires TonConnect 2.0 cryptographic proof signed with the account's Ed25519 private key, domain `atfminers.asloni.online`, and raw TON address (`0:<hex>`).
     * Executed TonConnect 2.0 signed proof generation (`create_ton_proof` from `mrg_turnstile_solver.py`) across all 4 accounts, achieving 100% verification (`wallet_verified: 1`).
