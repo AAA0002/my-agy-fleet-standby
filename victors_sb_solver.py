@@ -68,17 +68,18 @@ def get_webshare_proxy() -> str | None:
             continue
         try:
             req = urllib.request.Request(
-                "https://proxy.webshare.io/api/v2/proxy/list/?mode=direct&page=1&page_size=10",
+                "https://proxy.webshare.io/api/v2/proxy/list/?mode=direct&page=1&page_size=25",
                 headers={"Authorization": f"Token {key}"}
             )
             with urllib.request.urlopen(req, timeout=8) as resp:
                 data = json.loads(resp.read().decode())
-                results = data.get("results", [])
-                for p in results:
-                    if p.get("valid", True):
-                        u = p.get("username", "Arif2743")
-                        pw = p.get("password", "Arif2743")
-                        return f"{u}:{pw}@{p['proxy_address']}:{p['port']}"
+                results = [p for p in data.get("results", []) if p.get("valid", True)]
+                if results:
+                    import random
+                    p = random.choice(results)
+                    u = p.get("username", "Arif2743")
+                    pw = p.get("password", "Arif2743")
+                    return f"{u}:{pw}@{p['proxy_address']}:{p['port']}"
         except Exception as e:
             logger.warning(f"Webshare proxy fetch warning: {e}")
     return None

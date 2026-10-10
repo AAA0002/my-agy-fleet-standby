@@ -95,19 +95,19 @@ def get_webshare_proxy() -> dict | None:
             continue
         try:
             req = urllib.request.Request(
-                "https://proxy.webshare.io/api/v2/proxy/list/?mode=direct&page=1&page_size=5",
+                "https://proxy.webshare.io/api/v2/proxy/list/?mode=direct&page=1&page_size=25",
                 headers={"Authorization": f"Token {key}"}
             )
             with urllib.request.urlopen(req, timeout=8) as resp:
                 data = json.loads(resp.read().decode())
-                results = data.get("results", [])
-                for p in results:
-                    if p.get("valid", True):
-                        return {
-                            "server": f"http://{p['proxy_address']}:{p['port']}",
-                            "username": p.get("username", "Arif2743"),
-                            "password": p.get("password", "Arif2743")
-                        }
+                results = [p for p in data.get("results", []) if p.get("valid", True)]
+                if results:
+                    p = random.choice(results)
+                    return {
+                        "server": f"http://{p['proxy_address']}:{p['port']}",
+                        "username": p.get("username", "Arif2743"),
+                        "password": p.get("password", "Arif2743")
+                    }
         except Exception as e:
             logger.warning(f"Webshare proxy fetch warning: {e}")
     return None
@@ -1539,6 +1539,17 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                                 await page.mouse.down()
                                 await asyncio.sleep(0.1)
                                 await page.mouse.up()
+                                try:
+                                    await ts_iframe.click(position={"x": min(32.0, box["width"] / 3), "y": box["height"] / 2}, timeout=2000)
+                                except Exception:
+                                    pass
+                                try:
+                                    ts_f = page.frame_locator("#cf-vyro-slot iframe, iframe[src*='challenges.cloudflare.com']")
+                                    tgt = ts_f.locator("#challenge-stage, .ctp-checkbox-label, .mark, body").first
+                                    if await tgt.count() > 0:
+                                        await tgt.click(timeout=2500)
+                                except Exception:
+                                    pass
                                 break
                     except Exception:
                         pass
