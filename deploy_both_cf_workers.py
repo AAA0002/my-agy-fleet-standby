@@ -1581,14 +1581,15 @@ export default {
         "  2. 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n" +
         "  3. 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade minigame\n" +
         "  4. 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n" +
-        "- Explain that the bot automatically farms and claims all 4 bots 24/7 in the cloud without needing to keep apps or devices open.\n" +
+        "  5. 💎 [Kynex Network](https://t.me/Kynex_miningbot/App?startapp=6727787768) — High-yield cloud mining & 12h energy reserve\n" +
+        "- Explain that the bot automatically farms and claims all 5 bots 24/7 in the cloud without needing to keep apps or devices open.\n" +
         "- BRANDING: This bot was created and engineered by 'AAA'. When asked who created or made this bot, state clearly that it was created and engineered by AAA.\n" +
         "- NEVER mention internal developer terms like 'Zero Phone Load', 'serverless MTProto', 'Samsung Galaxy', Termux, or system architecture.\n" +
         "- NEVER show personal admin names (like 'Arif'). Always refer to the team simply as 'Support' or 'Support Team'.\n" +
         "- Address the user warmly: " + senderName + ".\n\n" +
         "CORE INFORMATION (User perspective only):\n" +
         "• Creator: Created and engineered by AAA.\n" +
-        "• What the bot does: Automatically farms 8 Telegram crypto bots (ATF Miner, Stones, MRG, AI Lab, UltraWallet, FINVORA Web3, Victor's Company, VyroDrop) 24/7 in the cloud.\n" +
+        "• What the bot does: Automatically farms 5 Telegram crypto bots (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network) 24/7 in the cloud.\n" +
         "• How to connect: Tap '➕ Connect Account' below, send your phone number (+...), and enter the Telegram login code.\n" +
         "• How to manage: Tap '👥 My Accounts' to view or tap '🗑️ Remove' to disconnect anytime.\n" +
         "• Points & Rewards: 100 points/day to mine. Earn free points by tapping '🎬 Watch Video Ad' (+20 Pts) or '👥 Invite Friends' (+500 Pts), or upgrade with Telegram Stars.\n" +
@@ -1647,8 +1648,8 @@ export default {
       // 3. Intelligent Edge Keyword-Aware Fallback (Answers user guides directly even if offline)
       const pLow = prompt.toLowerCase();
       let fallbackAns = `Hello ${senderName}! I am Ari AI, your official copilot for AAA Auto Mining (Created by AAA).\n\n` +
-        `• *What I Do:* Automatically farm 8 Telegram crypto bots 24/7 in the cloud.\n` +
-        `• *8 Supported Bots:* ATF Miner, Stones Miner, MRG Miner, AI Lab Robot, UltraWallet, FINVORA Web3, Victor's Company, VyroDrop.\n` +
+        `• *What I Do:* Automatically farm 5 Telegram crypto bots 24/7 in the cloud.\n` +
+        `• *5 Supported Bots:* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network.\n` +
         `• *Connect Account:* Tap *➕ Connect Account* in the menu to add your account.\n` +
         `• *Manage / Disconnect:* Tap *👥 My Accounts* or *🗑️ Remove Account* anytime.\n` +
         `• *Earn Points:* 100 Pts/day cost. Earn free points by watching ads (+20 Pts) or inviting friends (+500 Pts).\n` +
@@ -1658,16 +1659,17 @@ export default {
         fallbackAns = `⚡ *AAA AUTO MINING* was created and engineered by *AAA*.\n\n` +
           `• *Created by:* AAA\n` +
           `• *Ecosystem:* Autonomous 24/7 Cloud Mining Platform.\n` +
-          `• *Supported Bots:* Auto-farms 8 Telegram crypto bots 24/7 (ATF Miner, Stones, MRG, AI Lab, UltraWallet, FINVORA Web3, Victor's Company, VyroDrop).`;
+          `• *Supported Bots:* Auto-farms 5 Telegram crypto bots 24/7 (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network).`;
       } else if (pLow.includes("what can this bot do") || pLow.includes("what can you do") || pLow.includes("what does this bot do") || pLow.includes("features") || pLow.includes("bot list") || pLow.includes("which bots")) {
         fallbackAns = `🌟 *AAA AUTO MINING* (Created by AAA) 🚀\n\n` +
-          `This bot **automatically mines 4 Telegram crypto bots 24/7 in the cloud**! It executes mining starts, daily claims, task completions, and point rewards continuously.\n\n` +
-          `🤖 *The 4 Automated Mining Pools & Links:*\n` +
+          `This bot **automatically mines 5 Telegram crypto bots 24/7 in the cloud**! It executes mining starts, daily claims, task completions, and point rewards continuously.\n\n` +
+          `🤖 *The 5 Automated Mining Pools & Links:*\n` +
           `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
           `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
           `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade minigame\n` +
-          `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n\n` +
-          `📱 *How to Start:* Tap *➕ Connect Account*, send your phone number & Telegram login code. Your account will automatically farm all 4 pools 24/7 in the cloud!`;
+          `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n` +
+          `5️⃣ 💎 [Kynex Network](https://t.me/Kynex_miningbot/App?startapp=6727787768) — High-yield cloud mining & 12h energy reserve\n\n` +
+          `📱 *How to Start:* Tap *➕ Connect Account*, send your phone number & Telegram login code. Your account will automatically farm all 5 pools 24/7 in the cloud!`;
       } else if (pLow.includes("connect") || pLow.includes("add account") || pLow.includes("login")) {
         fallbackAns = `📱 *How to Connect Your Account:*\n\n` +
           `1. Tap *➕ Connect Account* in the menu.\n` +
@@ -1675,7 +1677,7 @@ export default {
           `3. Reply with the 5-digit verification code sent to your Telegram.\n` +
           `4. Enter your 2FA Cloud Password if enabled.\n\n` +
           `🔒 *Automated 24/7 Cloud Mining:*\n` +
-          `Once connected, your account automatically farms all 9 pools 24/7 in the cloud!`;
+          `Once connected, your account automatically farms all 5 pools 24/7 in the cloud!`;
       } else if (pLow.includes("remove") || pLow.includes("disconnect") || pLow.includes("delete account")) {
         fallbackAns = `🗑️ *How to Disconnect / Remove Accounts:*\n\n` +
           `1. Tap *👥 My Accounts* or *🗑️ Remove Account* in the menu.\n` +
@@ -1690,9 +1692,9 @@ export default {
           `Each connected account uses 100 points/day for continuous 24/7 cloud mining.`;
       } else if (pLow.includes("withdraw") || pLow.includes("payout") || pLow.includes("cashout") || pLow.includes("balance")) {
         fallbackAns = `⛏️ *Autonomous Cloud Auto-Farming:*\n\n` +
-          `• Our bot is dedicated strictly to 24/7 cloud auto-farming, task completion, and mining accumulation across all 9 bots.\n` +
+          `• Our bot is dedicated strictly to 24/7 cloud auto-farming, task completion, and mining accumulation across all 5 bots.\n` +
           `• All mined tokens, coins, and rewards accumulate directly inside each official Telegram bot.\n` +
-          `• Tap */pools* to see the complete list of 9 supported crypto mining pools.`;
+          `• Tap */pools* to see the complete list of 5 supported crypto mining pools.`;
       } else if (pLow.includes("support") || pLow.includes("admin") || pLow.includes("help") || pLow.includes("ticket")) {
         fallbackAns = `💬 *How to Contact Platform Support:*\n\n` +
           `• *Direct Ticket:* Send \`/support <your message>\` in this chat to reach Platform Support directly.\n` +
@@ -3471,7 +3473,7 @@ fi
               const rep = `👥 *Accounts Management Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `🟢 *Fleet Status:* \`${accounts.length}/18 Accounts Online & Active\`\n` +
-                `🤖 *24/7 Farming:* All 9 Bots Active (Stones • ATF • MRG • AI Lab • UltraWallet • FINVORA • Victor's • VyroDrop)\n` +
+                `🤖 *24/7 Farming:* All 5 Bots Active (MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network)\n` +
                 `🛡️ *Security:* 100% Anti-Ban Verified • Isolated Wallets & Proxies\n\n` +
                 `📋 *Connected Accounts:*\n` +
                 `${lines}\n` +
@@ -3495,7 +3497,7 @@ fi
               const rep = `🗑️ *Fleet Account Removal Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `Select an account below to disconnect and remove from 24/7 cloud automation:\n\n` +
-                `⚠️ _Removing an account stops all 7 mining bots on that session immediately._`;
+                `⚠️ _Removing an account stops all 5 mining bots on that session immediately._`;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -3633,10 +3635,10 @@ fi
               ctx.waitUntil((async () => {
                 const frames = [
                   "⚡ *Initiating Instant Harvest across Fleet...*\n`[▰▰▱▱▱▱▱▱▱▱] 20%` • Syncing Edge Nodes & Relayers",
-                  "⚡ *Harvesting Multi-Bot Rewards...*\n`[▰▰▰▰▰▰▱▱▱▱] 65%` • Dispatched 18 Accounts (Stones, ATF, MRG, AI Lab...)",
+                  "⚡ *Harvesting Multi-Bot Rewards...*\n`[▰▰▰▰▰▰▱▱▱▱] 65%` • Dispatched 18 Accounts (MRG, ATF, Victor's, VyroDrop, Kynex...)",
                   `⚡ *Instant Fleet Harvest Dispatched!*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Executing ✅\`\n\n` +
                   `• *Status:* Executing across 18 Accounts ✅\n` +
-                  `• *Active Lineup:* Stones • ATF • MRG • AI Lab • UltraWallet • FINVORA • Victor's • VyroDrop\n` +
+                  `• *Active Lineup (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n` +
                   `• *Edge Coordination:* 5 Parallel Cloudflare Edge Slots\n\n` +
                   `_Farming cycle and task claims active across all nodes._`
                 ];
@@ -3885,8 +3887,8 @@ fi
                   "📊 *Aggregating Multi-Chain Telemetry...*\n`[▰▰▰▰▰▰▰▱▱▱] 75%` • Verifying Anti-Bot & Proof-of-Work",
                   `⚡ *MY AGY AI — Private Admin Console*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Synchronized ✅\`\n\n` +
                   `🟢 *Fleet Health:* 18/18 Accounts Active & Mining\n` +
-                  `🤖 *Active Bots (7/7):* Stones • ATF • MRG • AI Lab • UltraWallet • FINVORA • Victor's • VyroDrop\n` +
-                  `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 18 TON Wallets\n` +
+                  `🤖 *Active Bots (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n` +
+                  `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • 18 Verified TON Wallets\n` +
                   `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
                   `📱 *Tap below to open your real-time visual Mini App dashboard:*`
                 ];
@@ -4358,8 +4360,8 @@ fi
                 } catch (_) {}
                 const rep = `⚡ *MY AGY AI — Fleet Operations*\n\n` +
                   `🟢 *Fleet Health:* 18/18 Accounts Active & Mining\n` +
-                  `🤖 *Active Bots (7/7):* Stones • ATF • MRG • AI Lab • UltraWallet • FINVORA • Victor's • VyroDrop\n` +
-                  `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 18 TON Wallets\n` +
+                  `🤖 *Active Bots (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n` +
+                  `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • 18 Verified TON Wallets\n` +
                   `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
                   `📱 *Tap below to open your real-time visual Mini App dashboard:*`;
                 const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -4428,8 +4430,8 @@ fi
             const welcome = `👋 *Welcome to MY AGY AI — Private Admin Console*\n\n` +
               `Your autonomous *24/7 Cloud Operations Hub* is active across 5 Cloudflare Edge nodes.\n\n` +
               `🟢 *Fleet Health:* 18/18 Accounts Online & Mining\n` +
-              `🤖 *Active Bots (7/7):* Stones • ATF • MRG • AI Lab • UltraWallet • FINVORA • Victor's • VyroDrop\n` +
-              `💰 *On-Chain Vaults:* BEP-20 (BNB) • Arbitrum (STONES) • 18 TON Wallets\n` +
+              `🤖 *Active Bots (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n` +
+              `💰 *On-Chain Vault:* BEP-20 (BNB) • 18 Verified TON Wallets\n` +
               `🛡️ *Security:* 5/5 Anti-Bot Verified • Dual-Edge Cloud Sync\n\n` +
               `📱 *Tap '👑 Admin Console' below or use quick controls:*`;
             const frames = [
@@ -5025,13 +5027,13 @@ fi
 
             const rep = `⚡ *MY AGY AI — Fleet Operations*\n\n` +
               `🟢 *Fleet Health:* 18/18 Accounts Active & Mining\n` +
-              `🤖 *Active Bots (7/7):* Stones • ATF • MRG • AI Lab • UltraWallet • FINVORA • Victor's • VyroDrop\n` +
-              `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • \`500 STONES\` • 18 TON Wallets\n` +
+              `🤖 *Active Bots (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n` +
+              `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • 18 Verified TON Wallets\n` +
               `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Edge Shards\n\n` +
               `📱 *Tap below to open your real-time visual Executive Dashboard:*`;
             const frames = [
               "📊 *Querying Fleet Live State...*\n`[▰▰▰▱▱▱▱▱▱▱] 30%` • Polling 18 Accounts & 5 Edge Nodes",
-              "📊 *Aggregating On-Chain Balances...*\n`[▰▰▰▰▰▰▰▱▱▱] 75%` • BEP-20 • Arbitrum • TON",
+              "📊 *Aggregating On-Chain Balances...*\n`[▰▰▰▰▰▰▰▱▱▱] 75%` • BEP-20 • TON",
               rep
             ];
             await sendAnimatedReply(chatId, frames, statusInlineKeyboard, 300);
@@ -5045,11 +5047,11 @@ fi
             await sendChatAction(chatId, "typing");
             const rep = `⚡ *Instant Fleet Harvest Dispatched!*\n\n` +
               `• *Status:* Executing across 18 Accounts ✅\n` +
-              `• *Active Lineup (7/7):* Stones • ATF • MRG • AI Lab • UltraWallet • FINVORA • Victor's • VyroDrop\n\n` +
+              `• *Active Lineup (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n\n` +
               `_Farming cycle and task claims active across all 5 parallel Cloudflare edge slots._`;
             const frames = [
               "⚡ *Initiating Instant Harvest across Fleet...*\n`[▰▰▱▱▱▱▱▱▱▱] 20%` • Syncing Edge Nodes & Relayers",
-              "⚡ *Harvesting Multi-Bot Rewards...*\n`[▰▰▰▰▰▰▱▱▱] 65%` • Dispatched 18 Accounts across all 7 mining pools",
+              "⚡ *Harvesting Multi-Bot Rewards...*\n`[▰▰▰▰▰▰▱▱▱] 65%` • Dispatched 18 Accounts across all 5 mining pools",
               rep
             ];
             const harvestPromise = queueHarvestAction();
@@ -5102,12 +5104,13 @@ fi
 
         if (text === "🧪 AI Lab" || text.startsWith("/ailab")) {
           ctx.waitUntil((async () => {
-            const rep = `🧪 *AI LAB ROBOT COMMAND CENTER*\n` +
+            const rep = `🚫 *AI LAB ROBOT DECOMMISSIONED & PURGED*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* AI Lab Agent (@AiLab_robot)\n` +
-              `• *Status:* Continuous 8h Mining Active\n` +
-              `• *Policy:* 100% Holding & Compounding Mode (Auto-Cashout Disabled)\n` +
-              `• *Asset Mode:* Pure Hashpower & USD Accumulation\n` +
+              `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
+              `• *Action Taken:* All 18 fleet accounts permanently blocked @AiLab_robot, purged keys, and deleted dialog history.\n` +
+              `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
+              `• *Active Legitimate Fleet:* MRG Miner, ATF Miner, Victor's Company, VyroDrop, and Kynex Network.\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -5248,7 +5251,7 @@ fi
               `• *Platform:* TurboGram V1 (@TurboGramV1_bot)\n` +
               `• *Status:* 🚫 Permanently removed and blacklisted from fleet per user directive\n` +
               `• *Action Taken:* Purged from cloud farm routines, unsubscribed channels, and sessions isolated.\n` +
-              `• *Active Legitimate Fleet:* MRG Miner, ATF Miner, Victor's Company, and VyroDrop.\n` +
+              `• *Active Legitimate Fleet:* MRG Miner, ATF Miner, Victor's Company, VyroDrop, and Kynex Network.\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -5309,18 +5312,14 @@ fi
               }
             } catch (_) {}
             const rep = `💼 *Multi-Chain Verified Destination Wallets*\n\n` +
-              `🟡 *Binance BEP-20 (All 18 Fleet Accounts):*\n` +
+              `🟡 *Binance BEP-20 (Master Reserve Vault):*\n` +
               `• Address: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
-              `• Balance: \`${liveBnb.toFixed(6)} BNB\` (~$${(liveBnb * 764.5).toFixed(2)} USD)\n` +
-              `• Direct Payouts: AI Lab (>= $0.02) • Safe Compounding Mode Active\n\n` +
-              `🔵 *Arbitrum One (STONES Miner):*\n` +
-              `• Address: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
-              `• Deposited: \`500+ STONES\` (Auto-claimed to wallet)\n\n` +
+              `• Balance: \`${liveBnb.toFixed(6)} BNB\` (~$${(liveBnb * 764.5).toFixed(2)} USD)\n\n` +
               `💎 *Binance TON (Main Account #1):*\n` +
               `• Address: \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
               `• Network: TON Blockchain (The Open Network)\n\n` +
-              `🛡️ *Worker TON Wallets (Accounts 2–18):*\n` +
-              `• 17 Dedicated TON v4r2 Wallets cryptographically bound for MRG, ATF, FINVORA, Victor's, and VyroDrop pools.\n\n` +
+              `🛡️ *Dedicated TON Wallets (18/18 Fleet Accounts):*\n` +
+              `• 18 Dedicated TON v4r2 Wallets cryptographically bound & verified for MRG, ATF, Victor's, and VyroDrop pools.\n\n` +
               `📱 _Tap '🚀 Open Executive Dashboard' below for interactive wallet explorer._`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -5347,10 +5346,9 @@ fi
                   `• *User ID:* \`${a.user_id || "N/A"}\`\n` +
                   `• *Role:* ${isHost ? "Master Host 👑" : "Worker Account 🟢"}\n` +
                   `• *Daemon Status:* 🟢 Active & Mining\n` +
-                  `• *Stones Policy:* 100% Compounding & Hash Growth Mode\n` +
-                  `• *AI Lab Policy:* 100% Compounding & Hashpower Reinvest Mode\n` +
+                  `• *Mining Policy:* 100% Compounding & Hash Growth Mode\n` +
                   `• *Withdrawal Directive:* Permanently Disabled (Anti-Wrong-Address Protection) 🛡️\n` +
-                  `• *Active Lineup:* 17 Mining Bots Active 24/7\n` +
+                  `• *Active Lineup:* 5 Legitimate Bots Active 24/7 (MRG • ATF • Victor's • VyroDrop • Kynex)\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
                   `💡 _Send \`/acc <1-18>\` to inspect any account or \`/accounts\` for full fleet roster._`;
                 const singleAccBtns = {
@@ -5375,7 +5373,7 @@ fi
             const rep = `👥 *Accounts Management Hub*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `🟢 *Fleet Status:* \`${accounts.length}/18 Accounts Online & Active\`\n` +
-              `🤖 *24/7 Farming:* All 9 Bots Active (Stones • ATF • MRG • AI Lab • UltraWallet • FINVORA • Victor's • VyroDrop)\n` +
+              `🤖 *24/7 Farming:* All 5 Bots Active (MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network)\n` +
               `🛡️ *Security:* 100% Anti-Ban Verified • Isolated Wallets & Proxies\n\n` +
               `📋 *Connected Accounts:*\n` +
               `${lines}\n` +
@@ -5645,8 +5643,7 @@ fi
             }
             const rep = `⚡ *MY AGY AI — EXECUTIVE ECOSYSTEM SUMMARY* 📊\n━━━━━━━━━━━━━━━━━━━━━━\n` +
               `🤖 *Fleet Automation:* 18/18 Accounts Online & Mining\n` +
-              `⛏️ *Active Mining Pools (7/7):* Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, Victor's Company, VyroDrop\n` +
-              `👛 *Ultra Wallet:* Auto-Mining 24/7 (Multi-Pool Integrated)\n` +
+              `⛏️ *Active Mining Pools (5/5):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network\n` +
               `👥 *Community Users:* \`${totalUsers || userList.length}\` Registered Miners\n` +
               `📱 *Community Accounts:* \`${activeAccountsCount}\` Connected Phones\n` +
               `🟢 *Active 24/7 Miners:* \`${activeMiners}\` Active | ⚠️ Paused: \`${pausedMiners}\`\n` +
@@ -6192,7 +6189,7 @@ fi
           }
 
           if (userLower.includes("stones") && (userLower.includes("status") || userLower.includes("balance") || userLower.includes("wd") || userLower.includes("cooldown"))) {
-            await sendReply(`💎 *Stones Miners Telemetry*\n\n• *Mode:* 100% Compounding & Hashrate Boost Mode\n• *Auto-Withdrawals:* Permanently Disabled (Per User Directive)\n• *Status:* All accounts active and compounding tokens safely in the cloud.`, statusInlineKeyboard);
+            await sendReply(`🚫 *STONES MINERS DECOMMISSIONED & PURGED*\n\n• *Status:* 🚫 Banned & Purged per Operator Directive\n• *Action Taken:* All 18 fleet accounts permanently blocked @stoneswithestand_bot, left scam channels, and deleted dialog history.\n• *Fleet Focus:* 100% active on the 5 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex).`, statusInlineKeyboard);
             return;
           }
 
@@ -6227,11 +6224,10 @@ fi
 
             const systemPrompt = `You are Ari, the personal cloud AI assistant for Arif's 18-account automated crypto and mining fleet (MY AGY AI).
 Live Fleet Context:
-- 18 active accounts mining 24/7 across the 4 active legitimate bots: MRG Miner, ATF Miner, Victor's Company, and VyroDrop. All discontinued & scammer bots (Stones, AI Lab, UltraWallet, FINVORA, ART, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, USDT QUAD, TAC, Ominix) have been permanently purged and blocked.
+- 18 active accounts mining 24/7 across the 5 active legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, and Kynex Network. All discontinued & scammer bots (Stones, AI Lab, UltraWallet, FINVORA, ART, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, USDT QUAD, TAC, Ominix) have been permanently purged and blocked.
 - Policy: ATF Miner is in 100% farming & accumulation mode (NO withdrawals; let balance grow).
 - Policy (Admin Fleet Accounts): MRG Miner is strictly in 100% Holding & Compounding mode (NO auto-withdrawals) to preserve peak levels (Level 1..50), maximum hashrate (5.5 TH/s), and squad referral qualifications.
 - Vault BEP-20 (BNB, USDT): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Live Balance: ${liveBnb.toFixed(6)} BNB).
-- Stones Vault (Arbitrum One): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Balance: 500+ STONES).
 - Main TON Vault: UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT.
 - ATF Mined: ~${totalAtf.toFixed(1)} ATF accumulating across all accounts.
 - Infrastructure: 100% running in the cloud (Triple Cloudflare Edge Nodes, Render Singapore, Cron-job.org). No VPS or local dependencies.
@@ -7280,7 +7276,7 @@ Reply to Arif naturally:`;
                 `• *Pass Status:* ${passBadge}\n` +
                 `• *Points Balance:* ${profile.points} Pts\n\n` +
                 `📱 *Active Accounts:*\n${accList}\n\n` +
-                `💡 _Every account automatically farms all 7 pools 24/7 in the cloud._`;
+                `💡 _Every account automatically farms all 5 pools 24/7 in the cloud._`;
               const inlineBtns = [
                 [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
                 [{ text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
@@ -7484,7 +7480,7 @@ Reply to Arif naturally:`;
               `• *Daily Cost:* ${isCovered ? "Covered by VIP Pass" : `${(profile.accounts || []).length * 100} Pts/day`}\n` +
               `• *Ads Watched:* ${profile.ads_watched || 0} / 50 (${(profile.ads_watched || 0) % 50}/50 towards bonus slot)\n` +
               `• *Referral Friends:* ${profile.referral_count || 0} (${(profile.referral_count || 0) * 500} Pts earned)\n` +
-              `• *Active Pools (7/7):* ATF, Stones, MRG, AI Lab, UltraWallet, FINVORA, Victor's Company, VyroDrop\n` +
+              `• *Active Pools (5/5):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network\n` +
               `• *Cloud Mining:* 🟢 24/7 Automated Running`;
             const statsBtns = {
               inline_keyboard: [
@@ -7632,7 +7628,7 @@ Reply to Arif naturally:`;
               `• *Daily Cost:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${profile.accounts.length * 100} Pts/day`}\n` +
               `• *Points Balance:* ${profile.points} Pts (~${daysRemaining} days left)\n\n` +
               `📱 *Active Accounts:*\n${accList}\n\n` +
-              `💡 _Every account automatically farms all 9 bots: ATF Miner, Stones, MRG, AI Lab, UltraWallet, FINVORA, Victor's Company, and VyroDrop._`;
+              `💡 _Every account automatically farms all 5 legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, and Kynex Network._`;
 
             const inlineBtns = [
               [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
@@ -7887,7 +7883,7 @@ Reply to Arif naturally:`;
                   `• *Username:* @${res.username || "None"}\n` +
                   `• *User ID:* \`${res.user_id}\`\n` +
                   `• *Mining Status:* 🟢 24/7 Cloud Automated\n` +
-                  `• *Pools Active (8/8):* Stones, ATF, MRG, AI Lab, UltraWallet, FINVORA, Victor's, VyroDrop\n` +
+                  `• *Pools Active (5/5):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network\n` +
                   `• *Balance:* ${profile.points} Points${welcomeBonusText}\n\n` +
                   `✅ 100% Cloud Mining active! 100 points/day will be deducted while farming is live.`;
                 await sendUserReply(succMsg, activeUserKeyboard);
@@ -7964,7 +7960,7 @@ Reply to Arif naturally:`;
                 `• *Username:* @${res.username || "None"}\n` +
                 `• *User ID:* \`${res.user_id}\`\n` +
                 `• *Mining Status:* 🟢 24/7 Cloud Automated\n` +
-                `• *Pools Active (8/8):* Stones, ATF, MRG, AI Lab, UltraWallet, FINVORA, Victor's, VyroDrop\n` +
+                `• *Pools Active (5/5):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network\n` +
                 `• *Balance:* ${profile.points} Points${welcomeBonusText}\n\n` +
                 `✅ 100% Cloud Mining active! 100 points/day will be deducted while farming is live.`;
               await sendUserReply(succMsg, activeUserKeyboard);
@@ -8161,7 +8157,7 @@ Reply to Arif naturally:`;
               `• *Daily Cost:* ${isCovered ? "Covered by VIP Pass" : `${dCost} Pts/day (100/acc)`}\n` +
               `• *Runway:* ~${daysRemaining}\n` +
               `• *Streak / Ads:* 🔥 Day ${profile.daily_streak || 0} • 🎬 ${profile.ads_watched || 0} Ads\n` +
-              `• *Active Pools (7/7):* ATF, Stones, MRG, AI Lab, UltraWallet, FINVORA, Victor's Company, VyroDrop\n` +
+              `• *Active Pools (5/5):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network\n` +
               `• *Cloud Mining:* ${farmStatus}`;
             const statsBtns = {
               inline_keyboard: [
@@ -8258,7 +8254,7 @@ Reply to Arif naturally:`;
               `• *Daily Cost:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${profile.accounts.length * 100} Pts/day`}\n` +
               `• *Points Balance:* ${profile.points} Pts (~${daysRemaining} days left)\n\n` +
               `📱 *Active Accounts:*\n${accList}\n\n` +
-              `💡 _Every connected account automatically farms all 9 bots: ATF Miner, Stones, MRG, AI Lab, UltraWallet, FINVORA, Victor's Company, and VyroDrop._`;
+              `💡 _Every connected account automatically farms all 5 legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, and Kynex Network._`;
 
             const inlineBtns = [
               [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],

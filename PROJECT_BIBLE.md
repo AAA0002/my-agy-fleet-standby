@@ -337,21 +337,21 @@ During thorough auditing of `/api/farm/cloud-all`, an investigation revealed why
 2. **Detached Asynchronous Background Dwell Execution**:
    - Dwell tasks and ad reward waits are dispatched as background event loop tasks (`asyncio.create_task`), returning HTTP farming responses immediately once core claims and check-ins complete.
 3. **Pure WebApp REST Execution**:
-   - All 7 legitimate bots farm strictly via high-performance REST APIs. Token extraction is decoupled and handled exclusively by `/collect-tokens` in dedicated background batches.
-4. **Empirical Fleet Results (Live October 8, 2026)**:
+   - All 5 legitimate bots farm strictly via high-performance REST APIs. Token extraction is decoupled and handled exclusively by `/collect-tokens` in dedicated background batches.
+4. **Empirical Fleet Results (Live October 10, 2026)**:
    - **Farmed Accounts**: **18 / 18 (100% Success)**.
-   - **Farmed Bots per Account**: **7/7 legitimate bots active per account**.
+   - **Farmed Bots per Account**: **5/5 legitimate bots active per account**.
    - **Total Active Bot Actions**: Complete coverage across all 18 accounts in under 30 seconds.
 
 ---
 
-## ⚡ 6.2 Dual-Type Bot Architecture, Channel Engine & Dialog Purge Protocol (October 8, 2026)
+## ⚡ 6.2 Dual-Type Bot Architecture, Channel Engine & Dialog Purge Protocol (October 10, 2026)
 
 ### 1. The Dual-Type Bot & Channel Architecture
-The fleet's 4 active high-conviction legitimate bots and channels are fundamentally divided into two technical architectures:
+The fleet's 5 active high-conviction legitimate bots and channels are fundamentally divided into two technical architectures:
 
-#### Type A: WebApp Mini-Apps / REST Bots (4 Genuine Bots)
-- **Bots Included**: MRG Miner (`@mrg_miner_bot` / `@mrgminerbot`), ATF Miner (`@atf_miner_bot` / `@ATF_AIRDROP_bot`), Victor's Company (`@VictorsCompanybot`), VyroDrop (`@vyrodrop_bot`).
+#### Type A: WebApp Mini-Apps / REST Bots (5 Genuine Bots)
+- **Bots Included**: MRG Miner (`@mrg_miner_bot` / `@mrgminerbot`), ATF Miner (`@atf_miner_bot` / `@ATF_AIRDROP_bot`), Victor's Company (`@VictorsCompanybot`), VyroDrop (`@vyrodrop_bot`), Kynex Network (`@Kynex_miningbot`).
 - **Mechanism**:
   - Authenticated via Telegram WebApp `initData` (HMAC SHA-256 query string signed by Telegram bot tokens) or Bearer JWT tokens.
   - Executed 100% via asynchronous HTTP REST calls with zero MTProto connection overhead.

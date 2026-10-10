@@ -4,6 +4,22 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+- **🛡️ Legacy Bot UI Eradication, ATF Wallet Verification & 5-Bot Cloud Parity (October 10, 2026)**:
+  - **🧹 Legacy Bot UI Text & Hallucination Elimination (`deploy_both_cf_workers.py`)**:
+    * Root-caused user report of old removed bots appearing active: identified ~50 legacy template strings hardcoding `Stones • ATF • MRG • AI Lab • UltraWallet • FINVORA • Victor's • VyroDrop` across `/start`, `/accounts`, `/harvest`, `/status`, `/summary`, `/menu`, and userbot callbacks.
+    * Converted `/ailab` text command from returning active 8h status to explicit decommission and purge notice (same as `/stones`, `/ultra`, `/finvora`, `/turbogram`).
+    * Converted all status texts, command fallbacks, AI system prompts, and rosters to strictly display the **5 Legitimate Bots**: `MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network` (`5/5 Active`).
+    * Removed legacy Arbitrum One STONES vault text and AI Lab cashout policies; replaced with 18 Verified TON Wallets display.
+    * Sanitized `public_admin/admin/index.html`, `public_admin/admin.html`, and `update_dashboard_compact.py` ticker and telemetry to reflect the 5 legitimate bots.
+  - **🪙 ATF Miner Cryptographic Wallet Binding Verified (18/18 Accounts)**:
+    * Identified root cause of missing wallet connections on the 4 newest fleet accounts (`7749125802`, `7954290138`, `8841038141`, `8975442879`): ATF requires TonConnect 2.0 cryptographic proof signed with the account's Ed25519 private key, domain `atfminers.asloni.online`, and raw TON address (`0:<hex>`).
+    * Executed TonConnect 2.0 signed proof generation (`create_ton_proof` from `mrg_turnstile_solver.py`) across all 4 accounts, achieving 100% verification (`wallet_verified: 1`).
+    * Confirmed full fleet verification: **18/18 accounts connected and verified on ATF Miner**.
+  - **🔄 Standby App Log & Docstring Alignment (`render_standby_app.py`, `render_app_latest.py`)**:
+    * Cleaned up legacy docstrings and log lines mentioning "7/7 legitimate bots" or "7-bot farming", aligning them to the active 5 legitimate bots.
+  - **📱 Rule 4 Compliance (Zero Phone Load)**:
+    * Verified 0 local Python bot background processes running on Samsung Galaxy A30.
+
 - **🛡️ Full-Stack Legacy Bot Purge & 5-Bot Cloud Workflow Parity (October 10, 2026)**:
   - **🧹 Deep Purge of All 15 Legacy Bot Fields Across Storage Layers**:
     * Cleaned `accounts.json` locally, purging all 15 decommissioned scam bots (`stones`, `ailab`, `ultrawallet`, `finvora`, `apx`, `ainovum`, `turbogram`, `mininggram`, `usdtquad`, `tensor`, `tac`, `trxpower`, `tontrader`, `ominix`, `art`, `bnb`).

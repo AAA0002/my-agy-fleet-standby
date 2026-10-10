@@ -537,13 +537,13 @@ function App() {
       const res = await fetch("/ai", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: `You are Ari, the personal cloud AI copilot for Arif's 13-account automated mining fleet (MY AGY AI). Fleet state: 13 active accounts across all 7 legitimate bots, ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Stones vault: 500+ STONES on Arbitrum One. Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
+          prompt: `You are Ari, the personal cloud AI copilot for Arif's 18-account automated mining fleet (MY AGY AI). Fleet state: 18 active accounts across all 5 legitimate bots (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network), ${bnbBalance.toFixed(6)} BNB in vault (${formatMoney(bnbUsd)}), ${totalAtfMined.toFixed(2)} ATF accumulating (farming only, no withdrawals). Speak naturally, warmly, and helpfully like ChatGPT/Claude, not robotic. Address the user as Arif. Question: "${query}"`
         })
       });
       const d = await res.json();
-      setAiMessages([...newMsgs, { sender: "ai", text: d.response || d.answer || "All 13 accounts are online and actively mining, Arif." }]);
+      setAiMessages([...newMsgs, { sender: "ai", text: d.response || d.answer || "All 18 accounts are online and actively mining, Arif." }]);
     } catch (_) {
-      setAiMessages([...newMsgs, { sender: "ai", text: `Fleet Status: 13/13 accounts active. On-chain balance is ${bnbBalance.toFixed(6)} BNB.` }]);
+      setAiMessages([...newMsgs, { sender: "ai", text: `Fleet Status: 18/18 accounts active. On-chain balance is ${bnbBalance.toFixed(6)} BNB.` }]);
     } finally {
       setAiLoading(false);
     }
@@ -635,16 +635,14 @@ function App() {
       currencySymbol: currencyConfig[currency].symbol, currencyRate: currencyConfig[currency].rate
     }),
 
-    // 7-Bot Status Ticker (1 Compact Line)
+    // 5-Bot Status Ticker (1 Compact Line)
     React.createElement("div", { className: "flex items-center gap-2 overflow-x-auto py-1 px-1 mb-3 text-[10px] font-semibold text-slate-600 dark:text-slate-300 no-scrollbar" },
       [
-        { name: "ATF Miner", token: totalAtfMined > 0 ? `${totalAtfMined.toFixed(0)} ATF (Farming)` : "ATF (Farming)" },
-        { name: "Stones", token: "Arbitrum" },
         { name: "MRG Miner", token: "TON" },
-        { name: "AI Lab", token: "USDT" },
-        { name: "UltraWallet", token: "USDT/LT" },
-        { name: "FINVORA", token: "TON" },
-        { name: "TurboGram", token: "TON" }
+        { name: "ATF Miner", token: totalAtfMined > 0 ? `${totalAtfMined.toFixed(0)} ATF (Farming)` : "ATF (Farming)" },
+        { name: "Victor's Company", token: "TON" },
+        { name: "VyroDrop", token: "TON" },
+        { name: "Kynex Network", token: "KNX" }
       ].map((b, i) => React.createElement("div", {
         key: i,
         className: "flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-white/5 shrink-0"

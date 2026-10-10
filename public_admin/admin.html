@@ -668,15 +668,14 @@ function App() {
       setAiLoading(false);
       haptic("success");
     } else if (lower.includes("harvest") || lower.includes("farm") || lower.includes("claim")) {
-      const reply = "🌾 Dispatched Instant 7-Pool Harvest across all 18 fleet accounts! Automated claim cycles queued on Cloudflare Edge mesh.";
+      const reply = "🌾 Dispatched Instant 5-Pool Harvest across all 18 fleet accounts! Automated claim cycles queued on Cloudflare Edge mesh.";
       handleInstantHarvest();
       setAiMessages(prev => [...prev, { sender: "ai", text: reply }]);
       setAiLoading(false);
       haptic("success");
     } else if (lower.includes("status") || lower.includes("fleet") || lower.includes("account")) {
-      const totalStones = fleet.reduce((sum, a) => sum + (a.stones_coins || 0), 0);
       const totalAtf = fleet.reduce((sum, a) => sum + (a.atf_balance || 0), 0);
-      const reply = `📊 Executive Fleet Telemetry:\n• Active Accounts: ${fleet.length || 18}/${fleet.length || 18} Online (100% Cloud-First)\n• Vault Balance: ${bnbBalance.toFixed(6)} BNB (≈ $${(bnbBalance * rates.bnb_usd).toFixed(2)})\n• Total Mined: ${totalStones.toLocaleString()} STONES • ${totalAtf.toFixed(1)} ATF\n• Active Pools (7/7): ATF, Stones, MRG, AI Lab, UltraWallet, FINVORA, Victor's, VyroDrop\n• 5 Edge Nodes: All Online (100% Cloud-Powered).`;
+      const reply = `📊 Executive Fleet Telemetry:\n• Active Accounts: ${fleet.length || 18}/${fleet.length || 18} Online (100% Cloud-First)\n• Vault Balance: ${bnbBalance.toFixed(6)} BNB (≈ $${(bnbBalance * rates.bnb_usd).toFixed(2)})\n• Total Mined: ${totalAtf.toFixed(1)} ATF\n• Active Pools (5/5): MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network\n• 5 Edge Nodes: All Online (100% Cloud-Powered).`;
       setAiMessages(prev => [...prev, { sender: "ai", text: reply }]);
       setAiLoading(false);
       haptic("success");
