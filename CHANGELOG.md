@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **📱 Mobile-First Mini App Architecture & Phone-Screen Optimization (October 11, 2026)**:
+  - **📱 Thumb-Friendly Docked Bottom Navigation (`public/index.html`)**:
+    * Replaced awkward top horizontal scrolling tabs with a fixed, thumb-friendly **Mobile Bottom Navigation Bar** (`Treasury`, `Nodes`, `Ari AI`, `8 Bots`, `Mesh`) featuring active state pills and haptic selection feedback.
+    * Engineered a strict `100dvh` viewport layout with safe-area insets (`env(safe-area-inset-top)` and `env(safe-area-inset-bottom)`) ensuring elements never collide with device status bars or home indicators.
+  - **⚡ Native Telegram WebApp SDK Integrations**:
+    * Implemented `Telegram.WebApp.BackButton` integration: opening any modal (Node Dossier, QR Code, Export) automatically triggers the native Telegram back button, and tapping it seamlessly dismisses the modal.
+    * Enabled `enableClosingConfirmation()` preventing accidental downward swipes from closing active AI chats or OTP sessions.
+    * Configured `setHeaderColor('#f8fafc')` and `setBackgroundColor('#f8fafc')` for native app feel.
+    * Added responsive middle truncation on wallet addresses so long strings never overflow narrow phone screens.
+  - **📐 Mobile Bot Banner Normalization (`tgcloud/lib/ui.js`)**:
+    * Normalized dashboard health bar to a clean 10-block visual ratio (`[🟩🟩🟩🟥🟥🟥🟥🟥🟥🟥] 5/18 (28%)`) that never wraps onto second lines on smartphone chat bubbles.
+    * Adjusted Unicode header box widths to 32 characters, eliminating broken borders on small phone screens (Samsung Galaxy A30).
+    * Added 1-tap `[ 🚀 Open WebApp Wallet ↗️ ]` inline button to individual account dossiers.
+  - **☁️ Telegram Serverless Deployment Verified**:
+    * Deployed Revision 14 with `npx tgcloud push`. Webhook in sync at `https://cloud.telegram.org/app8858823950/webhook` (0 pending updates).
+
+
 - **🏛️ Enterprise SaaS Dashboard Overhaul, Interactive Ari AI Council & Production Hardening (October 11, 2026)**:
   - **🧠 Dedicated Ari AI Council & Fleet Copilot Tab (`public/index.html` & `endpoints/aiCouncil.js`)**:
     * Created native interactive AI Copilot tab powered by Cloudflare Workers AI and Groq LPU (`qwen/qwen3.8-27b` & Llama 3 Edge).

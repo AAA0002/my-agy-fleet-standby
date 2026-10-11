@@ -2,7 +2,7 @@
 <html lang="en" class="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>AAA AUTO — Enterprise Fleet & Multi-Chain Treasury</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -23,15 +23,27 @@
     }
   </script>
   <style>
+    :root {
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+    }
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
     body {
       background-color: #f8fafc;
       color: #0f172a;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      -webkit-tap-highlight-color: transparent;
       user-select: none;
+      touch-action: manipulation;
+      overflow: hidden;
+      height: 100dvh;
+      width: 100vw;
     }
     .custom-scrollbar::-webkit-scrollbar {
-      width: 4px;
+      width: 3px;
+      height: 3px;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
       background: #cbd5e1;
@@ -40,17 +52,17 @@
     .card-clean {
       background: #ffffff;
       border: 1px solid #e2e8f0;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
     }
     .card-interactive {
       background: #ffffff;
       border: 1px solid #e2e8f0;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
-      transition: all 0.15s ease-in-out;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+      transition: border-color 0.15s ease, transform 0.1s ease;
     }
-    .card-interactive:hover {
+    .card-interactive:active {
+      transform: scale(0.985);
       border-color: #94a3b8;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
     }
     .pulse-dot {
       box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
@@ -58,41 +70,41 @@
     }
     @keyframes pulseGreen {
       0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
       100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
   </style>
 </head>
-<body class="p-3 max-w-lg mx-auto min-h-screen flex flex-col justify-between bg-slate-50 text-slate-900 selection:bg-blue-100">
+<body class="bg-slate-50 text-slate-900 flex flex-col justify-between selection:bg-blue-100">
 
   <!-- ======================================================== -->
-  <!-- 1. TOP EXECUTIVE HEADER                                  -->
+  <!-- 1. MOBILE TOP APP BAR (STICKY DOCKED)                    -->
   <!-- ======================================================== -->
-  <header class="flex items-center justify-between pb-3 border-b border-slate-200">
-    <div class="flex items-center space-x-2.5">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-500 flex items-center justify-center shadow-md shadow-blue-500/20 text-white font-black text-lg">
+  <header class="w-full max-w-md mx-auto pt-[max(var(--sat),8px)] px-3.5 pb-2.5 bg-slate-50/95 backdrop-blur-md border-b border-slate-200 z-30 shrink-0 flex items-center justify-between">
+    <div class="flex items-center space-x-2">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-xs text-white font-black text-base shrink-0">
         ⚡
       </div>
       <div>
         <div class="flex items-center gap-1.5">
-          <h1 class="text-sm font-black tracking-tight leading-tight uppercase text-slate-900">
+          <h1 class="text-xs font-black tracking-tight uppercase text-slate-900">
             AAA AUTO
           </h1>
-          <span class="text-[9px] font-extrabold uppercase px-1.5 py-0.2 bg-blue-100 text-blue-800 rounded">PRO</span>
+          <span class="text-[8px] font-extrabold uppercase px-1.5 py-0.2 bg-blue-100 text-blue-800 rounded">V8 CLOUD</span>
         </div>
-        <p class="text-[10px] text-slate-500 font-medium flex items-center gap-1">
+        <p class="text-[10px] text-slate-500 font-medium flex items-center gap-1 mt-0.5">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot inline-block"></span>
-          <span>Edge Mesh Active • 0 Phone Load</span>
+          <span>100% Cloud Mesh • 0 Phone Load</span>
         </p>
       </div>
     </div>
     
     <div class="flex items-center gap-1.5">
-      <button id="btnExportModal" class="px-2 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-bold shadow-xs active:scale-95 transition flex items-center gap-1">
+      <button id="btnExportModal" class="h-8 px-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-bold shadow-xs active:scale-95 transition flex items-center gap-1">
         <span>📦</span>
         <span>Export</span>
       </button>
-      <button id="btnRefresh" class="p-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-blue-600 shadow-xs active:scale-95 transition" title="Refresh Live State">
+      <button id="btnRefresh" class="w-8 h-8 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-blue-600 shadow-xs active:scale-95 transition flex items-center justify-center" title="Refresh Live State">
         <svg id="iconRefresh" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
@@ -101,384 +113,387 @@
   </header>
 
   <!-- ======================================================== -->
-  <!-- 2. EXECUTIVE KPI METRICS MATRIX (STRIPE / LINEAR STYLE)   -->
+  <!-- 2. SCROLLABLE MIDDLE WORKSPACE (PHONE OPTIMIZED)         -->
   <!-- ======================================================== -->
-  <div class="grid grid-cols-2 gap-2 my-2.5">
-    <!-- Metric 1: Fleet Session Health -->
-    <div class="card-clean p-2.5 rounded-2xl flex flex-col justify-between">
-      <div class="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-        <span>Fleet Sessions</span>
-        <span class="text-blue-600 font-mono">18 Nodes</span>
-      </div>
-      <div class="my-1">
-        <div class="text-base font-black text-slate-900 flex items-center gap-1.5">
-          <span class="text-emerald-600" id="cntOnline">5 🟢</span>
-          <span class="text-slate-300">•</span>
-          <span class="text-rose-600" id="cntRevoked">13 🔴</span>
-        </div>
-      </div>
-      <!-- Segmented Bar -->
-      <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden flex">
-        <div id="barOnline" class="bg-emerald-500 h-full transition-all duration-500" style="width: 27.8%;"></div>
-        <div id="barRevoked" class="bg-rose-400 h-full transition-all duration-500" style="width: 72.2%;"></div>
-      </div>
-    </div>
+  <main class="w-full max-w-md mx-auto flex-1 min-h-0 overflow-y-auto px-3.5 pt-2 pb-24 overscroll-contain custom-scrollbar space-y-2.5">
 
-    <!-- Metric 2: Multi-Chain Treasury -->
-    <div class="card-clean p-2.5 rounded-2xl flex flex-col justify-between">
-      <div class="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-        <span>Treasury Vaults</span>
-        <span class="text-emerald-600 font-mono">5 Chains</span>
-      </div>
-      <div class="my-1">
-        <div class="text-base font-black text-slate-900">90 Wallets</div>
-      </div>
-      <div class="text-[9px] text-slate-500 font-medium truncate">
-        TON • EVM • TRON • SOL • BTC
-      </div>
-    </div>
-
-    <!-- Metric 3: 8 Mining Bots Suite -->
-    <div class="card-clean p-2.5 rounded-2xl flex flex-col justify-between">
-      <div class="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-        <span>Mining Bots</span>
-        <span class="text-indigo-600 font-mono">100% Cloud</span>
-      </div>
-      <div class="my-1">
-        <div class="text-base font-black text-indigo-700">8 Active Bots</div>
-      </div>
-      <div class="text-[9px] text-emerald-600 font-bold">
-        Pure Auto-Compounding Mode
-      </div>
-    </div>
-
-    <!-- Metric 4: Ari AI Council -->
-    <div class="card-clean p-2.5 rounded-2xl flex flex-col justify-between cursor-pointer hover:border-blue-400 transition" id="cardAiShortcut">
-      <div class="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-        <span>Ari AI Council</span>
-        <span class="text-blue-600 font-mono">Groq LPU</span>
-      </div>
-      <div class="my-1">
-        <div class="text-base font-black text-blue-700 flex items-center gap-1">
-          <span>🧠 Active Copilot</span>
-        </div>
-      </div>
-      <div class="text-[9px] text-blue-600 font-bold flex items-center gap-0.5">
-        <span>Tap to Chat with AI</span>
-        <span>→</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ======================================================== -->
-  <!-- 3. PRIMARY ACTION COMMANDS                               -->
-  <!-- ======================================================== -->
-  <div class="space-y-1.5 mb-2.5">
-    <button id="btnHarvest" class="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-md shadow-blue-500/20 active:scale-[0.98] transition flex items-center justify-center gap-2 text-xs">
-      <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-      </svg>
-      <span>1-CLICK CLUSTER HARVEST (8 BOTS SWEEP)</span>
-    </button>
+    <!-- KPI OVERVIEW CARDS (2x2 GRID FOR MOBILE) -->
     <div class="grid grid-cols-2 gap-2">
-      <button id="btnTurnstile" class="py-2 px-3 card-clean hover:bg-slate-50 text-blue-700 font-bold rounded-xl text-[11px] active:scale-[0.98] transition flex items-center justify-center gap-1.5">
-        <span>🛡️ Solve Turnstile</span>
-      </button>
-      <button id="btnCollect" class="py-2 px-3 card-clean hover:bg-slate-50 text-indigo-700 font-bold rounded-xl text-[11px] active:scale-[0.98] transition flex items-center justify-center gap-1.5">
-        <span>🔄 Refresh Tokens</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Search Filter -->
-  <div class="mb-2">
-    <div class="relative">
-      <input type="text" id="inputSearch" placeholder="Search node #, operator name, phone, or wallet..." class="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-xs transition">
-      <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-    </div>
-  </div>
-
-  <!-- ======================================================== -->
-  <!-- 4. NAVIGATION TABS (5 RICH MODULES)                      -->
-  <!-- ======================================================== -->
-  <div class="flex border-b border-slate-200 mb-2.5 space-x-3 text-xs font-bold overflow-x-auto pb-0.5 custom-scrollbar">
-    <button class="tab-btn text-blue-600 border-b-2 border-blue-600 pb-2 transition flex items-center gap-1 whitespace-nowrap" data-tab="wallets">
-      <span>💼</span>
-      <span>Wallets (18)</span>
-    </button>
-    <button class="tab-btn text-slate-400 hover:text-slate-600 pb-2 transition flex items-center gap-1 whitespace-nowrap" data-tab="accounts">
-      <span>📱</span>
-      <span>Fleet Nodes</span>
-    </button>
-    <button class="tab-btn text-slate-400 hover:text-slate-600 pb-2 transition flex items-center gap-1 whitespace-nowrap" data-tab="ai">
-      <span>🧠</span>
-      <span>Ari AI Council</span>
-    </button>
-    <button class="tab-btn text-slate-400 hover:text-slate-600 pb-2 transition flex items-center gap-1 whitespace-nowrap" data-tab="bots">
-      <span>🤖</span>
-      <span>8 Mining Bots</span>
-    </button>
-    <button class="tab-btn text-slate-400 hover:text-slate-600 pb-2 transition flex items-center gap-1 whitespace-nowrap" data-tab="mesh">
-      <span>🌐</span>
-      <span>Edge Mesh</span>
-    </button>
-  </div>
-
-  <!-- ======================================================== -->
-  <!-- TAB 1: MULTI-CHAIN TREASURY & WEB WALLETS                -->
-  <!-- ======================================================== -->
-  <div id="tabWallets" class="tab-pane flex-1 custom-scrollbar overflow-y-auto space-y-2 max-h-[46vh]">
-    <!-- Chain Filter Pills -->
-    <div class="flex items-center gap-1 overflow-x-auto pb-1 text-[10px] font-bold custom-scrollbar">
-      <button class="chain-btn px-2.5 py-1 rounded-lg bg-blue-600 text-white shadow-xs font-bold" data-chain="all">All Chains</button>
-      <button class="chain-btn px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900" data-chain="ton">💎 TON v4R2</button>
-      <button class="chain-btn px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900" data-chain="evm">🪙 EVM / BSC</button>
-      <button class="chain-btn px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900" data-chain="tron">⚡ TRON TRX</button>
-      <button class="chain-btn px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900" data-chain="solana">☀️ Solana</button>
-      <button class="chain-btn px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900" data-chain="btc">₿ Bitcoin</button>
-    </div>
-
-    <!-- Wallets List -->
-    <div id="webWalletList" class="space-y-2">
-      <div class="p-8 text-center text-slate-400 text-xs">Loading multi-chain treasury vaults...</div>
-    </div>
-  </div>
-
-  <!-- ======================================================== -->
-  <!-- TAB 2: FLEET NODES MATRIX                                -->
-  <!-- ======================================================== -->
-  <div id="tabAccounts" class="tab-pane hidden flex-1 custom-scrollbar overflow-y-auto space-y-2 max-h-[46vh]">
-    <div class="flex items-center justify-between text-[11px] text-slate-500 px-1 pb-1">
-      <div class="flex gap-1.5">
-        <button id="filterBtnAll" class="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold">All [18]</button>
-        <button id="filterBtnActive" class="px-2 py-0.5 rounded-md card-clean text-slate-600 hover:text-slate-900">🟢 Online [5]</button>
-        <button id="filterBtnRevoked" class="px-2 py-0.5 rounded-md card-clean text-slate-600 hover:text-slate-900">🔴 Offline [13]</button>
-      </div>
-      <span class="text-[10px]">Tap node for dossier</span>
-    </div>
-    <div id="accountList" class="space-y-1.5">
-      <div class="p-8 text-center text-slate-400 text-xs">Loading live fleet telemetry...</div>
-    </div>
-  </div>
-
-  <!-- ======================================================== -->
-  <!-- TAB 3: ARI AI COUNCIL & COPILOT (FEATURED)               -->
-  <!-- ======================================================== -->
-  <div id="tabAi" class="tab-pane hidden flex-1 custom-scrollbar overflow-y-auto space-y-2.5 max-h-[46vh]">
-    <!-- AI Header Card -->
-    <div class="p-3 rounded-2xl bg-gradient-to-tr from-blue-50 via-indigo-50 to-white border border-blue-100 space-y-1.5">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
-            🧠
-          </div>
-          <div>
-            <h3 class="font-bold text-xs text-slate-900">Ari AI Fleet Commander</h3>
-            <p class="text-[10px] text-slate-500 font-medium">Groq LPU Engine • Edge Dual-Verification</p>
+      <!-- Card 1: Fleet Session Health -->
+      <div class="card-clean p-2.5 rounded-2xl flex flex-col justify-between">
+        <div class="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+          <span>Fleet Health</span>
+          <span class="text-blue-600 font-mono">18 Nodes</span>
+        </div>
+        <div class="my-1">
+          <div class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+            <span class="text-emerald-600" id="cntOnline">5 🟢</span>
+            <span class="text-slate-300">•</span>
+            <span class="text-rose-600" id="cntRevoked">13 🔴</span>
           </div>
         </div>
-        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-          ● ONLINE
-        </span>
+        <!-- Progress Bar -->
+        <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden flex">
+          <div id="barOnline" class="bg-emerald-500 h-full transition-all duration-500" style="width: 27.8%;"></div>
+          <div id="barRevoked" class="bg-rose-400 h-full transition-all duration-500" style="width: 72.2%;"></div>
+        </div>
       </div>
-      <p class="text-[11px] text-slate-600 leading-relaxed">
-        Ask Ari AI anything regarding fleet health, sybil risks, multi-chain compounding, or bot claim schedules.
-      </p>
+
+      <!-- Card 2: Multi-Chain Treasury -->
+      <div class="card-clean p-2.5 rounded-2xl flex flex-col justify-between">
+        <div class="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+          <span>Treasury</span>
+          <span class="text-emerald-600 font-mono">5 Chains</span>
+        </div>
+        <div class="my-1">
+          <div class="text-sm font-black text-slate-900">90 Wallets</div>
+        </div>
+        <div class="text-[9px] text-slate-500 font-medium truncate">
+          TON • EVM • TRX • SOL • BTC
+        </div>
+      </div>
+
+      <!-- Card 3: 8 Mining Bots -->
+      <div class="card-clean p-2.5 rounded-2xl flex flex-col justify-between">
+        <div class="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+          <span>Mining Bots</span>
+          <span class="text-indigo-600 font-mono">Cloud</span>
+        </div>
+        <div class="my-1">
+          <div class="text-sm font-black text-indigo-700">8 Bots Online</div>
+        </div>
+        <div class="text-[9px] text-emerald-600 font-bold truncate">
+          100% Compounding Mode
+        </div>
+      </div>
+
+      <!-- Card 4: Ari AI Council -->
+      <div class="card-clean p-2.5 rounded-2xl flex flex-col justify-between cursor-pointer active:scale-95 transition" id="cardAiShortcut">
+        <div class="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+          <span>Ari AI Copilot</span>
+          <span class="text-blue-600 font-mono">Groq LPU</span>
+        </div>
+        <div class="my-1">
+          <div class="text-sm font-black text-blue-700 flex items-center gap-1">
+            <span>🧠 Active</span>
+          </div>
+        </div>
+        <div class="text-[9px] text-blue-600 font-bold flex items-center gap-0.5">
+          <span>Tap to Chat →</span>
+        </div>
+      </div>
     </div>
 
-    <!-- Quick Action Diagnostic Chips -->
-    <div class="space-y-1">
-      <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quick AI Diagnostics</div>
-      <div class="grid grid-cols-2 gap-1.5 text-[10px]">
-        <button class="ai-quick-btn p-2 rounded-xl card-clean text-left hover:border-blue-400 active:scale-95 transition" data-prompt="Run a full security and sybil anti-ban audit across all 18 nodes and 8 bots.">
-          <span class="font-bold text-blue-700 block">🛡️ Security & Sybil Audit</span>
-          <span class="text-slate-500 text-[9px]">Check fleet health & risks</span>
+    <!-- PRIMARY ACTION CENTER (FINGER FRIENDLY >42px TOUCH) -->
+    <div class="space-y-1.5">
+      <button id="btnHarvest" class="w-full min-h-[44px] py-2.5 px-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-md shadow-blue-500/20 active:scale-[0.98] transition flex items-center justify-center gap-2 text-xs">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        <span>1-CLICK CLUSTER HARVEST (8 BOTS)</span>
+      </button>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btnTurnstile" class="min-h-[40px] py-2 px-3 card-clean text-blue-700 font-bold rounded-xl text-xs active:scale-[0.98] transition flex items-center justify-center gap-1">
+          <span>🛡️ Solve Turnstile</span>
         </button>
-        <button class="ai-quick-btn p-2 rounded-xl card-clean text-left hover:border-blue-400 active:scale-95 transition" data-prompt="Analyze multi-chain wallet distribution and calculate compounding yields across 5 chains.">
-          <span class="font-bold text-emerald-700 block">📈 Yield & Compounding</span>
-          <span class="text-slate-500 text-[9px]">Calculate optimal re-invest</span>
-        </button>
-        <button class="ai-quick-btn p-2 rounded-xl card-clean text-left hover:border-blue-400 active:scale-95 transition" data-prompt="Review all 8 bots (Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, Victor's, VyroDrop) and recommend best claim cycle.">
-          <span class="font-bold text-indigo-700 block">🤖 8 Bots Strategy</span>
-          <span class="text-slate-500 text-[9px]">Claim cycles & upgrades</span>
-        </button>
-        <button class="ai-quick-btn p-2 rounded-xl card-clean text-left hover:border-blue-400 active:scale-95 transition" data-prompt="Provide a step-by-step action plan to re-link the 13 offline worker sessions.">
-          <span class="font-bold text-amber-700 block">🔄 Session Recovery Plan</span>
-          <span class="text-slate-500 text-[9px]">Re-link guide for 13 nodes</span>
+        <button id="btnCollect" class="min-h-[40px] py-2 px-3 card-clean text-indigo-700 font-bold rounded-xl text-xs active:scale-[0.98] transition flex items-center justify-center gap-1">
+          <span>🔄 Refresh Tokens</span>
         </button>
       </div>
     </div>
 
-    <!-- Interactive AI Chat Terminal -->
-    <div class="space-y-2">
+    <!-- SEARCH FILTER INPUT -->
+    <div>
       <div class="relative">
-        <textarea id="aiInputPrompt" rows="2" placeholder="Ask Ari AI anything about your fleet..." class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-xs resize-none"></textarea>
-        <button id="btnAiSend" class="absolute right-2 bottom-2.5 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-sm active:scale-95 transition flex items-center gap-1">
-          <span>Send</span>
-          <span>⚡</span>
-        </button>
+        <input type="text" id="inputSearch" placeholder="Search node #, operator, phone, or address..." class="w-full min-h-[40px] bg-white border border-slate-200 rounded-xl pl-8 pr-7 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-2xs transition">
+        <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <button id="btnClearSearch" class="hidden absolute right-2.5 top-2.5 p-0.5 text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 1: MULTI-CHAIN TREASURY (WEB WALLETS)                -->
+    <!-- ======================================================== -->
+    <div id="tabWallets" class="tab-pane space-y-2">
+      <!-- Chain Filter Selector Pills -->
+      <div class="flex items-center gap-1 overflow-x-auto pb-1 text-[10px] font-bold custom-scrollbar shrink-0">
+        <button class="chain-btn min-h-[32px] px-2.5 py-1 rounded-lg bg-blue-600 text-white shadow-2xs font-bold whitespace-nowrap" data-chain="all">All Chains</button>
+        <button class="chain-btn min-h-[32px] px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900 whitespace-nowrap" data-chain="ton">💎 TON v4R2</button>
+        <button class="chain-btn min-h-[32px] px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900 whitespace-nowrap" data-chain="evm">🪙 EVM / BSC</button>
+        <button class="chain-btn min-h-[32px] px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900 whitespace-nowrap" data-chain="tron">⚡ TRON TRX</button>
+        <button class="chain-btn min-h-[32px] px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900 whitespace-nowrap" data-chain="solana">☀️ Solana</button>
+        <button class="chain-btn min-h-[32px] px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900 whitespace-nowrap" data-chain="btc">₿ Bitcoin</button>
       </div>
 
-      <!-- AI Response Container -->
-      <div id="aiResponseBox" class="p-3 rounded-2xl card-clean space-y-2 hidden">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
-          <span class="text-[10px] font-bold text-blue-700 flex items-center gap-1">
-            <span>🧠 Ari AI Diagnostic</span>
+      <!-- Wallets List -->
+      <div id="webWalletList" class="space-y-2">
+        <div class="p-8 text-center text-slate-400 text-xs">Loading multi-chain treasury vaults...</div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 2: FLEET NODES MATRIX                                -->
+    <!-- ======================================================== -->
+    <div id="tabAccounts" class="tab-pane hidden space-y-2">
+      <div class="flex items-center justify-between text-[11px] text-slate-500 px-1 pb-1">
+        <div class="flex gap-1.5">
+          <button id="filterBtnAll" class="min-h-[30px] px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 font-bold text-xs">All [18]</button>
+          <button id="filterBtnActive" class="min-h-[30px] px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900 text-xs">🟢 Online [5]</button>
+          <button id="filterBtnRevoked" class="min-h-[30px] px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900 text-xs">🔴 Offline [13]</button>
+        </div>
+        <span class="text-[10px] text-slate-400">Tap node</span>
+      </div>
+      <div id="accountList" class="space-y-1.5">
+        <div class="p-8 text-center text-slate-400 text-xs">Loading live fleet telemetry...</div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- TAB 3: ARI AI COUNCIL & COPILOT (FEATURED)               -->
+    <!-- ======================================================== -->
+    <div id="tabAi" class="tab-pane hidden space-y-2.5">
+      <!-- AI Header Card -->
+      <div class="p-3 rounded-2xl bg-gradient-to-tr from-blue-50 via-indigo-50 to-white border border-blue-100 space-y-1">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+              🧠
+            </div>
+            <div>
+              <h3 class="font-bold text-xs text-slate-900">Ari AI Fleet Commander</h3>
+              <p class="text-[10px] text-slate-500 font-medium">Groq LPU Engine • Edge Dual-Verification</p>
+            </div>
+          </div>
+          <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+            ● ONLINE
           </span>
-          <div class="flex items-center gap-1">
-            <span id="aiModelBadge" class="text-[9px] font-mono text-slate-400"></span>
-            <button id="btnCopyAi" class="p-1 rounded bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 text-[10px]" title="Copy Answer">📋</button>
-          </div>
         </div>
-        <div id="aiResponseText" class="text-xs text-slate-800 leading-relaxed font-sans whitespace-pre-wrap select-text"></div>
+        <p class="text-[11px] text-slate-600 leading-relaxed pt-1">
+          Ask Ari AI anything regarding fleet health, sybil risks, compounding yields, or bot claim schedules.
+        </p>
+      </div>
+
+      <!-- Quick Action Diagnostic Chips -->
+      <div class="space-y-1">
+        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quick AI Diagnostics</div>
+        <div class="grid grid-cols-2 gap-1.5 text-[10px]">
+          <button class="ai-quick-btn min-h-[48px] p-2 rounded-xl card-clean text-left hover:border-blue-400 active:scale-95 transition" data-prompt="Run a full security and sybil anti-ban audit across all 18 nodes and 8 bots.">
+            <span class="font-bold text-blue-700 block">🛡️ Security & Sybil</span>
+            <span class="text-slate-500 text-[9px]">Check fleet health & risks</span>
+          </button>
+          <button class="ai-quick-btn min-h-[48px] p-2 rounded-xl card-clean text-left hover:border-blue-400 active:scale-95 transition" data-prompt="Analyze multi-chain wallet distribution and calculate compounding yields across 5 chains.">
+            <span class="font-bold text-emerald-700 block">📈 Yield & Compound</span>
+            <span class="text-slate-500 text-[9px]">Optimal re-invest plan</span>
+          </button>
+          <button class="ai-quick-btn min-h-[48px] p-2 rounded-xl card-clean text-left hover:border-blue-400 active:scale-95 transition" data-prompt="Review all 8 bots (Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, Victor's, VyroDrop) and recommend best claim cycle.">
+            <span class="font-bold text-indigo-700 block">🤖 8 Bots Strategy</span>
+            <span class="text-slate-500 text-[9px]">Claim cycles & upgrades</span>
+          </button>
+          <button class="ai-quick-btn min-h-[48px] p-2 rounded-xl card-clean text-left hover:border-blue-400 active:scale-95 transition" data-prompt="Provide a step-by-step action plan to re-link the 13 offline worker sessions.">
+            <span class="font-bold text-amber-700 block">🔄 Session Recovery</span>
+            <span class="text-slate-500 text-[9px]">Guide for 13 nodes</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Interactive AI Chat Terminal -->
+      <div class="space-y-2">
+        <div class="relative">
+          <textarea id="aiInputPrompt" rows="2" placeholder="Ask Ari AI anything about your fleet..." class="w-full min-h-[56px] bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-2xs resize-none"></textarea>
+          <button id="btnAiSend" class="absolute right-2 bottom-2.5 h-8 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-xs active:scale-95 transition flex items-center gap-1">
+            <span>Send</span>
+            <span>⚡</span>
+          </button>
+        </div>
+
+        <!-- AI Response Container -->
+        <div id="aiResponseBox" class="p-3 rounded-2xl card-clean space-y-2 hidden">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+            <span class="text-[10px] font-bold text-blue-700 flex items-center gap-1">
+              <span>🧠 Ari AI Diagnostic</span>
+            </span>
+            <div class="flex items-center gap-1">
+              <span id="aiModelBadge" class="text-[9px] font-mono text-slate-400"></span>
+              <button id="btnCopyAi" class="p-1 rounded bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 text-[10px]" title="Copy Answer">📋</button>
+            </div>
+          </div>
+          <div id="aiResponseText" class="text-xs text-slate-800 leading-relaxed font-sans whitespace-pre-wrap select-text"></div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- ======================================================== -->
-  <!-- TAB 4: 8 BOTS MINING SUITE                               -->
-  <!-- ======================================================== -->
-  <div id="tabBots" class="tab-pane hidden flex-1 custom-scrollbar overflow-y-auto space-y-2 max-h-[46vh]">
-    <div class="grid grid-cols-1 gap-2 text-xs">
-      <div class="p-3 rounded-xl card-clean flex justify-between items-center">
-        <div class="flex items-center gap-2.5">
-          <span class="text-xl">💎</span>
-          <div>
-            <div class="font-bold text-slate-900">Stones Miner (@stoneswithestand_bot)</div>
-            <div class="text-[10px] text-slate-500">Hashrate Boost & Stone Breaker Claims • 100% Cloud</div>
+    <!-- ======================================================== -->
+    <!-- TAB 4: 8 BOTS MINING SUITE                               -->
+    <!-- ======================================================== -->
+    <div id="tabBots" class="tab-pane hidden space-y-2">
+      <div class="grid grid-cols-1 gap-2 text-xs">
+        <div class="p-3 rounded-xl card-clean flex justify-between items-center">
+          <div class="flex items-center gap-2.5">
+            <span class="text-xl">💎</span>
+            <div>
+              <div class="font-bold text-slate-900">Stones Miner (@stoneswithestand_bot)</div>
+              <div class="text-[10px] text-slate-500">Hashrate Boost & Stone Breaker Claims • Cloud</div>
+            </div>
           </div>
+          <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
         </div>
-        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
-      </div>
-      <div class="p-3 rounded-xl card-clean flex justify-between items-center">
-        <div class="flex items-center gap-2.5">
-          <span class="text-xl">🪙</span>
-          <div>
-            <div class="font-bold text-slate-900">MRG Miner (@mrgminerbot)</div>
-            <div class="text-[10px] text-slate-500">Turnstile Solver, Cloud Mining & Upgrade • 100% Cloud</div>
+        <div class="p-3 rounded-xl card-clean flex justify-between items-center">
+          <div class="flex items-center gap-2.5">
+            <span class="text-xl">🪙</span>
+            <div>
+              <div class="font-bold text-slate-900">MRG Miner (@mrgminerbot)</div>
+              <div class="text-[10px] text-slate-500">Turnstile Solver, Cloud Mining & Upgrade • Cloud</div>
+            </div>
           </div>
+          <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
         </div>
-        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
-      </div>
-      <div class="p-3 rounded-xl card-clean flex justify-between items-center">
-        <div class="flex items-center gap-2.5">
-          <span class="text-xl">🔬</span>
-          <div>
-            <div class="font-bold text-slate-900">AI Lab (@AiLab_robot)</div>
-            <div class="text-[10px] text-slate-500">USDT Miner & Hashrate Exchanger • 100% Cloud</div>
+        <div class="p-3 rounded-xl card-clean flex justify-between items-center">
+          <div class="flex items-center gap-2.5">
+            <span class="text-xl">🔬</span>
+            <div>
+              <div class="font-bold text-slate-900">AI Lab (@AiLab_robot)</div>
+              <div class="text-[10px] text-slate-500">USDT Miner & Hashrate Exchanger • Cloud</div>
+            </div>
           </div>
+          <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
         </div>
-        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
-      </div>
-      <div class="p-3 rounded-xl card-clean flex justify-between items-center">
-        <div class="flex items-center gap-2.5">
-          <span class="text-xl">💼</span>
-          <div>
-            <div class="font-bold text-slate-900">UltraWallet (@UltrawalletTrade_Bot)</div>
-            <div class="text-[10px] text-slate-500">Lucky Wheel, Captcha & Staking Harvest • 100% Cloud</div>
+        <div class="p-3 rounded-xl card-clean flex justify-between items-center">
+          <div class="flex items-center gap-2.5">
+            <span class="text-xl">💼</span>
+            <div>
+              <div class="font-bold text-slate-900">UltraWallet (@UltrawalletTrade_Bot)</div>
+              <div class="text-[10px] text-slate-500">Lucky Wheel, Captcha & Staking Harvest • Cloud</div>
+            </div>
           </div>
+          <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
         </div>
-        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
-      </div>
-      <div class="p-3 rounded-xl card-clean flex justify-between items-center">
-        <div class="flex items-center gap-2.5">
-          <span class="text-xl">⚡</span>
-          <div>
-            <div class="font-bold text-slate-900">ATF Miner (@ATF_AIRDROP_bot)</div>
-            <div class="text-[10px] text-slate-500">Autonomous Cloud Mining & Daily Claims • 100% Cloud</div>
+        <div class="p-3 rounded-xl card-clean flex justify-between items-center">
+          <div class="flex items-center gap-2.5">
+            <span class="text-xl">⚡</span>
+            <div>
+              <div class="font-bold text-slate-900">ATF Miner (@ATF_AIRDROP_bot)</div>
+              <div class="text-[10px] text-slate-500">Autonomous Cloud Mining & Daily Claims • Cloud</div>
+            </div>
           </div>
+          <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
         </div>
-        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
-      </div>
-      <div class="p-3 rounded-xl card-clean flex justify-between items-center">
-        <div class="flex items-center gap-2.5">
-          <span class="text-xl">📈</span>
-          <div>
-            <div class="font-bold text-slate-900">FINVORA Web3 (@FINVORAWeb3bot)</div>
-            <div class="text-[10px] text-slate-500">Instant Bonus & GRAM Miner • 100% Cloud</div>
+        <div class="p-3 rounded-xl card-clean flex justify-between items-center">
+          <div class="flex items-center gap-2.5">
+            <span class="text-xl">📈</span>
+            <div>
+              <div class="font-bold text-slate-900">FINVORA Web3 (@FINVORAWeb3bot)</div>
+              <div class="text-[10px] text-slate-500">Instant Bonus & GRAM Miner • Cloud</div>
+            </div>
           </div>
+          <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
         </div>
-        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
-      </div>
-      <div class="p-3 rounded-xl card-clean flex justify-between items-center">
-        <div class="flex items-center gap-2.5">
-          <span class="text-xl">👑</span>
-          <div>
-            <div class="font-bold text-slate-900">Victor's Company (@VictorsCompanybot)</div>
-            <div class="text-[10px] text-slate-500">Turnstile Commission Claim & Level Compound • 100% Cloud</div>
+        <div class="p-3 rounded-xl card-clean flex justify-between items-center">
+          <div class="flex items-center gap-2.5">
+            <span class="text-xl">👑</span>
+            <div>
+              <div class="font-bold text-slate-900">Victor's Company (@VictorsCompanybot)</div>
+              <div class="text-[10px] text-slate-500">Turnstile Commission Claim & Compound • Cloud</div>
+            </div>
           </div>
+          <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
         </div>
-        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
-      </div>
-      <div class="p-3 rounded-xl card-clean flex justify-between items-center">
-        <div class="flex items-center gap-2.5">
-          <span class="text-xl">💧</span>
-          <div>
-            <div class="font-bold text-slate-900">VyroDrop (@vyrodrop_bot)</div>
-            <div class="text-[10px] text-slate-500">TonConnect & Task Rewards Claim • 100% Cloud</div>
+        <div class="p-3 rounded-xl card-clean flex justify-between items-center">
+          <div class="flex items-center gap-2.5">
+            <span class="text-xl">💧</span>
+            <div>
+              <div class="font-bold text-slate-900">VyroDrop (@vyrodrop_bot)</div>
+              <div class="text-[10px] text-slate-500">TonConnect & Task Rewards Claim • Cloud</div>
+            </div>
           </div>
+          <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
         </div>
-        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
       </div>
     </div>
-  </div>
 
-  <!-- ======================================================== -->
-  <!-- TAB 5: EDGE MESH INFRASTRUCTURE                          -->
-  <!-- ======================================================== -->
-  <div id="tabMesh" class="tab-pane hidden flex-1 custom-scrollbar overflow-y-auto space-y-2 max-h-[46vh]">
-    <div class="space-y-2 text-xs">
-      <div class="p-3 rounded-xl card-clean space-y-1">
-        <div class="font-bold text-blue-700 flex items-center justify-between">
-          <span>Tier 1: Telegram Serverless Platform</span>
-          <span class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">● LIVE</span>
+    <!-- ======================================================== -->
+    <!-- TAB 5: EDGE MESH INFRASTRUCTURE                          -->
+    <!-- ======================================================== -->
+    <div id="tabMesh" class="tab-pane hidden space-y-2">
+      <div class="space-y-2 text-xs">
+        <div class="p-3 rounded-xl card-clean space-y-1">
+          <div class="font-bold text-blue-700 flex items-center justify-between">
+            <span>Tier 1: Telegram Serverless Platform</span>
+            <span class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">● LIVE</span>
+          </div>
+          <div class="text-[11px] text-slate-600">V8 Serverless Architecture • Native SQLite WAL Database</div>
+          <div class="text-[10px] text-slate-400 font-mono">cloud.telegram.org/app8858823950/webhook</div>
         </div>
-        <div class="text-[11px] text-slate-600">V8 Serverless Architecture • Native SQLite WAL Database</div>
-        <div class="text-[10px] text-slate-400 font-mono">cloud.telegram.org/app8858823950/webhook</div>
-      </div>
 
-      <div class="p-3 rounded-xl card-clean space-y-1">
-        <div class="font-bold text-indigo-700 flex items-center justify-between">
-          <span>Tier 2: Cloudflare 5-Node Edge Mesh</span>
-          <span class="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">● 5 NODES</span>
+        <div class="p-3 rounded-xl card-clean space-y-1">
+          <div class="font-bold text-indigo-700 flex items-center justify-between">
+            <span>Tier 2: Cloudflare 5-Node Edge Mesh</span>
+            <span class="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">● 5 NODES</span>
+          </div>
+          <div class="text-[11px] text-slate-600">Node 1 (Primary Cron) + Nodes 2-5 (Passive Hot Standby)</div>
+          <div class="text-[10px] text-slate-400 font-mono">restore-agy.aaaai2.workers.dev</div>
         </div>
-        <div class="text-[11px] text-slate-600">Node 1 (Primary Cron) + Nodes 2-5 (Passive Hot Standby)</div>
-        <div class="text-[10px] text-slate-400 font-mono">restore-agy.aaaai2.workers.dev</div>
-      </div>
 
-      <div class="p-3 rounded-xl card-clean space-y-1">
-        <div class="font-bold text-emerald-700 flex items-center justify-between">
-          <span>Tier 3: Render Cluster & Upstash Redis</span>
-          <span class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">● NOMINAL</span>
+        <div class="p-3 rounded-xl card-clean space-y-1">
+          <div class="font-bold text-emerald-700 flex items-center justify-between">
+            <span>Tier 3: Render Cluster & Upstash Redis</span>
+            <span class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">● NOMINAL</span>
+          </div>
+          <div class="text-[11px] text-slate-600">Primary Coordinator: Node 2 Frankfurt (200 OK)</div>
+          <div class="text-[10px] text-slate-400 font-mono">pleasant-locust-220893.upstash.io</div>
         </div>
-        <div class="text-[11px] text-slate-600">Primary Coordinator: Node 2 Frankfurt (200 OK)</div>
-        <div class="text-[10px] text-slate-400 font-mono">pleasant-locust-220893.upstash.io</div>
-      </div>
 
-      <div class="p-3 rounded-xl card-clean space-y-1">
-        <div class="font-bold text-amber-700 flex items-center justify-between">
-          <span>Rule 4: Zero Phone Load</span>
-          <span class="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">● 0 DAEMONS</span>
+        <div class="p-3 rounded-xl card-clean space-y-1">
+          <div class="font-bold text-amber-700 flex items-center justify-between">
+            <span>Rule 4: Zero Phone Load</span>
+            <span class="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">● 0 DAEMONS</span>
+          </div>
+          <div class="text-[11px] text-slate-600">Samsung Galaxy A30 CPU/RAM 100% Free for Pair Programming</div>
         </div>
-        <div class="text-[11px] text-slate-600">Samsung Galaxy A30 CPU/RAM 100% Free for Pair Programming</div>
       </div>
     </div>
-  </div>
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- 3. MOBILE FIXED BOTTOM NAVIGATION BAR (THUMB-FRIENDLY)   -->
+  <!-- ======================================================== -->
+  <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur-md border-t border-slate-200 pb-[max(var(--sab),6px)] pt-1.5 px-3 z-40 flex items-center justify-around shadow-lg">
+    <button class="nav-item flex flex-col items-center justify-center flex-1 py-1 text-blue-600 font-bold active:scale-95 transition" data-tab="wallets">
+      <span class="text-base leading-none">💼</span>
+      <span class="text-[10px] mt-1">Treasury</span>
+    </button>
+    <button class="nav-item flex flex-col items-center justify-center flex-1 py-1 text-slate-400 font-medium active:scale-95 transition" data-tab="accounts">
+      <span class="text-base leading-none">📱</span>
+      <span class="text-[10px] mt-1">Nodes</span>
+    </button>
+    <button class="nav-item flex flex-col items-center justify-center flex-1 py-1 text-slate-400 font-medium active:scale-95 transition relative" data-tab="ai">
+      <span class="text-base leading-none">🧠</span>
+      <span class="text-[10px] mt-1">Ari AI</span>
+      <span class="w-1.5 h-1.5 rounded-full bg-blue-600 absolute top-0.5 right-4"></span>
+    </button>
+    <button class="nav-item flex flex-col items-center justify-center flex-1 py-1 text-slate-400 font-medium active:scale-95 transition" data-tab="bots">
+      <span class="text-base leading-none">🤖</span>
+      <span class="text-[10px] mt-1">8 Bots</span>
+    </button>
+    <button class="nav-item flex flex-col items-center justify-center flex-1 py-1 text-slate-400 font-medium active:scale-95 transition" data-tab="mesh">
+      <span class="text-base leading-none">🌐</span>
+      <span class="text-[10px] mt-1">Mesh</span>
+    </button>
+  </nav>
 
   <!-- ======================================================== -->
   <!-- MODAL 1: NODE DOSSIER & OTP VIEWER                       -->
   <!-- ======================================================== -->
-  <div id="modalDetail" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-sm p-4 space-y-3 custom-scrollbar max-h-[85vh] overflow-y-auto shadow-2xl">
+  <div id="modalDetail" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all">
+    <div class="bg-white border-t sm:border border-slate-200 rounded-t-3xl sm:rounded-2xl w-full max-w-sm p-4 space-y-3 custom-scrollbar max-h-[88vh] overflow-y-auto shadow-2xl pb-[max(var(--sab),16px)]">
       <div class="flex justify-between items-start border-b border-slate-100 pb-2.5">
         <div>
           <h3 id="modalName" class="font-bold text-sm text-slate-900 flex items-center gap-1.5"></h3>
           <p id="modalPhone" class="text-[11px] text-blue-600 font-mono mt-0.5 font-bold"></p>
           <p id="modalUid" class="text-[10px] text-slate-500 font-mono"></p>
         </div>
-        <button id="modalClose" class="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 active:scale-95 transition">✕</button>
+        <button id="modalClose" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 active:scale-95 transition flex items-center justify-center text-sm font-bold">✕</button>
       </div>
 
       <div id="modalStatusBox" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
@@ -494,7 +509,7 @@
         </div>
         <div class="flex items-center justify-between">
           <span id="modalOtpDigits" class="text-xl font-black font-mono tracking-widest text-blue-700"></span>
-          <button id="btnCopyOtp" class="px-2.5 py-1 bg-blue-600 text-white font-bold rounded-lg text-xs active:scale-95 transition">Copy Code</button>
+          <button id="btnCopyOtp" class="h-8 px-3 bg-blue-600 text-white font-bold rounded-lg text-xs active:scale-95 transition">Copy Code</button>
         </div>
       </div>
 
@@ -504,11 +519,11 @@
       </div>
 
       <div class="pt-2 flex gap-2">
-        <button id="modalBtnOtp" class="flex-1 py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold rounded-xl text-xs active:scale-95 transition text-center flex items-center justify-center gap-1">
+        <button id="modalBtnOtp" class="flex-1 min-h-[44px] py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold rounded-xl text-xs active:scale-95 transition text-center flex items-center justify-center gap-1">
           <span>🔑</span>
           <span>Fetch Live OTP</span>
         </button>
-        <button id="modalBtnFarm" class="flex-1 py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold rounded-xl text-xs active:scale-95 transition text-center flex items-center justify-center gap-1">
+        <button id="modalBtnFarm" class="flex-1 min-h-[44px] py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold rounded-xl text-xs active:scale-95 transition text-center flex items-center justify-center gap-1">
           <span>⚡</span>
           <span>Farm Node</span>
         </button>
@@ -523,13 +538,13 @@
     <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-xs p-4 space-y-3 text-center shadow-2xl">
       <div class="flex justify-between items-center border-b border-slate-100 pb-2">
         <h4 id="modalQrTitle" class="font-bold text-xs text-slate-900"></h4>
-        <button id="modalQrClose" class="p-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">✕</button>
+        <button id="modalQrClose" class="w-7 h-7 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center text-xs">✕</button>
       </div>
       <div class="p-3 bg-white rounded-xl border border-slate-200 flex justify-center">
-        <img id="modalQrImg" src="" alt="Wallet QR Code" class="w-48 h-48 rounded-lg shadow-xs">
+        <img id="modalQrImg" src="" alt="Wallet QR Code" class="w-44 h-44 rounded-lg shadow-2xs">
       </div>
       <p id="modalQrAddr" class="font-mono text-[10px] text-slate-600 break-all select-all bg-slate-50 p-2 rounded-lg border border-slate-200"></p>
-      <button id="modalQrBtnCopy" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs active:scale-95 transition">
+      <button id="modalQrBtnCopy" class="w-full min-h-[42px] py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs active:scale-95 transition">
         📋 Copy Address
       </button>
     </div>
@@ -542,40 +557,37 @@
     <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-sm p-4 space-y-3 shadow-2xl">
       <div class="flex justify-between items-center border-b border-slate-100 pb-2">
         <h4 class="font-bold text-xs text-slate-900">📦 Export Multi-Chain Treasury</h4>
-        <button id="modalExportClose" class="p-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">✕</button>
+        <button id="modalExportClose" class="w-7 h-7 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center text-xs">✕</button>
       </div>
       <p class="text-[11px] text-slate-600">Export all 90 non-custodial addresses across 18 accounts in standard format:</p>
       <div class="flex gap-2">
-        <button id="btnExportJson" class="flex-1 py-2 bg-blue-50 text-blue-700 border border-blue-200 font-bold rounded-xl text-xs active:scale-95 transition">Copy JSON</button>
-        <button id="btnExportCsv" class="flex-1 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold rounded-xl text-xs active:scale-95 transition">Copy CSV</button>
+        <button id="btnExportJson" class="flex-1 min-h-[40px] py-2 bg-blue-50 text-blue-700 border border-blue-200 font-bold rounded-xl text-xs active:scale-95 transition">Copy JSON</button>
+        <button id="btnExportCsv" class="flex-1 min-h-[40px] py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold rounded-xl text-xs active:scale-95 transition">Copy CSV</button>
       </div>
-      <textarea id="txtExportPreview" readonly rows="6" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-mono text-[9px] text-slate-700 focus:outline-none select-all"></textarea>
+      <textarea id="txtExportPreview" readonly rows="5" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-mono text-[9px] text-slate-700 focus:outline-none select-all"></textarea>
     </div>
   </div>
 
   <!-- ======================================================== -->
-  <!-- SLIDE-UP TOAST NOTIFICATION                              -->
+  <!-- SLIDE-UP TOAST NOTIFICATION (ABOVE BOTTOM NAV)           -->
   <!-- ======================================================== -->
-  <div id="toast" class="fixed bottom-12 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-xl hidden z-50 flex items-center gap-1.5 transition-all">
+  <div id="toast" class="fixed bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-2xl hidden z-50 flex items-center gap-1.5 transition-all">
     <span id="toastText">Copied to clipboard! ✅</span>
   </div>
 
   <!-- ======================================================== -->
-  <!-- 5. FOOTER STATUS BAR                                     -->
-  <!-- ======================================================== -->
-  <footer class="mt-2.5 pt-2 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-500 font-mono">
-    <span id="txtLastSync">Connecting...</span>
-    <span class="text-blue-600 font-bold">AAA Serverless Light Console</span>
-  </footer>
-
-  <!-- ======================================================== -->
-  <!-- APPLICATION ENGINE SCRIPT                                -->
+  <!-- APPLICATION SCRIPT & TELEGRAM SDK INTEGRATION            -->
   <!-- ======================================================== -->
   <script>
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.expand();
       tg.ready();
+      try {
+        tg.enableClosingConfirmation();
+        tg.setHeaderColor('#f8fafc');
+        tg.setBackgroundColor('#f8fafc');
+      } catch (_) {}
     }
 
     let GLOBAL_ACCOUNTS = [];
@@ -584,8 +596,12 @@
     let CURRENT_CHAIN = 'all';
     let CURRENT_OPEN_ACC = null;
 
-    function haptic() {
-      try { tg?.HapticFeedback?.impactOccurred('medium'); } catch (_) {}
+    function haptic(type = 'light') {
+      try {
+        if (type === 'selection') tg?.HapticFeedback?.selectionChanged();
+        else if (type === 'success') tg?.HapticFeedback?.notificationOccurred('success');
+        else tg?.HapticFeedback?.impactOccurred(type);
+      } catch (_) {}
     }
 
     function showToast(msg = 'Copied to clipboard! ✅') {
@@ -596,36 +612,55 @@
     }
 
     function copyToClipboard(text, customMsg = 'Copied to clipboard! ✅') {
-      haptic();
+      haptic('success');
       navigator.clipboard?.writeText(text);
       showToast(customMsg);
     }
 
-    // Tabs Switcher
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        haptic();
-        document.querySelectorAll('.tab-btn').forEach(b => {
-          b.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
-          b.classList.add('text-slate-400');
-        });
-        btn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
-        btn.classList.remove('text-slate-400');
+    // Modal Manager with Native Telegram BackButton
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.remove('hidden');
+      try {
+        tg?.BackButton?.show();
+        tg?.BackButton?.onClick(() => closeModal(modalId));
+      } catch (_) {}
+    }
 
-        const tab = btn.dataset.tab;
-        document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
-        if (tab === 'wallets') document.getElementById('tabWallets').classList.remove('hidden');
-        if (tab === 'accounts') document.getElementById('tabAccounts').classList.remove('hidden');
-        if (tab === 'ai') document.getElementById('tabAi').classList.remove('hidden');
-        if (tab === 'bots') document.getElementById('tabBots').classList.remove('hidden');
-        if (tab === 'mesh') document.getElementById('tabMesh').classList.remove('hidden');
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+      try {
+        tg?.BackButton?.hide();
+      } catch (_) {}
+    }
+
+    // Bottom Navigation Switcher (Mobile First)
+    function switchTab(tab) {
+      haptic('selection');
+      document.querySelectorAll('.nav-item').forEach(b => {
+        b.classList.remove('text-blue-600', 'font-bold');
+        b.classList.add('text-slate-400', 'font-medium');
       });
+      const targetBtn = document.querySelector(`.nav-item[data-tab="${tab}"]`);
+      if (targetBtn) {
+        targetBtn.classList.add('text-blue-600', 'font-bold');
+        targetBtn.classList.remove('text-slate-400', 'font-medium');
+      }
+
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+      if (tab === 'wallets') document.getElementById('tabWallets').classList.remove('hidden');
+      if (tab === 'accounts') document.getElementById('tabAccounts').classList.remove('hidden');
+      if (tab === 'ai') document.getElementById('tabAi').classList.remove('hidden');
+      if (tab === 'bots') document.getElementById('tabBots').classList.remove('hidden');
+      if (tab === 'mesh') document.getElementById('tabMesh').classList.remove('hidden');
+    }
+
+    document.querySelectorAll('.nav-item').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
 
     // Shortcut from Metric Card to AI Tab
     document.getElementById('cardAiShortcut').addEventListener('click', () => {
-      const aiBtn = document.querySelector('.tab-btn[data-tab="ai"]');
-      if (aiBtn) aiBtn.click();
+      switchTab('ai');
     });
 
     // Chain Filter Switcher in Wallets Tab
@@ -633,9 +668,9 @@
       btn.addEventListener('click', () => {
         haptic();
         document.querySelectorAll('.chain-btn').forEach(b => {
-          b.className = 'chain-btn px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900';
+          b.className = 'chain-btn min-h-[32px] px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900 whitespace-nowrap';
         });
-        btn.className = 'chain-btn px-2.5 py-1 rounded-lg bg-blue-600 text-white shadow-xs font-bold';
+        btn.className = 'chain-btn min-h-[32px] px-2.5 py-1 rounded-lg bg-blue-600 text-white shadow-2xs font-bold whitespace-nowrap';
         CURRENT_CHAIN = btn.dataset.chain;
         renderWebWallets();
       });
@@ -650,11 +685,11 @@
       haptic();
       CURRENT_FILTER = f;
       [filterBtnAll, filterBtnActive, filterBtnRevoked].forEach(b => {
-        b.className = 'px-2 py-0.5 rounded-md card-clean text-slate-600 hover:text-slate-900';
+        b.className = 'min-h-[30px] px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900 text-xs';
       });
-      if (f === 'all') filterBtnAll.className = 'px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold';
-      if (f === 'active') filterBtnActive.className = 'px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold';
-      if (f === 'revoked') filterBtnRevoked.className = 'px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 font-bold';
+      if (f === 'all') filterBtnAll.className = 'min-h-[30px] px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 font-bold text-xs';
+      if (f === 'active') filterBtnActive.className = 'min-h-[30px] px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-xs';
+      if (f === 'revoked') filterBtnRevoked.className = 'min-h-[30px] px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 font-bold text-xs';
       filterAndRenderAccounts();
     }
 
@@ -668,22 +703,28 @@
       icon.classList.add('animate-spin');
 
       try {
-        // Fetch accounts live state
-        const r = await fetch('https://restore-agy.aaaai2.workers.dev/api/fleet/live');
-        const data = await r.json();
+        const [liveRes, wRes] = await Promise.allSettled([
+          fetch('https://restore-agy.aaaai2.workers.dev/api/fleet/live'),
+          fetch('https://pleasant-locust-220893.upstash.io/get/fleet:wallets:multichain', {
+            headers: { 'Authorization': 'Bearer gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg' }
+          })
+        ]);
 
-        // Fetch multi-chain wallets
-        const wRes = await fetch('https://pleasant-locust-220893.upstash.io/get/fleet:wallets:multichain', {
-          headers: { 'Authorization': 'Bearer gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg' }
-        });
-        const wData = await wRes.json();
-        if (wData?.result) {
-          GLOBAL_WALLETS = typeof wData.result === 'string' ? JSON.parse(wData.result) : wData.result;
+        let liveData = null;
+        if (liveRes.status === 'fulfilled') {
+          liveData = await liveRes.value.json().catch(() => null);
         }
 
-        if (data && Array.isArray(data.accounts)) {
+        if (wRes.status === 'fulfilled') {
+          const wData = await wRes.value.json().catch(() => null);
+          if (wData?.result) {
+            GLOBAL_WALLETS = typeof wData.result === 'string' ? JSON.parse(wData.result) : wData.result;
+          }
+        }
+
+        if (liveData && Array.isArray(liveData.accounts)) {
           const healthyList = [2, 10, 11, 14, 17];
-          GLOBAL_ACCOUNTS = data.accounts.map((acc, i) => {
+          GLOBAL_ACCOUNTS = liveData.accounts.map((acc, i) => {
             const idx = acc.index || (i + 1);
             const isOnline = healthyList.includes(idx);
             const uidStr = String(acc.user_id || acc.uid);
@@ -732,7 +773,6 @@
 
       filterAndRenderAccounts();
       renderWebWallets();
-      document.getElementById('txtLastSync').innerText = 'Synced ' + new Date().toLocaleTimeString();
     }
 
     // Render Web Wallet Manager
@@ -782,74 +822,73 @@
               <span class="text-[10px] font-mono font-bold text-slate-400">${acc.phone || ''}</span>
             </div>
 
-            <!-- Multi-chain address cards based on filter -->
             <div class="space-y-1.5 font-mono text-[10px]">
               ${(CURRENT_CHAIN === 'all' || CURRENT_CHAIN === 'ton') ? `
                 <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                  <div class="truncate max-w-[210px]">
+                  <div class="truncate max-w-[200px] sm:max-w-[230px]">
                     <span class="text-blue-700 font-bold block text-[9px]">💎 TON (v4R2):</span>
                     <span class="text-slate-800 font-medium select-all">${ton}</span>
                   </div>
-                  <div class="flex gap-1">
-                    <button class="p-1 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" onclick="openQrModal('TON Wallet (Node #${padIdx})', '${ton}')" title="Show QR">📱</button>
-                    <button class="p-1 rounded-md bg-white border border-slate-200 text-blue-600 hover:bg-slate-100" onclick="copyToClipboard('${ton}')" title="Copy Address">📋</button>
-                    <a href="https://tonviewer.com/${ton}" target="_blank" class="p-1 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-slate-100">↗️</a>
+                  <div class="flex gap-1 shrink-0">
+                    <button class="w-7 h-7 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 flex items-center justify-center" onclick="openQrModal('TON Wallet (Node #${padIdx})', '${ton}')" title="Show QR">📱</button>
+                    <button class="w-7 h-7 rounded-md bg-white border border-slate-200 text-blue-600 hover:bg-slate-100 flex items-center justify-center" onclick="copyToClipboard('${ton}')" title="Copy Address">📋</button>
+                    <a href="https://tonviewer.com/${ton}" target="_blank" class="w-7 h-7 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center">↗️</a>
                   </div>
                 </div>
               ` : ''}
 
               ${(CURRENT_CHAIN === 'all' || CURRENT_CHAIN === 'evm') ? `
                 <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                  <div class="truncate max-w-[210px]">
+                  <div class="truncate max-w-[200px] sm:max-w-[230px]">
                     <span class="text-amber-700 font-bold block text-[9px]">🪙 EVM / BSC (BEP-20):</span>
                     <span class="text-slate-800 font-medium select-all">${evm}</span>
                   </div>
-                  <div class="flex gap-1">
-                    <button class="p-1 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" onclick="openQrModal('EVM/BSC Wallet (Node #${padIdx})', '${evm}')" title="Show QR">📱</button>
-                    <button class="p-1 rounded-md bg-white border border-slate-200 text-blue-600 hover:bg-slate-100" onclick="copyToClipboard('${evm}')" title="Copy Address">📋</button>
-                    <a href="https://bscscan.com/address/${evm}" target="_blank" class="p-1 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-slate-100">↗️</a>
+                  <div class="flex gap-1 shrink-0">
+                    <button class="w-7 h-7 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 flex items-center justify-center" onclick="openQrModal('EVM/BSC Wallet (Node #${padIdx})', '${evm}')" title="Show QR">📱</button>
+                    <button class="w-7 h-7 rounded-md bg-white border border-slate-200 text-blue-600 hover:bg-slate-100 flex items-center justify-center" onclick="copyToClipboard('${evm}')" title="Copy Address">📋</button>
+                    <a href="https://bscscan.com/address/${evm}" target="_blank" class="w-7 h-7 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center">↗️</a>
                   </div>
                 </div>
               ` : ''}
 
               ${(CURRENT_CHAIN === 'all' || CURRENT_CHAIN === 'tron') ? `
                 <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                  <div class="truncate max-w-[210px]">
+                  <div class="truncate max-w-[200px] sm:max-w-[230px]">
                     <span class="text-rose-700 font-bold block text-[9px]">⚡ TRON (TRC-20):</span>
                     <span class="text-slate-800 font-medium select-all">${tron}</span>
                   </div>
-                  <div class="flex gap-1">
-                    <button class="p-1 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" onclick="openQrModal('TRON Wallet (Node #${padIdx})', '${tron}')" title="Show QR">📱</button>
-                    <button class="p-1 rounded-md bg-white border border-slate-200 text-blue-600 hover:bg-slate-100" onclick="copyToClipboard('${tron}')" title="Copy Address">📋</button>
-                    <a href="https://tronscan.org/#/address/${tron}" target="_blank" class="p-1 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-slate-100">↗️</a>
+                  <div class="flex gap-1 shrink-0">
+                    <button class="w-7 h-7 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 flex items-center justify-center" onclick="openQrModal('TRON Wallet (Node #${padIdx})', '${tron}')" title="Show QR">📱</button>
+                    <button class="w-7 h-7 rounded-md bg-white border border-slate-200 text-blue-600 hover:bg-slate-100 flex items-center justify-center" onclick="copyToClipboard('${tron}')" title="Copy Address">📋</button>
+                    <a href="https://tronscan.org/#/address/${tron}" target="_blank" class="w-7 h-7 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center">↗️</a>
                   </div>
                 </div>
               ` : ''}
 
               ${(CURRENT_CHAIN === 'all' || CURRENT_CHAIN === 'solana') ? `
                 <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                  <div class="truncate max-w-[210px]">
+                  <div class="truncate max-w-[200px] sm:max-w-[230px]">
                     <span class="text-purple-700 font-bold block text-[9px]">☀️ SOLANA:</span>
                     <span class="text-slate-800 font-medium select-all">${sol}</span>
                   </div>
-                  <div class="flex gap-1">
-                    <button class="p-1 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" onclick="openQrModal('Solana Wallet (Node #${padIdx})', '${sol}')" title="Show QR">📱</button>
-                    <button class="p-1 rounded-md bg-white border border-slate-200 text-blue-600 hover:bg-slate-100" onclick="copyToClipboard('${sol}')" title="Copy Address">📋</button>
-                    <a href="https://solscan.io/account/${sol}" target="_blank" class="p-1 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-slate-100">↗️</a>
+                  <div class="flex gap-1 shrink-0">
+                    <button class="w-7 h-7 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 flex items-center justify-center" onclick="openQrModal('Solana Wallet (Node #${padIdx})', '${sol}')" title="Show QR">📱</button>
+                    <button class="w-7 h-7 rounded-md bg-white border border-slate-200 text-blue-600 hover:bg-slate-100 flex items-center justify-center" onclick="copyToClipboard('${sol}')" title="Copy Address">📋</button>
+                    <a href="https://solscan.io/account/${sol}" target="_blank" class="w-7 h-7 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center">↗️</a>
                   </div>
                 </div>
               ` : ''}
 
               ${(CURRENT_CHAIN === 'all' || CURRENT_CHAIN === 'btc') ? `
                 <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                  <div class="truncate max-w-[210px]">
+                  <div class="truncate max-w-[200px] sm:max-w-[230px]">
                     <span class="text-emerald-700 font-bold block text-[9px]">₿ BITCOIN (SegWit):</span>
                     <span class="text-slate-800 font-medium select-all">${btc}</span>
                   </div>
-                  <div class="flex gap-1">
-                    <button class="p-1 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" onclick="openQrModal('Bitcoin Wallet (Node #${padIdx})', '${btc}')" title="Show QR">📱</button>
-                    <button class="p-1 rounded-md bg-white border border-slate-200 text-blue-600 hover:bg-slate-100" onclick="copyToClipboard('${btc}')" title="Copy Address">📋</button>
-                    <a href="https://mempool.space/address/${btc}" target="_blank" class="p-1 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-slate-100">↗️</a>
+                  <div class="flex gap-1 shrink-0">
+                    <button class="w-7 h-7 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 flex items-center justify-center" onclick="openQrModal('Bitcoin Wallet (Node #${padIdx})', '${btc}')" title="Show QR">📱</button>
+                    <button class="w-7 h-7 rounded-md bg-white border border-slate-200 text-blue-600 hover:bg-slate-100 flex items-center justify-center" onclick="copyToClipboard('${btc}')" title="Copy Address">📋</button>
+                    <a href="https://mempool.space/address/${btc}" target="_blank" class="w-7 h-7 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center">↗️</a>
                   </div>
                 </div>
               ` : ''}
@@ -979,11 +1018,11 @@
         }).catch(() => {});
       };
 
-      document.getElementById('modalDetail').classList.remove('hidden');
+      openModal('modalDetail');
     }
 
     document.getElementById('modalClose').addEventListener('click', () => {
-      document.getElementById('modalDetail').classList.add('hidden');
+      closeModal('modalDetail');
     });
 
     // QR Code Modal
@@ -993,11 +1032,11 @@
       document.getElementById('modalQrAddr').innerText = address;
       document.getElementById('modalQrImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(address)}`;
       document.getElementById('modalQrBtnCopy').onclick = () => copyToClipboard(address);
-      document.getElementById('modalQr').classList.remove('hidden');
+      openModal('modalQr');
     }
 
     document.getElementById('modalQrClose').addEventListener('click', () => {
-      document.getElementById('modalQr').classList.add('hidden');
+      closeModal('modalQr');
     });
 
     // Export Treasury Modal
@@ -1029,11 +1068,32 @@
         copyToClipboard(csv, 'CSV Treasury copied!');
       };
 
-      document.getElementById('modalExport').classList.remove('hidden');
+      openModal('modalExport');
     });
 
     document.getElementById('modalExportClose').addEventListener('click', () => {
-      document.getElementById('modalExport').classList.add('hidden');
+      closeModal('modalExport');
+    });
+
+    // Clear Search Input Button
+    const inputSearch = document.getElementById('inputSearch');
+    const btnClearSearch = document.getElementById('btnClearSearch');
+
+    inputSearch.addEventListener('input', () => {
+      if (inputSearch.value) {
+        btnClearSearch.classList.remove('hidden');
+      } else {
+        btnClearSearch.classList.add('hidden');
+      }
+      filterAndRenderAccounts();
+      renderWebWallets();
+    });
+
+    btnClearSearch.addEventListener('click', () => {
+      inputSearch.value = '';
+      btnClearSearch.classList.add('hidden');
+      filterAndRenderAccounts();
+      renderWebWallets();
     });
 
     // AI Council Chat & Diagnostics Engine
@@ -1089,12 +1149,6 @@
         document.getElementById('aiInputPrompt').value = prompt;
         queryAriAi(prompt);
       });
-    });
-
-    // Search Input Event
-    document.getElementById('inputSearch').addEventListener('input', () => {
-      filterAndRenderAccounts();
-      renderWebWallets();
     });
 
     // Refresh Button Event

@@ -106,41 +106,39 @@ export function buildAccountDetailCard(acc = {}) {
   const solAddr = acc.solana_wallet?.address || 'Provisioned in Vault';
   const btcAddr = acc.btc_wallet?.address || 'Provisioned in Vault';
 
-  return `┌──────────────────────────────────────┐
-│  📱 *ACCOUNT DOSSIER • NODE #${idx < 10 ? '0' + idx : idx}*   │
-└──────────────────────────────────────┘
+  return `┌──────────────────────────────┐
+│  📱 *NODE #${idx < 10 ? '0' + idx : idx} DOSSIER*           │
+└──────────────────────────────┘
 
-• *Operator:* *${name}* ${isHost ? '👑 `MASTER HOST`' : ''}
-• *Username:* \`${uname}\`
-• *Phone Number:* \`${phone}\`
-• *Telegram UID:* \`${uid}\`
-• *Session Health:* ${isHealthy ? '🟢 `ACTIVE & CONNECTED`' : '🔴 `REVOKED (ACTION REQUIRED)`'}
-• *Cloud Cluster:* \`Render Standby Node 2 (Frankfurt)\`
-• *Autonomous Mining:* \`8 Legitimate Bots Configured\`
+• *Operator:* *${name}* ${isHost ? '👑 `HOST`' : ''}
+• *Phone:* \`${phone}\`
+• *UID:* \`${uid}\`
+• *Session:* ${isHealthy ? '🟢 `ACTIVE & CONNECTED`' : '🔴 `REVOKED (RE-LINK NEEDED)`'}
+• *Cluster:* \`Render Node 2 (Frankfurt)\`
+• *Mining:* \`8 Bots (100% Cloud-First)\`
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💼 *CRYPTOGRAPHIC TREASURY SUITE:*
-• 💎 *TON (v4R2):*
-  \`${tonAddr}\`
-• 🪙 *EVM (BSC BEP-20):*
-  \`${evmAddr}\`
-• ⚡ *TRON (TRC-20):*
-  \`${tronAddr}\`
-• ☀️ *SOLANA:*
-  \`${solAddr}\`
-• ₿ *BITCOIN (SegWit):*
-  \`${btcAddr}\`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💼 *MULTI-CHAIN VAULT ADDRESSES:*
+• 💎 *TON:* \`${tonAddr}\`
+• 🪙 *EVM:* \`${evmAddr}\`
+• ⚡ *TRX:* \`${tronAddr}\`
+• ☀️ *SOL:* \`${solAddr}\`
+• ₿ *BTC:* \`${btcAddr}\`
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${isHealthy 
-  ? '✅ *Status:* Session is nominal. Mining tokens 24/7 in cloud cluster.' 
-  : '⚠️ *Status:* Session authorization key expired on Telegram DC. Tap 1-Tap Re-link below to refresh.'}`;
+  ? '✅ *Status:* Session nominal. Farming yield 24/7 in cloud.' 
+  : '⚠️ *Status:* Session expired on Telegram DC. Tap 1-Tap Re-link below.'}`;
 }
 
 export function buildAccountDetailKeyboard(acc = {}) {
   const idx = acc.index || 1;
   const isHealthy = acc.status === 'active';
   const buttons = [];
+
+  buttons.push([
+    { text: "🚀 Open WebApp Wallet ↗️", web_app: { url: "https://app8858823950.tgcloud.ai/" } }
+  ]);
 
   if (isHealthy) {
     buttons.push([
@@ -215,39 +213,40 @@ export function buildDashboardBanner(live = {}) {
   const active = live.healthy_count || 5;
   const revoked = live.revoked_count !== undefined ? live.revoked_count : (total - active);
 
-  // Generate dynamic visual health bar
-  const totalBlocks = 18;
-  const greenBlocks = Math.min(totalBlocks, active);
-  const redBlocks = Math.max(0, totalBlocks - greenBlocks);
-  const healthBar = "🟩".repeat(greenBlocks) + "🟥".repeat(redBlocks);
+  // Mobile-optimized 10-segment visual health bar (never wraps on narrow phones)
+  const totalSegments = 10;
+  const greenSegments = Math.round((active / total) * totalSegments);
+  const redSegments = totalSegments - greenSegments;
+  const healthBar = "🟩".repeat(greenSegments) + "🟥".repeat(redSegments);
+  const pct = Math.round((active / total) * 100);
 
-  return `┌──────────────────────────────────────┐
-│  ⚡ *AAA AUTO COMMAND SENTINEL*      │
-│  _Enterprise Fleet Operations V8_    │
-└──────────────────────────────────────┘
+  return `┌──────────────────────────────┐
+│  ⚡ *AAA AUTO SENTINEL V8*   │
+│  _Enterprise Fleet Console_  │
+└──────────────────────────────┘
 
-📡 *SYSTEM STATUS:* \`🟢 ONLINE • NOMINAL\`
-☁️ *PLATFORM:* \`Telegram Serverless (V8 Isolate)\`
-💾 *DATABASE:* \`Native SQLite WAL + Upstash Mesh\`
-🌐 *COORDINATOR:* \`Render Node 2 (Frankfurt)\`
+📡 *STATUS:* \`🟢 ONLINE • NOMINAL\`
+☁️ *PLATFORM:* \`Telegram Serverless Edge\`
+💾 *DB:* \`Native SQLite WAL + Upstash\`
+🌐 *CLUSTER:* \`Render Frankfurt (Coordinator)\`
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 *FLEET SESSIONS MATRIX (18 NODES)*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 *FLEET HEALTH: ${active}/${total} (${pct}%)*
 ${healthBar}
 • 🟢 *Active Sessions:* \`${active} Online\`
-• 🔴 *Revoked Sessions:* \`${revoked} Need Re-link\`
-• 👑 *Master Host:* \`Arif (#11 MD. ARIF HOSSAIN)\`
+• 🔴 *Revoked Sessions:* \`${revoked} Offline\`
+• 👑 *Master Host:* \`#11 MD. ARIF HOSSAIN\`
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🤖 *8-BOT AUTONOMOUS MINING SUITE*
-◈ 💎 *Stones Miner*      ◈ 🪙 *MRG Miner*
-◈ 🔬 *AI Lab*            ◈ 💼 *UltraWallet*
-◈ ⚡ *ATF Miner*         ◈ 📈 *FINVORA*
-◈ 👑 *Victor's Co.*      ◈ 💧 *VyroDrop*
+◈ 💎 Stones Miner  ◈ 🪙 MRG Miner
+◈ 🔬 AI Lab USDT    ◈ 💼 UltraWallet
+◈ ⚡ ATF Miner     ◈ 📈 FINVORA
+◈ 👑 Victor's Co.   ◈ 💧 VyroDrop
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💼 *TREASURY:* \`TON • EVM • TRON • SOL • BTC\`
-🔒 *SECURITY:* \`Zero Phone Load • Non-Custodial\`
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💼 *TREASURY:* \`TON • EVM • TRX • SOL • BTC\`
+🔒 *SECURITY:* \`0 Phone Load • Non-Custodial\`
 
 Select an operational directive below:`;
 }
