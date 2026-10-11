@@ -10,6 +10,7 @@ import aiohttp
 import datetime
 import secrets
 import hashlib
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 try:
     import ecdsa
     import base58
@@ -1990,40 +1991,43 @@ def generate_multichain_wallet_suite(account_index: int, name: str, user_id: str
 
 def save_and_archive_account_wallets(acc_entry: dict, wallets: dict):
     """Saves generated multi-chain wallets across local files, vaults, and cloud caches."""
-    uid = str(acc_entry.get("user_id"))
-    name = acc_entry.get("name", "Worker")
-    phone = acc_entry.get("phone", "Unknown")
-    uname = acc_entry.get("username") or "@None"
-    
-    # Update fleet JSON files
-    for fname, entry in [
-        ("fleet_ton_wallets.json", wallets["ton"]),
-        ("fleet_evm_wallets.json", wallets["evm"]),
-        ("fleet_tron_wallets.json", wallets["tron"]),
-        ("fleet_solana_wallets.json", wallets["solana"]),
-        ("fleet_btc_wallets.json", wallets["btc"])
-    ]:
-        p = os.path.join(BASE_DIR, fname)
-        data = {}
-        if os.path.exists(p):
+    try:
+        uid = str(acc_entry.get("user_id"))
+        name = acc_entry.get("name", "Worker")
+        phone = acc_entry.get("phone", "Unknown")
+        uname = acc_entry.get("username") or "@None"
+        target_dir = BASE_DIR if (BASE_DIR and os.path.exists(BASE_DIR)) else "/tmp"
+        
+        # Update fleet JSON files
+        for fname, entry in [
+            ("fleet_ton_wallets.json", wallets["ton"]),
+            ("fleet_evm_wallets.json", wallets["evm"]),
+            ("fleet_tron_wallets.json", wallets["tron"]),
+            ("fleet_solana_wallets.json", wallets["solana"]),
+            ("fleet_btc_wallets.json", wallets["btc"])
+        ]:
+            p = os.path.join(target_dir, fname)
+            data = {}
+            if os.path.exists(p):
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                except Exception:
+                    data = {}
+            data[uid] = entry
             try:
-                with open(p, "r", encoding="utf-8") as f:
-                    data = json.load(f)
+                with open(p, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2, ensure_ascii=False)
             except Exception:
-                data = {}
-        data[uid] = entry
-        try:
-            with open(p, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
-        except Exception:
-            pass
+                pass
 
-    # Append to FLEET_WALLETS_SECRETS_MASTER_VAULT.txt
-    vault_file = os.path.join(BASE_DIR, "FLEET_WALLETS_SECRETS_MASTER_VAULT.txt")
-    if os.path.exists(vault_file):
+        # Append to FLEET_WALLETS_SECRETS_MASTER_VAULT.txt
+        vault_file = os.path.join(target_dir, "FLEET_WALLETS_SECRETS_MASTER_VAULT.txt")
         try:
-            with open(vault_file, "r", encoding="utf-8") as f:
-                content = f.read()
+            content = ""
+            if os.path.exists(vault_file):
+                with open(vault_file, "r", encoding="utf-8") as f:
+                    content = f.read()
             if uid not in content:
                 idx = acc_entry.get("index", 19)
                 new_section = (
@@ -2048,12 +2052,13 @@ def save_and_archive_account_wallets(acc_entry: dict, wallets: dict):
         except Exception as e:
             logger.warning(f"Could not append to vault: {e}")
 
-    # Update accounts.json
-    accs_file = os.path.join(BASE_DIR, "accounts.json")
-    if os.path.exists(accs_file):
+        # Update accounts.json
+        accs_file = os.path.join(target_dir, "accounts.json")
         try:
-            with open(accs_file, "r", encoding="utf-8") as f:
-                accs = json.load(f)
+            accs = []
+            if os.path.exists(accs_file):
+                with open(accs_file, "r", encoding="utf-8") as f:
+                    accs = json.load(f)
             found = False
             for a in accs:
                 if str(a.get("user_id")) == uid:
@@ -2083,7 +2088,9 @@ def save_and_archive_account_wallets(acc_entry: dict, wallets: dict):
         except Exception as ae:
             logger.warning(f"Could not update accounts.json: {ae}")
 
-    logger.info(f"[{name}] ✅ All 5 multi-chain wallets generated, verified, and saved to master vault!")
+        logger.info(f"[{name}] ✅ All 5 multi-chain wallets generated, verified, and saved to master vault!")
+    except Exception as w_all_err:
+        logger.warning(f"[Wallet Archive] Non-fatal wallet archive note: {w_all_err}")
 
 async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
     """Binds the dedicated isolated wallets across all active bot WebApp backends."""

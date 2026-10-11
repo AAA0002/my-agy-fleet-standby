@@ -103,6 +103,15 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * **Nodes 2, 3, 4, 5 (Passive Standby / Failover)**: Crons disabled (`[]` empty list). Early exit in `scheduled()` (`if (CURRENT_SUBDOMAIN !== "aaaai2") return;`). Generates 0 scheduled operations and 0 KV writes. If Node 1 is ever offline, any standby can be promoted to primary instantly.
     * **Zero KV Ephemeral Caching**: `/api/rates` cached in module-scope memory (`memRatesCache`) with CDN `max-age=120`, eliminating KV writes for Binance rates. Sibling upload fan-out replication removed; standbys proxy `/backup.zip` on demand without local KV storage.
     * **Resilient Login State Machine**: `login_flow:${chatId}` uses in-memory `memLoginFlow` Map and Upstash Redis first, ensuring user login flows never fail when Cloudflare KV quotas are hit.
+- **Telegram Serverless Platform (`tgcloud.ai` & `@tgcloud/cli`)**:
+  - Official serverless runtime running V8 isolates directly on Telegram's global infrastructure (`core.telegram.org/bots/serverless`).
+  - Project directory: `tgcloud_admin_bot/` with official CLI `@tgcloud/cli@0.2.0`.
+  - Native SQLite Database (`tgcloud/schema.js`): `admin_users`, `login_sessions`, `accounts_cache`, and `telemetry_events` stored without external DB quotas or connection limits.
+  - Handlers:
+    * `tgcloud/handlers/message.js`: 100% serverless message routing, 2FA password verification dispatch, and fleet management commands (`/start`, `/menu`, `/otp`, `/relink`, `/status`).
+    * `tgcloud/handlers/callback_query.js`: 1-tap OTP reader, inline account status badges, and farming trigger.
+  - One-Click Deployment: Managed via `./deploy_tgcloud.sh [TGCLOUD_TOKEN]` (`npx tgcloud push` + `npx tgcloud migrate`).
+
 - **Render Cloud Fleet (Multi-Account Cloud MTProto Compute & Resilient Relay Mesh)**:
   - Node 1: **Render Standby Node 1 (Singapore)**: `https://my-agy-fleet-standby.onrender.com`
     * Service ID: `srv-damuhkmgekts73f1osag` | Workspace: `My Workspace` (`tea-d8j9clt8nd3s73eb041g`, `coz1gameh1@gmail.com`)

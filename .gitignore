@@ -20,6 +20,7 @@ cloudflared_config/
 
 # Dependencies
 node_modules/
+.tgcloud/
 venv/
 .venv/
 
