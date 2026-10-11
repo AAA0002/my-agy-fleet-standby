@@ -1,5 +1,5 @@
 import { api, db } from 'sdk';
-import { eq } from 'sdk/db';
+import { eq, sql } from 'sdk/db';
 import { loginSessions } from '../schema.js';
 import { CONFIG } from '../lib/config.js';
 import { sendLoginCode, verifyLoginCode, cancelLogin, fetchFleetLive, markAccountActive, requestBackend } from '../lib/backend.js';
@@ -492,10 +492,15 @@ Node updated in active cloud cluster.`,
 
     const res = await verifyLoginCode({ chatId, code: pureDigits });
     if (res && res.need_2fa) {
-      await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run();
       await db.insert(loginSessions).values({
         chatId,
         step: 'WAITING_2FA'
+      }).onConflictDoUpdate({
+        target: loginSessions.chatId,
+        set: {
+          step: 'WAITING_2FA',
+          updatedAt: sql`(unixepoch())`
+        }
       }).run();
 
       await api.sendMessage({
@@ -560,7 +565,6 @@ Please reply directly with your 2FA password:`,
 
     const res = await sendLoginCode(directPhone, chatId, accountIndex);
     if (res && res.ok) {
-      await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run();
       await db.insert(loginSessions).values({
         chatId,
         step: 'WAITING_CODE',
@@ -568,6 +572,16 @@ Please reply directly with your 2FA password:`,
         phoneCodeHash: res.phone_code_hash || '',
         accountIndex,
         nodeUrl: res.nodeUrl || ''
+      }).onConflictDoUpdate({
+        target: loginSessions.chatId,
+        set: {
+          step: 'WAITING_CODE',
+          phone: directPhone,
+          phoneCodeHash: res.phone_code_hash || '',
+          accountIndex,
+          nodeUrl: res.nodeUrl || '',
+          updatedAt: sql`(unixepoch())`
+        }
       }).run();
 
       await api.sendMessage({

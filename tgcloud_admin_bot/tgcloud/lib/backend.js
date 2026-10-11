@@ -259,12 +259,12 @@ export async function fetchFleetLive(force = false) {
   return memFleetLive || {
     ok: true,
     total_accounts: 18,
-    healthy_count: 5,
-    revoked_count: 13,
+    healthy_count: 7,
+    revoked_count: 11,
     accounts: Array.from({ length: 18 }, (_, i) => ({
       index: i + 1,
       name: `Account #${i + 1}`,
-      status: [2, 10, 11, 14, 17].includes(i + 1) ? 'active' : 'revoked'
+      status: [2, 4, 6, 10, 11, 14, 17].includes(i + 1) ? 'active' : 'revoked'
     }))
   };
 }

@@ -1,10 +1,11 @@
 import { api, db } from 'sdk';
-import { eq } from 'sdk/db';
+import { eq, sql } from 'sdk/db';
 import { loginSessions } from '../schema.js';
 import { CONFIG } from '../lib/config.js';
 import { sendLoginCode, cancelLogin, fetchFleetLive, fetchOtpForAccount, requestBackend } from '../lib/backend.js';
 import {
   getMainMenuKeyboard,
+  getPersistentReplyKeyboard,
   getCancelLoginKeyboard,
   getBackToMenuKeyboard,
   buildOtpKeyboard,
@@ -205,6 +206,16 @@ Tap any account node below. The cloud cluster will automatically connect to Tele
           phoneCodeHash: res.phone_code_hash || '',
           accountIndex: idx,
           nodeUrl: res.nodeUrl || ''
+        }).onConflictDoUpdate({
+          target: loginSessions.chatId,
+          set: {
+            step: 'WAITING_CODE',
+            phone: knownPhone,
+            phoneCodeHash: res.phone_code_hash || '',
+            accountIndex: idx,
+            nodeUrl: res.nodeUrl || '',
+            updatedAt: sql`(unixepoch())`
+          }
         }).run();
 
         await api.sendMessage({
@@ -235,6 +246,13 @@ Please reply directly with the code (e.g. \`12345\`):`,
         chatId,
         step: 'WAITING_PHONE',
         accountIndex: idx
+      }).onConflictDoUpdate({
+        target: loginSessions.chatId,
+        set: {
+          step: 'WAITING_PHONE',
+          accountIndex: idx,
+          updatedAt: sql`(unixepoch())`
+        }
       }).run();
 
       await replyOrEdit(chatId, messageId, `📱 *Enter Phone Number for Node #${idx < 10 ? '0' + idx : idx}*\n\nPlease reply with the international phone number (e.g., \`+8801943805617\`):`, getCancelLoginKeyboard());
@@ -247,6 +265,13 @@ Please reply directly with the code (e.g. \`12345\`):`,
     await db.insert(loginSessions).values({
       chatId,
       step: 'WAITING_PHONE'
+    }).onConflictDoUpdate({
+      target: loginSessions.chatId,
+      set: {
+        step: 'WAITING_PHONE',
+        accountIndex: null,
+        updatedAt: sql`(unixepoch())`
+      }
     }).run();
 
     await replyOrEdit(chatId, messageId, `┌──────────────────────────────────────┐
@@ -264,8 +289,9 @@ Please reply directly with the full phone number including international country
     try {
       await api.sendMessage({
         chat_id: chatId,
-        text: "🧹 *Cleared temporary input state.*",
-        reply_markup: { remove_keyboard: true }
+        text: "🧹 *Authentication cancelled. Keyboard menu active:*",
+        parse_mode: "Markdown",
+        reply_markup: getPersistentReplyKeyboard()
       });
     } catch (_) {}
 

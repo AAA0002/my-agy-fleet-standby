@@ -497,6 +497,10 @@
           <span>⚡</span>
           <span>Farm Node</span>
         </button>
+        <button id="modalBtnRelink" class="flex-1 min-h-[44px] py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-xl text-xs active:scale-95 transition text-center flex items-center justify-center gap-1 hidden">
+          <span>🔄</span>
+          <span>Re-link Node</span>
+        </button>
       </div>
     </div>
   </div>
@@ -1028,6 +1032,46 @@
         }).catch(() => {});
       };
 
+      const relinkBtn = document.getElementById('modalBtnRelink');
+      if (!isOnline) {
+        relinkBtn.classList.remove('hidden');
+        relinkBtn.onclick = async () => {
+          haptic();
+          relinkBtn.innerText = 'Dispatching Code...';
+          try {
+            const res = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/send-code', {
+              method: 'POST',
+              headers: {
+                'Authorization': 'Bearer agy_cf_secret_7d36994e_2026',
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                phone: acc.phone || '',
+                chat_id: '6727787768',
+                secret: 'agy_cf_secret_7d36994e_2026',
+                index: idx
+              })
+            });
+            const data = await res.json();
+            if (data && data.ok) {
+              showToast(`Code sent to ${acc.phone}! Reply in @myagyai`);
+              setTimeout(() => {
+                if (tg?.openTelegramLink) tg.openTelegramLink('https://t.me/myagyai');
+              }, 1200);
+            } else {
+              showToast(data?.error || 'Could not dispatch code');
+            }
+          } catch (_) {
+            showToast('Opening Admin Bot chat...');
+            if (tg?.openTelegramLink) tg.openTelegramLink('https://t.me/myagyai');
+          } finally {
+            relinkBtn.innerHTML = '<span>🔄</span><span>Re-link Node</span>';
+          }
+        };
+      } else {
+        relinkBtn.classList.add('hidden');
+      }
+
       openModal('modalDetail');
     }
 
@@ -1196,26 +1240,45 @@
       }
     });
 
-    document.getElementById('btnTurnstile').addEventListener('click', () => {
+    document.getElementById('btnTurnstile').addEventListener('click', async () => {
       haptic();
+      const btn = document.getElementById('btnTurnstile');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<span>⏳ Solving...</span>';
       showToast('Dispatched Cloud Turnstile Solver! 🛡️');
-      fetch('https://api.github.com/repos/AAA0002/ATL/actions/workflows/mrg_turnstile_solver.yml/dispatches', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer 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',
-          'Accept': 'application/vnd.github.v3+json'
-        },
-        body: JSON.stringify({ ref: 'main' })
-      }).catch(() => {});
+      try {
+        await fetch('https://api.github.com/repos/AAA0002/ATL/actions/workflows/mrg_turnstile_solver.yml/dispatches', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer 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',
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ ref: 'main' })
+        }).catch(() => {});
+      } catch (_) {}
+      setTimeout(() => { btn.innerHTML = orig; }, 3000);
     });
 
-    document.getElementById('btnCollect').addEventListener('click', () => {
+    document.getElementById('btnCollect').addEventListener('click', async () => {
       haptic();
+      const btn = document.getElementById('btnCollect');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<span>⏳ Refreshing...</span>';
       showToast('Dispatched 24h WebApp Token Collector! 🔄');
-      fetch('https://my-agy-fleet-standby-node2.onrender.com/collect-tokens?secret=agy_cf_secret_7d36994e_2026', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer agy_cf_secret_7d36994e_2026' }
-      }).catch(() => {});
+      try {
+        await Promise.any([
+          fetch('https://my-agy-fleet-standby-node2.onrender.com/collect-tokens?secret=agy_cf_secret_7d36994e_2026', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer agy_cf_secret_7d36994e_2026' }
+          }),
+          fetch('https://restore-agy.aaaai2.workers.dev/api/collect/tokens', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer agy_cf_secret_7d36994e_2026' }
+          })
+        ]).catch(() => {});
+      } catch (_) {}
+      setTimeout(() => { btn.innerHTML = orig; }, 3000);
     });
 
     // Initial Load

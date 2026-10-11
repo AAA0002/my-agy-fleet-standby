@@ -20,7 +20,11 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
       3. 👑 **Victor's Company** (`@VictorsCompanybot`)
       4. 💧 **VyroDrop** (`@vyrodrop_bot`)
       5. 🌐 **Kynex Network** (`@Kynex_miningbot`)
-    * Updated Mini App Tab 4, metric cards, 1-click harvest button, Telegram bot menus, and AI Copilot diagnostics to strictly reflect the 5 active bots.
+  - **🛡️ Production Hardening & Session Concurrency Guard**:
+    * **SQLite Unique Constraint Elimination (`callback_query.js` & `message.js`)**: Wrapped all `loginSessions` insertions in `.onConflictDoUpdate({ target: loginSessions.chatId, set: ... })`, eliminating race conditions or crashes when buttons are tapped repeatedly.
+    * **1-Tap In-Modal Re-link Trigger (`public/index.html`)**: Added a direct `[ 🔄 Re-link Node ]` action button into the Account Dossier modal for any offline/revoked node. Tapping it dispatches the official Telegram login code to that account's phone and deep-links to `@myagyai` for OTP entry.
+    * **Persistent Keyboard Preservation on Cancel**: Fixed `btn_cancel_login` callback which previously sent `{ remove_keyboard: true }`, ensuring the docked ReplyKeyboardMarkup menu is permanently preserved across cancellation flows.
+    * **Action Center Visual Loading & Failover**: Added tactile touch feedback and multi-node failover to `btnTurnstile` and `btnCollect`.
 
 
 - **📱 Mobile-First Mini App Architecture & Phone-Screen Optimization (October 11, 2026)**:
