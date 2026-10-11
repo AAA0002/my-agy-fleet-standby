@@ -2,6 +2,25 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Distributed MTProto Coordinator Lock, Telegram Session Block Prevention & Serverless Architecture (October 11, 2026)**:
+  - **🔒 Elimination of Telegram Session Revocations (`AuthKeyDuplicatedError` Fix)**:
+    * **Root Cause Solved**: Render Node 2 (Frankfurt, Germany) and Node 3 (Oregon, USA) were concurrently running 30-minute background watchdog loops (`cloud_wealth_automation_watchdog` and `token_health_and_refresh_watchdog`), attempting Telethon `client.connect()` on identical session strings simultaneously from different continents. Telegram detected concurrent multi-IP access on identical auth keys and revoked them.
+    * **Single Distributed Coordinator Lock**: Implemented `acquire_coordinator_lock()` using Upstash Redis key `fleet:mtproto_coordinator` with a 120-second lease. Node 2 (Frankfurt) is designated as the prioritized Primary Coordinator. Standby nodes (Singapore & Oregon) detect the active coordinator lease and idle in pure standby without executing background Telethon connections.
+    * **Per-Account Distributed Lock (`fleet:lock:acc:{uid}`)**: In `extract_tokens_for_account` and `get_account_otp`, every MTProto operation acquires an account-level lock in Redis before connecting. If any other task or node is accessing the account, the operation is skipped or deferred, guaranteeing zero concurrent connections.
+    * **Real-Time Session Health Synchronization**: Any occurrence of `AuthKeyDuplicatedError`, `UnauthorizedError`, or session revocation dynamically updates Upstash Redis sets (`fleet:revoked_sessions` and `fleet:healthy_sessions`), immediately updating Admin Bot badges (`🟢` / `🔴`) and preventing repeated failed connections.
+  - **🔑 Resilient MTProto Login Flow Decoupled to Upstash Redis**:
+    * Decoupled temporary login session state from volatile container RAM (`LOGIN_SESSIONS`) to Upstash Redis (`tg_login_flow:{chatId}` with 900s TTL).
+    * When an OTP code or 2FA password is submitted via `/api/account/login/verify-code`, if the session is not in local container RAM, it is instantly restored from Redis `session_string` and `phone_code_hash`.
+    * Cleaned up state upon successful login or `/cancel` to free resources.
+  - **☁️ Telegram Serverless Architecture Clarification & Edge Optimization**:
+    * Clarified serverless hosting topology: the Admin Bot (`@myagyai`) is 100% serverless via Telegram Webhook running across 330+ Cloudflare Edge data centers.
+    * The 8 active farming bots (Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, Victor's Company, VyroDrop) execute HTTP REST API cycles 100% serverlessly via `farmSingleAccountAllBots()` on Cloudflare Workers edge nodes.
+    * Render acts strictly as a stateless MTProto TCP helper gateway for raw binary socket handshakes (reading OTP codes from `777000` and requesting login codes).
+    * Replaced dual-node `/api/farm/cloud-all` triggers in Cloudflare Edge Cron with a lightweight keep-alive ping to Node 2 (`/health`), keeping the MTProto gateway warm for sub-second OTP lookups without concurrent farming conflicts.
+  - **🚀 Multi-Cloud Deployment**:
+    * Pushed updated standby code to GitHub repositories `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby` via `push_to_standby_repo.py`, triggering live Render builds.
+    * Deployed updated Cloudflare Workers across all 5 accounts via `deploy_both_cf_workers.py`.
+
 - **⚡ Admin Bot Comprehensive Modernization: Dynamic Session Health, Resilient Account Removal & Render Failback (October 11, 2026)**:
   - **🔄 Dynamic Session Health Synchronization & Instant Re-link State Transition**:
     * Replaced all static and hardcoded `REVOKED_INDICES` sets across `deploy_both_cf_workers.py` with dynamic `getSessionHealthState()` reading from Upstash Redis sets (`fleet:healthy_sessions` and `fleet:revoked_sessions`) with 60s in-memory caching.

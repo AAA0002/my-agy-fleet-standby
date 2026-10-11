@@ -10150,26 +10150,11 @@ Reply to Arif naturally:`;
         }
         if (!tokens) return;
 
-        // Periodically trigger full cloud farming run on Render Standby Node 2 (Frankfurt) & Node 3 (Oregon)
+        // 3.3 Keep-alive sentinel ping to Primary Render Node 2 (keeps MTProto gateway warm for instant OTP/login)
         if (CURRENT_SUBDOMAIN === "aaaai2") {
-          fetch("https://my-agy-fleet-standby-node2.onrender.com/api/farm/cloud-all", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${env.SECRET_KEY}`,
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            },
-            body: JSON.stringify({ origin: "cf_scheduled_cron" })
-          }).catch(() => null);
-        } else if (CURRENT_SUBDOMAIN === "aaa-bot" || CURRENT_SUBDOMAIN === "aaa222") {
-          fetch("https://my-agy-fleet-standby-node3.onrender.com/api/farm/cloud-all", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${env.SECRET_KEY}`,
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            },
-            body: JSON.stringify({ origin: "cf_scheduled_cron" })
+          fetch("https://my-agy-fleet-standby-node2.onrender.com/health", {
+            method: "GET",
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
           }).catch(() => null);
         }
 

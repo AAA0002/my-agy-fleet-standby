@@ -111,11 +111,15 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   - Node 2: **Render Standby Node 2 (Frankfurt)**: `https://my-agy-fleet-standby-node2.onrender.com`
     * Service ID: `srv-dan5q00ae00c73djummg` | Workspace: `Abid's workspace` (`tea-dan5pgbm8hqs73a5cvig`, `abidhasanch2001@gmail.com`)
     * API Key: `RENDER_API_KEY_2: rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB` | Linked Repo: `https://github.com/AAA0002/my-agy-fleet-standby` (main)
-    * Status: 🟢 200 OK — Primary 24/7 Compute & MTProto Token Collector. Deploys live automatically on git push via `push_to_standby_repo.py`.
+    * Status: 🟢 200 OK — **Designated Primary MTProto Coordinator**. Holds `fleet:mtproto_coordinator` lock in Upstash Redis. Only this node connects Telethon in 30m background watchdog loops.
   - Node 3: **Render Standby Node 3 (Oregon)**: `https://my-agy-fleet-standby-node3.onrender.com`
     * Service ID: `srv-db437o3tqb8s73dt4erg` | Workspace: `Koram's workspace` (`tea-daoj9nid0e5s738gqp0g`, `koramshah2@gmail.com`)
     * API Key: `RENDER_API_KEY: rnd_PqsurfX5D9blSaEEuEDDAUcl393y` | Linked Repo: `https://github.com/koramshah2/my-agy-fleet-standby` (main)
-    * Status: 🟢 200 OK — High-availability secondary compute node. Deploys live automatically on git push via `push_to_standby_repo.py`.
+    * Status: 🟢 200 OK — Standby compute node. Idles when Node 2 holds coordinator lock, preventing `AuthKeyDuplicatedError`.
+  - **🛡️ Distributed Lock & Concurrency Guardrails**:
+    * `fleet:mtproto_coordinator`: 120s distributed lease in Upstash Redis. Prevents multi-continent Telethon connections.
+    * `fleet:lock:acc:{uid}`: 60s per-account atomic mutex. Guarantees no two processes connect to the same Telegram account simultaneously.
+    * `fleet:healthy_sessions` / `fleet:revoked_sessions`: Real-time session state sets in Upstash Redis driving Admin Bot status badges (`🟢` / `🔴`).
   - Service 4: **Primary MTProto Relayer**: `https://atf-mtproto-relayer.onrender.com`
     * Service Endpoint: `/wake` (🟢 ONLINE & AUTHENTICATED)
     * Role: Dedicated 24/7 authenticated Telegram MTProto binary TCP socket bridge.

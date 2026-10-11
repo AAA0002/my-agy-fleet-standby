@@ -129,6 +129,102 @@ async def get_gemini_keys() -> list:
             pass
     return CACHED_GEMINI_KEYS
 
+# =====================================================================
+# DISTRIBUTED MTPROTO COORDINATOR & ACCOUNT CONCURRENCY LOCK ENGINE
+# Prevents AuthKeyDuplicatedError by ensuring only 1 node/process accesses an account
+# =====================================================================
+NODE_INSTANCE_ID = (
+    os.getenv("RENDER_SERVICE_NAME")
+    or os.getenv("RENDER_SERVICE_ID")
+    or os.getenv("RENDER_INSTANCE_ID")
+    or ("render_node_" + hashlib.md5(str(os.getpid()).encode()).hexdigest()[:6])
+)
+
+# Render Node 2 (Frankfurt - Abid / srv-dan5q00ae00c73djummg) is prioritized primary coordinator
+IS_PRIMARY_HOST = (
+    "node2" in NODE_INSTANCE_ID.lower()
+    or "dan5q00ae00c73djummg" in NODE_INSTANCE_ID.lower()
+    or os.getenv("IS_PRIMARY_COORDINATOR", "").lower() in ("1", "true")
+)
+
+async def acquire_coordinator_lock(ttl_seconds: int = 120) -> bool:
+    """Acquires or refreshes distributed coordinator lock in Upstash Redis.
+    Only the node holding this lock will run 30m background watchdog MTProto tasks."""
+    if not (UPSTASH_URL and UPSTASH_TOKEN):
+        return True
+    try:
+        up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        async with aiohttp.ClientSession() as s:
+            # 1. Check existing coordinator
+            async with s.get(f"{UPSTASH_URL}/get/fleet:mtproto_coordinator", headers=up_h, timeout=aiohttp.ClientTimeout(total=3)) as r:
+                if r.status == 200:
+                    data = await r.json()
+                    cur_holder = data.get("result")
+                    if cur_holder == NODE_INSTANCE_ID or (IS_PRIMARY_HOST and cur_holder in (None, "", "null")):
+                        # Refresh lock
+                        await s.post(f"{UPSTASH_URL}/set/fleet:mtproto_coordinator/{NODE_INSTANCE_ID}?ex={ttl_seconds}", headers=up_h, timeout=aiohttp.ClientTimeout(total=3))
+                        return True
+                    if cur_holder:
+                        # Another active node holds the lock
+                        return False
+            # 2. Key is empty; attempt atomic set-if-not-exists (NX)
+            async with s.post(f"{UPSTASH_URL}/set/fleet:mtproto_coordinator/{NODE_INSTANCE_ID}?nx=true&ex={ttl_seconds}", headers=up_h, timeout=aiohttp.ClientTimeout(total=3)) as r_nx:
+                if r_nx.status == 200:
+                    nx_res = await r_nx.json()
+                    return nx_res.get("result") == "OK"
+    except Exception as e:
+        logger.debug(f"[Coordinator Lock] Note: {e}")
+    return False
+
+async def acquire_account_lock(account_uid: str, ttl_seconds: int = 60) -> bool:
+    """Acquires a single-account distributed lock in Upstash Redis.
+    Guarantees that NO TWO PROCESSES across any server connect to the same account simultaneously."""
+    if not (UPSTASH_URL and UPSTASH_TOKEN) or not account_uid:
+        return True
+    try:
+        up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        key = f"fleet:lock:acc:{account_uid}"
+        async with aiohttp.ClientSession() as s:
+            async with s.post(f"{UPSTASH_URL}/set/{key}/{NODE_INSTANCE_ID}?nx=true&ex={ttl_seconds}", headers=up_h, timeout=aiohttp.ClientTimeout(total=3)) as r:
+                if r.status == 200:
+                    d = await r.json()
+                    return d.get("result") == "OK"
+    except Exception as e:
+        logger.debug(f"[Account Lock] Error for {account_uid}: {e}")
+    return True
+
+async def release_account_lock(account_uid: str):
+    """Releases the single-account distributed lock."""
+    if not (UPSTASH_URL and UPSTASH_TOKEN) or not account_uid:
+        return
+    try:
+        up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        key = f"fleet:lock:acc:{account_uid}"
+        async with aiohttp.ClientSession() as s:
+            await s.post(f"{UPSTASH_URL}/del/{key}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+    except Exception:
+        pass
+
+async def sync_account_health_state(account_idx: int, is_healthy: bool, reason: str = ""):
+    """Synchronizes real-time session health state in Upstash Redis across all Cloudflare Workers & Render nodes."""
+    if not (UPSTASH_URL and UPSTASH_TOKEN) or not account_idx:
+        return
+    try:
+        idx_str = str(account_idx)
+        up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        async with aiohttp.ClientSession() as s:
+            if is_healthy:
+                await s.post(f"{UPSTASH_URL}/sadd/fleet:healthy_sessions/{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+                await s.post(f"{UPSTASH_URL}/srem/fleet:revoked_sessions/{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+                await s.post(f"{UPSTASH_URL}/del/fleet:revocation_reason:{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+            else:
+                await s.post(f"{UPSTASH_URL}/sadd/fleet:revoked_sessions/{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+                await s.post(f"{UPSTASH_URL}/srem/fleet:healthy_sessions/{idx_str}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+                if reason:
+                    await s.post(f"{UPSTASH_URL}/set/fleet:revocation_reason:{idx_str}?ex=86400", data=reason, headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+    except Exception as e:
+        logger.debug(f"[Health Sync] Failed for #{account_idx}: {e}")
+
 BROWSER_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
 }
@@ -474,8 +570,17 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
 async def extract_tokens_for_account(acc: dict) -> dict:
     name = acc.get("name", "User")
     sess_str = acc.get("session_string") or acc.get("session")
+    uid = str(acc.get("user_id") or acc.get("id") or "")
+    idx = acc.get("index") or 0
     if not sess_str:
         return {}
+
+    # Acquire account-level distributed lock to guarantee zero concurrent connections
+    if uid:
+        locked = await acquire_account_lock(uid, ttl_seconds=60)
+        if not locked:
+            logger.info(f"[{name}] Account #{idx} currently locked by another node/task; skipping to prevent AuthKeyDuplicatedError.")
+            return {}
 
     client = create_telethon_client(sess_str=sess_str, identifier=acc.get("phone") or name, proxy_val=acc.get("proxy"))
     try:
@@ -485,14 +590,20 @@ async def extract_tokens_for_account(acc: dict) -> dict:
                 await client.connect()
                 if await client.is_user_authorized():
                     connected = True
+                    if idx:
+                        await sync_account_health_state(idx, is_healthy=True)
                     break
                 else:
                     logger.warning(f"[{name}] Session unauthorized")
+                    if idx:
+                        await sync_account_health_state(idx, is_healthy=False, reason="Session unauthorized / logged out")
                     return {}
             except Exception as conn_err:
                 err_str = str(conn_err)
-                if "used under two different IP addresses" in err_str or "AUTH_KEY_DUPLICATED" in err_str:
+                if "used under two different IP addresses" in err_str or "AUTH_KEY_DUPLICATED" in err_str or "AuthKeyDuplicatedError" in type(conn_err).__name__:
                     logger.warning(f"[{name}] MTProto session duplicated/revoked")
+                    if idx:
+                        await sync_account_health_state(idx, is_healthy=False, reason="AuthKeyDuplicatedError (multi-IP clash)")
                     return {}
                 if attempt < 3:
                     await asyncio.sleep(attempt * 2.0)
@@ -511,6 +622,8 @@ async def extract_tokens_for_account(acc: dict) -> dict:
             await client.disconnect()
         except Exception:
             pass
+        if uid:
+            await release_account_lock(uid)
 
 @app.post("/collect-tokens")
 @app.get("/collect-tokens")
@@ -1092,7 +1205,13 @@ async def token_health_and_refresh_watchdog():
                 except Exception as hbe:
                     logger.warning(f"[Token Watchdog] Heartbeat ping error: {hbe}")
 
-            # 2. Check token freshness across all accounts
+            # 2. Check token freshness across all accounts (Primary MTProto Coordinator Only)
+            is_coord = await acquire_coordinator_lock(ttl_seconds=1800)
+            if not is_coord:
+                logger.info("[Token Watchdog] Standby node: primary coordinator active on Node 2; skipping background MTProto refresh.")
+                await asyncio.sleep(1800)
+                continue
+
             accounts = await fetch_accounts_from_cloud()
             if accounts:
                 async with aiohttp.ClientSession(headers=BROWSER_HEADERS) as session:
@@ -2170,12 +2289,32 @@ async def send_login_code(request: Request):
     try:
         await temp_client.connect()
         sent_code = await asyncio.wait_for(temp_client.send_code_request(cleaned_phone), timeout=25)
+        sess_str_saved = temp_client.session.save()
         LOGIN_SESSIONS[chat_id] = {
             "client": temp_client,
             "phone": cleaned_phone,
             "phone_code_hash": sent_code.phone_code_hash,
+            "session_string": sess_str_saved,
             "created_at": time.time()
         }
+        if UPSTASH_URL and UPSTASH_TOKEN:
+            try:
+                async with aiohttp.ClientSession() as up_sess:
+                    up_data = {
+                        "phone": cleaned_phone,
+                        "phone_code_hash": sent_code.phone_code_hash,
+                        "session_string": sess_str_saved,
+                        "created_at": time.time()
+                    }
+                    await up_sess.post(
+                        f"{UPSTASH_URL}/set/tg_login_flow:{chat_id}?ex=900",
+                        headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+                        data=json.dumps(up_data),
+                        timeout=aiohttp.ClientTimeout(total=4)
+                    )
+            except Exception as up_err:
+                logger.warning(f"[Standby Cloud Login] Upstash session backup note: {up_err}")
+
         logger.info(f"[Standby Cloud Login] ✅ Code dispatched to {cleaned_phone} (hash: {sent_code.phone_code_hash[:8]})")
         return {
             "ok": True,
@@ -2213,6 +2352,35 @@ async def verify_login_code(request: Request):
     password = str(data.get("password") or "").strip()
 
     session_data = LOGIN_SESSIONS.get(chat_id)
+    # If session not in local RAM, restore from distributed Upstash Redis
+    if (not session_data or not session_data.get("client")) and UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            async with aiohttp.ClientSession() as up_sess:
+                async with up_sess.get(
+                    f"{UPSTASH_URL}/get/tg_login_flow:{chat_id}",
+                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+                    timeout=aiohttp.ClientTimeout(total=4)
+                ) as up_r:
+                    if up_r.status == 200:
+                        up_res = await up_r.json()
+                        val = up_res.get("result")
+                        if val:
+                            parsed_flow = json.loads(val) if isinstance(val, str) else val
+                            s_str = parsed_flow.get("session_string")
+                            if s_str:
+                                restored_cl = create_telethon_client(sess_str=s_str, identifier=parsed_flow.get("phone"), timeout=25)
+                                session_data = {
+                                    "client": restored_cl,
+                                    "phone": parsed_flow.get("phone"),
+                                    "phone_code_hash": parsed_flow.get("phone_code_hash"),
+                                    "session_string": s_str,
+                                    "created_at": parsed_flow.get("created_at")
+                                }
+                                LOGIN_SESSIONS[chat_id] = session_data
+                                logger.info(f"[Standby Cloud Login] Restored active login session from Upstash for Chat {chat_id}")
+        except Exception as up_rec_err:
+            logger.warning(f"[Standby Cloud Login] Could not restore session from Upstash: {up_rec_err}")
+
     if not session_data or not session_data.get("client"):
         return {"ok": False, "error": "No active login session found. Please tap Add Account to start over."}
 
@@ -2286,6 +2454,12 @@ async def verify_login_code(request: Request):
         asyncio.create_task(sync_new_account_to_clouds(acc_entry))
 
         LOGIN_SESSIONS.pop(chat_id, None)
+        if UPSTASH_URL and UPSTASH_TOKEN:
+            try:
+                async with aiohttp.ClientSession() as up_sess:
+                    await up_sess.post(f"{UPSTASH_URL}/del/tg_login_flow:{chat_id}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
+            except Exception:
+                pass
 
         return {
             "ok": True,
@@ -2338,6 +2512,14 @@ async def cancel_login(request: Request):
                 pass
         LOGIN_SESSIONS.pop(chat_id, None)
         logger.info(f"[Standby Cloud Login] ❌ Login session cancelled for Chat {chat_id}")
+
+    if UPSTASH_URL and UPSTASH_TOKEN:
+        try:
+            async with aiohttp.ClientSession() as up_sess:
+                await up_sess.post(f"{UPSTASH_URL}/del/tg_login_flow:{chat_id}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
+        except Exception:
+            pass
+
     return {"ok": True, "message": "Login cancelled"}
 
 
@@ -2480,10 +2662,13 @@ async def get_account_otp(acc_target: str, request: Request):
         tg_snippet = ""
         session_revoked = False
         revoked_msg = ""
+        acc_uid = str(target_acc.get("user_id") or target_idx)
+        await acquire_account_lock(acc_uid, ttl_seconds=30)
         try:
             client = create_telethon_client(sess_str=sess, identifier=phone or target_idx, proxy_val=target_acc.get("proxy"), timeout=12)
             await client.connect()
             if await client.is_user_authorized():
+                await sync_account_health_state(target_idx, is_healthy=True)
                 messages = await client.get_messages(777000, limit=5)
                 for msg in messages:
                     if not msg or not msg.message:
@@ -2501,18 +2686,21 @@ async def get_account_otp(acc_target: str, request: Request):
             else:
                 session_revoked = True
                 revoked_msg = "Telegram session is unauthorized/logged out."
+                await sync_account_health_state(target_idx, is_healthy=False, reason=revoked_msg)
         except Exception as e:
             err_str = str(e)
             logger.warning(f"[OTP Cloud Fetch] 777000 check note for #{target_idx}: {e}")
             if "AuthKeyDuplicatedError" in type(e).__name__ or "used under two different IP" in err_str or "SessionRevoked" in type(e).__name__:
                 session_revoked = True
                 revoked_msg = f"Session key revoked by Telegram: {err_str}"
+                await sync_account_health_state(target_idx, is_healthy=False, reason=revoked_msg)
         finally:
             if client:
                 try:
                     await client.disconnect()
                 except Exception:
                     pass
+            await release_account_lock(acc_uid)
 
         if tg_code:
             age = int(time.time() - tg_date)
@@ -5152,6 +5340,12 @@ async def cloud_wealth_automation_watchdog():
     cycle_count = 0
     while True:
         try:
+            is_coord = await acquire_coordinator_lock(ttl_seconds=1800)
+            if not is_coord:
+                logger.info("[Cloud Wealth Watchdog] Standby node: primary coordinator active on Node 2; idling.")
+                await asyncio.sleep(1800)
+                continue
+
             cycle_count += 1
             accounts = await fetch_accounts_from_cloud()
             if accounts:
