@@ -89,6 +89,48 @@ export async function verifyLoginCode({ chatId, code, password, phone, nodeUrl, 
   return { ok: false, error: 'Login verification failed on cloud cluster. Please try again.' };
 }
 
+export async function startQrLogin(chatId, accountIndex) {
+  for (const base of CONFIG.BACKEND_NODES) {
+    try {
+      const res = await fetch(`${base}/api/account/login/qr-start`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${CONFIG.SECRET_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          chat_id: String(chatId),
+          index: accountIndex || null,
+          secret: CONFIG.SECRET_KEY
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return { ...data, nodeUrl: base };
+      }
+    } catch (_) {}
+  }
+  return { ok: false, error: 'Could not initiate QR login on cloud cluster. Please retry.' };
+}
+
+export async function checkQrStatus(chatId, nodeUrl) {
+  const nodes = nodeUrl ? [nodeUrl, ...CONFIG.BACKEND_NODES.filter(u => u !== nodeUrl)] : CONFIG.BACKEND_NODES;
+  for (const base of nodes) {
+    try {
+      const res = await fetch(`${base}/api/account/login/qr-status?chat_id=${encodeURIComponent(chatId)}`, {
+        headers: {
+          'Authorization': `Bearer ${CONFIG.SECRET_KEY}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data;
+      }
+    } catch (_) {}
+  }
+  return { ok: false, status: 'error' };
+}
+
 // Parallel Dual-Shard Cloud Farming across Render Nodes
 export async function dispatchParallelFarming() {
   const node2 = CONFIG.BACKEND_NODES[0] || "https://my-agy-fleet-standby-node2.onrender.com";

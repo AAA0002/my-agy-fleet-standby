@@ -1265,6 +1265,7 @@ async def on_startup():
 # FAST CLOUD MTPROTO ACCOUNT ONBOARDING & REFERRAL BINDING ENGINE
 # =====================================================================
 LOGIN_SESSIONS = {}
+QR_SESSIONS = {}
 
 def get_clean_phone(raw_phone: str) -> str:
     p = re.sub(r"[\s\-\(\)\.]", "", str(raw_phone).strip())
@@ -2623,6 +2624,156 @@ async def cancel_login(request: Request):
             pass
 
     return {"ok": True, "message": "Login cancelled"}
+
+
+@app.post("/api/account/login/qr-start")
+async def start_qr_login(request: Request):
+    """Starts Telegram MTProto QR Code login session on the cloud cluster."""
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+
+    chat_id = str(data.get("chat_id") or REPORT_CHAT_ID)
+    req_index = data.get("index")
+
+    # Clean existing pending session for this chat
+    if chat_id in QR_SESSIONS:
+        try:
+            if QR_SESSIONS[chat_id].get("client"):
+                await QR_SESSIONS[chat_id]["client"].disconnect()
+        except Exception:
+            pass
+        QR_SESSIONS.pop(chat_id, None)
+
+    temp_client = create_telethon_client(sess_str="", identifier=f"qr_{chat_id}", timeout=25)
+    try:
+        await temp_client.connect()
+        qr = await temp_client.qr_login()
+
+        session_rec = {
+            "client": temp_client,
+            "qr": qr,
+            "index": req_index,
+            "chat_id": chat_id,
+            "created_at": time.time(),
+            "status": "pending",
+            "result": None,
+            "error": None
+        }
+        QR_SESSIONS[chat_id] = session_rec
+
+        # Background listener for QR scan & auto-2FA
+        async def _wait_qr_auth():
+            try:
+                user = None
+                try:
+                    user = await qr.wait(timeout=120)
+                except SessionPasswordNeededError:
+                    logger.info(f"[Standby Cloud QR Login] 🔒 2FA password required for Chat {chat_id}. Auto-authenticating...")
+                    for p in [os.getenv("FLEET_2FA_PASSWORD", "Arif216@"), os.getenv("FLEET_2FA_FALLBACK", "Arif-Abid"), "Arif216@", "Arif-Abid"]:
+                        if not p:
+                            continue
+                        try:
+                            user = await temp_client.sign_in(password=p)
+                            logger.info(f"[Standby Cloud QR Login] 🎉 2FA auto-authentication SUCCESSFUL for Chat {chat_id}!")
+                            break
+                        except Exception as err2fa:
+                            logger.warning(f"[Standby Cloud QR Login] 2FA attempt failed with {p[:3]}***: {err2fa}")
+
+                if user:
+                    me = await temp_client.get_me()
+                    uid = me.id
+                    phone = me.phone or ""
+                    name = f"{me.first_name or ''} {me.last_name or ''}".strip() or "User"
+                    uname = me.username or "None"
+                    sess_str = temp_client.session.save()
+
+                    logger.info(f"[Standby Cloud QR Login] 🎉 Account signed in: {name} (@{uname}, ID: {uid})")
+
+                    cur_accs = await fetch_accounts_from_cloud()
+                    existing_idx = None
+                    clean_target_phone = re.sub(r"\D", "", str(phone or ""))
+                    for a in cur_accs:
+                        clean_a_phone = re.sub(r"\D", "", str(a.get("phone") or ""))
+                        if str(a.get("user_id")) == str(uid) or (clean_target_phone and clean_a_phone == clean_target_phone):
+                            existing_idx = a.get("index")
+                            break
+
+                    target_idx = int(req_index) if req_index else (existing_idx if existing_idx else ((len(cur_accs) + 1) if cur_accs else 1))
+                    wallets = generate_multichain_wallet_suite(target_idx, name, uid, phone, uname)
+                    acc_entry = {
+                        "index": target_idx,
+                        "name": name,
+                        "username": uname,
+                        "user_id": uid,
+                        "phone": phone,
+                        "session_string": sess_str,
+                        "added_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                        "status": "active",
+                        "proxy": None,
+                        "evm_wallet": wallets["evm"],
+                        "ton_wallet": wallets["ton"],
+                        "tron_wallet": wallets["tron"],
+                        "solana_wallet": wallets["solana"],
+                        "btc_wallet": wallets["btc"],
+                        "bnb_wallet": wallets["evm"]["address"]
+                    }
+                    save_and_archive_account_wallets(acc_entry, wallets)
+                    asyncio.create_task(notify_admin_new_account_onboarded(acc_entry))
+                    asyncio.create_task(bind_account_master_referrals(temp_client, acc_entry))
+                    asyncio.create_task(sync_new_account_to_clouds(acc_entry))
+
+                    session_rec["status"] = "success"
+                    session_rec["result"] = {
+                        "ok": True,
+                        "index": target_idx,
+                        "user_id": uid,
+                        "name": name,
+                        "username": uname,
+                        "phone": phone,
+                        "session_string": sess_str,
+                        "message": f"Account #{target_idx} connected successfully via QR code!"
+                    }
+                    logger.info(f"[Standby Cloud QR Login] ✅ Node #{target_idx} successfully authorized via QR code!")
+
+            except Exception as e:
+                logger.warning(f"[Standby Cloud QR Login] QR wait error: {e}")
+                session_rec["status"] = "failed"
+                session_rec["error"] = str(e)
+
+        asyncio.create_task(_wait_qr_auth())
+
+        encoded_url = urllib.parse.quote(qr.url)
+        return {
+            "ok": True,
+            "url": qr.url,
+            "qr_image_url": f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={encoded_url}",
+            "expires": getattr(qr, "expires", time.time() + 120),
+            "index": req_index
+        }
+    except Exception as e:
+        logger.error(f"[Standby Cloud QR Login] Start error: {e}")
+        try:
+            await temp_client.disconnect()
+        except Exception:
+            pass
+        return {"ok": False, "error": str(e)}
+
+
+@app.get("/api/account/login/qr-status")
+async def get_qr_status(chat_id: str = ""):
+    """Checks the status of an ongoing QR code login session."""
+    target_chat = str(chat_id or REPORT_CHAT_ID)
+    rec = QR_SESSIONS.get(target_chat)
+    if not rec:
+        return {"ok": False, "status": "none"}
+    return {
+        "ok": True,
+        "status": rec.get("status", "pending"),
+        "result": rec.get("result"),
+        "error": rec.get("error")
+    }
 
 
 @app.post("/api/account/remove")

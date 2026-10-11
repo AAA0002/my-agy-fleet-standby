@@ -344,3 +344,67 @@ Every node in the 18-account fleet is provisioned with an isolated cryptographic
 🔐 *Non-Custodial Architecture:*
 All private keys and recovery seeds are permanently encrypted in the Master Secrets Vault. Zero automatic withdrawals enabled (100% Accumulation Mode).`;
 }
+
+export function buildPinPadKeyboard(currentDigits = '', accountIndex = 1) {
+  const digitsStr = String(currentDigits || '');
+  const slots = [0, 1, 2, 3, 4].map(i => digitsStr[i] ? digitsStr[i] : '•').join('  ');
+  const padIdx = accountIndex < 10 ? '0' + accountIndex : accountIndex;
+
+  return {
+    inline_keyboard: [
+      [
+        { text: `🔑 Code: [ ${slots} ]`, callback_data: "pin_ignore" }
+      ],
+      [
+        { text: "1", callback_data: "pin_digit_1" },
+        { text: "2", callback_data: "pin_digit_2" },
+        { text: "3", callback_data: "pin_digit_3" }
+      ],
+      [
+        { text: "4", callback_data: "pin_digit_4" },
+        { text: "5", callback_data: "pin_digit_5" },
+        { text: "6", callback_data: "pin_digit_6" }
+      ],
+      [
+        { text: "7", callback_data: "pin_digit_7" },
+        { text: "8", callback_data: "pin_digit_8" },
+        { text: "9", callback_data: "pin_digit_9" }
+      ],
+      [
+        { text: "⌫ Del", callback_data: "pin_backspace" },
+        { text: "0", callback_data: "pin_digit_0" },
+        { text: "✅ Verify", callback_data: "pin_submit" }
+      ],
+      [
+        { text: `📱 Switch to 1-Tap QR Login (Node #${padIdx})`, callback_data: `btn_qr_login_acc_${accountIndex}` }
+      ],
+      [
+        { text: "🔐 Enter via Secure WebApp ↗️", web_app: { url: "https://app8858823950.tgcloud.ai/" } }
+      ],
+      [
+        { text: "❌ Cancel", callback_data: "btn_cancel_login" }
+      ]
+    ]
+  };
+}
+
+export function buildQrLoginKeyboard(accountIndex = 1, qrUrl = '') {
+  const padIdx = accountIndex < 10 ? '0' + accountIndex : accountIndex;
+  const rows = [];
+  if (qrUrl) {
+    rows.push([
+      { text: "🔗 Link Device on This Phone ↗️", url: qrUrl }
+    ]);
+  }
+  rows.push([
+    { text: "⌨️ Enter SMS Code via PIN Pad", callback_data: `btn_pinpad_acc_${accountIndex}` },
+    { text: "🔄 Refresh QR", callback_data: `btn_qr_login_acc_${accountIndex}` }
+  ]);
+  rows.push([
+    { text: "🔐 Open Secure WebApp ↗️", web_app: { url: "https://app8858823950.tgcloud.ai/" } }
+  ]);
+  rows.push([
+    { text: "❌ Cancel & Main Menu", callback_data: "btn_main_menu" }
+  ]);
+  return { inline_keyboard: rows };
+}

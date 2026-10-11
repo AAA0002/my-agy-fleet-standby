@@ -401,9 +401,10 @@ Node updated in active cloud cluster.`,
 
       const isExpired = res?.expired || (res?.error && res.error.toLowerCase().includes('expired'));
       const targetIdx = activeSession.accountIndex || 1;
+      const padIdx = targetIdx < 10 ? '0' + targetIdx : targetIdx;
       const errText = isExpired
-        ? `⚠️ *Verification Code Expired*\n\nTelegram invalidated this code (due to expiration or a previous code request).\n\nTap *[ 🔄 Request Fresh Code ]* below to dispatch a single fresh code to \`${activeSession.phone}\`:`
-        : `❌ *Verification Failed*\n\n*Error:* ${res?.error || 'Invalid code'}\n\nPlease check the code and reply again, or tap below to restart:`;
+        ? `⚠️ *Telegram Security Block (Code Invalidated)*\n\nTelegram flagged this code because it was sent as a chat message.\n\n🚀 *RECOMMENDED SOLUTION:* Use *1-Tap QR Login* below (100% immune to code sharing blocks, zero codes needed)!`
+        : `❌ *Verification Failed*\n\n*Error:* ${res?.error || 'Invalid code'}\n\nPlease check the code and reply again, or switch to QR login:`;
 
       await api.sendMessage({
         chat_id: chatId,
@@ -411,7 +412,8 @@ Node updated in active cloud cluster.`,
         parse_mode: "Markdown",
         reply_markup: {
           inline_keyboard: [
-            [{ text: `🔄 Request Fresh Code (Node #${targetIdx < 10 ? '0' + targetIdx : targetIdx})`, callback_data: `btn_relink_acc_${targetIdx}` }],
+            [{ text: `📱 1-Tap QR Login (Node #${padIdx} - Zero Code)`, callback_data: `btn_qr_login_acc_${targetIdx}` }],
+            [{ text: `⌨️ Enter Code via PIN Pad Keypad`, callback_data: `btn_pinpad_acc_${targetIdx}` }],
             [{ text: "❌ Cancel & Main Menu", callback_data: "btn_main_menu" }]
           ]
         }

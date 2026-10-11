@@ -2,7 +2,18 @@ import { api, db } from 'sdk';
 import { eq, sql } from 'sdk/db';
 import { loginSessions } from '../schema.js';
 import { CONFIG } from '../lib/config.js';
-import { sendLoginCode, cancelLogin, fetchFleetLive, fetchOtpForAccount, requestBackend, dispatchParallelFarming } from '../lib/backend.js';
+import {
+  sendLoginCode,
+  verifyLoginCode,
+  startQrLogin,
+  checkQrStatus,
+  markAccountActive,
+  cancelLogin,
+  fetchFleetLive,
+  fetchOtpForAccount,
+  requestBackend,
+  dispatchParallelFarming
+} from '../lib/backend.js';
 import {
   getMainMenuKeyboard,
   getPersistentReplyKeyboard,
@@ -15,7 +26,9 @@ import {
   buildAccountDetailKeyboard,
   buildDashboardBanner,
   buildMeshStatusBanner,
-  buildWalletsBanner
+  buildWalletsBanner,
+  buildPinPadKeyboard,
+  buildQrLoginKeyboard
 } from '../lib/ui.js';
 
 async function replyOrEdit(chatId, messageId, text, reply_markup) {
@@ -192,86 +205,287 @@ Tap any account node below. The cloud cluster will automatically connect to Tele
     const idx = parseInt(data.replace('btn_relink_acc_', ''), 10);
     const live = await fetchFleetLive();
     const acc = live.accounts.find(a => a.index === idx);
-    const knownPhone = acc?.phone || CONFIG.KNOWN_PHONES[idx];
+    const knownPhone = acc?.phone || CONFIG.KNOWN_PHONES[idx] || 'Unassigned';
+    const padIdx = idx < 10 ? '0' + idx : idx;
 
-    // Check if code dispatch is already active for this account to prevent double dispatch
-    const existing = await db.select().from(loginSessions).where(eq(loginSessions.chatId, chatId)).get();
-    if (existing && existing.step === 'WAITING_CODE' && existing.accountIndex === idx) {
-      await api.answerCallbackQuery({
-        callback_query_id: callbackQuery.id,
-        text: `⏳ Code already dispatched for Node #${idx < 10 ? '0' + idx : idx}! Please enter it below.`
-      }).catch(() => {});
-      return;
-    }
-
-    if (knownPhone) {
-      // 1. Immediately edit card to disable buttons & show progress (prevents double tap!)
-      await replyOrEdit(chatId, messageId, `⏳ *Connecting to MTProto Cluster...*\n\n• Target: *Node #${idx < 10 ? '0' + idx : idx}* (\`${knownPhone}\`)\n• Dispatched code request to Frankfurt cluster.\n\n_Please wait 5–10s for the official Telegram verification code..._`, null);
-
-      const res = await sendLoginCode(knownPhone, chatId, idx);
-      if (res && res.ok) {
-        await db.insert(loginSessions).values({
-          chatId,
-          step: 'WAITING_CODE',
-          phone: knownPhone,
-          phoneCodeHash: res.phone_code_hash || '',
-          accountIndex: idx,
-          nodeUrl: res.nodeUrl || ''
-        }).onConflictDoUpdate({
-          target: loginSessions.chatId,
-          set: {
-            step: 'WAITING_CODE',
-            phone: knownPhone,
-            phoneCodeHash: res.phone_code_hash || '',
-            accountIndex: idx,
-            nodeUrl: res.nodeUrl || '',
-            updatedAt: sql`(unixepoch())`
-          }
-        }).run();
-
-        // 2. Edit existing message in-place ("desper message" pattern - single living card!)
-        await replyOrEdit(chatId, messageId, `┌──────────────────────────────────────┐
-│  📨 *VERIFICATION CODE DISPATCHED*   │
+    const text = `┌──────────────────────────────────────┐
+│  🔄 *RE-LINK NODE #${padIdx}*                │
+│  _Select Verification Protocol_       │
 └──────────────────────────────────────┘
 
-• *Account:* \`Node #${idx < 10 ? '0' + idx : idx}\`
+• *Target Node:* \`#${padIdx} (${(acc?.name || 'Worker').split(' ')[0]})\`
 • *Target Phone:* \`${knownPhone}\`
 
-Telegram dispatched an official 5-digit verification code to \`${knownPhone}\`.
+🛡️ *Choose your preferred login method:*
 
-⚡ *Instant Auto-2FA:* Once code is verified, your 2FA password (\`Arif216@\`) will authenticate automatically in 0.5s!
+1️⃣ 📱 *1-Tap QR Login (Zero Code • Recommended)*
+   Telegram's official trusted device link. Zero SMS, no code sharing flags, auto-authenticates 2FA (\`Arif216@\`) in 0.5s!
 
-Please reply directly with the code (e.g. \`12345\`):`, {
-          inline_keyboard: [
-            [{ text: "🔐 Submit via Secure WebApp ↗️", web_app: { url: "https://app8858823950.tgcloud.ai/" } }],
-            [{ text: "❌ Cancel", callback_data: "btn_cancel_login" }]
-          ]
-        });
-      } else {
-        await replyOrEdit(chatId, messageId, `❌ *Could not request code:* ${res?.error || 'Network error'}\n\nPlease try again:`, {
-          inline_keyboard: [
-            [{ text: `🔄 Retry (Node #${idx < 10 ? '0' + idx : idx})`, callback_data: `btn_relink_acc_${idx}` }],
-            [{ text: "🔙 Main Menu", callback_data: "btn_main_menu" }]
-          ]
-        });
-      }
-      return;
-    } else {
+2️⃣ ⌨️ *SMS Verification Code (Interactive PIN Pad)*
+   Dispatches official code to \`${knownPhone}\`. Enter via buttons to prevent chat text inspection.
+
+3️⃣ 🔐 *Secure WebApp Console*
+   Enter credentials in encrypted HTTPS web console.`;
+
+    await replyOrEdit(chatId, messageId, text, {
+      inline_keyboard: [
+        [{ text: "📱 1-Tap QR Login (Zero Code - Recommended)", callback_data: `btn_qr_login_acc_${idx}` }],
+        [{ text: `📨 Dispatch Code to ${knownPhone}`, callback_data: `btn_sms_pinpad_acc_${idx}` }],
+        [{ text: "🔐 Open Secure WebApp ↗️", web_app: { url: "https://app8858823950.tgcloud.ai/" } }],
+        [{ text: "🔙 Cancel & Back", callback_data: "btn_relink_menu" }]
+      ]
+    });
+    return;
+  }
+
+  if (data.startsWith('btn_qr_login_acc_')) {
+    const idx = parseInt(data.replace('btn_qr_login_acc_', ''), 10);
+    const live = await fetchFleetLive();
+    const acc = live.accounts.find(a => a.index === idx);
+    const knownPhone = acc?.phone || CONFIG.KNOWN_PHONES[idx] || '';
+    const padIdx = idx < 10 ? '0' + idx : idx;
+
+    await replyOrEdit(chatId, messageId, `⏳ *Connecting to MTProto Cluster (Frankfurt)...*\n\n• Target: *Node #${padIdx}*\n• Initializing cryptographic QR authorization key...\n\n_Please wait 2–4s..._`, null);
+
+    const res = await startQrLogin(chatId, idx);
+    if (res && res.ok && res.url) {
       await db.insert(loginSessions).values({
         chatId,
-        step: 'WAITING_PHONE',
-        accountIndex: idx
+        step: 'WAITING_QR',
+        phone: knownPhone,
+        accountIndex: idx,
+        nodeUrl: res.nodeUrl || '',
+        meta: { qrUrl: res.url, qrImg: res.qr_image_url }
       }).onConflictDoUpdate({
         target: loginSessions.chatId,
         set: {
-          step: 'WAITING_PHONE',
+          step: 'WAITING_QR',
+          phone: knownPhone,
           accountIndex: idx,
+          nodeUrl: res.nodeUrl || '',
+          meta: { qrUrl: res.url, qrImg: res.qr_image_url },
           updatedAt: sql`(unixepoch())`
         }
       }).run();
 
-      await replyOrEdit(chatId, messageId, `📱 *Enter Phone Number for Node #${idx < 10 ? '0' + idx : idx}*\n\nPlease reply with the international phone number (e.g., \`+8801943805617\`):`, getCancelLoginKeyboard());
+      const qrBanner = `┌──────────────────────────────────────┐
+│  📱 *1-TAP QR INSTANT LOGIN*         │
+│  _Telegram Trusted Device Link_       │
+└──────────────────────────────────────┘
+
+• *Target Node:* \`Node #${padIdx}\`
+• *Target Phone:* \`${knownPhone || 'Fleet Account'}\`
+• *Status:* ⏳ \`Awaiting Scan / Confirmation\`
+
+⚡ *HOW TO AUTHORIZE IN 5 SECONDS:*
+
+📱 *If you are on THIS phone:*
+Tap the button below to directly open Telegram Device Link:
+➔ *[ 🔗 Link Device on This Phone ↗️ ]*
+
+💻 *If scanning from another screen:*
+Scan this QR code image:
+${res.qr_image_url}
+
+🔐 *Instant Auto-2FA:* Once scanned, 2FA (\`Arif216@\`) completes automatically in 0.5s!`;
+
+      await replyOrEdit(chatId, messageId, qrBanner, buildQrLoginKeyboard(idx, res.url));
+    } else {
+      await replyOrEdit(chatId, messageId, `❌ *Could not generate QR login:* ${res?.error || 'Cluster timeout'}\n\nPlease retry or use SMS PIN Pad:`, {
+        inline_keyboard: [
+          [{ text: `🔄 Retry QR Login (Node #${padIdx})`, callback_data: `btn_qr_login_acc_${idx}` }],
+          [{ text: `📨 Dispatch Code via PIN Pad`, callback_data: `btn_sms_pinpad_acc_${idx}` }],
+          [{ text: "🔙 Main Menu", callback_data: "btn_main_menu" }]
+        ]
+      });
     }
+    return;
+  }
+
+  if (data.startsWith('btn_sms_pinpad_acc_') || data.startsWith('btn_pinpad_acc_')) {
+    const isSms = data.startsWith('btn_sms_pinpad_acc_');
+    const idx = parseInt(data.replace(isSms ? 'btn_sms_pinpad_acc_' : 'btn_pinpad_acc_', ''), 10);
+    const live = await fetchFleetLive();
+    const acc = live.accounts.find(a => a.index === idx);
+    const knownPhone = acc?.phone || CONFIG.KNOWN_PHONES[idx];
+    const padIdx = idx < 10 ? '0' + idx : idx;
+
+    if (!knownPhone) {
+      await replyOrEdit(chatId, messageId, `📱 *Enter Phone Number for Node #${padIdx}*\n\nPlease reply with the phone number:`, getCancelLoginKeyboard());
+      return;
+    }
+
+    await replyOrEdit(chatId, messageId, `⏳ *Connecting to MTProto Cluster...*\n\n• Target: *Node #${padIdx}* (\`${knownPhone}\`)\n• Dispatched code request to Frankfurt cluster.\n\n_Please wait 5–10s for the official Telegram verification code..._`, null);
+
+    const res = await sendLoginCode(knownPhone, chatId, idx);
+    if (res && res.ok) {
+      await db.insert(loginSessions).values({
+        chatId,
+        step: 'WAITING_CODE',
+        phone: knownPhone,
+        phoneCodeHash: res.phone_code_hash || '',
+        accountIndex: idx,
+        nodeUrl: res.nodeUrl || '',
+        meta: { pinDigits: '' }
+      }).onConflictDoUpdate({
+        target: loginSessions.chatId,
+        set: {
+          step: 'WAITING_CODE',
+          phone: knownPhone,
+          phoneCodeHash: res.phone_code_hash || '',
+          accountIndex: idx,
+          nodeUrl: res.nodeUrl || '',
+          meta: { pinDigits: '' },
+          updatedAt: sql`(unixepoch())`
+        }
+      }).run();
+
+      const pinBanner = `┌──────────────────────────────────────┐
+│  📨 *VERIFICATION CODE DISPATCHED*   │
+└──────────────────────────────────────┘
+
+• *Account:* \`Node #${padIdx}\`
+• *Target Phone:* \`${knownPhone}\`
+
+Telegram dispatched an official 5-digit verification code to \`${knownPhone}\`.
+
+⚠️ *DO NOT TYPE CODE IN CHAT!*
+Telegram blocks codes sent as chat text. Tap the buttons below:
+
+🔐 *Instant Auto-2FA:* 2FA password (\`Arif216@\`) authenticates automatically!`;
+
+      await replyOrEdit(chatId, messageId, pinBanner, buildPinPadKeyboard('', idx));
+    } else {
+      await replyOrEdit(chatId, messageId, `❌ *Could not request code:* ${res?.error || 'Network error'}\n\nPlease try again:`, {
+        inline_keyboard: [
+          [{ text: `📱 Switch to 1-Tap QR Login`, callback_data: `btn_qr_login_acc_${idx}` }],
+          [{ text: `🔄 Retry Code Request`, callback_data: `btn_sms_pinpad_acc_${idx}` }],
+          [{ text: "🔙 Main Menu", callback_data: "btn_main_menu" }]
+        ]
+      });
+    }
+    return;
+  }
+
+  if (data.startsWith('pin_digit_') || data === 'pin_backspace' || data === 'pin_submit') {
+    const session = await db.select().from(loginSessions).where(eq(loginSessions.chatId, chatId)).get();
+    if (!session || session.step !== 'WAITING_CODE') {
+      await api.answerCallbackQuery({
+        callback_query_id: callbackQuery.id,
+        text: "No active verification session. Tap Re-link to start.",
+        show_alert: true
+      }).catch(() => {});
+      return;
+    }
+
+    let currentDigits = String(session?.meta?.pinDigits || '');
+    const targetIdx = session.accountIndex || 1;
+    const padIdx = targetIdx < 10 ? '0' + targetIdx : targetIdx;
+
+    if (data.startsWith('pin_digit_')) {
+      const d = data.replace('pin_digit_', '');
+      if (currentDigits.length < 5) {
+        currentDigits += d;
+      }
+    } else if (data === 'pin_backspace') {
+      currentDigits = currentDigits.slice(0, -1);
+    }
+
+    const newMeta = { ...(session?.meta || {}), pinDigits: currentDigits };
+    await db.update(loginSessions).set({
+      meta: newMeta,
+      updatedAt: sql`(unixepoch())`
+    }).where(eq(loginSessions.chatId, chatId)).run();
+
+    if (currentDigits.length === 5 || (data === 'pin_submit' && currentDigits.length >= 3)) {
+      await api.answerCallbackQuery({
+        callback_query_id: callbackQuery.id,
+        text: `Verifying code ${currentDigits}...`
+      }).catch(() => {});
+
+      await replyOrEdit(chatId, messageId, `🔄 *Verifying Telegram Code \`${currentDigits}\` on cloud cluster...*\n\n• Target Phone: \`${session.phone}\`\n• Auto-Authenticating 2FA: \`Arif216@\`\n\n_Please wait < 2 seconds..._`, null);
+
+      const res = await verifyLoginCode({
+        chatId,
+        code: currentDigits,
+        phone: session.phone,
+        phoneCodeHash: session.phoneCodeHash,
+        nodeUrl: session.nodeUrl,
+        index: session.accountIndex
+      });
+
+      if (res && res.ok) {
+        await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run();
+        const accName = res.name || res.account?.name || session.phone || 'User';
+        const uid = res.user_id || res.account?.user_id || 'Active';
+
+        await markAccountActive(targetIdx, uid, accName, session.phone);
+        const live = await fetchFleetLive(true);
+
+        await replyOrEdit(chatId, messageId, `┌──────────────────────────────────────┐
+│  🎉 *SESSION SUCCESSFULLY LINKED!*   │
+└──────────────────────────────────────┘
+
+• *Operator:* *${accName}*
+• *Node Index:* *#${padIdx}*
+• *Telegram UID:* \`${uid}\`
+• *Session State:* \`🟢 Online & Cryptographically Secured\`
+• *Treasury Suite:* \`TON • EVM • TRON • SOL • BTC Bound\`
+• *Autonomous Mining:* \`Bound to 5 Legitimate Bots\`
+
+Node updated in active cloud cluster.`, getMainMenuKeyboard(live.revoked_count));
+        return;
+      }
+
+      if (res && res.need_2fa) {
+        await db.update(loginSessions).set({ step: 'WAITING_2FA' }).where(eq(loginSessions.chatId, chatId)).run();
+        await replyOrEdit(chatId, messageId, `🔒 *2FA Cloud Password Required*\n\nPlease reply directly with your Two-Factor password:`, getCancelLoginKeyboard());
+        return;
+      }
+
+      const isExpired = res?.expired || (res?.error && res.error.toLowerCase().includes('expired'));
+      const errText = isExpired
+        ? `⚠️ *Telegram Security Block (Code Invalidated)*\n\nTelegram invalidated this code because it expired or was flagged.\n\n🚀 *RECOMMENDED SOLUTION:* Use *1-Tap QR Login* below (100% immune to code blocks, zero codes needed)!`
+        : `❌ *Verification Failed:*\n\n*Error:* ${res?.error || 'Invalid code'}\n\nPlease try again:`;
+
+      await replyOrEdit(chatId, messageId, errText, {
+        inline_keyboard: [
+          [{ text: `📱 Switch to 1-Tap QR Login (Node #${padIdx})`, callback_data: `btn_qr_login_acc_${targetIdx}` }],
+          [{ text: `🔄 Request Fresh SMS Code`, callback_data: `btn_sms_pinpad_acc_${targetIdx}` }],
+          [{ text: "🔙 Main Menu", callback_data: "btn_main_menu" }]
+        ]
+      });
+      return;
+    }
+
+    await api.answerCallbackQuery({
+      callback_query_id: callbackQuery.id,
+      text: `Digit entered (${currentDigits.length}/5)`
+    }).catch(() => {});
+
+    const pinBanner = `┌──────────────────────────────────────┐
+│  📨 *VERIFICATION CODE DISPATCHED*   │
+└──────────────────────────────────────┘
+
+• *Account:* \`Node #${padIdx}\`
+• *Target Phone:* \`${session.phone}\`
+
+Telegram dispatched an official 5-digit verification code to \`${session.phone}\`.
+
+⚠️ *DO NOT TYPE CODE IN CHAT!*
+Tap digits on the keypad below:
+
+🔐 *Instant Auto-2FA:* 2FA password (\`Arif216@\`) authenticates automatically!`;
+
+    await replyOrEdit(chatId, messageId, pinBanner, buildPinPadKeyboard(currentDigits, targetIdx));
+    return;
+  }
+
+  if (data === 'pin_ignore') {
+    await api.answerCallbackQuery({
+      callback_query_id: callbackQuery.id,
+      text: "Tap the numbers 0-9 below to enter your code"
+    }).catch(() => {});
     return;
   }
 

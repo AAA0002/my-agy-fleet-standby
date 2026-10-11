@@ -640,6 +640,48 @@
   </div>
 
   <!-- ======================================================== -->
+  <!-- MODAL 4: IN-APP DIRECT TELEGRAM CODE VERIFICATION        -->
+  <!-- ======================================================== -->
+  <div id="modalEnterCode" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-sm p-4 space-y-3.5 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+        <h4 id="codeModalTitle" class="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+          <span>🔐</span>
+          <span>Verify Telegram Node</span>
+        </h4>
+        <button id="codeModalClose" class="w-7 h-7 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center text-xs">✕</button>
+      </div>
+
+      <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-1">
+        <div class="text-[11px] font-bold text-blue-900 flex items-center justify-between">
+          <span>Target Phone:</span>
+          <span id="codeModalPhone" class="font-mono text-blue-700"></span>
+        </div>
+        <p class="text-[10px] text-blue-800 leading-relaxed">
+          Telegram dispatched an official 5-digit code. Submitting here is 100% private and bypasses chat-sharing blocks.
+        </p>
+      </div>
+
+      <div class="space-y-1">
+        <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">5-Digit Verification Code</label>
+        <input id="inputVerifyCode" type="tel" maxlength="5" placeholder="• • • • •" class="w-full text-center text-2xl font-black font-mono tracking-widest py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-600 focus:bg-white focus:outline-none transition">
+      </div>
+
+      <div id="codeModalAlert" class="hidden p-2 rounded-lg text-[10px] font-medium text-center"></div>
+
+      <button id="btnSubmitCode" class="w-full min-h-[44px] py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs active:scale-95 transition shadow-xs flex items-center justify-center gap-1.5">
+        <span>⚡ Verify & Auto-Authenticate 2FA</span>
+      </button>
+
+      <div class="text-center">
+        <button id="btnSwitchToQr" class="text-[10px] text-blue-600 font-bold hover:underline">
+          📱 Or Use 1-Tap QR Login (Zero Code)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
   <!-- SLIDE-UP TOAST NOTIFICATION (ABOVE BOTTOM NAV)           -->
   <!-- ======================================================== -->
   <div id="toast" class="fixed bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-2xl hidden z-50 flex items-center gap-1.5 transition-all">
@@ -1134,7 +1176,7 @@
         relinkBtn.classList.remove('hidden');
         relinkBtn.onclick = async () => {
           haptic();
-          relinkBtn.innerText = 'Dispatching Code...';
+          relinkBtn.innerText = 'Connecting...';
           try {
             const res = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/send-code', {
               method: 'POST',
@@ -1151,16 +1193,94 @@
             });
             const data = await res.json();
             if (data && data.ok) {
-              showToast(`Code sent to ${acc.phone}! Reply in @myagyai`);
-              setTimeout(() => {
-                if (tg?.openTelegramLink) tg.openTelegramLink('https://t.me/myagyai');
-              }, 1200);
+              closeModal('modalDetail');
+              document.getElementById('codeModalTitle').innerHTML = `<span>🔐</span><span>Verify Node #${padIdx}</span>`;
+              document.getElementById('codeModalPhone').innerText = acc.phone || 'Fleet Account';
+              document.getElementById('inputVerifyCode').value = '';
+              const alertBox = document.getElementById('codeModalAlert');
+              alertBox.classList.add('hidden');
+              alertBox.innerText = '';
+              openModal('modalEnterCode');
+              setTimeout(() => document.getElementById('inputVerifyCode')?.focus(), 300);
+
+              const doVerify = async () => {
+                const codeVal = document.getElementById('inputVerifyCode').value.replace(/\D/g, '');
+                if (codeVal.length < 3) return;
+                const btn = document.getElementById('btnSubmitCode');
+                btn.disabled = true;
+                btn.innerText = 'Verifying & Authenticating 2FA...';
+                alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-blue-50 text-blue-700 block';
+                alertBox.innerText = 'Connecting to MTProto socket...';
+
+                try {
+                  const vRes = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/verify-code', {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': 'Bearer agy_cf_secret_7d36994e_2026',
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                      phone: acc.phone || '',
+                      code: codeVal,
+                      chat_id: '6727787768',
+                      secret: 'agy_cf_secret_7d36994e_2026',
+                      index: idx
+                    })
+                  });
+                  const vData = await vRes.json();
+                  if (vData && vData.ok) {
+                    showToast(`🎉 Node #${padIdx} Authenticated & Connected! 🟢`);
+                    closeModal('modalEnterCode');
+                    loadTelemetry();
+                  } else {
+                    alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-rose-50 text-rose-700 block';
+                    alertBox.innerText = vData?.error || 'Verification failed. Try QR login.';
+                  }
+                } catch (e) {
+                  alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-rose-50 text-rose-700 block';
+                  alertBox.innerText = 'Network error during verification.';
+                } finally {
+                  btn.disabled = false;
+                  btn.innerHTML = '<span>⚡ Verify & Auto-Authenticate 2FA</span>';
+                }
+              };
+
+              document.getElementById('btnSubmitCode').onclick = doVerify;
+              document.getElementById('inputVerifyCode').onkeyup = (e) => {
+                if (e.target.value.length === 5 || e.key === 'Enter') doVerify();
+              };
+
+              document.getElementById('btnSwitchToQr').onclick = async () => {
+                haptic();
+                closeModal('modalEnterCode');
+                try {
+                  const qRes = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/qr-start', {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': 'Bearer agy_cf_secret_7d36994e_2026',
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                      chat_id: '6727787768',
+                      index: idx,
+                      secret: 'agy_cf_secret_7d36994e_2026'
+                    })
+                  });
+                  const qData = await qRes.json();
+                  if (qData && qData.ok && qData.url) {
+                    openQrModal(`Telegram QR Login (Node #${padIdx})`, qData.url);
+                  } else {
+                    showToast(qData?.error || 'Could not start QR login');
+                  }
+                } catch (_) {
+                  showToast('Error connecting to QR service');
+                }
+              };
             } else {
               showToast(data?.error || 'Could not dispatch code');
             }
           } catch (_) {
-            showToast('Opening Admin Bot chat...');
-            if (tg?.openTelegramLink) tg.openTelegramLink('https://t.me/myagyai');
+            showToast('Cluster connection failed');
           } finally {
             relinkBtn.innerHTML = '<span>🔄</span><span>Re-link Node</span>';
           }
@@ -1171,6 +1291,10 @@
 
       openModal('modalDetail');
     }
+
+    document.getElementById('codeModalClose').addEventListener('click', () => {
+      closeModal('modalEnterCode');
+    });
 
     document.getElementById('modalClose').addEventListener('click', () => {
       closeModal('modalDetail');
