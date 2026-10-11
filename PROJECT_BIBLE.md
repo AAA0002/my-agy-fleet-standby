@@ -730,3 +730,34 @@ Whenever you perform work in this repository:
 3. **Keep `CHANGELOG.md` updated** with every major addition, modification, and bug fix.
 4. **Keep `PROJECT_BIBLE.md` updated** whenever a bot is added, an endpoint changes, or a new cloud service is provisioned.
 5. **Push git checkpoints** to `AAA0002/ATL` (`main`) and create a fresh backup in `@myagyai`.
+
+---
+
+## 💼 10. Web3 Multi-Chain Non-Custodial Real Wallet Architecture & Zero-Emoji Institutional UI Standards
+
+### 1. Real Non-Custodial Multi-Chain Wallet Engine
+* **Official Credentials Binding**: Strictly bound to the official 18 accounts documented in `FLEET_MULTICHAIN_WALLETS_DASHBOARD.md` (assembled into `public_admin/fleet_wallets_data.json`). Node #01 is bound to Binance Main Exchange Vault; Node #10 is bound to Binance Web3 Wallet 2 (AAA); Nodes #02-#09 and #11-#18 are bound to dedicated self-custody suites.
+* **Cryptographic Keys & BIP39 Derivation**:
+  - TON derivation path: `m/44'/607'/0'` with 24-word recovery seed phrases displayed in numbered chips with reveal/hide and 1-tap copy.
+  - BSC / EVM hex private keys, TRON base58 private keys, Solana base58 secret keys, and Bitcoin Taproot keys.
+* **Live On-Chain Public RPC Queries (Direct Browser Fetching)**:
+  - **TON Center RPC** (`https://toncenter.com/api/v2/getAddressInformation?address={addr}`): Queries live nanoTON balances with verified CORS `*`.
+  - **Mempool Space RPC** (`https://mempool.space/api/address/{addr}`): Queries live Bitcoin satoshis with verified CORS `*`.
+  - **Dynamic Sync Status**: Real-time badge indicating live timestamp and synchronization status.
+* **1-Tap Tonkeeper Mobile Transaction Signing**:
+  - Universal deeplink `https://app.tonkeeper.com/transfer/{addr}?amount={nanotons}&text={memo}` pre-fills the recipient address, amount in nanotons, and transfer memo.
+  - When opened on Android or iOS, Tonkeeper launches directly, loads the active 24-word account, and prompts the user to sign with one tap. Zero server custody or synthetic transaction mocking.
+
+### 2. Zero-Emoji Institutional UI Standards
+* **Institutional Vector SVG Standards**: 100% elimination of all emoji pictographs across Admin Console (`public_admin/admin.html`) and Standalone Login Portal (`public_admin/login.html`).
+* **SVG Vector Assets**: High-precision vector icons for TON, BSC, TRON, Solana, Bitcoin, USDT, USDC, ATF, MRG, NOT, DOGS, lock, key, badgeCheck, and server telemetry.
+* **High-Contrast Dark Theme & Responsive Architecture**: Built with Tailwind CSS and React 18, optimized for mobile devices (Samsung Galaxy A30) and desktop screens.
+
+### 3. Dedicated Admin Authentication & Standalone Login Portal
+* **Edge Password Hash Fix**: Corrected variable definition order in `deploy_both_cf_workers.py` line 2473 (`hexHash` buffer computation before validation), resolving `hexHash is not defined` error.
+* **Client-Side SHA-256 Fallback**: Integrated offline SHA-256 validation (`Arif-Abid` / `Arif216@` / master hash) directly into `AdminAuthGate`.
+* **Multi-Cloud Dedicated Deployments**:
+  - Primary Admin Console: `https://agy-aaa000.vercel.app/admin` & `https://aaa-free-ai.vercel.app/admin`
+  - Standalone Login Portal: `https://agy-aaa000.vercel.app/login` & `https://aaa-free-ai.vercel.app/login`
+  - Cloudflare Pages Mirrors: `https://aaa-admin-portal.pages.dev/admin` & `https://aaa-admin-portal.pages.dev/login`
+

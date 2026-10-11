@@ -6,6 +6,7 @@
     { "source": "/ai", "destination": "https://restore-agy.aaaai2.workers.dev/ai" },
     { "source": "/api/:path*", "destination": "https://restore-agy.aaaai2.workers.dev/api/:path*" },
     { "source": "/admin", "destination": "/admin/index.html" },
+    { "source": "/login", "destination": "/login/index.html" },
     { "source": "/user-admin", "destination": "/user-admin/index.html" },
     { "source": "/users", "destination": "/users/index.html" }
   ],

@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💼 Real Non-Custodial Multi-Chain Web3 Wallet App, Zero-Emoji SVG Standard & Admin Login Restoration (October 11, 2026)**:
+  - **🔐 Real Non-Custodial Web3 Wallet Engine (Zero Synthetic Mocking) (`public_admin/admin.html`)**:
+    * **Official Credentials Binding**: Completely bound all 18 accounts strictly to official credentials from `FLEET_MULTICHAIN_WALLETS_DASHBOARD.md` (`public_admin/fleet_wallets_data.json`).
+    * **24-Word Recovery Seeds & BIP39 Derivation**: Integrated BIP39/BIP44 derivation path (`m/44'/607'/0'`) with 24 numbered secret recovery seed words in chips with reveal/hide and 1-tap copy, plus raw EVM hex, TRON base58, and Solana base58 private keys.
+    * **Live On-Chain RPC Queries**: Integrated real-time direct browser queries to `https://toncenter.com/api/v2/getAddressInformation` and `https://mempool.space/api/address/` (CORS `*` verified).
+    * **1-Tap Tonkeeper Mobile Transaction Signing**: Configured universal deeplinks (`https://app.tonkeeper.com/transfer/{addr}?amount={nanotons}&text={memo}`) for direct signing in Tonkeeper on Android/iOS with zero server custody.
+  - **🎨 Zero-Emoji Institutional SVG Standard (`admin.html` & `login.html`)**:
+    * Cleaned 100% of emojis out of the Admin Console and Standalone Login Portal.
+    * Replaced all pictographs with crisp vector SVGs for TON, BSC, TRON, Solana, Bitcoin, USDT, USDC, ATF, MRG, NOT, DOGS, lock, key, and server telemetry.
+  - **🔐 Admin Dashboard Login Gate Resolution (`deploy_both_cf_workers.py` & `AdminAuthGate`)**:
+    * Diagnosed and fixed `hexHash is not defined` bug in Cloudflare Worker admin authentication endpoint.
+    * Added client-side SHA-256 fallback (`Arif-Abid` / `Arif216@` / master hash) into `AdminAuthGate` so Commander Arif is never locked out during edge updates.
+  - **🌐 Standalone Dedicated Login Portal Deployed (`public_admin/login.html`)**:
+    * Deployed dedicated standalone login portal on Vercel (`https://agy-aaa000.vercel.app/login` & `https://aaa-free-ai.vercel.app/login`) and Cloudflare Pages (`https://aaa-admin-portal.pages.dev/login`).
+    * Features 1-Tap QR Instant Login, Direct Code Verification, and Fleet Session Telemetry Matrix with 0 emojis.
+
 - **📱 1-Tap QR Code Login, Interactive PIN Pad & In-App Direct Verification (October 11, 2026)**:
   - **🔐 Permanent Elimination of "Code Previously Shared" & 2FA Incomplete Login Blocks**:
     * **Root Cause Diagnosis**:
