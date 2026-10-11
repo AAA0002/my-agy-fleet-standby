@@ -109,15 +109,16 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   - **App ID**: `app8858823950` (`@myagyai`)
   - **Webhook**: `https://cloud.telegram.org/app8858823950/webhook` (allowed updates: `message`, `callback_query`, status: in sync).
   - **Mini App & Web Wallet App**: `https://app8858823950.tgcloud.ai/` (managed via `public/index.html` and `tgcloud.jsonc`, accessible via 1-tap inline WebApp button in bot menu).
-    * **Executive Light Theme**: Clean white UI (`bg-slate-50`, `bg-white`, slate-900 typography, emerald/blue accents).
-    * **Multi-Chain Web Wallet Manager**: Manages all 18 accounts' non-custodial wallets across 5 blockchains (TON, EVM/BSC, TRON, Solana, Bitcoin) with 1-tap address copying, chain filters, and block explorer shortcuts.
+    * **Executive Light Theme**: Clean, professional Stripe/Linear-style UI (`bg-slate-50`, `bg-white`, slate-900 typography, emerald/blue accents).
+    * **Multi-Chain Web Wallet Manager**: Manages all 18 accounts' non-custodial wallets across 5 blockchains (TON, EVM/BSC, TRON, Solana, Bitcoin) with 1-tap address copying, QR code modals, and JSON/CSV Treasury Export.
+    * **Interactive Ari AI Council**: Live AI Copilot tab powered by Cloudflare Workers AI & Groq LPU (`qwen/qwen3.8-27b`) for real-time fleet diagnostics, compounding advice, and sybil risk audits.
     * **Instant State Reflection**: `markAccountActive()` ensures accounts re-linked in bot or cloud immediately show active status without stale revoked badges.
   - **Native SQLite Database**: 4 tables migrated (`accounts_cache`, `admin_users`, `login_sessions`, `telemetry_events`).
   - Project directory: `tgcloud_admin_bot/` with official CLI `@tgcloud/cli@0.2.0`.
   - Handlers:
     * `tgcloud/handlers/message.js`: 100% serverless message routing with sub-second execution (<1s), command preemption, non-blocking Render cancel calls, duplicate account detection, robust cancel handling, and auto-normalization of BD phone numbers and verification codes.
     * `tgcloud/handlers/callback_query.js`: 1-tap OTP reader with dynamic status badges (`🟢 5 Active`, `🔴 13 Revoked`, `👑 Master Host Arif`), 1-tap re-link actions for revoked sessions, resilient `replyOrEdit` wrapper preventing BotApiError 400 edit crashes, and on-demand cloud farming triggers.
-  - Endpoints: `collectTokens.js`, `getFleetStatus.js`, `triggerFarm.js`, `triggerTurnstile.js` (for WebApp API).
+  - Endpoints: `aiCouncil.js` (Groq/Edge AI Copilot), `getOtp.js` (live OTP extraction), `collectTokens.js`, `getFleetStatus.js`, `triggerFarm.js`, `triggerTurnstile.js` (for WebApp API).
   - Deployment: Managed via `./deploy_tgcloud.sh [TGCLOUD_TOKEN]` (`npx tgcloud push` + `npx tgcloud migrate`). Webhook permanently preserved across all Cloudflare deployments.
 
 
