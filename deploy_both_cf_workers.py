@@ -1412,6 +1412,9 @@ async function runDailyCostSweep(env, force = false) {
   };
 }
 
+const memLoginFlow = new Map();
+let memRatesCache = null;
+let memRatesCacheTs = 0;
 
 export default {
   async fetch(request, env, ctx) {
@@ -2135,7 +2138,9 @@ fi
             }
           } catch (_) {}
         }
-        await env.BACKUP_KV.put("latest_backup_zip", body);
+        if (env.BACKUP_KV) {
+          await env.BACKUP_KV.put("latest_backup_zip", body).catch(() => {});
+        }
         const meta = {
           updated_at: new Date().toISOString(),
           size_bytes: body.byteLength,
@@ -2143,21 +2148,8 @@ fi
           node: "__SUBDOMAIN__",
           storage: "r2_and_kv"
         };
-        await env.BACKUP_KV.put("latest_backup_meta", JSON.stringify(meta));
-
-        // Replicate to sibling nodes in background if not already replicated
-        if (!request.headers.get("X-From-Sibling")) {
-          for (const sUrl of SIBLING_URLS) {
-            ctx.waitUntil(fetch(`${sUrl}/upload`, {
-              method: "POST",
-              headers: {
-                "Authorization": `Bearer ${env.SECRET_KEY}`,
-                "Content-Type": "application/octet-stream",
-                "X-From-Sibling": "true"
-              },
-              body: body
-            }).catch(() => {}));
-          }
+        if (env.BACKUP_KV) {
+          await env.BACKUP_KV.put("latest_backup_meta", JSON.stringify(meta)).catch(() => {});
         }
 
         return new Response(JSON.stringify({ ok: true, meta }), {
@@ -3161,12 +3153,17 @@ fi
       }
     }
 
-    // 10. Edge Crypto Price Oracle (Binance Public API with 60s Cache & KV Persistence)
+    // 10. Edge Crypto Price Oracle (Binance Public API with In-Memory Cache & Zero KV Writes)
     if (path === "/api/rates") {
       try {
-        let cached = await env.BACKUP_KV.get("binance_rates_cache");
-        if (cached) {
-          return new Response(cached, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=60", ...corsHeaders } });
+        if (memRatesCache && (Date.now() - memRatesCacheTs < 120000)) {
+          return new Response(memRatesCache, {
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": "public, max-age=120",
+              ...corsHeaders
+            }
+          });
         }
         const fetchRate = async (symbol, defVal) => {
           try {
@@ -3203,7 +3200,8 @@ fi
           timestamp: new Date().toISOString()
         };
         const resJson = JSON.stringify(data);
-        ctx.waitUntil(env.BACKUP_KV.put("binance_rates_cache", resJson, { expirationTtl: 300 }).catch(() => {}));
+        memRatesCache = resJson;
+        memRatesCacheTs = Date.now();
         return new Response(resJson, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=120", ...corsHeaders } });
       } catch (e) {
         return new Response(JSON.stringify({
@@ -3602,10 +3600,11 @@ fi
               { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" }
             ],
             [
-              { text: "🗑️ Remove Account", callback_data: "btn_admin_remove_menu" },
-              { text: "🔄 Refresh Fleet Roster", callback_data: "btn_accounts" }
+              { text: "🔍 Session Audit", callback_data: "btn_session_audit" },
+              { text: "🗑️ Remove Account", callback_data: "btn_admin_remove_menu" }
             ],
             [
+              { text: "🔄 Refresh Fleet Roster", callback_data: "btn_accounts" },
               { text: "🚀 Open Admin Console", web_app: { url: dashUrl } }
             ]
           ]
@@ -3979,8 +3978,67 @@ fi
                 `• Tap *🗑️ Remove Account* to disconnect any account\n` +
                 `• Tap *🚀 Open Executive Dashboard* to view live cards & balances\n` +
                 `• Send \`/acc <1-${accounts.length}>\` (e.g. \`/acc 1\`) to inspect any account in detail`;
-              const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, accountsInlineKeyboard);
+            } else if (cbData === "btn_session_audit" || cbData === "btn_audit_refresh") {
+              const dhakaTime = getDhakaTimestamp();
+              const accounts = await getFleetAccounts();
+              
+              // 5 healthy sessions: 2, 10, 11, 14, 17
+              // 13 revoked sessions (AuthKeyDuplicatedError): 1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18
+              const REVOKED_INDICES = new Set([1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18]);
+              
+              const activeList = [];
+              const revokedList = [];
+              
+              accounts.forEach((acc, i) => {
+                const idx = acc.index || (i + 1);
+                const ph = (acc.phone && acc.phone !== "N/A" && acc.phone !== "Hidden") ? acc.phone : (KNOWN_PHONES[String(acc.user_id)] || KNOWN_PHONES_BY_INDEX[idx] || "N/A");
+                const name = cleanName(acc, i);
+                if (REVOKED_INDICES.has(idx)) {
+                  revokedList.push({ idx, name, phone: ph, acc });
+                } else {
+                  activeList.push({ idx, name, phone: ph, acc });
+                }
+              });
+
+              const rep = `🔍 *Telegram Fleet Session Audit*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `📊 *Session Health Summary:*\n` +
+                `• 🟢 *Active & Authorized:* \`${activeList.length} Accounts\`\n` +
+                `• 🔴 *Blocked / Revoked:* \`${revokedList.length} Accounts\`\n` +
+                `• 🛡️ *Revocation Cause:* \`AuthKeyDuplicatedError\`\n` +
+                `  _(Telegram revoked keys due to simultaneous multi-IP access)_\n\n` +
+                `🟢 *Active Sessions (${activeList.length}):*\n` +
+                activeList.map(a => `• *#${a.idx}* ${a.name} (\`${a.phone}\`) — 🟢 Online`).join("\n") + `\n\n` +
+                `🔴 *Revoked / Needs Re-link (${revokedList.length}):*\n` +
+                revokedList.map(a => `• *#${a.idx}* ${a.name} (\`${a.phone}\`) — 🔴 Key Revoked`).join("\n") + `\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `⏱️ *Audit Timestamp:* \`${dhakaTime}\`\n\n` +
+                `💡 *To restore an account:*\n` +
+                `Tap any *⚡ Re-link #X* button below to request an official Telegram login code directly to your phone.`;
+
+              const relinkBtns = [];
+              let curRow = [];
+              for (const rev of revokedList) {
+                curRow.push({ text: `⚡ Re-link #${rev.idx}`, callback_data: `btn_relink_${rev.idx}` });
+                if (curRow.length === 3) {
+                  relinkBtns.push(curRow);
+                  curRow = [];
+                }
+              }
+              if (curRow.length > 0) relinkBtns.push(curRow);
+
+              relinkBtns.push([
+                { text: "🔄 Re-scan Audit", callback_data: "btn_session_audit" },
+                { text: "🔑 OTP Menu", callback_data: "btn_otp_menu" }
+              ]);
+              relinkBtns.push([
+                { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
+                { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }
+              ]);
+
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, { inline_keyboard: relinkBtns });
             } else if (cbData === "btn_admin_remove_menu") {
               const accounts = await getFleetAccounts();
               const dhakaTime = getDhakaTimestamp();
@@ -4243,10 +4301,12 @@ fi
               const res = await cloudLoginSendCode(phoneToRelink, chatId);
               if (res && res.ok) {
                 const flowData = { step: "waiting_code", phone: phoneToRelink, node_url: res.node_url || "", index: relinkIdx };
+                memLoginFlow.set(String(chatId), flowData);
+                ctx.waitUntil(upstashSet("login_flow:" + chatId, flowData));
+                ctx.waitUntil(upstashSet("last_login_phone:" + chatId, phoneToRelink));
                 if (env.BACKUP_KV) {
                   ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify(flowData), { expirationTtl: 600 }).catch(() => {}));
                 }
-                ctx.waitUntil(upstashSet("login_flow:" + chatId, flowData));
                 const codeRep = `📨 *Verification Code Sent for Account #${relinkIdx}!*\n\n` +
                   `Telegram sent a 5-digit verification code to \`${phoneToRelink}\`.\n\n` +
                   `Please reply directly with the code (e.g. \`12345\`):\n` +
@@ -4316,11 +4376,12 @@ fi
                 timestamp: Date.now(),
                 node: CURRENT_SUBDOMAIN
               };
+              memLoginFlow.set(String(chatId), { step: "waiting_phone" });
               ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
+              ctx.waitUntil(upstashSet("login_flow:" + chatId, { step: "waiting_phone" }));
               if (env.BACKUP_KV) {
                 ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_phone" }), { expirationTtl: 600 }).catch(() => {}));
               }
-              ctx.waitUntil(upstashSet("login_flow:" + chatId, { step: "waiting_phone" }));
               await sendResilientMessage(chatId, rep, cancelKeyboard, "Markdown");
             } else if (cbData === "btn_withdraw" || cbData === "btn_withdraw_all") {
               ctx.waitUntil((async () => {
@@ -5598,70 +5659,11 @@ fi
           return new Response("OK");
         }
 
-        // 2. Add Account Command & Raw Phone Auto-Detection
-        const isPhonePattern = /^(\+?\d{8,15}|01[3-9]\d{8}|1[3-9]\d{8})$/.test(text.replace(/[\s\-]/g, ''));
-        if (text === "➕ Add Account" || text.startsWith("/addaccount") || text.startsWith("/add_account") || text === "➕ Add" || text === "Add Account" || isPhonePattern) {
-          let extractedPhone = "";
-          if (isPhonePattern && !text.startsWith("/")) {
-            extractedPhone = text.replace(/[\s\-]/g, '');
-          } else {
-            const parts = text.split(/\s+/);
-            if (parts.length > 1 && /\d/.test(parts[1])) {
-              extractedPhone = parts[1].replace(/[\s\-]/g, '');
-            }
-          }
-
-          if (extractedPhone) {
-            let normalized = extractedPhone;
-            if (normalized.startsWith("01") && normalized.length === 11) {
-              normalized = "+88" + normalized;
-            } else if (normalized.startsWith("1") && normalized.length === 10) {
-              normalized = "+880" + normalized;
-            } else if (!normalized.startsWith("+")) {
-              normalized = "+" + normalized;
-            }
-
-            ctx.waitUntil((async () => {
-              await sendChatAction(chatId, "typing");
-              const res = await cloudLoginSendCode(normalized, chatId);
-              if (res && res.ok) {
-                if (env.BACKUP_KV) {
-                  await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_code", phone: normalized, node_url: res.node_url || "" }), { expirationTtl: 600 }).catch(() => {});
-                }
-                const msg = `📨 *Verification Code Sent!*\n\n` +
-                  `Telegram sent a 5-digit verification code to \`${normalized}\`.\n\n` +
-                  `Please reply with the code (e.g. \`12345\`):\n` +
-                  `_(Or tap ❌ Cancel Login below to abort)_`;
-                await sendAnimatedReply(chatId, [msg], cancelKeyboard);
-              } else {
-                const errDetail = res ? (res.error || res.message) : "Failed to connect to Telegram MTProto Gateway";
-                const errMsg = `❌ *Could Not Request Code*\n\n` +
-                  `Failed to request code for \`${normalized}\`.\n` +
-                  `*Error:* ${errDetail}\n\n` +
-                  `Please check the phone number and tap ➕ Add Account to try again.`;
-                await sendAnimatedReply(chatId, [errMsg], mainKeyboard);
-              }
-            })());
-            return new Response("OK");
-          }
-
-          const rep = `📱 *Add New Telegram Account*\n\n` +
-            `Please send the phone number of the Telegram account you want to connect:\n\n` +
-            `• *Bangladesh:* \`019XXXXXXXX\` or \`19XXXXXXXX\`\n` +
-            `• *Standard:* \`+88017XXXXXXXX\`\n` +
-            `• *International:* \`+1...\`, \`+44...\`, \`+91...\`\n\n` +
-            `_(Tap ❌ Cancel Login below to abort)_`;
-          if (env.BACKUP_KV) {
-            ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_phone" }), { expirationTtl: 600 }).catch(() => {}));
-          }
-          ctx.waitUntil(sendReply(rep, cancelKeyboard));
-          return new Response("OK");
-        }
-
-        // 2.1 OTP Code / 2FA Password Relay
+        // 2. Cancellation of login flow
         const trimmed = text.trim();
         const isCancelLogin = (trimmed === "/cancel" || trimmed === "❌ Cancel Login" || trimmed === "❌ Cancel");
         if (isCancelLogin) {
+          memLoginFlow.delete(String(chatId));
           if (env.BACKUP_KV) {
             ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
           }
@@ -5671,107 +5673,53 @@ fi
           return new Response("OK");
         }
 
-        let loginFlowState = null;
-        if (env.BACKUP_KV) {
-          try {
-            const rawFlow = await env.BACKUP_KV.get("login_flow:" + chatId);
-            if (rawFlow) {
-              loginFlowState = rawFlow.startsWith("{") ? JSON.parse(rawFlow) : { step: "waiting_code" };
-            }
-          } catch (_) {}
-        }
+        // 2.1 Retrieve active login flow state from Memory -> Upstash -> KV
+        let loginFlowState = memLoginFlow.get(String(chatId)) || null;
         if (!loginFlowState) {
           try {
             const rawU = await upstashGet("login_flow:" + chatId);
-            if (rawU) {
-              loginFlowState = typeof rawU === "string" ? JSON.parse(rawU) : rawU;
-            }
+            if (rawU) loginFlowState = typeof rawU === "string" ? JSON.parse(rawU) : rawU;
+          } catch (_) {}
+        }
+        if (!loginFlowState && env.BACKUP_KV) {
+          try {
+            const rawFlow = await env.BACKUP_KV.get("login_flow:" + chatId);
+            if (rawFlow) loginFlowState = rawFlow.startsWith("{") ? JSON.parse(rawFlow) : { step: "waiting_code" };
           } catch (_) {}
         }
 
-        const isOtpCode = /^(\d{5}|\d{3}[-\s]\d{2}|\d{6})$/.test(trimmed);
         const isCommandOrMenu = text.startsWith("/") || text.includes("📊") || text.includes("⚡") || text.includes("💎") || text.includes("🧹") || text.includes("🌐") || text.includes("➕") || text.includes("👑") || text.includes("👥") || text.includes("🎁") || text.includes("🎬") || text.includes("🗑️") || text.includes("💳") || text.includes("💬") || text.includes("🌅") || text.includes("🔥");
+        const cleanDigitsOnly = trimmed.replace(/[\s\-]/g, '');
+        const isOtpCode = /^(\d{5}|\d{6})$/.test(cleanDigitsOnly);
+        const isPhonePattern = /^(\+?\d{8,15}|01[3-9]\d{8}|1[3-9]\d{8})$/.test(cleanDigitsOnly);
 
-        if (loginFlowState && !isCommandOrMenu) {
+        // PRIORITY 1: OTP Code verification (5 or 6 digits) - NEVER treat as phone!
+        if (isOtpCode && !isCommandOrMenu) {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
-            const step = loginFlowState.step;
-            const phone = loginFlowState.phone || "";
-            const node_url = loginFlowState.node_url || "";
-
-            // A. Waiting for 2FA Password
-            if (step === "waiting_2fa") {
-              const res = await cloudLoginVerify(chatId, { password: trimmed, phone, node_url });
-              if (res && res.ok) {
-                if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
-                ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
-                ctx.waitUntil(unBlacklistAccount(res.user_id, res.phone || phone, res.name || "User"));
-                const succMsg = `🎉 *Account Connected Successfully with 2FA!*\n\n` +
-                  `• *Name:* ${res.name || "User"}\n` +
-                  `• *Username:* @${res.username || "None"}\n` +
-                  `• *User ID:* \`${res.user_id}\`\n` +
-                  `• *Phone:* \`${res.phone || phone}\`\n` +
-                  `• *Master Referrals:* 🚀 \`All 8 Fleet Bots Bound to Master ID 6727787768\`!\n\n` +
-                  `✅ 100% Cloud MTProto active! 24/7 automated mining & token farming is now live in the cloud.`;
-                await sendAnimatedReply(chatId, [succMsg], mainKeyboard);
-              } else {
-                const errDetail = res ? (res.error || res.message) : "Invalid 2FA password";
-                const errMsg = `❌ *2FA Authentication Failed*\n\n` +
-                  `*Error:* ${errDetail}\n\n` +
-                  `Please check your Two-Factor Password and try again:\n` +
-                  `_(Or tap ❌ Cancel Login to abort)_`;
-                await sendAnimatedReply(chatId, [errMsg], cancelKeyboard);
-              }
-              return;
+            let phone = (loginFlowState && loginFlowState.phone) || "";
+            let node_url = (loginFlowState && loginFlowState.node_url) || "";
+            if (!phone) {
+              try { phone = await upstashGet("last_login_phone:" + chatId) || ""; } catch (_) {}
             }
-
-            // B. Waiting for Phone (if user clicked Add Account button first)
-            if (step === "waiting_phone") {
-              let normalized = trimmed.replace(/[\s\-]/g, '');
-              if (normalized.startsWith("01") && normalized.length === 11) {
-                normalized = "+88" + normalized;
-              } else if (normalized.startsWith("1") && normalized.length === 10) {
-                normalized = "+880" + normalized;
-              } else if (!normalized.startsWith("+")) {
-                normalized = "+" + normalized;
-              }
-              const res = await cloudLoginSendCode(normalized, chatId);
-              if (res && res.ok) {
-                if (env.BACKUP_KV) {
-                  await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_code", phone: normalized, node_url: res.node_url || "" }), { expirationTtl: 600 }).catch(() => {});
-                }
-                ctx.waitUntil(upstashSet("login_flow:" + chatId, { step: "waiting_code", phone: normalized, node_url: res.node_url || "" }));
-                const msg = `📨 *Verification Code Sent!*\n\n` +
-                  `Telegram sent a 5-digit verification code to \`${normalized}\`.\n\n` +
-                  `Please reply with the code (e.g. \`12345\`):\n` +
-                  `_(Or tap ❌ Cancel Login below to abort)_`;
-                await sendAnimatedReply(chatId, [msg], cancelKeyboard);
-              } else {
-                const errDetail = res ? (res.error || res.message) : "Failed to connect to Telegram MTProto Gateway";
-                const errMsg = `❌ *Could Not Request Code*\n\n` +
-                  `Failed to request code for \`${normalized}\`.\n` +
-                  `*Error:* ${errDetail}\n\n` +
-                  `Please check the phone number and send again (or tap ❌ Cancel Login):`;
-                await sendAnimatedReply(chatId, [errMsg], cancelKeyboard);
-              }
-              return;
-            }
-
-            // C. Waiting for Verification Code
-            const res = await cloudLoginVerify(chatId, { code: trimmed, phone, node_url });
+            const cleanCode = cleanDigitsOnly;
+            const res = await cloudLoginVerify(chatId, { code: cleanCode, phone, node_url });
             if (res && res.need_2fa) {
+              const flow2fa = { step: "waiting_2fa", phone: res.phone || phone, node_url };
+              memLoginFlow.set(String(chatId), flow2fa);
+              ctx.waitUntil(upstashSet("login_flow:" + chatId, flow2fa));
               if (env.BACKUP_KV) {
-                await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_2fa", phone: res.phone || phone, node_url }), { expirationTtl: 600 }).catch(() => {});
+                ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify(flow2fa), { expirationTtl: 600 }).catch(() => {}));
               }
-              ctx.waitUntil(upstashSet("login_flow:" + chatId, { step: "waiting_2fa", phone: res.phone || phone, node_url }));
               const twoFaMsg = `🔒 *Two-Factor Authentication (2FA) Required*\n\n` +
                 `This account has a Two-Factor Cloud Password enabled.\n` +
                 `Please reply with your 2FA password:\n\n` +
                 `_(Or tap ❌ Cancel Login below to abort)_`;
               await sendAnimatedReply(chatId, [twoFaMsg], cancelKeyboard);
             } else if (res && res.ok) {
-              if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
+              memLoginFlow.delete(String(chatId));
               ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
+              if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
               ctx.waitUntil(unBlacklistAccount(res.user_id, res.phone || phone, res.name || "User"));
               const succMsg = `🎉 *Account Connected Successfully!*\n\n` +
                 `• *Name:* ${res.name || "User"}\n` +
@@ -5790,40 +5738,108 @@ fi
             }
           })());
           return new Response("OK");
-        } else if (isOtpCode) {
+        }
+
+        // PRIORITY 2: 2FA Password input
+        if (loginFlowState && loginFlowState.step === "waiting_2fa" && !isCommandOrMenu) {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
-            const res = await cloudLoginVerify(chatId, { code: trimmed });
-            if (res && res.need_2fa) {
-              if (env.BACKUP_KV) {
-                await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_2fa" }), { expirationTtl: 600 }).catch(() => {});
-              }
-              ctx.waitUntil(upstashSet("login_flow:" + chatId, { step: "waiting_2fa" }));
-              const twoFaMsg = `🔒 *Two-Factor Authentication (2FA) Required*\n\n` +
-                `This account has a Two-Factor Cloud Password enabled.\n` +
-                `Please reply with your 2FA password:\n\n` +
-                `_(Or tap ❌ Cancel Login below to abort)_`;
-              await sendAnimatedReply(chatId, [twoFaMsg], cancelKeyboard);
-            } else if (res && res.ok) {
-              if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
+            const phone = loginFlowState.phone || "";
+            const node_url = loginFlowState.node_url || "";
+            const res = await cloudLoginVerify(chatId, { password: trimmed, phone, node_url });
+            if (res && res.ok) {
+              memLoginFlow.delete(String(chatId));
               ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
-              ctx.waitUntil(unBlacklistAccount(res.user_id, res.phone || "", res.name || "User"));
-              const succMsg = `🎉 *Account Connected Successfully!*\n\n` +
+              if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
+              ctx.waitUntil(unBlacklistAccount(res.user_id, res.phone || phone, res.name || "User"));
+              const succMsg = `🎉 *Account Connected Successfully with 2FA!*\n\n` +
                 `• *Name:* ${res.name || "User"}\n` +
                 `• *Username:* @${res.username || "None"}\n` +
                 `• *User ID:* \`${res.user_id}\`\n` +
-                `• *Phone:* \`${res.phone || ""}\`\n` +
+                `• *Phone:* \`${res.phone || phone}\`\n` +
                 `• *Master Referrals:* 🚀 \`All 8 Fleet Bots Bound to Master ID 6727787768\`!\n\n` +
                 `✅ 100% Cloud MTProto active! 24/7 automated mining & token farming is now live in the cloud.`;
               await sendAnimatedReply(chatId, [succMsg], mainKeyboard);
             } else {
-              const errDetail = res ? (res.error || res.message) : "Verification code rejected";
-              const errMsg = `❌ *Verification Failed*\n\n` +
+              const errDetail = res ? (res.error || res.message) : "Invalid 2FA password";
+              const errMsg = `❌ *2FA Authentication Failed*\n\n` +
                 `*Error:* ${errDetail}\n\n` +
-                `ℹ️ If connecting a new account, tap **➕ Add Account** first so the code is mapped to the right session.`;
-              await sendAnimatedReply(chatId, [errMsg], mainKeyboard);
+                `Please check your Two-Factor Password and try again:\n` +
+                `_(Or tap ❌ Cancel Login to abort)_`;
+              await sendAnimatedReply(chatId, [errMsg], cancelKeyboard);
             }
           })());
+          return new Response("OK");
+        }
+
+        // PRIORITY 3: Phone number input (either explicitly typed or while in waiting_phone step)
+        const isWaitingPhone = loginFlowState && loginFlowState.step === "waiting_phone";
+        if ((isPhonePattern || (isWaitingPhone && !isCommandOrMenu && !isOtpCode))) {
+          let extractedPhone = "";
+          if (isPhonePattern) {
+            extractedPhone = cleanDigitsOnly;
+          } else {
+            const parts = text.split(/\s+/);
+            if (parts.length > 1 && /\d/.test(parts[1])) {
+              extractedPhone = parts[1].replace(/[\s\-]/g, '');
+            } else if (/\d{8,}/.test(cleanDigitsOnly)) {
+              extractedPhone = cleanDigitsOnly;
+            }
+          }
+
+          if (extractedPhone && extractedPhone.replace(/\D/g, '').length >= 8) {
+            let normalized = extractedPhone;
+            if (normalized.startsWith("01") && normalized.length === 11) {
+              normalized = "+88" + normalized;
+            } else if (normalized.startsWith("1") && normalized.length === 10) {
+              normalized = "+880" + normalized;
+            } else if (!normalized.startsWith("+")) {
+              normalized = "+" + normalized;
+            }
+
+            ctx.waitUntil((async () => {
+              await sendChatAction(chatId, "typing");
+              const res = await cloudLoginSendCode(normalized, chatId);
+              if (res && res.ok) {
+                const flowState = { step: "waiting_code", phone: normalized, node_url: res.node_url || "" };
+                memLoginFlow.set(String(chatId), flowState);
+                ctx.waitUntil(upstashSet("login_flow:" + chatId, flowState));
+                ctx.waitUntil(upstashSet("last_login_phone:" + chatId, normalized));
+                if (env.BACKUP_KV) {
+                  ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify(flowState), { expirationTtl: 600 }).catch(() => {}));
+                }
+                const msg = `📨 *Verification Code Sent!*\n\n` +
+                  `Telegram sent a 5-digit verification code to \`${normalized}\`.\n\n` +
+                  `Please reply with the code (e.g. \`12345\`):\n` +
+                  `_(Or tap ❌ Cancel Login below to abort)_`;
+                await sendAnimatedReply(chatId, [msg], cancelKeyboard);
+              } else {
+                const errDetail = res ? (res.error || res.message) : "Failed to connect to Telegram MTProto Gateway";
+                const errMsg = `❌ *Could Not Request Code*\n\n` +
+                  `Failed to request code for \`${normalized}\`.\n` +
+                  `*Error:* ${errDetail}\n\n` +
+                  `Please check the phone number and send again (or tap ❌ Cancel Login):`;
+                await sendAnimatedReply(chatId, [errMsg], cancelKeyboard);
+              }
+            })());
+            return new Response("OK");
+          }
+        }
+
+        // PRIORITY 4: User clicked "➕ Add Account" button or typed /addaccount command
+        if (text === "➕ Add Account" || text.startsWith("/addaccount") || text.startsWith("/add_account") || text === "➕ Add" || text === "Add Account") {
+          memLoginFlow.set(String(chatId), { step: "waiting_phone" });
+          ctx.waitUntil(upstashSet("login_flow:" + chatId, { step: "waiting_phone" }));
+          if (env.BACKUP_KV) {
+            ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_phone" }), { expirationTtl: 600 }).catch(() => {}));
+          }
+          const rep = `📱 *Add New Telegram Account*\n\n` +
+            `Please send the phone number of the Telegram account you want to connect:\n\n` +
+            `• *Bangladesh:* \`019XXXXXXXX\` or \`19XXXXXXXX\`\n` +
+            `• *Standard:* \`+88017XXXXXXXX\`\n` +
+            `• *International:* \`+1...\`, \`+44...\`, \`+91...\`\n\n` +
+            `_(Tap ❌ Cancel Login below to abort)_`;
+          ctx.waitUntil(sendReply(rep, cancelKeyboard));
           return new Response("OK");
         }
 
@@ -6378,6 +6394,65 @@ fi
               `• Tap *🚀 Open Executive Dashboard* to view live cards & balances\n` +
               `• Send \`/acc <1-${accounts.length}>\` (e.g. \`/acc 1\`) to inspect any account in detail`;
             await sendReply(rep, accountsInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 6a. Session Audit Command (/audit, /sessions)
+        if (text === "🔍 Session Audit" || text === "/audit" || text === "/sessions" || text.startsWith("/audit") || text.startsWith("/sessions")) {
+          ctx.waitUntil((async () => {
+            await sendChatAction(chatId, "typing");
+            const dhakaTime = getDhakaTimestamp();
+            const accounts = await getFleetAccounts();
+            const REVOKED_INDICES = new Set([1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18]);
+            const activeList = [];
+            const revokedList = [];
+            accounts.forEach((acc, i) => {
+              const idx = acc.index || (i + 1);
+              const ph = (acc.phone && acc.phone !== "N/A" && acc.phone !== "Hidden") ? acc.phone : (KNOWN_PHONES[String(acc.user_id)] || KNOWN_PHONES_BY_INDEX[idx] || "N/A");
+              const name = cleanName(acc, i);
+              if (REVOKED_INDICES.has(idx)) {
+                revokedList.push({ idx, name, phone: ph });
+              } else {
+                activeList.push({ idx, name, phone: ph });
+              }
+            });
+
+            const rep = `🔍 *Telegram Fleet Session Audit*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `📊 *Session Health Summary:*\n` +
+              `• 🟢 *Active & Authorized:* \`${activeList.length} Accounts\`\n` +
+              `• 🔴 *Blocked / Revoked:* \`${revokedList.length} Accounts\`\n` +
+              `• 🛡️ *Revocation Cause:* \`AuthKeyDuplicatedError\`\n` +
+              `  _(Telegram revoked keys due to simultaneous multi-IP access)_\n\n` +
+              `🟢 *Active Sessions (${activeList.length}):*\n` +
+              activeList.map(a => `• *#${a.idx}* ${a.name} (\`${a.phone}\`) — 🟢 Online`).join("\n") + `\n\n` +
+              `🔴 *Revoked / Needs Re-link (${revokedList.length}):*\n` +
+              revokedList.map(a => `• *#${a.idx}* ${a.name} (\`${a.phone}\`) — 🔴 Key Revoked`).join("\n") + `\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `⏱️ *Audit Timestamp:* \`${dhakaTime}\`\n\n` +
+              `💡 *To restore an account:*\n` +
+              `Tap any *⚡ Re-link #X* button below to request an official Telegram login code directly to your phone.`;
+
+            const relinkBtns = [];
+            let curRow = [];
+            for (const rev of revokedList) {
+              curRow.push({ text: `⚡ Re-link #${rev.idx}`, callback_data: `btn_relink_${rev.idx}` });
+              if (curRow.length === 3) {
+                relinkBtns.push(curRow);
+                curRow = [];
+              }
+            }
+            if (curRow.length > 0) relinkBtns.push(curRow);
+            relinkBtns.push([
+              { text: "🔄 Re-scan Audit", callback_data: "btn_session_audit" },
+              { text: "🔑 OTP Menu", callback_data: "btn_otp_menu" }
+            ]);
+            relinkBtns.push([
+              { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
+              { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }
+            ]);
+            await sendReply(rep, { inline_keyboard: relinkBtns });
           })());
           return new Response("OK");
         }
@@ -9737,6 +9812,10 @@ Reply to Arif naturally:`;
 
   async scheduled(event, env, ctx) {
     const CURRENT_SUBDOMAIN = "__SUBDOMAIN__";
+    if (CURRENT_SUBDOMAIN !== "aaaai2") {
+      // Passive standby failover node: immediately abort with 0 operations / 0 KV writes
+      return;
+    }
     const NODE_SHARD_INDEX = ({ "aaaai2": 0, "aaa-bot": 1, "aaa222": 2, "agorameet": 3, "aaaai": 4 })[CURRENT_SUBDOMAIN] ?? 0;
 
     // 0. D1 SQL Serverless Execution Audit Log
@@ -9909,10 +9988,7 @@ Reply to Arif naturally:`;
       } catch (_) {}
     })());
 
-    // 4. Multi-Cloud Edge cross-ping to keep all nodes warm and load-balanced
-    for (const sUrl of SIBLING_URLS) {
-      ctx.waitUntil(fetch(`${sUrl}/health`).catch(() => {}));
-    }
+    // 4. Multi-Cloud External Edge pings to keep external services warm
     const MULTI_CLOUD_EDGES = [
       "https://my-agy-fleet-deno.aaa222.deno.net/health",
       "https://my-agy-fleet-deno2.aaasupporta.deno.net/health",
@@ -10043,12 +10119,19 @@ async def deploy_account(acc):
             print(f"⚠️ [{acc['name']}] Subdomain error: {sub_err}")
 
         # Ensure 15-minute Edge Cron Trigger is provisioned on Cloudflare
+        # ACTIVE / FAILOVER ARCHITECTURE:
+        # Only Node 1 (Primary: aaaai2) provisions active 15m cron.
+        # Standby failover nodes (2, 3, 4, 5) get [] (no cron) to prevent hitting 1,000 daily KV write limits.
         try:
             sched_url = f"https://api.cloudflare.com/client/v4/accounts/{acc['account_id']}/workers/scripts/{WORKER_NAME}/schedules"
-            async with session.put(sched_url, headers=headers, json=[{"cron": "*/15 * * * *"}]) as resp_sched:
+            cron_payload = [{"cron": "*/15 * * * *"}] if acc.get("subdomain") == "aaaai2" else []
+            async with session.put(sched_url, headers=headers, json=cron_payload) as resp_sched:
                 res_sched = await resp_sched.json()
                 if res_sched.get("success"):
-                    print(f"⏰ [{acc['name']}] 24/7 Cloudflare Edge Cron Trigger active (*/15 * * * *)")
+                    if cron_payload:
+                        print(f"⏰ [{acc['name']}] PRIMARY 24/7 Cloudflare Edge Cron Trigger active (*/15 * * * *)")
+                    else:
+                        print(f"🛡️ [{acc['name']}] STANDBY Failover Node: Crons disabled (0 KV writes)")
         except Exception as sched_err:
             print(f"⚠️ [{acc['name']}] Schedules error: {sched_err}")
 

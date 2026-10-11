@@ -2,7 +2,31 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
-- **⚡ Admin Bot Account Removal State Sync, Dynamic OTP Grid & Real-Time Dynamic Text Refresh (October 11, 2026)**:
+- **⚡ Cloudflare KV Limit Optimization (Primary/Standby Failover), Login OTP Routing Fix & Session Block Audit (October 11, 2026)**:
+  - **🛡️ Resolved OTP 5-Digit Verification Code Routing (`90928` Treated as Phone `+90928`)**:
+    * Pinpointed root cause of login error reported by user: when entering 5-digit Telegram codes (e.g. `90928`), the dispatcher had no OTP priority filter. If `login_flow` in KV failed due to daily write quota limits, the router fell back to `waiting_phone` and prepended `+`, attempting to request a code for `+90928`.
+    * Implemented strict priority-ordered message dispatcher:
+      1. Cancellation (`/cancel`, `❌ Cancel Login`)
+      2. 5-digit / 6-digit OTP verification (`/^\d{5,6}$/`) — **ALWAYS** verified against Telegram MTProto gateway, never formatted as a phone number
+      3. 2FA password verification (`step === "waiting_2fa"`)
+      4. Phone number submission (`isPhonePattern` or `waiting_phone` with `>= 8 digits`)
+      5. Add Account prompt button handler
+    * Added in-memory `memLoginFlow` Map and synchronized Upstash Redis (`login_flow:${chatId}` and `last_login_phone:${chatId}`) so login flows are 100% resilient and independent of Cloudflare KV write quotas.
+  - **☁️ Cloudflare KV Limit Optimization (Active-Passive / Failover Architecture)**:
+    * Identified that all 5 Cloudflare Worker accounts hit daily free-tier KV limits (1,000 writes/day) because all 5 accounts were simultaneously running crons (`*/15 * * * *`), replicating backups across 4 sibling nodes, and writing price rates to KV.
+    * Converted edge mesh to **Active-Passive Failover Topology**:
+      - **Node 1 (`aaaai2`)**: Primary active node running 15-minute Edge Cron trigger (`*/15 * * * *`).
+      - **Nodes 2, 3, 4, 5 (`aaa-bot`, `aaa222`, `agorameet`, `aaaai`)**: Standby failover nodes with crons disabled (`[]` empty list in Cloudflare API PUT), generating 0 scheduled operations and 0 KV writes.
+      - Added early exit `if (CURRENT_SUBDOMAIN !== "aaaai2") return;` at the top of `scheduled()`.
+      - Replaced `BACKUP_KV.put("binance_rates_cache")` in `/api/rates` with module-scope in-memory cache (`memRatesCache`, `memRatesCacheTs`) with 120s TTL and CDN edge caching (`Cache-Control: public, max-age=120`), eliminating hundreds of daily KV writes.
+      - Removed 4x sibling backup upload replication loop (`fetch("${sUrl}/upload")`) in `/upload`. Sibling nodes proxy `/backup.zip` on demand without writing to KV.
+      - Removed sibling cross-ping storm from `scheduled()`.
+  - **🔍 Complete 18-Account Session Audit & 1-Tap Re-link Hub**:
+    * Audited all 18 Telegram account sessions against cloud MTProto nodes:
+      - 🟢 **5 Active & Healthy Sessions**: Account #2 (Nancy Davis 2, `+8801943805617`), #10 (Tanvir Ahmed 10, `+8801729892810`), #11 (MD. ARIF HOSSAIN, `+8801571089931`), #14 (Rohan Sharma 14, `+918930504750`), #17 (Kawsar Mahmud 17, `+8801879273559`).
+      - 🔴 **13 Blocked/Revoked Sessions**: Accounts #1, #3, #4, #5, #6, #7, #8, #9, #12, #13, #15, #16, #18 (sessions revoked by Telegram with `AuthKeyDuplicatedError` due to simultaneous multi-IP connections across cloud nodes).
+    * Integrated `/audit`, `/sessions`, and `btn_session_audit` into Admin Bot (`@myagyai`) with dynamic 1-tap `[⚡ Re-link #X]` buttons for all revoked accounts, allowing instant reconnection with clean Bangladesh MTProto device fingerprints.
+
   - **🔧 Cloudflare KV Primary Source of Truth & Deletion Blacklist (`fleet_deleted_accounts`)**:
     * Identified that Upstash Redis hit fixed plan limits (`ERR This database has reached current Fixed plan limits`), causing `upstashSet("fleet:live_state", ...)` to fail silently and keeping deleted accounts cached.
     * Migrated `getFleetAccounts()` to treat Cloudflare KV (`env.BACKUP_KV.get("fleet_live_state")`) as primary storage.

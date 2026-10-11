@@ -98,6 +98,11 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * D1 Database: `aaa-d1` (`e2db1db3-eaaf-49b3-86e5-95aee66772ef`)
     * R2 (S3) Bucket: `aaa-r2`
     * KV Namespace: `atf-miner-kv` (`c5eadf91...`)
+  - **Active-Passive / Failover Edge Architecture (Zero Daily KV Write Quota Exhaustion)**:
+    * **Node 1 (Primary: `aaaai2.workers.dev`)**: The ONLY node provisioned with the 15-minute Edge Cron trigger (`*/15 * * * *`). Handles primary cron farming cycles, D1 logs, and periodic state updates.
+    * **Nodes 2, 3, 4, 5 (Passive Standby / Failover)**: Crons disabled (`[]` empty list). Early exit in `scheduled()` (`if (CURRENT_SUBDOMAIN !== "aaaai2") return;`). Generates 0 scheduled operations and 0 KV writes. If Node 1 is ever offline, any standby can be promoted to primary instantly.
+    * **Zero KV Ephemeral Caching**: `/api/rates` cached in module-scope memory (`memRatesCache`) with CDN `max-age=120`, eliminating KV writes for Binance rates. Sibling upload fan-out replication removed; standbys proxy `/backup.zip` on demand without local KV storage.
+    * **Resilient Login State Machine**: `login_flow:${chatId}` uses in-memory `memLoginFlow` Map and Upstash Redis first, ensuring user login flows never fail when Cloudflare KV quotas are hit.
 - **Render Cloud Fleet (Multi-Account Cloud MTProto Compute & Resilient Relay Mesh)**:
   - Node 1: **Render Standby Node 1 (Singapore)**: `https://my-agy-fleet-standby.onrender.com`
     * Service ID: `srv-damuhkmgekts73f1osag` | Workspace: `My Workspace` (`tea-d8j9clt8nd3s73eb041g`, `coz1gameh1@gmail.com`)
