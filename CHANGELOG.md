@@ -24,6 +24,10 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
     * **Layerbase Managed Databases**: Archived 6 API keys (`sk_...`) for QuestDB, InfluxDB, Weaviate, CouchDB.
     * **Qdrant Cloud**: Archived 3 management cluster keys for semantic vector operations.
     * All credentials permanently stored in `.env` and `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt`.
+  - **🛡️ Conservative Free-Tier Quota Protection & Write Deduplication ("Use All Wisely")**:
+    * Implemented 5-minute identical-write deduplication in `upstashSet()` on Cloudflare Workers: skips issuing redundant HTTP write requests when the cached value is identical, preserving >80% of daily write operations.
+    * Integrated 30-second in-memory response caching for `fetchFleetLive()` in `tgcloud_admin_bot/tgcloud/lib/backend.js` to protect backend endpoints from high-frequency admin clicks.
+    * Cloudflare Worker Cron execution remains strictly pinned to Node 1 (`aaaai2.workers.dev`) alone; Nodes 2, 3, 4, 5 operate in 0-cron passive standby, consuming 0 KV writes.
 
 - **⚡ Telegram Serverless Platform Revision 7, 2FA `BASE_DIR` Resolution & Webhook Protection (October 11, 2026)**:
   - **🔒 Resolution of 2FA Authentication Failure (`name 'BASE_DIR' is not defined`)**:

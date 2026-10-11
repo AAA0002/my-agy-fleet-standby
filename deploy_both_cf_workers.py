@@ -1115,6 +1115,11 @@ async function upstashSet(key, value) {
       return;
     }
     const valStr = typeof value === "string" ? value : JSON.stringify(value);
+    const cached = UPSTASH_GET_CACHE.get(key);
+    // Conservative Quota Guard: skip writing identical value within 5 minutes to protect free tier
+    if (cached && cached.val === valStr && (Date.now() - cached.ts < 300000)) {
+      return;
+    }
     UPSTASH_GET_CACHE.set(key, { val: valStr, ts: Date.now() });
     await fetch(`${UPSTASH_URL}/set/${key}`, {
       method: "POST",

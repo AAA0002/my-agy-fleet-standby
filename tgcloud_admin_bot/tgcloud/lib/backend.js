@@ -97,9 +97,20 @@ export async function cancelLogin(chatId) {
   }
 }
 
+let memFleetLive = null;
+let memFleetLiveTs = 0;
+
 export async function fetchFleetLive() {
+  if (memFleetLive && (Date.now() - memFleetLiveTs < 30000)) {
+    return memFleetLive;
+  }
   const res = await requestBackend('/api/fleet/live');
-  return res || { accounts: [], healthy_count: 0, total_accounts: 0 };
+  if (res) {
+    memFleetLive = res;
+    memFleetLiveTs = Date.now();
+    return res;
+  }
+  return memFleetLive || { accounts: [], healthy_count: 0, total_accounts: 0 };
 }
 
 export async function fetchOtpForAccount(accountIndex) {
