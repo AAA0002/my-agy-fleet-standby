@@ -40,8 +40,8 @@ jobs:
 
       - name: Run Dedicated Victor's Turnstile Solver & Referral Qualification
         env:
-          UPSTASH_URL: "https://relaxing-starfish-285827.upstash.io"
-          UPSTASH_TOKEN: "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw"
+          UPSTASH_URL: "https://pleasant-locust-220893.upstash.io"
+          UPSTASH_TOKEN: "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg"
           ALERT_BOT_TOKEN: "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8"
           OWNER_ID: "6727787768"
           WEBSHARE_KEY: "1r347t4h8dwfkpoa4ifmmyajvmu3oxyn2guzs5k0"

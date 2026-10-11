@@ -70,8 +70,8 @@ jobs:
               try:
                   print("Checking Upstash Redis & Pinata IPFS fallback...")
                   import json
-                  up_url = "https://relaxing-starfish-285827.upstash.io/get/fleet:latest_ipfs_cid"
-                  up_req = urllib.request.Request(up_url, headers={"Authorization": "Bearer gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw"})
+                  up_url = "https://pleasant-locust-220893.upstash.io/get/fleet:latest_ipfs_cid"
+                  up_req = urllib.request.Request(up_url, headers={"Authorization": "Bearer gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg"})
                   with urllib.request.urlopen(up_req, timeout=8) as up_r:
                       if up_r.status == 200:
                           cid = json.loads(up_r.read().decode()).get("result")

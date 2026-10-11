@@ -27,8 +27,8 @@ jobs:
           SECRET_KEY: "agy_cf_secret_7d36994e_2026"
           SUPABASE_URL: "https://znbbaozpevurvbfkxakz.supabase.co"
           SUPABASE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYmJhb3pwZXZ1cnZiZmt4YWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTYxNTQsImV4cCI6MjEwNTM5MjE1NH0.ldgn0gCtOLEPUQyvTiG5RgKX6VY0LrS_4LkIKCf8NqM"
-          UPSTASH_URL: "https://relaxing-starfish-285827.upstash.io"
-          UPSTASH_TOKEN: "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw"
+          UPSTASH_URL: "https://pleasant-locust-220893.upstash.io"
+          UPSTASH_TOKEN: "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg"
           TONAPI_KEY: "AGCD63WTWLGKKWYAAAAKRKZU45HTYMDI3PV7UBKKL6QDVIHG54NQDVNSQF7W3LQJ3X77QKY"
           ETHERSCAN_KEY: "Z7TRGEGWC7C3CG9574D531ZRAJ1KC6MAMK"
           TURSO_URL: "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io"
@@ -346,8 +346,8 @@ jobs:
 
       - name: Run Autonomous Multi-Tier Sanitation & Maintenance Engine
         env:
-          UPSTASH_URL: "https://relaxing-starfish-285827.upstash.io"
-          UPSTASH_TOKEN: "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw"
+          UPSTASH_URL: "https://pleasant-locust-220893.upstash.io"
+          UPSTASH_TOKEN: "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg"
         run: |
           python clean_up_system.py
 

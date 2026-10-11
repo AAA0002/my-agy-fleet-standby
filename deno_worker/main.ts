@@ -7,8 +7,8 @@ const CHAT_ID = Deno.env.get("REPORT_CHAT_ID") || "6727787768";
 // Cloud Integrations
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "https://znbbaozpevurvbfkxakz.supabase.co";
 const SUPABASE_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYmJhb3pwZXZ1cnZiZmt4YWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTYxNTQsImV4cCI6MjEwNTM5MjE1NH0.ldgn0gCtOLEPUQyvTiG5RgKX6VY0LrS_4LkIKCf8NqM";
-const UPSTASH_URL = Deno.env.get("UPSTASH_REDIS_REST_URL") || "https://relaxing-starfish-285827.upstash.io";
-const UPSTASH_TOKEN = Deno.env.get("UPSTASH_REDIS_REST_TOKEN") || "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw";
+const UPSTASH_URL = Deno.env.get("UPSTASH_REDIS_REST_URL") || "https://pleasant-locust-220893.upstash.io";
+const UPSTASH_TOKEN = Deno.env.get("UPSTASH_REDIS_REST_TOKEN") || "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg";
 const TONAPI_KEY = Deno.env.get("TONAPI_KEY") || "AGCD63WTWLGKKWYAAAAKRKZU45HTYMDI3PV7UBKKL6QDVIHG54NQDVNSQF7W3LQJ3X77QKY";
 const TURSO_URL = Deno.env.get("TURSO_URL") || "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io";
 const TURSO_TOKEN = Deno.env.get("TURSO_TOKEN") || "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODk4MjQ5NjMsImlkIjoiMDFhMGI5ZTEtNzYwMS03ZDIwLWIwNTAtZDkyNmJkMDRiYzhmIiwia2lkIjoiVXI0T3NhVlRiZktFaWU3aEMydjFPYUQ3T01sQ2RZSjhDa3M3bGZKWEh0MCIsInJpZCI6IjcyYjQ5N2Y4LWVhY2UtNDI5Yy04YTIzLWI4MDRmYjg2ODBhOCJ9.W1W5nHYEFXTFLgIh6Q8yLmH3bL9QgCTEI7d4k-tG_Q_-oZwEZz-Ryq0oYtyvChD0ivOqn6NA_asbPAOYAFVaDw";
