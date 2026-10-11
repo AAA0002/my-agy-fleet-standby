@@ -10,12 +10,16 @@ export const CONFIG = {
     "https://my-agy-fleet-standby.onrender.com"
   ],
   EDGE_MESH: [
+    "https://my-agy-fleet-deno.aaa222.deno.net",
+    "https://my-agy-fleet-deno2.aaasupporta.deno.net",
     "https://restore-agy.aaaai2.workers.dev",
     "https://restore-agy.aaa-bot.workers.dev",
     "https://restore-agy.aaa222.workers.dev",
     "https://restore-agy.agorameet.workers.dev",
     "https://restore-agy.aaaai.workers.dev"
   ],
+  SUPABASE_URL: "https://znbbaozpevurvbfkxakz.supabase.co",
+  BETTERSTACK_HEARTBEAT_URL: "https://uptime.betterstack.com/api/v1/heartbeat/bABS7gYDXgHp6H35XGcU7S6p",
   ACTIVE_BOTS: [
     { name: "MRG Miner", symbol: "MRG", bot: "@mrgminerbot", status: "Active" },
     { name: "ATF Miner", symbol: "ATF", bot: "@ATF_AIRDROP_bot", status: "Active" },

@@ -2211,41 +2211,73 @@ async def sync_new_account_to_clouds(acc_entry: dict):
     except Exception:
         pass
 
-    # 1. Supabase
+    # 1. Supabase Managed Cloud Postgres
     if SUPABASE_URL and SUPABASE_KEY:
         try:
+            record = {
+                "id": uid,
+                "phone": acc_entry.get("phone", ""),
+                "status": "active",
+                "data": {
+                    "name": acc_entry.get("name", ""),
+                    "username": acc_entry.get("username", ""),
+                    "index": acc_entry.get("index"),
+                    "ton_wallet": (acc_entry.get("ton_wallet") or {}).get("address", ""),
+                    "evm_wallet": (acc_entry.get("evm_wallet") or {}).get("address", ""),
+                    "tron_wallet": (acc_entry.get("tron_wallet") or {}).get("address", ""),
+                    "solana_wallet": (acc_entry.get("solana_wallet") or {}).get("address", ""),
+                    "btc_wallet": (acc_entry.get("btc_wallet") or {}).get("address", "")
+                }
+            }
             async with aiohttp.ClientSession() as s:
                 await s.post(
-                    f"{SUPABASE_URL}/rest/v1/accounts",
+                    f"{SUPABASE_URL}/rest/v1/fleet_accounts",
                     headers={
                         "apikey": SUPABASE_KEY,
                         "Authorization": f"Bearer {SUPABASE_KEY}",
                         "Content-Type": "application/json",
                         "Prefer": "resolution=merge-duplicates"
                     },
-                    json=acc_entry,
-                    timeout=aiohttp.ClientTimeout(total=10)
+                    json=[record],
+                    timeout=aiohttp.ClientTimeout(total=8)
                 )
         except Exception as e:
-            logger.warning(f"Supabase sync note: {e}")
+            logger.warning(f"Supabase fleet_accounts sync note: {e}")
 
-    # 2. Upstash Redis
+    # 2. Upstash Redis Pipeline Sync (Syncs full fleet:accounts list & healthy_sessions)
     if UPSTASH_URL and UPSTASH_TOKEN:
         try:
+            cur_accs = await fetch_accounts_from_cloud()
+            idx_str = str(acc_entry.get("index") or "")
+            pipe_cmds = [
+                ["SET", f"account:{uid}", json.dumps(acc_entry)],
+                ["SADD", "fleet_accounts_set", uid],
+                ["SADD", "fleet:healthy_sessions", uid],
+                ["SREM", "fleet:revoked_sessions", uid],
+                ["SET", "fleet:accounts", json.dumps(cur_accs)]
+            ]
+            if idx_str:
+                pipe_cmds.append(["SADD", "fleet:healthy_sessions", idx_str])
+                pipe_cmds.append(["SREM", "fleet:revoked_sessions", idx_str])
+
             async with aiohttp.ClientSession() as s:
                 await s.post(
-                    f"{UPSTASH_URL}/set/account:{acc_entry['user_id']}",
-                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
-                    data=json.dumps(acc_entry),
-                    timeout=aiohttp.ClientTimeout(total=10)
-                )
-                await s.post(
-                    f"{UPSTASH_URL}/sadd/fleet_accounts_set/{acc_entry['user_id']}",
-                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
-                    timeout=aiohttp.ClientTimeout(total=10)
+                    f"{UPSTASH_URL}/pipeline",
+                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"},
+                    data=json.dumps(pipe_cmds),
+                    timeout=aiohttp.ClientTimeout(total=8)
                 )
         except Exception as e:
             logger.warning(f"Upstash sync note: {e}")
+
+    # 3. BetterStack Heartbeat Uptime Sentinel
+    betterstack_url = os.getenv("BETTERSTACK_HEARTBEAT_URL", "https://uptime.betterstack.com/api/v1/heartbeat/bABS7gYDXgHp6H35XGcU7S6p")
+    if betterstack_url:
+        try:
+            async with aiohttp.ClientSession() as s:
+                await s.get(betterstack_url, timeout=aiohttp.ClientTimeout(total=4))
+        except Exception:
+            pass
 
     # 3. Cloudflare KV Sync (Active-Passive / Failback to avoid hitting all 5 KVs)
     for cf_url in CF_WORKER_URLS:
@@ -2423,7 +2455,54 @@ async def verify_login_code(request: Request):
             if not clean_code or len(clean_code) < 3:
                 return {"ok": False, "error": "Please provide a valid verification code."}
             logger.info(f"[Standby Cloud Login] Attempting code sign in for {phone} (code: {clean_code})...")
-            await asyncio.wait_for(client.sign_in(phone=phone, code=clean_code, phone_code_hash=phone_code_hash), timeout=25)
+            try:
+                await asyncio.wait_for(client.sign_in(phone=phone, code=clean_code, phone_code_hash=phone_code_hash), timeout=25)
+            except SessionPasswordNeededError:
+                logger.info(f"[Standby Cloud Login] 🔒 2FA password required for {phone}. Auto-authenticating with fleet 2FA password...")
+                two_fa_passwords = [
+                    os.getenv("FLEET_2FA_PASSWORD", "Arif216@"),
+                    os.getenv("FLEET_2FA_FALLBACK", "Arif-Abid"),
+                    "Arif216@",
+                    "Arif-Abid"
+                ]
+                two_fa_ok = False
+                for p in two_fa_passwords:
+                    if not p:
+                        continue
+                    try:
+                        await asyncio.wait_for(client.sign_in(password=p), timeout=20)
+                        two_fa_ok = True
+                        logger.info(f"[Standby Cloud Login] 🎉 2FA auto-authentication SUCCESSFUL for {phone}!")
+                        break
+                    except Exception as err2fa:
+                        logger.warning(f"[Standby Cloud Login] 2FA attempt failed with {p[:3]}***: {err2fa}")
+                if not two_fa_ok:
+                    sess_str_saved = client.session.save()
+                    if chat_id in LOGIN_SESSIONS:
+                        LOGIN_SESSIONS[chat_id]["session_string"] = sess_str_saved
+                    if UPSTASH_URL and UPSTASH_TOKEN:
+                        try:
+                            async with aiohttp.ClientSession() as up_sess:
+                                up_data = {
+                                    "phone": phone,
+                                    "phone_code_hash": phone_code_hash,
+                                    "session_string": sess_str_saved,
+                                    "created_at": time.time()
+                                }
+                                await up_sess.post(
+                                    f"{UPSTASH_URL}/set/tg_login_flow:{chat_id}?ex=900",
+                                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+                                    data=json.dumps(up_data),
+                                    timeout=aiohttp.ClientTimeout(total=4)
+                                )
+                        except Exception:
+                            pass
+                    return {
+                        "ok": False,
+                        "need_2fa": True,
+                        "phone": phone,
+                        "message": "Two-Factor Cloud Password required"
+                    }
 
         # Authenticated successfully!
         me = await client.get_me()
@@ -4072,12 +4151,14 @@ async def api_farm_cloud_all(request: Request):
         try:
             async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as session:
                 accounts = await fetch_accounts_from_cloud()
+                total = len(accounts) if accounts else 0
+                midpoint = (total + 1) // 2
                 if shard_param == "1":
-                    accounts = [a for a in accounts if int(a.get("index") or 0) <= 9]
-                    logger.info(f"[Farm Trigger] Partition Shard 1: Selected accounts 1-9 ({len(accounts)} accounts)")
+                    accounts = [a for a in accounts if int(a.get("index") or 0) <= midpoint]
+                    logger.info(f"[Farm Trigger] Partition Shard 1: Selected accounts 1-{midpoint} ({len(accounts)}/{total} accounts)")
                 elif shard_param == "2":
-                    accounts = [a for a in accounts if int(a.get("index") or 0) > 9]
-                    logger.info(f"[Farm Trigger] Partition Shard 2: Selected accounts 10-18 ({len(accounts)} accounts)")
+                    accounts = [a for a in accounts if int(a.get("index") or 0) > midpoint]
+                    logger.info(f"[Farm Trigger] Partition Shard 2: Selected accounts {midpoint+1}-{total} ({len(accounts)}/{total} accounts)")
 
                 tokens = await fetch_cloud_miniapp_tokens(session)
                 res = await run_cloud_fleet_farming_cycle(session, accounts, tokens, force=force_mode)

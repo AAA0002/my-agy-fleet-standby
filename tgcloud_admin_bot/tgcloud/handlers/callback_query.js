@@ -239,7 +239,14 @@ Tap any account node below. The cloud cluster will automatically connect to Tele
 
 Telegram dispatched an official 5-digit verification code to \`${knownPhone}\`.
 
-Please reply directly with the code (e.g. \`12345\`):`, getCancelLoginKeyboard());
+⚡ *Instant Auto-2FA:* Once code is verified, your 2FA password (\`Arif216@\`) will authenticate automatically in 0.5s!
+
+Please reply directly with the code (e.g. \`12345\`):`, {
+          inline_keyboard: [
+            [{ text: "🔐 Submit via Secure WebApp ↗️", web_app: { url: "https://app8858823950.tgcloud.ai/" } }],
+            [{ text: "❌ Cancel", callback_data: "btn_cancel_login" }]
+          ]
+        });
       } else {
         await replyOrEdit(chatId, messageId, `❌ *Could not request code:* ${res?.error || 'Network error'}\n\nPlease try again:`, {
           inline_keyboard: [

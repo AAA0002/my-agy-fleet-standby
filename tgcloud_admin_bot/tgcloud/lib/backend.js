@@ -111,6 +111,10 @@ export async function dispatchParallelFarming() {
     }).catch(e => ({ ok: false, error: e.message }))
   ];
 
+  if (CONFIG.BETTERSTACK_HEARTBEAT_URL) {
+    promises.push(fetch(CONFIG.BETTERSTACK_HEARTBEAT_URL).catch(() => {}));
+  }
+
   await Promise.allSettled(promises);
   return { ok: true, dispatched: true, shards: [1, 2] };
 }
@@ -141,6 +145,16 @@ export async function markAccountActive(index, userId, name, phone) {
       acc.status = 'active';
       if (name) acc.name = name;
       if (phone) acc.phone = phone;
+    } else {
+      // Dynamic fleet scaling: smoothly accommodates accounts 19, 20+
+      memFleetLive.accounts.push({
+        index: idx,
+        user_id: uidStr,
+        name: name || `Account #${idx}`,
+        phone: phone || '',
+        status: 'active'
+      });
+      memFleetLive.total_accounts = memFleetLive.accounts.length;
     }
     memFleetLive.healthy_count = memFleetLive.accounts.filter(a => a.status === 'active').length;
     memFleetLive.revoked_count = memFleetLive.accounts.filter(a => a.status === 'revoked' || a.status === 'inactive').length;
@@ -183,6 +197,11 @@ export async function markAccountActive(index, userId, name, phone) {
         body: JSON.stringify(upstashCommands)
       });
     } catch (_) {}
+  }
+
+  // BetterStack Heartbeat Ping
+  if (CONFIG.BETTERSTACK_HEARTBEAT_URL) {
+    fetch(CONFIG.BETTERSTACK_HEARTBEAT_URL).catch(() => {});
   }
 }
 
