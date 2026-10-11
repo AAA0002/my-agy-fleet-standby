@@ -574,16 +574,18 @@ async def collect_tokens(request: Request):
         tasks = [_collect_single(a) for a in target_accounts]
         await asyncio.gather(*tasks, return_exceptions=True)
 
-        # Trigger Cloudflare Edge Autonomous Cloud Farming for ALL bots
+        # Trigger Cloudflare Edge Autonomous Cloud Farming (Failback to primary node)
         async with aiohttp.ClientSession() as http:
             for idx, cf_url in enumerate(CF_WORKER_URLS):
                 try:
-                    await http.post(
+                    async with http.post(
                         f"{cf_url}/api/farm/all",
                         json={"all": True, "bot": "all"},
                         headers={"Authorization": f"Bearer {SECRET_KEY}", "Content-Type": "application/json"},
                         timeout=aiohttp.ClientTimeout(total=8)
-                    )
+                    ) as r:
+                        if r.status == 200:
+                            break  # Primary handled farming cycle, do NOT fan out to 4 standbys!
                 except Exception:
                     pass
 
@@ -1163,10 +1165,10 @@ async def sync_account_tokens_to_clouds(tokens: dict):
         return
     uid = str(tokens["account_id"])
     async with aiohttp.ClientSession() as s:
-        # 1. 5x Cloudflare Edge Workers
+        # 1. Cloudflare Edge Workers (Active-Passive / Failback to avoid exhausting KV limits)
         for cf_url in CF_WORKER_URLS:
             try:
-                await s.post(
+                async with s.post(
                     f"{cf_url}/api/miniapp/tokens/sync",
                     json=tokens,
                     headers={
@@ -1175,9 +1177,11 @@ async def sync_account_tokens_to_clouds(tokens: dict):
                         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
                     },
                     timeout=aiohttp.ClientTimeout(total=6)
-                )
+                ) as r:
+                    if r.status == 200:
+                        break  # Succeeded on primary or active failback, exit loop!
             except Exception as se:
-                logger.warning(f"Tokens sync error to {cf_url}: {se}")
+                logger.warning(f"Tokens sync fallback from {cf_url}: {se}")
 
         # 2. Upstash Redis (Safely merge with existing tokens to preserve valid keys)
         if UPSTASH_URL and UPSTASH_TOKEN:
@@ -2117,16 +2121,18 @@ async def sync_new_account_to_clouds(acc_entry: dict):
         except Exception as e:
             logger.warning(f"Upstash sync note: {e}")
 
-    # 3. Cloudflare KV Sync
+    # 3. Cloudflare KV Sync (Active-Passive / Failback to avoid hitting all 5 KVs)
     for cf_url in CF_WORKER_URLS:
         try:
             async with aiohttp.ClientSession() as s:
-                await s.post(
+                async with s.post(
                     f"{cf_url}/api/fleet/sync_account",
                     headers={"Authorization": f"Bearer {SECRET_KEY}", "Content-Type": "application/json", **BROWSER_HEADERS},
                     json=acc_entry,
-                    timeout=aiohttp.ClientTimeout(total=10)
-                )
+                    timeout=aiohttp.ClientTimeout(total=8)
+                ) as r:
+                    if r.status == 200:
+                        break  # Succeeded on primary or active failback, exit loop!
         except Exception:
             pass
 
@@ -2248,14 +2254,17 @@ async def verify_login_code(request: Request):
         }
 
         # Determine account index & preserve existing index if re-linking
+        req_index = data.get("index")
         cur_accs = await fetch_accounts_from_cloud()
         existing_idx = None
+        clean_target_phone = re.sub(r"\D", "", str(phone or ""))
         for a in cur_accs:
-            if str(a.get("user_id")) == str(user_id) or a.get("phone") == phone:
+            clean_a_phone = re.sub(r"\D", "", str(a.get("phone") or ""))
+            if str(a.get("user_id")) == str(user_id) or (clean_target_phone and clean_a_phone == clean_target_phone):
                 existing_idx = a.get("index")
                 break
 
-        target_idx = existing_idx if existing_idx else ((len(cur_accs) + 1) if cur_accs else 1)
+        target_idx = int(req_index) if req_index else (existing_idx if existing_idx else ((len(cur_accs) + 1) if cur_accs else 1))
         wallets = generate_multichain_wallet_suite(target_idx, acc_name, user_id, phone, uname)
         acc_entry.update({
             "index": target_idx,
@@ -2270,7 +2279,7 @@ async def verify_login_code(request: Request):
         save_and_archive_account_wallets(acc_entry, wallets)
         asyncio.create_task(notify_admin_new_account_onboarded(acc_entry))
 
-        # Automatically bind all 15 master referrals and bot wallets in the background
+        # Automatically bind master referrals and bot wallets in the background
         asyncio.create_task(bind_account_master_referrals(client, acc_entry))
 
         # Sync account to Supabase, Upstash Redis, and Cloudflare KV
@@ -2280,13 +2289,14 @@ async def verify_login_code(request: Request):
 
         return {
             "ok": True,
+            "index": target_idx,
             "user_id": user_id,
             "name": acc_name,
             "username": uname,
             "phone": phone,
             "session_string": sess_str,
-            "referrals": "Binding to Master Fleet (15/15 Bots)...",
-            "message": "Account connected successfully! All 15 fleet bots are being bound to Master ID 6727787768."
+            "referrals": "Binding to Master Fleet (8/8 Active Bots)...",
+            "message": f"Account #{target_idx} connected successfully! Restored to active cloud fleet."
         }
 
     except SessionPasswordNeededError:

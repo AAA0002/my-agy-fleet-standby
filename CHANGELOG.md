@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Admin Bot Comprehensive Modernization: Dynamic Session Health, Resilient Account Removal & Render Failback (October 11, 2026)**:
+  - **🔄 Dynamic Session Health Synchronization & Instant Re-link State Transition**:
+    * Replaced all static and hardcoded `REVOKED_INDICES` sets across `deploy_both_cf_workers.py` with dynamic `getSessionHealthState()` reading from Upstash Redis sets (`fleet:healthy_sessions` and `fleet:revoked_sessions`) with 60s in-memory caching.
+    * Added `onAccountRelinkSuccess(targetIdx)` hook: when an account is re-linked (e.g. Account #1 Arif Hossain `+8801317342850`), it is immediately removed from `revoked` and added to `healthy`.
+    * Upgraded OTP Grid keyboard (`buildOtpMenuKeyboard`) to dynamically render status badges: `👑` for Master Host, `🟢` for Active accounts, and `🔴` for accounts needing re-linking.
+  - **🗑️ Resilient Multi-Layer Account Removal ("Why Text Did Not Change" Fix)**:
+    * Solved the issue where removing an account did not reflect when KV quota was reached: `fleet_deleted_accounts` is now tracked in module RAM cache (`memDeletedAccounts`), Upstash Redis (`fleet:deleted_accounts`), and Cloudflare KV.
+    * `getFleetAccounts()` loads deleted accounts across RAM, Upstash, and KV, strictly filtering them out even if Cloudflare KV rate limits are active.
+    * In `btn_admin_del_` and `/remove_account`, the confirmation message dynamically displays real remaining fleet health: `🟢 ${activeCount} Active • 🔴 ${revokedCount} Needs Re-link (${accounts.length} Total)`.
+  - **☁️ Active-Passive Failback from Render to Cloudflare Edge (Zero KV Waste)**:
+    * Replaced fan-out loops in `render_standby_app.py` and `render_app_latest.py` (`for cf_url in CF_WORKER_URLS`) with **Failback Routing**: requests query Node 1 (`aaaai2.workers.dev`) first, and break immediately upon receiving a 200 OK response, preventing simultaneous multi-node hammering.
+    * Added throttling to `/api/miniapp/tokens/sync` on Cloudflare Workers so token KV writes occur at most once per hour, and only on Node 1, while standby nodes generate 0 KV writes.
+  - **📱 Single Account Inspection (`/acc <id>`) & Natural Language Session Assistant**:
+    * Enhanced `/acc <targetIdx>` to check live session health. If revoked, it clearly states `🔴 Session Revoked (Needs Re-linking)` and presents an instant `[⚡ 1-Tap Re-link #X]` button.
+    * Added conversational AI matcher in message router: when the user asks about blocked sessions ("which account session block", "session audit", "why account block", "relink"), the bot immediately renders the interactive Session Audit card.
+  - **🚀 Render Standby App Index Preservation & Multi-Node Cloud Deployment**:
+    * Updated `verify_login_code` in `render_standby_app.py` and `render_app_latest.py` to accept `data.get("index")`, match against cleaned digits, preserve account slots, and return `"index": target_idx`.
+    * Deployed updated standby code to GitHub repositories `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby` via `push_to_standby_repo.py`, triggering live Render builds.
+    * Deployed updated Cloudflare Workers across all 5 accounts via `deploy_both_cf_workers.py`.
+
 - **⚡ Cloudflare KV Limit Optimization (Primary/Standby Failover), Login OTP Routing Fix & Session Block Audit (October 11, 2026)**:
   - **🛡️ Resolved OTP 5-Digit Verification Code Routing (`90928` Treated as Phone `+90928`)**:
     * Pinpointed root cause of login error reported by user: when entering 5-digit Telegram codes (e.g. `90928`), the dispatcher had no OTP priority filter. If `login_flow` in KV failed due to daily write quota limits, the router fell back to `waiting_phone` and prepended `+`, attempting to request a code for `+90928`.

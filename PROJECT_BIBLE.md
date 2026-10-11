@@ -677,10 +677,16 @@ To facilitate seamless login on new devices (e.g., after phone resets) without S
   - Returns account name, phone number, formatted copyable `code`, 2FA password (`Arif216@`), source, and age in seconds.
 * **Telegram Admin Bot UI**:
   - `🔑 OTP & Relogin` button in persistent reply keyboard and inline keyboards.
-  - Interactive 18-account Grid Picker (`btn_otp_menu`).
-  - 1-by-1 Wizard (`btn_otp_get_1` through `btn_otp_get_18`) with *🔄 Fetch Code Now*, *⏭️ Next / Skip*, and *⏮️ Prev*.
-  - Text commands `/otp <number>` and `/recover`.
+  - Interactive Dynamic Grid Picker (`btn_otp_menu`) with real-time badges: `👑` (Master Host), `🟢` (Active), `🔴` (Needs Re-link).
+  - 1-by-1 Wizard (`btn_otp_get_1` through `btn_otp_get_18`) with *🔄 Fetch Code Now*, *⚡ 1-Tap Re-link*, and *⏭️ Next / Skip*.
+  - Text commands `/otp <number>`, `/recover`, `/sessions`, `/audit`, and `/acc <id>`.
   - 1-tap copyable Markdown `<code>` blocks for phone, login code, and 2FA password.
+
+### 4. Dynamic Session Health Synchronization & Active-Passive Edge Failback
+* **Dynamic Health State Machine**: Managed dynamically via Upstash Redis sets (`fleet:healthy_sessions` and `fleet:revoked_sessions`) with 60s in-memory edge caching.
+* **1-Tap Re-link Auto-Promotion (`onAccountRelinkSuccess`)**: When an account session is re-linked via MTProto, its index is dynamically promoted from `revoked` to `healthy` across all edge nodes, immediately updating the OTP grid, fleet roster, and inspection screens.
+* **Resilient Multi-Layer Account Removal**: Deletions are mirrored across module RAM cache (`memDeletedAccounts`), Upstash Redis (`fleet:deleted_accounts`), and Cloudflare KV (`fleet_deleted_accounts`), ensuring that hitting Cloudflare KV daily free quotas never causes removed accounts to reappear or screens to stall.
+* **Render-to-Edge Failback Routing**: All outbound calls from Render nodes to Cloudflare Workers query Node 1 (`aaaai2.workers.dev`) first, immediately breaking upon receiving a 200 OK response. Standby nodes (Nodes 2-5) produce 0 scheduled KV writes and maintain cold zero-cost standby posture.
 
 ---
 

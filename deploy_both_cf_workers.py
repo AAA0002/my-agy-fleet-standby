@@ -1415,6 +1415,16 @@ async function runDailyCostSweep(env, force = false) {
 const memLoginFlow = new Map();
 let memRatesCache = null;
 let memRatesCacheTs = 0;
+let memFleetAccounts = null;
+let memFleetAccountsTs = 0;
+let memDeletedAccounts = null;
+let memDeletedAccountsTs = 0;
+let lastMiniappTokensKvWrite = 0;
+let memSessionHealth = {
+  healthy: [2, 10, 11, 14, 17],
+  revoked: [1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18],
+  lastCheck: 0
+};
 
 export default {
   async fetch(request, env, ctx) {
@@ -1506,7 +1516,7 @@ export default {
       return { ok: false, error: "Cloud login servers unreachable. Please retry in a few moments." };
     };
 
-    const cloudLoginVerify = async (targetChatId, { code, password, phone, node_url }) => {
+    const cloudLoginVerify = async (targetChatId, { code, password, phone, node_url, index }) => {
       const urls = node_url ? [node_url, ...RENDER_LOGIN_URLS.filter(u => u !== node_url)] : RENDER_LOGIN_URLS;
       for (const baseUrl of urls) {
         try {
@@ -1521,7 +1531,8 @@ export default {
               code: code || "",
               password: password || "",
               chat_id: String(targetChatId),
-              secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"
+              secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026",
+              index: index || null
             })
           });
           if (res.ok) {
@@ -2185,8 +2196,8 @@ fi
       };
       memHeartbeat = heartbeat;
 
-      // KV WRITE SAVER: Throttle to at most once per 30 minutes (max 48 writes/day)
-      let shouldWrite = (Date.now() - lastHeartbeatKvWrite >= 1800000);
+      // KV WRITE SAVER: Throttle to at most once per 30 minutes (max 48 writes/day on primary node only)
+      let shouldWrite = (CURRENT_SUBDOMAIN === "aaaai2") && (Date.now() - lastHeartbeatKvWrite >= 1800000);
       if (shouldWrite) {
         lastHeartbeatKvWrite = Date.now();
         try {
@@ -2219,9 +2230,9 @@ fi
           ctx.waitUntil(env.DB.prepare("INSERT INTO fleet_logs (event, details) VALUES (?, ?)").bind("fleet_sync", JSON.stringify({ node: "__SUBDOMAIN__", accounts: body.accounts ? body.accounts.length : 18, ts: Date.now() })).run().catch(() => {}));
         }
 
-        // 3. KV WRITE SAVER: Throttle to at most once per 30 minutes (max 48 writes/day)
+        // 3. KV WRITE SAVER: Throttle to at most once per 30 minutes on primary node only
         let kvWritten = false;
-        if (Date.now() - lastFleetKvWrite >= 1800000) {
+        if (CURRENT_SUBDOMAIN === "aaaai2" && (Date.now() - lastFleetKvWrite >= 1800000)) {
           lastFleetKvWrite = Date.now();
           kvWritten = true;
           try {
@@ -3066,9 +3077,13 @@ fi
           current[k] = sanitizeTokens(v);
         }
         memTokens = current;
-        try {
-          await env.BACKUP_KV.put("miniapp_tokens", JSON.stringify(current));
-        } catch (_) {}
+        if (CURRENT_SUBDOMAIN === "aaaai2" && (Date.now() - lastMiniappTokensKvWrite >= 3600000)) {
+          lastMiniappTokensKvWrite = Date.now();
+          try {
+            await env.BACKUP_KV.put("miniapp_tokens", JSON.stringify(current));
+          } catch (_) {}
+        }
+        ctx.waitUntil(upstashSet("fleet:tokens_state", current).catch(() => {}));
         if (env.DB) {
           try {
             const nowSec = Math.floor(Date.now() / 1000);
@@ -3544,7 +3559,51 @@ fi
 
         const getDhakaTimestamp = () => new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " (Dhaka)";
 
-        const buildOtpMenuKeyboard = (accList = []) => {
+        const getSessionHealthState = async () => {
+          if (memSessionHealth && (Date.now() - memSessionHealth.lastCheck < 60000)) {
+            return {
+              healthy: new Set(memSessionHealth.healthy),
+              revoked: new Set(memSessionHealth.revoked)
+            };
+          }
+          let healthy = [2, 10, 11, 14, 17];
+          let revoked = [1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18];
+          try {
+            const rawH = await upstashGet("fleet:healthy_sessions");
+            if (rawH) {
+              const arr = typeof rawH === "string" ? JSON.parse(rawH) : rawH;
+              if (Array.isArray(arr) && arr.length > 0) healthy = arr.map(Number);
+            }
+          } catch (_) {}
+          try {
+            const rawR = await upstashGet("fleet:revoked_sessions");
+            if (rawR) {
+              const arr = typeof rawR === "string" ? JSON.parse(rawR) : rawR;
+              if (Array.isArray(arr) && arr.length > 0) revoked = arr.map(Number);
+            }
+          } catch (_) {}
+
+          const healthySet = new Set(healthy);
+          const revokedSet = new Set(revoked.filter(x => !healthySet.has(x)));
+          memSessionHealth = {
+            healthy: Array.from(healthySet),
+            revoked: Array.from(revokedSet),
+            lastCheck: Date.now()
+          };
+          return { healthy: healthySet, revoked: revokedSet };
+        };
+
+        const onAccountRelinkSuccess = async (targetIdx) => {
+          const numIdx = Number(targetIdx);
+          if (!numIdx) return;
+          if (!memSessionHealth.healthy.includes(numIdx)) memSessionHealth.healthy.push(numIdx);
+          memSessionHealth.revoked = memSessionHealth.revoked.filter(x => x !== numIdx);
+          memSessionHealth.lastCheck = Date.now();
+          ctx.waitUntil(upstashSet("fleet:healthy_sessions", memSessionHealth.healthy));
+          ctx.waitUntil(upstashSet("fleet:revoked_sessions", memSessionHealth.revoked));
+        };
+
+        const buildOtpMenuKeyboard = (accList = [], revokedSet = new Set()) => {
           const rows = [];
           const chunkSize = 3;
           for (let i = 0; i < accList.length; i += chunkSize) {
@@ -3554,8 +3613,10 @@ fi
               const name = cleanName(a, i + cIdx);
               const shortName = name.split(" ")[0];
               const isHost = String(a.user_id) === "6727787768";
+              const isRev = revokedSet.has(idx);
+              const tag = isHost ? " 👑" : (isRev ? " 🔴" : " 🟢");
               return {
-                text: `${idx}. ${shortName}${isHost ? " 👑" : ""}`,
+                text: `${idx}. ${shortName}${tag}`,
                 callback_data: `btn_otp_get_${idx}`
               };
             }));
@@ -3567,11 +3628,11 @@ fi
           }
           rows.push([
             { text: "➕ Add Account", callback_data: "btn_add_account" },
-            { text: "🗑️ Remove Account", callback_data: "btn_admin_remove_menu" }
+            { text: "🔍 Session Audit", callback_data: "btn_session_audit" }
           ]);
           rows.push([
             { text: `👥 Fleet Accounts (${accList.length})`, callback_data: "btn_accounts" },
-            { text: "📊 Fleet Status", callback_data: "btn_status" }
+            { text: "🗑️ Remove Account", callback_data: "btn_admin_remove_menu" }
           ]);
           return { inline_keyboard: rows };
         };
@@ -3580,15 +3641,15 @@ fi
           inline_keyboard: [
             [
               { text: "⚡ Instant Harvest", callback_data: "btn_harvest" },
-              { text: "🔥 Economy & Sweep", callback_data: "btn_burn" }
+              { text: "🔍 Session Audit", callback_data: "btn_session_audit" }
             ],
             [
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
               { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" }
             ],
             [
-              { text: "📊 Community Miners", callback_data: "btn_community" },
-              { text: "🚀 Open Executive Dashboard", web_app: { url: dashUrl } }
+              { text: "🔥 Economy & Sweep", callback_data: "btn_burn" },
+              { text: "🚀 Open Admin Console", web_app: { url: dashUrl } }
             ]
           ]
         };
@@ -3632,15 +3693,15 @@ fi
             ],
             [
               { text: "⚡ Instant Harvest" },
-              { text: "🔥 Economy & Sweep" }
+              { text: "🔍 Session Audit" }
             ],
             [
               { text: "⚙️ Fleet Accounts" },
               { text: "🌐 Cloud Mesh" }
             ],
             [
-              { text: "🧠 Ask Ari AI" },
-              { text: "🎨 AI Image" }
+              { text: "🔥 Economy & Sweep" },
+              { text: "💼 Treasury & Wallets" }
             ]
           ],
           resize_keyboard: true,
@@ -3830,21 +3891,14 @@ fi
         };
 
         const getFleetAccounts = async () => {
-          let accounts = [];
-          // 1. Primary storage: Cloudflare KV (immune to Upstash Redis plan limits)
-          try {
-            if (env.BACKUP_KV) {
-              const raw = await env.BACKUP_KV.get("fleet_live_state");
-              if (raw) {
-                const s = JSON.parse(raw);
-                if (s.accounts && Array.isArray(s.accounts) && s.accounts.length > 0) {
-                  accounts = s.accounts;
-                }
-              }
-            }
-          } catch (_) {}
+          let accounts = null;
 
-          // 2. Secondary fallback: Upstash Redis
+          // 0. High-speed In-Memory RAM Cache (immune to all KV & Redis rate limits)
+          if (memFleetAccounts && Array.isArray(memFleetAccounts) && memFleetAccounts.length > 0 && (Date.now() - memFleetAccountsTs < 30000)) {
+            accounts = memFleetAccounts.map(a => Object.assign({}, a));
+          }
+
+          // 1. Upstash Redis (Serverless cloud cache, 0 KV operations)
           if (!accounts || accounts.length === 0) {
             try {
               const upstashRaw = await upstashGet("fleet:live_state");
@@ -3857,29 +3911,72 @@ fi
             } catch (_) {}
           }
 
+          // 2. Cloudflare KV fallback (read safely with error protection)
+          if (!accounts || accounts.length === 0) {
+            try {
+              if (env.BACKUP_KV) {
+                const raw = await env.BACKUP_KV.get("fleet_live_state");
+                if (raw) {
+                  const s = JSON.parse(raw);
+                  if (s.accounts && Array.isArray(s.accounts) && s.accounts.length > 0) {
+                    accounts = s.accounts;
+                  }
+                }
+              }
+            } catch (_) {}
+          }
+
           // 3. Static Default Accounts fallback
           if (!accounts || accounts.length === 0) {
             accounts = DEFAULT_FLEET_ACCOUNTS.map(a => Object.assign({}, a));
           }
 
-          // 4. Load Blacklist of Deleted Accounts from KV
+          // 4. Load Blacklist of Deleted Accounts with Multi-Layer Failback
           let deletedSet = new Set();
-          try {
-            if (env.BACKUP_KV) {
-              const rawDel = await env.BACKUP_KV.get("fleet_deleted_accounts");
-              if (rawDel) {
-                const parsedDel = JSON.parse(rawDel);
-                if (Array.isArray(parsedDel)) {
-                  parsedDel.forEach(d => {
-                    if (d) {
-                      deletedSet.add(String(d).trim().replace("+", ""));
-                      deletedSet.add(String(d).trim());
-                    }
-                  });
+          let delArr = null;
+
+          if (memDeletedAccounts && Array.isArray(memDeletedAccounts)) {
+            delArr = memDeletedAccounts;
+          }
+
+          if (!delArr) {
+            try {
+              const upDel = await upstashGet("fleet:deleted_accounts");
+              if (upDel) {
+                const parsed = typeof upDel === "string" ? JSON.parse(upDel) : upDel;
+                if (Array.isArray(parsed)) {
+                  delArr = parsed;
+                  memDeletedAccounts = delArr;
+                  memDeletedAccountsTs = Date.now();
                 }
               }
-            }
-          } catch (_) {}
+            } catch (_) {}
+          }
+
+          if (!delArr) {
+            try {
+              if (env.BACKUP_KV) {
+                const rawDel = await env.BACKUP_KV.get("fleet_deleted_accounts");
+                if (rawDel) {
+                  const parsedDel = JSON.parse(rawDel);
+                  if (Array.isArray(parsedDel)) {
+                    delArr = parsedDel;
+                    memDeletedAccounts = delArr;
+                    memDeletedAccountsTs = Date.now();
+                  }
+                }
+              }
+            } catch (_) {}
+          }
+
+          if (Array.isArray(delArr)) {
+            delArr.forEach(d => {
+              if (d) {
+                deletedSet.add(String(d).trim().replace("+", ""));
+                deletedSet.add(String(d).trim());
+              }
+            });
+          }
 
           // 5. Strictly filter out any deleted accounts
           if (deletedSet.size > 0) {
@@ -3898,32 +3995,72 @@ fi
             a.index = idx + 1;
           });
 
+          memFleetAccounts = accounts;
+          memFleetAccountsTs = Date.now();
+
           return accounts;
         };
 
         const unBlacklistAccount = async (targetUserId, targetPhone, targetName = "User") => {
+          const tU = String(targetUserId || "").trim();
+          const tP = String(targetPhone || "").trim();
+          const tPC = tP.replace("+", "");
+
+          if (memDeletedAccounts && Array.isArray(memDeletedAccounts)) {
+            memDeletedAccounts = memDeletedAccounts.filter(x => {
+              const s = String(x).trim();
+              return s !== tU && s !== tP && s !== tPC;
+            });
+            memDeletedAccountsTs = Date.now();
+          }
+          memFleetAccounts = null;
+          memFleetAccountsTs = 0;
+
+          try {
+            let delArr = [];
+            const upDel = await upstashGet("fleet:deleted_accounts");
+            if (upDel) {
+              delArr = typeof upDel === "string" ? JSON.parse(upDel) : upDel;
+            }
+            if (Array.isArray(delArr)) {
+              delArr = delArr.filter(x => {
+                const s = String(x).trim();
+                return s !== tU && s !== tP && s !== tPC;
+              });
+              ctx.waitUntil(upstashSet("fleet:deleted_accounts", delArr));
+            }
+          } catch (_) {}
+
           try {
             if (env.BACKUP_KV) {
               const rawDel = await env.BACKUP_KV.get("fleet_deleted_accounts");
               if (rawDel) {
                 let delArr = JSON.parse(rawDel);
                 if (Array.isArray(delArr)) {
-                  const tU = String(targetUserId || "").trim();
-                  const tP = String(targetPhone || "").trim();
-                  const tPC = tP.replace("+", "");
-                  delArr = delArr.filter(x => x !== tU && x !== tP && x !== tPC);
-                  await env.BACKUP_KV.put("fleet_deleted_accounts", JSON.stringify(delArr));
+                  delArr = delArr.filter(x => {
+                    const s = String(x).trim();
+                    return s !== tU && s !== tP && s !== tPC;
+                  });
+                  await env.BACKUP_KV.put("fleet_deleted_accounts", JSON.stringify(delArr)).catch(() => {});
                 }
               }
-              const curAccs = await getFleetAccounts();
-              if (!curAccs.some(a => (targetUserId && String(a.user_id) === String(targetUserId)) || (targetPhone && a.phone === targetPhone))) {
-                curAccs.push({
-                  index: curAccs.length + 1,
-                  name: targetName,
-                  user_id: targetUserId,
-                  phone: targetPhone
-                });
-                await env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts: curAccs, timestamp: Date.now() }));
+            }
+          } catch (_) {}
+
+          try {
+            const curAccs = await getFleetAccounts();
+            if (!curAccs.some(a => (targetUserId && String(a.user_id) === String(targetUserId)) || (targetPhone && a.phone === targetPhone))) {
+              curAccs.push({
+                index: curAccs.length + 1,
+                name: targetName,
+                user_id: targetUserId,
+                phone: targetPhone
+              });
+              memFleetAccounts = curAccs;
+              memFleetAccountsTs = Date.now();
+              ctx.waitUntil(upstashSet("fleet:live_state", { accounts: curAccs, timestamp: Date.now() }));
+              if (env.BACKUP_KV) {
+                ctx.waitUntil(env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts: curAccs, timestamp: Date.now() })).catch(() => {}));
               }
             }
           } catch (_) {}
@@ -3955,37 +4092,41 @@ fi
           if (chatId) {
             if (cbData === "btn_accounts") {
               const accounts = await getFleetAccounts();
+              const health = await getSessionHealthState();
               const dhakaTime = getDhakaTimestamp();
+              let activeCount = 0;
+              let revokedCount = 0;
               const lines = accounts.map((a, i) => {
+                const idx = a.index || (i + 1);
                 const isHost = String(a.user_id) === "6727787768";
-                const tag = isHost ? "Master Host 👑" : "🟢 Active";
-                const ph = (a.phone && a.phone !== "N/A" && a.phone !== "Hidden") ? a.phone : (KNOWN_PHONES[String(a.user_id)] || KNOWN_PHONES_BY_INDEX[i + 1] || "");
+                const isRev = health.revoked.has(idx);
+                if (isRev) revokedCount++; else activeCount++;
+                const tag = isHost ? "Master Host 👑" : (isRev ? "🔴 Needs Re-link" : "🟢 Active");
+                const ph = (a.phone && a.phone !== "N/A" && a.phone !== "Hidden") ? a.phone : (KNOWN_PHONES[String(a.user_id)] || KNOWN_PHONES_BY_INDEX[idx] || "");
                 const phoneStr = ph ? ` (${ph})` : "";
-                return `• #${a.index || (i+1)} *${cleanName(a, i)}*${phoneStr} — ${tag}`;
+                return `• #${idx} *${cleanName(a, i)}*${phoneStr} — ${tag}`;
               }).join("\n");
 
               const rep = `👥 *Accounts Management Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `🟢 *Fleet Status:* \`${accounts.length}/${accounts.length} Accounts Online & Active\`\n` +
-                `🤖 *24/7 Farming:* All 5 Bots Active (MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network)\n` +
-                `🛡️ *Security:* 100% Anti-Ban Verified • Isolated Wallets & Proxies\n` +
+                `📊 *Fleet Breakdown:* 🟢 \`${activeCount} Active\` • 🔴 \`${revokedCount} Needs Re-link\` (\`${accounts.length} Total\`)\n` +
+                `🤖 *24/7 Farming:* All 8 Active Legitimate Bots (Stones • MRG • AI Lab • UltraWallet • ATF • FINVORA • Victor's Company • VyroDrop)\n` +
+                `🛡️ *Security:* 100% Anti-Ban Verified • Isolated BD Fingerprints\n` +
                 `⏱️ *Last Synced:* \`${dhakaTime}\`\n\n` +
                 `📋 *Connected Accounts (${accounts.length}):*\n` +
                 `${lines}\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `💡 *Quick Actions:*\n` +
                 `• Tap *➕ Add Account* below to connect a new number\n` +
+                `• Tap *🔍 Session Audit* to inspect and 1-tap re-link blocked accounts\n` +
                 `• Tap *🗑️ Remove Account* to disconnect any account\n` +
-                `• Tap *🚀 Open Executive Dashboard* to view live cards & balances\n` +
                 `• Send \`/acc <1-${accounts.length}>\` (e.g. \`/acc 1\`) to inspect any account in detail`;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, accountsInlineKeyboard);
             } else if (cbData === "btn_session_audit" || cbData === "btn_audit_refresh") {
               const dhakaTime = getDhakaTimestamp();
               const accounts = await getFleetAccounts();
-              
-              // 5 healthy sessions: 2, 10, 11, 14, 17
-              // 13 revoked sessions (AuthKeyDuplicatedError): 1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18
-              const REVOKED_INDICES = new Set([1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18]);
+              const health = await getSessionHealthState();
+              const REVOKED_INDICES = health.revoked;
               
               const activeList = [];
               const revokedList = [];
@@ -4059,35 +4200,43 @@ fi
               const targetClean = targetId.replace("+", "");
               let accounts = await getFleetAccounts();
               const removedAcc = accounts.find(a => String(a.user_id) === targetId || String(a.phone || "").replace("+", "") === targetClean || String(a.index) === targetId);
+              const removedIdx = removedAcc ? removedAcc.index : (parseInt(targetId, 10) || null);
               
               accounts = accounts.filter(a => String(a.user_id) !== targetId && String(a.phone || "").replace("+", "") !== targetClean && String(a.index) !== targetId);
               accounts.forEach((a, i) => { a.index = i + 1; });
 
-              // Update KV deleted blacklist & live state
-              try {
-                if (env.BACKUP_KV) {
-                  let deletedList = [];
-                  const rawDel = await env.BACKUP_KV.get("fleet_deleted_accounts");
-                  if (rawDel) {
-                    try { deletedList = JSON.parse(rawDel); } catch (_) {}
-                  }
-                  if (!Array.isArray(deletedList)) deletedList = [];
-                  deletedList.push(targetId);
-                  deletedList.push(targetClean);
-                  if (removedAcc) {
-                    if (removedAcc.user_id) deletedList.push(String(removedAcc.user_id));
-                    if (removedAcc.phone) {
-                      deletedList.push(String(removedAcc.phone));
-                      deletedList.push(String(removedAcc.phone).replace("+", ""));
-                    }
-                  }
-                  deletedList = Array.from(new Set(deletedList.map(x => String(x).trim())));
-                  await env.BACKUP_KV.put("fleet_deleted_accounts", JSON.stringify(deletedList));
-                  await env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts, timestamp: Date.now() }));
+              if (!memDeletedAccounts || !Array.isArray(memDeletedAccounts)) memDeletedAccounts = [];
+              memDeletedAccounts.push(targetId);
+              memDeletedAccounts.push(targetClean);
+              if (removedAcc) {
+                if (removedAcc.user_id) memDeletedAccounts.push(String(removedAcc.user_id));
+                if (removedAcc.phone) {
+                  memDeletedAccounts.push(String(removedAcc.phone));
+                  memDeletedAccounts.push(String(removedAcc.phone).replace("+", ""));
                 }
-              } catch (_) {}
+              }
+              memDeletedAccounts = Array.from(new Set(memDeletedAccounts.map(x => String(x).trim())));
+              memDeletedAccountsTs = Date.now();
+              memFleetAccounts = accounts;
+              memFleetAccountsTs = Date.now();
 
+              if (removedIdx) {
+                memSessionHealth.healthy = memSessionHealth.healthy.filter(x => x !== removedIdx);
+                memSessionHealth.revoked = memSessionHealth.revoked.filter(x => x !== removedIdx);
+                memSessionHealth.lastCheck = Date.now();
+                ctx.waitUntil(upstashSet("fleet:healthy_sessions", memSessionHealth.healthy).catch(() => {}));
+                ctx.waitUntil(upstashSet("fleet:revoked_sessions", memSessionHealth.revoked).catch(() => {}));
+              }
+
+              // Update Upstash Redis
+              ctx.waitUntil(upstashSet("fleet:deleted_accounts", memDeletedAccounts).catch(() => {}));
               ctx.waitUntil(upstashSet("fleet:live_state", { accounts, timestamp: Date.now() }).catch(() => {}));
+
+              // Update KV safely
+              if (env.BACKUP_KV) {
+                ctx.waitUntil(env.BACKUP_KV.put("fleet_deleted_accounts", JSON.stringify(memDeletedAccounts)).catch(() => {}));
+                ctx.waitUntil(env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts, timestamp: Date.now() })).catch(() => {}));
+              }
 
               // Evict across Render Standby Nodes
               const renderNodes = [
@@ -4104,10 +4253,13 @@ fi
               }
 
               const dhakaTime = getDhakaTimestamp();
+              const health = await getSessionHealthState();
+              const remainingHealthy = accounts.filter(a => !health.revoked.has(a.index)).length;
+              const remainingRevoked = accounts.filter(a => health.revoked.has(a.index)).length;
               const accDesc = removedAcc ? `${cleanName(removedAcc, 0)} (\`${removedAcc.phone || removedAcc.user_id}\`)` : `\`${targetId}\``;
               const rep = `✅ *Account Removed from Fleet Successfully!* 🗑️\n\n` +
                 `• *Removed:* ${accDesc}\n` +
-                `• *Remaining Active Accounts:* ${accounts.length} / ${accounts.length}\n` +
+                `• *Remaining Fleet:* \`${accounts.length} Accounts\` (🟢 \`${remainingHealthy} Active\` • 🔴 \`${remainingRevoked} Needs Re-link\`)\n` +
                 `• *Status:* Disconnected from 24/7 cloud mining and sessions evicted.\n` +
                 `• *⏱️ Updated:* \`${dhakaTime}\`\n\n` +
                 `Tap *👥 Fleet Accounts* below to view updated fleet roster.`;
@@ -4121,6 +4273,7 @@ fi
               await editOrSendResilientMessage(chatId, cbMsgId, rep, repMarkup);
             } else if (cbData === "btn_otp_menu") {
               const accounts = await getFleetAccounts();
+              const health = await getSessionHealthState();
               const dhakaTime = getDhakaTimestamp();
               const rep = `🔑 *Telegram Login OTP & Relogin Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -4133,7 +4286,7 @@ fi
                 `• *⏱️ Synced:* \`${dhakaTime}\`\n\n` +
                 `_Or tap **▶️ Start 1-by-1 Wizard** to log into all accounts consecutively._`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
-              await editOrSendResilientMessage(chatId, cbMsgId, rep, buildOtpMenuKeyboard(accounts));
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, buildOtpMenuKeyboard(accounts, health.revoked));
             } else if (cbData.startsWith("btn_otp_get_")) {
               const targetIdx = parseInt(cbData.replace("btn_otp_get_", ""), 10) || 1;
               const accounts = await getFleetAccounts();
@@ -5601,31 +5754,39 @@ fi
             accounts = accounts.filter(a => String(a.user_id) !== targetId && String(a.phone || "").replace("+", "") !== targetClean && String(a.index) !== targetId);
             accounts.forEach((a, i) => { a.index = i + 1; });
 
-            // Update KV deleted blacklist & live state
-            try {
-              if (env.BACKUP_KV) {
-                let deletedList = [];
-                const rawDel = await env.BACKUP_KV.get("fleet_deleted_accounts");
-                if (rawDel) {
-                  try { deletedList = JSON.parse(rawDel); } catch (_) {}
-                }
-                if (!Array.isArray(deletedList)) deletedList = [];
-                deletedList.push(targetId);
-                deletedList.push(targetClean);
-                if (removedAcc) {
-                  if (removedAcc.user_id) deletedList.push(String(removedAcc.user_id));
-                  if (removedAcc.phone) {
-                    deletedList.push(String(removedAcc.phone));
-                    deletedList.push(String(removedAcc.phone).replace("+", ""));
-                  }
-                }
-                deletedList = Array.from(new Set(deletedList.map(x => String(x).trim())));
-                await env.BACKUP_KV.put("fleet_deleted_accounts", JSON.stringify(deletedList));
-                await env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts, timestamp: Date.now() }));
+            if (!memDeletedAccounts || !Array.isArray(memDeletedAccounts)) memDeletedAccounts = [];
+            memDeletedAccounts.push(targetId);
+            memDeletedAccounts.push(targetClean);
+            if (removedAcc) {
+              if (removedAcc.user_id) memDeletedAccounts.push(String(removedAcc.user_id));
+              if (removedAcc.phone) {
+                memDeletedAccounts.push(String(removedAcc.phone));
+                memDeletedAccounts.push(String(removedAcc.phone).replace("+", ""));
               }
-            } catch (_) {}
+            }
+            memDeletedAccounts = Array.from(new Set(memDeletedAccounts.map(x => String(x).trim())));
+            memDeletedAccountsTs = Date.now();
+            memFleetAccounts = accounts;
+            memFleetAccountsTs = Date.now();
 
+            const removedIdx = removedAcc ? removedAcc.index : (parseInt(targetId, 10) || null);
+            if (removedIdx) {
+              memSessionHealth.healthy = memSessionHealth.healthy.filter(x => x !== removedIdx);
+              memSessionHealth.revoked = memSessionHealth.revoked.filter(x => x !== removedIdx);
+              memSessionHealth.lastCheck = Date.now();
+              ctx.waitUntil(upstashSet("fleet:healthy_sessions", memSessionHealth.healthy).catch(() => {}));
+              ctx.waitUntil(upstashSet("fleet:revoked_sessions", memSessionHealth.revoked).catch(() => {}));
+            }
+
+            // Update Upstash Redis
+            ctx.waitUntil(upstashSet("fleet:deleted_accounts", memDeletedAccounts).catch(() => {}));
             ctx.waitUntil(upstashSet("fleet:live_state", { accounts, timestamp: Date.now() }).catch(() => {}));
+
+            // Update KV safely
+            if (env.BACKUP_KV) {
+              ctx.waitUntil(env.BACKUP_KV.put("fleet_deleted_accounts", JSON.stringify(memDeletedAccounts)).catch(() => {}));
+              ctx.waitUntil(env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts, timestamp: Date.now() })).catch(() => {}));
+            }
 
             // Evict across Render Standby Nodes
             const renderNodes = [
@@ -5642,9 +5803,12 @@ fi
             }
 
             const accDesc = removedAcc ? `${cleanName(removedAcc, 0)} (\`${removedAcc.phone || removedAcc.user_id}\`)` : `\`${targetId}\``;
+            const health = await getSessionHealthState();
+            const remainingHealthy = accounts.filter(a => !health.revoked.has(a.index)).length;
+            const remainingRevoked = accounts.filter(a => health.revoked.has(a.index)).length;
             const rep = `✅ *Account Removed from Fleet Successfully!* 🗑️\n\n` +
               `• *Removed:* ${accDesc}\n` +
-              `• *Remaining Active Accounts:* ${accounts.length} / ${accounts.length}\n` +
+              `• *Remaining Fleet:* \`${accounts.length} Accounts\` (🟢 \`${remainingHealthy} Active\` • 🔴 \`${remainingRevoked} Needs Re-link\`)\n` +
               `• *Action:* Disconnected from 24/7 cloud mining and sessions evicted.\n` +
               `• *⏱️ Updated:* \`${dhakaTime}\`\n\n` +
               `Tap *👥 Fleet Accounts* below to view updated fleet roster.`;
@@ -5703,9 +5867,10 @@ fi
               try { phone = await upstashGet("last_login_phone:" + chatId) || ""; } catch (_) {}
             }
             const cleanCode = cleanDigitsOnly;
-            const res = await cloudLoginVerify(chatId, { code: cleanCode, phone, node_url });
+            const targetRelinkIdx = (loginFlowState && loginFlowState.index) ? Number(loginFlowState.index) : null;
+            const res = await cloudLoginVerify(chatId, { code: cleanCode, phone, node_url, index: targetRelinkIdx });
             if (res && res.need_2fa) {
-              const flow2fa = { step: "waiting_2fa", phone: res.phone || phone, node_url };
+              const flow2fa = { step: "waiting_2fa", phone: res.phone || phone, node_url, index: targetRelinkIdx || res.index };
               memLoginFlow.set(String(chatId), flow2fa);
               ctx.waitUntil(upstashSet("login_flow:" + chatId, flow2fa));
               if (env.BACKUP_KV) {
@@ -5721,7 +5886,12 @@ fi
               ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
               if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
               ctx.waitUntil(unBlacklistAccount(res.user_id, res.phone || phone, res.name || "User"));
+              const finalIdx = targetRelinkIdx || res.index;
+              if (finalIdx) {
+                ctx.waitUntil(onAccountRelinkSuccess(finalIdx));
+              }
               const succMsg = `🎉 *Account Connected Successfully!*\n\n` +
+                (finalIdx ? `• *Fleet Slot:* Account #${finalIdx} 🟢 (Restored to Active)\n` : "") +
                 `• *Name:* ${res.name || "User"}\n` +
                 `• *Username:* @${res.username || "None"}\n` +
                 `• *User ID:* \`${res.user_id}\`\n` +
@@ -5746,13 +5916,19 @@ fi
             await sendChatAction(chatId, "typing");
             const phone = loginFlowState.phone || "";
             const node_url = loginFlowState.node_url || "";
-            const res = await cloudLoginVerify(chatId, { password: trimmed, phone, node_url });
+            const targetRelinkIdx = (loginFlowState && loginFlowState.index) ? Number(loginFlowState.index) : null;
+            const res = await cloudLoginVerify(chatId, { password: trimmed, phone, node_url, index: targetRelinkIdx });
             if (res && res.ok) {
               memLoginFlow.delete(String(chatId));
               ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
               if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
               ctx.waitUntil(unBlacklistAccount(res.user_id, res.phone || phone, res.name || "User"));
+              const finalIdx = targetRelinkIdx || res.index;
+              if (finalIdx) {
+                ctx.waitUntil(onAccountRelinkSuccess(finalIdx));
+              }
               const succMsg = `🎉 *Account Connected Successfully with 2FA!*\n\n` +
+                (finalIdx ? `• *Fleet Slot:* Account #${finalIdx} 🟢 (Restored to Active)\n` : "") +
                 `• *Name:* ${res.name || "User"}\n` +
                 `• *Username:* @${res.username || "None"}\n` +
                 `• *User ID:* \`${res.user_id}\`\n` +
@@ -5801,7 +5977,15 @@ fi
               await sendChatAction(chatId, "typing");
               const res = await cloudLoginSendCode(normalized, chatId);
               if (res && res.ok) {
-                const flowState = { step: "waiting_code", phone: normalized, node_url: res.node_url || "" };
+                let matchedIdx = null;
+                const cleanNormDigits = normalized.replace(/\D/g, '');
+                for (const [idxStr, ph] of Object.entries(KNOWN_PHONES_BY_INDEX)) {
+                  if (ph.replace(/\D/g, '') === cleanNormDigits) {
+                    matchedIdx = Number(idxStr);
+                    break;
+                  }
+                }
+                const flowState = { step: "waiting_code", phone: normalized, node_url: res.node_url || "", index: matchedIdx };
                 memLoginFlow.set(String(chatId), flowState);
                 ctx.waitUntil(upstashSet("login_flow:" + chatId, flowState));
                 ctx.waitUntil(upstashSet("last_login_phone:" + chatId, normalized));
@@ -5953,7 +6137,8 @@ fi
                 `• *Active Accounts:* \`${totalAccs}\`\n` +
                 `• *⏱️ Synced:* \`${dhakaTime}\`\n\n` +
                 `_Or tap **▶️ Start 1-by-1 Wizard** to go in order._`;
-              await sendResilientMessage(chatId, rep, buildOtpMenuKeyboard(accounts));
+              const health = await getSessionHealthState();
+              await sendResilientMessage(chatId, rep, buildOtpMenuKeyboard(accounts, health.revoked));
             }
           })());
           return new Response("OK");
@@ -6344,54 +6529,65 @@ fi
               const targetIdx = parseInt(accParts[1], 10);
               if (targetIdx >= 1 && targetIdx <= accounts.length) {
                 const a = accounts[targetIdx - 1];
+                const health = await getSessionHealthState();
                 const isHost = String(a.user_id) === "6727787768";
+                const isRev = health.revoked.has(targetIdx);
                 const ph = (a.phone && a.phone !== "N/A" && a.phone !== "Hidden") ? a.phone : (KNOWN_PHONES[String(a.user_id)] || KNOWN_PHONES_BY_INDEX[targetIdx] || "N/A");
                 const cName = cleanName(a, targetIdx - 1);
+                const daemonStatus = isHost ? "👑 Master Host (Online & Directing)" : (isRev ? "🔴 Session Revoked (Needs Re-linking)" : "🟢 Active & Mining");
                 const detailRep = `📱 *Account #${targetIdx} Inspection*\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
                   `• *Name:* ${cName}\n` +
                   `• *Phone:* \`${ph}\`\n` +
                   `• *User ID:* \`${a.user_id || "N/A"}\`\n` +
-                  `• *Role:* ${isHost ? "Master Host 👑" : "Worker Account 🟢"}\n` +
-                  `• *Daemon Status:* 🟢 Active & Mining\n` +
+                  `• *Role:* ${isHost ? "Master Host 👑" : (isRev ? "Worker Account 🔴" : "Worker Account 🟢")}\n` +
+                  `• *Daemon Status:* ${daemonStatus}\n` +
                   `• *Mining Policy:* 100% Compounding & Hash Growth Mode\n` +
                   `• *Withdrawal Directive:* Permanently Disabled (Anti-Wrong-Address Protection) 🛡️\n` +
-                  `• *Active Lineup:* 5 Legitimate Bots Active 24/7 (MRG • ATF • Victor's • VyroDrop • Kynex)\n` +
+                  `• *Active Lineup:* 8 Legitimate Bots Active 24/7 (Stones • MRG • AI Lab • UltraWallet • ATF • FINVORA • Victor's • VyroDrop)\n` +
                   `• *⏱️ Synced:* \`${dhakaTime}\`\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
                   `💡 _Send \`/acc <1-${accounts.length}>\` to inspect any account or \`/accounts\` for full fleet roster._`;
-                const singleAccBtns = {
-                  inline_keyboard: [
-                    [{ text: `🗑️ Remove #${targetIdx} ${cName}`, callback_data: `btn_admin_del_${a.user_id || a.phone}` }],
-                    [{ text: "🔙 Fleet Roster", callback_data: "btn_accounts" }]
-                  ]
-                };
-                await sendReply(detailRep, singleAccBtns);
+                const singleAccBtns = [];
+                if (isRev) {
+                  singleAccBtns.push([{ text: `⚡ 1-Tap Re-link #${targetIdx}`, callback_data: `btn_relink_${targetIdx}` }]);
+                }
+                singleAccBtns.push([
+                  { text: `🗑️ Remove #${targetIdx} ${cName}`, callback_data: `btn_admin_del_${a.user_id || a.phone}` },
+                  { text: "🔙 Fleet Roster", callback_data: "btn_accounts" }
+                ]);
+                await sendReply(detailRep, { inline_keyboard: singleAccBtns });
                 return;
               }
             }
 
+            const health = await getSessionHealthState();
+            let activeCount = 0;
+            let revokedCount = 0;
             const lines = accounts.map((a, i) => {
+              const idx = a.index || (i + 1);
               const isHost = String(a.user_id) === "6727787768";
-              const tag = isHost ? "Master Host 👑" : "🟢 Active";
-              const ph = (a.phone && a.phone !== "N/A" && a.phone !== "Hidden") ? a.phone : (KNOWN_PHONES[String(a.user_id)] || KNOWN_PHONES_BY_INDEX[i + 1] || "");
+              const isRev = health.revoked.has(idx);
+              if (isRev) revokedCount++; else activeCount++;
+              const tag = isHost ? "Master Host 👑" : (isRev ? "🔴 Needs Re-link" : "🟢 Active");
+              const ph = (a.phone && a.phone !== "N/A" && a.phone !== "Hidden") ? a.phone : (KNOWN_PHONES[String(a.user_id)] || KNOWN_PHONES_BY_INDEX[idx] || "");
               const phoneStr = ph ? ` (${ph})` : "";
-              return `• #${a.index || (i+1)} *${cleanName(a, i)}*${phoneStr} — ${tag}`;
+              return `• #${idx} *${cleanName(a, i)}*${phoneStr} — ${tag}`;
             }).join("\n");
 
             const rep = `👥 *Accounts Management Hub*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `🟢 *Fleet Status:* \`${accounts.length}/${accounts.length} Accounts Online & Active\`\n` +
-              `🤖 *24/7 Farming:* All 5 Bots Active (MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network)\n` +
-              `🛡️ *Security:* 100% Anti-Ban Verified • Isolated Wallets & Proxies\n` +
+              `📊 *Fleet Breakdown:* 🟢 \`${activeCount} Active\` • 🔴 \`${revokedCount} Needs Re-link\` (\`${accounts.length} Total\`)\n` +
+              `🤖 *24/7 Farming:* All 8 Active Legitimate Bots (Stones • MRG • AI Lab • UltraWallet • ATF • FINVORA • Victor's Company • VyroDrop)\n` +
+              `🛡️ *Security:* 100% Anti-Ban Verified • Isolated BD Fingerprints\n` +
               `⏱️ *Last Synced:* \`${dhakaTime}\`\n\n` +
               `📋 *Connected Accounts (${accounts.length}):*\n` +
               `${lines}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `💡 *Quick Actions:*\n` +
               `• Tap *➕ Add Account* below to connect a new number\n` +
+              `• Tap *🔍 Session Audit* to view & 1-tap re-link blocked accounts\n` +
               `• Tap *🗑️ Remove Account* to disconnect any account\n` +
-              `• Tap *🚀 Open Executive Dashboard* to view live cards & balances\n` +
               `• Send \`/acc <1-${accounts.length}>\` (e.g. \`/acc 1\`) to inspect any account in detail`;
             await sendReply(rep, accountsInlineKeyboard);
           })());
@@ -6404,7 +6600,8 @@ fi
             await sendChatAction(chatId, "typing");
             const dhakaTime = getDhakaTimestamp();
             const accounts = await getFleetAccounts();
-            const REVOKED_INDICES = new Set([1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18]);
+            const health = await getSessionHealthState();
+            const REVOKED_INDICES = health.revoked;
             const activeList = [];
             const revokedList = [];
             accounts.forEach((acc, i) => {
@@ -7242,6 +7439,61 @@ fi
 
           const userLower = text.toLowerCase();
 
+          if (userLower.includes("session") || userLower.includes("audit") || userLower.includes("blocked") || userLower.includes("block") || userLower.includes("relink") || userLower.includes("re-link")) {
+            const dhakaTime = getDhakaTimestamp();
+            const accounts = await getFleetAccounts();
+            const health = await getSessionHealthState();
+            const activeList = [];
+            const revokedList = [];
+            accounts.forEach((acc, i) => {
+              const idx = acc.index || (i + 1);
+              const ph = (acc.phone && acc.phone !== "N/A" && acc.phone !== "Hidden") ? acc.phone : (KNOWN_PHONES[String(acc.user_id)] || KNOWN_PHONES_BY_INDEX[idx] || "N/A");
+              const name = cleanName(acc, i);
+              if (health.revoked.has(idx)) {
+                revokedList.push({ idx, name, phone: ph });
+              } else {
+                activeList.push({ idx, name, phone: ph });
+              }
+            });
+
+            const rep = `🔍 *Telegram Fleet Session Audit*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `📊 *Session Health Summary:*\n` +
+              `• 🟢 *Active & Authorized:* \`${activeList.length} Accounts\`\n` +
+              `• 🔴 *Blocked / Revoked:* \`${revokedList.length} Accounts\`\n` +
+              `• 🛡️ *Revocation Cause:* \`AuthKeyDuplicatedError\`\n` +
+              `  _(Telegram revoked keys due to simultaneous multi-IP access)_\n\n` +
+              `🟢 *Active Sessions (${activeList.length}):*\n` +
+              activeList.map(a => `• *#${a.idx}* ${a.name} (\`${a.phone}\`) — 🟢 Online`).join("\n") + `\n\n` +
+              `🔴 *Revoked / Needs Re-link (${revokedList.length}):*\n` +
+              revokedList.map(a => `• *#${a.idx}* ${a.name} (\`${a.phone}\`) — 🔴 Key Revoked`).join("\n") + `\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `⏱️ *Audit Timestamp:* \`${dhakaTime}\`\n\n` +
+              `💡 *To restore an account:*\n` +
+              `Tap any *⚡ Re-link #X* button below to request an official Telegram login code directly to your phone.`;
+
+            const relinkBtns = [];
+            let curRow = [];
+            for (const rev of revokedList) {
+              curRow.push({ text: `⚡ Re-link #${rev.idx}`, callback_data: `btn_relink_${rev.idx}` });
+              if (curRow.length === 3) {
+                relinkBtns.push(curRow);
+                curRow = [];
+              }
+            }
+            if (curRow.length > 0) relinkBtns.push(curRow);
+            relinkBtns.push([
+              { text: "🔄 Re-scan Audit", callback_data: "btn_session_audit" },
+              { text: "🔑 OTP Menu", callback_data: "btn_otp_menu" }
+            ]);
+            relinkBtns.push([
+              { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
+              { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }
+            ]);
+            await sendReply(rep, { inline_keyboard: relinkBtns });
+            return;
+          }
+
           if (userLower.includes("harvest") || userLower.includes("farm all") || userLower.includes("claim all")) {
             await queueHarvestAction();
             await sendReply("🌾 *Fleet Harvest Dispatched!*\n\nAll 18 accounts across all 5 active mining pools (MRG, ATF, Victor's, VyroDrop, Kynex) have been queued for harvesting on Cloudflare Edge.", statusInlineKeyboard);
@@ -7295,7 +7547,7 @@ fi
 
             const systemPrompt = `You are Ari, the personal cloud AI assistant for Arif's 18-account automated crypto and mining fleet (MY AGY AI).
 Live Fleet Context:
-- 18 active accounts mining 24/7 across the 5 active legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, and Kynex Network. All discontinued & scammer bots (Stones, AI Lab, UltraWallet, FINVORA, ART, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, USDT QUAD, TAC, Ominix) have been permanently purged and blocked.
+- 18 active accounts mining 24/7 across the 8 active legitimate bots: Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, Victor's Company, and VyroDrop. All discontinued & scammer bots (ART, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, USDT QUAD, TAC, Ominix) have been permanently purged and blocked.
 - Policy: ATF Miner is in 100% farming & accumulation mode (NO withdrawals; let balance grow).
 - Policy (Admin Fleet Accounts): MRG Miner is strictly in 100% Holding & Compounding mode (NO auto-withdrawals) to preserve peak levels (Level 1..50), maximum hashrate (5.5 TH/s), and squad referral qualifications.
 - Vault BEP-20 (BNB, USDT): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Live Balance: ${liveBnb.toFixed(6)} BNB).
