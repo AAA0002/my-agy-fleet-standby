@@ -2,6 +2,29 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **☁️ Brand New Upstash Redis Cluster Provisioned, Multi-Cloud Infrastructure Expansion & Vault Synchronization (October 11, 2026)**:
+  - **🚀 Brand New Upstash Redis Database Activated (`pleasant-locust-220893.upstash.io`)**:
+    * Authenticated with developer API token (`d0713452-cf1b-4fd2-8712-ee8413fb01d4`) under account `Jmf705845@gmail.com`.
+    * Programmatically provisioned a brand new global serverless Redis database:
+      - Name: `aaa-fleet-cache` (ID: `c3422f60-42f4-432d-8600-22c9e97999c4`)
+      - Endpoint: `https://pleasant-locust-220893.upstash.io`
+      - Rest Token: `gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg`
+      - Quota: 10,000 fresh commands/day active.
+    * Replaced all instances of the old rate-limited cluster (`relaxing-starfish-285827.upstash.io`) across:
+      - `.env`
+      - `deploy_both_cf_workers.py`
+      - `render_standby_app.py` & `render_app_latest.py`
+      - `tgcloud_admin_bot/tgcloud/lib/config.js`
+      - `PROJECT_BIBLE.md` & `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt`
+    * Deployed live to Render Node 2 (Frankfurt, `dep-db5q2p3bc2fs739o4b4g`), Node 3 (Oregon, `dep-db5q2pad0e5s738ars7g`), Telegram Serverless (`tgcloud push`), and all 5 Cloudflare Worker edge nodes.
+  - **🔑 Enterprise Multi-Cloud Credential Integration & Security Vault Archival**:
+    * **CircleCI Cloud Compute**: Integrated 1-year verified PAT (`CCIPAT_2aSqQCSRPoxvMdtVh6hqrz_e05b8974d6de1aa66f561e719c71a51cdbb8047f`) for automated continuous cloud pipelines (`aaa.support.a@gmail.com`).
+    * **Ubicloud Cloud Infrastructure**: Integrated Personal Access Token (`pat-akn22db4qrx65heyfx6b83dq42-hrN1UPssH0lVZCkAwVHhnaIKPtqy3e7g`).
+    * **Puzl.cloud Kubernetes**: Integrated European K8s cluster kubeconfig context (`cloud-jobs` in Finland EU).
+    * **Layerbase Managed Databases**: Archived 6 API keys (`sk_...`) for QuestDB, InfluxDB, Weaviate, CouchDB.
+    * **Qdrant Cloud**: Archived 3 management cluster keys for semantic vector operations.
+    * All credentials permanently stored in `.env` and `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt`.
+
 - **⚡ Telegram Serverless Platform Revision 7, 2FA `BASE_DIR` Resolution & Webhook Protection (October 11, 2026)**:
   - **🔒 Resolution of 2FA Authentication Failure (`name 'BASE_DIR' is not defined`)**:
     * **Root Cause Identified**: When entering the Two-Factor password (`Arif216@`), Telethon successfully authenticated the MTProto session on Telegram DC. However, subsequent wallet persistence in `save_and_archive_account_wallets()` crashed because `BASE_DIR` was undefined in `render_standby_app.py`, throwing `NameError: name 'BASE_DIR' is not defined` and presenting a false 2FA failure.

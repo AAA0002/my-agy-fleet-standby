@@ -1098,8 +1098,8 @@ const DEFAULT_FLEET_DATA = {
 };
 
 // High-Performance Upstash Serverless Redis REST Configuration (with In-Memory Caching to stay well below 10k/day limit)
-const UPSTASH_URL = "https://relaxing-starfish-285827.upstash.io";
-const UPSTASH_TOKEN = "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw";
+const UPSTASH_URL = "https://pleasant-locust-220893.upstash.io";
+const UPSTASH_TOKEN = "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg";
 
 const UPSTASH_GET_CACHE = new Map();
 const UPSTASH_MEMBERS_CACHE = new Map();
@@ -5739,8 +5739,8 @@ fi
         // 1.8 Force Fleet Sync (/sync)
         if (text === "/sync" || text.startsWith("/sync")) {
           ctx.waitUntil((async () => {
-            const upstashUrl = "https://relaxing-starfish-285827.upstash.io";
-            const upstashToken = "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw";
+            const upstashUrl = "https://pleasant-locust-220893.upstash.io";
+            const upstashToken = "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg";
             await fetch(`${upstashUrl}/set/fleet:pending_action`, {
               method: "POST",
               headers: { "Authorization": `Bearer ${upstashToken}`, "Content-Type": "application/json" },

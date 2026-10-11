@@ -67,7 +67,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 │                      ▼                                          │ Reads Fresh Tokens   │
 │  ┌──────────────────────────────────────────────────────────────┴───────────────────┐  │
 │  │                        Upstash Serverless Redis REST                             │  │
-│  │  • URL: https://relaxing-starfish-285827.upstash.io                              │  │
+│  │  • URL: https://pleasant-locust-220893.upstash.io                                │  │
 │  │  • Key: fleet:tokens:<uid> (Contains active WebApp initData for each account)    │  │
 │  │  • Key: fleet:wallets:ton (Contains isolated TON wallets & recovery mnemonics)   │  │
 │  │  • Key: victors:pass:<uid> (Contains fresh Cloudflare Turnstile humanPass)       │  │
@@ -240,9 +240,14 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 | **Serverless Edge Web** | **Deno Deploy (Node 2)** | `https://my-agy-fleet-deno2.aaasupporta.deno.net` | 🟢 **HTTP 200 OK** — Secondary TypeScript Edge runner |
 | **Cloudflare Pages** | **ATF WebApp** | `https://atf-miner-app.pages.dev` | 🟢 **HTTP 200 OK** — Global static and edge WebApp frontend |
 | **Decentralized Storage** | **Pinata IPFS** | `api.pinata.cloud` | 🟢 **AUTHENTICATED** — Latest CID: `QmUSX7XHwMcq3muCnZBaDzvk3D9ohXnJpe9iiQikbms8mn` |
-| **Serverless Database** | **Upstash Redis** | `relaxing-starfish-285827.upstash.io` | 🟢 **HTTP 200 OK** — Real-time token storage across all 18 accounts |
+| **Serverless Database** | **Upstash Redis** | `pleasant-locust-220893.upstash.io` | 🟢 **HTTP 200 OK** — Brand new active database (10k fresh commands/day) |
 | **Serverless Database** | **Turso LibSQL** | `my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io` | 🟢 **HTTP 200 OK** — Distributed SQLite edge database |
 | **Cloud Postgres** | **Supabase Cloud** | `znbbaozpevurvbfkxakz.supabase.co` | 🟢 **HTTP 200 OK** — Managed PostgreSQL database via Service Role Key |
+| **Cloud Database** | **Layerbase Cloud** | `api.layerbase.com` | 🟢 **ACTIVE** — 6 Managed database instances (QuestDB, InfluxDB, Weaviate) |
+| **Vector Database** | **Qdrant Cloud** | `cloud.qdrant.io` | 🟢 **MANAGEMENT KEYS ACTIVE** — Semantic memory and embedding clusters |
+| **CI/CD Cloud Compute** | **CircleCI Cloud** | `circleci.com` | 🟢 **1-YEAR TOKEN ACTIVE** — Cloud automation runner (`aaa.support.a@gmail.com`) |
+| **Cloud Compute** | **Ubicloud** | `console.ubicloud.com` | 🟢 **PAT ACTIVE** — Cloud VM & Postgres compute (`pat-akn22db4...`) |
+| **Kubernetes Cluster** | **Puzl Cloud K8s** | `k8s.eu-finland-1.clusters.puzl.cloud` | 🟢 **CONFIG ACTIVE** — Finland European Kubernetes cluster context |
 | **AI Inference Engine** | **Google Gemini** | `generativelanguage.googleapis.com` | 🟢 **14/14 KEYS ACTIVE** — Rotating multi-key pool for Ari AI reasoning |
 | **Edge AI Inference** | **Workers AI (Cloudflare)** | Global Edge Mesh (Llama 3.2 3B Instruct) | 🟢 **ACTIVE** — Zero API keys required across 5 Cloudflare nodes |
 | **Web3 Infrastructure** | **Alchemy Ethereum** | `eth-mainnet.g.alchemy.com/v2/...` | 🟢 **HTTP 200 OK** — Live block height queries verified |
