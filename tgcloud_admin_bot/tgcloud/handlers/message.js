@@ -2,7 +2,7 @@ import { api, db } from 'sdk';
 import { eq } from 'sdk/db';
 import { loginSessions } from '../schema.js';
 import { CONFIG } from '../lib/config.js';
-import { sendLoginCode, verifyLoginCode, cancelLogin, fetchFleetLive, requestBackend } from '../lib/backend.js';
+import { sendLoginCode, verifyLoginCode, cancelLogin, fetchFleetLive, markAccountActive, requestBackend } from '../lib/backend.js';
 import {
   getMainMenuKeyboard,
   getCancelLoginKeyboard,
@@ -44,7 +44,7 @@ export default async function (message, ctx) {
   // 2. Preemptive Cancel Check (Supports /cancel, cancel, ❌ Cancel Login, ❌, etc.)
   const isCancel = /cancel/i.test(rawText) || rawText.includes('❌');
   if (isCancel) {
-    await cancelLogin(chatId).catch(() => {});
+    cancelLogin(chatId);
     await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run().catch(() => {});
 
     // Wipe persistent ReplyKeyboardMarkup button from the user's Telegram client
@@ -68,7 +68,7 @@ export default async function (message, ctx) {
   // 3. Preemptive Command Router (Any command starting with '/' cancels active login state)
   const isCommand = rawText.startsWith('/');
   if (isCommand) {
-    await cancelLogin(chatId).catch(() => {});
+    cancelLogin(chatId);
     await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run().catch(() => {});
 
     const cmd = rawText.split(' ')[0].toLowerCase();
@@ -168,7 +168,7 @@ Tap any account node below to dispatch an official verification code:`;
         text: "⚡ *Triggering Mining Cycle Across All 8 Legitimate Bots...*\n\n• Dispatched to Render Standby primary coordinator...",
         parse_mode: "Markdown"
       });
-      await requestBackend('/api/farm/cloud-all', 'POST', {}).catch(() => {});
+      requestBackend('/api/farm/cloud-all', 'POST', {}).catch(() => {});
       
       const banner = 
 `┌──────────────────────────────────────┐
@@ -225,6 +225,20 @@ Tap any account node below to dispatch an official verification code:`;
         return;
       }
 
+      // Check for duplicate account by phone
+      const live = await fetchFleetLive();
+      const dupAcc = live.accounts.find(a => normalizePhone(a.phone) === cleanPhone);
+      const dupIdx = dupAcc?.index || Object.entries(CONFIG.KNOWN_PHONES).find(([i, p]) => normalizePhone(p) === cleanPhone)?.[0];
+      if (dupIdx) {
+        const dupName = dupAcc?.name || `Account #${dupIdx}`;
+        await api.sendMessage({
+          chat_id: chatId,
+          text: `⚠️ *DUPLICATE ACCOUNT DETECTED!*\n\n• Phone: \`${cleanPhone}\` is already assigned to *Node #${dupIdx}* (*${dupName}*).\n• Current Status: ${dupAcc?.status === 'active' ? '🟢 Online' : '🔴 Session Revoked'}\n\n🔄 *Re-linking existing Node #${dupIdx} instead of creating a duplicate.*`,
+          parse_mode: "Markdown"
+        });
+        activeSession.accountIndex = parseInt(dupIdx, 10);
+      }
+
       await api.sendMessage({
         chat_id: chatId,
         text: `┌──────────────────────────────────────┐
@@ -244,6 +258,7 @@ Dispatching official Telegram verification code...`,
           step: 'WAITING_CODE',
           phone: cleanPhone,
           phoneCodeHash: res.phone_code_hash || '',
+          accountIndex: activeSession.accountIndex || null,
           nodeUrl: res.nodeUrl || ''
         }).where(eq(loginSessions.chatId, chatId)).run();
 
@@ -321,6 +336,16 @@ Please reply directly with your 2FA password:`,
         await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run();
         const accName = res.name || res.account?.name || activeSession.phone || 'User';
         const uid = res.user_id || res.account?.user_id || 'Active';
+        const targetIdx = res.index || activeSession.accountIndex || 1;
+
+        // Immediately update cache and SQLite so state updates in 0ms!
+        await markAccountActive(targetIdx, uid, accName, activeSession.phone);
+        const live = await fetchFleetLive(true);
+
+        const dupNotice = res.is_duplicate 
+          ? `\n⚠️ *Duplicate Notice:* User was already registered as Node #${res.existing_index || targetIdx}. Re-linked session credentials.`
+          : '';
+
         await api.sendMessage({
           chat_id: chatId,
           text: `┌──────────────────────────────────────┐
@@ -328,14 +353,15 @@ Please reply directly with your 2FA password:`,
 └──────────────────────────────────────┘
 
 • *Operator:* *${accName}*
+• *Node Index:* *#${targetIdx < 10 ? '0' + targetIdx : targetIdx}*
 • *Telegram UID:* \`${uid}\`
 • *Session State:* \`🟢 Online & Cryptographically Secured\`
 • *Treasury Suite:* \`TON • EVM • TRON • SOL • BTC Bound\`
-• *Autonomous Mining:* \`Bound to 8 Legitimate Bots\`
+• *Autonomous Mining:* \`Bound to 8 Legitimate Bots\`${dupNotice}
 
-Node added to active cloud cluster.`,
+Node updated in active cloud cluster.`,
           parse_mode: "Markdown",
-          reply_markup: getMainMenuKeyboard(13)
+          reply_markup: getMainMenuKeyboard(live.revoked_count || 12)
         });
         return;
       }
@@ -369,6 +395,16 @@ Node added to active cloud cluster.`,
         await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run();
         const accName = res.name || res.account?.name || activeSession.phone || 'User';
         const uid = res.user_id || res.account?.user_id || 'Active';
+        const targetIdx = res.index || activeSession.accountIndex || 1;
+
+        // Immediately update cache and SQLite!
+        await markAccountActive(targetIdx, uid, accName, activeSession.phone);
+        const live = await fetchFleetLive(true);
+
+        const dupNotice = res.is_duplicate 
+          ? `\n⚠️ *Duplicate Notice:* User was already registered as Node #${res.existing_index || targetIdx}. Re-linked session credentials.`
+          : '';
+
         await api.sendMessage({
           chat_id: chatId,
           text: `┌──────────────────────────────────────┐
@@ -376,14 +412,15 @@ Node added to active cloud cluster.`,
 └──────────────────────────────────────┘
 
 • *Operator:* *${accName}*
+• *Node Index:* *#${targetIdx < 10 ? '0' + targetIdx : targetIdx}*
 • *Telegram UID:* \`${uid}\`
 • *Session State:* \`🟢 Online & Cryptographically Secured\`
 • *Treasury Suite:* \`TON • EVM • TRON • SOL • BTC Bound\`
-• *Autonomous Mining:* \`Bound to 8 Legitimate Bots\`
+• *Autonomous Mining:* \`Bound to 8 Legitimate Bots\`${dupNotice}
 
-Node added to active cloud cluster.`,
+Node updated in active cloud cluster.`,
           parse_mode: "Markdown",
-          reply_markup: getMainMenuKeyboard(13)
+          reply_markup: getMainMenuKeyboard(live.revoked_count || 12)
         });
         return;
       }
@@ -432,6 +469,10 @@ Please reply directly with your 2FA password:`,
     if (res && res.ok) {
       const accName = res.name || res.account?.name || 'Verified User';
       const uid = res.user_id || res.account?.user_id || 'Active';
+      const targetIdx = res.index || 1;
+      await markAccountActive(targetIdx, uid, accName, '');
+      const live = await fetchFleetLive(true);
+
       await api.sendMessage({
         chat_id: chatId,
         text: `┌──────────────────────────────────────┐
@@ -442,7 +483,7 @@ Please reply directly with your 2FA password:`,
 • *Telegram UID:* \`${uid}\`
 • *Session State:* \`🟢 Online & Active\``,
         parse_mode: "Markdown",
-        reply_markup: getMainMenuKeyboard(13)
+        reply_markup: getMainMenuKeyboard(live.revoked_count || 12)
       });
       return;
     }
@@ -451,13 +492,27 @@ Please reply directly with your 2FA password:`,
   // 6. Auto-detect phone number sent directly
   const directPhone = normalizePhone(rawText);
   if (/^\+8801[3-9][0-9]{8}$/.test(directPhone) || /^\+[1-9][0-9]{8,14}$/.test(directPhone)) {
+    const live = await fetchFleetLive();
+    const dupAcc = live.accounts.find(a => normalizePhone(a.phone) === directPhone);
+    const dupIdx = dupAcc?.index || Object.entries(CONFIG.KNOWN_PHONES).find(([i, p]) => normalizePhone(p) === directPhone)?.[0];
+    let accountIndex = dupIdx ? parseInt(dupIdx, 10) : null;
+
+    if (dupIdx) {
+      const dupName = dupAcc?.name || `Account #${dupIdx}`;
+      await api.sendMessage({
+        chat_id: chatId,
+        text: `⚠️ *DUPLICATE ACCOUNT DETECTED!*\n\n• Phone: \`${directPhone}\` is already assigned to *Node #${dupIdx}* (*${dupName}*).\n• Current Status: ${dupAcc?.status === 'active' ? '🟢 Online' : '🔴 Session Revoked'}\n\n🔄 *Re-linking existing Node #${dupIdx}...*`,
+        parse_mode: "Markdown"
+      });
+    }
+
     await api.sendMessage({
       chat_id: chatId,
       text: `🔄 *Auto-detected phone number \`${directPhone}\`... Dispatching verification code...*`,
       parse_mode: "Markdown"
     });
 
-    const res = await sendLoginCode(directPhone, chatId);
+    const res = await sendLoginCode(directPhone, chatId, accountIndex);
     if (res && res.ok) {
       await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run();
       await db.insert(loginSessions).values({
@@ -465,6 +520,7 @@ Please reply directly with your 2FA password:`,
         step: 'WAITING_CODE',
         phone: directPhone,
         phoneCodeHash: res.phone_code_hash || '',
+        accountIndex,
         nodeUrl: res.nodeUrl || ''
       }).run();
 

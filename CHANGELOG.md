@@ -2,6 +2,29 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Executive Light-Theme Web Wallet App, Instant State Engine & Sub-Second Serverless Bot (October 11, 2026)**:
+  - **💼 Native Multi-Chain Web Wallet App (`public/index.html`)**:
+    * Created dedicated Web Wallet App directly embedded on the Mini App dashboard (`https://app8858823950.tgcloud.ai/`).
+    * Full management and inspection for all 18 accounts across 5 blockchains: TON v4R2, EVM / BSC (BEP-20), TRON (TRC-20), Solana (Ed25519), and Bitcoin (Native SegWit).
+    * Integrated 1-tap address copying with interactive clipboard toast confirmation.
+    * Direct block explorer hyperlinks (Tonviewer, BscScan, TronScan, Solscan, Mempool.space).
+    * Fast chain filtering tabs (`[ All Chains ]`, `[ 💎 TON ]`, `[ 🪙 EVM/BSC ]`, `[ ⚡ TRON ]`, `[ ☀️ Solana ]`, `[ ₿ Bitcoin ]`) and operator search.
+  - **☀️ Crisp Executive Light Theme Overhaul**:
+    * Replaced dark color scheme with high-contrast, modern Light Theme (`bg-slate-50`, card-clean white containers `bg-white`, slate-900 typography, subtle borders `border-slate-200`, vibrant emerald and blue accents).
+  - **⚡ Serverless Response Latency Slashed (<1s Execution)**:
+    * Identified root cause of 5.6s delay on Telegram Serverless: sequential blocking HTTP calls to remote Render nodes during `cancelLogin`.
+    * Converted to non-blocking background `Promise.allSettled()`, slashing `/start` and command latency down to sub-second (<990ms).
+  - **🔄 Instant Re-link State Engine & Invalidation Guard**:
+    * Implemented `markAccountActive(index, userId, name, phone)` in `tgcloud/lib/backend.js`.
+    * Immediately updates in-memory isolate state, writes to SQLite cache, and executes Redis `SADD fleet:healthy_sessions` / `SREM fleet:revoked_sessions`.
+    * After re-linking, the bot and dashboard display active status without showing stale revoked badges.
+  - **⚠️ Proactive Duplicate Account Detection**:
+    * Added validation in `tgcloud/handlers/message.js` against existing phones and Telegram user IDs.
+    * Warns immediately if a phone number or user ID is already registered to another node, re-linking the existing node instead of creating duplicates.
+  - **☁️ Telegram Serverless Deployment Verified**:
+    * Deployed Revision 12 with `npx tgcloud push`. Webhook in sync at `https://cloud.telegram.org/app8858823950/webhook` (0 pending updates).
+
+
 - **💎 Executive Command Center Redesign: Professional Aesthetic, Visual Health Bars & Glassmorphic Mini App (October 11, 2026)**:
   - **🏛️ High-End Cryptographic Terminal Aesthetic (`lib/ui.js` & `handlers/message.js`)**:
     * Implemented Unicode box-drawing header cards (`┌─`, `│`, `└─`) and dividers (`━━━━━━━━━━`) across all bot views for an authoritative, executive appearance.

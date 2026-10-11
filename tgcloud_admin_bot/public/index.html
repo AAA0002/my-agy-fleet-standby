@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AAA AUTO — Enterprise Command Console</title>
+  <title>AAA AUTO — Executive Fleet & Web Wallet Console</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -12,14 +12,15 @@
       theme: {
         extend: {
           colors: {
-            bgDark: '#070b14',
-            surface: '#0f172a',
-            surfaceLight: '#1e293b',
-            accent: '#38bdf8',
-            accentGlow: '#0284c7',
-            emeraldGlow: '#10b981',
-            roseGlow: '#f43f5e',
-            gold: '#fbbf24'
+            brand: '#2563eb',
+            brandDark: '#1d4ed8',
+            brandLight: '#eff6ff',
+            emeraldText: '#047857',
+            emeraldBg: '#ecfdf5',
+            roseText: '#be123c',
+            roseBg: '#fff1f2',
+            amberText: '#b45309',
+            amberBg: '#fffbeb'
           }
         }
       }
@@ -27,8 +28,8 @@
   </script>
   <style>
     body {
-      background-color: #070b14;
-      color: #f1f5f9;
+      background-color: #f8fafc;
+      color: #0f172a;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
@@ -37,75 +38,76 @@
       width: 4px;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #334155;
+      background: #cbd5e1;
       border-radius: 4px;
     }
-    .glass-card {
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(51, 65, 85, 0.6);
+    .card-clean {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
     }
   </style>
 </head>
-<body class="p-3.5 max-w-lg mx-auto min-h-screen flex flex-col justify-between selection:bg-sky-500/30">
-  <!-- Top App Header -->
-  <header class="flex items-center justify-between pb-3 border-b border-slate-800/80">
+<body class="p-3.5 max-w-lg mx-auto min-h-screen flex flex-col justify-between bg-slate-50 text-slate-900 selection:bg-blue-100">
+
+  <!-- Top Executive Header (Light Theme) -->
+  <header class="flex items-center justify-between pb-3 border-b border-slate-200">
     <div class="flex items-center space-x-3">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-600 to-blue-500 flex items-center justify-center shadow-lg shadow-sky-500/20 border border-sky-400/30">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-500/20 text-white">
         <span class="text-xl">⚡</span>
       </div>
       <div>
-        <h1 class="text-sm font-black tracking-wider leading-tight flex items-center gap-1.5 uppercase text-slate-100">
+        <h1 class="text-sm font-black tracking-wide leading-tight flex items-center gap-1.5 uppercase text-slate-900">
           AAA AUTO SENTINEL
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400"></span>
+          <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-400"></span>
         </h1>
-        <p class="text-[10px] text-slate-400 font-medium">Enterprise Cloud Mesh • 0 Phone Load</p>
+        <p class="text-[10px] text-slate-500 font-medium">Telegram Serverless V8 • 0 Phone Load</p>
       </div>
     </div>
     <div class="flex items-center gap-1.5">
-      <span class="text-[10px] font-mono px-2 py-1 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">V8 ISOLATE</span>
-      <button id="btnRefresh" class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 active:scale-95 transition">
-        <svg id="iconRefresh" class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <span class="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-bold">LIVE CLUSTER</span>
+      <button id="btnRefresh" class="p-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 shadow-sm active:scale-95 transition text-slate-700">
+        <svg id="iconRefresh" class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
       </button>
     </div>
   </header>
 
-  <!-- Metric Badges -->
+  <!-- Metric Badges (Light Card Styling) -->
   <div class="grid grid-cols-3 gap-2 my-2.5">
-    <div class="glass-card p-2.5 rounded-2xl text-center">
-      <div class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Fleet Nodes</div>
-      <div class="text-base font-black text-sky-400 mt-0.5" id="metricAccounts">18 Nodes</div>
-      <div class="text-[10px] text-emerald-400 font-medium flex items-center justify-center gap-1">
+    <div class="card-clean p-2.5 rounded-2xl text-center">
+      <div class="text-[9px] text-slate-400 uppercase tracking-widest font-bold">Fleet Nodes</div>
+      <div class="text-base font-black text-blue-600 mt-0.5" id="metricAccounts">18 Nodes</div>
+      <div class="text-[10px] text-emerald-600 font-bold flex items-center justify-center gap-1">
         <span>5 🟢</span> • <span>13 🔴</span>
       </div>
     </div>
-    <div class="glass-card p-2.5 rounded-2xl text-center">
-      <div class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Mining Bots</div>
-      <div class="text-base font-black text-indigo-400 mt-0.5">8 Bots</div>
-      <div class="text-[10px] text-indigo-300/80 font-medium">Autonomous</div>
+    <div class="card-clean p-2.5 rounded-2xl text-center">
+      <div class="text-[9px] text-slate-400 uppercase tracking-widest font-bold">Mining Bots</div>
+      <div class="text-base font-black text-indigo-600 mt-0.5">8 Bots</div>
+      <div class="text-[10px] text-indigo-600 font-semibold">Autonomous</div>
     </div>
-    <div class="glass-card p-2.5 rounded-2xl text-center">
-      <div class="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Cloud Mesh</div>
-      <div class="text-base font-black text-emerald-400 mt-0.5">8 Hosts</div>
-      <div class="text-[10px] text-slate-400 font-medium">5 CF + 3 Render</div>
+    <div class="card-clean p-2.5 rounded-2xl text-center">
+      <div class="text-[9px] text-slate-400 uppercase tracking-widest font-bold">Multi-Chain</div>
+      <div class="text-base font-black text-emerald-600 mt-0.5">5 Chains</div>
+      <div class="text-[10px] text-slate-500 font-medium">TON/EVM/TRX</div>
     </div>
   </div>
 
   <!-- Primary Action Controls -->
   <div class="space-y-2 mb-2.5">
-    <button id="btnHarvest" class="w-full py-2.5 px-4 bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:opacity-95 text-white font-bold rounded-xl shadow-lg shadow-sky-500/20 active:scale-[0.98] transition flex items-center justify-center gap-2 text-xs">
+    <button id="btnHarvest" class="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-md shadow-blue-500/20 active:scale-[0.98] transition flex items-center justify-center gap-2 text-xs">
       <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
       </svg>
       <span>TRIGGER CLOUD FARMING (8 BOTS)</span>
     </button>
     <div class="grid grid-cols-2 gap-2">
-      <button id="btnTurnstile" class="py-2 px-3 glass-card hover:bg-slate-800 text-sky-400 font-semibold rounded-xl text-xs active:scale-[0.98] transition flex items-center justify-center gap-1.5">
+      <button id="btnTurnstile" class="py-2 px-3 card-clean hover:bg-slate-50 text-blue-700 font-bold rounded-xl text-xs active:scale-[0.98] transition flex items-center justify-center gap-1.5">
         <span>🛡️ Solve Turnstile Pass</span>
       </button>
-      <button id="btnCollect" class="py-2 px-3 glass-card hover:bg-slate-800 text-indigo-400 font-semibold rounded-xl text-xs active:scale-[0.98] transition flex items-center justify-center gap-1.5">
+      <button id="btnCollect" class="py-2 px-3 card-clean hover:bg-slate-50 text-indigo-700 font-bold rounded-xl text-xs active:scale-[0.98] transition flex items-center justify-center gap-1.5">
         <span>🔄 Refresh Fleet Tokens</span>
       </button>
     </div>
@@ -113,229 +115,226 @@
 
   <!-- Search Filter -->
   <div class="mb-2">
-    <input type="text" id="inputSearch" placeholder="Search account node, operator name, or UID..." class="w-full bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500/80 transition">
+    <input type="text" id="inputSearch" placeholder="Search node #, operator name, or address..." class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-sm transition">
   </div>
 
-  <!-- Nav Tabs -->
-  <div class="flex border-b border-slate-800 mb-2.5 space-x-5 text-xs font-semibold">
-    <button class="tab-btn text-sky-400 border-b-2 border-sky-400 pb-2 transition" data-tab="accounts">Nodes [18]</button>
-    <button class="tab-btn text-slate-400 hover:text-slate-200 pb-2 transition" data-tab="bots">8 Bots Suite</button>
-    <button class="tab-btn text-slate-400 hover:text-slate-200 pb-2 transition" data-tab="wallets">Treasury</button>
-    <button class="tab-btn text-slate-400 hover:text-slate-200 pb-2 transition" data-tab="mesh">Edge Mesh</button>
+  <!-- Main Navigation Tabs -->
+  <div class="flex border-b border-slate-200 mb-2.5 space-x-4 text-xs font-bold">
+    <button class="tab-btn text-blue-600 border-b-2 border-blue-600 pb-2 transition" data-tab="wallets">💼 Web Wallets (18)</button>
+    <button class="tab-btn text-slate-400 hover:text-slate-600 pb-2 transition" data-tab="accounts">📱 Fleet Nodes</button>
+    <button class="tab-btn text-slate-400 hover:text-slate-600 pb-2 transition" data-tab="bots">🤖 8 Bots Suite</button>
+    <button class="tab-btn text-slate-400 hover:text-slate-600 pb-2 transition" data-tab="mesh">🌐 Edge Mesh</button>
   </div>
 
-  <!-- Tab Content: Accounts -->
-  <div id="tabAccounts" class="tab-pane flex-1 custom-scrollbar overflow-y-auto space-y-2 max-h-[44vh]">
-    <div class="flex items-center justify-between text-[11px] text-slate-400 px-1 pb-1">
+  <!-- ========================================== -->
+  <!-- TAB 1: WEB WALLET APP & TREASURY MANAGER   -->
+  <!-- ========================================== -->
+  <div id="tabWallets" class="tab-pane flex-1 custom-scrollbar overflow-y-auto space-y-2 max-h-[44vh]">
+    <!-- Chain Selector Bar -->
+    <div class="flex items-center gap-1 overflow-x-auto pb-1 text-[10px] font-bold">
+      <button class="chain-btn px-2.5 py-1 rounded-lg bg-blue-600 text-white shadow-sm" data-chain="all">All Chains</button>
+      <button class="chain-btn px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900" data-chain="ton">💎 TON v4R2</button>
+      <button class="chain-btn px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900" data-chain="evm">🪙 EVM / BSC</button>
+      <button class="chain-btn px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900" data-chain="tron">⚡ TRON TRX</button>
+      <button class="chain-btn px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900" data-chain="solana">☀️ Solana</button>
+      <button class="chain-btn px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900" data-chain="btc">₿ Bitcoin</button>
+    </div>
+
+    <!-- Wallets List -->
+    <div id="webWalletList" class="space-y-2">
+      <div class="p-6 text-center text-slate-400 text-xs">Loading multi-chain wallets...</div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TAB 2: FLEET NODES MATRIX                  -->
+  <!-- ========================================== -->
+  <div id="tabAccounts" class="tab-pane hidden flex-1 custom-scrollbar overflow-y-auto space-y-2 max-h-[44vh]">
+    <div class="flex items-center justify-between text-[11px] text-slate-500 px-1 pb-1">
       <div class="flex gap-1.5">
-        <button id="filterBtnAll" class="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 font-medium">All [18]</button>
-        <button id="filterBtnActive" class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 hover:text-slate-200">🟢 Online [5]</button>
-        <button id="filterBtnRevoked" class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 hover:text-slate-200">🔴 Offline [13]</button>
+        <button id="filterBtnAll" class="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold">All [18]</button>
+        <button id="filterBtnActive" class="px-2 py-0.5 rounded-md card-clean text-slate-600 hover:text-slate-900">🟢 Online [5]</button>
+        <button id="filterBtnRevoked" class="px-2 py-0.5 rounded-md card-clean text-slate-600 hover:text-slate-900">🔴 Offline [13]</button>
       </div>
-      <span class="text-[10px] text-slate-500">Tap node for dossier</span>
+      <span class="text-[10px]">Tap node for details</span>
     </div>
     <div id="accountList" class="space-y-1.5">
-      <div class="p-6 text-center text-slate-500 text-xs">Loading live fleet telemetry...</div>
+      <div class="p-6 text-center text-slate-400 text-xs">Loading live fleet telemetry...</div>
     </div>
   </div>
 
-  <!-- Tab Content: 8 Bots Suite -->
+  <!-- ========================================== -->
+  <!-- TAB 3: 8 BOTS MINING SUITE                 -->
+  <!-- ========================================== -->
   <div id="tabBots" class="tab-pane hidden flex-1 custom-scrollbar overflow-y-auto space-y-2 max-h-[44vh]">
     <div class="grid grid-cols-1 gap-2 text-xs">
-      <div class="p-2.5 rounded-xl glass-card flex justify-between items-center">
+      <div class="p-2.5 rounded-xl card-clean flex justify-between items-center">
         <div class="flex items-center gap-2.5">
           <span class="text-lg">💎</span>
           <div>
-            <div class="font-bold text-slate-200">Stones Miner (@stoneswithestand_bot)</div>
-            <div class="text-[10px] text-slate-400">Hashrate Boost & Stone Breaker Claims</div>
+            <div class="font-bold text-slate-900">Stones Miner (@stoneswithestand_bot)</div>
+            <div class="text-[10px] text-slate-500">Hashrate Boost & Stone Breaker Claims</div>
           </div>
         </div>
-        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">ONLINE</span>
+        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
       </div>
-      <div class="p-2.5 rounded-xl glass-card flex justify-between items-center">
+      <div class="p-2.5 rounded-xl card-clean flex justify-between items-center">
         <div class="flex items-center gap-2.5">
           <span class="text-lg">🪙</span>
           <div>
-            <div class="font-bold text-slate-200">MRG Miner (@mrgminerbot)</div>
-            <div class="text-[10px] text-slate-400">Cloud Mining, Level Compound & Turnstile Solver</div>
+            <div class="font-bold text-slate-900">MRG Miner (@mrgminerbot)</div>
+            <div class="text-[10px] text-slate-500">Turnstile Solver, Cloud Mining & Upgrade</div>
           </div>
         </div>
-        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">ONLINE</span>
+        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
       </div>
-      <div class="p-2.5 rounded-xl glass-card flex justify-between items-center">
+      <div class="p-2.5 rounded-xl card-clean flex justify-between items-center">
         <div class="flex items-center gap-2.5">
           <span class="text-lg">🔬</span>
           <div>
-            <div class="font-bold text-slate-200">AI Lab (@AiLab_robot)</div>
-            <div class="text-[10px] text-slate-400">USDT Miner & Hashrate Exchanger</div>
+            <div class="font-bold text-slate-900">AI Lab (@AiLab_robot)</div>
+            <div class="text-[10px] text-slate-500">USDT Miner & Hashrate Exchanger</div>
           </div>
         </div>
-        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">ONLINE</span>
+        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
       </div>
-      <div class="p-2.5 rounded-xl glass-card flex justify-between items-center">
+      <div class="p-2.5 rounded-xl card-clean flex justify-between items-center">
         <div class="flex items-center gap-2.5">
           <span class="text-lg">💼</span>
           <div>
-            <div class="font-bold text-slate-200">UltraWallet (@UltrawalletTrade_Bot)</div>
-            <div class="text-[10px] text-slate-400">Lucky Wheel, Captcha & Instant Staking Claims</div>
+            <div class="font-bold text-slate-900">UltraWallet (@UltrawalletTrade_Bot)</div>
+            <div class="text-[10px] text-slate-500">Lucky Wheel, Captcha & Staking Harvest</div>
           </div>
         </div>
-        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">ONLINE</span>
+        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
       </div>
-      <div class="p-2.5 rounded-xl glass-card flex justify-between items-center">
+      <div class="p-2.5 rounded-xl card-clean flex justify-between items-center">
         <div class="flex items-center gap-2.5">
           <span class="text-lg">⚡</span>
           <div>
-            <div class="font-bold text-slate-200">ATF Miner (@ATF_AIRDROP_bot)</div>
-            <div class="text-[10px] text-slate-400">Autonomous Cloud Mining & Daily Harvest</div>
+            <div class="font-bold text-slate-900">ATF Miner (@ATF_AIRDROP_bot)</div>
+            <div class="text-[10px] text-slate-500">Autonomous Cloud Mining & Daily Claims</div>
           </div>
         </div>
-        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">ONLINE</span>
+        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
       </div>
-      <div class="p-2.5 rounded-xl glass-card flex justify-between items-center">
+      <div class="p-2.5 rounded-xl card-clean flex justify-between items-center">
         <div class="flex items-center gap-2.5">
           <span class="text-lg">📈</span>
           <div>
-            <div class="font-bold text-slate-200">FINVORA Web3 (@FINVORAWeb3bot)</div>
-            <div class="text-[10px] text-slate-400">Instant Bonus & GRAM Miner</div>
+            <div class="font-bold text-slate-900">FINVORA Web3 (@FINVORAWeb3bot)</div>
+            <div class="text-[10px] text-slate-500">Instant Bonus & GRAM Miner</div>
           </div>
         </div>
-        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">ONLINE</span>
+        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
       </div>
-      <div class="p-2.5 rounded-xl glass-card flex justify-between items-center">
+      <div class="p-2.5 rounded-xl card-clean flex justify-between items-center">
         <div class="flex items-center gap-2.5">
           <span class="text-lg">👑</span>
           <div>
-            <div class="font-bold text-slate-200">Victor's Company (@VictorsCompanybot)</div>
-            <div class="text-[10px] text-slate-400">Recruit Binding & Turnstile Commission Claim</div>
+            <div class="font-bold text-slate-900">Victor's Company (@VictorsCompanybot)</div>
+            <div class="text-[10px] text-slate-500">Turnstile Commission Claim & Level Compound</div>
           </div>
         </div>
-        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">ONLINE</span>
+        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
       </div>
-      <div class="p-2.5 rounded-xl glass-card flex justify-between items-center">
+      <div class="p-2.5 rounded-xl card-clean flex justify-between items-center">
         <div class="flex items-center gap-2.5">
           <span class="text-lg">💧</span>
           <div>
-            <div class="font-bold text-slate-200">VyroDrop (@vyrodrop_bot)</div>
-            <div class="text-[10px] text-slate-400">TonConnect & Task Rewards Claim</div>
+            <div class="font-bold text-slate-900">VyroDrop (@vyrodrop_bot)</div>
+            <div class="text-[10px] text-slate-500">TonConnect & Task Rewards Claim</div>
           </div>
         </div>
-        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">ONLINE</span>
+        <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
       </div>
     </div>
   </div>
 
-  <!-- Tab Content: Treasury -->
-  <div id="tabWallets" class="tab-pane hidden flex-1 custom-scrollbar overflow-y-auto space-y-2 max-h-[44vh]">
-    <div class="p-3 rounded-2xl glass-card space-y-2 text-xs">
-      <div class="font-bold text-slate-200 flex items-center gap-2">
-        <span>🔐 Non-Custodial Multi-Chain Architecture</span>
-      </div>
-      <p class="text-[11px] text-slate-400 leading-relaxed">
-        Every account node operates an isolated cryptographic keypair suite across 5 blockchains.
-        Private keys are stored exclusively in the offline Master Secrets Vault.
-      </p>
-      <div class="grid grid-cols-2 gap-2 pt-1 font-mono text-[10px]">
-        <div class="p-2 rounded-xl bg-slate-900/80 border border-slate-800">
-          <span class="text-sky-400 font-bold block">💎 TON v4R2</span>
-          <span class="text-slate-400">MRG & ATF Binding</span>
-        </div>
-        <div class="p-2 rounded-xl bg-slate-900/80 border border-slate-800">
-          <span class="text-amber-400 font-bold block">🪙 EVM / BSC</span>
-          <span class="text-slate-400">BNB Yield Harvesting</span>
-        </div>
-        <div class="p-2 rounded-xl bg-slate-900/80 border border-slate-800">
-          <span class="text-rose-400 font-bold block">⚡ TRON TRX</span>
-          <span class="text-slate-400">TRC-20 Contracts</span>
-        </div>
-        <div class="p-2 rounded-xl bg-slate-900/80 border border-slate-800">
-          <span class="text-purple-400 font-bold block">☀️ SOLANA</span>
-          <span class="text-slate-400">Ed25519 Keypairs</span>
-        </div>
-      </div>
-    </div>
-    <div id="walletList" class="space-y-1.5 text-xs">
-      <div class="p-4 text-center text-slate-500">Loading fleet treasury addresses...</div>
-    </div>
-  </div>
-
-  <!-- Tab Content: Edge Mesh -->
+  <!-- ========================================== -->
+  <!-- TAB 4: EDGE MESH INFRASTRUCTURE            -->
+  <!-- ========================================== -->
   <div id="tabMesh" class="tab-pane hidden flex-1 custom-scrollbar overflow-y-auto space-y-2 max-h-[44vh]">
     <div class="space-y-2 text-xs">
-      <div class="p-3 rounded-xl glass-card space-y-1.5">
-        <div class="font-bold text-sky-400 flex items-center justify-between">
-          <span>Tier 1: Telegram Serverless</span>
-          <span class="text-[10px] text-emerald-400">● LIVE</span>
+      <div class="p-3 rounded-xl card-clean space-y-1">
+        <div class="font-bold text-blue-700 flex items-center justify-between">
+          <span>Tier 1: Telegram Serverless Platform</span>
+          <span class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">● LIVE</span>
         </div>
-        <div class="text-[11px] text-slate-300">V8 Global Edge Platform • Native SQLite WAL</div>
-        <div class="text-[10px] text-slate-500 font-mono">cloud.telegram.org/app8858823950/webhook</div>
+        <div class="text-[11px] text-slate-600">V8 Global Edge Platform • Native SQLite WAL Database</div>
+        <div class="text-[10px] text-slate-400 font-mono">cloud.telegram.org/app8858823950/webhook</div>
       </div>
 
-      <div class="p-3 rounded-xl glass-card space-y-1.5">
-        <div class="font-bold text-indigo-400 flex items-center justify-between">
+      <div class="p-3 rounded-xl card-clean space-y-1">
+        <div class="font-bold text-indigo-700 flex items-center justify-between">
           <span>Tier 2: Cloudflare 5-Node Edge Mesh</span>
-          <span class="text-[10px] text-emerald-400">● 5 NODES</span>
+          <span class="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">● 5 NODES</span>
         </div>
-        <div class="text-[11px] text-slate-300">Node 1 (Primary Cron) + Nodes 2-5 (Passive Hot Standby)</div>
-        <div class="text-[10px] text-slate-500 font-mono">restore-agy.aaaai2.workers.dev</div>
+        <div class="text-[11px] text-slate-600">Node 1 (Primary Cron) + Nodes 2-5 (Passive Hot Standby)</div>
+        <div class="text-[10px] text-slate-400 font-mono">restore-agy.aaaai2.workers.dev</div>
       </div>
 
-      <div class="p-3 rounded-xl glass-card space-y-1.5">
-        <div class="font-bold text-emerald-400 flex items-center justify-between">
-          <span>Tier 3: Render Cluster & Upstash</span>
-          <span class="text-[10px] text-emerald-400">● NOMINAL</span>
+      <div class="p-3 rounded-xl card-clean space-y-1">
+        <div class="font-bold text-emerald-700 flex items-center justify-between">
+          <span>Tier 3: Render Cluster & Upstash Redis</span>
+          <span class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">● NOMINAL</span>
         </div>
-        <div class="text-[11px] text-slate-300">Primary Coordinator: Node 2 Frankfurt (200 OK)</div>
-        <div class="text-[10px] text-slate-500 font-mono">pleasant-locust-220893.upstash.io</div>
+        <div class="text-[11px] text-slate-600">Primary Coordinator: Node 2 Frankfurt (200 OK)</div>
+        <div class="text-[10px] text-slate-400 font-mono">pleasant-locust-220893.upstash.io</div>
       </div>
 
-      <div class="p-3 rounded-xl glass-card space-y-1.5">
-        <div class="font-bold text-amber-400 flex items-center justify-between">
+      <div class="p-3 rounded-xl card-clean space-y-1">
+        <div class="font-bold text-amber-700 flex items-center justify-between">
           <span>Rule 4: Zero Phone Load</span>
-          <span class="text-[10px] text-emerald-400">● 0 DAEMONS</span>
+          <span class="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">● 0 DAEMONS</span>
         </div>
-        <div class="text-[11px] text-slate-300">Samsung Galaxy A30 CPU/RAM 100% Free for Pair Programming</div>
+        <div class="text-[11px] text-slate-600">Samsung Galaxy A30 CPU/RAM 100% Free for Pair Programming</div>
       </div>
     </div>
   </div>
 
   <!-- Detail Modal -->
-  <div id="modalDetail" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-sm p-4 space-y-3 custom-scrollbar max-h-[85vh] overflow-y-auto shadow-2xl">
-      <div class="flex justify-between items-start border-b border-slate-800 pb-2.5">
+  <div id="modalDetail" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-sm p-4 space-y-3 custom-scrollbar max-h-[85vh] overflow-y-auto shadow-2xl">
+      <div class="flex justify-between items-start border-b border-slate-100 pb-2.5">
         <div>
-          <h3 id="modalName" class="font-bold text-sm text-slate-100 flex items-center gap-1.5"></h3>
-          <p id="modalPhone" class="text-[11px] text-sky-400 font-mono mt-0.5"></p>
-          <p id="modalUid" class="text-[10px] text-slate-400 font-mono"></p>
+          <h3 id="modalName" class="font-bold text-sm text-slate-900 flex items-center gap-1.5"></h3>
+          <p id="modalPhone" class="text-[11px] text-blue-600 font-mono mt-0.5 font-bold"></p>
+          <p id="modalUid" class="text-[10px] text-slate-500 font-mono"></p>
         </div>
-        <button id="modalClose" class="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white active:scale-95 transition">✕</button>
+        <button id="modalClose" class="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 active:scale-95 transition">✕</button>
       </div>
 
-      <div id="modalStatusBox" class="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between">
-        <span class="text-xs text-slate-300 font-medium">Session State</span>
-        <span id="modalStatusBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full"></span>
+      <div id="modalStatusBox" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+        <span class="text-xs text-slate-700 font-semibold">Session State</span>
+        <span id="modalStatusBadge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full"></span>
       </div>
 
       <div class="space-y-1.5">
-        <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Multi-Chain Vault Addresses</div>
+        <div class="text-[10px] text-slate-400 uppercase font-black tracking-wider">Multi-Chain Vault Addresses</div>
         <div id="modalWalletsList" class="space-y-1 font-mono text-[10px]"></div>
       </div>
 
       <div class="pt-2 flex gap-2">
-        <button id="modalBtnOtp" class="flex-1 py-2 px-3 bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-semibold rounded-xl text-xs active:scale-95 transition text-center">
+        <button id="modalBtnOtp" class="flex-1 py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold rounded-xl text-xs active:scale-95 transition text-center">
           🔑 Read OTP
         </button>
-        <button id="modalBtnFarm" class="flex-1 py-2 px-3 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 font-semibold rounded-xl text-xs active:scale-95 transition text-center">
+        <button id="modalBtnFarm" class="flex-1 py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold rounded-xl text-xs active:scale-95 transition text-center">
           ⚡ Farm Node
         </button>
       </div>
     </div>
   </div>
 
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-12 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-lg hidden z-50">
+    Copied to clipboard! ✅
+  </div>
+
   <!-- Footer Status -->
-  <footer class="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500 font-mono">
-    <span id="txtLastSync">Connecting to mesh...</span>
-    <span class="text-sky-400">Telegram Serverless V8</span>
+  <footer class="mt-2.5 pt-2 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+    <span id="txtLastSync">Connecting...</span>
+    <span class="text-blue-600 font-bold">AAA Serverless Light Console</span>
   </footer>
 
   <script>
@@ -346,10 +345,25 @@
     }
 
     let GLOBAL_ACCOUNTS = [];
+    let GLOBAL_WALLETS = {};
     let CURRENT_FILTER = 'all';
+    let CURRENT_CHAIN = 'all';
 
     function haptic() {
       try { tg?.HapticFeedback?.impactOccurred('medium'); } catch (_) {}
+    }
+
+    function showToast(msg = 'Copied to clipboard! ✅') {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.classList.remove('hidden');
+      setTimeout(() => t.classList.add('hidden'), 2000);
+    }
+
+    function copyToClipboard(text) {
+      haptic();
+      navigator.clipboard?.writeText(text);
+      showToast();
     }
 
     // Tabs Switcher
@@ -357,18 +371,31 @@
       btn.addEventListener('click', () => {
         haptic();
         document.querySelectorAll('.tab-btn').forEach(b => {
-          b.classList.remove('text-sky-400', 'border-b-2', 'border-sky-400', 'font-semibold');
-          b.classList.add('text-slate-400', 'font-medium');
+          b.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+          b.classList.add('text-slate-400');
         });
-        btn.classList.add('text-sky-400', 'border-b-2', 'border-sky-400', 'font-semibold');
+        btn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
         btn.classList.remove('text-slate-400');
 
         const tab = btn.dataset.tab;
         document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+        if (tab === 'wallets') document.getElementById('tabWallets').classList.remove('hidden');
         if (tab === 'accounts') document.getElementById('tabAccounts').classList.remove('hidden');
         if (tab === 'bots') document.getElementById('tabBots').classList.remove('hidden');
-        if (tab === 'wallets') document.getElementById('tabWallets').classList.remove('hidden');
         if (tab === 'mesh') document.getElementById('tabMesh').classList.remove('hidden');
+      });
+    });
+
+    // Chain Filter Switcher in Wallets Tab
+    document.querySelectorAll('.chain-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        haptic();
+        document.querySelectorAll('.chain-btn').forEach(b => {
+          b.className = 'chain-btn px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900';
+        });
+        btn.className = 'chain-btn px-2.5 py-1 rounded-lg bg-blue-600 text-white shadow-sm font-bold';
+        CURRENT_CHAIN = btn.dataset.chain;
+        renderWebWallets();
       });
     });
 
@@ -381,11 +408,11 @@
       haptic();
       CURRENT_FILTER = f;
       [filterBtnAll, filterBtnActive, filterBtnRevoked].forEach(b => {
-        b.className = 'px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 hover:text-slate-200';
+        b.className = 'px-2 py-0.5 rounded-md card-clean text-slate-600 hover:text-slate-900';
       });
-      if (f === 'all') filterBtnAll.className = 'px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 font-bold';
-      if (f === 'active') filterBtnActive.className = 'px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-bold';
-      if (f === 'revoked') filterBtnRevoked.className = 'px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 font-bold';
+      if (f === 'all') filterBtnAll.className = 'px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold';
+      if (f === 'active') filterBtnActive.className = 'px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold';
+      if (f === 'revoked') filterBtnRevoked.className = 'px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 font-bold';
       filterAndRenderAccounts();
     }
 
@@ -398,18 +425,32 @@
       icon.classList.add('animate-spin');
 
       try {
+        // Fetch accounts live state
         const r = await fetch('https://restore-agy.aaaai2.workers.dev/api/fleet/live');
         const data = await r.json();
+
+        // Fetch multi-chain wallets
+        const wRes = await fetch('https://pleasant-locust-220893.upstash.io/get/fleet:wallets:multichain', {
+          headers: { 'Authorization': 'Bearer gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg' }
+        });
+        const wData = await wRes.json();
+        if (wData?.result) {
+          GLOBAL_WALLETS = typeof wData.result === 'string' ? JSON.parse(wData.result) : wData.result;
+        }
+
         if (data && Array.isArray(data.accounts)) {
           const healthyList = [2, 10, 11, 14, 17];
           GLOBAL_ACCOUNTS = data.accounts.map((acc, i) => {
             const idx = acc.index || (i + 1);
             const isOnline = healthyList.includes(idx);
+            const uidStr = String(acc.user_id || acc.uid);
+            const extraWallets = GLOBAL_WALLETS[uidStr] || {};
             return {
               ...acc,
+              ...extraWallets,
               index: idx,
               status: isOnline ? 'active' : 'revoked',
-              isHost: String(acc.user_id) === '6727787768'
+              isHost: uidStr === '6727787768'
             };
           });
           renderDashboard();
@@ -437,10 +478,123 @@
 
     function renderDashboard() {
       filterAndRenderAccounts();
-      renderTreasuryList();
+      renderWebWallets();
       document.getElementById('txtLastSync').innerText = 'Synced ' + new Date().toLocaleTimeString();
     }
 
+    // Render Web Wallet Manager
+    function renderWebWallets() {
+      const listEl = document.getElementById('webWalletList');
+      const query = (document.getElementById('inputSearch').value || '').toLowerCase().trim();
+
+      const filtered = GLOBAL_ACCOUNTS.filter(a => {
+        const name = (a.name || '').toLowerCase();
+        const uid = String(a.user_id || a.uid || '');
+        const phone = String(a.phone || '');
+        return !query || name.includes(query) || uid.includes(query) || phone.includes(query);
+      });
+
+      if (!filtered.length) {
+        listEl.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No wallets found matching query.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = filtered.map(acc => {
+        const idx = acc.index;
+        const padIdx = idx < 10 ? '0' + idx : idx;
+        const isOnline = acc.status === 'active';
+        const isHost = acc.isHost;
+
+        const ton = acc.ton?.address || acc.ton_wallet?.address || 'UQBPZiS...';
+        const evm = acc.evm?.address || acc.evm_wallet?.address || '0xfda4...';
+        const tron = acc.tron?.address || acc.tron_wallet?.address || 'TZ6LY...';
+        const sol = acc.solana?.address || acc.solana_wallet?.address || '2EKC...';
+        const btc = acc.btc?.address || acc.btc_wallet?.address || 'bc1p...';
+
+        return `
+          <div class="p-3 rounded-2xl card-clean space-y-2">
+            <div class="flex items-center justify-between pb-1 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-lg ${isOnline ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'} text-[10px] font-bold flex items-center justify-center font-mono">#${padIdx}</span>
+                <span class="font-bold text-xs text-slate-900">${acc.name || 'Worker'}</span>
+                ${isHost ? '<span class="text-[8px] bg-amber-100 text-amber-800 px-1 py-0.2 rounded font-bold">HOST 👑</span>' : ''}
+              </div>
+              <span class="text-[10px] font-mono font-bold text-slate-400">${acc.phone || ''}</span>
+            </div>
+
+            <!-- Multi-chain address cards based on filter -->
+            <div class="space-y-1.5 font-mono text-[10px]">
+              ${(CURRENT_CHAIN === 'all' || CURRENT_CHAIN === 'ton') ? `
+                <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <div class="truncate max-w-[240px]">
+                    <span class="text-blue-700 font-bold block text-[9px]">💎 TON (v4R2):</span>
+                    <span class="text-slate-800 font-medium select-all">${ton}</span>
+                  </div>
+                  <div class="flex gap-1">
+                    <button class="p-1 rounded-md bg-white border border-slate-200 text-blue-600 hover:bg-slate-100" onclick="copyToClipboard('${ton}')" title="Copy TON Address">📋</button>
+                    <a href="https://tonviewer.com/${ton}" target="_blank" class="p-1 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-slate-100">↗️</a>
+                  </div>
+                </div>
+              ` : ''}
+
+              ${(CURRENT_CHAIN === 'all' || CURRENT_CHAIN === 'evm') ? `
+                <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <div class="truncate max-w-[240px]">
+                    <span class="text-amber-700 font-bold block text-[9px]">🪙 EVM / BSC (BEP-20):</span>
+                    <span class="text-slate-800 font-medium select-all">${evm}</span>
+                  </div>
+                  <div class="flex gap-1">
+                    <button class="p-1 rounded-md bg-white border border-slate-200 text-blue-600 hover:bg-slate-100" onclick="copyToClipboard('${evm}')" title="Copy EVM Address">📋</button>
+                    <a href="https://bscscan.com/address/${evm}" target="_blank" class="p-1 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-slate-100">↗️</a>
+                  </div>
+                </div>
+              ` : ''}
+
+              ${(CURRENT_CHAIN === 'all' || CURRENT_CHAIN === 'tron') ? `
+                <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <div class="truncate max-w-[240px]">
+                    <span class="text-rose-700 font-bold block text-[9px]">⚡ TRON (TRC-20):</span>
+                    <span class="text-slate-800 font-medium select-all">${tron}</span>
+                  </div>
+                  <div class="flex gap-1">
+                    <button class="p-1 rounded-md bg-white border border-slate-200 text-blue-600 hover:bg-slate-100" onclick="copyToClipboard('${tron}')" title="Copy TRON Address">📋</button>
+                    <a href="https://tronscan.org/#/address/${tron}" target="_blank" class="p-1 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-slate-100">↗️</a>
+                  </div>
+                </div>
+              ` : ''}
+
+              ${(CURRENT_CHAIN === 'all' || CURRENT_CHAIN === 'solana') ? `
+                <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <div class="truncate max-w-[240px]">
+                    <span class="text-purple-700 font-bold block text-[9px]">☀️ SOLANA:</span>
+                    <span class="text-slate-800 font-medium select-all">${sol}</span>
+                  </div>
+                  <div class="flex gap-1">
+                    <button class="p-1 rounded-md bg-white border border-slate-200 text-blue-600 hover:bg-slate-100" onclick="copyToClipboard('${sol}')" title="Copy Solana Address">📋</button>
+                    <a href="https://solscan.io/account/${sol}" target="_blank" class="p-1 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-slate-100">↗️</a>
+                  </div>
+                </div>
+              ` : ''}
+
+              ${(CURRENT_CHAIN === 'all' || CURRENT_CHAIN === 'btc') ? `
+                <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <div class="truncate max-w-[240px]">
+                    <span class="text-emerald-700 font-bold block text-[9px]">₿ BITCOIN (Native SegWit):</span>
+                    <span class="text-slate-800 font-medium select-all">${btc}</span>
+                  </div>
+                  <div class="flex gap-1">
+                    <button class="p-1 rounded-md bg-white border border-slate-200 text-blue-600 hover:bg-slate-100" onclick="copyToClipboard('${btc}')" title="Copy BTC Address">📋</button>
+                    <a href="https://mempool.space/address/${btc}" target="_blank" class="p-1 rounded-md bg-white border border-slate-200 text-slate-600 hover:bg-slate-100">↗️</a>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Render Fleet Nodes Tab
     function filterAndRenderAccounts() {
       const query = (document.getElementById('inputSearch').value || '').toLowerCase().trim();
       const listEl = document.getElementById('accountList');
@@ -455,7 +609,7 @@
       });
 
       if (!filtered.length) {
-        listEl.innerHTML = `<div class="p-6 text-center text-slate-500 text-xs">No matching nodes found.</div>`;
+        listEl.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No matching nodes found.</div>`;
         return;
       }
 
@@ -466,19 +620,19 @@
         const padIdx = idx < 10 ? '0' + idx : idx;
 
         return `
-          <div class="p-2.5 rounded-xl glass-card hover:border-slate-500 cursor-pointer active:scale-[0.99] transition flex items-center justify-between" data-idx="${idx}">
+          <div class="p-2.5 rounded-xl card-clean hover:border-slate-400 cursor-pointer active:scale-[0.99] transition flex items-center justify-between" data-idx="${idx}">
             <div class="flex items-center gap-2.5">
-              <span class="w-6 h-6 rounded-lg ${isOnline ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'} text-[10px] font-bold flex items-center justify-center font-mono">#${padIdx}</span>
+              <span class="w-6 h-6 rounded-lg ${isOnline ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'} text-[10px] font-bold flex items-center justify-center font-mono">#${padIdx}</span>
               <div>
-                <div class="font-bold text-xs text-slate-100 flex items-center gap-1.5">
+                <div class="font-bold text-xs text-slate-900 flex items-center gap-1.5">
                   <span>${acc.name || 'Worker'}</span>
-                  ${isHost ? '<span class="text-[8px] bg-amber-500/20 text-amber-300 px-1 py-0.2 rounded font-bold">HOST 👑</span>' : ''}
+                  ${isHost ? '<span class="text-[8px] bg-amber-100 text-amber-800 px-1 py-0.2 rounded font-bold">HOST 👑</span>' : ''}
                 </div>
-                <div class="text-[10px] text-slate-400 font-mono">${acc.phone || 'Unknown phone'}</div>
+                <div class="text-[10px] text-slate-500 font-mono">${acc.phone || 'Unknown phone'}</div>
               </div>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${isOnline ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">
+              <span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${isOnline ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
                 ${isOnline ? 'ONLINE' : 'REVOKED'}
               </span>
             </div>
@@ -494,25 +648,6 @@
       });
     }
 
-    function renderTreasuryList() {
-      const wEl = document.getElementById('walletList');
-      wEl.innerHTML = GLOBAL_ACCOUNTS.map(acc => {
-        const idx = acc.index;
-        const padIdx = idx < 10 ? '0' + idx : idx;
-        const ton = acc.ton_wallet?.address || 'UQBPZiS...';
-        const evm = acc.evm_wallet?.address || '0xfda4...';
-        return `
-          <div class="p-2.5 rounded-xl glass-card font-mono text-[10px] flex items-center justify-between">
-            <span class="text-slate-300 font-bold">#${padIdx} ${acc.name?.split(' ')[0] || 'Node'}</span>
-            <div class="text-right">
-              <span class="text-sky-400 block truncate max-w-[170px]">TON: ${ton}</span>
-              <span class="text-amber-400 block truncate max-w-[170px]">EVM: ${evm}</span>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
     function openAccountModal(idx) {
       const acc = GLOBAL_ACCOUNTS.find(a => a.index === idx);
       if (!acc) return;
@@ -525,26 +660,32 @@
       document.getElementById('modalUid').innerText = 'Telegram UID: ' + (acc.user_id || 'N/A');
 
       const b = document.getElementById('modalStatusBadge');
-      b.className = `text-[10px] font-bold px-2.5 py-0.5 rounded-full ${isOnline ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`;
+      b.className = `text-[10px] font-bold px-2.5 py-0.5 rounded-full ${isOnline ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`;
       b.innerText = isOnline ? 'ACTIVE SESSION 🟢' : 'SESSION REVOKED 🔴';
+
+      const ton = acc.ton?.address || acc.ton_wallet?.address || 'UQBPZiS...';
+      const evm = acc.evm?.address || acc.evm_wallet?.address || '0xfda4...';
+      const tron = acc.tron?.address || acc.tron_wallet?.address || 'TZ6LY...';
+      const sol = acc.solana?.address || acc.solana_wallet?.address || '2EKC...';
+      const btc = acc.btc?.address || acc.btc_wallet?.address || 'bc1p...';
 
       const wList = document.getElementById('modalWalletsList');
       wList.innerHTML = `
-        <div class="p-1.5 rounded-lg bg-slate-950/70 border border-slate-800 flex justify-between"><span class="text-slate-400">💎 TON:</span><span class="text-sky-300 truncate max-w-[190px] select-all">${acc.ton_wallet?.address || 'Generated in vault'}</span></div>
-        <div class="p-1.5 rounded-lg bg-slate-950/70 border border-slate-800 flex justify-between"><span class="text-slate-400">🪙 EVM:</span><span class="text-amber-300 truncate max-w-[190px] select-all">${acc.evm_wallet?.address || 'Generated in vault'}</span></div>
-        <div class="p-1.5 rounded-lg bg-slate-950/70 border border-slate-800 flex justify-between"><span class="text-slate-400">⚡ TRON:</span><span class="text-rose-300 truncate max-w-[190px] select-all">${acc.tron_wallet?.address || 'Generated in vault'}</span></div>
-        <div class="p-1.5 rounded-lg bg-slate-950/70 border border-slate-800 flex justify-between"><span class="text-slate-400">☀️ SOL:</span><span class="text-purple-300 truncate max-w-[190px] select-all">${acc.solana_wallet?.address || 'Generated in vault'}</span></div>
-        <div class="p-1.5 rounded-lg bg-slate-950/70 border border-slate-800 flex justify-between"><span class="text-slate-400">₿ BTC:</span><span class="text-emerald-300 truncate max-w-[190px] select-all">${acc.btc_wallet?.address || 'Generated in vault'}</span></div>
+        <div class="p-1.5 rounded-lg bg-slate-50 border border-slate-200 flex justify-between"><span class="text-blue-700 font-bold">💎 TON:</span><span class="text-slate-800 truncate max-w-[190px] select-all">${ton}</span></div>
+        <div class="p-1.5 rounded-lg bg-slate-50 border border-slate-200 flex justify-between"><span class="text-amber-700 font-bold">🪙 EVM:</span><span class="text-slate-800 truncate max-w-[190px] select-all">${evm}</span></div>
+        <div class="p-1.5 rounded-lg bg-slate-50 border border-slate-200 flex justify-between"><span class="text-rose-700 font-bold">⚡ TRON:</span><span class="text-slate-800 truncate max-w-[190px] select-all">${tron}</span></div>
+        <div class="p-1.5 rounded-lg bg-slate-50 border border-slate-200 flex justify-between"><span class="text-purple-700 font-bold">☀️ SOL:</span><span class="text-slate-800 truncate max-w-[190px] select-all">${sol}</span></div>
+        <div class="p-1.5 rounded-lg bg-slate-50 border border-slate-200 flex justify-between"><span class="text-emerald-700 font-bold">₿ BTC:</span><span class="text-slate-800 truncate max-w-[190px] select-all">${btc}</span></div>
       `;
 
       document.getElementById('modalBtnOtp').onclick = () => {
         haptic();
-        alert(`Fetching OTP for Node #${idx}... Please check bot chat.`);
+        alert(`Requesting OTP for Node #${idx}... Please view inside bot chat.`);
       };
 
       document.getElementById('modalBtnFarm').onclick = () => {
         haptic();
-        alert(`Farming dispatched for Node #${idx}!`);
+        alert(`Mining cycle dispatched for Node #${idx}!`);
       };
 
       document.getElementById('modalDetail').classList.remove('hidden');
@@ -554,7 +695,11 @@
       document.getElementById('modalDetail').classList.add('hidden');
     });
 
-    document.getElementById('inputSearch').addEventListener('input', filterAndRenderAccounts);
+    document.getElementById('inputSearch').addEventListener('input', () => {
+      filterAndRenderAccounts();
+      renderWebWallets();
+    });
+
     document.getElementById('btnRefresh').addEventListener('click', () => {
       haptic();
       loadTelemetry();

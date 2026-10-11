@@ -77,7 +77,7 @@ export async function triggerFarmSweep(bot = 'all') {
 
 export async function fetchWallets() {
   try {
-    const resp = await fetch(`${UPSTASH_URL}/get/fleet:wallets:ton`, {
+    const resp = await fetch(`${UPSTASH_URL}/get/fleet:wallets:multichain`, {
       headers: {
         'Authorization': `Bearer ${UPSTASH_TOKEN}`
       }

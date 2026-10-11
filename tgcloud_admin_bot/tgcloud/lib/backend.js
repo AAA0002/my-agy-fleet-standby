@@ -1,8 +1,11 @@
-import { fetch } from 'sdk';
+import { fetch, db } from 'sdk';
+import { eq, sql } from 'sdk/db';
 import { CONFIG } from './config.js';
+import { accountsCache } from '../schema.js';
 
 export async function requestBackend(path, method = 'GET', body = null) {
-  const urls = [...CONFIG.BACKEND_NODES, ...CONFIG.EDGE_MESH];
+  // Try Render coordinator first, then Edge mesh
+  const urls = [CONFIG.BACKEND_NODES[0], ...CONFIG.EDGE_MESH];
   for (const base of urls) {
     try {
       const url = `${base}${path.startsWith('/') ? '' : '/'}${path}`;
@@ -85,27 +88,74 @@ export async function verifyLoginCode({ chatId, code, password, phone, nodeUrl, 
   return { ok: false, error: 'Login verification failed on cloud cluster. Please try again.' };
 }
 
-export async function cancelLogin(chatId) {
-  for (const base of CONFIG.BACKEND_NODES) {
-    try {
-      await fetch(`${base}/api/account/login/cancel`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: String(chatId) })
-      });
-    } catch (_) {}
-  }
+// Non-blocking, parallelized cancel — NEVER blocks Telegram command response!
+export function cancelLogin(chatId) {
+  Promise.allSettled(CONFIG.BACKEND_NODES.map(base =>
+    fetch(`${base}/api/account/login/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: String(chatId) })
+    })
+  )).catch(() => {});
 }
 
 let memFleetLive = null;
 let memFleetLiveTs = 0;
 
-export async function fetchFleetLive() {
-  if (memFleetLive && (Date.now() - memFleetLiveTs < 30000)) {
+// Immediate status sync when an account is re-linked: guarantees it never shows stale state!
+export async function markAccountActive(index, userId, name, phone) {
+  const idx = parseInt(index, 10);
+  if (memFleetLive && Array.isArray(memFleetLive.accounts)) {
+    const acc = memFleetLive.accounts.find(a => a.index === idx || (userId && String(a.user_id) === String(userId)));
+    if (acc) {
+      acc.status = 'active';
+      if (name) acc.name = name;
+      if (phone) acc.phone = phone;
+    }
+    memFleetLive.healthy_count = memFleetLive.accounts.filter(a => a.status === 'active').length;
+    memFleetLive.revoked_count = memFleetLive.accounts.filter(a => a.status === 'revoked' || a.status === 'inactive').length;
+    memFleetLiveTs = Date.now();
+  }
+
+  // Update SQLite local accounts cache
+  if (userId) {
+    try {
+      await db.insert(accountsCache).values({
+        userId: String(userId),
+        accountIndex: idx,
+        name: name || `Account #${idx}`,
+        phone: phone || '',
+        status: 'active'
+      }).onConflictDoUpdate({
+        target: accountsCache.userId,
+        set: { status: 'active', updatedAt: sql`(unixepoch())` }
+      }).run();
+    } catch (_) {}
+  }
+
+  // Asynchronously update Upstash sets (healthy vs revoked)
+  if (CONFIG.UPSTASH_URL && CONFIG.UPSTASH_TOKEN) {
+    fetch(`${CONFIG.UPSTASH_URL}/pipeline`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${CONFIG.UPSTASH_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify([
+        ["SADD", "fleet:healthy_sessions", String(idx)],
+        ["SREM", "fleet:revoked_sessions", String(idx)]
+      ])
+    }).catch(() => {});
+  }
+}
+
+export async function fetchFleetLive(force = false) {
+  // If memory cache is valid (< 30s) and not forced, return immediately (0ms latency!)
+  if (!force && memFleetLive && (Date.now() - memFleetLiveTs < 30000)) {
     return memFleetLive;
   }
 
-  // 1. Try single-request Upstash Pipeline for instant, accurate live state
+  // 1. Try single-request Upstash Pipeline
   if (CONFIG.UPSTASH_URL && CONFIG.UPSTASH_TOKEN) {
     try {
       const pipeRes = await fetch(`${CONFIG.UPSTASH_URL}/pipeline`, {
@@ -164,32 +214,34 @@ export async function fetchFleetLive() {
     } catch (_) {}
   }
 
-  // 2. Fallback to Cloudflare Edge Mesh /api/fleet/live
-  const res = await requestBackend('/api/fleet/live');
-  if (res && Array.isArray(res.accounts)) {
-    const defaultHealthy = [2, 10, 11, 14, 17];
-    const enriched = res.accounts.map((acc, i) => {
-      const idx = acc.index || (i + 1);
-      const isHealthy = defaultHealthy.includes(idx);
-      return {
-        ...acc,
-        index: idx,
-        status: isHealthy ? 'active' : 'revoked',
-        isHost: String(acc.user_id) === '6727787768'
+  // 2. Fallback to Cloudflare Edge Mesh
+  try {
+    const res = await requestBackend('/api/fleet/live');
+    if (res && Array.isArray(res.accounts)) {
+      const defaultHealthy = [2, 10, 11, 14, 17];
+      const enriched = res.accounts.map((acc, i) => {
+        const idx = acc.index || (i + 1);
+        const isHealthy = defaultHealthy.includes(idx);
+        return {
+          ...acc,
+          index: idx,
+          status: isHealthy ? 'active' : 'revoked',
+          isHost: String(acc.user_id) === '6727787768'
+        };
+      });
+      const result = {
+        ok: true,
+        total_accounts: enriched.length,
+        healthy_count: defaultHealthy.length,
+        revoked_count: enriched.length - defaultHealthy.length,
+        accounts: enriched,
+        timestamp: Date.now()
       };
-    });
-    const result = {
-      ok: true,
-      total_accounts: enriched.length,
-      healthy_count: defaultHealthy.length,
-      revoked_count: enriched.length - defaultHealthy.length,
-      accounts: enriched,
-      timestamp: Date.now()
-    };
-    memFleetLive = result;
-    memFleetLiveTs = Date.now();
-    return result;
-  }
+      memFleetLive = result;
+      memFleetLiveTs = Date.now();
+      return result;
+    }
+  } catch (_) {}
 
   // 3. Fallback static structured fleet representation
   return memFleetLive || {
