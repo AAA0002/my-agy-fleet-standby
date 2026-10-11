@@ -737,16 +737,31 @@ Whenever you perform work in this repository:
 
 ### 1. Real Non-Custodial Multi-Chain Wallet Engine
 * **Official Credentials Binding**: Strictly bound to the official 18 accounts documented in `FLEET_MULTICHAIN_WALLETS_DASHBOARD.md` (assembled into `public_admin/fleet_wallets_data.json`). Node #01 is bound to Binance Main Exchange Vault; Node #10 is bound to Binance Web3 Wallet 2 (AAA); Nodes #02-#09 and #11-#18 are bound to dedicated self-custody suites.
-* **Cryptographic Keys & BIP39 Derivation**:
-  - TON derivation path: `m/44'/607'/0'` with 24-word recovery seed phrases displayed in numbered chips with reveal/hide and 1-tap copy.
-  - BSC / EVM hex private keys, TRON base58 private keys, Solana base58 secret keys, and Bitcoin Taproot keys.
-* **Live On-Chain Public RPC Queries (Direct Browser Fetching)**:
-  - **TON Center RPC** (`https://toncenter.com/api/v2/getAddressInformation?address={addr}`): Queries live nanoTON balances with verified CORS `*`.
-  - **Mempool Space RPC** (`https://mempool.space/api/address/{addr}`): Queries live Bitcoin satoshis with verified CORS `*`.
-  - **Dynamic Sync Status**: Real-time badge indicating live timestamp and synchronization status.
+* **Static Fleet Registry Precedence (`fleet_wallet_provisioner.py`)**:
+  - `FLEET_STATIC_REGISTRY` loaded directly from `fleet_wallets_data.json`.
+  - When accounts relink or onboard (e.g. Node 5 Nathan Miller 5, `+14302084365`), user ID and phone number take precedence over modal request parameters (`req_index`).
+  - Pre-configured accounts (Nodes 1-18) **NEVER** have random synthetic keys generated; their permanent authentic keys and node indices are strictly preserved.
+* **16-Account Fleet Seed Manager & Quick Mobile Importer Wizard (`admin.html`)**:
+  - Eliminates the burden of typing 384 words (16 accounts × 24 words) on a mobile phone keyboard.
+  - Interactive sequential carousel with Prev / Next account switching over all 16 self-custody worker nodes.
+  - Numbered 3-column 24-word grid with 1-tap "Copy 24 Words" (ready to paste into Gram Wallet or Tonkeeper).
+  - 1-Tap "Open in Tonkeeper" deeplink and 1-Tap "Copy EVM Key".
+  - Bulk Export Utilities: 1-Click "Copy 16 Seeds", 1-Click "Download TXT Backup", 1-Click "Download JSON Vault".
+* **Telegram Alert Secret Phrase & Key Delivery (`render_standby_app.py`)**:
+  - `notify_admin_new_account_onboarded(acc_entry, is_existing)` delivers the complete 24-word recovery phrase formatted in `<pre>` for 1-tap copying on mobile, plus the EVM private key.
+  - Confirms automatic archival to `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt`.
+* **Zero Fake Mock Tokens & Live Multi-Chain RPC Queries**:
+  - Purged all fake token mock balances (`notBal`, `dogsBal`, `mrgBal`, `usdtBscBal`, `usdtTronBal`, `solBal`).
+  - Browser directly queries 5 public RPCs:
+    * TON Center RPC (`https://toncenter.com/api/v2/getAddressInformation?address={addr}`)
+    * BSC JSON-RPC (`https://bsc-dataseed.binance.org` -> `eth_getBalance`)
+    * TronGrid API (`https://api.trongrid.io/v1/accounts/{addr}`)
+    * Solana RPC (`https://api.mainnet-beta.solana.com` -> `getBalance`)
+    * Mempool Space API (`https://mempool.space/api/address/{addr}`)
+    * Binance Live Price Tickers (`TONUSDT`, `BNBUSDT`, `BTCUSDT`, `TRXUSDT`, `SOLUSDT`)
 * **1-Tap Tonkeeper Mobile Transaction Signing**:
-  - Universal deeplink `https://app.tonkeeper.com/transfer/{addr}?amount={nanotons}&text={memo}` pre-fills the recipient address, amount in nanotons, and transfer memo.
-  - When opened on Android or iOS, Tonkeeper launches directly, loads the active 24-word account, and prompts the user to sign with one tap. Zero server custody or synthetic transaction mocking.
+  - Universal deeplink `https://app.tonkeeper.com/transfer/{addr}?amount={nanotons}&text={memo}` pre-fills recipient address, amount in nanotons, and transfer memo.
+  - Tonkeeper opens directly on mobile, loads the active 24-word account, and prompts the user to sign with one tap. Zero server custody.
 
 ### 2. Zero-Emoji Institutional UI Standards
 * **Institutional Vector SVG Standards**: 100% elimination of all emoji pictographs across Admin Console (`public_admin/admin.html`) and Standalone Login Portal (`public_admin/login.html`).

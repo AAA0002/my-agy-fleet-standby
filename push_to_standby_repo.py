@@ -121,6 +121,15 @@ def push_app():
     clean_file = os.path.join(BASE_DIR, "clean_up_system.py")
     if os.path.exists(clean_file):
         push_file(clean_file, "clean_up_system.py", "feat: autonomous multi-tier clean up engine")
+    wallets_file = os.path.join(BASE_DIR, "fleet_wallets_data.json")
+    if os.path.exists(wallets_file):
+        push_file(wallets_file, "fleet_wallets_data.json", "feat: 18-account authentic fleet wallets registry")
+    prov_file = os.path.join(BASE_DIR, "fleet_wallet_provisioner.py")
+    if os.path.exists(prov_file):
+        push_file(prov_file, "fleet_wallet_provisioner.py", "feat: authentic multichain wallet suite provisioner")
+    pub_wallets = os.path.join(BASE_DIR, "public_admin", "fleet_wallets_data.json")
+    if os.path.exists(pub_wallets):
+        push_file(pub_wallets, "public_admin/fleet_wallets_data.json", "feat: public admin fleet wallets registry")
     
     # Trigger Render Node 1 deploy (Singapore - Coz1)
     node1_key = env.get("RENDER_API_KEY_1", "rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1")

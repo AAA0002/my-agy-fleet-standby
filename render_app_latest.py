@@ -1856,9 +1856,114 @@ BIP39_SAMPLE_WORDS = [
     "case", "cash", "casino", "castle", "casual", "cat", "catalog", "catch", "category", "cattle"
 ]
 
+def load_fleet_static_registry() -> list:
+    candidates = [
+        os.path.join(BASE_DIR, "public_admin", "fleet_wallets_data.json"),
+        os.path.join(BASE_DIR, "fleet_wallets_data.json"),
+        "/root/projects/AAA_AUTO/public_admin/fleet_wallets_data.json"
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            try:
+                with open(c, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, list) and len(data) >= 18:
+                        return data
+            except Exception:
+                pass
+    return []
+
+FLEET_STATIC_REGISTRY = load_fleet_static_registry()
+
+def get_fleet_static_account(account_index=None, user_id=None, phone=None):
+    clean_p = re.sub(r"\D", "", str(phone or ""))
+    uid_str = str(user_id or "")
+    for acc in FLEET_STATIC_REGISTRY:
+        acc_p = re.sub(r"\D", "", str(acc.get("phone") or ""))
+        acc_uid = str(acc.get("user_id") or "")
+        acc_idx = acc.get("index")
+        if uid_str and acc_uid and uid_str == acc_uid:
+            return acc
+        if clean_p and acc_p and (clean_p == acc_p or clean_p.endswith(acc_p) or acc_p.endswith(clean_p)):
+            return acc
+        if account_index is not None and acc_idx == account_index:
+            return acc
+    return None
+
+def build_suite_from_static(m: dict) -> dict:
+    idx = m.get("index")
+    uid = str(m.get("user_id"))
+    name = m.get("name", "Worker")
+
+    if idx == 1 or uid == "6727787768":
+        return {
+            "ton": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT", "mnemonic": None, "wallet_type": "binance_main_exchange"},
+            "evm": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "0xfda4182001672b9f0f09e2118242e543e35ed5ce", "private_key": None, "wallet_type": "binance_main_exchange"},
+            "tron": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "TZ6LY4QwiJr8WXN6W1HjiUCbkvFxq1vmUJ", "private_key": None, "network": "TRON (TRX / TRC-20)"},
+            "solana": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "2EKCkj6RSgMHomtTPigoVfaLa5x4RaXq9qrxv2roi5Fu", "private_key": None, "network": "Solana (SOL)"},
+            "btc": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "bc1peg8n6rv7lnzpdwgqqktcyxvrw7we60c780l2yh48pvqvgpj2p7gsvecjdg", "private_key": None, "network": "Bitcoin (BTC)"}
+        }
+    if idx == 10 or uid == "8203342513":
+        return {
+            "ton": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH", "mnemonic": None, "wallet_type": "binance_web3_wallet_2"},
+            "evm": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "0x017841f26d5b79cc8c5eb20c65367bb645cc2610", "private_key": None, "wallet_type": "binance_web3_wallet_2"},
+            "tron": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "TA6yjtuWh6Sz5uE8RywLZxFQBBvhHYP9FP", "private_key": None, "network": "TRON (TRX / TRC-20)"},
+            "solana": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "Bf4uGaYzpZc3aoW4HsABo4obPsk9ozDEUBfzHWTDeM5Q", "private_key": None, "network": "Solana (SOL)"},
+            "btc": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "bc1pq2kas8lk3w29v6eve9tevnr3sl2ef58zvg9k4krlpu5u7ph7u47s6whcw2", "private_key": None, "network": "Bitcoin (BTC)"}
+        }
+
+    ton_mnemonic = m.get("ton_mnemonic", "")
+    return {
+        "ton": {
+            "account_index": idx,
+            "name": name,
+            "user_id": uid,
+            "address": m.get("ton", ""),
+            "mnemonic": ton_mnemonic,
+            "mnemonic_words": ton_mnemonic.split() if ton_mnemonic else [],
+            "wallet_version": "v4r2"
+        },
+        "evm": {
+            "account_index": idx,
+            "name": name,
+            "user_id": uid,
+            "address": m.get("evm", ""),
+            "private_key": m.get("evm_key", "")
+        },
+        "tron": {
+            "account_index": idx,
+            "name": name,
+            "user_id": uid,
+            "address": m.get("tron", ""),
+            "private_key": m.get("tron_key", ""),
+            "network": "TRON (TRX / TRC-20)"
+        },
+        "solana": {
+            "account_index": idx,
+            "name": name,
+            "user_id": uid,
+            "address": m.get("sol", ""),
+            "private_key": m.get("sol_key", ""),
+            "network": "Solana (SOL)"
+        },
+        "btc": {
+            "account_index": idx,
+            "name": name,
+            "user_id": uid,
+            "address": m.get("btc", ""),
+            "private_key": m.get("btc_key", ""),
+            "network": "Bitcoin (BTC)"
+        }
+    }
+
 def generate_multichain_wallet_suite(account_index: int, name: str, user_id: str, phone: str = "", username: str = "") -> dict:
-    """Generates 100% unique isolated wallets across all 5 chains for any new account."""
-    uid = str(user_id)
+    """Returns official fleet wallets for pre-configured accounts (Nodes 1-18), or generates unique isolated wallets for new accounts."""
+    matched = get_fleet_static_account(account_index=account_index, user_id=user_id, phone=phone)
+    if matched:
+        return build_suite_from_static(matched)
+    
+    if account_index and 1 <= int(account_index) <= len(FLEET_STATIC_REGISTRY):
+        return build_suite_from_static(FLEET_STATIC_REGISTRY[int(account_index) - 1])
     
     # 1. TON Wallet (v4r2)
     ton_entry = {}
@@ -2000,12 +2105,13 @@ def save_and_archive_account_wallets(acc_entry: dict, wallets: dict):
         target_dir = BASE_DIR if (BASE_DIR and os.path.exists(BASE_DIR)) else "/tmp"
         
         # Update fleet JSON files
+        is_binance_vault = (uid in ["6727787768", "8203342513"] or acc_entry.get("index") in [1, 10])
         for fname, entry in [
-            ("fleet_ton_wallets.json", wallets["ton"]),
-            ("fleet_evm_wallets.json", wallets["evm"]),
-            ("fleet_tron_wallets.json", wallets["tron"]),
-            ("fleet_solana_wallets.json", wallets["solana"]),
-            ("fleet_btc_wallets.json", wallets["btc"])
+            ("fleet_ton_wallets.json", wallets.get("ton", {})),
+            ("fleet_evm_wallets.json", wallets.get("evm", {})),
+            ("fleet_tron_wallets.json", wallets.get("tron", {})),
+            ("fleet_solana_wallets.json", wallets.get("solana", {})),
+            ("fleet_btc_wallets.json", wallets.get("btc", {}))
         ]:
             p = os.path.join(target_dir, fname)
             data = {}
@@ -2015,21 +2121,30 @@ def save_and_archive_account_wallets(acc_entry: dict, wallets: dict):
                         data = json.load(f)
                 except Exception:
                     data = {}
-            data[uid] = entry
+            clean_entry = dict(entry) if isinstance(entry, dict) else {}
+            if is_binance_vault:
+                clean_entry.pop("mnemonic", None)
+                clean_entry.pop("mnemonic_words", None)
+                clean_entry.pop("private_key", None)
+                clean_entry.pop("private_key_hex", None)
+                clean_entry.pop("public_key_hex", None)
+                clean_entry.pop("_archived_legacy_mnemonic", None)
+                clean_entry.pop("_archived_legacy_privkey", None)
+            data[uid] = clean_entry
             try:
                 with open(p, "w", encoding="utf-8") as f:
                     json.dump(data, f, indent=2, ensure_ascii=False)
             except Exception:
                 pass
 
-        # Append to FLEET_WALLETS_SECRETS_MASTER_VAULT.txt
+        # Append to FLEET_WALLETS_SECRETS_MASTER_VAULT.txt (Self-custody worker accounts only)
         vault_file = os.path.join(target_dir, "FLEET_WALLETS_SECRETS_MASTER_VAULT.txt")
         try:
             content = ""
             if os.path.exists(vault_file):
                 with open(vault_file, "r", encoding="utf-8") as f:
                     content = f.read()
-            if uid not in content:
+            if not is_binance_vault and uid not in content:
                 idx = acc_entry.get("index", 19)
                 new_section = (
                     f"Account #{idx:02d}: {name}\n"
@@ -2152,8 +2267,8 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
         except Exception as ae:
             logger.debug(f"[{name}] ATF wallet bind note: {ae}")
 
-async def notify_admin_new_account_onboarded(acc_entry: dict):
-    """Sends structured Telegram alert to Master Admin upon new account onboarding."""
+async def notify_admin_new_account_onboarded(acc_entry: dict, is_existing: bool = False):
+    """Sends structured Telegram alert to Master Admin upon account onboarding or relink."""
     bot_token = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8")
     chat_id = REPORT_CHAT_ID  # 6727787768
     name = acc_entry.get("name", "User")
@@ -2161,23 +2276,51 @@ async def notify_admin_new_account_onboarded(acc_entry: dict):
     uid = acc_entry.get("user_id")
     idx = acc_entry.get("index", "?")
     
-    ton_addr = (acc_entry.get("ton_wallet") or {}).get("address", "N/A")
-    evm_addr = (acc_entry.get("evm_wallet") or {}).get("address", "N/A")
-    tron_addr = (acc_entry.get("tron_wallet") or {}).get("address", "N/A")
-    sol_addr = (acc_entry.get("solana_wallet") or {}).get("address", "N/A")
-    btc_addr = (acc_entry.get("btc_wallet") or {}).get("address", "N/A")
-    
+    ton_w = acc_entry.get("ton_wallet") or {}
+    evm_w = acc_entry.get("evm_wallet") or {}
+    tron_w = acc_entry.get("tron_wallet") or {}
+    sol_w = acc_entry.get("solana_wallet") or {}
+    btc_w = acc_entry.get("btc_wallet") or {}
+
+    ton_addr = ton_w.get("address", "N/A")
+    ton_mnemonic = ton_w.get("mnemonic")
+    evm_addr = evm_w.get("address", "N/A")
+    evm_pk = evm_w.get("private_key")
+    tron_addr = tron_w.get("address", "N/A")
+    sol_addr = sol_w.get("address", "N/A")
+    btc_addr = btc_w.get("address", "N/A")
+
+    title = f"🎉 <b>Account #{idx} Relinked & Active in Fleet!</b>" if is_existing else f"🎉 <b>New Account #{idx} Onboarded to Fleet!</b>"
+    wallet_header = "💎 <b>Authentic Multi-Chain Wallets Connected (From Vault):</b>" if is_existing else "💎 <b>100% Unique Multi-Chain Wallets Generated:</b>"
+
+    keys_section = ""
+    if idx == 1 or str(uid) == "6727787768":
+        keys_section = "🔐 <b>Custody:</b> Binance Main Exchange Vault (Direct Deposit / Zero server seeds)\n\n"
+    elif idx == 10 or str(uid) == "8203342513":
+        keys_section = "🔐 <b>Custody:</b> Binance Web3 Wallet 2 (AAA) (Direct App Custody / Zero server seeds)\n\n"
+    else:
+        seed_txt = ton_mnemonic if ton_mnemonic else "Securely archived in Master Vault"
+        pk_txt = evm_pk if evm_pk else "Securely archived in Master Vault"
+        keys_section = (
+            f"🔐 <b>TON 24-Word Seed (Gram / Tonkeeper):</b>\n"
+            f"<pre>{seed_txt}</pre>\n\n"
+            f"🔑 <b>EVM Private Key (BSC/Arb):</b>\n"
+            f"<code>{pk_txt}</code>\n\n"
+            f"💾 <b>Vault Storage:</b> Saved to FLEET_WALLETS_SECRETS_MASTER_VAULT.txt\n\n"
+        )
+
     msg = (
-        f"🎉 <b>New Account #{idx} Onboarded to Fleet!</b>\n\n"
+        f"{title}\n\n"
         f"• <b>Account:</b> {name} (<code>{phone}</code>)\n"
         f"• <b>Telegram ID:</b> <code>{uid}</code>\n"
-        f"• <b>Role:</b> Worker Account\n\n"
-        f"💎 <b>100% Unique Multi-Chain Wallets Generated:</b>\n"
+        f"• <b>Role:</b> {'Host Vault Account' if idx == 1 else 'Worker Account'}\n\n"
+        f"{wallet_header}\n"
         f"• <b>TON (v4r2):</b> <code>{ton_addr}</code>\n"
         f"• <b>EVM (BSC/Arb):</b> <code>{evm_addr}</code>\n"
         f"• <b>TRON (TRC-20):</b> <code>{tron_addr}</code>\n"
         f"• <b>Solana:</b> <code>{sol_addr}</code>\n"
         f"• <b>Bitcoin:</b> <code>{btc_addr}</code>\n\n"
+        f"{keys_section}"
         f"🔗 <b>Mining Bots Linked:</b>\n"
         f"• ATF Miner: TON Connected ✅\n"
         f"• MRG Miner: TON Connected ✅\n"
@@ -2524,20 +2667,44 @@ async def verify_login_code(request: Request):
             "status": "active"
         }
 
-        # Determine account index & preserve existing index if re-linking
+        # Determine account index & preserve authentic fleet index if re-linking
         req_index = data.get("index")
-        cur_accs = await fetch_accounts_from_cloud()
-        existing_idx = None
-        clean_target_phone = re.sub(r"\D", "", str(phone or ""))
-        for a in cur_accs:
-            clean_a_phone = re.sub(r"\D", "", str(a.get("phone") or ""))
-            if str(a.get("user_id")) == str(user_id) or (clean_target_phone and clean_a_phone == clean_target_phone):
-                existing_idx = a.get("index")
-                break
+        matched_static = get_fleet_static_account(user_id=user_id, phone=phone)
+        if matched_static:
+            target_idx = matched_static["index"]
+            acc_name = matched_static.get("name") or acc_name
+            wallets = build_suite_from_static(matched_static)
+            is_existing = True
+        else:
+            cur_accs = await fetch_accounts_from_cloud()
+            existing_idx = None
+            existing_wallets = None
+            clean_target_phone = re.sub(r"\D", "", str(phone or ""))
+            for a in cur_accs:
+                clean_a_phone = re.sub(r"\D", "", str(a.get("phone") or ""))
+                if str(a.get("user_id")) == str(user_id) or (clean_target_phone and clean_a_phone == clean_target_phone):
+                    existing_idx = a.get("index")
+                    if a.get("ton_wallet") or a.get("evm_wallet"):
+                        existing_wallets = {
+                            "ton": a.get("ton_wallet") or {},
+                            "evm": a.get("evm_wallet") or {},
+                            "tron": a.get("tron_wallet") or {},
+                            "solana": a.get("solana_wallet") or {},
+                            "btc": a.get("btc_wallet") or {}
+                        }
+                    break
 
-        target_idx = int(req_index) if req_index else (existing_idx if existing_idx else ((len(cur_accs) + 1) if cur_accs else 1))
-        wallets = generate_multichain_wallet_suite(target_idx, acc_name, user_id, phone, uname)
+            if existing_idx:
+                target_idx = existing_idx
+                wallets = existing_wallets if existing_wallets else generate_multichain_wallet_suite(target_idx, acc_name, user_id, phone, uname)
+                is_existing = True
+            else:
+                target_idx = int(req_index) if req_index else ((len(cur_accs) + 1) if cur_accs else 1)
+                wallets = generate_multichain_wallet_suite(target_idx, acc_name, user_id, phone, uname)
+                is_existing = False
+
         acc_entry.update({
+            "name": acc_name,
             "index": target_idx,
             "proxy": None,
             "evm_wallet": wallets["evm"],
@@ -2548,7 +2715,7 @@ async def verify_login_code(request: Request):
             "bnb_wallet": wallets["evm"]["address"]
         })
         save_and_archive_account_wallets(acc_entry, wallets)
-        asyncio.create_task(notify_admin_new_account_onboarded(acc_entry))
+        asyncio.create_task(notify_admin_new_account_onboarded(acc_entry, is_existing=is_existing))
 
         # Automatically bind master referrals and bot wallets in the background
         asyncio.create_task(bind_account_master_referrals(client, acc_entry))
@@ -2691,17 +2858,40 @@ async def start_qr_login(request: Request):
 
                     logger.info(f"[Standby Cloud QR Login] 🎉 Account signed in: {name} (@{uname}, ID: {uid})")
 
-                    cur_accs = await fetch_accounts_from_cloud()
-                    existing_idx = None
-                    clean_target_phone = re.sub(r"\D", "", str(phone or ""))
-                    for a in cur_accs:
-                        clean_a_phone = re.sub(r"\D", "", str(a.get("phone") or ""))
-                        if str(a.get("user_id")) == str(uid) or (clean_target_phone and clean_a_phone == clean_target_phone):
-                            existing_idx = a.get("index")
-                            break
+                    matched_static = get_fleet_static_account(user_id=uid, phone=phone)
+                    if matched_static:
+                        target_idx = matched_static["index"]
+                        name = matched_static.get("name") or name
+                        wallets = build_suite_from_static(matched_static)
+                        is_existing = True
+                    else:
+                        cur_accs = await fetch_accounts_from_cloud()
+                        existing_idx = None
+                        existing_wallets = None
+                        clean_target_phone = re.sub(r"\D", "", str(phone or ""))
+                        for a in cur_accs:
+                            clean_a_phone = re.sub(r"\D", "", str(a.get("phone") or ""))
+                            if str(a.get("user_id")) == str(uid) or (clean_target_phone and clean_a_phone == clean_target_phone):
+                                existing_idx = a.get("index")
+                                if a.get("ton_wallet") or a.get("evm_wallet"):
+                                    existing_wallets = {
+                                        "ton": a.get("ton_wallet") or {},
+                                        "evm": a.get("evm_wallet") or {},
+                                        "tron": a.get("tron_wallet") or {},
+                                        "solana": a.get("solana_wallet") or {},
+                                        "btc": a.get("btc_wallet") or {}
+                                    }
+                                break
 
-                    target_idx = int(req_index) if req_index else (existing_idx if existing_idx else ((len(cur_accs) + 1) if cur_accs else 1))
-                    wallets = generate_multichain_wallet_suite(target_idx, name, uid, phone, uname)
+                        if existing_idx:
+                            target_idx = existing_idx
+                            wallets = existing_wallets if existing_wallets else generate_multichain_wallet_suite(target_idx, name, uid, phone, uname)
+                            is_existing = True
+                        else:
+                            target_idx = int(req_index) if req_index else ((len(cur_accs) + 1) if cur_accs else 1)
+                            wallets = generate_multichain_wallet_suite(target_idx, name, uid, phone, uname)
+                            is_existing = False
+
                     acc_entry = {
                         "index": target_idx,
                         "name": name,
@@ -2720,7 +2910,7 @@ async def start_qr_login(request: Request):
                         "bnb_wallet": wallets["evm"]["address"]
                     }
                     save_and_archive_account_wallets(acc_entry, wallets)
-                    asyncio.create_task(notify_admin_new_account_onboarded(acc_entry))
+                    asyncio.create_task(notify_admin_new_account_onboarded(acc_entry, is_existing=is_existing))
                     asyncio.create_task(bind_account_master_referrals(temp_client, acc_entry))
                     asyncio.create_task(sync_new_account_to_clouds(acc_entry))
 

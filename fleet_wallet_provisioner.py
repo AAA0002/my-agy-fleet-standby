@@ -120,9 +120,116 @@ BIP39_SAMPLE_WORDS = [
     "caught", "cause", "caution", "cave", "ceiling", "celery", "cement", "census", "century", "cereal"
 ]
 
+def load_fleet_static_registry() -> list:
+    import json
+    candidates = [
+        os.path.join(BASE_DIR, "public_admin", "fleet_wallets_data.json"),
+        os.path.join(BASE_DIR, "fleet_wallets_data.json"),
+        "/root/projects/AAA_AUTO/public_admin/fleet_wallets_data.json"
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            try:
+                with open(c, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, list) and len(data) >= 18:
+                        return data
+            except Exception:
+                pass
+    return []
+
+FLEET_STATIC_REGISTRY = load_fleet_static_registry()
+
+def get_fleet_static_account(account_index=None, user_id=None, phone=None):
+    import re
+    clean_p = re.sub(r"\D", "", str(phone or ""))
+    uid_str = str(user_id or "")
+    for acc in FLEET_STATIC_REGISTRY:
+        acc_p = re.sub(r"\D", "", str(acc.get("phone") or ""))
+        acc_uid = str(acc.get("user_id") or "")
+        acc_idx = acc.get("index")
+        if uid_str and acc_uid and uid_str == acc_uid:
+            return acc
+        if clean_p and acc_p and (clean_p == acc_p or clean_p.endswith(acc_p) or acc_p.endswith(clean_p)):
+            return acc
+        if account_index is not None and acc_idx == account_index:
+            return acc
+    return None
+
+def build_suite_from_static(m: dict) -> dict:
+    idx = m.get("index")
+    uid = str(m.get("user_id"))
+    name = m.get("name", "Worker")
+
+    if idx == 1 or uid == "6727787768":
+        return {
+            "ton": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT", "mnemonic": None, "wallet_type": "binance_main_exchange"},
+            "evm": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "0xfda4182001672b9f0f09e2118242e543e35ed5ce", "private_key": None, "wallet_type": "binance_main_exchange"},
+            "tron": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "TZ6LY4QwiJr8WXN6W1HjiUCbkvFxq1vmUJ", "private_key": None, "network": "TRON (TRX / TRC-20)"},
+            "solana": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "2EKCkj6RSgMHomtTPigoVfaLa5x4RaXq9qrxv2roi5Fu", "private_key": None, "network": "Solana (SOL)"},
+            "btc": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "bc1peg8n6rv7lnzpdwgqqktcyxvrw7we60c780l2yh48pvqvgpj2p7gsvecjdg", "private_key": None, "network": "Bitcoin (BTC)"}
+        }
+    if idx == 10 or uid == "8203342513":
+        return {
+            "ton": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH", "mnemonic": None, "wallet_type": "binance_web3_wallet_2"},
+            "evm": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "0x017841f26d5b79cc8c5eb20c65367bb645cc2610", "private_key": None, "wallet_type": "binance_web3_wallet_2"},
+            "tron": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "TA6yjtuWh6Sz5uE8RywLZxFQBBvhHYP9FP", "private_key": None, "network": "TRON (TRX / TRC-20)"},
+            "solana": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "Bf4uGaYzpZc3aoW4HsABo4obPsk9ozDEUBfzHWTDeM5Q", "private_key": None, "network": "Solana (SOL)"},
+            "btc": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "bc1pq2kas8lk3w29v6eve9tevnr3sl2ef58zvg9k4krlpu5u7ph7u47s6whcw2", "private_key": None, "network": "Bitcoin (BTC)"}
+        }
+
+    ton_mnemonic = m.get("ton_mnemonic", "")
+    return {
+        "ton": {
+            "account_index": idx,
+            "name": name,
+            "user_id": uid,
+            "address": m.get("ton", ""),
+            "mnemonic": ton_mnemonic,
+            "mnemonic_words": ton_mnemonic.split() if ton_mnemonic else [],
+            "wallet_version": "v4r2"
+        },
+        "evm": {
+            "account_index": idx,
+            "name": name,
+            "user_id": uid,
+            "address": m.get("evm", ""),
+            "private_key": m.get("evm_key", "")
+        },
+        "tron": {
+            "account_index": idx,
+            "name": name,
+            "user_id": uid,
+            "address": m.get("tron", ""),
+            "private_key": m.get("tron_key", ""),
+            "network": "TRON (TRX / TRC-20)"
+        },
+        "solana": {
+            "account_index": idx,
+            "name": name,
+            "user_id": uid,
+            "address": m.get("sol", ""),
+            "private_key": m.get("sol_key", ""),
+            "network": "Solana (SOL)"
+        },
+        "btc": {
+            "account_index": idx,
+            "name": name,
+            "user_id": uid,
+            "address": m.get("btc", ""),
+            "private_key": m.get("btc_key", ""),
+            "network": "Bitcoin (BTC)"
+        }
+    }
+
 def generate_multichain_wallet_suite(account_index: int, name: str, user_id: str, phone: str = "", username: str = "") -> dict:
-    """Generates 100% unique isolated wallets across all 5 chains."""
-    uid = str(user_id)
+    """Returns official fleet wallets for pre-configured accounts (Nodes 1-18), or generates unique isolated wallets for new accounts."""
+    matched = get_fleet_static_account(account_index=account_index, user_id=user_id, phone=phone)
+    if matched:
+        return build_suite_from_static(matched)
+    
+    if account_index and 1 <= int(account_index) <= len(FLEET_STATIC_REGISTRY):
+        return build_suite_from_static(FLEET_STATIC_REGISTRY[int(account_index) - 1])
     
     # 1. TON Wallet (v4r2)
     ton_entry = {}
@@ -242,12 +349,13 @@ def save_and_archive_account_wallets(acc_entry: dict, wallets: dict):
     uname = acc_entry.get("username") or "@None"
     
     # 1. Update fleet JSON files
+    is_binance_vault = (uid in ["6727787768", "8203342513"] or acc_entry.get("index") in [1, 10])
     for fname, entry in [
-        ("fleet_ton_wallets.json", wallets["ton"]),
-        ("fleet_evm_wallets.json", wallets["evm"]),
-        ("fleet_tron_wallets.json", wallets["tron"]),
-        ("fleet_solana_wallets.json", wallets["solana"]),
-        ("fleet_btc_wallets.json", wallets["btc"])
+        ("fleet_ton_wallets.json", wallets.get("ton", {})),
+        ("fleet_evm_wallets.json", wallets.get("evm", {})),
+        ("fleet_tron_wallets.json", wallets.get("tron", {})),
+        ("fleet_solana_wallets.json", wallets.get("solana", {})),
+        ("fleet_btc_wallets.json", wallets.get("btc", {}))
     ]:
         p = os.path.join(BASE_DIR, fname)
         data = {}
@@ -257,13 +365,22 @@ def save_and_archive_account_wallets(acc_entry: dict, wallets: dict):
                     data = json.load(f)
             except Exception:
                 data = {}
-        data[uid] = entry
+        clean_entry = dict(entry) if isinstance(entry, dict) else {}
+        if is_binance_vault:
+            clean_entry.pop("mnemonic", None)
+            clean_entry.pop("mnemonic_words", None)
+            clean_entry.pop("private_key", None)
+            clean_entry.pop("private_key_hex", None)
+            clean_entry.pop("public_key_hex", None)
+            clean_entry.pop("_archived_legacy_mnemonic", None)
+            clean_entry.pop("_archived_legacy_privkey", None)
+        data[uid] = clean_entry
         with open(p, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
-    # 2. Append to FLEET_WALLETS_SECRETS_MASTER_VAULT.txt
+    # 2. Append to FLEET_WALLETS_SECRETS_MASTER_VAULT.txt (Self-custody worker accounts only)
     vault_file = os.path.join(BASE_DIR, "FLEET_WALLETS_SECRETS_MASTER_VAULT.txt")
-    if os.path.exists(vault_file):
+    if not is_binance_vault and os.path.exists(vault_file):
         try:
             with open(vault_file, "r", encoding="utf-8") as f:
                 content = f.read()

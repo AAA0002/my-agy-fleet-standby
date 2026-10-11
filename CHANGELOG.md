@@ -2,6 +2,28 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Authentic Fleet Wallet Preservation, Telegram Secret Phrase Delivery & 16-Seed Manager Wizard (October 11, 2026)**:
+  - **🔐 Permanent Resolution of Wallet Generation & Node Index Overwrite (`fleet_wallet_provisioner.py` & `render_standby_app.py`)**:
+    * **Root Cause Fixed**: When Node 5 (Nathan Miller 5, `+14302084365`, ID `8450010161`) was relinked, modal default `index: 1` caused the backend to treat it as a new Account #1 and generate synthetic keys.
+    * **Static Fleet Registry Precedence**: Built `FLEET_STATIC_REGISTRY` loaded from `fleet_wallets_data.json`. The login verification pipeline now matches by Telegram User ID and phone number before inspecting `req_index`. Existing accounts strictly preserve their permanent node index (1-18) and authentic wallet credentials.
+    * **Zero Synthetic Generation for Nodes 1-18**: `generate_multichain_wallet_suite()` checks the static fleet registry first; it never generates random keys for pre-configured accounts.
+  - **📢 Telegram Onboarding/Relink Alert Secret Phrase & Key Delivery (`render_standby_app.py`)**:
+    * Updated `notify_admin_new_account_onboarded(acc_entry, is_existing)` to deliver the full 24-word TON seed phrase in `<pre>` for 1-tap mobile copying into Gram Wallet or Tonkeeper, plus the EVM private key in `<code>`.
+    * For Node 1 and Node 10, explicitly documents custody as Binance Main Exchange Vault and Binance Web3 Wallet 2 (AAA).
+    * Automatically archives all secrets to `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt`.
+  - **🔑 16-Account Fleet Seed Manager & Quick Mobile Importer Wizard (`public_admin/admin.html`)**:
+    * Added dedicated "Seed Manager (16)" sub-tab to eliminate manual typing of 384 words on mobile keyboards.
+    * Features a sequential Prev / Next carousel across all 16 self-custody accounts (Nodes 2-9, 11-18).
+    * Numbered 3-column 24-word grid with 1-tap "Copy 24 Words", 1-tap "Open in Tonkeeper", and 1-tap "Copy EVM Key".
+    * Master Bulk Operations: 1-Click Copy 16 Seeds, 1-Click Download TXT Backup, 1-Click Download JSON Vault.
+  - **📊 100% Elimination of Fake Mock Tokens**:
+    * Completely purged mock token balances (`notBal`, `dogsBal`, `mrgBal`, `usdtBscBal`, etc.).
+    * Replaced with live multi-chain RPC balance queries across TON (TON Center v2 API), BSC (`eth_getBalance`), TRON (TronGrid API), Solana (`getBalance`), Bitcoin (mempool.space API), and real fleet-mined ATF balance.
+  - **🚀 Triple Multi-Cloud Deployment**:
+    * Vercel deployed to `https://agy-aaa000.vercel.app/admin` and `https://aaa-free-ai.vercel.app/admin`.
+    * Render Node 2 (Frankfurt) and Node 3 (Oregon) updated via GitHub standby repos (`my-agy-fleet-standby`).
+    * Cloudflare Edge Workers updated across all 5 nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **💼 Real Non-Custodial Multi-Chain Web3 Wallet App, Zero-Emoji SVG Standard & Admin Login Restoration (October 11, 2026)**:
   - **🔐 Real Non-Custodial Web3 Wallet Engine (Zero Synthetic Mocking) (`public_admin/admin.html`)**:
     * **Official Credentials Binding**: Completely bound all 18 accounts strictly to official credentials from `FLEET_MULTICHAIN_WALLETS_DASHBOARD.md` (`public_admin/fleet_wallets_data.json`).
