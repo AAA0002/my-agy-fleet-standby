@@ -105,12 +105,18 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * **Resilient Login State Machine**: `login_flow:${chatId}` uses in-memory `memLoginFlow` Map and Upstash Redis first, ensuring user login flows never fail when Cloudflare KV quotas are hit.
 - **Telegram Serverless Platform (`tgcloud.ai` & `@tgcloud/cli`)**:
   - Official serverless runtime running V8 isolates directly on Telegram's global infrastructure (`core.telegram.org/bots/serverless`).
+  - **Live Status**: 🟢 LIVE & OPERATIONAL (Revision 5 deployed & synced).
+  - **App ID**: `app8858823950` (`@myagyai`)
+  - **Webhook**: `https://cloud.telegram.org/app8858823950/webhook` (allowed updates: `message`, `callback_query`, status: in sync).
+  - **Mini App**: `https://app8858823950.tgcloud.ai/`
+  - **Native SQLite Database**: 4 tables migrated (`accounts_cache`, `admin_users`, `login_sessions`, `telemetry_events`).
   - Project directory: `tgcloud_admin_bot/` with official CLI `@tgcloud/cli@0.2.0`.
-  - Native SQLite Database (`tgcloud/schema.js`): `admin_users`, `login_sessions`, `accounts_cache`, and `telemetry_events` stored without external DB quotas or connection limits.
   - Handlers:
     * `tgcloud/handlers/message.js`: 100% serverless message routing, 2FA password verification dispatch, and fleet management commands (`/start`, `/menu`, `/otp`, `/relink`, `/status`).
     * `tgcloud/handlers/callback_query.js`: 1-tap OTP reader, inline account status badges, and farming trigger.
-  - One-Click Deployment: Managed via `./deploy_tgcloud.sh [TGCLOUD_TOKEN]` (`npx tgcloud push` + `npx tgcloud migrate`).
+  - Endpoints: `collectTokens.js`, `getFleetStatus.js`, `triggerFarm.js`, `triggerTurnstile.js` (for WebApp API).
+  - Deployment: Managed via `./deploy_tgcloud.sh [TGCLOUD_TOKEN]` (`npx tgcloud push` + `npx tgcloud migrate`).
+
 
 - **Render Cloud Fleet (Multi-Account Cloud MTProto Compute & Resilient Relay Mesh)**:
   - Node 1: **Render Standby Node 1 (Singapore)**: `https://my-agy-fleet-standby.onrender.com`

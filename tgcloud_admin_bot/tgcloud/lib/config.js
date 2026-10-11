@@ -9,7 +9,9 @@ export const CONFIG = {
   EDGE_MESH: [
     "https://restore-agy.aaaai2.workers.dev",
     "https://restore-agy.aaa-bot.workers.dev",
-    "https://restore-agy.aaa222.workers.dev"
+    "https://restore-agy.aaa222.workers.dev",
+    "https://restore-agy.agorameet.workers.dev",
+    "https://restore-agy.aaaai.workers.dev"
   ],
   ACTIVE_BOTS: [
     { name: "Stones Miner", symbol: "STONES", status: "Active" },
@@ -41,4 +43,15 @@ export const CONFIG = {
     17: "+8801725579294",
     18: "+8801728148811"
   }
+};
+
+export const SECRET_KEY = CONFIG.SECRET_KEY;
+export const OWNER_ID = "6727787768";
+export const CF_WORKER_URLS = CONFIG.EDGE_MESH;
+export const RENDER_NODES = CONFIG.BACKEND_NODES;
+export const UPSTASH_URL = "https://relaxing-starfish-285827.upstash.io";
+export const UPSTASH_TOKEN = "gQAAAAAABFyDAAIgcDI5MDYyYWZjNzYzNzk0ZmRjYjhmNTA4ZDI4ODlmODkzNw";
+export const BROWSER_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+  "Accept": "application/json"
 };
