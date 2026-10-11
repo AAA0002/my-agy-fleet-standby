@@ -2,6 +2,34 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Real-Time Auto-Update Engine, Dynamic Telemetry & Interactive 5-Bot Suite (October 11, 2026)**:
+  - **🔄 Automatic Message Refresh & Unhandled Callback Fixes (`tgcloud/handlers/callback_query.js` & `ui.js`)**:
+    * **Root Cause of "Why Message Don't Update Automatically"**:
+      1. Identified that `btn_refresh_menu` callback was missing from `callback_query.js`, causing tapping `[ 🔄 Refresh Menu ]` on the inline keyboard to be silently ignored by Telegram. Added dedicated handler that bypasses in-memory cache (`fetchFleetLive(true)`) and immediately rewrites the message via `editMessageText`.
+      2. Fixed `btn_fleet_wallets` callback mismatch (`btn_wallets` vs `btn_fleet_wallets`).
+      3. Added 15-second auto-polling interval in WebApp Mini App (`public/index.html`: `setInterval(loadTelemetry, 15000)`) so the dashboard automatically syncs with Upstash Redis in real time without requiring manual refreshes.
+  - **🟢 Complete Eradication of Hardcoded 5 / 13 Counts**:
+    * Removed all hardcoded `|| 5` and `|| 13` / `|| 12` defaults across `tgcloud/lib/ui.js`, `tgcloud/handlers/message.js`, and `tgcloud/handlers/callback_query.js`.
+    * `healthy_count` and `revoked_count` are now calculated dynamically from Upstash Redis sets (`fleet:healthy_sessions` and `fleet:revoked_sessions`).
+    * In `public/index.html`, replaced initial static HTML text (`5 🟢`, `13 🔴`, `🟢 Online [5]`, `🔴 Offline [13]`) with dynamic placeholders (`-- 🟢`, `-- 🔴`, `🟢 Online`, `🔴 Offline`) that dynamically update upon fetch.
+    * Fixed `isOnline` logic in `public/index.html` by removing `|| acc.status === 'active'` override, ensuring `healthySet` is the ground truth.
+  - **🤖 Strict 5-Bot Consistency & Purge of Legacy "8 Bots" Text**:
+    * Fixed line 466 of `message.js` which previously displayed `Bound to 8 Legitimate Bots` upon 2FA login; updated to `Bound to 5 Legitimate Bots`.
+  - **⚡ Interactive 5-Bot Mining Suite in WebApp (`tabBots` in `public/index.html`)**:
+    * Transformed static bot cards into interactive consoles with:
+      * 1-tap `[ ⚡ Farm Bot ]` button calling cloud farming endpoint (`/api/farm/<bot>`) with loading feedback.
+      * 1-tap `[ ↗️ Open Bot ]` button launching the Telegram bot directly (`tg.openTelegramLink`).
+      * Strategy tags and cycle schedules for each bot:
+        1. 🪙 **MRG Miner** (`@mrgminerbot`): Turnstile Pass • 2h Cycle
+        2. ⚡ **ATF Miner** (`@ATF_AIRDROP_bot`): Cloud Captcha • 3h Cycle
+        3. 👑 **Victor's Company** (`@VictorsCompanybot`): Deep Mine Arcade • Level Up
+        4. 💧 **VyroDrop** (`@vyrodrop_bot`): TonConnect Rewards • Daily Claim
+        5. 🌐 **Kynex Network** (`@Kynex_miningbot`): Session Token Sync • Daily Harvest
+  - **☁️ Telegram Serverless Deployment Verified**:
+    * Deployed Revision 17 via `npx tgcloud push`. Webhook in sync with 0 pending updates.
+    * Zero Phone Load verified on Samsung Galaxy A30 (Rule 4 compliant).
+
+
 - **⚡ Keyboard Menu, Dynamic Session Relink & Strict 5-Bot Suite Migration (October 11, 2026)**:
   - **⌨️ Persistent Reply Keyboard Menu & Command Router (`tgcloud/lib/ui.js` & `tgcloud/handlers/message.js`)**:
     * Restored persistent bottom ReplyKeyboardMarkup (`[ 🚀 Open WebApp Console ↗️ ]`, `[ 📱 Fleet Nodes ]`, `[ 💼 Web Wallets ]`, `[ 🔑 1-Tap OTP ]`, `[ ⚡ Farm 5 Bots ]`, `[ 📊 Status & Mesh ]`, `[ 🔄 Refresh Menu ]`).

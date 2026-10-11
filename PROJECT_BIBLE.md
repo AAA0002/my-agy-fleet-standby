@@ -118,7 +118,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   - Project directory: `tgcloud_admin_bot/` with official CLI `@tgcloud/cli@0.2.0`.
   - Handlers:
     * `tgcloud/handlers/message.js`: 100% serverless message routing with sub-second execution (<1s), command preemption, non-blocking Render cancel calls, duplicate account detection, robust cancel handling, and auto-normalization of BD phone numbers and verification codes.
-    * `tgcloud/handlers/callback_query.js`: 1-tap OTP reader with dynamic status badges (`🟢 5 Active`, `🔴 13 Revoked`, `👑 Master Host Arif`), 1-tap re-link actions for revoked sessions, resilient `replyOrEdit` wrapper preventing BotApiError 400 edit crashes, and on-demand cloud farming triggers.
+    * `tgcloud/handlers/callback_query.js`: 1-tap OTP reader with dynamic status badges (`🟢 Online`, `🔴 Revoked`, `👑 Master Host Arif`), 1-tap re-link actions for revoked sessions, instant `btn_refresh_menu` dynamic cache bypass, resilient `replyOrEdit` wrapper preventing BotApiError 400 edit crashes, and on-demand cloud farming triggers.
   - Endpoints: `aiCouncil.js` (Groq/Edge AI Copilot), `getOtp.js` (live OTP extraction), `collectTokens.js`, `getFleetStatus.js`, `triggerFarm.js`, `triggerTurnstile.js` (for WebApp API).
   - Deployment: Managed via `./deploy_tgcloud.sh [TGCLOUD_TOKEN]` (`npx tgcloud push` + `npx tgcloud migrate`). Webhook permanently preserved across all Cloudflare deployments.
 

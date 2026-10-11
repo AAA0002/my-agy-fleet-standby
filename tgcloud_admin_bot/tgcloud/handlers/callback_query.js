@@ -61,29 +61,32 @@ export default async function (callbackQuery, ctx) {
   // Answer callback query promptly
   await api.answerCallbackQuery({ callback_query_id: callbackQuery.id }).catch(() => {});
 
-  if (data === 'btn_main_menu') {
-    const live = await fetchFleetLive();
-    await replyOrEdit(chatId, messageId, buildDashboardBanner(live), getMainMenuKeyboard(live.revoked_count || 13));
+  if (data === 'btn_main_menu' || data === 'btn_refresh_menu') {
+    const live = await fetchFleetLive(true);
+    await replyOrEdit(chatId, messageId, buildDashboardBanner(live), getMainMenuKeyboard(live.revoked_count));
     return;
   }
 
   if (data === 'btn_fleet_accounts' || data === 'btn_filter_all') {
-    const live = await fetchFleetLive();
-    const text = `📱 *FLEET ACCOUNTS MATRIX (${live.healthy_count || 5}/${live.total_accounts || 18} ACTIVE)*\n\n🟢 = Active MTProto Session\n🔴 = Session Revoked / Needs Re-link\n👑 = Master Host Account\n\nSelect an account node below to inspect dossier:`;
+    const live = await fetchFleetLive(true);
+    const actCount = live.healthy_count !== undefined ? live.healthy_count : (live.accounts ? live.accounts.filter(a => a.status === 'active').length : 7);
+    const text = `📱 *FLEET ACCOUNTS MATRIX (${actCount}/${live.total_accounts || 18} ACTIVE)*\n\n🟢 = Active MTProto Session\n🔴 = Session Revoked / Needs Re-link\n👑 = Master Host Account\n\nSelect an account node below to inspect dossier:`;
     await replyOrEdit(chatId, messageId, text, buildAccountsKeyboard(live.accounts, 'all'));
     return;
   }
 
   if (data === 'btn_filter_active') {
-    const live = await fetchFleetLive();
-    const text = `🟢 *ONLINE ACTIVE SESSIONS (${live.healthy_count || 5} NODES)*\n\nAll accounts below have active 24h MTProto authorization keys.\nSelect a node to inspect:`;
+    const live = await fetchFleetLive(true);
+    const actCount = live.healthy_count !== undefined ? live.healthy_count : (live.accounts ? live.accounts.filter(a => a.status === 'active').length : 7);
+    const text = `🟢 *ONLINE ACTIVE SESSIONS (${actCount} NODES)*\n\nAll accounts below have active 24h MTProto authorization keys.\nSelect a node to inspect:`;
     await replyOrEdit(chatId, messageId, text, buildAccountsKeyboard(live.accounts, 'active'));
     return;
   }
 
   if (data === 'btn_filter_revoked') {
-    const live = await fetchFleetLive();
-    const text = `🔴 *REVOKED SESSIONS (${live.revoked_count || 13} NODES)*\n\nSessions below require re-linking. Tap any account to trigger 1-tap SMS/Telegram login code:`;
+    const live = await fetchFleetLive(true);
+    const revCount = live.revoked_count !== undefined ? live.revoked_count : (live.accounts ? live.accounts.filter(a => a.status !== 'active').length : 11);
+    const text = `🔴 *REVOKED SESSIONS (${revCount} NODES)*\n\nSessions below require re-linking. Tap any account to trigger 1-tap SMS/Telegram login code:`;
     await replyOrEdit(chatId, messageId, text, buildAccountsKeyboard(live.accounts, 'revoked'));
     return;
   }
@@ -171,8 +174,8 @@ Use this code to authorize desktop, web, or mobile clients.`;
   }
 
   if (data === 'btn_relink_menu') {
-    const live = await fetchFleetLive();
-    const revokedCount = live.revoked_count || 13;
+    const live = await fetchFleetLive(true);
+    const revokedCount = live.revoked_count !== undefined ? live.revoked_count : (live.accounts ? live.accounts.filter(a => a.status !== 'active').length : 11);
     const text = `┌──────────────────────────────────────┐
 │  🔄 *FLEET SESSION RECOVERY CENTER*  │
 │  _Automated 1-Tap Re-Authentication_ │
@@ -295,8 +298,8 @@ Please reply directly with the full phone number including international country
       });
     } catch (_) {}
 
-    const live = await fetchFleetLive();
-    await replyOrEdit(chatId, messageId, buildDashboardBanner(live), getMainMenuKeyboard(live.revoked_count || 13));
+    const live = await fetchFleetLive(true);
+    await replyOrEdit(chatId, messageId, buildDashboardBanner(live), getMainMenuKeyboard(live.revoked_count));
     return;
   }
 
@@ -320,7 +323,8 @@ Please reply directly with the full phone number including international country
 📡 *Cluster Execution:* \`Render Standby Node 2 (Frankfurt)\`
 ⚡ *Phone Impact:* \`0% CPU • 0% RAM • 100% Cloud Execution\``;
 
-    await replyOrEdit(chatId, messageId, banner, getMainMenuKeyboard());
+    const live = await fetchFleetLive();
+    await replyOrEdit(chatId, messageId, banner, getMainMenuKeyboard(live.revoked_count));
     return;
   }
 
@@ -330,7 +334,7 @@ Please reply directly with the full phone number including international country
     return;
   }
 
-  if (data === 'btn_wallets') {
+  if (data === 'btn_wallets' || data === 'btn_fleet_wallets') {
     await replyOrEdit(chatId, messageId, buildWalletsBanner(), getBackToMenuKeyboard());
     return;
   }

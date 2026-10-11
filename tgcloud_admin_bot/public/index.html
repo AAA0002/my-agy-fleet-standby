@@ -127,9 +127,9 @@
         </div>
         <div class="my-1">
           <div class="text-sm font-black text-slate-900 flex items-center gap-1.5">
-            <span class="text-emerald-600" id="cntOnline">5 🟢</span>
+            <span class="text-emerald-600" id="cntOnline">-- 🟢</span>
             <span class="text-slate-300">•</span>
-            <span class="text-rose-600" id="cntRevoked">13 🔴</span>
+            <span class="text-rose-600" id="cntRevoked">-- 🔴</span>
           </div>
         </div>
         <!-- Progress Bar -->
@@ -240,8 +240,8 @@
       <div class="flex items-center justify-between text-[11px] text-slate-500 px-1 pb-1">
         <div class="flex gap-1.5">
           <button id="filterBtnAll" class="min-h-[30px] px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 font-bold text-xs">All [18]</button>
-          <button id="filterBtnActive" class="min-h-[30px] px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900 text-xs">🟢 Online [5]</button>
-          <button id="filterBtnRevoked" class="min-h-[30px] px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900 text-xs">🔴 Offline [13]</button>
+          <button id="filterBtnActive" class="min-h-[30px] px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900 text-xs">🟢 Online</button>
+          <button id="filterBtnRevoked" class="min-h-[30px] px-2.5 py-1 rounded-lg card-clean text-slate-600 hover:text-slate-900 text-xs">🔴 Offline</button>
         </div>
         <span class="text-[10px] text-slate-400">Tap node</span>
       </div>
@@ -327,57 +327,154 @@
     <!-- ======================================================== -->
     <!-- TAB 4: 5 BOTS MINING SUITE                               -->
     <!-- ======================================================== -->
-    <div id="tabBots" class="tab-pane hidden space-y-2">
-      <div class="grid grid-cols-1 gap-2 text-xs">
-        <div class="p-3 rounded-xl card-clean flex justify-between items-center">
-          <div class="flex items-center gap-2.5">
-            <span class="text-xl">🪙</span>
+    <div id="tabBots" class="tab-pane hidden space-y-2.5">
+      <!-- 5 Bots Header Banner -->
+      <div class="p-3 rounded-2xl bg-gradient-to-tr from-blue-50 via-indigo-50 to-white border border-blue-100 space-y-1">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+              🤖
+            </div>
             <div>
-              <div class="font-bold text-slate-900">MRG Miner (@mrgminerbot)</div>
-              <div class="text-[10px] text-slate-500">Turnstile Solver, Cloud Mining & Upgrade • Cloud</div>
+              <h3 class="font-bold text-xs text-slate-900">5 Legitimate Active Mining Bots</h3>
+              <p class="text-[10px] text-slate-500 font-medium">100% Cloud Execution • Zero Phone Load</p>
             </div>
           </div>
-          <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
+          <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+            ● 5 ACTIVE
+          </span>
         </div>
-        <div class="p-3 rounded-xl card-clean flex justify-between items-center">
-          <div class="flex items-center gap-2.5">
-            <span class="text-xl">⚡</span>
-            <div>
-              <div class="font-bold text-slate-900">ATF Miner (@ATF_AIRDROP_bot)</div>
-              <div class="text-[10px] text-slate-500">Autonomous Cloud Mining & Daily Claims • Cloud</div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-2.5 text-xs">
+        <!-- Bot 1: MRG Miner -->
+        <div class="card-clean p-3 rounded-2xl space-y-2">
+          <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-base border border-amber-200">🪙</span>
+              <div>
+                <div class="font-bold text-xs text-slate-900">MRG Miner</div>
+                <div class="text-[10px] text-blue-600 font-mono">@mrgminerbot</div>
+              </div>
             </div>
+            <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">● 100% CLOUD</span>
           </div>
-          <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
+          <div class="flex items-center justify-between text-[10px] text-slate-500 font-medium">
+            <span>Turnstile Pass • Cloud Mine & Auto-Upgrade</span>
+            <span class="font-mono text-slate-700 font-bold">2h Cycle</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-0.5">
+            <button class="min-h-[36px] py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="farmSingleBot('mrg')">
+              <span>⚡ Farm MRG</span>
+            </button>
+            <button class="min-h-[36px] py-1.5 px-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="openTelegramBot('mrgminerbot')">
+              <span>↗️ Open Bot</span>
+            </button>
+          </div>
         </div>
-        <div class="p-3 rounded-xl card-clean flex justify-between items-center">
-          <div class="flex items-center gap-2.5">
-            <span class="text-xl">👑</span>
-            <div>
-              <div class="font-bold text-slate-900">Victor's Company (@VictorsCompanybot)</div>
-              <div class="text-[10px] text-slate-500">Turnstile Commission Claim & Compound • Cloud</div>
+
+        <!-- Bot 2: ATF Miner -->
+        <div class="card-clean p-3 rounded-2xl space-y-2">
+          <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-base border border-indigo-200">⚡</span>
+              <div>
+                <div class="font-bold text-xs text-slate-900">ATF Miner</div>
+                <div class="text-[10px] text-blue-600 font-mono">@ATF_AIRDROP_bot</div>
+              </div>
             </div>
+            <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">● 100% CLOUD</span>
           </div>
-          <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
+          <div class="flex items-center justify-between text-[10px] text-slate-500 font-medium">
+            <span>Autonomous Cloud Mining & Daily Claims</span>
+            <span class="font-mono text-slate-700 font-bold">3h Cycle</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-0.5">
+            <button class="min-h-[36px] py-1.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="farmSingleBot('atf')">
+              <span>⚡ Farm ATF</span>
+            </button>
+            <button class="min-h-[36px] py-1.5 px-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="openTelegramBot('ATF_AIRDROP_bot')">
+              <span>↗️ Open Bot</span>
+            </button>
+          </div>
         </div>
-        <div class="p-3 rounded-xl card-clean flex justify-between items-center">
-          <div class="flex items-center gap-2.5">
-            <span class="text-xl">💧</span>
-            <div>
-              <div class="font-bold text-slate-900">VyroDrop (@vyrodrop_bot)</div>
-              <div class="text-[10px] text-slate-500">TonConnect & Task Rewards Claim • Cloud</div>
+
+        <!-- Bot 3: Victor's Company -->
+        <div class="card-clean p-3 rounded-2xl space-y-2">
+          <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-base border border-amber-200">👑</span>
+              <div>
+                <div class="font-bold text-xs text-slate-900">Victor's Company</div>
+                <div class="text-[10px] text-blue-600 font-mono">@VictorsCompanybot</div>
+              </div>
             </div>
+            <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">● 100% CLOUD</span>
           </div>
-          <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
+          <div class="flex items-center justify-between text-[10px] text-slate-500 font-medium">
+            <span>Turnstile Commission Claim & Compound Level</span>
+            <span class="font-mono text-slate-700 font-bold">Arcade Claim</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-0.5">
+            <button class="min-h-[36px] py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="farmSingleBot('victors')">
+              <span>⚡ Farm Victor's</span>
+            </button>
+            <button class="min-h-[36px] py-1.5 px-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="openTelegramBot('VictorsCompanybot')">
+              <span>↗️ Open Bot</span>
+            </button>
+          </div>
         </div>
-        <div class="p-3 rounded-xl card-clean flex justify-between items-center">
-          <div class="flex items-center gap-2.5">
-            <span class="text-xl">🌐</span>
-            <div>
-              <div class="font-bold text-slate-900">Kynex Network (@Kynex_miningbot)</div>
-              <div class="text-[10px] text-slate-500">Node Sync, Session Verification & Daily Harvest • Cloud</div>
+
+        <!-- Bot 4: VyroDrop -->
+        <div class="card-clean p-3 rounded-2xl space-y-2">
+          <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center font-bold text-base border border-sky-200">💧</span>
+              <div>
+                <div class="font-bold text-xs text-slate-900">VyroDrop</div>
+                <div class="text-[10px] text-blue-600 font-mono">@vyrodrop_bot</div>
+              </div>
             </div>
+            <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">● 100% CLOUD</span>
           </div>
-          <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">ONLINE</span>
+          <div class="flex items-center justify-between text-[10px] text-slate-500 font-medium">
+            <span>TonConnect & Task Rewards Claim</span>
+            <span class="font-mono text-slate-700 font-bold">Daily Drop</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-0.5">
+            <button class="min-h-[36px] py-1.5 px-2 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="farmSingleBot('vyro')">
+              <span>⚡ Farm VyroDrop</span>
+            </button>
+            <button class="min-h-[36px] py-1.5 px-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="openTelegramBot('vyrodrop_bot')">
+              <span>↗️ Open Bot</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Bot 5: Kynex Network -->
+        <div class="card-clean p-3 rounded-2xl space-y-2">
+          <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-base border border-emerald-200">🌐</span>
+              <div>
+                <div class="font-bold text-xs text-slate-900">Kynex Network</div>
+                <div class="text-[10px] text-blue-600 font-mono">@Kynex_miningbot</div>
+              </div>
+            </div>
+            <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">● 100% CLOUD</span>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-slate-500 font-medium">
+            <span>Node Sync, Session Verification & Daily Harvest</span>
+            <span class="font-mono text-slate-700 font-bold">Daily Harvest</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-0.5">
+            <button class="min-h-[36px] py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="farmSingleBot('kynex')">
+              <span>⚡ Farm Kynex</span>
+            </button>
+            <button class="min-h-[36px] py-1.5 px-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="openTelegramBot('Kynex_miningbot')">
+              <span>↗️ Open Bot</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -731,7 +828,7 @@
           GLOBAL_ACCOUNTS = accounts.map((acc, i) => {
             const idx = acc.index || (i + 1);
             const uidStr = String(acc.user_id || acc.uid || '');
-            const isOnline = healthySet.has(String(idx)) || (uidStr && healthySet.has(uidStr)) || acc.status === 'active';
+            const isOnline = healthySet.has(String(idx)) || (uidStr && healthySet.has(uidStr));
             const extraWallets = GLOBAL_WALLETS[uidStr] || {};
             return {
               ...acc,
@@ -1280,6 +1377,43 @@
       } catch (_) {}
       setTimeout(() => { btn.innerHTML = orig; }, 3000);
     });
+
+    function openTelegramBot(username) {
+      haptic();
+      if (tg?.openTelegramLink) {
+        tg.openTelegramLink(`https://t.me/${username}`);
+      } else {
+        window.open(`https://t.me/${username}`, '_blank');
+      }
+    }
+
+    async function farmSingleBot(botKey) {
+      haptic();
+      const botNames = {
+        mrg: 'MRG Miner',
+        atf: 'ATF Miner',
+        victors: "Victor's Company",
+        vyro: 'VyroDrop',
+        kynex: 'Kynex Network'
+      };
+      const name = botNames[botKey] || 'Bot';
+      showToast(`Dispatched farming for ${name}! ⚡`);
+      try {
+        await fetch(`https://restore-agy.aaaai2.workers.dev/api/farm/${botKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer agy_cf_secret_7d36994e_2026'
+          },
+          body: JSON.stringify({ bot: botKey })
+        });
+      } catch (_) {}
+    }
+
+    // Auto-refresh telemetry every 15 seconds so dashboard updates automatically!
+    setInterval(() => {
+      loadTelemetry();
+    }, 15000);
 
     // Initial Load
     loadTelemetry();

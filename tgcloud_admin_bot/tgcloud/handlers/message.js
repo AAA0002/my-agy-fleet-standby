@@ -57,12 +57,12 @@ export default async function (message, ctx) {
       reply_markup: getPersistentReplyKeyboard()
     });
 
-    const live = await fetchFleetLive();
+    const live = await fetchFleetLive(true);
     await api.sendMessage({
       chat_id: chatId,
       text: buildDashboardBanner(live),
       parse_mode: "Markdown",
-      reply_markup: getMainMenuKeyboard(live.revoked_count || 13)
+      reply_markup: getMainMenuKeyboard(live.revoked_count)
     });
     return;
   }
@@ -117,12 +117,12 @@ export default async function (message, ctx) {
         reply_markup: getPersistentReplyKeyboard()
       });
 
-      const live = await fetchFleetLive();
+      const live = await fetchFleetLive(true);
       await api.sendMessage({
         chat_id: chatId,
         text: buildDashboardBanner(live),
         parse_mode: "Markdown",
-        reply_markup: getMainMenuKeyboard(live.revoked_count || 13)
+        reply_markup: getMainMenuKeyboard(live.revoked_count)
       });
       return;
     }
@@ -142,7 +142,7 @@ export default async function (message, ctx) {
     }
 
     if (cmd === '/otp' || cmd === '/code' || rawText.includes("1-Tap OTP") || lowerText === 'otp') {
-      const live = await fetchFleetLive();
+      const live = await fetchFleetLive(true);
       const text = `┌──────────────────────────────┐
 │  🔑 *1-TAP TELEGRAM OTP*     │
 │  _MTProto Verification_      │
@@ -159,8 +159,8 @@ Select an active account node below to instantly inspect the latest Telegram ver
     }
 
     if (cmd === '/relink') {
-      const live = await fetchFleetLive();
-      const revokedCount = live.revoked_count || 13;
+      const live = await fetchFleetLive(true);
+      const revokedCount = live.revoked_count !== undefined ? live.revoked_count : (live.accounts ? live.accounts.filter(a => a.status !== 'active').length : 11);
       const text = `┌──────────────────────────────┐
 │  🔄 *SESSION RECOVERY*       │
 │  _1-Tap Re-Authentication_   │
@@ -179,8 +179,9 @@ Tap any account node below to dispatch an official verification code:`;
     }
 
     if (cmd === '/accounts' || cmd === '/fleet' || rawText.includes("Fleet Nodes") || lowerText === 'nodes') {
-      const live = await fetchFleetLive();
-      const text = `📱 *FLEET ACCOUNTS MATRIX (${live.healthy_count || 5}/${live.total_accounts || 18} ACTIVE)*\n\n🟢 = Active MTProto Session\n🔴 = Session Revoked / Needs Re-link\n👑 = Master Host Account\n\nSelect an account node below to inspect dossier:`;
+      const live = await fetchFleetLive(true);
+      const actCount = live.healthy_count !== undefined ? live.healthy_count : (live.accounts ? live.accounts.filter(a => a.status === 'active').length : 7);
+      const text = `📱 *FLEET ACCOUNTS MATRIX (${actCount}/${live.total_accounts || 18} ACTIVE)*\n\n🟢 = Active MTProto Session\n🔴 = Session Revoked / Needs Re-link\n👑 = Master Host Account\n\nSelect an account node below to inspect dossier:`;
       await api.sendMessage({
         chat_id: chatId,
         text,
@@ -191,12 +192,12 @@ Tap any account node below to dispatch an official verification code:`;
     }
 
     if (cmd === '/status' || cmd === '/mesh' || rawText.includes("Status & Mesh") || lowerText === 'status' || lowerText === 'mesh') {
-      const live = await fetchFleetLive();
+      const live = await fetchFleetLive(true);
       await api.sendMessage({
         chat_id: chatId,
         text: buildMeshStatusBanner(live),
         parse_mode: "Markdown",
-        reply_markup: getMainMenuKeyboard(live.revoked_count || 13)
+        reply_markup: getMainMenuKeyboard(live.revoked_count)
       });
       return;
     }
@@ -407,7 +408,7 @@ Please reply directly with your 2FA password:`,
 
 Node updated in active cloud cluster.`,
           parse_mode: "Markdown",
-          reply_markup: getMainMenuKeyboard(live.revoked_count || 12)
+          reply_markup: getMainMenuKeyboard(live.revoked_count)
         });
         return;
       }
@@ -462,11 +463,11 @@ Node updated in active cloud cluster.`,
 • *Telegram UID:* \`${uid}\`
 • *Session State:* \`🟢 Online & Cryptographically Secured\`
 • *Treasury Suite:* \`TON • EVM • TRON • SOL • BTC Bound\`
-• *Autonomous Mining:* \`Bound to 8 Legitimate Bots\`${dupNotice}
+• *Autonomous Mining:* \`Bound to 5 Legitimate Bots\`${dupNotice}
 
 Node updated in active cloud cluster.`,
           parse_mode: "Markdown",
-          reply_markup: getMainMenuKeyboard(live.revoked_count || 12)
+          reply_markup: getMainMenuKeyboard(live.revoked_count)
         });
         return;
       }
@@ -534,7 +535,7 @@ Please reply directly with your 2FA password:`,
 • *Telegram UID:* \`${uid}\`
 • *Session State:* \`🟢 Online & Active\``,
         parse_mode: "Markdown",
-        reply_markup: getMainMenuKeyboard(live.revoked_count || 12)
+        reply_markup: getMainMenuKeyboard(live.revoked_count)
       });
       return;
     }

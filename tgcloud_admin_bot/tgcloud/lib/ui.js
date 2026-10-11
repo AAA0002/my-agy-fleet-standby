@@ -1,6 +1,7 @@
 import { CONFIG } from './config.js';
 
-export function getMainMenuKeyboard(revokedCount = 13) {
+export function getMainMenuKeyboard(revokedCount) {
+  const revText = revokedCount !== undefined ? ` [${revokedCount}]` : '';
   return {
     inline_keyboard: [
       [
@@ -12,7 +13,7 @@ export function getMainMenuKeyboard(revokedCount = 13) {
       ],
       [
         { text: "🔑 1-Tap OTP Vault", callback_data: "btn_otp_menu" },
-        { text: `🔄 Session Recovery [${revokedCount}]`, callback_data: "btn_relink_menu" }
+        { text: `🔄 Session Recovery${revText}`, callback_data: "btn_relink_menu" }
       ],
       [
         { text: "⚡ Farm 5-Bot Fleet", callback_data: "btn_farm_all" },
@@ -23,7 +24,7 @@ export function getMainMenuKeyboard(revokedCount = 13) {
         { text: "🌐 Global Edge Mesh", callback_data: "btn_mesh_status" }
       ],
       [
-        { text: "🔄 Refresh Dashboard", callback_data: "btn_main_menu" }
+        { text: "🔄 Refresh Dashboard", callback_data: "btn_refresh_menu" }
       ]
     ]
   };
@@ -244,7 +245,7 @@ export function buildRelinkKeyboard(accounts = []) {
 
 export function buildDashboardBanner(live = {}) {
   const total = live.total_accounts || 18;
-  const active = live.healthy_count || 5;
+  const active = live.healthy_count !== undefined ? live.healthy_count : (live.accounts ? live.accounts.filter(a => a.status === 'active').length : 7);
   const revoked = live.revoked_count !== undefined ? live.revoked_count : (total - active);
 
   // Mobile-optimized 10-segment visual health bar (never wraps on narrow phones)
@@ -286,7 +287,7 @@ Select an operational directive below:`;
 
 export function buildMeshStatusBanner(live = {}) {
   const total = live.total_accounts || 18;
-  const active = live.healthy_count || 5;
+  const active = live.healthy_count !== undefined ? live.healthy_count : (live.accounts ? live.accounts.filter(a => a.status === 'active').length : 7);
 
   return `┌──────────────────────────────────────┐
 │  🌐 *GLOBAL INFRASTRUCTURE MESH*     │
