@@ -743,10 +743,16 @@ Whenever you perform work in this repository:
   - Pre-configured accounts (Nodes 1-18) **NEVER** have random synthetic keys generated; their permanent authentic keys and node indices are strictly preserved.
 * **16-Account Fleet Seed Manager & Quick Mobile Importer Wizard (`admin.html`)**:
   - Eliminates the burden of typing 384 words (16 accounts × 24 words) on a mobile phone keyboard.
-  - Interactive sequential carousel with Prev / Next account switching over all 16 self-custody worker nodes.
-  - Numbered 3-column 24-word grid with 1-tap "Copy 24 Words" (ready to paste into Gram Wallet or Tonkeeper).
+  - **18-Account Quick-Jump Pills**: Horizontal scroll bar with 1-tap selectors for all 18 accounts (color-coded amber for Binance Vaults #1 & #10, and cyan for the 16 self-custody accounts).
+  - **Dedicated Binance Vault Cards**: Node #1 displays Binance Central Reserve Vault with mandatory memo (`103525143`); Node #10 displays Binance Web3 MPC Vault.
+  - Numbered 3-column 24-word grid with 1-tap "Copy 24 Words" (clean space-separated) and "Numbered" export.
   - 1-Tap "Open in Tonkeeper" deeplink and 1-Tap "Copy EVM Key".
   - Bulk Export Utilities: 1-Click "Copy 16 Seeds", 1-Click "Download TXT Backup", 1-Click "Download JSON Vault".
+* **Fleet Account Detail Modal Wallet & Seed Shortcut (`admin.html`)**:
+  - Tapping any account card in the Fleet list instantly shows its TON and BSC addresses, custody type, and provides a direct `[ 🔑 View 24-Word Seed in Seed Manager ]` button.
+* **Telegram Bot `/wallet <1-18>` Dynamic Inspection Engine (`deploy_both_cf_workers.py`)**:
+  - `/wallets`: Returns executive summary of both Binance vaults and the 16 self-custody accounts.
+  - `/wallet <1-18>` (e.g. `/wallet 5`): Immediately delivers that account's multi-chain addresses, EVM key in `<code>`, and for worker accounts, the 24-word recovery phrase in `<pre>` for 1-tap copying.
 * **Telegram Alert Secret Phrase & Key Delivery (`render_standby_app.py`)**:
   - `notify_admin_new_account_onboarded(acc_entry, is_existing)` delivers the complete 24-word recovery phrase formatted in `<pre>` for 1-tap copying on mobile, plus the EVM private key.
   - Confirms automatic archival to `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt`.

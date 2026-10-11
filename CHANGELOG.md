@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 1-Tap Account Jump Pills, Binance Vault Cards, Modal Wallet Integration & Bot `/wallet <index>` Engine (October 11, 2026)**:
+  - **📱 18-Account Quick-Jump Pills & Binance Vault Cards (`public_admin/admin.html` & `admin/index.html`)**:
+    * **1-Tap Account Selector Pills**: Built a horizontal scroll pill bar across all 18 accounts in the Seed & Vault Manager. Amber styling for Binance Institutional Vaults (`#1 Binance` & `#10 Web3`) and glowing cyan for the 16 self-custody accounts (`#2-9`, `#11-18`), enabling instant 1-tap switching without multiple clicks.
+    * **Dedicated Binance Institutional Vault Cards**: Selecting Node #1 or Node #10 now displays dedicated institutional cards with 1-tap copy of TON deposit address, mandatory TON memo (`103525143`), BSC address, TRON, SOL, BTC, and explicit zero-server-seed custody indicators.
+    * **Dual Seed Copying Modes**: Added both "1-Tap Copy 24 Words" (clean space-separated for direct Tonkeeper/Gram Wallet paste) and "Numbered" (`1. word1 2. word2 ...`) export options.
+  - **🔎 Fleet Account Detail Modal Wallet & Seed Shortcut (`public_admin/admin.html`)**:
+    * Integrated a dedicated "Multi-Chain Wallets" preview directly inside the Account Detail Modal when tapping any account in the Fleet list.
+    * Displays TON and EVM/BSC addresses with 1-tap copy, plus a prominent `[ 🔑 View 24-Word Seed in Seed Manager ]` shortcut button that instantly switches to Treasury and focuses on that node.
+  - **🤖 Telegram Bot `/wallet <1-18>` Dynamic Inspection Engine (`deploy_both_cf_workers.py`)**:
+    * Embedded `STATIC_FLEET_WALLETS` from `fleet_wallets_data.json` directly into Cloudflare Worker edge code.
+    * Enhanced `/wallet` and `/wallets`:
+      - `/wallets`: Sends an executive summary of Binance Vault 1, Binance Vault 2, and the 16 self-custodial accounts with quick command instructions.
+      - `/wallet <1-18>` (e.g. `/wallet 5`): Instantly delivers that account's complete multi-chain address breakdown (TON, BSC, TRON, SOL, BTC), EVM private key in `<code>`, and for worker accounts, the full 24-word recovery seed formatted in `<pre>` for 1-tap mobile copying.
+  - **☁️ Multi-Cloud Synchronization & Durability**:
+    * Re-deployed and verified across Vercel (`https://agy-aaa000.vercel.app/admin` & `https://aaa-free-ai.vercel.app/admin`).
+    * Synchronized all 5 Cloudflare Worker accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Dispatched fresh encrypted disaster recovery vault snapshot to Telegram channel `@myagyai` via `backup_manager.py`.
+
 - **💎 Authentic Fleet Wallet Preservation, Telegram Secret Phrase Delivery & 16-Seed Manager Wizard (October 11, 2026)**:
   - **🔐 Permanent Resolution of Wallet Generation & Node Index Overwrite (`fleet_wallet_provisioner.py` & `render_standby_app.py`)**:
     * **Root Cause Fixed**: When Node 5 (Nathan Miller 5, `+14302084365`, ID `8450010161`) was relinked, modal default `index: 1` caused the backend to treat it as a new Account #1 and generate synthetic keys.

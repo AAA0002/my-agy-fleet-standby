@@ -3907,6 +3907,8 @@ fi
           { index: 18, name: "Mehedi Hasan 18", user_id: 8975442879, phone: "+8801839716506" }
         ];
 
+        const STATIC_FLEET_WALLETS = __FLEET_WALLETS_JSON__;
+
         const cleanName = (acc, idx) => {
           let n = (acc.name || "").trim();
           if (n.includes("Никитин")) return "Nathan Miller 5";
@@ -6528,9 +6530,57 @@ fi
           return new Response("OK");
         }
 
-        // 5. Wallet Portfolio Command (/wallet or /wallets)
-        if (text === "💼 Treasury & Wallets" || text === "💼 Wallet" || text === "/wallet" || text.startsWith("/wallet")) {
+        // 5. Wallet Portfolio Command (/wallet or /wallets [index])
+        if (text === "💼 Treasury & Wallets" || text === "💼 Wallet" || text === "/wallet" || text === "/wallets" || text.startsWith("/wallet") || text.startsWith("/wallets")) {
           ctx.waitUntil((async () => {
+            const accParts = text.trim().split(/\s+/);
+            const targetIdx = (accParts.length >= 2 && /^\d+$/.test(accParts[1])) ? parseInt(accParts[1], 10) : null;
+
+            if (targetIdx && targetIdx >= 1 && Array.isArray(STATIC_FLEET_WALLETS) && targetIdx <= STATIC_FLEET_WALLETS.length) {
+              const w = STATIC_FLEET_WALLETS[targetIdx - 1];
+              let msg = "";
+              if (targetIdx === 1) {
+                msg = `👑 *Account #1: Arif Hossain (Master Host)*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `🏛️ *Custody:* Binance Main Exchange Vault\n` +
+                  `• Phone: \`+8801317342850\` | ID: \`6727787768\`\n\n` +
+                  `💎 *TON Deposit Address:*\n\`${w.ton}\`\n` +
+                  `⚠️ *MANDATORY TON MEMO:* \`103525143\`\n\n` +
+                  `🟡 *EVM (BSC) Address:*\n\`${w.evm}\`\n\n` +
+                  `🔴 *TRON Address:*\n\`${w.tron}\`\n\n` +
+                  `🟣 *Solana Address:*\n\`${w.sol}\`\n\n` +
+                  `🟠 *Bitcoin Address:*\n\`${w.btc}\`\n\n` +
+                  `🛡️ _Direct Binance exchange custody (zero server recovery seeds)._`;
+              } else if (targetIdx === 10) {
+                msg = `⭐ *Account #10: Tanvir Ahmed 10 (Worker Node)*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `🏛️ *Custody:* Binance Web3 Wallet 2 (AAA)\n` +
+                  `• Phone: \`+8801729892810\` | ID: \`8203342513\`\n\n` +
+                  `💎 *TON Address:*\n\`${w.ton}\`\n\n` +
+                  `🟡 *EVM (BSC) Address:*\n\`${w.evm}\`\n\n` +
+                  `🔴 *TRON Address:*\n\`${w.tron}\`\n\n` +
+                  `🟣 *Solana Address:*\n\`${w.sol}\`\n\n` +
+                  `🟠 *Bitcoin Address:*\n\`${w.btc}\`\n\n` +
+                  `🛡️ _Binance Web3 Mobile App MPC custody (zero server recovery seeds)._`;
+              } else {
+                const cleanPhone = w.phone || KNOWN_PHONES_BY_INDEX[targetIdx] || "Cloud Worker";
+                msg = `📱 *Account #${targetIdx}: ${w.name}*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `🔐 *Custody:* Self-Custody (Gram Wallet / Tonkeeper)\n` +
+                  `• Phone: \`${cleanPhone}\` | ID: \`${w.user_id}\`\n\n` +
+                  `💎 *TON Address (v4r2):*\n\`${w.ton}\`\n\n` +
+                  `🟡 *EVM Address (BSC):*\n\`${w.evm}\`\n\n` +
+                  `🔴 *TRON:* \`${w.tron}\`\n` +
+                  `🟣 *Solana:* \`${w.sol}\`\n` +
+                  `🟠 *Bitcoin:* \`${w.btc}\`\n\n` +
+                  `🔑 *EVM Private Key:*\n<code>${w.evm_key || "Archived in Vault"}</code>\n\n` +
+                  `🔐 *TON 24-Word Seed Phrase (1-Tap Copy):*\n<pre>${w.ton_mnemonic || "Archived in Vault"}</pre>\n\n` +
+                  `💾 _Archive: FLEET_WALLETS_SECRETS_MASTER_VAULT.txt_`;
+              }
+              await sendReply(msg, statusInlineKeyboard);
+              return;
+            }
+
             let liveBnb = 0.000812;
             try {
               const rawMC = await env.BACKUP_KV.get("multichain_balances_state");
@@ -6540,14 +6590,17 @@ fi
               }
             } catch (_) {}
             const rep = `💼 *Multi-Chain Verified Destination Wallets*\n\n` +
-              `🟡 *Binance BEP-20 (Master Reserve Vault):*\n` +
-              `• Address: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
-              `• Balance: \`${liveBnb.toFixed(6)} BNB\` (~$${(liveBnb * 764.5).toFixed(2)} USD)\n\n` +
-              `💎 *Binance TON (Main Account #1):*\n` +
-              `• Address: \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
-              `• Network: TON Blockchain (The Open Network)\n\n` +
-              `🛡️ *Dedicated TON Wallets (18/18 Fleet Accounts):*\n` +
-              `• 18 Dedicated TON v4r2 Wallets cryptographically bound & verified for MRG, ATF, Victor's, and VyroDrop pools.\n\n` +
+              `👑 *Binance Main Vault (Account #1 - Arif Hossain):*\n` +
+              `• BEP-20: \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+              `• TON Deposit: \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
+              `• MANDATORY MEMO: \`103525143\`\n\n` +
+              `⭐ *Binance Web3 Vault (Account #10 - Tanvir Ahmed 10):*\n` +
+              `• BEP-20: \`0x017841f26d5b79cc8c5eb20c65367bb645cc2610\`\n` +
+              `• TON: \`UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH\`\n\n` +
+              `🔐 *16 Self-Custody Worker Wallets (Gram / Tonkeeper):*\n` +
+              `• Nodes 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18\n` +
+              `• 100% Isolated 24-word seeds for anti-sybil pool verification.\n\n` +
+              `💡 *Command Tip:* Send \`/wallet <1-18>\` (e.g. \`/wallet 5\`) to inspect any account's full keys & 24-word seed phrase!\n\n` +
               `📱 _Tap '🚀 Open Executive Dashboard' below for interactive wallet explorer._`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -10293,10 +10346,15 @@ async def deploy_account(acc):
     with open(admin_html_path, "r", encoding="utf-8") as f_adm:
         admin_html_json = json.dumps(f_adm.read())
 
+    wallets_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public_admin", "fleet_wallets_data.json")
+    with open(wallets_path, "r", encoding="utf-8") as f_w:
+        wallets_json_str = f_w.read().strip()
+
     worker_code = (
         WORKER_JS_TEMPLATE.replace("__SUBDOMAIN__", acc["subdomain"])
         .replace("__SIBLING_URLS_JSON__", json.dumps(acc["sibling_urls"]))
         .replace("__ADMIN_DASHBOARD_HTML_JSON__", admin_html_json)
+        .replace("__FLEET_WALLETS_JSON__", wallets_json_str)
     )
 
     if acc.get("api_token"):
