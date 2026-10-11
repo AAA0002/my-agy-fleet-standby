@@ -1,6 +1,9 @@
 export const CONFIG = {
   ADMIN_IDS: [6727787768],
   SECRET_KEY: "agy_cf_secret_7d36994e_2026",
+  UPSTASH_URL: "https://pleasant-locust-220893.upstash.io",
+  UPSTASH_TOKEN: "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg",
+  WEBAPP_URL: "https://app8858823950.tgcloud.ai/",
   BACKEND_NODES: [
     "https://my-agy-fleet-standby-node2.onrender.com",
     "https://my-agy-fleet-standby-node3.onrender.com",
