@@ -511,7 +511,18 @@ async def interactive_login():
             if choice != "y":
                 return
 
-    client = TelegramClient(StringSession(), API_ID, API_HASH)
+    from proxy_manager import get_account_fingerprint
+    fp = get_account_fingerprint(phone)
+    client = TelegramClient(
+        StringSession(),
+        API_ID,
+        API_HASH,
+        device_model=fp["device_model"],
+        system_version=fp["system_version"],
+        app_version=fp["app_version"],
+        lang_code=fp["lang_code"],
+        system_lang_code=fp["system_lang_code"]
+    )
     await client.connect()
 
     print(f"\n📡 Requesting login verification code for {phone} ({country_label})...")

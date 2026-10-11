@@ -2,6 +2,19 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🇧🇩 100% Bangladesh (BD) Regional Localization & Foreign Proxy Purge (October 11, 2026)**:
+  - **🚫 Purged Conflicting Foreign Proxies from Accounts**:
+    * Identified root cause of recurring Telegram session revocations: 13 of 18 Bangladesh accounts (`+880`) in `accounts.json` were assigned UK (`31.59.20.176`, `45.38.107.97`), Poland (`84.247.60.125`), Spain, Canada, and US proxies. When accessed in Bangladesh on a phone while cloud scripts connected via UK/PL proxies, Telegram flagged "impossible travel" and location clashing.
+    * Cleared all foreign proxies across `accounts.json`, setting all accounts to Direct Clean BD Mode (`proxy: null`).
+  - **📱 Authentic BD Hardware Device Profiles & Localization**:
+    * Updated `DEVICE_POOL` in `proxy_manager.py` with realistic Android devices matching the user's mobile environment (`Samsung Galaxy A30`, `Galaxy A54`, `Redmi Note 12`, `Realme C55`, `Vivo Y22`).
+    * Configured `system_lang_code: "en-BD"`, `lang_code: "en"`, and `Asia/Dhaka` timezone across `get_account_fingerprint`.
+    * Implemented `create_telethon_client` helper across `render_standby_app.py`, `render_app_latest.py`, and `login_account.py` so Telegram's MTProto handshakes receive authentic BD mobile device headers instead of generic Linux PC datacenter headers.
+  - **🌏 Singapore (APAC Node 1) Priority Routing**:
+    * Re-ordered sequential fallback in `deploy_both_cf_workers.py` to prioritize Node 1 (Singapore - APAC, `my-agy-fleet-standby.onrender.com`), which is geographically closest to Bangladesh (~35ms submarine cable latency from Dhaka), minimizing latency and cross-continental IP flags.
+  - **🔧 Fixed Admin Bot "➕ Add Account" Callback**:
+    * Corrected button callback on lines 4002 and 5613 from `btn_admin_add_acc` to `btn_add_account`, ensuring 1-tap account re-linking works seamlessly.
+
 - **🚀 Full 5 Render Accounts Topology, MTProto Multi-IP Collision Fix & Gmail Purge (October 11, 2026)**:
   - **🌐 Complete 5 Render Accounts / 6 Services Integration**:
     * Corrected outdated dashboard and bot messaging that previously displayed only 2 Render compute nodes.

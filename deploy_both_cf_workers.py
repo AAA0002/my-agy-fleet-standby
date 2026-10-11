@@ -1568,12 +1568,11 @@ export default {
     };
 
     const fetchFleetOtp = async (targetIdx) => {
-      // Query Render standby nodes SEQUENTIALLY to prevent AuthKeyDuplicatedError
-      // (Telegram detects concurrent connections with the same session from multiple IPs and revokes the key)
+      // Query Render nodes SEQUENTIALLY prioritizing Singapore (APAC - geographically closest to Bangladesh)
       const renderNodes = [
+        "https://my-agy-fleet-standby.onrender.com",
         "https://my-agy-fleet-standby-node2.onrender.com",
-        "https://my-agy-fleet-standby-node3.onrender.com",
-        "https://my-agy-fleet-standby.onrender.com"
+        "https://my-agy-fleet-standby-node3.onrender.com"
       ];
       for (const rUrl of renderNodes) {
         try {
@@ -3999,7 +3998,7 @@ fi
                       { text: `⏭️ Skip to #${nextIdx}`, callback_data: `btn_otp_get_${nextIdx}` }
                     ],
                     [
-                      { text: "➕ Add Account", callback_data: "btn_admin_add_acc" },
+                      { text: "➕ Add Account", callback_data: "btn_add_account" },
                       { text: "📋 Account Grid", callback_data: "btn_otp_menu" }
                     ]
                   ]
@@ -5610,7 +5609,7 @@ fi
                 markup = {
                   inline_keyboard: [
                     [{ text: "🔄 Try Fetch Again", callback_data: `btn_otp_get_${reqIdx}` }, { text: `⏭️ Skip to #${nextIdx}`, callback_data: `btn_otp_get_${nextIdx}` }],
-                    [{ text: "➕ Add Account", callback_data: "btn_admin_add_acc" }, { text: "📋 Account Grid", callback_data: "btn_otp_menu" }]
+                    [{ text: "➕ Add Account", callback_data: "btn_add_account" }, { text: "📋 Account Grid", callback_data: "btn_otp_menu" }]
                   ]
                 };
               } else {

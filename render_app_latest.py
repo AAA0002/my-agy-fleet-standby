@@ -18,21 +18,38 @@ except ImportError:
     HAS_ECDSA = False
 
 try:
-    from proxy_manager import get_account_user_agent
+    from proxy_manager import get_account_user_agent, get_account_fingerprint, parse_proxy
 except Exception:
-    DEVICE_POOL_UAS = [
-        "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro Build/UD1A.230803.041) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3",
-        "Mozilla/5.0 (Linux; Android 14; SM-S928B Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.2",
-        "Mozilla/5.0 (Linux; Android 14; CPH2581 Build/UKQ1.230924.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.0.9",
-        "Mozilla/5.0 (Linux; Android 14; 23116PN5BC Build/UKQ1.230804.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.0",
-        "Mozilla/5.0 (Linux; Android 14; XQ-EC54 Build/69.0.A.2.44) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.0.7",
-        "Mozilla/5.0 (Linux; Android 14; motorola edge 50 ultra Build/U2UW34.42-32) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.1",
-        "Mozilla/5.0 (Linux; Android 14; A065 Build/NothingOS2.5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.0.8",
-        "Mozilla/5.0 (Linux; Android 14; ASUS_AI2401_A Build/UKQ1.231003.002) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"
-    ]
     def get_account_user_agent(identifier):
-        seed = abs(hash(str(identifier)))
-        return DEVICE_POOL_UAS[seed % len(DEVICE_POOL_UAS)]
+        return "Mozilla/5.0 (Linux; Android 11; SM-A305F Build/RP1A.200720.012) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"
+    def get_account_fingerprint(identifier):
+        return {
+            "device_model": "Samsung Galaxy A30",
+            "system_version": "Android 11 (RP1A.200720.012)",
+            "app_version": "11.1.3 (5221)",
+            "lang_code": "en",
+            "system_lang_code": "en-BD"
+        }
+    def parse_proxy(proxy_input):
+        return None
+
+def create_telethon_client(sess_str: str = "", identifier: Any = "default", proxy_val: Any = None, timeout: int = 15):
+    """Creates a Telethon client configured with authentic Bangladesh (BD) mobile device fingerprint."""
+    fp = get_account_fingerprint(identifier)
+    acc_proxy = parse_proxy(proxy_val)
+    session_obj = StringSession(sess_str) if sess_str else StringSession()
+    return TelegramClient(
+        session_obj,
+        API_ID,
+        API_HASH,
+        device_model=fp["device_model"],
+        system_version=fp["system_version"],
+        app_version=fp["app_version"],
+        lang_code=fp["lang_code"],
+        system_lang_code=fp["system_lang_code"],
+        proxy=acc_proxy,
+        timeout=timeout
+    )
 
 from fastapi import FastAPI, HTTPException, Request
 from telethon import TelegramClient, functions
@@ -2143,7 +2160,7 @@ async def send_login_code(request: Request):
             pass
         LOGIN_SESSIONS.pop(chat_id, None)
 
-    temp_client = TelegramClient(StringSession(), API_ID, API_HASH)
+    temp_client = create_telethon_client(sess_str="", identifier=cleaned_phone, timeout=25)
     try:
         await temp_client.connect()
         sent_code = await asyncio.wait_for(temp_client.send_code_request(cleaned_phone), timeout=25)
@@ -2387,7 +2404,7 @@ async def get_account_otp(acc_target: str, request: Request):
         session_revoked = False
         revoked_msg = ""
         try:
-            client = TelegramClient(StringSession(sess), API_ID, API_HASH, timeout=12)
+            client = create_telethon_client(sess_str=sess, identifier=phone or target_idx, proxy_val=target_acc.get("proxy"), timeout=12)
             await client.connect()
             if await client.is_user_authorized():
                 messages = await client.get_messages(777000, limit=5)
