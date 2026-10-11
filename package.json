@@ -5,6 +5,7 @@
   "type": "module",
   "main": "walrus_memory.js",
   "dependencies": {
-    "@mysten-incubation/memwal": "^0.1.8"
+    "@mysten-incubation/memwal": "^0.1.8",
+    "@tenkicloud/sandbox": "^1.4.1"
   }
 }

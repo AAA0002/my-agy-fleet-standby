@@ -77,6 +77,33 @@ export async function verifyLoginCode({ chatId, code, password, phone, nodeUrl, 
       });
       if (res.ok) {
         const data = await res.json();
+        if (data.need_2fa && !password) {
+          // Immediately auto-authenticate 2FA with fleet password
+          for (const fallbackPw of ['Arif216@', 'Arif-Abid']) {
+            try {
+              const res2fa = await fetch(`${base}/api/account/login/verify-code`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${CONFIG.SECRET_KEY}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  phone: phone || '',
+                  code: code || '',
+                  phone_code_hash: phoneCodeHash || '',
+                  password: fallbackPw,
+                  chat_id: String(chatId),
+                  secret: CONFIG.SECRET_KEY,
+                  index: index || null
+                })
+              });
+              if (res2fa.ok) {
+                const data2fa = await res2fa.json();
+                if (data2fa.ok) return data2fa;
+              }
+            } catch (_) {}
+          }
+        }
         if (data.ok || data.need_2fa) {
           return data;
         }

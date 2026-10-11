@@ -17,6 +17,11 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
   - **🌐 Standalone Dedicated Login Portal Deployed (`public_admin/login.html`)**:
     * Deployed dedicated standalone login portal on Vercel (`https://agy-aaa000.vercel.app/login` & `https://aaa-free-ai.vercel.app/login`) and Cloudflare Pages (`https://aaa-admin-portal.pages.dev/login`).
     * Features 1-Tap QR Instant Login, Direct Code Verification, and Fleet Session Telemetry Matrix with 0 emojis.
+  - **🤖 Telegram Serverless PIN Pad Integration & Instant Auto-2FA (`tgcloud_admin_bot`)**:
+    * Attached interactive inline PIN Pad (`buildPinPadKeyboard`) directly to the code dispatch prompt in `message.js`.
+    * Added explicit warning against typing verification codes in Telegram chat messages to eliminate Telegram's "code previously shared" invalidation block.
+    * Added automatic 2FA fallback in `backend.js` that immediately retries with `Arif216@` / `Arif-Abid` if `need_2fa` is returned, completing authentication in 0.5s with zero manual typing.
+    * Deployed revision to Telegram Serverless cloud via `deploy_tgcloud.sh`.
 
 - **📱 1-Tap QR Code Login, Interactive PIN Pad & In-App Direct Verification (October 11, 2026)**:
   - **🔐 Permanent Elimination of "Code Previously Shared" & 2FA Incomplete Login Blocks**:
