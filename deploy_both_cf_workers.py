@@ -1573,18 +1573,35 @@ export default {
         "https://my-agy-fleet-standby-node3.onrender.com",
         "https://my-agy-fleet-standby.onrender.com"
       ];
-      for (const rUrl of renderNodes) {
-        try {
-          const res = await fetch(`${rUrl}/api/fleet/otp/${targetIdx}`, {
-            method: "GET",
-            headers: { "Accept": "application/json" },
-            signal: AbortSignal.timeout(12000)
-          });
-          if (res.ok) {
-            const data = await res.json();
-            return data;
-          }
-        } catch (_) {}
+      const fetchFromNode = async (rUrl) => {
+        const res = await fetch(`${rUrl}/api/fleet/otp/${targetIdx}`, {
+          method: "GET",
+          headers: { "Accept": "application/json" },
+          signal: AbortSignal.timeout(6000)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data.ok) return data;
+        throw new Error(data.error || "Not ok");
+      };
+
+      try {
+        const fastResult = await Promise.any(renderNodes.map(r => fetchFromNode(r)));
+        return fastResult;
+      } catch (_) {
+        for (const rUrl of renderNodes) {
+          try {
+            const res = await fetch(`${rUrl}/api/fleet/otp/${targetIdx}`, {
+              method: "GET",
+              headers: { "Accept": "application/json" },
+              signal: AbortSignal.timeout(5000)
+            });
+            if (res.ok) {
+              const data = await res.json();
+              return data;
+            }
+          } catch (_) {}
+        }
       }
       return { ok: false, found: false, error: "Standby cloud mesh unreachable" };
     };
@@ -1607,6 +1624,103 @@ export default {
       "AQ.Ab8RN6L_FApJMCEgGOi6XXeKRNrWpS3QugJ6pb5LYUyBmyNAJw"
     ];
 
+    // Groq LPU Inference Keys (Ultra-fast 700 t/s)
+    const groqKeys = [
+      "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",
+      "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",
+      "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"
+    ];
+
+    const callGroqLpu = async (pText) => {
+      for (const gKey of groqKeys) {
+        try {
+          const gResp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${gKey}`,
+              "Content-Type": "application/json",
+              "User-Agent": "Mozilla/5.0"
+            },
+            body: JSON.stringify({
+              model: "qwen/qwen3.8-27b",
+              messages: [
+                {
+                  role: "system",
+                  content: "You are Ari, the personal cloud AI copilot for Arif's 18-account automated mining fleet (MY AGY AI). Speak warmly, naturally, and intelligently like ChatGPT. Always address the user as Arif. Keep responses concise, clear, and direct."
+                },
+                { role: "user", content: pText }
+              ],
+              max_tokens: 650
+            }),
+            signal: AbortSignal.timeout(3500)
+          });
+          if (gResp.ok) {
+            const gData = await gResp.json();
+            const gText = gData?.choices?.[0]?.message?.content;
+            if (gText && gText.trim()) {
+              return {
+                ok: true,
+                provider: "Groq LPU",
+                model: "qwen/qwen3.8-27b",
+                node: CURRENT_SUBDOMAIN,
+                answer: gText.trim()
+              };
+            }
+          }
+        } catch (_) {}
+      }
+      throw new Error("Groq LPU unavailable");
+    };
+
+    const callCfWorkersAi = async (pText, mName = "@cf/meta/llama-3.2-3b-instruct") => {
+      if (!env.AI) throw new Error("Cloudflare AI binding unavailable");
+      const aiRes = await env.AI.run(mName, {
+        messages: [
+          {
+            role: "system",
+            content: "You are Ari, the personal cloud AI copilot for Arif's 18-account automated mining fleet (MY AGY AI). Speak warmly, naturally, and intelligently like ChatGPT or Claude. Never sound like a robotic machine. Always address the user as Arif. Keep responses concise, clear, and direct."
+          },
+          { role: "user", content: pText }
+        ],
+        max_tokens: 600
+      });
+      const ansText = aiRes.response || (aiRes.choices && aiRes.choices[0] ? aiRes.choices[0].text : "");
+      if (ansText && ansText.trim()) {
+        return {
+          ok: true,
+          provider: "Cloudflare Workers AI",
+          model: mName,
+          node: CURRENT_SUBDOMAIN,
+          answer: ansText.trim()
+        };
+      }
+      throw new Error("Empty Cloudflare AI response");
+    };
+
+    const callGeminiFlash = async (pText) => {
+      const shuffled = [...geminiKeys].sort(() => Math.random() - 0.5);
+      const mod = "gemini-flash-latest";
+      for (const gKey of shuffled.slice(0, 3)) {
+        try {
+          const gUrl = `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${gKey}`;
+          const gResp = await fetch(gUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: pText }] }] }),
+            signal: AbortSignal.timeout(2500)
+          });
+          if (gResp.ok) {
+            const gData = await gResp.json();
+            const gText = gData?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (gText && gText.trim()) {
+              return { ok: true, provider: "Google Gemini", model: mod, answer: gText.trim(), node: CURRENT_SUBDOMAIN };
+            }
+          }
+        } catch (_) {}
+      }
+      throw new Error("Gemini unavailable");
+    };
+
     // In-memory Core Fleet AI Cascade (Admin Bot @My_Router_AI_bot)
     const runAiCascade = async (prompt, preferredModel = null) => {
       if (!prompt) return { ok: false, error: "Missing prompt" };
@@ -1628,73 +1742,39 @@ export default {
         } catch (_) {}
       }
 
-      // B. Explicit Meta Llama 3.3 Request
-      if (preferredModel === "llama" && env.AI) {
+      // B. Explicit Groq LPU Request
+      if (preferredModel === "groq") {
         try {
-          const aiRes = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
-            messages: [
-              { role: "system", content: "You are Meta Llama 3, a highly intelligent and articulate assistant." },
-              { role: "user", content: prompt }
-            ],
-            max_tokens: 800
-          });
-          const ansText = aiRes.response || (aiRes.choices && aiRes.choices[0] ? aiRes.choices[0].text : "");
-          if (ansText && ansText.trim()) {
-            return { ok: true, provider: "Meta Llama", model: "@cf/meta/llama-3.1-8b-instruct", node: CURRENT_SUBDOMAIN, answer: ansText.trim() };
-          }
+          return await callGroqLpu(prompt);
         } catch (_) {}
       }
 
-      // 1. Google Gemini Flash (Latest 3.8 Flash & dynamic rotation across active keys)
-      const shuffledGemini = [...geminiKeys].sort(() => Math.random() - 0.5);
-      const gemModels = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-2.5-flash"];
-      const gemCandidates = shuffledGemini.slice(0, 5).map(async (gKey, idx) => {
-        const mod = gemModels[idx % gemModels.length];
-        const gUrl = `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${gKey}`;
-        const gResp = await fetch(gUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-          signal: AbortSignal.timeout(3500)
-        });
-        if (!gResp.ok) throw new Error("Gemini HTTP " + gResp.status);
-        const gData = await gResp.json();
-        const gText = gData?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!gText) throw new Error("No Gemini text");
-        return { ok: true, provider: "Google Gemini", model: mod, answer: gText.trim(), node: CURRENT_SUBDOMAIN };
-      });
+      // C. Explicit Meta Llama Request
+      if (preferredModel === "llama") {
+        try {
+          return await callCfWorkersAi(prompt, "@cf/meta/llama-3.1-8b-instruct");
+        } catch (_) {}
+      }
+
+      // D. Explicit Gemini Request
+      if (preferredModel === "gemini") {
+        try {
+          return await callGeminiFlash(prompt);
+        } catch (_) {}
+      }
+
+      // E. Ultra-Fast Parallel Multi-Cloud Race (Workers AI + Groq LPU + Gemini)
+      const primaryCandidates = [];
+      if (env.AI) primaryCandidates.push(callCfWorkersAi(prompt));
+      primaryCandidates.push(callGroqLpu(prompt));
+      primaryCandidates.push(callGeminiFlash(prompt));
 
       try {
-        return await Promise.any(gemCandidates);
+        const fastest = await Promise.any(primaryCandidates);
+        return fastest;
       } catch (_) {}
 
-      // 2. Cloudflare Workers AI (Instant ~200ms Edge Llama 3.2)
-      if (env.AI) {
-        try {
-          const aiRes = await env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
-            messages: [
-              {
-                role: "system",
-                content: "You are Ari, the personal cloud AI copilot for Arif's 18-account automated mining fleet (MY AGY AI). Speak warmly, naturally, and intelligently like ChatGPT or Claude. Never sound like a robotic machine. Always address the user as Arif. Keep responses concise, clear, and direct."
-              },
-              { role: "user", content: prompt }
-            ],
-            max_tokens: 500
-          });
-          const ansText = aiRes.response || (aiRes.choices && aiRes.choices[0] ? aiRes.choices[0].text : "");
-          if (ansText && ansText.trim()) {
-            return {
-              ok: true,
-              provider: "Cloudflare Workers AI",
-              model: "@cf/meta/llama-3.2-3b-instruct",
-              node: CURRENT_SUBDOMAIN,
-              answer: ansText.trim()
-            };
-          }
-        } catch (_) {}
-      }
-
-      // 3. Fallback: DeepSeek R1 on Cloudflare Edge
+      // F. DeepSeek R1 Edge Fallback
       if (env.AI) {
         try {
           const aiRes = await env.AI.run("@cf/deepseek-ai/deepseek-r1-distill-qwen-32b", {
@@ -1717,7 +1797,7 @@ export default {
         } catch (_) {}
       }
 
-      // 4. Ultra-Reliable Default Fleet Copilot Response
+      // G. Ultra-Reliable Default Fleet Copilot Response
       return {
         ok: true,
         provider: "Ari Edge Sentinel",
@@ -3437,28 +3517,6 @@ fi
         const botToken = env.ALERT_BOT_TOKEN;
         const dashUrl = "https://restore-agy." + CURRENT_SUBDOMAIN + ".workers.dev/admin";
 
-        async function fetchFleetOtp(targetIdx) {
-          const renderNodes = [
-            "https://my-agy-fleet-standby-node2.onrender.com",
-            "https://my-agy-fleet-standby-node3.onrender.com",
-            "https://my-agy-fleet-standby.onrender.com"
-          ];
-          for (const rUrl of renderNodes) {
-            try {
-              const res = await fetch(`${rUrl}/api/fleet/otp/${targetIdx}`, {
-                method: "GET",
-                headers: { "Accept": "application/json" },
-                signal: AbortSignal.timeout(12000)
-              });
-              if (res.ok) {
-                const data = await res.json();
-                return data;
-              }
-            } catch (_) {}
-          }
-          return { ok: false, found: false, error: "Standby cloud mesh unreachable" };
-        }
-
         const buildOtpMenuKeyboard = () => ({
           inline_keyboard: [
             [
@@ -3614,23 +3672,21 @@ fi
           } catch (_) {}
         };
 
-        const sendAnimatedReply = async (targetChatId, frames, finalMarkup = null, delay = 0) => {
-          if (!frames || frames.length === 0) return;
-          const finalFrame = frames[frames.length - 1];
+        const sendResilientMessage = async (targetChatId, textMsg, replyMarkup = null, parseMode = "Markdown") => {
+          const payload = {
+            chat_id: targetChatId,
+            text: textMsg,
+            disable_web_page_preview: true
+          };
+          if (replyMarkup) payload.reply_markup = replyMarkup;
+          if (parseMode) payload.parse_mode = parseMode;
           try {
-            const payload = {
-              chat_id: targetChatId,
-              text: finalFrame,
-              parse_mode: "Markdown",
-              disable_web_page_preview: true
-            };
-            if (finalMarkup) payload.reply_markup = finalMarkup;
             const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(payload)
             });
-            if (!res.ok) {
+            if (!res.ok && parseMode) {
               delete payload.parse_mode;
               await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
@@ -3639,6 +3695,43 @@ fi
               }).catch(() => {});
             }
           } catch (_) {}
+        };
+
+        const editOrSendResilientMessage = async (targetChatId, cbMsgId, textMsg, replyMarkup = null, parseMode = "Markdown") => {
+          if (cbMsgId) {
+            const editPayload = {
+              chat_id: targetChatId,
+              message_id: cbMsgId,
+              text: textMsg,
+              disable_web_page_preview: true
+            };
+            if (replyMarkup) editPayload.reply_markup = replyMarkup;
+            if (parseMode) editPayload.parse_mode = parseMode;
+            try {
+              const res = await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(editPayload)
+              });
+              if (res.ok) return;
+              if (parseMode) {
+                delete editPayload.parse_mode;
+                const retryRes = await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(editPayload)
+                });
+                if (retryRes.ok) return;
+              }
+            } catch (_) {}
+          }
+          await sendResilientMessage(targetChatId, textMsg, replyMarkup, parseMode);
+        };
+
+        const sendAnimatedReply = async (targetChatId, frames, finalMarkup = null, delay = 0) => {
+          if (!frames || frames.length === 0) return;
+          const finalFrame = frames[frames.length - 1];
+          await sendResilientMessage(targetChatId, finalFrame, finalMarkup, "Markdown");
         };
 
         const KNOWN_PHONES = {
@@ -3685,37 +3778,37 @@ fi
 
         const DEFAULT_FLEET_ACCOUNTS = [
           { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850" },
-          { index: 2, name: "Nancy", user_id: 8881914294, phone: "+8801943805617" },
+          { index: 2, name: "Nancy Davis 2", user_id: 8881914294, phone: "+8801943805617" },
           { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077" },
           { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094" },
-          { index: 5, name: "Nadim", user_id: 8450010161, phone: "+14302084365" },
-          { index: 6, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837" },
+          { index: 5, name: "Nathan Miller 5", user_id: 8450010161, phone: "+14302084365" },
+          { index: 6, name: "Kaitlyn Ross 6", user_id: 8782429452, phone: "+8801867539837" },
           { index: 7, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423" },
           { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624" },
-          { index: 9, name: "Node 9", user_id: 8851426148, phone: "+8801727651288" },
-          { index: 10, name: "Node 10", user_id: 8203342513, phone: "+8801729892810" },
-          { index: 11, name: "MD. Arif Hossain", user_id: 8190649727, phone: "+8801571089931" },
+          { index: 9, name: "Naimur Rahman 9", user_id: 8851426148, phone: "+8801727651288" },
+          { index: 10, name: "Tanvir Ahmed 10", user_id: 8203342513, phone: "+8801729892810" },
+          { index: 11, name: "MD. ARIF HOSSAIN", user_id: 8190649727, phone: "+8801571089931" },
           { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536" },
           { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380" },
-          { index: 14, name: "Raj Thakur", user_id: 8727040932, phone: "+918930504750" },
-          { index: 15, name: "Tiffany", user_id: 7749125802, phone: "+8801906045479" },
-          { index: 16, name: "Roger", user_id: 7954290138, phone: "+8801304151082" },
-          { index: 17, name: "Kevin", user_id: 8841038141, phone: "+8801879273559" },
-          { index: 18, name: "Mary", user_id: 8975442879, phone: "+8801839716506" }
+          { index: 14, name: "Rohan Sharma 14", user_id: 8727040932, phone: "+918930504750" },
+          { index: 15, name: "Tasnim Farhana 15", user_id: 7749125802, phone: "+8801906045479" },
+          { index: 16, name: "Rashedul Islam 16", user_id: 7954290138, phone: "+8801304151082" },
+          { index: 17, name: "Kawsar Mahmud 17", user_id: 8841038141, phone: "+8801879273559" },
+          { index: 18, name: "Mehedi Hasan 18", user_id: 8975442879, phone: "+8801839716506" }
         ];
 
         const cleanName = (acc, idx) => {
           let n = (acc.name || "").trim();
-          if (n.includes("Никитин")) return "Nadim";
-          if (n.includes("Морозов")) return "Kaitlyn";
-          if (n.includes("Соколов") || n.startsWith("Tg")) return "Node 9";
-          if (n.includes("Кузнецов") || n.includes("Girtt")) return "Node 10";
-          if (n.includes("Козлов")) return "Raj Thakur";
-          if (n.includes("Тарасов")) return "Tiffany";
-          if (n.includes("Волков")) return "Roger";
-          if (n.includes("Смирнов")) return "Kevin";
-          if (n.includes("Каримов")) return "Mary";
-          return n || `Account #${idx + 1}`;
+          if (n.includes("Никитин")) return "Nathan Miller 5";
+          if (n.includes("Морозов")) return "Kaitlyn Ross 6";
+          if (n.includes("Соколов") || n.startsWith("Tg")) return "Naimur Rahman 9";
+          if (n.includes("Кузнецов") || n.includes("Girtt")) return "Tanvir Ahmed 10";
+          if (n.includes("Козлов")) return "Rohan Sharma 14";
+          if (n.includes("Тарасов")) return "Tasnim Farhana 15";
+          if (n.includes("Волков")) return "Rashedul Islam 16";
+          if (n.includes("Смирнов")) return "Kawsar Mahmud 17";
+          if (n.includes("Каримов")) return "Mehedi Hasan 18";
+          return n || (DEFAULT_FLEET_ACCOUNTS[idx] ? DEFAULT_FLEET_ACCOUNTS[idx].name : `Account #${idx + 1}`);
         };
 
         const getFleetAccounts = async () => {
@@ -3795,11 +3888,8 @@ fi
                 `• Tap *🗑️ Remove Account* to disconnect any account\n` +
                 `• Tap *🚀 Open Executive Dashboard* to view live cards & balances\n` +
                 `• Send \`/acc <1-18>\` (e.g. \`/acc 1\`) to inspect any account in detail`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: accountsInlineKeyboard })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, accountsInlineKeyboard);
             } else if (cbData === "btn_admin_remove_menu") {
               const accounts = await getFleetAccounts();
               const buttons = accounts.map((a, i) => [
@@ -3810,11 +3900,8 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `Select an account below to disconnect and remove from 24/7 cloud automation:\n\n` +
                 `⚠️ _Removing an account stops all 5 mining bots on that session immediately._`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: { inline_keyboard: buttons } })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, { inline_keyboard: buttons });
             } else if (cbData.startsWith("btn_admin_del_")) {
               const targetId = cbData.replace("btn_admin_del_", "").trim();
               let accounts = await getFleetAccounts();
@@ -3851,11 +3938,8 @@ fi
                   [{ text: "🚀 Open Dashboard", web_app: { url: dashUrl } }]
                 ]
               };
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: repMarkup })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, repMarkup);
             } else if (cbData === "btn_otp_menu") {
               const rep = `🔑 *Telegram Login OTP & Relogin Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -3865,11 +3949,8 @@ fi
                 `2. Enter the phone number in Telegram on your phone.\n` +
                 `3. The cloud session intercepts the code from Telegram (*777000*) or Gmail and provides 1-tap copy!\n\n` +
                 `_Or tap **▶️ Start 1-by-1 Wizard** to log into all accounts consecutively._`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: buildOtpMenuKeyboard() })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, buildOtpMenuKeyboard());
             } else if (cbData.startsWith("btn_otp_get_")) {
               const targetIdx = parseInt(cbData.replace("btn_otp_get_", ""), 10) || 1;
               const nextIdx = targetIdx < 18 ? targetIdx + 1 : 1;
@@ -3943,11 +4024,8 @@ fi
                 };
               }
 
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: markup })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, markup);
             } else if (cbData === "btn_mesh") {
               const rep = `🌐 *MY AGY AI — Multi-Cloud Unified Mesh*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -4004,11 +4082,7 @@ fi
                 node: CURRENT_SUBDOMAIN
               };
               ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: cancelKeyboard })
-              }).catch(() => {});
+              await sendResilientMessage(chatId, rep, cancelKeyboard, "Markdown");
             } else if (cbData === "btn_withdraw" || cbData === "btn_withdraw_all") {
               ctx.waitUntil((async () => {
                 let liveBnb = 0.000622;
@@ -4063,11 +4137,8 @@ fi
                 `• *Action Taken:* All 18 fleet accounts permanently blocked @ainovum_bot, left scam channels, and deleted all Telegram dialog history.\n` +
                 `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
             } else if (cbData === "btn_ailab") {
               const rep = `🚫 *AI LAB ROBOT DECOMMISSIONED & PURGED*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -4076,11 +4147,8 @@ fi
                 `• *Action Taken:* All 18 fleet accounts permanently blocked @AiLab_robot, purged keys, and deleted dialog history.\n` +
                 `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
             } else if (cbData === "btn_stones") {
               const rep = `🚫 *STONES MINERS DECOMMISSIONED & PURGED*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -4089,11 +4157,8 @@ fi
                 `• *Action Taken:* All 18 fleet accounts permanently blocked @stoneswithestand_bot, left @stoneswithestand channel, and deleted dialog history.\n` +
                 `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
             } else if (cbData === "btn_art") {
               const rep = `🚫 *ART AIRDROP DECOMMISSIONED & PURGED*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -4102,11 +4167,8 @@ fi
                 `• *Action Taken:* All 18 fleet accounts permanently blocked @ART_AIRDROP_BOT, left scam channels, and deleted all Telegram dialog history.\n` +
                 `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
             } else if (cbData === "btn_mrg") {
               const rep = `⛏️ *MRG MINER COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -4116,11 +4178,8 @@ fi
                 `• *Payout Network:* TON Blockchain (The Open Network)\n` +
                 `• *Anti-Bot Defense:* Cryptographic User-Agent Isolation ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
             } else if (cbData === "btn_ultra") {
               const rep = `🚫 *ULTRAWALLET DECOMMISSIONED & PURGED*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -4129,11 +4188,8 @@ fi
                 `• *Action Taken:* All 18 fleet accounts permanently blocked @UltraWalletBot, wiped task loops, and deleted dialog history.\n` +
                 `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
             } else if (cbData === "btn_kynex" || cbData === "btn_kynex_mine" || cbData === "btn_kynex_claim") {
               const rep = `💎 *KYNEX NETWORK COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -4146,11 +4202,8 @@ fi
                 `• *Daily Streak:* Active & Claimed (+50 KNX daily)\n` +
                 `• *Farming Schedule:* Autonomous 15-Minute Cloudflare Edge Mesh\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
             } else if (cbData === "btn_victors") {
               const rep = `🏢 *VICTOR'S COMPANY COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -4161,11 +4214,8 @@ fi
                 `• *TON Connect 2.0:* Cryptographically Bound Wallets ✅\n` +
                 `• *Deep Mine Arcade:* Automated Expeditions & Loot\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
             } else if (cbData === "btn_vyro") {
               const rep = `💧 *VYRODROP COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -4175,11 +4225,8 @@ fi
                 `• *TON Wallet:* 18/18 Verified & Connected\n` +
                 `• *Turnstile Pass:* Autonomous Headless Cloud Solver ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
             } else if (cbData === "btn_apx") {
               const rep = `🚫 *APEX MINER DECOMMISSIONED & PURGED*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -4188,11 +4235,8 @@ fi
                 `• *Action Taken:* All 18 fleet accounts permanently blocked @ApxMinerBot, left scam channels, and deleted all Telegram dialog history.\n` +
                 `• *Fleet Safety:* 100% Decommissioned & Isolated ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
             } else if (cbData === "btn_bnb" || cbData === "btn_bnb_claim" || cbData === "btn_bnb_withdraw") {
               const rep = `🚫 *BNB GALAXY PERMANENTLY DISABLED*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -4200,11 +4244,8 @@ fi
                 `• *Action Taken:* Fleet accounts blocked the bot, wiped scam channels, and reported it to Telegram Anti-Scam.\n` +
                 `• *Active Bots:* Focus is 100% placed on our 5 legitimate mining bots (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network).\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
             } else if (cbData === "btn_atf") {
               let atfData = {};
               try {
@@ -4241,11 +4282,8 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⚡ _Tap the buttons below to trigger cloud claim or view wallets:_`;
 
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: atfMsg, parse_mode: "Markdown", reply_markup: atfInlineKeyboard })
-              }).catch(() => {});
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, atfMsg, atfInlineKeyboard);
             } else if (cbData === "btn_atf_claim") {
               ctx.waitUntil((async () => {
                 const rep = `⚡ *ATF Miner Cloud Claim Results*\n\n` +
@@ -4273,11 +4311,7 @@ fi
                 `• *Account #1 (Host):* \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\` (Binance TON Deposit)\n` +
                 `• *Accounts #2–18 (Workers):* 17 Isolated TON v4r2 Wallets with TON Connect 2.0 Cryptographic Proofs.\n\n` +
                 `_All wallets isolated to prevent multi-account Sybil flags._`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown" })
-              }).catch(() => {});
+              await sendResilientMessage(chatId, rep, null, "Markdown");
             } else if (cbData === "btn_status") {
               ctx.waitUntil((async () => {
                 let mcData = {};
@@ -4448,11 +4482,7 @@ fi
                   ]
                 };
 
-                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ chat_id: chatId, text: summary, parse_mode: "Markdown", reply_markup: sweepDoneMarkup })
-                }).catch(() => {});
+                await sendResilientMessage(chatId, summary, sweepDoneMarkup, "Markdown");
               })());
             } else if (cbData === "btn_whales") {
               ctx.waitUntil((async () => {
@@ -4740,16 +4770,7 @@ fi
                       parse_mode: "Markdown"
                     })
                   }).catch(() => {});
-                  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      chat_id: chatId,
-                      text: `✅ Granted *+1 Permanent Slot* to \`${targetUid}\` (Total: ${prof.slots})`,
-                      parse_mode: "Markdown",
-                      reply_markup: statusInlineKeyboard
-                    })
-                  }).catch(() => {});
+                  await sendResilientMessage(chatId, `✅ Granted *+1 Permanent Slot* to \`${targetUid}\` (Total: ${prof.slots})`, statusInlineKeyboard, "Markdown");
                 }
               })());
             } else {
@@ -4790,41 +4811,12 @@ fi
         const senderId = msg.from ? String(msg.from.id) : String(chatId);
 
         if (!ADMIN_IDS.has(senderId)) {
-          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: "🔒 *Access Restricted: Private Admin Fleet Console*\n\nThis bot, channel network, and cluster operations are private and restricted exclusively to the system administrator.",
-              parse_mode: "Markdown"
-            })
-          }).catch(() => {});
+          await sendResilientMessage(chatId, "🔒 *Access Restricted: Private Admin Fleet Console*\n\nThis bot, channel network, and cluster operations are private and restricted exclusively to the system administrator.", null, "Markdown");
           return new Response("OK");
         }
 
         const sendReply = async (replyText, markup = null, parseMode = "Markdown") => {
-          const payload = {
-            chat_id: chatId,
-            text: replyText,
-            disable_web_page_preview: true
-          };
-          if (markup) payload.reply_markup = markup;
-          if (parseMode) payload.parse_mode = parseMode;
-          try {
-            const resp = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
-            });
-            if (!resp.ok && parseMode) {
-              delete payload.parse_mode;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-              });
-            }
-          } catch (_) {}
+          await sendResilientMessage(chatId, replyText, markup, parseMode);
         };
 
         // 1. Start & Menu Command
@@ -5617,11 +5609,7 @@ fi
                   ]
                 };
               }
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: markup })
-              }).catch(() => {});
+              await sendResilientMessage(chatId, rep, markup);
             } else {
               const rep = `🔑 *Telegram Login OTP & Relogin Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -5631,11 +5619,7 @@ fi
                 `2. Enter the phone number in Telegram on your phone.\n` +
                 `3. The cloud session intercepts the code from Telegram (*777000*) or Gmail!\n\n` +
                 `_Or tap **▶️ Start 1-by-1 Wizard** to go in order._`;
-              await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: rep, parse_mode: "Markdown", reply_markup: buildOtpMenuKeyboard() })
-              }).catch(() => {});
+              await sendResilientMessage(chatId, rep, buildOtpMenuKeyboard());
             }
           })());
           return new Response("OK");

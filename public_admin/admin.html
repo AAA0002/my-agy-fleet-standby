@@ -161,25 +161,39 @@ const KNOWN_PHONES_BY_INDEX = {
 };
 
 const DEFAULT_FLEET = [
-  { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850", kynex_coins: 6309, atf_balance: 312.4, status: "Active" },
-  { index: 2, name: "Nancy", user_id: 8881914294, phone: "+8801943805617", kynex_coins: 4050, atf_balance: 198.2, status: "Active" },
+  { index: 1, name: "Arif Hossain", user_id: 6727787768, phone: "+8801317342850", kynex_coins: 33199, atf_balance: 312.4, status: "Active" },
+  { index: 2, name: "Nancy Davis 2", user_id: 8881914294, phone: "+8801943805617", kynex_coins: 4050, atf_balance: 198.2, status: "Active" },
   { index: 3, name: "Koram Shah", user_id: 7648254021, phone: "+8801790208077", kynex_coins: 5250, atf_balance: 184.6, status: "Active" },
   { index: 4, name: "Arif", user_id: 8826375659, phone: "+8801575842094", kynex_coins: 4050, atf_balance: 201.0, status: "Active" },
-  { index: 5, name: "Nadim", user_id: 8450010161, phone: "+14302084365", kynex_coins: 4050, atf_balance: 175.5, status: "Active" },
-  { index: 6, name: "Kaitlyn", user_id: 8782429452, phone: "+8801867539837", kynex_coins: 4050, atf_balance: 215.8, status: "Active" },
+  { index: 5, name: "Nathan Miller 5", user_id: 8450010161, phone: "+14302084365", kynex_coins: 4050, atf_balance: 175.5, status: "Active" },
+  { index: 6, name: "Kaitlyn Ross 6", user_id: 8782429452, phone: "+8801867539837", kynex_coins: 4050, atf_balance: 215.8, status: "Active" },
   { index: 7, name: "Abid Hasan", user_id: 7734849205, phone: "+8801718056423", kynex_coins: 4050, atf_balance: 192.1, status: "Active" },
   { index: 8, name: "Abid Hasan (2)", user_id: 8025472383, phone: "+8801797795624", kynex_coins: 4050, atf_balance: 189.4, status: "Active" },
-  { index: 9, name: "Node 9", user_id: 8851426148, phone: "+8801727651288", kynex_coins: 4050, atf_balance: 167.3, status: "Active" },
-  { index: 10, name: "Node 10", user_id: 8203342513, phone: "+8801729892810", kynex_coins: 4050, atf_balance: 178.9, status: "Active" },
-  { index: 11, name: "MD. Arif Hossain", user_id: 8190649727, phone: "+8801571089931", kynex_coins: 4050, atf_balance: 220.4, status: "Active" },
+  { index: 9, name: "Naimur Rahman 9", user_id: 8851426148, phone: "+8801727651288", kynex_coins: 4050, atf_balance: 167.3, status: "Active" },
+  { index: 10, name: "Tanvir Ahmed 10", user_id: 8203342513, phone: "+8801729892810", kynex_coins: 4050, atf_balance: 178.9, status: "Active" },
+  { index: 11, name: "MD. ARIF HOSSAIN", user_id: 8190649727, phone: "+8801571089931", kynex_coins: 4050, atf_balance: 220.4, status: "Active" },
   { index: 12, name: "Sanzida Shimu", user_id: 7487048946, phone: "+8801774578536", kynex_coins: 4050, atf_balance: 165.7, status: "Active" },
   { index: 13, name: "Abid (3)", user_id: 8741547543, phone: "+8801838268380", kynex_coins: 4050, atf_balance: 194.2, status: "Active" },
-  { index: 14, name: "Raj Thakur Козлов", user_id: 8727040932, phone: "+918930504750", kynex_coins: 4050, atf_balance: 180.1, status: "Active" },
-  { index: 15, name: "Tiffany Тарасов", user_id: 7749125802, phone: "+8801906045479", kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-  { index: 16, name: "Roger Волков", user_id: 7954290138, phone: "+8801304151082", kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-  { index: 17, name: "Kevin Смирнов", user_id: 8841038141, phone: "+8801879273559", kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-  { index: 18, name: "Mary Каримов", user_id: 8975442879, phone: "+8801839716506", kynex_coins: 4050, atf_balance: 150.0, status: "Active" }
+  { index: 14, name: "Rohan Sharma 14", user_id: 8727040932, phone: "+918930504750", kynex_coins: 4050, atf_balance: 180.1, status: "Active" },
+  { index: 15, name: "Tasnim Farhana 15", user_id: 7749125802, phone: "+8801906045479", kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+  { index: 16, name: "Rashedul Islam 16", user_id: 7954290138, phone: "+8801304151082", kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+  { index: 17, name: "Kawsar Mahmud 17", user_id: 8841038141, phone: "+8801879273559", kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+  { index: 18, name: "Mehedi Hasan 18", user_id: 8975442879, phone: "+8801839716506", kynex_coins: 4050, atf_balance: 150.0, status: "Active" }
 ];
+
+const cleanName = (acc, idx) => {
+  let n = (acc?.name || "").trim();
+  if (n.includes("Никитин")) return "Nathan Miller 5";
+  if (n.includes("Морозов")) return "Kaitlyn Ross 6";
+  if (n.includes("Соколов") || n.startsWith("Tg")) return "Naimur Rahman 9";
+  if (n.includes("Кузнецов") || n.includes("Girtt")) return "Tanvir Ahmed 10";
+  if (n.includes("Козлов")) return "Rohan Sharma 14";
+  if (n.includes("Тарасов")) return "Tasnim Farhana 15";
+  if (n.includes("Волков")) return "Rashedul Islam 16";
+  if (n.includes("Смирнов")) return "Kawsar Mahmud 17";
+  if (n.includes("Каримов")) return "Mehedi Hasan 18";
+  return n || (DEFAULT_FLEET[idx] ? DEFAULT_FLEET[idx].name : `Account #${(acc?.index || idx + 1)}`);
+};
 
 function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnabled, isDark }) {
   const [password, setPassword] = useState("");
@@ -904,7 +918,7 @@ function App() {
                   isMaster ? "👑" : `#${accNum}`
                 ),
                 React.createElement("div", null,
-                  React.createElement("div", { className: `font-black text-xs ${isDark ? 'text-white' : 'text-slate-900'}` }, acc.name || `Account #${accNum}`),
+                  React.createElement("div", { className: `font-black text-xs ${isDark ? 'text-white' : 'text-slate-900'}` }, cleanName(acc, idx)),
                   React.createElement("div", { className: "text-[11px] font-mono text-slate-400 flex items-center gap-1.5" },
                     React.createElement("span", { className: "text-blue-400 font-semibold" }, phone || "Cloud MTProto"),
                     phone && React.createElement("button", {
@@ -1006,8 +1020,9 @@ function App() {
       React.createElement("div", { className: "flex items-center gap-1.5 overflow-x-auto pb-2 mb-2" },
         [
           { id: "deepseek", label: "🔮 DeepSeek R1", tag: "32B Reasoning" },
+          { id: "groq", label: "⚡ Groq LPU", tag: "700 t/s LPU" },
           { id: "llama", label: "🦙 Meta Llama 3.2", tag: "Fast Edge" },
-          { id: "gemini", label: "⚡ Gemini 3.8 Flash", tag: "Google Cloud" },
+          { id: "gemini", label: "⚡ Gemini Flash", tag: "Google Cloud" },
           { id: "image", label: "🎨 SDXL Image", tag: "Visual Art" }
         ].map(m => React.createElement("button", {
           key: m.id,
@@ -1264,7 +1279,7 @@ function App() {
                 `#${accNum}`
               ),
               React.createElement("div", null,
-                React.createElement("h3", { className: "font-black text-sm" }, selectedAccount.name || `Account #${accNum}`),
+                React.createElement("h3", { className: "font-black text-sm" }, cleanName(selectedAccount, accNum - 1)),
                 React.createElement("span", { className: "text-[10px] text-slate-400 font-mono" }, isHost ? "Master Host 👑" : "Worker Node 🟢")
               )
             ),
