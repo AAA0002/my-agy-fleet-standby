@@ -2599,6 +2599,7 @@ async def get_account_otp(acc_target: str, request: Request):
     Checks peer 777000 (Telegram Service Notifications) first.
     Falls back to Gmail IMAP if no recent Telegram message exists.
     """
+
     try:
         accounts = []
         if os.path.exists("accounts.json"):
@@ -2748,6 +2749,14 @@ async def get_account_otp(acc_target: str, request: Request):
     except Exception as exc:
         logger.error(f"[OTP Cloud Fetch] Error for {acc_target}: {exc}")
         return {"ok": False, "found": False, "error": str(exc)}
+
+
+@app.get("/api/account/otp")
+@app.post("/api/account/otp")
+async def get_account_otp_query(request: Request):
+    idx = request.query_params.get("index") or request.query_params.get("target") or "1"
+    return await get_account_otp(idx, request)
+
 
 
 # =============================================================================

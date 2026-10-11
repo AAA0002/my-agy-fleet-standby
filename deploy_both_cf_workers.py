@@ -10420,17 +10420,17 @@ async def main():
     print("  🔧 Synchronizing Telegram Bot Menu Button & Commands...")
     print("=" * 60)
     async with aiohttp.ClientSession() as session:
-        # 0. Ensure Webhooks are set and synchronized on Cloudflare Edge
+        # 0. Preserve official Telegram Serverless webhook for Admin Bot (@myagyai)
         try:
-            alert_webhook_url = "https://restore-agy.aaaai2.workers.dev/telegram-webhook"
-            async with session.post(
-                f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/setWebhook",
-                json={"url": alert_webhook_url, "allowed_updates": ["message", "callback_query"]}
-            ) as resp:
-                res_wh = await resp.json()
-                print(f"📡 Admin Bot Webhook: {res_wh.get('ok')} ({res_wh.get('description', 'OK')})")
+            async with session.get(f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/getWebhookInfo") as resp:
+                cur_wh = await resp.json()
+                cur_url = (cur_wh.get("result") or {}).get("url", "")
+                if "cloud.telegram.org" in cur_url:
+                    print(f"📡 Admin Bot Webhook: Preserved on Telegram Serverless ({cur_url})")
+                else:
+                    print(f"📡 Admin Bot Webhook current: {cur_url}")
         except Exception as e:
-            print(f"⚠️ Error synchronizing webhooks: {e}")
+            print(f"⚠️ Error checking webhooks: {e}")
 
         # 1. Set global Chat Menu Button to Watch Ads WebApp
         menu_payload = {

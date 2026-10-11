@@ -106,11 +106,25 @@ Select an action below to manage fleet operations:`;
         parse_mode: "Markdown",
         reply_markup: buildOtpKeyboard(Array.from({ length: 18 }, (_, i) => ({ index: i + 1 })))
       });
+    } else if (res && res.session_revoked) {
+      await api.editMessageText({
+        chat_id: chatId,
+        message_id: messageId,
+        text: `🔴 *Account #${idx} Session Revoked on Telegram*\n\nThe authorization key was invalidated or expired.\nTap below to re-link this account:`,
+        parse_mode: "Markdown",
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: `⚡ 1-Tap Re-link Account #${idx}`, callback_data: `btn_relink_acc_${idx}` }],
+            [{ text: "🔙 OTP Menu", callback_data: "btn_otp_menu" }],
+            [{ text: "🔙 Main Menu", callback_data: "btn_main_menu" }]
+          ]
+        }
+      });
     } else {
       await api.editMessageText({
         chat_id: chatId,
         message_id: messageId,
-        text: `⚠️ *No Recent OTP Found for Account #${idx}*\n\nNo verification codes received in the last 15 minutes, or the account session is currently unlinked.`,
+        text: `⚠️ *No Recent OTP Found for Account #${idx}*\n\nNo verification codes received in the last 15 minutes, or the account is currently idle.`,
         parse_mode: "Markdown",
         reply_markup: buildOtpKeyboard(Array.from({ length: 18 }, (_, i) => ({ index: i + 1 })))
       });

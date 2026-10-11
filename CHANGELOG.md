@@ -2,21 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
-- **⚡ Telegram Serverless Platform Implementation, 2FA `BASE_DIR` Resolution & Upstash Limit Decoupling (October 11, 2026)**:
+- **⚡ Telegram Serverless Platform Revision 7, 2FA `BASE_DIR` Resolution & Webhook Protection (October 11, 2026)**:
   - **🔒 Resolution of 2FA Authentication Failure (`name 'BASE_DIR' is not defined`)**:
     * **Root Cause Identified**: When entering the Two-Factor password (`Arif216@`), Telethon successfully authenticated the MTProto session on Telegram DC. However, subsequent wallet persistence in `save_and_archive_account_wallets()` crashed because `BASE_DIR` was undefined in `render_standby_app.py`, throwing `NameError: name 'BASE_DIR' is not defined` and presenting a false 2FA failure.
     * **Permanent Fix**: Defined `BASE_DIR = os.path.dirname(os.path.abspath(__file__))` at the module root and wrapped wallet archival in a resilient `try...except` block with a `/tmp` fallback directory so file operations can never interrupt successful authentication.
-    * **Live Deployment**: Pushed updated code to GitHub repositories `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`, triggering live Render Node 2 (Frankfurt) and Node 3 (Oregon) builds (`dep-db5o5mad0e5s7384t5g0` & `dep-db5o5mlckfvc73asgvr0`).
-  - **☁️ Telegram Serverless Platform Live Deployment (`tgcloud.ai` & `@tgcloud/cli`)**:
+    * **Live Deployment**: Pushed updated code to GitHub repositories `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`, triggering live Render Node 2 (Frankfurt) and Node 3 (Oregon) builds (`dep-db5p0j2d0e5s7387k3g0` & `dep-db5p0jh42hec739nl1ag`).
+  - **☁️ Telegram Serverless Platform Live Deployment (`tgcloud.ai` Revision 7)**:
     * Authenticated with Telegram Serverless access token `app8858823950:UCTcdhdQuFNGDAzu33f7bv6sz3k7seuPSO3c_oKdqMo`.
-    * Synchronized local project with remote snapshot and deployed Revision 5 to Telegram's cloud:
+    * Synchronized local project with remote snapshot and deployed Revision 7 to Telegram's cloud:
       - `tgcloud/schema.js` (SQLite schema with 4 tables: `accounts_cache`, `admin_users`, `login_sessions`, `telemetry_events`)
-      - `tgcloud/handlers/message.js` & `tgcloud/handlers/callback_query.js`
-      - `tgcloud/lib/backend.js`, `tgcloud/lib/ui.js`, `tgcloud/lib/config.js`, `tgcloud/lib/fleetApi.js`
-      - `tgcloud/endpoints/`: `collectTokens.js`, `getFleetStatus.js`, `triggerFarm.js`, `triggerTurnstile.js`
-    * Successfully ran `tgcloud migrate`: Applied 4 SQLite table migrations (`accounts_cache`, `admin_users`, `login_sessions`, `telemetry_events`).
+      - `tgcloud/handlers/message.js`: Added automatic detection and normalization of phone numbers (`01...` -> `+8801...`), auto-detection of direct 5-digit verification codes (`pureDigits.length === 5`), and expanded commands (`/accounts`, `/fleet`, `/wallets`).
+      - `tgcloud/handlers/callback_query.js`: When an account's session is revoked, the OTP card immediately provides a direct `[⚡ 1-Tap Re-link Account #X]` button.
+      - `tgcloud/lib/backend.js`: Synchronized OTP lookup endpoints across Render and Cloudflare meshes.
+      - `tgcloud/lib/ui.js`, `tgcloud/lib/config.js`, `tgcloud/lib/fleetApi.js`.
+      - `tgcloud/endpoints/`: `collectTokens.js`, `getFleetStatus.js`, `triggerFarm.js`, `triggerTurnstile.js`.
+      - `public/index.html`: Fully managed Static Mini App dashboard (`https://app8858823950.tgcloud.ai/`) registered in `tgcloud.jsonc`.
+    * Applied 4 SQLite table migrations (`accounts_cache`, `admin_users`, `login_sessions`, `telemetry_events`).
     * Webhook synchronized: `https://cloud.telegram.org/app8858823950/webhook` (allowed: `message`, `callback_query`, status: in sync).
     * Working directory clean, zero errors.
+  - **🛡️ Admin Bot Webhook Hijack Protection in `deploy_both_cf_workers.py`**:
+    * Guarded webhook synchronization: If `@myagyai` webhook URL contains `cloud.telegram.org`, Cloudflare deployments will preserve it and not overwrite it with Cloudflare worker URLs, ensuring Telegram Serverless remains permanently active.
   - **🛡️ Upstash Redis Quota Exhaustion Resilient Decoupling**:
     * Insulated all cloud operations from Upstash Redis plan limits (`ERR This database has reached current Fixed plan limits`). All operations now seamlessly fall back to local V8 memory, Cloudflare D1 SQL, and Telegram Serverless SQLite.
 

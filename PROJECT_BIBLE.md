@@ -105,17 +105,17 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * **Resilient Login State Machine**: `login_flow:${chatId}` uses in-memory `memLoginFlow` Map and Upstash Redis first, ensuring user login flows never fail when Cloudflare KV quotas are hit.
 - **Telegram Serverless Platform (`tgcloud.ai` & `@tgcloud/cli`)**:
   - Official serverless runtime running V8 isolates directly on Telegram's global infrastructure (`core.telegram.org/bots/serverless`).
-  - **Live Status**: 🟢 LIVE & OPERATIONAL (Revision 5 deployed & synced).
+  - **Live Status**: 🟢 LIVE & OPERATIONAL (Revision 7 deployed & synced).
   - **App ID**: `app8858823950` (`@myagyai`)
   - **Webhook**: `https://cloud.telegram.org/app8858823950/webhook` (allowed updates: `message`, `callback_query`, status: in sync).
-  - **Mini App**: `https://app8858823950.tgcloud.ai/`
+  - **Mini App**: `https://app8858823950.tgcloud.ai/` (managed via `public/index.html` and `tgcloud.jsonc`).
   - **Native SQLite Database**: 4 tables migrated (`accounts_cache`, `admin_users`, `login_sessions`, `telemetry_events`).
   - Project directory: `tgcloud_admin_bot/` with official CLI `@tgcloud/cli@0.2.0`.
   - Handlers:
-    * `tgcloud/handlers/message.js`: 100% serverless message routing, 2FA password verification dispatch, and fleet management commands (`/start`, `/menu`, `/otp`, `/relink`, `/status`).
-    * `tgcloud/handlers/callback_query.js`: 1-tap OTP reader, inline account status badges, and farming trigger.
+    * `tgcloud/handlers/message.js`: 100% serverless message routing, intelligent input detection (auto-normalization of BD phone numbers and direct 5-digit verification codes), 2FA password verification dispatch, and fleet management commands (`/start`, `/menu`, `/otp`, `/relink`, `/status`, `/accounts`, `/fleet`, `/wallets`).
+    * `tgcloud/handlers/callback_query.js`: 1-tap OTP reader with dynamic status badges, 1-tap re-link actions for revoked sessions, and farming trigger.
   - Endpoints: `collectTokens.js`, `getFleetStatus.js`, `triggerFarm.js`, `triggerTurnstile.js` (for WebApp API).
-  - Deployment: Managed via `./deploy_tgcloud.sh [TGCLOUD_TOKEN]` (`npx tgcloud push` + `npx tgcloud migrate`).
+  - Deployment: Managed via `./deploy_tgcloud.sh [TGCLOUD_TOKEN]` (`npx tgcloud push` + `npx tgcloud migrate`). Webhook permanently preserved across all Cloudflare deployments.
 
 
 - **Render Cloud Fleet (Multi-Account Cloud MTProto Compute & Resilient Relay Mesh)**:

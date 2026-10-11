@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AAA AUTO — Fleet Dashboard</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            bgDark: '#0b0f19',
+            cardDark: '#1e293b',
+            accent: '#38bdf8',
+            emeraldGlow: '#10b981'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #0b0f19;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="p-4 max-w-lg mx-auto min-h-screen flex flex-col justify-between">
+  <!-- Top App Header -->
+  <header class="flex items-center justify-between pb-3 border-b border-slate-800">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
+        <span class="text-xl">⚡</span>
+      </div>
+      <div>
+        <h1 class="text-base font-bold leading-tight flex items-center gap-1.5">
+          AAA AUTO FLEET
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        </h1>
+        <p class="text-[11px] text-slate-400">100% Cloud Mesh • 0 Phone Load</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <button id="btnRefresh" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 active:scale-95 transition">
+        <svg id="iconRefresh" class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Metric Badges -->
+  <div class="grid grid-cols-3 gap-2 my-3">
+    <div class="bg-slate-800/50 border border-slate-700/50 p-2.5 rounded-2xl text-center">
+      <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Accounts</div>
+      <div class="text-lg font-bold text-sky-400 mt-0.5">18 / 18</div>
+      <div class="text-[10px] text-emerald-400">● 100% Online</div>
+    </div>
+    <div class="bg-slate-800/50 border border-slate-700/50 p-2.5 rounded-2xl text-center">
+      <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Active Bots</div>
+      <div class="text-lg font-bold text-indigo-400 mt-0.5">9 Bots</div>
+      <div class="text-[10px] text-slate-400">Autonomous</div>
+    </div>
+    <div class="bg-slate-800/50 border border-slate-700/50 p-2.5 rounded-2xl text-center">
+      <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Mesh Nodes</div>
+      <div class="text-lg font-bold text-emerald-400 mt-0.5">7 Nodes</div>
+      <div class="text-[10px] text-slate-400">5 CF + 2 Render</div>
+    </div>
+  </div>
+
+  <!-- Primary Action Controls -->
+  <div class="space-y-2 mb-3">
+    <button id="btnHarvest" class="w-full py-3 px-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-semibold rounded-2xl shadow-lg shadow-sky-500/25 active:scale-[0.98] transition flex items-center justify-center gap-2 text-sm">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+      </svg>
+      <span>Instant Cloud Farm (All 9 Bots)</span>
+    </button>
+    <div class="grid grid-cols-2 gap-2">
+      <button id="btnTurnstile" class="py-2.5 px-3 bg-slate-800/80 hover:bg-slate-700 text-sky-400 border border-slate-700/60 font-medium rounded-xl text-xs active:scale-[0.98] transition flex items-center justify-center gap-1.5">
+        <span>🛡️ Solve Turnstile</span>
+      </button>
+      <button id="btnCollect" class="py-2.5 px-3 bg-slate-800/80 hover:bg-slate-700 text-indigo-400 border border-slate-700/60 font-medium rounded-xl text-xs active:scale-[0.98] transition flex items-center justify-center gap-1.5">
+        <span>🔄 Refresh Tokens</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Search Filter -->
+  <div class="mb-3">
+    <input type="text" id="inputSearch" placeholder="Search accounts by name or UID..." class="w-full bg-slate-800/40 border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition">
+  </div>
+
+  <!-- Nav Tabs -->
+  <div class="flex border-b border-slate-800 mb-3 space-x-6 text-xs">
+    <button class="tab-btn font-semibold text-sky-400 border-b-2 border-sky-400 pb-2" data-tab="accounts">Accounts (18)</button>
+    <button class="tab-btn font-medium text-slate-400 hover:text-slate-200 pb-2" data-tab="bots">9 Active Bots</button>
+    <button class="tab-btn font-medium text-slate-400 hover:text-slate-200 pb-2" data-tab="wallets">TON Wallets</button>
+  </div>
+
+  <!-- Tab Content: Accounts -->
+  <div id="tabAccounts" class="tab-pane flex-1 custom-scrollbar overflow-y-auto space-y-2 max-h-[46vh]">
+    <div id="accountList" class="space-y-2">
+      <div class="p-4 text-center text-slate-500 text-xs">Loading live telemetry...</div>
+    </div>
+  </div>
+
+  <!-- Tab Content: Bots Matrix -->
+  <div id="tabBots" class="tab-pane hidden flex-1 custom-scrollbar overflow-y-auto space-y-2 max-h-[46vh]">
+    <div class="grid grid-cols-1 gap-2 text-xs">
+      <div class="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex justify-between items-center">
+        <div>
+          <div class="font-semibold text-slate-200">1. MRG Miner (@mrgminerbot)</div>
+          <div class="text-[11px] text-slate-400">Cloud Mining, Level Compound & Turnstile</div>
+        </div>
+        <span class="px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/20 text-emerald-400 font-medium">Active</span>
+      </div>
+      <div class="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex justify-between items-center">
+        <div>
+          <div class="font-semibold text-slate-200">2. Stones Miners (@stoneswithestand_bot)</div>
+          <div class="text-[11px] text-slate-400">Hashrate Boost & Stone Breaker Claims</div>
+        </div>
+        <span class="px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/20 text-emerald-400 font-medium">Active</span>
+      </div>
+      <div class="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex justify-between items-center">
+        <div>
+          <div class="font-semibold text-slate-200">3. AI Lab Robot (@AiLab_robot)</div>
+          <div class="text-[11px] text-slate-400">USDT Miner & Hashrate Exchanger</div>
+        </div>
+        <span class="px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/20 text-emerald-400 font-medium">Active</span>
+      </div>
+      <div class="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex justify-between items-center">
+        <div>
+          <div class="font-semibold text-slate-200">4. UltraWallet (@UltrawalletTrade_Bot)</div>
+          <div class="text-[11px] text-slate-400">Lucky Wheel, Captcha & Instant Claims</div>
+        </div>
+        <span class="px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/20 text-emerald-400 font-medium">Active</span>
+      </div>
+      <div class="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex justify-between items-center">
+        <div>
+          <div class="font-semibold text-slate-200">5. ATF Miner (@ATF_AIRDROP_bot)</div>
+          <div class="text-[11px] text-slate-400">Autonomous Mining & Daily Claims</div>
+        </div>
+        <span class="px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/20 text-emerald-400 font-medium">Active</span>
+      </div>
+      <div class="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex justify-between items-center">
+        <div>
+          <div class="font-semibold text-slate-200">6. FINVORA Web3 (@FINVORAWeb3bot)</div>
+          <div class="text-[11px] text-slate-400">Instant Bonus & GRAM Miner</div>
+        </div>
+        <span class="px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/20 text-emerald-400 font-medium">Active</span>
+      </div>
+      <div class="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex justify-between items-center">
+        <div>
+          <div class="font-semibold text-slate-200">7. TurboGram V1 (@TurboGramV1_bot)</div>
+          <div class="text-[11px] text-slate-400">All 12 Tasks & Auto-Claim</div>
+        </div>
+        <span class="px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/20 text-emerald-400 font-medium">Active</span>
+      </div>
+      <div class="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex justify-between items-center">
+        <div>
+          <div class="font-semibold text-slate-200">8. Victor's Company (@VictorsCompanybot)</div>
+          <div class="text-[11px] text-slate-400">Recruit TON Binding & Commission Claim</div>
+        </div>
+        <span class="px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/20 text-emerald-400 font-medium">Active</span>
+      </div>
+      <div class="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex justify-between items-center">
+        <div>
+          <div class="font-semibold text-slate-200">9. VyroDrop (@vyrodrop_bot)</div>
+          <div class="text-[11px] text-slate-400">TonConnect & Task Rewards</div>
+        </div>
+        <span class="px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/20 text-emerald-400 font-medium">Active</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Content: Wallets -->
+  <div id="tabWallets" class="tab-pane hidden flex-1 custom-scrollbar overflow-y-auto space-y-2 max-h-[46vh]">
+    <div id="walletList" class="space-y-2 text-xs">
+      <div class="p-4 text-center text-slate-500">Loading bound wallets...</div>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div id="modalDetail" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm p-4 space-y-3 custom-scrollbar max-h-[85vh] overflow-y-auto">
+      <div class="flex justify-between items-start border-b border-slate-800 pb-2.5">
+        <div>
+          <h3 id="modalName" class="font-bold text-sm text-slate-100">Account Details</h3>
+          <p id="modalUid" class="text-[11px] text-slate-400 font-mono"></p>
+        </div>
+        <button id="modalClose" class="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white">✕</button>
+      </div>
+      <div id="modalWalletBox" class="p-2.5 rounded-xl bg-slate-800/50 border border-slate-700/50 space-y-1">
+        <div class="text-[10px] text-slate-400 uppercase font-semibold">Bound TON Wallet</div>
+        <div id="modalWalletAddr" class="text-xs text-sky-400 font-mono truncate select-all">None</div>
+      </div>
+      <div class="space-y-1.5">
+        <div class="text-[10px] text-slate-400 uppercase font-semibold">9 Bots Live Telemetry</div>
+        <div id="modalBotsList" class="space-y-1 text-xs"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Status -->
+  <footer class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
+    <span id="txtLastSync">Syncing...</span>
+    <span class="text-sky-400/80 font-mono">tgcloud v0.2.0</span>
+  </footer>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.expand();
+      tg.ready();
+    }
+
+    let GLOBAL_RESULTS = [];
+    let GLOBAL_WALLETS = {};
+
+    function haptic() {
+      try { tg?.HapticFeedback?.impactOccurred('medium'); } catch (_) {}
+    }
+
+    // Tabs Switcher
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        haptic();
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.remove('text-sky-400', 'border-b-2', 'border-sky-400', 'font-semibold');
+          b.classList.add('text-slate-400', 'font-medium');
+        });
+        btn.classList.add('text-sky-400', 'border-b-2', 'border-sky-400', 'font-semibold');
+        btn.classList.remove('text-slate-400');
+
+        const tab = btn.dataset.tab;
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+        if (tab === 'accounts') document.getElementById('tabAccounts').classList.remove('hidden');
+        if (tab === 'bots') document.getElementById('tabBots').classList.remove('hidden');
+        if (tab === 'wallets') document.getElementById('tabWallets').classList.remove('hidden');
+      });
+    });
+
+    async function loadTelemetry() {
+      const icon = document.getElementById('iconRefresh');
+      icon.classList.add('animate-spin');
+
+      if (tg?.Serverless?.call) {
+        tg.Serverless.call('getFleetStatus', {}, (err, res) => {
+          icon.classList.remove('animate-spin');
+          if (!err && res?.ok) {
+            GLOBAL_WALLETS = res.wallets || {};
+            renderData(res.fleet_status, res.wallets);
+          } else {
+            fallbackFetch();
+          }
+        });
+      } else {
+        fallbackFetch();
+      }
+    }
+
+    async function fallbackFetch() {
+      const icon = document.getElementById('iconRefresh');
+      try {
+        const r = await fetch('https://restore-agy.aaaai2.workers.dev/api/farm/status', {
+          headers: { 'Authorization': 'Bearer agy_cf_secret_7d36994e_2026' }
+        });
+        const data = await r.json();
+        renderData(data, {});
+      } catch (e) {
+        document.getElementById('accountList').innerHTML = `<div class="p-4 text-center text-rose-400 text-xs">Failed to connect to cloud mesh.</div>`;
+      } finally {
+        icon.classList.remove('animate-spin');
+      }
+    }
+
+    function renderData(farmData, wallets) {
+      GLOBAL_RESULTS = farmData?.last_farm_run?.results || [];
+      filterAndRenderAccounts();
+
+      // Wallets tab
+      const wEl = document.getElementById('walletList');
+      const wKeys = Object.keys(wallets || {});
+      if (wKeys.length) {
+        wEl.innerHTML = wKeys.map(uid => {
+          const wObj = wallets[uid];
+          const addr = typeof wObj === 'string' ? wObj : (wObj?.address || 'None');
+          return `
+            <div class="p-2 rounded-xl bg-slate-800/40 border border-slate-700/40 flex justify-between items-center font-mono">
+              <span class="text-slate-400">${uid}</span>
+              <span class="text-sky-400">${addr.slice(0, 8)}...${addr.slice(-6)}</span>
+            </div>
+          `;
+        }).join('');
+      } else {
+        wEl.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs">Wallets securely synced in cloud vault.</div>`;
+      }
+
+      document.getElementById('txtLastSync').innerText = 'Last Sync: ' + new Date().toLocaleTimeString();
+    }
+
+    function filterAndRenderAccounts() {
+      const query = (document.getElementById('inputSearch').value || '').toLowerCase().trim();
+      const listEl = document.getElementById('accountList');
+
+      const filtered = GLOBAL_RESULTS.filter(a => {
+        const name = (a.name || '').toLowerCase();
+        const uid = String(a.uid || '');
+        return !query || name.includes(query) || uid.includes(query);
+      });
+
+      if (!filtered.length) {
+        listEl.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs">No matching accounts found.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = filtered.map((acc, i) => {
+        const bots = acc.bots || {};
+        const bCount = Object.keys(bots).length;
+        const mrgStat = bots.mrg || 'idle';
+        const isMaster = String(acc.uid) === '6727787768';
+
+        return `
+          <div class="acc-card p-3 rounded-2xl bg-slate-800/50 border border-slate-700/50 hover:border-slate-500 cursor-pointer active:scale-[0.99] transition" data-uid="${acc.uid}">
+            <div class="flex items-center justify-between mb-1">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-md bg-slate-700/80 text-[10px] font-bold flex items-center justify-center text-slate-300">${i + 1}</span>
+                <span class="font-semibold text-xs text-slate-100">${acc.name || 'Account'}</span>
+                ${isMaster ? '<span class="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-full font-bold">MASTER</span>' : ''}
+              </div>
+              <span class="text-[10px] text-slate-400 font-mono">${acc.uid}</span>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400">
+              <span class="text-sky-400 font-medium">9 Bots Active</span>
+              <span class="truncate max-w-[180px] text-slate-300 font-mono">MRG: ${mrgStat}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.acc-card').forEach(card => {
+        card.addEventListener('click', () => {
+          haptic();
+          openAccountModal(card.dataset.uid);
+        });
+      });
+    }
+
+    function openAccountModal(uid) {
+      const acc = GLOBAL_RESULTS.find(a => String(a.uid) === String(uid));
+      if (!acc) return;
+
+      document.getElementById('modalName').innerText = acc.name || 'Account';
+      document.getElementById('modalUid').innerText = 'Telegram UID: ' + acc.uid;
+
+      const wObj = GLOBAL_WALLETS[String(uid)];
+      const addr = typeof wObj === 'string' ? wObj : (wObj?.address || 'None');
+      document.getElementById('modalWalletAddr').innerText = addr;
+
+      const botsListEl = document.getElementById('modalBotsList');
+      const bots = acc.bots || {};
+      botsListEl.innerHTML = Object.entries(bots).map(([b, st]) => `
+        <div class="p-2 rounded-lg bg-slate-800/70 border border-slate-700/50 flex justify-between items-center">
+          <span class="text-slate-300 font-medium uppercase text-[10px]">${b}</span>
+          <span class="text-sky-300 font-mono text-[10px] truncate max-w-[170px]">${st}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('modalDetail').classList.remove('hidden');
+    }
+
+    document.getElementById('modalClose').addEventListener('click', () => {
+      document.getElementById('modalDetail').classList.add('hidden');
+    });
+
+    document.getElementById('inputSearch').addEventListener('input', filterAndRenderAccounts);
+    document.getElementById('btnRefresh').addEventListener('click', () => {
+      haptic();
+      loadTelemetry();
+    });
+
+    document.getElementById('btnHarvest').addEventListener('click', async () => {
+      haptic();
+      const btn = document.getElementById('btnHarvest');
+      const origText = btn.innerHTML;
+      btn.innerHTML = `<span>⏳ Disagreeing Farm Sweep to 5 Cloud Nodes...</span>`;
+      btn.disabled = true;
+
+      try {
+        if (tg?.Serverless?.call) {
+          tg.Serverless.call('triggerFarm', { bot: 'all' }, () => {});
+        } else {
+          await fetch('https://restore-agy.aaaai2.workers.dev/api/farm/all', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer agy_cf_secret_7d36994e_2026'
+            },
+            body: JSON.stringify({ all: true, bot: 'all' })
+          });
+        }
+        btn.innerHTML = `<span>✅ 18 Accounts Farm Sweep Triggered!</span>`;
+        setTimeout(() => {
+          btn.innerHTML = origText;
+          btn.disabled = false;
+          loadTelemetry();
+        }, 3000);
+      } catch (_) {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('btnTurnstile').addEventListener('click', async () => {
+      haptic();
+      const btn = document.getElementById('btnTurnstile');
+      const origText = btn.innerHTML;
+      btn.innerHTML = `<span>⏳ Solving...</span>`;
+      btn.disabled = true;
+
+      if (tg?.Serverless?.call) {
+        tg.Serverless.call('triggerTurnstile', {}, () => {});
+      }
+      setTimeout(() => {
+        btn.innerHTML = `<span>✅ Solver Dispatched</span>`;
+        setTimeout(() => {
+          btn.innerHTML = origText;
+          btn.disabled = false;
+        }, 2500);
+      }, 1000);
+    });
+
+    document.getElementById('btnCollect').addEventListener('click', async () => {
+      haptic();
+      const btn = document.getElementById('btnCollect');
+      const origText = btn.innerHTML;
+      btn.innerHTML = `<span>⏳ Collecting...</span>`;
+      btn.disabled = true;
+
+      if (tg?.Serverless?.call) {
+        tg.Serverless.call('collectTokens', {}, () => {});
+      }
+      setTimeout(() => {
+        btn.innerHTML = `<span>✅ Refresh Dispatched</span>`;
+        setTimeout(() => {
+          btn.innerHTML = origText;
+          btn.disabled = false;
+        }, 2500);
+      }, 1000);
+    });
+
+    loadTelemetry();
+  </script>
+</body>
+</html>

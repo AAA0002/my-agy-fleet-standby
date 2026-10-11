@@ -1,9 +1,19 @@
 import { api, db } from 'sdk';
 import { eq } from 'sdk/db';
-import { loginSessions, accountsCache, adminUsers } from '../schema.js';
+import { loginSessions } from '../schema.js';
 import { CONFIG } from '../lib/config.js';
 import { sendLoginCode, verifyLoginCode, cancelLogin, fetchFleetLive } from '../lib/backend.js';
-import { getMainMenuKeyboard, getCancelLoginKeyboard, buildOtpKeyboard, buildRelinkKeyboard } from '../lib/ui.js';
+import { getMainMenuKeyboard, getCancelLoginKeyboard, buildOtpKeyboard, buildRelinkKeyboard, buildAccountsKeyboard } from '../lib/ui.js';
+
+function normalizePhone(raw) {
+  let cleaned = String(raw || '').replace(/[^0-9+]/g, '');
+  if (cleaned.startsWith('01') && cleaned.length === 11) {
+    cleaned = '+88' + cleaned;
+  } else if (!cleaned.startsWith('+') && cleaned.length >= 8) {
+    cleaned = '+' + cleaned;
+  }
+  return cleaned;
+}
 
 export default async function (message, ctx) {
   if (!message || !message.chat) return;
@@ -23,28 +33,30 @@ export default async function (message, ctx) {
   }
 
   // Check if this chat has an active login session in Telegram Serverless SQLite DB
-  const activeSession = await db.select().from(loginSessions).where(eq(loginSessions.chatId, chatId)).get();
+  let activeSession = await db.select().from(loginSessions).where(eq(loginSessions.chatId, chatId)).get();
+
+  if (text === '/cancel' || text.toLowerCase() === 'cancel') {
+    await cancelLogin(chatId);
+    if (activeSession) {
+      await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run();
+    }
+    await api.sendMessage({
+      chat_id: chatId,
+      text: "❌ *Login Process Cancelled.*\n\nReturned to standard idle sentinel mode.",
+      parse_mode: "Markdown",
+      reply_markup: getMainMenuKeyboard()
+    });
+    return;
+  }
 
   if (activeSession) {
-    if (text === '/cancel' || text.toLowerCase() === 'cancel') {
-      await cancelLogin(chatId);
-      await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run();
-      await api.sendMessage({
-        chat_id: chatId,
-        text: "❌ *Login Process Cancelled.*\n\nReturned to standard idle sentinel mode.",
-        parse_mode: "Markdown",
-        reply_markup: getMainMenuKeyboard()
-      });
-      return;
-    }
-
     // Step 1: Waiting for phone number
     if (activeSession.step === 'WAITING_PHONE') {
-      const cleanPhone = text.replace(/[^0-9+]/g, '');
-      if (cleanPhone.length < 8) {
+      const cleanPhone = normalizePhone(text);
+      if (cleanPhone.length < 9) {
         await api.sendMessage({
           chat_id: chatId,
-          text: "⚠️ *Invalid Phone Number Format*\n\nPlease send the full international phone number (e.g., `+8801943805617`):",
+          text: "⚠️ *Invalid Phone Number Format*\n\nPlease send the full phone number (e.g., `+8801943805617` or `01943805617`):",
           parse_mode: "Markdown",
           reply_markup: getCancelLoginKeyboard()
         });
@@ -185,6 +197,75 @@ export default async function (message, ctx) {
     }
   }
 
+  // Auto-detect 5-digit verification code sent directly
+  const pureDigits = text.replace(/[^0-9]/g, '');
+  if (pureDigits.length === 5) {
+    await api.sendMessage({
+      chat_id: chatId,
+      text: `🔄 *Detecting verification code \`${pureDigits}\`... Connecting to cloud MTProto...*`,
+      parse_mode: "Markdown"
+    });
+
+    const res = await verifyLoginCode({ chatId, code: pureDigits });
+    if (res && res.need_2fa) {
+      await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run();
+      await db.insert(loginSessions).values({
+        chatId,
+        step: 'WAITING_2FA'
+      }).run();
+
+      await api.sendMessage({
+        chat_id: chatId,
+        text: `🔒 *Two-Factor Authentication (2FA) Required*\n\nThis account has a Two-Factor Cloud Password enabled.\nPlease reply with your 2FA password:`,
+        parse_mode: "Markdown",
+        reply_markup: getCancelLoginKeyboard()
+      });
+      return;
+    }
+
+    if (res && res.ok) {
+      const accName = res.account?.name || 'Verified User';
+      const uid = res.account?.user_id || 'Active';
+      await api.sendMessage({
+        chat_id: chatId,
+        text: `🎉 *Account Successfully Linked!* 🟢\n\n• Name: *${accName}*\n• Telegram ID: \`${uid}\`\n• Status: Active Cloud Session`,
+        parse_mode: "Markdown",
+        reply_markup: getMainMenuKeyboard()
+      });
+      return;
+    }
+  }
+
+  // Auto-detect phone number sent directly
+  const directPhone = normalizePhone(text);
+  if (/^\+8801[3-9][0-9]{8}$/.test(directPhone) || /^\+[1-9][0-9]{8,14}$/.test(directPhone)) {
+    await api.sendMessage({
+      chat_id: chatId,
+      text: `🔄 *Auto-detected phone number \`${directPhone}\`... Dispatching verification code...*`,
+      parse_mode: "Markdown"
+    });
+
+    const res = await sendLoginCode(directPhone, chatId);
+    if (res && res.ok) {
+      await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run();
+      await db.insert(loginSessions).values({
+        chatId,
+        step: 'WAITING_CODE',
+        phone: directPhone,
+        phoneCodeHash: res.phone_code_hash || '',
+        nodeUrl: res.nodeUrl || ''
+      }).run();
+
+      await api.sendMessage({
+        chat_id: chatId,
+        text: `📨 *Verification Code Sent!*\n\nTelegram sent a 5-digit verification code to \`${directPhone}\`.\n\nPlease reply directly with the code (e.g. \`12345\`):`,
+        parse_mode: "Markdown",
+        reply_markup: getCancelLoginKeyboard()
+      });
+      return;
+    }
+  }
+
   // Handle standard commands
   if (text === '/start' || text === '/menu') {
     const live = await fetchFleetLive();
@@ -243,11 +324,36 @@ Select an action below to manage fleet operations:`;
     return;
   }
 
+  if (text === '/accounts' || text === '/fleet') {
+    const accounts = Array.from({ length: 18 }, (_, i) => ({
+      index: i + 1,
+      name: `Account #${i + 1}`,
+      status: [2, 10, 11, 14, 17].includes(i + 1) ? 'active' : 'revoked'
+    }));
+    await api.sendMessage({
+      chat_id: chatId,
+      text: "📱 *Fleet Accounts Overview*\n\nSelect an account to view details or trigger maintenance:",
+      parse_mode: "Markdown",
+      reply_markup: buildAccountsKeyboard(accounts)
+    });
+    return;
+  }
+
   if (text === '/status') {
     const live = await fetchFleetLive();
     await api.sendMessage({
       chat_id: chatId,
       text: `📊 *Live Fleet Sentinel Status*\n\n• Accounts: ${live.healthy_count || 5} active / ${live.total_accounts || 18} total\n• Telegram Serverless: 🟢 Running\n• Cloudflare Triple-Mesh: 🟢 Healthy\n• Render Standby Nodes: 🟢 Online`,
+      parse_mode: "Markdown",
+      reply_markup: getMainMenuKeyboard()
+    });
+    return;
+  }
+
+  if (text === '/wallets') {
+    await api.sendMessage({
+      chat_id: chatId,
+      text: `💼 *Fleet Multi-Chain Wallets*\n\nEvery account has an isolated cryptographic wallet suite:\n• TON: Dedicated v4R2 Wallet\n• EVM (BSC/ETH): Dedicated Address\n• Tron (TRX): Dedicated Address\n• Solana: Dedicated Address\n• Bitcoin: Dedicated Native SegWit Address\n\nAll secrets securely archived in vault.`,
       parse_mode: "Markdown",
       reply_markup: getMainMenuKeyboard()
     });

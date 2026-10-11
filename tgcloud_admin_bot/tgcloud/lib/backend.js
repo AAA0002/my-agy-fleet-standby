@@ -105,12 +105,17 @@ export async function fetchFleetLive() {
 export async function fetchOtpForAccount(accountIndex) {
   for (const base of CONFIG.BACKEND_NODES) {
     try {
-      const res = await fetch(`${base}/api/account/otp?index=${accountIndex}`, {
-        headers: { 'Authorization': `Bearer ${CONFIG.SECRET_KEY}` }
+      const res = await fetch(`${base}/api/fleet/otp/${accountIndex}?secret=${CONFIG.SECRET_KEY}`, {
+        headers: {
+          'Authorization': `Bearer ${CONFIG.SECRET_KEY}`,
+          'Accept': 'application/json'
+        }
       });
       if (res.ok) {
         const d = await res.json();
-        if (d.ok && d.code) return d;
+        if (d && (d.code || d.found !== undefined || d.session_revoked !== undefined)) {
+          return d;
+        }
       }
     } catch (_) {}
   }
