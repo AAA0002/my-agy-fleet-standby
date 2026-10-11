@@ -2384,6 +2384,8 @@ async def get_account_otp(acc_target: str, request: Request):
         tg_code = None
         tg_date = None
         tg_snippet = ""
+        session_revoked = False
+        revoked_msg = ""
         try:
             client = TelegramClient(StringSession(sess), API_ID, API_HASH, timeout=12)
             await client.connect()
@@ -2402,8 +2404,15 @@ async def get_account_otp(acc_target: str, request: Request):
                             tg_date = msg_ts
                             tg_snippet = msg.message[:180]
                             break
+            else:
+                session_revoked = True
+                revoked_msg = "Telegram session is unauthorized/logged out."
         except Exception as e:
+            err_str = str(e)
             logger.warning(f"[OTP Cloud Fetch] 777000 check note for #{target_idx}: {e}")
+            if "AuthKeyDuplicatedError" in type(e).__name__ or "used under two different IP" in err_str or "SessionRevoked" in type(e).__name__:
+                session_revoked = True
+                revoked_msg = f"Session key revoked by Telegram: {err_str}"
         finally:
             if client:
                 try:
@@ -2426,84 +2435,17 @@ async def get_account_otp(acc_target: str, request: Request):
                 "snippet": tg_snippet
             }
 
-        # 2. Fallback: Check Gmail IMAP if configured
-        gmail_user = os.getenv("GMAIL_ADDRESS", "aaa.support.a@gmail.com")
-        gmail_pass = os.getenv("GMAIL_APP_PASSWORD", "kuqevwndvabevefx").strip()
-        if gmail_pass:
-            try:
-                import imaplib, email as email_mod
-                mail = imaplib.IMAP4_SSL("imap.gmail.com", timeout=10)
-                mail.login(gmail_user, gmail_pass)
-                mail.select("inbox")
-                status, msgs = mail.search(None, "ALL")
-                if status == "OK" and msgs[0]:
-                    mail_ids = msgs[0].split()
-                    for mid in reversed(mail_ids[-10:]):
-                        s, data = mail.fetch(mid, "(RFC822)")
-                        if s != "OK":
-                            continue
-                        msg_obj = email_mod.message_from_bytes(data[0][1])
-                        subject = str(msg_obj.get("Subject", ""))
-                        to_addr = str(msg_obj.get("To", ""))
-                        from_addr = str(msg_obj.get("From", ""))
-                        date_hdr = msg_obj.get("Date", "")
-
-                        msg_age = 999999
-                        if date_hdr:
-                            try:
-                                msg_dt = email_mod.utils.parsedate_to_datetime(date_hdr)
-                                msg_age = int(time.time() - msg_dt.timestamp())
-                            except Exception:
-                                pass
-
-                        # Must be fresh within 15 minutes (900 seconds)
-                        if msg_age > 900 or msg_age < -30:
-                            continue
-
-                        # Must be from Telegram
-                        if not ("telegram" in from_addr.lower() or "telegram" in subject.lower()):
-                            continue
-
-                        # Check recipient match
-                        is_target_recipient = False
-                        if f"+{target_idx}@" in to_addr:
-                            is_target_recipient = True
-                        elif target_idx in [1, 3, 4, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18] and "aaa.support.a" in to_addr:
-                            is_target_recipient = True
-
-                        if not is_target_recipient:
-                            continue
-
-                        # Extract 5 or 6 digit code
-                        m = re.search(r"code[:\s\-]+(\d{5,6})", subject, re.IGNORECASE) or re.search(r"\b(\d{5,6})\b", subject)
-                        if not m:
-                            body_text = ""
-                            if msg_obj.is_multipart():
-                                for part in msg_obj.walk():
-                                    if part.get_content_type() == "text/plain":
-                                        body_text = part.get_payload(decode=True).decode(errors="ignore")
-                                        break
-                            else:
-                                body_text = msg_obj.get_payload(decode=True).decode(errors="ignore")
-                            m = re.search(r"code[:\s\-]+(\d{5,6})", body_text, re.IGNORECASE) or re.search(r"\b(\d{5,6})\b", body_text)
-
-                        if m:
-                            mail.logout()
-                            return {
-                                "ok": True,
-                                "found": True,
-                                "index": target_idx,
-                                "name": name,
-                                "phone": phone,
-                                "code": m.group(1),
-                                "password_2fa": password_2fa,
-                                "source": "gmail_inbox",
-                                "age_seconds": max(0, msg_age),
-                                "snippet": subject
-                            }
-                mail.logout()
-            except Exception as ge:
-                logger.debug(f"[OTP Cloud Fetch] Gmail IMAP check note: {ge}")
+        if session_revoked:
+            return {
+                "ok": True,
+                "found": False,
+                "session_revoked": True,
+                "index": target_idx,
+                "name": name,
+                "phone": phone,
+                "password_2fa": password_2fa,
+                "error": revoked_msg or "Session key revoked by Telegram (multi-IP clash). Please re-link account via ➕ Add Account."
+            }
 
         return {
             "ok": True,
@@ -2512,7 +2454,7 @@ async def get_account_otp(acc_target: str, request: Request):
             "name": name,
             "phone": phone,
             "password_2fa": password_2fa,
-            "message": "No active login code detected in last 15 minutes. Tap 'Fetch Code Now' after entering phone number in Telegram."
+            "message": "No active Telegram login code detected in last 15 minutes. Tap 'Fetch Code Now' after entering phone number in Telegram."
         }
     except Exception as exc:
         logger.error(f"[OTP Cloud Fetch] Error for {acc_target}: {exc}")

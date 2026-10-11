@@ -1139,7 +1139,7 @@ function App() {
             className: "flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-glow-blue active:scale-95"
           },
             React.createElement(Icon, { name: "refresh", className: `w-3.5 h-3.5 ${otpLoading ? 'animate-spin' : ''}` }),
-            otpLoading ? "Querying Cloud Mailbox..." : `Fetch Code for #${otpTargetIndex}`
+            otpLoading ? "Querying Cloud MTProto..." : `Fetch Code for #${otpTargetIndex}`
           ),
           React.createElement("button", {
             onClick: () => setOtpAutoPoll(prev => !prev),
@@ -1164,6 +1164,11 @@ function App() {
               `2FA Password: `,
               React.createElement("span", { className: "font-bold text-amber-400" }, otpResult.two_fa)
             )
+          ) : otpResult.session_revoked ? React.createElement("div", { className: "text-center py-2 text-amber-400 text-xs" },
+            React.createElement("div", { className: "text-base mb-1" }, "⚠️"),
+            React.createElement("div", { className: "font-bold text-rose-400 mb-1" }, "Session Needs Re-linking"),
+            `Telegram revoked the stored session key (multi-IP clash). Use Add Account or enter code to save fresh session.`,
+            React.createElement("div", { className: "text-[10px] text-slate-400 mt-2" }, "Password: Arif216@")
           ) : React.createElement("div", { className: "text-center py-2 text-slate-400 text-xs" },
             React.createElement("div", { className: "text-base mb-1" }, "⏳"),
             `No new Telegram code found for #${otpTargetIndex} (${otpTargetPhone}) in the last 15 minutes.`,
@@ -1219,11 +1224,15 @@ function App() {
       ),
 
       React.createElement("div", { className: `rounded-2xl p-4 border ${cardBg}` },
-        React.createElement("h4", { className: `font-black text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}` }, "Render Standby Collectors"),
+        React.createElement("h4", { className: `font-black text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}` }, "Render Cloud Fleet (5 Accounts / 6 Services)"),
         React.createElement("div", { className: "space-y-1.5 font-mono text-xs" },
           [
-            { name: "Render Node 2 (Frankfurt)", status: "Hot Standby Live", ok: true },
-            { name: "Render Node 3 (Singapore)", status: "Hot Standby Live", ok: true }
+            { name: "Node 1: Singapore (coz1gameh1)", status: "Hot Standby Live", ok: true },
+            { name: "Node 2: Frankfurt (abidhasanch)", status: "Hot Standby Live", ok: true },
+            { name: "Node 3: Oregon (koramshah2)", status: "Hot Standby Live", ok: true },
+            { name: "Ari AI: Hermes Council (koramshah2)", status: "AI Copilot Live", ok: true },
+            { name: "Relayer 1: ATF MTProto Primary", status: "Stateless Relayer", ok: true },
+            { name: "Relayer 2: ATF MTProto Backup", status: "Zero-Cost Failback", ok: true }
           ].map((r, rIdx) => React.createElement("div", {
             key: rIdx,
             className: `p-2.5 rounded-xl border flex items-center justify-between ${subCardBg}`

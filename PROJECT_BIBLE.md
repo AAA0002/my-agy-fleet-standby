@@ -76,7 +76,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Cloud Nodes Directory (5 Cloudflare Accounts & 5 Render Services)
+### Cloud Nodes Directory (5 Cloudflare Accounts & 5 Render Accounts / 6 Services)
 - **5 Cloudflare Edge Accounts & Workers (Serverless 24/7 Farming Mesh & 25M D1 Reads / 50GB R2)**:
   - Account 1 (`korimhaji210@gmail.com`): `https://restore-agy.aaaai2.workers.dev` (Shard 0)
     * D1 Database: `agy_fleet_db` (`c29cc72d-3813-4aa2-859a-8cdfd929825c`)

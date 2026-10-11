@@ -1568,40 +1568,25 @@ export default {
     };
 
     const fetchFleetOtp = async (targetIdx) => {
+      // Query Render standby nodes SEQUENTIALLY to prevent AuthKeyDuplicatedError
+      // (Telegram detects concurrent connections with the same session from multiple IPs and revokes the key)
       const renderNodes = [
         "https://my-agy-fleet-standby-node2.onrender.com",
         "https://my-agy-fleet-standby-node3.onrender.com",
         "https://my-agy-fleet-standby.onrender.com"
       ];
-      const fetchFromNode = async (rUrl) => {
-        const res = await fetch(`${rUrl}/api/fleet/otp/${targetIdx}`, {
-          method: "GET",
-          headers: { "Accept": "application/json" },
-          signal: AbortSignal.timeout(6000)
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (data.ok) return data;
-        throw new Error(data.error || "Not ok");
-      };
-
-      try {
-        const fastResult = await Promise.any(renderNodes.map(r => fetchFromNode(r)));
-        return fastResult;
-      } catch (_) {
-        for (const rUrl of renderNodes) {
-          try {
-            const res = await fetch(`${rUrl}/api/fleet/otp/${targetIdx}`, {
-              method: "GET",
-              headers: { "Accept": "application/json" },
-              signal: AbortSignal.timeout(5000)
-            });
-            if (res.ok) {
-              const data = await res.json();
-              return data;
-            }
-          } catch (_) {}
-        }
+      for (const rUrl of renderNodes) {
+        try {
+          const res = await fetch(`${rUrl}/api/fleet/otp/${targetIdx}`, {
+            method: "GET",
+            headers: { "Accept": "application/json" },
+            signal: AbortSignal.timeout(6000)
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.ok) return data;
+          }
+        } catch (_) {}
       }
       return { ok: false, found: false, error: "Standby cloud mesh unreachable" };
     };
@@ -3943,11 +3928,11 @@ fi
             } else if (cbData === "btn_otp_menu") {
               const rep = `🔑 *Telegram Login OTP & Relogin Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `Select an account below to fetch its Telegram login code directly from your active 24/7 cloud sessions (Render & Gmail):\n\n` +
+                `Select an account below to fetch its Telegram login code directly from your active 24/7 cloud sessions:\n\n` +
                 `👉 *How it works:*\n` +
                 `1. Tap the account number you are logging into.\n` +
                 `2. Enter the phone number in Telegram on your phone.\n` +
-                `3. The cloud session intercepts the code from Telegram (*777000*) or Gmail and provides 1-tap copy!\n\n` +
+                `3. The cloud session intercepts the code from Telegram (*777000*) and provides 1-tap copy!\n\n` +
                 `_Or tap **▶️ Start 1-by-1 Wizard** to log into all accounts consecutively._`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, buildOtpMenuKeyboard());
@@ -3971,7 +3956,7 @@ fi
               let markup = {};
 
               if (data.ok && data.found) {
-                const srcStr = data.source === "telegram_777000" ? "Telegram Service Notification (777000) 📨" : "Gmail Inbox (aaa.support.a@gmail.com) 📧";
+                const srcStr = "Telegram Service Notification (777000) 📨";
                 const ageSec = data.age_seconds || 15;
                 rep = `🎉 *Telegram Login Code Intercepted!*\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -3994,6 +3979,27 @@ fi
                     ],
                     [
                       { text: `⏮️ Prev (#${prevIdx})`, callback_data: `btn_otp_get_${prevIdx}` },
+                      { text: "📋 Account Grid", callback_data: "btn_otp_menu" }
+                    ]
+                  ]
+                };
+              } else if (data.session_revoked) {
+                rep = `⚠️ *Session Needs Re-linking — #${targetIdx}*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `👤 *Account:* #${targetIdx} *${nameStr}*\n` +
+                  `📱 *Phone:* \`${phoneStr}\`\n` +
+                  `🔒 *2FA Password:* \`${pwdStr}\`\n\n` +
+                  `❗️ *Status:* Telegram revoked the old session key due to simultaneous multi-IP access.\n` +
+                  `👉 *To Fix:* Use *➕ Add Account* or enter code to re-link this session fresh!\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━`;
+                markup = {
+                  inline_keyboard: [
+                    [
+                      { text: "🔄 Try Fetch Again", callback_data: `btn_otp_get_${targetIdx}` },
+                      { text: `⏭️ Skip to #${nextIdx}`, callback_data: `btn_otp_get_${nextIdx}` }
+                    ],
+                    [
+                      { text: "➕ Add Account", callback_data: "btn_admin_add_acc" },
                       { text: "📋 Account Grid", callback_data: "btn_otp_menu" }
                     ]
                   ]
@@ -4035,11 +4041,13 @@ fi
                 `• Node 3 (Global Shard): 🟢 Online (45ms)\n` +
                 `• Node 4 (Singapore APAC D1 SQL): 🟢 Online (18 Accounts Active)\n` +
                 `• Node 5 (Secondary Mining Engine): 🟢 Online (2m Cron Active)\n\n` +
-                `🚀 *Render Compute Nodes (4/4 Online):*\n` +
-                `• MTProto Relayer (Primary): 🟢 Online & Authenticated\n` +
-                `• MTProto Relayer (Backup Failover): 🟢 Standby (Zero-Cost Cold Failback)\n` +
-                `• Failover Compute #1 (Singapore): 🟢 Online (0 MTProto, $0 Plan)\n` +
-                `• Failover Compute #2 (Frankfurt): 🟢 Online (0 MTProto, $0 Plan)\n\n` +
+                `🚀 *Render Compute Nodes (5 Accounts / 6 Services Online):*\n` +
+                `• Standby Node #1 (Singapore - coz1gameh1): 🟢 Online ($0 Free Tier)\n` +
+                `• Standby Node #2 (Frankfurt - abidhasanch): 🟢 Online ($0 Free Tier)\n` +
+                `• Standby Node #3 (Oregon - koramshah2): 🟢 Online ($0 Free Tier)\n` +
+                `• Ari AI Council Agent (koramshah2): 🟢 Online (Grok & Gemini LPU)\n` +
+                `• MTProto Relayer Primary: 🟢 Online (Stateless Telethon)\n` +
+                `• MTProto Relayer Backup: 🟢 Standby (Zero-Cost Cold Failback)\n\n` +
                 `🦕 *Deno Deploy Edge Sentinels (2/2 Online):*\n` +
                 `• Sentinel #1 (aaa222): 🟢 Online (Mesh Cron Active)\n` +
                 `• Sentinel #2 (aaasupporta): 🟢 Online (Multi-Node Sentinel)\n\n` +
@@ -5569,7 +5577,7 @@ fi
               let rep = "";
               let markup = {};
               if (data.ok && data.found) {
-                const srcStr = data.source === "telegram_777000" ? "Telegram Service Notification (777000) 📨" : "Gmail Inbox (aaa.support.a@gmail.com) 📧";
+                const srcStr = "Telegram Service Notification (777000) 📨";
                 const ageSec = data.age_seconds || 15;
                 rep = `🎉 *Telegram Login Code Intercepted!*\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -5588,6 +5596,21 @@ fi
                   inline_keyboard: [
                     [{ text: "🔄 Refresh Code", callback_data: `btn_otp_get_${reqIdx}` }, { text: `⏭️ Next (#${nextIdx})`, callback_data: `btn_otp_get_${nextIdx}` }],
                     [{ text: `⏮️ Prev (#${prevIdx})`, callback_data: `btn_otp_get_${prevIdx}` }, { text: "📋 Account Grid", callback_data: "btn_otp_menu" }]
+                  ]
+                };
+              } else if (data.session_revoked) {
+                rep = `⚠️ *Session Needs Re-linking — #${reqIdx}*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `👤 *Account:* #${reqIdx} *${nameStr}*\n` +
+                  `📱 *Phone:* \`${phoneStr}\`\n` +
+                  `🔒 *2FA Password:* \`${pwdStr}\`\n\n` +
+                  `❗️ *Status:* Telegram revoked the old session key due to simultaneous multi-IP access.\n` +
+                  `👉 *To Fix:* Use *➕ Add Account* or enter code to re-link this session fresh!\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━`;
+                markup = {
+                  inline_keyboard: [
+                    [{ text: "🔄 Try Fetch Again", callback_data: `btn_otp_get_${reqIdx}` }, { text: `⏭️ Skip to #${nextIdx}`, callback_data: `btn_otp_get_${nextIdx}` }],
+                    [{ text: "➕ Add Account", callback_data: "btn_admin_add_acc" }, { text: "📋 Account Grid", callback_data: "btn_otp_menu" }]
                   ]
                 };
               } else {
@@ -5613,11 +5636,11 @@ fi
             } else {
               const rep = `🔑 *Telegram Login OTP & Relogin Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `Select an account below to fetch its Telegram login code from active cloud sessions (Render & Gmail):\n\n` +
+                `Select an account below to fetch its Telegram login code from active cloud sessions:\n\n` +
                 `👉 *How it works:*\n` +
                 `1. Tap the account number you are logging into.\n` +
                 `2. Enter the phone number in Telegram on your phone.\n` +
-                `3. The cloud session intercepts the code from Telegram (*777000*) or Gmail!\n\n` +
+                `3. The cloud session intercepts the code from Telegram (*777000*) and provides 1-tap copy!\n\n` +
                 `_Or tap **▶️ Start 1-by-1 Wizard** to go in order._`;
               await sendResilientMessage(chatId, rep, buildOtpMenuKeyboard());
             }
@@ -6073,11 +6096,13 @@ fi
               `• Node 3 (Global Shard): 🟢 Online (45ms)\n` +
               `• Node 4 (Singapore APAC D1 SQL): 🟢 Online (18 Accounts Active)\n` +
               `• Node 5 (Secondary Mining Engine): 🟢 Online (2m Cron Active)\n\n` +
-              `🚀 *Render Compute Nodes (4/4 Online):*\n` +
-              `• MTProto Relayer (Primary): 🟢 Online & Authenticated\n` +
-              `• MTProto Relayer (Backup Failover): 🟢 Standby (Zero-Cost Cold Failback)\n` +
-              `• Failover Compute #1 (Singapore): 🟢 Online (0 MTProto, $0 Plan)\n` +
-              `• Failover Compute #2 (Frankfurt): 🟢 Online (0 MTProto, $0 Plan)\n\n` +
+              `🚀 *Render Compute Nodes (5 Accounts / 6 Services Online):*\n` +
+              `• Standby Node #1 (Singapore - coz1gameh1): 🟢 Online ($0 Free Tier)\n` +
+              `• Standby Node #2 (Frankfurt - abidhasanch): 🟢 Online ($0 Free Tier)\n` +
+              `• Standby Node #3 (Oregon - koramshah2): 🟢 Online ($0 Free Tier)\n` +
+              `• Ari AI Council Agent (koramshah2): 🟢 Online (Grok & Gemini LPU)\n` +
+              `• MTProto Relayer Primary: 🟢 Online (Stateless Telethon)\n` +
+              `• MTProto Relayer Backup: 🟢 Standby (Zero-Cost Cold Failback)\n\n` +
               `🦕 *Deno Deploy Edge Sentinels (2/2 Online):*\n` +
               `• Sentinel #1 (aaa222): 🟢 Online (Mesh Cron Active)\n` +
               `• Sentinel #2 (aaasupporta): 🟢 Online (Multi-Node Sentinel)\n\n` +

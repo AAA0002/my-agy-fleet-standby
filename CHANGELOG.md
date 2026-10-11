@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Full 5 Render Accounts Topology, MTProto Multi-IP Collision Fix & Gmail Purge (October 11, 2026)**:
+  - **🌐 Complete 5 Render Accounts / 6 Services Integration**:
+    * Corrected outdated dashboard and bot messaging that previously displayed only 2 Render compute nodes.
+    * Cataloged and integrated all 5 distinct Render accounts (6 cloud services) across `/mesh`, `btn_mesh`, and `public_admin/admin.html`:
+      1. Node 1: Singapore Standby (`my-agy-fleet-standby.onrender.com`, `coz1gameh1@gmail.com`)
+      2. Node 2: Frankfurt Standby (`my-agy-fleet-standby-node2.onrender.com`, `abidhasanch2001@gmail.com`)
+      3. Node 3: Oregon Standby (`my-agy-fleet-standby-node3.onrender.com`, `koramshah2@gmail.com`)
+      4. Ari AI Council Agent (`hermes-grok-cloud-agent.onrender.com`, `koramshah2@gmail.com`)
+      5. Primary ATF MTProto Relayer (`atf-mtproto-relayer.onrender.com`)
+      6. Backup ATF MTProto Relayer (`atf-mtproto-relayer-backup.onrender.com`)
+  - **🛡️ Root Cause Fix for Telegram OTP `AuthKeyDuplicatedError`**:
+    * Diagnosed why Telegram login codes (e.g. `97348`) arrived on the user's phone but showed "Waiting for Login Code" in the bot: `fetchFleetOtp` previously used parallel `Promise.any` querying Singapore, Frankfurt, and Oregon simultaneously. Telethon attempted concurrent MTProto connections with the identical `StringSession` from 3 different IP addresses/continents, triggering instant `AuthKeyDuplicatedError` and permanently revoking the session key.
+    * Converted `fetchFleetOtp` to strict sequential fallback, preventing multi-IP clashes.
+    * Implemented explicit `session_revoked` detection in `render_standby_app.py`, `render_app_latest.py`, `deploy_both_cf_workers.py`, and `admin.html` with direct instructions to re-link or add the account when a session is revoked.
+  - **🚫 Complete Purge of Irrelevant Gmail/Email Mixing**:
+    * Per explicit user directive ("why you mix email code it not improtent"), completely purged all Gmail IMAP fallback code (`aaa.support.a@gmail.com`) from `render_standby_app.py` and `render_app_latest.py`.
+    * Removed all email text and references across `btn_otp_menu`, `btn_otp_get_`, `/otp`, and `admin.html`. All Telegram verification codes are strictly routed via Telegram Service Notifications (`777000`).
+  - **☁️ Multi-Cloud Redeployment**:
+    * Pushed updated `app.py` to `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`, triggering live deployments on Render Node 2 (`dep-db5etcvlk1mc739oqfrg`) and Node 3 (`dep-db5etd0473hc73atkek0`).
+    * Deployed synchronized edge code across all 5 Cloudflare Worker accounts (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **🚀 Telegram Admin Bot Resilient Delivery, Groq LPU Ultra-Fast Inference & Fleet Polish (October 11, 2026)**:
   - **🛡️ Telegram Markdown Entity Resiliency (`sendResilientMessage` & `editOrSendResilientMessage`)**:
     * Diagnosed and fixed Telegram `400 Bad Request: can't parse entities` caused by unescaped underscores and symbols in usernames and phone numbers.
