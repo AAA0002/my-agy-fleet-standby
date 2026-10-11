@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Admin Bot Account Removal State Sync, Dynamic OTP Grid & Real-Time Dynamic Text Refresh (October 11, 2026)**:
+  - **🔧 Cloudflare KV Primary Source of Truth & Deletion Blacklist (`fleet_deleted_accounts`)**:
+    * Identified that Upstash Redis hit fixed plan limits (`ERR This database has reached current Fixed plan limits`), causing `upstashSet("fleet:live_state", ...)` to fail silently and keeping deleted accounts cached.
+    * Migrated `getFleetAccounts()` to treat Cloudflare KV (`env.BACKUP_KV.get("fleet_live_state")`) as primary storage.
+    * Added persistent KV blacklist `fleet_deleted_accounts` containing deleted `user_id` and normalized `phone` records. `getFleetAccounts()` strictly filters out blacklisted entries even when falling back to default arrays.
+    * When accounts are added via `cloudLoginVerify`, they are automatically removed from the blacklist and restored to `fleet_live_state`.
+  - **⌨️ Dynamic OTP Grid Keyboard (`buildOtpMenuKeyboard`)**:
+    * Replaced hardcoded accounts 1..18 inline keyboard in `deploy_both_cf_workers.py` with dynamic grid generator `buildOtpMenuKeyboard(accounts)`.
+    * Grid now generates buttons only for active, non-deleted accounts, and dynamically embeds `➕ Add Account`, `🗑️ Remove Account`, and current fleet counter.
+  - **⏱️ Dynamic Dhaka Timestamps Eliminating Telegram "Message is Not Modified" Errors**:
+    * Telegram API was returning `400 Bad Request: message is not modified` when refreshing or clicking "🔄 Fetch Code Now" because the text was character-for-character identical, freezing user screens.
+    * Embedded live `⏱️ Checked: ${dhakaTime}` across all OTP, fleet roster, and status messages, ensuring every tap yields a unique payload and updates the user's interface immediately.
+  - **🚀 Multi-Node Render Eviction Endpoint (`/api/account/remove`)**:
+    * Implemented `@app.post("/api/account/remove")` in `render_standby_app.py` and `render_app_latest.py`.
+    * Evicts deleted account from `accounts.json`, local `FLEET_ACCOUNTS_CACHE`, and Supabase Postgres so standby nodes never rebroadcast stale accounts back to the edge.
+    * Pushed updates to `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby` and triggered automatic Render builds.
+  - **🛡️ Resolved Telegram MTProto `AuthKeyDuplicatedError` (Multi-IP Clash)**:
+    * Pinpointed why account login sessions were revoked: multiple Render nodes in Frankfurt, Oregon, and Singapore attempted to connect simultaneously with identical Telethon session keys.
+    * Documented strict single-coordinator routing and provided 1-tap re-link prompt with BD localization for revoked sessions.
+
 - **⚡ Admin Bot OTP State Machine Restoration, 1-Tap Re-link & Complete BD Mobile Alignment (October 11, 2026)**:
   - **🔧 Fixed `btn_add_account` State Machine Dropping User Replies**:
     * Resolved critical bug where tapping "➕ Add Account" set `fleet:pending_action` in Upstash but omitted `env.BACKUP_KV.put("login_flow:" + chatId, { step: "waiting_phone" })`.

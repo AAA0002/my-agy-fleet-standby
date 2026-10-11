@@ -2331,6 +2331,67 @@ async def cancel_login(request: Request):
     return {"ok": True, "message": "Login cancelled"}
 
 
+@app.post("/api/account/remove")
+@app.get("/api/account/remove")
+async def api_remove_account(request: Request):
+    """Permanently disconnects and removes an account from the cloud fleet."""
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+
+    target_id = str(body.get("user_id") or body.get("phone") or request.query_params.get("target") or request.query_params.get("user_id") or request.query_params.get("phone") or "").replace("+", "").strip()
+    if not target_id:
+        return {"ok": False, "error": "target user_id, phone, or index required"}
+
+    removed = None
+    remaining_count = 0
+    try:
+        if os.path.exists("accounts.json"):
+            with open("accounts.json", "r", encoding="utf-8") as f:
+                accs = json.load(f)
+            new_accs = []
+            for a in accs:
+                uid_str = str(a.get("user_id", ""))
+                ph_str = str(a.get("phone", "")).replace("+", "")
+                idx_str = str(a.get("index", ""))
+                if uid_str == target_id or ph_str == target_id or idx_str == target_id:
+                    removed = a
+                else:
+                    new_accs.append(a)
+            if removed:
+                with open("accounts.json", "w", encoding="utf-8") as f:
+                    json.dump(new_accs, f, indent=2, ensure_ascii=False)
+                FLEET_ACCOUNTS_CACHE.pop(str(removed.get("user_id")), None)
+                remaining_count = len(new_accs)
+                logger.info(f"[Account Remove] Removed {removed.get('name')} ({removed.get('phone')}). Remaining: {remaining_count}")
+            else:
+                remaining_count = len(accs)
+    except Exception as e:
+        logger.error(f"[Account Remove] Error updating accounts.json: {e}")
+
+    # Remove from Supabase if connected
+    if SUPABASE_URL and SUPABASE_KEY and removed:
+        try:
+            async with aiohttp.ClientSession() as s:
+                await s.delete(
+                    f"{SUPABASE_URL}/rest/v1/accounts?user_id=eq.{removed.get('user_id')}",
+                    headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"},
+                    timeout=aiohttp.ClientTimeout(total=5)
+                )
+        except Exception:
+            pass
+
+    return {
+        "ok": True,
+        "removed": bool(removed),
+        "target": target_id,
+        "account_name": removed.get("name") if removed else "N/A",
+        "remaining_accounts": remaining_count
+    }
+
+
 @app.get("/api/fleet/otp/{acc_target}")
 @app.post("/api/fleet/otp/{acc_target}")
 async def get_account_otp(acc_target: str, request: Request):

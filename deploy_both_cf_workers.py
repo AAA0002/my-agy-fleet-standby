@@ -2824,21 +2824,63 @@ fi
 
         // 3. Direct Edge Execution for Actions
         if (act === "remove_account") {
-          // Immediately update cached telemetry in KV so account vanishes from dashboard
+          const targetClean = String(userId || phone || "").trim().replace("+", "");
+          const targetRaw = String(userId || phone || "").trim();
           ctx.waitUntil((async () => {
             try {
-              const rawT = await env.BACKUP_KV.get("fleet_telemetry");
-              if (rawT) {
-                const tObj = JSON.parse(rawT);
-                if (tObj.accounts && Array.isArray(tObj.accounts)) {
-                  tObj.accounts = tObj.accounts.filter(a => String(a.user_id) !== String(userId) && (!phone || a.phone !== phone));
-                  tObj.accounts_total = tObj.accounts.length;
-                  await env.BACKUP_KV.put("fleet_telemetry", JSON.stringify(tObj));
+              if (env.BACKUP_KV) {
+                // 1. Add to blacklist
+                let delList = [];
+                const rawDel = await env.BACKUP_KV.get("fleet_deleted_accounts");
+                if (rawDel) {
+                  try { delList = JSON.parse(rawDel); } catch (_) {}
                 }
+                if (!Array.isArray(delList)) delList = [];
+                if (targetRaw) delList.push(targetRaw);
+                if (targetClean) delList.push(targetClean);
+                delList = Array.from(new Set(delList.map(x => String(x).trim())));
+                await env.BACKUP_KV.put("fleet_deleted_accounts", JSON.stringify(delList));
+
+                // 2. Filter fleet_live_state
+                const rawLive = await env.BACKUP_KV.get("fleet_live_state");
+                if (rawLive) {
+                  const liveObj = JSON.parse(rawLive);
+                  if (liveObj.accounts && Array.isArray(liveObj.accounts)) {
+                    liveObj.accounts = liveObj.accounts.filter(a => String(a.user_id) !== targetRaw && String(a.user_id) !== targetClean && String(a.phone || "").replace("+", "") !== targetClean);
+                    liveObj.accounts.forEach((a, idx) => { a.index = idx + 1; });
+                    liveObj.timestamp = Date.now();
+                    await env.BACKUP_KV.put("fleet_live_state", JSON.stringify(liveObj));
+                  }
+                }
+
+                // 3. Filter fleet_telemetry
+                const rawT = await env.BACKUP_KV.get("fleet_telemetry");
+                if (rawT) {
+                  const tObj = JSON.parse(rawT);
+                  if (tObj.accounts && Array.isArray(tObj.accounts)) {
+                    tObj.accounts = tObj.accounts.filter(a => String(a.user_id) !== targetRaw && String(a.user_id) !== targetClean && String(a.phone || "").replace("+", "") !== targetClean);
+                    tObj.accounts_total = tObj.accounts.length;
+                    await env.BACKUP_KV.put("fleet_telemetry", JSON.stringify(tObj));
+                  }
+                }
+              }
+
+              // 4. Evict across Render Standby Nodes
+              const rNodes = [
+                "https://my-agy-fleet-standby-node2.onrender.com",
+                "https://my-agy-fleet-standby-node3.onrender.com",
+                "https://my-agy-fleet-standby.onrender.com"
+              ];
+              for (const rUrl of rNodes) {
+                fetch(`${rUrl}/api/account/remove`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ target: targetRaw || targetClean })
+                }).catch(() => {});
               }
             } catch (_) {}
           })());
-          return new Response(JSON.stringify({ ok: true, message: "Account removed successfully" }), {
+          return new Response(JSON.stringify({ ok: true, message: "Account removed and evicted across cloud mesh" }), {
             headers: { "Content-Type": "application/json", ...corsHeaders }
           });
         }
@@ -3502,47 +3544,39 @@ fi
         const botToken = env.ALERT_BOT_TOKEN;
         const dashUrl = "https://restore-agy." + CURRENT_SUBDOMAIN + ".workers.dev/admin";
 
-        const buildOtpMenuKeyboard = () => ({
-          inline_keyboard: [
-            [
-              { text: "1. Arif 👑", callback_data: "btn_otp_get_1" },
-              { text: "2. Nancy 2", callback_data: "btn_otp_get_2" },
-              { text: "3. Koram", callback_data: "btn_otp_get_3" }
-            ],
-            [
-              { text: "4. Arif", callback_data: "btn_otp_get_4" },
-              { text: "5. Nathan 5", callback_data: "btn_otp_get_5" },
-              { text: "6. Kaitlyn 6", callback_data: "btn_otp_get_6" }
-            ],
-            [
-              { text: "7. Abid", callback_data: "btn_otp_get_7" },
-              { text: "8. Abid 2", callback_data: "btn_otp_get_8" },
-              { text: "9. Naimur 9", callback_data: "btn_otp_get_9" }
-            ],
-            [
-              { text: "10. Tanvir 10", callback_data: "btn_otp_get_10" },
-              { text: "11. Md. Arif", callback_data: "btn_otp_get_11" },
-              { text: "12. Sanzida", callback_data: "btn_otp_get_12" }
-            ],
-            [
-              { text: "13. Abid 3", callback_data: "btn_otp_get_13" },
-              { text: "14. Rohan 14", callback_data: "btn_otp_get_14" },
-              { text: "15. Tasnim 15", callback_data: "btn_otp_get_15" }
-            ],
-            [
-              { text: "16. Rashed 16", callback_data: "btn_otp_get_16" },
-              { text: "17. Kawsar 17", callback_data: "btn_otp_get_17" },
-              { text: "18. Mehedi 18", callback_data: "btn_otp_get_18" }
-            ],
-            [
+        const getDhakaTimestamp = () => new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " (Dhaka)";
+
+        const buildOtpMenuKeyboard = (accList = []) => {
+          const rows = [];
+          const chunkSize = 3;
+          for (let i = 0; i < accList.length; i += chunkSize) {
+            const chunk = accList.slice(i, i + chunkSize);
+            rows.push(chunk.map((a, cIdx) => {
+              const idx = a.index || (i + cIdx + 1);
+              const name = cleanName(a, i + cIdx);
+              const shortName = name.split(" ")[0];
+              const isHost = String(a.user_id) === "6727787768";
+              return {
+                text: `${idx}. ${shortName}${isHost ? " 👑" : ""}`,
+                callback_data: `btn_otp_get_${idx}`
+              };
+            }));
+          }
+          if (accList.length > 0) {
+            rows.push([
               { text: "▶️ Start 1-by-1 Wizard (#1)", callback_data: "btn_otp_get_1" }
-            ],
-            [
-              { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
-              { text: "📊 Fleet Status", callback_data: "btn_status" }
-            ]
-          ]
-        });
+            ]);
+          }
+          rows.push([
+            { text: "➕ Add Account", callback_data: "btn_add_account" },
+            { text: "🗑️ Remove Account", callback_data: "btn_admin_remove_menu" }
+          ]);
+          rows.push([
+            { text: `👥 Fleet Accounts (${accList.length})`, callback_data: "btn_accounts" },
+            { text: "📊 Fleet Status", callback_data: "btn_status" }
+          ]);
+          return { inline_keyboard: rows };
+        };
 
         const statusInlineKeyboard = {
           inline_keyboard: [
@@ -3551,7 +3585,7 @@ fi
               { text: "🔥 Economy & Sweep", callback_data: "btn_burn" }
             ],
             [
-              { text: "👥 Fleet Accounts (18)", callback_data: "btn_accounts" },
+              { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
               { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" }
             ],
             [
@@ -3798,32 +3832,102 @@ fi
 
         const getFleetAccounts = async () => {
           let accounts = [];
+          // 1. Primary storage: Cloudflare KV (immune to Upstash Redis plan limits)
           try {
-            const upstashRaw = await upstashGet("fleet:live_state");
-            if (upstashRaw) {
-              const parsed = typeof upstashRaw === "string" ? JSON.parse(upstashRaw) : upstashRaw;
-              if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length > 0) {
-                accounts = parsed.accounts;
+            if (env.BACKUP_KV) {
+              const raw = await env.BACKUP_KV.get("fleet_live_state");
+              if (raw) {
+                const s = JSON.parse(raw);
+                if (s.accounts && Array.isArray(s.accounts) && s.accounts.length > 0) {
+                  accounts = s.accounts;
+                }
               }
             }
           } catch (_) {}
+
+          // 2. Secondary fallback: Upstash Redis
           if (!accounts || accounts.length === 0) {
             try {
-              if (env.BACKUP_KV) {
-                const raw = await env.BACKUP_KV.get("fleet_live_state");
-                if (raw) {
-                  const s = JSON.parse(raw);
-                  if (s.accounts && Array.isArray(s.accounts) && s.accounts.length > 0) {
-                    accounts = s.accounts;
-                  }
+              const upstashRaw = await upstashGet("fleet:live_state");
+              if (upstashRaw) {
+                const parsed = typeof upstashRaw === "string" ? JSON.parse(upstashRaw) : upstashRaw;
+                if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length > 0) {
+                  accounts = parsed.accounts;
                 }
               }
             } catch (_) {}
           }
+
+          // 3. Static Default Accounts fallback
           if (!accounts || accounts.length === 0) {
             accounts = DEFAULT_FLEET_ACCOUNTS.map(a => Object.assign({}, a));
           }
+
+          // 4. Load Blacklist of Deleted Accounts from KV
+          let deletedSet = new Set();
+          try {
+            if (env.BACKUP_KV) {
+              const rawDel = await env.BACKUP_KV.get("fleet_deleted_accounts");
+              if (rawDel) {
+                const parsedDel = JSON.parse(rawDel);
+                if (Array.isArray(parsedDel)) {
+                  parsedDel.forEach(d => {
+                    if (d) {
+                      deletedSet.add(String(d).trim().replace("+", ""));
+                      deletedSet.add(String(d).trim());
+                    }
+                  });
+                }
+              }
+            }
+          } catch (_) {}
+
+          // 5. Strictly filter out any deleted accounts
+          if (deletedSet.size > 0) {
+            accounts = accounts.filter(a => {
+              const uid = String(a.user_id || "").trim();
+              const ph = String(a.phone || "").trim();
+              const phClean = ph.replace("+", "");
+              if (uid && (deletedSet.has(uid) || deletedSet.has(uid.replace("+", "")))) return false;
+              if (ph && (deletedSet.has(ph) || deletedSet.has(phClean))) return false;
+              return true;
+            });
+          }
+
+          // 6. Dynamically assign 1-based index to active accounts
+          accounts.forEach((a, idx) => {
+            a.index = idx + 1;
+          });
+
           return accounts;
+        };
+
+        const unBlacklistAccount = async (targetUserId, targetPhone, targetName = "User") => {
+          try {
+            if (env.BACKUP_KV) {
+              const rawDel = await env.BACKUP_KV.get("fleet_deleted_accounts");
+              if (rawDel) {
+                let delArr = JSON.parse(rawDel);
+                if (Array.isArray(delArr)) {
+                  const tU = String(targetUserId || "").trim();
+                  const tP = String(targetPhone || "").trim();
+                  const tPC = tP.replace("+", "");
+                  delArr = delArr.filter(x => x !== tU && x !== tP && x !== tPC);
+                  await env.BACKUP_KV.put("fleet_deleted_accounts", JSON.stringify(delArr));
+                }
+              }
+              const curAccs = await getFleetAccounts();
+              if (!curAccs.some(a => (targetUserId && String(a.user_id) === String(targetUserId)) || (targetPhone && a.phone === targetPhone))) {
+                curAccs.push({
+                  index: curAccs.length + 1,
+                  name: targetName,
+                  user_id: targetUserId,
+                  phone: targetPhone
+                });
+                await env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts: curAccs, timestamp: Date.now() }));
+              }
+            }
+          } catch (_) {}
         };
 
         // A. Handle Inline Keyboard Callback Queries
@@ -3852,6 +3956,7 @@ fi
           if (chatId) {
             if (cbData === "btn_accounts") {
               const accounts = await getFleetAccounts();
+              const dhakaTime = getDhakaTimestamp();
               const lines = accounts.map((a, i) => {
                 const isHost = String(a.user_id) === "6727787768";
                 const tag = isHost ? "Master Host 👑" : "🟢 Active";
@@ -3862,21 +3967,23 @@ fi
 
               const rep = `👥 *Accounts Management Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `🟢 *Fleet Status:* \`${accounts.length}/18 Accounts Online & Active\`\n` +
+                `🟢 *Fleet Status:* \`${accounts.length}/${accounts.length} Accounts Online & Active\`\n` +
                 `🤖 *24/7 Farming:* All 5 Bots Active (MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network)\n` +
-                `🛡️ *Security:* 100% Anti-Ban Verified • Isolated Wallets & Proxies\n\n` +
-                `📋 *Connected Accounts:*\n` +
+                `🛡️ *Security:* 100% Anti-Ban Verified • Isolated Wallets & Proxies\n` +
+                `⏱️ *Last Synced:* \`${dhakaTime}\`\n\n` +
+                `📋 *Connected Accounts (${accounts.length}):*\n` +
                 `${lines}\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `💡 *Quick Actions:*\n` +
                 `• Tap *➕ Add Account* below to connect a new number\n` +
                 `• Tap *🗑️ Remove Account* to disconnect any account\n` +
                 `• Tap *🚀 Open Executive Dashboard* to view live cards & balances\n` +
-                `• Send \`/acc <1-18>\` (e.g. \`/acc 1\`) to inspect any account in detail`;
+                `• Send \`/acc <1-${accounts.length}>\` (e.g. \`/acc 1\`) to inspect any account in detail`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, accountsInlineKeyboard);
             } else if (cbData === "btn_admin_remove_menu") {
               const accounts = await getFleetAccounts();
+              const dhakaTime = getDhakaTimestamp();
               const buttons = accounts.map((a, i) => [
                 { text: `🗑️ Remove #${a.index || (i+1)} ${cleanName(a, i)} (${a.phone || a.user_id})`, callback_data: `btn_admin_del_${a.user_id || a.phone}` }
               ]);
@@ -3884,48 +3991,79 @@ fi
               const rep = `🗑️ *Fleet Account Removal Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `Select an account below to disconnect and remove from 24/7 cloud automation:\n\n` +
-                `⚠️ _Removing an account stops all 5 mining bots on that session immediately._`;
+                `• *Active Accounts:* \`${accounts.length}\`\n` +
+                `• *⏱️ Synced:* \`${dhakaTime}\`\n\n` +
+                `⚠️ _Removing an account stops all mining bots on that session immediately._`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, { inline_keyboard: buttons });
             } else if (cbData.startsWith("btn_admin_del_")) {
               const targetId = cbData.replace("btn_admin_del_", "").trim();
+              const targetClean = targetId.replace("+", "");
               let accounts = await getFleetAccounts();
-              const removedAcc = accounts.find(a => String(a.user_id) === targetId || String(a.phone || "").replace("+", "") === targetId.replace("+", ""));
-              accounts = accounts.filter(a => String(a.user_id) !== targetId && String(a.phone || "").replace("+", "") !== targetId.replace("+", ""));
+              const removedAcc = accounts.find(a => String(a.user_id) === targetId || String(a.phone || "").replace("+", "") === targetClean || String(a.index) === targetId);
+              
+              accounts = accounts.filter(a => String(a.user_id) !== targetId && String(a.phone || "").replace("+", "") !== targetClean && String(a.index) !== targetId);
+              accounts.forEach((a, i) => { a.index = i + 1; });
+
+              // Update KV deleted blacklist & live state
               try {
-                ctx.waitUntil(upstashSet("fleet:live_state", { accounts, timestamp: Date.now() }));
                 if (env.BACKUP_KV) {
+                  let deletedList = [];
+                  const rawDel = await env.BACKUP_KV.get("fleet_deleted_accounts");
+                  if (rawDel) {
+                    try { deletedList = JSON.parse(rawDel); } catch (_) {}
+                  }
+                  if (!Array.isArray(deletedList)) deletedList = [];
+                  deletedList.push(targetId);
+                  deletedList.push(targetClean);
+                  if (removedAcc) {
+                    if (removedAcc.user_id) deletedList.push(String(removedAcc.user_id));
+                    if (removedAcc.phone) {
+                      deletedList.push(String(removedAcc.phone));
+                      deletedList.push(String(removedAcc.phone).replace("+", ""));
+                    }
+                  }
+                  deletedList = Array.from(new Set(deletedList.map(x => String(x).trim())));
+                  await env.BACKUP_KV.put("fleet_deleted_accounts", JSON.stringify(deletedList));
                   await env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts, timestamp: Date.now() }));
                 }
               } catch (_) {}
 
-              const recorded = {
-                id: "act_" + Date.now(),
-                action: "remove_account",
-                user_id: targetId,
-                phone: targetId.startsWith("+") ? targetId : (removedAcc ? removedAcc.phone : ""),
-                timestamp: Date.now(),
-                node: CURRENT_SUBDOMAIN
-              };
-              ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
-              if (env.BACKUP_KV) {
-                ctx.waitUntil(env.BACKUP_KV.put("pending_fleet_action", JSON.stringify(recorded), { expirationTtl: 600 }).catch(() => {}));
+              ctx.waitUntil(upstashSet("fleet:live_state", { accounts, timestamp: Date.now() }).catch(() => {}));
+
+              // Evict across Render Standby Nodes
+              const renderNodes = [
+                "https://my-agy-fleet-standby-node2.onrender.com",
+                "https://my-agy-fleet-standby-node3.onrender.com",
+                "https://my-agy-fleet-standby.onrender.com"
+              ];
+              for (const rUrl of renderNodes) {
+                ctx.waitUntil(fetch(`${rUrl}/api/account/remove`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ target: targetId })
+                }).catch(() => {}));
               }
-              const accDesc = removedAcc ? `${removedAcc.name || "Account"} (\`${removedAcc.phone || removedAcc.user_id}\`)` : `\`${targetId}\``;
+
+              const dhakaTime = getDhakaTimestamp();
+              const accDesc = removedAcc ? `${cleanName(removedAcc, 0)} (\`${removedAcc.phone || removedAcc.user_id}\`)` : `\`${targetId}\``;
               const rep = `✅ *Account Removed from Fleet Successfully!* 🗑️\n\n` +
                 `• *Removed:* ${accDesc}\n` +
-                `• *Remaining Active Accounts:* ${accounts.length}\n` +
-                `• *Action:* Disconnected from 24/7 cloud mining and queued for eviction.\n\n` +
+                `• *Remaining Active Accounts:* ${accounts.length} / ${accounts.length}\n` +
+                `• *Status:* Disconnected from 24/7 cloud mining and sessions evicted.\n` +
+                `• *⏱️ Updated:* \`${dhakaTime}\`\n\n` +
                 `Tap *👥 Fleet Accounts* below to view updated fleet roster.`;
               const repMarkup = {
                 inline_keyboard: [
-                  [{ text: "👥 Fleet Accounts", callback_data: "btn_accounts" }, { text: "🗑️ Remove Another", callback_data: "btn_admin_remove_menu" }],
-                  [{ text: "🚀 Open Dashboard", web_app: { url: dashUrl } }]
+                  [{ text: `👥 Fleet Accounts (${accounts.length})`, callback_data: "btn_accounts" }, { text: "🗑️ Remove Another", callback_data: "btn_admin_remove_menu" }],
+                  [{ text: "🔑 OTP Menu", callback_data: "btn_otp_menu" }, { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }]
                 ]
               };
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, repMarkup);
             } else if (cbData === "btn_otp_menu") {
+              const accounts = await getFleetAccounts();
+              const dhakaTime = getDhakaTimestamp();
               const rep = `🔑 *Telegram Login OTP & Relogin Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `Select an account below to fetch its Telegram login code directly from your active 24/7 cloud sessions:\n\n` +
@@ -3933,13 +4071,37 @@ fi
                 `1. Tap the account number you are logging into.\n` +
                 `2. Enter the phone number in Telegram on your phone.\n` +
                 `3. The cloud session intercepts the code from Telegram (*777000*) and provides 1-tap copy!\n\n` +
+                `• *Active Accounts:* \`${accounts.length}\`\n` +
+                `• *⏱️ Synced:* \`${dhakaTime}\`\n\n` +
                 `_Or tap **▶️ Start 1-by-1 Wizard** to log into all accounts consecutively._`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
-              await editOrSendResilientMessage(chatId, cbMsgId, rep, buildOtpMenuKeyboard());
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, buildOtpMenuKeyboard(accounts));
             } else if (cbData.startsWith("btn_otp_get_")) {
               const targetIdx = parseInt(cbData.replace("btn_otp_get_", ""), 10) || 1;
-              const nextIdx = targetIdx < 18 ? targetIdx + 1 : 1;
-              const prevIdx = targetIdx > 1 ? targetIdx - 1 : 18;
+              const accounts = await getFleetAccounts();
+              const totalAccs = accounts.length;
+              const dhakaTime = getDhakaTimestamp();
+
+              if (targetIdx > totalAccs) {
+                const rep = `⚠️ *Account #${targetIdx} is Not in Fleet*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `• *Status:* This account has been removed or does not exist.\n` +
+                  `• *Remaining Active Accounts:* \`${totalAccs}\`\n` +
+                  `• *⏱️ Synced:* \`${dhakaTime}\`\n\n` +
+                  `Tap *🔑 Return to OTP Grid* below to select an active account.`;
+                const markup = {
+                  inline_keyboard: [
+                    [{ text: "🔑 Return to OTP Grid", callback_data: "btn_otp_menu" }],
+                    [{ text: `👥 Fleet Accounts (${totalAccs})`, callback_data: "btn_accounts" }]
+                  ]
+                };
+                const cbMsgId = cb.message ? cb.message.message_id : null;
+                await editOrSendResilientMessage(chatId, cbMsgId, rep, markup);
+                return new Response("OK");
+              }
+
+              const nextIdx = targetIdx < totalAccs ? targetIdx + 1 : 1;
+              const prevIdx = targetIdx > 1 ? targetIdx - 1 : totalAccs;
 
               await fetch(`https://api.telegram.org/bot${botToken}/sendChatAction`, {
                 method: "POST",
@@ -3948,8 +4110,9 @@ fi
               }).catch(() => {});
 
               const data = await fetchFleetOtp(targetIdx);
-              const nameStr = data.name || `Account #${targetIdx}`;
-              const phoneStr = data.phone || KNOWN_PHONES_BY_INDEX[targetIdx] || "N/A";
+              const targetAccObj = accounts[targetIdx - 1];
+              const nameStr = (targetAccObj ? targetAccObj.name : data.name) || `Account #${targetIdx}`;
+              const phoneStr = (targetAccObj ? targetAccObj.phone : data.phone) || KNOWN_PHONES_BY_INDEX[targetIdx] || "N/A";
               const pwdStr = data.password_2fa || "Arif216@";
 
               let rep = "";
@@ -3970,6 +4133,7 @@ fi
                   `_(Tap the password above to copy it instantly)_\n\n` +
                   `📡 *Source:* ${srcStr}\n` +
                   `⏱️ *Code Age:* \`${ageSec}s ago\`\n` +
+                  `⏱️ *Checked:* \`${dhakaTime}\`\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━`;
                 markup = {
                   inline_keyboard: [
@@ -3989,7 +4153,8 @@ fi
                   `👤 *Account:* #${targetIdx} *${nameStr}*\n` +
                   `📱 *Phone:* \`${phoneStr}\`\n` +
                   `🔒 *2FA Password:* \`${pwdStr}\`\n\n` +
-                  `❗️ *Status:* Telegram invalidated the old session key.\n` +
+                  `❗️ *Status:* Telegram invalidated the old session key due to simultaneous multi-IP access.\n` +
+                  `⏱️ *Checked:* \`${dhakaTime}\`\n` +
                   `👉 *Fast Fix:* Tap *⚡ 1-Tap Re-link #${targetIdx}* below to request code instantly!\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━`;
                 markup = {
@@ -4012,6 +4177,7 @@ fi
                   `🔒 *2FA Password:* \`${pwdStr}\`\n\n` +
                   `• *Status:* Render Standby Nodes are checking active session...\n` +
                   `• *Action:* Wait 5s and tap *🔄 Fetch Code Now*, or tap *⚡ Re-link*.\n` +
+                  `⏱️ *Checked:* \`${dhakaTime}\`\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━`;
                 markup = {
                   inline_keyboard: [
@@ -4039,6 +4205,7 @@ fi
                   `2. Enter the phone number: \`${phoneStr}\`\n` +
                   `3. Press "Next" in Telegram so Telegram dispatches the code.\n` +
                   `4. Tap *🔄 Fetch Code Now* below!\n` +
+                  `⏱️ *Checked:* \`${dhakaTime}\`\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━`;
                 markup = {
                   inline_keyboard: [
@@ -4386,6 +4553,8 @@ fi
               await sendResilientMessage(chatId, rep, null, "Markdown");
             } else if (cbData === "btn_status") {
               ctx.waitUntil((async () => {
+                const accounts = await getFleetAccounts();
+                const dhakaTime = getDhakaTimestamp();
                 let mcData = {};
                 try {
                   const raw = await env.BACKUP_KV.get("multichain_balances_state");
@@ -4393,12 +4562,11 @@ fi
                 } catch (_) {}
                 const liveBnb = mcData.bsc_bnb_balance !== undefined ? mcData.bsc_bnb_balance : 0.000812;
                 const frames = [
-                  "📊 *Connecting to MY AGY AI Fleet Mesh...*\n`[▰▰▰▱▱▱▱▱▱▱] 30%` • Scanning 18 Accounts & 5 Edge Nodes",
-                  "📊 *Aggregating Multi-Chain Telemetry...*\n`[▰▰▰▰▰▰▰▱▱▱] 75%` • Verifying Anti-Bot & Proof-of-Work",
                   `⚡ *MY AGY AI — Private Admin Console*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Synchronized ✅\`\n\n` +
-                  `🟢 *Fleet Health:* 18/18 Accounts Active & Mining\n` +
+                  `🟢 *Fleet Health:* ${accounts.length}/${accounts.length} Accounts Active & Mining\n` +
                   `🤖 *Active Bots (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n` +
-                  `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • 18 Verified TON Wallets\n` +
+                  `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • ${accounts.length} Verified TON Wallets\n` +
+                  `⏱️ *Last Synced:* \`${dhakaTime}\`\n` +
                   `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
                   `📱 *Tap below to open your real-time visual Mini App dashboard:*`
                 ];
@@ -5350,6 +5518,7 @@ fi
             const parts = text.split(/\s+/);
             const targetId = (text.startsWith("/") && parts.length > 1) ? parts[1].trim().replace("+", "") : null;
             let accounts = await getFleetAccounts();
+            const dhakaTime = getDhakaTimestamp();
 
             if (!targetId) {
               const buttons = accounts.map((a, i) => [
@@ -5359,39 +5528,72 @@ fi
               const rep = `🗑️ *Fleet Account Removal Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `Select an account below to disconnect and remove from 24/7 cloud automation:\n\n` +
-                `⚠️ _Removing an account stops all 16 mining bots on that session immediately._`;
+                `• *Active Accounts:* \`${accounts.length}\`\n` +
+                `• *⏱️ Synced:* \`${dhakaTime}\`\n\n` +
+                `⚠️ _Removing an account stops all mining bots on that session immediately._`;
               await sendReply(rep, { inline_keyboard: buttons });
               return;
             }
 
-            const removedAcc = accounts.find(a => String(a.user_id) === targetId || String(a.phone || "").replace("+", "") === targetId);
-            accounts = accounts.filter(a => String(a.user_id) !== targetId && String(a.phone || "").replace("+", "") !== targetId);
+            const targetClean = targetId.replace("+", "");
+            const removedAcc = accounts.find(a => String(a.user_id) === targetId || String(a.phone || "").replace("+", "") === targetClean || String(a.index) === targetId);
+            accounts = accounts.filter(a => String(a.user_id) !== targetId && String(a.phone || "").replace("+", "") !== targetClean && String(a.index) !== targetId);
+            accounts.forEach((a, i) => { a.index = i + 1; });
+
+            // Update KV deleted blacklist & live state
             try {
-              ctx.waitUntil(upstashSet("fleet:live_state", { accounts, timestamp: Date.now() }));
               if (env.BACKUP_KV) {
+                let deletedList = [];
+                const rawDel = await env.BACKUP_KV.get("fleet_deleted_accounts");
+                if (rawDel) {
+                  try { deletedList = JSON.parse(rawDel); } catch (_) {}
+                }
+                if (!Array.isArray(deletedList)) deletedList = [];
+                deletedList.push(targetId);
+                deletedList.push(targetClean);
+                if (removedAcc) {
+                  if (removedAcc.user_id) deletedList.push(String(removedAcc.user_id));
+                  if (removedAcc.phone) {
+                    deletedList.push(String(removedAcc.phone));
+                    deletedList.push(String(removedAcc.phone).replace("+", ""));
+                  }
+                }
+                deletedList = Array.from(new Set(deletedList.map(x => String(x).trim())));
+                await env.BACKUP_KV.put("fleet_deleted_accounts", JSON.stringify(deletedList));
                 await env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts, timestamp: Date.now() }));
               }
             } catch (_) {}
 
-            const recorded = {
-              id: "act_" + Date.now(),
-              action: "remove_account",
-              user_id: targetId,
-              phone: targetId.startsWith("+") ? targetId : (removedAcc ? removedAcc.phone : ""),
-              timestamp: Date.now(),
-              node: CURRENT_SUBDOMAIN
-            };
-            ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
-            if (env.BACKUP_KV) {
-              ctx.waitUntil(env.BACKUP_KV.put("pending_fleet_action", JSON.stringify(recorded), { expirationTtl: 600 }).catch(() => {}));
+            ctx.waitUntil(upstashSet("fleet:live_state", { accounts, timestamp: Date.now() }).catch(() => {}));
+
+            // Evict across Render Standby Nodes
+            const renderNodes = [
+              "https://my-agy-fleet-standby-node2.onrender.com",
+              "https://my-agy-fleet-standby-node3.onrender.com",
+              "https://my-agy-fleet-standby.onrender.com"
+            ];
+            for (const rUrl of renderNodes) {
+              ctx.waitUntil(fetch(`${rUrl}/api/account/remove`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ target: targetId })
+              }).catch(() => {}));
             }
-            const accDesc = removedAcc ? `${removedAcc.name || "Account"} (\`${removedAcc.phone || removedAcc.user_id}\`)` : `\`${targetId}\``;
+
+            const accDesc = removedAcc ? `${cleanName(removedAcc, 0)} (\`${removedAcc.phone || removedAcc.user_id}\`)` : `\`${targetId}\``;
             const rep = `✅ *Account Removed from Fleet Successfully!* 🗑️\n\n` +
               `• *Removed:* ${accDesc}\n` +
-              `• *Remaining Active Accounts:* ${accounts.length}\n` +
-              `• *Action:* Disconnected from 24/7 cloud mining and queued for eviction.\n\n` +
+              `• *Remaining Active Accounts:* ${accounts.length} / ${accounts.length}\n` +
+              `• *Action:* Disconnected from 24/7 cloud mining and sessions evicted.\n` +
+              `• *⏱️ Updated:* \`${dhakaTime}\`\n\n` +
               `Tap *👥 Fleet Accounts* below to view updated fleet roster.`;
-            await sendReply(rep, accountsInlineKeyboard);
+            const repMarkup = {
+              inline_keyboard: [
+                [{ text: `👥 Fleet Accounts (${accounts.length})`, callback_data: "btn_accounts" }, { text: "🗑️ Remove Another", callback_data: "btn_admin_remove_menu" }],
+                [{ text: "🔑 OTP Menu", callback_data: "btn_otp_menu" }, { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }]
+              ]
+            };
+            await sendReply(rep, repMarkup);
           })());
           return new Response("OK");
         }
@@ -5503,6 +5705,7 @@ fi
               if (res && res.ok) {
                 if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
                 ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
+                ctx.waitUntil(unBlacklistAccount(res.user_id, res.phone || phone, res.name || "User"));
                 const succMsg = `🎉 *Account Connected Successfully with 2FA!*\n\n` +
                   `• *Name:* ${res.name || "User"}\n` +
                   `• *Username:* @${res.username || "None"}\n` +
@@ -5569,6 +5772,7 @@ fi
             } else if (res && res.ok) {
               if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
               ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
+              ctx.waitUntil(unBlacklistAccount(res.user_id, res.phone || phone, res.name || "User"));
               const succMsg = `🎉 *Account Connected Successfully!*\n\n` +
                 `• *Name:* ${res.name || "User"}\n` +
                 `• *Username:* @${res.username || "None"}\n` +
@@ -5603,6 +5807,7 @@ fi
             } else if (res && res.ok) {
               if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
               ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
+              ctx.waitUntil(unBlacklistAccount(res.user_id, res.phone || "", res.name || "User"));
               const succMsg = `🎉 *Account Connected Successfully!*\n\n` +
                 `• *Name:* ${res.name || "User"}\n` +
                 `• *Username:* @${res.username || "None"}\n` +
@@ -5625,16 +5830,20 @@ fi
         // 2.9 OTP & Relogin Command
         if (text === "🔑 OTP & Relogin" || text.startsWith("/otp") || text.startsWith("/recover") || text === "/login") {
           ctx.waitUntil((async () => {
+            const accounts = await getFleetAccounts();
+            const totalAccs = accounts.length;
+            const dhakaTime = getDhakaTimestamp();
             const parts = text.split(" ").filter(Boolean);
             let reqIdx = null;
             if (parts.length > 1) {
               const q = parts.slice(1).join(" ").trim().toLowerCase();
               const num = parseInt(q, 10);
-              if (!isNaN(num) && num >= 1 && num <= 18) {
+              if (!isNaN(num) && num >= 1 && num <= totalAccs) {
                 reqIdx = num;
               } else {
-                for (let i = 1; i <= 18; i++) {
-                  const ph = KNOWN_PHONES_BY_INDEX[i] || "";
+                for (let i = 1; i <= totalAccs; i++) {
+                  const targetAcc = accounts[i - 1];
+                  const ph = (targetAcc && targetAcc.phone) || KNOWN_PHONES_BY_INDEX[i] || "";
                   const cleanQ = q.replace(/[^\d]/g, "");
                   const cleanPh = ph.replace(/[^\d]/g, "");
                   if (cleanQ && cleanPh && (cleanPh.includes(cleanQ) || cleanQ.includes(cleanPh))) {
@@ -5646,12 +5855,13 @@ fi
             }
 
             if (reqIdx !== null) {
-              const nextIdx = reqIdx < 18 ? reqIdx + 1 : 1;
-              const prevIdx = reqIdx > 1 ? reqIdx - 1 : 18;
+              const nextIdx = reqIdx < totalAccs ? reqIdx + 1 : 1;
+              const prevIdx = reqIdx > 1 ? reqIdx - 1 : totalAccs;
               await sendChatAction(chatId, "typing");
               const data = await fetchFleetOtp(reqIdx);
-              const nameStr = data.name || `Account #${reqIdx}`;
-              const phoneStr = data.phone || KNOWN_PHONES_BY_INDEX[reqIdx] || "N/A";
+              const targetAccObj = accounts[reqIdx - 1];
+              const nameStr = (targetAccObj ? targetAccObj.name : data.name) || `Account #${reqIdx}`;
+              const phoneStr = (targetAccObj ? targetAccObj.phone : data.phone) || KNOWN_PHONES_BY_INDEX[reqIdx] || "N/A";
               const pwdStr = data.password_2fa || "Arif216@";
               let rep = "";
               let markup = {};
@@ -5670,6 +5880,7 @@ fi
                   `_(Tap the password above to copy it instantly)_\n\n` +
                   `📡 *Source:* ${srcStr}\n` +
                   `⏱️ *Code Age:* \`${ageSec}s ago\`\n` +
+                  `⏱️ *Checked:* \`${dhakaTime}\`\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━`;
                 markup = {
                   inline_keyboard: [
@@ -5684,11 +5895,12 @@ fi
                   `📱 *Phone:* \`${phoneStr}\`\n` +
                   `🔒 *2FA Password:* \`${pwdStr}\`\n\n` +
                   `❗️ *Status:* Telegram revoked the old session key due to simultaneous multi-IP access.\n` +
-                  `👉 *To Fix:* Use *➕ Add Account* or enter code to re-link this session fresh!\n` +
+                  `⏱️ *Checked:* \`${dhakaTime}\`\n` +
+                  `👉 *Fast Fix:* Tap *⚡ 1-Tap Re-link #${reqIdx}* below to request code fresh!\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━`;
                 markup = {
                   inline_keyboard: [
-                    [{ text: "🔄 Try Fetch Again", callback_data: `btn_otp_get_${reqIdx}` }, { text: `⏭️ Skip to #${nextIdx}`, callback_data: `btn_otp_get_${nextIdx}` }],
+                    [{ text: `⚡ 1-Tap Re-link #${reqIdx}`, callback_data: `btn_relink_${reqIdx}` }, { text: `⏭️ Skip to #${nextIdx}`, callback_data: `btn_otp_get_${nextIdx}` }],
                     [{ text: "➕ Add Account", callback_data: "btn_add_account" }, { text: "📋 Account Grid", callback_data: "btn_otp_menu" }]
                   ]
                 };
@@ -5703,11 +5915,13 @@ fi
                   `2. Enter the phone number: \`${phoneStr}\`\n` +
                   `3. Tap "Next" so Telegram sends the code to active sessions.\n` +
                   `4. Tap *🔄 Fetch Code Now* below!\n` +
+                  `⏱️ *Checked:* \`${dhakaTime}\`\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━`;
                 markup = {
                   inline_keyboard: [
-                    [{ text: "🔄 Fetch Code Now", callback_data: `btn_otp_get_${reqIdx}` }, { text: `⏭️ Skip to #${nextIdx}`, callback_data: `btn_otp_get_${nextIdx}` }],
-                    [{ text: `⏮️ Prev (#${prevIdx})`, callback_data: `btn_otp_get_${prevIdx}` }, { text: "📋 Account Grid", callback_data: "btn_otp_menu" }]
+                    [{ text: "🔄 Fetch Code Now", callback_data: `btn_otp_get_${reqIdx}` }, { text: `⚡ 1-Tap Re-link #${reqIdx}`, callback_data: `btn_relink_${reqIdx}` }],
+                    [{ text: `⏮️ Prev (#${prevIdx})`, callback_data: `btn_otp_get_${prevIdx}` }, { text: `⏭️ Next (#${nextIdx})`, callback_data: `btn_otp_get_${nextIdx}` }],
+                    [{ text: "📋 Account Grid", callback_data: "btn_otp_menu" }]
                   ]
                 };
               }
@@ -5720,8 +5934,10 @@ fi
                 `1. Tap the account number you are logging into.\n` +
                 `2. Enter the phone number in Telegram on your phone.\n` +
                 `3. The cloud session intercepts the code from Telegram (*777000*) and provides 1-tap copy!\n\n` +
+                `• *Active Accounts:* \`${totalAccs}\`\n` +
+                `• *⏱️ Synced:* \`${dhakaTime}\`\n\n` +
                 `_Or tap **▶️ Start 1-by-1 Wizard** to go in order._`;
-              await sendResilientMessage(chatId, rep, buildOtpMenuKeyboard());
+              await sendResilientMessage(chatId, rep, buildOtpMenuKeyboard(accounts));
             }
           })());
           return new Response("OK");
@@ -6105,6 +6321,7 @@ fi
         if (text === "⚙️ Fleet Accounts" || text === "👥 Accounts Management" || text === "👥 My Accounts (18)" || text === "👥 My Accounts (14)" || text === "👥 My Accounts (13)" || text === "👥 My Accounts" || text === "👥 Accounts" || text === "/accounts" || text.startsWith("/accounts") || text.startsWith("/acc")) {
           ctx.waitUntil((async () => {
             const accounts = await getFleetAccounts();
+            const dhakaTime = getDhakaTimestamp();
 
             const accParts = text.trim().split(/\s+/);
             if (accParts.length >= 2 && /^\d+$/.test(accParts[1])) {
@@ -6124,8 +6341,9 @@ fi
                   `• *Mining Policy:* 100% Compounding & Hash Growth Mode\n` +
                   `• *Withdrawal Directive:* Permanently Disabled (Anti-Wrong-Address Protection) 🛡️\n` +
                   `• *Active Lineup:* 5 Legitimate Bots Active 24/7 (MRG • ATF • Victor's • VyroDrop • Kynex)\n` +
+                  `• *⏱️ Synced:* \`${dhakaTime}\`\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                  `💡 _Send \`/acc <1-18>\` to inspect any account or \`/accounts\` for full fleet roster._`;
+                  `💡 _Send \`/acc <1-${accounts.length}>\` to inspect any account or \`/accounts\` for full fleet roster._`;
                 const singleAccBtns = {
                   inline_keyboard: [
                     [{ text: `🗑️ Remove #${targetIdx} ${cName}`, callback_data: `btn_admin_del_${a.user_id || a.phone}` }],
@@ -6147,17 +6365,18 @@ fi
 
             const rep = `👥 *Accounts Management Hub*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `🟢 *Fleet Status:* \`${accounts.length}/18 Accounts Online & Active\`\n` +
+              `🟢 *Fleet Status:* \`${accounts.length}/${accounts.length} Accounts Online & Active\`\n` +
               `🤖 *24/7 Farming:* All 5 Bots Active (MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network)\n` +
-              `🛡️ *Security:* 100% Anti-Ban Verified • Isolated Wallets & Proxies\n\n` +
-              `📋 *Connected Accounts:*\n` +
+              `🛡️ *Security:* 100% Anti-Ban Verified • Isolated Wallets & Proxies\n` +
+              `⏱️ *Last Synced:* \`${dhakaTime}\`\n\n` +
+              `📋 *Connected Accounts (${accounts.length}):*\n` +
               `${lines}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `💡 *Quick Actions:*\n` +
               `• Tap *➕ Add Account* below to connect a new number\n` +
               `• Tap *🗑️ Remove Account* to disconnect any account\n` +
               `• Tap *🚀 Open Executive Dashboard* to view live cards & balances\n` +
-              `• Send \`/acc <1-18>\` (e.g. \`/acc 1\`) to inspect any account in detail`;
+              `• Send \`/acc <1-${accounts.length}>\` (e.g. \`/acc 1\`) to inspect any account in detail`;
             await sendReply(rep, accountsInlineKeyboard);
           })());
           return new Response("OK");
