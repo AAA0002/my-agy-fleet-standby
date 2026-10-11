@@ -26,7 +26,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 4. **🛑 Permanent Auto-Withdrawal Ban (100% Accumulation & Compounding Mode)**:
    - **NEVER trigger automatic withdrawals** from ANY bot under any circumstance.
    - Prevents wrong-address routing, sybil blacklisting, or draining into outdated/test wallets.
-   - All bots operate in pure asset accumulation and auto-reinvest mode (e.g. ART compounds hardware, Stones & MRG upgrade miners).
+   - All bots operate in pure asset accumulation and auto-reinvest mode (e.g. MRG upgrades miners, ATF compounds hash, Victor's compounds passes).
 5. **📝 Living Memory & Changelog**:
    - Whenever any file, function, bot, or architecture decision is modified, added, or removed, **always document it immediately** in `CHANGELOG.md` and update this `PROJECT_BIBLE.md`.
 6. **🔇 Absolute Zero-Chat Policy for Fleet Accounts**:
@@ -109,7 +109,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   - **App ID**: `app8858823950` (`@myagyai`)
   - **Webhook**: `https://cloud.telegram.org/app8858823950/webhook` (allowed updates: `message`, `callback_query`, status: in sync).
   - **Mini App & Web Wallet App**: `https://app8858823950.tgcloud.ai/` (managed via `public/index.html` and `tgcloud.jsonc`, accessible via 1-tap inline WebApp button in bot menu).
-    * **Mobile-First Smartphone Architecture**: Fixed bottom thumb navigation bar (`Treasury`, `Nodes`, `Ari AI`, `8 Bots`, `Mesh`), strict `100dvh` viewport, and native `Telegram.WebApp.BackButton` integration.
+    * **Mobile-First Smartphone Architecture**: Fixed bottom thumb navigation bar (`Treasury`, `Nodes`, `Ari AI`, `5 Bots`, `Mesh`), strict `100dvh` viewport, and native `Telegram.WebApp.BackButton` integration.
     * **Executive Light Theme**: Clean, professional Stripe/Linear-style UI (`bg-slate-50`, `bg-white`, slate-900 typography, emerald/blue accents).
     * **Multi-Chain Web Wallet Manager**: Manages all 18 accounts' non-custodial wallets across 5 blockchains (TON, EVM/BSC, TRON, Solana, Bitcoin) with 1-tap address copying, QR code modals, and JSON/CSV Treasury Export.
     * **Interactive Ari AI Council**: Live AI Copilot tab powered by Cloudflare Workers AI & Groq LPU (`qwen/qwen3.8-27b`) for real-time fleet diagnostics, compounding advice, and sybil risk audits.

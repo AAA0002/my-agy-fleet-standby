@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Keyboard Menu, Dynamic Session Relink & Strict 5-Bot Suite Migration (October 11, 2026)**:
+  - **⌨️ Persistent Reply Keyboard Menu & Command Router (`tgcloud/lib/ui.js` & `tgcloud/handlers/message.js`)**:
+    * Restored persistent bottom ReplyKeyboardMarkup (`[ 🚀 Open WebApp Console ↗️ ]`, `[ 📱 Fleet Nodes ]`, `[ 💼 Web Wallets ]`, `[ 🔑 1-Tap OTP ]`, `[ ⚡ Farm 5 Bots ]`, `[ 📊 Status & Mesh ]`, `[ 🔄 Refresh Menu ]`).
+    * Implemented full text router in `tgcloud/handlers/message.js` so tapping any docked keyboard button executes the corresponding command instantly without lag.
+    * Registered Telegram's native input bar `[/] Menu` commands (`/start`, `/menu`, `/accounts`, `/wallets`, `/otp`, `/farm`, `/status`, `/cancel`).
+  - **🟢 Dynamic Session Health & Instant Relink Reflection (Fixed "Relinked Account Shows Red")**:
+    * **Root Cause 1 Resolved (`public/index.html`)**: Eradicated hardcoded array `const healthyList = [2, 10, 11, 14, 17]` that forced relinked accounts to RED. `loadTelemetry()` now queries Upstash Redis pipeline directly (`fleet:accounts`, `fleet:healthy_sessions`, `fleet:revoked_sessions`, `fleet:wallets:multichain`) and checks membership dynamically against both node index and `user_id`.
+    * **Root Cause 2 Resolved (`tgcloud/lib/backend.js`)**: In `markAccountActive()`, added `await` to the Upstash pipeline update so Cloudflare/Telegram serverless isolates never terminate the request prematurely. Added both `String(idx)` and `String(userId)` to `fleet:healthy_sessions` and removed both from `fleet:revoked_sessions`. Removed hardcoded fallback `[2, 10, 11, 14, 17]`.
+    * **Root Cause 3 Resolved (`tgcloud/lib/config.js` & `callback_query.js`)**: Corrected all 18 phone numbers in `CONFIG.KNOWN_PHONES` from old placeholder numbers to the fleet's real numbers. `callback_query.js` now dynamically retrieves phone from `live.accounts` first.
+    * **Upstash Session Sets Synced**: Added newly active nodes (including Node #4 Arif `8826375659` and Node #6 Kaitlyn Ross `8782429452`) to `fleet:healthy_sessions` in Upstash Redis.
+  - **🤖 Strict 5-Bot Autonomous Mining Suite Migration**:
+    * Purged all references to Stones Miner, AI Lab, UltraWallet, and FINVORA across all codebase files, bot banners, AI Copilot system context, and Mini App tabs without creating banned lists.
+    * Standardized the exact 5 legitimate active bots in production:
+      1. 🪙 **MRG Miner** (`@mrgminerbot`)
+      2. ⚡ **ATF Miner** (`@ATF_AIRDROP_bot`)
+      3. 👑 **Victor's Company** (`@VictorsCompanybot`)
+      4. 💧 **VyroDrop** (`@vyrodrop_bot`)
+      5. 🌐 **Kynex Network** (`@Kynex_miningbot`)
+    * Updated Mini App Tab 4, metric cards, 1-click harvest button, Telegram bot menus, and AI Copilot diagnostics to strictly reflect the 5 active bots.
+
+
 - **📱 Mobile-First Mini App Architecture & Phone-Screen Optimization (October 11, 2026)**:
   - **📱 Thumb-Friendly Docked Bottom Navigation (`public/index.html`)**:
     * Replaced awkward top horizontal scrolling tabs with a fixed, thumb-friendly **Mobile Bottom Navigation Bar** (`Treasury`, `Nodes`, `Ari AI`, `8 Bots`, `Mesh`) featuring active state pills and haptic selection feedback.

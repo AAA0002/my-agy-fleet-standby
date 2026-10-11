@@ -6,6 +6,8 @@ import { sendLoginCode, verifyLoginCode, cancelLogin, fetchFleetLive, markAccoun
 import {
   getMainMenuKeyboard,
   getCancelLoginKeyboard,
+  getPersistentReplyKeyboard,
+  getLoginCancelReplyKeyboard,
   buildOtpKeyboard,
   buildRelinkKeyboard,
   buildAccountsKeyboard,
@@ -41,18 +43,18 @@ export default async function (message, ctx) {
     return;
   }
 
-  // 2. Preemptive Cancel Check (Supports /cancel, cancel, ❌ Cancel Login, ❌, etc.)
+  // 2. Preemptive Cancel Check (Supports /cancel, cancel, ❌ Cancel Login, ❌ Cancel Authentication, ❌, etc.)
   const isCancel = /cancel/i.test(rawText) || rawText.includes('❌');
   if (isCancel) {
     cancelLogin(chatId);
     await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run().catch(() => {});
 
-    // Wipe persistent ReplyKeyboardMarkup button from the user's Telegram client
+    // Restore persistent ReplyKeyboardMarkup
     await api.sendMessage({
       chat_id: chatId,
-      text: "🧹 *Authentication flow cancelled & keyboard cleared.*",
+      text: "🧹 *Authentication cancelled. Keyboard menu active below:*",
       parse_mode: "Markdown",
-      reply_markup: { remove_keyboard: true }
+      reply_markup: getPersistentReplyKeyboard()
     });
 
     const live = await fetchFleetLive();
@@ -65,21 +67,54 @@ export default async function (message, ctx) {
     return;
   }
 
-  // 3. Preemptive Command Router (Any command starting with '/' cancels active login state)
+  // 3. Command & Persistent Keyboard Menu Action Router
+  const lowerText = rawText.toLowerCase();
   const isCommand = rawText.startsWith('/');
-  if (isCommand) {
+  const isKeyboardAction = 
+    rawText.includes("Fleet Nodes") ||
+    rawText.includes("Web Wallets") ||
+    rawText.includes("1-Tap OTP") ||
+    rawText.includes("Farm 5 Bots") ||
+    rawText.includes("Farm 8 Bots") ||
+    rawText.includes("Status & Mesh") ||
+    rawText.includes("Refresh Menu") ||
+    rawText.includes("Open WebApp Console") ||
+    lowerText === "menu" ||
+    lowerText === "start" ||
+    lowerText === "keyboard menu" ||
+    lowerText === "keyboard" ||
+    lowerText === "wallets" ||
+    lowerText === "nodes" ||
+    lowerText === "farm" ||
+    lowerText === "otp";
+
+  if (isCommand || isKeyboardAction) {
     cancelLogin(chatId);
     await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run().catch(() => {});
 
-    const cmd = rawText.split(' ')[0].toLowerCase();
+    // Sync bot commands in background for native [/] button
+    api.setMyCommands({
+      commands: [
+        { command: "start", description: "🚀 Open Dashboard & Keyboard Menu" },
+        { command: "menu", description: "⚡ Open Command Sentinel Menu" },
+        { command: "accounts", description: "📱 Fleet Nodes Matrix (18 Nodes)" },
+        { command: "wallets", description: "💼 Multi-Chain Treasury Vault" },
+        { command: "otp", description: "🔑 1-Tap Telegram Verification OTP" },
+        { command: "farm", description: "⚡ 1-Click 5-Bot Cloud Farming" },
+        { command: "status", description: "📊 System Status & Edge Mesh" },
+        { command: "cancel", description: "❌ Cancel Active Login Flow" }
+      ]
+    }).catch(() => {});
 
-    if (cmd === '/start' || cmd === '/menu') {
-      // First wipe any stuck ReplyKeyboardMarkup
+    const cmd = isCommand ? rawText.split(' ')[0].toLowerCase() : '';
+
+    if (cmd === '/start' || cmd === '/menu' || lowerText === 'menu' || lowerText === 'start' || lowerText.includes('refresh menu') || lowerText.includes('keyboard')) {
+      // Dock persistent ReplyKeyboardMarkup
       await api.sendMessage({
         chat_id: chatId,
-        text: "⚡ *AAA AUTO Command Sentinel Ready*",
+        text: "⌨️ *Keyboard Menu Active* — Tap any button docked below for 1-tap commands:",
         parse_mode: "Markdown",
-        reply_markup: { remove_keyboard: true }
+        reply_markup: getPersistentReplyKeyboard()
       });
 
       const live = await fetchFleetLive();
@@ -92,12 +127,26 @@ export default async function (message, ctx) {
       return;
     }
 
-    if (cmd === '/otp' || cmd === '/code') {
+    if (rawText.includes("Open WebApp Console") || lowerText === 'webapp') {
+      await api.sendMessage({
+        chat_id: chatId,
+        text: "🚀 *AAA AUTO WebApp Console*\n\nTap below to launch the executive mobile dashboard:",
+        parse_mode: "Markdown",
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "🚀 Open WebApp Console ↗️", web_app: { url: "https://app8858823950.tgcloud.ai/" } }]
+          ]
+        }
+      });
+      return;
+    }
+
+    if (cmd === '/otp' || cmd === '/code' || rawText.includes("1-Tap OTP") || lowerText === 'otp') {
       const live = await fetchFleetLive();
-      const text = `┌──────────────────────────────────────┐
-│  🔑 *1-TAP TELEGRAM OTP VAULT*       │
-│  _Instant MTProto Authorization_     │
-└──────────────────────────────────────┘
+      const text = `┌──────────────────────────────┐
+│  🔑 *1-TAP TELEGRAM OTP*     │
+│  _MTProto Verification_      │
+└──────────────────────────────┘
 
 Select an active account node below to instantly inspect the latest Telegram verification code:`;
       await api.sendMessage({
@@ -112,10 +161,10 @@ Select an active account node below to instantly inspect the latest Telegram ver
     if (cmd === '/relink') {
       const live = await fetchFleetLive();
       const revokedCount = live.revoked_count || 13;
-      const text = `┌──────────────────────────────────────┐
-│  🔄 *FLEET SESSION RECOVERY CENTER*  │
-│  _Automated 1-Tap Re-Authentication_ │
-└──────────────────────────────────────┘
+      const text = `┌──────────────────────────────┐
+│  🔄 *SESSION RECOVERY*       │
+│  _1-Tap Re-Authentication_   │
+└──────────────────────────────┘
 
 ⚠️ *Offline Fleet Sessions:* \`${revokedCount} Nodes Require Renewal\`
 
@@ -129,7 +178,7 @@ Tap any account node below to dispatch an official verification code:`;
       return;
     }
 
-    if (cmd === '/accounts' || cmd === '/fleet') {
+    if (cmd === '/accounts' || cmd === '/fleet' || rawText.includes("Fleet Nodes") || lowerText === 'nodes') {
       const live = await fetchFleetLive();
       const text = `📱 *FLEET ACCOUNTS MATRIX (${live.healthy_count || 5}/${live.total_accounts || 18} ACTIVE)*\n\n🟢 = Active MTProto Session\n🔴 = Session Revoked / Needs Re-link\n👑 = Master Host Account\n\nSelect an account node below to inspect dossier:`;
       await api.sendMessage({
@@ -141,7 +190,7 @@ Tap any account node below to dispatch an official verification code:`;
       return;
     }
 
-    if (cmd === '/status' || cmd === '/mesh') {
+    if (cmd === '/status' || cmd === '/mesh' || rawText.includes("Status & Mesh") || lowerText === 'status' || lowerText === 'mesh') {
       const live = await fetchFleetLive();
       await api.sendMessage({
         chat_id: chatId,
@@ -152,7 +201,7 @@ Tap any account node below to dispatch an official verification code:`;
       return;
     }
 
-    if (cmd === '/wallets') {
+    if (cmd === '/wallets' || rawText.includes("Web Wallets") || lowerText === 'wallets') {
       await api.sendMessage({
         chat_id: chatId,
         text: buildWalletsBanner(),
@@ -162,29 +211,26 @@ Tap any account node below to dispatch an official verification code:`;
       return;
     }
 
-    if (cmd === '/farm') {
+    if (cmd === '/farm' || rawText.includes("Farm 5 Bots") || rawText.includes("Farm 8 Bots") || lowerText === 'farm') {
       await api.sendMessage({
         chat_id: chatId,
-        text: "⚡ *Triggering Mining Cycle Across All 8 Legitimate Bots...*\n\n• Dispatched to Render Standby primary coordinator...",
+        text: "⚡ *Triggering Mining Cycle Across All 5 Legitimate Bots...*\n\n• Dispatched to Render Standby primary coordinator...",
         parse_mode: "Markdown"
       });
       requestBackend('/api/farm/cloud-all', 'POST', {}).catch(() => {});
       
       const banner = 
-`┌──────────────────────────────────────┐
-│  ⚡ *AUTONOMOUS 8-BOT MINING CYCLE*  │
-└──────────────────────────────────────┘
+`┌──────────────────────────────┐
+│  ⚡ *AUTONOMOUS 5-BOT FARM*  │
+└──────────────────────────────┘
 
 🚀 Dispatched multi-farming cycle across all 18 nodes:
 
-◈ 💎 *Stones Miner*      → Harvesting & Compounding
 ◈ 🪙 *MRG Miner*         → Turnstile Pass Verification & Harvest
-◈ 🔬 *AI Lab*            → Research Task Claims
-◈ 💼 *UltraWallet*       → Point Staking & Yield
 ◈ ⚡ *ATF Miner*         → Cloud Captcha & Mining Cycle
-◈ 📈 *FINVORA*           → Yield Harvesting
 ◈ 👑 *Victor's Company*  → Proof-of-Pass & Level Compounding
 ◈ 💧 *VyroDrop*          → Wallet Sync & Airdrop Farming
+◈ 🌐 *Kynex Network*     → Session Token Claim & Node Mining
 
 📡 *Cluster Execution:* \`Render Standby Node 2 (Frankfurt)\`
 ⚡ *Phone Impact:* \`0% CPU • 0% RAM • 100% Cloud Execution\``;
@@ -357,7 +403,7 @@ Please reply directly with your 2FA password:`,
 • *Telegram UID:* \`${uid}\`
 • *Session State:* \`🟢 Online & Cryptographically Secured\`
 • *Treasury Suite:* \`TON • EVM • TRON • SOL • BTC Bound\`
-• *Autonomous Mining:* \`Bound to 8 Legitimate Bots\`${dupNotice}
+• *Autonomous Mining:* \`Bound to 5 Legitimate Bots\`${dupNotice}
 
 Node updated in active cloud cluster.`,
           parse_mode: "Markdown",
@@ -543,8 +589,16 @@ Please reply directly with the code (e.g. \`12345\`):`,
   // 7. Default Fallback
   await api.sendMessage({
     chat_id: chatId,
-    text: `🤖 *AAA AUTO Sentinel Command Bot*\n\nTap /menu or /start to open the fleet dashboard.`,
+    text: `🤖 *AAA AUTO Sentinel Command Bot*\n\nUse the docked keyboard menu below or tap /menu for the fleet dashboard.`,
     parse_mode: "Markdown",
-    reply_markup: getMainMenuKeyboard(13)
+    reply_markup: getPersistentReplyKeyboard()
+  });
+
+  const live = await fetchFleetLive();
+  await api.sendMessage({
+    chat_id: chatId,
+    text: buildDashboardBanner(live),
+    parse_mode: "Markdown",
+    reply_markup: getMainMenuKeyboard(live.revoked_count || 13)
   });
 }

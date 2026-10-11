@@ -104,7 +104,7 @@ export default async function (callbackQuery, ctx) {
     await replyOrEdit(chatId, messageId, `⚡ *Farming Node #${idx < 10 ? '0' + idx : idx} (${acc.name})...*\n\nDispatched to Render Standby cloud cluster...`, null);
     await requestBackend(`/api/farm/account/${uid}`, 'POST', {}).catch(() => {});
 
-    await replyOrEdit(chatId, messageId, `✅ *Node #${idx < 10 ? '0' + idx : idx} Mining Cycle Dispatched!* 🟢\n\nActive bots farmed: Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, Victor's, VyroDrop.\n100% cloud execution, 0% phone load.`, {
+    await replyOrEdit(chatId, messageId, `✅ *Node #${idx < 10 ? '0' + idx : idx} Mining Cycle Dispatched!* 🟢\n\nActive bots farmed: MRG, ATF, Victor's, VyroDrop, Kynex Network.\n100% cloud execution, 0% phone load.`, {
       inline_keyboard: [
         [{ text: `📱 Back to Node #${idx < 10 ? '0' + idx : idx}`, callback_data: `btn_account_view_${idx}` }],
         [{ text: "📱 Fleet Matrix", callback_data: "btn_fleet_accounts" }],
@@ -186,7 +186,9 @@ Tap any account node below. The cloud cluster will automatically connect to Tele
 
   if (data.startsWith('btn_relink_acc_')) {
     const idx = parseInt(data.replace('btn_relink_acc_', ''), 10);
-    const knownPhone = CONFIG.KNOWN_PHONES[idx];
+    const live = await fetchFleetLive();
+    const acc = live.accounts.find(a => a.index === idx);
+    const knownPhone = acc?.phone || CONFIG.KNOWN_PHONES[idx];
 
     // Clean existing session for this chat
     await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run().catch(() => {});
@@ -273,24 +275,21 @@ Please reply directly with the full phone number including international country
   }
 
   if (data === 'btn_farm_all') {
-    await replyOrEdit(chatId, messageId, "⚡ *Triggering Mining Cycle Across All 8 Legitimate Bots...*\n\n• Dispatched to Render Standby primary coordinator...", null);
+    await replyOrEdit(chatId, messageId, "⚡ *Triggering Mining Cycle Across All 5 Legitimate Bots...*\n\n• Dispatched to Render Standby primary coordinator...", null);
     const res = await requestBackend('/api/farm/cloud-all', 'POST', {}).catch(() => {});
     
     const banner = 
-`┌──────────────────────────────────────┐
-│  ⚡ *AUTONOMOUS 8-BOT MINING CYCLE*  │
-└──────────────────────────────────────┘
+`┌──────────────────────────────┐
+│  ⚡ *AUTONOMOUS 5-BOT FARM*  │
+└──────────────────────────────┘
 
 🚀 Dispatched multi-farming cycle across all 18 nodes:
 
-◈ 💎 *Stones Miner*      → Harvesting & Compounding
 ◈ 🪙 *MRG Miner*         → Turnstile Pass Verification & Harvest
-◈ 🔬 *AI Lab*            → Research Task Claims
-◈ 💼 *UltraWallet*       → Point Staking & Yield
 ◈ ⚡ *ATF Miner*         → Cloud Captcha & Mining Cycle
-◈ 📈 *FINVORA*           → Yield Harvesting
 ◈ 👑 *Victor's Company*  → Proof-of-Pass & Level Compounding
 ◈ 💧 *VyroDrop*          → Wallet Sync & Airdrop Farming
+◈ 🌐 *Kynex Network*     → Session Token Claim & Node Mining
 
 📡 *Cluster Execution:* \`Render Standby Node 2 (Frankfurt)\`
 ⚡ *Phone Impact:* \`0% CPU • 0% RAM • 100% Cloud Execution\``;

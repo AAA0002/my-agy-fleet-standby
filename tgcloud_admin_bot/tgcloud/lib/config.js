@@ -14,34 +14,31 @@ export const CONFIG = {
     "https://restore-agy.aaaai.workers.dev"
   ],
   ACTIVE_BOTS: [
-    { name: "Stones Miner", symbol: "STONES", status: "Active" },
-    { name: "MRG Miner", symbol: "MRG", status: "Active" },
-    { name: "AI Lab", symbol: "AILAB", status: "Active" },
-    { name: "UltraWallet", symbol: "ULTRA", status: "Active" },
-    { name: "ATF Miner", symbol: "ATF", status: "Active" },
-    { name: "FINVORA", symbol: "FINVORA", status: "Active" },
-    { name: "Victor's Company", symbol: "VICTOR", status: "Active" },
-    { name: "VyroDrop", symbol: "VYRO", status: "Active" }
+    { name: "MRG Miner", symbol: "MRG", bot: "@mrgminerbot", status: "Active" },
+    { name: "ATF Miner", symbol: "ATF", bot: "@ATF_AIRDROP_bot", status: "Active" },
+    { name: "Victor's Company", symbol: "VICTOR", bot: "@VictorsCompanybot", status: "Active" },
+    { name: "VyroDrop", symbol: "VYRO", bot: "@vyrodrop_bot", status: "Active" },
+    { name: "Kynex Network", symbol: "KYNEX", bot: "@Kynex_miningbot", status: "Active" }
   ],
   KNOWN_PHONES: {
     1: "+8801317342850",
     2: "+8801943805617",
     3: "+8801790208077",
-    4: "+8801861036830",
-    5: "+8801790208099",
-    6: "+8801750275811",
-    7: "+8801736652150",
-    8: "+8801752495911",
-    9: "+8801716942761",
-    10: "+8801777264871",
-    11: "+8801790208066",
-    12: "+8801752763781",
-    13: "+8801867160751",
-    14: "+8801764654522",
-    15: "+8801742445831",
-    16: "+8801729606688",
-    17: "+8801725579294",
-    18: "+8801728148811"
+    4: "+8801575842094",
+    5: "+14302084365",
+    6: "+8801867539837",
+    7: "+8801718056423",
+    8: "+8801797795624",
+    9: "+8801727651288",
+    10: "+8801729892810",
+    11: "+8801571089931",
+    12: "+8801774578536",
+    13: "+8801838268380",
+    14: "+918930504750",
+    15: "+8801906045479",
+    16: "+8801304151082",
+    17: "+8801879273559",
+    18: "+8801839716506"
   }
 };
 

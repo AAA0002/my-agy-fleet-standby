@@ -15,7 +15,7 @@ export function getMainMenuKeyboard(revokedCount = 13) {
         { text: `🔄 Session Recovery [${revokedCount}]`, callback_data: "btn_relink_menu" }
       ],
       [
-        { text: "⚡ Farm 8-Bot Fleet", callback_data: "btn_farm_all" },
+        { text: "⚡ Farm 5-Bot Fleet", callback_data: "btn_farm_all" },
         { text: "📊 Telemetry Live", callback_data: "btn_system_status" }
       ],
       [
@@ -26,6 +26,40 @@ export function getMainMenuKeyboard(revokedCount = 13) {
         { text: "🔄 Refresh Dashboard", callback_data: "btn_main_menu" }
       ]
     ]
+  };
+}
+
+export function getPersistentReplyKeyboard() {
+  return {
+    keyboard: [
+      [
+        { text: "🚀 Open WebApp Console ↗️", web_app: { url: "https://app8858823950.tgcloud.ai/" } }
+      ],
+      [
+        { text: "📱 Fleet Nodes" },
+        { text: "💼 Web Wallets" }
+      ],
+      [
+        { text: "🔑 1-Tap OTP" },
+        { text: "⚡ Farm 5 Bots" }
+      ],
+      [
+        { text: "📊 Status & Mesh" },
+        { text: "🔄 Refresh Menu" }
+      ]
+    ],
+    resize_keyboard: true,
+    is_persistent: true
+  };
+}
+
+export function getLoginCancelReplyKeyboard() {
+  return {
+    keyboard: [
+      [{ text: "❌ Cancel Authentication" }]
+    ],
+    resize_keyboard: true,
+    is_persistent: true
   };
 }
 
@@ -115,7 +149,7 @@ export function buildAccountDetailCard(acc = {}) {
 • *UID:* \`${uid}\`
 • *Session:* ${isHealthy ? '🟢 `ACTIVE & CONNECTED`' : '🔴 `REVOKED (RE-LINK NEEDED)`'}
 • *Cluster:* \`Render Node 2 (Frankfurt)\`
-• *Mining:* \`8 Bots (100% Cloud-First)\`
+• *Mining:* \`5 Bots (100% Cloud-First)\`
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💼 *MULTI-CHAIN VAULT ADDRESSES:*
@@ -238,11 +272,10 @@ ${healthBar}
 • 👑 *Master Host:* \`#11 MD. ARIF HOSSAIN\`
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🤖 *8-BOT AUTONOMOUS MINING SUITE*
-◈ 💎 Stones Miner  ◈ 🪙 MRG Miner
-◈ 🔬 AI Lab USDT    ◈ 💼 UltraWallet
-◈ ⚡ ATF Miner     ◈ 📈 FINVORA
+🤖 *5-BOT AUTONOMOUS MINING SUITE*
+◈ 🪙 MRG Miner      ◈ ⚡ ATF Miner
 ◈ 👑 Victor's Co.   ◈ 💧 VyroDrop
+◈ 🌐 Kynex Network  ◈ ⚡ 100% Cloud
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💼 *TREASURY:* \`TON • EVM • TRX • SOL • BTC\`

@@ -105,8 +105,11 @@ let memFleetLiveTs = 0;
 // Immediate status sync when an account is re-linked: guarantees it never shows stale state!
 export async function markAccountActive(index, userId, name, phone) {
   const idx = parseInt(index, 10);
+  const uidStr = userId ? String(userId) : '';
+  const idxStr = String(idx);
+
   if (memFleetLive && Array.isArray(memFleetLive.accounts)) {
-    const acc = memFleetLive.accounts.find(a => a.index === idx || (userId && String(a.user_id) === String(userId)));
+    const acc = memFleetLive.accounts.find(a => a.index === idx || (uidStr && String(a.user_id) === uidStr));
     if (acc) {
       acc.status = 'active';
       if (name) acc.name = name;
@@ -118,10 +121,10 @@ export async function markAccountActive(index, userId, name, phone) {
   }
 
   // Update SQLite local accounts cache
-  if (userId) {
+  if (uidStr) {
     try {
       await db.insert(accountsCache).values({
-        userId: String(userId),
+        userId: uidStr,
         accountIndex: idx,
         name: name || `Account #${idx}`,
         phone: phone || '',
@@ -133,19 +136,26 @@ export async function markAccountActive(index, userId, name, phone) {
     } catch (_) {}
   }
 
-  // Asynchronously update Upstash sets (healthy vs revoked)
+  // Awaited update of Upstash Redis sets (ensures Cloudflare / V8 isolate does not drop the request!)
   if (CONFIG.UPSTASH_URL && CONFIG.UPSTASH_TOKEN) {
-    fetch(`${CONFIG.UPSTASH_URL}/pipeline`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${CONFIG.UPSTASH_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify([
-        ["SADD", "fleet:healthy_sessions", String(idx)],
-        ["SREM", "fleet:revoked_sessions", String(idx)]
-      ])
-    }).catch(() => {});
+    try {
+      const upstashCommands = [
+        ["SADD", "fleet:healthy_sessions", idxStr],
+        ["SREM", "fleet:revoked_sessions", idxStr]
+      ];
+      if (uidStr) {
+        upstashCommands.push(["SADD", "fleet:healthy_sessions", uidStr]);
+        upstashCommands.push(["SREM", "fleet:revoked_sessions", uidStr]);
+      }
+      await fetch(`${CONFIG.UPSTASH_URL}/pipeline`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${CONFIG.UPSTASH_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(upstashCommands)
+      });
+    } catch (_) {}
   }
 }
 
@@ -188,21 +198,23 @@ export async function fetchFleetLive(force = false) {
         if (Array.isArray(accounts) && accounts.length > 0) {
           const enriched = accounts.map((acc, i) => {
             const idx = acc.index || (i + 1);
-            const isHealthy = healthySet.has(String(idx));
-            const isRev = revokedSet.has(String(idx));
+            const uidStr = String(acc.user_id || '');
+            const isHealthy = healthySet.has(String(idx)) || (uidStr && healthySet.has(uidStr));
+            const isRev = !isHealthy && (revokedSet.has(String(idx)) || (uidStr && revokedSet.has(uidStr)));
             return {
               ...acc,
               index: idx,
               status: isHealthy ? 'active' : (isRev ? 'revoked' : (acc.status || 'inactive')),
-              isHost: String(acc.user_id) === '6727787768'
+              isHost: uidStr === '6727787768'
             };
           });
 
+          const activeNodesCount = enriched.filter(a => a.status === 'active').length;
           const result = {
             ok: true,
             total_accounts: enriched.length,
-            healthy_count: healthySet.size,
-            revoked_count: revokedSet.size,
+            healthy_count: activeNodesCount,
+            revoked_count: enriched.length - activeNodesCount,
             accounts: enriched,
             timestamp: Date.now()
           };
@@ -218,10 +230,9 @@ export async function fetchFleetLive(force = false) {
   try {
     const res = await requestBackend('/api/fleet/live');
     if (res && Array.isArray(res.accounts)) {
-      const defaultHealthy = [2, 10, 11, 14, 17];
       const enriched = res.accounts.map((acc, i) => {
         const idx = acc.index || (i + 1);
-        const isHealthy = defaultHealthy.includes(idx);
+        const isHealthy = acc.status === 'active';
         return {
           ...acc,
           index: idx,
@@ -229,11 +240,12 @@ export async function fetchFleetLive(force = false) {
           isHost: String(acc.user_id) === '6727787768'
         };
       });
+      const actCount = enriched.filter(a => a.status === 'active').length;
       const result = {
         ok: true,
         total_accounts: enriched.length,
-        healthy_count: defaultHealthy.length,
-        revoked_count: enriched.length - defaultHealthy.length,
+        healthy_count: actCount,
+        revoked_count: enriched.length - actCount,
         accounts: enriched,
         timestamp: Date.now()
       };

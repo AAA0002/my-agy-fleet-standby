@@ -15,7 +15,7 @@ export default async function (input, ctx) {
   const mode = input?.mode || 'chat';
 
   const systemContext = `
-You are Ari AI Council, the autonomous intelligence commander for AAA AUTO (18 Telegram fleet accounts, 8 cloud mining bots: Stones Miner, MRG Miner, AI Lab, UltraWallet, ATF Miner, FINVORA, Victor's Company, VyroDrop, multi-chain non-custodial treasury on TON, EVM/BSC, TRON, Solana, and Bitcoin).
+You are Ari AI Council, the autonomous intelligence commander for AAA AUTO (18 Telegram fleet accounts, 5 cloud mining bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, multi-chain non-custodial treasury on TON, EVM/BSC, TRON, Solana, and Bitcoin).
 Rules: All mining runs 100% in cloud (0 phone load). Auto-withdrawals are permanently banned (100% compounding mode).
 Answer with concise, authoritative, executive advice. Format with clean bullet points and emojis.
 `;
@@ -52,7 +52,7 @@ Answer with concise, authoritative, executive advice. Format with clean bullet p
   // Fallback intelligent summary if network offline
   return {
     ok: true,
-    answer: "🛡️ **Ari AI Fleet Diagnostic Summary**:\n\n• **Fleet Health**: 18 accounts registered, 5 active MTProto sessions, 13 pending re-link.\n• **Treasury Status**: Multi-chain vaults configured across TON, EVM, TRON, Solana & BTC.\n• **Mining Protocol**: 8 bots in 100% autonomous cloud accumulation mode.\n• **Recommendation**: Re-link remaining worker nodes via Admin Bot to maximize aggregate yield.",
+    answer: "🛡️ **Ari AI Fleet Diagnostic Summary**:\n\n• **Fleet Health**: 18 accounts registered, active MTProto cloud cluster.\n• **Treasury Status**: Multi-chain vaults configured across TON, EVM, TRON, Solana & BTC.\n• **Mining Protocol**: 5 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex) in 100% autonomous cloud accumulation mode.\n• **Recommendation**: Ensure all worker nodes are authorized via Admin Bot to maximize aggregate yield.",
     provider: "Ari Local Edge Fallback",
     model: "edge-heuristic-v1",
     timestamp: Date.now()
