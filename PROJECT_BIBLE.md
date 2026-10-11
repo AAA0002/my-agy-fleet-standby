@@ -51,19 +51,20 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 │                                                                                        │
 │  ┌────────────────────────────────────────┐  ┌──────────────────────────────────────┐  │
 │  │    Triple Render Standby Mesh (3 Nodes)│  │      Cloudflare Edge Mesh (5 Nodes)  │  │
-│  │  • Node 1 (Singapore - Coz1): app.py   │  │  • aaaai2.workers.dev (Shard 0)      │  │
-│  │  • Node 2 (Frankfurt - Abid): app.py   │  │  • aaa-bot.workers.dev (Shard 1)     │  │
-│  │  • Node 3 (Oregon - Koram): app.py     │  │  • aaa222.workers.dev (Shard 2)      │  │
-│  │                                        │  │  • agorameet.workers.dev (Shard 3)   │  │
-│  │  Role: MTProto Session Collector       │  │  • aaaai.workers.dev (Shard 4)       │  │
-│  │  - Runs Telethon in the cloud          │  │                                      │  │
-│  │  - Connects 18 Telegram sessions       │  │  Role: 24/7 Edge Autonomous Farming   │  │
-│  │  - Extracts fresh 24h WebApp initData  │  │  - Runs cron every 15 mins           │  │
-│  │  - Syncs tokens to D1, Upstash & KV     │  │  - Farms all 5 legitimate bots        │  │
-│  │  - Endpoint: POST /collect-tokens      │  │  - Executes side tasks & check-ins   │  │
-│  └───────────────────┬────────────────────┘  │  - Fast, serverless, zero ban risk   │  │
-│                      │                       │  - Propagates cached Turnstile passes │  │
-│                      │ Syncs Fresh Tokens    └──────────────────▲───────────────────┘  │
+│  │  • Node 2 (Frankfurt): Shard 1 (Acc 1-9│  │  • aaaai2.workers.dev (Shard 0)      │  │
+│  │    + Primary MTProto Auth & OTP Gateway│  │  • aaa-bot.workers.dev (Shard 1)     │  │
+│  │  • Node 3 (Oregon): Shard 2 (Acc 10-18)│  │  • aaa222.workers.dev (Shard 2)      │  │
+│  │    + Failover MTProto Gateway          │  │  • agorameet.workers.dev (Shard 3)   │  │
+│  │  • Node 1 (Singapore): Standby Archive │  │  • aaaai.workers.dev (Shard 4)       │  │
+│  │                                        │  │                                      │  │
+│  │  Role: Parallel MTProto & Farming Shard│  │  Role: 24/7 Edge Autonomous Farming   │  │
+│  │  - Partitioned Shard 1 (1-9) & 2 (10-18│  │  - Runs cron every 15 mins           │  │
+│  │  - Cuts memory, CPU & MTProto load 50% │  │  - Farms all 5 legitimate bots        │  │
+│  │  - Debounced anti-duplicate code retry │  │  - Executes side tasks & check-ins   │  │
+│  │  - Extracts fresh 24h WebApp initData  │  │  - Fast, serverless, zero ban risk   │  │
+│  │  - Syncs tokens to D1, Upstash & KV     │  │  - Propagates cached Turnstile passes │  │
+│  │  - Endpoint: POST /collect-tokens      │  │                                      │  │
+│  └───────────────────┬────────────────────┘  └──────────────────▲───────────────────┘  │
 │                      ▼                                          │ Reads Fresh Tokens   │
 │  ┌──────────────────────────────────────────────────────────────┴───────────────────┐  │
 │  │                        Upstash Serverless Redis REST                             │  │

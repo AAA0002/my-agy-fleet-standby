@@ -2,7 +2,7 @@ import { api, db } from 'sdk';
 import { eq, sql } from 'sdk/db';
 import { loginSessions } from '../schema.js';
 import { CONFIG } from '../lib/config.js';
-import { sendLoginCode, cancelLogin, fetchFleetLive, fetchOtpForAccount, requestBackend } from '../lib/backend.js';
+import { sendLoginCode, cancelLogin, fetchFleetLive, fetchOtpForAccount, requestBackend, dispatchParallelFarming } from '../lib/backend.js';
 import {
   getMainMenuKeyboard,
   getPersistentReplyKeyboard,
@@ -194,11 +194,19 @@ Tap any account node below. The cloud cluster will automatically connect to Tele
     const acc = live.accounts.find(a => a.index === idx);
     const knownPhone = acc?.phone || CONFIG.KNOWN_PHONES[idx];
 
-    // Clean existing session for this chat
-    await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run().catch(() => {});
+    // Check if code dispatch is already active for this account to prevent double dispatch
+    const existing = await db.select().from(loginSessions).where(eq(loginSessions.chatId, chatId)).get();
+    if (existing && existing.step === 'WAITING_CODE' && existing.accountIndex === idx) {
+      await api.answerCallbackQuery({
+        callback_query_id: callbackQuery.id,
+        text: `⏳ Code already dispatched for Node #${idx < 10 ? '0' + idx : idx}! Please enter it below.`
+      }).catch(() => {});
+      return;
+    }
 
     if (knownPhone) {
-      await replyOrEdit(chatId, messageId, `🔄 *Re-linking Node #${idx < 10 ? '0' + idx : idx}*\n\n• Phone: \`${knownPhone}\`\n• Dispatching official Telegram verification code...`, null);
+      // 1. Immediately edit card to disable buttons & show progress (prevents double tap!)
+      await replyOrEdit(chatId, messageId, `⏳ *Connecting to MTProto Cluster...*\n\n• Target: *Node #${idx < 10 ? '0' + idx : idx}* (\`${knownPhone}\`)\n• Dispatched code request to Frankfurt cluster.\n\n_Please wait 5–10s for the official Telegram verification code..._`, null);
 
       const res = await sendLoginCode(knownPhone, chatId, idx);
       if (res && res.ok) {
@@ -221,9 +229,8 @@ Tap any account node below. The cloud cluster will automatically connect to Tele
           }
         }).run();
 
-        await api.sendMessage({
-          chat_id: chatId,
-          text: `┌──────────────────────────────────────┐
+        // 2. Edit existing message in-place ("desper message" pattern - single living card!)
+        await replyOrEdit(chatId, messageId, `┌──────────────────────────────────────┐
 │  📨 *VERIFICATION CODE DISPATCHED*   │
 └──────────────────────────────────────┘
 
@@ -232,18 +239,16 @@ Tap any account node below. The cloud cluster will automatically connect to Tele
 
 Telegram dispatched an official 5-digit verification code to \`${knownPhone}\`.
 
-Please reply directly with the code (e.g. \`12345\`):`,
-          parse_mode: "Markdown",
-          reply_markup: getCancelLoginKeyboard()
-        });
+Please reply directly with the code (e.g. \`12345\`):`, getCancelLoginKeyboard());
       } else {
-        await api.sendMessage({
-          chat_id: chatId,
-          text: `❌ *Could not request code:* ${res?.error || 'Network error'}\n\nPlease try again:`,
-          parse_mode: "Markdown",
-          reply_markup: getMainMenuKeyboard()
+        await replyOrEdit(chatId, messageId, `❌ *Could not request code:* ${res?.error || 'Network error'}\n\nPlease try again:`, {
+          inline_keyboard: [
+            [{ text: `🔄 Retry (Node #${idx < 10 ? '0' + idx : idx})`, callback_data: `btn_relink_acc_${idx}` }],
+            [{ text: "🔙 Main Menu", callback_data: "btn_main_menu" }]
+          ]
         });
       }
+      return;
     } else {
       await db.insert(loginSessions).values({
         chatId,
@@ -304,15 +309,15 @@ Please reply directly with the full phone number including international country
   }
 
   if (data === 'btn_farm_all') {
-    await replyOrEdit(chatId, messageId, "⚡ *Triggering Mining Cycle Across All 5 Legitimate Bots...*\n\n• Dispatched to Render Standby primary coordinator...", null);
-    const res = await requestBackend('/api/farm/cloud-all', 'POST', {}).catch(() => {});
+    await replyOrEdit(chatId, messageId, "⚡ *Dispatching Dual-Shard Cloud Mining across 5 Bots...*\n\n• Shard 1 (Nodes 01-09) → Render Node 2 (Frankfurt)\n• Shard 2 (Nodes 10-18) → Render Node 3 (Oregon)\n\n_Executing 100% in cloud, 0% phone load..._", null);
+    await dispatchParallelFarming().catch(() => {});
     
     const banner = 
 `┌──────────────────────────────┐
 │  ⚡ *AUTONOMOUS 5-BOT FARM*  │
 └──────────────────────────────┘
 
-🚀 Dispatched multi-farming cycle across all 18 nodes:
+🚀 Dispatched parallel dual-shard farming across all 18 nodes:
 
 ◈ 🪙 *MRG Miner*         → Turnstile Pass Verification & Harvest
 ◈ ⚡ *ATF Miner*         → Cloud Captcha & Mining Cycle
@@ -320,7 +325,9 @@ Please reply directly with the full phone number including international country
 ◈ 💧 *VyroDrop*          → Wallet Sync & Airdrop Farming
 ◈ 🌐 *Kynex Network*     → Session Token Claim & Node Mining
 
-📡 *Cluster Execution:* \`Render Standby Node 2 (Frankfurt)\`
+📡 *Parallel Shard Architecture:*
+• \`Shard 1 (Nodes 01-09)\` → Render Node 2 (Frankfurt)
+• \`Shard 2 (Nodes 10-18)\` → Render Node 3 (Oregon)
 ⚡ *Phone Impact:* \`0% CPU • 0% RAM • 100% Cloud Execution\``;
 
     const live = await fetchFleetLive();

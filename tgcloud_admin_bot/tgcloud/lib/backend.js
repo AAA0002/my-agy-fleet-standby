@@ -55,7 +55,7 @@ export async function sendLoginCode(phone, chatId, accountIndex) {
   return { ok: false, error: 'Could not connect to Render MTProto nodes. Please retry in a moment.' };
 }
 
-export async function verifyLoginCode({ chatId, code, password, phone, nodeUrl, index }) {
+export async function verifyLoginCode({ chatId, code, password, phone, nodeUrl, index, phoneCodeHash }) {
   const nodes = nodeUrl ? [nodeUrl, ...CONFIG.BACKEND_NODES.filter(u => u !== nodeUrl)] : CONFIG.BACKEND_NODES;
   for (const base of nodes) {
     try {
@@ -68,6 +68,7 @@ export async function verifyLoginCode({ chatId, code, password, phone, nodeUrl, 
         body: JSON.stringify({
           phone: phone || '',
           code: code || '',
+          phone_code_hash: phoneCodeHash || '',
           password: password || '',
           chat_id: String(chatId),
           secret: CONFIG.SECRET_KEY,
@@ -86,6 +87,32 @@ export async function verifyLoginCode({ chatId, code, password, phone, nodeUrl, 
     } catch (_) {}
   }
   return { ok: false, error: 'Login verification failed on cloud cluster. Please try again.' };
+}
+
+// Parallel Dual-Shard Cloud Farming across Render Nodes
+export async function dispatchParallelFarming() {
+  const node2 = CONFIG.BACKEND_NODES[0] || "https://my-agy-fleet-standby-node2.onrender.com";
+  const node3 = CONFIG.BACKEND_NODES[1] || "https://my-agy-fleet-standby-node3.onrender.com";
+
+  const promises = [
+    fetch(`${node2}/api/farm/cloud-all?shard=1`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${CONFIG.SECRET_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    }).catch(e => ({ ok: false, error: e.message })),
+    fetch(`${node3}/api/farm/cloud-all?shard=2`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${CONFIG.SECRET_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    }).catch(e => ({ ok: false, error: e.message }))
+  ];
+
+  await Promise.allSettled(promises);
+  return { ok: true, dispatched: true, shards: [1, 2] };
 }
 
 // Non-blocking, parallelized cancel — NEVER blocks Telegram command response!

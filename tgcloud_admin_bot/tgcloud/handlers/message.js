@@ -2,7 +2,7 @@ import { api, db } from 'sdk';
 import { eq, sql } from 'sdk/db';
 import { loginSessions } from '../schema.js';
 import { CONFIG } from '../lib/config.js';
-import { sendLoginCode, verifyLoginCode, cancelLogin, fetchFleetLive, markAccountActive, requestBackend } from '../lib/backend.js';
+import { sendLoginCode, verifyLoginCode, cancelLogin, fetchFleetLive, markAccountActive, requestBackend, dispatchParallelFarming } from '../lib/backend.js';
 import {
   getMainMenuKeyboard,
   getCancelLoginKeyboard,
@@ -24,6 +24,36 @@ function normalizePhone(raw) {
     cleaned = '+' + cleaned;
   }
   return cleaned;
+}
+
+// Disappearing single-console dashboard helper: keeps chat spotless!
+async function sendLivingDashboard(chatId, text, reply_markup) {
+  try {
+    const session = await db.select().from(loginSessions).where(eq(loginSessions.chatId, chatId)).get();
+    const lastMsgId = session?.meta?.lastMsgId;
+    if (lastMsgId) {
+      await api.deleteMessage({ chat_id: chatId, message_id: lastMsgId }).catch(() => {});
+    }
+  } catch (_) {}
+  const sent = await api.sendMessage({
+    chat_id: chatId,
+    text,
+    parse_mode: "Markdown",
+    reply_markup
+  });
+  if (sent && sent.message_id) {
+    const session = await db.select().from(loginSessions).where(eq(loginSessions.chatId, chatId)).get();
+    const meta = { ...(session?.meta || {}), lastMsgId: sent.message_id };
+    await db.insert(loginSessions).values({
+      chatId,
+      step: session?.step || 'IDLE',
+      meta
+    }).onConflictDoUpdate({
+      target: loginSessions.chatId,
+      set: { meta, updatedAt: sql`(unixepoch())` }
+    }).run().catch(() => {});
+  }
+  return sent;
 }
 
 export default async function (message, ctx) {
@@ -49,21 +79,11 @@ export default async function (message, ctx) {
     cancelLogin(chatId);
     await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run().catch(() => {});
 
-    // Restore persistent ReplyKeyboardMarkup
-    await api.sendMessage({
-      chat_id: chatId,
-      text: "🧹 *Authentication cancelled. Keyboard menu active below:*",
-      parse_mode: "Markdown",
-      reply_markup: getPersistentReplyKeyboard()
-    });
+    // Desper message: auto-delete user cancel command
+    await api.deleteMessage({ chat_id: chatId, message_id: message.message_id }).catch(() => {});
 
     const live = await fetchFleetLive(true);
-    await api.sendMessage({
-      chat_id: chatId,
-      text: buildDashboardBanner(live),
-      parse_mode: "Markdown",
-      reply_markup: getMainMenuKeyboard(live.revoked_count)
-    });
+    await sendLivingDashboard(chatId, buildDashboardBanner(live), getMainMenuKeyboard(live.revoked_count));
     return;
   }
 
@@ -92,6 +112,9 @@ export default async function (message, ctx) {
     cancelLogin(chatId);
     await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run().catch(() => {});
 
+    // Desper message: auto-delete user trigger command
+    await api.deleteMessage({ chat_id: chatId, message_id: message.message_id }).catch(() => {});
+
     // Sync bot commands in background for native [/] button
     api.setMyCommands({
       commands: [
@@ -109,34 +132,16 @@ export default async function (message, ctx) {
     const cmd = isCommand ? rawText.split(' ')[0].toLowerCase() : '';
 
     if (cmd === '/start' || cmd === '/menu' || lowerText === 'menu' || lowerText === 'start' || lowerText.includes('refresh menu') || lowerText.includes('keyboard')) {
-      // Dock persistent ReplyKeyboardMarkup
-      await api.sendMessage({
-        chat_id: chatId,
-        text: "⌨️ *Keyboard Menu Active* — Tap any button docked below for 1-tap commands:",
-        parse_mode: "Markdown",
-        reply_markup: getPersistentReplyKeyboard()
-      });
-
       const live = await fetchFleetLive(true);
-      await api.sendMessage({
-        chat_id: chatId,
-        text: buildDashboardBanner(live),
-        parse_mode: "Markdown",
-        reply_markup: getMainMenuKeyboard(live.revoked_count)
-      });
+      await sendLivingDashboard(chatId, buildDashboardBanner(live), getMainMenuKeyboard(live.revoked_count));
       return;
     }
 
     if (rawText.includes("Open WebApp Console") || lowerText === 'webapp') {
-      await api.sendMessage({
-        chat_id: chatId,
-        text: "🚀 *AAA AUTO WebApp Console*\n\nTap below to launch the executive mobile dashboard:",
-        parse_mode: "Markdown",
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "🚀 Open WebApp Console ↗️", web_app: { url: "https://app8858823950.tgcloud.ai/" } }]
-          ]
-        }
+      await sendLivingDashboard(chatId, "🚀 *AAA AUTO WebApp Console*\n\nTap below to launch the executive mobile dashboard:", {
+        inline_keyboard: [
+          [{ text: "🚀 Open WebApp Console ↗️", web_app: { url: "https://app8858823950.tgcloud.ai/" } }]
+        ]
       });
       return;
     }
@@ -149,12 +154,7 @@ export default async function (message, ctx) {
 └──────────────────────────────┘
 
 Select an active account node below to instantly inspect the latest Telegram verification code:`;
-      await api.sendMessage({
-        chat_id: chatId,
-        text,
-        parse_mode: "Markdown",
-        reply_markup: buildOtpKeyboard(live.accounts)
-      });
+      await sendLivingDashboard(chatId, text, buildOtpKeyboard(live.accounts));
       return;
     }
 
@@ -169,12 +169,7 @@ Select an active account node below to instantly inspect the latest Telegram ver
 ⚠️ *Offline Fleet Sessions:* \`${revokedCount} Nodes Require Renewal\`
 
 Tap any account node below to dispatch an official verification code:`;
-      await api.sendMessage({
-        chat_id: chatId,
-        text,
-        parse_mode: "Markdown",
-        reply_markup: buildRelinkKeyboard(live.accounts)
-      });
+      await sendLivingDashboard(chatId, text, buildRelinkKeyboard(live.accounts));
       return;
     }
 
@@ -182,50 +177,31 @@ Tap any account node below to dispatch an official verification code:`;
       const live = await fetchFleetLive(true);
       const actCount = live.healthy_count !== undefined ? live.healthy_count : (live.accounts ? live.accounts.filter(a => a.status === 'active').length : 7);
       const text = `📱 *FLEET ACCOUNTS MATRIX (${actCount}/${live.total_accounts || 18} ACTIVE)*\n\n🟢 = Active MTProto Session\n🔴 = Session Revoked / Needs Re-link\n👑 = Master Host Account\n\nSelect an account node below to inspect dossier:`;
-      await api.sendMessage({
-        chat_id: chatId,
-        text,
-        parse_mode: "Markdown",
-        reply_markup: buildAccountsKeyboard(live.accounts, 'all')
-      });
+      await sendLivingDashboard(chatId, text, buildAccountsKeyboard(live.accounts, 'all'));
       return;
     }
 
     if (cmd === '/status' || cmd === '/mesh' || rawText.includes("Status & Mesh") || lowerText === 'status' || lowerText === 'mesh') {
       const live = await fetchFleetLive(true);
-      await api.sendMessage({
-        chat_id: chatId,
-        text: buildMeshStatusBanner(live),
-        parse_mode: "Markdown",
-        reply_markup: getMainMenuKeyboard(live.revoked_count)
-      });
+      await sendLivingDashboard(chatId, buildMeshStatusBanner(live), getMainMenuKeyboard(live.revoked_count));
       return;
     }
 
     if (cmd === '/wallets' || rawText.includes("Web Wallets") || lowerText === 'wallets') {
-      await api.sendMessage({
-        chat_id: chatId,
-        text: buildWalletsBanner(),
-        parse_mode: "Markdown",
-        reply_markup: getMainMenuKeyboard(13)
-      });
+      await sendLivingDashboard(chatId, buildWalletsBanner(), getMainMenuKeyboard(13));
       return;
     }
 
-    if (cmd === '/farm' || rawText.includes("Farm 5 Bots") || rawText.includes("Farm 8 Bots") || lowerText === 'farm') {
-      await api.sendMessage({
-        chat_id: chatId,
-        text: "⚡ *Triggering Mining Cycle Across All 5 Legitimate Bots...*\n\n• Dispatched to Render Standby primary coordinator...",
-        parse_mode: "Markdown"
-      });
-      requestBackend('/api/farm/cloud-all', 'POST', {}).catch(() => {});
+    if (cmd === '/farm' || rawText.includes("Farm 5 Bots") || lowerText === 'farm') {
+      await sendLivingDashboard(chatId, "⚡ *Dispatching Dual-Shard Cloud Mining across 5 Bots...*\n\n• Shard 1 (Nodes 01-09) → Render Node 2 (Frankfurt)\n• Shard 2 (Nodes 10-18) → Render Node 3 (Oregon)\n\n_Executing 100% in cloud, 0% phone load..._", null);
+      await dispatchParallelFarming().catch(() => {});
       
       const banner = 
 `┌──────────────────────────────┐
 │  ⚡ *AUTONOMOUS 5-BOT FARM*  │
 └──────────────────────────────┘
 
-🚀 Dispatched multi-farming cycle across all 18 nodes:
+🚀 Dispatched parallel dual-shard farming across all 18 nodes:
 
 ◈ 🪙 *MRG Miner*         → Turnstile Pass Verification & Harvest
 ◈ ⚡ *ATF Miner*         → Cloud Captcha & Mining Cycle
@@ -233,25 +209,18 @@ Tap any account node below to dispatch an official verification code:`;
 ◈ 💧 *VyroDrop*          → Wallet Sync & Airdrop Farming
 ◈ 🌐 *Kynex Network*     → Session Token Claim & Node Mining
 
-📡 *Cluster Execution:* \`Render Standby Node 2 (Frankfurt)\`
+📡 *Parallel Shard Architecture:*
+• \`Shard 1 (Nodes 01-09)\` → Render Node 2 (Frankfurt)
+• \`Shard 2 (Nodes 10-18)\` → Render Node 3 (Oregon)
 ⚡ *Phone Impact:* \`0% CPU • 0% RAM • 100% Cloud Execution\``;
 
-      await api.sendMessage({
-        chat_id: chatId,
-        text: banner,
-        parse_mode: "Markdown",
-        reply_markup: getMainMenuKeyboard(13)
-      });
+      const live = await fetchFleetLive();
+      await sendLivingDashboard(chatId, banner, getMainMenuKeyboard(live.revoked_count));
       return;
     }
 
     // Default unknown command
-    await api.sendMessage({
-      chat_id: chatId,
-      text: `🤖 *AAA AUTO Sentinel*\n\nCommand \`${cmd}\` not recognized.\nTap /menu or /start to open the fleet dashboard.`,
-      parse_mode: "Markdown",
-      reply_markup: getMainMenuKeyboard(13)
-    });
+    await sendLivingDashboard(chatId, `🤖 *AAA AUTO Sentinel*\n\nCommand \`${cmd}\` not recognized.\nTap /menu or /start to open the fleet dashboard.`, getMainMenuKeyboard(13));
     return;
   }
 
@@ -345,7 +314,10 @@ Please reply directly with the code (e.g. \`12345\`):`,
         return;
       }
 
-      await api.sendMessage({
+      // Desper message: auto-delete user OTP digits for security & zero chat clutter
+      await api.deleteMessage({ chat_id: chatId, message_id: message.message_id }).catch(() => {});
+
+      const progressMsg = await api.sendMessage({
         chat_id: chatId,
         text: `🔄 *Verifying Telegram Code \`${cleanCode}\` on cloud cluster...*`,
         parse_mode: "Markdown"
@@ -355,9 +327,14 @@ Please reply directly with the code (e.g. \`12345\`):`,
         chatId,
         code: cleanCode,
         phone: activeSession.phone,
+        phoneCodeHash: activeSession.phoneCodeHash,
         nodeUrl: activeSession.nodeUrl,
         index: activeSession.accountIndex
       });
+
+      if (progressMsg?.message_id) {
+        await api.deleteMessage({ chat_id: chatId, message_id: progressMsg.message_id }).catch(() => {});
+      }
 
       if (res && res.need_2fa) {
         await db.update(loginSessions).set({
@@ -413,18 +390,32 @@ Node updated in active cloud cluster.`,
         return;
       }
 
+      const isExpired = res?.expired || (res?.error && res.error.toLowerCase().includes('expired'));
+      const targetIdx = activeSession.accountIndex || 1;
+      const errText = isExpired
+        ? `⚠️ *Verification Code Expired*\n\nTelegram invalidated this code (due to expiration or a previous code request).\n\nTap *[ 🔄 Request Fresh Code ]* below to dispatch a single fresh code to \`${activeSession.phone}\`:`
+        : `❌ *Verification Failed*\n\n*Error:* ${res?.error || 'Invalid code'}\n\nPlease check the code and reply again, or tap below to restart:`;
+
       await api.sendMessage({
         chat_id: chatId,
-        text: `❌ *Verification Failed*\n\n*Error:* ${res?.error || 'Invalid code'}\n\nPlease check the code and reply again:`,
+        text: errText,
         parse_mode: "Markdown",
-        reply_markup: getCancelLoginKeyboard()
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: `🔄 Request Fresh Code (Node #${targetIdx < 10 ? '0' + targetIdx : targetIdx})`, callback_data: `btn_relink_acc_${targetIdx}` }],
+            [{ text: "❌ Cancel & Main Menu", callback_data: "btn_main_menu" }]
+          ]
+        }
       });
       return;
     }
 
     // Step 3: Waiting for 2FA password
     if (activeSession.step === 'WAITING_2FA') {
-      await api.sendMessage({
+      // Desper message: auto-delete user's 2FA password immediately for security
+      await api.deleteMessage({ chat_id: chatId, message_id: message.message_id }).catch(() => {});
+
+      const progressMsg = await api.sendMessage({
         chat_id: chatId,
         text: `🔐 *Authenticating Two-Factor Password on cloud cluster...*`,
         parse_mode: "Markdown"
@@ -434,9 +425,14 @@ Node updated in active cloud cluster.`,
         chatId,
         password: rawText,
         phone: activeSession.phone,
+        phoneCodeHash: activeSession.phoneCodeHash,
         nodeUrl: activeSession.nodeUrl,
         index: activeSession.accountIndex
       });
+
+      if (progressMsg?.message_id) {
+        await api.deleteMessage({ chat_id: chatId, message_id: progressMsg.message_id }).catch(() => {});
+      }
 
       if (res && res.ok) {
         await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run();

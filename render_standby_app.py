@@ -2284,6 +2284,22 @@ async def send_login_code(request: Request):
     cleaned_phone = get_clean_phone(raw_phone)
     logger.info(f"[Standby Cloud Login] Requesting code for {cleaned_phone} (Chat {chat_id})")
 
+    # Anti-duplicate Debounce Guardrail:
+    # If a code was already requested for this phone & chat within the last 75 seconds,
+    # DO NOT trigger a duplicate MTProto send_code_request (which invalidates the code)!
+    existing_session = LOGIN_SESSIONS.get(chat_id)
+    if existing_session and existing_session.get("phone") == cleaned_phone and existing_session.get("phone_code_hash"):
+        elapsed = time.time() - existing_session.get("created_at", 0)
+        if elapsed < 75:
+            logger.info(f"[Standby Cloud Login] Debounce: Code already dispatched {elapsed:.1f}s ago for {cleaned_phone}. Preserving active hash {existing_session['phone_code_hash'][:8]}.")
+            return {
+                "ok": True,
+                "phone": cleaned_phone,
+                "phone_code_hash": existing_session["phone_code_hash"],
+                "message": f"Verification code is already active for {cleaned_phone}.",
+                "reused": True
+            }
+
     # Disconnect any old pending client for this chat
     if chat_id in LOGIN_SESSIONS and LOGIN_SESSIONS[chat_id].get("client"):
         try:
@@ -2476,7 +2492,7 @@ async def verify_login_code(request: Request):
             "username": uname,
             "phone": phone,
             "session_string": sess_str,
-            "referrals": "Binding to Master Fleet (8/8 Active Bots)...",
+            "referrals": "Binding to Master Fleet (5/5 Active Bots)...",
             "message": f"Account #{target_idx} connected successfully! Restored to active cloud fleet."
         }
 
@@ -2496,7 +2512,7 @@ async def verify_login_code(request: Request):
         except Exception:
             pass
         LOGIN_SESSIONS.pop(chat_id, None)
-        return {"ok": False, "need_2fa": False, "error": "Verification code expired. Please tap Add Account to start over."}
+        return {"ok": False, "need_2fa": False, "expired": True, "error": "Verification code expired. Tap Request Fresh Code to receive a new one."}
     except Exception as e:
         logger.error(f"[Standby Cloud Login] Sign-in error: {e}")
         return {"ok": False, "need_2fa": False, "error": str(e)}
@@ -4039,7 +4055,7 @@ LAST_FARM_RUN = {
 
 @app.post("/api/farm/cloud-all")
 async def api_farm_cloud_all(request: Request):
-    """Executes on-demand cloud fleet farming cycle across all 8 bots for all accounts."""
+    """Executes on-demand cloud fleet farming cycle across all 5 legitimate bots for accounts."""
     auth = request.headers.get("Authorization") or ""
     req_secret = request.query_params.get("secret", "")
     if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
@@ -4047,6 +4063,7 @@ async def api_farm_cloud_all(request: Request):
 
     sync_mode = request.query_params.get("sync") == "1"
     force_mode = request.query_params.get("force") == "1"
+    shard_param = str(request.query_params.get("shard") or os.getenv("NODE_SHARD") or "all").lower()
 
     async def _execute_farming():
         global LAST_FARM_RUN
@@ -4055,6 +4072,13 @@ async def api_farm_cloud_all(request: Request):
         try:
             async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as session:
                 accounts = await fetch_accounts_from_cloud()
+                if shard_param == "1":
+                    accounts = [a for a in accounts if int(a.get("index") or 0) <= 9]
+                    logger.info(f"[Farm Trigger] Partition Shard 1: Selected accounts 1-9 ({len(accounts)} accounts)")
+                elif shard_param == "2":
+                    accounts = [a for a in accounts if int(a.get("index") or 0) > 9]
+                    logger.info(f"[Farm Trigger] Partition Shard 2: Selected accounts 10-18 ({len(accounts)} accounts)")
+
                 tokens = await fetch_cloud_miniapp_tokens(session)
                 res = await run_cloud_fleet_farming_cycle(session, accounts, tokens, force=force_mode)
                 LAST_FARM_RUN["status"] = "completed"
@@ -4075,7 +4099,8 @@ async def api_farm_cloud_all(request: Request):
     return {
         "ok": True,
         "status": "dispatched",
-        "message": "Full 8-bot cloud farming cycle dispatched across all accounts in the fleet.",
+        "shard": shard_param,
+        "message": f"Full 5-bot cloud farming cycle dispatched for Shard {shard_param}.",
         "timestamp": time.time()
     }
 
