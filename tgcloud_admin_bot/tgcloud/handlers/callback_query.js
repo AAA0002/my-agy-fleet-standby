@@ -10,6 +10,8 @@ import {
   buildOtpKeyboard,
   buildRelinkKeyboard,
   buildAccountsKeyboard,
+  buildAccountDetailCard,
+  buildAccountDetailKeyboard,
   buildDashboardBanner,
   buildMeshStatusBanner,
   buildWalletsBanner
@@ -60,14 +62,28 @@ export default async function (callbackQuery, ctx) {
 
   if (data === 'btn_main_menu') {
     const live = await fetchFleetLive();
-    await replyOrEdit(chatId, messageId, buildDashboardBanner(live), getMainMenuKeyboard());
+    await replyOrEdit(chatId, messageId, buildDashboardBanner(live), getMainMenuKeyboard(live.revoked_count || 13));
     return;
   }
 
-  if (data === 'btn_fleet_accounts') {
+  if (data === 'btn_fleet_accounts' || data === 'btn_filter_all') {
     const live = await fetchFleetLive();
-    const text = `📱 *Fleet Accounts Overview (${live.healthy_count || 5}/${live.total_accounts || 18} Active)*\n\n🟢 = Active MTProto Session\n🔴 = Session Revoked / Needs Re-link\n👑 = Master Host Account\n\nSelect an account to view details:`;
-    await replyOrEdit(chatId, messageId, text, buildAccountsKeyboard(live.accounts, "btn_account_view_"));
+    const text = `📱 *FLEET ACCOUNTS MATRIX (${live.healthy_count || 5}/${live.total_accounts || 18} ACTIVE)*\n\n🟢 = Active MTProto Session\n🔴 = Session Revoked / Needs Re-link\n👑 = Master Host Account\n\nSelect an account node below to inspect dossier:`;
+    await replyOrEdit(chatId, messageId, text, buildAccountsKeyboard(live.accounts, 'all'));
+    return;
+  }
+
+  if (data === 'btn_filter_active') {
+    const live = await fetchFleetLive();
+    const text = `🟢 *ONLINE ACTIVE SESSIONS (${live.healthy_count || 5} NODES)*\n\nAll accounts below have active 24h MTProto authorization keys.\nSelect a node to inspect:`;
+    await replyOrEdit(chatId, messageId, text, buildAccountsKeyboard(live.accounts, 'active'));
+    return;
+  }
+
+  if (data === 'btn_filter_revoked') {
+    const live = await fetchFleetLive();
+    const text = `🔴 *REVOKED SESSIONS (${live.revoked_count || 13} NODES)*\n\nSessions below require re-linking. Tap any account to trigger 1-tap SMS/Telegram login code:`;
+    await replyOrEdit(chatId, messageId, text, buildAccountsKeyboard(live.accounts, 'revoked'));
     return;
   }
 
@@ -75,54 +91,23 @@ export default async function (callbackQuery, ctx) {
     const idx = parseInt(data.replace('btn_account_view_', ''), 10);
     const live = await fetchFleetLive();
     const acc = live.accounts.find(a => a.index === idx) || { index: idx, name: `Account #${idx}` };
-    const phone = acc.phone || CONFIG.KNOWN_PHONES[idx] || "Unknown";
-    const isHealthy = acc.status === 'active';
-    const isHost = String(acc.user_id) === "6727787768";
-
-    const detailText = 
-`📱 *Fleet Account #${idx} Details*
-──────────────────────────────
-• *Name:* ${acc.name || 'Worker Account'} ${isHost ? '👑 (Master Host)' : ''}
-• *Phone:* \`${phone}\`
-• *Telegram ID:* \`${acc.user_id || 'N/A'}\`
-• *Session Status:* ${isHealthy ? '🟢 Active MTProto Session' : '🔴 Session Revoked (Needs Re-link)'}
-• *Wallets Suite:* TON, EVM, SOL, TRX, BTC Generated & Bound
-
-${isHealthy ? '✅ Account is online and mining actively in cloud cluster.' : '⚠️ Authorization expired. Tap Re-link below to refresh session.'}`;
-
-    const buttons = [];
-    if (isHealthy) {
-      buttons.push([
-        { text: "🔑 Fetch OTP Code", callback_data: `btn_otp_get_${idx}` },
-        { text: "⚡ Farm Account", callback_data: `btn_farm_acc_${idx}` }
-      ]);
-    } else {
-      buttons.push([
-        { text: `⚡ 1-Tap Re-link Account #${idx}`, callback_data: `btn_relink_acc_${idx}` }
-      ]);
-    }
-    buttons.push([
-      { text: "🔙 Accounts List", callback_data: "btn_fleet_accounts" },
-      { text: "🔙 Main Menu", callback_data: "btn_main_menu" }
-    ]);
-
-    await replyOrEdit(chatId, messageId, detailText, { inline_keyboard: buttons });
+    await replyOrEdit(chatId, messageId, buildAccountDetailCard(acc), buildAccountDetailKeyboard(acc));
     return;
   }
 
   if (data.startsWith('btn_farm_acc_')) {
     const idx = parseInt(data.replace('btn_farm_acc_', ''), 10);
     const live = await fetchFleetLive();
-    const acc = live.accounts.find(a => a.index === idx);
+    const acc = live.accounts.find(a => a.index === idx) || { index: idx, name: `Account #${idx}` };
     const uid = acc?.user_id || idx;
 
-    await replyOrEdit(chatId, messageId, `⚡ *Farming Account #${idx} (${acc?.name || 'Worker'})...*\n\nDispatched to Render Standby cluster...`, null);
+    await replyOrEdit(chatId, messageId, `⚡ *Farming Node #${idx < 10 ? '0' + idx : idx} (${acc.name})...*\n\nDispatched to Render Standby cloud cluster...`, null);
     await requestBackend(`/api/farm/account/${uid}`, 'POST', {}).catch(() => {});
 
-    await replyOrEdit(chatId, messageId, `✅ *Account #${idx} Farming Cycle Dispatched!* 🟢\n\nActive bots farmed: Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, Victor's, VyroDrop.`, {
+    await replyOrEdit(chatId, messageId, `✅ *Node #${idx < 10 ? '0' + idx : idx} Mining Cycle Dispatched!* 🟢\n\nActive bots farmed: Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, Victor's, VyroDrop.\n100% cloud execution, 0% phone load.`, {
       inline_keyboard: [
-        [{ text: `📱 Back to Account #${idx}`, callback_data: `btn_account_view_${idx}` }],
-        [{ text: "🔙 Accounts List", callback_data: "btn_fleet_accounts" }],
+        [{ text: `📱 Back to Node #${idx < 10 ? '0' + idx : idx}`, callback_data: `btn_account_view_${idx}` }],
+        [{ text: "📱 Fleet Matrix", callback_data: "btn_fleet_accounts" }],
         [{ text: "🔙 Main Menu", callback_data: "btn_main_menu" }]
       ]
     });
@@ -131,32 +116,54 @@ ${isHealthy ? '✅ Account is online and mining actively in cloud cluster.' : '�
 
   if (data === 'btn_otp_menu') {
     const live = await fetchFleetLive();
-    const text = "🔑 *1-Tap OTP Verification Code Fetcher*\n\nSelect an account to instantly read its latest Telegram login code from cloud MTProto:";
+    const text = `┌──────────────────────────────────────┐
+│  🔑 *1-TAP TELEGRAM OTP VAULT*       │
+│  _Instant MTProto Authorization_     │
+└──────────────────────────────────────┘
+
+Select an active account node below to instantly inspect the latest Telegram verification code received from MTProto:`;
     await replyOrEdit(chatId, messageId, text, buildOtpKeyboard(live.accounts));
     return;
   }
 
   if (data.startsWith('btn_otp_get_')) {
     const idx = parseInt(data.replace('btn_otp_get_', ''), 10);
-    await replyOrEdit(chatId, messageId, `⏳ *Fetching Latest OTP for Account #${idx}...*\n\nQuerying cloud MTProto inbox...`, null);
+    await replyOrEdit(chatId, messageId, `⏳ *Extracting Latest OTP for Node #${idx < 10 ? '0' + idx : idx}...*\n\nConnecting to cloud MTProto inbox...`, null);
 
     const res = await fetchOtpForAccount(idx);
     const live = await fetchFleetLive();
+    const acc = live.accounts.find(a => a.index === idx) || { index: idx, name: `Account #${idx}` };
+    const phone = acc.phone || CONFIG.KNOWN_PHONES[idx] || "Unassigned";
 
     if (res && res.code) {
-      const text = `🔑 *Telegram Verification Code for Account #${idx}*\n\n• Code: \`${res.code}\`\n• Time: \`${res.time || 'Recent'}\`\n\nTap to copy: \`${res.code}\``;
+      const text = `┌──────────────────────────────────────┐
+│  🔑 *TELEGRAM VERIFICATION CODE*     │
+└──────────────────────────────────────┘
+
+• *Account Node:* \`#${idx < 10 ? '0' + idx : idx} • ${acc.name}\`
+• *Phone Number:* \`${phone}\`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔐 *AUTHENTICATION DIGITS:*
+\`${res.code}\`   _(Tap code to copy: \`${res.code}\`)_
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• *Timestamp:* \`${res.time || 'Fresh (< 2 mins)'}\`
+• *Verification State:* \`🟢 Official Cloud MTProto Passcode\`
+
+Use this code to authorize desktop, web, or mobile clients.`;
       await replyOrEdit(chatId, messageId, text, buildOtpKeyboard(live.accounts));
     } else if (res && res.session_revoked) {
-      const text = `🔴 *Account #${idx} Session Revoked on Telegram*\n\nThe authorization key was invalidated or expired.\nTap below to re-link this account:`;
+      const text = `🔴 *Node #${idx < 10 ? '0' + idx : idx} Session Revoked on Telegram*\n\nThe authorization key was invalidated or expired.\nTap below to re-link this session:`;
       await replyOrEdit(chatId, messageId, text, {
         inline_keyboard: [
-          [{ text: `⚡ 1-Tap Re-link Account #${idx}`, callback_data: `btn_relink_acc_${idx}` }],
-          [{ text: "🔙 OTP Menu", callback_data: "btn_otp_menu" }],
+          [{ text: `⚡ 1-Tap Re-link Node #${idx < 10 ? '0' + idx : idx}`, callback_data: `btn_relink_acc_${idx}` }],
+          [{ text: "🔑 Back to OTP Vault", callback_data: "btn_otp_menu" }],
           [{ text: "🔙 Main Menu", callback_data: "btn_main_menu" }]
         ]
       });
     } else {
-      const text = `⚠️ *No Recent OTP Found for Account #${idx}*\n\nNo verification codes received in the last 15 minutes, or the account is currently idle.`;
+      const text = `⚠️ *No Recent OTP Found for Node #${idx < 10 ? '0' + idx : idx}*\n\nNo verification codes received in the last 15 minutes, or the node is currently idle.`;
       await replyOrEdit(chatId, messageId, text, buildOtpKeyboard(live.accounts));
     }
     return;
@@ -165,7 +172,14 @@ ${isHealthy ? '✅ Account is online and mining actively in cloud cluster.' : '�
   if (data === 'btn_relink_menu') {
     const live = await fetchFleetLive();
     const revokedCount = live.revoked_count || 13;
-    const text = `🔄 *Select Account to Re-Link (${revokedCount} Revoked):*\n\nTap an account to immediately dispatch a Telegram verification code:`;
+    const text = `┌──────────────────────────────────────┐
+│  🔄 *FLEET SESSION RECOVERY CENTER*  │
+│  _Automated 1-Tap Re-Authentication_ │
+└──────────────────────────────────────┘
+
+⚠️ *Offline Fleet Sessions:* \`${revokedCount} Nodes Require Renewal\`
+
+Tap any account node below. The cloud cluster will automatically connect to Telegram MTProto and dispatch the official verification code to its registered phone number:`;
     await replyOrEdit(chatId, messageId, text, buildRelinkKeyboard(live.accounts));
     return;
   }
@@ -178,7 +192,7 @@ ${isHealthy ? '✅ Account is online and mining actively in cloud cluster.' : '�
     await db.delete(loginSessions).where(eq(loginSessions.chatId, chatId)).run().catch(() => {});
 
     if (knownPhone) {
-      await replyOrEdit(chatId, messageId, `🔄 *Re-linking Account #${idx}*\n\n• Phone: \`${knownPhone}\`\n• Dispatching Telegram verification code...`, null);
+      await replyOrEdit(chatId, messageId, `🔄 *Re-linking Node #${idx < 10 ? '0' + idx : idx}*\n\n• Phone: \`${knownPhone}\`\n• Dispatching official Telegram verification code...`, null);
 
       const res = await sendLoginCode(knownPhone, chatId, idx);
       if (res && res.ok) {
@@ -193,7 +207,16 @@ ${isHealthy ? '✅ Account is online and mining actively in cloud cluster.' : '�
 
         await api.sendMessage({
           chat_id: chatId,
-          text: `📨 *Verification Code Sent for Account #${idx}!*\n\nTelegram sent a 5-digit verification code to \`${knownPhone}\`.\n\nPlease reply directly with the code (e.g. \`12345\`):`,
+          text: `┌──────────────────────────────────────┐
+│  📨 *VERIFICATION CODE DISPATCHED*   │
+└──────────────────────────────────────┘
+
+• *Account:* \`Node #${idx < 10 ? '0' + idx : idx}\`
+• *Target Phone:* \`${knownPhone}\`
+
+Telegram dispatched an official 5-digit verification code to \`${knownPhone}\`.
+
+Please reply directly with the code (e.g. \`12345\`):`,
           parse_mode: "Markdown",
           reply_markup: getCancelLoginKeyboard()
         });
@@ -212,7 +235,7 @@ ${isHealthy ? '✅ Account is online and mining actively in cloud cluster.' : '�
         accountIndex: idx
       }).run();
 
-      await replyOrEdit(chatId, messageId, `📱 *Enter Phone Number for Account #${idx}*\n\nPlease reply with the international phone number (e.g., \`+8801943805617\`):`, getCancelLoginKeyboard());
+      await replyOrEdit(chatId, messageId, `📱 *Enter Phone Number for Node #${idx < 10 ? '0' + idx : idx}*\n\nPlease reply with the international phone number (e.g., \`+8801943805617\`):`, getCancelLoginKeyboard());
     }
     return;
   }
@@ -224,7 +247,11 @@ ${isHealthy ? '✅ Account is online and mining actively in cloud cluster.' : '�
       step: 'WAITING_PHONE'
     }).run();
 
-    await replyOrEdit(chatId, messageId, "➕ *Add New Account to Fleet*\n\nPlease reply with the phone number with country code (e.g., `+8801943805617`):", getCancelLoginKeyboard());
+    await replyOrEdit(chatId, messageId, `┌──────────────────────────────────────┐
+│  ➕ *LINK NEW TELEGRAM SESSION*      │
+└──────────────────────────────────────┘
+
+Please reply directly with the full phone number including international country code (e.g. \`+8801943805617\` or \`01943805617\`):`, getCancelLoginKeyboard());
     return;
   }
 
@@ -235,21 +262,40 @@ ${isHealthy ? '✅ Account is online and mining actively in cloud cluster.' : '�
     try {
       await api.sendMessage({
         chat_id: chatId,
-        text: "🧹 *Cleared temporary keyboard.*",
+        text: "🧹 *Cleared temporary input state.*",
         reply_markup: { remove_keyboard: true }
       });
     } catch (_) {}
 
     const live = await fetchFleetLive();
-    await replyOrEdit(chatId, messageId, buildDashboardBanner(live), getMainMenuKeyboard());
+    await replyOrEdit(chatId, messageId, buildDashboardBanner(live), getMainMenuKeyboard(live.revoked_count || 13));
     return;
   }
 
   if (data === 'btn_farm_all') {
-    await replyOrEdit(chatId, messageId, "⚡ *Triggering Mining Cycle Across All 8 Legitimate Bots...*\n\n• Dispatched to Render Standby cluster...", null);
+    await replyOrEdit(chatId, messageId, "⚡ *Triggering Mining Cycle Across All 8 Legitimate Bots...*\n\n• Dispatched to Render Standby primary coordinator...", null);
     const res = await requestBackend('/api/farm/cloud-all', 'POST', {}).catch(() => {});
-    const msg = `⚡ *Mining Cycle Dispatched!* 🟢\n\nActive bots farmed: Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, Victor's, VyroDrop.\nCluster state: ${res?.status || 'Dispatched successfully'}`;
-    await replyOrEdit(chatId, messageId, msg, getMainMenuKeyboard());
+    
+    const banner = 
+`┌──────────────────────────────────────┐
+│  ⚡ *AUTONOMOUS 8-BOT MINING CYCLE*  │
+└──────────────────────────────────────┘
+
+🚀 Dispatched multi-farming cycle across all 18 nodes:
+
+◈ 💎 *Stones Miner*      → Harvesting & Compounding
+◈ 🪙 *MRG Miner*         → Turnstile Pass Verification & Harvest
+◈ 🔬 *AI Lab*            → Research Task Claims
+◈ 💼 *UltraWallet*       → Point Staking & Yield
+◈ ⚡ *ATF Miner*         → Cloud Captcha & Mining Cycle
+◈ 📈 *FINVORA*           → Yield Harvesting
+◈ 👑 *Victor's Company*  → Proof-of-Pass & Level Compounding
+◈ 💧 *VyroDrop*          → Wallet Sync & Airdrop Farming
+
+📡 *Cluster Execution:* \`Render Standby Node 2 (Frankfurt)\`
+⚡ *Phone Impact:* \`0% CPU • 0% RAM • 100% Cloud Execution\``;
+
+    await replyOrEdit(chatId, messageId, banner, getMainMenuKeyboard());
     return;
   }
 

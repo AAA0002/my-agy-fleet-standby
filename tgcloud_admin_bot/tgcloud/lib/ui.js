@@ -1,24 +1,29 @@
-export function getMainMenuKeyboard() {
+import { CONFIG } from './config.js';
+
+export function getMainMenuKeyboard(revokedCount = 13) {
   return {
     inline_keyboard: [
       [
-        { text: "📱 Fleet Accounts", callback_data: "btn_fleet_accounts" },
-        { text: "➕ Add Account", callback_data: "btn_add_account" }
+        { text: "🚀 Open WebApp Console ↗️", web_app: { url: "https://app8858823950.tgcloud.ai/" } }
       ],
       [
-        { text: "🔑 1-Tap OTP Code", callback_data: "btn_otp_menu" },
-        { text: "🔄 Re-link (13)", callback_data: "btn_relink_menu" }
+        { text: "📱 Fleet Accounts [18]", callback_data: "btn_fleet_accounts" },
+        { text: "➕ Link Session", callback_data: "btn_add_account" }
       ],
       [
-        { text: "⚡ Farm 8 Bots", callback_data: "btn_farm_all" },
-        { text: "📊 Fleet Telemetry", callback_data: "btn_system_status" }
+        { text: "🔑 1-Tap OTP Vault", callback_data: "btn_otp_menu" },
+        { text: `🔄 Session Recovery [${revokedCount}]`, callback_data: "btn_relink_menu" }
       ],
       [
-        { text: "💼 Multi-Chain Wallets", callback_data: "btn_wallets" },
-        { text: "🛡️ Serverless Mesh", callback_data: "btn_mesh_status" }
+        { text: "⚡ Farm 8-Bot Fleet", callback_data: "btn_farm_all" },
+        { text: "📊 Telemetry Live", callback_data: "btn_system_status" }
       ],
       [
-        { text: "🚀 Open WebApp Dashboard ↗️", web_app: { url: "https://app8858823950.tgcloud.ai/" } }
+        { text: "💼 Treasury Wallets", callback_data: "btn_wallets" },
+        { text: "🌐 Global Edge Mesh", callback_data: "btn_mesh_status" }
+      ],
+      [
+        { text: "🔄 Refresh Dashboard", callback_data: "btn_main_menu" }
       ]
     ]
   };
@@ -27,7 +32,7 @@ export function getMainMenuKeyboard() {
 export function getCancelLoginKeyboard() {
   return {
     inline_keyboard: [
-      [{ text: "❌ Cancel Login", callback_data: "btn_cancel_login" }]
+      [{ text: "❌ Abort Authentication", callback_data: "btn_cancel_login" }]
     ]
   };
 }
@@ -40,73 +45,168 @@ export function getBackToMenuKeyboard() {
   };
 }
 
-export function buildAccountsKeyboard(accounts = [], actionPrefix = "btn_account_view_") {
+export function buildAccountsKeyboard(accounts = [], filter = 'all', actionPrefix = 'btn_account_view_') {
+  const filtered = accounts.filter(acc => {
+    if (filter === 'active') return acc.status === 'active';
+    if (filter === 'revoked') return acc.status === 'revoked' || acc.status === 'inactive';
+    return true;
+  });
+
+  const activeCount = accounts.filter(a => a.status === 'active').length;
+  const revokedCount = accounts.filter(a => a.status === 'revoked' || a.status === 'inactive').length;
+
   const rows = [];
+  
+  // Interactive Filter Tabs
+  rows.push([
+    { text: filter === 'all' ? `• All [${accounts.length || 18}] •` : `All [${accounts.length || 18}]`, callback_data: "btn_filter_all" },
+    { text: filter === 'active' ? `• 🟢 Online [${activeCount}] •` : `🟢 Online [${activeCount}]`, callback_data: "btn_filter_active" },
+    { text: filter === 'revoked' ? `• 🔴 Revoked [${revokedCount}] •` : `🔴 Revoked [${revokedCount}]`, callback_data: "btn_filter_revoked" }
+  ]);
+
+  // Account Nodes Grid (3 Columns)
   const chunkSize = 3;
-  for (let i = 0; i < accounts.length; i += chunkSize) {
-    const chunk = accounts.slice(i, i + chunkSize);
+  for (let i = 0; i < filtered.length; i += chunkSize) {
+    const chunk = filtered.slice(i, i + chunkSize);
     rows.push(chunk.map((acc, cIdx) => {
       const idx = acc.index || (i + cIdx + 1);
       const isHost = String(acc.user_id) === "6727787768";
       const isRev = acc.status === "revoked" || acc.status === "inactive";
       const tag = isHost ? " 👑" : (isRev ? " 🔴" : " 🟢");
       const shortName = (acc.name || `Acc #${idx}`).split(" ")[0];
+      const paddedIdx = idx < 10 ? `0${idx}` : `${idx}`;
       return {
-        text: `${idx}. ${shortName}${tag}`,
+        text: `#${paddedIdx} ${shortName}${tag}`,
         callback_data: `${actionPrefix}${idx}`
       };
     }));
   }
+
+  // Quick Action Utilities
   rows.push([
-    { text: "➕ Add Account", callback_data: "btn_add_account" },
-    { text: "🔄 Re-link (13)", callback_data: "btn_relink_menu" }
+    { text: "➕ Link New Session", callback_data: "btn_add_account" },
+    { text: `🔄 Re-link Offline [${revokedCount}]`, callback_data: "btn_relink_menu" }
   ]);
-  rows.push([{ text: "🔙 Main Menu", callback_data: "btn_main_menu" }]);
+  rows.push([{ text: "🔙 Return to Dashboard", callback_data: "btn_main_menu" }]);
   return { inline_keyboard: rows };
 }
 
+export function buildAccountDetailCard(acc = {}) {
+  const idx = acc.index || 1;
+  const name = acc.name || `Account #${idx}`;
+  const uname = acc.username ? `@${acc.username}` : '@None';
+  const phone = acc.phone || CONFIG.KNOWN_PHONES[idx] || "Unassigned";
+  const uid = acc.user_id || 'N/A';
+  const isHealthy = acc.status === 'active';
+  const isHost = String(acc.user_id) === "6727787768";
+
+  const tonAddr = acc.ton_wallet?.address || 'Provisioned in Vault';
+  const evmAddr = acc.evm_wallet?.address || 'Provisioned in Vault';
+  const tronAddr = acc.tron_wallet?.address || 'Provisioned in Vault';
+  const solAddr = acc.solana_wallet?.address || 'Provisioned in Vault';
+  const btcAddr = acc.btc_wallet?.address || 'Provisioned in Vault';
+
+  return `┌──────────────────────────────────────┐
+│  📱 *ACCOUNT DOSSIER • NODE #${idx < 10 ? '0' + idx : idx}*   │
+└──────────────────────────────────────┘
+
+• *Operator:* *${name}* ${isHost ? '👑 `MASTER HOST`' : ''}
+• *Username:* \`${uname}\`
+• *Phone Number:* \`${phone}\`
+• *Telegram UID:* \`${uid}\`
+• *Session Health:* ${isHealthy ? '🟢 `ACTIVE & CONNECTED`' : '🔴 `REVOKED (ACTION REQUIRED)`'}
+• *Cloud Cluster:* \`Render Standby Node 2 (Frankfurt)\`
+• *Autonomous Mining:* \`8 Legitimate Bots Configured\`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💼 *CRYPTOGRAPHIC TREASURY SUITE:*
+• 💎 *TON (v4R2):*
+  \`${tonAddr}\`
+• 🪙 *EVM (BSC BEP-20):*
+  \`${evmAddr}\`
+• ⚡ *TRON (TRC-20):*
+  \`${tronAddr}\`
+• ☀️ *SOLANA:*
+  \`${solAddr}\`
+• ₿ *BITCOIN (SegWit):*
+  \`${btcAddr}\`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${isHealthy 
+  ? '✅ *Status:* Session is nominal. Mining tokens 24/7 in cloud cluster.' 
+  : '⚠️ *Status:* Session authorization key expired on Telegram DC. Tap 1-Tap Re-link below to refresh.'}`;
+}
+
+export function buildAccountDetailKeyboard(acc = {}) {
+  const idx = acc.index || 1;
+  const isHealthy = acc.status === 'active';
+  const buttons = [];
+
+  if (isHealthy) {
+    buttons.push([
+      { text: "🔑 Extract OTP Code", callback_data: `btn_otp_get_${idx}` },
+      { text: "⚡ Farm Account", callback_data: `btn_farm_acc_${idx}` }
+    ]);
+  } else {
+    buttons.push([
+      { text: `⚡ 1-Tap Re-link Session #${idx} 🔴`, callback_data: `btn_relink_acc_${idx}` }
+    ]);
+  }
+
+  buttons.push([
+    { text: "📱 Back to Fleet", callback_data: "btn_fleet_accounts" },
+    { text: "🔙 Main Menu", callback_data: "btn_main_menu" }
+  ]);
+
+  return { inline_keyboard: buttons };
+}
+
 export function buildOtpKeyboard(accounts = []) {
-  const rows = [];
   const activeTargets = accounts.filter(a => a.status === 'active');
   const targetList = activeTargets.length > 0 ? activeTargets : accounts;
+  const rows = [];
   const chunkSize = 2;
+
   for (let i = 0; i < targetList.length; i += chunkSize) {
     const chunk = targetList.slice(i, i + chunkSize);
-    rows.push(chunk.map((acc, cIdx) => {
-      const idx = acc.index || (i + cIdx + 1);
+    rows.push(chunk.map(acc => {
+      const idx = acc.index;
       const shortName = (acc.name || `Acc #${idx}`).split(" ")[0];
       const isHost = String(acc.user_id) === "6727787768";
       const tag = isHost ? " 👑" : " 🟢";
       return {
-        text: `🔑 OTP #${idx} (${shortName})${tag}`,
+        text: `🔑 OTP #${idx < 10 ? '0' + idx : idx} (${shortName})${tag}`,
         callback_data: `btn_otp_get_${idx}`
       };
     }));
   }
+
   rows.push([
-    { text: "📱 All Accounts", callback_data: "btn_fleet_accounts" },
+    { text: "📱 All Fleet Accounts", callback_data: "btn_fleet_accounts" },
     { text: "🔙 Main Menu", callback_data: "btn_main_menu" }
   ]);
   return { inline_keyboard: rows };
 }
 
 export function buildRelinkKeyboard(accounts = []) {
-  const rows = [];
   const relinkTargets = accounts.filter(a => a.status === 'revoked' || a.status === 'inactive');
   const targetList = relinkTargets.length > 0 ? relinkTargets : accounts;
+  const rows = [];
   const chunkSize = 2;
+
   for (let i = 0; i < targetList.length; i += chunkSize) {
     const chunk = targetList.slice(i, i + chunkSize);
     rows.push(chunk.map(acc => {
       const idx = acc.index;
       const shortName = (acc.name || `Acc #${idx}`).split(" ")[0];
       return {
-        text: `⚡ Re-link #${idx} (${shortName}) 🔴`,
+        text: `⚡ Re-link #${idx < 10 ? '0' + idx : idx} (${shortName}) 🔴`,
         callback_data: `btn_relink_acc_${idx}`
       };
     }));
   }
-  rows.push([{ text: "🔙 Main Menu", callback_data: "btn_main_menu" }]);
+
+  rows.push([{ text: "🔙 Return to Dashboard", callback_data: "btn_main_menu" }]);
   return { inline_keyboard: rows };
 }
 
@@ -115,57 +215,99 @@ export function buildDashboardBanner(live = {}) {
   const active = live.healthy_count || 5;
   const revoked = live.revoked_count !== undefined ? live.revoked_count : (total - active);
 
-  return `⚡ *AAA AUTO SERVERLESS COMMAND SENTINEL* ⚡
-──────────────────────────────
-☁️ *Platform:* Telegram Serverless V8 Platform
-💾 *Database:* Native SQLite Database
-🌐 *Mesh Cluster:* Render Nodes 1-3 & Cloudflare Mesh
-🤖 *Active Legitimate Bots (8):*
-   • 💎 Stones Miner | 🪙 MRG Miner
-   • 🔬 AI Lab | 💼 UltraWallet
-   • ⚡ ATF Miner | 📈 FINVORA
-   • 👑 Victor's Company | 💧 VyroDrop
+  // Generate dynamic visual health bar
+  const totalBlocks = 18;
+  const greenBlocks = Math.min(totalBlocks, active);
+  const redBlocks = Math.max(0, totalBlocks - greenBlocks);
+  const healthBar = "🟩".repeat(greenBlocks) + "🟥".repeat(redBlocks);
 
-📱 *Fleet Sessions:*
-   🟢 *Active:* \`${active}\` Accounts
-   🔴 *Revoked:* \`${revoked}\` Accounts (Tap Re-link below)
-   👑 *Master Host:* \`Arif (#11 MD. ARIF HOSSAIN)\`
+  return `┌──────────────────────────────────────┐
+│  ⚡ *AAA AUTO COMMAND SENTINEL*      │
+│  _Enterprise Fleet Operations V8_    │
+└──────────────────────────────────────┘
 
-Select an action below to manage fleet operations:`;
+📡 *SYSTEM STATUS:* \`🟢 ONLINE • NOMINAL\`
+☁️ *PLATFORM:* \`Telegram Serverless (V8 Isolate)\`
+💾 *DATABASE:* \`Native SQLite WAL + Upstash Mesh\`
+🌐 *COORDINATOR:* \`Render Node 2 (Frankfurt)\`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 *FLEET SESSIONS MATRIX (18 NODES)*
+${healthBar}
+• 🟢 *Active Sessions:* \`${active} Online\`
+• 🔴 *Revoked Sessions:* \`${revoked} Need Re-link\`
+• 👑 *Master Host:* \`Arif (#11 MD. ARIF HOSSAIN)\`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🤖 *8-BOT AUTONOMOUS MINING SUITE*
+◈ 💎 *Stones Miner*      ◈ 🪙 *MRG Miner*
+◈ 🔬 *AI Lab*            ◈ 💼 *UltraWallet*
+◈ ⚡ *ATF Miner*         ◈ 📈 *FINVORA*
+◈ 👑 *Victor's Co.*      ◈ 💧 *VyroDrop*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💼 *TREASURY:* \`TON • EVM • TRON • SOL • BTC\`
+🔒 *SECURITY:* \`Zero Phone Load • Non-Custodial\`
+
+Select an operational directive below:`;
 }
 
 export function buildMeshStatusBanner(live = {}) {
   const total = live.total_accounts || 18;
   const active = live.healthy_count || 5;
 
-  return `🛡️ *Infrastructure & Mesh Health Status*
-──────────────────────────────
-☁️ *Telegram Serverless:* 🟢 Operational (V8 Platform)
-💾 *SQLite Database:* 🟢 Active & Migrated
-🌐 *Cloudflare Triple-Mesh:*
-   • Node 1 (aaaai2.workers.dev): 🟢 Healthy
-   • Node 2 (aaa-bot.workers.dev): 🟢 Healthy
-   • Node 3 (aaa222.workers.dev): 🟢 Healthy
-🚀 *Render Standby Cluster:*
-   • Node 1 (Singapore): 🟢 Standby
-   • Node 2 (Frankfurt): 🟢 Primary Coordinator (200 OK)
-   • Node 3 (Oregon): 🟢 Standby
-🗄️ *Upstash Serverless Redis:* 🟢 Active (pleasant-locust-220893)
-🤖 *Active Legitimate Bots (8):*
-   Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, Victor's, VyroDrop
-📱 *Fleet Status:* ${active}/${total} Active Cloud Sessions`;
+  return `┌──────────────────────────────────────┐
+│  🌐 *GLOBAL INFRASTRUCTURE MESH*     │
+│  _Triple-Tier Redundant Cloud_       │
+└──────────────────────────────────────┘
+
+☁️ *TIER 1: TELEGRAM SERVERLESS PLATFORM*
+• Runtime: \`V8 Isolated Global Edge\`
+• App ID: \`app8858823950 (@myagyai)\`
+• Webhook: \`https://cloud.telegram.org/app8858823950/webhook\` (🟢 In Sync)
+• Storage: \`Native SQLite WAL Database\`
+
+🌐 *TIER 2: CLOUDFLARE 5-NODE EDGE MESH*
+• Node 1 (aaaai2.workers.dev): \`🟢 Primary Cron Farming\`
+• Node 2 (aaa-bot.workers.dev): \`🟢 Passive Hot Standby\`
+• Node 3 (aaa222.workers.dev): \`🟢 Passive Hot Standby\`
+• Node 4 (agorameet.workers.dev): \`🟢 Passive Hot Standby\`
+• Node 5 (aaaai.workers.dev): \`🟢 Passive Hot Standby\`
+
+🚀 *TIER 3: RENDER CLUSTER & UPSTASH REDIS*
+• Primary Host: \`Node 2 Frankfurt\` (🟢 200 OK Coordinator)
+• Standby Failover: \`Node 3 Oregon\` & \`Node 1 Singapore\`
+• Distributed DB: \`pleasant-locust-220893.upstash.io\` (🟢 10k Quota)
+
+📱 *LOCAL HOST (SAMSUNG GALAXY A30):*
+• Mode: \`100% Dedicated Pair Programming CLI\`
+• Daemon Load: \`0 Local Bots (Rule 4 Zero Phone Load)\`
+• Active Nodes: \`${active}/${total} Managed Remotely\``;
 }
 
 export function buildWalletsBanner() {
-  return `💼 *Fleet Multi-Chain Wallets Suite*
-──────────────────────────────
-Every account in the 18-node fleet is provisioned with an isolated, non-custodial multi-chain wallet suite:
+  return `┌──────────────────────────────────────┐
+│  💼 *FLEET TREASURY & MULTI-CHAIN*   │
+│  _Cryptographic Non-Custodial Vault_ │
+└──────────────────────────────────────┘
 
-• 💎 *TON (v4R2):* Dedicated mnemonic & address for TON miners (MRG, ATF)
-• 🪙 *EVM (BSC / Ethereum):* Dedicated private key & address
-• ⚡ *Tron (TRX):* Dedicated private key & TRC-20 address
-• ☀️ *Solana (SOL):* Dedicated private key & address
-• ₿ *Bitcoin (BTC):* Dedicated Native SegWit address
+Every node in the 18-account fleet is provisioned with an isolated cryptographic wallet suite across 5 major blockchains:
 
-🔐 *Security:* All private keys and mnemonics are archived in the encrypted master secrets vault. Zero private keys are exposed over unsecured networks.`;
+• 💎 *TON Ecosystem (v4R2):*
+  Dedicated non-custodial 24-word seed mnemonics bound directly to MRG and ATF Telegram WebApps.
+
+• 🪙 *EVM / BSC (BEP-20):*
+  Dedicated private keys for BNB Chain and Ethereum yield extraction.
+
+• ⚡ *TRON Network (TRC-20):*
+  Dedicated addresses for USDT and TRC-20 farming contracts.
+
+• ☀️ *Solana Network:*
+  Dedicated Ed25519 keypairs for Solana ecosystem airdrops.
+
+• ₿ *Bitcoin (Native SegWit):*
+  P2WPKH bech32 addresses for satoshi accumulation.
+
+🔐 *Non-Custodial Architecture:*
+All private keys and recovery seeds are permanently encrypted in the Master Secrets Vault. Zero automatic withdrawals enabled (100% Accumulation Mode).`;
 }

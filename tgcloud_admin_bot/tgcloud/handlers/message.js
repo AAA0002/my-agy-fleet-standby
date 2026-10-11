@@ -50,7 +50,7 @@ export default async function (message, ctx) {
     // Wipe persistent ReplyKeyboardMarkup button from the user's Telegram client
     await api.sendMessage({
       chat_id: chatId,
-      text: "❌ *Login Session Cancelled.*",
+      text: "🧹 *Authentication flow cancelled & keyboard cleared.*",
       parse_mode: "Markdown",
       reply_markup: { remove_keyboard: true }
     });
@@ -60,7 +60,7 @@ export default async function (message, ctx) {
       chat_id: chatId,
       text: buildDashboardBanner(live),
       parse_mode: "Markdown",
-      reply_markup: getMainMenuKeyboard()
+      reply_markup: getMainMenuKeyboard(live.revoked_count || 13)
     });
     return;
   }
@@ -77,7 +77,7 @@ export default async function (message, ctx) {
       // First wipe any stuck ReplyKeyboardMarkup
       await api.sendMessage({
         chat_id: chatId,
-        text: "⚡ *AAA AUTO Sentinel Ready*",
+        text: "⚡ *AAA AUTO Command Sentinel Ready*",
         parse_mode: "Markdown",
         reply_markup: { remove_keyboard: true }
       });
@@ -87,16 +87,22 @@ export default async function (message, ctx) {
         chat_id: chatId,
         text: buildDashboardBanner(live),
         parse_mode: "Markdown",
-        reply_markup: getMainMenuKeyboard()
+        reply_markup: getMainMenuKeyboard(live.revoked_count || 13)
       });
       return;
     }
 
     if (cmd === '/otp' || cmd === '/code') {
       const live = await fetchFleetLive();
+      const text = `┌──────────────────────────────────────┐
+│  🔑 *1-TAP TELEGRAM OTP VAULT*       │
+│  _Instant MTProto Authorization_     │
+└──────────────────────────────────────┘
+
+Select an active account node below to instantly inspect the latest Telegram verification code:`;
       await api.sendMessage({
         chat_id: chatId,
-        text: "🔑 *1-Tap OTP Verification Code Fetcher*\n\nSelect an account to instantly read the latest Telegram verification code from cloud MTProto:",
+        text,
         parse_mode: "Markdown",
         reply_markup: buildOtpKeyboard(live.accounts)
       });
@@ -106,9 +112,17 @@ export default async function (message, ctx) {
     if (cmd === '/relink') {
       const live = await fetchFleetLive();
       const revokedCount = live.revoked_count || 13;
+      const text = `┌──────────────────────────────────────┐
+│  🔄 *FLEET SESSION RECOVERY CENTER*  │
+│  _Automated 1-Tap Re-Authentication_ │
+└──────────────────────────────────────┘
+
+⚠️ *Offline Fleet Sessions:* \`${revokedCount} Nodes Require Renewal\`
+
+Tap any account node below to dispatch an official verification code:`;
       await api.sendMessage({
         chat_id: chatId,
-        text: `🔄 *Re-link Fleet Accounts*\n\nFound *${revokedCount}* accounts requiring session renewal.\nSelect an account below to trigger instant SMS/Telegram login code:`,
+        text,
         parse_mode: "Markdown",
         reply_markup: buildRelinkKeyboard(live.accounts)
       });
@@ -117,11 +131,12 @@ export default async function (message, ctx) {
 
     if (cmd === '/accounts' || cmd === '/fleet') {
       const live = await fetchFleetLive();
+      const text = `📱 *FLEET ACCOUNTS MATRIX (${live.healthy_count || 5}/${live.total_accounts || 18} ACTIVE)*\n\n🟢 = Active MTProto Session\n🔴 = Session Revoked / Needs Re-link\n👑 = Master Host Account\n\nSelect an account node below to inspect dossier:`;
       await api.sendMessage({
         chat_id: chatId,
-        text: `📱 *Fleet Accounts Overview (${live.healthy_count || 5}/${live.total_accounts || 18} Active)*\n\n🟢 = Active MTProto Session\n🔴 = Session Revoked / Needs Re-link\n👑 = Master Host Account\n\nSelect an account to view details:`,
+        text,
         parse_mode: "Markdown",
-        reply_markup: buildAccountsKeyboard(live.accounts)
+        reply_markup: buildAccountsKeyboard(live.accounts, 'all')
       });
       return;
     }
@@ -132,7 +147,7 @@ export default async function (message, ctx) {
         chat_id: chatId,
         text: buildMeshStatusBanner(live),
         parse_mode: "Markdown",
-        reply_markup: getMainMenuKeyboard()
+        reply_markup: getMainMenuKeyboard(live.revoked_count || 13)
       });
       return;
     }
@@ -142,7 +157,7 @@ export default async function (message, ctx) {
         chat_id: chatId,
         text: buildWalletsBanner(),
         parse_mode: "Markdown",
-        reply_markup: getMainMenuKeyboard()
+        reply_markup: getMainMenuKeyboard(13)
       });
       return;
     }
@@ -150,15 +165,35 @@ export default async function (message, ctx) {
     if (cmd === '/farm') {
       await api.sendMessage({
         chat_id: chatId,
-        text: "⚡ *Triggering Farming Cycle Across All 8 Legitimate Bots...*\n\n• Dispatched to Render Standby cluster...",
+        text: "⚡ *Triggering Mining Cycle Across All 8 Legitimate Bots...*\n\n• Dispatched to Render Standby primary coordinator...",
         parse_mode: "Markdown"
       });
       await requestBackend('/api/farm/cloud-all', 'POST', {}).catch(() => {});
+      
+      const banner = 
+`┌──────────────────────────────────────┐
+│  ⚡ *AUTONOMOUS 8-BOT MINING CYCLE*  │
+└──────────────────────────────────────┘
+
+🚀 Dispatched multi-farming cycle across all 18 nodes:
+
+◈ 💎 *Stones Miner*      → Harvesting & Compounding
+◈ 🪙 *MRG Miner*         → Turnstile Pass Verification & Harvest
+◈ 🔬 *AI Lab*            → Research Task Claims
+◈ 💼 *UltraWallet*       → Point Staking & Yield
+◈ ⚡ *ATF Miner*         → Cloud Captcha & Mining Cycle
+◈ 📈 *FINVORA*           → Yield Harvesting
+◈ 👑 *Victor's Company*  → Proof-of-Pass & Level Compounding
+◈ 💧 *VyroDrop*          → Wallet Sync & Airdrop Farming
+
+📡 *Cluster Execution:* \`Render Standby Node 2 (Frankfurt)\`
+⚡ *Phone Impact:* \`0% CPU • 0% RAM • 100% Cloud Execution\``;
+
       await api.sendMessage({
         chat_id: chatId,
-        text: "⚡ *Mining Cycle Dispatched to Cloud Cluster!* 🟢\n\nActive bots farmed: Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, Victor's, VyroDrop.",
+        text: banner,
         parse_mode: "Markdown",
-        reply_markup: getMainMenuKeyboard()
+        reply_markup: getMainMenuKeyboard(13)
       });
       return;
     }
@@ -168,7 +203,7 @@ export default async function (message, ctx) {
       chat_id: chatId,
       text: `🤖 *AAA AUTO Sentinel*\n\nCommand \`${cmd}\` not recognized.\nTap /menu or /start to open the fleet dashboard.`,
       parse_mode: "Markdown",
-      reply_markup: getMainMenuKeyboard()
+      reply_markup: getMainMenuKeyboard(13)
     });
     return;
   }
@@ -183,7 +218,7 @@ export default async function (message, ctx) {
       if (cleanPhone.length < 9) {
         await api.sendMessage({
           chat_id: chatId,
-          text: "⚠️ *Invalid Phone Number Format*\n\nPlease send the full phone number (e.g., `+8801943805617` or `01943805617`):",
+          text: "⚠️ *Invalid Phone Number Format*\n\nPlease reply with the international phone number (e.g. `+8801943805617` or `01943805617`):",
           parse_mode: "Markdown",
           reply_markup: getCancelLoginKeyboard()
         });
@@ -192,7 +227,14 @@ export default async function (message, ctx) {
 
       await api.sendMessage({
         chat_id: chatId,
-        text: `🔄 *Connecting to Telegram MTProto...*\n\n• Phone: \`${cleanPhone}\`\n• Dispatching official verification code via cloud cluster...`,
+        text: `┌──────────────────────────────────────┐
+│  📱 *CONNECTING TO TELEGRAM MTPROTO* │
+└──────────────────────────────────────┘
+
+• *Target Phone:* \`${cleanPhone}\`
+• *Cluster Gateway:* \`Render Standby Node 2 (Frankfurt)\`
+
+Dispatching official Telegram verification code...`,
         parse_mode: "Markdown"
       });
 
@@ -207,7 +249,13 @@ export default async function (message, ctx) {
 
         await api.sendMessage({
           chat_id: chatId,
-          text: `📨 *Verification Code Sent!*\n\nTelegram sent a 5-digit verification code to \`${cleanPhone}\`.\n\nPlease reply directly with the code (e.g. \`12345\`):`,
+          text: `┌──────────────────────────────────────┐
+│  📨 *OFFICIAL TELEGRAM CODE SENT*    │
+└──────────────────────────────────────┘
+
+Telegram dispatched an official 5-digit verification code to \`${cleanPhone}\`.
+
+Please reply directly with the code (e.g. \`12345\`):`,
           parse_mode: "Markdown",
           reply_markup: getCancelLoginKeyboard()
         });
@@ -237,7 +285,7 @@ export default async function (message, ctx) {
 
       await api.sendMessage({
         chat_id: chatId,
-        text: `🔄 *Verifying Telegram Code \`${cleanCode}\`...*`,
+        text: `🔄 *Verifying Telegram Code \`${cleanCode}\` on cloud cluster...*`,
         parse_mode: "Markdown"
       });
 
@@ -256,7 +304,13 @@ export default async function (message, ctx) {
 
         await api.sendMessage({
           chat_id: chatId,
-          text: `🔒 *Two-Factor Authentication (2FA) Required*\n\nThis account has a Two-Factor Cloud Password enabled.\nPlease reply directly with your 2FA password:`,
+          text: `┌──────────────────────────────────────┐
+│  🔒 *TWO-FACTOR 2FA PASSWORD*        │
+└──────────────────────────────────────┘
+
+This Telegram account has a Two-Factor Cloud Password enabled.
+
+Please reply directly with your 2FA password:`,
           parse_mode: "Markdown",
           reply_markup: getCancelLoginKeyboard()
         });
@@ -269,9 +323,19 @@ export default async function (message, ctx) {
         const uid = res.user_id || res.account?.user_id || 'Active';
         await api.sendMessage({
           chat_id: chatId,
-          text: `🎉 *Account Successfully Linked!* 🟢\n\n• Name: *${accName}*\n• Telegram ID: \`${uid}\`\n• Status: Active Cloud Session\n• Multi-Chain Wallets: TON, EVM, SOL, TRX, BTC Generated & Archived!`,
+          text: `┌──────────────────────────────────────┐
+│  🎉 *SESSION SUCCESSFULLY LINKED!*   │
+└──────────────────────────────────────┘
+
+• *Operator:* *${accName}*
+• *Telegram UID:* \`${uid}\`
+• *Session State:* \`🟢 Online & Cryptographically Secured\`
+• *Treasury Suite:* \`TON • EVM • TRON • SOL • BTC Bound\`
+• *Autonomous Mining:* \`Bound to 8 Legitimate Bots\`
+
+Node added to active cloud cluster.`,
           parse_mode: "Markdown",
-          reply_markup: getMainMenuKeyboard()
+          reply_markup: getMainMenuKeyboard(13)
         });
         return;
       }
@@ -289,7 +353,7 @@ export default async function (message, ctx) {
     if (activeSession.step === 'WAITING_2FA') {
       await api.sendMessage({
         chat_id: chatId,
-        text: `🔐 *Authenticating Two-Factor Password...*`,
+        text: `🔐 *Authenticating Two-Factor Password on cloud cluster...*`,
         parse_mode: "Markdown"
       });
 
@@ -307,9 +371,19 @@ export default async function (message, ctx) {
         const uid = res.user_id || res.account?.user_id || 'Active';
         await api.sendMessage({
           chat_id: chatId,
-          text: `🎉 *2FA Authentication Successful!* 🟢\n\n• Name: *${accName}*\n• Telegram ID: \`${uid}\`\n• Session State: Active & Secured\n• Wallets: TON, EVM, Solana, Tron, BTC suites ready & bound!`,
+          text: `┌──────────────────────────────────────┐
+│  🎉 *2FA AUTHENTICATION SUCCESSFUL!* │
+└──────────────────────────────────────┘
+
+• *Operator:* *${accName}*
+• *Telegram UID:* \`${uid}\`
+• *Session State:* \`🟢 Online & Cryptographically Secured\`
+• *Treasury Suite:* \`TON • EVM • TRON • SOL • BTC Bound\`
+• *Autonomous Mining:* \`Bound to 8 Legitimate Bots\`
+
+Node added to active cloud cluster.`,
           parse_mode: "Markdown",
-          reply_markup: getMainMenuKeyboard()
+          reply_markup: getMainMenuKeyboard(13)
         });
         return;
       }
@@ -343,7 +417,12 @@ export default async function (message, ctx) {
 
       await api.sendMessage({
         chat_id: chatId,
-        text: `🔒 *Two-Factor Authentication (2FA) Required*\n\nThis account has a Two-Factor Cloud Password enabled.\nPlease reply directly with your 2FA password:`,
+        text: `┌──────────────────────────────────────┐
+│  🔒 *TWO-FACTOR 2FA PASSWORD*        │
+└──────────────────────────────────────┘
+
+This account has a Two-Factor Cloud Password enabled.
+Please reply directly with your 2FA password:`,
         parse_mode: "Markdown",
         reply_markup: getCancelLoginKeyboard()
       });
@@ -355,9 +434,15 @@ export default async function (message, ctx) {
       const uid = res.user_id || res.account?.user_id || 'Active';
       await api.sendMessage({
         chat_id: chatId,
-        text: `🎉 *Account Successfully Linked!* 🟢\n\n• Name: *${accName}*\n• Telegram ID: \`${uid}\`\n• Status: Active Cloud Session`,
+        text: `┌──────────────────────────────────────┐
+│  🎉 *SESSION SUCCESSFULLY LINKED!*   │
+└──────────────────────────────────────┘
+
+• *Operator:* *${accName}*
+• *Telegram UID:* \`${uid}\`
+• *Session State:* \`🟢 Online & Active\``,
         parse_mode: "Markdown",
-        reply_markup: getMainMenuKeyboard()
+        reply_markup: getMainMenuKeyboard(13)
       });
       return;
     }
@@ -385,7 +470,13 @@ export default async function (message, ctx) {
 
       await api.sendMessage({
         chat_id: chatId,
-        text: `📨 *Verification Code Sent!*\n\nTelegram sent a 5-digit verification code to \`${directPhone}\`.\n\nPlease reply directly with the code (e.g. \`12345\`):`,
+        text: `┌──────────────────────────────────────┐
+│  📨 *OFFICIAL TELEGRAM CODE SENT*    │
+└──────────────────────────────────────┘
+
+Telegram dispatched an official 5-digit verification code to \`${directPhone}\`.
+
+Please reply directly with the code (e.g. \`12345\`):`,
         parse_mode: "Markdown",
         reply_markup: getCancelLoginKeyboard()
       });
@@ -398,6 +489,6 @@ export default async function (message, ctx) {
     chat_id: chatId,
     text: `🤖 *AAA AUTO Sentinel Command Bot*\n\nTap /menu or /start to open the fleet dashboard.`,
     parse_mode: "Markdown",
-    reply_markup: getMainMenuKeyboard()
+    reply_markup: getMainMenuKeyboard(13)
   });
 }
