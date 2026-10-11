@@ -2,6 +2,21 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Admin Bot OTP State Machine Restoration, 1-Tap Re-link & Complete BD Mobile Alignment (October 11, 2026)**:
+  - **🔧 Fixed `btn_add_account` State Machine Dropping User Replies**:
+    * Resolved critical bug where tapping "➕ Add Account" set `fleet:pending_action` in Upstash but omitted `env.BACKUP_KV.put("login_flow:" + chatId, { step: "waiting_phone" })`.
+    * Implemented dual-layer persistence (both Cloudflare KV and Upstash Redis) for `login_flow:${chatId}`, ensuring all 5 edge shards recognize when the user sends their phone number or 5-digit verification code.
+  - **⚡ Added "⚡ 1-Tap Re-link" in Admin Bot OTP Flow**:
+    * When an account session is revoked by Telegram, the bot now presents a direct `[⚡ 1-Tap Re-link #X]` button that automatically looks up the known phone number (e.g. `+8801317342850`), requests the verification code via MTProto gateway, and prompts for the 5-digit code without requiring manual number re-typing.
+  - **🛡️ Preserved Existing Account Index on Re-linking**:
+    * Fixed `verify_login_code` in `render_standby_app.py` and `render_app_latest.py` to check for existing `user_id` or `phone` in fleet accounts, preserving the original account index (e.g. Account #1 remains #1) rather than erroneously appending as #19.
+  - **📱 Universal Authentic BD Mobile Device Fingerprints**:
+    * Replaced all remaining raw `TelegramClient(...)` instances with `create_telethon_client(...)` across `render_standby_app.py` and `render_app_latest.py` (`extract_tokens`, `check_account_bnb_balance`, `study_bot_deep`, `mute_all_chats`, `inspect_bot_chat`, `test_session_debug`, `sync_channels`, `cleanup_purged_bots`, `onboard_new_bots`).
+    * All MTProto handshakes now uniformly carry authentic Bangladesh Android fingerprints (`Samsung Galaxy A30`, `Galaxy A54`, `Redmi Note 12`, `system_lang_code: en-BD`, `Asia/Dhaka`).
+  - **🚀 Render Standby Topology & Priority Alignment**:
+    * Prioritized active, live Render Node 2 (Frankfurt) and Node 3 (Oregon) in `RENDER_LOGIN_URLS` and cron token collectors, preventing 404 delays from unlinked Node 1.
+    * Added Render Node 3 to `tgcloud/lib/config.js` and `autonomous_cloud_agent.py`.
+
 - **🇧🇩 100% Bangladesh (BD) Regional Localization & Foreign Proxy Purge (October 11, 2026)**:
   - **🚫 Purged Conflicting Foreign Proxies from Accounts**:
     * Identified root cause of recurring Telegram session revocations: 13 of 18 Bangladesh accounts (`+880`) in `accounts.json` were assigned UK (`31.59.20.176`, `45.38.107.97`), Poland (`84.247.60.125`), Spain, Canada, and US proxies. When accessed in Bangladesh on a phone while cloud scripts connected via UK/PL proxies, Telegram flagged "impossible travel" and location clashing.

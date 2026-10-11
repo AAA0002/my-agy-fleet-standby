@@ -12,7 +12,8 @@ export const CF_WORKER_URLS = [
 
 export const RENDER_NODES = [
   "https://my-agy-fleet-standby-node2.onrender.com",
-  "https://my-agy-fleet-standby-node3.onrender.com"
+  "https://my-agy-fleet-standby-node3.onrender.com",
+  "https://my-agy-fleet-standby.onrender.com"
 ];
 
 export const UPSTASH_URL = "https://relaxing-starfish-285827.upstash.io";

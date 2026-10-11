@@ -1473,6 +1473,7 @@ export default {
 
     const RENDER_LOGIN_URLS = [
       "https://my-agy-fleet-standby-node2.onrender.com",
+      "https://my-agy-fleet-standby-node3.onrender.com",
       "https://my-agy-fleet-standby.onrender.com"
     ];
 
@@ -1570,9 +1571,9 @@ export default {
     const fetchFleetOtp = async (targetIdx) => {
       // Query Render nodes SEQUENTIALLY prioritizing Singapore (APAC - geographically closest to Bangladesh)
       const renderNodes = [
-        "https://my-agy-fleet-standby.onrender.com",
         "https://my-agy-fleet-standby-node2.onrender.com",
-        "https://my-agy-fleet-standby-node3.onrender.com"
+        "https://my-agy-fleet-standby-node3.onrender.com",
+        "https://my-agy-fleet-standby.onrender.com"
       ];
       for (const rUrl of renderNodes) {
         try {
@@ -3109,7 +3110,7 @@ fi
         return new Response(JSON.stringify({
           ok: true,
           status: "DISPATCHED",
-          message: "MTProto session token collection dispatched to Render Standby Mesh (Node 1 -> Node 2)!"
+          message: "MTProto session token collection dispatched to Render Standby Mesh (5 Accounts / 6 Services)!"
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
@@ -3988,17 +3989,41 @@ fi
                   `👤 *Account:* #${targetIdx} *${nameStr}*\n` +
                   `📱 *Phone:* \`${phoneStr}\`\n` +
                   `🔒 *2FA Password:* \`${pwdStr}\`\n\n` +
-                  `❗️ *Status:* Telegram revoked the old session key due to simultaneous multi-IP access.\n` +
-                  `👉 *To Fix:* Use *➕ Add Account* or enter code to re-link this session fresh!\n` +
+                  `❗️ *Status:* Telegram invalidated the old session key.\n` +
+                  `👉 *Fast Fix:* Tap *⚡ 1-Tap Re-link #${targetIdx}* below to request code instantly!\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━`;
                 markup = {
                   inline_keyboard: [
                     [
-                      { text: "🔄 Try Fetch Again", callback_data: `btn_otp_get_${targetIdx}` },
-                      { text: `⏭️ Skip to #${nextIdx}`, callback_data: `btn_otp_get_${nextIdx}` }
+                      { text: `⚡ 1-Tap Re-link #${targetIdx}`, callback_data: `btn_relink_${targetIdx}` },
+                      { text: `⏭️ Next (#${nextIdx})`, callback_data: `btn_otp_get_${nextIdx}` }
                     ],
                     [
-                      { text: "➕ Add Account", callback_data: "btn_add_account" },
+                      { text: "🔄 Try Fetch Again", callback_data: `btn_otp_get_${targetIdx}` },
+                      { text: "📋 Account Grid", callback_data: "btn_otp_menu" }
+                    ]
+                  ]
+                };
+              } else if (!data.ok) {
+                rep = `⚠️ *Checking Cloud Session — #${targetIdx}*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `👤 *Account:* #${targetIdx} *${nameStr}*\n` +
+                  `📱 *Phone:* \`${phoneStr}\`\n` +
+                  `🔒 *2FA Password:* \`${pwdStr}\`\n\n` +
+                  `• *Status:* Render Standby Nodes are checking active session...\n` +
+                  `• *Action:* Wait 5s and tap *🔄 Fetch Code Now*, or tap *⚡ Re-link*.\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━`;
+                markup = {
+                  inline_keyboard: [
+                    [
+                      { text: "🔄 Fetch Code Now", callback_data: `btn_otp_get_${targetIdx}` },
+                      { text: `⚡ 1-Tap Re-link #${targetIdx}`, callback_data: `btn_relink_${targetIdx}` }
+                    ],
+                    [
+                      { text: `⏮️ Prev (#${prevIdx})`, callback_data: `btn_otp_get_${prevIdx}` },
+                      { text: `⏭️ Next (#${nextIdx})`, callback_data: `btn_otp_get_${nextIdx}` }
+                    ],
+                    [
                       { text: "📋 Account Grid", callback_data: "btn_otp_menu" }
                     ]
                   ]
@@ -4019,10 +4044,13 @@ fi
                   inline_keyboard: [
                     [
                       { text: "🔄 Fetch Code Now", callback_data: `btn_otp_get_${targetIdx}` },
-                      { text: `⏭️ Skip to #${nextIdx}`, callback_data: `btn_otp_get_${nextIdx}` }
+                      { text: `⚡ 1-Tap Re-link #${targetIdx}`, callback_data: `btn_relink_${targetIdx}` }
                     ],
                     [
                       { text: `⏮️ Prev (#${prevIdx})`, callback_data: `btn_otp_get_${prevIdx}` },
+                      { text: `⏭️ Next (#${nextIdx})`, callback_data: `btn_otp_get_${nextIdx}` }
+                    ],
+                    [
                       { text: "📋 Account Grid", callback_data: "btn_otp_menu" }
                     ]
                   ]
@@ -4031,6 +4059,39 @@ fi
 
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, markup);
+            } else if (cbData.startsWith("btn_relink_")) {
+              const relinkIdx = parseInt(cbData.replace("btn_relink_", ""), 10) || 1;
+              const phoneToRelink = KNOWN_PHONES_BY_INDEX[relinkIdx] || "";
+              if (!phoneToRelink) {
+                await sendResilientMessage(chatId, `❌ Phone number for Account #${relinkIdx} not found. Please tap ➕ Add Account.`, cancelKeyboard, "Markdown");
+                return;
+              }
+              const rep = `🔄 *Re-linking Account #${relinkIdx}*\n\n` +
+                `• *Phone:* \`${phoneToRelink}\`\n` +
+                `• *Region:* Bangladesh (BD)\n\n` +
+                `Connecting to Telegram MTProto and requesting verification code...`;
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, cancelKeyboard);
+
+              const res = await cloudLoginSendCode(phoneToRelink, chatId);
+              if (res && res.ok) {
+                const flowData = { step: "waiting_code", phone: phoneToRelink, node_url: res.node_url || "", index: relinkIdx };
+                if (env.BACKUP_KV) {
+                  ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify(flowData), { expirationTtl: 600 }).catch(() => {}));
+                }
+                ctx.waitUntil(upstashSet("login_flow:" + chatId, flowData));
+                const codeRep = `📨 *Verification Code Sent for Account #${relinkIdx}!*\n\n` +
+                  `Telegram sent a 5-digit verification code to \`${phoneToRelink}\`.\n\n` +
+                  `Please reply directly with the code (e.g. \`12345\`):\n` +
+                  `_(Or tap ❌ Cancel Login below to abort)_`;
+                await sendResilientMessage(chatId, codeRep, cancelKeyboard, "Markdown");
+              } else {
+                const errDetail = res ? (res.error || res.message) : "Failed to connect to Telegram MTProto Gateway";
+                const errRep = `❌ *Could Not Request Code for Account #${relinkIdx}*\n\n` +
+                  `*Error:* ${errDetail}\n\n` +
+                  `Please check the phone number or try again in a few moments:`;
+                await sendResilientMessage(chatId, errRep, cancelKeyboard, "Markdown");
+              }
             } else if (cbData === "btn_mesh") {
               const rep = `🌐 *MY AGY AI — Multi-Cloud Unified Mesh*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -4089,6 +4150,10 @@ fi
                 node: CURRENT_SUBDOMAIN
               };
               ctx.waitUntil(upstashSet("fleet:pending_action", recorded));
+              if (env.BACKUP_KV) {
+                ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_phone" }), { expirationTtl: 600 }).catch(() => {}));
+              }
+              ctx.waitUntil(upstashSet("login_flow:" + chatId, { step: "waiting_phone" }));
               await sendResilientMessage(chatId, rep, cancelKeyboard, "Markdown");
             } else if (cbData === "btn_withdraw" || cbData === "btn_withdraw_all") {
               ctx.waitUntil((async () => {
@@ -5398,6 +5463,7 @@ fi
           if (env.BACKUP_KV) {
             ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
           }
+          ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
           ctx.waitUntil(cloudLoginCancel(chatId));
           ctx.waitUntil(sendReply("❌ Account connection cancelled.", mainKeyboard));
           return new Response("OK");
@@ -5409,6 +5475,14 @@ fi
             const rawFlow = await env.BACKUP_KV.get("login_flow:" + chatId);
             if (rawFlow) {
               loginFlowState = rawFlow.startsWith("{") ? JSON.parse(rawFlow) : { step: "waiting_code" };
+            }
+          } catch (_) {}
+        }
+        if (!loginFlowState) {
+          try {
+            const rawU = await upstashGet("login_flow:" + chatId);
+            if (rawU) {
+              loginFlowState = typeof rawU === "string" ? JSON.parse(rawU) : rawU;
             }
           } catch (_) {}
         }
@@ -5428,6 +5502,7 @@ fi
               const res = await cloudLoginVerify(chatId, { password: trimmed, phone, node_url });
               if (res && res.ok) {
                 if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
+                ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
                 const succMsg = `🎉 *Account Connected Successfully with 2FA!*\n\n` +
                   `• *Name:* ${res.name || "User"}\n` +
                   `• *Username:* @${res.username || "None"}\n` +
@@ -5462,6 +5537,7 @@ fi
                 if (env.BACKUP_KV) {
                   await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_code", phone: normalized, node_url: res.node_url || "" }), { expirationTtl: 600 }).catch(() => {});
                 }
+                ctx.waitUntil(upstashSet("login_flow:" + chatId, { step: "waiting_code", phone: normalized, node_url: res.node_url || "" }));
                 const msg = `📨 *Verification Code Sent!*\n\n` +
                   `Telegram sent a 5-digit verification code to \`${normalized}\`.\n\n` +
                   `Please reply with the code (e.g. \`12345\`):\n` +
@@ -5484,6 +5560,7 @@ fi
               if (env.BACKUP_KV) {
                 await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_2fa", phone: res.phone || phone, node_url }), { expirationTtl: 600 }).catch(() => {});
               }
+              ctx.waitUntil(upstashSet("login_flow:" + chatId, { step: "waiting_2fa", phone: res.phone || phone, node_url }));
               const twoFaMsg = `🔒 *Two-Factor Authentication (2FA) Required*\n\n` +
                 `This account has a Two-Factor Cloud Password enabled.\n` +
                 `Please reply with your 2FA password:\n\n` +
@@ -5491,6 +5568,7 @@ fi
               await sendAnimatedReply(chatId, [twoFaMsg], cancelKeyboard);
             } else if (res && res.ok) {
               if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
+              ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
               const succMsg = `🎉 *Account Connected Successfully!*\n\n` +
                 `• *Name:* ${res.name || "User"}\n` +
                 `• *Username:* @${res.username || "None"}\n` +
@@ -5516,6 +5594,7 @@ fi
               if (env.BACKUP_KV) {
                 await env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_2fa" }), { expirationTtl: 600 }).catch(() => {});
               }
+              ctx.waitUntil(upstashSet("login_flow:" + chatId, { step: "waiting_2fa" }));
               const twoFaMsg = `🔒 *Two-Factor Authentication (2FA) Required*\n\n` +
                 `This account has a Two-Factor Cloud Password enabled.\n` +
                 `Please reply with your 2FA password:\n\n` +
@@ -5523,6 +5602,7 @@ fi
               await sendAnimatedReply(chatId, [twoFaMsg], cancelKeyboard);
             } else if (res && res.ok) {
               if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {});
+              ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
               const succMsg = `🎉 *Account Connected Successfully!*\n\n` +
                 `• *Name:* ${res.name || "User"}\n` +
                 `• *Username:* @${res.username || "None"}\n` +
@@ -5535,7 +5615,7 @@ fi
               const errDetail = res ? (res.error || res.message) : "Verification code rejected";
               const errMsg = `❌ *Verification Failed*\n\n` +
                 `*Error:* ${errDetail}\n\n` +
-                `Please tap ➕ Add Account to start connection.`;
+                `ℹ️ If connecting a new account, tap **➕ Add Account** first so the code is mapped to the right session.`;
               await sendAnimatedReply(chatId, [errMsg], mainKeyboard);
             }
           })());
@@ -9553,8 +9633,9 @@ Reply to Arif naturally:`;
         }
 
 
-        // 3.4 Ping Render Cloud Standby (Frankfurt Node 2 & Singapore Node 1) health check
+        // 3.4 Ping Render Cloud Standby (Frankfurt Node 2, Oregon Node 3 & Singapore Node 1) health check
         fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => {});
+        fetch("https://my-agy-fleet-standby-node3.onrender.com/health", { method: "GET" }).catch(() => {});
         fetch("https://my-agy-fleet-standby.onrender.com/health", { method: "GET" }).catch(() => {});
 
         // 3.5 Token Expiry Watcher: If tokens have <= 4 hours remaining (age >= 20h), wake up Render to collect batch
@@ -9573,7 +9654,7 @@ Reply to Arif naturally:`;
 
         if (needBatchRefresh) {
           // Render takes ~30-50s to wake from cold sleep on Free Tier; Cloudflare waits gracefully in waitUntil
-          // Try Render Node 2 (Frankfurt), automatic fallback to Render Node 1 (Singapore)
+          // Try Render Node 2 (Frankfurt), automatic fallback to Node 3 (Oregon) then Node 1 (Singapore)
           const r1 = await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
             method: "POST",
             headers: {
@@ -9584,14 +9665,25 @@ Reply to Arif naturally:`;
           }).catch(() => null);
 
           if (!r1 || !r1.ok) {
-            await fetch("https://my-agy-fleet-standby.onrender.com/collect-tokens", {
+            const r2 = await fetch("https://my-agy-fleet-standby-node3.onrender.com/collect-tokens", {
               method: "POST",
               headers: {
                 "Authorization": `Bearer ${env.SECRET_KEY}`,
                 "Content-Type": "application/json"
               },
-              body: JSON.stringify({ source: "cf_cron_expiry_check_node2" })
-            }).catch(() => {});
+              body: JSON.stringify({ source: "cf_cron_expiry_check_node3" })
+            }).catch(() => null);
+
+            if (!r2 || !r2.ok) {
+              await fetch("https://my-agy-fleet-standby.onrender.com/collect-tokens", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${env.SECRET_KEY}`,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ source: "cf_cron_expiry_check_node1" })
+              }).catch(() => {});
+            }
           }
         }
 

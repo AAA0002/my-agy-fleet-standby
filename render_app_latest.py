@@ -477,7 +477,7 @@ async def extract_tokens_for_account(acc: dict) -> dict:
     if not sess_str:
         return {}
 
-    client = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+    client = create_telethon_client(sess_str=sess_str, identifier=acc.get("phone") or name, proxy_val=acc.get("proxy"))
     try:
         connected = False
         for attempt in range(1, 4):
@@ -812,7 +812,7 @@ async def check_and_auto_withdraw_cloud(acc: dict) -> dict:
         "ok": True
     }
 
-    client = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+    client = create_telethon_client(sess_str=sess_str, identifier=acc.get("phone") or name, proxy_val=acc.get("proxy"))
     try:
         await client.connect()
         if not await client.is_user_authorized():
@@ -2247,13 +2247,19 @@ async def verify_login_code(request: Request):
             "status": "active"
         }
 
-        # Determine account index & generate 100% isolated 5-chain wallets
+        # Determine account index & preserve existing index if re-linking
         cur_accs = await fetch_accounts_from_cloud()
-        next_idx = (len(cur_accs) + 1) if cur_accs else 19
+        existing_idx = None
+        for a in cur_accs:
+            if str(a.get("user_id")) == str(user_id) or a.get("phone") == phone:
+                existing_idx = a.get("index")
+                break
 
-        wallets = generate_multichain_wallet_suite(next_idx, acc_name, user_id, phone, uname)
+        target_idx = existing_idx if existing_idx else ((len(cur_accs) + 1) if cur_accs else 1)
+        wallets = generate_multichain_wallet_suite(target_idx, acc_name, user_id, phone, uname)
         acc_entry.update({
-            "index": next_idx,
+            "index": target_idx,
+            "proxy": None,
             "evm_wallet": wallets["evm"],
             "ton_wallet": wallets["ton"],
             "tron_wallet": wallets["tron"],
@@ -3856,7 +3862,7 @@ async def inspect_referrals_master(request: Request):
         raise HTTPException(status_code=404, detail="Master account not found")
 
     sess_str = master_acc.get("session_string") or master_acc.get("session")
-    cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+    cl = create_telethon_client(sess_str=sess_str, identifier=master_acc.get("phone") or "Master", proxy_val=master_acc.get("proxy"))
     bots_to_query = [
         ("mrg", "mrgminerbot", ["/start"]),
         ("atf", "ATF_AIRDROP_bot", ["/start"])
@@ -4217,7 +4223,7 @@ async def study_bot_endpoint(bot_key: str, request: Request):
         sess_str = acc.get("session_string") or acc.get("session")
         if not sess_str:
             continue
-        cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+        cl = create_telethon_client(sess_str=sess_str, identifier=acc.get("phone") or acc.get("name") or "worker", proxy_val=acc.get("proxy"))
         try:
             await asyncio.wait_for(cl.connect(), timeout=8.0)
             if not await cl.is_user_authorized():
@@ -4269,7 +4275,7 @@ async def mute_all_chats_endpoint(request: Request):
         sess_str = acc.get("session_string") or acc.get("session")
         if not sess_str:
             continue
-        cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+        cl = create_telethon_client(sess_str=sess_str, identifier=acc.get("phone") or name, proxy_val=acc.get("proxy"))
         muted_count = 0
         try:
             await cl.connect()
@@ -4320,7 +4326,7 @@ async def inspect_bot_chat(uid: str, request: Request):
         raise HTTPException(status_code=404, detail="Account not found")
 
     sess_str = target_acc.get("session_string") or target_acc.get("session")
-    cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+    cl = create_telethon_client(sess_str=sess_str, identifier=target_acc.get("phone") or target_acc.get("name") or uid, proxy_val=target_acc.get("proxy"))
     bots_to_check = [
         ("mrg", "mrgminerbot"),
         ("atf", "ATF_AIRDROP_bot"),
@@ -4422,7 +4428,7 @@ async def debug_account_session(uid: str, request: Request):
         return {"ok": False, "error": f"Account {uid} has no session string"}
 
     results = {"uid": uid, "name": target_acc.get("name"), "steps": {}}
-    cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+    cl = create_telethon_client(sess_str=sess_str, identifier=target_acc.get("phone") or target_acc.get("name") or uid, proxy_val=target_acc.get("proxy"))
     try:
         results["steps"]["connecting"] = "started"
         await cl.connect()
@@ -4613,7 +4619,7 @@ async def sync_and_verify_channels_endpoint(request: Request):
                 LAST_CHANNEL_SYNC_STATUS["results"].append(res_item)
                 continue
 
-            cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+            cl = create_telethon_client(sess_str=sess_str, identifier=acc.get("phone") or name, proxy_val=acc.get("proxy"))
             already_purged = bool(acc.get("dead_bots_purged_v2"))
             acc_res = {"uid": uid, "name": name, "joined": [], "unblocked": [], "blocked_scammers": [], "deleted_dialogs": [], "left_scam_channels": [], "muted": 0, "pruned": 0, "already_purged": already_purged}
             try:
@@ -4836,7 +4842,7 @@ async def cleanup_purged_bots_once_endpoint(request: Request):
             results.append({"uid": uid, "name": name, "status": "already_purged_skipped"})
             continue
 
-        cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+        cl = create_telethon_client(sess_str=sess_str, identifier=acc.get("phone") or name, proxy_val=acc.get("proxy"))
         acc_res = {"uid": uid, "name": name, "blocked_and_erased": [], "left_channels": []}
         try:
             await asyncio.wait_for(cl.connect(), timeout=10.0)
@@ -4992,7 +4998,7 @@ async def onboard_new_bots(request: Request):
                 continue
 
             acc_res = {"uid": uid, "name": name, "bots": {}}
-            cl = TelegramClient(StringSession(sess_str), API_ID, API_HASH)
+            cl = create_telethon_client(sess_str=sess_str, identifier=acc.get("phone") or name, proxy_val=acc.get("proxy"))
             try:
                 await cl.connect()
                 if not await cl.is_user_authorized():
