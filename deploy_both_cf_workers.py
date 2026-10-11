@@ -1106,6 +1106,14 @@ const UPSTASH_MEMBERS_CACHE = new Map();
 
 async function upstashSet(key, value) {
   try {
+    if (value === null || value === undefined) {
+      UPSTASH_GET_CACHE.delete(key);
+      await fetch(`${UPSTASH_URL}/del/${key}`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
+      });
+      return;
+    }
     const valStr = typeof value === "string" ? value : JSON.stringify(value);
     UPSTASH_GET_CACHE.set(key, { val: valStr, ts: Date.now() });
     await fetch(`${UPSTASH_URL}/set/${key}`, {
@@ -1117,8 +1125,11 @@ async function upstashSet(key, value) {
 }
 
 async function upstashGet(key, maxAgeMs = 900000) { // 15 minutes default cache to protect 10k/day quota
+  if (key.startsWith("login_flow:") || key.startsWith("last_login_phone:") || key.startsWith("fleet:lock:") || key.startsWith("fleet:pending_action") || key.startsWith("tg_login_flow:")) {
+    maxAgeMs = 0; // Interactive real-time flow keys bypass caching completely
+  }
   const cached = UPSTASH_GET_CACHE.get(key);
-  if (cached && (Date.now() - cached.ts) < maxAgeMs) {
+  if (maxAgeMs > 0 && cached && (Date.now() - cached.ts) < maxAgeMs) {
     return cached.val;
   }
   try {
@@ -1499,7 +1510,8 @@ export default {
               "Content-Type": "application/json",
               "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`
             },
-            body: JSON.stringify({ phone, chat_id: String(targetChatId), secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026" })
+            body: JSON.stringify({ phone, chat_id: String(targetChatId), secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026" }),
+            signal: AbortSignal.timeout(35000)
           });
           if (res.ok) {
             const data = await res.json();
@@ -1533,7 +1545,8 @@ export default {
               chat_id: String(targetChatId),
               secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026",
               index: index || null
-            })
+            }),
+            signal: AbortSignal.timeout(35000)
           });
           if (res.ok) {
             const data = await res.json();
@@ -3569,17 +3582,27 @@ fi
           let healthy = [2, 10, 11, 14, 17];
           let revoked = [1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18];
           try {
-            const rawH = await upstashGet("fleet:healthy_sessions");
-            if (rawH) {
-              const arr = typeof rawH === "string" ? JSON.parse(rawH) : rawH;
-              if (Array.isArray(arr) && arr.length > 0) healthy = arr.map(Number);
+            const smH = await upstashSmembers("fleet:healthy_sessions", 15000);
+            if (Array.isArray(smH) && smH.length > 0) {
+              healthy = smH.map(Number).filter(n => !isNaN(n) && n > 0);
+            } else {
+              const rawH = await upstashGet("fleet:healthy_sessions", 15000);
+              if (rawH) {
+                const arr = typeof rawH === "string" ? JSON.parse(rawH) : rawH;
+                if (Array.isArray(arr) && arr.length > 0) healthy = arr.map(Number).filter(n => !isNaN(n) && n > 0);
+              }
             }
           } catch (_) {}
           try {
-            const rawR = await upstashGet("fleet:revoked_sessions");
-            if (rawR) {
-              const arr = typeof rawR === "string" ? JSON.parse(rawR) : rawR;
-              if (Array.isArray(arr) && arr.length > 0) revoked = arr.map(Number);
+            const smR = await upstashSmembers("fleet:revoked_sessions", 15000);
+            if (Array.isArray(smR) && smR.length > 0) {
+              revoked = smR.map(Number).filter(n => !isNaN(n) && n > 0);
+            } else {
+              const rawR = await upstashGet("fleet:revoked_sessions", 15000);
+              if (rawR) {
+                const arr = typeof rawR === "string" ? JSON.parse(rawR) : rawR;
+                if (Array.isArray(arr) && arr.length > 0) revoked = arr.map(Number).filter(n => !isNaN(n) && n > 0);
+              }
             }
           } catch (_) {}
 
@@ -3599,6 +3622,8 @@ fi
           if (!memSessionHealth.healthy.includes(numIdx)) memSessionHealth.healthy.push(numIdx);
           memSessionHealth.revoked = memSessionHealth.revoked.filter(x => x !== numIdx);
           memSessionHealth.lastCheck = Date.now();
+          ctx.waitUntil(upstashSadd("fleet:healthy_sessions", String(numIdx)));
+          ctx.waitUntil(upstashSrem("fleet:revoked_sessions", String(numIdx)));
           ctx.waitUntil(upstashSet("fleet:healthy_sessions", memSessionHealth.healthy));
           ctx.waitUntil(upstashSet("fleet:revoked_sessions", memSessionHealth.revoked));
         };
@@ -4439,7 +4464,11 @@ fi
               await editOrSendResilientMessage(chatId, cbMsgId, rep, markup);
             } else if (cbData.startsWith("btn_relink_")) {
               const relinkIdx = parseInt(cbData.replace("btn_relink_", ""), 10) || 1;
-              const phoneToRelink = KNOWN_PHONES_BY_INDEX[relinkIdx] || "";
+              const accounts = await getFleetAccounts();
+              const targetAcc = accounts.find(a => (a.index === relinkIdx) || (accounts.indexOf(a) + 1 === relinkIdx));
+              const phoneToRelink = (targetAcc && targetAcc.phone && targetAcc.phone.length >= 8 && targetAcc.phone !== "N/A" && targetAcc.phone !== "Hidden")
+                ? targetAcc.phone
+                : (KNOWN_PHONES_BY_INDEX[relinkIdx] || "");
               if (!phoneToRelink) {
                 await sendResilientMessage(chatId, `❌ Phone number for Account #${relinkIdx} not found. Please tap ➕ Add Account.`, cancelKeyboard, "Markdown");
                 return;
@@ -5852,9 +5881,10 @@ fi
           } catch (_) {}
         }
 
-        const isCommandOrMenu = text.startsWith("/") || text.includes("📊") || text.includes("⚡") || text.includes("💎") || text.includes("🧹") || text.includes("🌐") || text.includes("➕") || text.includes("👑") || text.includes("👥") || text.includes("🎁") || text.includes("🎬") || text.includes("🗑️") || text.includes("💳") || text.includes("💬") || text.includes("🌅") || text.includes("🔥");
-        const cleanDigitsOnly = trimmed.replace(/[\s\-]/g, '');
-        const isOtpCode = /^(\d{5}|\d{6})$/.test(cleanDigitsOnly);
+        const isCommandOrMenu = text.startsWith("/") || text.includes("📊") || text.includes("⚡") || text.includes("💎") || text.includes("🧹") || text.includes("🌐") || text.includes("➕") || text.includes("👑") || text.includes("👥") || text.includes("🎁") || text.includes("🎬") || text.includes("🗑️") || text.includes("💳") || text.includes("💬") || text.includes("🌅") || text.includes("🔥") || text.includes("💼") || text.includes("⚙️");
+        const cleanDigitsOnly = trimmed.replace(/[\s\-\.]/g, '');
+        const digitsStrict = trimmed.replace(/\D/g, '');
+        const isOtpCode = (/^(\d{5}|\d{6})$/.test(cleanDigitsOnly) || ((digitsStrict.length === 5 || digitsStrict.length === 6) && trimmed.length <= 8));
         const isPhonePattern = /^(\+?\d{8,15}|01[3-9]\d{8}|1[3-9]\d{8})$/.test(cleanDigitsOnly);
 
         // PRIORITY 1: OTP Code verification (5 or 6 digits) - NEVER treat as phone!
@@ -5866,7 +5896,7 @@ fi
             if (!phone) {
               try { phone = await upstashGet("last_login_phone:" + chatId) || ""; } catch (_) {}
             }
-            const cleanCode = cleanDigitsOnly;
+            const cleanCode = digitsStrict || cleanDigitsOnly;
             const targetRelinkIdx = (loginFlowState && loginFlowState.index) ? Number(loginFlowState.index) : null;
             const res = await cloudLoginVerify(chatId, { code: cleanCode, phone, node_url, index: targetRelinkIdx });
             if (res && res.need_2fa) {
@@ -6519,7 +6549,7 @@ fi
         }
 
         // 6. Accounts Roster Command (/accounts)
-        if (text === "⚙️ Fleet Accounts" || text === "👥 Accounts Management" || text === "👥 My Accounts (18)" || text === "👥 My Accounts (14)" || text === "👥 My Accounts (13)" || text === "👥 My Accounts" || text === "👥 Accounts" || text === "/accounts" || text.startsWith("/accounts") || text.startsWith("/acc")) {
+        if (text === "⚙️ Fleet Accounts" || text === "👥 Fleet Accounts" || text === "Fleet Accounts" || text === "Accounts" || text === "👥 Accounts Management" || text === "👥 My Accounts (18)" || text === "👥 My Accounts (14)" || text === "👥 My Accounts (13)" || text === "👥 My Accounts" || text === "👥 Accounts" || text === "/accounts" || text.startsWith("/accounts") || text.startsWith("/acc")) {
           ctx.waitUntil((async () => {
             const accounts = await getFleetAccounts();
             const dhakaTime = getDhakaTimestamp();

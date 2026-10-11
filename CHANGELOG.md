@@ -2,6 +2,19 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Redis Set Protocol Synchronization, Interactive Flow Cache Bypass & 35s Cold-Start Timeout (October 11, 2026)**:
+  - **🔄 Redis Set Protocol Synchronization (`SMEMBERS` & `SADD` / `SREM`)**:
+    * Resolved protocol mismatch between Render and Cloudflare: Render used Redis Sets (`SADD` / `SREM`) while Cloudflare Workers attempted `GET /get/fleet:healthy_sessions`, which caused Redis `WRONGTYPE` errors and prevented dynamic health badge updates.
+    * Upgraded `getSessionHealthState()` in Cloudflare Workers to use `upstashSmembers()` with automatic string array fallback, ensuring session health changes reflect immediately in the OTP grid and Session Audit card.
+    * Updated `onAccountRelinkSuccess()` to atomically execute `upstashSadd("fleet:healthy_sessions", id)` and `upstashSrem("fleet:revoked_sessions", id)`.
+  - **🚀 Interactive Login Flow Cache Bypass (`maxAgeMs = 0`)**:
+    * Updated `upstashGet()` to completely bypass in-memory caching for interactive real-time keys (`login_flow:`, `last_login_phone:`, `fleet:lock:`, `fleet:pending_action`, `tg_login_flow:`), ensuring OTP codes are validated against the live flow state with zero latency.
+    * Fixed `upstashSet()` deletion semantics: passing `null` or `undefined` now issues a clean `DEL` (`/del/${key}`) rather than setting the string `"null"`.
+  - **⏱️ 35-Second Cold-Start Resilience**:
+    * Added `signal: AbortSignal.timeout(35000)` to `cloudLoginSendCode()` and `cloudLoginVerify()` on Cloudflare Workers, allowing Render Free Tier containers up to 35 seconds to wake from cold sleep without timing out.
+    * Added comprehensive punctuation and whitespace stripping (`[\s\-\.]`) to phone number parsing and OTP code extraction (`digitsStrict` / `cleanDigitsOnly`).
+    * Expanded `/accounts` command router to match all emoji and plain text variations (`⚙️ Fleet Accounts`, `👥 Fleet Accounts`, `Fleet Accounts`, `Accounts`).
+
 - **🛡️ Distributed MTProto Coordinator Lock, Telegram Session Block Prevention & Serverless Architecture (October 11, 2026)**:
   - **🔒 Elimination of Telegram Session Revocations (`AuthKeyDuplicatedError` Fix)**:
     * **Root Cause Solved**: Render Node 2 (Frankfurt, Germany) and Node 3 (Oregon, USA) were concurrently running 30-minute background watchdog loops (`cloud_wealth_automation_watchdog` and `token_health_and_refresh_watchdog`), attempting Telethon `client.connect()` on identical session strings simultaneously from different continents. Telegram detected concurrent multi-IP access on identical auth keys and revoked them.

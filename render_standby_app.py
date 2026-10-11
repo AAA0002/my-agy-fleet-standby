@@ -1266,7 +1266,7 @@ async def on_startup():
 LOGIN_SESSIONS = {}
 
 def get_clean_phone(raw_phone: str) -> str:
-    p = re.sub(r"[\s\-\(\)]", "", str(raw_phone).strip())
+    p = re.sub(r"[\s\-\(\)\.]", "", str(raw_phone).strip())
     if p.startswith("00"):
         p = "+" + p[2:]
     elif not p.startswith("+"):
