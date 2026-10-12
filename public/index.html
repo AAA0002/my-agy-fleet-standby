@@ -362,11 +362,85 @@
 
           <!-- Page Titles -->
           <h2 class="text-xl font-bold text-navy-900 mb-1.5">Connect Telegram</h2>
-          <p class="text-xs text-slate-600 mb-6 leading-relaxed">
-            Enter your phone number to log in to your Telegram account.
+          <p class="text-xs text-slate-600 mb-4 leading-relaxed">
+            Log in via phone number or scan with the Telegram mobile app.
           </p>
 
-          <!-- Input Panel Card -->
+          <!-- Login Method Segmented Control -->
+          <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl mb-4 text-xs font-semibold">
+            <button type="button" onclick="setLoginMode('phone')" id="loginModePhoneBtn" class="flex-1 py-1.5 rounded-lg bg-surface shadow-subtle text-brand-600 transition">Phone Number</button>
+            <button type="button" onclick="setLoginMode('qr')" id="loginModeQrBtn" class="flex-1 py-1.5 rounded-lg text-slate-500 hover:text-navy-900 transition">QR Code</button>
+          </div>
+
+          <!-- QR Code Panel (Initially Hidden) -->
+          <div id="loginQrPanel" class="hidden bg-surface rounded-2xl border border-slate-200/80 p-5 shadow-card text-center space-y-4">
+            <div class="relative w-44 h-44 mx-auto p-2 bg-white rounded-2xl border border-slate-200 shadow-sm flex items-center justify-center">
+              <!-- Crisp SVG QR Code Mockup with Animated Scan Line -->
+              <svg class="w-full h-full text-navy-900" viewBox="0 0 100 100" fill="currentColor">
+                <!-- QR Position Detection Patterns -->
+                <rect x="5" y="5" width="25" height="25" rx="3" fill="#2481CC"/>
+                <rect x="8" y="8" width="19" height="19" rx="2" fill="white"/>
+                <rect x="12" y="12" width="11" height="11" rx="1.5" fill="#0E1E38"/>
+                <rect x="70" y="5" width="25" height="25" rx="3" fill="#2481CC"/>
+                <rect x="73" y="8" width="19" height="19" rx="2" fill="white"/>
+                <rect x="77" y="12" width="11" height="11" rx="1.5" fill="#0E1E38"/>
+                <rect x="5" y="70" width="25" height="25" rx="3" fill="#2481CC"/>
+                <rect x="8" y="73" width="19" height="19" rx="2" fill="white"/>
+                <rect x="12" y="77" width="11" height="11" rx="1.5" fill="#0E1E38"/>
+                <!-- Matrix Points -->
+                <rect x="35" y="10" width="6" height="6" rx="1"/>
+                <rect x="45" y="15" width="8" height="6" rx="1"/>
+                <rect x="58" y="8" width="6" height="8" rx="1"/>
+                <rect x="10" y="38" width="8" height="6" rx="1"/>
+                <rect x="22" y="45" width="6" height="8" rx="1"/>
+                <rect x="35" y="35" width="7" height="7" rx="1"/>
+                <rect x="48" y="42" width="6" height="6" rx="1"/>
+                <rect x="60" y="36" width="8" height="6" rx="1"/>
+                <rect x="75" y="45" width="6" height="8" rx="1"/>
+                <rect x="85" y="38" width="8" height="6" rx="1"/>
+                <rect x="38" y="58" width="8" height="6" rx="1"/>
+                <rect x="50" y="55" width="6" height="8" rx="1"/>
+                <rect x="65" y="62" width="7" height="6" rx="1"/>
+                <rect x="78" y="72" width="6" height="6" rx="1"/>
+                <rect x="42" y="75" width="8" height="8" rx="1"/>
+                <rect x="55" y="80" width="6" height="6" rx="1"/>
+                <rect x="70" y="82" width="8" height="6" rx="1"/>
+                <rect x="85" y="76" width="6" height="8" rx="1"/>
+              </svg>
+              <!-- Center Telegram Badge -->
+              <div class="absolute inset-0 m-auto w-10 h-10 rounded-xl bg-brand-500 text-white flex items-center justify-center shadow-md border-2 border-white">
+                <svg class="w-5 h-5 transform -rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                </svg>
+              </div>
+            </div>
+
+            <div class="text-left space-y-1.5 text-xs text-slate-600 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100">
+              <div class="font-bold text-navy-900 text-xs mb-1">Quick Instructions:</div>
+              <div class="flex items-start space-x-2">
+                <span class="w-4 h-4 rounded-full bg-brand-100 text-brand-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                <span>Open Telegram on your smartphone</span>
+              </div>
+              <div class="flex items-start space-x-2">
+                <span class="w-4 h-4 rounded-full bg-brand-100 text-brand-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                <span>Go to <b>Settings > Devices > Link Desktop Device</b></span>
+              </div>
+              <div class="flex items-start space-x-2">
+                <span class="w-4 h-4 rounded-full bg-brand-100 text-brand-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                <span>Point your phone camera at this screen to confirm</span>
+              </div>
+            </div>
+
+            <button type="button" onclick="simulateQrAuth()" class="w-full h-10 bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold text-xs rounded-xl border border-brand-200 transition active:scale-95 flex items-center justify-center space-x-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+              </svg>
+              <span>Simulate QR Scan Confirmation</span>
+            </button>
+          </div>
+
+          <!-- Input Panel Card (Phone Mode) -->
+          <div id="loginPhonePanel" class="bg-surface rounded-2xl border border-slate-200/80 p-4 shadow-card space-y-3.5">
           <div class="bg-surface rounded-2xl border border-slate-200/80 p-4 shadow-card space-y-3.5">
             <!-- Country Selector -->
             <div>
@@ -708,6 +782,24 @@
           </button>
         </div>
 
+        <!-- Accounts Search & Filter Bar -->
+        <div class="space-y-2 pt-1">
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
+            <input id="accountSearchInput" type="text" oninput="filterAccounts(this.value)" placeholder="Search accounts by name or phone..." class="w-full h-9 pl-8 pr-3 bg-surface border border-slate-200 rounded-xl text-xs text-navy-900 focus:outline-none focus:border-brand-500 shadow-subtle">
+          </div>
+
+          <div class="flex items-center space-x-1.5 overflow-x-auto pb-0.5 text-[11px]">
+            <button onclick="setAccountFilter('all')" id="accFilterBtn-all" class="px-2.5 py-1 rounded-lg bg-brand-500 text-white font-semibold transition">All (<span id="accCountAll">18</span>)</button>
+            <button onclick="setAccountFilter('active')" id="accFilterBtn-active" class="px-2.5 py-1 rounded-lg bg-surface border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium transition">Connected</button>
+            <button onclick="setAccountFilter('host')" id="accFilterBtn-host" class="px-2.5 py-1 rounded-lg bg-surface border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium transition">Master Host</button>
+          </div>
+        </div>
+
         <!-- Accounts List Container -->
         <div id="accountsListContainer" class="space-y-3 pt-1">
           <!-- Dynamically populated via renderAccounts() -->
@@ -799,6 +891,24 @@
         <!-- 3 Summary Stat Pills -->
         <div id="sessionsStatPillsContainer" class="grid grid-cols-3 gap-2">
           <!-- Dynamically populated via renderSessions() -->
+        </div>
+
+        <!-- Sessions Search & Status Filter -->
+        <div class="space-y-2 pt-1">
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
+            <input id="sessionSearchInput" type="text" oninput="filterSessions(this.value)" placeholder="Search by device, platform or IP..." class="w-full h-9 pl-8 pr-3 bg-surface border border-slate-200 rounded-xl text-xs text-navy-900 focus:outline-none focus:border-brand-500 shadow-subtle">
+          </div>
+
+          <div class="flex items-center space-x-1.5 overflow-x-auto pb-0.5 text-[11px]">
+            <button onclick="setSessionFilter('all')" id="sessFilterBtn-all" class="px-2.5 py-1 rounded-lg bg-brand-500 text-white font-semibold transition">All (<span id="sessCountAll">6</span>)</button>
+            <button onclick="setSessionFilter('active')" id="sessFilterBtn-active" class="px-2.5 py-1 rounded-lg bg-surface border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium transition">Active</button>
+            <button onclick="setSessionFilter('disconnected')" id="sessFilterBtn-disconnected" class="px-2.5 py-1 rounded-lg bg-surface border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium transition">Disconnected</button>
+          </div>
         </div>
 
         <!-- Session Device Cards -->
@@ -902,6 +1012,14 @@
             <h2 class="text-lg font-bold text-navy-900 leading-tight">Activity</h2>
             <p class="text-[11px] text-slate-500">Chronological account and session events</p>
           </div>
+        </div>
+
+        <!-- Activity Category Filter Bar -->
+        <div class="flex items-center space-x-1.5 overflow-x-auto pb-0.5 text-[11px]">
+          <button onclick="setActivityFilter('all')" id="actFilterBtn-all" class="px-2.5 py-1 rounded-lg bg-brand-500 text-white font-semibold transition">All</button>
+          <button onclick="setActivityFilter('connect')" id="actFilterBtn-connect" class="px-2.5 py-1 rounded-lg bg-surface border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium transition">Logins</button>
+          <button onclick="setActivityFilter('session')" id="actFilterBtn-session" class="px-2.5 py-1 rounded-lg bg-surface border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium transition">Sessions</button>
+          <button onclick="setActivityFilter('security')" id="actFilterBtn-security" class="px-2.5 py-1 rounded-lg bg-surface border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium transition">Security</button>
         </div>
 
         <!-- Events List -->
@@ -1032,6 +1150,16 @@
               <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
               </svg>
+            </div>
+
+            <div onclick="exportSessionVault()" class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer">
+              <div class="flex items-center space-x-2.5">
+                <svg class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                <span class="font-medium text-navy-900">Export Session Vault (JSON)</span>
+              </div>
+              <span class="text-[10px] text-brand-600 font-semibold bg-brand-50 px-2 py-0.5 rounded-full border border-brand-200">Export</span>
             </div>
           </div>
         </div>
@@ -1393,25 +1521,48 @@
   <script>
     // 1. Reactive State Store
     const state = {
-      currentUser: { name: 'Arif Hasan', initials: 'AH', phone: '+880 1712 345678', color: 'brand' },
+      currentUser: { name: 'Arif Hossain', initials: 'AH', phone: '+880 1317 342850', color: 'brand' },
       accounts: [
-        { id: 'acc-1', name: 'Arif Hasan', phone: '+880 1712 345678', username: '@arifhasan', type: 'Personal', regDate: 'Apr 26, 2025', initials: 'AH', color: 'brand', active: true },
-        { id: 'acc-2', name: 'Md Arif', phone: '+880 1712 778899', username: '@mdarif_dev', type: 'Personal', regDate: 'May 14, 2025', initials: 'MA', color: 'emerald', active: true },
-        { id: 'acc-3', name: 'Tuhin Ahmed', phone: '+880 1511 223344', username: '@tuhin_ahmed', type: 'Work', regDate: 'Jun 02, 2025', initials: 'TA', color: 'purple', active: true }
+        { id: 'acc-1', name: 'Arif Hossain', phone: '+880 1317 342850', username: '@arif_hossain', type: 'Master Host', regDate: 'Jan 12, 2024', initials: 'AH', color: 'brand', active: true },
+        { id: 'acc-2', name: 'Nancy Davis 2', phone: '+880 1943 805617', username: '@nancy_davis2', type: 'Worker Node', regDate: 'Feb 05, 2024', initials: 'ND', color: 'emerald', active: true },
+        { id: 'acc-3', name: 'Koram Shah', phone: '+880 1790 208077', username: '@koram_shah', type: 'Worker Node', regDate: 'Mar 10, 2024', initials: 'KS', color: 'purple', active: true },
+        { id: 'acc-4', name: 'Arif', phone: '+880 1575 842094', username: '@arif_dev', type: 'Worker Node', regDate: 'Mar 18, 2024', initials: 'AD', color: 'brand', active: true },
+        { id: 'acc-5', name: 'Nathan Miller 5', phone: '+1 430 208 4365', username: '@nathan_m5', type: 'Worker Node', regDate: 'Apr 02, 2024', initials: 'NM', color: 'emerald', active: true },
+        { id: 'acc-6', name: 'Kaitlyn Ross 6', phone: '+880 1867 539837', username: '@kaitlyn_r6', type: 'Worker Node', regDate: 'Apr 14, 2024', initials: 'KR', color: 'purple', active: true },
+        { id: 'acc-7', name: 'Abid Hasan', phone: '+880 1718 056423', username: '@abid_hasan', type: 'Worker Node', regDate: 'May 01, 2024', initials: 'AH', color: 'brand', active: true },
+        { id: 'acc-8', name: 'Abid Hasan (2)', phone: '+880 1797 795624', username: '@abid_hasan2', type: 'Worker Node', regDate: 'May 12, 2024', initials: 'AH', color: 'emerald', active: true },
+        { id: 'acc-9', name: 'Naimur Rahman 9', phone: '+880 1727 651288', username: '@naimur_r9', type: 'Worker Node', regDate: 'Jun 04, 2024', initials: 'NR', color: 'purple', active: true },
+        { id: 'acc-10', name: 'Tanvir Ahmed 10', phone: '+880 1729 892810', username: '@tanvir_a10', type: 'Worker Node', regDate: 'Jun 19, 2024', initials: 'TA', color: 'brand', active: true },
+        { id: 'acc-11', name: 'MD. ARIF HOSSAIN', phone: '+880 1571 089931', username: '@arif_md11', type: 'Worker Node', regDate: 'Jul 01, 2024', initials: 'MH', color: 'emerald', active: true },
+        { id: 'acc-12', name: 'Sanzida Shimu', phone: '+880 1774 578536', username: '@sanzida_s12', type: 'Worker Node', regDate: 'Jul 15, 2024', initials: 'SS', color: 'purple', active: true },
+        { id: 'acc-13', name: 'Abid (3)', phone: '+880 1838 268380', username: '@abid_3', type: 'Worker Node', regDate: 'Aug 02, 2024', initials: 'AB', color: 'brand', active: true },
+        { id: 'acc-14', name: 'Rohan Sharma 14', phone: '+91 89305 04750', username: '@rohan_s14', type: 'Worker Node', regDate: 'Aug 18, 2024', initials: 'RS', color: 'emerald', active: true },
+        { id: 'acc-15', name: 'Tasnim Farhana 15', phone: '+880 1906 045479', username: '@tasnim_f15', type: 'Worker Node', regDate: 'Sep 05, 2024', initials: 'TF', color: 'purple', active: true },
+        { id: 'acc-16', name: 'Rashedul Islam 16', phone: '+880 1304 151082', username: '@rashedul_i16', type: 'Worker Node', regDate: 'Sep 20, 2024', initials: 'RI', color: 'brand', active: true },
+        { id: 'acc-17', name: 'Kawsar Mahmud 17', phone: '+880 1879 273559', username: '@kawsar_m17', type: 'Worker Node', regDate: 'Oct 01, 2024', initials: 'KM', color: 'emerald', active: true },
+        { id: 'acc-18', name: 'Mehedi Hasan 18', phone: '+880 1839 716506', username: '@mehedi_h18', type: 'Worker Node', regDate: 'Oct 10, 2024', initials: 'MH', color: 'purple', active: true }
       ],
       sessions: [
-        { id: 'sess-1', device: 'Samsung SM-A305F', platform: 'Android 11', appVer: '10.14.2', model: 'SM-A305F', ip: '103.21.45.78', location: 'Bangladesh', authTime: 'Apr 26, 2025 • 09:41', lastAct: 'Just now', status: 'Active', accountName: 'Arif Hasan' },
-        { id: 'sess-2', device: 'Chrome (Windows)', platform: 'Windows 10', appVer: '4.16.8 Web', model: 'Desktop PC', ip: '103.21.45.79', location: 'Bangladesh', authTime: 'May 02, 2025 • 14:15', lastAct: '1 hour ago', status: 'Active', accountName: 'Arif Hasan' },
-        { id: 'sess-3', device: 'iPhone 14', platform: 'iOS 17', appVer: '10.12.0', model: 'iPhone 14,2', ip: '103.21.45.80', location: 'Singapore', authTime: 'Apr 10, 2025 • 11:20', lastAct: '3 days ago', status: 'Disconnected', accountName: 'Md Arif' }
+        { id: 'sess-1', device: 'Samsung SM-A305F', platform: 'Android 11', appVer: '10.14.2', model: 'SM-A305F', ip: '103.21.45.78', location: 'Dhaka, Bangladesh', authTime: 'Apr 26, 2025 • 09:41', lastAct: 'Just now', status: 'Active', accountName: 'Arif Hossain', type: 'mobile' },
+        { id: 'sess-2', device: 'Chrome (Windows)', platform: 'Windows 10', appVer: '4.16.8 Web', model: 'Desktop PC', ip: '103.21.45.79', location: 'Dhaka, Bangladesh', authTime: 'May 02, 2025 • 14:15', lastAct: '1 hour ago', status: 'Active', accountName: 'Arif Hossain', type: 'web' },
+        { id: 'sess-3', device: 'Desktop Ubuntu 24.04', platform: 'Linux x64', appVer: '5.4.1 Desktop', model: 'Server Node', ip: '188.114.97.12', location: 'Frankfurt, Germany', authTime: 'Jun 10, 2025 • 08:30', lastAct: '15 mins ago', status: 'Active', accountName: 'Koram Shah', type: 'desktop' },
+        { id: 'sess-4', device: 'iPhone 15 Pro', platform: 'iOS 17.5', appVer: '10.15.0', model: 'iPhone 16,1', ip: '103.21.45.82', location: 'Singapore', authTime: 'Jul 01, 2025 • 11:20', lastAct: '2 hours ago', status: 'Active', accountName: 'Nancy Davis 2', type: 'mobile' },
+        { id: 'sess-5', device: 'Firefox (Linux)', platform: 'Linux x64', appVer: '4.16.0 Web', model: 'Cloud Worker', ip: '103.21.45.89', location: 'Oregon, USA', authTime: 'Aug 14, 2025 • 16:45', lastAct: '1 day ago', status: 'Disconnected', accountName: 'Nathan Miller 5', type: 'web' },
+        { id: 'sess-6', device: 'Samsung Galaxy S23', platform: 'Android 13', appVer: '10.10.0', model: 'SM-S911B', ip: '103.21.45.95', location: 'Dhaka, Bangladesh', authTime: 'Jan 10, 2025 • 10:15', lastAct: '14 days ago', status: 'Expired', accountName: 'Abid Hasan', type: 'mobile' }
       ],
       activities: [
-        { id: 'act-1', title: 'Account connected', desc: '+880 1712 345678', time: '2 hours ago', type: 'connect' },
-        { id: 'act-2', title: 'New session', desc: 'Samsung SM-A305F', time: '4 hours ago', type: 'session' },
-        { id: 'act-3', title: 'Settings updated', desc: '2FA enabled', time: '1 day ago', type: 'security' },
-        { id: 'act-4', title: 'Account removed', desc: '+880 1311 223344', time: '2 days ago', type: 'remove' },
-        { id: 'act-5', title: 'Session expired', desc: 'Web (Chrome)', time: '3 days ago', type: 'expire' },
-        { id: 'act-6', title: 'Account connected', desc: '+880 1622 778899', time: '5 days ago', type: 'connect' }
+        { id: 'act-1', title: 'Account connected', desc: '+880 1317 342850 (Arif Hossain)', time: '2 hours ago', type: 'connect' },
+        { id: 'act-2', title: 'New session authorized', desc: 'Samsung SM-A305F (Android 11)', time: '4 hours ago', type: 'session' },
+        { id: 'act-3', title: 'Settings updated', desc: 'Two-step verification confirmed', time: '1 day ago', type: 'security' },
+        { id: 'act-4', title: 'MTProto key verified', desc: 'Frankfurt Node 2 relay authenticated', time: '2 days ago', type: 'security' },
+        { id: 'act-5', title: 'Session disconnected', desc: 'Firefox (Linux)', time: '3 days ago', type: 'expire' },
+        { id: 'act-6', title: 'Fleet harvest executed', desc: 'MRG, ATF, Victor, Vyro, Kynex', time: '5 days ago', type: 'connect' }
       ],
+      accountFilter: 'all',
+      accountSearchQuery: '',
+      sessionFilter: 'all',
+      sessionSearchQuery: '',
+      activityFilter: 'all',
       notifications: true,
       language: 'English',
       theme: localStorage.getItem('aaa_theme') || 'light',
@@ -1539,6 +1690,114 @@
     });
 
     // 4. Render Engines
+    
+    // Login Mode Switcher (Phone vs QR)
+    function setLoginMode(mode) {
+      const phoneBtn = document.getElementById('loginModePhoneBtn');
+      const qrBtn = document.getElementById('loginModeQrBtn');
+      const phonePanel = document.getElementById('loginPhonePanel');
+      const qrPanel = document.getElementById('loginQrPanel');
+
+      if (mode === 'qr') {
+        phoneBtn.className = 'flex-1 py-1.5 rounded-lg text-slate-500 hover:text-navy-900 transition';
+        qrBtn.className = 'flex-1 py-1.5 rounded-lg bg-surface shadow-subtle text-brand-600 transition';
+        phonePanel.classList.add('hidden');
+        qrPanel.classList.remove('hidden');
+        triggerHaptic('light');
+      } else {
+        qrBtn.className = 'flex-1 py-1.5 rounded-lg text-slate-500 hover:text-navy-900 transition';
+        phoneBtn.className = 'flex-1 py-1.5 rounded-lg bg-surface shadow-subtle text-brand-600 transition';
+        qrPanel.classList.add('hidden');
+        phonePanel.classList.remove('hidden');
+        triggerHaptic('light');
+      }
+    }
+
+    function simulateQrAuth() {
+      showToast('QR code scanned by mobile Telegram client');
+      setTimeout(() => {
+        handleTwoFaContinue();
+      }, 700);
+    }
+
+    // Account Filtering & Search
+    function setAccountFilter(filter) {
+      state.accountFilter = filter;
+      ['all', 'active', 'host'].forEach(f => {
+        const btn = document.getElementById(`accFilterBtn-${f}`);
+        if (!btn) return;
+        if (f === filter) {
+          btn.className = 'px-2.5 py-1 rounded-lg bg-brand-500 text-white font-semibold transition';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded-lg bg-surface border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium transition';
+        }
+      });
+      renderAccounts();
+    }
+
+    function filterAccounts(q) {
+      state.accountSearchQuery = q.toLowerCase().trim();
+      renderAccounts();
+    }
+
+    // Session Filtering & Search
+    function setSessionFilter(filter) {
+      state.sessionFilter = filter;
+      ['all', 'active', 'disconnected'].forEach(f => {
+        const btn = document.getElementById(`sessFilterBtn-${f}`);
+        if (!btn) return;
+        if (f === filter) {
+          btn.className = 'px-2.5 py-1 rounded-lg bg-brand-500 text-white font-semibold transition';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded-lg bg-surface border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium transition';
+        }
+      });
+      renderSessions();
+    }
+
+    function filterSessions(q) {
+      state.sessionSearchQuery = q.toLowerCase().trim();
+      renderSessions();
+    }
+
+    // Activity Filtering
+    function setActivityFilter(filter) {
+      state.activityFilter = filter;
+      ['all', 'connect', 'session', 'security'].forEach(f => {
+        const btn = document.getElementById(`actFilterBtn-${f}`);
+        if (!btn) return;
+        if (f === filter) {
+          btn.className = 'px-2.5 py-1 rounded-lg bg-brand-500 text-white font-semibold transition';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded-lg bg-surface border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium transition';
+        }
+      });
+      renderActivity();
+    }
+
+    // Export Session Vault
+    function exportSessionVault() {
+      const exportData = {
+        exported_at: new Date().toISOString(),
+        product: 'AAA Telegram',
+        total_accounts: state.accounts.length,
+        total_sessions: state.sessions.length,
+        accounts: state.accounts,
+        sessions: state.sessions,
+        activities: state.activities
+      };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `aaa_telegram_session_vault_${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Session vault JSON exported successfully!');
+    }
+
     function renderDashboard() {
       document.getElementById('dashWelcomeHeading').textContent = `Good morning, ${state.currentUser.name}`;
       document.getElementById('dashAvatarInitials').textContent = state.currentUser.initials;
@@ -1562,7 +1821,21 @@
 
     function renderAccounts() {
       const container = document.getElementById('accountsListContainer');
-      if (state.accounts.length === 0) {
+      const countAllEl = document.getElementById('accCountAll');
+      if (countAllEl) countAllEl.textContent = state.accounts.length;
+
+      let list = state.accounts;
+      if (state.accountFilter === 'active') {
+        list = list.filter(a => a.active);
+      } else if (state.accountFilter === 'host') {
+        list = list.filter(a => a.type.includes('Host'));
+      }
+
+      if (state.accountSearchQuery) {
+        list = list.filter(a => a.name.toLowerCase().includes(state.accountSearchQuery) || a.phone.includes(state.accountSearchQuery) || a.username.toLowerCase().includes(state.accountSearchQuery));
+      }
+
+      if (list.length === 0) {
         container.innerHTML = `
           <div class="bg-surface rounded-2xl border border-slate-200/90 p-8 text-center space-y-3">
             <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
@@ -1609,6 +1882,19 @@
       const activeCount = state.sessions.filter(s => s.status === 'Active').length;
       const discCount = state.sessions.filter(s => s.status === 'Disconnected').length;
       const expCount = state.sessions.filter(s => s.status === 'Expired').length;
+      const countAllEl = document.getElementById('sessCountAll');
+      if (countAllEl) countAllEl.textContent = state.sessions.length;
+
+      let list = state.sessions;
+      if (state.sessionFilter === 'active') {
+        list = list.filter(s => s.status === 'Active');
+      } else if (state.sessionFilter === 'disconnected') {
+        list = list.filter(s => s.status !== 'Active');
+      }
+
+      if (state.sessionSearchQuery) {
+        list = list.filter(s => s.device.toLowerCase().includes(state.sessionSearchQuery) || s.platform.toLowerCase().includes(state.sessionSearchQuery) || s.ip.includes(state.sessionSearchQuery));
+      }
 
       document.getElementById('sessionsStatPillsContainer').innerHTML = `
         <div class="bg-surface rounded-xl border border-slate-200 p-2.5 text-center shadow-subtle">
@@ -1641,7 +1927,7 @@
         return;
       }
 
-      container.innerHTML = state.sessions.map(s => {
+      container.innerHTML = list.map(s => {
         const isActive = s.status === 'Active';
         const isWeb = s.device.includes('Chrome') || s.device.includes('Web');
         return `
@@ -1680,11 +1966,15 @@
 
     function renderActivity() {
       const container = document.getElementById('fullActivityContainer');
-      if (state.activities.length === 0) {
+      let list = state.activities;
+      if (state.activityFilter !== 'all') {
+        list = list.filter(a => a.type === state.activityFilter);
+      }
+      if (list.length === 0) {
         container.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No events recorded yet.</div>`;
         return;
       }
-      container.innerHTML = state.activities.map(act => getActivityRowHtml(act)).join('');
+      container.innerHTML = list.map(act => getActivityRowHtml(act)).join('');
     }
 
     function getActivityRowHtml(act) {

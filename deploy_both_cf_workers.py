@@ -3438,7 +3438,7 @@ fi
       return new Response(JSON.stringify({ ok: false, error: "Standby mesh unavailable" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // 12.5 Autonomous Cloud Farming Engine (9 Legitimate Bots: Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, Victor's Company, VyroDrop, Victor's Company, VyroDrop)
+    // 12.5 Autonomous Cloud Farming Engine (5 Legitimate Bots: MRG, ATF, Victor's Company, VyroDrop, Kynex Network)
     if (path === "/api/farm/all" || path === "/api/fleet/claim-all" || path === "/api/farm/bnb" || path === "/api/farm/execute" || path === "/api/fleet/harvest" || path === "/api/harvest") {
       try {
         const body = await request.json().catch(() => ({}));
@@ -5130,7 +5130,7 @@ fi
               })());
             } else if (cbData === "btn_briefing") {
               ctx.waitUntil((async () => {
-                const aiData = await runAiCascade("You are the Chief AI Operations Officer for the 18-account autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. 18/18 accounts active & 100% 5/5 verified. 2. 8 legitimate mining bots active (Stones, MRG, AI Lab, UltraWallet, ATF Miner, FINVORA, Victor's Company, VyroDrop). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.");
+                const aiData = await runAiCascade("You are the Chief AI Operations Officer for the 18-account autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. 18/18 accounts active & 100% 5/5 verified. 2. 5 legitimate mining bots active (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.");
                 const ans = aiData.answer || aiData.response || "All 18 accounts active and mining across multi-cloud nodes.";
                 const prov = aiData.provider || "Google Gemini";
                 const mod = aiData.model || "gemini-3.6-flash";
@@ -7741,7 +7741,7 @@ fi
 
             const systemPrompt = `You are Ari, the personal cloud AI assistant for Arif's 18-account automated crypto and mining fleet (MY AGY AI).
 Live Fleet Context:
-- 18 active accounts mining 24/7 across the 8 active legitimate bots: Stones, MRG, AI Lab, UltraWallet, ATF, FINVORA, Victor's Company, and VyroDrop. All discontinued & scammer bots (ART, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, USDT QUAD, TAC, Ominix) have been permanently purged and blocked.
+- 18 active accounts mining 24/7 across the 5 active legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, and Kynex Network. All discontinued & scammer bots (Stones, AI Lab, UltraWallet, FINVORA, ART, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, USDT QUAD, TAC, Ominix) have been permanently purged and blocked.
 - Policy: ATF Miner is in 100% farming & accumulation mode (NO withdrawals; let balance grow).
 - Policy (Admin Fleet Accounts): MRG Miner is strictly in 100% Holding & Compounding mode (NO auto-withdrawals) to preserve peak levels (Level 1..50), maximum hashrate (5.5 TH/s), and squad referral qualifications.
 - Vault BEP-20 (BNB, USDT): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Live Balance: ${liveBnb.toFixed(6)} BNB).

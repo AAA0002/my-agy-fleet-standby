@@ -2,6 +2,20 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 AAA Telegram Mini App Advanced Upgrades & Cloudflare Prompt Standardization (October 12, 2026)**:
+  - **📱 Telegram Mini App QR Code Authentication & Roster Expansion (`public_admin/index.html` & `public/index.html`)**:
+    * **Segmented Login Mode Switcher**: Added responsive segmented control on Page 2 enabling switching between **Phone Number** and **QR Code** login modes.
+    * **SVG QR Code Mockup & Instructions**: Crisp vector QR code display with animated scanner line and step-by-step connection guide for desktop/in-app Telegram linkage.
+    * **Full 18-Account Production Fleet Roster**: Expanded reactive state store to pre-load all 18 production fleet accounts matching `PROJECT_BIBLE.md` (Arif Hossain, Nancy Davis 2, Koram Shah, Arif dev, Nathan Miller 5, Kaitlyn Ross 6, Abid Hasan 1..3, Naimur Rahman 9, Tanvir Ahmed 10, MD. ARIF HOSSAIN 11, Sanzida Shimu 12, Rohan Sharma 14, Tasnim Farhana 15, Rashedul Islam 16, Kawsar Mahmud 17, Mehedi Hasan 18).
+    * **Real-Time Accounts Search & Filtering**: Instant live search input by name, username, or phone number, with one-tap status filters (All, Connected, Master Host).
+    * **Real-Time Sessions Search & Status Filtering**: Instant search across connected devices, operating system, and IP address, plus status filter tabs (All, Active, Disconnected).
+    * **Activity Feed Category Filtering**: Tabbed filtering for event logs by type (All, Logins, Sessions, Security).
+    * **1-Click JSON Session Vault Export**: Added secure JSON export button in Page 10 Settings allowing operators to download the complete sanitized fleet session ledger.
+    * **Vercel Production Deploy**: Deployed live to `https://agy-aaa000.vercel.app/` and `https://aaa-free-ai.vercel.app/` (HTTP 200 OK verified).
+  - **☁️ Cloudflare Edge AI Engine & Prompt Clean-up (`deploy_both_cf_workers.py`)**:
+    * Cleaned up legacy prompt text in `btn_briefing` and Ari's system prompt (lines 5133 and 7744), standardizing strictly on the **5 active legitimate bots** (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network) with all scam bots (Stones, AI Lab, UltraWallet, FINVORA, etc.) explicitly marked as permanently purged.
+    * Re-synchronized across all 5 Cloudflare edge nodes with live webhook health verified.
+
 - **⚡ Admin Bot Comprehensive Redesign, De-duplication & Interactive Mini App Reactive Upgrade (October 12, 2026)**:
   - **👑 Admin Bot Complete Redesign (`@myagyai`)**:
     * **Unified Single-Message Command Console**: Eliminated the redundant double-message spam on `/start` and `/menu`. The bot now sends a single authoritative operations panel with dynamic stats, Dhaka time, and streamlined inline controls.
