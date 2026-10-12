@@ -112,18 +112,20 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   - **Mini App & Web Wallet App**: `https://app8858823950.tgcloud.ai/` (managed via `public/index.html` and `tgcloud.jsonc`, accessible via 1-tap inline WebApp button in bot menu).
     * **Mobile-First Smartphone Architecture**: Fixed bottom thumb navigation bar (`Treasury`, `Nodes`, `Ari AI`, `5 Bots`, `Mesh`), strict `100dvh` viewport, and native `Telegram.WebApp.BackButton` integration.
     * **Executive Light Theme**: Clean, professional Stripe/Linear-style UI (`bg-slate-50`, `bg-white`, slate-900 typography, emerald/blue accents).
-    * **Multi-Chain Web Wallet Manager**: Manages all 18 accounts' non-custodial wallets across 5 blockchains (TON, EVM/BSC, TRON, Solana, Bitcoin) with 1-tap address copying, QR code modals, and JSON/CSV Treasury Export.
+    * **16-Account Fleet Seed Manager & Quick Mobile Importer Wizard**: Built directly into Treasury tab with 1-tap horizontal account jump pills (Amber for `#1 Binance` and `#10 Web3`, Blue/Cyan for `#2-9` and `#11-18`), sequential Prev/Next carousel, dedicated Binance institutional vault cards (with TON deposit memo `103525143`), numbered 3-column 24-word grid with 1-tap copy, direct Tonkeeper import URL, EVM key copy, and 1-click bulk exports (Copy 16 seeds, Download TXT/JSON).
+    * **Zero Mock Tokens / Pure Authentic Cryptographic Suite**: Embedded `STATIC_FLEET_WALLETS` from `fleet_wallets_data.json` across all 18 accounts across 5 blockchains (TON, EVM/BSC, TRON, Solana, Bitcoin) with 1-tap address copying, QR code modals, and JSON/CSV Treasury Export.
     * **Interactive Ari AI Council**: Live AI Copilot tab powered by Cloudflare Workers AI & Groq LPU (`qwen/qwen3.8-27b`) for real-time fleet diagnostics, compounding advice, and sybil risk audits.
     * **Instant State Reflection**: `markAccountActive()` ensures accounts re-linked in bot or cloud immediately show active status without stale revoked badges.
   - **Native SQLite Database**: 4 tables migrated (`accounts_cache`, `admin_users`, `login_sessions`, `telemetry_events`).
   - Project directory: `tgcloud_admin_bot/` with official CLI `@tgcloud/cli@0.2.0`.
   - Handlers:
-    * `tgcloud/handlers/message.js`: 100% serverless message routing with sub-second execution (<1s), command preemption, non-blocking Render cancel calls, duplicate account detection, auto-normalization of BD phone numbers, immediate deletion of incoming OTP text to protect against Telegram chat-sharing algorithms, and automatic diversion to 1-Tap QR Login / PIN Pad when Telegram flags shared codes.
-    * `tgcloud/handlers/callback_query.js`: Multi-method session re-linking suite (1-Tap QR Login via `startQrLogin`, Interactive Inline PIN Pad `buildPinPadKeyboard`, and SMS code dispatch), 1-tap OTP reader with dynamic status badges, and parallel cloud farming triggers.
-    * `tgcloud/lib/ui.js`: Interactive inline PIN pad keyboard (`[1][2][3]...[⌫][0][✅ Verify]`) and QR device linking buttons (`tg://login?token=...`).
-    * `public/index.html`: Mobile WebApp featuring `modalEnterCode` for direct in-app HTTPS verification and 1-tap QR scanning, completely bypassing Telegram chat-sharing inspection.
+    * `tgcloud/handlers/message.js`: 100% serverless message routing with sub-second execution (<1s), command preemption, non-blocking Render cancel calls, dynamic `/wallet <1-18>` and `/wallets` execution delivering 24-word seeds in `<pre>` for 1-tap mobile copying, duplicate account detection, auto-normalization of BD phone numbers, and diversion to 1-Tap QR Login / PIN Pad.
+    * `tgcloud/handlers/callback_query.js`: Interactive 18-account wallet explorer callbacks (`wallet_view_<1-18>`), session re-linking suite (1-Tap QR Login via `startQrLogin`, Inline PIN Pad `buildPinPadKeyboard`, and SMS code dispatch), 1-tap OTP reader with dynamic status badges, and parallel cloud farming triggers.
+    * `tgcloud/lib/fleetWallets.js`: Cryptographic static registry for all 18 accounts, formatting HTML dossiers with copyable `<pre>` seeds and `<code>` keys, plus 18-button inline keyboard.
+    * `tgcloud/lib/ui.js`: Account dossier keyboard with direct "💼 View Multi-Chain Wallet & Seeds" button, interactive inline PIN pad keyboard (`[1][2][3]...[⌫][0][✅ Verify]`) and QR device linking buttons (`tg://login?token=...`).
+    * `public/index.html`: Mobile WebApp featuring 16-seed wizard, direct in-app HTTPS verification, and 1-tap QR scanning, completely bypassing Telegram chat-sharing inspection.
   - Endpoints: `aiCouncil.js` (Groq/Edge AI Copilot), `getOtp.js` (live OTP extraction), `collectTokens.js`, `getFleetStatus.js`, `triggerFarm.js`, `triggerTurnstile.js` (for WebApp API).
-  - Deployment: Managed via `./deploy_tgcloud.sh [TGCLOUD_TOKEN]` (`npx tgcloud push` + `npx tgcloud migrate`). Webhook permanently preserved across all Cloudflare deployments.
+  - Deployment: Managed via `./deploy_tgcloud.sh [TGCLOUD_TOKEN]` or `npx tgcloud push`. Webhook permanently synced to `https://cloud.telegram.org/app8858823950/webhook`.
 
 
 - **Render Cloud Fleet (Multi-Account Cloud MTProto Compute & Resilient Relay Mesh)**:

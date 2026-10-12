@@ -2,6 +2,28 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **📱 Telegram Serverless Mini App Web Wallet & Interactive Bot `/wallet <1-18>` Engine (October 12, 2026)**:
+  - **🚀 Complete Mini App Web Wallet App (`https://app8858823950.tgcloud.ai/` & `tgcloud_admin_bot/public/index.html`)**:
+    * **100% Authentic Fleet Data**: Embedded full 18-node cryptographic registry `STATIC_FLEET_WALLETS` from `fleet_wallets_data.json`, completely purging all placeholder/mock wallet addresses.
+    * **Interactive 18-Account Seed Manager & Quick Mobile Importer**: Built mobile-optimized wizard directly into the Telegram Mini App Treasury tab with 1-tap horizontal quick-jump pills:
+      - Amber pill for `👑 #1 Binance` (Master Central Reserve Vault)
+      - Amber pill for `⭐ #10 Web3` (Binance Web3 App MPC Vault)
+      - Blue/Cyan pills for Nodes `#2-9` and `#11-18` (16 Self-Custody accounts)
+    * **Dedicated Binance Institutional Cards**: Displays Commander Arif's Central Reserve Vault (TON deposit address + 1-tap copy of mandatory memo `103525143`, EVM, TRON, SOL, BTC) and Tanvir Ahmed 10 Binance Web3 MPC Vault.
+    * **1-Tap Non-Custodial Mobile Importer (Nodes 2-9, 11-18)**: Numbered 3-column 24-word grid with 1-tap "Copy 24 Words" (clean space-separated format for Gram Wallet & Tonkeeper), "Numbered" export, direct "Open in Tonkeeper" deep-link, and "Copy EVM Key" button.
+    * **Master Bulk Export Suite**: 1-Click "Copy All 16 TON Seeds", 1-Click "Download TXT Master Vault" (`FLEET_WALLETS_SECRETS_MASTER_VAULT.txt`), and 1-Click "Download JSON Vault".
+    * **Seamless Modal Integration**: Node detail modal now features a direct `[ 🔑 View 24-Word Seed in Treasury Wizard ]` button that switches tabs and focuses on the selected account.
+  - **🤖 Telegram Serverless Admin Bot (`@myagyai`) `/wallet <1-18>` & Interactive Keyboard Engine**:
+    * **Dynamic Bot Command Handler (`tgcloud/handlers/message.js`)**: Implemented `/wallet <1-18>` and `/wallets <1-18>` delivering instant multi-chain breakdown with 24-word seed phrases formatted in `<pre>` for 1-tap mobile copying and EVM private keys in `<code>`.
+    * **Interactive 18-Node Inline Keyboard (`tgcloud/lib/fleetWallets.js`)**: Users can tap any account button (`[👑 #1 Binance] [#2] [#3] ... [#10 Web3] ... [#18]`) to toggle between accounts without typing commands.
+    * **Dossier Integration (`tgcloud/lib/ui.js` & `callback_query.js`)**: Added direct "💼 View Multi-Chain Wallet & Seeds" button in account dossiers.
+    * **Webhook & Serverless Push**: Pushed revision to tgcloud in 1.8s and verified webhook in-sync with `https://cloud.telegram.org/app8858823950/webhook`.
+  - **☁️ Multi-Cloud Mesh & Standby Parity**:
+    * **Vercel Deployments**: State synchronization between Seed Wizard, Matrix, and Switcher deployed to `https://agy-aaa000.vercel.app/admin` & `https://aaa-free-ai.vercel.app/admin` (READY).
+    * **Cloudflare Edge**: All 5 Worker nodes deployed with synchronized bot commands and webhooks.
+    * **Render Cluster**: Render Standby Node 2 (Frankfurt: `dep-db63jc142hec73apevgg`) and Node 3 (Oregon: `dep-db63jc942hec73apf0lg`) deployed.
+    * **Disaster Recovery**: Fresh encrypted snapshot uploaded to Telegram vault `@myagyai` via `backup_manager.py`.
+
 - **🚀 1-Tap Account Jump Pills, Binance Vault Cards, Modal Wallet Integration & Bot `/wallet <index>` Engine (October 11, 2026)**:
   - **📱 18-Account Quick-Jump Pills & Binance Vault Cards (`public_admin/admin.html` & `admin/index.html`)**:
     * **1-Tap Account Selector Pills**: Built a horizontal scroll pill bar across all 18 accounts in the Seed & Vault Manager. Amber styling for Binance Institutional Vaults (`#1 Binance` & `#10 Web3`) and glowing cyan for the 16 self-custody accounts (`#2-9`, `#11-18`), enabling instant 1-tap switching without multiple clicks.

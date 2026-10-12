@@ -216,7 +216,9 @@
     <!-- ======================================================== -->
     <!-- TAB 1: MULTI-CHAIN TREASURY (WEB WALLETS)                -->
     <!-- ======================================================== -->
-    <div id="tabWallets" class="tab-pane space-y-2">
+    <div id="tabWallets" class="tab-pane space-y-3">
+      <!-- 16-ACCOUNT FLEET SEED MANAGER & QUICK MOBILE IMPORTER WIZARD -->
+      <div id="seedWizardSection" class="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3"></div>
       <!-- Chain Filter Selector Pills -->
       <div class="flex items-center gap-1 overflow-x-auto pb-1 text-[10px] font-bold custom-scrollbar shrink-0">
         <button class="chain-btn min-h-[32px] px-2.5 py-1 rounded-lg bg-blue-600 text-white shadow-2xs font-bold whitespace-nowrap" data-chain="all">All Chains</button>
@@ -583,6 +585,10 @@
       <div class="space-y-1.5">
         <div class="text-[10px] text-slate-400 uppercase font-black tracking-wider">Multi-Chain Vault Addresses</div>
         <div id="modalWalletsList" class="space-y-1 font-mono text-[10px]"></div>
+        <button id="modalBtnViewSeed" class="w-full mt-2 min-h-[38px] py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition">
+          <span id="modalBtnViewSeedIcon">🔑</span>
+          <span id="modalBtnViewSeedText">View 24-Word Seed in Treasury Wizard</span>
+        </button>
       </div>
 
       <div class="pt-2 flex gap-2">
@@ -703,6 +709,8 @@
       } catch (_) {}
     }
 
+    const STATIC_FLEET_WALLETS = [{"index": 1, "name": "Arif Hossain", "phone": "+8801317342850", "user_id": "6727787768", "ton": "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT", "ton_mnemonic": "", "evm": "0xfda4182001672b9f0f09e2118242e543e35ed5ce", "evm_key": "Binance Main Exchange Deposit (Direct Custody)", "tron": "TZ6LY4QwiJr8WXN6W1HjiUCbkvFxq1vmUJ", "tron_key": "Binance Main Exchange Deposit (Direct Custody)", "sol": "2EKCkj6RSgMHomtTPigoVfaLa5x4RaXq9qrxv2roi5Fu", "sol_key": "Binance Main Exchange Deposit (Direct Custody)", "btc": "bc1peg8n6rv7lnzpdwgqqktcyxvrw7we60c780l2yh48pvqvgpj2p7gsvecjdg", "btc_key": "Binance Main Exchange Deposit (Direct Custody)"}, {"index": 2, "name": "Nancy", "phone": "+8801943805617", "user_id": "8881914294", "ton": "UQA0aO4Ybdg76l2ewtiGxA7vtk8CHbVaGvrcpA0G1kionhsP", "ton_mnemonic": "emerge floor involve rookie enroll army social alien swing wasp thank panel kiwi feature tenant dog dust use garlic when ocean vintage unveil chase", "evm": "0xA203269B8a970d5b74361B406345e1BBF5A0623B", "evm_key": "aa2eda911e13e78fc83f32daef9425f952369aed79b16a5f6e6192c40a17eaf7", "tron": "TQjrF4JNZLBXTH64Vrs9P5ZLGdqM8UdrTY", "tron_key": "aa2eda911e13e78fc83f32daef9425f952369aed79b16a5f6e6192c40a17eaf7", "sol": "5bnRudWyU1Sjhe2XXXFNFRLWCAmq3c7K1ZEHWtRxHszU", "sol_key": "61t3godJxXGsnV9AAeiWMSnem311ja5jdBH21ryk6ynKmUudci4gkUiAbATccy5MRVQiqtuArgqpC2DjazgkNcvx", "btc": "1Ny6K4ktywSbvXo9eVEniHchfn8ihFugdK", "btc_key": "aa2eda911e13e78fc83f32daef9425f952369aed79b16a5f6e6192c40a17eaf7"}, {"index": 3, "name": "Koram Shah", "phone": "+8801790208077", "user_id": "7648254021", "ton": "UQC8xeCT2LQHUOceVFozYqRR8xEnxdZeo4Hsy_B9_jrkpp-1", "ton_mnemonic": "fitness what silver basic solution wing spray window raven ability bulk clutch core document civil bag rhythm bike jacket address glow minimum match path", "evm": "0x65DB0FA942144a2A89630c4975FA5f5469f97411", "evm_key": "9a198a0266af226f7b72d124dab07552bfef1d5484a5133c82fd896da0d11ca3", "tron": "TKFmg55vVkbHGLNznmh5vXq3hgbmj5b4qk", "tron_key": "9a198a0266af226f7b72d124dab07552bfef1d5484a5133c82fd896da0d11ca3", "sol": "6f6XoV3hnAC48swXcCi2A32X24f3fqrfF2xqcfMB7XNh", "sol_key": "2YhGMXP6jMdQgYFHfXJPAnwb4T2FBjQo29MXoiok4tK9KwEVWbUW1TiGWgtgdcp4Aa7YUNCuEiRtuPfgZPwm9nCZ", "btc": "13TQRdfLP2C45b3jiAMt6ZaF6LtrrkpnN3", "btc_key": "9a198a0266af226f7b72d124dab07552bfef1d5484a5133c82fd896da0d11ca3"}, {"index": 4, "name": "Arif", "phone": "+8801575842094", "user_id": "8826375659", "ton": "UQAOfjJtPFrKKWVqHGF0Fmo6BkTLyTTmE3Oq0vABlQYZoPBD", "ton_mnemonic": "rubber fun tongue tortoise shine unknown nose indicate ritual stomach true simple moon quote ritual rebuild all help motion cotton crowd brave knock toast", "evm": "0x24718F037aA61e3873073098D121ba3ced8C9daB", "evm_key": "7517fc4097944d56cedfa09abff7964831a993a6f3c831298fc60b838bcb1354", "tron": "TDHuNA7ma8YmdTWZyTShAvdQsg6NKeuyxP", "tron_key": "7517fc4097944d56cedfa09abff7964831a993a6f3c831298fc60b838bcb1354", "sol": "CYcguQk4Pk8Z8RqtJVp9mBVepUvXFdc7eLw7G85uC3FM", "sol_key": "3bkLLtWcBQpE85BJSH3z2Aavy7YwhF8n7Axjn5nYQwNLS57hEjTg2LM66B3qFwRxHmncSgzvxz8HLXfVnxFP5tzj", "btc": "1Ldi4Ze1U54zhbzqS18AfkaHpcd3YKxBny", "btc_key": "7517fc4097944d56cedfa09abff7964831a993a6f3c831298fc60b838bcb1354"}, {"index": 5, "name": "Nadim", "phone": "+14302084365", "user_id": "8450010161", "ton": "UQBrmX45swcSdxBfgg4vQUjoaBxD-_48zwqvofbpndAsMOBQ", "ton_mnemonic": "kidney witness embody neglect hero input addict enjoy account honey brand guess slush gospel curtain express umbrella section size side obtain page hybrid tiny", "evm": "0x0c649480FC33DfB9216756cB28e2e2efd6b0725D", "evm_key": "88d39e51a85fdaad28642a11fb640299b03ddc6a74781b5253f26be661e90578", "tron": "TB6jbngGfmtLGG3CrAAYF8kDt1w7UEp1Wn", "tron_key": "88d39e51a85fdaad28642a11fb640299b03ddc6a74781b5253f26be661e90578", "sol": "2UXL1Eb5RE2uNRmJsrqmYr46XEGHLa7vGtLhRr6DiGYE", "sol_key": "RJVkQousgE4yHeokTEtyKDFmFEo8i9uytqukzaAwUmBZPHTQ4FN5bPbtmYGhC9KgrgtpenGTjFqUGhyrzgTtRot", "btc": "13xKtWd7m5xrcxmrXoovrCULHYnC9fiKwZ", "btc_key": "88d39e51a85fdaad28642a11fb640299b03ddc6a74781b5253f26be661e90578"}, {"index": 6, "name": "Kaitlyn", "phone": "+8801867539837", "user_id": "8782429452", "ton": "UQAid8oL7Qm8TFhLMhQAk-BjL39iqQW4Zfik77XCMqjhjk9q", "ton_mnemonic": "cycle chaos wash debris bargain lady glove picture install human hat donate wise fat shine network nuclear visa twenty jacket ill knock radar pear", "evm": "0xC3afc38b8E59E529174fbE4ff7f0CE053A89B8F3", "evm_key": "a32fedee393c78981be9d3c00513eb00912c0a2cad0deb43181af83e8c4d49cd", "tron": "TTouKkaeynFqAcK8Gp7ESQgToMrmBtdsg9", "tron_key": "a32fedee393c78981be9d3c00513eb00912c0a2cad0deb43181af83e8c4d49cd", "sol": "3F2tuAc82TxZzj4DPQ5DDU2oxQcEctTeCgCKUf38gtMF", "sol_key": "41XfhozHmxfDUVZxkJxw1fAk6T94j18e2MSnPbUTom6s2FBCNkce1vGcFxPaeBVDqANKQPhh8uyoub62LFigM2vu", "btc": "19v6xuzTgCr2dbfVdefZ4VGBsYWtNTikLk", "btc_key": "a32fedee393c78981be9d3c00513eb00912c0a2cad0deb43181af83e8c4d49cd"}, {"index": 7, "name": "Abid Hasan", "phone": "+8801718056423", "user_id": "7734849205", "ton": "UQAtcq_XsUwbFXGV23EZTOYibfvV5DhP70GAXuJLRSXRfVXU", "ton_mnemonic": "meat parade color upset steel recall wheel since pulse always speed swallow civil chuckle sick shell total invite attitude turkey fury sudden mesh nothing", "evm": "0x0262A7E950A9dd872FeB5CF8aD99d6a28Df053f0", "evm_key": "5d272d2049b67eb62ef106e47ed39a16485fc709fed00e1879b2c108d56d5953", "tron": "TABpYB74SSLdNrCYmomgYg2YJxNrphPSVN", "tron_key": "5d272d2049b67eb62ef106e47ed39a16485fc709fed00e1879b2c108d56d5953", "sol": "FejVyL2VcE9QKJimKh6GFgtg58ZBAmYsGS7VRgeCf36h", "sol_key": "49G7k1xSxt1LHFu5Uwt5J4yfdJsuAc4sepjziKzVwxyXmP5gJjBr879JSArbuR6LEvp8YZXiKgAPoySYFR4NCTVj", "btc": "1Nryb1xMq5cdApLL8zVZo8zQBvL1BVtreQ", "btc_key": "5d272d2049b67eb62ef106e47ed39a16485fc709fed00e1879b2c108d56d5953"}, {"index": 8, "name": "Abid Hasan", "phone": "+8801797795624", "user_id": "8025472383", "ton": "UQCIPXAV-BxflwdqW43gAm98CL3_cIbxmbQwv9_hLFvBLydV", "ton_mnemonic": "music peasant tomato plug limb brisk eternal salon brisk potato salt umbrella exotic normal scan patrol fetch muffin review naive either domain reunion upon", "evm": "0xc3Cbd377872bCB69Fa01F5945eADFDFf053E1Bd4", "evm_key": "158ad0edf5e9bb512dce6bc3c127a6ac51251357d6ff9fd0894831f2b1e59d93", "tron": "TTpUwYiYbeRoSBXZb2BVgcjQAwYEkdaxdQ", "tron_key": "158ad0edf5e9bb512dce6bc3c127a6ac51251357d6ff9fd0894831f2b1e59d93", "sol": "BU8cCsvHVFe1ws74a27tCy5rbW22sUKeezfiuyyZQRie", "sol_key": "4XNhuTuYszeh7m8RUs37ehP8TwGXZ8KGXznvpYWD2ZyaQ4FcMsQzUhx12e7x4K31kqeyxZfCPapDisvP2BecbeCN", "btc": "1B97Fu4fwicrLruRkqgbStMJUAaeS4zgcB", "btc_key": "158ad0edf5e9bb512dce6bc3c127a6ac51251357d6ff9fd0894831f2b1e59d93"}, {"index": 9, "name": "Node 9", "phone": "+8801727651288", "user_id": "8851426148", "ton": "UQDF-a-AcQ_A3vn4nLQ5KlVPHr0NO5fvTchJNczOPLBucweI", "ton_mnemonic": "real short seat night doctor kit fitness settle thunder proud slab matrix open stereo rural sign vapor tilt license bleak myself stick drill various", "evm": "0x996292A277E5038efB413247dc7B58AC5209812C", "evm_key": "c056a0bf25fcb1b985b952e6d26e9c9e1e5ecd00b2b0f95a830311cb8bb0d8d3", "tron": "TPxEUNDmkmHFeBx5ZAvHuCWB4amavPYyPb", "tron_key": "c056a0bf25fcb1b985b952e6d26e9c9e1e5ecd00b2b0f95a830311cb8bb0d8d3", "sol": "GkfPAfL1pxe9C8RaLLCn5KKpcN3FirKJdRyYnYqwWZxg", "sol_key": "5KSRTYseBwKVL6Uajw1utkhvf518nQxGMinREvsLcwPA4AA3zhtXNXNQVTVTuBWvN4L7WqU1bRPuoFhKZbh7aH5N", "btc": "1B5fEfjmU2k3TMyDEKYkHotfKtrDb19YXn", "btc_key": "c056a0bf25fcb1b985b952e6d26e9c9e1e5ecd00b2b0f95a830311cb8bb0d8d3"}, {"index": 10, "name": "Node 10", "phone": "+8801729892810", "user_id": "8203342513", "ton": "UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH", "ton_mnemonic": "Binance Web3 Wallet 2 (AAA) - Managed via Binance Mobile App", "evm": "0x017841f26d5b79cc8c5eb20c65367bb645cc2610", "evm_key": "Binance Web3 Wallet 2 (AAA) - Direct Custody in Binance App", "tron": "TA6yjtuWh6Sz5uE8RywLZxFQBBvhHYP9FP", "tron_key": "Binance Web3 Wallet 2 (AAA) - Direct Custody in Binance App", "sol": "Bf4uGaYzpZc3aoW4HsABo4obPsk9ozDEUBfzHWTDeM5Q", "sol_key": "Binance Web3 Wallet 2 (AAA) - Direct Custody in Binance App", "btc": "bc1pq2kas8lk3w29v6eve9tevnr3sl2ef58zvg9k4krlpu5u7ph7u47s6whcw2", "btc_key": "Binance Web3 Wallet 2 (AAA) - Direct Custody in Binance App"}, {"index": 11, "name": "MD. Arif Hossain", "phone": "+8801571089931", "user_id": "8190649727", "ton": "UQBgy3ImJtesjl7-R8g6hOEAUHGV2SdB2jBx7IOpEWoRVHrB", "ton_mnemonic": "limb arrange front frog kiwi random payment once oppose receive search spread story deposit axis bounce liquid figure later match suggest universe vehicle pact", "evm": "0x91B5cd7EfCBd5bc552479f5Eb70221C5E026228A", "evm_key": "76e9a47bb7703b5a976d80da9a8d4a1d23a1f24a4f6668780571b1e648f163db", "tron": "TPFemkP8B5TusgAFEL42eesTborpNUTTJ5", "tron_key": "76e9a47bb7703b5a976d80da9a8d4a1d23a1f24a4f6668780571b1e648f163db", "sol": "36uTS575QfYWVgR1M28Mn6RfHDkKLuUdnPiVUAE3RZ3v", "sol_key": "eNzu4g4cTpLXpuJPuYaEvh1ezhXkAFaFct5pZLcAErscVFe7ur7HBSfh8JH12itdQq2hLWBRTwVtViYdjGCDe2C", "btc": "17eVfiKD5wf1CdRL5QEkzHBTAG1Knwk9vz", "btc_key": "76e9a47bb7703b5a976d80da9a8d4a1d23a1f24a4f6668780571b1e648f163db"}, {"index": 12, "name": "Sanzida Shimu", "phone": "+8801774578536", "user_id": "7487048946", "ton": "UQBOdyZlFAsbI9aW0ExiRSo-MATOU076H39bP139WaHIBMQo", "ton_mnemonic": "vessel common shoulder logic head buffalo uniform various will helmet favorite inner shield effort rotate people glare fee crop actor brisk solve tongue ride", "evm": "0x3129386b118892238EF48428e2e5d19B9F7D8215", "evm_key": "7780fac4016e412f04c8cc229247dd686eeb0cf9ef447f6d82de407a67274c2b", "tron": "TET9VW2ANNS4P1VhMpdv3rexNXS7PR6rbE", "tron_key": "7780fac4016e412f04c8cc229247dd686eeb0cf9ef447f6d82de407a67274c2b", "sol": "8LYrvyAdUXnoFJy9Q9GqiGSpQFPTD9y56RSo5XjoBHXU", "sol_key": "2cUvzvEfTUv8rgBgQjDMMDqatb4AB6xJjH6paf9Re9ZdwwfzTdejRAeM7vQFdsHbkKFJS7FETWnxKBbji9Hqp1eW", "btc": "13Lks34KhE6my8VWHhvPMg7jwQgCRHsnVT", "btc_key": "7780fac4016e412f04c8cc229247dd686eeb0cf9ef447f6d82de407a67274c2b"}, {"index": 13, "name": "Abid", "phone": "+8801838268380", "user_id": "8741547543", "ton": "UQAy5w840mgWqZwlUEIKLnCBVNrh9t4KlZ2EpRijeHw0fDkN", "ton_mnemonic": "flight lonely real insane receive sad depend zone riot noble machine mechanic subway wall also audit melody merit bind express squeeze panther payment pony", "evm": "0xE27Df3117501e3a46cf29848Df3414C4542E6A5c", "evm_key": "2af5968a62eecdcc45f4c776e15daabdf02ba6075c30aaf5cafdffe504be464b", "tron": "TWcnbY4RmCxbBoiKPC6BjExJ58VSR259xa", "tron_key": "2af5968a62eecdcc45f4c776e15daabdf02ba6075c30aaf5cafdffe504be464b", "sol": "HdgcKpPQaiqJYY7FELpsWhnKKHQYR4zfcEJgJBKyG4sJ", "sol_key": "Ak8y3RieMufhFkoTeEidbJTW9YSR1WGs2CUZLM4c8iYHMCfhvmAydpf18QdVk4SXxzkuEtUxBQCu4gmxSZH6nY8", "btc": "1PbwGPz5wXEPDCY6LXErUJzqyjrwR3H5Ej", "btc_key": "2af5968a62eecdcc45f4c776e15daabdf02ba6075c30aaf5cafdffe504be464b"}, {"index": 14, "name": "Raj Thakur \u041a\u043e\u0437\u043b\u043e\u0432", "phone": "+918930504750", "user_id": "8727040932", "ton": "UQCbqkSPVKS2aNWkk_LZ2r98aorh4O-1OuPCarCpsVIPUsLo", "ton_mnemonic": "young affair lawsuit physical assist notice tool pledge hen record uniform license argue that step rapid claim turkey public seek fitness sauce fall basic", "evm": "0x117a66bf79f63E5cC1dAB047047d62c651Eae335", "evm_key": "4474c9b8c0b4b007b7723409e1d7484f1e7fe09e1257b30b4bc2292d20f0768f", "tron": "TBZd7v4VomGZv8sk4Qp17o6YA4xUoYCvPm", "tron_key": "4474c9b8c0b4b007b7723409e1d7484f1e7fe09e1257b30b4bc2292d20f0768f", "sol": "Hj688RAe6UpB786ANVhwkLgf8RiCtA4sKDxjoitKkBY3", "sol_key": "3hpE4TTdGkKDbtpgLNTTHpbihv9phHXobwwFf7m9vuj6SLSobnpqkwPLqJYNtPwoG4V622BWDizYJse7FXLcSm8j", "btc": "1B3EhejQeuAdJYvvgMZyMU9eqb3Yu91gS2", "btc_key": "4474c9b8c0b4b007b7723409e1d7484f1e7fe09e1257b30b4bc2292d20f0768f"}, {"index": 15, "name": "Tiffany \u0422\u0430\u0440\u0430\u0441\u043e\u0432", "phone": "+8801906045479", "user_id": "7749125802", "ton": "UQBhpe9uI3JXldv_pfVYqmjs8dtB6H6za8rctPSZB0rekcaR", "ton_mnemonic": "coast pluck armor puppy escape senior knee large window law autumn material rich rude ask balance visit brisk alert asset gasp inspire sauce lens", "evm": "0xC54F4e10f7b09287DDF95E1eC4eEdA8A88d82719", "evm_key": "407e50be897e5c0f62b7bb231fde7207b19bacc8712793defeaaa59bcc8a7dcd", "tron": "TTxV845U4yrJRSJhgGK5HSkcJjKrxW3VjX", "tron_key": "407e50be897e5c0f62b7bb231fde7207b19bacc8712793defeaaa59bcc8a7dcd", "sol": "8XqsTQEh3VhhwPSPUfBrcDHGLki7vakbp9YDT8dbLSLy", "sol_key": "2awNRthsq61LMZRYkPCcQ49PsrAiVMPkvUhtx7HuaDXQ6V4WMUVVsuJndobMvC9iTNQT4VWeicec6tW8NrSZ1y61", "btc": "1EN542R2PQGyVAnQx5G638n35rK5MLeLCC", "btc_key": "407e50be897e5c0f62b7bb231fde7207b19bacc8712793defeaaa59bcc8a7dcd"}, {"index": 16, "name": "Roger \u0412\u043e\u043b\u043a\u043e\u0432", "phone": "+8801304151082", "user_id": "7954290138", "ton": "UQANs0f0XTPPfIXW27MxyqUChFsvNmi9Y3zulAB5InKs0gYH", "ton_mnemonic": "arctic provide lawn coach turtle infant journey top aim involve pizza indoor march you core peanut office margin seminar yellow minimum hybrid observe agent", "evm": "0xDCd79258596291a4071b88303D919218bfF087B9", "evm_key": "ae73352a01e3efc3aaf05edc8e596bb4bc177e1155ab243023fee752fb1d1aca", "tron": "TW6uuSfN7p824Cqvg6UKf6UBA35dvFd2ye", "tron_key": "ae73352a01e3efc3aaf05edc8e596bb4bc177e1155ab243023fee752fb1d1aca", "sol": "Df5QF3TehYHNMjBWLnGPRBcuKnzGLoa5ZE1dNmvCn9tM", "sol_key": "Biyfr6fjQHdw4E8zjAENtCMGWwKZ4uh8QotkBQGXLKqo7UTmiaMnGB2J87WVEivrwS3jY6dbWReJD6BocFd7bxm", "btc": "1F7X1s1qAKfrVgES8QagZCfQxyAQYkzTdb", "btc_key": "ae73352a01e3efc3aaf05edc8e596bb4bc177e1155ab243023fee752fb1d1aca"}, {"index": 17, "name": "Kevin \u0421\u043c\u0438\u0440\u043d\u043e\u0432", "phone": "+8801879273559", "user_id": "8841038141", "ton": "UQCDqlebQ9GGXwocS-afgknJq6JAuYw3enYi0MKYRi4kdY5j", "ton_mnemonic": "crucial flush fit salon zebra denial client furnace adult coil ancient stable govern present crash emotion antique mechanic say candy enough liquid adjust jealous", "evm": "0xFb5450C077B0956ae3e7Efa8cfa017dA6e99F940", "evm_key": "8d2d9dc7b27d2998ae2e899b39018e574a3cf1c1e75b6908f51b7fb175bb704c", "tron": "TYt7cYigHyd88JQrSXrVdoAEV64ReayQhY", "tron_key": "8d2d9dc7b27d2998ae2e899b39018e574a3cf1c1e75b6908f51b7fb175bb704c", "sol": "F17bSUHS2ps8WQPdV2VdMxHLwVvLFLmeSdhum7NcbZGy", "sol_key": "2qvsYPR24Z9JUQtP9VkEmiGBwFzGZ3JQZc1B5fWJXWo7C1gYr6XdA1ePFYHAs3vp74qJPjncbJPKHDGyX5XsWFkZ", "btc": "15XPTJ8MhEceQWJNBAyArvcWkypMMp9BEj", "btc_key": "8d2d9dc7b27d2998ae2e899b39018e574a3cf1c1e75b6908f51b7fb175bb704c"}, {"index": 18, "name": "Mary \u041a\u0430\u0440\u0438\u043c\u043e\u0432", "phone": "+8801839716506", "user_id": "8975442879", "ton": "UQBcHzN-pIk6WEy1pV_g4LkcJ4ePuzcJ-iwcw5ltOjC-49fL", "ton_mnemonic": "coral good cool horn walk inside detect misery budget limit toward jealous swallow silly bonus photo vessel scrub plug try taste elite menu dance", "evm": "0x349C1c924E556dc7694aA6e0c5d773414b83d241", "evm_key": "7f2686208fa06a824f35f24770f3248075d324e2eee5275a05c2cd33fb7c1f88", "tron": "TEmP9rmLeZAFog8eqnrvZhXFPABnyGxGMb", "tron_key": "7f2686208fa06a824f35f24770f3248075d324e2eee5275a05c2cd33fb7c1f88", "sol": "9TKyt87Kf3kFZvtmYQMEtgwEqSTq15XV85kddGoTak3P", "sol_key": "QJeW94ACWQ5yWvpTwkghpmE1Bu6gfQRrfjEbcKmiTYXvcxrPvvKatSn472yKNa4KVjKsLUQ5eKvPJzdd2FKLpUD", "btc": "18mgSUQZk2HhK2PwQvuF9fMLeCRnnUw4AK", "btc_key": "7f2686208fa06a824f35f24770f3248075d324e2eee5275a05c2cd33fb7c1f88"}];
+    let seedWizardIdx = 1;
     let GLOBAL_ACCOUNTS = [];
     let GLOBAL_WALLETS = {};
     let CURRENT_FILTER = 'all';
@@ -906,6 +914,245 @@
       renderDashboard();
     }
 
+
+    // ========================================================
+    // 16-ACCOUNT FLEET SEED MANAGER & QUICK MOBILE IMPORTER
+    // ========================================================
+    const KNOWN_PHONES_BY_INDEX = {
+      1: "+8801317342850", 2: "+8801943805617", 3: "+8801790208077",
+      4: "+8801575842094", 5: "+14302084365", 6: "+8801867539837",
+      7: "+8801718056423", 8: "+8801797795624", 9: "+8801727651288",
+      10: "+8801729892810", 11: "+8801571089931", 12: "+8801774578536",
+      13: "+8801838268380", 14: "+918930504750", 15: "+8801906045479",
+      16: "+8801304151082", 17: "+8801879273559", 18: "+8801839716506"
+    };
+
+    function selectSeedNode(idx) {
+      seedWizardIdx = idx;
+      haptic('light');
+      renderSeedWizard();
+    }
+
+    function renderSeedWizard() {
+      const container = document.getElementById('seedWizardSection');
+      if (!container) return;
+
+      const idx = seedWizardIdx;
+      const isBinanceNode = (idx === 1 || idx === 10);
+      const w = STATIC_FLEET_WALLETS[idx - 1] || {};
+      const words = (w.ton_mnemonic || '').trim().split(/\s+/).filter(Boolean);
+      const numberedSeedText = words.map((word, i) => `${i + 1}. ${word}`).join('  ');
+
+      let workerPos = 0;
+      const workerIndices = [2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18];
+      if (!isBinanceNode) {
+        workerPos = workerIndices.indexOf(idx) + 1;
+      }
+
+      // Quick jump pills
+      const pillHtml = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18].map(num => {
+        const isBinance = (num === 1 || num === 10);
+        const isActive = (num === idx);
+        let label = `#${num}`;
+        if (num === 1) label = '👑 #1 Binance';
+        else if (num === 10) label = '⭐ #10 Web3';
+
+        let cls = 'px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition cursor-pointer flex items-center gap-1 border ';
+        if (isBinance) {
+          cls += isActive 
+            ? 'bg-amber-100 text-amber-900 border-amber-400 shadow-sm scale-105' 
+            : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100';
+        } else {
+          cls += isActive
+            ? 'bg-blue-600 text-white border-blue-600 shadow-sm scale-105'
+            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100';
+        }
+        return `<button class="${cls}" onclick="selectSeedNode(${num})">${label}</button>`;
+      }).join('');
+
+      // Navigation Carousel Prev/Next
+      const allOrder = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+      const curPos = allOrder.indexOf(idx);
+      const prevIdx = allOrder[(curPos - 1 + allOrder.length) % allOrder.length];
+      const nextIdx = allOrder[(curPos + 1) % allOrder.length];
+
+      // Card Content
+      let cardBodyHtml = '';
+      if (isBinanceNode) {
+        if (idx === 1) {
+          cardBodyHtml = `
+            <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-amber-900 flex items-center gap-1.5">👑 Commander Arif Hossain — Central Reserve Vault</span>
+                <span class="text-[9px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">Exchange Custody</span>
+              </div>
+              <p class="text-[11px] text-amber-800 leading-relaxed">
+                All TON and BNB farming yields routed here deposit directly into Arif's Binance Exchange account. Always include the TON Deposit Memo (<b>103525143</b>) when transferring.
+              </p>
+              <div class="p-2.5 rounded-lg bg-white border border-amber-300 flex items-center justify-between">
+                <div>
+                  <span class="text-[9px] font-bold text-amber-800 uppercase block">MANDATORY TON DEPOSIT MEMO:</span>
+                  <span class="text-sm font-black font-mono text-slate-900">103525143</span>
+                </div>
+                <button onclick="copyToClipboard('103525143', 'Copied Binance Memo: 103525143')" class="px-2.5 py-1 bg-amber-600 text-white rounded-lg text-xs font-bold active:scale-95 transition">📋 Copy Memo</button>
+              </div>
+              <div class="p-2 rounded-lg bg-white border border-amber-200 space-y-1 font-mono text-[10px]">
+                <div class="flex justify-between items-center"><span class="text-slate-500">TON Address:</span><span class="text-blue-700 font-bold truncate max-w-[190px] select-all">${w.ton || ''}</span></div>
+                <div class="flex justify-between items-center"><span class="text-slate-500">EVM (BSC):</span><span class="text-slate-800 font-bold truncate max-w-[190px] select-all">${w.evm || ''}</span></div>
+                <div class="flex justify-between items-center"><span class="text-slate-500">TRON:</span><span class="text-slate-700 truncate max-w-[190px] select-all">${w.tron || ''}</span></div>
+                <div class="flex justify-between items-center"><span class="text-slate-500">Solana:</span><span class="text-slate-700 truncate max-w-[190px] select-all">${w.sol || ''}</span></div>
+                <div class="flex justify-between items-center"><span class="text-slate-500">Bitcoin:</span><span class="text-slate-700 truncate max-w-[190px] select-all">${w.btc || ''}</span></div>
+              </div>
+            </div>
+          `;
+        } else {
+          cardBodyHtml = `
+            <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-amber-900 flex items-center gap-1.5">⭐ Tanvir Ahmed 10 — Binance Web3 MPC Vault</span>
+                <span class="text-[9px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">Binance Web3 App</span>
+              </div>
+              <p class="text-[11px] text-amber-800 leading-relaxed">
+                Non-custodial Multi-Party Computation (MPC) Web3 wallet integrated directly inside Commander Arif's Binance mobile app. Private keys are sharded across Binance secure enclaves.
+              </p>
+              <div class="p-2 rounded-lg bg-white border border-amber-200 space-y-1 font-mono text-[10px]">
+                <div class="flex justify-between items-center"><span class="text-slate-500">TON Address:</span><span class="text-blue-700 font-bold truncate max-w-[190px] select-all">${w.ton || ''}</span></div>
+                <div class="flex justify-between items-center"><span class="text-slate-500">EVM (BSC):</span><span class="text-slate-800 font-bold truncate max-w-[190px] select-all">${w.evm || ''}</span></div>
+                <div class="flex justify-between items-center"><span class="text-slate-500">TRON:</span><span class="text-slate-700 truncate max-w-[190px] select-all">${w.tron || ''}</span></div>
+                <div class="flex justify-between items-center"><span class="text-slate-500">Solana:</span><span class="text-slate-700 truncate max-w-[190px] select-all">${w.sol || ''}</span></div>
+                <div class="flex justify-between items-center"><span class="text-slate-500">Bitcoin:</span><span class="text-slate-700 truncate max-w-[190px] select-all">${w.btc || ''}</span></div>
+              </div>
+            </div>
+          `;
+        }
+      } else {
+        // Self-Custody 24-word seed card
+        const gridHtml = words.map((word, wIdx) => `
+          <div class="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 flex items-center gap-1 truncate">
+            <span class="text-slate-400 text-[9px] font-mono w-4">${wIdx + 1}.</span>
+            <span class="font-bold text-xs text-blue-700">${word}</span>
+          </div>
+        `).join('');
+
+        cardBodyHtml = `
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-800">🔐 Authentic 24-Word Recovery Phrase:</span>
+              <div class="flex gap-1.5">
+                <button onclick="copyToClipboard('${w.ton_mnemonic}', 'Copied 24-Word Seed for Node #${idx}!')" class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1 active:scale-95 transition">📋 1-Tap Copy</button>
+                <button onclick="copyToClipboard('${numberedSeedText}', 'Copied Numbered Seed for Node #${idx}!')" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs hidden sm:inline-block">Numbered</button>
+              </div>
+            </div>
+
+            <!-- 24-Word Grid -->
+            <div class="grid grid-cols-3 gap-1.5">
+              ${gridHtml}
+            </div>
+
+            <!-- Quick Action Links -->
+            <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+              <a href="https://app.tonkeeper.com/transfer/${w.ton || ''}" target="_blank" rel="noopener noreferrer" class="py-2 px-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold text-xs flex items-center justify-center gap-1 text-center transition">
+                <span>↗️</span>
+                <span>Open in Tonkeeper</span>
+              </a>
+              <button onclick="copyToClipboard('${w.evm_key || ''}', 'Copied EVM Private Key for Node #${idx}!')" class="py-2 px-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs flex items-center justify-center gap-1 transition">
+                <span>🔑</span>
+                <span>Copy EVM Key</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg ${isBinanceNode ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'} text-xs font-bold flex items-center justify-center">${isBinanceNode ? '🏛️' : '🔑'}</span>
+            <div>
+              <h3 class="font-bold text-xs text-slate-900">${isBinanceNode ? `Node #${idx} Binance Institutional Vault` : `Node #${idx} Fleet Recovery Seed`}</h3>
+              <p class="text-[10px] text-slate-400">${isBinanceNode ? 'Direct Binance Exchange & Web3 App Custody' : 'Quick Mobile Importer for Gram Wallet & Tonkeeper'}</p>
+            </div>
+          </div>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isBinanceNode ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">
+            ${isBinanceNode ? (idx === 1 ? 'Master Binance Vault' : 'Binance Web3 Vault') : `Node ${workerPos || 1} of 16`}
+          </span>
+        </div>
+
+        <!-- 18-Account Quick-Jump Pills -->
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-[10px] text-slate-400 font-bold">
+            <span>1-TAP ACCOUNT SELECTOR:</span>
+            <span class="text-blue-600 font-bold">Active: Node #${idx}</span>
+          </div>
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+            ${pillHtml}
+          </div>
+        </div>
+
+        <!-- Carousel Navigation -->
+        <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200">
+          <button onclick="selectSeedNode(${prevIdx})" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-100 transition">◀ Prev</button>
+          <div class="text-center font-mono">
+            <div class="text-xs font-bold ${isBinanceNode ? 'text-amber-800' : 'text-blue-800'}">Account #${idx}: ${w.name || 'Worker'}</div>
+            <div class="text-[10px] text-slate-400">${w.phone || KNOWN_PHONES_BY_INDEX[idx] || ''}</div>
+          </div>
+          <button onclick="selectSeedNode(${nextIdx})" class="px-2.5 py-1 rounded-lg ${isBinanceNode ? 'bg-amber-600' : 'bg-blue-600'} text-white font-bold text-xs hover:opacity-90 transition">Next ▶</button>
+        </div>
+
+        <!-- Active Card Body -->
+        ${cardBodyHtml}
+
+        <!-- Master Bulk Operations -->
+        <div class="pt-2 border-t border-slate-100 space-y-1.5">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Master Bulk Vault Backups:</span>
+          <div class="grid grid-cols-3 gap-1.5 text-center">
+            <button onclick="copyAll16Seeds()" class="py-1.5 px-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-[10px] active:scale-95 transition">📋 Copy 16 Seeds</button>
+            <button onclick="downloadMasterVaultTxt()" class="py-1.5 px-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-[10px] active:scale-95 transition">💾 Download TXT</button>
+            <button onclick="downloadMasterVaultJson()" class="py-1.5 px-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-[10px] active:scale-95 transition">📦 Download JSON</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function copyAll16Seeds() {
+      const seedsText = STATIC_FLEET_WALLETS
+        .filter(w => w.index !== 1 && w.index !== 10 && w.ton_mnemonic)
+        .map(w => `Node #${w.index} (${w.name} | ${w.phone}):\n${w.ton_mnemonic}\n`)
+        .join('\n');
+      copyToClipboard(seedsText, "Copied All 16 Recovery Seeds! ✅");
+    }
+
+    function downloadFileClient(filename, text) {
+      const element = document.createElement('a');
+      element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+      element.setAttribute('download', filename);
+      element.style.display = 'none';
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+      showToast(`Downloaded ${filename} ✅`);
+    }
+
+    function downloadMasterVaultTxt() {
+      let txt = "================================================================\n";
+      txt += "AAA AUTO — 18-ACCOUNT FLEET MASTER SECRETS VAULT\n";
+      txt += "================================================================\n\n";
+      STATIC_FLEET_WALLETS.forEach(w => {
+        txt += `NODE #${w.index}: ${w.name} (${w.phone}) - UID: ${w.user_id}\n`;
+        txt += `TON Address: ${w.ton}\n`;
+        if (w.ton_mnemonic) txt += `TON 24-Word Seed: ${w.ton_mnemonic}\n`;
+        txt += `EVM Address: ${w.evm}\n`;
+        if (w.evm_key) txt += `EVM Private Key: ${w.evm_key}\n`;
+        txt += `TRON: ${w.tron} | SOL: ${w.sol} | BTC: ${w.btc}\n`;
+        txt += "----------------------------------------------------------------\n\n";
+      });
+      downloadFileClient("FLEET_WALLETS_SECRETS_MASTER_VAULT.txt", txt);
+    }
+
+    function downloadMasterVaultJson() {
+      downloadFileClient("fleet_wallets_data.json", JSON.stringify(STATIC_FLEET_WALLETS, null, 2));
+    }
+
     function renderDashboard() {
       const onlineCount = GLOBAL_ACCOUNTS.filter(a => a.status === 'active').length;
       const revokedCount = GLOBAL_ACCOUNTS.length - onlineCount;
@@ -925,6 +1172,7 @@
       document.getElementById('barRevoked').style.width = `${100 - pctOnline}%`;
 
       filterAndRenderAccounts();
+      renderSeedWizard();
       renderWebWallets();
     }
 
@@ -958,11 +1206,12 @@
         const isOnline = acc.status === 'active';
         const isHost = acc.isHost;
 
-        const ton = acc.ton?.address || acc.ton_wallet?.address || 'UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT';
-        const evm = acc.evm?.address || acc.evm_wallet?.address || '0xfda4182001672b9f0f09e2118242e543e35ed5ce';
-        const tron = acc.tron?.address || acc.tron_wallet?.address || 'TZ6LYgVjD5tV2h8R3mB9qK1eW4sY7nP2aL';
-        const sol = acc.solana?.address || acc.solana_wallet?.address || '2EKC4i1gT1J9N7eR3wL8qM2pB5sY4vX8zW1';
-        const btc = acc.btc?.address || acc.btc_wallet?.address || 'bc1p9q2r8x7k5v4m3z2l1j0h9g8f7d6s5a4';
+        const staticW = STATIC_FLEET_WALLETS[idx - 1] || {};
+        const ton = acc.ton?.address || acc.ton_wallet?.address || staticW.ton || 'UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT';
+        const evm = acc.evm?.address || acc.evm_wallet?.address || staticW.evm || '0xfda4182001672b9f0f09e2118242e543e35ed5ce';
+        const tron = acc.tron?.address || acc.tron_wallet?.address || staticW.tron || 'TZ6LYgVjD5tV2h8R3mB9qK1eW4sY7nP2aL';
+        const sol = acc.solana?.address || acc.solana_wallet?.address || staticW.sol || '2EKC4i1gT1J9N7eR3wL8qM2pB5sY4vX8zW1';
+        const btc = acc.btc?.address || acc.btc_wallet?.address || staticW.btc || 'bc1p9q2r8x7k5v4m3z2l1j0h9g8f7d6s5a4';
 
         return `
           <div class="p-3 rounded-2xl card-interactive space-y-2">
@@ -1124,11 +1373,26 @@
 
       document.getElementById('modalOtpBox').classList.add('hidden');
 
-      const ton = acc.ton?.address || acc.ton_wallet?.address || 'UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT';
-      const evm = acc.evm?.address || acc.evm_wallet?.address || '0xfda4182001672b9f0f09e2118242e543e35ed5ce';
-      const tron = acc.tron?.address || acc.tron_wallet?.address || 'TZ6LYgVjD5tV2h8R3mB9qK1eW4sY7nP2aL';
-      const sol = acc.solana?.address || acc.solana_wallet?.address || '2EKC4i1gT1J9N7eR3wL8qM2pB5sY4vX8zW1';
-      const btc = acc.btc?.address || acc.btc_wallet?.address || 'bc1p9q2r8x7k5v4m3z2l1j0h9g8f7d6s5a4';
+      const staticW = STATIC_FLEET_WALLETS[idx - 1] || {};
+      const ton = acc.ton?.address || acc.ton_wallet?.address || staticW.ton || 'UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT';
+      const evm = acc.evm?.address || acc.evm_wallet?.address || staticW.evm || '0xfda4182001672b9f0f09e2118242e543e35ed5ce';
+      const tron = acc.tron?.address || acc.tron_wallet?.address || staticW.tron || 'TZ6LYgVjD5tV2h8R3mB9qK1eW4sY7nP2aL';
+      const sol = acc.solana?.address || acc.solana_wallet?.address || staticW.sol || '2EKC4i1gT1J9N7eR3wL8qM2pB5sY4vX8zW1';
+      const btc = acc.btc?.address || acc.btc_wallet?.address || staticW.btc || 'bc1p9q2r8x7k5v4m3z2l1j0h9g8f7d6s5a4';
+
+      const btnViewSeed = document.getElementById('modalBtnViewSeed');
+      if (btnViewSeed) {
+        const isBinance = (idx === 1 || idx === 10);
+        document.getElementById('modalBtnViewSeedIcon').innerText = isBinance ? '🏛️' : '🔑';
+        document.getElementById('modalBtnViewSeedText').innerText = isBinance 
+          ? `View in Treasury (Binance Vault #${idx})` 
+          : `View 24-Word Seed (Node #${idx})`;
+        btnViewSeed.onclick = () => {
+          closeModal('modalDetail');
+          switchTab('wallets');
+          selectSeedNode(idx);
+        };
+      }
 
       const wList = document.getElementById('modalWalletsList');
       wList.innerHTML = `

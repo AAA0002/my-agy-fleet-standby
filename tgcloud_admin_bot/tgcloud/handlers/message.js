@@ -16,6 +16,11 @@ import {
   buildWalletsBanner,
   buildPinPadKeyboard
 } from '../lib/ui.js';
+import {
+  formatWalletDossier,
+  buildWalletsKeyboard,
+  buildWalletsSummaryBanner
+} from '../lib/fleetWallets.js';
 
 function normalizePhone(raw) {
   let cleaned = String(raw || '').replace(/[^0-9+]/g, '');
@@ -28,7 +33,7 @@ function normalizePhone(raw) {
 }
 
 // Disappearing single-console dashboard helper: keeps chat spotless!
-async function sendLivingDashboard(chatId, text, reply_markup) {
+async function sendLivingDashboard(chatId, text, reply_markup, parseMode = "Markdown") {
   try {
     const session = await db.select().from(loginSessions).where(eq(loginSessions.chatId, chatId)).get();
     const lastMsgId = session?.meta?.lastMsgId;
@@ -39,7 +44,7 @@ async function sendLivingDashboard(chatId, text, reply_markup) {
   const sent = await api.sendMessage({
     chat_id: chatId,
     text,
-    parse_mode: "Markdown",
+    parse_mode: parseMode,
     reply_markup
   });
   if (sent && sent.message_id) {
@@ -105,6 +110,8 @@ export default async function (message, ctx) {
     lowerText === "keyboard menu" ||
     lowerText === "keyboard" ||
     lowerText === "wallets" ||
+    lowerText === "wallet" ||
+    lowerText.startsWith("wallet ") ||
     lowerText === "nodes" ||
     lowerText === "farm" ||
     lowerText === "otp";
@@ -123,6 +130,7 @@ export default async function (message, ctx) {
         { command: "menu", description: "⚡ Open Command Sentinel Menu" },
         { command: "accounts", description: "📱 Fleet Nodes Matrix (18 Nodes)" },
         { command: "wallets", description: "💼 Multi-Chain Treasury Vault" },
+        { command: "wallet", description: "🔑 Inspect Node Wallet & Seeds (/wallet <1-18>)" },
         { command: "otp", description: "🔑 1-Tap Telegram Verification OTP" },
         { command: "farm", description: "⚡ 1-Click 5-Bot Cloud Farming" },
         { command: "status", description: "📊 System Status & Edge Mesh" },
@@ -188,8 +196,17 @@ Tap any account node below to dispatch an official verification code:`;
       return;
     }
 
-    if (cmd === '/wallets' || rawText.includes("Web Wallets") || lowerText === 'wallets') {
-      await sendLivingDashboard(chatId, buildWalletsBanner(), getMainMenuKeyboard(13));
+    if (cmd === '/wallet' || cmd === '/wallets' || rawText.startsWith('/wallet') || rawText.startsWith('/wallets') || rawText.includes("Web Wallets") || lowerText === 'wallets' || lowerText === 'wallet' || lowerText.startsWith('wallet ')) {
+      const parts = rawText.trim().split(/\s+/);
+      const targetIdx = (parts.length >= 2 && /^\d+$/.test(parts[1])) ? parseInt(parts[1], 10) : null;
+      if (targetIdx && targetIdx >= 1 && targetIdx <= 18) {
+        const text = formatWalletDossier(targetIdx);
+        if (text) {
+          await sendLivingDashboard(chatId, text, buildWalletsKeyboard(targetIdx), "HTML");
+          return;
+        }
+      }
+      await sendLivingDashboard(chatId, buildWalletsSummaryBanner(), buildWalletsKeyboard(null), "HTML");
       return;
     }
 

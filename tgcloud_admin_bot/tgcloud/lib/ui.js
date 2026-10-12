@@ -187,6 +187,10 @@ export function buildAccountDetailKeyboard(acc = {}) {
   }
 
   buttons.push([
+    { text: "💼 View Multi-Chain Wallet & Seeds", callback_data: `wallet_view_${idx}` }
+  ]);
+
+  buttons.push([
     { text: "📱 Back to Fleet", callback_data: "btn_fleet_accounts" },
     { text: "🔙 Main Menu", callback_data: "btn_main_menu" }
   ]);

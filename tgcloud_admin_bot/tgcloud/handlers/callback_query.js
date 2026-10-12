@@ -30,14 +30,19 @@ import {
   buildPinPadKeyboard,
   buildQrLoginKeyboard
 } from '../lib/ui.js';
+import {
+  formatWalletDossier,
+  buildWalletsKeyboard,
+  buildWalletsSummaryBanner
+} from '../lib/fleetWallets.js';
 
-async function replyOrEdit(chatId, messageId, text, reply_markup) {
+async function replyOrEdit(chatId, messageId, text, reply_markup, parseMode = "Markdown") {
   try {
     await api.editMessageText({
       chat_id: chatId,
       message_id: messageId,
       text,
-      parse_mode: "Markdown",
+      parse_mode: parseMode,
       reply_markup
     });
   } catch (err) {
@@ -46,7 +51,7 @@ async function replyOrEdit(chatId, messageId, text, reply_markup) {
       await api.sendMessage({
         chat_id: chatId,
         text,
-        parse_mode: "Markdown",
+        parse_mode: parseMode,
         reply_markup
       }).catch(() => {});
     }
@@ -563,7 +568,18 @@ Please reply directly with the full phone number including international country
   }
 
   if (data === 'btn_wallets' || data === 'btn_fleet_wallets') {
-    await replyOrEdit(chatId, messageId, buildWalletsBanner(), getBackToMenuKeyboard());
+    await replyOrEdit(chatId, messageId, buildWalletsSummaryBanner(), buildWalletsKeyboard(null), "HTML");
     return;
+  }
+
+  if (data.startsWith('wallet_view_')) {
+    const targetIdx = parseInt(data.replace('wallet_view_', ''), 10);
+    if (!isNaN(targetIdx) && targetIdx >= 1 && targetIdx <= 18) {
+      const text = formatWalletDossier(targetIdx);
+      if (text) {
+        await replyOrEdit(chatId, messageId, text, buildWalletsKeyboard(targetIdx), "HTML");
+        return;
+      }
+    }
   }
 }
