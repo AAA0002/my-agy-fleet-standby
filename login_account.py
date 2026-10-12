@@ -590,30 +590,37 @@ async def interactive_login():
         "status": "active"
     }
 
-    # Preserve existing wallets or generate isolated 5-chain wallets for genuinely new worker account
+    # Preserve authentic static fleet wallets or generate isolated 5-chain wallets for genuinely new worker account
     try:
-        from fleet_wallet_provisioner import generate_multichain_wallet_suite, save_and_archive_account_wallets
-        cur_accs = load_accounts()
-        existing_acc = None
-        clean_phone = re.sub(r"\D", "", str(phone or ""))
-        for a in cur_accs:
-            clean_a_p = re.sub(r"\D", "", str(a.get("phone") or ""))
-            if str(a.get("user_id")) == str(me.id) or (clean_phone and clean_a_p == clean_phone):
-                existing_acc = a
-                break
-
-        next_idx = existing_acc.get("index") if (existing_acc and existing_acc.get("index")) else (len(cur_accs) + 1)
-        if existing_acc and (existing_acc.get("ton_wallet") or existing_acc.get("evm_wallet")):
-            wallets = {
-                "ton": existing_acc.get("ton_wallet") or {},
-                "evm": existing_acc.get("evm_wallet") or {},
-                "tron": existing_acc.get("tron_wallet") or {},
-                "solana": existing_acc.get("solana_wallet") or {},
-                "btc": existing_acc.get("btc_wallet") or {}
-            }
+        from fleet_wallet_provisioner import get_fleet_static_account, build_suite_from_static, generate_multichain_wallet_suite, save_and_archive_account_wallets
+        matched_static = get_fleet_static_account(user_id=me.id, phone=phone)
+        if matched_static:
+            next_idx = matched_static["index"]
+            name = matched_static.get("name") or name
+            wallets = build_suite_from_static(matched_static)
         else:
-            wallets = generate_multichain_wallet_suite(next_idx, name, me.id, phone, username)
+            cur_accs = load_accounts()
+            existing_acc = None
+            clean_phone = re.sub(r"\D", "", str(phone or ""))
+            for a in cur_accs:
+                clean_a_p = re.sub(r"\D", "", str(a.get("phone") or ""))
+                if str(a.get("user_id")) == str(me.id) or (clean_phone and clean_a_p == clean_phone):
+                    existing_acc = a
+                    break
+
+            next_idx = existing_acc.get("index") if (existing_acc and existing_acc.get("index")) else (len(cur_accs) + 1)
+            if existing_acc and (existing_acc.get("ton_wallet") or existing_acc.get("evm_wallet")):
+                wallets = {
+                    "ton": existing_acc.get("ton_wallet") or {},
+                    "evm": existing_acc.get("evm_wallet") or {},
+                    "tron": existing_acc.get("tron_wallet") or {},
+                    "solana": existing_acc.get("solana_wallet") or {},
+                    "btc": existing_acc.get("btc_wallet") or {}
+                }
+            else:
+                wallets = generate_multichain_wallet_suite(next_idx, name, me.id, phone, username)
         acc_entry.update({
+            "name": name,
             "index": next_idx,
             "evm_wallet": wallets["evm"],
             "ton_wallet": wallets["ton"],

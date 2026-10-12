@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Authentic Fleet Static Node Hierarchy, Custody Decoupling & Telegram Seed Delivery Engine (October 12, 2026)**:
+  - **🐛 Root Cause Resolution for Multi-Account Relink Alert Mismatch**:
+    * **The Issue**: When relinking Node 7 (`Abid Hasan, +8801718056423, UID 7734849205`) and Node 8 (`Abid Hasan, +8801797795624, UID 8025472383`), the login flow passed temporary slot indices `1` and `2`. In `render_standby_app.py`, custody and seed delivery evaluated `if idx == 1 or str(uid) == "6727787768"`. Because `idx == 1`, Node 7 was erroneously labeled as `Host Vault Account` and `Custody: Binance Main Exchange Vault`, which hid its authentic 24-word TON recovery seed phrase (`meat parade color upset steel recall wheel...`). Meanwhile, Node 8 was assigned `idx: 2` (`idx != 1`), causing it to display its authentic 24-word seed phrase (`music peasant tomato...`).
+    * **Loop Matching Priority Fix (`get_fleet_static_account`)**: In both `fleet_wallet_provisioner.py` and `render_standby_app.py`, refactored `get_fleet_static_account` to enforce strict three-tier priority matching:
+      1. First Priority: Exact User ID match across the entire 18-account static registry.
+      2. Second Priority: Normalized phone number match across the fleet.
+      3. Third Priority (Fallback only): Static slot index fallback (`acc.get("index") == target_i`).
+      * This prevents `account_index=1` from prematurely matching Node 1 during iteration 1 when another account's UID or phone is being onboarded.
+    * **Strict UID-Based Custody Guard**: Decoupled custody rules completely from transient index numbers:
+      - Only `str(uid) == "6727787768"` (Arif Hossain, Node #1) receives `Role: Host Vault Account` and `Custody: Binance Main Exchange Vault (Direct Deposit / Zero server seeds)`.
+      - Only `str(uid) == "8203342513"` (Tanvir Ahmed 10, Node #10) receives `Role: Binance Web3 Vault Account` and `Custody: Binance Web3 Wallet 2 (AAA)`.
+      - All other accounts (Nodes 2-9, 11-18, including Nodes #7 and #8 Abid Hasan) are strictly `Role: Worker Account` and ALWAYS receive their full 24-word TON seed phrase and EVM private key in Telegram notifications.
+    * **Static Seed & Index Recovery in Telegram Notifier (`notify_admin_new_account_onboarded`)**: In `render_standby_app.py`, `notify_admin_new_account_onboarded` now performs an automatic `get_fleet_static_account(user_id=uid, phone=phone)` lookup to lock the authentic slot index (`idx = matched_static["index"]`) and pull the authentic `ton_mnemonic` and `evm_key` if missing from runtime state.
+    * **Interactive Login Generator Fix (`login_account.py`)**: Updated account onboarding flow to prioritize `get_fleet_static_account(user_id=me.id, phone=phone)` and `build_suite_from_static` before falling back to local `accounts.json` counters, ensuring new sessions automatically lock into their authentic fleet slot and wallet suite.
+  - **🚀 Cloud Deployment & Sync**:
+    * Pushed updated `app.py` (Commit: `99e8a5eb`) and `fleet_wallet_provisioner.py` (Commit: `e4119c2f`) to GitHub standby repositories `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`.
+    * Triggered automatic zero-downtime deployments on Render Node 2 (Frankfurt: `dep-db64rl142hec73ati2s0`) and Node 3 (Oregon: `dep-db64rlad0e5s739d6k10`).
+
 - **📱 Telegram Serverless Mini App Web Wallet & Interactive Bot `/wallet <1-18>` Engine (October 12, 2026)**:
   - **🚀 Complete Mini App Web Wallet App (`https://app8858823950.tgcloud.ai/` & `tgcloud_admin_bot/public/index.html`)**:
     * **100% Authentic Fleet Data**: Embedded full 18-node cryptographic registry `STATIC_FLEET_WALLETS` from `fleet_wallets_data.json`, completely purging all placeholder/mock wallet addresses.

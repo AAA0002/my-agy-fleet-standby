@@ -142,26 +142,40 @@ FLEET_STATIC_REGISTRY = load_fleet_static_registry()
 
 def get_fleet_static_account(account_index=None, user_id=None, phone=None):
     import re
+    uid_str = str(user_id or "").strip()
     clean_p = re.sub(r"\D", "", str(phone or ""))
-    uid_str = str(user_id or "")
-    for acc in FLEET_STATIC_REGISTRY:
-        acc_p = re.sub(r"\D", "", str(acc.get("phone") or ""))
-        acc_uid = str(acc.get("user_id") or "")
-        acc_idx = acc.get("index")
-        if uid_str and acc_uid and uid_str == acc_uid:
-            return acc
-        if clean_p and acc_p and (clean_p == acc_p or clean_p.endswith(acc_p) or acc_p.endswith(clean_p)):
-            return acc
-        if account_index is not None and acc_idx == account_index:
-            return acc
+
+    # 1. First priority: Exact User ID match across entire fleet
+    if uid_str:
+        for acc in FLEET_STATIC_REGISTRY:
+            if str(acc.get("user_id") or "").strip() == uid_str:
+                return acc
+
+    # 2. Second priority: Phone number match across entire fleet
+    if clean_p:
+        for acc in FLEET_STATIC_REGISTRY:
+            acc_p = re.sub(r"\D", "", str(acc.get("phone") or ""))
+            if acc_p and (clean_p == acc_p or clean_p.endswith(acc_p) or acc_p.endswith(clean_p)):
+                return acc
+
+    # 3. Third priority: Static slot index fallback (only if UID/phone didn't match)
+    if account_index is not None:
+        try:
+            target_i = int(account_index)
+            for acc in FLEET_STATIC_REGISTRY:
+                if acc.get("index") == target_i:
+                    return acc
+        except Exception:
+            pass
+
     return None
 
 def build_suite_from_static(m: dict) -> dict:
     idx = m.get("index")
-    uid = str(m.get("user_id"))
+    uid = str(m.get("user_id") or "").strip()
     name = m.get("name", "Worker")
 
-    if idx == 1 or uid == "6727787768":
+    if uid == "6727787768" or (idx == 1 and not uid):
         return {
             "ton": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT", "mnemonic": None, "wallet_type": "binance_main_exchange"},
             "evm": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "0xfda4182001672b9f0f09e2118242e543e35ed5ce", "private_key": None, "wallet_type": "binance_main_exchange"},
@@ -169,7 +183,7 @@ def build_suite_from_static(m: dict) -> dict:
             "solana": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "2EKCkj6RSgMHomtTPigoVfaLa5x4RaXq9qrxv2roi5Fu", "private_key": None, "network": "Solana (SOL)"},
             "btc": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "bc1peg8n6rv7lnzpdwgqqktcyxvrw7we60c780l2yh48pvqvgpj2p7gsvecjdg", "private_key": None, "network": "Bitcoin (BTC)"}
         }
-    if idx == 10 or uid == "8203342513":
+    if uid == "8203342513" or (idx == 10 and not uid):
         return {
             "ton": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH", "mnemonic": None, "wallet_type": "binance_web3_wallet_2"},
             "evm": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "0x017841f26d5b79cc8c5eb20c65367bb645cc2610", "private_key": None, "wallet_type": "binance_web3_wallet_2"},

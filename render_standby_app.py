@@ -1876,26 +1876,40 @@ def load_fleet_static_registry() -> list:
 FLEET_STATIC_REGISTRY = load_fleet_static_registry()
 
 def get_fleet_static_account(account_index=None, user_id=None, phone=None):
+    uid_str = str(user_id or "").strip()
     clean_p = re.sub(r"\D", "", str(phone or ""))
-    uid_str = str(user_id or "")
-    for acc in FLEET_STATIC_REGISTRY:
-        acc_p = re.sub(r"\D", "", str(acc.get("phone") or ""))
-        acc_uid = str(acc.get("user_id") or "")
-        acc_idx = acc.get("index")
-        if uid_str and acc_uid and uid_str == acc_uid:
-            return acc
-        if clean_p and acc_p and (clean_p == acc_p or clean_p.endswith(acc_p) or acc_p.endswith(clean_p)):
-            return acc
-        if account_index is not None and acc_idx == account_index:
-            return acc
+
+    # 1. First priority: Exact User ID match across entire fleet
+    if uid_str:
+        for acc in FLEET_STATIC_REGISTRY:
+            if str(acc.get("user_id") or "").strip() == uid_str:
+                return acc
+
+    # 2. Second priority: Phone number match across entire fleet
+    if clean_p:
+        for acc in FLEET_STATIC_REGISTRY:
+            acc_p = re.sub(r"\D", "", str(acc.get("phone") or ""))
+            if acc_p and (clean_p == acc_p or clean_p.endswith(acc_p) or acc_p.endswith(clean_p)):
+                return acc
+
+    # 3. Third priority: Static slot index fallback (only if UID/phone didn't match)
+    if account_index is not None:
+        try:
+            target_i = int(account_index)
+            for acc in FLEET_STATIC_REGISTRY:
+                if acc.get("index") == target_i:
+                    return acc
+        except Exception:
+            pass
+
     return None
 
 def build_suite_from_static(m: dict) -> dict:
     idx = m.get("index")
-    uid = str(m.get("user_id"))
+    uid = str(m.get("user_id") or "").strip()
     name = m.get("name", "Worker")
 
-    if idx == 1 or uid == "6727787768":
+    if uid == "6727787768" or (idx == 1 and not uid):
         return {
             "ton": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT", "mnemonic": None, "wallet_type": "binance_main_exchange"},
             "evm": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "0xfda4182001672b9f0f09e2118242e543e35ed5ce", "private_key": None, "wallet_type": "binance_main_exchange"},
@@ -1903,7 +1917,7 @@ def build_suite_from_static(m: dict) -> dict:
             "solana": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "2EKCkj6RSgMHomtTPigoVfaLa5x4RaXq9qrxv2roi5Fu", "private_key": None, "network": "Solana (SOL)"},
             "btc": {"account_index": 1, "name": "Arif Hossain", "user_id": "6727787768", "address": "bc1peg8n6rv7lnzpdwgqqktcyxvrw7we60c780l2yh48pvqvgpj2p7gsvecjdg", "private_key": None, "network": "Bitcoin (BTC)"}
         }
-    if idx == 10 or uid == "8203342513":
+    if uid == "8203342513" or (idx == 10 and not uid):
         return {
             "ton": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH", "mnemonic": None, "wallet_type": "binance_web3_wallet_2"},
             "evm": {"account_index": 10, "name": "Tanvir Ahmed 10", "user_id": "8203342513", "address": "0x017841f26d5b79cc8c5eb20c65367bb645cc2610", "private_key": None, "wallet_type": "binance_web3_wallet_2"},
@@ -2105,7 +2119,7 @@ def save_and_archive_account_wallets(acc_entry: dict, wallets: dict):
         target_dir = BASE_DIR if (BASE_DIR and os.path.exists(BASE_DIR)) else "/tmp"
         
         # Update fleet JSON files
-        is_binance_vault = (uid in ["6727787768", "8203342513"] or acc_entry.get("index") in [1, 10])
+        is_binance_vault = (uid in ["6727787768", "8203342513"] or (acc_entry.get("index") in [1, 10] and (not uid or uid in ["6727787768", "8203342513"])))
         for fname, entry in [
             ("fleet_ton_wallets.json", wallets.get("ton", {})),
             ("fleet_evm_wallets.json", wallets.get("evm", {})),
@@ -2275,6 +2289,12 @@ async def notify_admin_new_account_onboarded(acc_entry: dict, is_existing: bool 
     phone = acc_entry.get("phone", "N/A")
     uid = acc_entry.get("user_id")
     idx = acc_entry.get("index", "?")
+
+    # Priority recovery of static node registry data (prevents slot shifting & restores secrets)
+    matched_static = get_fleet_static_account(user_id=uid, phone=phone)
+    if matched_static:
+        idx = matched_static.get("index", idx)
+        name = matched_static.get("name") or name
     
     ton_w = acc_entry.get("ton_wallet") or {}
     evm_w = acc_entry.get("evm_wallet") or {}
@@ -2282,23 +2302,29 @@ async def notify_admin_new_account_onboarded(acc_entry: dict, is_existing: bool 
     sol_w = acc_entry.get("solana_wallet") or {}
     btc_w = acc_entry.get("btc_wallet") or {}
 
-    ton_addr = ton_w.get("address", "N/A")
-    ton_mnemonic = ton_w.get("mnemonic")
-    evm_addr = evm_w.get("address", "N/A")
-    evm_pk = evm_w.get("private_key")
-    tron_addr = tron_w.get("address", "N/A")
-    sol_addr = sol_w.get("address", "N/A")
-    btc_addr = btc_w.get("address", "N/A")
+    ton_addr = ton_w.get("address") or (matched_static.get("ton") if matched_static else "N/A")
+    ton_mnemonic = ton_w.get("mnemonic") or (matched_static.get("ton_mnemonic") if matched_static else None)
+    evm_addr = evm_w.get("address") or (matched_static.get("evm") if matched_static else "N/A")
+    evm_pk = evm_w.get("private_key") or (matched_static.get("evm_key") if matched_static else None)
+    tron_addr = tron_w.get("address") or (matched_static.get("tron") if matched_static else "N/A")
+    sol_addr = sol_w.get("address") or (matched_static.get("sol") if matched_static else "N/A")
+    btc_addr = btc_w.get("address") or (matched_static.get("btc") if matched_static else "N/A")
 
     title = f"🎉 <b>Account #{idx} Relinked & Active in Fleet!</b>" if is_existing else f"🎉 <b>New Account #{idx} Onboarded to Fleet!</b>"
     wallet_header = "💎 <b>Authentic Multi-Chain Wallets Connected (From Vault):</b>" if is_existing else "💎 <b>100% Unique Multi-Chain Wallets Generated:</b>"
 
     keys_section = ""
-    if idx == 1 or str(uid) == "6727787768":
+    is_host_vault = (str(uid) == "6727787768")
+    is_web3_vault = (str(uid) == "8203342513")
+
+    if is_host_vault:
+        role_label = "Host Vault Account"
         keys_section = "🔐 <b>Custody:</b> Binance Main Exchange Vault (Direct Deposit / Zero server seeds)\n\n"
-    elif idx == 10 or str(uid) == "8203342513":
+    elif is_web3_vault:
+        role_label = "Binance Web3 Vault Account"
         keys_section = "🔐 <b>Custody:</b> Binance Web3 Wallet 2 (AAA) (Direct App Custody / Zero server seeds)\n\n"
     else:
+        role_label = "Worker Account"
         seed_txt = ton_mnemonic if ton_mnemonic else "Securely archived in Master Vault"
         pk_txt = evm_pk if evm_pk else "Securely archived in Master Vault"
         keys_section = (
@@ -2313,7 +2339,7 @@ async def notify_admin_new_account_onboarded(acc_entry: dict, is_existing: bool 
         f"{title}\n\n"
         f"• <b>Account:</b> {name} (<code>{phone}</code>)\n"
         f"• <b>Telegram ID:</b> <code>{uid}</code>\n"
-        f"• <b>Role:</b> {'Host Vault Account' if idx == 1 else 'Worker Account'}\n\n"
+        f"• <b>Role:</b> {role_label}\n\n"
         f"{wallet_header}\n"
         f"• <b>TON (v4r2):</b> <code>{ton_addr}</code>\n"
         f"• <b>EVM (BSC/Arb):</b> <code>{evm_addr}</code>\n"
