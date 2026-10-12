@@ -10,6 +10,7 @@ import aiohttp
 import datetime
 import secrets
 import hashlib
+import traceback
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 try:
     import ecdsa
@@ -576,6 +577,12 @@ async def extract_tokens_for_account(acc: dict) -> dict:
     if not sess_str:
         return {}
 
+    # STRICT 1-IP PINNING GUARD: Only designated Primary Node 2 (Frankfurt) is permitted to open MTProto connections.
+    # Standby nodes (Node 1 Singapore, Node 3 Oregon) strictly idle to permanently prevent multi-IP AuthKeyDuplicatedError.
+    if not IS_PRIMARY_HOST:
+        logger.info(f"[{name}] Standby node ({NODE_INSTANCE_ID}) skipping MTProto connection — only Primary Node 2 (Frankfurt) connects.")
+        return {}
+
     # Acquire account-level distributed lock to guarantee zero concurrent connections
     if uid:
         locked = await acquire_account_lock(uid, ttl_seconds=60)
@@ -661,6 +668,13 @@ async def collect_tokens(request: Request):
                                     break
                 except Exception as e:
                     logger.warning(f"Could not load backup zip from {cf_url}: {e}")
+
+    if not IS_PRIMARY_HOST and not request.query_params.get("force") == "1":
+        return {
+            "ok": True,
+            "status": "STANDBY_IDLE",
+            "message": f"Node {NODE_INSTANCE_ID} is standby. MTProto token collection is strictly pinned to Primary Node 2 (Frankfurt) to prevent multi-IP collisions."
+        }
 
     if not accounts:
         return {"ok": True, "message": "No accounts with sessions found in backup archive or body", "collected": 0}
@@ -4959,12 +4973,16 @@ async def study_bot_endpoint(bot_key: str, request: Request):
         "kynex": "Kynex_miningbot"
     }
 
-    target_bots = list(bot_map.items()) if bot_key == "all" else [(bot_key, bot_map[bot_key])] if bot_key in bot_map else None
-    if not target_bots:
-        raise HTTPException(status_code=400, detail=f"Unknown bot_key: {bot_key}. Available: {list(bot_map.keys())} or 'all'")
+    if bot_key == "all":
+        target_bots = list(bot_map.items())
+    elif bot_key in bot_map:
+        target_bots = [(bot_key, bot_map[bot_key])]
+    else:
+        clean_bot = bot_key.replace("@", "").strip()
+        target_bots = [(clean_bot.lower(), clean_bot)]
 
-    # Try target account first, then fallback to any active worker account
-    ordered_accs = ([target_acc] if target_acc else []) + [a for a in accounts if a != target_acc and (a.get("session_string") or a.get("session"))]
+    # Try target account first, then fallback to any active worker account (strictly excluding Master 6727787768)
+    ordered_accs = ([target_acc] if target_acc else []) + [a for a in accounts if a != target_acc and str(a.get("user_id")) != "6727787768" and (a.get("session_string") or a.get("session"))]
     results = {}
     used_uid = None
     for acc in ordered_accs:
@@ -4991,7 +5009,6 @@ async def study_bot_endpoint(bot_key: str, request: Request):
         return {"ok": False, "error": "No authorized account session available for deep study"}
 
     return {"ok": True, "inspected_by_uid": used_uid, "results": results}
-
 
 @app.post("/api/mute-all-chats")
 @app.get("/api/mute-all-chats")

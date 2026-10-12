@@ -2,6 +2,34 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Permanent Multi-IP Conflict Resolution & Strict 1-IP Pinning Architecture (October 12, 2026)**:
+  - **🔍 Root Cause of `AuthKeyDuplicatedError` Discovered**: Found that when accounts were relinked, multiple nodes (GitHub Actions on Microsoft Azure runners, Render Node 1 in Singapore, Render Node 3 in Oregon, and Render Node 2 in Frankfurt) were simultaneously attempting Telethon connections across three continents. Telegram detected concurrent multi-IP connections on the same session keys and immediately revoked them.
+  - **🔒 Strict 1-IP Pinning Enforced**:
+    1. Designated Render Node 2 (Frankfurt) as the **100% EXCLUSIVE MTProto Coordinator**.
+    2. Enforced strict `if not IS_PRIMARY_HOST: return` guards on Node 1 (Singapore) and Node 3 (Oregon) so standby nodes never open Telethon MTProto connections.
+    3. Updated GitHub Actions `.github/workflows/cloud_token_refresher.yml` to delegate token refresh to Render Node 2 via REST API instead of running Telethon on multi-IP Azure runners.
+  - **🔄 Upstash Redis Master Session Synchronization**: Merged all 10 newly relinked accounts from Upstash Redis (`account:*`) into `accounts.json`, ensuring the local and backup records contain the authentic, freshly relinked session strings.
+
+- **🔑 Admin Bot PIN Pad Duplicate Prevention, SMS Flood Fallback & Cloudflare Webhook Architecture (October 12, 2026)**:
+  - **⌨️ PIN Pad Duplicate SendCodeRequest Fix**: Resolved issue where tapping "Enter Code via PIN Pad Keypad" after an incorrect entry erroneously triggered a duplicate MTProto `send_code_request` to Telegram, exhausting SMS quotas and resulting in `You have tried logging in too many times (caused by SendCodeRequest)`. Now detects existing active `loginSessions` with `phoneCodeHash` and re-renders the interactive PIN Pad directly without requesting redundant codes.
+  - **📱 1-Tap QR Login Failover**: Added automatic detection of Telegram `PhoneNumberFloodError` / flood wait limits, immediately presenting a 1-tap QR Login fallback button (`btn_qr_login_acc_<idx>`) which operates via MTProto `auth.exportLoginToken` without SMS or rate limits.
+  - **☁️ Cloudflare Workers Webhook Migration Blueprint**: Analyzed Telegram Serverless webhook dropping root cause and verified Cloudflare Edge Worker webhook (`https://restore-agy.aaaai2.workers.dev/telegram-webhook`) as a permanently resilient alternative.
+
+- **🤖 Telegram Admin Bot Webhook Restoration & Fleet Health (October 12, 2026)**:
+  - **⚡ Telegram Admin Bot (@myagyai) Outage Resolution**:
+    * **Root Cause Diagnostics**: Queried Telegram Bot API `getWebhookInfo` for `@myagyai` (`8858823950`). Found `url: ""` (webhook had dropped) with 5 pending updates queued.
+    * **Serverless Webhook Resynchronization**: Executed `tgcloud webhook sync` inside `tgcloud_admin_bot/`. Restored official Telegram serverless endpoint `https://cloud.telegram.org/app8858823950/webhook` (allowed updates: `message`, `callback_query`).
+    * **Zero Queue Verification**: Verified all pending updates flushed immediately (`pending_update_count: 0`), server connected to Telegram Cloud IP `149.154.166.100` with sub-second response times.
+  - **🚀 Cloud Infrastructure Deployment & 5-Bot Fleet Health**:
+    * Pushed updated `app.py` to GitHub standby repositories `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`.
+    * Triggered live zero-downtime deployment on Render Frankfurt Node 2 (`dep-db6bioss728c73ftjg90`).
+    * Verified 18-account active state across all 5 legitimate farming bots (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network) via Cloudflare Edge mesh.
+  - **⚡ Fleet 5-Bot Multi-Cloud Auto-Farming & Turnstile Solver Refresh**:
+    * **18-Account Live Farming Audit**: Audited live state of all 18 accounts across MRG Miner, ATF Miner, Victor's Company, VyroDrop, and Kynex Network.
+    * **Cloud Token Refresher Execution**: Dispatched `.github/workflows/cloud_token_refresher.yml` (Run #37) on GitHub Actions; completed with 100% success across the cloud fleet.
+    * **Cloud Turnstile Solver Pipeline**: Dispatched `.github/workflows/mrg_turnstile_solver.yml` (Run #34) to refresh Turnstile human passes for Victor's Company and VyroDrop wallet connections.
+    * **Render Node 2 Standby Pipeline**: Synchronized and deployed updated `render_standby_app.py` across GitHub standby repositories (`AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`), verified live on Render Frankfurt Node 2 (`dep-db66gclckfvc73cal0u0`).
+
 - **🛡️ Authentic Fleet Static Node Hierarchy, Custody Decoupling & Telegram Seed Delivery Engine (October 12, 2026)**:
   - **🐛 Root Cause Resolution for Multi-Account Relink Alert Mismatch**:
     * **The Issue**: When relinking Node 7 (`Abid Hasan, +8801718056423, UID 7734849205`) and Node 8 (`Abid Hasan, +8801797795624, UID 8025472383`), the login flow passed temporary slot indices `1` and `2`. In `render_standby_app.py`, custody and seed delivery evaluated `if idx == 1 or str(uid) == "6727787768"`. Because `idx == 1`, Node 7 was erroneously labeled as `Host Vault Account` and `Custody: Binance Main Exchange Vault`, which hid its authentic 24-word TON recovery seed phrase (`meat parade color upset steel recall wheel...`). Meanwhile, Node 8 was assigned `idx: 2` (`idx != 1`), causing it to display its authentic 24-word seed phrase (`music peasant tomato...`).

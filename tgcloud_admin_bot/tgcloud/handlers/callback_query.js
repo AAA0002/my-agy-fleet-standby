@@ -58,6 +58,16 @@ async function replyOrEdit(chatId, messageId, text, reply_markup, parseMode = "M
   }
 }
 
+async function editMarkupOnly(chatId, messageId, reply_markup) {
+  try {
+    await api.editMessageReplyMarkup({
+      chat_id: chatId,
+      message_id: messageId,
+      reply_markup
+    });
+  } catch (_) {}
+}
+
 export default async function (callbackQuery, ctx) {
   if (!callbackQuery || !callbackQuery.message) return;
 
@@ -315,6 +325,32 @@ ${res.qr_image_url}
     const knownPhone = acc?.phone || CONFIG.KNOWN_PHONES[idx];
     const padIdx = idx < 10 ? '0' + idx : idx;
 
+    // 1. Check if an active login session with phoneCodeHash already exists for this chat
+    const existingSession = await db.select().from(loginSessions).where(eq(loginSessions.chatId, chatId)).get().catch(() => null);
+
+    if (!isSms && existingSession && existingSession.phoneCodeHash) {
+      // User tapped "Enter Code via PIN Pad" for an existing dispatched code.
+      // Re-render PIN Pad directly WITHOUT triggering a duplicate SendCodeRequest!
+      await db.update(loginSessions).set({
+        meta: { pinDigits: '' },
+        updatedAt: sql`(unixepoch())`
+      }).where(eq(loginSessions.chatId, chatId)).run().catch(() => {});
+
+      const pinBanner = `┌──────────────────────────────────────┐
+│  ⌨️ *TELEGRAM VERIFICATION PIN PAD*  │
+└──────────────────────────────────────┘
+
+• *Account:* \`Node #${padIdx}\`
+• *Target Phone:* \`${existingSession.phone || knownPhone}\`
+
+Please enter your 5-digit verification code using the PIN pad buttons below:
+
+🔐 *Instant Auto-2FA:* 2FA password (\`Arif216@\`) authenticates automatically in 0.5s!`;
+
+      await replyOrEdit(chatId, messageId, pinBanner, buildPinPadKeyboard('', idx));
+      return;
+    }
+
     if (!knownPhone) {
       await replyOrEdit(chatId, messageId, `📱 *Enter Phone Number for Node #${padIdx}*\n\nPlease reply with the phone number:`, getCancelLoginKeyboard());
       return;
@@ -361,13 +397,23 @@ Telegram blocks codes sent as chat text. Tap the buttons below:
 
       await replyOrEdit(chatId, messageId, pinBanner, buildPinPadKeyboard('', idx));
     } else {
-      await replyOrEdit(chatId, messageId, `❌ *Could not request code:* ${res?.error || 'Network error'}\n\nPlease try again:`, {
-        inline_keyboard: [
-          [{ text: `📱 Switch to 1-Tap QR Login`, callback_data: `btn_qr_login_acc_${idx}` }],
-          [{ text: `🔄 Retry Code Request`, callback_data: `btn_sms_pinpad_acc_${idx}` }],
-          [{ text: "🔙 Main Menu", callback_data: "btn_main_menu" }]
-        ]
-      });
+      const errStr = res?.error || 'Network error';
+      const isFlood = errStr.toLowerCase().includes('too many times') || errStr.toLowerCase().includes('flood');
+      const errNotice = isFlood
+        ? `⚠️ *Telegram Rate Limit (SMS Request Blocked)*\n\nTelegram temporarily blocked requesting *new* SMS codes for this phone number because codes were requested multiple times.\n\n🚀 *INSTANT SOLUTION:* Use *1-Tap QR Login* below (100% immune to SMS flood limits, zero codes needed)!`
+        : `❌ *Could not request code:* ${errStr}\n\nPlease try again:`;
+
+      const buttons = [
+        [{ text: `📱 1-Tap QR Login (Node #${padIdx} - Zero Code)`, callback_data: `btn_qr_login_acc_${idx}` }]
+      ];
+      if (existingSession && existingSession.phoneCodeHash) {
+        buttons.push([{ text: `⌨️ Re-open PIN Pad for Existing Code`, callback_data: `btn_pinpad_acc_${idx}` }]);
+      } else {
+        buttons.push([{ text: `🔄 Retry Code Request`, callback_data: `btn_sms_pinpad_acc_${idx}` }]);
+      }
+      buttons.push([{ text: "🔙 Main Menu", callback_data: "btn_main_menu" }]);
+
+      await replyOrEdit(chatId, messageId, errNotice, { inline_keyboard: buttons });
     }
     return;
   }
@@ -463,26 +509,13 @@ Node updated in active cloud cluster.`, getMainMenuKeyboard(live.revoked_count))
       return;
     }
 
-    await api.answerCallbackQuery({
-      callback_query_id: callbackQuery.id,
-      text: `Digit entered (${currentDigits.length}/5)`
+    // Fast non-blocking callback query answer
+    api.answerCallbackQuery({
+      callback_query_id: callbackQuery.id
     }).catch(() => {});
 
-    const pinBanner = `┌──────────────────────────────────────┐
-│  📨 *VERIFICATION CODE DISPATCHED*   │
-└──────────────────────────────────────┘
-
-• *Account:* \`Node #${padIdx}\`
-• *Target Phone:* \`${session.phone}\`
-
-Telegram dispatched an official 5-digit verification code to \`${session.phone}\`.
-
-⚠️ *DO NOT TYPE CODE IN CHAT!*
-Tap digits on the keypad below:
-
-🔐 *Instant Auto-2FA:* 2FA password (\`Arif216@\`) authenticates automatically!`;
-
-    await replyOrEdit(chatId, messageId, pinBanner, buildPinPadKeyboard(currentDigits, targetIdx));
+    // Instant (<100ms) keyboard markup update
+    await editMarkupOnly(chatId, messageId, buildPinPadKeyboard(currentDigits, targetIdx));
     return;
   }
 

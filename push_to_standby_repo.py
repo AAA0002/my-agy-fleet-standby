@@ -94,7 +94,7 @@ def push_file(local_path: str, repo_path: str, commit_msg: str):
         )
 
         try:
-            with urllib.request.urlopen(req_put, timeout=30) as put_resp:
+            with urllib.request.urlopen(req_put, timeout=60) as put_resp:
                 res = json.loads(put_resp.read().decode())
                 new_commit = res.get("commit", {}).get("sha", "")[:8]
                 print(f"✅ Pushed {repo_path} to {repo} (Commit: {new_commit})!")
@@ -137,22 +137,8 @@ def push_app():
     if os.path.exists(evm_f):
         push_file(evm_f, "fleet_evm_wallets.json", "feat: 18-account authentic EVM wallets cache")
     
-    # Trigger Render Node 1 deploy (Singapore - Coz1)
-    node1_key = env.get("RENDER_API_KEY_1", "rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1")
-    srv_node1 = "srv-damuhkmgekts73f1osag"
-    try:
-        req_dep1 = urllib.request.Request(
-            f"https://api.render.com/v1/services/{srv_node1}/deploys",
-            data=json.dumps({"clearCache": "do_not_clear"}).encode(),
-            headers={"Authorization": f"Bearer {node1_key}", "Content-Type": "application/json"}
-        )
-        with urllib.request.urlopen(req_dep1, timeout=15) as d_resp:
-            d_data = json.loads(d_resp.read().decode())
-            print(f"🚀 Render Node 1 (Singapore) deployment triggered: {d_data.get('id')}")
-    except Exception as de:
-        print(f"Note triggering Render Node 1 deploy: {de}")
-
-    # Trigger Render Node 2 deploy (Frankfurt - Abid)
+    # Strictly Pin Deployment EXCLUSIVELY to Render Node 2 (Frankfurt - Abid)
+    # Node 1 (Singapore) and Node 3 (Oregon) are suspended to guarantee ZERO IP collisions
     node2_key = env.get("RENDER_API_KEY_2", "rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB")
     srv_node2 = "srv-dan5q00ae00c73djummg"
     try:
@@ -166,21 +152,6 @@ def push_app():
             print(f"🚀 Render Node 2 (Frankfurt) deployment triggered: {d_data.get('id')}")
     except Exception as de:
         print(f"Note triggering Render Node 2 deploy: {de}")
-
-    # Trigger Render Node 3 deploy (Oregon - Koram)
-    node3_key = env.get("RENDER_API_KEY", "rnd_PqsurfX5D9blSaEEuEDDAUcl393y")
-    srv_node3 = "srv-db437o3tqb8s73dt4erg"
-    try:
-        req_dep3 = urllib.request.Request(
-            f"https://api.render.com/v1/services/{srv_node3}/deploys",
-            data=json.dumps({"clearCache": "do_not_clear"}).encode(),
-            headers={"Authorization": f"Bearer {node3_key}", "Content-Type": "application/json"}
-        )
-        with urllib.request.urlopen(req_dep3, timeout=15) as d_resp:
-            d_data = json.loads(d_resp.read().decode())
-            print(f"🚀 Render Node 3 (Oregon) deployment triggered: {d_data.get('id')}")
-    except Exception as de:
-        print(f"Note triggering Render Node 3 deploy: {de}")
 
 if __name__ == "__main__":
     push_app()
