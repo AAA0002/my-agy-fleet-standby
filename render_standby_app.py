@@ -1432,6 +1432,28 @@ async def token_health_and_refresh_watchdog():
                 except Exception as hbe:
                     logger.warning(f"[Token Watchdog] Heartbeat ping error: {hbe}")
 
+            # 1.1 Webhook Health Sentinel for Admin Bot (@myagyai)
+            REPORT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8")
+            if REPORT_TOKEN:
+                try:
+                    async with aiohttp.ClientSession() as wb_s:
+                        async with wb_s.get(f"https://api.telegram.org/bot{REPORT_TOKEN}/getWebhookInfo", timeout=aiohttp.ClientTimeout(total=5)) as wb_r:
+                            if wb_r.status == 200:
+                                wb_d = await wb_r.json()
+                                cur_wb = wb_d.get("result", {}).get("url", "")
+                                if not cur_wb:
+                                    logger.warning("[Webhook Sentinel] ⚠️ Admin Bot Webhook was EMPTY! Auto-restoring...")
+                                    restore_url = "https://cloud.telegram.org/app8858823950/webhook"
+                                    async with wb_s.post(
+                                        f"https://api.telegram.org/bot{REPORT_TOKEN}/setWebhook",
+                                        json={"url": restore_url, "allowed_updates": ["message", "callback_query"]},
+                                        timeout=aiohttp.ClientTimeout(total=5)
+                                    ) as set_r:
+                                        if set_r.status == 200:
+                                            logger.info("[Webhook Sentinel] ✅ Admin Bot Webhook restored to https://cloud.telegram.org/app8858823950/webhook")
+                except Exception as wbe:
+                    logger.debug(f"[Webhook Sentinel] Note: {wbe}")
+
             # 1.5 Anti-Ban Safeguard: Check Maintenance Mode
             in_maint, reason, rem = await is_in_maintenance_mode()
             if in_maint:
