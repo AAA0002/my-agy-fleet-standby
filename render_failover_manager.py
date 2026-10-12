@@ -395,11 +395,14 @@ async def print_status():
         for relayer in RELAYER_SERVICES:
             url = relayer["url"]
             alive = False
-            try:
-                async with session.get(f"{url}/wake", timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    alive = (r.status == 200)
-            except Exception:
-                pass
+            for attempt in range(2):
+                try:
+                    async with session.get(f"{url}/wake", timeout=aiohttp.ClientTimeout(total=20)) as r:
+                        if r.status == 200:
+                            alive = True
+                            break
+                except Exception:
+                    await asyncio.sleep(1)
             sym = "🟢 ONLINE" if alive else "🔴 OFFLINE"
             print(f"• {relayer['name']}: {sym} ({url})")
             print("-" * 70)

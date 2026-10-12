@@ -57,3 +57,4 @@ AAAPREMIUMAPPSbot/
 .bash_history
 .bashrc.bak
 *.mjs
+session_audit_report.json

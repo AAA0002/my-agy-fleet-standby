@@ -15,7 +15,12 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
     * Deployed updated `app.py` to standby repos (`AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`) and triggered live deployment on Render Node 2 (`dep-db6hojqj9qps73cd6bd0`).
   - **💾 Automated Disaster Recovery Vaulting (`backup_manager.py`)**:
     * Executed full off-machine disaster recovery archive via `backup_manager.py`.
-    * Created complete encrypted disaster recovery package (`my_agy_ai_backup_20261012_174051.zip`) and dispatched it directly to the Telegram off-machine vault channel (`@myagyai`, `-1004453515167`).
+    * Created complete encrypted disaster recovery package (`my_agy_ai_backup_20261012_174051.zip` & `my_agy_ai_backup_20261012_180630.zip`) and dispatched it directly to the Telegram off-machine vault channel (`@myagyai`, `-1004453515167`).
+  - **🛰️ MTProto Relayer Probing Resilience Upgrade**:
+    * Enhanced `render_failover_manager.py` relayer probing logic with a 20s timeout and 2-attempt exponential retry, preventing false-negative "OFFLINE" statuses during cold start spin-ups of free Render instances.
+    * Both `atf-mtproto-relayer` and `atf-mtproto-relayer-backup` verified 100% 🟢 ONLINE (`/wake` returning HTTP 200).
+  - **🧹 Workspace Hygiene & Git Cleanup**:
+    * Added `session_audit_report.json` to `.gitignore` to keep working directory clean and prevent transient test data from polluting the repository.
 
 - **🔄 Render 3-Account Baton Relay Handover & Telegram Anti-Ban Maintenance Mode (October 12, 2026)**:
   - **📐 The 3 Official Render Accounts**:
