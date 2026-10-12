@@ -12,7 +12,13 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
     * **Dedicated Binance Institutional Cards**: Displays Commander Arif's Central Reserve Vault (TON deposit address + 1-tap copy of mandatory memo `103525143`, EVM, TRON, SOL, BTC) and Tanvir Ahmed 10 Binance Web3 MPC Vault.
     * **1-Tap Non-Custodial Mobile Importer (Nodes 2-9, 11-18)**: Numbered 3-column 24-word grid with 1-tap "Copy 24 Words" (clean space-separated format for Gram Wallet & Tonkeeper), "Numbered" export, direct "Open in Tonkeeper" deep-link, and "Copy EVM Key" button.
     * **Master Bulk Export Suite**: 1-Click "Copy All 16 TON Seeds", 1-Click "Download TXT Master Vault" (`FLEET_WALLETS_SECRETS_MASTER_VAULT.txt`), and 1-Click "Download JSON Vault".
+    * **Global Search & Export Enhancements**: Search input matches operator name, phone, UID, node index, or any multi-chain address across `STATIC_FLEET_WALLETS`. Fixed JSON and CSV export mapping to guarantee authentic addresses.
     * **Seamless Modal Integration**: Node detail modal now features a direct `[ 🔑 View 24-Word Seed in Treasury Wizard ]` button that switches tabs and focuses on the selected account.
+  - **🏛️ Vercel Admin Dashboard Parity (`public_admin/admin.html` & `public_admin/admin/index.html`)**:
+    * **1-Tap Seed Manager Wizard Shortcut Banner**: Added prominent header banner directly inside Treasury view allowing instant 1-tap jumping to the 16-Account Seed Manager Wizard without searching through sub-tabs.
+    * **Sub-Tab Synchronizer**: Synchronized state across Seed Wizard, 18-Node Matrix, and Switcher.
+  - **🐛 Interactive Login Bugfix (`login_account.py`)**:
+    * Fixed missing `import re` which prevented phone number normalization and clean account deduplication during Telegram client login.
   - **🤖 Telegram Serverless Admin Bot (`@myagyai`) `/wallet <1-18>` & Interactive Keyboard Engine**:
     * **Dynamic Bot Command Handler (`tgcloud/handlers/message.js`)**: Implemented `/wallet <1-18>` and `/wallets <1-18>` delivering instant multi-chain breakdown with 24-word seed phrases formatted in `<pre>` for 1-tap mobile copying and EVM private keys in `<code>`.
     * **Interactive 18-Node Inline Keyboard (`tgcloud/lib/fleetWallets.js`)**: Users can tap any account button (`[👑 #1 Binance] [#2] [#3] ... [#10 Web3] ... [#18]`) to toggle between accounts without typing commands.

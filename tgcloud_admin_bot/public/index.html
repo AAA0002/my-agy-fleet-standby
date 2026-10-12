@@ -1182,17 +1182,19 @@
       const query = (document.getElementById('inputSearch').value || '').toLowerCase().trim();
 
       const filtered = GLOBAL_ACCOUNTS.filter(a => {
-        const name = (a.name || '').toLowerCase();
-        const uid = String(a.user_id || a.uid || '');
-        const phone = String(a.phone || '');
-        const ton = (a.ton?.address || a.ton_wallet?.address || '').toLowerCase();
-        const evm = (a.evm?.address || a.evm_wallet?.address || '').toLowerCase();
-        const tron = (a.tron?.address || a.tron_wallet?.address || '').toLowerCase();
-        const sol = (a.solana?.address || a.solana_wallet?.address || '').toLowerCase();
-        const btc = (a.btc?.address || a.btc_wallet?.address || '').toLowerCase();
+        const idx = a.index || 1;
+        const staticW = STATIC_FLEET_WALLETS[idx - 1] || {};
+        const name = (a.name || staticW.name || '').toLowerCase();
+        const uid = String(a.user_id || a.uid || staticW.user_id || '');
+        const phone = String(a.phone || staticW.phone || '');
+        const ton = (a.ton?.address || a.ton_wallet?.address || staticW.ton || '').toLowerCase();
+        const evm = (a.evm?.address || a.evm_wallet?.address || staticW.evm || '').toLowerCase();
+        const tron = (a.tron?.address || a.tron_wallet?.address || staticW.tron || '').toLowerCase();
+        const sol = (a.solana?.address || a.solana_wallet?.address || staticW.sol || '').toLowerCase();
+        const btc = (a.btc?.address || a.btc_wallet?.address || staticW.btc || '').toLowerCase();
 
         return !query || name.includes(query) || uid.includes(query) || phone.includes(query) ||
-          ton.includes(query) || evm.includes(query) || tron.includes(query) || sol.includes(query) || btc.includes(query);
+          ton.includes(query) || evm.includes(query) || tron.includes(query) || sol.includes(query) || btc.includes(query) || String(idx) === query;
       });
 
       if (!filtered.length) {
@@ -1582,16 +1584,20 @@
     document.getElementById('btnExportModal').addEventListener('click', () => {
       haptic();
       const txtArea = document.getElementById('txtExportPreview');
-      const exportData = GLOBAL_ACCOUNTS.map(a => ({
-        node: a.index,
-        name: a.name,
-        phone: a.phone,
-        ton: a.ton?.address || a.ton_wallet?.address || '',
-        evm: a.evm?.address || a.evm_wallet?.address || '',
-        tron: a.tron?.address || a.tron_wallet?.address || '',
-        solana: a.solana?.address || a.solana_wallet?.address || '',
-        btc: a.btc?.address || a.btc_wallet?.address || ''
-      }));
+      const exportData = GLOBAL_ACCOUNTS.map(a => {
+        const idx = a.index || 1;
+        const staticW = STATIC_FLEET_WALLETS[idx - 1] || {};
+        return {
+          node: idx,
+          name: a.name || staticW.name || `Account #${idx}`,
+          phone: a.phone || staticW.phone || '',
+          ton: a.ton?.address || a.ton_wallet?.address || staticW.ton || '',
+          evm: a.evm?.address || a.evm_wallet?.address || staticW.evm || '',
+          tron: a.tron?.address || a.tron_wallet?.address || staticW.tron || '',
+          solana: a.solana?.address || a.solana_wallet?.address || staticW.sol || '',
+          btc: a.btc?.address || a.btc_wallet?.address || staticW.btc || ''
+        };
+      });
 
       txtArea.value = JSON.stringify(exportData, null, 2);
 

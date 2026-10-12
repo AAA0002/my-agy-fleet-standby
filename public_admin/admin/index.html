@@ -1508,6 +1508,27 @@ function App() {
           )
         ),
 
+        // 1.5 Quick 1-Tap Jump to 16-Account Fleet Seed Manager Wizard
+        React.createElement("div", {
+          onClick: () => { setWalletSubTab("seeds"); haptic("medium"); },
+          className: `p-3 rounded-2xl border ${walletSubTab === "seeds" ? "bg-cyan-500/10 border-cyan-400 shadow-glow-cyan" : "bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border-cyan-500/30 hover:border-cyan-400"} cursor-pointer transition flex items-center justify-between`
+        },
+          React.createElement("div", { className: "flex items-center gap-2.5" },
+            React.createElement("span", { className: "w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-bold text-sm border border-cyan-500/40" }, "🔑"),
+            React.createElement("div", null,
+              React.createElement("div", { className: "font-black text-xs text-white flex items-center gap-1.5" },
+                "16-Account Fleet Seed Manager & Mobile Importer",
+                React.createElement("span", { className: "text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded font-bold" }, "1-TAP COPY")
+              ),
+              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "Zero mobile typing • 24-Word Seeds • Tonkeeper & Gram Importer")
+            )
+          ),
+          React.createElement("div", { className: "flex items-center gap-1 text-cyan-400 text-xs font-bold font-mono" },
+            walletSubTab === "seeds" ? "Active" : "Open Wizard",
+            React.createElement(Icon, { name: "chevronRight", className: "w-3.5 h-3.5" })
+          )
+        ),
+
         // 2. Real Non-Custodial Secret Phrase Connection Card
         React.createElement("div", { className: `rounded-2xl p-4 border ${subCardBg}` },
           React.createElement("div", { className: "flex items-center justify-between mb-2" },
