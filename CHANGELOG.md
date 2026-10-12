@@ -2,6 +2,21 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Restoration & Perfection of Authentic AAA AUTO Telegram Mini App & Admin Bot Integration (October 12, 2026)**:
+  - **📱 Authentic Mini App Restored (`public/index.html`)**:
+    * Restored the authentic production application (`AAA AUTO — Enterprise Fleet & Multi-Chain Treasury`) from commit `844b738`.
+    * Preserved all production capabilities: Multi-Chain Treasury (90 non-custodial wallets across TON v4R2, EVM/BSC, TRON, Solana, Bitcoin), 18-Node Fleet Matrix, Ari AI Council & Copilot, and 5-Bot Mining Suite (MRG, ATF, Victor's, Vyro, Kynex).
+    * Restored authentic modals: Node Dossier & OTP Viewer, QR Code Preview, Export Treasury (JSON/CSV), and In-App Telegram Code Verification.
+  - **👑 Admin Bot (`@myagyai`) Live Merger**:
+    * Added **`@myagyai`** direct launcher button on the sticky top app bar header.
+    * Integrated **"⚡ Fetch Latest Code from Admin Bot (@myagyai)"** button inside `modalEnterCode`, allowing 1-tap OTP pulling directly from the edge mesh (`/api/fleet/otp`).
+    * Added auto-pasting and auto-verification triggers when a 5-digit Telegram code is entered or pasted into the verification box.
+  - **🛡️ Public Admin Console Restoration (`public_admin/`)**:
+    * Reverted `public_admin/` back to the authentic React User Bot Admin Console (`844b738`), cleanly deleting unauthorized temporary mockup files.
+  - **⚡ Cloudflare Edge Gateway Hardening (`deploy_both_cf_workers.py`)**:
+    * Increased `fetchFleetOtp` timeout from 6,000ms to 15,000ms, preventing premature timeouts when inspecting Telegram/IMAP messages on Render Node 2.
+    * Hardened all outbound `Authorization` headers across harvest dispatches, token refreshes, and cron trigger checks with fallback to production secret (`agy_cf_secret_7d36994e_2026`).
+
 - **⚡ Auto-Farming Bot Overhaul, Failure Cooldown Trap Elimination & Token Synchronization (October 12, 2026)**:
   - **🛡️ Cooldown Trap Elimination (`deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`)**:
     * **Root Cause Fixed**: Previously, failed bot requests or expired 401 tokens received standard 2h–8h cooldowns, trapping accounts in hours of dormancy even after fresh tokens were collected.

@@ -1620,7 +1620,7 @@ export default {
           const res = await fetch(`${rUrl}/api/fleet/otp/${targetIdx}`, {
             method: "GET",
             headers: { "Accept": "application/json" },
-            signal: AbortSignal.timeout(6000)
+            signal: AbortSignal.timeout(15000)
           });
           if (res.ok) {
             const data = await res.json();
@@ -2023,7 +2023,7 @@ export default {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${env.SECRET_KEY}`,
+                "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`,
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
               },
               body: JSON.stringify({ origin: "cf_harvest_action" })
@@ -3317,13 +3317,13 @@ fi
         ctx.waitUntil((async () => {
           const r1 = await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
             method: "POST",
-            headers: { "Authorization": `Bearer ${env.SECRET_KEY}`, "Content-Type": "application/json" },
+            headers: { "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`, "Content-Type": "application/json" },
             body: JSON.stringify({ source: "api_tokens_refresh_trigger" })
           }).catch(() => null);
           if (!r1 || !r1.ok) {
             await fetch("https://my-agy-fleet-standby.onrender.com/collect-tokens", {
               method: "POST",
-              headers: { "Authorization": `Bearer ${env.SECRET_KEY}`, "Content-Type": "application/json" },
+              headers: { "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`, "Content-Type": "application/json" },
               body: JSON.stringify({ source: "api_tokens_refresh_fallback" })
             }).catch(() => {});
           }
@@ -10585,7 +10585,7 @@ Reply to Arif naturally:`;
           const r1 = await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${env.SECRET_KEY}`,
+              "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`,
               "Content-Type": "application/json"
             },
             body: JSON.stringify({ source: "cf_cron_expiry_check_node2" })
@@ -10595,7 +10595,7 @@ Reply to Arif naturally:`;
             const r2 = await fetch("https://my-agy-fleet-standby-node3.onrender.com/collect-tokens", {
               method: "POST",
               headers: {
-                "Authorization": `Bearer ${env.SECRET_KEY}`,
+                "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`,
                 "Content-Type": "application/json"
               },
               body: JSON.stringify({ source: "cf_cron_expiry_check_node3" })
@@ -10605,7 +10605,7 @@ Reply to Arif naturally:`;
               await fetch("https://my-agy-fleet-standby.onrender.com/collect-tokens", {
                 method: "POST",
                 headers: {
-                  "Authorization": `Bearer ${env.SECRET_KEY}`,
+                  "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`,
                   "Content-Type": "application/json"
                 },
                 body: JSON.stringify({ source: "cf_cron_expiry_check_node1" })
