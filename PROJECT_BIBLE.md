@@ -772,3 +772,27 @@ Whenever you perform work in this repository:
   - Standalone Login Portal: `https://agy-aaa000.vercel.app/login` & `https://aaa-free-ai.vercel.app/login`
   - Cloudflare Pages Mirrors: `https://aaa-admin-portal.pages.dev/admin` & `https://aaa-admin-portal.pages.dev/login`
 
+### 4. AAA Telegram — Premium Mini App UI Design System (`public_admin/index.html`)
+* **Product Mission**: Distinctive, polished commercial Telegram Mini App web product launched directly via Telegram bot for multi-account and MTProto session lifecycle management.
+* **Aesthetic Standard**:
+  - **Premium Light Theme**: Pure white surfaces (`#FFFFFF`), pale blue canvas (`#F4F8FC`), deep navy typography (`#0E1E38`), and Telegram-blue primary accents (`#2481CC`).
+  - **100% Vector SVGs**: Zero emoji icons used in UI components.
+  - **Mobile-First In-App Browser Optimization**: Uses `window.Telegram.WebApp` with header color `#F4F8FC`, background `#F4F8FC`, full viewport expansion, and synchronized native back button.
+* **11-Screen Complete Specification**:
+  1. **Page 1 — Welcome**: Wordmark, abstract layered floating device graphic with radial glow, headline *"All your Telegram accounts. One place."*, *"Connect Telegram"* primary button, and privacy disclaimer.
+  2. **Page 2 — Telegram Account Login**: Back control, step indicator, country selector (`🇧🇩 Bangladesh +880`), phone input (`1712 345678`), validation messaging, and Terms/Privacy links.
+  3. **Page 3 — Login Code**: Step 2 of 3, paper airplane verification icon, 6 individual auto-advancing OTP digit boxes, live ticking countdown timer (`04:32`), and resend link.
+  4. **Page 4 — Two-Step Verification (2FA)**: Step 3 of 3, lock badge, password input with vector eye visibility toggle, and *"Forgot password?"* link.
+  5. **Page 5 — Main Dashboard**: Header lockup (wordmark, avatar initials "AH", settings cog), greeting *"Good morning, Arif Hasan"*, overview card (Connected pill, 3 connected accounts, 2 active sessions), 3 quick-action cards (Accounts, Sessions, Settings), and Recent Activity feed.
+  6. **Page 6 — My Accounts**: Top bar, *"+ Add Account"* CTA, account cards with initials, masked phone number, connection status pill, and chevron.
+  7. **Subpage — Account Details**: Large avatar header, account attributes list, *"Switch Account"*, and *"Remove Account"* with confirmation modal dialog.
+  8. **Page 7 — Session Management (Sessions)**: 3 stat summary pills (2 Active, 1 Disconnected, 0 Expired), device cards (Samsung SM-A305F, Chrome Windows, iPhone 14) with status pills and last active times.
+  9. **Page 8 — Session Details**: Device status header, specifications card (Account name, Platform, App Version, Device Model, IP, Location, Authorization Time, Last Activity), and red *"Terminate Session"* CTA with confirmation modal.
+  10. **Page 9 — Activity**: Chronological event rows with vector icons, descriptions, and timestamps.
+  11. **Page 10 — Settings**: Grouped list rows for Appearance (Light/Dark/System themes), Preferences (Language, Notifications), Security and Privacy (Security info, Session management, Privacy info), and About (App version 1.0.0, Support, Terms).
+  12. **Page 11 — Empty, Loading & Error Screens Modal**: Showcases all 8 production states (No accounts connected, No sessions available, Logging in spinner, Invalid verification code, Expired authorization, Network error, Account disconnected, Successful authorization).
+* **Live Production URLs**:
+  - `https://agy-aaa000.vercel.app/`
+  - `https://aaa-free-ai.vercel.app/`
+
+
