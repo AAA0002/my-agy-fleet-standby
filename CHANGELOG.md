@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐛 Deep Bug Hunt & Baton Relay Multi-Node Failover Architecture Resolution (October 12, 2026)**:
+  - **🔍 Bug 1 Fixed: Static `IS_PRIMARY_HOST` Lock-in**:
+    * *Issue*: `IS_PRIMARY_HOST` was evaluated statically at startup based only on whether container ID had `node2`. When rotating to Node 3 or Node 1, those nodes evaluated `IS_PRIMARY_HOST == False` and aborted all MTProto connections, breaking autonomous handover.
+    * *Fix*: Replaced static guard with dynamic `await is_this_node_active()` and `get_current_node_number()`, ensuring whichever node is designated active in Redis (`fleet:active_render_node`) seamlessly takes over MTProto coordination while standby nodes idle.
+  - **🔍 Bug 2 Fixed: Node 1 Instance ID Matching Failure**:
+    * *Issue*: Node 1's service name is `my-agy-fleet-standby` (missing the substring `"node1"`). Substring checks like `"node1" in NODE_INSTANCE_ID` returned `False`, preventing Node 1 from acquiring coordinator lock when promoted.
+    * *Fix*: Added canonical pattern matching across service IDs (`srv-damuhkmgekts73f1osag`, `srv-dan5q00ae00c73djummg`, `srv-db437o3tqb8s73dt4erg`) and names in `get_current_node_number()`.
+  - **🔍 Bug 3 Fixed: Lingering MTProto Socket Leaks on Rotation**:
+    * *Issue*: `api_disconnect_mtproto()` only cleared `LOGIN_SESSIONS` and `QR_SESSIONS`. Any in-flight background token extraction tasks could keep active MTProto sockets open during handover.
+    * *Fix*: Implemented global `ACTIVE_MTPROTO_CLIENTS` tracking. All Telethon clients register on connect and are severed instantly when `api_disconnect_mtproto()` triggers.
+  - **🔍 Bug 4 Fixed: Missing Redis Active Node Update in Auto-Rotation**:
+    * *Issue*: Autonomous 620h watchdog `_trigger_node_rotation()` set maintenance mode in Redis but omitted updating `fleet:active_render_node` to the destination node. Target node would wake up and still see the old node as active.
+    * *Fix*: Added atomic Redis update for `fleet:active_render_node/node{to_node}` and `fleet:mtproto_coordinator` directly inside `_trigger_node_rotation()`.
+  - **🔍 Bug 5 Fixed: Failover Manager Premature Source Node Suspension**:
+    * *Issue*: `render_failover_manager.py` polled destination node health for only 12 attempts (60s) and proceeded to suspend the source node even if destination had not booted.
+    * *Fix*: Extended health polling to 24 attempts (120s) and added an abort safeguard that halts rotation, clears maintenance mode, preserves the running source node, and alerts admin via Telegram if destination fails.
+
 - **☁️ Admin Bot Permanent Migration to Cloudflare Workers Edge & Automated Disaster Vaulting (October 12, 2026)**:
   - **🚫 Telegram Serverless (`tgcloud.ai`) Deprecation for Admin Bot**:
     * Retired experimental `tgcloud.ai` bot webhook hosting because container cold restarts cleared the webhook URL to blank, causing admin commands and buttons to go unresponsive.

@@ -139,11 +139,12 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * On the 1st of every month, Render automatically resets free tier hours to 750, ensuring infinite zero-cost runtime.
   - **🛡️ Telegram Anti-Ban Maintenance Mode & Graceful Disconnect**:
     * **Root Cause of Session Bans (`AuthKeyDuplicatedError`)**: Connecting to Telegram from two different cloud IPs simultaneously triggers immediate Telegram account revocation.
+    * **Dynamic Coordinator Auto-Detection**: Replaced static import-time checks with dynamic `is_this_node_active()` and canonical node ID mapping (`get_current_node_number()`), allowing whichever node is designated active in Upstash Redis (`fleet:active_render_node`) to seamlessly take over MTProto connections while standby nodes remain silent.
     * **Maintenance Mode (5-Minute Cooling Buffer)**:
       1. Rotation triggers `fleet:maintenance_mode = true` and `fleet:maintenance_until` (300 seconds) in Redis.
       2. Telegram Admin Bot alert dispatched to `@myagyai`.
-      3. Destination node is resumed via Render API (`POST /v1/services/{new_id}/resume`).
-      4. Source node severes all MTProto sockets cleanly (`POST /api/fleet/disconnect-mtproto`).
+      3. Destination node is resumed via Render API (`POST /v1/services/{new_id}/resume`) and polled for healthy status (up to 120s max). If destination fails to boot, rotation safely aborts and keeps source node active.
+      4. Source node severs all MTProto sockets cleanly (`POST /api/fleet/disconnect-mtproto`, including in-flight `ACTIVE_MTPROTO_CLIENTS`).
       5. Source node suspends itself (`POST /v1/services/{old_id}/suspend`) -> container stops, hours stop.
       6. System enforces 5-minute cooldown where NO MTProto connections are made, allowing Telegram datacenter servers to completely flush old socket states and NAT bindings.
       7. Maintenance Mode expires, new node promotes itself to active coordinator, and normal farming resumes on a clean single IP.

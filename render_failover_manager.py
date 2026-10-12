@@ -305,7 +305,7 @@ async def rotate_node(from_node: int, to_node: int, cooldown_seconds: int = 300)
     # 4. Wait for destination node to warm up
     print("2. Warming up destination node (polling health endpoint)...")
     dest_alive = False
-    for attempt in range(12):
+    for attempt in range(24):
         await asyncio.sleep(5)
         try:
             async with aiohttp.ClientSession() as s:
@@ -316,7 +316,18 @@ async def rotate_node(from_node: int, to_node: int, cooldown_seconds: int = 300)
                         break
         except Exception:
             pass
-        print(f"   Waiting for {to_acc['name']} boot... ({attempt+1}/12)")
+        print(f"   Waiting for {to_acc['name']} boot... ({attempt+1}/24)")
+
+    if not dest_alive:
+        print(f"❌ Handover aborted: Destination {to_acc['name']} failed to respond healthy within 120s!")
+        await set_maintenance_mode(False)
+        abort_alert = (
+            f"🔴 <b>[FLEET ROTATION ABORTED] Handover Failed</b>\n\n"
+            f"❌ <b>Destination:</b> {to_acc['name']} failed to become healthy within 120s.\n"
+            f"🛡️ <b>Action:</b> Kept {from_acc['name']} running. Maintenance mode deactivated."
+        )
+        await send_telegram_alert(abort_alert)
+        return False
 
     # 5. Clean disconnect on old node
     print(f"3. Severing MTProto connections on {from_acc['name']}...")

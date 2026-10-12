@@ -167,12 +167,41 @@ RENDER_ACCOUNTS_MAP = {
     }
 }
 
+ACTIVE_MTPROTO_CLIENTS: set = set()
+
+def get_current_node_number() -> int:
+    nid = (NODE_INSTANCE_ID or "").lower()
+    sid = os.getenv("RENDER_SERVICE_ID", "").lower()
+    sname = os.getenv("RENDER_SERVICE_NAME", "").lower()
+
+    if "node2" in nid or "dan5q00ae00c73djummg" in nid or sid == "srv-dan5q00ae00c73djummg" or "node2" in sname:
+        return 2
+    if "node3" in nid or "db437o3tqb8s73dt4erg" in nid or sid == "srv-db437o3tqb8s73dt4erg" or "node3" in sname:
+        return 3
+    if "node1" in nid or "damuhkmgekts73f1osag" in nid or sid == "srv-damuhkmgekts73f1osag" or "my-agy-fleet-standby" in sname or "my-agy-fleet-standby" in nid:
+        return 1
+    return 2
+
 # Determine this node's default role
 IS_PRIMARY_HOST = (
     "node2" in NODE_INSTANCE_ID.lower()
     or "dan5q00ae00c73djummg" in NODE_INSTANCE_ID.lower()
     or os.getenv("IS_PRIMARY_COORDINATOR", "").lower() in ("1", "true")
 )
+
+async def is_this_node_active() -> bool:
+    """Dynamically determines if this Render node is the designated active MTProto coordinator."""
+    cur_n = get_current_node_number()
+    raw_active = await get_active_render_node()
+    active_str = str(raw_active).strip('"').strip("'").lower()
+
+    active_n = 2
+    for n in (1, 2, 3):
+        if str(n) in active_str:
+            active_n = n
+            break
+
+    return cur_n == active_n
 
 async def get_active_render_node() -> str:
     """Returns the designated active Render node from Upstash Redis (default: node2)."""
@@ -231,7 +260,7 @@ async def acquire_coordinator_lock(ttl_seconds: int = 120) -> bool:
     if not (UPSTASH_URL and UPSTASH_TOKEN):
         return True
     active_node = await get_active_render_node()
-    is_this_active = (active_node in NODE_INSTANCE_ID.lower()) or (IS_PRIMARY_HOST and active_node in ("node2", ""))
+    is_this_active = await is_this_node_active()
     try:
         up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
         async with aiohttp.ClientSession() as s:
@@ -422,6 +451,15 @@ async def api_disconnect_mtproto():
                 pass
     QR_SESSIONS.clear()
 
+    # Disconnect in-flight background MTProto clients
+    for cl in list(ACTIVE_MTPROTO_CLIENTS):
+        try:
+            await cl.disconnect()
+            disconnected_count += 1
+        except Exception:
+            pass
+    ACTIVE_MTPROTO_CLIENTS.clear()
+
     logger.info(f"[MTProto Disconnect] 🔌 Severed {disconnected_count} active Telegram socket connections.")
     return {
         "ok": True,
@@ -432,7 +470,7 @@ async def api_disconnect_mtproto():
 
 async def _trigger_node_rotation(to_node: int, cooldown_seconds: int = 300):
     """Executes the rotation from this node to target node with maintenance cooldown."""
-    cur_node_num = 2 if ("node2" in NODE_INSTANCE_ID.lower() or "dan5q00ae00c73djummg" in NODE_INSTANCE_ID.lower()) else (3 if "node3" in NODE_INSTANCE_ID.lower() else 1)
+    cur_node_num = get_current_node_number()
     target = RENDER_ACCOUNTS_MAP.get(to_node)
     current = RENDER_ACCOUNTS_MAP.get(cur_node_num)
     if not target or not current:
@@ -441,7 +479,7 @@ async def _trigger_node_rotation(to_node: int, cooldown_seconds: int = 300):
 
     logger.info(f"[Rotation] 🔄 Initiating handover: Node {cur_node_num} -> Node {to_node} ({cooldown_seconds}s cooldown)")
 
-    # 1. Enable Maintenance Mode in Redis
+    # 1. Enable Maintenance Mode & Set Active Node in Redis
     reason = f"Render Node Handover: Node {cur_node_num} -> Node {to_node}"
     if UPSTASH_URL and UPSTASH_TOKEN:
         up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
@@ -450,6 +488,8 @@ async def _trigger_node_rotation(to_node: int, cooldown_seconds: int = 300):
         async with aiohttp.ClientSession() as s:
             await s.post(f"{UPSTASH_URL}/set/fleet:maintenance_mode/{reason}?ex={cooldown_seconds + 60}", headers=up_h)
             await s.post(f"{UPSTASH_URL}/set/fleet:maintenance_until/{until}?ex={cooldown_seconds + 60}", headers=up_h)
+            await s.post(f"{UPSTASH_URL}/set/fleet:active_render_node/node{to_node}", headers=up_h)
+            await s.post(f"{UPSTASH_URL}/set/fleet:mtproto_coordinator/node{to_node}?ex={cooldown_seconds + 1800}", headers=up_h)
 
     # 2. Telegram Alert
     alert_txt = (
@@ -789,10 +829,12 @@ async def extract_tokens_for_account(acc: dict) -> dict:
     if not sess_str:
         return {}
 
-    # STRICT 1-IP PINNING GUARD: Only designated Primary Node 2 (Frankfurt) is permitted to open MTProto connections.
-    # Standby nodes (Node 1 Singapore, Node 3 Oregon) strictly idle to permanently prevent multi-IP AuthKeyDuplicatedError.
-    if not IS_PRIMARY_HOST:
-        logger.info(f"[{name}] Standby node ({NODE_INSTANCE_ID}) skipping MTProto connection — only Primary Node 2 (Frankfurt) connects.")
+    # STRICT 1-IP PINNING GUARD: Only the currently active coordinator node connects to MTProto.
+    # Standby nodes strictly idle to permanently prevent multi-IP AuthKeyDuplicatedError.
+    if not (await is_this_node_active()):
+        cur_n = get_current_node_number()
+        act_n = await get_active_render_node()
+        logger.info(f"[{name}] Standby node {cur_n} ({NODE_INSTANCE_ID}) skipping MTProto connection — active coordinator is {act_n}.")
         return {}
 
     # Acquire account-level distributed lock to guarantee zero concurrent connections
@@ -803,6 +845,7 @@ async def extract_tokens_for_account(acc: dict) -> dict:
             return {}
 
     client = create_telethon_client(sess_str=sess_str, identifier=acc.get("phone") or name, proxy_val=acc.get("proxy"))
+    ACTIVE_MTPROTO_CLIENTS.add(client)
     try:
         connected = False
         for attempt in range(1, 4):
@@ -838,6 +881,7 @@ async def extract_tokens_for_account(acc: dict) -> dict:
         logger.error(f"[{name}] Telethon connection error: {e}")
         return {}
     finally:
+        ACTIVE_MTPROTO_CLIENTS.discard(client)
         try:
             await client.disconnect()
         except Exception:
@@ -881,11 +925,13 @@ async def collect_tokens(request: Request):
                 except Exception as e:
                     logger.warning(f"Could not load backup zip from {cf_url}: {e}")
 
-    if not IS_PRIMARY_HOST and not request.query_params.get("force") == "1":
+    if not (await is_this_node_active()) and not request.query_params.get("force") == "1":
+        cur_n = get_current_node_number()
+        act_n = await get_active_render_node()
         return {
             "ok": True,
             "status": "STANDBY_IDLE",
-            "message": f"Node {NODE_INSTANCE_ID} is standby. MTProto token collection is strictly pinned to Primary Node 2 (Frankfurt) to prevent multi-IP collisions."
+            "message": f"Node {cur_n} ({NODE_INSTANCE_ID}) is standby. MTProto token collection is strictly pinned to active coordinator ({act_n}) to prevent multi-IP collisions."
         }
 
     if not accounts:
@@ -6131,7 +6177,7 @@ async def cloud_wealth_automation_watchdog():
                             logger.debug(f"[Cloud Wealth Watchdog] Auto clean-up note: {ce}")
 
             # 4. Baton Relay 600-650h Rotation Monitor
-            cur_node_num = 2 if ("node2" in NODE_INSTANCE_ID.lower() or "dan5q00ae00c73djummg" in NODE_INSTANCE_ID.lower()) else (3 if "node3" in NODE_INSTANCE_ID.lower() else 1)
+            cur_node_num = get_current_node_number()
             if UPSTASH_URL and UPSTASH_TOKEN:
                 try:
                     now_utc = datetime.datetime.now(datetime.timezone.utc)
