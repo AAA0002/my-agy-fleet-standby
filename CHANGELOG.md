@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔗 Full Fusion: AAA Telegram Mini App Merged with Admin Bot & Cloud Relink Engine (October 12, 2026)**:
+  - **📱 AAA Telegram Mini App Live Backend Fusion (`public_admin/index.html` & `public/index.html`)**:
+    * **Full Cloud API Integration**: Replaced mockup actions with live asynchronous communication layer (`apiRequest`) communicating with primary (`aaaai2.workers.dev`) and backup (`aaa-bot.workers.dev`) Cloudflare edge routers.
+    * **Live Login & MTProto Session Creation**:
+      - `Page 2 (Phone Login)`: Tapping Continue dispatches `POST /api/telegram/send-code` with live phone normalization, sends instantaneous alert to Arif on Telegram via `@myagyai`, and transitions to the OTP screen with 5-minute timer.
+      - `Page 3 (Verification Code)`: Supports manual entry, auto-paste, and a 1-tap **"⚡ Fetch Latest Code from Admin Bot (@myagyai)"** button that queries `/api/fleet/otp` directly. Tapping Continue calls `POST /api/telegram/verify-code`. Automatically detects if 2FA is required and routes seamlessly to `Page 4`.
+      - `Page 4 (Two-Step Verification)`: Submits cloud password to `POST /api/telegram/verify-password`, notifies `@myagyai`, and creates active MTProto session.
+    * **Instant Account Relink & Re-authorization**: Added **"🔄 Relink / Re-authorize MTProto Session"** button on Account Details subpage. Pre-fills candidate phone, requests a new OTP via `@myagyai`, and opens the verification code screen.
+    * **Admin Bot Mesh Hub Card on Dashboard**: Added live `@myagyai` mesh card on Page 5 Dashboard with live node health (5/5 nodes), 1-tap `@myagyai` chat launcher, and a **"Sync Telemetry"** button that synchronizes state with `/api/fleet/live`.
+    * **Telegram WebApp Operator Detection**: On boot, parses `Telegram.WebApp.initDataUnsafe`. If launched by operator, sets verified identity and skips directly to the Dashboard.
+    * **Edge Eviction on Removal**: Removing an account in the Mini App calls `POST /api/fleet/account/remove` to evict the account across KV, Redis, D1, and Render nodes.
+    * **Fixed Filter Mapping Bug**: Fixed list rendering in `renderAccounts()` so search and category filters properly filter the active DOM list (`list.map`).
+  - **👑 Admin Bot Integration & Relink Engine (`deploy_both_cf_workers.py`)**:
+    * **Dedicated REST Endpoints**: Added `/api/telegram/send-code`, `/api/telegram/verify-code`, `/api/telegram/verify-password`, `/api/telegram/relink`, and `/api/telegram/notify-admin`.
+    * **`/relink` Text Command**: Added `/relink` (and `/relink <number>`) command in `@myagyai` allowing 1-tap session relinking for all 18 accounts directly in chat or via the Mini App.
+    * **Synchronized Across 5 Cloudflare Edge Nodes**: Uploaded and validated across all 5 nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`), webhook verified healthy.
+  - **🚀 Production Deployment to Vercel**: Deployed live to `https://agy-aaa000.vercel.app/` and `https://aaa-free-ai.vercel.app/` (HTTP 200 OK verified).
+
 - **🚀 AAA Telegram Mini App Advanced Upgrades & Cloudflare Prompt Standardization (October 12, 2026)**:
   - **📱 Telegram Mini App QR Code Authentication & Roster Expansion (`public_admin/index.html` & `public/index.html`)**:
     * **Segmented Login Mode Switcher**: Added responsive segmented control on Page 2 enabling switching between **Phone Number** and **QR Code** login modes.

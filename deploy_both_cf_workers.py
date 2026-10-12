@@ -2811,6 +2811,151 @@ fi
       }
     }
 
+    // 7.15 Dedicated AAA Telegram Mini App Integration Endpoints (Login, Relink, Verification, Admin Bot Bridge)
+    if (path.startsWith("/api/telegram/") && (request.method === "POST" || request.method === "GET")) {
+      try {
+        const body = request.method === "POST" ? await request.json().catch(() => ({})) : {};
+        const subPath = path.replace("/api/telegram/", "");
+
+        if (subPath === "send-code" || subPath === "login/send-code") {
+          let phone = String(body.phone || "").trim().replace(/[\s\-]/g, '');
+          if (phone.startsWith("01") && phone.length === 11) phone = "+88" + phone;
+          else if (phone.startsWith("1") && phone.length === 10) phone = "+880" + phone;
+          else if (!phone.startsWith("+") && phone.length > 5) phone = "+" + phone;
+
+          const res = await cloudLoginSendCode(phone, "dashboard");
+
+          // Send notification alert to Admin Bot (@myagyai)
+          if (env.ALERT_BOT_TOKEN || env.BOT_TOKEN) {
+            const botTok = env.ALERT_BOT_TOKEN || env.BOT_TOKEN;
+            const dhakaTime = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const alertMsg = `📲 *[AAA Telegram App — Login Code Requested]*\n` +
+              `• Phone: \`${phone}\`\n` +
+              `• Result: ${res.ok ? "✅ OTP Dispatched to Telegram" : "⚠️ " + (res.error || "Failed")}\n` +
+              `• Time: \`${dhakaTime} BST\`\n` +
+              `• Manage: [Open Mini App](https://agy-aaa000.vercel.app/)`;
+            ctx.waitUntil(fetch(`https://api.telegram.org/bot${botTok}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: String(env.OWNER_ID || "6727787768"), text: alertMsg, parse_mode: "Markdown" })
+            }).catch(() => {}));
+          }
+
+          return new Response(JSON.stringify(res), {
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+
+        if (subPath === "verify-code" || subPath === "login/verify-code") {
+          const code = String(body.code || "").trim();
+          const phone = String(body.phone || "").trim();
+          const index = body.index || null;
+          const res = await cloudLoginVerify("dashboard", { code, phone, index });
+
+          if (res.ok && (env.ALERT_BOT_TOKEN || env.BOT_TOKEN)) {
+            const botTok = env.ALERT_BOT_TOKEN || env.BOT_TOKEN;
+            const dhakaTime = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const alertMsg = `🎉 *[AAA Telegram App — Account Linked Successfully!]*\n` +
+              `• Phone: \`${phone}\`\n` +
+              `• Time: \`${dhakaTime} BST\`\n` +
+              `• Status: 🟢 MTProto Session Active & Cloud Farm Synchronized\n` +
+              `• Manage: [Open Mini App](https://agy-aaa000.vercel.app/)`;
+            ctx.waitUntil(fetch(`https://api.telegram.org/bot${botTok}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: String(env.OWNER_ID || "6727787768"), text: alertMsg, parse_mode: "Markdown" })
+            }).catch(() => {}));
+          }
+
+          return new Response(JSON.stringify(res), {
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+
+        if (subPath === "verify-password" || subPath === "login/verify-password") {
+          const password = String(body.password || "").trim();
+          const phone = String(body.phone || "").trim();
+          const index = body.index || null;
+          const res = await cloudLoginVerify("dashboard", { password, phone, index });
+
+          if (res.ok && (env.ALERT_BOT_TOKEN || env.BOT_TOKEN)) {
+            const botTok = env.ALERT_BOT_TOKEN || env.BOT_TOKEN;
+            const dhakaTime = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const alertMsg = `🔐 *[AAA Telegram App — 2FA Verified]*\n` +
+              `• Phone: \`${phone}\`\n` +
+              `• Time: \`${dhakaTime} BST\`\n` +
+              `• Status: 🟢 Full MTProto Access Granted!`;
+            ctx.waitUntil(fetch(`https://api.telegram.org/bot${botTok}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: String(env.OWNER_ID || "6727787768"), text: alertMsg, parse_mode: "Markdown" })
+            }).catch(() => {}));
+          }
+
+          return new Response(JSON.stringify(res), {
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+
+        if (subPath === "relink") {
+          let phone = String(body.phone || "").trim().replace(/[\s\-]/g, '');
+          if (phone.startsWith("01") && phone.length === 11) phone = "+88" + phone;
+          else if (phone.startsWith("1") && phone.length === 10) phone = "+880" + phone;
+          else if (!phone.startsWith("+") && phone.length > 5) phone = "+" + phone;
+
+          const res = await cloudLoginSendCode(phone, "relink");
+
+          if (env.ALERT_BOT_TOKEN || env.BOT_TOKEN) {
+            const botTok = env.ALERT_BOT_TOKEN || env.BOT_TOKEN;
+            const dhakaTime = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const alertMsg = `🔄 *[AAA Telegram App — Account Relink Triggered]*\n` +
+              `• Target: \`${body.name || phone}\` (\`${phone}\`)\n` +
+              `• Result: ${res.ok ? "✅ OTP Dispatched" : "⚠️ " + (res.error || "Failed")}\n` +
+              `• Time: \`${dhakaTime} BST\``;
+            ctx.waitUntil(fetch(`https://api.telegram.org/bot${botTok}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: String(env.OWNER_ID || "6727787768"), text: alertMsg, parse_mode: "Markdown" })
+            }).catch(() => {}));
+          }
+
+          return new Response(JSON.stringify(res), {
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+
+        if (subPath === "notify-admin") {
+          const title = body.title || "AAA Telegram Notification";
+          const details = body.details || body.text || "";
+          if (env.ALERT_BOT_TOKEN || env.BOT_TOKEN) {
+            const botTok = env.ALERT_BOT_TOKEN || env.BOT_TOKEN;
+            const dhakaTime = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const alertMsg = `🔔 *[AAA Telegram App — ${title}]*\n` +
+              `• Details: ${details}\n` +
+              `• Time: \`${dhakaTime} BST\``;
+            ctx.waitUntil(fetch(`https://api.telegram.org/bot${botTok}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: String(env.OWNER_ID || "6727787768"), text: alertMsg, parse_mode: "Markdown" })
+            }).catch(() => {}));
+          }
+          return new Response(JSON.stringify({ ok: true, delivered: true }), {
+            headers: { "Content-Type": "application/json", ...corsHeaders }
+          });
+        }
+
+        return new Response(JSON.stringify({ ok: false, error: "Unknown telegram endpoint" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
     // 7.2 Fast Action Dispatcher (Dashboard / Admin -> Edge Queue & Direct Cloud Execution)
     if ((path === "/api/action" || path === "/api/fleet/add" || path === "/api/fleet/verify" || path === "/api/fleet/remove" || path === "/api/fleet/account/remove") && request.method === "POST") {
       try {
@@ -5433,6 +5578,51 @@ fi
               ]
             };
             await sendReply(rep, appMarkup);
+          })());
+          return new Response("OK");
+        }
+
+        // 1.15 Dedicated Relink Command (/relink)
+        if (text === "/relink" || text.startsWith("/relink")) {
+          ctx.waitUntil((async () => {
+            const parts = text.split(" ").filter(Boolean);
+            const reqIdx = parts.length > 1 ? parseInt(parts[1], 10) : null;
+            if (reqIdx && reqIdx >= 1 && reqIdx <= 18) {
+              const targetPhone = KNOWN_PHONES_BY_INDEX[reqIdx] || "";
+              if (!targetPhone) {
+                await sendReply(`❌ Phone for Account #${reqIdx} not registered.`);
+                return;
+              }
+              const sendRes = await cloudLoginSendCode(targetPhone, chatId);
+              const rep = `🔄 *Re-linking Account #${reqIdx} (${targetPhone})*\n━━━━━━━━━━━━━━━━━━━━━━\n` +
+                (sendRes.ok ? `📨 *Verification Code Sent!*\nPlease enter the code here or use the [AAA Telegram Mini App](${appUrl})` : `⚠️ *Error:* ${sendRes.error || "Could not dispatch code"}`);
+              await sendReply(rep, {
+                inline_keyboard: [
+                  [{ text: `⚡ Fetch Code for #${reqIdx}`, callback_data: `btn_otp_get_${reqIdx}` }],
+                  [{ text: "📱 Open AAA Telegram App", web_app: { url: appUrl } }],
+                  [{ text: "🔙 Main Menu", callback_data: "btn_back_main" }]
+                ]
+              });
+              return;
+            }
+
+            // Otherwise show all 18 accounts relink picker
+            const relinkBtns = [];
+            let row = [];
+            for (let i = 1; i <= 18; i++) {
+              row.push({ text: `⚡ #${i}`, callback_data: `btn_relink_${i}` });
+              if (row.length === 3) {
+                relinkBtns.push(row);
+                row = [];
+              }
+            }
+            if (row.length > 0) relinkBtns.push(row);
+            relinkBtns.push([{ text: "📱 Open AAA Telegram App", web_app: { url: appUrl } }]);
+            relinkBtns.push([{ text: "🔙 Main Menu", callback_data: "btn_back_main" }]);
+
+            const rep = `🔄 *Select Fleet Account to Re-link Session:*\n━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `Tap an account number to dispatch a new Telegram login code, or manage all sessions directly inside the Mini App.`;
+            await sendReply(rep, { inline_keyboard: relinkBtns });
           })());
           return new Response("OK");
         }
