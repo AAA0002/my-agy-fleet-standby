@@ -583,6 +583,31 @@ To prevent resource leakages, unbounded database list growth, and local disk bal
 
 ---
 
+## ⚡ 6.7 Humanized Cooldown Economy, Failure Retry Backoff & Cloud Mini App Fusion (October 12, 2026)
+
+### 1. Human Cooldown Economy vs. Error Backoff Fix
+- **The Issue**: Previously, in both Cloudflare Edge (`deploy_both_cf_workers.py`) and Render apps (`render_standby_app.py`, `render_app_latest.py`), any bot run (even timeouts or 401 token expirations) received a standard 2h–8h cooldown. This created a cooldown trap where accounts with refreshed tokens were blocked from farming for hours.
+- **The Solution**:
+  * **Success Condition**: Only genuine successful harvests (`ok`, `farmed`, `auto-claimed`) apply the full human cooldown (ATF: 2h–3h, MRG: 3h–4h, Victor's: 4h–5h, Vyro: 4h–6h, Kynex: 6h–8h).
+  * **Failure / Expired Condition**: If a bot returns an error, timeout, or expired status, it is assigned a short **180s–300s (3m–5m)** retry backoff. When fresh tokens are ingested, the fleet resumes harvesting within minutes instead of hours.
+
+### 2. Edge-to-Render Cloud Secret Key Hardening
+- Replaced vulnerable default fallback secret key (`"YOUR_SHARED_SECRET_KEY"`) in Cloudflare Edge dispatcher with production shared secret (`"agy_cf_secret_7d36994e_2026"`), guaranteeing that automated edge failover triggers to Render Standby Nodes never fail with HTTP 401 Unauthorized.
+
+### 3. Render 24h WebApp Token Collector Coordination
+- Render Frankfurt Node 2 (`my-agy-fleet-standby-node2.onrender.com`) acts as the primary cloud token extraction worker.
+- Dispatched via `POST /collect-tokens?secret=agy_cf_secret_7d36994e_2026&force=1`, extracting fresh signed `tgWebAppData` query strings across all 18 accounts and syncing atomically to Cloudflare KV and Upstash Redis without burning local device CPU.
+
+### 4. AAA Telegram Mini App & Admin Bot Deep Fusion
+- **Live Vercel Mini App**: `https://agy-aaa000.vercel.app/`
+- **Admin Bot**: `@myagyai`
+- **End-to-End Synergy**:
+  * Added REST endpoints: `/api/telegram/send-code`, `/api/telegram/verify-code`, `/api/telegram/verify-password`, `/api/telegram/relink`, `/api/telegram/notify-admin`.
+  * Added `/relink` command in `@myagyai` for 1-tap account MTProto re-authorization.
+  * Direct 1-tap OTP retrieval button inside Mini App querying `/api/fleet/otp`.
+
+---
+
 ## 🛠️ 7. Operator & AI Cheat Sheet
 
 Here are the exact commands to run for everyday operations:

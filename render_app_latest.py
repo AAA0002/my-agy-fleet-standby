@@ -4383,8 +4383,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             try:
                 await jitter(0.2, 0.6)
                 await asyncio.wait_for(b["fn"](), timeout=45.0)
-                # Store randomized cooldown for next harvest cycle
-                next_cd = random.randint(min_s, max_s)
+                # Store randomized cooldown: 2h-8h on success, 3m-5m retry on error/expired
+                bot_res = str(status["bots"].get(b_name, "")).lower()
+                is_success = bot_res.startswith("farmed") or bot_res.startswith("ok")
+                next_cd = random.randint(min_s, max_s) if is_success else random.randint(180, 300)
                 val_to_save = json.dumps({"timestamp": now_ts, "cooldown": next_cd})
                 FLEET_LAST_FARM_CACHE[f"{b_name}:{uid}"] = val_to_save
                 if UPSTASH_URL and UPSTASH_TOKEN:
@@ -4395,8 +4397,12 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         pass
             except asyncio.TimeoutError:
                 status["bots"][b_name] = "timeout (45s)"
+                fail_cd = random.randint(180, 300)
+                FLEET_LAST_FARM_CACHE[f"{b_name}:{uid}"] = json.dumps({"timestamp": now_ts, "cooldown": fail_cd})
             except Exception as err:
                 status["bots"][b_name] = f"error: {format_error(err)}"
+                fail_cd = random.randint(180, 300)
+                FLEET_LAST_FARM_CACHE[f"{b_name}:{uid}"] = json.dumps({"timestamp": now_ts, "cooldown": fail_cd})
 
     await asyncio.gather(*[_run_single_routine(b) for b in active_routines], return_exceptions=True)
     if bg_tasks:

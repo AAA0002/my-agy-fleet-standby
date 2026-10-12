@@ -945,7 +945,11 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
 
     try {
       await b.fn();
-      const nextCooldown = Math.floor(Math.random() * (cdConfig.maxSec - cdConfig.minSec + 1)) + cdConfig.minSec;
+      const botRes = String(result.bots[b.name] || "").toLowerCase();
+      const isSuccess = botRes.startsWith("ok") || botRes.startsWith("farmed") || botRes.startsWith("auto-claimed");
+      const nextCooldown = isSuccess
+        ? Math.floor(Math.random() * (cdConfig.maxSec - cdConfig.minSec + 1)) + cdConfig.minSec
+        : Math.floor(Math.random() * (300 - 180 + 1)) + 180;
       if (ctx && ctx.waitUntil) {
         ctx.waitUntil(upstashSet(`fleet:last_farm:${b.name}:${uid}`, JSON.stringify({ timestamp: nowSec, cooldown: nextCooldown })).catch(() => {}));
       } else {
@@ -954,6 +958,10 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
       await humanDelay(1200, 3000);
     } catch (err) {
       result.bots[b.name] = `error: ${err.message}`;
+      const failCd = Math.floor(Math.random() * (300 - 180 + 1)) + 180;
+      if (ctx && ctx.waitUntil) {
+        ctx.waitUntil(upstashSet(`fleet:last_farm:${b.name}:${uid}`, JSON.stringify({ timestamp: nowSec, cooldown: failCd })).catch(() => {}));
+      }
     }
   }
 
@@ -3676,7 +3684,7 @@ fi
               try {
                 await fetch(sUrl, {
                   method: "POST",
-                  headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY || "YOUR_SHARED_SECRET_KEY"}` },
+                  headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}` },
                   body: JSON.stringify({ all: true, bot: "all" })
                 });
                 break;

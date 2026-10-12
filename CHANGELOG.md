@@ -2,6 +2,19 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Auto-Farming Bot Overhaul, Failure Cooldown Trap Elimination & Token Synchronization (October 12, 2026)**:
+  - **🛡️ Cooldown Trap Elimination (`deploy_both_cf_workers.py`, `render_standby_app.py`, `render_app_latest.py`)**:
+    * **Root Cause Fixed**: Previously, failed bot requests or expired 401 tokens received standard 2h–8h cooldowns, trapping accounts in hours of dormancy even after fresh tokens were collected.
+    * **Short Retry Backoff**: Refactored cooldown logic so that only successful harvests (`ok`, `farmed`, `auto-claimed`) receive full human intervals. Errors, timeouts, and expired tokens now use a short 3–5m retry backoff (180s–300s).
+  - **🔑 Edge-to-Render Secret Key Authorization Hardening (`deploy_both_cf_workers.py`)**:
+    * Replaced insecure fallback secret key (`YOUR_SHARED_SECRET_KEY`) with production shared secret (`agy_cf_secret_7d36994e_2026`), preventing 401 Unauthorized errors during edge-to-Render dispatches.
+  - **🔄 Automated Cloud Token Refresh & Synchronization**:
+    * Dispatched force collection to Render Frankfurt Node 2 (`my-agy-fleet-standby-node2.onrender.com`), refreshing 24h WebApp tokens across all 18 accounts.
+    * Synchronized fresh tokens to Cloudflare KV and Upstash Redis.
+    * Verified legitimate farming across the 5 bots (MRG, ATF, Victor's, Vyro, Kynex), with accounts entering genuine active human cooldowns.
+  - **🚀 5-Node Cloudflare Edge Mesh Synchronization**:
+    * Successfully uploaded and verified all 5 edge worker nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`), confirming 100% webhook health.
+
 - **🔗 Full Fusion: AAA Telegram Mini App Merged with Admin Bot & Cloud Relink Engine (October 12, 2026)**:
   - **📱 AAA Telegram Mini App Live Backend Fusion (`public_admin/index.html` & `public/index.html`)**:
     * **Full Cloud API Integration**: Replaced mockup actions with live asynchronous communication layer (`apiRequest`) communicating with primary (`aaaai2.workers.dev`) and backup (`aaa-bot.workers.dev`) Cloudflare edge routers.
