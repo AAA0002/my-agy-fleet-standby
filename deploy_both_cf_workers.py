@@ -5311,7 +5311,7 @@ fi
         };
 
         // 1. Start & Menu Command
-        if (text === "/start" || text === "/menu" || text.startsWith("/start")) {
+        if (text === "/start" || text === "/menu" || text.startsWith("/start") || text.includes("Refresh Menu") || text === "🔄 Refresh Menu") {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
             const welcome = `👋 *Welcome to MY AGY AI — Private Admin Console*\n\n` +

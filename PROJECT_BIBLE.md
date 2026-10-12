@@ -1,7 +1,7 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
 > **Universal Onboarding, System Architecture, 5-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
-> *Last Updated: October 11, 2026*
+> *Last Updated: October 12, 2026*
 > *Classification: Mission-Critical Living Technical Documentation*
 
 ---
@@ -104,28 +104,18 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * **Nodes 2, 3, 4, 5 (Passive Standby / Failover)**: Crons disabled (`[]` empty list). Early exit in `scheduled()` (`if (CURRENT_SUBDOMAIN !== "aaaai2") return;`). Generates 0 scheduled operations and 0 KV writes. If Node 1 is ever offline, any standby can be promoted to primary instantly.
     * **Zero KV Ephemeral Caching**: `/api/rates` cached in module-scope memory (`memRatesCache`) with CDN `max-age=120`, eliminating KV writes for Binance rates. Sibling upload fan-out replication removed; standbys proxy `/backup.zip` on demand without local KV storage.
     * **Resilient Login State Machine**: `login_flow:${chatId}` uses in-memory `memLoginFlow` Map and Upstash Redis first, ensuring user login flows never fail when Cloudflare KV quotas are hit.
-- **Telegram Serverless Platform (`tgcloud.ai` & `@tgcloud/cli`)**:
-  - Official serverless runtime running V8 isolates directly on Telegram's global infrastructure (`core.telegram.org/bots/serverless`).
-  - **Live Status**: 🟢 LIVE & OPERATIONAL (Revision 10 deployed & synced).
-  - **App ID**: `app8858823950` (`@myagyai`)
-  - **Webhook**: `https://cloud.telegram.org/app8858823950/webhook` (allowed updates: `message`, `callback_query`, status: in sync).
-  - **Mini App & Web Wallet App**: `https://app8858823950.tgcloud.ai/` (managed via `public/index.html` and `tgcloud.jsonc`, accessible via 1-tap inline WebApp button in bot menu).
-    * **Mobile-First Smartphone Architecture**: Fixed bottom thumb navigation bar (`Treasury`, `Nodes`, `Ari AI`, `5 Bots`, `Mesh`), strict `100dvh` viewport, and native `Telegram.WebApp.BackButton` integration.
-    * **Executive Light Theme**: Clean, professional Stripe/Linear-style UI (`bg-slate-50`, `bg-white`, slate-900 typography, emerald/blue accents).
-    * **16-Account Fleet Seed Manager & Quick Mobile Importer Wizard**: Built directly into Treasury tab with 1-tap horizontal account jump pills (Amber for `#1 Binance` and `#10 Web3`, Blue/Cyan for `#2-9` and `#11-18`), sequential Prev/Next carousel, dedicated Binance institutional vault cards (with TON deposit memo `103525143`), numbered 3-column 24-word grid with 1-tap copy, direct Tonkeeper import URL, EVM key copy, and 1-click bulk exports (Copy 16 seeds, Download TXT/JSON).
-    * **Zero Mock Tokens / Pure Authentic Cryptographic Suite**: Embedded `STATIC_FLEET_WALLETS` from `fleet_wallets_data.json` across all 18 accounts across 5 blockchains (TON, EVM/BSC, TRON, Solana, Bitcoin) with 1-tap address copying, QR code modals, and JSON/CSV Treasury Export.
-    * **Interactive Ari AI Council**: Live AI Copilot tab powered by Cloudflare Workers AI & Groq LPU (`qwen/qwen3.8-27b`) for real-time fleet diagnostics, compounding advice, and sybil risk audits.
-    * **Instant State Reflection**: `markAccountActive()` ensures accounts re-linked in bot or cloud immediately show active status without stale revoked badges.
-  - **Native SQLite Database**: 4 tables migrated (`accounts_cache`, `admin_users`, `login_sessions`, `telemetry_events`).
-  - Project directory: `tgcloud_admin_bot/` with official CLI `@tgcloud/cli@0.2.0`.
-  - Handlers:
-    * `tgcloud/handlers/message.js`: 100% serverless message routing with sub-second execution (<1s), command preemption, non-blocking Render cancel calls, dynamic `/wallet <1-18>` and `/wallets` execution delivering 24-word seeds in `<pre>` for 1-tap mobile copying, duplicate account detection, auto-normalization of BD phone numbers, and diversion to 1-Tap QR Login / PIN Pad.
-    * `tgcloud/handlers/callback_query.js`: Interactive 18-account wallet explorer callbacks (`wallet_view_<1-18>`), session re-linking suite (1-Tap QR Login via `startQrLogin`, Inline PIN Pad `buildPinPadKeyboard`, and SMS code dispatch), 1-tap OTP reader with dynamic status badges, and parallel cloud farming triggers.
-    * `tgcloud/lib/fleetWallets.js`: Cryptographic static registry for all 18 accounts, formatting HTML dossiers with copyable `<pre>` seeds and `<code>` keys, plus 18-button inline keyboard.
-    * `tgcloud/lib/ui.js`: Account dossier keyboard with direct "💼 View Multi-Chain Wallet & Seeds" button, interactive inline PIN pad keyboard (`[1][2][3]...[⌫][0][✅ Verify]`) and QR device linking buttons (`tg://login?token=...`).
-    * `public/index.html`: Mobile WebApp featuring 16-seed wizard, direct in-app HTTPS verification, and 1-tap QR scanning, completely bypassing Telegram chat-sharing inspection.
-  - Endpoints: `aiCouncil.js` (Groq/Edge AI Copilot), `getOtp.js` (live OTP extraction), `collectTokens.js`, `getFleetStatus.js`, `triggerFarm.js`, `triggerTurnstile.js` (for WebApp API).
-  - Deployment: Managed via `./deploy_tgcloud.sh [TGCLOUD_TOKEN]` or `npx tgcloud push`. Webhook permanently synced to `https://cloud.telegram.org/app8858823950/webhook`.
+- **Cloudflare Workers Edge Admin Bot Hosting (100% Cloudflare Edge — NOT Telegram Serverless)**:
+  - **MANDATORY POLICY**: The Admin Bot (`@myagyai`, ID `8858823950`) webhook is hosted **100% permanently on Cloudflare Workers Edge**, NOT Telegram Serverless (`tgcloud.ai`).
+  - **Live Webhook URL**: `https://restore-agy.aaaai2.workers.dev/telegram-webhook`
+  - **Verification**: Verified with Telegram Bot API `getWebhookInfo` (`ip_address: "188.114.96.0"` (Cloudflare), `pending_update_count: 0`).
+  - **Why Telegram Serverless (`tgcloud.ai`) Was Retired for Bot Webhooks**:
+    * `tgcloud.ai` is an experimental beta runtime. During container cold restarts or edge scale-downs, Telegram automatically wiped the bot's webhook to `""` (blank).
+    * This caused the Admin Bot to go completely silent and fail to respond to commands like `🔄 Refresh Menu`, `/start`, `/farm`, or OTP requests.
+    * Cloudflare Workers Edge provides 100% uptime SLA, globally distributed V8 isolates, instant sub-50ms response times, and never drops webhooks.
+  - **Auxiliary Mini App**: The static WebApp interface `https://app8858823950.tgcloud.ai/` remains accessible as an optional client UI, but all bot logic, webhook routing, callback handling, and command processing execute strictly on Cloudflare Workers Edge (`deploy_both_cf_workers.py`).
+  - **Interactive Features on Cloudflare Edge**:
+    * Full button-based menus, OTP extraction (`/otp`), wallet inspection (`/wallets`, `/wallet <1-18>`), AI Copilot (`/deepseek`, `/llama`, `/ai`, `/image`), multi-node farming triggers (`/farm`), Turnstile dispatch, and Render standby relay control.
+    * Added explicit support for inline keyboard button `🔄 Refresh Menu` returning the full private console dashboard.
 
 
 - **Render Cloud Fleet (The 3 Official Accounts — 600-650h Baton Relay & Anti-Ban Maintenance Mode)**:
@@ -186,19 +176,10 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * Script: `mrg_turnstile_solver.py` (Patchright Chromium stealth engine, Turnstile script loader race guard, dual-action targeted iframe element and frame locator clicks on `#challenge-stage, .ctp-checkbox-label, .mark`, real Telegram `initData` simulation, TonConnect 2.0 wallet onboarding, Turnstile iframe solver, and full reward auto-compounder).
     * Zero Phone Load: Runs 100% inside GitHub's cloud runner environment (Ubuntu 24.04, 7GB RAM).
 
-- **Native Telegram Serverless Platform (`My_Router_AI_bot` / `tgcloud` / App ID `app8858823950`)**:
-  - Live Mini App URL: `https://app8858823950.tgcloud.ai/`
-  - Bot Handle: `@My_Router_AI_bot`
-  - CLI: `@tgcloud/cli` v0.2.0 (managed atomically in `My_Router_AI_bot/` directory)
-  - Cloud Infrastructure: Hosted 100% serverless on Telegram's official edge cloud data centers.
-  - Endpoints & Handlers:
-    * `tgcloud/handlers/message.js`: Instant command routing (`/start`, `/status`, `/farm`, `/wallets`).
-    * `tgcloud/handlers/callback_query.js`: Inline keyboard UI interactions.
-    * `tgcloud/endpoints/getFleetStatus.js`: Queries CF edge, Render, and Upstash via `Telegram.WebApp.Serverless.call`.
-    * `tgcloud/endpoints/triggerFarm.js`: 1-click dual-dispatch harvest sweep across 5 CF edge nodes and 2 Render nodes.
-    * `tgcloud/endpoints/collectTokens.js`: Triggers Render Standby MTProto batch collection.
-    * `tgcloud/endpoints/triggerTurnstile.js`: Dispatches GitHub Actions Turnstile solver workflow.
-  - Zero Phone Load: Runs 100% in Telegram's cloud. No daemon or poller on mobile.
+- **Retired Telegram Serverless Platform (`tgcloud.ai` - Deprecated for Bot Webhooks)**:
+  - Mini App Static Mirror: `https://app8858823950.tgcloud.ai/` (static UI frontend only).
+  - **Status**: Retired & replaced by Cloudflare Workers Edge (`https://restore-agy.aaaai2.workers.dev/telegram-webhook`) for all bot webhooks and backend execution.
+  - Reason: `tgcloud.ai` wiped webhooks during cold restarts. Cloudflare Edge provides 100% stability, never clears webhooks, and has zero cold-start delay.
 
 - **Telegram Dual Bot & Channel Ecosystem (Admin Infrastructure vs. Normal User Platform)**:
 

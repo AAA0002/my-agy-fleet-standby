@@ -2,6 +2,21 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **☁️ Admin Bot Permanent Migration to Cloudflare Workers Edge & Automated Disaster Vaulting (October 12, 2026)**:
+  - **🚫 Telegram Serverless (`tgcloud.ai`) Deprecation for Admin Bot**:
+    * Retired experimental `tgcloud.ai` bot webhook hosting because container cold restarts cleared the webhook URL to blank, causing admin commands and buttons to go unresponsive.
+    * Re-routed and permanently bound the Admin Bot (`@myagyai`, `8858823950`) webhook to **Cloudflare Workers Edge**: `https://restore-agy.aaaai2.workers.dev/telegram-webhook`.
+    * Verified webhook status via Telegram Bot API `getWebhookInfo`: IP `188.114.96.0` (Cloudflare Edge), `pending_update_count: 0`.
+  - **🔄 Enhanced Cloudflare Worker Command Routing**:
+    * Updated `deploy_both_cf_workers.py` to natively handle `🔄 Refresh Menu` button clicks in addition to `/start` and `/menu`, ensuring instantaneous response for private admin menu reloads.
+    * Redeployed and synchronized all 5 Cloudflare Workers edge nodes.
+  - **🛡️ Render Node 2 Webhook Sentinel Integration**:
+    * Updated `render_standby_app.py` Webhook Sentinel watchdog so that if Telegram ever drops or modifies the webhook to `tgcloud.ai`, it automatically restores it directly to Cloudflare Edge (`https://restore-agy.aaaai2.workers.dev/telegram-webhook`).
+    * Deployed updated `app.py` to standby repos (`AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`) and triggered live deployment on Render Node 2 (`dep-db6hojqj9qps73cd6bd0`).
+  - **💾 Automated Disaster Recovery Vaulting (`backup_manager.py`)**:
+    * Executed full off-machine disaster recovery archive via `backup_manager.py`.
+    * Created complete encrypted disaster recovery package (`my_agy_ai_backup_20261012_174051.zip`) and dispatched it directly to the Telegram off-machine vault channel (`@myagyai`, `-1004453515167`).
+
 - **🔄 Render 3-Account Baton Relay Handover & Telegram Anti-Ban Maintenance Mode (October 12, 2026)**:
   - **📐 The 3 Official Render Accounts**:
     * Strictly configured the 3 legitimate accounts: Node 1 (`coz1gameh1@gmail.com`, Singapore), Node 2 (`abidhasanch2001@gmail.com`, Frankfurt - Current Active), Node 3 (`koramshah2@gmail.com`, Oregon).
