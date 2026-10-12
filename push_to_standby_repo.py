@@ -130,6 +130,12 @@ def push_app():
     pub_wallets = os.path.join(BASE_DIR, "public_admin", "fleet_wallets_data.json")
     if os.path.exists(pub_wallets):
         push_file(pub_wallets, "public_admin/fleet_wallets_data.json", "feat: public admin fleet wallets registry")
+    ton_f = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
+    if os.path.exists(ton_f):
+        push_file(ton_f, "fleet_ton_wallets.json", "feat: 18-account authentic TON wallets cache")
+    evm_f = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
+    if os.path.exists(evm_f):
+        push_file(evm_f, "fleet_evm_wallets.json", "feat: 18-account authentic EVM wallets cache")
     
     # Trigger Render Node 1 deploy (Singapore - Coz1)
     node1_key = env.get("RENDER_API_KEY_1", "rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1")
