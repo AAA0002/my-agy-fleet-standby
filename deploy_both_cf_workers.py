@@ -3574,6 +3574,8 @@ fi
         if (!update) return new Response("OK");
 
         const botToken = env.ALERT_BOT_TOKEN;
+        const appUrl = "https://agy-aaa000.vercel.app/";
+        const adminConsoleUrl = "https://agy-aaa000.vercel.app/admin";
         const dashUrl = "https://restore-agy." + CURRENT_SUBDOMAIN + ".workers.dev/admin";
 
         const getDhakaTimestamp = () => new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " (Dhaka)";
@@ -3634,6 +3636,23 @@ fi
           ctx.waitUntil(upstashSet("fleet:revoked_sessions", memSessionHealth.revoked));
         };
 
+        const renderMainMenuText = async (dhakaTime) => {
+          const accounts = await getFleetAccounts();
+          const health = await getSessionHealthState();
+          const activeCount = accounts.filter(a => !health.revoked.has(a.index)).length;
+          const revokedCount = health.revoked.size;
+
+          return `💎 *AAA TELEGRAM — OPERATIONS COMMAND CENTER*\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `🟢 *Fleet Health:* \`${activeCount}/${accounts.length} Active\` • 🔴 \`${revokedCount} Needs Re-link\`\n` +
+            `🤖 *5 Legitimate Mining Bots:* MRG • ATF • Victor's • VyroDrop • Kynex Network\n` +
+            `☁️ *Multi-Cloud Mesh:* 5 Cloudflare Edge Nodes • 3 Render Baton Nodes\n` +
+            `🛡️ *Security:* 100% Anti-Ban • Pure Accumulation Mode\n` +
+            `⏱️ *Time (Dhaka):* \`${dhakaTime}\`\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `📱 _Tap **AAA Telegram App** below for visual MTProto session management, or choose an operational action:_`;
+        };
+
         const buildOtpMenuKeyboard = (accList = [], revokedSet = new Set()) => {
           const rows = [];
           const chunkSize = 3;
@@ -3665,25 +3684,38 @@ fi
             { text: `👥 Fleet Accounts (${accList.length})`, callback_data: "btn_accounts" },
             { text: "🗑️ Remove Account", callback_data: "btn_admin_remove_menu" }
           ]);
+          rows.push([
+            { text: "🔙 Back to Main Menu", callback_data: "btn_back_main" },
+            { text: "📱 Open Mini App", web_app: { url: appUrl } }
+          ]);
           return { inline_keyboard: rows };
         };
 
-        const statusInlineKeyboard = {
+        const mainInlineKeyboard = {
           inline_keyboard: [
             [
-              { text: "⚡ Instant Harvest", callback_data: "btn_harvest" },
+              { text: "📱 AAA Telegram App", web_app: { url: appUrl } },
+              { text: "👑 Fleet Console", web_app: { url: adminConsoleUrl } }
+            ],
+            [
+              { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" },
               { text: "🔍 Session Audit", callback_data: "btn_session_audit" }
             ],
             [
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
-              { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" }
+              { text: "⚡ 5-Bot Harvest", callback_data: "btn_harvest" }
             ],
             [
-              { text: "🔥 Economy & Sweep", callback_data: "btn_burn" },
-              { text: "🚀 Open Admin Console", web_app: { url: dashUrl } }
+              { text: "💼 Multi-Chain Wallets", callback_data: "btn_wallets" },
+              { text: "🌐 Cloud Mesh & Nodes", callback_data: "btn_mesh" }
+            ],
+            [
+              { text: "🔄 Refresh Status", callback_data: "btn_refresh_menu" }
             ]
           ]
         };
+
+        const statusInlineKeyboard = mainInlineKeyboard;
 
         const accountsInlineKeyboard = {
           inline_keyboard: [
@@ -3696,12 +3728,13 @@ fi
               { text: "🗑️ Remove Account", callback_data: "btn_admin_remove_menu" }
             ],
             [
-              { text: "🔄 Refresh Fleet Roster", callback_data: "btn_accounts" },
-              { text: "🚀 Open Admin Console", web_app: { url: dashUrl } }
+              { text: "🔙 Back to Main Menu", callback_data: "btn_back_main" },
+              { text: "📱 Open Mini App", web_app: { url: appUrl } }
             ]
           ]
         };
-        const meshInlineKeyboard = statusInlineKeyboard;
+
+        const meshInlineKeyboard = mainInlineKeyboard;
 
         const cancelKeyboard = {
           keyboard: [
@@ -3716,23 +3749,20 @@ fi
         const mainKeyboard = {
           keyboard: [
             [
-              { text: "👑 Admin Console", web_app: { url: dashUrl } }
+              { text: "📱 AAA Telegram App", web_app: { url: appUrl } },
+              { text: "👑 Admin Console", web_app: { url: adminConsoleUrl } }
             ],
             [
               { text: "📊 Fleet Status" },
               { text: "🔑 OTP & Relogin" }
             ],
             [
-              { text: "⚡ Instant Harvest" },
+              { text: "💼 Multi-Chain Wallets" },
               { text: "🔍 Session Audit" }
             ],
             [
-              { text: "⚙️ Fleet Accounts" },
-              { text: "🌐 Cloud Mesh" }
-            ],
-            [
-              { text: "🔥 Economy & Sweep" },
-              { text: "💼 Treasury & Wallets" }
+              { text: "👥 Fleet Accounts" },
+              { text: "🔄 Refresh Menu" }
             ]
           ],
           resize_keyboard: true,
@@ -4123,7 +4153,67 @@ fi
           }).catch(() => {});
 
           if (chatId) {
-            if (cbData === "btn_accounts") {
+            if (cbData === "btn_back_main" || cbData === "btn_refresh_menu") {
+              const dhakaTime = getDhakaTimestamp();
+              const rep = await renderMainMenuText(dhakaTime);
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, mainInlineKeyboard);
+            } else if (cbData === "btn_wallets") {
+              const dhakaTime = getDhakaTimestamp();
+              const rep = `💼 *Multi-Chain Verified Destination Wallets*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `👑 *Binance Main Vault (Account #1 - Arif Hossain):*\n` +
+                `• BEP-20 (BSC): \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
+                `• TON Deposit: \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
+                `• Mandatory Memo: \`103525143\`\n\n` +
+                `⭐ *Binance Web3 Vault (Account #10 - Tanvir Ahmed 10):*\n` +
+                `• BEP-20 (BSC): \`0x017841f26d5b79cc8c5eb20c65367bb645cc2610\`\n` +
+                `• TON: \`UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH\`\n\n` +
+                `🔐 *16 Self-Custody Worker Wallets (Gram / Tonkeeper):*\n` +
+                `• Nodes 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18\n` +
+                `• 100% Isolated 24-word recovery seeds for anti-sybil pool protection.\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `💡 _Tip: Send \`/wallet <1-18>\` (e.g. \`/wallet 5\`) to inspect any account's private key & 24-word seed phrase._`;
+              const walletMarkup = {
+                inline_keyboard: [
+                  [
+                    { text: "🔙 Back to Main Menu", callback_data: "btn_back_main" },
+                    { text: "📱 Open Mini App", web_app: { url: appUrl } }
+                  ]
+                ]
+              };
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, walletMarkup);
+            } else if (cbData === "btn_mesh" || cbData === "btn_mesh_telemetry") {
+              const dhakaTime = getDhakaTimestamp();
+              const rep = `🌐 *Triple Multi-Cloud Mesh & Node Telemetry*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `⚡ *Cloudflare Edge Mesh (5 Regions):*\n` +
+                `• \`aaaai2.workers.dev\` (Primary Gateway) — 🟢 ONLINE\n` +
+                `• \`aaa-bot.workers.dev\` (Node 2 Shard) — 🟢 ONLINE\n` +
+                `• \`aaa222.workers.dev\` (Node 3 Shard) — 🟢 ONLINE\n` +
+                `• \`agorameet.workers.dev\` (Node 4 Failover) — 🟢 ONLINE\n` +
+                `• \`aaaai.workers.dev\` (Node 5 Sentinel) — 🟢 ONLINE\n\n` +
+                `🏢 *Render Baton Relay Ring (3 Accounts):*\n` +
+                `• Node 2 (Frankfurt): 🟢 ACTIVE & ONLINE (Current Coordinator)\n` +
+                `• Node 3 (Oregon): ⏸️ SUSPENDED (0h Consumed / Frozen Standby)\n` +
+                `• Node 1 (Singapore): ⏸️ SUSPENDED (0h Consumed / Frozen Standby)\n\n` +
+                `🛰️ *MTProto Relayer Sockets:*\n` +
+                `• Primary Relayer: 🟢 ONLINE (\`atf-mtproto-relayer\`)\n` +
+                `• Backup Relayer: 🟢 ONLINE (\`atf-mtproto-relayer-backup\`)\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `⏱️ *Time (Dhaka):* \`${dhakaTime}\``;
+              const meshMarkup = {
+                inline_keyboard: [
+                  [
+                    { text: "🔄 Refresh Mesh", callback_data: "btn_mesh" },
+                    { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                  ]
+                ]
+              };
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, meshMarkup);
+            } else if (cbData === "btn_accounts") {
               const accounts = await getFleetAccounts();
               const health = await getSessionHealthState();
               const dhakaTime = getDhakaTimestamp();
@@ -4143,7 +4233,7 @@ fi
               const rep = `👥 *Accounts Management Hub*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `📊 *Fleet Breakdown:* 🟢 \`${activeCount} Active\` • 🔴 \`${revokedCount} Needs Re-link\` (\`${accounts.length} Total\`)\n` +
-                `🤖 *24/7 Farming:* All 8 Active Legitimate Bots (Stones • MRG • AI Lab • UltraWallet • ATF • FINVORA • Victor's Company • VyroDrop)\n` +
+                `🤖 *24/7 Farming:* All 5 Active Legitimate Bots (MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network)\n` +
                 `🛡️ *Security:* 100% Anti-Ban Verified • Isolated BD Fingerprints\n` +
                 `⏱️ *Last Synced:* \`${dhakaTime}\`\n\n` +
                 `📋 *Connected Accounts (${accounts.length}):*\n` +
@@ -5310,24 +5400,39 @@ fi
           await sendResilientMessage(chatId, replyText, markup, parseMode);
         };
 
-        // 1. Start & Menu Command
+        // 1. Start & Menu Command (Redesigned Unified Single Message)
         if (text === "/start" || text === "/menu" || text.startsWith("/start") || text.includes("Refresh Menu") || text === "🔄 Refresh Menu") {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
-            const welcome = `👋 *Welcome to MY AGY AI — Private Admin Console*\n\n` +
-              `Your autonomous *24/7 Cloud Operations Hub* is active across 5 Cloudflare Edge nodes.\n\n` +
-              `🟢 *Fleet Health:* 18/18 Accounts Online & Mining\n` +
-              `🤖 *Active Bots (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n` +
-              `💰 *On-Chain Vault:* BEP-20 (BNB) • 18 Verified TON Wallets\n` +
-              `🛡️ *Security:* 5/5 Anti-Bot Verified • Dual-Edge Cloud Sync\n\n` +
-              `📱 *Tap '👑 Admin Console' below or use quick controls:*`;
-            const frames = [
-              "⚡ *MY AGY AI Fleet Initialization...*\n`[▰▰▰▱▱▱▱▱▱▱] 30%` • Verifying Admin Permissions",
-              "⚡ *Synchronizing Cloud Edge Nodes...*\n`[▰▰▰▰▰▰▰▱▱▱] 75%` • Loading 18 Mining Accounts",
-              welcome
-            ];
-            await sendAnimatedReply(chatId, frames, mainKeyboard, 300);
-            await sendReply("⚡ *Instant Fleet Controls:*", statusInlineKeyboard);
+            const dhakaTime = getDhakaTimestamp();
+            const welcome = await renderMainMenuText(dhakaTime);
+            // Send single authoritative message with inline actions & update persistent keyboard
+            await sendResilientMessage(chatId, welcome, mainInlineKeyboard, "Markdown");
+          })());
+          return new Response("OK");
+        }
+
+        // 1.1 Dedicated AAA Telegram Mini App Command (/app)
+        if (text === "/app" || text === "📱 AAA Telegram App" || text === "/miniapp" || text === "📱 Mini App") {
+          ctx.waitUntil((async () => {
+            const rep = `📱 *AAA Telegram — Premium Mini App*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `Manage multiple Telegram accounts and active MTProto sessions from one simple workspace.\n\n` +
+              `🌐 *Direct WebApp Link:* \`${appUrl}\`\n` +
+              `👑 *Fleet Admin Console:* \`${adminConsoleUrl}\`\n\n` +
+              `_Tap the button below to launch inside Telegram:_`;
+            const appMarkup = {
+              inline_keyboard: [
+                [
+                  { text: "📱 Launch AAA Telegram", web_app: { url: appUrl } },
+                  { text: "👑 Launch Admin Console", web_app: { url: adminConsoleUrl } }
+                ],
+                [
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                ]
+              ]
+            };
+            await sendReply(rep, appMarkup);
           })());
           return new Response("OK");
         }
@@ -6633,7 +6738,7 @@ fi
                   `• *Daemon Status:* ${daemonStatus}\n` +
                   `• *Mining Policy:* 100% Compounding & Hash Growth Mode\n` +
                   `• *Withdrawal Directive:* Permanently Disabled (Anti-Wrong-Address Protection) 🛡️\n` +
-                  `• *Active Lineup:* 8 Legitimate Bots Active 24/7 (Stones • MRG • AI Lab • UltraWallet • ATF • FINVORA • Victor's • VyroDrop)\n` +
+                  `• *Active Lineup:* 5 Legitimate Bots Active 24/7 (MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network)\n` +
                   `• *⏱️ Synced:* \`${dhakaTime}\`\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
                   `💡 _Send \`/acc <1-${accounts.length}>\` to inspect any account or \`/accounts\` for full fleet roster._`;
@@ -6667,7 +6772,7 @@ fi
             const rep = `👥 *Accounts Management Hub*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `📊 *Fleet Breakdown:* 🟢 \`${activeCount} Active\` • 🔴 \`${revokedCount} Needs Re-link\` (\`${accounts.length} Total\`)\n` +
-              `🤖 *24/7 Farming:* All 8 Active Legitimate Bots (Stones • MRG • AI Lab • UltraWallet • ATF • FINVORA • Victor's Company • VyroDrop)\n` +
+              `🤖 *24/7 Farming:* All 5 Active Legitimate Bots (MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network)\n` +
               `🛡️ *Security:* 100% Anti-Ban Verified • Isolated BD Fingerprints\n` +
               `⏱️ *Last Synced:* \`${dhakaTime}\`\n\n` +
               `📋 *Connected Accounts (${accounts.length}):*\n` +

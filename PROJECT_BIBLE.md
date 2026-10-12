@@ -795,4 +795,26 @@ Whenever you perform work in this repository:
   - `https://agy-aaa000.vercel.app/`
   - `https://aaa-free-ai.vercel.app/`
 
+### 5. Admin Bot Redesign & De-duplication Protocol (`deploy_both_cf_workers.py`)
+* **Bot Handle & Token**: `@myagyai` (`8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8`)
+* **Live Edge Webhook**: `https://restore-agy.aaaai2.workers.dev/telegram-webhook` (Primary Gateway on Cloudflare Workers)
+* **Single-Message Philosophy**:
+  - Zero duplicate double-messages on `/start` or `/menu`. The bot replies with a single authoritative Markdown console.
+  - Zero duplicate buttons between inline keyboard and persistent reply keyboard.
+  - In-place message edits via `editMessageText` for all submenus (`btn_accounts`, `btn_session_audit`, `btn_otp_menu`, `btn_wallets`, `btn_mesh`).
+  - Every submenu features a universal `[ 🔙 Back to Main Menu ]` button (`btn_back_main`) that reverts the message cleanly.
+* **Direct WebApp Integration**:
+  - Primary button: `📱 AAA Telegram App` (launches `https://agy-aaa000.vercel.app/`)
+  - Secondary button: `👑 Fleet Console` (launches `https://agy-aaa000.vercel.app/admin`)
+  - Dedicated `/app` command for instant 1-tap direct launch.
+* **Scam Bot Elimination**:
+  - Permanently purged all menu items, text prompts, and buttons for decommissioned scam bots (`Stones`, `AI Lab`, `UltraWallet`, `FINVORA`, `ART`, `Apex`, `BNB Galaxy`).
+  - Bot and fleet strictly standardized on the **5 active legitimate bots**:
+    1. **MRG Miner** (`@MRG_miner_bot`)
+    2. **ATF Miner** (`@atf_miner_bot`)
+    3. **Victor's Company** (`@VictorsCompanybot`)
+    4. **VyroDrop** (`@vyrodrop_bot`)
+    5. **Kynex Network** (`@Kynex_miningbot`)
+
+
 

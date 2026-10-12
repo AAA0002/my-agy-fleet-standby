@@ -96,7 +96,9 @@
       background-color: #0B1320 !important;
     }
     html.dark .border-slate-100,
-    html.dark .border-slate-200 {
+    html.dark .border-slate-200,
+    html.dark .border-slate-200\/80,
+    html.dark .border-slate-200\/90 {
       border-color: #1E2D44 !important;
     }
     html.dark .text-navy-900 {
@@ -106,8 +108,13 @@
     html.dark .text-slate-500 {
       color: #94A3B8 !important;
     }
-    html.dark .bg-slate-50 {
+    html.dark .bg-slate-50,
+    html.dark .bg-slate-50\/70,
+    html.dark .bg-slate-50\/80 {
       background-color: #16243A !important;
+    }
+    html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+      border-color: #1E2D44 !important;
     }
 
     /* Custom Transitions */
@@ -135,6 +142,11 @@
       border-radius: 12px;
       color: #0E1E38;
       transition: all 0.15s ease;
+    }
+    html.dark .code-box {
+      background-color: #16243A;
+      border-color: #1E2D44;
+      color: #F1F5F9;
     }
     .code-box:focus {
       outline: none;
@@ -170,7 +182,7 @@
           <span class="w-1.5 h-1.5 rounded-full bg-brand-500 mr-1.5 animate-pulse"></span>
           AAA Telegram
         </span>
-        <span id="currentScreenPill" class="text-slate-500 font-medium">Welcome Screen</span>
+        <span id="currentScreenPill" class="text-slate-500 font-medium">Page 1 — Welcome</span>
       </div>
 
       <!-- Quick Screen Switcher Dropdown Button -->
@@ -212,19 +224,19 @@
           </button>
           <button onclick="switchScreen('page-accounts')" class="w-full px-3 py-1.5 text-left text-xs hover:bg-slate-50 flex items-center justify-between">
             <span>Page 6 — My Accounts</span>
-            <span class="text-[10px] text-slate-400">List (3)</span>
+            <span class="text-[10px] text-slate-400">List (<span id="menuAccCount">3</span>)</span>
           </button>
           <button onclick="switchScreen('page-account-details')" class="w-full px-3 py-1.5 text-left text-xs hover:bg-slate-50 flex items-center justify-between">
             <span>Subpage — Account Details</span>
-            <span class="text-[10px] text-slate-400">Arif Hasan</span>
+            <span class="text-[10px] text-slate-400">Active</span>
           </button>
           <button onclick="switchScreen('page-sessions')" class="w-full px-3 py-1.5 text-left text-xs hover:bg-slate-50 flex items-center justify-between">
             <span>Page 7 — Sessions</span>
-            <span class="text-[10px] text-slate-400">Devices</span>
+            <span class="text-[10px] text-slate-400">Devices (<span id="menuSessCount">3</span>)</span>
           </button>
           <button onclick="switchScreen('page-session-details')" class="w-full px-3 py-1.5 text-left text-xs hover:bg-slate-50 flex items-center justify-between">
             <span>Page 8 — Session Details</span>
-            <span class="text-[10px] text-slate-400">SM-A305F</span>
+            <span class="text-[10px] text-slate-400">Inspector</span>
           </button>
           <button onclick="switchScreen('page-activity')" class="w-full px-3 py-1.5 text-left text-xs hover:bg-slate-50 flex items-center justify-between">
             <span>Page 9 — Activity</span>
@@ -301,7 +313,7 @@
               </div>
               <div class="flex items-center space-x-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span class="text-[11px] font-semibold text-navy-900">3 Sessions Connected</span>
+                <span id="welcomeActiveBadge" class="text-[11px] font-semibold text-navy-900">3 Sessions Connected</span>
               </div>
             </div>
           </div>
@@ -359,9 +371,9 @@
             <!-- Country Selector -->
             <div>
               <label class="block text-xs font-medium text-slate-500 mb-1.5">Country</label>
-              <button onclick="toggleCountryPicker()" class="w-full h-11 px-3 bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-xl flex items-center justify-between text-xs text-navy-900 font-medium transition">
+              <button type="button" onclick="openCountryModal()" class="w-full h-11 px-3 bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-xl flex items-center justify-between text-xs text-navy-900 font-medium transition active:scale-[0.99]">
                 <div class="flex items-center space-x-2">
-                  <span class="text-base">🇧🇩</span>
+                  <span id="selectedCountryFlag" class="text-base">🇧🇩</span>
                   <span id="selectedCountryLabel">Bangladesh</span>
                 </div>
                 <div class="flex items-center space-x-1.5 text-slate-500">
@@ -382,7 +394,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                   </svg>
                 </div>
-                <input id="loginPhoneInput" type="tel" value="1712 345678" placeholder="1712 345678" class="w-full h-11 pl-9 pr-3 bg-white border border-slate-200 rounded-xl text-xs text-navy-900 font-medium focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition">
+                <input id="loginPhoneInput" type="tel" inputmode="tel" value="1712 345678" placeholder="1712 345678" class="w-full h-11 pl-9 pr-3 bg-white border border-slate-200 rounded-xl text-xs text-navy-900 font-medium focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition">
               </div>
               <p class="text-[11px] text-slate-500 mt-1.5 flex items-center space-x-1">
                 <svg class="w-3.5 h-3.5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -404,7 +416,7 @@
           </button>
 
           <p class="text-[11px] text-center text-slate-400 px-4 leading-relaxed">
-            By continuing, you agree to Telegram's <a href="#" class="text-brand-600 hover:underline">Terms of Service</a> and <a href="#" class="text-brand-600 hover:underline">Privacy Policy</a>.
+            By continuing, you agree to Telegram's <a href="#" onclick="openTermsModal(); return false;" class="text-brand-600 hover:underline">Terms of Service</a> and <a href="#" onclick="openPrivacyModal(); return false;" class="text-brand-600 hover:underline">Privacy Policy</a>.
           </p>
         </div>
       </section>
@@ -439,12 +451,12 @@
 
           <!-- Six Individual Code Input Boxes -->
           <div class="flex justify-center space-x-2 sm:space-x-2.5 mb-6">
-            <input type="text" maxlength="1" class="code-box" value="1" id="otp-1" oninput="handleOtpInput(this, 1)" onkeydown="handleOtpKeydown(event, 1)">
-            <input type="text" maxlength="1" class="code-box" value="2" id="otp-2" oninput="handleOtpInput(this, 2)" onkeydown="handleOtpKeydown(event, 2)">
-            <input type="text" maxlength="1" class="code-box" value="3" id="otp-3" oninput="handleOtpInput(this, 3)" onkeydown="handleOtpKeydown(event, 3)">
-            <input type="text" maxlength="1" class="code-box" value="4" id="otp-4" oninput="handleOtpInput(this, 4)" onkeydown="handleOtpKeydown(event, 4)">
-            <input type="text" maxlength="1" class="code-box" value="5" id="otp-5" oninput="handleOtpInput(this, 5)" onkeydown="handleOtpKeydown(event, 5)">
-            <input type="text" maxlength="1" class="code-box" value="6" id="otp-6" oninput="handleOtpInput(this, 6)" onkeydown="handleOtpKeydown(event, 6)">
+            <input type="text" inputmode="numeric" maxlength="1" class="code-box" value="1" id="otp-1" oninput="handleOtpInput(this, 1)" onkeydown="handleOtpKeydown(event, 1)" onpaste="handleOtpPaste(event)">
+            <input type="text" inputmode="numeric" maxlength="1" class="code-box" value="2" id="otp-2" oninput="handleOtpInput(this, 2)" onkeydown="handleOtpKeydown(event, 2)" onpaste="handleOtpPaste(event)">
+            <input type="text" inputmode="numeric" maxlength="1" class="code-box" value="3" id="otp-3" oninput="handleOtpInput(this, 3)" onkeydown="handleOtpKeydown(event, 3)" onpaste="handleOtpPaste(event)">
+            <input type="text" inputmode="numeric" maxlength="1" class="code-box" value="4" id="otp-4" oninput="handleOtpInput(this, 4)" onkeydown="handleOtpKeydown(event, 4)" onpaste="handleOtpPaste(event)">
+            <input type="text" inputmode="numeric" maxlength="1" class="code-box" value="5" id="otp-5" oninput="handleOtpInput(this, 5)" onkeydown="handleOtpKeydown(event, 5)" onpaste="handleOtpPaste(event)">
+            <input type="text" inputmode="numeric" maxlength="1" class="code-box" value="6" id="otp-6" oninput="handleOtpInput(this, 6)" onkeydown="handleOtpKeydown(event, 6)" onpaste="handleOtpPaste(event)">
           </div>
 
           <!-- Countdown & Resend State -->
@@ -518,7 +530,7 @@
             </div>
 
             <div class="text-right">
-              <a href="#" class="text-xs font-medium text-brand-600 hover:underline">Forgot password?</a>
+              <a href="#" onclick="showToast('Password reset link sent to your Telegram recovery email'); return false;" class="text-xs font-medium text-brand-600 hover:underline">Forgot password?</a>
             </div>
           </div>
         </div>
@@ -552,7 +564,7 @@
           <div class="flex items-center space-x-2">
             <!-- Account Initials Button -->
             <button onclick="switchScreen('page-account-details')" class="w-8 h-8 rounded-full bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-700 font-semibold text-xs relative hover:bg-brand-100 transition">
-              <span>AH</span>
+              <span id="dashAvatarInitials">AH</span>
               <span class="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 border border-white"></span>
             </button>
             <!-- Settings Icon Button -->
@@ -567,7 +579,7 @@
 
         <!-- Personalized Greeting -->
         <div>
-          <h2 class="text-xl font-bold text-navy-900 leading-tight">Good morning, Arif Hasan</h2>
+          <h2 id="dashWelcomeHeading" class="text-xl font-bold text-navy-900 leading-tight">Good morning, Arif Hasan</h2>
           <p class="text-xs text-slate-500">Welcome back to AAA Telegram</p>
         </div>
 
@@ -589,12 +601,12 @@
 
           <!-- Two Metric Columns -->
           <div class="grid grid-cols-2 gap-4 pt-3.5">
-            <div onclick="switchScreen('page-accounts')" class="cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition">
-              <div class="text-2xl font-bold text-navy-900">3</div>
+            <div onclick="switchScreen('page-accounts')" class="cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition active:scale-[0.98]">
+              <div id="dashAccountCount" class="text-2xl font-bold text-navy-900">3</div>
               <div class="text-xs text-slate-500 font-medium">Connected Accounts</div>
             </div>
-            <div onclick="switchScreen('page-sessions')" class="cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition border-l border-slate-100 pl-4">
-              <div class="text-2xl font-bold text-brand-600">2</div>
+            <div onclick="switchScreen('page-sessions')" class="cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition border-l border-slate-100 pl-4 active:scale-[0.98]">
+              <div id="dashSessionCount" class="text-2xl font-bold text-brand-600">2</div>
               <div class="text-xs text-slate-500 font-medium">Active Sessions</div>
             </div>
           </div>
@@ -664,54 +676,8 @@
             <button onclick="switchScreen('page-activity')" class="text-xs font-medium text-brand-600 hover:text-brand-700">View all</button>
           </div>
 
-          <div class="bg-surface rounded-2xl border border-slate-200/80 divide-y divide-slate-100 shadow-card">
-            <!-- Event Row 1 -->
-            <div class="p-3 flex items-center justify-between hover:bg-slate-50/50 transition">
-              <div class="flex items-center space-x-2.5">
-                <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-                  </svg>
-                </div>
-                <div>
-                  <div class="text-xs font-semibold text-navy-900">Account connected</div>
-                  <div class="text-[11px] text-slate-500">+880 1712 345678</div>
-                </div>
-              </div>
-              <span class="text-[10px] text-slate-400 font-medium">2 hours ago</span>
-            </div>
-
-            <!-- Event Row 2 -->
-            <div class="p-3 flex items-center justify-between hover:bg-slate-50/50 transition">
-              <div class="flex items-center space-x-2.5">
-                <div class="w-7 h-7 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center flex-shrink-0">
-                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                  </svg>
-                </div>
-                <div>
-                  <div class="text-xs font-semibold text-navy-900">New session</div>
-                  <div class="text-[11px] text-slate-500">Samsung SM-A305F</div>
-                </div>
-              </div>
-              <span class="text-[10px] text-slate-400 font-medium">4 hours ago</span>
-            </div>
-
-            <!-- Event Row 3 -->
-            <div class="p-3 flex items-center justify-between hover:bg-slate-50/50 transition">
-              <div class="flex items-center space-x-2.5">
-                <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
-                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                  </svg>
-                </div>
-                <div>
-                  <div class="text-xs font-semibold text-navy-900">Settings updated</div>
-                  <div class="text-[11px] text-slate-500">2FA enabled</div>
-                </div>
-              </div>
-              <span class="text-[10px] text-slate-400 font-medium">1 day ago</span>
-            </div>
+          <div id="dashRecentActivityContainer" class="bg-surface rounded-2xl border border-slate-200/80 divide-y divide-slate-100 shadow-card">
+            <!-- Dynamically populated via renderDashboard() -->
           </div>
         </div>
       </section>
@@ -742,67 +708,9 @@
           </button>
         </div>
 
-        <!-- Accounts List Cards -->
-        <div class="space-y-3 pt-1">
-          <!-- Account Card 1 (Arif Hasan - Active) -->
-          <div onclick="openAccountDetails('Arif Hasan', '+880 1712 345678', '@arifhasan', 'Personal', 'Apr 26, 2025', 'AH', 'brand')" class="bg-surface rounded-2xl border border-slate-200/90 p-3.5 shadow-card hover:border-brand-200 transition cursor-pointer active:scale-[0.99] flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-full bg-brand-500 text-white font-semibold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
-                AH
-              </div>
-              <div>
-                <div class="text-xs font-bold text-navy-900">Arif Hasan</div>
-                <div class="text-[11px] text-slate-500">+880 1712 345678</div>
-                <div class="inline-flex items-center space-x-1 mt-0.5">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  <span class="text-[10px] font-medium text-emerald-700">Connected</span>
-                </div>
-              </div>
-            </div>
-            <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-            </svg>
-          </div>
-
-          <!-- Account Card 2 (Md Arif) -->
-          <div onclick="openAccountDetails('Md Arif', '+880 1712 778899', '@mdarif_dev', 'Personal', 'May 14, 2025', 'MA', 'emerald')" class="bg-surface rounded-2xl border border-slate-200/90 p-3.5 shadow-card hover:border-brand-200 transition cursor-pointer active:scale-[0.99] flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-full bg-emerald-600 text-white font-semibold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
-                MA
-              </div>
-              <div>
-                <div class="text-xs font-bold text-navy-900">Md Arif</div>
-                <div class="text-[11px] text-slate-500">+880 1712 778899</div>
-                <div class="inline-flex items-center space-x-1 mt-0.5">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  <span class="text-[10px] font-medium text-emerald-700">Connected</span>
-                </div>
-              </div>
-            </div>
-            <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-            </svg>
-          </div>
-
-          <!-- Account Card 3 (Tuhin Ahmed) -->
-          <div onclick="openAccountDetails('Tuhin Ahmed', '+880 1511 223344', '@tuhin_ahmed', 'Work', 'Jun 02, 2025', 'TA', 'purple')" class="bg-surface rounded-2xl border border-slate-200/90 p-3.5 shadow-card hover:border-brand-200 transition cursor-pointer active:scale-[0.99] flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-full bg-purple-600 text-white font-semibold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
-                TA
-              </div>
-              <div>
-                <div class="text-xs font-bold text-navy-900">Tuhin Ahmed</div>
-                <div class="text-[11px] text-slate-500">+880 1511 223344</div>
-                <div class="inline-flex items-center space-x-1 mt-0.5">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  <span class="text-[10px] font-medium text-emerald-700">Connected</span>
-                </div>
-              </div>
-            </div>
-            <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-            </svg>
-          </div>
+        <!-- Accounts List Container -->
+        <div id="accountsListContainer" class="space-y-3 pt-1">
+          <!-- Dynamically populated via renderAccounts() -->
         </div>
       </section>
 
@@ -855,11 +763,11 @@
 
         <!-- Action Controls -->
         <div class="space-y-2 pt-2">
-          <button onclick="switchScreen('page-dashboard')" class="w-full h-11 bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold text-xs rounded-xl border border-brand-200 transition active:scale-[0.98] flex items-center justify-center space-x-2">
+          <button onclick="handleSwitchActiveAccount()" class="w-full h-11 bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold text-xs rounded-xl border border-brand-200 transition active:scale-[0.98] flex items-center justify-center space-x-2">
             <svg class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
             </svg>
-            <span>Switch Account</span>
+            <span>Set as Active Account</span>
           </button>
 
           <button onclick="openConfirmRemoveModal()" class="w-full h-11 bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs rounded-xl border border-red-200 transition active:scale-[0.98] flex items-center justify-center space-x-2">
@@ -889,96 +797,13 @@
         </div>
 
         <!-- 3 Summary Stat Pills -->
-        <div class="grid grid-cols-3 gap-2">
-          <div class="bg-surface rounded-xl border border-slate-200 p-2.5 text-center shadow-subtle">
-            <div class="text-base font-bold text-emerald-600">2</div>
-            <div class="text-[10px] text-slate-500 font-medium">Active</div>
-          </div>
-          <div class="bg-surface rounded-xl border border-slate-200 p-2.5 text-center shadow-subtle">
-            <div class="text-base font-bold text-slate-600">1</div>
-            <div class="text-[10px] text-slate-500 font-medium">Disconnected</div>
-          </div>
-          <div class="bg-surface rounded-xl border border-slate-200 p-2.5 text-center shadow-subtle">
-            <div class="text-base font-bold text-slate-400">0</div>
-            <div class="text-[10px] text-slate-500 font-medium">Expired</div>
-          </div>
+        <div id="sessionsStatPillsContainer" class="grid grid-cols-3 gap-2">
+          <!-- Dynamically populated via renderSessions() -->
         </div>
 
         <!-- Session Device Cards -->
-        <div class="space-y-3 pt-1">
-          <!-- Session 1: Samsung SM-A305F (Active Mobile) -->
-          <div onclick="openSessionDetails('Samsung SM-A305F', 'Android 11', '10.14.2', 'SM-A305F', '103.21.45.78', 'Bangladesh', 'Apr 26, 2025 • 09:41', 'Today • 09:38', true)" class="bg-surface rounded-2xl border border-slate-200/90 p-3.5 shadow-card hover:border-brand-200 transition cursor-pointer active:scale-[0.99] flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center flex-shrink-0">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                </svg>
-              </div>
-              <div>
-                <div class="text-xs font-bold text-navy-900">Samsung SM-A305F</div>
-                <div class="text-[11px] text-slate-500">Android 11 • Telegram</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">Last active: 2 minutes ago</div>
-              </div>
-            </div>
-            <div class="flex items-center space-x-2">
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>
-                Active
-              </span>
-              <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-              </svg>
-            </div>
-          </div>
-
-          <!-- Session 2: Chrome (Windows - Active Web) -->
-          <div onclick="openSessionDetails('Chrome (Windows)', 'Windows 10', '4.16.8 Web', 'Desktop PC', '103.21.45.79', 'Bangladesh', 'May 02, 2025 • 14:15', '1 hour ago', true)" class="bg-surface rounded-2xl border border-slate-200/90 p-3.5 shadow-card hover:border-brand-200 transition cursor-pointer active:scale-[0.99] flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                </svg>
-              </div>
-              <div>
-                <div class="text-xs font-bold text-navy-900">Chrome (Windows)</div>
-                <div class="text-[11px] text-slate-500">Windows 10 • Web</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">Last active: 1 hour ago</div>
-              </div>
-            </div>
-            <div class="flex items-center space-x-2">
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>
-                Active
-              </span>
-              <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-              </svg>
-            </div>
-          </div>
-
-          <!-- Session 3: iPhone 14 (Disconnected) -->
-          <div onclick="openSessionDetails('iPhone 14', 'iOS 17', '10.12.0', 'iPhone 14,2', '103.21.45.80', 'Singapore', 'Apr 10, 2025 • 11:20', '3 days ago', false)" class="bg-surface rounded-2xl border border-slate-200/90 p-3.5 shadow-card hover:border-brand-200 transition cursor-pointer active:scale-[0.99] flex items-center justify-between opacity-80">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center flex-shrink-0">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                </svg>
-              </div>
-              <div>
-                <div class="text-xs font-bold text-navy-900">iPhone 14</div>
-                <div class="text-[11px] text-slate-500">iOS 17 • Telegram</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">Last active: 3 days ago</div>
-              </div>
-            </div>
-            <div class="flex items-center space-x-2">
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                Disconnected
-              </span>
-              <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-              </svg>
-            </div>
-          </div>
+        <div id="sessionsListContainer" class="space-y-3 pt-1">
+          <!-- Dynamically populated via renderSessions() -->
         </div>
       </section>
 
@@ -1006,7 +831,7 @@
           <div>
             <div id="sessHeaderDevice" class="text-sm font-bold text-navy-900">Samsung SM-A305F</div>
             <div class="inline-flex items-center space-x-1.5 mt-0.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span id="sessHeaderDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
               <span id="sessHeaderStatus" class="text-[11px] font-semibold text-emerald-700">Active</span>
             </div>
             <div id="sessHeaderActiveTime" class="text-[10px] text-slate-400 mt-0.5">Last active: 2 minutes ago</div>
@@ -1017,7 +842,7 @@
         <div class="bg-surface rounded-2xl border border-slate-200/90 divide-y divide-slate-100 shadow-card text-xs">
           <div class="p-3.5 flex items-center justify-between">
             <span class="text-slate-500">Account</span>
-            <span class="font-semibold text-navy-900">Arif Hasan</span>
+            <span id="sessAccountName" class="font-semibold text-navy-900">Arif Hasan</span>
           </div>
           <div class="p-3.5 flex items-center justify-between">
             <span class="text-slate-500">Platform</span>
@@ -1053,7 +878,7 @@
 
         <!-- Terminate Session Action -->
         <div class="pt-2">
-          <button onclick="openConfirmTerminateModal()" class="w-full h-11 bg-white hover:bg-red-50 text-red-600 font-semibold text-xs rounded-xl border border-red-200 transition active:scale-[0.98] flex items-center justify-center space-x-2 shadow-subtle">
+          <button id="sessTerminateBtn" onclick="openConfirmTerminateModal()" class="w-full h-11 bg-white hover:bg-red-50 text-red-600 font-semibold text-xs rounded-xl border border-red-200 transition active:scale-[0.98] flex items-center justify-center space-x-2 shadow-subtle">
             <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
             </svg>
@@ -1080,102 +905,8 @@
         </div>
 
         <!-- Events List -->
-        <div class="bg-surface rounded-2xl border border-slate-200/90 divide-y divide-slate-100 shadow-card">
-          <!-- Item 1 -->
-          <div class="p-3.5 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-              <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <div>
-                <div class="text-xs font-bold text-navy-900">Account connected</div>
-                <div class="text-[11px] text-slate-500">+880 1712 345678</div>
-              </div>
-            </div>
-            <span class="text-[10px] text-slate-400 font-medium">2 hours ago</span>
-          </div>
-
-          <!-- Item 2 -->
-          <div class="p-3.5 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-              <div class="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                </svg>
-              </div>
-              <div>
-                <div class="text-xs font-bold text-navy-900">New session</div>
-                <div class="text-[11px] text-slate-500">Samsung SM-A305F</div>
-              </div>
-            </div>
-            <span class="text-[10px] text-slate-400 font-medium">4 hours ago</span>
-          </div>
-
-          <!-- Item 3 -->
-          <div class="p-3.5 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-              <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                </svg>
-              </div>
-              <div>
-                <div class="text-xs font-bold text-navy-900">Settings updated</div>
-                <div class="text-[11px] text-slate-500">2FA enabled</div>
-              </div>
-            </div>
-            <span class="text-[10px] text-slate-400 font-medium">1 day ago</span>
-          </div>
-
-          <!-- Item 4 -->
-          <div class="p-3.5 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-              <div class="w-8 h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
-              </div>
-              <div>
-                <div class="text-xs font-bold text-navy-900">Account removed</div>
-                <div class="text-[11px] text-slate-500">+880 1311 223344</div>
-              </div>
-            </div>
-            <span class="text-[10px] text-slate-400 font-medium">2 days ago</span>
-          </div>
-
-          <!-- Item 5 -->
-          <div class="p-3.5 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-              <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <div>
-                <div class="text-xs font-bold text-navy-900">Session expired</div>
-                <div class="text-[11px] text-slate-500">Web (Chrome)</div>
-              </div>
-            </div>
-            <span class="text-[10px] text-slate-400 font-medium">3 days ago</span>
-          </div>
-
-          <!-- Item 6 -->
-          <div class="p-3.5 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-              <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <div>
-                <div class="text-xs font-bold text-navy-900">Account connected</div>
-                <div class="text-[11px] text-slate-500">+880 1622 778899</div>
-              </div>
-            </div>
-            <span class="text-[10px] text-slate-400 font-medium">5 days ago</span>
-          </div>
+        <div id="fullActivityContainer" class="bg-surface rounded-2xl border border-slate-200/90 divide-y divide-slate-100 shadow-card">
+          <!-- Dynamically populated via renderActivity() -->
         </div>
       </section>
 
@@ -1207,7 +938,7 @@
                 </svg>
                 <span class="font-medium text-navy-900">Light Theme</span>
               </div>
-              <input type="radio" name="theme" checked onchange="setTheme('light')" class="w-4 h-4 text-brand-600 focus:ring-brand-500">
+              <input type="radio" name="themeRadio" value="light" id="themeRadioLight" onchange="setTheme('light')" class="w-4 h-4 text-brand-600 focus:ring-brand-500">
             </label>
             <label class="p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition">
               <div class="flex items-center space-x-2.5">
@@ -1216,7 +947,7 @@
                 </svg>
                 <span class="font-medium text-navy-900">Dark Theme</span>
               </div>
-              <input type="radio" name="theme" onchange="setTheme('dark')" class="w-4 h-4 text-brand-600 focus:ring-brand-500">
+              <input type="radio" name="themeRadio" value="dark" id="themeRadioDark" onchange="setTheme('dark')" class="w-4 h-4 text-brand-600 focus:ring-brand-500">
             </label>
             <label class="p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition">
               <div class="flex items-center space-x-2.5">
@@ -1225,7 +956,7 @@
                 </svg>
                 <span class="font-medium text-navy-900">System Theme</span>
               </div>
-              <input type="radio" name="theme" onchange="setTheme('system')" class="w-4 h-4 text-brand-600 focus:ring-brand-500">
+              <input type="radio" name="themeRadio" value="system" id="themeRadioSystem" onchange="setTheme('system')" class="w-4 h-4 text-brand-600 focus:ring-brand-500">
             </label>
           </div>
         </div>
@@ -1234,7 +965,7 @@
         <div>
           <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-1 mb-1.5">Preferences</div>
           <div class="bg-surface rounded-2xl border border-slate-200/90 divide-y divide-slate-100 shadow-card text-xs">
-            <div class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer">
+            <div onclick="openLanguageModal()" class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer">
               <div class="flex items-center space-x-2.5">
                 <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
@@ -1242,26 +973,23 @@
                 <span class="font-medium text-navy-900">Language</span>
               </div>
               <div class="flex items-center space-x-1.5 text-slate-500">
-                <span>English</span>
+                <span id="settingsCurrentLanguage">English</span>
                 <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                 </svg>
               </div>
             </div>
 
-            <div class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer">
+            <div class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition">
               <div class="flex items-center space-x-2.5">
                 <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                 </svg>
                 <span class="font-medium text-navy-900">Notifications</span>
               </div>
-              <div class="flex items-center space-x-1.5 text-slate-500">
-                <span>On</span>
-                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                </svg>
-              </div>
+              <button type="button" onclick="toggleNotifications()" id="notificationToggleBtn" class="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-brand-500 transition-colors duration-200 ease-in-out focus:outline-none">
+                <span id="notificationToggleKnob" class="translate-x-4 pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+              </button>
             </div>
           </div>
         </div>
@@ -1270,7 +998,7 @@
         <div>
           <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-1 mb-1.5">Security and Privacy</div>
           <div class="bg-surface rounded-2xl border border-slate-200/90 divide-y divide-slate-100 shadow-card text-xs">
-            <div class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer">
+            <div onclick="openSecurityModal()" class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer">
               <div class="flex items-center space-x-2.5">
                 <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
@@ -1294,7 +1022,7 @@
               </svg>
             </div>
 
-            <div class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer">
+            <div onclick="openPrivacyModal()" class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer">
               <div class="flex items-center space-x-2.5">
                 <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
@@ -1319,10 +1047,10 @@
                 </svg>
                 <span class="font-medium text-navy-900">App Version</span>
               </div>
-              <span class="font-mono font-medium text-slate-500">1.0.0</span>
+              <span class="font-mono font-medium text-slate-500">1.2.0 (Commercial)</span>
             </div>
 
-            <div class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer">
+            <div onclick="openSupportModal()" class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer">
               <div class="flex items-center space-x-2.5">
                 <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -1334,7 +1062,7 @@
               </svg>
             </div>
 
-            <div class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer">
+            <div onclick="openTermsModal()" class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition cursor-pointer">
               <div class="flex items-center space-x-2.5">
                 <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -1492,7 +1220,7 @@
           </div>
           <div class="text-xs font-bold text-navy-900">Network Error</div>
           <div class="text-[10px] text-slate-500 mt-0.5 mb-3">Please check your internet connection and try again.</div>
-          <button onclick="closeStatesModal()" class="w-full h-8 bg-brand-500 text-white text-[11px] font-semibold rounded-lg shadow-sm">
+          <button onclick="closeStatesModal(); showToast('Connection re-established')" class="w-full h-8 bg-brand-500 text-white text-[11px] font-semibold rounded-lg shadow-sm">
             Retry
           </button>
         </div>
@@ -1529,6 +1257,30 @@
     </div>
   </div>
 
+  <!-- Country Picker Modal Sheet -->
+  <div id="countryModal" class="fixed inset-0 bg-navy-950/40 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-surface w-full max-w-sm rounded-t-3xl sm:rounded-2xl border border-slate-200 p-5 shadow-2xl max-h-[80vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h4 class="text-sm font-bold text-navy-900">Select Country</h4>
+        <button onclick="closeCountryModal()" class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Search Input -->
+      <div class="py-2.5">
+        <input type="text" id="countrySearchInput" oninput="filterCountries(this.value)" placeholder="Search country or code..." class="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-navy-900 focus:outline-none focus:border-brand-500">
+      </div>
+
+      <!-- Country List -->
+      <div id="countryList" class="overflow-y-auto space-y-1 divide-y divide-slate-100 text-xs">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
   <!-- Confirmation Dialog Modal: Remove Account -->
   <div id="confirmRemoveModal" class="fixed inset-0 bg-navy-950/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-surface w-full max-w-sm rounded-2xl border border-slate-200 p-5 shadow-2xl text-center space-y-3">
@@ -1539,7 +1291,7 @@
       </div>
       <h4 class="text-sm font-bold text-navy-900">Remove Account?</h4>
       <p class="text-xs text-slate-500 leading-relaxed">
-        Are you sure you want to remove <span class="font-semibold text-navy-900">Arif Hasan</span>? This will cleanly close all active MTProto client sockets.
+        Are you sure you want to remove <span id="removeAccountTargetName" class="font-semibold text-navy-900">Arif Hasan</span>? This will cleanly close all active MTProto client sockets.
       </p>
       <div class="grid grid-cols-2 gap-2 pt-2">
         <button onclick="closeConfirmRemoveModal()" class="h-10 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition">
@@ -1575,6 +1327,60 @@
     </div>
   </div>
 
+  <!-- Security & Privacy Info Modal -->
+  <div id="infoModal" class="fixed inset-0 bg-navy-950/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-surface w-full max-w-sm rounded-2xl border border-slate-200 p-5 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h4 id="infoModalTitle" class="text-sm font-bold text-navy-900">Security Information</h4>
+        <button onclick="closeInfoModal()" class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <p id="infoModalBody" class="text-xs text-slate-600 leading-relaxed">
+        AAA Telegram uses the official Telegram MTProto client protocol with end-to-end cryptographic keys.
+      </p>
+      <div class="pt-2">
+        <button onclick="closeInfoModal()" class="w-full h-10 bg-brand-500 text-white font-semibold text-xs rounded-xl transition">
+          Got it
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Language Picker Modal -->
+  <div id="languageModal" class="fixed inset-0 bg-navy-950/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-surface w-full max-w-sm rounded-2xl border border-slate-200 p-5 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h4 class="text-sm font-bold text-navy-900">Select Language</h4>
+        <button onclick="closeLanguageModal()" class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="space-y-1.5 text-xs">
+        <button onclick="setLanguage('English')" class="w-full p-2.5 rounded-xl hover:bg-slate-50 text-left flex items-center justify-between">
+          <span class="font-medium text-navy-900">English (US)</span>
+          <span class="text-brand-600 font-semibold">Active</span>
+        </button>
+        <button onclick="setLanguage('Español')" class="w-full p-2.5 rounded-xl hover:bg-slate-50 text-left flex items-center justify-between">
+          <span class="font-medium text-navy-900">Español</span>
+        </button>
+        <button onclick="setLanguage('বাংলা')" class="w-full p-2.5 rounded-xl hover:bg-slate-50 text-left flex items-center justify-between">
+          <span class="font-medium text-navy-900">বাংলা (Bengali)</span>
+        </button>
+        <button onclick="setLanguage('Русский')" class="w-full p-2.5 rounded-xl hover:bg-slate-50 text-left flex items-center justify-between">
+          <span class="font-medium text-navy-900">Русский (Russian)</span>
+        </button>
+        <button onclick="setLanguage('العربية')" class="w-full p-2.5 rounded-xl hover:bg-slate-50 text-left flex items-center justify-between">
+          <span class="font-medium text-navy-900">العربية (Arabic)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Pill -->
   <div id="toastNotification" class="fixed bottom-20 inset-x-0 mx-auto w-max max-w-xs bg-navy-900 text-white text-xs px-4 py-2.5 rounded-full shadow-lg border border-slate-700/50 flex items-center space-x-2 opacity-0 pointer-events-none transition-all duration-200 z-50">
     <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
@@ -1583,9 +1389,37 @@
     <span id="toastMessage">Success</span>
   </div>
 
-  <!-- Interactive JavaScript Controller -->
+  <!-- Interactive JavaScript Controller & Reactive State Store -->
   <script>
-    // 1. Telegram WebApp Integration
+    // 1. Reactive State Store
+    const state = {
+      currentUser: { name: 'Arif Hasan', initials: 'AH', phone: '+880 1712 345678', color: 'brand' },
+      accounts: [
+        { id: 'acc-1', name: 'Arif Hasan', phone: '+880 1712 345678', username: '@arifhasan', type: 'Personal', regDate: 'Apr 26, 2025', initials: 'AH', color: 'brand', active: true },
+        { id: 'acc-2', name: 'Md Arif', phone: '+880 1712 778899', username: '@mdarif_dev', type: 'Personal', regDate: 'May 14, 2025', initials: 'MA', color: 'emerald', active: true },
+        { id: 'acc-3', name: 'Tuhin Ahmed', phone: '+880 1511 223344', username: '@tuhin_ahmed', type: 'Work', regDate: 'Jun 02, 2025', initials: 'TA', color: 'purple', active: true }
+      ],
+      sessions: [
+        { id: 'sess-1', device: 'Samsung SM-A305F', platform: 'Android 11', appVer: '10.14.2', model: 'SM-A305F', ip: '103.21.45.78', location: 'Bangladesh', authTime: 'Apr 26, 2025 • 09:41', lastAct: 'Just now', status: 'Active', accountName: 'Arif Hasan' },
+        { id: 'sess-2', device: 'Chrome (Windows)', platform: 'Windows 10', appVer: '4.16.8 Web', model: 'Desktop PC', ip: '103.21.45.79', location: 'Bangladesh', authTime: 'May 02, 2025 • 14:15', lastAct: '1 hour ago', status: 'Active', accountName: 'Arif Hasan' },
+        { id: 'sess-3', device: 'iPhone 14', platform: 'iOS 17', appVer: '10.12.0', model: 'iPhone 14,2', ip: '103.21.45.80', location: 'Singapore', authTime: 'Apr 10, 2025 • 11:20', lastAct: '3 days ago', status: 'Disconnected', accountName: 'Md Arif' }
+      ],
+      activities: [
+        { id: 'act-1', title: 'Account connected', desc: '+880 1712 345678', time: '2 hours ago', type: 'connect' },
+        { id: 'act-2', title: 'New session', desc: 'Samsung SM-A305F', time: '4 hours ago', type: 'session' },
+        { id: 'act-3', title: 'Settings updated', desc: '2FA enabled', time: '1 day ago', type: 'security' },
+        { id: 'act-4', title: 'Account removed', desc: '+880 1311 223344', time: '2 days ago', type: 'remove' },
+        { id: 'act-5', title: 'Session expired', desc: 'Web (Chrome)', time: '3 days ago', type: 'expire' },
+        { id: 'act-6', title: 'Account connected', desc: '+880 1622 778899', time: '5 days ago', type: 'connect' }
+      ],
+      notifications: true,
+      language: 'English',
+      theme: localStorage.getItem('aaa_theme') || 'light',
+      selectedAccountTarget: null,
+      selectedSessionTarget: null
+    };
+
+    // 2. Telegram WebApp SDK Integration
     const tg = window.Telegram ? window.Telegram.WebApp : null;
     if (tg) {
       tg.ready();
@@ -1595,7 +1429,6 @@
         tg.setBackgroundColor('#F4F8FC');
       } catch (_) {}
       
-      // Wire Telegram Native Back Button
       if (tg.BackButton) {
         tg.BackButton.onClick(() => {
           handleBackNavigation();
@@ -1611,7 +1444,7 @@
       } catch (_) {}
     }
 
-    // Navigation History Stack
+    // 3. Navigation History & Screen Switching
     const screenHistory = ['page-welcome'];
     let currentScreen = 'page-welcome';
 
@@ -1632,12 +1465,10 @@
     function switchScreen(screenId, pushHistory = true) {
       triggerHaptic('light');
 
-      // Hide all screen views
       document.querySelectorAll('.screen-view').forEach(el => {
         el.classList.remove('active');
       });
 
-      // Show destination screen
       const target = document.getElementById(screenId);
       if (target) {
         target.classList.add('active');
@@ -1647,33 +1478,26 @@
         }
       }
 
-      // Update screen indicator pill
       const pill = document.getElementById('currentScreenPill');
       if (pill) {
         pill.textContent = screenLabels[screenId] || 'AAA Telegram';
       }
 
-      // Close dropdown if open
       document.getElementById('screenDropdown').classList.add('hidden');
 
-      // Update bottom navigation visibility & active state
       const bottomNav = document.getElementById('bottomNavBar');
-      const isAppScreen = ['page-dashboard', 'page-accounts', 'page-sessions', 'page-settings'].includes(screenId);
-      
       if (['page-welcome', 'page-login', 'page-code', 'page-2fa'].includes(screenId)) {
         bottomNav.style.display = 'none';
       } else {
         bottomNav.style.display = 'flex';
       }
 
-      // Update Nav Buttons Active Style
       document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
       if (screenId === 'page-dashboard') document.getElementById('nav-home')?.classList.add('active');
       if (screenId === 'page-accounts' || screenId === 'page-account-details') document.getElementById('nav-accounts')?.classList.add('active');
       if (screenId === 'page-sessions' || screenId === 'page-session-details') document.getElementById('nav-sessions')?.classList.add('active');
       if (screenId === 'page-settings' || screenId === 'page-activity') document.getElementById('nav-settings')?.classList.add('active');
 
-      // Sync Native Telegram BackButton
       if (tg && tg.BackButton) {
         if (screenId === 'page-welcome' || screenId === 'page-dashboard') {
           tg.BackButton.hide();
@@ -1682,13 +1506,19 @@
         }
       }
 
+      // Re-render target screen if dynamic
+      if (screenId === 'page-dashboard') renderDashboard();
+      if (screenId === 'page-accounts') renderAccounts();
+      if (screenId === 'page-sessions') renderSessions();
+      if (screenId === 'page-activity') renderActivity();
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function handleBackNavigation() {
       if (screenHistory.length > 1) {
-        screenHistory.pop(); // Remove current
-        const prev = screenHistory.pop(); // Pop target
+        screenHistory.pop();
+        const prev = screenHistory.pop();
         switchScreen(prev, true);
       } else {
         switchScreen('page-dashboard');
@@ -1700,20 +1530,359 @@
       dd.classList.toggle('hidden');
     }
 
-    // Close menu when clicking outside
     document.addEventListener('click', (e) => {
       const menuBtn = document.getElementById('screenMenuBtn');
       const dd = document.getElementById('screenDropdown');
-      if (!menuBtn.contains(e.target) && !dd.contains(e.target)) {
+      if (menuBtn && dd && !menuBtn.contains(e.target) && !dd.contains(e.target)) {
         dd.classList.add('hidden');
       }
     });
 
-    // 2. User Flows
+    // 4. Render Engines
+    function renderDashboard() {
+      document.getElementById('dashWelcomeHeading').textContent = `Good morning, ${state.currentUser.name}`;
+      document.getElementById('dashAvatarInitials').textContent = state.currentUser.initials;
+      document.getElementById('dashAccountCount').textContent = state.accounts.length;
+      
+      const activeSessCount = state.sessions.filter(s => s.status === 'Active').length;
+      document.getElementById('dashSessionCount').textContent = activeSessCount;
+      document.getElementById('welcomeActiveBadge').textContent = `${activeSessCount} Sessions Connected`;
+      document.getElementById('menuAccCount').textContent = state.accounts.length;
+      document.getElementById('menuSessCount').textContent = state.sessions.length;
+
+      // Render top 3 recent activities
+      const container = document.getElementById('dashRecentActivityContainer');
+      const recent = state.activities.slice(0, 3);
+      if (recent.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">No recent activity</div>`;
+        return;
+      }
+      container.innerHTML = recent.map(act => getActivityRowHtml(act)).join('');
+    }
+
+    function renderAccounts() {
+      const container = document.getElementById('accountsListContainer');
+      if (state.accounts.length === 0) {
+        container.innerHTML = `
+          <div class="bg-surface rounded-2xl border border-slate-200/90 p-8 text-center space-y-3">
+            <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
+              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+            </div>
+            <div class="text-xs font-bold text-navy-900">No accounts connected</div>
+            <div class="text-[11px] text-slate-500">Connect your first Telegram account to begin.</div>
+            <button onclick="switchScreen('page-login')" class="px-4 py-2 bg-brand-500 text-white font-semibold text-xs rounded-xl shadow-sm">
+              Connect Telegram
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = state.accounts.map(acc => {
+        const bgClass = acc.color === 'emerald' ? 'bg-emerald-600' : (acc.color === 'purple' ? 'bg-purple-600' : 'bg-brand-500');
+        return `
+          <div onclick="selectAccountForDetails('${acc.id}')" class="bg-surface rounded-2xl border border-slate-200/90 p-3.5 shadow-card hover:border-brand-200 transition cursor-pointer active:scale-[0.99] flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-full ${bgClass} text-white font-semibold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
+                ${acc.initials}
+              </div>
+              <div>
+                <div class="text-xs font-bold text-navy-900">${acc.name}</div>
+                <div class="text-[11px] text-slate-500">${acc.phone}</div>
+                <div class="inline-flex items-center space-x-1 mt-0.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  <span class="text-[10px] font-medium text-emerald-700">Connected</span>
+                </div>
+              </div>
+            </div>
+            <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+            </svg>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderSessions() {
+      const activeCount = state.sessions.filter(s => s.status === 'Active').length;
+      const discCount = state.sessions.filter(s => s.status === 'Disconnected').length;
+      const expCount = state.sessions.filter(s => s.status === 'Expired').length;
+
+      document.getElementById('sessionsStatPillsContainer').innerHTML = `
+        <div class="bg-surface rounded-xl border border-slate-200 p-2.5 text-center shadow-subtle">
+          <div class="text-base font-bold text-emerald-600">${activeCount}</div>
+          <div class="text-[10px] text-slate-500 font-medium">Active</div>
+        </div>
+        <div class="bg-surface rounded-xl border border-slate-200 p-2.5 text-center shadow-subtle">
+          <div class="text-base font-bold text-slate-600">${discCount}</div>
+          <div class="text-[10px] text-slate-500 font-medium">Disconnected</div>
+        </div>
+        <div class="bg-surface rounded-xl border border-slate-200 p-2.5 text-center shadow-subtle">
+          <div class="text-base font-bold text-slate-400">${expCount}</div>
+          <div class="text-[10px] text-slate-500 font-medium">Expired</div>
+        </div>
+      `;
+
+      const container = document.getElementById('sessionsListContainer');
+      if (state.sessions.length === 0) {
+        container.innerHTML = `
+          <div class="bg-surface rounded-2xl border border-slate-200/90 p-8 text-center space-y-3">
+            <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
+              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+              </svg>
+            </div>
+            <div class="text-xs font-bold text-navy-900">No active sessions</div>
+            <div class="text-[11px] text-slate-500">Connect an account to see authorizations here.</div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = state.sessions.map(s => {
+        const isActive = s.status === 'Active';
+        const isWeb = s.device.includes('Chrome') || s.device.includes('Web');
+        return `
+          <div onclick="selectSessionForDetails('${s.id}')" class="bg-surface rounded-2xl border border-slate-200/90 p-3.5 shadow-card hover:border-brand-200 transition cursor-pointer active:scale-[0.99] flex items-center justify-between ${isActive ? '' : 'opacity-80'}">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-xl ${isActive ? (isWeb ? 'bg-blue-50 text-blue-600' : 'bg-brand-50 text-brand-600') : 'bg-slate-100 text-slate-500'} flex items-center justify-center flex-shrink-0">
+                ${isWeb ? `
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                  </svg>
+                ` : `
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                  </svg>
+                `}
+              </div>
+              <div>
+                <div class="text-xs font-bold text-navy-900">${s.device}</div>
+                <div class="text-[11px] text-slate-500">${s.platform} • Telegram</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">Last active: ${s.lastAct}</div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${isActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}">
+                ${isActive ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>' : ''}
+                ${s.status}
+              </span>
+              <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderActivity() {
+      const container = document.getElementById('fullActivityContainer');
+      if (state.activities.length === 0) {
+        container.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No events recorded yet.</div>`;
+        return;
+      }
+      container.innerHTML = state.activities.map(act => getActivityRowHtml(act)).join('');
+    }
+
+    function getActivityRowHtml(act) {
+      let iconHtml = '';
+      if (act.type === 'connect') {
+        iconHtml = `
+          <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+            </svg>
+          </div>
+        `;
+      } else if (act.type === 'session') {
+        iconHtml = `
+          <div class="w-7 h-7 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center flex-shrink-0">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+            </svg>
+          </div>
+        `;
+      } else if (act.type === 'security') {
+        iconHtml = `
+          <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+          </div>
+        `;
+      } else if (act.type === 'remove') {
+        iconHtml = `
+          <div class="w-7 h-7 rounded-lg bg-red-50 text-red-600 flex items-center justify-center flex-shrink-0">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </div>
+        `;
+      } else {
+        iconHtml = `
+          <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="p-3.5 flex items-center justify-between hover:bg-slate-50/50 transition">
+          <div class="flex items-center space-x-2.5">
+            ${iconHtml}
+            <div>
+              <div class="text-xs font-semibold text-navy-900">${act.title}</div>
+              <div class="text-[11px] text-slate-500">${act.desc}</div>
+            </div>
+          </div>
+          <span class="text-[10px] text-slate-400 font-medium">${act.time}</span>
+        </div>
+      `;
+    }
+
+    // 5. Account Inspection & Actions
+    function selectAccountForDetails(id) {
+      const acc = state.accounts.find(a => a.id === id);
+      if (!acc) return;
+      state.selectedAccountTarget = acc;
+
+      document.getElementById('detailName').textContent = acc.name;
+      document.getElementById('detailPhoneSub').textContent = acc.phone;
+      document.getElementById('detailPhone').textContent = acc.phone;
+      document.getElementById('detailUsername').textContent = acc.username;
+      document.getElementById('detailType').textContent = acc.type;
+      document.getElementById('detailRegDate').textContent = acc.regDate;
+      document.getElementById('removeAccountTargetName').textContent = acc.name;
+
+      const av = document.getElementById('detailAvatarBox');
+      av.textContent = acc.initials;
+      if (acc.color === 'emerald') av.className = 'w-16 h-16 rounded-full bg-emerald-600 text-white font-bold text-lg flex items-center justify-center mb-3 shadow-md';
+      else if (acc.color === 'purple') av.className = 'w-16 h-16 rounded-full bg-purple-600 text-white font-bold text-lg flex items-center justify-center mb-3 shadow-md';
+      else av.className = 'w-16 h-16 rounded-full bg-brand-500 text-white font-bold text-lg flex items-center justify-center mb-3 shadow-md';
+
+      switchScreen('page-account-details');
+    }
+
+    function handleSwitchActiveAccount() {
+      if (state.selectedAccountTarget) {
+        state.currentUser = {
+          name: state.selectedAccountTarget.name,
+          initials: state.selectedAccountTarget.initials,
+          phone: state.selectedAccountTarget.phone,
+          color: state.selectedAccountTarget.color
+        };
+        showToast(`Active account switched to ${state.currentUser.name}`);
+        switchScreen('page-dashboard');
+      }
+    }
+
+    function openConfirmRemoveModal() {
+      document.getElementById('confirmRemoveModal').classList.remove('hidden');
+    }
+    function closeConfirmRemoveModal() {
+      document.getElementById('confirmRemoveModal').classList.add('hidden');
+    }
+    function executeRemoveAccount() {
+      closeConfirmRemoveModal();
+      if (state.selectedAccountTarget) {
+        const removedName = state.selectedAccountTarget.name;
+        const removedPhone = state.selectedAccountTarget.phone;
+        state.accounts = state.accounts.filter(a => a.id !== state.selectedAccountTarget.id);
+        
+        // Add activity
+        state.activities.unshift({
+          id: 'act-' + Date.now(),
+          title: 'Account removed',
+          desc: removedPhone,
+          time: 'Just now',
+          type: 'remove'
+        });
+
+        // Switch active user if needed
+        if (state.currentUser.name === removedName) {
+          if (state.accounts.length > 0) {
+            state.currentUser = { ...state.accounts[0] };
+          }
+        }
+
+        showToast(`${removedName} removed and sessions closed.`);
+        renderAccounts();
+        switchScreen('page-accounts');
+      }
+    }
+
+    // 6. Session Inspection & Actions
+    function selectSessionForDetails(id) {
+      const s = state.sessions.find(item => item.id === id);
+      if (!s) return;
+      state.selectedSessionTarget = s;
+
+      const isActive = s.status === 'Active';
+      document.getElementById('sessHeaderDevice').textContent = s.device;
+      document.getElementById('sessHeaderStatus').textContent = s.status;
+      document.getElementById('sessHeaderStatus').className = isActive ? 'text-[11px] font-semibold text-emerald-700' : 'text-[11px] font-semibold text-slate-500';
+      document.getElementById('sessHeaderDot').className = isActive ? 'w-1.5 h-1.5 rounded-full bg-emerald-500' : 'w-1.5 h-1.5 rounded-full bg-slate-400';
+      document.getElementById('sessHeaderActiveTime').textContent = `Last active: ${s.lastAct}`;
+
+      document.getElementById('sessAccountName').textContent = s.accountName;
+      document.getElementById('sessPlatform').textContent = s.platform;
+      document.getElementById('sessAppVersion').textContent = s.appVer;
+      document.getElementById('sessDeviceModel').textContent = s.model;
+      document.getElementById('sessIp').textContent = s.ip;
+      document.getElementById('sessLocation').innerHTML = `<span>${s.location}</span>`;
+      document.getElementById('sessAuthTime').textContent = s.authTime;
+      document.getElementById('sessLastActivity').textContent = s.lastAct;
+      document.getElementById('terminateDeviceTarget').textContent = s.device;
+
+      const termBtn = document.getElementById('sessTerminateBtn');
+      if (isActive) {
+        termBtn.style.display = 'flex';
+      } else {
+        termBtn.style.display = 'none';
+      }
+
+      switchScreen('page-session-details');
+    }
+
+    function openConfirmTerminateModal() {
+      document.getElementById('confirmTerminateModal').classList.remove('hidden');
+    }
+    function closeConfirmTerminateModal() {
+      document.getElementById('confirmTerminateModal').classList.add('hidden');
+    }
+    function executeTerminateSession() {
+      closeConfirmTerminateModal();
+      if (state.selectedSessionTarget) {
+        state.selectedSessionTarget.status = 'Disconnected';
+        state.selectedSessionTarget.lastAct = 'Just now';
+
+        state.activities.unshift({
+          id: 'act-' + Date.now(),
+          title: 'Session terminated',
+          desc: state.selectedSessionTarget.device,
+          time: 'Just now',
+          type: 'remove'
+        });
+
+        showToast(`${state.selectedSessionTarget.device} session terminated.`);
+        renderSessions();
+        selectSessionForDetails(state.selectedSessionTarget.id);
+      }
+    }
+
+    // 7. Login / Add Account Complete User Flow
+    let candidatePhone = '';
     function handlePhoneContinue() {
       const input = document.getElementById('loginPhoneInput');
       const val = input.value.trim() || '1712 345678';
-      document.getElementById('displayTargetPhone').textContent = '+880 ' + val;
+      const cCode = document.getElementById('selectedCountryCode').textContent;
+      candidatePhone = `${cCode} ${val}`;
+      document.getElementById('displayTargetPhone').textContent = candidatePhone;
       showToast('Login code requested from Telegram');
       switchScreen('page-code');
     }
@@ -1724,11 +1893,50 @@
     }
 
     function handleTwoFaContinue() {
-      showToast('Password verified! Welcome to AAA Telegram');
+      // Create new connected account
+      const newAcc = {
+        id: 'acc-' + Date.now(),
+        name: 'Arif (New)',
+        phone: candidatePhone || '+880 1712 345678',
+        username: '@arif_telegram',
+        type: 'Personal',
+        regDate: 'Today',
+        initials: 'AN',
+        color: 'brand',
+        active: true
+      };
+      state.accounts.push(newAcc);
+      state.currentUser = { name: newAcc.name, initials: newAcc.initials, phone: newAcc.phone, color: 'brand' };
+
+      // Add a session
+      state.sessions.unshift({
+        id: 'sess-' + Date.now(),
+        device: 'Samsung SM-A305F',
+        platform: 'Android 11',
+        appVer: '10.14.2',
+        model: 'SM-A305F',
+        ip: '103.21.45.88',
+        location: 'Bangladesh',
+        authTime: 'Today • Just now',
+        lastAct: 'Just now',
+        status: 'Active',
+        accountName: newAcc.name
+      });
+
+      // Add activity
+      state.activities.unshift({
+        id: 'act-' + Date.now(),
+        title: 'Account connected',
+        desc: newAcc.phone,
+        time: 'Just now',
+        type: 'connect'
+      });
+
+      showToast(`Welcome! ${newAcc.phone} connected.`);
       switchScreen('page-dashboard');
     }
 
-    // 3. OTP Code Input Logic (Auto-jump, backspace)
+    // 8. 6-Box OTP Code Logic
     function handleOtpInput(input, index) {
       if (input.value.length === 1 && index < 6) {
         const next = document.getElementById(`otp-${index + 1}`);
@@ -1741,9 +1949,26 @@
         const prev = document.getElementById(`otp-${index - 1}`);
         if (prev) prev.focus();
       }
+      if (e.key === 'Enter') {
+        handleCodeContinue();
+      }
     }
 
-    // 4. Live Resend Timer
+    function handleOtpPaste(e) {
+      e.preventDefault();
+      const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+      if (paste.length >= 6) {
+        for (let i = 1; i <= 6; i++) {
+          const el = document.getElementById(`otp-${i}`);
+          if (el) el.value = paste[i - 1];
+        }
+        document.getElementById('otp-6').focus();
+        showToast('Verification code pasted');
+        triggerHaptic('medium');
+      }
+    }
+
+    // 9. Countdown Timer & Resend
     let timerSeconds = 272; // 04:32
     setInterval(() => {
       if (timerSeconds > 0) {
@@ -1760,7 +1985,7 @@
       showToast('A fresh 6-digit code was dispatched to your phone');
     }
 
-    // 5. Password Visibility Toggle
+    // 10. Password Visibility Toggle
     let pwdVisible = false;
     function togglePasswordVisibility() {
       const input = document.getElementById('twoFaInput');
@@ -1774,61 +1999,122 @@
       }
     }
 
-    // 6. Dynamic Account Details Inspection
-    function openAccountDetails(name, phone, username, type, regDate, initials, colorKey) {
-      document.getElementById('detailName').textContent = name;
-      document.getElementById('detailPhoneSub').textContent = phone;
-      document.getElementById('detailPhone').textContent = phone;
-      document.getElementById('detailUsername').textContent = username;
-      document.getElementById('detailType').textContent = type;
-      document.getElementById('detailRegDate').textContent = regDate;
-      const av = document.getElementById('detailAvatarBox');
-      av.textContent = initials;
-      if (colorKey === 'emerald') av.className = 'w-16 h-16 rounded-full bg-emerald-600 text-white font-bold text-lg flex items-center justify-center mb-3 shadow-md';
-      else if (colorKey === 'purple') av.className = 'w-16 h-16 rounded-full bg-purple-600 text-white font-bold text-lg flex items-center justify-center mb-3 shadow-md';
-      else av.className = 'w-16 h-16 rounded-full bg-brand-500 text-white font-bold text-lg flex items-center justify-center mb-3 shadow-md';
-      switchScreen('page-account-details');
+    // 11. Country Picker
+    const countries = [
+      { name: 'Bangladesh', code: '+880', flag: '🇧🇩' },
+      { name: 'United States', code: '+1', flag: '🇺🇸' },
+      { name: 'United Kingdom', code: '+44', flag: '🇬🇧' },
+      { name: 'United Arab Emirates', code: '+971', flag: '🇦🇪' },
+      { name: 'India', code: '+91', flag: '🇮🇳' },
+      { name: 'Singapore', code: '+65', flag: '🇸🇬' },
+      { name: 'Germany', code: '+49', flag: '🇩🇪' },
+      { name: 'Canada', code: '+1', flag: '🇨🇦' },
+      { name: 'Australia', code: '+61', flag: '🇦🇺' },
+      { name: 'Turkey', code: '+90', flag: '🇹🇷' },
+      { name: 'Saudi Arabia', code: '+966', flag: '🇸🇦' }
+    ];
+
+    function openCountryModal() {
+      renderCountryList(countries);
+      document.getElementById('countryModal').classList.remove('hidden');
+    }
+    function closeCountryModal() {
+      document.getElementById('countryModal').classList.add('hidden');
+    }
+    function renderCountryList(list) {
+      document.getElementById('countryList').innerHTML = list.map(c => `
+        <button onclick="selectCountry('${c.name}', '${c.code}', '${c.flag}')" class="w-full p-2.5 rounded-xl hover:bg-slate-50 flex items-center justify-between text-left transition">
+          <div class="flex items-center space-x-2">
+            <span class="text-base">${c.flag}</span>
+            <span class="font-medium text-navy-900">${c.name}</span>
+          </div>
+          <span class="font-mono text-slate-500 font-semibold">${c.code}</span>
+        </button>
+      `).join('');
+    }
+    function filterCountries(q) {
+      const filtered = countries.filter(c => c.name.toLowerCase().includes(q.toLowerCase()) || c.code.includes(q));
+      renderCountryList(filtered);
+    }
+    function selectCountry(name, code, flag) {
+      document.getElementById('selectedCountryFlag').textContent = flag;
+      document.getElementById('selectedCountryLabel').textContent = name;
+      document.getElementById('selectedCountryCode').textContent = code;
+      closeCountryModal();
+      showToast(`Selected ${name} (${code})`);
     }
 
-    // 7. Dynamic Session Details Inspection
-    function openSessionDetails(device, platform, appVer, model, ip, location, authTime, lastAct, isActive) {
-      document.getElementById('sessHeaderDevice').textContent = device;
-      document.getElementById('sessHeaderStatus').textContent = isActive ? 'Active' : 'Disconnected';
-      document.getElementById('sessHeaderStatus').className = isActive ? 'text-[11px] font-semibold text-emerald-700' : 'text-[11px] font-semibold text-slate-500';
-      document.getElementById('sessPlatform').textContent = platform;
-      document.getElementById('sessAppVersion').textContent = appVer;
-      document.getElementById('sessDeviceModel').textContent = model;
-      document.getElementById('sessIp').textContent = ip;
-      document.getElementById('sessLocation').textContent = location;
-      document.getElementById('sessAuthTime').textContent = authTime;
-      document.getElementById('sessLastActivity').textContent = lastAct;
-      document.getElementById('terminateDeviceTarget').textContent = device;
-      switchScreen('page-session-details');
+    // 12. Settings Controls
+    function setTheme(mode) {
+      state.theme = mode;
+      localStorage.setItem('aaa_theme', mode);
+      if (mode === 'dark') {
+        document.documentElement.classList.add('dark');
+        try { tg?.setHeaderColor('#0B1320'); tg?.setBackgroundColor('#0B1320'); } catch (_) {}
+      } else if (mode === 'light') {
+        document.documentElement.classList.remove('dark');
+        try { tg?.setHeaderColor('#F4F8FC'); tg?.setBackgroundColor('#F4F8FC'); } catch (_) {}
+      } else {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.classList.toggle('dark', prefersDark);
+      }
+      showToast(`Appearance: ${mode}`);
     }
 
-    // 8. Modals
-    function openConfirmRemoveModal() {
-      document.getElementById('confirmRemoveModal').classList.remove('hidden');
-    }
-    function closeConfirmRemoveModal() {
-      document.getElementById('confirmRemoveModal').classList.add('hidden');
-    }
-    function executeRemoveAccount() {
-      closeConfirmRemoveModal();
-      showToast('Account removed and sessions closed.');
-      switchScreen('page-accounts');
+    function toggleNotifications() {
+      state.notifications = !state.notifications;
+      const btn = document.getElementById('notificationToggleBtn');
+      const knob = document.getElementById('notificationToggleKnob');
+      if (state.notifications) {
+        btn.className = 'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-brand-500 transition-colors duration-200 ease-in-out focus:outline-none';
+        knob.className = 'translate-x-4 pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out';
+        showToast('Notifications turned ON');
+      } else {
+        btn.className = 'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-slate-300 transition-colors duration-200 ease-in-out focus:outline-none';
+        knob.className = 'translate-x-0 pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out';
+        showToast('Notifications turned OFF');
+      }
     }
 
-    function openConfirmTerminateModal() {
-      document.getElementById('confirmTerminateModal').classList.remove('hidden');
+    function openLanguageModal() {
+      document.getElementById('languageModal').classList.remove('hidden');
     }
-    function closeConfirmTerminateModal() {
-      document.getElementById('confirmTerminateModal').classList.add('hidden');
+    function closeLanguageModal() {
+      document.getElementById('languageModal').classList.add('hidden');
     }
-    function executeTerminateSession() {
-      closeConfirmTerminateModal();
-      showToast('Session terminated successfully.');
-      switchScreen('page-sessions');
+    function setLanguage(lang) {
+      state.language = lang;
+      document.getElementById('settingsCurrentLanguage').textContent = lang;
+      closeLanguageModal();
+      showToast(`Language set to ${lang}`);
+    }
+
+    function openSecurityModal() {
+      document.getElementById('infoModalTitle').textContent = 'Security Information';
+      document.getElementById('infoModalBody').textContent = 'AAA Telegram utilizes official Telegram MTProto cryptographic authorization with 2048-bit RSA and Diffie-Hellman handshakes. Authentication keys and session strings are kept strictly sandboxed and never logged or exposed.';
+      document.getElementById('infoModal').classList.remove('hidden');
+    }
+
+    function openPrivacyModal() {
+      document.getElementById('infoModalTitle').textContent = 'Privacy Information';
+      document.getElementById('infoModalBody').textContent = 'We respect your privacy. AAA Telegram connects only as an MTProto client to coordinate bot management. We do not index your personal conversations, media, or contact address books.';
+      document.getElementById('infoModal').classList.remove('hidden');
+    }
+
+    function openSupportModal() {
+      document.getElementById('infoModalTitle').textContent = 'Help & Support';
+      document.getElementById('infoModalBody').textContent = 'Need assistance with your Telegram accounts or session authorizations? Contact our administrator support bot on Telegram at @myagyai or visit the official support channels.';
+      document.getElementById('infoModal').classList.remove('hidden');
+    }
+
+    function openTermsModal() {
+      document.getElementById('infoModalTitle').textContent = 'Terms of Service';
+      document.getElementById('infoModalBody').textContent = 'By using AAA Telegram, you agree to comply with standard Telegram API terms. You are solely responsible for compliance with Telegram rate limits and fair-usage policies.';
+      document.getElementById('infoModal').classList.remove('hidden');
+    }
+
+    function closeInfoModal() {
+      document.getElementById('infoModal').classList.add('hidden');
     }
 
     function openStatesModal() {
@@ -1838,7 +2124,7 @@
       document.getElementById('statesModal').classList.add('hidden');
     }
 
-    // 9. Toast Helper
+    // 13. Toast Notification Pill
     let toastTimeout;
     function showToast(msg) {
       triggerHaptic('medium');
@@ -1854,40 +2140,30 @@
       }, 2400);
     }
 
-    // 10. Theme Handling
-    function setTheme(mode) {
-      if (mode === 'dark') {
-        document.documentElement.classList.add('dark');
-        try { tg?.setHeaderColor('#0B1320'); tg?.setBackgroundColor('#0B1320'); } catch (_) {}
-      } else if (mode === 'light') {
-        document.documentElement.classList.remove('dark');
-        try { tg?.setHeaderColor('#F4F8FC'); tg?.setBackgroundColor('#F4F8FC'); } catch (_) {}
+    // 14. Initialize State on Load
+    window.addEventListener('DOMContentLoaded', () => {
+      // Restore theme
+      const savedTheme = localStorage.getItem('aaa_theme') || 'light';
+      if (savedTheme === 'dark') {
+        document.getElementById('themeRadioDark').checked = true;
+        setTheme('dark');
+      } else if (savedTheme === 'system') {
+        document.getElementById('themeRadioSystem').checked = true;
+        setTheme('system');
       } else {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.classList.toggle('dark', prefersDark);
+        document.getElementById('themeRadioLight').checked = true;
+        setTheme('light');
       }
-      showToast(`Appearance updated: ${mode}`);
-    }
 
-    // Country Picker Demo Toggle
-    const countries = [
-      { name: 'Bangladesh', code: '+880', flag: '🇧🇩' },
-      { name: 'United States', code: '+1', flag: '🇺🇸' },
-      { name: 'United Kingdom', code: '+44', flag: '🇬🇧' },
-      { name: 'United Arab Emirates', code: '+971', flag: '🇦🇪' },
-      { name: 'India', code: '+91', flag: '🇮🇳' },
-    ];
-    let countryIdx = 0;
-    function toggleCountryPicker() {
-      countryIdx = (countryIdx + 1) % countries.length;
-      const c = countries[countryIdx];
-      document.getElementById('selectedCountryLabel').textContent = c.name;
-      document.getElementById('selectedCountryCode').textContent = c.code;
-      showToast(`Selected ${c.name} (${c.code})`);
-    }
+      // Initial data render
+      renderDashboard();
+      renderAccounts();
+      renderSessions();
+      renderActivity();
 
-    // Default start
-    switchScreen('page-welcome', false);
+      // Start on Welcome screen
+      switchScreen('page-welcome', false);
+    });
   </script>
 </body>
 </html>

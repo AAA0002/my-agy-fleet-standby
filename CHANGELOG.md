@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Admin Bot Comprehensive Redesign, De-duplication & Interactive Mini App Reactive Upgrade (October 12, 2026)**:
+  - **👑 Admin Bot Complete Redesign (`@myagyai`)**:
+    * **Unified Single-Message Command Console**: Eliminated the redundant double-message spam on `/start` and `/menu`. The bot now sends a single authoritative operations panel with dynamic stats, Dhaka time, and streamlined inline controls.
+    * **Eliminated Duplicate Buttons**: Removed overlapping buttons between the persistent reply keyboard and inline keyboards. Compact 4-row reply keyboard provides instant access with zero duplication.
+    * **Direct Mini App Integration**: Integrated prominent 1-tap launch buttons for both the **AAA Telegram Mini App** (`https://agy-aaa000.vercel.app/`) and the **Fleet Admin Console** (`https://agy-aaa000.vercel.app/admin`).
+    * **In-Place Seamless Navigation**: Implemented clean `editMessageText` transitions with universal `[ 🔙 Back to Main Menu ]` buttons on all submenus (OTP menu, session audit, account management, wallets, cloud mesh), keeping chat history uncluttered.
+    * **Dedicated `/app` Command**: Added `/app` (and `/miniapp`) for instant direct access to the AAA Telegram Mini App.
+    * **Purged Decommissioned Scam Bot Clutter**: Removed dead buttons and obsolete handlers (`btn_burn`, `btn_art`, `btn_ultra`, `btn_apx`, `btn_bnb`, `btn_stones`), strictly harmonizing on the **5 active legitimate bots** (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network).
+    * **Cloudflare Edge 5-Node Synchronization**: Deployed live across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) and verified live webhook health (`HTTP 200 OK`).
+  - **📱 AAA Telegram Mini App Reactive State Engine Upgrade (`public_admin/index.html`)**:
+    * **Reactive State Store**: Implemented client-side state store (`state = { currentUser, accounts, sessions, activities, theme, notifications, language }`) driving all views dynamically.
+    * **Live Interactive CRUD**: Removing an account cleanly updates counts and shows Page 11 empty state if 0 accounts remain. Terminating a session live-updates device status, active/disconnected counters, and session specs.
+    * **Full Login Flow Integration**: Completing the 3-step authorization flow dynamically registers the new account into the fleet roster and creates an active session.
+    * **Account Switching**: "Set as Active Account" in Account Details instantly updates the Dashboard greeting, account attributes, and top avatar initials.
+    * **6-Box OTP Auto-Paste**: Pasting a 6-digit verification code automatically populates all 6 individual input boxes and triggers haptic feedback.
+    * **Interactive Country Selector**: Replaced static flag cycling with a modal sheet with instant search filtering across 11 countries.
+    * **Settings & Preferences**: Added interactive toggles for notifications, language selection sheet, and modal dialogs for Security Information, Privacy Information, and Help & Support.
+    * **Permanent Theme Persistence**: Theme selection (Light/Dark/System) saved in `localStorage.setItem('aaa_theme')` and restored on page boot.
+    * **Vercel Production Deployment**: Successfully deployed and verified at `https://agy-aaa000.vercel.app/` and `https://aaa-free-ai.vercel.app/`.
+
 - **💎 AAA Telegram — Premium Mini App UI Design & Vercel Deployment (October 12, 2026)**:
   - **🎨 Visual Design & Design System Standards**:
     * **Premium Light Theme**: Pure white surfaces (`#FFFFFF`), pale blue canvas background (`#F4F8FC`), deep navy typography (`#0E1E38`), and vivid Telegram-inspired blue accents (`#2481CC`).
