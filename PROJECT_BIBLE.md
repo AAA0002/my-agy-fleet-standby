@@ -128,33 +128,39 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   - Deployment: Managed via `./deploy_tgcloud.sh [TGCLOUD_TOKEN]` or `npx tgcloud push`. Webhook permanently synced to `https://cloud.telegram.org/app8858823950/webhook`.
 
 
-- **Render Cloud Fleet (Multi-Account Cloud MTProto Compute & Resilient Relay Mesh)**:
-  - Node 1: **Render Standby Node 1 (Singapore)**: `https://my-agy-fleet-standby.onrender.com`
+- **Render Cloud Fleet (The 3 Official Accounts — 600-650h Baton Relay & Anti-Ban Maintenance Mode)**:
+  - **Account 1: Node 1 (Singapore)**: `https://my-agy-fleet-standby.onrender.com`
     * Service ID: `srv-damuhkmgekts73f1osag` | Workspace: `My Workspace` (`tea-d8j9clt8nd3s73eb041g`, `coz1gameh1@gmail.com`)
-    * API Key: `RENDER_API_KEY_1: rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1` | Linked Repo: `https://github.com/AAA2743/my-agy-fleet-standby` (main)
-    * Status: 🟢 200 OK — Immutable standby compute node & failover MTProto token collector.
-  - Node 2: **Render Standby Node 2 (Frankfurt)**: `https://my-agy-fleet-standby-node2.onrender.com`
+    * API Key: `RENDER_API_KEY_1: rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1` | Linked Repo: `https://github.com/AAA0002/my-agy-fleet-standby` (main)
+    * Status: ⏸️ **Suspended** (0 hours consumed / cold standby). Protected user service `temp-mail-bot` (`srv-d8j9n867r5hc73dlqvgg`) is blacklisted and permanently isolated.
+  - **Account 2: Node 2 (Frankfurt)**: `https://my-agy-fleet-standby-node2.onrender.com`
     * Service ID: `srv-dan5q00ae00c73djummg` | Workspace: `Abid's workspace` (`tea-dan5pgbm8hqs73a5cvig`, `abidhasanch2001@gmail.com`)
     * API Key: `RENDER_API_KEY_2: rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB` | Linked Repo: `https://github.com/AAA0002/my-agy-fleet-standby` (main)
-    * Status: 🟢 200 OK — **Designated Primary MTProto Coordinator**. Holds `fleet:mtproto_coordinator` lock in Upstash Redis. Only this node connects Telethon in 30m background watchdog loops.
-  - Node 3: **Render Standby Node 3 (Oregon)**: `https://my-agy-fleet-standby-node3.onrender.com`
+    * Status: 🟢 **ACTIVE & ONLINE** — Designated Primary MTProto Coordinator.
+  - **Account 3: Node 3 (Oregon)**: `https://my-agy-fleet-standby-node3.onrender.com`
     * Service ID: `srv-db437o3tqb8s73dt4erg` | Workspace: `Koram's workspace` (`tea-daoj9nid0e5s738gqp0g`, `koramshah2@gmail.com`)
-    * API Key: `RENDER_API_KEY: rnd_PqsurfX5D9blSaEEuEDDAUcl393y` | Linked Repo: `https://github.com/koramshah2/my-agy-fleet-standby` (main)
-    * Status: 🟢 200 OK — Standby compute node. Idles when Node 2 holds coordinator lock, preventing `AuthKeyDuplicatedError`.
-  - **🛡️ Distributed Lock & Concurrency Guardrails**:
-    * `fleet:mtproto_coordinator`: 120s distributed lease in Upstash Redis. Prevents multi-continent Telethon connections.
-    * `fleet:lock:acc:{uid}`: 60s per-account atomic mutex. Guarantees no two processes connect to the same Telegram account simultaneously.
-    * `fleet:healthy_sessions` / `fleet:revoked_sessions`: Real-time session state sets in Upstash Redis driving Admin Bot status badges (`🟢` / `🔴`).
-  - Service 4: **Primary MTProto Relayer**: `https://atf-mtproto-relayer.onrender.com`
-    * Service Endpoint: `/wake` (🟢 ONLINE & AUTHENTICATED)
-    * Role: Dedicated 24/7 authenticated Telegram MTProto binary TCP socket bridge.
-  - Service 5: **Backup MTProto Relayer**: `https://atf-mtproto-relayer-backup.onrender.com`
-    * Service Endpoint: `/wake` (🟢 ONLINE & AUTHENTICATED)
-    * Role: Cold standby failover MTProto bridge for high-availability session extraction.
-  - Service 6: **Hermes Ari AI Council Agent**: `https://hermes-grok-cloud-agent.onrender.com`
-    * Service ID: `srv-daojdt5g1s2s738jsjmg` | Workspace: `Koram's workspace` (`tea-daoj9nid0e5s738gqp0g`, `koramshah2@gmail.com`)
-    * Service Key: `rnd_PqsurfX5D9blSaEEuEDDAUcl393y` | Linked Repo: `https://github.com/koramshah2/hermes-cloud-agent` (main)
-    * Status: 🟢 200 OK — Background AI intelligence worker running `autonomous_cloud_agent.py` (Multi-model Groq + Gemini council).
+    * API Key: `RENDER_API_KEY_3: rnd_PqsurfX5D9blSaEEuEDDAUcl393y` | Linked Repo: `https://github.com/koramshah2/my-agy-fleet-standby` (main)
+    * Status: ⏸️ **Suspended** (0 hours consumed / cold standby failover).
+  - **🔄 600–650 Hour Baton Relay Handover Protocol**:
+    * Render free tier grants 750 hours/month per account (1 calendar month = 744 hours).
+    * When a service is suspended via `POST /v1/services/{id}/suspend`, its hour meter freezes to 0.
+    * Active node tracks its monthly uptime in Upstash Redis (`fleet:uptime_hours:node{id}:{YYYY-MM}`).
+    * At **620 hours** (~Day 25/26), the active node automatically triggers a clean Baton Relay rotation to the next node in the ring (`Node 2 -> Node 3 -> Node 1 -> Node 2`).
+    * On the 1st of every month, Render automatically resets free tier hours to 750, ensuring infinite zero-cost runtime.
+  - **🛡️ Telegram Anti-Ban Maintenance Mode & Graceful Disconnect**:
+    * **Root Cause of Session Bans (`AuthKeyDuplicatedError`)**: Connecting to Telegram from two different cloud IPs simultaneously triggers immediate Telegram account revocation.
+    * **Maintenance Mode (5-Minute Cooling Buffer)**:
+      1. Rotation triggers `fleet:maintenance_mode = true` and `fleet:maintenance_until` (300 seconds) in Redis.
+      2. Telegram Admin Bot alert dispatched to `@myagyai`.
+      3. Destination node is resumed via Render API (`POST /v1/services/{new_id}/resume`).
+      4. Source node severes all MTProto sockets cleanly (`POST /api/fleet/disconnect-mtproto`).
+      5. Source node suspends itself (`POST /v1/services/{old_id}/suspend`) -> container stops, hours stop.
+      6. System enforces 5-minute cooldown where NO MTProto connections are made, allowing Telegram datacenter servers to completely flush old socket states and NAT bindings.
+      7. Maintenance Mode expires, new node promotes itself to active coordinator, and normal farming resumes on a clean single IP.
+  - **🌐 Dedicated Relayers & Auxiliary AI Services**:
+    * Primary MTProto Relayer: `https://atf-mtproto-relayer.onrender.com/wake` (🟢 ONLINE & AUTHENTICATED)
+    * Backup MTProto Relayer: `https://atf-mtproto-relayer-backup.onrender.com/wake` (🟢 ONLINE & AUTHENTICATED)
+    * Hermes Ari AI Council Agent: `https://hermes-grok-cloud-agent.onrender.com` (🟢 ONLINE, Koram account, Groq AI Council)
 
 - **GitHub Multi-Account CI/CD & Cloud Compute Fleet (4,000 Free Minutes/Month)**:
   - Account 1 (`AAA0002`):

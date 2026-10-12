@@ -142,18 +142,96 @@ NODE_INSTANCE_ID = (
     or ("render_node_" + hashlib.md5(str(os.getpid()).encode()).hexdigest()[:6])
 )
 
-# Render Node 2 (Frankfurt - Abid / srv-dan5q00ae00c73djummg) is prioritized primary coordinator
+# Render 3-Account Baton Relay Map
+RENDER_ACCOUNTS_MAP = {
+    1: {
+        "node": 1,
+        "name": "Render Node 1 (Singapore)",
+        "service_id": "srv-damuhkmgekts73f1osag",
+        "api_key": os.getenv("RENDER_API_KEY_1", "rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1"),
+        "url": "https://my-agy-fleet-standby.onrender.com"
+    },
+    2: {
+        "node": 2,
+        "name": "Render Node 2 (Frankfurt)",
+        "service_id": "srv-dan5q00ae00c73djummg",
+        "api_key": os.getenv("RENDER_API_KEY_2", "rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB"),
+        "url": "https://my-agy-fleet-standby-node2.onrender.com"
+    },
+    3: {
+        "node": 3,
+        "name": "Render Node 3 (Oregon)",
+        "service_id": "srv-db437o3tqb8s73dt4erg",
+        "api_key": os.getenv("RENDER_API_KEY_3") or os.getenv("RENDER_API_KEY", "rnd_PqsurfX5D9blSaEEuEDDAUcl393y"),
+        "url": "https://my-agy-fleet-standby-node3.onrender.com"
+    }
+}
+
+# Determine this node's default role
 IS_PRIMARY_HOST = (
     "node2" in NODE_INSTANCE_ID.lower()
     or "dan5q00ae00c73djummg" in NODE_INSTANCE_ID.lower()
     or os.getenv("IS_PRIMARY_COORDINATOR", "").lower() in ("1", "true")
 )
 
+async def get_active_render_node() -> str:
+    """Returns the designated active Render node from Upstash Redis (default: node2)."""
+    if not (UPSTASH_URL and UPSTASH_TOKEN):
+        return "node2"
+    try:
+        up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        async with aiohttp.ClientSession() as s:
+            async with s.get(f"{UPSTASH_URL}/get/fleet:active_render_node", headers=up_h, timeout=aiohttp.ClientTimeout(total=2)) as r:
+                if r.status == 200:
+                    d = await r.json()
+                    val = d.get("result")
+                    if val and val not in ("null", "false", "0", ""):
+                        return str(val).lower()
+    except Exception:
+        pass
+    return "node2"
+
+async def is_in_maintenance_mode() -> tuple[bool, str, int]:
+    """Checks if the fleet is in Maintenance Mode (during Render node rotation or cooldown).
+    Returns (in_maintenance, reason, seconds_remaining)."""
+    if not (UPSTASH_URL and UPSTASH_TOKEN):
+        return (False, "", 0)
+    try:
+        up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        async with aiohttp.ClientSession() as s:
+            async with s.get(f"{UPSTASH_URL}/get/fleet:maintenance_mode", headers=up_h, timeout=aiohttp.ClientTimeout(total=3)) as r:
+                if r.status == 200:
+                    d = await r.json()
+                    val = d.get("result")
+                    if val and val not in ("null", "false", "0", ""):
+                        async with s.get(f"{UPSTASH_URL}/get/fleet:maintenance_until", headers=up_h, timeout=aiohttp.ClientTimeout(total=3)) as r_u:
+                            until_ts = 0
+                            if r_u.status == 200:
+                                u_d = await r_u.json()
+                                try:
+                                    until_ts = float(u_d.get("result") or 0)
+                                except Exception:
+                                    until_ts = 0
+                            now = time.time()
+                            if until_ts > now:
+                                return (True, str(val), int(until_ts - now))
+                            else:
+                                await s.post(f"{UPSTASH_URL}/del/fleet:maintenance_mode", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+                                await s.post(f"{UPSTASH_URL}/del/fleet:maintenance_until", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+    except Exception as e:
+        logger.debug(f"[Maintenance Check] Note: {e}")
+    return (False, "", 0)
+
 async def acquire_coordinator_lock(ttl_seconds: int = 120) -> bool:
     """Acquires or refreshes distributed coordinator lock in Upstash Redis.
-    Only the node holding this lock will run 30m background watchdog MTProto tasks."""
+    Only the active node holding this lock will run background watchdog MTProto tasks."""
+    in_maint, _, _ = await is_in_maintenance_mode()
+    if in_maint:
+        return False
     if not (UPSTASH_URL and UPSTASH_TOKEN):
         return True
+    active_node = await get_active_render_node()
+    is_this_active = (active_node in NODE_INSTANCE_ID.lower()) or (IS_PRIMARY_HOST and active_node in ("node2", ""))
     try:
         up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
         async with aiohttp.ClientSession() as s:
@@ -162,18 +240,18 @@ async def acquire_coordinator_lock(ttl_seconds: int = 120) -> bool:
                 if r.status == 200:
                     data = await r.json()
                     cur_holder = data.get("result")
-                    if cur_holder == NODE_INSTANCE_ID or (IS_PRIMARY_HOST and cur_holder in (None, "", "null")):
+                    if cur_holder == NODE_INSTANCE_ID or (is_this_active and cur_holder in (None, "", "null")):
                         # Refresh lock
                         await s.post(f"{UPSTASH_URL}/set/fleet:mtproto_coordinator/{NODE_INSTANCE_ID}?ex={ttl_seconds}", headers=up_h, timeout=aiohttp.ClientTimeout(total=3))
                         return True
                     if cur_holder:
-                        # Another active node holds the lock
                         return False
             # 2. Key is empty; attempt atomic set-if-not-exists (NX)
-            async with s.post(f"{UPSTASH_URL}/set/fleet:mtproto_coordinator/{NODE_INSTANCE_ID}?nx=true&ex={ttl_seconds}", headers=up_h, timeout=aiohttp.ClientTimeout(total=3)) as r_nx:
-                if r_nx.status == 200:
-                    nx_res = await r_nx.json()
-                    return nx_res.get("result") == "OK"
+            if is_this_active:
+                async with s.post(f"{UPSTASH_URL}/set/fleet:mtproto_coordinator/{NODE_INSTANCE_ID}?nx=true&ex={ttl_seconds}", headers=up_h, timeout=aiohttp.ClientTimeout(total=3)) as r_nx:
+                    if r_nx.status == 200:
+                        nx_res = await r_nx.json()
+                        return nx_res.get("result") == "OK"
     except Exception as e:
         logger.debug(f"[Coordinator Lock] Note: {e}")
     return False
@@ -292,7 +370,141 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"ok": True, "status": "healthy"}
+    in_maint, reason, rem = await is_in_maintenance_mode()
+    return {
+        "ok": True,
+        "status": "maintenance" if in_maint else "healthy",
+        "in_maintenance": in_maint,
+        "maintenance_reason": reason if in_maint else None,
+        "cooldown_remaining_seconds": rem if in_maint else 0,
+        "node": NODE_INSTANCE_ID
+    }
+
+@app.get("/api/fleet/maintenance-status")
+async def api_maintenance_status():
+    """Returns the fleet maintenance state, remaining cooldown seconds, and active node."""
+    in_maint, reason, rem = await is_in_maintenance_mode()
+    active_node = await get_active_render_node()
+    return {
+        "ok": True,
+        "in_maintenance": in_maint,
+        "reason": reason,
+        "remaining_seconds": rem,
+        "active_node": active_node,
+        "this_node": NODE_INSTANCE_ID,
+        "timestamp": time.time()
+    }
+
+@app.post("/api/fleet/disconnect-mtproto")
+@app.get("/api/fleet/disconnect-mtproto")
+async def api_disconnect_mtproto():
+    """Immediately and cleanly disconnects all active Telethon MTProto sessions on this node."""
+    disconnected_count = 0
+    # Disconnect login sessions
+    for cid, sess in list(LOGIN_SESSIONS.items()):
+        cl = sess.get("client")
+        if cl:
+            try:
+                await cl.disconnect()
+                disconnected_count += 1
+            except Exception:
+                pass
+    LOGIN_SESSIONS.clear()
+
+    # Disconnect QR sessions
+    for cid, sess in list(QR_SESSIONS.items()):
+        cl = sess.get("client")
+        if cl:
+            try:
+                await cl.disconnect()
+                disconnected_count += 1
+            except Exception:
+                pass
+    QR_SESSIONS.clear()
+
+    logger.info(f"[MTProto Disconnect] 🔌 Severed {disconnected_count} active Telegram socket connections.")
+    return {
+        "ok": True,
+        "disconnected": disconnected_count,
+        "message": "All Telegram MTProto client sockets severed cleanly.",
+        "timestamp": time.time()
+    }
+
+async def _trigger_node_rotation(to_node: int, cooldown_seconds: int = 300):
+    """Executes the rotation from this node to target node with maintenance cooldown."""
+    cur_node_num = 2 if ("node2" in NODE_INSTANCE_ID.lower() or "dan5q00ae00c73djummg" in NODE_INSTANCE_ID.lower()) else (3 if "node3" in NODE_INSTANCE_ID.lower() else 1)
+    target = RENDER_ACCOUNTS_MAP.get(to_node)
+    current = RENDER_ACCOUNTS_MAP.get(cur_node_num)
+    if not target or not current:
+        logger.error(f"[Rotation] Invalid target node {to_node}")
+        return
+
+    logger.info(f"[Rotation] 🔄 Initiating handover: Node {cur_node_num} -> Node {to_node} ({cooldown_seconds}s cooldown)")
+
+    # 1. Enable Maintenance Mode in Redis
+    reason = f"Render Node Handover: Node {cur_node_num} -> Node {to_node}"
+    if UPSTASH_URL and UPSTASH_TOKEN:
+        up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        now = time.time()
+        until = now + cooldown_seconds
+        async with aiohttp.ClientSession() as s:
+            await s.post(f"{UPSTASH_URL}/set/fleet:maintenance_mode/{reason}?ex={cooldown_seconds + 60}", headers=up_h)
+            await s.post(f"{UPSTASH_URL}/set/fleet:maintenance_until/{until}?ex={cooldown_seconds + 60}", headers=up_h)
+
+    # 2. Telegram Alert
+    alert_txt = (
+        f"🟡 <b>[FLEET ROTATION] Maintenance Mode Activated</b>\n\n"
+        f"🔄 <b>Handover:</b> Node {cur_node_num} ➡️ Node {to_node}\n"
+        f"⏳ <b>Cooling Duration:</b> {cooldown_seconds // 60}m ({cooldown_seconds}s)\n"
+        f"🛡️ <b>Anti-Ban Safeguard:</b> All Telegram MTProto sockets disconnected to prevent dual-IP bans.\n"
+        f"⏸️ <b>Source Node:</b> Suspending container to freeze free tier hour usage."
+    )
+    if REPORT_BOT_TOKEN and REPORT_CHAT_ID:
+        try:
+            async with aiohttp.ClientSession() as s:
+                await s.post(f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage", json={"chat_id": REPORT_CHAT_ID, "text": alert_txt, "parse_mode": "HTML"})
+        except Exception:
+            pass
+
+    # 3. Resume target node via Render API
+    try:
+        r_headers = {"Authorization": f"Bearer {target['api_key']}", "Accept": "application/json"}
+        async with aiohttp.ClientSession() as s:
+            await s.post(f"https://api.render.com/v1/services/{target['service_id']}/resume", headers=r_headers, timeout=aiohttp.ClientTimeout(total=15))
+            logger.info(f"[Rotation] Resumed Node {to_node} ({target['service_id']})")
+    except Exception as re:
+        logger.error(f"[Rotation] Error resuming Node {to_node}: {re}")
+
+    # 4. Clean disconnect local MTProto
+    await api_disconnect_mtproto()
+
+    # 5. Suspend current node via Render API
+    try:
+        c_headers = {"Authorization": f"Bearer {current['api_key']}", "Accept": "application/json"}
+        async with aiohttp.ClientSession() as s:
+            await s.post(f"https://api.render.com/v1/services/{current['service_id']}/suspend", headers=c_headers, timeout=aiohttp.ClientTimeout(total=15))
+            logger.info(f"[Rotation] Suspended Node {cur_node_num} ({current['service_id']}). Hour meter frozen to 0!")
+    except Exception as se:
+        logger.error(f"[Rotation] Error suspending Node {cur_node_num}: {se}")
+
+@app.post("/api/fleet/rotate-node")
+async def api_rotate_node(request: Request):
+    """Triggers an atomic Baton Relay rotation to another Render node with Telegram Anti-Ban Maintenance Mode."""
+    data = {}
+    try:
+        data = await request.json()
+    except Exception:
+        pass
+    to_node = int(data.get("to_node", 3))
+    cooldown = int(data.get("cooldown_seconds", 300))
+    asyncio.create_task(_trigger_node_rotation(to_node=to_node, cooldown_seconds=cooldown))
+    return {
+        "ok": True,
+        "status": "rotation_initiated",
+        "target_node": to_node,
+        "cooldown_seconds": cooldown,
+        "message": f"Maintenance Mode cooling buffer active ({cooldown}s). Handing over to Node {to_node}."
+    }
 
 def format_error(e: Exception) -> str:
     """Helper for formatted error string (never returns empty string)."""
@@ -1220,10 +1432,17 @@ async def token_health_and_refresh_watchdog():
                 except Exception as hbe:
                     logger.warning(f"[Token Watchdog] Heartbeat ping error: {hbe}")
 
+            # 1.5 Anti-Ban Safeguard: Check Maintenance Mode
+            in_maint, reason, rem = await is_in_maintenance_mode()
+            if in_maint:
+                logger.info(f"[Token Watchdog] ⏸️ Fleet in MAINTENANCE MODE ({reason}). Cooldown: {rem}s remaining. Pausing MTProto.")
+                await asyncio.sleep(min(rem + 5, 60))
+                continue
+
             # 2. Check token freshness across all accounts (Primary MTProto Coordinator Only)
             is_coord = await acquire_coordinator_lock(ttl_seconds=1800)
             if not is_coord:
-                logger.info("[Token Watchdog] Standby node: primary coordinator active on Node 2; skipping background MTProto refresh.")
+                logger.info("[Token Watchdog] Standby node: not active coordinator; skipping background MTProto refresh.")
                 await asyncio.sleep(1800)
                 continue
 
@@ -5839,16 +6058,23 @@ async def api_cleanup_endpoint(request: Request):
 
 
 async def cloud_wealth_automation_watchdog():
-    """24/7 background watchdog executing scheduled cloud farming and autonomous sanitation in the cloud."""
+    """24/7 background watchdog executing scheduled cloud farming, autonomous sanitation, and 600-650h Baton Relay rotation."""
     global LAST_AUTO_CLEANUP_TS
-    logger.info("[Cloud Wealth Watchdog] Initialized 24/7 autonomous farming scheduler & auto clean-up engine...")
+    logger.info("[Cloud Wealth Watchdog] Initialized 24/7 autonomous farming scheduler, auto clean-up & Baton Relay engine...")
     await asyncio.sleep(60)
     cycle_count = 0
     while True:
         try:
+            # 1. Anti-Ban Safeguard: Check Maintenance Mode
+            in_maint, reason, rem = await is_in_maintenance_mode()
+            if in_maint:
+                logger.info(f"[Cloud Wealth Watchdog] ⏸️ Fleet in MAINTENANCE MODE ({reason}). Cooldown: {rem}s remaining. Idling.")
+                await asyncio.sleep(min(rem + 5, 60))
+                continue
+
             is_coord = await acquire_coordinator_lock(ttl_seconds=1800)
             if not is_coord:
-                logger.info("[Cloud Wealth Watchdog] Standby node: primary coordinator active on Node 2; idling.")
+                logger.info("[Cloud Wealth Watchdog] Standby node: not active coordinator; idling.")
                 await asyncio.sleep(1800)
                 continue
 
@@ -5866,7 +6092,7 @@ async def cloud_wealth_automation_watchdog():
                     except Exception as fe:
                         logger.error(f"[Cloud Wealth Watchdog] Farming error: {fe}")
 
-                    # 2. Automated Withdrawals & Sweepers Permanently Disabled by User Directive
+                    # 2. Automated Withdrawals Permanently Disabled by User Directive
                     pass
 
                     # 3. Autonomous Sanitation & Maintenance (Runs automatically every 6 hours)
@@ -5881,6 +6107,31 @@ async def cloud_wealth_automation_watchdog():
                             logger.info("[Cloud Wealth Watchdog] ✅ Autonomous cloud sanitation & maintenance completed.")
                         except Exception as ce:
                             logger.debug(f"[Cloud Wealth Watchdog] Auto clean-up note: {ce}")
+
+            # 4. Baton Relay 600-650h Rotation Monitor
+            cur_node_num = 2 if ("node2" in NODE_INSTANCE_ID.lower() or "dan5q00ae00c73djummg" in NODE_INSTANCE_ID.lower()) else (3 if "node3" in NODE_INSTANCE_ID.lower() else 1)
+            if UPSTASH_URL and UPSTASH_TOKEN:
+                try:
+                    now_utc = datetime.datetime.now(datetime.timezone.utc)
+                    month_str = now_utc.strftime("%Y-%m")
+                    uptime_key = f"fleet:uptime_hours:node{cur_node_num}:{month_str}"
+                    up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+                    # Each cycle is 0.5 hours (1800s)
+                    async with aiohttp.ClientSession() as s:
+                        await s.post(f"{UPSTASH_URL}/incrbyfloat/{uptime_key}/0.5", headers=up_h, timeout=aiohttp.ClientTimeout(total=3))
+                        async with s.get(f"{UPSTASH_URL}/get/{uptime_key}", headers=up_h, timeout=aiohttp.ClientTimeout(total=3)) as ur:
+                            if ur.status == 200:
+                                u_data = await ur.json()
+                                cur_hours = float(u_data.get("result") or 0)
+                                logger.info(f"[Baton Relay] Node {cur_node_num} monthly uptime: {cur_hours:.1f} / 750.0 hours (Threshold: 620.0h)")
+                                if cur_hours >= 620.0:
+                                    next_node = 3 if cur_node_num == 2 else (1 if cur_node_num == 3 else 2)
+                                    logger.warning(f"[Baton Relay] ⚠️ Node {cur_node_num} reached {cur_hours:.1f} hours! Triggering rotation to Node {next_node}...")
+                                    asyncio.create_task(_trigger_node_rotation(to_node=next_node, cooldown_seconds=300))
+                                    await asyncio.sleep(300)
+                                    continue
+                except Exception as ute:
+                    logger.debug(f"[Baton Relay] Uptime tracking note: {ute}")
 
         except Exception as e:
             logger.error(f"[Cloud Wealth Watchdog] Cycle error: {e}")

@@ -2,6 +2,25 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔄 Render 3-Account Baton Relay Handover & Telegram Anti-Ban Maintenance Mode (October 12, 2026)**:
+  - **📐 The 3 Official Render Accounts**:
+    * Strictly configured the 3 legitimate accounts: Node 1 (`coz1gameh1@gmail.com`, Singapore), Node 2 (`abidhasanch2001@gmail.com`, Frankfurt - Current Active), Node 3 (`koramshah2@gmail.com`, Oregon).
+    * Purged and isolated all other expired/revoked credentials and blacklisted user services (`temp-mail-bot`, `hermes-grok-cloud-agent`).
+  - **🛡️ Telegram Anti-Ban Maintenance Mode & 5-Minute Cooling Buffer**:
+    * Implemented distributed Maintenance Mode state in Upstash Redis (`fleet:maintenance_mode`, `fleet:maintenance_until`).
+    * When switching nodes, all Telegram MTProto client sockets are cleanly severed (`/api/fleet/disconnect-mtproto`).
+    * Old node container is suspended via Render API (`POST /v1/services/{id}/suspend`), freezing hour consumption to 0.
+    * New node container resumes via Render API (`POST /v1/services/{id}/resume`) and enforces a 5-minute cooling window before opening MTProto connections.
+    * This prevents Telegram datacenter servers from detecting multi-IP concurrency, eliminating `AuthKeyDuplicatedError` and session bans permanently.
+  - **⏱️ Automated 600–650h Baton Relay Handover**:
+    * Active node tracks monthly uptime hours in Upstash Redis (`fleet:uptime_hours:node{id}:{YYYY-MM}`).
+    * At **620 hours** (~Day 25/26), the active node automatically triggers a clean Baton Relay handover to the next node in the ring (`Node 2 -> Node 3 -> Node 1 -> Node 2`).
+    * On the 1st of every month, Render automatically resets free tier hours to 750, ensuring permanent zero-cost cloud runtime.
+  - **🛠️ Controller Tooling & Deployment**:
+    * Upgraded `render_failover_manager.py` with CLI controls (`status`, `rotate <from> <to>`, `suspend`, `resume`, `maint on/off`).
+    * Added `/api/fleet/maintenance-status`, `/api/fleet/disconnect-mtproto`, and `/api/fleet/rotate-node` endpoints to `render_standby_app.py`.
+    * Pushed updated code to GitHub standby repos `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby` and deployed live to Render Node 2 (`dep-db6hbj0n74is73a0e710`).
+
 - **🛡️ Permanent Multi-IP Conflict Resolution & Strict 1-IP Pinning Architecture (October 12, 2026)**:
   - **🔍 Root Cause of `AuthKeyDuplicatedError` Discovered**: Found that when accounts were relinked, multiple nodes (GitHub Actions on Microsoft Azure runners, Render Node 1 in Singapore, Render Node 3 in Oregon, and Render Node 2 in Frankfurt) were simultaneously attempting Telethon connections across three continents. Telegram detected concurrent multi-IP connections on the same session keys and immediately revoked them.
   - **🔒 Strict 1-IP Pinning Enforced**:
