@@ -211,23 +211,26 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   ---
 
   #### 👥 System 2: Normal User Telegram Ecosystem (Public Mining Platform & Community)
-  > 🛑 **MANDATORY DIRECTIVE — DO NOT TOUCH THE USER BOT**:
-  > Under NO circumstances should any AI agent (Antigravity, Claude, GPT, Gemini) modify, edit, redeploy, reconfigure, or tamper with the User Bot (`@AAAPREMIUMAPPSbot`), its Cloudflare edge webhook, its database bindings, or its user-facing community channels. It is strictly dedicated to public end-users and operates in 100% autonomous serving mode.
+  > 📢 **OPERATOR DIRECTIVE & OVERRIDE APPLIED (October 13, 2026)**:
+  > Commander Arif explicitly authorized the upgrade and modification of User Bot (`@AAAPREMIUMAPPSbot`) to mirror the multi-miner dashboard and frictionless account binding interface of `@Allbottesting_bot` ("ATE AUTO Mining"), enhanced with our sustainable **Points System** (100 Pts/day, +100 welcome points) and **Rewarded Video Ads Engine** (+20 Pts/ad, +1 permanent bonus account slot per 50 ads).
 
   - **User Bot Identity**: `@AAAPREMIUMAPPSbot` (Bot ID: `8167732110`, Token: `USER_BOT_TOKEN: 8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8`)
-    - Name: *AAA AUTO MINING*
-    - Live Webhook: `https://atf-miner-worker.agorameet.workers.dev/` (Cloudflare Worker Node 4)
-    - Role: User onboarding, public mining slot dashboard, referral tree rewards, in-bot ad rewards, and point tracking.
+    - Name: *AAA AUTO MINING (PREMIUM)*
+    - Live Webhook: `https://restore-agy.aaaai2.workers.dev/user-bot-webhook` (Multi-Edge Mesh on Cloudflare Worker Node 1)
+    - Role: Multi-bot cloud mining platform, modern dashboard (modeled after `@Allbottesting_bot`), per-pool management across 5 pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network), frictionless WebApp URL / `initData` query string account connector (0 SMS codes), Points economy (100 Pts/day), Rewarded Adsgram/Monetag video ads (+20 Pts), milestone slots (+1 slot per 50 ads), and Telegram Stars VIP passes.
+  - **Supported Mining Pools (5/5 Legitimate Pools)**:
+    1. ⚡ **MRG Miner** (`@mrgminerbot`)
+    2. 🪙 **ATF Miner** (`@ATF_AIRDROP_bot`)
+    3. 🏢 **Victor's Company** (`@VictorsCompanybot`)
+    4. 💧 **VyroDrop** (`@vyrodrop_bot`)
+    5. 🌐 **Kynex Network** (`@kynexnetworkbot`)
   - **User WebApp Frontend**: `https://atf-miner-app.pages.dev` (Cloudflare Pages)
   - **User Distributed Mining Engine**: `https://atf-mining-engine.aaaai.workers.dev` (Cloudflare Worker Node 5)
-  - **User Database & Cache**: Cloudflare D1 `atf-miner-db` (`2659c73b-8144-4f2a-9a06-ef2368a1ce7f`) + KV `atf-cache-kv` (`c712104ed5744835add7e97384da8c82`)
+  - **User Database & State**: Upstash Redis (`pleasant-locust-220893.upstash.io`) + Cloudflare D1 `atf-miner-db` (`2659c73b-8144-4f2a-9a06-ef2368a1ce7f`)
   - **User Session Security Key**: `USER_BOT_SESSION_ENCRYPTION_KEY: edf824a8b2d05d039839fdfcef84108c555459779f2d4ea3fca6e66a21ec056e`
-  - **User Community Group**: Chat ID: `-1003684868577` (*AAA Auto Miner*, `https://t.me/+8xTmE28Up9U5YWQ1`)
-    - Purpose: Public end-user community discussion, miner support, and questions.
-  - **Official Public Announcements**: Channel ID: `-1004255751168` (`@AAAATFAUTOMINING`, `https://t.me/AAAATFAUTOMINING`)
-    - Purpose: Official broadcasts, platform updates, airdrop news, and system maintenance alerts for end-users.
-  - **Live Public Miner Activity Stream**: Channel ID: `-1004332544939` (`@AAAATF_ACTIVITY`, `https://t.me/AAAATF_ACTIVITY`)
-    - Purpose: Real-time public user claims, level achievements, and active mining transactions stream.
+  - **User Community Group**: Chat ID: `-1003684868577` (*AAA Auto Miner*, `https://t.me/AAAAutoMiner`)
+  - **Official Public Announcements**: Channel ID: `-1004255751168` (`@AAAAUTOMINING`, `https://t.me/AAAAUTOMINING`)
+  - **Live Public Miner Activity Stream**: Channel ID: `-1004332544939` (`@AAA_ACTIVITY`, `https://t.me/AAA_ACTIVITY`)
 
 ### 🛰️ The Complete Master Catalog of Cloud Infrastructure & Verified APIs (from `.env`)
 

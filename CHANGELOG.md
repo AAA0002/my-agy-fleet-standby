@@ -2,6 +2,37 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 User Bot (`@AAAPREMIUMAPPSbot`) Upgraded to `@Allbottesting_bot` Multi-Miner Architecture + 18 Fleet Accounts Verified Active (October 13, 2026)**:
+  - **👑 Operator Directive & Rule Override Executed**:
+    * Commander Arif explicitly authorized overriding the legacy immutability directive to upgrade `@AAAPREMIUMAPPSbot` (`8167732110`) to match the multi-miner dashboard, per-pool management, and frictionless account-adding workflow of `@Allbottesting_bot` ("ATE AUTO Mining", ID: `8774301115`).
+  - **📊 Modern Multi-Miner Dashboard (Modeled after `@Allbottesting_bot`)**:
+    * Built dynamic dashboard card displaying User ID, connected account counts across the 5 legitimate pools (⚡ MRG, 🪙 ATF, 🏢 Victor's Company, 💧 VyroDrop, 🌐 Kynex Network), total fleet capacity (`X / Y Slots`), live points balance, runway duration (`~N days`), VIP Pass status, daily mining cost (`0 Pts/day` with pass or `100 Pts/day/account`), check-in streak, and active Sticky IP anti-ban status.
+  - **⛏️ 5 Legitimate Mining Pools Hub & Per-Pool Submenus**:
+    * Created interactive `⛏️ Mining Pools` menu with dedicated submenus for all 5 legitimate pools:
+      - ⚡ MRG Miner (`@mrgminerbot`)
+      - 🪙 ATF Miner (`@ATF_AIRDROP_bot`)
+      - 🏢 Victor's Company (`@VictorsCompanybot`)
+      - 💧 VyroDrop (`@vyrodrop_bot`)
+      - 🌐 Kynex Network (`@kynexnetworkbot`)
+    * Each pool features dedicated action buttons: `[ ➕ Add {Pool} Account ]`, `[ 📋 View Accounts ]`, `[ 🔙 Back to Pools ]`, and `[ 📊 Dashboard ]`.
+  - **⚡ Frictionless WebApp URL / `initData` Account Binding Flow (0 SMS Codes)**:
+    * Implemented instant WebApp URL parser: users copy the Telegram Mini App link (`#tgWebAppData=...` or raw query string) from any supported bot, paste it directly into `@AAAPREMIUMAPPSbot`, and the engine extracts user auth data without requiring phone numbers, login codes, or 2FA passwords.
+    * Prompts user for a unique account label (e.g., `main`, `phone2`, `airdrop1`), binds the account, applies anti-ban routing, and resumes 24/7 autonomous cloud farming.
+    * Retained full Cloud Phone Session Login as an alternate option for operators who prefer full MTProto credential linking.
+  - **💎 Sustainable Points Economy & Rewarded Video Ads Engine**:
+    * Unlike `@Allbottesting_bot` (which offers unmonetized/free access), our User Bot is powered by:
+      - **100 Pts/day per account** daily cost (first day free with +100 Welcome Points upon channel verification).
+      - **Rewarded Video Ads** via Adsgram & Monetag (+20 Pts/view, 15s cooldown).
+      - **Milestone Reward**: +1 Permanent Bonus Account Slot unlocked for every 50 ads watched.
+      - **Daily Check-In Streak**: +25 to +50 Pts every 24 hours.
+      - **Referral Engine**: +500 Pts per invited friend.
+      - **Telegram Stars VIP Passes**: 1-Day (15⭐), 7-Day (45⭐), 30-Day (120⭐) passes for zero-point daily fee and 2x ad multipliers.
+  - **🛰️ Live 18-Account Admin Fleet Status Verification**:
+    * Audited live Render Node 2 farm telemetry (`/api/farm/status`): **18/18 accounts verified 100% online and actively farming**, with genuine balances (e.g. Koram Shah: 2,308.8 MRG, Nancy: 928.3 ATF, Nathan: 938.7 ATF, Tanvir: 993.9 ATF) and active cooldown timers across all 5 pools. Zero accounts blocked or revoked.
+  - **☁️ Multi-Cloud Deployment & Synchronization**:
+    * Deployed updated Edge Worker across all 5 Cloudflare nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Synchronized User Bot Webhook to `https://restore-agy.aaaai2.workers.dev/user-bot-webhook`, persistent `🎬 Watch Ads` menu button, and official bot commands.
+
 - **⚡ Duplicate Button Removal, Fake Session Blocked Data Elimination & 100% Truthful Telemetry on `@myagyai` (October 13, 2026)**:
   - **🚫 Eliminated Duplicate ("Double") Buttons Across All Menus**:
     * **Session Audit Cleaned**: Removed redundant paired buttons per account (`[ 📱 QR #X ]` + `[ ⚡ Code #X ]`) which previously duplicated actions and confused operators on mobile devices. Replaced with a single clean `[ 🔑 Re-link #X ]` button triggering the on-screen native PIN Pad.
