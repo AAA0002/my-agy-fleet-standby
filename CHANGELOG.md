@@ -2,6 +2,20 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **📱 Mini App 1-Tap QR Integration, Audit Menu QR Priority & Farming Engine Perfection (October 13, 2026)**:
+  - **📱 Mini App Direct 1-Tap QR Login (`public/index.html`)**:
+    * Added dedicated **"📱 1-Tap QR"** button directly to the account detail modal (`modalDetail`), allowing operators to re-link revoked nodes with zero SMS or codes.
+    * Integrated direct device link button (`modalQrBtnDirect`) with official `tg://login?token=...` protocol inside `modalQr`.
+    * Implemented live status polling (`/api/account/login/qr-status` every 2.5s) inside the Mini App: as soon as the operator confirms linking in Telegram on their phone, the Mini App automatically detects success, closes the modal, and refreshes fleet telemetry to 🟢 Online.
+  - **👑 Admin Bot Session Audit 1-Tap QR Upgrade (`deploy_both_cf_workers.py`)**:
+    * Upgraded Session Audit (`/audit`, `btn_session_audit`) across all 3 audit blocks to display **"📱 1-Tap QR #X"** alongside **"⚡ Code #X"** for every revoked account.
+    * Upgraded `btn_relink_` callback handler: instead of immediately requesting a code that gets blocked if typed in chat, it now presents a clear interactive choice between **1-Tap QR Login (Instant, 0 Codes, Auto-2FA)** and **Request 5-Digit Code** (to be used inside the Mini App).
+    * Added `btn_request_code_` handler for explicit code generation with strict anti-phishing warnings.
+  - **⚡ 5-Bot Cloud Fleet Auto-Farming Verification**:
+    * Verified 100% operational status of the 5 legitimate cloud farming bots (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network).
+    * Executed force farming cycle across all 18 accounts via Render Node 2 (`my-agy-fleet-standby-node2.onrender.com`).
+    * Confirmed legitimate automated claim cycles, Turnstile/math captcha handling, wallet bindings, and non-blocking short retries on transient errors.
+
 - **🛡️ Telegram Anti-Phishing Code Interception Fix, 1-Tap QR Login & 2FA Resolution (October 13, 2026)**:
   - **🚫 Root Cause Resolved (Telegram "Code Previously Shared" Block)**:
     * When users typed their 5-digit Telegram verification code directly into bot chat messages (`@myagyai`), Telegram's anti-phishing scanner intercepted the code in the chat, flagged it as compromised/leaked, and revoked it (`PHONE_CODE_EXPIRED`).

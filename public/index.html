@@ -598,6 +598,10 @@
           <span>⚡</span>
           <span>Farm Node</span>
         </button>
+        <button id="modalBtnQrLogin" class="flex-1 min-h-[44px] py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold rounded-xl text-xs active:scale-95 transition text-center flex items-center justify-center gap-1 hidden">
+          <span>📱</span>
+          <span>1-Tap QR</span>
+        </button>
         <button id="modalBtnRelink" class="flex-1 min-h-[44px] py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-xl text-xs active:scale-95 transition text-center flex items-center justify-center gap-1 hidden">
           <span>🔄</span>
           <span>Re-link Node</span>
@@ -619,6 +623,9 @@
         <img id="modalQrImg" src="" alt="Wallet QR Code" class="w-44 h-44 rounded-lg shadow-2xs">
       </div>
       <p id="modalQrAddr" class="font-mono text-[10px] text-slate-600 break-all select-all bg-slate-50 p-2 rounded-lg border border-slate-200"></p>
+      <a id="modalQrBtnDirect" href="#" class="w-full min-h-[42px] py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs active:scale-95 transition hidden flex items-center justify-center gap-1.5 shadow-sm">
+        ⚡ Link Device in Telegram Now
+      </a>
       <button id="modalQrBtnCopy" class="w-full min-h-[42px] py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs active:scale-95 transition">
         📋 Copy Address
       </button>
@@ -1181,8 +1188,41 @@
       };
 
       const relinkBtn = document.getElementById('modalBtnRelink');
+      const qrLoginBtn = document.getElementById('modalBtnQrLogin');
       if (!isOnline) {
         relinkBtn.classList.remove('hidden');
+        if (qrLoginBtn) {
+          qrLoginBtn.classList.remove('hidden');
+          qrLoginBtn.onclick = async () => {
+            haptic();
+            qrLoginBtn.innerText = 'Connecting...';
+            try {
+              const qRes = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/qr-start', {
+                method: 'POST',
+                headers: {
+                  'Authorization': 'Bearer agy_cf_secret_7d36994e_2026',
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  chat_id: '6727787768',
+                  index: idx,
+                  secret: 'agy_cf_secret_7d36994e_2026'
+                })
+              });
+              const qData = await qRes.json();
+              if (qData && qData.ok && qData.url) {
+                closeModal('modalDetail');
+                openQrModal(`Telegram QR Login (Node #${padIdx})`, qData.url);
+              } else {
+                showToast(qData?.error || 'Could not start QR login');
+              }
+            } catch (_) {
+              showToast('Error connecting to QR service');
+            } finally {
+              qrLoginBtn.innerHTML = '<span>📱</span><span>1-Tap QR</span>';
+            }
+          };
+        }
         relinkBtn.onclick = async () => {
           haptic();
           relinkBtn.innerText = 'Connecting...';
@@ -1346,6 +1386,7 @@
         };
       } else {
         relinkBtn.classList.add('hidden');
+        if (qrLoginBtn) qrLoginBtn.classList.add('hidden');
       }
 
       openModal('modalDetail');
@@ -1360,16 +1401,50 @@
     });
 
     // QR Code Modal
+    let qrPollInterval = null;
     function openQrModal(title, address) {
       haptic();
+      if (qrPollInterval) { clearInterval(qrPollInterval); qrPollInterval = null; }
       document.getElementById('modalQrTitle').innerText = title;
       document.getElementById('modalQrAddr').innerText = address;
       document.getElementById('modalQrImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(address)}`;
-      document.getElementById('modalQrBtnCopy').onclick = () => copyToClipboard(address);
+      
+      const btnDirect = document.getElementById('modalQrBtnDirect');
+      const btnCopy = document.getElementById('modalQrBtnCopy');
+      
+      if (address.startsWith('tg://')) {
+        if (btnDirect) {
+          btnDirect.href = address;
+          btnDirect.classList.remove('hidden');
+        }
+        if (btnCopy) btnCopy.innerText = '📋 Copy Login Link';
+        let pollCount = 0;
+        qrPollInterval = setInterval(async () => {
+          pollCount++;
+          if (pollCount > 60) { clearInterval(qrPollInterval); qrPollInterval = null; return; }
+          try {
+            const sRes = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/qr-status?chat_id=6727787768');
+            const sData = await sRes.json();
+            if (sData && sData.ok && sData.status === 'success') {
+              clearInterval(qrPollInterval);
+              qrPollInterval = null;
+              closeModal('modalQr');
+              showToast('🎉 Node Authenticated & Connected via QR! 🟢');
+              loadTelemetry();
+            }
+          } catch (_) {}
+        }, 2500);
+      } else {
+        if (btnDirect) btnDirect.classList.add('hidden');
+        if (btnCopy) btnCopy.innerText = '📋 Copy Address';
+      }
+
+      btnCopy.onclick = () => copyToClipboard(address);
       openModal('modalQr');
     }
 
     document.getElementById('modalQrClose').addEventListener('click', () => {
+      if (qrPollInterval) { clearInterval(qrPollInterval); qrPollInterval = null; }
       closeModal('modalQr');
     });
 

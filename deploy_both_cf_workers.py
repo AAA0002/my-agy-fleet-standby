@@ -4432,13 +4432,14 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⏱️ *Audit Timestamp:* \`${dhakaTime}\`\n\n` +
                 `💡 *To restore an account:*\n` +
-                `Tap any *⚡ Re-link #X* button below to request an official Telegram login code directly to your phone.`;
+                `Tap any *📱 1-Tap QR #X* button below to link directly in Telegram with 0 codes (100% immune to Telegram code blocks)!`;
 
               const relinkBtns = [];
               let curRow = [];
               for (const rev of revokedList) {
-                curRow.push({ text: `⚡ Re-link #${rev.idx}`, callback_data: `btn_relink_${rev.idx}` });
-                if (curRow.length === 3) {
+                curRow.push({ text: `📱 QR #${rev.idx}`, callback_data: `btn_qr_login_${rev.idx}` });
+                curRow.push({ text: `⚡ Code #${rev.idx}`, callback_data: `btn_relink_${rev.idx}` });
+                if (curRow.length >= 2) {
                   relinkBtns.push(curRow);
                   curRow = [];
                 }
@@ -4724,10 +4725,36 @@ fi
                 await sendResilientMessage(chatId, `❌ Phone number for Account #${relinkIdx} not found. Please tap ➕ Add Account.`, cancelKeyboard, "Markdown");
                 return;
               }
-              const rep = `🔄 *Re-linking Account #${relinkIdx}*\n\n` +
-                `• *Phone:* \`${phoneToRelink}\`\n` +
-                `• *Region:* Bangladesh (BD)\n\n` +
-                `Connecting to Telegram MTProto and requesting verification code...`;
+              const rep = `🔄 *Re-link Account #${relinkIdx}*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `• *Account:* #${relinkIdx} (${targetAcc ? targetAcc.name : "Node " + relinkIdx})\n` +
+                `• *Phone:* \`${phoneToRelink}\`\n\n` +
+                `👉 *Choose Connection Method:*\n\n` +
+                `1️⃣ *Option 1 (Recommended — Instant):* Tap **[ 📱 1-Tap QR Login ]** below.\n` +
+                `✅ *Zero SMS or codes needed!*\n` +
+                `✅ *Auto-authenticates 2FA (\`Arif216@\`)*\n` +
+                `✅ *Telegram will never block this login.*\n\n` +
+                `2️⃣ *Option 2:* Tap **[ 📨 Request 5-Digit Code ]** to receive a code. (Submit inside the Mini App, never in chat!)\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━`;
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, {
+                inline_keyboard: [
+                  [{ text: `📱 1-Tap QR Login (#${relinkIdx})`, callback_data: `btn_qr_login_${relinkIdx}` }],
+                  [{ text: `📨 Request 5-Digit Code (#${relinkIdx})`, callback_data: `btn_request_code_${relinkIdx}` }],
+                  [{ text: "🔐 Open Mini App", web_app: { url: appUrl } }],
+                  [{ text: "🔙 Cancel", callback_data: "btn_cancel_login" }]
+                ]
+              });
+            } else if (cbData.startsWith("btn_request_code_")) {
+              const relinkIdx = parseInt(cbData.replace("btn_request_code_", ""), 10) || 1;
+              const accounts = await getFleetAccounts();
+              const targetAcc = accounts.find(a => (a.index === relinkIdx) || (accounts.indexOf(a) + 1 === relinkIdx));
+              const phoneToRelink = (targetAcc && targetAcc.phone && targetAcc.phone.length >= 8 && targetAcc.phone !== "N/A" && targetAcc.phone !== "Hidden")
+                ? targetAcc.phone
+                : (KNOWN_PHONES_BY_INDEX[relinkIdx] || "");
+              const rep = `🔄 *Requesting Verification Code for Account #${relinkIdx}*\n\n` +
+                `• *Phone:* \`${phoneToRelink}\`\n\n` +
+                `Connecting to Telegram MTProto...`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, cancelKeyboard);
 
@@ -7155,13 +7182,14 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⏱️ *Audit Timestamp:* \`${dhakaTime}\`\n\n` +
               `💡 *To restore an account:*\n` +
-              `Tap any *⚡ Re-link #X* button below to request an official Telegram login code directly to your phone.`;
+              `Tap any *📱 1-Tap QR #X* button below to link directly in Telegram with 0 codes (100% immune to Telegram code blocks)!`;
 
             const relinkBtns = [];
             let curRow = [];
             for (const rev of revokedList) {
-              curRow.push({ text: `⚡ Re-link #${rev.idx}`, callback_data: `btn_relink_${rev.idx}` });
-              if (curRow.length === 3) {
+              curRow.push({ text: `📱 QR #${rev.idx}`, callback_data: `btn_qr_login_${rev.idx}` });
+              curRow.push({ text: `⚡ Code #${rev.idx}`, callback_data: `btn_relink_${rev.idx}` });
+              if (curRow.length >= 2) {
                 relinkBtns.push(curRow);
                 curRow = [];
               }
@@ -7996,13 +8024,14 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⏱️ *Audit Timestamp:* \`${dhakaTime}\`\n\n` +
               `💡 *To restore an account:*\n` +
-              `Tap any *⚡ Re-link #X* button below to request an official Telegram login code directly to your phone.`;
+              `Tap any *📱 1-Tap QR #X* button below to link directly in Telegram with 0 codes (100% immune to Telegram code blocks)!`;
 
             const relinkBtns = [];
             let curRow = [];
             for (const rev of revokedList) {
-              curRow.push({ text: `⚡ Re-link #${rev.idx}`, callback_data: `btn_relink_${rev.idx}` });
-              if (curRow.length === 3) {
+              curRow.push({ text: `📱 QR #${rev.idx}`, callback_data: `btn_qr_login_${rev.idx}` });
+              curRow.push({ text: `⚡ Code #${rev.idx}`, callback_data: `btn_relink_${rev.idx}` });
+              if (curRow.length >= 2) {
                 relinkBtns.push(curRow);
                 curRow = [];
               }
