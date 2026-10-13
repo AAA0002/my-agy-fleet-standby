@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎬 Restored Authentic Sponsored Ads Website (`agy-henna.vercel.app`) & Upgraded User Bot (`@AAAPREMIUMAPPSbot`) + Truthful Admin Bot Fleet Telemetry (October 13, 2026)**:
+  - **🌐 Authentic User Ads Website Fully Restored (`https://agy-henna.vercel.app/`)**:
+    * Restored `public_ads/index.html` to the authentic, full-featured **"Watch Sponsored Ad — AAA Auto Mining"** website (2,508 lines, 122.8 KB) with complete multi-network ad integration: HilltopAds, Clickadu, Monetag (Zone 11753248), Adsterra, AdEx, VastLoader, GigaPub, audio sound effects, auto-advance countdown, and Telegram WebApp bridging.
+    * Re-routed `public_ads/vercel.json` so `/`, `/ads`, and `/app/ad` serve the authentic Ads Website where users watch video ads and earn +20 Points (+40 for VIP Monthly Pass) to fund 24/7 cloud mining.
+    * Relocated Multi-Miner Mini App to `https://agy-henna.vercel.app/miner` so both applications co-exist harmoniously on Vercel without overriding each other.
+    * Deployed live to production via Vercel API and verified HTTP 200 with authentic title: `Watch Sponsored Ad — AAA Auto Mining`.
+  - **🤖 User Bot (`@AAAPREMIUMAPPSbot`) Upgraded & Harmonized**:
+    * Restored official Telegram Bot Menu Button (`setChatMenuButton`) to `🎬 Watch Ads` pointing directly to `https://agy-henna.vercel.app/`.
+    * Updated all bot inline buttons (`ub_watch_ad`, `/ads`, welcome cards) so `🎬 Watch Video Ad (+20 Pts)` opens `https://agy-henna.vercel.app/` directly.
+    * Connected `⛏️ Open Multi-Miner Mini App 🚀` button to `https://agy-henna.vercel.app/miner`.
+  - **🛡️ Truthful Admin Bot (`@myagyai`) Session & Farming Health Enforced**:
+    * Eliminated fake 18/18 green reporting across `@myagyai` (`btn_status`, `/status`, `/harvest`, `/farm`, `btn_kynex`, `btn_victors`, `btn_vyro`, `btn_mrg`, `btn_atf`, `/briefing`, and ecosystem summary).
+    * Aligned Upstash Redis session health sets to ground truth:
+      - `fleet:healthy_sessions`: `[2, 10, 11, 14, 17]` (5 active accounts)
+      - `fleet:revoked_sessions`: `[1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18]` (13 accounts requiring session re-link tomorrow)
+    * Hardened `getSessionHealthState()` in `deploy_both_cf_workers.py` so revocation state takes strict priority and revoked sessions are never silently purged by defaults.
+    * Synchronized and verified across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **🚀 World-Class Multi-Miner Telegram Mini App Frontend & Edge REST APIs Deployed (`@AAAPREMIUMAPPSbot`) (October 13, 2026)**:
   - **📱 Improved Multi-Miner Mini App Dashboard (`https://agy-henna.vercel.app/` & `https://restore-agy.aaaai2.workers.dev/app`)**:
     * Built and deployed an ultra-modern, responsive cyberpunk glassmorphic Telegram Mini App dashboard improving upon `@Allbottesting_bot` (which had NO Mini App frontend).

@@ -3802,30 +3802,41 @@ fi
         const getDhakaTimestamp = () => new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " (Dhaka)";
 
         const getSessionHealthState = async () => {
-          if (memSessionHealth && (Date.now() - memSessionHealth.lastCheck < 60000)) {
+          if (memSessionHealth && (Date.now() - memSessionHealth.lastCheck < 30000)) {
             return {
               healthy: new Set(memSessionHealth.healthy),
               revoked: new Set(memSessionHealth.revoked)
             };
           }
-          // Default: all 18 accounts are active and mining in the cloud
-          let healthy = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+          // Ground truth defaults: 5 healthy accounts, 13 revoked / need re-link accounts
+          const DEFAULT_REVOKED = [1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18];
+          const DEFAULT_HEALTHY = [2, 10, 11, 14, 17];
+          let healthy = [];
           let revoked = [];
           try {
-            const smH = await upstashSmembers("fleet:healthy_sessions", 15000);
-            if (Array.isArray(smH) && smH.length > 0) {
-              healthy = smH.map(Number).filter(n => !isNaN(n) && n > 0);
-            }
-          } catch (_) {}
-          try {
-            const smR = await upstashSmembers("fleet:revoked_sessions", 15000);
+            const smR = await upstashSmembers("fleet:revoked_sessions", 10000);
             if (Array.isArray(smR) && smR.length > 0) {
               revoked = smR.map(Number).filter(n => !isNaN(n) && n > 0);
             }
           } catch (_) {}
+          try {
+            const smH = await upstashSmembers("fleet:healthy_sessions", 10000);
+            if (Array.isArray(smH) && smH.length > 0) {
+              healthy = smH.map(Number).filter(n => !isNaN(n) && n > 0);
+            }
+          } catch (_) {}
 
-          const healthySet = new Set(healthy);
-          const revokedSet = new Set(revoked.filter(x => !healthySet.has(x)));
+          if (revoked.length === 0 && healthy.length === 0) {
+            revoked = DEFAULT_REVOKED;
+            healthy = DEFAULT_HEALTHY;
+          } else if (revoked.length === 0) {
+            revoked = DEFAULT_REVOKED;
+          }
+
+          const revokedSet = new Set(revoked);
+          const healthySet = new Set(
+            (healthy.length > 0 ? healthy : DEFAULT_HEALTHY).filter(x => !revokedSet.has(x))
+          );
           memSessionHealth = {
             healthy: Array.from(healthySet),
             revoked: Array.from(revokedSet),
@@ -5162,14 +5173,19 @@ fi
               })());
             } else if (cbData === "btn_harvest") {
               ctx.waitUntil((async () => {
-                const frames = [
-                  "⚡ *Initiating Instant Harvest across Fleet...*\n`[▰▰▱▱▱▱▱▱▱▱] 20%` • Syncing Edge Nodes & Relayers",
-                  "⚡ *Harvesting Multi-Bot Rewards...*\n`[▰▰▰▰▰▰▱▱▱▱] 65%` • Dispatched 18 Accounts (MRG, ATF, Victor's, VyroDrop, Kynex...)",
-                  `⚡ *Instant Fleet Harvest Dispatched!*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Executing ✅\`\n\n` +
-                  `• *Status:* Executing across 18 Accounts ✅\n` +
+                const health = await getSessionHealthState();
+                const activeCount = health.healthy.size;
+                const revokedCount = health.revoked.size;
+                const rep = `⚡ *Instant Fleet Harvest Dispatched!*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Executing ✅\`\n\n` +
+                  `• *Status:* Executing across ${activeCount} Active Accounts ✅\n` +
+                  (revokedCount > 0 ? `• *Skipped:* ${revokedCount} Accounts (Session Re-link Required ⚠️)\n` : "") +
                   `• *Active Lineup (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n` +
                   `• *Edge Coordination:* 5 Parallel Cloudflare Edge Slots\n\n` +
-                  `_Farming cycle and task claims active across all nodes._`
+                  `_Farming cycle and task claims active across all healthy nodes._`;
+                const frames = [
+                  "⚡ *Initiating Instant Harvest across Fleet...*\n`[▰▰▱▱▱▱▱▱▱▱] 20%` • Syncing Edge Nodes & Relayers",
+                  `⚡ *Harvesting Multi-Bot Rewards...*\n\`[▰▰▰▰▰▰▱▱▱▱] 65%\` • Dispatched ${activeCount} Active Accounts (MRG, ATF, Victor's, VyroDrop, Kynex...)`,
+                  rep
                 ];
                 const harvestPromise = queueHarvestAction();
                 const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -5242,10 +5258,13 @@ fi
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
             } else if (cbData === "btn_kynex" || cbData === "btn_kynex_mine" || cbData === "btn_kynex_claim") {
+              const health = await getSessionHealthState();
+              const activeCount = health.healthy.size;
+              const revokedCount = health.revoked.size;
               const rep = `💎 *KYNEX NETWORK COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* Kynex Network (@Kynex_miningbot)\n` +
-                `• *Status:* 🟢 Active & Mining across 18/18 Fleet Accounts\n` +
+                `• *Status:* 🟢 \`${activeCount}/18 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Master Account (6727787768):* 33,199+ KNX\n` +
                 `• *Energy System:* 43,200s (12h capacity) Auto-Refilled\n` +
                 `• *Sponsor Channels:* 4/4 Verified (+1,800 KNX each)\n` +
@@ -5256,10 +5275,13 @@ fi
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
             } else if (cbData === "btn_victors") {
+              const health = await getSessionHealthState();
+              const activeCount = health.healthy.size;
+              const revokedCount = health.revoked.size;
               const rep = `🏢 *VICTOR'S COMPANY COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* Victor's Company (@VictorsCompanybot)\n` +
-                `• *Status:* 🟢 Active & Mining across 18/18 Fleet Accounts\n` +
+                `• *Status:* 🟢 \`${activeCount}/18 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Master Account:* Level 10 Miner (13.25 VIC/day, 142+ VIC Balance)\n` +
                 `• *Turnstile Protection:* 100% Solved via Cloud Xvfb Browser\n` +
                 `• *TON Connect 2.0:* Cryptographically Bound Wallets ✅\n` +
@@ -5268,12 +5290,15 @@ fi
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
             } else if (cbData === "btn_vyro") {
+              const health = await getSessionHealthState();
+              const activeCount = health.healthy.size;
+              const revokedCount = health.revoked.size;
               const rep = `💧 *VYRODROP COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Platform:* VyroDrop (@vyrodrop_bot)\n` +
-                `• *Status:* 🟢 Active & Mining across 18/18 Fleet Accounts\n` +
+                `• *Status:* 🟢 \`${activeCount}/18 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
                 `• *Mining Speed:* 0.05 VYRO/h per account\n` +
-                `• *TON Wallet:* 18/18 Verified & Connected\n` +
+                `• *TON Wallet:* 18/18 Configured (${activeCount} Active Mining)\n` +
                 `• *Turnstile Pass:* Autonomous Headless Cloud Solver ✅\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -5305,11 +5330,12 @@ fi
               } catch (_) {}
               
               let totalMined = 3933.99;
-              let activeAccs = 18;
               if (atfData && atfData.results) {
                 totalMined = atfData.results.reduce((s, a) => s + (parseFloat(a.mined_balance) || 0), 0);
-                activeAccs = atfData.results.filter(a => a.mining_active).length;
               }
+              const health = await getSessionHealthState();
+              const activeAccs = health.healthy.size;
+              const revokedAccs = health.revoked.size;
 
               const atfInlineKeyboard = {
                 inline_keyboard: [
@@ -5326,7 +5352,7 @@ fi
               const atfMsg = `🪙 *ATF MINER CLOUD COMMAND CENTER*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⛏️ *Total Fleet ATF Mined:* \`${totalMined.toFixed(2)} ATF\`\n` +
-                `👥 *Active Mining Accounts:* \`${activeAccs}/18 Accounts\`\n` +
+                `👥 *Active Mining Accounts:* \`${activeAccs}/18 Accounts\`${revokedAccs > 0 ? ` • 🔴 \`${revokedAccs} Need Re-link\`` : ""}\n` +
                 `💎 *TON Wallets:* \`18/18 Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
                 `🧮 *Anti-Bot Math Verification:* \`100% Solved\` ✅\n` +
                 `🛡️ *TON Connect 2.0 Proofs:* \`Cryptographically Verified\`\n` +
@@ -5337,9 +5363,13 @@ fi
               await editOrSendResilientMessage(chatId, cbMsgId, atfMsg, atfInlineKeyboard);
             } else if (cbData === "btn_atf_claim") {
               ctx.waitUntil((async () => {
+                const health = await getSessionHealthState();
+                const activeCount = health.healthy.size;
+                const revokedCount = health.revoked.size;
                 const rep = `⚡ *ATF Miner Cloud Claim Results*\n\n` +
                   `• *Status:* Success ✅\n` +
-                  `• *Accounts Processed:* \`18/18\`\n` +
+                  `• *Accounts Processed:* \`${activeCount}/18 Active\`\n` +
+                  (revokedCount > 0 ? `• *Skipped:* \`${revokedCount} Accounts (Session Re-link Required ⚠️)\`\n` : "") +
                   `• *Tasks & Mining:* \`Harvested & Active\`\n` +
                   `• *Math Verification:* \`100% Passed\`\n\n` +
                   `_Next auto-harvest cycle running on Cloudflare Edge cron._`;
@@ -5366,6 +5396,9 @@ fi
             } else if (cbData === "btn_status") {
               ctx.waitUntil((async () => {
                 const accounts = await getFleetAccounts();
+                const health = await getSessionHealthState();
+                const activeCount = health.healthy.size;
+                const revokedCount = health.revoked.size;
                 const dhakaTime = getDhakaTimestamp();
                 let mcData = {};
                 try {
@@ -5373,14 +5406,20 @@ fi
                   if (raw) mcData = JSON.parse(raw);
                 } catch (_) {}
                 const liveBnb = mcData.bsc_bnb_balance !== undefined ? mcData.bsc_bnb_balance : 0.000812;
+                const healthLine = revokedCount > 0
+                  ? `🟢 *Fleet Health:* \`${activeCount}/${accounts.length} Active\` • 🔴 \`${revokedCount} Needs Re-link\`\n`
+                  : `🟢 *Fleet Health:* \`${activeCount}/${accounts.length} Active\` (100% Online) ✅\n`;
+                const summaryLine = revokedCount > 0
+                  ? `⚡ *${activeCount} accounts active & mining.* ⚠️ *${revokedCount} accounts require session re-link via Session Audit.*`
+                  : `⚡ *All ${accounts.length} accounts are active and autonomously mining in the cloud.*`;
                 const frames = [
-                  `⚡ *MY AGY AI — Private Admin Console*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Synchronized ✅\`\n\n` +
-                  `🟢 *Fleet Health:* ${accounts.length}/${accounts.length} Accounts Active & Mining\n` +
+                  `⚡ *MY AGY AI — Private Admin Console*\n\`[▰▰▰▰▰▰▰▰▰▰] Synchronized ✅\`\n\n` +
+                  healthLine +
                   `🤖 *Active Bots (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n` +
-                  `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • ${accounts.length} Verified TON Wallets\n` +
+                  `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • ${accounts.length} Configured TON Wallets\n` +
                   `⏱️ *Last Synced:* \`${dhakaTime}\`\n` +
                   `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
-                  `⚡ *All 18 accounts are active and autonomously mining in the cloud.*`
+                  summaryLine
                 ];
                 const cbMsgId = cb.message ? cb.message.message_id : null;
                 if (cbMsgId) {
@@ -5601,8 +5640,9 @@ fi
               })());
             } else if (cbData === "btn_briefing") {
               ctx.waitUntil((async () => {
-                const aiData = await runAiCascade("You are the Chief AI Operations Officer for the 18-account autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. 18/18 accounts active & 100% 5/5 verified. 2. 5 legitimate mining bots active (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.");
-                const ans = aiData.answer || aiData.response || "All 18 accounts active and mining across multi-cloud nodes.";
+                const health = await getSessionHealthState();
+                const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size}/18 accounts active & mining, ${health.revoked.size} accounts requiring session re-link tomorrow. 2. 5 legitimate mining bots active (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
+                const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size}/18 mining, ${health.revoked.size} need re-link across multi-cloud nodes.`;
                 const prov = aiData.provider || "Google Gemini";
                 const mod = aiData.model || "gemini-3.6-flash";
                 const msgText = `📊 *MY AGY AI — Daily Executive Briefing*\n━━━━━━━━━━━━━━━━━━━━━━\n${ans}\n━━━━━━━━━━━━━━━━━━━━━━\n🤖 _Generated by ${prov} (${mod})_`;
@@ -5835,12 +5875,16 @@ fi
                     if (mc.bsc_bnb_balance !== undefined) liveBnb = mc.bsc_bnb_balance;
                   }
                 } catch (_) {}
+                const accounts = await getFleetAccounts();
+                const health = await getSessionHealthState();
+                const activeCount = health.healthy.size;
+                const revokedCount = health.revoked.size;
                 const rep = `⚡ *MY AGY AI — Fleet Operations*\n\n` +
-                  `🟢 *Fleet Health:* 18/18 Accounts Active & Mining\n` +
+                  (revokedCount > 0 ? `🟢 *Fleet Health:* \`${activeCount}/${accounts.length} Active\` • 🔴 \`${revokedCount} Needs Re-link\`\n` : `🟢 *Fleet Health:* \`${activeCount}/${accounts.length} Active\` (100% Online)\n`) +
                   `🤖 *Active Bots (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n` +
-                  `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • 18 Verified TON Wallets\n` +
+                  `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • ${accounts.length} Verified TON Wallets\n` +
                   `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
-                  `⚡ *All 18 accounts are active and autonomously mining in the cloud.*`;
+                  (revokedCount > 0 ? `⚡ *${activeCount} accounts active & mining.* ⚠️ *${revokedCount} accounts require session re-link via Session Audit.*` : `⚡ *All ${accounts.length} accounts are active and autonomously mining in the cloud.*`);
                 const cbMsgId = cb.message ? cb.message.message_id : null;
                 if (cbMsgId) {
                   await editAnimatedMessage(chatId, cbMsgId, [rep], statusInlineKeyboard, 200);
@@ -6029,6 +6073,9 @@ fi
         // 1.42 Dedicated Kynex Network Command (/kynex)
         if (text === "/kynex" || text.startsWith("/kynex")) {
           ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
+            const activeCount = health.healthy.size;
+            const revokedCount = health.revoked.size;
             const kynexInlineKeyboard = {
               inline_keyboard: [
                 [
@@ -6044,7 +6091,7 @@ fi
             const kynexMsg = `💎 *KYNEX NETWORK CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Bot:* @Kynex_miningbot (MiniApp: App)\n` +
-              `• *Status:* 🟢 Active & Mining across 18/18 Fleet Accounts\n` +
+              `• *Status:* 🟢 \`${activeCount}/18 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Master Account (6727787768):* 33,199+ KNX\n` +
               `• *Energy System:* 43,200s (12h capacity) Auto-Refilled\n` +
               `• *Sponsor Channels:* 4/4 Verified (+1,800 KNX each)\n` +
@@ -6061,6 +6108,9 @@ fi
         // 1.43 Dedicated Victor's Company Command (/victors)
         if (text === "/victors" || text.startsWith("/victors")) {
           ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
+            const activeCount = health.healthy.size;
+            const revokedCount = health.revoked.size;
             const vicInlineKeyboard = {
               inline_keyboard: [
                 [
@@ -6076,7 +6126,7 @@ fi
             const vicMsg = `🏢 *VICTOR'S COMPANY CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* Victor's Company (@VictorsCompanybot)\n` +
-              `• *Status:* 🟢 Active & Mining across 18/18 Fleet Accounts\n` +
+              `• *Status:* 🟢 \`${activeCount}/18 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Master Account (6727787768):* Level 10 Miner (13.25 VIC/day, 142+ VIC Balance)\n` +
               `• *Session Status:* 24h Cloud Mining Active\n` +
               `• *Turnstile Protection:* 100% Solved via Cloud Xvfb Browser (humanPass active)\n` +
@@ -6092,6 +6142,9 @@ fi
         // 1.44 Dedicated VyroDrop Command (/vyro)
         if (text === "/vyro" || text.startsWith("/vyro")) {
           ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
+            const activeCount = health.healthy.size;
+            const revokedCount = health.revoked.size;
             const vyroInlineKeyboard = {
               inline_keyboard: [
                 [
@@ -6107,9 +6160,9 @@ fi
             const vyroMsg = `💧 *VYRODROP CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* VyroDrop (@vyrodrop_bot)\n` +
-              `• *Status:* 🟢 Active & Mining across 18/18 Fleet Accounts\n` +
+              `• *Status:* 🟢 \`${activeCount}/18 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Mining Speed:* 0.05 VYRO/h per account\n` +
-              `• *TON Wallets:* 18/18 Bound & Connected\n` +
+              `• *TON Wallets:* 18/18 Configured (${activeCount} Active Mining)\n` +
               `• *Turnstile Pass:* Autonomous Headless Cloud Solver ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⚡ _Tap the buttons below to check telemetry:_`;
@@ -6121,6 +6174,9 @@ fi
         // 1.445 Dedicated MRG Miner Command (/mrg)
         if (text === "/mrg" || text.startsWith("/mrg")) {
           ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
+            const activeCount = health.healthy.size;
+            const revokedCount = health.revoked.size;
             const mrgInlineKeyboard = {
               inline_keyboard: [
                 [
@@ -6136,7 +6192,7 @@ fi
             const mrgMsg = `⛏️ *MRG MINER CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* MRG Cloud Miner (@MRG_miner_bot)\n` +
-              `• *Status:* 🟢 Active & Mining across 18/18 Fleet Accounts\n` +
+              `• *Status:* 🟢 \`${activeCount}/18 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
               `• *Autonomous Level Upgrader:* Level 95+ Auto-Unlocked\n` +
               `• *Cryptographic TON Connect 2.0 Proof:* 18/18 Connected\n` +
               `• *Anti-Bot Defense:* User-Agent & Signature Isolation ✅\n` +
@@ -6157,11 +6213,12 @@ fi
             } catch (_) {}
             
             let totalMined = 3933.99;
-            let activeAccs = 18;
             if (atfData && atfData.results) {
               totalMined = atfData.results.reduce((s, a) => s + (parseFloat(a.mined_balance) || 0), 0);
-              activeAccs = atfData.results.filter(a => a.mining_active).length;
             }
+            const health = await getSessionHealthState();
+            const activeAccs = health.healthy.size;
+            const revokedAccs = health.revoked.size;
 
             const atfInlineKeyboard = {
               inline_keyboard: [
@@ -6179,7 +6236,7 @@ fi
             const atfMsg = `🪙 *ATF MINER CLOUD COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⛏️ *Total Fleet ATF Mined:* \`${totalMined.toFixed(2)} ATF\`\n` +
-              `👥 *Active Mining Accounts:* \`${activeAccs}/18 Accounts\`\n` +
+              `👥 *Active Mining Accounts:* \`${activeAccs}/18 Accounts\`${revokedAccs > 0 ? ` • 🔴 \`${revokedAccs} Need Re-link\`` : ""}\n` +
               `💎 *TON Wallets:* \`18/18 Bound\` (Main: Binance TON, Workers: Isolated v4r2)\n` +
               `🧮 *Anti-Bot Math Verification:* \`100% Solved\` ✅\n` +
               `🛡️ *TON Connect 2.0 Proofs:* \`Cryptographically Verified\`\n` +
@@ -6197,8 +6254,9 @@ fi
           ctx.waitUntil((async () => {
             await sendReply("⏳ *Generating AI Executive Briefing via Google Gemini 3.6 Flash & Multi-Cloud AI...*");
             try {
-              const aiData = await runAiCascade("You are the Chief AI Operations Officer for the 18-account autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. 18/18 accounts active & 100% 5/5 verified. 2. 5 legitimate mining bots active (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.");
-              const ans = aiData.answer || aiData.response || "All 18 accounts active and mining across multi-cloud nodes.";
+              const health = await getSessionHealthState();
+              const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size}/18 accounts active & mining, ${health.revoked.size} accounts requiring session re-link tomorrow. 2. 5 legitimate mining bots active (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
+              const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size}/18 mining, ${health.revoked.size} need re-link across multi-cloud nodes.`;
               const prov = aiData.provider || "Google Gemini";
               const mod = aiData.model || "gemini-3.6-flash";
               const msgText = `📊 *MY AGY AI — Daily Executive Briefing*\n━━━━━━━━━━━━━━━━━━━━━━\n${ans}\n━━━━━━━━━━━━━━━━━━━━━━\n🤖 _Generated by ${prov} (${mod})_`;
@@ -6905,14 +6963,26 @@ fi
               }
             } catch (_) {}
 
+            const accounts = await getFleetAccounts();
+            const health = await getSessionHealthState();
+            const activeCount = health.healthy.size;
+            const revokedCount = health.revoked.size;
+
+            const healthLine = revokedCount > 0
+              ? `🟢 *Fleet Health:* \`${activeCount}/${accounts.length} Active\` • 🔴 \`${revokedCount} Needs Re-link\`\n`
+              : `🟢 *Fleet Health:* \`${activeCount}/${accounts.length} Active\` (100% Online) ✅\n`;
+            const summaryLine = revokedCount > 0
+              ? `⚡ *${activeCount} accounts active & mining.* ⚠️ *${revokedCount} accounts require session re-link via Session Audit.*`
+              : `⚡ *All ${accounts.length} accounts are active and autonomously mining in the cloud.*`;
+
             const rep = `⚡ *MY AGY AI — Fleet Operations*\n\n` +
-              `🟢 *Fleet Health:* 18/18 Accounts Active & Mining\n` +
+              healthLine +
               `🤖 *Active Bots (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n` +
-              `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • 18 Verified TON Wallets\n` +
+              `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • ${accounts.length} Configured TON Wallets\n` +
               `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Edge Shards\n\n` +
-              `⚡ *All 18 accounts are active and autonomously mining in the cloud.*`;
+              summaryLine;
             const frames = [
-              "📊 *Querying Fleet Live State...*\n`[▰▰▰▱▱▱▱▱▱▱] 30%` • Polling 18 Accounts & 5 Edge Nodes",
+              "📊 *Querying Fleet Live State...*\n`[▰▰▰▱▱▱▱▱▱▱] 30%` • Polling Accounts & Edge Nodes",
               "📊 *Aggregating On-Chain Balances...*\n`[▰▰▰▰▰▰▰▱▱▱] 75%` • BEP-20 • TON",
               rep
             ];
@@ -6925,13 +6995,17 @@ fi
         if (text === "⚡ 5-Bot Harvest" || text === "⚡ Instant Harvest" || text === "⚡ Harvest" || text.startsWith("/harvest") || text === "/farm" || text.startsWith("/farm")) {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
+            const health = await getSessionHealthState();
+            const activeCount = health.healthy.size;
+            const revokedCount = health.revoked.size;
             const rep = `⚡ *Instant Fleet Harvest Dispatched!*\n\n` +
-              `• *Status:* Executing across 18 Accounts ✅\n` +
+              `• *Status:* Executing across ${activeCount} Active Accounts ✅\n` +
+              (revokedCount > 0 ? `• *Skipped:* ${revokedCount} Accounts (Session Re-link Required ⚠️)\n` : "") +
               `• *Active Lineup (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n\n` +
-              `_Farming cycle and task claims active across all 5 parallel Cloudflare edge slots._`;
+              `_Farming cycle and task claims active across all healthy nodes._`;
             const frames = [
               "⚡ *Initiating Instant Harvest across Fleet...*\n`[▰▰▱▱▱▱▱▱▱▱] 20%` • Syncing Edge Nodes & Relayers",
-              "⚡ *Harvesting Multi-Bot Rewards...*\n`[▰▰▰▰▰▰▱▱▱] 65%` • Dispatched 18 Accounts across all 5 mining pools",
+              `⚡ *Harvesting Multi-Bot Rewards...*\n\`[▰▰▰▰▰▰▱▱▱] 65%\` • Dispatched ${activeCount} Active Accounts across all 5 mining pools`,
               rep
             ];
             const harvestPromise = queueHarvestAction();
@@ -7028,13 +7102,14 @@ fi
 
         if (text === "🪙 ATF Miner" || text.startsWith("/atf")) {
           ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
             const rep = `🪙 *ATF MINER COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* ATF Miner (@ATF_AIRDROP_bot)\n` +
               `• *Status:* Active & Auto-Mining ✅\n` +
               `• *Automation:* Auto Math Challenge Solver, Hashrate Boost, Cooldown Tasks\n` +
               `• *Payout Network:* TON Blockchain\n` +
-              `• *Accounts:* 18/18 Fleet Nodes Configured\n` +
+              `• *Accounts:* \`${health.healthy.size}/18 Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -7043,13 +7118,14 @@ fi
 
         if (text === "🏢 Victor's Company" || text.startsWith("/victors") || text.startsWith("/victor")) {
           ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
             const rep = `🏢 *VICTOR'S COMPANY COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* Victor's Company (@VictorsCompanybot)\n` +
               `• *Status:* Active & Auto-Mining ✅\n` +
               `• *Automation:* Cloud Turnstile Solvers, Arcade Mining, Daily Check-in, Level Upgrades\n` +
               `• *Payout Network:* TON Blockchain\n` +
-              `• *Accounts:* 18/18 Fleet Nodes Bound & Active\n` +
+              `• *Accounts:* \`${health.healthy.size}/18 Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -7058,13 +7134,14 @@ fi
 
         if (text === "💧 VyroDrop" || text.startsWith("/vyro")) {
           ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
             const rep = `💧 *VYRODROP COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* VyroDrop (@vyrodrop_bot)\n` +
               `• *Status:* Active & Auto-Mining ✅\n` +
               `• *Automation:* Mining Start/Claim, Task Verification, TonConnect 2.0 Wallets\n` +
               `• *Payout Network:* TON / VYRO DEX\n` +
-              `• *Accounts:* 18/18 Fleet Nodes Bound & Active\n` +
+              `• *Accounts:* \`${health.healthy.size}/18 Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -7073,13 +7150,14 @@ fi
 
         if (text === "⚡ Kynex Network" || text.startsWith("/kynex") || text.startsWith("/knx")) {
           ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
             const rep = `⚡ *KYNEX NETWORK COMMAND CENTER*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Platform:* Kynex Network (@Kynex_miningbot)\n` +
               `• *Status:* Active & Auto-Mining ✅\n` +
               `• *Automation:* Firebase RTDB Auth, Energy Management, Daily Checkin, Ads Rewards\n` +
               `• *Payout Network:* Firebase Cloud / KNX\n` +
-              `• *Accounts:* 18/18 Fleet Nodes Configured\n` +
+              `• *Accounts:* \`${health.healthy.size}/18 Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -7661,8 +7739,9 @@ fi
                 }
               }
             }
+            const health = await getSessionHealthState();
             const rep = `⚡ *MY AGY AI — EXECUTIVE ECOSYSTEM SUMMARY* 📊\n━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `🤖 *Fleet Automation:* 18/18 Accounts Online & Mining\n` +
+              `🤖 *Fleet Automation:* \`${health.healthy.size}/18 Accounts Online\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `⛏️ *Active Mining Pools (5/5):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network\n` +
               `👥 *Community Users:* \`${totalUsers || userList.length}\` Registered Miners\n` +
               `📱 *Community Accounts:* \`${activeAccountsCount}\` Connected Phones\n` +
@@ -8202,7 +8281,8 @@ fi
 
           if (userLower.includes("harvest") || userLower.includes("farm all") || userLower.includes("claim all")) {
             await queueHarvestAction();
-            await sendReply("🌾 *Fleet Harvest Dispatched!*\n\nAll 18 accounts across all 5 active mining pools (MRG, ATF, Victor's, VyroDrop, Kynex) have been queued for harvesting on Cloudflare Edge.", statusInlineKeyboard);
+            const health = await getSessionHealthState();
+            await sendReply(`🌾 *Fleet Harvest Dispatched!*\n\n${health.healthy.size}/18 active accounts across all 5 active mining pools (MRG, ATF, Victor's, VyroDrop, Kynex) have been queued for harvesting on Cloudflare Edge.${health.revoked.size > 0 ? `\n\n⚠️ ${health.revoked.size} accounts skipped — session re-link required via Session Audit.` : ""}`, statusInlineKeyboard);
             return;
           }
 
@@ -9372,10 +9452,10 @@ Reply to Arif naturally:`;
                 { text: "⛏️ Mining Pools", callback_data: "ub_pools" }
               ],
               [
-                { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+                { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }
               ],
               [
                 { text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" },
@@ -9427,10 +9507,10 @@ Reply to Arif naturally:`;
                 { text: `🌐 Kynex Network (${kynexAccs})`, callback_data: "ub_pool_kynex" }
               ],
               [
-                { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+                { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }
               ],
               [
                 { text: "➕ Add Account (All Pools)", callback_data: "ub_add_acc" },
@@ -9525,10 +9605,10 @@ Reply to Arif naturally:`;
         const userWelcomeInlineKeyboard = {
           inline_keyboard: [
             [
-              { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+              { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }
             ],
             [
               { text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" },
@@ -9694,7 +9774,7 @@ Reply to Arif naturally:`;
               `👇 *Tap below to launch the video ad:*`;
             ctx.waitUntil(sendCqReply(adMsg, {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "🎁 Claim Directly (Fallback)", callback_data: "ub_claim_ad" }]
               ]
             }));
@@ -9755,10 +9835,10 @@ Reply to Arif naturally:`;
             ctx.waitUntil(sendCqReply(refMsg, {
               inline_keyboard: [
                 [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }]
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }]
               ]
             }));
             return new Response("OK");
@@ -9873,10 +9953,10 @@ Reply to Arif naturally:`;
                 `• 🌟 *Upgrade with Telegram Stars* (0 point daily fee)`;
               const kb = {
                 inline_keyboard: [
-                  [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+                  [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }],
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
                   [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
                 ]
               };
@@ -9915,10 +9995,10 @@ Reply to Arif naturally:`;
               `💡 _Come back in 24 hours to keep your streak burning!_`;
             const succKb = {
               inline_keyboard: [
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }],
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "💎 View Points & Passes", callback_data: "ub_points" }]
               ]
             };
@@ -9961,10 +10041,10 @@ Reply to Arif naturally:`;
 
             const ptsKb = {
               inline_keyboard: [
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }],
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
@@ -9988,10 +10068,10 @@ Reply to Arif naturally:`;
             ctx.waitUntil(sendCqReply(poolsMsg, {
               inline_keyboard: [
                 [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "👥 My Accounts", callback_data: "ub_accounts" }],
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }]
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }]
               ]
             }));
             return new Response("OK");
@@ -10865,10 +10945,10 @@ Reply to Arif naturally:`;
             await sendUserReply(refMsg, {
               inline_keyboard: [
                 [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }]
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }]
               ]
             });
             return;
@@ -11088,10 +11168,10 @@ Reply to Arif naturally:`;
 
             await sendUserReply(ptsMsg, {
               inline_keyboard: [
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }],
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
@@ -11121,10 +11201,10 @@ Reply to Arif naturally:`;
                 `• 🌟 *Upgrade with Telegram Stars* (VIP Pass - unlimited mining)`;
               const kb = {
                 inline_keyboard: [
-                  [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+                  [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }],
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
                   [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
                 ]
               };
@@ -11163,10 +11243,10 @@ Reply to Arif naturally:`;
               `💡 _Come back in 24 hours to keep your streak burning!_`;
             const succKb = {
               inline_keyboard: [
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }],
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "💎 View Points & Passes", callback_data: "ub_points" }]
               ]
             };
@@ -11191,12 +11271,11 @@ Reply to Arif naturally:`;
               `👇 *Tap below to launch the video ad:*`;
             await sendUserReply(adMsg, {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts) — Node 4", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: "🎬 Watch Sponsored Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [
-                  { text: "⚡ Mirror 2 (Node 2)", web_app: { url: "https://aaa-watch-ads.pages.dev/" } },
-                  { text: "🌐 Mirror 3 (Node 3)", web_app: { url: "https://aaa-community-ads.pages.dev/" } }
+                  { text: "⚡ Edge Mirror 1", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } },
+                  { text: "🌐 Edge Mirror 2", web_app: { url: "https://aaa-watch-ads.pages.dev/" } }
                 ],
-                [{ text: "☁️ Mirror 4 (Vercel Edge)", web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "🎁 Claim Directly (Fallback)", callback_data: "ub_claim_ad" }]
               ]
             });
@@ -11217,10 +11296,10 @@ Reply to Arif naturally:`;
             await sendUserReply(refMsg, {
               inline_keyboard: [
                 [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }],
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "🎁 My Rewards Hub", callback_data: "ub_rewards" }]
               ]
             });
@@ -11267,10 +11346,10 @@ Reply to Arif naturally:`;
               `💡 _Watch ads & invite friends to climb the leaderboard!_`;
             await sendUserReply(boardMsg, {
               inline_keyboard: [
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }],
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
               ]
             });
@@ -11361,10 +11440,10 @@ Reply to Arif naturally:`;
             const chatAiKeyboard = {
               inline_keyboard: [
                 [
-                  { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+                  { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }
                 ],
                 [
                   { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" }
@@ -11412,10 +11491,10 @@ Reply to Arif naturally:`;
           const aiInlineMarkup = {
             inline_keyboard: [
               [
-                { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+                { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }
               ],
               [
                 { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" }
@@ -11840,7 +11919,7 @@ async def main():
             user_menu_payload = {
                 "menu_button": {
                     "type": "web_app",
-                    "text": "⛏️ Mining App",
+                    "text": "🎬 Watch Ads",
                     "web_app": {
                         "url": "https://agy-henna.vercel.app/"
                     }

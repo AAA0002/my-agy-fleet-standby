@@ -33,6 +33,7 @@ ADMIN_FILES = [
 ADS_FILES = [
     ('index.html', 'public_ads/index.html'),
     ('app/ad/index.html', 'public_ads/app/ad/index.html'),
+    ('miner/index.html', 'public_ads/miner/index.html'),
     ('assets/banner.jpg', 'public_ads/assets/banner.jpg'),
     ('shared/waterfallController.js', 'public_ads/shared/waterfallController.js'),
     ('shared/gigapubController.js', 'public_ads/shared/gigapubController.js'),
