@@ -3923,6 +3923,47 @@ fi
 
         const meshInlineKeyboard = mainInlineKeyboard;
 
+        const buildPinPadKeyboard = (currentDigits = "", accountIndex = 1) => {
+          const digitsStr = String(currentDigits || "");
+          const slots = [0, 1, 2, 3, 4].map(i => digitsStr[i] ? digitsStr[i] : "•").join("  ");
+          const padIdx = accountIndex < 10 ? "0" + accountIndex : accountIndex;
+
+          return {
+            inline_keyboard: [
+              [
+                { text: `🔑 Code: [  ${slots}  ]`, callback_data: "pin_ignore" }
+              ],
+              [
+                { text: "1", callback_data: "pin_digit_1" },
+                { text: "2", callback_data: "pin_digit_2" },
+                { text: "3", callback_data: "pin_digit_3" }
+              ],
+              [
+                { text: "4", callback_data: "pin_digit_4" },
+                { text: "5", callback_data: "pin_digit_5" },
+                { text: "6", callback_data: "pin_digit_6" }
+              ],
+              [
+                { text: "7", callback_data: "pin_digit_7" },
+                { text: "8", callback_data: "pin_digit_8" },
+                { text: "9", callback_data: "pin_digit_9" }
+              ],
+              [
+                { text: "⌫ Del", callback_data: "pin_backspace" },
+                { text: "0", callback_data: "pin_digit_0" },
+                { text: "✅ Verify", callback_data: "pin_submit" }
+              ],
+              [
+                { text: "🔐 Open Mini App Login Portal ↗️", web_app: { url: `${appUrl}?action=login&index=${accountIndex}` } }
+              ],
+              [
+                { text: `📱 Switch to 1-Tap QR (#${padIdx})`, callback_data: `btn_qr_login_${accountIndex}` },
+                { text: "❌ Cancel", callback_data: "btn_cancel_login" }
+              ]
+            ]
+          };
+        };
+
         const cancelKeyboard = {
           keyboard: [
             [
@@ -4361,7 +4402,147 @@ fi
           }).catch(() => {});
 
           if (chatId) {
-            if (cbData === "btn_back_main" || cbData === "btn_refresh_menu") {
+            if (cbData.startsWith("pin_digit_") || cbData === "pin_backspace" || cbData === "pin_submit" || cbData === "pin_clear" || cbData === "pin_ignore") {
+              if (cbData === "pin_ignore") {
+                await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ callback_query_id: cbId, text: "Tap digits 0-9 below to enter verification code" })
+                }).catch(() => {});
+                return new Response("OK");
+              }
+
+              let flowData = memLoginFlow.get(String(chatId));
+              if (!flowData) {
+                try {
+                  const raw = await upstashGet("login_flow:" + chatId);
+                  if (raw) flowData = typeof raw === "string" ? JSON.parse(raw) : raw;
+                } catch (_) {}
+              }
+
+              if (!flowData || flowData.step !== "waiting_code") {
+                await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ callback_query_id: cbId, text: "No active verification session. Tap Re-link to start.", show_alert: true })
+                }).catch(() => {});
+                return new Response("OK");
+              }
+
+              let currentDigits = String(flowData.pinDigits || "");
+              const targetIdx = Number(flowData.index) || 1;
+              const phoneToRelink = flowData.phone || (KNOWN_PHONES_BY_INDEX[targetIdx] || "");
+
+              if (cbData.startsWith("pin_digit_")) {
+                const d = cbData.replace("pin_digit_", "");
+                if (currentDigits.length < 5) {
+                  currentDigits += d;
+                }
+              } else if (cbData === "pin_backspace") {
+                currentDigits = currentDigits.slice(0, -1);
+              } else if (cbData === "pin_clear") {
+                currentDigits = "";
+              }
+
+              flowData.pinDigits = currentDigits;
+              memLoginFlow.set(String(chatId), flowData);
+              ctx.waitUntil(upstashSet("login_flow:" + chatId, flowData));
+
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+
+              if (currentDigits.length === 5 || (cbData === "pin_submit" && currentDigits.length >= 3)) {
+                await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ callback_query_id: cbId, text: `Verifying code ${currentDigits}...` })
+                }).catch(() => {});
+
+                const verifyingRep = `🔄 *Verifying Telegram Code \`${currentDigits}\` on cloud cluster...*\n\n` +
+                  `• *Account:* #${targetIdx}\n` +
+                  `• *Target Phone:* \`${phoneToRelink}\`\n` +
+                  `• *Auto-Authenticating 2FA:* \`Arif216@\`\n\n` +
+                  `_Connecting to MTProto socket... please wait < 2 seconds..._`;
+                await editOrSendResilientMessage(chatId, cbMsgId, verifyingRep, null);
+
+                const res = await cloudLoginVerify(chatId, {
+                  code: currentDigits,
+                  phone: phoneToRelink,
+                  node_url: flowData.node_url,
+                  index: targetIdx
+                });
+
+                if (res && res.need_2fa) {
+                  for (const fallbackPw of ["Arif216@", "Arif-Abid"]) {
+                    const res2fa = await cloudLoginVerify(chatId, {
+                      password: fallbackPw,
+                      phone: phoneToRelink,
+                      node_url: flowData.node_url,
+                      index: targetIdx
+                    });
+                    if (res2fa && res2fa.ok) {
+                      memLoginFlow.delete(String(chatId));
+                      ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
+                      if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
+                      ctx.waitUntil(unBlacklistAccount(res2fa.user_id, res2fa.phone || phoneToRelink, res2fa.name || "User"));
+                      ctx.waitUntil(onAccountRelinkSuccess(targetIdx));
+                      const succMsg = `🎉 *Account #${targetIdx} Authenticated & Connected!* 🟢\n\n` +
+                        `• *Name:* ${res2fa.name || "User"}\n` +
+                        `• *Username:* @${res2fa.username || "None"}\n` +
+                        `• *User ID:* \`${res2fa.user_id}\`\n` +
+                        `• *Phone:* \`${res2fa.phone || phoneToRelink}\`\n` +
+                        `• *2FA:* ✅ Auto-authenticated with \`${fallbackPw}\`\n\n` +
+                        `✅ *100% Cloud MTProto Active!*\nAll 5 autonomous farming bots are online 24/7 in the cloud.`;
+                      await sendResilientMessage(chatId, succMsg, mainKeyboard, "Markdown");
+                      return new Response("OK");
+                    }
+                  }
+                }
+
+                if (res && res.ok) {
+                  memLoginFlow.delete(String(chatId));
+                  ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
+                  if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
+                  ctx.waitUntil(unBlacklistAccount(res.user_id, res.phone || phoneToRelink, res.name || "User"));
+                  ctx.waitUntil(onAccountRelinkSuccess(targetIdx));
+                  const succMsg = `🎉 *Account #${targetIdx} Authenticated & Connected!* 🟢\n\n` +
+                    `• *Name:* ${res.name || "User"}\n` +
+                    `• *Username:* @${res.username || "None"}\n` +
+                    `• *User ID:* \`${res.user_id}\`\n` +
+                    `• *Phone:* \`${res.phone || phoneToRelink}\`\n` +
+                    `• *2FA:* ✅ Auto-authenticated with \`Arif216@\`\n\n` +
+                    `✅ *100% Cloud MTProto Active!*\nAll 5 autonomous farming bots are online 24/7 in the cloud.`;
+                  await sendResilientMessage(chatId, succMsg, mainKeyboard, "Markdown");
+                  return new Response("OK");
+                }
+
+                flowData.pinDigits = "";
+                memLoginFlow.set(String(chatId), flowData);
+                ctx.waitUntil(upstashSet("login_flow:" + chatId, flowData));
+                const errDetail = res ? (res.error || res.message) : "Verification code rejected";
+                const failRep = `❌ *Verification Failed*\n\n` +
+                  `*Error:* ${errDetail}\n\n` +
+                  `• *Target Phone:* \`${phoneToRelink}\`\n\n` +
+                  `Please check the code on your phone and tap digits on the PIN Pad below to try again:`;
+                await editOrSendResilientMessage(chatId, cbMsgId, failRep, buildPinPadKeyboard("", targetIdx));
+                return new Response("OK");
+              }
+
+              await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ callback_query_id: cbId })
+              }).catch(() => {});
+
+              const slots = [0, 1, 2, 3, 4].map(i => currentDigits[i] ? currentDigits[i] : "•").join("  ");
+              const rep = `📨 *Verification Code Sent for Account #${targetIdx}!*\n\n` +
+                `Telegram sent a 5-digit verification code to \`${phoneToRelink}\`.\n\n` +
+                `⌨️ *TAP DIGITS ON PIN PAD KEYPAD BELOW:*\n` +
+                `• Zero text typing in chat = 100% immune to Telegram anti-phishing blocks!\n` +
+                `• 2FA password (\`Arif216@\`) will be applied automatically upon 5th digit.\n\n` +
+                `🔑 *Code:* \`[  ${slots}  ]\``;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, buildPinPadKeyboard(currentDigits, targetIdx));
+              return new Response("OK");
+            } else if (cbData === "btn_back_main" || cbData === "btn_refresh_menu") {
               const dhakaTime = getDhakaTimestamp();
               const rep = await renderMainMenuText(dhakaTime);
               const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -4603,6 +4784,14 @@ fi
               };
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, repMarkup);
+            } else if (cbData === "btn_cancel_login") {
+              memLoginFlow.delete(String(chatId));
+              ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
+              if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
+              ctx.waitUntil(cloudLoginCancel(chatId));
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              const rep = `❌ *Login Session Cancelled*\n\nReturning to Main Fleet Hub.`;
+              await editOrSendResilientMessage(chatId, cbMsgId, rep, mainInlineKeyboard);
             } else if (cbData === "btn_otp_menu") {
               const accounts = await getFleetAccounts();
               const health = await getSessionHealthState();
@@ -4785,18 +4974,17 @@ fi
                 `• *Account:* #${relinkIdx} (${targetAcc ? targetAcc.name : "Node " + relinkIdx})\n` +
                 `• *Phone:* \`${phoneToRelink}\`\n\n` +
                 `👉 *Choose Connection Method:*\n\n` +
-                `1️⃣ *Option 1 (Recommended — Instant):* Tap **[ 📱 1-Tap QR Login ]** below.\n` +
-                `✅ *Zero SMS or codes needed!*\n` +
-                `✅ *Auto-authenticates 2FA (\`Arif216@\`)*\n` +
-                `✅ *Telegram will never block this login.*\n\n` +
-                `2️⃣ *Option 2:* Tap **[ 📨 Request 5-Digit Code ]** to receive a code. (Submit inside the Mini App, never in chat!)\n` +
+                `1️⃣ *Option 1 (Interactive PIN Pad — Recommended):*\n` +
+                `Tap **[ 📨 Request Code & Open PIN Pad ]** below. Telegram sends a 5-digit code, and you tap it directly on the on-screen keypad with zero chat typing!\n\n` +
+                `2️⃣ *Option 2 (Mini App Portal):* Tap **[ 🔐 Open Mini App Login Portal ]**.\n` +
+                `3️⃣ *Option 3 (QR Link):* Tap **[ 📱 1-Tap QR Login ]**.\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, {
                 inline_keyboard: [
+                  [{ text: `📨 Request Code & Open PIN Pad (#${relinkIdx})`, callback_data: `btn_request_code_${relinkIdx}` }],
+                  [{ text: "🔐 Open Mini App Login Portal ↗️", web_app: { url: `${appUrl}?action=login&index=${relinkIdx}` } }],
                   [{ text: `📱 1-Tap QR Login (#${relinkIdx})`, callback_data: `btn_qr_login_${relinkIdx}` }],
-                  [{ text: `📨 Request 5-Digit Code (#${relinkIdx})`, callback_data: `btn_request_code_${relinkIdx}` }],
-                  [{ text: "🔐 Open Mini App", web_app: { url: appUrl } }],
                   [{ text: "🔙 Cancel", callback_data: "btn_cancel_login" }]
                 ]
               });
@@ -4815,7 +5003,7 @@ fi
 
               const res = await cloudLoginSendCode(phoneToRelink, chatId);
               if (res && res.ok) {
-                const flowData = { step: "waiting_code", phone: phoneToRelink, node_url: res.node_url || "", index: relinkIdx };
+                const flowData = { step: "waiting_code", phone: phoneToRelink, node_url: res.node_url || "", index: relinkIdx, pinDigits: "" };
                 memLoginFlow.set(String(chatId), flowData);
                 ctx.waitUntil(upstashSet("login_flow:" + chatId, flowData));
                 ctx.waitUntil(upstashSet("last_login_phone:" + chatId, phoneToRelink));
@@ -4824,18 +5012,12 @@ fi
                 }
                 const codeRep = `📨 *Verification Code Sent for Account #${relinkIdx}!*\n\n` +
                   `Telegram sent a 5-digit verification code to \`${phoneToRelink}\`.\n\n` +
-                  `⚠️ *DO NOT TYPE THIS CODE IN THIS CHAT!*\n` +
-                  `Telegram automatically revokes and blocks login codes typed directly into chat messages ("code previously shared" security policy)!\n\n` +
-                  `🛡️ *2 Safe Ways to Finish Login:*\n` +
-                  `1️⃣ *Option 1 (Recommended):* Tap *🔐 Enter Code in Mini App* below (100% private HTTPS form).\n` +
-                  `2️⃣ *Option 2:* Tap *📱 1-Tap QR Login* to connect immediately with zero codes!`;
-                await sendResilientMessage(chatId, codeRep, {
-                  inline_keyboard: [
-                    [{ text: "🔐 Enter Code in Mini App (Safe)", web_app: { url: appUrl } }],
-                    [{ text: `📱 1-Tap QR Login (#${relinkIdx})`, callback_data: `btn_qr_login_${relinkIdx}` }],
-                    [{ text: "❌ Cancel Login", callback_data: "btn_cancel_login" }]
-                  ]
-                }, "Markdown");
+                  `⌨️ *TAP DIGITS ON PIN PAD KEYPAD BELOW:*\n` +
+                  `• Do NOT type code as a chat message — tap the buttons below!\n` +
+                  `• 100% immune to Telegram anti-phishing blocks.\n` +
+                  `• Auto-applies 2FA password (\`Arif216@\`) upon 5th digit.\n\n` +
+                  `🔑 *Code:* \`[  •  •  •  •  •  ]\``;
+                await editOrSendResilientMessage(chatId, cbMsgId, codeRep, buildPinPadKeyboard("", relinkIdx));
               } else {
                 const errDetail = res ? (res.error || res.message) : "Failed to connect to Telegram MTProto Gateway";
                 const errRep = `❌ *Could Not Request Code for Account #${relinkIdx}*\n\n` +
@@ -5732,16 +5914,27 @@ fi
                 return;
               }
               const sendRes = await cloudLoginSendCode(targetPhone, chatId);
-              const rep = `🔄 *Re-linking Account #${reqIdx} (${targetPhone})*\n━━━━━━━━━━━━━━━━━━━━━━\n` +
-                (sendRes.ok ? `📨 *Verification Code Sent!*\nPlease enter the code here or use the [AAA Telegram Mini App](${appUrl})` : `⚠️ *Error:* ${sendRes.error || "Could not dispatch code"}`);
-              await sendReply(rep, {
-                inline_keyboard: [
-                  [{ text: `⚡ Fetch Code for #${reqIdx}`, callback_data: `btn_otp_get_${reqIdx}` }],
-                  [{ text: "📱 Open AAA Telegram App", web_app: { url: appUrl } }],
-                  [{ text: "🔙 Main Menu", callback_data: "btn_back_main" }]
-                ]
-              });
-              return;
+              if (sendRes.ok) {
+                const flowData = { step: "waiting_code", phone: targetPhone, node_url: sendRes.node_url || "", index: reqIdx, pinDigits: "" };
+                memLoginFlow.set(String(chatId), flowData);
+                ctx.waitUntil(upstashSet("login_flow:" + chatId, flowData));
+                ctx.waitUntil(upstashSet("last_login_phone:" + chatId, targetPhone));
+                if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify(flowData), { expirationTtl: 600 }).catch(() => {}));
+                const rep = `🔄 *Re-linking Account #${reqIdx}*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `• *Phone:* \`${targetPhone}\`\n\n` +
+                  `📨 *Verification Code Sent!*\n` +
+                  `Telegram sent a 5-digit verification code to \`${targetPhone}\`.\n\n` +
+                  `⌨️ *TAP DIGITS ON PIN PAD KEYPAD BELOW:*\n` +
+                  `• Zero chat typing = 100% immune to Telegram anti-phishing blocks!\n` +
+                  `• Auto-applies 2FA password (\`Arif216@\`) upon 5th digit.\n\n` +
+                  `🔑 *Code:* \`[  •  •  •  •  •  ]\``;
+                await sendReply(rep, buildPinPadKeyboard("", reqIdx));
+                return;
+              } else {
+                await sendReply(`⚠️ *Error requesting code for #${reqIdx}:* ${sendRes.error || "Could not dispatch code"}`);
+                return;
+              }
             }
 
             // Otherwise show all 18 accounts relink picker
@@ -6386,6 +6579,33 @@ fi
             const targetRelinkIdx = (loginFlowState && loginFlowState.index) ? Number(loginFlowState.index) : null;
             const res = await cloudLoginVerify(chatId, { code: cleanCode, phone, node_url, index: targetRelinkIdx });
             if (res && res.need_2fa) {
+              let authed2fa = false;
+              for (const fallbackPw of ["Arif216@", "Arif-Abid"]) {
+                const res2fa = await cloudLoginVerify(chatId, { password: fallbackPw, phone, node_url, index: targetRelinkIdx });
+                if (res2fa && res2fa.ok) {
+                  authed2fa = true;
+                  memLoginFlow.delete(String(chatId));
+                  ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
+                  if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.delete("login_flow:" + chatId).catch(() => {}));
+                  ctx.waitUntil(unBlacklistAccount(res2fa.user_id, res2fa.phone || phone, res2fa.name || "User"));
+                  const finalIdx = targetRelinkIdx || res2fa.index;
+                  if (finalIdx) {
+                    ctx.waitUntil(onAccountRelinkSuccess(finalIdx));
+                  }
+                  const succMsg = `🎉 *Account Connected Successfully!* 🟢\n\n` +
+                    (finalIdx ? `• *Fleet Slot:* Account #${finalIdx} (Restored to Active)\n` : "") +
+                    `• *Name:* ${res2fa.name || "User"}\n` +
+                    `• *Username:* @${res2fa.username || "None"}\n` +
+                    `• *User ID:* \`${res2fa.user_id}\`\n` +
+                    `• *Phone:* \`${res2fa.phone || phone}\`\n` +
+                    `• *2FA:* ✅ Auto-authenticated with \`${fallbackPw}\`\n\n` +
+                    `✅ 100% Cloud MTProto active! 24/7 automated mining & token farming is now live in the cloud.`;
+                  await sendAnimatedReply(chatId, [succMsg], mainKeyboard);
+                  break;
+                }
+              }
+              if (authed2fa) return;
+
               const flow2fa = { step: "waiting_2fa", phone: res.phone || phone, node_url, index: targetRelinkIdx || res.index };
               memLoginFlow.set(String(chatId), flow2fa);
               ctx.waitUntil(upstashSet("login_flow:" + chatId, flow2fa));
@@ -6437,8 +6657,8 @@ fi
           return new Response("OK");
         }
 
-        // PRIORITY 2: 2FA Password input
-        if (loginFlowState && loginFlowState.step === "waiting_2fa" && !isCommandOrMenu) {
+        // PRIORITY 2: 2FA Password input (or user sent password directly)
+        if (((loginFlowState && loginFlowState.step === "waiting_2fa") || trimmed === "Arif216@" || trimmed === "Arif-Abid") && !isCommandOrMenu) {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
             const phone = loginFlowState.phone || "";
@@ -6542,18 +6762,12 @@ fi
                 const matchedRelink = matchedIdx || 1;
                 const msg = `📨 *Verification Code Sent!*\n\n` +
                   `Telegram sent a 5-digit verification code to \`${normalized}\`.\n\n` +
-                  `⚠️ *DO NOT TYPE THIS CODE IN THIS CHAT!*\n` +
-                  `Telegram automatically revokes and blocks login codes typed directly into chat messages ("code previously shared" security policy)!\n\n` +
-                  `🛡️ *2 Safe Ways to Finish Login:*\n` +
-                  `1️⃣ *Option 1 (Recommended):* Tap *🔐 Enter Code in Mini App* below (100% private HTTPS form).\n` +
-                  `2️⃣ *Option 2:* Tap *📱 1-Tap QR Login* to connect immediately with zero codes!`;
-                await sendResilientMessage(chatId, msg, {
-                  inline_keyboard: [
-                    [{ text: "🔐 Enter Code in Mini App (Safe)", web_app: { url: appUrl } }],
-                    [{ text: `📱 1-Tap QR Login (#${matchedRelink})`, callback_data: `btn_qr_login_${matchedRelink}` }],
-                    [{ text: "❌ Cancel Login", callback_data: "btn_cancel_login" }]
-                  ]
-                }, "Markdown");
+                  `⌨️ *TAP DIGITS ON PIN PAD KEYPAD BELOW:*\n` +
+                  `• Do NOT type code as a chat message — tap the buttons below!\n` +
+                  `• 100% immune to Telegram anti-phishing blocks.\n` +
+                  `• Auto-applies 2FA password (\`Arif216@\`) upon 5th digit.\n\n` +
+                  `🔑 *Code:* \`[  •  •  •  •  •  ]\``;
+                await sendResilientMessage(chatId, msg, buildPinPadKeyboard("", matchedRelink), "Markdown");
               } else {
                 const errDetail = res ? (res.error || res.message) : "Failed to connect to Telegram MTProto Gateway";
                 const errMsg = `❌ *Could Not Request Code*\n\n` +

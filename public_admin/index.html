@@ -572,6 +572,21 @@
         <span id="modalStatusBadge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full"></span>
       </div>
 
+      <!-- Prominent Re-link Banner for Revoked Sessions -->
+      <div id="modalRevokedAlert" class="p-3 rounded-2xl bg-rose-50 border border-rose-200 space-y-2 hidden">
+        <div class="flex items-center justify-between text-xs font-bold text-rose-800">
+          <span>⚠️ Account Offline — Needs Re-link</span>
+          <span class="text-[10px] bg-rose-200 text-rose-900 font-bold px-2 py-0.5 rounded-full font-mono">STANDBY</span>
+        </div>
+        <p class="text-[11px] text-rose-700 leading-snug">
+          Telegram session key was revoked. Connect securely on this phone using the interactive PIN Pad or request a fresh code.
+        </p>
+        <button id="modalBtnDirectPortal" type="button" class="w-full min-h-[44px] py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs active:scale-95 transition shadow-sm flex items-center justify-center gap-2">
+          <span>⚡</span>
+          <span>Open Telegram Login & PIN Pad</span>
+        </button>
+      </div>
+
       <!-- Live OTP Display Box -->
       <div id="modalOtpBox" class="p-2.5 rounded-xl bg-blue-50 border border-blue-200 hidden space-y-1">
         <div class="flex items-center justify-between">
@@ -603,8 +618,8 @@
           <span>1-Tap QR</span>
         </button>
         <button id="modalBtnRelink" class="flex-1 min-h-[44px] py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-xl text-xs active:scale-95 transition text-center flex items-center justify-center gap-1 hidden">
-          <span>🔄</span>
-          <span>Re-link Node</span>
+          <span>⚡</span>
+          <span>Login & PIN Pad</span>
         </button>
       </div>
     </div>
@@ -653,46 +668,74 @@
   <!-- ======================================================== -->
   <!-- MODAL 4: IN-APP DIRECT TELEGRAM CODE VERIFICATION        -->
   <!-- ======================================================== -->
-  <div id="modalEnterCode" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white border border-slate-200 rounded-2xl w-full max-w-sm p-4 space-y-3.5 shadow-2xl">
+  <div id="modalEnterCode" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all">
+    <div class="bg-white border-t sm:border border-slate-200 rounded-t-3xl sm:rounded-2xl w-full max-w-sm p-4 space-y-3 shadow-2xl max-h-[92vh] overflow-y-auto custom-scrollbar pb-[max(var(--sab),16px)]">
       <div class="flex justify-between items-center border-b border-slate-100 pb-2">
         <h4 id="codeModalTitle" class="font-bold text-xs text-slate-900 flex items-center gap-1.5">
           <span>🔐</span>
-          <span>Verify Telegram Node</span>
+          <span>Telegram Login & PIN Pad Portal</span>
         </h4>
-        <button id="codeModalClose" class="w-7 h-7 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center text-xs">✕</button>
+        <button id="codeModalClose" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center text-sm font-bold">✕</button>
       </div>
 
-      <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-1">
-        <div class="text-[11px] font-bold text-blue-900 flex items-center justify-between">
+      <!-- Phone Number Bar & Direct Request Button -->
+      <div class="p-3 bg-blue-50/70 border border-blue-200 rounded-xl space-y-2">
+        <div class="flex items-center justify-between text-[11px] font-bold text-blue-900">
           <span>Target Phone:</span>
-          <span id="codeModalPhone" class="font-mono text-blue-700"></span>
+          <span id="codeModalPhone" class="font-mono text-blue-700 bg-white px-2 py-0.5 rounded-md border border-blue-100 font-bold"></span>
         </div>
-        <p class="text-[10px] text-blue-800 leading-relaxed">
-          Telegram dispatched an official 5-digit code. Submitting here is 100% private and bypasses chat-sharing blocks.
-        </p>
+        <div class="flex gap-2">
+          <button id="btnRequestFreshCode" type="button" class="flex-1 py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-[10px] active:scale-95 transition flex items-center justify-center gap-1 shadow-2xs">
+            <span>📨</span>
+            <span>Request Fresh Code</span>
+          </button>
+          <button id="btnFetchLatestOtp" type="button" class="py-1.5 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-lg text-[10px] active:scale-95 transition flex items-center justify-center gap-1 shadow-2xs">
+            <span>⚡</span>
+            <span>Check @myagyai</span>
+          </button>
+        </div>
       </div>
 
-      <div class="space-y-1">
-        <label class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">5-Digit Verification Code</label>
-        <input id="inputVerifyCode" type="tel" maxlength="5" placeholder="• • • • •" class="w-full text-center text-2xl font-black font-mono tracking-widest py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-600 focus:bg-white focus:outline-none transition">
+      <!-- Visual 5-Digit PIN Slots -->
+      <div class="space-y-1.5 text-center">
+        <label class="text-[10px] uppercase font-black text-slate-500 tracking-wider">5-Digit Telegram Verification Code</label>
+        <div class="flex justify-center gap-2 py-1">
+          <div class="pin-slot w-11 h-12 rounded-xl bg-slate-50 border-2 border-slate-200 text-xl font-mono font-black flex items-center justify-center text-slate-300 shadow-2xs transition-all" id="slot0">•</div>
+          <div class="pin-slot w-11 h-12 rounded-xl bg-slate-50 border-2 border-slate-200 text-xl font-mono font-black flex items-center justify-center text-slate-300 shadow-2xs transition-all" id="slot1">•</div>
+          <div class="pin-slot w-11 h-12 rounded-xl bg-slate-50 border-2 border-slate-200 text-xl font-mono font-black flex items-center justify-center text-slate-300 shadow-2xs transition-all" id="slot2">•</div>
+          <div class="pin-slot w-11 h-12 rounded-xl bg-slate-50 border-2 border-slate-200 text-xl font-mono font-black flex items-center justify-center text-slate-300 shadow-2xs transition-all" id="slot3">•</div>
+          <div class="pin-slot w-11 h-12 rounded-xl bg-slate-50 border-2 border-slate-200 text-xl font-mono font-black flex items-center justify-center text-slate-300 shadow-2xs transition-all" id="slot4">•</div>
+        </div>
+        <input id="inputVerifyCode" type="tel" maxlength="5" class="opacity-0 h-0 w-0 absolute pointer-events-none">
       </div>
 
       <div id="codeModalAlert" class="hidden p-2 rounded-lg text-[10px] font-medium text-center"></div>
 
-      <button id="btnFetchLatestOtp" type="button" class="w-full min-h-[38px] py-2 px-3 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1.5 shadow-2xs">
-        <span>⚡</span>
-        <span>Fetch Latest Code from Admin Bot (@myagyai)</span>
-      </button>
+      <!-- TOUCH PIN PAD (ON-SCREEN 0-9 NUMPAD FOR MOBILE) -->
+      <div class="grid grid-cols-3 gap-1.5 pt-1">
+        <button type="button" class="pin-key h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-blue-100 active:scale-95 text-slate-800 text-lg font-bold transition flex items-center justify-center shadow-2xs select-none" data-digit="1">1</button>
+        <button type="button" class="pin-key h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-blue-100 active:scale-95 text-slate-800 text-lg font-bold transition flex items-center justify-center shadow-2xs select-none" data-digit="2">2</button>
+        <button type="button" class="pin-key h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-blue-100 active:scale-95 text-slate-800 text-lg font-bold transition flex items-center justify-center shadow-2xs select-none" data-digit="3">3</button>
+        <button type="button" class="pin-key h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-blue-100 active:scale-95 text-slate-800 text-lg font-bold transition flex items-center justify-center shadow-2xs select-none" data-digit="4">4</button>
+        <button type="button" class="pin-key h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-blue-100 active:scale-95 text-slate-800 text-lg font-bold transition flex items-center justify-center shadow-2xs select-none" data-digit="5">5</button>
+        <button type="button" class="pin-key h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-blue-100 active:scale-95 text-slate-800 text-lg font-bold transition flex items-center justify-center shadow-2xs select-none" data-digit="6">6</button>
+        <button type="button" class="pin-key h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-blue-100 active:scale-95 text-slate-800 text-lg font-bold transition flex items-center justify-center shadow-2xs select-none" data-digit="7">7</button>
+        <button type="button" class="pin-key h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-blue-100 active:scale-95 text-slate-800 text-lg font-bold transition flex items-center justify-center shadow-2xs select-none" data-digit="8">8</button>
+        <button type="button" class="pin-key h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-blue-100 active:scale-95 text-slate-800 text-lg font-bold transition flex items-center justify-center shadow-2xs select-none" data-digit="9">9</button>
+        <button type="button" class="pin-key h-11 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 active:scale-95 text-xs font-bold transition flex items-center justify-center shadow-2xs select-none" id="pinBtnBack">⌫ Del</button>
+        <button type="button" class="pin-key h-11 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-blue-100 active:scale-95 text-slate-800 text-lg font-bold transition flex items-center justify-center shadow-2xs select-none" data-digit="0">0</button>
+        <button type="button" class="pin-key h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95 text-xs font-bold transition flex items-center justify-center shadow-sm select-none" id="pinBtnSubmit">⚡ Verify</button>
+      </div>
 
       <button id="btnSubmitCode" class="w-full min-h-[44px] py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs active:scale-95 transition shadow-xs flex items-center justify-center gap-1.5">
         <span>⚡ Verify & Auto-Authenticate 2FA</span>
       </button>
 
-      <div class="text-center">
-        <button id="btnSwitchToQr" class="text-[10px] text-blue-600 font-bold hover:underline">
-          📱 Or Use 1-Tap QR Login (Zero Code)
+      <div class="flex justify-between items-center pt-1 px-1 text-[10px]">
+        <button id="btnSwitchToQr" class="text-blue-600 font-bold hover:underline">
+          📱 1-Tap QR Login
         </button>
+        <span class="text-slate-400 font-mono">Auto 2FA: Arif216@</span>
       </div>
     </div>
   </div>
@@ -1239,10 +1282,27 @@
 
       const relinkBtn = document.getElementById('modalBtnRelink');
       const qrLoginBtn = document.getElementById('modalBtnQrLogin');
+      const revokedAlert = document.getElementById('modalRevokedAlert');
+      const directPortalBtn = document.getElementById('modalBtnDirectPortal');
+
       if (!isOnline) {
+        if (revokedAlert) revokedAlert.classList.remove('hidden');
         relinkBtn.classList.remove('hidden');
+        if (qrLoginBtn) qrLoginBtn.classList.remove('hidden');
+
+        if (directPortalBtn) {
+          directPortalBtn.onclick = () => {
+            haptic();
+            openLoginPortal(idx, true);
+          };
+        }
+
+        relinkBtn.onclick = () => {
+          haptic();
+          openLoginPortal(idx, true);
+        };
+
         if (qrLoginBtn) {
-          qrLoginBtn.classList.remove('hidden');
           qrLoginBtn.onclick = async () => {
             haptic();
             qrLoginBtn.innerText = 'Connecting...';
@@ -1273,168 +1333,8 @@
             }
           };
         }
-        relinkBtn.onclick = async () => {
-          haptic();
-          relinkBtn.innerText = 'Connecting...';
-          try {
-            const res = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/send-code', {
-              method: 'POST',
-              headers: {
-                'Authorization': 'Bearer agy_cf_secret_7d36994e_2026',
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                phone: acc.phone || '',
-                chat_id: '6727787768',
-                secret: 'agy_cf_secret_7d36994e_2026',
-                index: idx
-              })
-            });
-            const data = await res.json();
-            if (data && data.ok) {
-              closeModal('modalDetail');
-              document.getElementById('codeModalTitle').innerHTML = `<span>🔐</span><span>Verify Node #${padIdx}</span>`;
-              document.getElementById('codeModalPhone').innerText = acc.phone || 'Fleet Account';
-              document.getElementById('inputVerifyCode').value = '';
-              const alertBox = document.getElementById('codeModalAlert');
-              alertBox.classList.add('hidden');
-              alertBox.innerText = '';
-              openModal('modalEnterCode');
-              setTimeout(() => document.getElementById('inputVerifyCode')?.focus(), 300);
-
-              const doVerify = async () => {
-                const codeVal = document.getElementById('inputVerifyCode').value.replace(/\D/g, '');
-                if (codeVal.length < 3) return;
-                const btn = document.getElementById('btnSubmitCode');
-                btn.disabled = true;
-                btn.innerText = 'Verifying & Authenticating 2FA...';
-                alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-blue-50 text-blue-700 block';
-                alertBox.innerText = 'Connecting to MTProto socket...';
-
-                try {
-                  const vRes = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/verify-code', {
-                    method: 'POST',
-                    headers: {
-                      'Authorization': 'Bearer agy_cf_secret_7d36994e_2026',
-                      'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                      phone: acc.phone || '',
-                      code: codeVal,
-                      chat_id: '6727787768',
-                      secret: 'agy_cf_secret_7d36994e_2026',
-                      index: idx
-                    })
-                  });
-                  const vData = await vRes.json();
-                  if (vData && vData.ok) {
-                    showToast(`🎉 Node #${padIdx} Authenticated & Connected! 🟢`);
-                    closeModal('modalEnterCode');
-                    loadTelemetry();
-                  } else {
-                    alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-rose-50 text-rose-700 block';
-                    alertBox.innerText = vData?.error || 'Verification failed. Try QR login.';
-                  }
-                } catch (e) {
-                  alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-rose-50 text-rose-700 block';
-                  alertBox.innerText = 'Network error during verification.';
-                } finally {
-                  btn.disabled = false;
-                  btn.innerHTML = '<span>⚡ Verify & Auto-Authenticate 2FA</span>';
-                }
-              };
-
-              document.getElementById('btnSubmitCode').onclick = doVerify;
-
-              const btnFetchOtp = document.getElementById('btnFetchLatestOtp');
-              if (btnFetchOtp) {
-                btnFetchOtp.onclick = async () => {
-                  haptic();
-                  const origHtml = btnFetchOtp.innerHTML;
-                  btnFetchOtp.disabled = true;
-                  btnFetchOtp.innerHTML = '<span>⏳</span><span>Checking @myagyai for code...</span>';
-                  try {
-                    const endpoints = [
-                      `https://restore-agy.aaaai2.workers.dev/api/fleet/otp?index=${idx}&phone=${encodeURIComponent(acc.phone || '')}`,
-                      `https://restore-agy.aaa-bot.workers.dev/api/fleet/otp?index=${idx}&phone=${encodeURIComponent(acc.phone || '')}`,
-                      `https://my-agy-fleet-standby-node2.onrender.com/api/fleet/otp/${idx}`
-                    ];
-                    let codeFound = null;
-                    for (const u of endpoints) {
-                      try {
-                        const r = await fetch(u, { headers: { 'Accept': 'application/json' } });
-                        if (r.ok) {
-                          const d = await r.json();
-                          if (d && (d.code || (d.found && d.code))) {
-                            codeFound = d.code;
-                            break;
-                          }
-                        }
-                      } catch (_) {}
-                    }
-                    if (codeFound) {
-                      document.getElementById('inputVerifyCode').value = codeFound;
-                      showToast(`Found code: ${codeFound}! Auto-verifying...`);
-                      doVerify();
-                    } else {
-                      showToast('No active login code found in @myagyai yet.');
-                    }
-                  } catch (_) {
-                    showToast('Failed to reach OTP service');
-                  } finally {
-                    btnFetchOtp.disabled = false;
-                    btnFetchOtp.innerHTML = origHtml;
-                  }
-                };
-              }
-
-              const inpCode = document.getElementById('inputVerifyCode');
-              inpCode.onkeyup = (e) => {
-                if (e.target.value.length === 5 || e.key === 'Enter') doVerify();
-              };
-              inpCode.onpaste = (e) => {
-                setTimeout(() => {
-                  e.target.value = e.target.value.replace(/\D/g, '').slice(0, 5);
-                  if (e.target.value.length === 5) doVerify();
-                }, 50);
-              };
-
-              document.getElementById('btnSwitchToQr').onclick = async () => {
-                haptic();
-                closeModal('modalEnterCode');
-                try {
-                  const qRes = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/qr-start', {
-                    method: 'POST',
-                    headers: {
-                      'Authorization': 'Bearer agy_cf_secret_7d36994e_2026',
-                      'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                      chat_id: '6727787768',
-                      index: idx,
-                      secret: 'agy_cf_secret_7d36994e_2026'
-                    })
-                  });
-                  const qData = await qRes.json();
-                  if (qData && qData.ok && qData.url) {
-                    openQrModal(`Telegram QR Login (Node #${padIdx})`, qData.url);
-                  } else {
-                    showToast(qData?.error || 'Could not start QR login');
-                  }
-                } catch (_) {
-                  showToast('Error connecting to QR service');
-                }
-              };
-            } else {
-              showToast(data?.error || 'Could not dispatch code');
-            }
-          } catch (_) {
-            showToast('Cluster connection failed');
-          } finally {
-            relinkBtn.innerHTML = '<span>🔄</span><span>Re-link Node</span>';
-          }
-        };
       } else {
+        if (revokedAlert) revokedAlert.classList.add('hidden');
         relinkBtn.classList.add('hidden');
         if (qrLoginBtn) qrLoginBtn.classList.add('hidden');
       }
@@ -1449,6 +1349,287 @@
     document.getElementById('modalClose').addEventListener('click', () => {
       closeModal('modalDetail');
     });
+
+    // ========================================================
+    // TELEGRAM LOGIN PORTAL WITH INTERACTIVE TOUCH PIN PAD
+    // ========================================================
+    let currentLoginIdx = 1;
+    let currentLoginPhone = '';
+
+    function updatePinSlots() {
+      const val = (document.getElementById('inputVerifyCode').value || '').replace(/\D/g, '');
+      for (let i = 0; i < 5; i++) {
+        const slot = document.getElementById('slot' + i);
+        if (slot) {
+          if (val[i]) {
+            slot.innerText = val[i];
+            slot.className = 'pin-slot w-11 h-12 rounded-xl bg-blue-50 border-2 border-blue-600 text-xl font-mono font-black flex items-center justify-center text-blue-700 shadow-sm transition-all';
+          } else {
+            slot.innerText = '•';
+            slot.className = 'pin-slot w-11 h-12 rounded-xl bg-slate-50 border-2 border-slate-200 text-xl font-mono font-black flex items-center justify-center text-slate-300 shadow-2xs transition-all';
+          }
+        }
+      }
+    }
+
+    async function openLoginPortal(targetIndex = 1, autoSend = false) {
+      currentLoginIdx = Number(targetIndex) || 1;
+      const padIdx = currentLoginIdx < 10 ? '0' + currentLoginIdx : currentLoginIdx;
+      const acc = GLOBAL_ACCOUNTS.find(a => Number(a.index) === currentLoginIdx) || MASTER_STATIC_ACCS.find(m => m.index === currentLoginIdx) || { index: currentLoginIdx, phone: '+8801317342850' };
+      currentLoginPhone = (acc.phone && acc.phone !== 'Hidden' && acc.phone !== 'N/A') ? acc.phone : '+8801317342850';
+
+      closeModal('modalDetail');
+      document.getElementById('codeModalTitle').innerHTML = `<span>🔐</span><span>Node #${padIdx} Login Portal</span>`;
+      document.getElementById('codeModalPhone').innerText = currentLoginPhone;
+      document.getElementById('inputVerifyCode').value = '';
+      updatePinSlots();
+      const alertBox = document.getElementById('codeModalAlert');
+      alertBox.classList.add('hidden');
+      alertBox.innerText = '';
+
+      openModal('modalEnterCode');
+
+      if (autoSend) {
+        requestLoginCode(currentLoginIdx, currentLoginPhone);
+      }
+    }
+
+    async function requestLoginCode(idx, phone) {
+      const alertBox = document.getElementById('codeModalAlert');
+      const reqBtn = document.getElementById('btnRequestFreshCode');
+      if (reqBtn) { reqBtn.disabled = true; reqBtn.innerHTML = '<span>⏳</span><span>Sending...</span>'; }
+      alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-blue-50 text-blue-700 block';
+      alertBox.innerText = `Connecting to Telegram MTProto & requesting code for ${phone}...`;
+
+      try {
+        const res = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/send-code', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer agy_cf_secret_7d36994e_2026',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            phone: phone,
+            chat_id: '6727787768',
+            secret: 'agy_cf_secret_7d36994e_2026',
+            index: idx
+          })
+        });
+        const data = await res.json();
+        if (data && data.ok) {
+          alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-emerald-50 text-emerald-800 block';
+          alertBox.innerText = `📨 Telegram verification code sent to ${phone}! Tap digits on the PIN Pad below:`;
+          showToast('Verification code dispatched by Telegram!');
+        } else {
+          alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-rose-50 text-rose-700 block';
+          alertBox.innerText = data?.error || 'Could not request code. If code already sent to your phone, enter it on PIN Pad:';
+        }
+      } catch (_) {
+        alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-amber-50 text-amber-800 block';
+        alertBox.innerText = 'Network warning. If you have the code from Telegram, enter it below:';
+      } finally {
+        if (reqBtn) { reqBtn.disabled = false; reqBtn.innerHTML = '<span>📨</span><span>Request Fresh Code</span>'; }
+      }
+    }
+
+    async function doVerifyLogin() {
+      const codeVal = document.getElementById('inputVerifyCode').value.replace(/\D/g, '');
+      const alertBox = document.getElementById('codeModalAlert');
+      if (codeVal.length < 3) {
+        alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-rose-50 text-rose-700 block';
+        alertBox.innerText = 'Please enter at least 5 digits.';
+        return;
+      }
+      const btn = document.getElementById('btnSubmitCode');
+      btn.disabled = true;
+      btn.innerText = 'Verifying & Auto-Authenticating 2FA...';
+      alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-blue-50 text-blue-700 block';
+      alertBox.innerText = 'Connecting to MTProto socket & auto-applying 2FA (Arif216@)...';
+
+      try {
+        const vRes = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/verify-code', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer agy_cf_secret_7d36994e_2026',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            phone: currentLoginPhone,
+            code: codeVal,
+            chat_id: '6727787768',
+            secret: 'agy_cf_secret_7d36994e_2026',
+            index: currentLoginIdx
+          })
+        });
+        let vData = await vRes.json();
+        if (vData && vData.need_2fa) {
+          alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-blue-50 text-blue-700 block';
+          alertBox.innerText = 'Auto-authenticating 2FA password (Arif216@)...';
+          for (const fallbackPw of ['Arif216@', 'Arif-Abid']) {
+            try {
+              const res2fa = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/verify-code', {
+                method: 'POST',
+                headers: {
+                  'Authorization': 'Bearer agy_cf_secret_7d36994e_2026',
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  phone: currentLoginPhone,
+                  password: fallbackPw,
+                  chat_id: '6727787768',
+                  secret: 'agy_cf_secret_7d36994e_2026',
+                  index: currentLoginIdx
+                })
+              });
+              const d2fa = await res2fa.json();
+              if (d2fa && d2fa.ok) {
+                vData = d2fa;
+                break;
+              }
+            } catch (_) {}
+          }
+        }
+        if (vData && vData.ok) {
+          const padIdx = currentLoginIdx < 10 ? '0' + currentLoginIdx : currentLoginIdx;
+          showToast(`🎉 Node #${padIdx} Authenticated & Connected! 🟢`);
+          closeModal('modalEnterCode');
+          loadTelemetry();
+        } else {
+          alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-rose-50 text-rose-700 block';
+          alertBox.innerText = vData?.error || 'Verification failed. Please tap digits again or request fresh code.';
+          document.getElementById('inputVerifyCode').value = '';
+          updatePinSlots();
+        }
+      } catch (e) {
+        alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-rose-50 text-rose-700 block';
+        alertBox.innerText = 'Network error during verification.';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>⚡ Verify & Auto-Authenticate 2FA</span>';
+      }
+    }
+
+    // Touch PIN Pad Handlers
+    document.querySelectorAll('.pin-key[data-digit]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        haptic();
+        const inp = document.getElementById('inputVerifyCode');
+        if (inp.value.length < 5) {
+          inp.value += btn.getAttribute('data-digit');
+          updatePinSlots();
+          if (inp.value.length === 5) {
+            doVerifyLogin();
+          }
+        }
+      });
+    });
+
+    const btnPinBack = document.getElementById('pinBtnBack');
+    if (btnPinBack) {
+      btnPinBack.addEventListener('click', () => {
+        haptic();
+        const inp = document.getElementById('inputVerifyCode');
+        inp.value = inp.value.slice(0, -1);
+        updatePinSlots();
+      });
+    }
+
+    const btnPinSubmit = document.getElementById('pinBtnSubmit');
+    if (btnPinSubmit) {
+      btnPinSubmit.addEventListener('click', () => {
+        haptic();
+        doVerifyLogin();
+      });
+    }
+
+    const btnSubmitCode = document.getElementById('btnSubmitCode');
+    if (btnSubmitCode) {
+      btnSubmitCode.addEventListener('click', () => {
+        haptic();
+        doVerifyLogin();
+      });
+    }
+
+    const btnReqFresh = document.getElementById('btnRequestFreshCode');
+    if (btnReqFresh) {
+      btnReqFresh.addEventListener('click', () => {
+        haptic();
+        requestLoginCode(currentLoginIdx, currentLoginPhone);
+      });
+    }
+
+    const btnFetchOtpGlobal = document.getElementById('btnFetchLatestOtp');
+    if (btnFetchOtpGlobal) {
+      btnFetchOtpGlobal.addEventListener('click', async () => {
+        haptic();
+        const origHtml = btnFetchOtpGlobal.innerHTML;
+        btnFetchOtpGlobal.disabled = true;
+        btnFetchOtpGlobal.innerHTML = '<span>⏳</span><span>Checking @myagyai...</span>';
+        try {
+          const endpoints = [
+            `https://restore-agy.aaaai2.workers.dev/api/fleet/otp?index=${currentLoginIdx}&phone=${encodeURIComponent(currentLoginPhone)}`,
+            `https://my-agy-fleet-standby-node2.onrender.com/api/fleet/otp/${currentLoginIdx}`
+          ];
+          let codeFound = null;
+          for (const u of endpoints) {
+            try {
+              const r = await fetch(u, { headers: { 'Accept': 'application/json' } });
+              if (r.ok) {
+                const d = await r.json();
+                if (d && (d.code || (d.found && d.code))) {
+                  codeFound = d.code;
+                  break;
+                }
+              }
+            } catch (_) {}
+          }
+          if (codeFound) {
+            document.getElementById('inputVerifyCode').value = codeFound;
+            updatePinSlots();
+            showToast(`Found code: ${codeFound}! Auto-verifying...`);
+            doVerifyLogin();
+          } else {
+            showToast('No active login code found in @myagyai yet.');
+          }
+        } catch (_) {
+          showToast('Failed to reach OTP service');
+        } finally {
+          btnFetchOtpGlobal.disabled = false;
+          btnFetchOtpGlobal.innerHTML = origHtml;
+        }
+      });
+    }
+
+    const btnSwitchQr = document.getElementById('btnSwitchToQr');
+    if (btnSwitchQr) {
+      btnSwitchQr.addEventListener('click', async () => {
+        haptic();
+        closeModal('modalEnterCode');
+        try {
+          const qRes = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/qr-start', {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Bearer agy_cf_secret_7d36994e_2026',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              chat_id: '6727787768',
+              index: currentLoginIdx,
+              secret: 'agy_cf_secret_7d36994e_2026'
+            })
+          });
+          const qData = await qRes.json();
+          if (qData && qData.ok && qData.url) {
+            const padIdx = currentLoginIdx < 10 ? '0' + currentLoginIdx : currentLoginIdx;
+            openQrModal(`Telegram QR Login (Node #${padIdx})`, qData.url);
+          } else {
+            showToast(qData?.error || 'Could not start QR login');
+          }
+        } catch (_) {
+          showToast('Error connecting to QR service');
+        }
+      });
+    }
 
     // QR Code Modal
     let qrPollInterval = null;
@@ -1725,6 +1906,28 @@
 
     // Initial Load
     loadTelemetry();
+
+    // Check URL parameters and Telegram WebApp start_param for direct Login Portal opening
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const startParam = tg?.initDataUnsafe?.start_param || '';
+      let targetIdx = parseInt(urlParams.get('index') || urlParams.get('relink') || '', 10);
+      let targetAction = urlParams.get('action');
+
+      if (!targetIdx && startParam) {
+        const m = startParam.match(/(?:login|relink)_?(\d+)/i);
+        if (m) {
+          targetIdx = parseInt(m[1], 10);
+          targetAction = 'login';
+        }
+      }
+
+      if (targetAction === 'login' || targetIdx) {
+        setTimeout(() => {
+          openLoginPortal(targetIdx || 1, false);
+        }, 500);
+      }
+    } catch (_) {}
   </script>
 </body>
 </html>

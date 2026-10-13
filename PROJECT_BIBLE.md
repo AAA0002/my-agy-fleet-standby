@@ -744,7 +744,15 @@ To facilitate seamless login on new devices (e.g., after phone resets) without S
   - Interactive Dynamic Grid Picker (`btn_otp_menu`) with real-time badges: `👑` (Master Host), `🟢` (Active), `🔴` (Needs Re-link).
   - 1-by-1 Wizard (`btn_otp_get_1` through `btn_otp_get_18`) with *🔄 Fetch Code Now*, *⚡ 1-Tap Re-link*, and *⏭️ Next / Skip*.
   - Text commands `/otp <number>`, `/recover`, `/sessions`, `/audit`, and `/acc <id>`.
-  - 1-tap copyable Markdown `<code>` blocks for phone, login code, and 2FA password.
+* **Interactive Inline PIN Pad Keypad (`buildPinPadKeyboard`)**:
+  - Solves the single mobile device constraint: users cannot scan a QR code displayed on their own smartphone screen.
+  - Generates an on-screen numeric keypad `[1][2][3]`...`[⌫ Del][0][✅ Verify]` inside `@myagyai` with real-time slot state `[ • • • • • ]`.
+  - Digit taps send Telegram Callback Queries (`pin_digit_0..9`) rather than chat text messages, completely bypassing Telegram's chat text anti-phishing scanner and preventing "code previously shared" revocation blocks.
+  - Automatically submits on 5th digit (or `✅ Verify`), calls Render Node 2 MTProto coordinator, and auto-applies 2FA password (`Arif216@` / `Arif-Abid`).
+* **Real Telegram Login Portal with Touch PIN Pad (Mini App `public/index.html`)**:
+  - Provides an in-app HTTPS modal with 5 visual styled PIN slot boxes and an on-screen 3x4 Touch PIN Pad.
+  - Supports deep-link parameter routing (`?action=login&index=X` and `startapp=login_X`) to open the portal directly for any target node.
+  - Performs 100% private HTTPS authentication with automatic 2FA resolution.
 
 ### 4. Dynamic Session Health Synchronization & Active-Passive Edge Failback
 * **Dynamic Health State Machine**: Managed dynamically via Upstash Redis sets (`fleet:healthy_sessions` and `fleet:revoked_sessions`) with 60s in-memory edge caching.
