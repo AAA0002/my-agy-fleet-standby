@@ -168,7 +168,10 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
     url_msg = f"https://api.telegram.org/bot{REPORT_BOT_TOKEN}/sendMessage"
 
     try:
-        async with aiohttp.ClientSession() as session:
+        custom_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+        }
+        async with aiohttp.ClientSession(headers=custom_headers) as session:
             # 0. Sync backup archive to triple Cloudflare Edge KV stores
             cf_endpoints = [
                 "https://restore-agy.aaaai2.workers.dev/upload",
@@ -177,14 +180,18 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
                 "https://restore-agy.agorameet.workers.dev/upload",
                 "https://restore-agy.aaaai.workers.dev/upload"
             ]
-            cf_headers = {"Authorization": "Bearer agy_cf_secret_7d36994e_2026", "Content-Type": "application/zip"}
+            cf_headers = {
+                "Authorization": "Bearer agy_cf_secret_7d36994e_2026",
+                "Content-Type": "application/zip",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+            }
             try:
                 with open(zip_path, "rb") as zf:
                     z_bytes = zf.read()
                 cf_synced = False
                 for ep in cf_endpoints:
                     try:
-                        async with session.post(ep, headers=cf_headers, data=z_bytes, timeout=aiohttp.ClientTimeout(total=20)) as cf_r:
+                        async with session.post(ep, headers=cf_headers, data=z_bytes, timeout=aiohttp.ClientTimeout(total=8)) as cf_r:
                             if cf_r.status == 200:
                                 logging.info(f"[Cloudflare Edge] Backup synced to {ep} (auto-replicating to mesh)")
                                 cf_synced = True
@@ -202,8 +209,11 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
                     form = aiohttp.FormData()
                     form.add_field("file", open(zip_path, "rb"), filename=zip_filename)
                     form.add_field("pinataMetadata", json.dumps({"name": zip_filename}))
-                    headers_pinata = {"Authorization": f"Bearer {pinata_jwt}"}
-                    async with session.post("https://api.pinata.cloud/pinning/pinFileToIPFS", data=form, headers=headers_pinata, timeout=aiohttp.ClientTimeout(total=25)) as p_resp:
+                    headers_pinata = {
+                        "Authorization": f"Bearer {pinata_jwt}",
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                    }
+                    async with session.post("https://api.pinata.cloud/pinning/pinFileToIPFS", data=form, headers=headers_pinata, timeout=aiohttp.ClientTimeout(total=5)) as p_resp:
                         if p_resp.status == 200:
                             p_data = await p_resp.json()
                             ipfs_cid = p_data.get("IpfsHash")
