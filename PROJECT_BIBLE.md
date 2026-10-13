@@ -888,5 +888,14 @@ Whenever you perform work in this repository:
   - All 18 accounts actively cycle through the 5 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex).
   - Short 3m–5m retry backoff prevents accounts from getting trapped in hours of cooldown on transient network errors.
 
+### 6.1 Upstash Redis Pipeline Bug Fix & Full 18-Account Synthesis (October 13, 2026)
+* **Upstash Redis Pipeline `WRONGTYPE` Bug Resolved (`public/index.html`)**:
+  - `fleet:healthy_sessions` and `fleet:revoked_sessions` are stored in Upstash Redis as JSON string arrays (e.g. `"[2,10,11,14,17,1,3]"`).
+  - The Mini App previously queried them using `["SMEMBERS", "fleet:healthy_sessions"]`, causing Redis to return `{"error":"WRONGTYPE Operation against a key holding the wrong kind of value"}` and wiping `healthyArr` to `[]`.
+  - Fixed by querying `["GET", "fleet:healthy_sessions"]` and `["GET", "fleet:revoked_sessions"]` with JSON array parsing.
+* **Account #1 (Master Host) Permanent Restoration (`deploy_both_cf_workers.py`)**:
+  - Implemented `ensureFullFleet()` in Cloudflare Edge router: automatically inspects `fleet:accounts` in Upstash and synthesizes the full 18 accounts with `DEFAULT_FLEET_DATA`, ensuring Node #1 (`Arif Hossain`, `+8801317342850`, `6727787768`) is always present in `/api/fleet/live`.
+  - Embedded `MASTER_STATIC_ACCS` merge in Mini App (`loadTelemetry`) ensuring all 18 nodes (1 to 18) render on the dashboard matrix regardless of upstream glitches.
+
 
 

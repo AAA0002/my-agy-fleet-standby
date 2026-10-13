@@ -2302,27 +2302,63 @@ fi
     // 7. Fleet Live Telemetry Query (Fast In-Memory -> Upstash Redis -> KV -> Default Fallback)
     if (path === "/api/fleet/live" || path === "/api/status" || path === "/api/fleet-status" || path === "/api/stats") {
       try {
-        if (memFleetState && Array.isArray(memFleetState.accounts) && memFleetState.accounts.length > 0) {
+        const ensureFullFleet = (stateObj) => {
+          if (!stateObj) return DEFAULT_FLEET_DATA;
+          let accs = Array.isArray(stateObj.accounts) ? stateObj.accounts : [];
+          if (accs.length < 18 || !accs.some(a => (a.index === 1 || String(a.user_id) === "6727787768"))) {
+            const accMap = new Map();
+            accs.forEach(a => {
+              if (a.index) accMap.set(String(a.index), a);
+              if (a.user_id) accMap.set(String(a.user_id), a);
+            });
+            accs = DEFAULT_FLEET_DATA.accounts.map(m => {
+              const ex = accMap.get(String(m.index)) || accMap.get(String(m.user_id));
+              return ex ? { ...m, ...ex } : m;
+            });
+            stateObj.accounts = accs;
+            stateObj.count = accs.length;
+          }
+          return stateObj;
+        };
+
+        if (memFleetState && Array.isArray(memFleetState.accounts) && memFleetState.accounts.length >= 18) {
           return new Response(JSON.stringify(memFleetState), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
         }
-        // 1. Check Upstash Serverless Redis
+        // 1. Check Upstash Serverless Redis fleet:live_state
         const upstashRaw = await upstashGet("fleet:live_state");
         if (upstashRaw && upstashRaw !== "null" && upstashRaw !== "undefined") {
           try {
-            const parsed = typeof upstashRaw === "string" ? JSON.parse(upstashRaw) : upstashRaw;
+            let parsed = typeof upstashRaw === "string" ? JSON.parse(upstashRaw) : upstashRaw;
             if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length > 0) {
+              parsed = ensureFullFleet(parsed);
               memFleetState = parsed;
               return new Response(JSON.stringify(parsed), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
             }
           } catch (_) {}
         }
+
+        // 1.5 Check Upstash Serverless Redis fleet:accounts
+        try {
+          const accsRaw = await upstashGet("fleet:accounts");
+          if (accsRaw) {
+            const parsedAccs = typeof accsRaw === "string" ? JSON.parse(accsRaw) : accsRaw;
+            if (Array.isArray(parsedAccs) && parsedAccs.length > 0) {
+              const synthesized = ensureFullFleet({ ...DEFAULT_FLEET_DATA, accounts: parsedAccs });
+              memFleetState = synthesized;
+              ctx.waitUntil(upstashSet("fleet:live_state", synthesized));
+              return new Response(JSON.stringify(synthesized), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
+            }
+          }
+        } catch (_) {}
+
         // 2. Fallback to KV
         let raw = null;
         try {
           raw = await env.BACKUP_KV.get("fleet_live_state");
           if (raw && raw !== "null") {
-            const parsed = JSON.parse(raw);
+            let parsed = JSON.parse(raw);
             if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length > 0) {
+              parsed = ensureFullFleet(parsed);
               memFleetState = parsed;
               return new Response(JSON.stringify(parsed), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
             }
@@ -4120,8 +4156,21 @@ fi
               const upstashRaw = await upstashGet("fleet:live_state");
               if (upstashRaw) {
                 const parsed = typeof upstashRaw === "string" ? JSON.parse(upstashRaw) : upstashRaw;
-                if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length > 0) {
+                if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length >= 18) {
                   accounts = parsed.accounts;
+                }
+              }
+            } catch (_) {}
+          }
+
+          // 1.5 Upstash fleet:accounts fallback
+          if (!accounts || accounts.length < 18) {
+            try {
+              const upAccs = await upstashGet("fleet:accounts");
+              if (upAccs) {
+                const parsedAccs = typeof upAccs === "string" ? JSON.parse(upAccs) : upAccs;
+                if (Array.isArray(parsedAccs) && parsedAccs.length > 0) {
+                  accounts = parsedAccs;
                 }
               }
             } catch (_) {}
@@ -4134,7 +4183,7 @@ fi
                 const raw = await env.BACKUP_KV.get("fleet_live_state");
                 if (raw) {
                   const s = JSON.parse(raw);
-                  if (s.accounts && Array.isArray(s.accounts) && s.accounts.length > 0) {
+                  if (s.accounts && Array.isArray(s.accounts) && s.accounts.length >= 18) {
                     accounts = s.accounts;
                   }
                 }
@@ -4142,9 +4191,17 @@ fi
             } catch (_) {}
           }
 
-          // 3. Static Default Accounts fallback
-          if (!accounts || accounts.length === 0) {
-            accounts = DEFAULT_FLEET_ACCOUNTS.map(a => Object.assign({}, a));
+          // 3. Static Default Accounts fallback & full 18-node merge
+          if (!accounts || accounts.length < 18) {
+            const accMap = new Map();
+            (accounts || []).forEach(a => {
+              if (a.index) accMap.set(String(a.index), a);
+              if (a.user_id) accMap.set(String(a.user_id), a);
+            });
+            accounts = DEFAULT_FLEET_ACCOUNTS.map(m => {
+              const ex = accMap.get(String(m.index)) || accMap.get(String(m.user_id));
+              return ex ? { ...m, ...ex } : Object.assign({}, m);
+            });
           }
 
           // 4. Load Blacklist of Deleted Accounts with Multi-Layer Failback

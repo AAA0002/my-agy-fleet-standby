@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Full 18-Account Fleet Telemetry Guarantee & Upstash Pipeline `WRONGTYPE` Fix (October 13, 2026)**:
+  - **🔧 Upstash Redis Pipeline `WRONGTYPE` Bug Resolved (`public/index.html`)**:
+    * **Root Cause Fixed**: `fleet:healthy_sessions` and `fleet:revoked_sessions` are stored in Upstash Redis as JSON string arrays (e.g. `"[2,10,11,14,17,1,3]"`).
+    * Mini App telemetry previously called `["SMEMBERS", "fleet:healthy_sessions"]`, causing Redis to return `{"error":"WRONGTYPE Operation against a key holding the wrong kind of value"}` and wiping `healthyArr` to `[]`. Consequently, all online accounts were misreported as offline.
+    * Fixed pipeline by querying `["GET", "fleet:healthy_sessions"]` and `["GET", "fleet:revoked_sessions"]` and robustly parsing the JSON array.
+  - **👑 Account #1 (Master Host) Permanent Restoration (`deploy_both_cf_workers.py` & `public/index.html`)**:
+    * Fixed `/api/fleet/live` dropping Account #1 due to stale KV cache fallbacks.
+    * Implemented `ensureFullFleet()` in Cloudflare Edge router: automatically inspects `fleet:accounts` in Upstash and synthesizes the full 18 accounts with `DEFAULT_FLEET_DATA`, ensuring Node #1 (`Arif Hossain`, `+8801317342850`, `6727787768`) is always present.
+    * Embedded `MASTER_STATIC_ACCS` merge in Mini App (`loadTelemetry`) ensuring all 18 nodes (1 to 18) render on the dashboard matrix regardless of upstream hiccups.
+  - **🛡️ 1-Tap QR & Safe Code Re-linking**:
+    * Node #1 is now prominently displayed in the Mini App matrix and audit lists, enabling 1-tap QR linking (`/qr 1` or Mini App `📱 1-Tap QR`) with auto-applied 2FA (`Arif216@`).
+
 - **📱 Mini App 1-Tap QR Integration, Audit Menu QR Priority & Farming Engine Perfection (October 13, 2026)**:
   - **📱 Mini App Direct 1-Tap QR Login (`public/index.html`)**:
     * Added dedicated **"📱 1-Tap QR"** button directly to the account detail modal (`modalDetail`), allowing operators to re-link revoked nodes with zero SMS or codes.
