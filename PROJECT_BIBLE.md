@@ -927,13 +927,39 @@ Whenever you perform work in this repository:
   - Restored official Telegram Bot Menu Button (`setChatMenuButton`) to `🎬 Watch Ads` pointing directly to `https://agy-henna.vercel.app/`.
   - Updated all bot inline buttons (`ub_watch_ad`, `/ads`, welcome cards) so `🎬 Watch Video Ad (+20 Pts)` opens `https://agy-henna.vercel.app/` directly.
   - Connected `⛏️ Open Multi-Miner Mini App 🚀` button to `https://agy-henna.vercel.app/miner`.
-* **🛡️ Truthful Admin Bot (`@myagyai`) Session & Farming Health Enforced**:
-  - Eliminated fake 18/18 green reporting across `@myagyai` (`btn_status`, `/status`, `/harvest`, `/farm`, `btn_kynex`, `btn_victors`, `btn_vyro`, `btn_mrg`, `btn_atf`, `/briefing`, and ecosystem summary).
-  - Aligned Upstash Redis session health sets to ground truth:
-    * `fleet:healthy_sessions`: `[2, 10, 11, 14, 17]` (5 active accounts)
-    * `fleet:revoked_sessions`: `[1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18]` (13 accounts requiring session re-link tomorrow)
-  - Hardened `getSessionHealthState()` in `deploy_both_cf_workers.py` so revocation state takes strict priority and revoked sessions are never silently purged by defaults.
-  - Synchronized and verified across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+### 6.4 Professional Vector SVG Miner Dashboard, Truthful Crown Indicator & Bot UX Streamlining (October 13, 2026)
+* **👑 Truthful Crown & Session Indicator Disambiguation on Admin Bot (`@myagyai`)**:
+  - **The Issue**: Previously, the crown `👑` indicator on Account #1 (`Arif Hossain`, ID `6727787768`) replaced the health emoji (`isHost ? " 👑" : (isRev ? " 🔴" : " 🟢")`). This left the operator blind to whether Account #1 was currently active or revoked.
+  - **The Solution**: In `deploy_both_cf_workers.py`, the health indicator and the crown now coexist across all views:
+    - OTP Menu Keyboard: `${idx}. ${shortName} 👑 ${statusIcon}` (`🔴` or `🟢`).
+    - Session Audit: `#1 Arif Hossain 👑 — 🔴 Needs Code` or `— 🟢 Online`.
+    - Account Roster (`/accounts`): `Master Host 👑 (🔴 Needs Re-link)` vs `Master Host 👑 (🟢 Active)`.
+    - Account Inspector (`/acc 1`): `👑 Master Host — 🔴 Session Revoked (Needs Re-linking)` or `👑 Master Host — 🟢 Active & Directing`.
+* **🎨 Professional Fintech User Web Dashboard (`https://agy-henna.vercel.app/miner`)**:
+  - Fully refactored `public_ads/miner/index.html` using scalable, high-resolution vector SVGs instead of emojis for all brand logos, protocol identifiers, and navigation buttons:
+    * MRG Miner: Amber electric lightning bolt SVG.
+    * ATF Miner: Neon cyan cryptographic shield SVG.
+    * Victor's Company: Laser emerald bank vault SVG.
+    * VyroDrop: Azure blue hydro droplet SVG.
+    * Kynex Network: Amethyst purple hexagonal mesh node SVG.
+    * Bottom Navigation: Crisp micro-stroke vector SVGs for Mining Hub, Connect, Earn, Accounts, and Ecosystem.
+  - Deployed live to production via Vercel (`https://agy-henna.vercel.app/miner`, 71,597 bytes) with zero conflict against the root sponsored ads page.
+* **🌐 Strict Separation of Ads Website and User Web Dashboard**:
+  - **Ads Website (`https://agy-henna.vercel.app/`)**: Strictly dedicated to rewarded video ads and user points monetization (HilltopAds, Clickadu, Monetag, Adsterra, AdEx, VastLoader, GigaPub).
+  - **User Web Dashboard (`https://agy-henna.vercel.app/miner`)**: Strictly dedicated to multi-protocol cloud mining telemetry, account connection, and pool statistics.
+* **🤖 User Bot (`@AAAPREMIUMAPPSbot`) UX Streamlining & Double Button Elimination**:
+  - Routine bot messages (`/start`, `/dashboard`, `/pools`, `/accounts`, `/bonus`, `/points`) condensed to clean, high-density status cards.
+  - Comprehensive, in-depth text guides reserved exclusively for `/guide` (`📖 User Guide`) and the Ari AI Copilot.
+  - Purged redundant paired buttons (`⛏️ Open Multi-Miner Mini App` + `🎬 Watch Video Ad`) from callback queries and replies.
+  - Organized reply keyboard into an intuitive 2-column layout:
+    * `[ 📊 Dashboard | ⛏️ Mining Pools ]`
+    * `[ 👥 My Accounts | 💎 Points & Pass ]`
+    * `[ 🎬 Watch Ads (+20 Pts) | 🎁 Daily Bonus ]`
+    * `[ 📖 User Guide | 💬 Support ]`
+  - Admin Bot Menu Button (`setChatMenuButton`) reset to pure native command menu, removing all "AAA Telegram App" web app buttons.
+* **⚡ 5-Node Cloudflare Edge Synchronization**:
+  - Deployed updated worker logic across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with 100% success.
+
 
 
 

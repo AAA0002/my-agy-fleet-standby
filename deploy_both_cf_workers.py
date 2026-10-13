@@ -3887,7 +3887,8 @@ fi
               const shortName = name.split(" ")[0];
               const isHost = String(a.user_id) === "6727787768";
               const isRev = revokedSet.has(idx);
-              const tag = isHost ? " 👑" : (isRev ? " 🔴" : " 🟢");
+              const statusIcon = isRev ? "🔴" : "🟢";
+              const tag = isHost ? ` 👑 ${statusIcon}` : ` ${statusIcon}`;
               return {
                 text: `${idx}. ${shortName}${tag}`,
                 callback_data: `btn_otp_get_${idx}`
@@ -3952,7 +3953,9 @@ fi
           accounts.forEach((acc, i) => {
             const idx = acc.index || (i + 1);
             const ph = (acc.phone && acc.phone !== "N/A" && acc.phone !== "Hidden") ? acc.phone : (KNOWN_PHONES[String(acc.user_id)] || KNOWN_PHONES_BY_INDEX[idx] || "N/A");
-            const name = cleanName(acc, i);
+            const rawName = cleanName(acc, i);
+            const isHost = String(acc.user_id) === "6727787768";
+            const name = isHost ? `${rawName} 👑` : rawName;
             if (REVOKED_INDICES.has(idx)) {
               revokedList.push({ idx, name, phone: ph });
             } else {
@@ -4707,7 +4710,9 @@ fi
                 const isHost = String(a.user_id) === "6727787768";
                 const isRev = health.revoked.has(idx);
                 if (isRev) revokedCount++; else activeCount++;
-                const tag = isHost ? "Master Host 👑" : (isRev ? "🔴 Needs Re-link" : "🟢 Active");
+                const tag = isHost
+                  ? (isRev ? "Master Host 👑 (🔴 Needs Re-link)" : "Master Host 👑 (🟢 Active)")
+                  : (isRev ? "🔴 Needs Re-link" : "🟢 Active");
                 const ph = (a.phone && a.phone !== "N/A" && a.phone !== "Hidden") ? a.phone : (KNOWN_PHONES[String(a.user_id)] || KNOWN_PHONES_BY_INDEX[idx] || "");
                 const phoneStr = ph ? ` (${ph})` : "";
                 return `• #${idx} *${cleanName(a, i)}*${phoneStr} — ${tag}`;
@@ -7411,13 +7416,15 @@ fi
                 const isRev = health.revoked.has(targetIdx);
                 const ph = (a.phone && a.phone !== "N/A" && a.phone !== "Hidden") ? a.phone : (KNOWN_PHONES[String(a.user_id)] || KNOWN_PHONES_BY_INDEX[targetIdx] || "N/A");
                 const cName = cleanName(a, targetIdx - 1);
-                const daemonStatus = isHost ? "👑 Master Host (Online & Directing)" : (isRev ? "🔴 Session Revoked (Needs Re-linking)" : "🟢 Active & Mining");
+                const daemonStatus = isHost
+                  ? (isRev ? "👑 Master Host — 🔴 Session Revoked (Needs Re-linking)" : "👑 Master Host — 🟢 Active & Directing")
+                  : (isRev ? "🔴 Session Revoked (Needs Re-linking)" : "🟢 Active & Mining");
                 const detailRep = `📱 *Account #${targetIdx} Inspection*\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━\n` +
                   `• *Name:* ${cName}\n` +
                   `• *Phone:* \`${ph}\`\n` +
                   `• *User ID:* \`${a.user_id || "N/A"}\`\n` +
-                  `• *Role:* ${isHost ? "Master Host 👑" : (isRev ? "Worker Account 🔴" : "Worker Account 🟢")}\n` +
+                  `• *Role:* ${isHost ? (isRev ? "Master Host 👑 (🔴 Needs Re-link)" : "Master Host 👑 (🟢 Active)") : (isRev ? "Worker Account 🔴" : "Worker Account 🟢")}\n` +
                   `• *Daemon Status:* ${daemonStatus}\n` +
                   `• *Mining Policy:* 100% Compounding & Hash Growth Mode\n` +
                   `• *Withdrawal Directive:* Permanently Disabled (Anti-Wrong-Address Protection) 🛡️\n` +
@@ -7446,7 +7453,9 @@ fi
               const isHost = String(a.user_id) === "6727787768";
               const isRev = health.revoked.has(idx);
               if (isRev) revokedCount++; else activeCount++;
-              const tag = isHost ? "Master Host 👑" : (isRev ? "🔴 Needs Re-link" : "🟢 Active");
+              const tag = isHost
+                ? (isRev ? "Master Host 👑 (🔴 Needs Re-link)" : "Master Host 👑 (🟢 Active)")
+                : (isRev ? "🔴 Needs Re-link" : "🟢 Active");
               const ph = (a.phone && a.phone !== "N/A" && a.phone !== "Hidden") ? a.phone : (KNOWN_PHONES[String(a.user_id)] || KNOWN_PHONES_BY_INDEX[idx] || "");
               const phoneStr = ph ? ` (${ph})` : "";
               return `• #${idx} *${cleanName(a, i)}*${phoneStr} — ${tag}`;
@@ -9423,47 +9432,38 @@ Reply to Arif naturally:`;
           const vyroAccs = accs.filter(a => a.pool === "vyro" || a.pool === "all" || !a.pool).length;
           const kynexAccs = accs.filter(a => a.pool === "kynex" || a.pool === "all" || !a.pool).length;
           const dCost = isCovered ? 0 : (accs.length * 100);
-          const daysRemaining = isCovered ? "Unlimited (VIP Pass)" : (dCost > 0 ? `${Math.floor((profile.points || 0) / dCost)} Days` : "Unlimited");
-          const farmStatus = isCovered ? "🟢 Active 24/7 (Covered by VIP Pass)" : (profile.farming_active ? "🟢 Active & Mining 24/7" : "🔴 Paused (Needs Points)");
+          const daysRemaining = isCovered ? "Unlimited (VIP)" : (dCost > 0 ? `${Math.floor((profile.points || 0) / dCost)}d` : "Unlimited");
+          const farmStatus = isCovered ? "🟢 Active 24/7 (VIP Pass)" : (profile.farming_active ? "🟢 Active & Mining 24/7" : "🔴 Paused (Needs Points)");
 
-          const txt = `📊 *Your Mining Dashboard*\n` +
+          const txt = `⚡ *AAA AUTO MINING — DASHBOARD*\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `👤 *User ID:* \`${uid}\`\n` +
-            `⚡ *MRG Accounts:* ${mrgAccs}\n` +
-            `🪙 *ATF Accounts:* ${atfAccs}\n` +
-            `🏢 *Victor's Accounts:* ${victorsAccs}\n` +
-            `💧 *VyroDrop Accounts:* ${vyroAccs}\n` +
-            `🌐 *Kynex Accounts:* ${kynexAccs}\n` +
-            `🚀 *Total Connected Accounts:* ${accs.length} / ${totalSlots} Slots\n` +
+            `• *User ID:* \`${uid}\`\n` +
+            `• *Status:* ${farmStatus}\n` +
+            `• *Points Runway:* \`${profile.points || 0} Pts\` (~${daysRemaining})\n` +
+            `• *Connected Accounts:* \`${accs.length}/${totalSlots} Slots\` (MRG: ${mrgAccs} • ATF: ${atfAccs} • Vic: ${victorsAccs} • Vyr: ${vyroAccs} • Kyn: ${kynexAccs})\n` +
+            `• *Subscription:* ${passBadge}\n` +
+            `• *Daily Cost:* \`${isCovered ? "0 Pts (VIP)" : `${dCost} Pts/day`}\`\n` +
+            `• *Streak:* Day ${profile.daily_streak || 0} • Ads: ${profile.ads_watched || 0}/50\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `💎 *Points Balance:* ${profile.points || 0} Points (~${daysRemaining} runway)\n` +
-            `🎟️ *Pass Status:* ${passBadge}\n` +
-            `⚡ *Daily Cost:* ${isCovered ? "0 Pts/day (VIP Pass)" : `${dCost} Pts/day (100/acc)`}\n` +
-            `🔥 *Daily Streak:* Day ${profile.daily_streak || 0} • 🎬 *Ads Watched:* ${profile.ads_watched || 0} / 50\n` +
-            `🛡️ *Anti-Ban Protection:* ✅ Active (Sticky IP & Cloud Rotator)\n` +
-            `⚡ *Automated Cloud Mining:* ${farmStatus}\n` +
-            `━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `💡 _Tap below to manage pools, watch ads for points, or connect accounts:_`;
+            `_Select an action below:_`;
 
           const btns = {
             inline_keyboard: [
               [
-                { text: "➕ Connect Account", callback_data: "ub_add_acc" },
-                { text: "⛏️ Mining Pools", callback_data: "ub_pools" }
+                { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } },
+                { text: "➕ Connect Account", callback_data: "ub_add_acc" }
               ],
               [
-                { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }
+                { text: "⛏️ Mining Pools", callback_data: "ub_pools" },
+                { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
               ],
               [
-                { text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" },
-                { text: "🌟 VIP Passes & Boosts", callback_data: "ub_buy_stars" }
+                { text: "🎁 Daily Bonus", callback_data: "ub_daily_claim" },
+                { text: "🌟 VIP Passes", callback_data: "ub_buy_stars" }
               ],
               [
                 { text: "👥 My Accounts", callback_data: "ub_accounts" },
-                { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }
+                { text: "👥 Invite Friends", callback_data: "ub_referral" }
               ]
             ]
           };
@@ -9480,18 +9480,16 @@ Reply to Arif naturally:`;
           const vyroAccs = accs.filter(a => a.pool === "vyro" || a.pool === "all" || !a.pool).length;
           const kynexAccs = accs.filter(a => a.pool === "kynex" || a.pool === "all" || !a.pool).length;
 
-          const txt = `⛏️ *SUPPORTED CLOUD MINING POOLS & BOTS* 🤖\n` +
-            `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
-            `Select a crypto mining bot below to view your connected accounts or add new accounts:\n\n` +
-            `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
-            `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
-            `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade\n` +
-            `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n` +
-            `5️⃣ 🌐 [Kynex Network](https://t.me/kynexnetworkbot) — Decentralized TON edge mining\n\n` +
-            `☁️ *What Our Bot Does:*\n` +
-            `• Automatically runs 24/7 cloud auto-farming across all 5 bots for your connected accounts.\n` +
-            `• Executes daily claims, starts, tasks, and point rewards without keeping your phone or app open.\n` +
-            `• All mined tokens accumulate directly in your accounts inside each respective official bot.`;
+          const txt = `⛏️ *SUPPORTED CLOUD MINING POOLS*\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `Autonomous 24/7 cloud mining active across 5 official bots:\n\n` +
+            `1. *MRG Miner* (4h cycle • TON AI Mining)\n` +
+            `2. *ATF Miner* (24h cycle • Daily Task Claiming)\n` +
+            `3. *Victor's Company* (8h cycle • Solar & Arcade)\n` +
+            `4. *VyroDrop* (12h cycle • High-Yield TON)\n` +
+            `5. *Kynex Network* (12h cycle • TON Edge Node)\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `_Select a pool below to link accounts:_`;
 
           const btns = {
             inline_keyboard: [
@@ -9504,17 +9502,12 @@ Reply to Arif naturally:`;
                 { text: `💧 VyroDrop (${vyroAccs})`, callback_data: "ub_pool_vyro" }
               ],
               [
-                { text: `🌐 Kynex Network (${kynexAccs})`, callback_data: "ub_pool_kynex" }
+                { text: `🌐 Kynex Network (${kynexAccs})`, callback_data: "ub_pool_kynex" },
+                { text: "➕ Add to All Pools", callback_data: "ub_add_acc" }
               ],
               [
-                { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }
-              ],
-              [
-                { text: "➕ Add Account (All Pools)", callback_data: "ub_add_acc" },
-                { text: "📊 My Dashboard", callback_data: "ub_stats" }
+                { text: "📊 Dashboard", callback_data: "ub_stats" },
+                { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }
               ]
             ]
           };
@@ -9539,7 +9532,10 @@ Reply to Arif naturally:`;
             ],
             [
               { text: "👥 Invite Friends" },
-              { text: "💬 Help & Support" }
+              { text: "📖 User Guide" }
+            ],
+            [
+              { text: "💬 Support" }
             ]
           ],
           resize_keyboard: true,
@@ -9563,7 +9559,7 @@ Reply to Arif naturally:`;
             ],
             [
               { text: "👥 Invite Friends" },
-              { text: "💬 Help & Support" }
+              { text: "📖 User Guide" }
             ],
             [
               { text: "👑 User Admin Dashboard", web_app: { url: "https://aaa-admin-portal.pages.dev/" } }
@@ -9605,25 +9601,20 @@ Reply to Arif naturally:`;
         const userWelcomeInlineKeyboard = {
           inline_keyboard: [
             [
-              { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
+              { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } },
+              { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
             ],
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }
+              { text: "⛏️ Mining Pools", callback_data: "ub_pools" },
+              { text: "➕ Connect Account", callback_data: "ub_add_acc" }
             ],
             [
-              { text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" },
-              { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }
+              { text: "🎁 Daily Bonus", callback_data: "ub_daily_claim" },
+              { text: "👥 Invite Friends", callback_data: "ub_referral" }
             ],
             [
-              { text: "⛏️ 5 Supported Farming Pools 🤖", callback_data: "ub_pools" },
-              { text: "🌟 VIP Passes & Boosts", callback_data: "ub_buy_stars" }
-            ],
-            [
-              { text: "💬 Community Hub ↗️", url: "https://t.me/AAAAutoMiner" },
-              { text: "📢 Announcements ↗️", url: "https://t.me/AAAAUTOMINING" }
-            ],
-            [
-              { text: "⚡ Live Activity Stream ↗️", url: "https://t.me/AAA_ACTIVITY" }
+              { text: "🌟 VIP Passes", callback_data: "ub_buy_stars" },
+              { text: "📖 User Guide", callback_data: "ub_guide" }
             ]
           ]
         };
@@ -9643,7 +9634,7 @@ Reply to Arif naturally:`;
               { text: "🌟 +1 Permanent Slot (50 Stars)", callback_data: "ub_stars_slot1" }
             ],
             [
-              { text: "📺 Watch Ad (+20 Pts Free)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } },
+              { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } },
               { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }
             ]
           ]
@@ -9835,10 +9826,7 @@ Reply to Arif naturally:`;
             ctx.waitUntil(sendCqReply(refMsg, {
               inline_keyboard: [
                 [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }]
+                [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }]
               ]
             }));
             return new Response("OK");
@@ -9953,10 +9941,8 @@ Reply to Arif naturally:`;
                 `• 🌟 *Upgrade with Telegram Stars* (0 point daily fee)`;
               const kb = {
                 inline_keyboard: [
-                  [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
+                  [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }],
+                  [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
                   [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
                 ]
               };
@@ -9995,10 +9981,7 @@ Reply to Arif naturally:`;
               `💡 _Come back in 24 hours to keep your streak burning!_`;
             const succKb = {
               inline_keyboard: [
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
+                [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }],
                 [{ text: "💎 View Points & Passes", callback_data: "ub_points" }]
               ]
             };
@@ -10041,37 +10024,32 @@ Reply to Arif naturally:`;
 
             const ptsKb = {
               inline_keyboard: [
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
-                [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
-                [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
+                [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
+                [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends", callback_data: "ub_referral" }],
+                [{ text: "🌟 Upgrade VIP Passes", callback_data: "ub_buy_stars" }]
               ]
             };
             ctx.waitUntil(sendCqReply(ptsMsg, ptsKb));
             return new Response("OK");
           }
 
-          // C2.6 4 Mining Pools & Auto-Farming Guide
+          // C2.6 5 Mining Pools & Auto-Farming Guide
           if (cqData === "ub_withdraw" || cqData === "ub_pools") {
-            const poolsMsg = `⛏️ *4 SUPPORTED CLOUD MINING POOLS & BOTS* 🤖\n\n` +
-              `Our cloud engines automatically farm and claim all 4 bots 24/7 across your connected accounts:\n\n` +
+            const poolsMsg = `⛏️ *5 SUPPORTED CLOUD MINING POOLS & BOTS* 🤖\n\n` +
+              `Our cloud engines automatically farm and claim all 5 bots 24/7 across your connected accounts:\n\n` +
               `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
               `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
-              `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade minigame\n` +
-              `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n\n` +
+              `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade\n` +
+              `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n` +
+              `5️⃣ 🌐 [Kynex Network](https://t.me/kynexnetworkbot) — Decentralized TON edge node mining\n\n` +
               `☁️ *What Our Bot Does:*\n` +
-              `• Automatically runs 24/7 cloud auto-farming across all 4 bots for your connected accounts.\n` +
+              `• Automatically runs 24/7 cloud auto-farming across all 5 bots for your connected accounts.\n` +
               `• Executes daily claims, starts, tasks, and point rewards without keeping your phone or app open.\n` +
               `• All mined tokens accumulate directly in your accounts inside each respective official bot.`;
             ctx.waitUntil(sendCqReply(poolsMsg, {
               inline_keyboard: [
                 [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "👥 My Accounts", callback_data: "ub_accounts" }],
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }]
+                [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }]
               ]
             }));
             return new Response("OK");
@@ -10903,30 +10881,32 @@ Reply to Arif naturally:`;
             return;
           }
 
-          // 0. Dedicated Help & User Guide (/help, /guide, /info, /about)
-          if (text.startsWith("/help") || text.startsWith("/guide") || text.startsWith("/info") || text.startsWith("/about")) {
-            const helpMsg = `📖 *AAA AUTO MINING & ARI AI GUIDE* 🤖\n` +
+          // 0. Dedicated Help & User Guide (/help, /guide, /info, /about, "📖 User Guide", "📖 Guide")
+          if (text.startsWith("/help") || text.startsWith("/guide") || text === "📖 User Guide" || text === "📖 Guide" || text === "Guide" || text.startsWith("/info") || text.startsWith("/about")) {
+            const helpMsg = `📖 *AAA CLOUD MINING — COMPREHENSIVE USER GUIDE* 🤖\n` +
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Hello ${senderName}! Here is your complete guide to automated cloud mining:\n\n` +
-              `🤖 *4 Automated Mining Pools & Links:*\n` +
-              `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
-              `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
-              `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade minigame\n` +
-              `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n\n` +
+              `🤖 *5 Automated Mining Pools & Links:*\n` +
+              `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier TON AI mining (4h cycle)\n` +
+              `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming (24h cycle)\n` +
+              `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level solar & arcade yield (8h cycle)\n` +
+              `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining (12h cycle)\n` +
+              `5️⃣ 🌐 [Kynex Network](https://t.me/kynexnetworkbot) — Decentralized TON edge node mining (12h cycle)\n\n` +
               `1️⃣ *How to Connect & Remove Accounts*\n` +
-              `• *Connect:* Tap *➕ Connect Account*, send phone number & 5-digit Telegram code.\n` +
-              `• *Remove:* Tap *👥 My Accounts* in the menu and tap *🗑️ Remove* next to any account, or type \`/remove\` anytime!\n` +
-              `• Cloud-powered: your accounts farm 24/7 in the cloud without needing your phone or app open!\n\n` +
-              `2️⃣ *Points & Free Earning*\n` +
-              `• Daily cost is 100 Points/day per active connected account.\n` +
-              `• *🎬 Watch Ads:* Tap *🎬 Watch Ads* (next to message input) or in the message above to earn +20 Points every 15s. Every 50 ads unlocks a *Free Bonus Account Slot*!\n` +
+              `• *Method A (Mini App Link):* Launch any bot, tap ⋮ (three dots) -> Copy Link, then tap *➕ Connect Account* and paste!\n` +
+              `• *Method B (Phone & PIN Pad):* Send phone number and enter 5-digit code via our secure PIN Pad.\n` +
+              `• *Zero Phone Load:* Once connected, your accounts farm 24/7 on Cloudflare Edge & Render clusters. Zero battery or RAM used!\n\n` +
+              `2️⃣ *Points Economy & Free Earning*\n` +
+              `• Daily cost: 100 Points/day per active connected account.\n` +
+              `• *🎬 Watch Ads:* Tap *🎬 Watch Ads* (or use the persistent button) to earn +20 Points every 15s. Every 50 ads unlocks a *Free Bonus Account Slot*!\n` +
+              `• *🎁 Daily Streak Bonus:* Claim +100 Points every 24 hours.\n` +
               `• *👥 Invite Friends:* Earn +500 Points for every friend who joins & verifies.\n\n` +
               `3️⃣ *VIP Subscription Passes (Telegram Stars)*\n` +
               `• *🎟️ 1-Day Pass (15 Stars):* 24h unlimited cloud mining + 150 points.\n` +
               `• *🎟️ 7-Day Weekly Pass (45 Stars):* 7 days unlimited cloud mining + 1,000 points + 1 extra account slot.\n` +
               `• *💎 30-Day Monthly Pass (120 Stars):* 30 days unlimited cloud mining + 4,500 points + 1 permanent slot + 2x ad rewards (+40 Pts per ad)!\n` +
               `• *🌟 Permanent Slot (50 Stars):* Add permanent account capacity.\n\n` +
-              `💬 *Ask Ari AI:* Simply type any question or guide request directly in this chat!`;
+              `💬 *Ask Ari AI:* Simply type any question directly in this chat!`;
             await sendUserReply(helpMsg, userWelcomeInlineKeyboard);
             return;
           }
@@ -10945,10 +10925,7 @@ Reply to Arif naturally:`;
             await sendUserReply(refMsg, {
               inline_keyboard: [
                 [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }]
+                [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }]
               ]
             });
             return;
@@ -10965,7 +10942,7 @@ Reply to Arif naturally:`;
               `Earn free points below:`;
             const rewBtns = {
               inline_keyboard: [
-                [{ text: `🎬 Watch Video Ad (+${adPts} Pts)`, web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: `🎬 Watch Ads (+${adPts} Pts)`, web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
@@ -10983,10 +10960,9 @@ Reply to Arif naturally:`;
           // 1. /start, /menu
           if (text.startsWith("/start") || text === "/menu") {
             const dash = renderMiningDashboard(profile, chatId, senderName);
-            await sendUserReply(`🌟 *AAA AUTO MINING PLATFORM (PREMIUM)* 🚀\n_⚡ Autonomous 24/7 Multi-Bot Cloud Farming Ecosystem_\n\n` + dash.text, dash.markup);
-            await sendUserReply("⚡ *Control Panel:* Select an option below or tap 🎬 Watch Ads:", activeUserKeyboard);
+            await sendUserReply(dash.text, dash.markup);
 
-            // Ensure persistent Chat Menu Button on User Bot is ALWAYS set to Watch Ads for ALL users (including owner)
+            // Ensure persistent Chat Menu Button on User Bot is ALWAYS set to Watch Ads
             if (ctx && ctx.waitUntil) {
               const menuPayload = {
                 chat_id: chatId,
@@ -10994,7 +10970,7 @@ Reply to Arif naturally:`;
                   type: "web_app",
                   text: "🎬 Watch Ads",
                   web_app: {
-                    url: "https://atf-miner-app.pages.dev/app/ad/"
+                    url: "https://agy-henna.vercel.app/"
                   }
                 }
               };
@@ -11168,12 +11144,9 @@ Reply to Arif naturally:`;
 
             await sendUserReply(ptsMsg, {
               inline_keyboard: [
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
-                [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
-                [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
+                [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
+                [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends", callback_data: "ub_referral" }],
+                [{ text: "🌟 Upgrade VIP Passes", callback_data: "ub_buy_stars" }]
               ]
             });
             return;
@@ -11201,10 +11174,8 @@ Reply to Arif naturally:`;
                 `• 🌟 *Upgrade with Telegram Stars* (VIP Pass - unlimited mining)`;
               const kb = {
                 inline_keyboard: [
-                  [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
+                  [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }],
+                  [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
                   [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
                 ]
               };
@@ -11243,10 +11214,7 @@ Reply to Arif naturally:`;
               `💡 _Come back in 24 hours to keep your streak burning!_`;
             const succKb = {
               inline_keyboard: [
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
+                [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }],
                 [{ text: "💎 View Points & Passes", callback_data: "ub_points" }]
               ]
             };
@@ -11296,10 +11264,7 @@ Reply to Arif naturally:`;
             await sendUserReply(refMsg, {
               inline_keyboard: [
                 [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
+                [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }],
                 [{ text: "🎁 My Rewards Hub", callback_data: "ub_rewards" }]
               ]
             });
@@ -11346,10 +11311,8 @@ Reply to Arif naturally:`;
               `💡 _Watch ads & invite friends to climb the leaderboard!_`;
             await sendUserReply(boardMsg, {
               inline_keyboard: [
-                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
+                [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }],
+                [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
               ]
             });
@@ -11440,10 +11403,8 @@ Reply to Arif naturally:`;
             const chatAiKeyboard = {
               inline_keyboard: [
                 [
-                  { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }
+                  { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } },
+                  { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
                 ],
                 [
                   { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" }
@@ -11491,10 +11452,8 @@ Reply to Arif naturally:`;
           const aiInlineMarkup = {
             inline_keyboard: [
               [
-                { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/miner" } }
-            ],
-            [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }
+                { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } },
+                { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
               ],
               [
                 { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" }

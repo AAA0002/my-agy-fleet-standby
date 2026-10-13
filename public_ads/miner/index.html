@@ -4,11 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#070b14" />
-  <title>AAA AUTO Mining — Multi-Pool Cloud Miner</title>
+  <title>AAA Protocol — Autonomous Cloud Mining Dashboard</title>
 
-  <!-- HilltopAds Verification -->
+  <!-- HilltopAds & Clickadu Verification -->
   <meta name="77d314e64e8dc15578e7d6411310745a041720e6" content="77d314e64e8dc15578e7d6411310745a041720e6" />
-  <!-- Clickadu Verification -->
   <meta name="clckd" content="e924148c5d931ae4a1270696d955223c" />
 
   <!-- Official Telegram WebApp SDK -->
@@ -20,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Dual-Network Waterfall Mediation: Monetag (Zone 11753248) & GigaPub (Placement 8160) -->
+  <!-- Dual-Network Waterfall Mediation -->
   <script src="https://yoszi.com/sdk.js" data-zone="11753248" data-sdk="show_11753248" onerror="this.onerror=null;this.src='https://libtl.com/sdk.js';"></script>
   <script src="https://ad.gigapub.tech/script?id=8160" async defer></script>
 
@@ -31,12 +30,13 @@
         extend: {
           colors: {
             cyberDark: '#070b14',
-            cyberCard: 'rgba(15, 23, 42, 0.82)',
+            cyberCard: 'rgba(15, 23, 42, 0.78)',
             cyberBorder: 'rgba(255, 255, 255, 0.08)',
             cyberCyan: '#06b6d4',
             cyberAmber: '#f59e0b',
             cyberIndigo: '#6366f1',
-            cyberEmerald: '#10b981'
+            cyberEmerald: '#10b981',
+            cyberPurple: '#a855f7'
           }
         }
       }
@@ -55,9 +55,9 @@
     body {
       background-color: #070b14;
       background-image: 
-        radial-gradient(circle at 10% 15%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 90% 85%, rgba(6, 182, 212, 0.12) 0%, transparent 45%),
-        radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.05) 0%, transparent 60%);
+        radial-gradient(circle at 10% 12%, rgba(99, 102, 241, 0.16) 0%, transparent 40%),
+        radial-gradient(circle at 90% 88%, rgba(6, 182, 212, 0.14) 0%, transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.06) 0%, transparent 60%);
       background-attachment: fixed;
       color: #f8fafc;
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -75,17 +75,17 @@
       border: 1px solid rgba(255, 255, 255, 0.08);
       box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
     }
-    .card-glow-amber {
-      border-color: rgba(245, 158, 11, 0.3);
-      box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.2);
+    .card-glow-cyan {
+      border-color: rgba(6, 182, 212, 0.32);
+      box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.18);
     }
     .card-glow-indigo {
-      border-color: rgba(99, 102, 241, 0.35);
-      box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.2);
+      border-color: rgba(99, 102, 241, 0.32);
+      box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.18);
     }
-    .card-glow-cyan {
-      border-color: rgba(6, 182, 212, 0.35);
-      box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.2);
+    .card-glow-amber {
+      border-color: rgba(245, 158, 11, 0.32);
+      box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.18);
     }
     .pulse-dot {
       animation: pulseGreen 2s infinite;
@@ -95,80 +95,105 @@
       70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
       100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
-    .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
     .nav-btn.active {
       color: #38bdf8;
       background: rgba(56, 189, 248, 0.12);
-      border-color: rgba(56, 189, 248, 0.3);
+      border-color: rgba(56, 189, 248, 0.28);
+    }
+    .nav-btn.active svg {
+      stroke: #38bdf8;
     }
   </style>
 </head>
 <body class="flex flex-col min-h-screen text-slate-100 selection:bg-cyan-500/20">
 
   <!-- ======================================================== -->
-  <!-- 1. STICKY TOP APP BAR (USER PROFILE & ANTI-BAN BADGE)    -->
+  <!-- 1. HEADER (BRAND IDENTITY & VECTOR CONTROLS)            -->
   <!-- ======================================================== -->
   <header class="sticky top-0 z-40 w-full max-w-lg mx-auto pt-[max(var(--sat),8px)] px-3 pb-2.5 bg-slate-950/80 backdrop-blur-xl border-b border-white/10 flex items-center justify-between">
     <div class="flex items-center gap-2.5 min-w-0">
-      <div id="user-avatar" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-cyan-500 flex items-center justify-center font-black text-white text-sm shadow-md shrink-0 overflow-hidden ring-1 ring-white/20">
-        <span>A</span>
+      <!-- Modern Geometric Brand SVG Avatar -->
+      <div id="user-avatar" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-indigo-600 to-purple-600 flex items-center justify-center font-black text-white text-xs shadow-md shrink-0 overflow-hidden ring-1 ring-white/20">
+        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
       </div>
       <div class="min-w-0 text-left">
         <div class="flex items-center gap-1.5">
-          <span id="user-name" class="font-bold text-xs sm:text-sm text-white truncate">AAA Miner</span>
-          <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold shrink-0">V5 AUTO</span>
+          <span id="user-name" class="font-bold text-xs sm:text-sm text-white truncate">AAA Protocol</span>
+          <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold shrink-0">CLOUD V5</span>
         </div>
         <div class="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5">
           <span id="user-id-badge" class="truncate">ID: ...</span>
           <span>•</span>
           <span class="text-emerald-400 font-semibold flex items-center gap-1">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot inline-block"></span>
-            <span>Sticky IP Active</span>
+            <span>Mesh Active</span>
           </span>
         </div>
       </div>
     </div>
 
+    <!-- Header Action Icons (Vector SVGs) -->
     <div class="flex items-center gap-1.5 shrink-0">
-      <button id="btn-sound" onclick="toggleAudio()" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 transition border border-white/10 text-xs flex items-center justify-center text-slate-300" title="Sound">
-        <span id="sound-icon">🔊</span>
+      <button id="btn-sound" onclick="toggleAudio()" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 transition border border-white/10 flex items-center justify-center text-slate-300 hover:text-white" title="Toggle Audio">
+        <svg id="sound-icon-svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
       </button>
-      <button onclick="closeApp()" class="h-8 px-2.5 rounded-xl bg-white/5 hover:bg-rose-500/20 active:scale-95 transition border border-white/10 text-xs font-semibold text-slate-300 hover:text-rose-300 flex items-center gap-1" title="Close">
-        <span>✕</span>
+      <button onclick="closeApp()" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-rose-500/20 active:scale-95 transition border border-white/10 flex items-center justify-center text-slate-300 hover:text-rose-300" title="Close">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
       </button>
     </div>
   </header>
 
   <!-- ======================================================== -->
-  <!-- 2. QUICK STATS KPI BAR (POINTS, CAPACITY, STREAK, TIER)  -->
+  <!-- 2. KPI METRICS STRIP                                     -->
   <!-- ======================================================== -->
   <section class="w-full max-w-lg mx-auto px-3 pt-2.5 pb-1">
     <div class="grid grid-cols-4 gap-1.5">
       <!-- KPI 1: Points -->
       <div class="card-glass p-2 rounded-xl text-center flex flex-col justify-between">
-        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Points</div>
+        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-center gap-1">
+          <svg class="w-2.5 h-2.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"></circle><path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path></svg>
+          <span>Points</span>
+        </div>
         <div id="stat-points" class="text-xs sm:text-sm font-black text-amber-400 font-mono my-0.5">--</div>
         <div id="stat-runway" class="text-[8px] text-slate-400 truncate font-mono">-- days</div>
       </div>
 
       <!-- KPI 2: Daily Cost -->
       <div class="card-glass p-2 rounded-xl text-center flex flex-col justify-between">
-        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Cost</div>
+        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-center gap-1">
+          <svg class="w-2.5 h-2.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+          <span>Cost</span>
+        </div>
         <div id="stat-cost" class="text-xs sm:text-sm font-black text-cyan-400 font-mono my-0.5">100/d</div>
         <div class="text-[8px] text-emerald-400 font-semibold truncate">Free Day 1</div>
       </div>
 
-      <!-- KPI 3: Accounts Capacity -->
+      <!-- KPI 3: Account Slots -->
       <div class="card-glass p-2 rounded-xl text-center flex flex-col justify-between">
-        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Slots</div>
+        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-center gap-1">
+          <svg class="w-2.5 h-2.5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+          <span>Slots</span>
+        </div>
         <div id="stat-slots" class="text-xs sm:text-sm font-black text-indigo-300 font-mono my-0.5">0 / 1</div>
         <div id="stat-slot-sub" class="text-[8px] text-slate-400 truncate">+1 per 50 ads</div>
       </div>
 
       <!-- KPI 4: Streak -->
       <div class="card-glass p-2 rounded-xl text-center flex flex-col justify-between">
-        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Streak</div>
+        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold flex items-center justify-center gap-1">
+          <svg class="w-2.5 h-2.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+          <span>Streak</span>
+        </div>
         <div id="stat-streak" class="text-xs sm:text-sm font-black text-rose-400 font-mono my-0.5">Day 1</div>
         <div class="text-[8px] text-rose-300 font-semibold truncate">+100 Pts/d</div>
       </div>
@@ -176,86 +201,88 @@
   </section>
 
   <!-- ======================================================== -->
-  <!-- 3. MAIN SCROLLABLE CONTENT AREA (TABBED VIEWS)           -->
+  <!-- 3. MAIN CONTENT (TABBED VIEWS)                           -->
   <!-- ======================================================== -->
   <main class="flex-1 w-full max-w-lg mx-auto px-3 py-2 pb-24 space-y-3">
 
     <!-- ---------------------------------------------------- -->
-    <!-- TAB 1: MINING HUB (5 LEGITIMATE POOLS DASHBOARD)     -->
+    <!-- TAB 1: MINING POOLS DASHBOARD                        -->
     <!-- ---------------------------------------------------- -->
     <div id="tab-hub" class="space-y-3">
-      <!-- Hero Telemetry Banner -->
+      <!-- Telemetry Banner -->
       <div class="card-glass card-glow-indigo p-3.5 rounded-2xl relative overflow-hidden text-left">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-2">
-            <span class="text-xl">⚡</span>
+            <div class="w-7 h-7 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+            </div>
             <div>
-              <div class="font-extrabold text-xs sm:text-sm text-white font-display">24/7 Autonomous Cloud Mining</div>
-              <div class="text-[10px] text-indigo-300 font-mono">100% Cloud Mesh • 0 Phone Load (Samsung A30 Safe)</div>
+              <div class="font-bold text-xs sm:text-sm text-white font-display">Autonomous Cloud Mining</div>
+              <div class="text-[10px] text-indigo-300 font-mono">100% Cloud Mesh • 0 Phone Resource Load</div>
             </div>
           </div>
           <span id="hub-farming-badge" class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono shrink-0">
-            🟢 Active
+            Active
           </span>
         </div>
         <p class="text-[11px] text-slate-300 leading-relaxed">
-          Cloudflare Edge & Render clusters automatically execute continuous token claims, hashrate booster activations, and daily quests across all 5 official bots on your behalf.
+          Cloudflare Edge and Render nodes execute continuous token claims, hashrate boosters, and daily quests across all 5 official bots automatically.
         </p>
       </div>
 
-      <!-- 5 Legitimate Pools Grid -->
+      <!-- 5 Verified Pools Grid -->
       <div class="space-y-2">
         <div class="flex items-center justify-between px-1">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 font-display">5 Supported Mining Pools</h2>
-          <span class="text-[10px] font-mono text-cyan-400">Modeled after @Allbottesting_bot</span>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 font-display">5 Supported Mining Protocols</h2>
+          <span class="text-[10px] font-mono text-cyan-400">Multi-Edge Architecture</span>
         </div>
 
         <!-- Pool 1: MRG Miner -->
         <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3 hover:border-amber-500/30 transition">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-xl shrink-0">
-              ⚡
+            <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
             </div>
             <div class="min-w-0 text-left">
               <div class="flex items-center gap-2">
                 <span class="font-bold text-xs text-white">MRG Miner</span>
                 <span class="text-[9px] font-mono px-1.5 py-0.2 bg-amber-500/20 text-amber-300 rounded">4h cycle</span>
               </div>
-              <div class="text-[10px] text-slate-400 truncate mt-0.5">Peak Tier TON AI Mining • Auto 1-Click Bonus</div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">TON AI Mining • Auto 1-Click Bonus</div>
               <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-mrg-count">0 Connected Accounts</div>
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
             <button onclick="openConnectTab('mrg')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
-              ➕ Connect
+              Connect
             </button>
-            <a href="https://t.me/mrgminerbot?start=ref_IRN1G3XD" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs" title="Open Official Bot">
-              ↗️
+            <a href="https://t.me/mrgminerbot?start=ref_IRN1G3XD" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition" title="Open Official Bot">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>
           </div>
         </div>
 
         <!-- Pool 2: ATF Miner -->
-        <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3 hover:border-amber-500/30 transition">
+        <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3 hover:border-indigo-500/30 transition">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xl shrink-0">
-              🪙
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
             </div>
             <div class="min-w-0 text-left">
               <div class="flex items-center gap-2">
                 <span class="font-bold text-xs text-white">ATF Miner</span>
                 <span class="text-[9px] font-mono px-1.5 py-0.2 bg-indigo-500/20 text-indigo-300 rounded">24h cycle</span>
               </div>
-              <div class="text-[10px] text-slate-400 truncate mt-0.5">Auto 24h Mining • Daily Quest Auto-Claiming</div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">24h Yield Cycle • Daily Task Claiming</div>
               <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-atf-count">0 Connected Accounts</div>
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
             <button onclick="openConnectTab('atf')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
-              ➕ Connect
+              Connect
             </button>
-            <a href="https://t.me/ATF_AIRDROP_bot?start=6727787768" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs" title="Open Official Bot">
-              ↗️
+            <a href="https://t.me/ATF_AIRDROP_bot?start=6727787768" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition" title="Open Official Bot">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>
           </div>
         </div>
@@ -263,24 +290,24 @@
         <!-- Pool 3: Victor's Company -->
         <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3 hover:border-emerald-500/30 transition">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-xl shrink-0">
-              🏢
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="9" y1="22" x2="9" y2="22.01"></line><line x1="15" y1="22" x2="15" y2="22.01"></line><line x1="9" y1="18" x2="9" y2="18.01"></line><line x1="15" y1="18" x2="15" y2="18.01"></line><line x1="9" y1="14" x2="9" y2="14.01"></line><line x1="15" y1="14" x2="15" y2="14.01"></line><line x1="9" y1="10" x2="9" y2="10.01"></line><line x1="15" y1="10" x2="15" y2="10.01"></line><line x1="9" y1="6" x2="9" y2="6.01"></line><line x1="15" y1="6" x2="15" y2="6.01"></line></svg>
             </div>
             <div class="min-w-0 text-left">
               <div class="flex items-center gap-2">
                 <span class="font-bold text-xs text-white">Victor's Company</span>
                 <span class="text-[9px] font-mono px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded">8h cycle</span>
               </div>
-              <div class="text-[10px] text-slate-400 truncate mt-0.5">1,000-Level Arcade & Solar Mining Engine</div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">1,000-Level Arcade & Solar Yield Engine</div>
               <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-victors-count">0 Connected Accounts</div>
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
             <button onclick="openConnectTab('victors')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
-              ➕ Connect
+              Connect
             </button>
-            <a href="https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs" title="Open Official Bot">
-              ↗️
+            <a href="https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition" title="Open Official Bot">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>
           </div>
         </div>
@@ -288,38 +315,38 @@
         <!-- Pool 4: VyroDrop -->
         <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3 hover:border-cyan-500/30 transition">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-xl shrink-0">
-              💧
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
             </div>
             <div class="min-w-0 text-left">
               <div class="flex items-center gap-2">
                 <span class="font-bold text-xs text-white">VyroDrop</span>
                 <span class="text-[9px] font-mono px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 rounded">12h cycle</span>
               </div>
-              <div class="text-[10px] text-slate-400 truncate mt-0.5">High-Yield TON Mining • Auto Task Solver</div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">High-Yield TON Mining • Task Automation</div>
               <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-vyro-count">0 Connected Accounts</div>
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
             <button onclick="openConnectTab('vyro')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
-              ➕ Connect
+              Connect
             </button>
-            <a href="https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs" title="Open Official Bot">
-              ↗️
+            <a href="https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition" title="Open Official Bot">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>
           </div>
         </div>
 
         <!-- Pool 5: Kynex Network -->
-        <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3 hover:border-violet-500/30 transition">
+        <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3 hover:border-purple-500/30 transition">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-xl shrink-0">
-              🌐
+            <div class="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
             </div>
             <div class="min-w-0 text-left">
               <div class="flex items-center gap-2">
                 <span class="font-bold text-xs text-white">Kynex Network</span>
-                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-violet-500/20 text-violet-300 rounded">12h cycle</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-purple-500/20 text-purple-300 rounded">12h cycle</span>
               </div>
               <div class="text-[10px] text-slate-400 truncate mt-0.5">Decentralized TON Edge Node Mining</div>
               <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-kynex-count">0 Connected Accounts</div>
@@ -327,10 +354,10 @@
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
             <button onclick="openConnectTab('kynex')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
-              ➕ Connect
+              Connect
             </button>
-            <a href="https://t.me/kynexnetworkbot" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs" title="Open Official Bot">
-              ↗️
+            <a href="https://t.me/kynexnetworkbot" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition" title="Open Official Bot">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>
           </div>
         </div>
@@ -338,41 +365,41 @@
     </div>
 
     <!-- ---------------------------------------------------- -->
-    <!-- TAB 2: CONNECT ACCOUNT (URL PARSER & AUTHENTICATOR) -->
+    <!-- TAB 2: CONNECT ACCOUNT (URL & DATA PARSER)           -->
     <!-- ---------------------------------------------------- -->
     <div id="tab-connect" class="hidden space-y-3 text-left">
       <div class="card-glass card-glow-cyan p-4 rounded-2xl">
         <div class="flex items-center gap-2.5 mb-2">
-          <div class="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-lg text-cyan-400">
-            ➕
+          <div class="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
           </div>
           <div>
             <h2 class="font-bold text-xs sm:text-sm text-white">Connect Mining Account</h2>
-            <p class="text-[10px] text-slate-400">Frictionless Mini App URL or Query String Parser</p>
+            <p class="text-[10px] text-slate-400">Mini App URL or Telegram Query String Parser</p>
           </div>
         </div>
 
-        <!-- Pool Selector -->
+        <!-- Pool Selector Chips -->
         <div class="my-3">
-          <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1.5">Select Mining Pool</label>
+          <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1.5">Select Protocol</label>
           <div class="grid grid-cols-3 gap-1.5 text-xs font-semibold">
             <button type="button" onclick="selectPool('mrg')" id="btn-pool-mrg" class="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition">
-              ⚡ MRG
+              MRG Miner
             </button>
             <button type="button" onclick="selectPool('atf')" id="btn-pool-atf" class="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition">
-              🪙 ATF
+              ATF Miner
             </button>
             <button type="button" onclick="selectPool('victors')" id="btn-pool-victors" class="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition">
-              🏢 Victor's
+              Victor's
             </button>
             <button type="button" onclick="selectPool('vyro')" id="btn-pool-vyro" class="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition">
-              💧 VyroDrop
+              VyroDrop
             </button>
             <button type="button" onclick="selectPool('kynex')" id="btn-pool-kynex" class="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition">
-              🌐 Kynex
+              Kynex
             </button>
             <button type="button" onclick="selectPool('all')" id="btn-pool-all" class="p-2 rounded-xl border border-cyan-500/40 bg-cyan-500/20 text-cyan-300 text-center active:scale-95 transition font-bold">
-              🤖 All Pools
+              All 5 Pools
             </button>
           </div>
         </div>
@@ -380,60 +407,62 @@
         <!-- URL / initData Input -->
         <div class="my-3">
           <div class="flex items-center justify-between mb-1">
-            <label class="block text-[10px] uppercase font-bold text-slate-400">Mini App URL or #tgWebAppData=...</label>
+            <label class="block text-[10px] uppercase font-bold text-slate-400">Mini App Link / tgWebAppData</label>
             <button type="button" onclick="pasteFromClipboard()" class="text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
-              📋 Paste
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+              <span>Paste</span>
             </button>
           </div>
-          <textarea id="input-raw-data" oninput="onInputDataChanged()" rows="3" class="w-full p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition" placeholder="Paste WebApp URL containing #tgWebAppData=... or query string user=..."></textarea>
+          <textarea id="input-raw-data" oninput="onInputDataChanged()" rows="3" class="w-full p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition" placeholder="Paste link containing #tgWebAppData=... or query string user=..."></textarea>
         </div>
 
-        <!-- Live Parsed Validation Card (Real-Time Client-Side Verification) -->
+        <!-- Live Parsed Validation Card -->
         <div id="parse-preview-box" class="hidden mb-3 p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-[11px] text-emerald-200 space-y-1">
           <div class="flex items-center gap-1.5 font-bold text-emerald-300">
-            <span>✅</span>
-            <span>Valid Telegram initData Verified!</span>
+            <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Verified Telegram initData Detected</span>
           </div>
-          <div id="parse-preview-user" class="font-mono text-[10px] text-slate-300">User: Arif (ID: 6727787768)</div>
-          <div id="parse-preview-hash" class="font-mono text-[9px] text-slate-400 truncate">Hash: 4fb6fabe87...</div>
+          <div id="parse-preview-user" class="font-mono text-[10px] text-slate-300">User: --</div>
+          <div id="parse-preview-hash" class="font-mono text-[9px] text-slate-400 truncate">Hash: --</div>
         </div>
 
         <!-- Account Label Input -->
         <div class="mb-3">
           <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Account Label</label>
-          <input type="text" id="input-label" class="w-full p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition" placeholder="e.g. main, phone2, a30, backup" value="main" />
+          <input type="text" id="input-label" class="w-full p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition" placeholder="e.g. main, node2, phone2, worker" value="main" />
         </div>
 
         <!-- Submit Button -->
         <button id="btn-submit-connect" onclick="submitConnectAccount()" class="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 via-indigo-600 to-cyan-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs active:scale-[0.98] transition flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20">
-          <span>🚀 Connect Account to Cloud Miner</span>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>Connect Account to Cloud Miner</span>
         </button>
 
         <!-- Instructions Accordion -->
         <div class="mt-4 pt-3 border-t border-white/10">
           <button type="button" onclick="toggleInstructions()" class="w-full flex items-center justify-between text-[11px] font-bold text-slate-300 hover:text-white">
-            <span>💡 How to get your Mini App URL (30s Guide)</span>
-            <span id="instr-arrow">▼</span>
+            <span>How to retrieve your Mini App link (30s Guide)</span>
+            <span id="instr-arrow" class="font-mono text-xs">▼</span>
           </button>
           <div id="instructions-body" class="hidden text-[10px] text-slate-400 mt-2 space-y-1.5 leading-relaxed bg-black/30 p-2.5 rounded-xl border border-white/5">
-            <p>1. Open any supported bot (e.g. <a href="https://t.me/mrgminerbot" class="text-cyan-400 underline" target="_blank">@mrgminerbot</a>, <a href="https://t.me/ATF_AIRDROP_bot" class="text-cyan-400 underline" target="_blank">@ATF_AIRDROP_bot</a>, <a href="https://t.me/VictorsCompanybot" class="text-cyan-400 underline" target="_blank">@VictorsCompanybot</a>).</p>
+            <p>1. Open any supported bot (<a href="https://t.me/mrgminerbot" class="text-cyan-400 underline" target="_blank">@mrgminerbot</a>, <a href="https://t.me/ATF_AIRDROP_bot" class="text-cyan-400 underline" target="_blank">@ATF_AIRDROP_bot</a>, <a href="https://t.me/VictorsCompanybot" class="text-cyan-400 underline" target="_blank">@VictorsCompanybot</a>).</p>
             <p>2. Launch the Mini App inside Telegram.</p>
-            <p>3. Tap the top-right <strong>⋮ (three dots)</strong> menu in Telegram and choose <strong>"Copy Link"</strong> or open in browser and copy the address bar.</p>
-            <p>4. Paste it directly into the box above!</p>
+            <p>3. Tap the top-right menu in Telegram and select <strong>"Copy Link"</strong>.</p>
+            <p>4. Paste the full URL into the box above and tap Connect.</p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- ---------------------------------------------------- -->
-    <!-- TAB 3: EARN & REWARDED ADS (POINTS & VIP HUB)        -->
+    <!-- TAB 3: REWARDS & EARNING                            -->
     <!-- ---------------------------------------------------- -->
     <div id="tab-earn" class="hidden space-y-3 text-left">
       <!-- Daily Check-in Card -->
       <div class="card-glass card-glow-amber p-4 rounded-2xl flex items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-2xl shrink-0">
-            🎁
+          <div class="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>
           </div>
           <div>
             <div class="font-bold text-xs sm:text-sm text-white">Daily Streak Bonus</div>
@@ -446,12 +475,12 @@
         </button>
       </div>
 
-      <!-- Rewarded Video Ads Card (Integrated Monetag & GigaPub) -->
+      <!-- Rewarded Ads Engine -->
       <div class="card-glass card-glow-indigo p-4 rounded-2xl space-y-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2.5">
-            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xl shrink-0">
-              🎬
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
             </div>
             <div>
               <div class="font-bold text-xs sm:text-sm text-white font-display">Watch Rewarded Video Ad</div>
@@ -472,17 +501,20 @@
           <div class="w-full bg-slate-800/80 rounded-full h-2 overflow-hidden border border-white/5">
             <div id="earn-ads-progress-fill" class="bg-gradient-to-r from-amber-400 to-amber-600 h-full rounded-full transition-all duration-500 w-[0%]"></div>
           </div>
-          <div class="text-[9px] text-slate-400 text-right">Every 50 ads watched unlocks +1 permanent cloud slot!</div>
+          <div class="text-[9px] text-slate-400 text-right">Every 50 ads watched unlocks +1 permanent cloud slot</div>
         </div>
 
-        <!-- Ad Player Window / Trigger -->
+        <!-- Ad Player Window -->
         <div id="ad-player-box" class="relative w-full h-36 rounded-xl overflow-hidden bg-gradient-to-b from-slate-950 to-slate-900 border border-white/10 flex flex-col items-center justify-center p-3 text-center">
           <div id="ad-idle-state" class="space-y-2">
-            <div class="text-2xl animate-bounce">📺</div>
+            <div class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-cyan-400 mx-auto">
+              <svg class="w-5 h-5 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            </div>
             <div class="text-xs font-bold text-white">Monetag & GigaPub Rewarded Engine</div>
             <div class="text-[10px] text-slate-400">16-second interactive showcase with instant +20 Pts credit</div>
-            <button id="btn-watch-ad" onclick="triggerWatchAd()" class="min-h-[38px] px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-extrabold text-xs active:scale-95 transition shadow-lg">
-              🎬 Watch Video Ad (+20 Pts)
+            <button id="btn-watch-ad" onclick="triggerWatchAd()" class="min-h-[38px] px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-extrabold text-xs active:scale-95 transition shadow-lg flex items-center justify-center gap-1.5 mx-auto">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span>Watch Video Ad (+20 Pts)</span>
             </button>
           </div>
 
@@ -492,7 +524,7 @@
               <span>Playing Sponsored Ad...</span>
             </div>
             <div class="text-3xl font-black text-amber-400 font-mono" id="ad-countdown-timer">16.3s</div>
-            <div class="text-[10px] text-slate-400">Please wait for completion to receive your points reward</div>
+            <div class="text-[10px] text-slate-400">Please wait for completion to receive your reward</div>
           </div>
         </div>
       </div>
@@ -500,7 +532,9 @@
       <!-- Telegram Stars VIP Passes -->
       <div class="card-glass p-4 rounded-2xl space-y-3">
         <div class="flex items-center gap-2.5">
-          <span class="text-xl">🌟</span>
+          <div class="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          </div>
           <div>
             <h3 class="font-bold text-xs sm:text-sm text-white">Telegram Stars VIP Passes</h3>
             <p class="text-[10px] text-slate-400 font-mono">Bypass points completely with 100% free autonomous mining</p>
@@ -510,17 +544,17 @@
         <div class="grid grid-cols-3 gap-2 text-center">
           <button onclick="buyStarsPass('day', 15)" class="card-glass p-2.5 rounded-xl border-amber-500/30 hover:border-amber-400 active:scale-95 transition flex flex-col justify-between">
             <div class="text-[9px] uppercase font-bold text-slate-400">1-Day Pass</div>
-            <div class="text-xs font-black text-amber-400 my-1">15 ⭐</div>
+            <div class="text-xs font-black text-amber-400 my-1 font-mono">15 Stars</div>
             <div class="text-[8px] text-emerald-400 font-semibold">0 Pts Cost</div>
           </button>
           <button onclick="buyStarsPass('week', 45)" class="card-glass p-2.5 rounded-xl border-amber-500/30 hover:border-amber-400 active:scale-95 transition flex flex-col justify-between">
             <div class="text-[9px] uppercase font-bold text-slate-400">7-Day Pass</div>
-            <div class="text-xs font-black text-amber-400 my-1">45 ⭐</div>
+            <div class="text-xs font-black text-amber-400 my-1 font-mono">45 Stars</div>
             <div class="text-[8px] text-emerald-400 font-semibold">Most Popular</div>
           </button>
           <button onclick="buyStarsPass('month', 120)" class="card-glass p-2.5 rounded-xl border-indigo-500/40 hover:border-indigo-400 active:scale-95 transition flex flex-col justify-between">
             <div class="text-[9px] uppercase font-bold text-slate-400">30-Day VIP</div>
-            <div class="text-xs font-black text-indigo-300 my-1">120 ⭐</div>
+            <div class="text-xs font-black text-indigo-300 my-1 font-mono">120 Stars</div>
             <div class="text-[8px] text-indigo-400 font-semibold">2x Ad Points</div>
           </button>
         </div>
@@ -528,62 +562,64 @@
     </div>
 
     <!-- ---------------------------------------------------- -->
-    <!-- TAB 4: MY ACCOUNTS (CONNECTED FLEET MANAGEMENT)      -->
+    <!-- TAB 4: MY CONNECTED ACCOUNTS                         -->
     <!-- ---------------------------------------------------- -->
     <div id="tab-accounts" class="hidden space-y-3 text-left">
       <div class="flex items-center justify-between px-1">
         <div>
           <h2 class="font-bold text-xs sm:text-sm text-white">Connected Accounts</h2>
-          <p class="text-[10px] text-slate-400" id="accounts-count-summary">0 Accounts Active</p>
+          <p class="text-[10px] text-slate-400 font-mono" id="accounts-count-summary">0 Accounts Active</p>
         </div>
-        <button onclick="openConnectTab('all')" class="px-2.5 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold active:scale-95 transition">
-          ➕ Add Account
+        <button onclick="openConnectTab('all')" class="px-2.5 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold active:scale-95 transition flex items-center gap-1">
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>Add Account</span>
         </button>
       </div>
 
       <div id="accounts-list-container" class="space-y-2">
-        <!-- Rendered dynamically via renderAccountsList() -->
-        <div class="card-glass p-4 rounded-2xl text-center text-slate-400 text-xs py-8">
-          <span>No accounts connected yet. Tap "➕ Add Account" to link your mining bots!</span>
+        <div class="card-glass p-6 rounded-2xl text-center text-slate-400 text-xs">
+          <span>No accounts connected yet. Tap <strong>"Add Account"</strong> to link your mining bots.</span>
         </div>
       </div>
     </div>
 
     <!-- ---------------------------------------------------- -->
-    <!-- TAB 5: ABOUT & COMMUNITY ECOSYSTEM                   -->
+    <!-- TAB 5: NETWORK & ECOSYSTEM                          -->
     <!-- ---------------------------------------------------- -->
     <div id="tab-about" class="hidden space-y-3 text-left">
       <!-- Official Channels Card -->
       <div class="card-glass p-4 rounded-2xl space-y-3">
         <div class="flex items-center gap-2">
-          <span class="text-xl">📢</span>
+          <div class="w-7 h-7 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+          </div>
           <div>
-            <h2 class="font-bold text-xs sm:text-sm text-white">Official Community & Support</h2>
+            <h2 class="font-bold text-xs sm:text-sm text-white">Official Community & Network</h2>
             <p class="text-[10px] text-slate-400">Verified channels for announcements and live activity</p>
           </div>
         </div>
 
         <div class="space-y-1.5">
           <a href="https://t.me/AAAAutoMiner" target="_blank" class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-between border border-white/10 transition">
-            <div class="flex items-center gap-2">
-              <span>💬</span>
+            <div class="flex items-center gap-2.5">
+              <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
               <span class="font-bold text-xs text-white">AAA Auto Miner — Community Hub</span>
             </div>
-            <span class="text-[10px] text-cyan-400 font-mono">@AAAAutoMiner ↗️</span>
+            <span class="text-[10px] text-cyan-400 font-mono">@AAAAutoMiner ↗</span>
           </a>
           <a href="https://t.me/AAAAUTOMINING" target="_blank" class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-between border border-white/10 transition">
-            <div class="flex items-center gap-2">
-              <span>📢</span>
+            <div class="flex items-center gap-2.5">
+              <svg class="w-4 h-4 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
               <span class="font-bold text-xs text-white">AAA Auto Miner — Announcements</span>
             </div>
-            <span class="text-[10px] text-cyan-400 font-mono">@AAAAUTOMINING ↗️</span>
+            <span class="text-[10px] text-cyan-400 font-mono">@AAAAUTOMINING ↗</span>
           </a>
           <a href="https://t.me/AAA_ACTIVITY" target="_blank" class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-between border border-white/10 transition">
-            <div class="flex items-center gap-2">
-              <span>⚡</span>
-              <span class="font-bold text-xs text-white">Live Activity & Payouts Stream</span>
+            <div class="flex items-center gap-2.5">
+              <svg class="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+              <span class="font-bold text-xs text-white">Live Activity & Telemetry</span>
             </div>
-            <span class="text-[10px] text-cyan-400 font-mono">@AAA_ACTIVITY ↗️</span>
+            <span class="text-[10px] text-cyan-400 font-mono">@AAA_ACTIVITY ↗</span>
           </a>
         </div>
       </div>
@@ -592,13 +628,13 @@
       <div class="card-glass p-4 rounded-2xl space-y-2">
         <div class="flex items-center justify-between">
           <div class="font-bold text-xs sm:text-sm text-white flex items-center gap-1.5">
-            <span>👥</span>
+            <svg class="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
             <span>Invite Friends (+500 Pts)</span>
           </div>
-          <span class="text-[9px] font-mono text-amber-400 font-bold">+500 Pts / Friend</span>
+          <span class="text-[9px] font-mono text-amber-400 font-bold">+500 Pts / User</span>
         </div>
         <p class="text-[10px] text-slate-300 leading-snug">
-          Share your referral link with friends. Both of you receive 500 bonus points for 5 free days of autonomous mining!
+          Share your referral link. Both you and your friend receive 500 bonus points for 5 days of autonomous mining.
         </p>
         <div class="flex items-center gap-2">
           <input type="text" id="referral-link-input" readonly class="flex-1 p-2 rounded-xl bg-slate-950 border border-white/10 text-[10px] font-mono text-cyan-300 truncate" value="https://t.me/AAAPREMIUMAPPSbot?start=ref_..." />
@@ -611,7 +647,7 @@
       <!-- Zero Phone Load Directive Info -->
       <div class="card-glass p-3.5 rounded-2xl text-[10px] text-slate-400 space-y-1.5 leading-relaxed">
         <div class="font-bold text-xs text-slate-200 flex items-center gap-1.5">
-          <span>🛡️</span>
+          <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
           <span>Zero Phone Load Directive Guaranteed</span>
         </div>
         <p>
@@ -622,33 +658,38 @@
   </main>
 
   <!-- ======================================================== -->
-  <!-- 4. BOTTOM DOCKED NAVIGATION BAR (FINGER-FRIENDLY >44px)   -->
+  <!-- 4. BOTTOM DOCKED NAVIGATION (PURE VECTOR SVG ICONS)      -->
   <!-- ======================================================== -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/90 backdrop-blur-xl border-t border-white/10 pb-[max(var(--sab),6px)] pt-1 px-2">
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/90 backdrop-blur-xl border-t border-white/10 pb-[max(var(--sab),6px)] pt-1.5 px-2">
     <div class="max-w-lg mx-auto grid grid-cols-5 gap-1 text-center">
-      <button onclick="switchTab('hub')" id="nav-hub" class="nav-btn active py-1.5 px-1 rounded-xl text-slate-400 hover:text-white flex flex-col items-center justify-center transition">
-        <span class="text-base sm:text-lg">⛏️</span>
-        <span class="text-[10px] font-bold mt-0.5">Mining</span>
+      <!-- Nav 1: Pools -->
+      <button onclick="switchTab('hub')" id="nav-hub" class="nav-btn active py-1.5 px-1 rounded-xl text-slate-400 hover:text-white flex flex-col items-center justify-center transition border border-transparent">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="15" x2="23" y2="15"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="15" x2="4" y2="15"></line></svg>
+        <span class="text-[10px] font-bold mt-1">Pools</span>
       </button>
 
-      <button onclick="switchTab('connect')" id="nav-connect" class="nav-btn py-1.5 px-1 rounded-xl text-slate-400 hover:text-white flex flex-col items-center justify-center transition">
-        <span class="text-base sm:text-lg">➕</span>
-        <span class="text-[10px] font-bold mt-0.5">Connect</span>
+      <!-- Nav 2: Connect -->
+      <button onclick="switchTab('connect')" id="nav-connect" class="nav-btn py-1.5 px-1 rounded-xl text-slate-400 hover:text-white flex flex-col items-center justify-center transition border border-transparent">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        <span class="text-[10px] font-bold mt-1">Connect</span>
       </button>
 
-      <button onclick="switchTab('earn')" id="nav-earn" class="nav-btn py-1.5 px-1 rounded-xl text-slate-400 hover:text-white flex flex-col items-center justify-center transition">
-        <span class="text-base sm:text-lg">💎</span>
-        <span class="text-[10px] font-bold mt-0.5">Earn Ads</span>
+      <!-- Nav 3: Rewards -->
+      <button onclick="switchTab('earn')" id="nav-earn" class="nav-btn py-1.5 px-1 rounded-xl text-slate-400 hover:text-white flex flex-col items-center justify-center transition border border-transparent">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        <span class="text-[10px] font-bold mt-1">Rewards</span>
       </button>
 
-      <button onclick="switchTab('accounts')" id="nav-accounts" class="nav-btn py-1.5 px-1 rounded-xl text-slate-400 hover:text-white flex flex-col items-center justify-center transition">
-        <span class="text-base sm:text-lg">📋</span>
-        <span class="text-[10px] font-bold mt-0.5">Accounts</span>
+      <!-- Nav 4: Accounts -->
+      <button onclick="switchTab('accounts')" id="nav-accounts" class="nav-btn py-1.5 px-1 rounded-xl text-slate-400 hover:text-white flex flex-col items-center justify-center transition border border-transparent">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        <span class="text-[10px] font-bold mt-1">Accounts</span>
       </button>
 
-      <button onclick="switchTab('about')" id="nav-about" class="nav-btn py-1.5 px-1 rounded-xl text-slate-400 hover:text-white flex flex-col items-center justify-center transition">
-        <span class="text-base sm:text-lg">🌐</span>
-        <span class="text-[10px] font-bold mt-0.5">About</span>
+      <!-- Nav 5: Network -->
+      <button onclick="switchTab('about')" id="nav-about" class="nav-btn py-1.5 px-1 rounded-xl text-slate-400 hover:text-white flex flex-col items-center justify-center transition border border-transparent">
+        <svg class="w-4 h-4 sm:w-5 sm:h-5 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+        <span class="text-[10px] font-bold mt-1">Network</span>
       </button>
     </div>
   </nav>
@@ -717,9 +758,9 @@
         if (badgeEl) badgeEl.textContent = 'ID: ' + currentUserId;
         if (avatarEl) {
           if (u.photo_url) {
-            avatarEl.innerHTML = `<img src="${u.photo_url}" class="w-full h-full object-cover rounded-xl" alt="Avatar" onerror="this.parentElement.textContent='${fullName[0].toUpperCase()}';" />`;
+            avatarEl.innerHTML = `<img src="${u.photo_url}" class="w-full h-full object-cover rounded-xl" alt="Avatar" onerror="this.parentElement.innerHTML='<span class=\\'font-black text-sm\\'>${(fullName[0] || 'M').toUpperCase()}</span>';" />`;
           } else {
-            avatarEl.textContent = (fullName[0] || 'M').toUpperCase();
+            avatarEl.innerHTML = `<span class="font-black text-sm">${(fullName[0] || 'M').toUpperCase()}</span>`;
           }
         }
         const refInput = document.getElementById('referral-link-input');
@@ -734,7 +775,7 @@
         const el = document.getElementById('tab-' + t);
         const btn = document.getElementById('nav-' + t);
         if (el) el.classList.toggle('hidden', t !== tabId);
-        if (btn) btn.classList.toggle('active', t !== tabId);
+        if (btn) btn.classList.toggle('active', t === tabId);
       });
       hapticFeedback();
     }
@@ -827,13 +868,13 @@
           if (text) {
             document.getElementById('input-raw-data').value = text;
             onInputDataChanged();
-            showToast("Pasted from clipboard!");
+            showToast("Pasted from clipboard");
           }
         } else {
-          showToast("Long press in the box to paste");
+          showToast("Long press inside the box to paste");
         }
       } catch (_) {
-        showToast("Long press in the box to paste");
+        showToast("Long press inside the box to paste");
       }
     }
 
@@ -853,7 +894,6 @@
           currentUserProfile = resp.profile;
           renderProfileUI(resp);
         } else {
-          // Fallback to local default
           renderProfileUI({
             profile: {
               points: 100,
@@ -872,7 +912,6 @@
 
     function renderProfileUI(data) {
       const p = data.profile || {};
-      const pools = data.pools || {};
 
       const ptsEl = document.getElementById('stat-points');
       const runwayEl = document.getElementById('stat-runway');
@@ -888,7 +927,7 @@
       if (streakEl) streakEl.textContent = `Day ${p.daily_streak || 1}`;
       if (earnStreakBadge) earnStreakBadge.textContent = `Streak: Day ${p.daily_streak || 1} Active`;
 
-      // 5 Pools Accounts Count Badges
+      // 5 Pools Badges
       const accs = p.accounts || [];
       const mrgC = accs.filter(a => a.pool === 'mrg' || a.pool === 'all').length;
       const atfC = accs.filter(a => a.pool === 'atf' || a.pool === 'all').length;
@@ -896,11 +935,17 @@
       const vyroC = accs.filter(a => a.pool === 'vyro' || a.pool === 'all').length;
       const kynexC = accs.filter(a => a.pool === 'kynex' || a.pool === 'all').length;
 
-      document.getElementById('pool-mrg-count').textContent = `${mrgC} Connected Account${mrgC === 1 ? '' : 's'}`;
-      document.getElementById('pool-atf-count').textContent = `${atfC} Connected Account${atfC === 1 ? '' : 's'}`;
-      document.getElementById('pool-victors-count').textContent = `${victorsC} Connected Account${victorsC === 1 ? '' : 's'}`;
-      document.getElementById('pool-vyro-count').textContent = `${vyroC} Connected Account${vyroC === 1 ? '' : 's'}`;
-      document.getElementById('pool-kynex-count').textContent = `${kynexC} Connected Account${kynexC === 1 ? '' : 's'}`;
+      const mrgEl = document.getElementById('pool-mrg-count');
+      const atfEl = document.getElementById('pool-atf-count');
+      const vicEl = document.getElementById('pool-victors-count');
+      const vyrEl = document.getElementById('pool-vyro-count');
+      const kynEl = document.getElementById('pool-kynex-count');
+
+      if (mrgEl) mrgEl.textContent = `${mrgC} Connected Account${mrgC === 1 ? '' : 's'}`;
+      if (atfEl) atfEl.textContent = `${atfC} Connected Account${atfC === 1 ? '' : 's'}`;
+      if (vicEl) vicEl.textContent = `${victorsC} Connected Account${victorsC === 1 ? '' : 's'}`;
+      if (vyrEl) vyrEl.textContent = `${vyroC} Connected Account${vyroC === 1 ? '' : 's'}`;
+      if (kynEl) kynEl.textContent = `${kynexC} Connected Account${kynexC === 1 ? '' : 's'}`;
 
       // Ads Milestone Progress
       const adsCount = p.ads_watched || 0;
@@ -916,7 +961,7 @@
       if (btnDaily) {
         if (p.can_claim_daily === false) {
           btnDaily.disabled = true;
-          btnDaily.textContent = "Claimed ✓";
+          btnDaily.textContent = "Claimed";
           btnDaily.className = "px-3.5 py-2 rounded-xl bg-slate-800 text-slate-500 font-bold text-xs shrink-0 cursor-not-allowed";
         } else {
           btnDaily.disabled = false;
@@ -937,20 +982,20 @@
       if (!accs || accs.length === 0) {
         container.innerHTML = `
           <div class="card-glass p-6 rounded-2xl text-center text-slate-400 text-xs">
-            <span class="text-3xl block mb-2">⛏️</span>
-            <span>No accounts connected yet. Tap <strong>"➕ Add Account"</strong> to link your mining bots!</span>
+            <svg class="w-8 h-8 text-slate-600 mx-auto mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+            <span>No accounts connected yet. Tap <strong>"Add Account"</strong> to link your mining bots.</span>
           </div>`;
         return;
       }
 
-      const poolIcons = { mrg: '⚡ MRG', atf: '🪙 ATF', victors: "🏢 Victor's", vyro: '💧 VyroDrop', kynex: '🌐 Kynex', all: '🤖 All Pools' };
+      const poolLabels = { mrg: 'MRG Miner', atf: 'ATF Miner', victors: "Victor's", vyro: 'VyroDrop', kynex: 'Kynex', all: 'All 5 Pools' };
 
       container.innerHTML = accs.map(a => `
         <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3">
           <div class="min-w-0 text-left">
             <div class="flex items-center gap-2">
-              <span class="font-bold text-xs text-white truncate">\`${a.label}\`</span>
-              <span class="text-[9px] font-mono px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 rounded font-semibold">${poolIcons[a.pool] || a.pool.toUpperCase()}</span>
+              <span class="font-bold text-xs text-white truncate font-mono">${a.label}</span>
+              <span class="text-[9px] font-mono px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 rounded font-semibold">${poolLabels[a.pool] || a.pool.toUpperCase()}</span>
             </div>
             <div class="text-[10px] text-slate-400 font-mono mt-0.5 truncate">User: ${a.name || a.acc_user_id || 'Active'}</div>
             <div class="text-[9px] text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
@@ -959,7 +1004,7 @@
             </div>
           </div>
           <button onclick="removeAccount('${a.id || a.label}')" class="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold active:scale-95 transition shrink-0 border border-rose-500/20" title="Remove">
-            🗑️
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
           </button>
         </div>
       `).join('');
@@ -972,12 +1017,12 @@
       const btn = document.getElementById('btn-submit-connect');
 
       if (!raw) {
-        showToast("Please paste your Mini App URL or query string!");
+        showToast("Please paste your Mini App URL or query string");
         return;
       }
 
       btn.disabled = true;
-      btn.innerHTML = `<span class="spinner inline-block w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> Connecting...`;
+      btn.innerHTML = `<span class="inline-block w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> Connecting...`;
 
       try {
         let ok = false;
@@ -1005,19 +1050,19 @@
         }
 
         if (ok && resData?.ok) {
-          showToast(`✅ Account "${label}" connected successfully!`);
+          showToast(`Account "${label}" connected successfully`);
           document.getElementById('input-raw-data').value = "";
           onInputDataChanged();
           await loadUserProfile();
           switchTab('accounts');
         } else {
-          showToast(resData?.error || "Failed to connect. Check your URL or slot limits.");
+          showToast(resData?.error || "Failed to connect. Check URL or slots.");
         }
       } catch (err) {
         showToast("Error: " + err.message);
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<span>🚀 Connect Account to Cloud Miner</span>`;
+        btn.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>Connect Account to Cloud Miner</span>`;
       }
     }
 
@@ -1035,7 +1080,7 @@
             if (r.ok) break;
           } catch (_) {}
         }
-        showToast("Account disconnected.");
+        showToast("Account disconnected");
         await loadUserProfile();
       } catch (_) {}
     }
@@ -1061,11 +1106,11 @@
         }
 
         if (ok && resData?.ok) {
-          showToast(`🎁 Claimed +${resData.reward || 100} Points! Streak: Day ${resData.streak}!`);
+          showToast(`Claimed +${resData.reward || 100} Points (Day ${resData.streak})`);
           await loadUserProfile();
         } else {
-          showToast(resData?.error || "Already claimed today!");
-          btn.textContent = "Claimed ✓";
+          showToast(resData?.error || "Already claimed today");
+          btn.textContent = "Claimed";
         }
       } catch (e) {
         showToast("Error: " + e.message);
@@ -1074,7 +1119,7 @@
       }
     }
 
-    // Rewarded Video Ad Player (Monetag & GigaPub)
+    // Rewarded Video Ad Player
     function triggerWatchAd() {
       const idleBox = document.getElementById('ad-idle-state');
       const playBox = document.getElementById('ad-playing-state');
@@ -1086,7 +1131,6 @@
       let sec = 16.3;
       timerEl.textContent = sec.toFixed(1) + 's';
 
-      // Launch Ad SDK if available
       try {
         if (typeof window.show_11753248 === 'function') {
           window.show_11753248().catch(() => {});
@@ -1126,15 +1170,15 @@
         }
 
         if (ok && resData?.ok) {
-          showToast(`🎬 +${resData.points_awarded || 20} Points Credited! Balance: ${resData.new_balance} Pts`);
+          showToast(`+${resData.points_awarded || 20} Points Credited (Balance: ${resData.new_balance} Pts)`);
           hapticFeedback();
           await loadUserProfile();
         } else {
-          showToast("Ad completed! Points credited.");
+          showToast("Ad completed, reward credited");
           await loadUserProfile();
         }
       } catch (_) {
-        showToast("Ad completed! Points credited.");
+        showToast("Ad completed, reward credited");
         await loadUserProfile();
       }
     }
@@ -1144,15 +1188,22 @@
       if (window.Telegram?.WebApp?.openTelegramLink) {
         window.Telegram.WebApp.openTelegramLink(`https://t.me/AAAPREMIUMAPPSbot?start=pass_${tier}`);
       } else {
-        showToast(`Send /stars to @AAAPREMIUMAPPSbot to upgrade for ${stars} Stars!`);
+        showToast(`Send /stars to @AAAPREMIUMAPPSbot to upgrade for ${stars} Stars`);
       }
     }
 
     // Utility Helpers
     function toggleAudio() {
       isSoundOn = !isSoundOn;
-      document.getElementById('sound-icon').textContent = isSoundOn ? '🔊' : '🔇';
-      showToast(isSoundOn ? "Sound turned on" : "Sound muted");
+      const svg = document.getElementById('sound-icon-svg');
+      if (svg) {
+        if (isSoundOn) {
+          svg.innerHTML = `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>`;
+        } else {
+          svg.innerHTML = `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>`;
+        }
+      }
+      showToast(isSoundOn ? "Sound enabled" : "Sound muted");
     }
 
     function toggleInstructions() {
@@ -1169,7 +1220,7 @@
       if (inp) {
         inp.select();
         navigator.clipboard?.writeText(inp.value);
-        showToast("Referral link copied!");
+        showToast("Referral link copied");
       }
     }
 
