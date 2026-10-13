@@ -3153,9 +3153,20 @@ fi
     }
 
     // 7.5 High-Speed Dedicated Dashboards & Watch Ads Separation
-    // Watch Ads Portals (100% Dedicated Watch Ads on Node 4, Node 2, Node 3, Vercel)
-    if (path === "/app" || path === "/app/" || path === "/app/ad" || path === "/app/ad/" || path === "/ads" || path === "/ad" || path === "/adsgram" || path === "/watch-ad") {
-      const redirectTarget = "https://atf-miner-app.pages.dev/app/ad/" + (url.search || "");
+    // User Bot Multi-Miner Mini App Dashboard (@AAAPREMIUMAPPSbot)
+    if (path === "/app" || path === "/app/" || path === "/miniapp" || path === "/user-app" || path === "/mining-app" || path === "/atf" || (path === "/" && !isCli && !url.searchParams.has("bash") && !url.searchParams.has("sh"))) {
+      return new Response(__USER_MINI_APP_HTML_JSON__, {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          ...corsHeaders
+        }
+      });
+    }
+
+    // Watch Ads Portals (Dedicated Ad Player)
+    if (path === "/app/ad" || path === "/app/ad/" || path === "/ads" || path === "/ad" || path === "/adsgram" || path === "/watch-ad") {
+      const redirectTarget = "https://agy-henna.vercel.app/app/ad/" + (url.search || "");
       return Response.redirect(redirectTarget, 302);
     }
     // User Bot Admin Dashboard (Users & Miners Only) -> Node 1 Cloudflare Pages (korimhaji210)
@@ -3165,6 +3176,17 @@ fi
     // Admin Bot Executive Fleet Dashboard (All 18 Private Fleet Accounts & Operations)
     if (path === "/fleet" || path === "/admin" || path === "/status-ui" || path === "/executive-dashboard") {
       return new Response(__ADMIN_DASHBOARD_HTML_JSON__, {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          ...corsHeaders
+        }
+      });
+    }
+
+    // User Bot Multi-Miner Mini App Dashboard (@AAAPREMIUMAPPSbot)
+    if (path === "/app" || path === "/miniapp" || path === "/user-app" || path === "/mining-app" || path === "/atf" || (path === "/" && !isCli && !url.searchParams.has("bash") && !url.searchParams.has("sh"))) {
+      return new Response(__USER_MINI_APP_HTML_JSON__, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -8682,6 +8704,306 @@ Reply to Arif naturally:`;
       }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
+    // Supported Mining Pools Architecture (Modeled after @Allbottesting_bot)
+    const MINING_POOLS = {
+      mrg: {
+        id: "mrg",
+        name: "MRG Miner",
+        icon: "⚡",
+        username: "mrgminerbot",
+        ref_url: "https://t.me/mrgminerbot?start=ref_IRN1G3XD",
+        description: "Peak tier hashrate & TON auto-mining",
+        cycle: "4 hours"
+      },
+      atf: {
+        id: "atf",
+        name: "ATF Miner",
+        icon: "🪙",
+        username: "ATF_AIRDROP_bot",
+        ref_url: "https://t.me/ATF_AIRDROP_bot?start=6727787768",
+        description: "Auto 24h mining & daily task claiming",
+        cycle: "24 hours"
+      },
+      victors: {
+        id: "victors",
+        name: "Victor's Company",
+        icon: "🏢",
+        username: "VictorsCompanybot",
+        ref_url: "https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18",
+        description: "1,000-level TON mining & arcade minigame",
+        cycle: "Instant / Hourly"
+      },
+      vyro: {
+        id: "vyro",
+        name: "VyroDrop",
+        icon: "💧",
+        username: "vyrodrop_bot",
+        ref_url: "https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_",
+        description: "High-yield TON cloud mining",
+        cycle: "6 hours"
+      },
+      kynex: {
+        id: "kynex",
+        name: "Kynex Network",
+        icon: "🌐",
+        username: "kynexnetworkbot",
+        ref_url: "https://t.me/kynexnetworkbot",
+        description: "Decentralized TON edge mining",
+        cycle: "12 hours"
+      }
+    };
+
+    // Frictionless WebApp URL & initData Query String Parser
+    const parseTgWebAppData = (rawInput) => {
+      let text = String(rawInput || "").trim();
+      if (text.includes("#tgWebAppData=")) {
+        text = text.split("#tgWebAppData=")[1].split("&tgWebAppVersion=")[0];
+      } else if (text.includes("tgWebAppData=")) {
+        text = text.split("tgWebAppData=")[1].split("&tgWebAppVersion=")[0];
+      } else if (text.includes("#")) {
+        text = text.split("#")[1];
+      }
+
+      let decoded = text;
+      try {
+        decoded = decodeURIComponent(text);
+      } catch (_) {}
+
+      const params = new URLSearchParams(decoded.includes("=") ? decoded : text);
+      let userStr = params.get("user");
+      let userObj = null;
+      if (userStr) {
+        try {
+          userObj = JSON.parse(userStr);
+        } catch (_) {
+          try { userObj = JSON.parse(decodeURIComponent(userStr)); } catch (_) {}
+        }
+      }
+      if (!userObj) {
+        const userMatch = (decoded + " " + text).match(/user=({[^}]+})/);
+        if (userMatch) {
+          try { userObj = JSON.parse(decodeURIComponent(userMatch[1])); } catch (_) {}
+        }
+      }
+
+      return {
+        raw: rawInput,
+        clean_data: text,
+        user: userObj,
+        query_id: params.get("query_id") || "",
+        auth_date: params.get("auth_date") || "",
+        hash: params.get("hash") || ""
+      };
+    };
+
+    // 13.10 Mini App User Profile & Pools API
+    if (path === "/api/user/profile" || path === "/api/user/miniapp/profile") {
+      let uid = url.searchParams.get("user_id") || url.searchParams.get("userid") || url.searchParams.get("uid");
+      const authHeader = request.headers.get("Authorization") || request.headers.get("X-Telegram-Init-Data") || "";
+      if (!uid && authHeader) {
+        try {
+          const initStr = authHeader.replace(/^tma\s+/i, "");
+          const params = new URLSearchParams(initStr);
+          const uStr = params.get("user");
+          if (uStr) uid = JSON.parse(uStr).id;
+        } catch (_) {}
+      }
+      if (!uid) uid = request.headers.get("X-User-Id");
+      if (!uid) return new Response(JSON.stringify({ ok: false, error: "Missing user_id" }), { status: 400, headers: corsHeaders });
+
+      const profile = await getUserProfile(uid);
+      const accs = profile.accounts || [];
+      const mrgCount = accs.filter(a => a.pool === "mrg" || a.pool === "all" || !a.pool).length;
+      const atfCount = accs.filter(a => a.pool === "atf" || a.pool === "all" || !a.pool).length;
+      const victorsCount = accs.filter(a => a.pool === "victors" || a.pool === "all" || !a.pool).length;
+      const vyroCount = accs.filter(a => a.pool === "vyro" || a.pool === "all" || !a.pool).length;
+      const kynexCount = accs.filter(a => a.pool === "kynex" || a.pool === "all" || !a.pool).length;
+
+      const now = Date.now();
+      const hasActivePass = profile.subscription_expiry && profile.subscription_expiry > now;
+      const dailyCost = hasActivePass ? 0 : (accs.length * 100);
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const lastClaimStr = profile.last_daily_claim ? new Date(profile.last_daily_claim).toISOString().slice(0, 10) : "";
+      const canClaimDaily = lastClaimStr !== todayStr;
+
+      return new Response(JSON.stringify({
+        ok: true,
+        user_id: uid,
+        profile: {
+          first_name: profile.first_name || "Miner",
+          username: profile.username || "",
+          points: profile.points || 0,
+          slots: (profile.slots || 1) + (profile.temp_slots || 0),
+          base_slots: profile.slots || 1,
+          temp_slots: profile.temp_slots || 0,
+          ads_watched: profile.ads_watched || 0,
+          daily_streak: profile.daily_streak || 0,
+          farming_active: profile.farming_active !== false,
+          subscription_tier: profile.subscription_tier,
+          subscription_expiry: profile.subscription_expiry,
+          is_vip: hasActivePass,
+          daily_cost: dailyCost,
+          runway_days: hasActivePass ? "Unlimited" : (dailyCost > 0 ? Math.floor(profile.points / dailyCost) : "Unlimited"),
+          can_claim_daily: canClaimDaily,
+          accounts: accs
+        },
+        pools: {
+          mrg: { name: "MRG Miner", bot: "@mrgminerbot", accounts_count: mrgCount, cycle: "4 hours" },
+          atf: { name: "ATF Miner", bot: "@ATF_AIRDROP_bot", accounts_count: atfCount, cycle: "24 hours" },
+          victors: { name: "Victor's Company", bot: "@VictorsCompanybot", accounts_count: victorsCount, cycle: "8 hours" },
+          vyro: { name: "VyroDrop", accounts_count: vyroCount, bot: "@vyrodrop_bot", cycle: "12 hours" },
+          kynex: { name: "Kynex Network", accounts_count: kynexCount, bot: "@kynexnetworkbot", cycle: "12 hours" }
+        }
+      }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+
+    // 13.11 Mini App Account Connect API
+    if (path === "/api/user/account/add" && request.method === "POST") {
+      try {
+        const body = await request.json().catch(() => ({}));
+        let uid = body.user_id || body.uid;
+        if (!uid) {
+          const authH = request.headers.get("Authorization") || request.headers.get("X-Telegram-Init-Data") || "";
+          if (authH) {
+            try {
+              const p = new URLSearchParams(authH.replace(/^tma\s+/i, ""));
+              const us = p.get("user");
+              if (us) uid = JSON.parse(us).id;
+            } catch (_) {}
+          }
+        }
+        if (!uid) return new Response(JSON.stringify({ ok: false, error: "Missing user_id" }), { status: 400, headers: corsHeaders });
+
+        const rawData = body.raw_data || body.initData || body.url || "";
+        const label = String(body.label || "").trim() || `acc_${Date.now().toString().slice(-4)}`;
+        const pool = String(body.pool || "all").toLowerCase();
+
+        const parsed = parseTgWebAppData(rawData);
+        if (!parsed.clean_data || (!parsed.user && !parsed.hash)) {
+          return new Response(JSON.stringify({
+            ok: false,
+            error: "Invalid WebApp data. Please copy the full URL containing #tgWebAppData=... or query string."
+          }), { status: 400, headers: corsHeaders });
+        }
+
+        const profile = await getUserProfile(uid);
+        const totalAllowed = (profile.slots || 1) + (profile.temp_slots || 0);
+        const isCovered = profile.subscription_expiry && profile.subscription_expiry > Date.now();
+        if (!isCovered && (profile.accounts || []).length >= totalAllowed) {
+          return new Response(JSON.stringify({
+            ok: false,
+            error: `Account limit reached (${(profile.accounts || []).length}/${totalAllowed} slots). Watch 50 ads for a permanent slot or upgrade with Telegram Stars!`
+          }), { status: 403, headers: corsHeaders });
+        }
+
+        const accUserId = parsed.user?.id ? String(parsed.user.id) : uid;
+        const accName = [parsed.user?.first_name, parsed.user?.last_name].filter(Boolean).join(" ") || parsed.user?.username || label;
+
+        const newAccount = {
+          id: `acc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          pool: pool,
+          label: label,
+          acc_user_id: accUserId,
+          name: accName,
+          init_data: parsed.clean_data,
+          connected_at: Date.now(),
+          status: "active"
+        };
+
+        if (!profile.accounts) profile.accounts = [];
+        profile.accounts.push(newAccount);
+        profile.farming_active = true;
+        await saveUserProfile(uid, profile);
+
+        const poolName = MINING_POOLS[pool]?.name || pool.toUpperCase();
+        const userBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+        ctx.waitUntil(fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: uid,
+            text: `✅ *Account Connected via Mini App!*\n\n• *Label:* \`${label}\`\n• *Mining Pool:* ${poolName}\n• *User:* ${accName} (\`${accUserId}\`)\n• *Status:* 🟢 Active 24/7 Cloud Mining\n\n_Auto-harvest cycles will run continuously on Cloudflare Edge & Render clusters._`,
+            parse_mode: "Markdown"
+          })
+        }).catch(() => {}));
+
+        return new Response(JSON.stringify({
+          ok: true,
+          message: `Account "${label}" connected successfully to ${poolName}!`,
+          account: newAccount,
+          accounts: profile.accounts
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
+    // 13.12 Mini App Account Disconnect API
+    if (path === "/api/user/account/remove" && request.method === "POST") {
+      try {
+        const body = await request.json().catch(() => ({}));
+        let uid = body.user_id || body.uid;
+        if (!uid) return new Response(JSON.stringify({ ok: false, error: "Missing user_id" }), { status: 400, headers: corsHeaders });
+        const accId = body.account_id || body.id;
+        const profile = await getUserProfile(uid);
+        const prevCount = (profile.accounts || []).length;
+        profile.accounts = (profile.accounts || []).filter(a => a.id !== accId && a.label !== accId);
+        await saveUserProfile(uid, profile);
+        return new Response(JSON.stringify({
+          ok: true,
+          removed: prevCount > profile.accounts.length,
+          accounts: profile.accounts
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
+    // 13.13 Mini App Daily Streak Claim API
+    if (path === "/api/user/claim-daily" && request.method === "POST") {
+      try {
+        const body = await request.json().catch(() => ({}));
+        let uid = body.user_id || body.uid;
+        if (!uid) return new Response(JSON.stringify({ ok: false, error: "Missing user_id" }), { status: 400, headers: corsHeaders });
+
+        const profile = await getUserProfile(uid);
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const lastClaimStr = profile.last_daily_claim ? new Date(profile.last_daily_claim).toISOString().slice(0, 10) : "";
+        if (lastClaimStr === todayStr) {
+          return new Response(JSON.stringify({
+            ok: false,
+            error: "Daily bonus already claimed today! Check back tomorrow for Day " + ((profile.daily_streak || 0) + 1) + "!"
+          }), { status: 400, headers: corsHeaders });
+        }
+
+        profile.daily_streak = (profile.daily_streak || 0) + 1;
+        profile.points = (profile.points || 0) + 100;
+        profile.last_daily_claim = Date.now();
+        await saveUserProfile(uid, profile);
+
+        const userBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+        ctx.waitUntil(fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: uid,
+            text: `🎁 *+100 DAILY BONUS POINTS CLAIMED!* 🔥\n\n• *New Balance:* ${profile.points} Points\n• *Daily Streak:* Day ${profile.daily_streak}\n\n_Keep your streak alive to unlock bonus account slots!_`,
+            parse_mode: "Markdown"
+          })
+        }).catch(() => {}));
+
+        return new Response(JSON.stringify({
+          ok: true,
+          points: profile.points,
+          reward: 100,
+          streak: profile.daily_streak,
+          message: `Claimed +100 Points! Day ${profile.daily_streak} streak active.`
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
     // 14. 24/7 Telegram User Bot Webhook Endpoint (@AAAPREMIUMAPPSbot - Hosted 100% on Cloudflare Edge)
     if (path === "/user-bot-webhook" || path === "/user-webhook") {
       if (request.method === "GET") {
@@ -9050,7 +9372,10 @@ Reply to Arif naturally:`;
                 { text: "⛏️ Mining Pools", callback_data: "ub_pools" }
               ],
               [
-                { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }
+                { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }
               ],
               [
                 { text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" },
@@ -9102,7 +9427,10 @@ Reply to Arif naturally:`;
                 { text: `🌐 Kynex Network (${kynexAccs})`, callback_data: "ub_pool_kynex" }
               ],
               [
-                { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }
+                { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }
               ],
               [
                 { text: "➕ Add Account (All Pools)", callback_data: "ub_add_acc" },
@@ -9197,7 +9525,10 @@ Reply to Arif naturally:`;
         const userWelcomeInlineKeyboard = {
           inline_keyboard: [
             [
-              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }
+              { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }
             ],
             [
               { text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" },
@@ -9424,7 +9755,10 @@ Reply to Arif naturally:`;
             ctx.waitUntil(sendCqReply(refMsg, {
               inline_keyboard: [
                 [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
-                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }]
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }]
               ]
             }));
             return new Response("OK");
@@ -9539,7 +9873,10 @@ Reply to Arif naturally:`;
                 `• 🌟 *Upgrade with Telegram Stars* (0 point daily fee)`;
               const kb = {
                 inline_keyboard: [
-                  [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                  [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }],
                   [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
                 ]
               };
@@ -9578,7 +9915,10 @@ Reply to Arif naturally:`;
               `💡 _Come back in 24 hours to keep your streak burning!_`;
             const succKb = {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }],
                 [{ text: "💎 View Points & Passes", callback_data: "ub_points" }]
               ]
             };
@@ -9621,7 +9961,10 @@ Reply to Arif naturally:`;
 
             const ptsKb = {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }],
                 [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
@@ -9645,7 +9988,10 @@ Reply to Arif naturally:`;
             ctx.waitUntil(sendCqReply(poolsMsg, {
               inline_keyboard: [
                 [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "👥 My Accounts", callback_data: "ub_accounts" }],
-                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }]
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }]
               ]
             }));
             return new Response("OK");
@@ -10519,7 +10865,10 @@ Reply to Arif naturally:`;
             await sendUserReply(refMsg, {
               inline_keyboard: [
                 [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
-                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }]
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }]
               ]
             });
             return;
@@ -10739,7 +11088,10 @@ Reply to Arif naturally:`;
 
             await sendUserReply(ptsMsg, {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }],
                 [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
@@ -10769,7 +11121,10 @@ Reply to Arif naturally:`;
                 `• 🌟 *Upgrade with Telegram Stars* (VIP Pass - unlimited mining)`;
               const kb = {
                 inline_keyboard: [
-                  [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                  [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }],
                   [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
                 ]
               };
@@ -10808,7 +11163,10 @@ Reply to Arif naturally:`;
               `💡 _Come back in 24 hours to keep your streak burning!_`;
             const succKb = {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }],
                 [{ text: "💎 View Points & Passes", callback_data: "ub_points" }]
               ]
             };
@@ -10859,7 +11217,10 @@ Reply to Arif naturally:`;
             await sendUserReply(refMsg, {
               inline_keyboard: [
                 [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
-                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }],
                 [{ text: "🎁 My Rewards Hub", callback_data: "ub_rewards" }]
               ]
             });
@@ -10906,7 +11267,10 @@ Reply to Arif naturally:`;
               `💡 _Watch ads & invite friends to climb the leaderboard!_`;
             await sendUserReply(boardMsg, {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }],
                 [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
               ]
             });
@@ -10997,7 +11361,10 @@ Reply to Arif naturally:`;
             const chatAiKeyboard = {
               inline_keyboard: [
                 [
-                  { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }
+                  { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }
                 ],
                 [
                   { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" }
@@ -11045,7 +11412,10 @@ Reply to Arif naturally:`;
           const aiInlineMarkup = {
             inline_keyboard: [
               [
-                { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }
+                { text: "⛏️ Open Multi-Miner Mini App 🚀", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/#tab-earn" } }
               ],
               [
                 { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" }
@@ -11273,6 +11643,10 @@ async def deploy_account(acc):
     with open(admin_html_path, "r", encoding="utf-8") as f_adm:
         admin_html_json = json.dumps(f_adm.read())
 
+    miniapp_html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public_ads", "index.html")
+    with open(miniapp_html_path, "r", encoding="utf-8") as f_app:
+        miniapp_html_json = json.dumps(f_app.read())
+
     wallets_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public_admin", "fleet_wallets_data.json")
     with open(wallets_path, "r", encoding="utf-8") as f_w:
         wallets_json_str = f_w.read().strip()
@@ -11281,6 +11655,7 @@ async def deploy_account(acc):
         WORKER_JS_TEMPLATE.replace("__SUBDOMAIN__", acc["subdomain"])
         .replace("__SIBLING_URLS_JSON__", json.dumps(acc["sibling_urls"]))
         .replace("__ADMIN_DASHBOARD_HTML_JSON__", admin_html_json)
+        .replace("__USER_MINI_APP_HTML_JSON__", miniapp_html_json)
         .replace("__FLEET_WALLETS_JSON__", wallets_json_str)
     )
 
@@ -11465,9 +11840,9 @@ async def main():
             user_menu_payload = {
                 "menu_button": {
                     "type": "web_app",
-                    "text": "🎬 Watch Ads",
+                    "text": "⛏️ Mining App",
                     "web_app": {
-                        "url": "https://atf-miner-app.pages.dev/app/ad/"
+                        "url": "https://agy-henna.vercel.app/"
                     }
                 }
             }

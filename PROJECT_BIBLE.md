@@ -224,8 +224,9 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     3. 🏢 **Victor's Company** (`@VictorsCompanybot`)
     4. 💧 **VyroDrop** (`@vyrodrop_bot`)
     5. 🌐 **Kynex Network** (`@kynexnetworkbot`)
-  - **User WebApp Frontend**: `https://atf-miner-app.pages.dev` (Cloudflare Pages)
-  - **User Distributed Mining Engine**: `https://atf-mining-engine.aaaai.workers.dev` (Cloudflare Worker Node 5)
+  - **User WebApp Mini App Frontend**: `https://agy-henna.vercel.app/` (Vercel Global Edge) & `https://restore-agy.aaaai2.workers.dev/app` (Cloudflare Worker Node 1) & `https://atf-miner-app.pages.dev` (Cloudflare Pages)
+    - Architecture: Ultra-modern responsive cyberpunk glassmorphic Mini App improving upon `@Allbottesting_bot` with 5 pools (⚡ MRG, 🪙 ATF, 🏢 Victor's Company, 💧 VyroDrop, 🌐 Kynex Network), real-time client-side `#tgWebAppData=...` parser, 24/7 cloud mining telemetry, Rewarded Video Ad player (Monetag + GigaPub), Daily Streak Claim (+100 Pts/d), 50-ad permanent slot milestone tracker, and Telegram Stars VIP passes.
+  - **User Distributed Mining Engine & REST APIs**: `https://restore-agy.aaaai2.workers.dev/api/user/` (Endpoints: `/profile`, `/account/add`, `/account/remove`, `/claim-daily`, `/claim-ad`)
   - **User Database & State**: Upstash Redis (`pleasant-locust-220893.upstash.io`) + Cloudflare D1 `atf-miner-db` (`2659c73b-8144-4f2a-9a06-ef2368a1ce7f`)
   - **User Session Security Key**: `USER_BOT_SESSION_ENCRYPTION_KEY: edf824a8b2d05d039839fdfcef84108c555459779f2d4ea3fca6e66a21ec056e`
   - **User Community Group**: Chat ID: `-1003684868577` (*AAA Auto Miner*, `https://t.me/AAAAutoMiner`)
@@ -923,8 +924,8 @@ Whenever you perform work in this repository:
 * **⌨️ Native In-Chat Authentication via Interactive Inline PIN Pad**:
   - All account connections and session re-linking execute strictly inside Telegram chat via the interactive numeric PIN Pad (`[1][2][3]`...`[⌫ Del][0][✅ Verify]`).
   - Dynamic slot rendering `[ • • • • • ]` provides real-time tap feedback without sending text messages, eliminating Telegram's "code previously shared" anti-phishing revocation blocks.
-* **🔒 Strict User Bot Immutability**:
-  - User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`) and community channels are 100% untouched and preserved.
+* **⚡ Full Upgrade of User Bot (`@AAAPREMIUMAPPSbot`) & Mini App**:
+  - Upgraded with Commander Arif's explicit override to feature modern Multi-Miner Mini App dashboard (`https://agy-henna.vercel.app/`), 5 pools management, frictionless `#tgWebAppData=...` parsing, Points economy, and Rewarded Ads engine.
 
 
 

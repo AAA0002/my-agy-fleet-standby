@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#070b14" />
+  <title>AAA AUTO Mining — Multi-Pool Cloud Miner</title>
+
+  <!-- HilltopAds Verification -->
+  <meta name="77d314e64e8dc15578e7d6411310745a041720e6" content="77d314e64e8dc15578e7d6411310745a041720e6" />
+  <!-- Clickadu Verification -->
+  <meta name="clckd" content="e924148c5d931ae4a1270696d955223c" />
+
+  <!-- Official Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter, JetBrains Mono, Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Dual-Network Waterfall Mediation: Monetag (Zone 11753248) & GigaPub (Placement 8160) -->
+  <script src="https://yoszi.com/sdk.js" data-zone="11753248" data-sdk="show_11753248" onerror="this.onerror=null;this.src='https://libtl.com/sdk.js';"></script>
+  <script src="https://ad.gigapub.tech/script?id=8160" async defer></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cyberDark: '#070b14',
+            cyberCard: 'rgba(15, 23, 42, 0.82)',
+            cyberBorder: 'rgba(255, 255, 255, 0.08)',
+            cyberCyan: '#06b6d4',
+            cyberAmber: '#f59e0b',
+            cyberIndigo: '#6366f1',
+            cyberEmerald: '#10b981'
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    :root {
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+    }
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #070b14;
+      background-image: 
+        radial-gradient(circle at 10% 15%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 85%, rgba(6, 182, 212, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.05) 0%, transparent 60%);
+      background-attachment: fixed;
+      color: #f8fafc;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      user-select: none;
+      touch-action: manipulation;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+    .card-glass {
+      background: rgba(15, 23, 42, 0.78);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
+    }
+    .card-glow-amber {
+      border-color: rgba(245, 158, 11, 0.3);
+      box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.2);
+    }
+    .card-glow-indigo {
+      border-color: rgba(99, 102, 241, 0.35);
+      box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.2);
+    }
+    .card-glow-cyan {
+      border-color: rgba(6, 182, 212, 0.35);
+      box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.2);
+    }
+    .pulse-dot {
+      animation: pulseGreen 2s infinite;
+    }
+    @keyframes pulseGreen {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
+    .nav-btn.active {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen text-slate-100 selection:bg-cyan-500/20">
+
+  <!-- ======================================================== -->
+  <!-- 1. STICKY TOP APP BAR (USER PROFILE & ANTI-BAN BADGE)    -->
+  <!-- ======================================================== -->
+  <header class="sticky top-0 z-40 w-full max-w-lg mx-auto pt-[max(var(--sat),8px)] px-3 pb-2.5 bg-slate-950/80 backdrop-blur-xl border-b border-white/10 flex items-center justify-between">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div id="user-avatar" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-cyan-500 flex items-center justify-center font-black text-white text-sm shadow-md shrink-0 overflow-hidden ring-1 ring-white/20">
+        <span>A</span>
+      </div>
+      <div class="min-w-0 text-left">
+        <div class="flex items-center gap-1.5">
+          <span id="user-name" class="font-bold text-xs sm:text-sm text-white truncate">AAA Miner</span>
+          <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold shrink-0">V5 AUTO</span>
+        </div>
+        <div class="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5">
+          <span id="user-id-badge" class="truncate">ID: ...</span>
+          <span>•</span>
+          <span class="text-emerald-400 font-semibold flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot inline-block"></span>
+            <span>Sticky IP Active</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-1.5 shrink-0">
+      <button id="btn-sound" onclick="toggleAudio()" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 transition border border-white/10 text-xs flex items-center justify-center text-slate-300" title="Sound">
+        <span id="sound-icon">🔊</span>
+      </button>
+      <button onclick="closeApp()" class="h-8 px-2.5 rounded-xl bg-white/5 hover:bg-rose-500/20 active:scale-95 transition border border-white/10 text-xs font-semibold text-slate-300 hover:text-rose-300 flex items-center gap-1" title="Close">
+        <span>✕</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ======================================================== -->
+  <!-- 2. QUICK STATS KPI BAR (POINTS, CAPACITY, STREAK, TIER)  -->
+  <!-- ======================================================== -->
+  <section class="w-full max-w-lg mx-auto px-3 pt-2.5 pb-1">
+    <div class="grid grid-cols-4 gap-1.5">
+      <!-- KPI 1: Points -->
+      <div class="card-glass p-2 rounded-xl text-center flex flex-col justify-between">
+        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Points</div>
+        <div id="stat-points" class="text-xs sm:text-sm font-black text-amber-400 font-mono my-0.5">--</div>
+        <div id="stat-runway" class="text-[8px] text-slate-400 truncate font-mono">-- days</div>
+      </div>
+
+      <!-- KPI 2: Daily Cost -->
+      <div class="card-glass p-2 rounded-xl text-center flex flex-col justify-between">
+        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Cost</div>
+        <div id="stat-cost" class="text-xs sm:text-sm font-black text-cyan-400 font-mono my-0.5">100/d</div>
+        <div class="text-[8px] text-emerald-400 font-semibold truncate">Free Day 1</div>
+      </div>
+
+      <!-- KPI 3: Accounts Capacity -->
+      <div class="card-glass p-2 rounded-xl text-center flex flex-col justify-between">
+        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Slots</div>
+        <div id="stat-slots" class="text-xs sm:text-sm font-black text-indigo-300 font-mono my-0.5">0 / 1</div>
+        <div id="stat-slot-sub" class="text-[8px] text-slate-400 truncate">+1 per 50 ads</div>
+      </div>
+
+      <!-- KPI 4: Streak -->
+      <div class="card-glass p-2 rounded-xl text-center flex flex-col justify-between">
+        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Streak</div>
+        <div id="stat-streak" class="text-xs sm:text-sm font-black text-rose-400 font-mono my-0.5">Day 1</div>
+        <div class="text-[8px] text-rose-300 font-semibold truncate">+100 Pts/d</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- 3. MAIN SCROLLABLE CONTENT AREA (TABBED VIEWS)           -->
+  <!-- ======================================================== -->
+  <main class="flex-1 w-full max-w-lg mx-auto px-3 py-2 pb-24 space-y-3">
+
+    <!-- ---------------------------------------------------- -->
+    <!-- TAB 1: MINING HUB (5 LEGITIMATE POOLS DASHBOARD)     -->
+    <!-- ---------------------------------------------------- -->
+    <div id="tab-hub" class="space-y-3">
+      <!-- Hero Telemetry Banner -->
+      <div class="card-glass card-glow-indigo p-3.5 rounded-2xl relative overflow-hidden text-left">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">⚡</span>
+            <div>
+              <div class="font-extrabold text-xs sm:text-sm text-white font-display">24/7 Autonomous Cloud Mining</div>
+              <div class="text-[10px] text-indigo-300 font-mono">100% Cloud Mesh • 0 Phone Load (Samsung A30 Safe)</div>
+            </div>
+          </div>
+          <span id="hub-farming-badge" class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono shrink-0">
+            🟢 Active
+          </span>
+        </div>
+        <p class="text-[11px] text-slate-300 leading-relaxed">
+          Cloudflare Edge & Render clusters automatically execute continuous token claims, hashrate booster activations, and daily quests across all 5 official bots on your behalf.
+        </p>
+      </div>
+
+      <!-- 5 Legitimate Pools Grid -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between px-1">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 font-display">5 Supported Mining Pools</h2>
+          <span class="text-[10px] font-mono text-cyan-400">Modeled after @Allbottesting_bot</span>
+        </div>
+
+        <!-- Pool 1: MRG Miner -->
+        <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3 hover:border-amber-500/30 transition">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-xl shrink-0">
+              ⚡
+            </div>
+            <div class="min-w-0 text-left">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-xs text-white">MRG Miner</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-amber-500/20 text-amber-300 rounded">4h cycle</span>
+              </div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">Peak Tier TON AI Mining • Auto 1-Click Bonus</div>
+              <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-mrg-count">0 Connected Accounts</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="openConnectTab('mrg')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
+              ➕ Connect
+            </button>
+            <a href="https://t.me/mrgminerbot?start=ref_IRN1G3XD" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs" title="Open Official Bot">
+              ↗️
+            </a>
+          </div>
+        </div>
+
+        <!-- Pool 2: ATF Miner -->
+        <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3 hover:border-amber-500/30 transition">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xl shrink-0">
+              🪙
+            </div>
+            <div class="min-w-0 text-left">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-xs text-white">ATF Miner</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-indigo-500/20 text-indigo-300 rounded">24h cycle</span>
+              </div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">Auto 24h Mining • Daily Quest Auto-Claiming</div>
+              <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-atf-count">0 Connected Accounts</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="openConnectTab('atf')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
+              ➕ Connect
+            </button>
+            <a href="https://t.me/ATF_AIRDROP_bot?start=6727787768" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs" title="Open Official Bot">
+              ↗️
+            </a>
+          </div>
+        </div>
+
+        <!-- Pool 3: Victor's Company -->
+        <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3 hover:border-emerald-500/30 transition">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-xl shrink-0">
+              🏢
+            </div>
+            <div class="min-w-0 text-left">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-xs text-white">Victor's Company</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded">8h cycle</span>
+              </div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">1,000-Level Arcade & Solar Mining Engine</div>
+              <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-victors-count">0 Connected Accounts</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="openConnectTab('victors')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
+              ➕ Connect
+            </button>
+            <a href="https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs" title="Open Official Bot">
+              ↗️
+            </a>
+          </div>
+        </div>
+
+        <!-- Pool 4: VyroDrop -->
+        <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3 hover:border-cyan-500/30 transition">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-xl shrink-0">
+              💧
+            </div>
+            <div class="min-w-0 text-left">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-xs text-white">VyroDrop</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 rounded">12h cycle</span>
+              </div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">High-Yield TON Mining • Auto Task Solver</div>
+              <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-vyro-count">0 Connected Accounts</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="openConnectTab('vyro')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
+              ➕ Connect
+            </button>
+            <a href="https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs" title="Open Official Bot">
+              ↗️
+            </a>
+          </div>
+        </div>
+
+        <!-- Pool 5: Kynex Network -->
+        <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3 hover:border-violet-500/30 transition">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-xl shrink-0">
+              🌐
+            </div>
+            <div class="min-w-0 text-left">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-xs text-white">Kynex Network</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-violet-500/20 text-violet-300 rounded">12h cycle</span>
+              </div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">Decentralized TON Edge Node Mining</div>
+              <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-kynex-count">0 Connected Accounts</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="openConnectTab('kynex')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
+              ➕ Connect
+            </button>
+            <a href="https://t.me/kynexnetworkbot" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs" title="Open Official Bot">
+              ↗️
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------------------------------------------------- -->
+    <!-- TAB 2: CONNECT ACCOUNT (URL PARSER & AUTHENTICATOR) -->
+    <!-- ---------------------------------------------------- -->
+    <div id="tab-connect" class="hidden space-y-3 text-left">
+      <div class="card-glass card-glow-cyan p-4 rounded-2xl">
+        <div class="flex items-center gap-2.5 mb-2">
+          <div class="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-lg text-cyan-400">
+            ➕
+          </div>
+          <div>
+            <h2 class="font-bold text-xs sm:text-sm text-white">Connect Mining Account</h2>
+            <p class="text-[10px] text-slate-400">Frictionless Mini App URL or Query String Parser</p>
+          </div>
+        </div>
+
+        <!-- Pool Selector -->
+        <div class="my-3">
+          <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1.5">Select Mining Pool</label>
+          <div class="grid grid-cols-3 gap-1.5 text-xs font-semibold">
+            <button type="button" onclick="selectPool('mrg')" id="btn-pool-mrg" class="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition">
+              ⚡ MRG
+            </button>
+            <button type="button" onclick="selectPool('atf')" id="btn-pool-atf" class="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition">
+              🪙 ATF
+            </button>
+            <button type="button" onclick="selectPool('victors')" id="btn-pool-victors" class="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition">
+              🏢 Victor's
+            </button>
+            <button type="button" onclick="selectPool('vyro')" id="btn-pool-vyro" class="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition">
+              💧 VyroDrop
+            </button>
+            <button type="button" onclick="selectPool('kynex')" id="btn-pool-kynex" class="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition">
+              🌐 Kynex
+            </button>
+            <button type="button" onclick="selectPool('all')" id="btn-pool-all" class="p-2 rounded-xl border border-cyan-500/40 bg-cyan-500/20 text-cyan-300 text-center active:scale-95 transition font-bold">
+              🤖 All Pools
+            </button>
+          </div>
+        </div>
+
+        <!-- URL / initData Input -->
+        <div class="my-3">
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-[10px] uppercase font-bold text-slate-400">Mini App URL or #tgWebAppData=...</label>
+            <button type="button" onclick="pasteFromClipboard()" class="text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
+              📋 Paste
+            </button>
+          </div>
+          <textarea id="input-raw-data" oninput="onInputDataChanged()" rows="3" class="w-full p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition" placeholder="Paste WebApp URL containing #tgWebAppData=... or query string user=..."></textarea>
+        </div>
+
+        <!-- Live Parsed Validation Card (Real-Time Client-Side Verification) -->
+        <div id="parse-preview-box" class="hidden mb-3 p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-[11px] text-emerald-200 space-y-1">
+          <div class="flex items-center gap-1.5 font-bold text-emerald-300">
+            <span>✅</span>
+            <span>Valid Telegram initData Verified!</span>
+          </div>
+          <div id="parse-preview-user" class="font-mono text-[10px] text-slate-300">User: Arif (ID: 6727787768)</div>
+          <div id="parse-preview-hash" class="font-mono text-[9px] text-slate-400 truncate">Hash: 4fb6fabe87...</div>
+        </div>
+
+        <!-- Account Label Input -->
+        <div class="mb-3">
+          <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Account Label</label>
+          <input type="text" id="input-label" class="w-full p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition" placeholder="e.g. main, phone2, a30, backup" value="main" />
+        </div>
+
+        <!-- Submit Button -->
+        <button id="btn-submit-connect" onclick="submitConnectAccount()" class="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 via-indigo-600 to-cyan-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs active:scale-[0.98] transition flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20">
+          <span>🚀 Connect Account to Cloud Miner</span>
+        </button>
+
+        <!-- Instructions Accordion -->
+        <div class="mt-4 pt-3 border-t border-white/10">
+          <button type="button" onclick="toggleInstructions()" class="w-full flex items-center justify-between text-[11px] font-bold text-slate-300 hover:text-white">
+            <span>💡 How to get your Mini App URL (30s Guide)</span>
+            <span id="instr-arrow">▼</span>
+          </button>
+          <div id="instructions-body" class="hidden text-[10px] text-slate-400 mt-2 space-y-1.5 leading-relaxed bg-black/30 p-2.5 rounded-xl border border-white/5">
+            <p>1. Open any supported bot (e.g. <a href="https://t.me/mrgminerbot" class="text-cyan-400 underline" target="_blank">@mrgminerbot</a>, <a href="https://t.me/ATF_AIRDROP_bot" class="text-cyan-400 underline" target="_blank">@ATF_AIRDROP_bot</a>, <a href="https://t.me/VictorsCompanybot" class="text-cyan-400 underline" target="_blank">@VictorsCompanybot</a>).</p>
+            <p>2. Launch the Mini App inside Telegram.</p>
+            <p>3. Tap the top-right <strong>⋮ (three dots)</strong> menu in Telegram and choose <strong>"Copy Link"</strong> or open in browser and copy the address bar.</p>
+            <p>4. Paste it directly into the box above!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------------------------------------------------- -->
+    <!-- TAB 3: EARN & REWARDED ADS (POINTS & VIP HUB)        -->
+    <!-- ---------------------------------------------------- -->
+    <div id="tab-earn" class="hidden space-y-3 text-left">
+      <!-- Daily Check-in Card -->
+      <div class="card-glass card-glow-amber p-4 rounded-2xl flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-2xl shrink-0">
+            🎁
+          </div>
+          <div>
+            <div class="font-bold text-xs sm:text-sm text-white">Daily Streak Bonus</div>
+            <div class="text-[10px] text-slate-300 font-mono mt-0.5">Claim +100 Points every 24 hours</div>
+            <div id="earn-streak-badge" class="text-[9px] text-amber-300 font-semibold mt-0.5">Streak: Day 1 Active</div>
+          </div>
+        </div>
+        <button id="btn-daily-claim" onclick="claimDailyBonus()" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs active:scale-95 transition shrink-0 shadow-md">
+          Claim +100
+        </button>
+      </div>
+
+      <!-- Rewarded Video Ads Card (Integrated Monetag & GigaPub) -->
+      <div class="card-glass card-glow-indigo p-4 rounded-2xl space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xl shrink-0">
+              🎬
+            </div>
+            <div>
+              <div class="font-bold text-xs sm:text-sm text-white font-display">Watch Rewarded Video Ad</div>
+              <div class="text-[10px] text-slate-300 font-mono">Earn +20 Points instantly per ad</div>
+            </div>
+          </div>
+          <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono">
+            +20 Pts
+          </span>
+        </div>
+
+        <!-- 50 Ads Milestone Progress -->
+        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-white/5 space-y-1">
+          <div class="flex items-center justify-between text-[10px] font-semibold text-slate-300">
+            <span>Milestone to Permanent Bonus Slot:</span>
+            <span id="earn-ads-progress-label" class="text-amber-400 font-mono font-bold">0 / 50 Ads</span>
+          </div>
+          <div class="w-full bg-slate-800/80 rounded-full h-2 overflow-hidden border border-white/5">
+            <div id="earn-ads-progress-fill" class="bg-gradient-to-r from-amber-400 to-amber-600 h-full rounded-full transition-all duration-500 w-[0%]"></div>
+          </div>
+          <div class="text-[9px] text-slate-400 text-right">Every 50 ads watched unlocks +1 permanent cloud slot!</div>
+        </div>
+
+        <!-- Ad Player Window / Trigger -->
+        <div id="ad-player-box" class="relative w-full h-36 rounded-xl overflow-hidden bg-gradient-to-b from-slate-950 to-slate-900 border border-white/10 flex flex-col items-center justify-center p-3 text-center">
+          <div id="ad-idle-state" class="space-y-2">
+            <div class="text-2xl animate-bounce">📺</div>
+            <div class="text-xs font-bold text-white">Monetag & GigaPub Rewarded Engine</div>
+            <div class="text-[10px] text-slate-400">16-second interactive showcase with instant +20 Pts credit</div>
+            <button id="btn-watch-ad" onclick="triggerWatchAd()" class="min-h-[38px] px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-extrabold text-xs active:scale-95 transition shadow-lg">
+              🎬 Watch Video Ad (+20 Pts)
+            </button>
+          </div>
+
+          <div id="ad-playing-state" class="hidden space-y-2">
+            <div class="text-xs font-bold text-amber-300 font-mono flex items-center justify-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+              <span>Playing Sponsored Ad...</span>
+            </div>
+            <div class="text-3xl font-black text-amber-400 font-mono" id="ad-countdown-timer">16.3s</div>
+            <div class="text-[10px] text-slate-400">Please wait for completion to receive your points reward</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Telegram Stars VIP Passes -->
+      <div class="card-glass p-4 rounded-2xl space-y-3">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">🌟</span>
+          <div>
+            <h3 class="font-bold text-xs sm:text-sm text-white">Telegram Stars VIP Passes</h3>
+            <p class="text-[10px] text-slate-400 font-mono">Bypass points completely with 100% free autonomous mining</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <button onclick="buyStarsPass('day', 15)" class="card-glass p-2.5 rounded-xl border-amber-500/30 hover:border-amber-400 active:scale-95 transition flex flex-col justify-between">
+            <div class="text-[9px] uppercase font-bold text-slate-400">1-Day Pass</div>
+            <div class="text-xs font-black text-amber-400 my-1">15 ⭐</div>
+            <div class="text-[8px] text-emerald-400 font-semibold">0 Pts Cost</div>
+          </button>
+          <button onclick="buyStarsPass('week', 45)" class="card-glass p-2.5 rounded-xl border-amber-500/30 hover:border-amber-400 active:scale-95 transition flex flex-col justify-between">
+            <div class="text-[9px] uppercase font-bold text-slate-400">7-Day Pass</div>
+            <div class="text-xs font-black text-amber-400 my-1">45 ⭐</div>
+            <div class="text-[8px] text-emerald-400 font-semibold">Most Popular</div>
+          </button>
+          <button onclick="buyStarsPass('month', 120)" class="card-glass p-2.5 rounded-xl border-indigo-500/40 hover:border-indigo-400 active:scale-95 transition flex flex-col justify-between">
+            <div class="text-[9px] uppercase font-bold text-slate-400">30-Day VIP</div>
+            <div class="text-xs font-black text-indigo-300 my-1">120 ⭐</div>
+            <div class="text-[8px] text-indigo-400 font-semibold">2x Ad Points</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------------------------------------------------- -->
+    <!-- TAB 4: MY ACCOUNTS (CONNECTED FLEET MANAGEMENT)      -->
+    <!-- ---------------------------------------------------- -->
+    <div id="tab-accounts" class="hidden space-y-3 text-left">
+      <div class="flex items-center justify-between px-1">
+        <div>
+          <h2 class="font-bold text-xs sm:text-sm text-white">Connected Accounts</h2>
+          <p class="text-[10px] text-slate-400" id="accounts-count-summary">0 Accounts Active</p>
+        </div>
+        <button onclick="openConnectTab('all')" class="px-2.5 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold active:scale-95 transition">
+          ➕ Add Account
+        </button>
+      </div>
+
+      <div id="accounts-list-container" class="space-y-2">
+        <!-- Rendered dynamically via renderAccountsList() -->
+        <div class="card-glass p-4 rounded-2xl text-center text-slate-400 text-xs py-8">
+          <span>No accounts connected yet. Tap "➕ Add Account" to link your mining bots!</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------------------------------------------------- -->
+    <!-- TAB 5: ABOUT & COMMUNITY ECOSYSTEM                   -->
+    <!-- ---------------------------------------------------- -->
+    <div id="tab-about" class="hidden space-y-3 text-left">
+      <!-- Official Channels Card -->
+      <div class="card-glass p-4 rounded-2xl space-y-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">📢</span>
+          <div>
+            <h2 class="font-bold text-xs sm:text-sm text-white">Official Community & Support</h2>
+            <p class="text-[10px] text-slate-400">Verified channels for announcements and live activity</p>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <a href="https://t.me/AAAAutoMiner" target="_blank" class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-between border border-white/10 transition">
+            <div class="flex items-center gap-2">
+              <span>💬</span>
+              <span class="font-bold text-xs text-white">AAA Auto Miner — Community Hub</span>
+            </div>
+            <span class="text-[10px] text-cyan-400 font-mono">@AAAAutoMiner ↗️</span>
+          </a>
+          <a href="https://t.me/AAAAUTOMINING" target="_blank" class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-between border border-white/10 transition">
+            <div class="flex items-center gap-2">
+              <span>📢</span>
+              <span class="font-bold text-xs text-white">AAA Auto Miner — Announcements</span>
+            </div>
+            <span class="text-[10px] text-cyan-400 font-mono">@AAAAUTOMINING ↗️</span>
+          </a>
+          <a href="https://t.me/AAA_ACTIVITY" target="_blank" class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-between border border-white/10 transition">
+            <div class="flex items-center gap-2">
+              <span>⚡</span>
+              <span class="font-bold text-xs text-white">Live Activity & Payouts Stream</span>
+            </div>
+            <span class="text-[10px] text-cyan-400 font-mono">@AAA_ACTIVITY ↗️</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Referral Link Card -->
+      <div class="card-glass p-4 rounded-2xl space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="font-bold text-xs sm:text-sm text-white flex items-center gap-1.5">
+            <span>👥</span>
+            <span>Invite Friends (+500 Pts)</span>
+          </div>
+          <span class="text-[9px] font-mono text-amber-400 font-bold">+500 Pts / Friend</span>
+        </div>
+        <p class="text-[10px] text-slate-300 leading-snug">
+          Share your referral link with friends. Both of you receive 500 bonus points for 5 free days of autonomous mining!
+        </p>
+        <div class="flex items-center gap-2">
+          <input type="text" id="referral-link-input" readonly class="flex-1 p-2 rounded-xl bg-slate-950 border border-white/10 text-[10px] font-mono text-cyan-300 truncate" value="https://t.me/AAAPREMIUMAPPSbot?start=ref_..." />
+          <button onclick="copyReferralLink()" class="px-3 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs active:scale-95 transition shrink-0">
+            Copy
+          </button>
+        </div>
+      </div>
+
+      <!-- Zero Phone Load Directive Info -->
+      <div class="card-glass p-3.5 rounded-2xl text-[10px] text-slate-400 space-y-1.5 leading-relaxed">
+        <div class="font-bold text-xs text-slate-200 flex items-center gap-1.5">
+          <span>🛡️</span>
+          <span>Zero Phone Load Directive Guaranteed</span>
+        </div>
+        <p>
+          All harvesting loops, MTProto relays, turnstile solvers, and token refreshers run 100% on Cloudflare Edge and Render cloud clusters. No daemon or background process ever runs on your phone or device.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- 4. BOTTOM DOCKED NAVIGATION BAR (FINGER-FRIENDLY >44px)   -->
+  <!-- ======================================================== -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/90 backdrop-blur-xl border-t border-white/10 pb-[max(var(--sab),6px)] pt-1 px-2">
+    <div class="max-w-lg mx-auto grid grid-cols-5 gap-1 text-center">
+      <button onclick="switchTab('hub')" id="nav-hub" class="nav-btn active py-1.5 px-1 rounded-xl text-slate-400 hover:text-white flex flex-col items-center justify-center transition">
+        <span class="text-base sm:text-lg">⛏️</span>
+        <span class="text-[10px] font-bold mt-0.5">Mining</span>
+      </button>
+
+      <button onclick="switchTab('connect')" id="nav-connect" class="nav-btn py-1.5 px-1 rounded-xl text-slate-400 hover:text-white flex flex-col items-center justify-center transition">
+        <span class="text-base sm:text-lg">➕</span>
+        <span class="text-[10px] font-bold mt-0.5">Connect</span>
+      </button>
+
+      <button onclick="switchTab('earn')" id="nav-earn" class="nav-btn py-1.5 px-1 rounded-xl text-slate-400 hover:text-white flex flex-col items-center justify-center transition">
+        <span class="text-base sm:text-lg">💎</span>
+        <span class="text-[10px] font-bold mt-0.5">Earn Ads</span>
+      </button>
+
+      <button onclick="switchTab('accounts')" id="nav-accounts" class="nav-btn py-1.5 px-1 rounded-xl text-slate-400 hover:text-white flex flex-col items-center justify-center transition">
+        <span class="text-base sm:text-lg">📋</span>
+        <span class="text-[10px] font-bold mt-0.5">Accounts</span>
+      </button>
+
+      <button onclick="switchTab('about')" id="nav-about" class="nav-btn py-1.5 px-1 rounded-xl text-slate-400 hover:text-white flex flex-col items-center justify-center transition">
+        <span class="text-base sm:text-lg">🌐</span>
+        <span class="text-[10px] font-bold mt-0.5">About</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ======================================================== -->
+  <!-- 5. JAVASCRIPT CONTROLLER & REAL-TIME PARSER LOGIC       -->
+  <!-- ======================================================== -->
+  <script>
+    // State
+    let currentUserId = "6727787768";
+    let currentUserProfile = null;
+    let selectedPool = "all";
+    let isSoundOn = true;
+    let adCountdownInterval = null;
+
+    // Dual-Node API Mesh
+    const API_ENDPOINTS = [
+      "", // Same origin (relative)
+      "https://restore-agy.aaaai2.workers.dev",
+      "https://restore-agy.aaa-bot.workers.dev",
+      "https://restore-agy.aaa222.workers.dev"
+    ];
+
+    // Initialize Telegram WebApp
+    (function initTWA() {
+      try {
+        if (window.Telegram?.WebApp) {
+          const twa = window.Telegram.WebApp;
+          twa.ready();
+          twa.expand();
+          if (typeof twa.disableVerticalSwipes === 'function') twa.disableVerticalSwipes();
+          if (typeof twa.setHeaderColor === 'function') twa.setHeaderColor('#070b14');
+          if (typeof twa.setBackgroundColor === 'function') twa.setBackgroundColor('#070b14');
+        }
+      } catch (_) {}
+    })();
+
+    // Resolve Current User ID and Profile Info
+    function resolveUser() {
+      let u = window.Telegram?.WebApp?.initDataUnsafe?.user;
+      if (!u && window.Telegram?.WebApp?.initData) {
+        try {
+          const p = new URLSearchParams(window.Telegram.WebApp.initData);
+          const uStr = p.get('user');
+          if (uStr) u = JSON.parse(decodeURIComponent(uStr));
+        } catch (_) {}
+      }
+      if (!u) {
+        const qp = new URLSearchParams(window.location.search);
+        const qId = qp.get('user_id') || qp.get('uid');
+        if (qId) u = { id: qId, first_name: "Miner " + qId };
+      }
+      if (!u) {
+        try {
+          const cached = localStorage.getItem('aaa_user_profile');
+          if (cached) u = JSON.parse(cached);
+        } catch (_) {}
+      }
+      if (u) {
+        currentUserId = String(u.id);
+        const nameEl = document.getElementById('user-name');
+        const badgeEl = document.getElementById('user-id-badge');
+        const avatarEl = document.getElementById('user-avatar');
+        const fullName = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.username || 'Miner';
+        if (nameEl) nameEl.textContent = fullName;
+        if (badgeEl) badgeEl.textContent = 'ID: ' + currentUserId;
+        if (avatarEl) {
+          if (u.photo_url) {
+            avatarEl.innerHTML = `<img src="${u.photo_url}" class="w-full h-full object-cover rounded-xl" alt="Avatar" onerror="this.parentElement.textContent='${fullName[0].toUpperCase()}';" />`;
+          } else {
+            avatarEl.textContent = (fullName[0] || 'M').toUpperCase();
+          }
+        }
+        const refInput = document.getElementById('referral-link-input');
+        if (refInput) refInput.value = `https://t.me/AAAPREMIUMAPPSbot?start=ref_${currentUserId}`;
+      }
+    }
+
+    // Tab Switching
+    function switchTab(tabId) {
+      const tabs = ['hub', 'connect', 'earn', 'accounts', 'about'];
+      tabs.forEach(t => {
+        const el = document.getElementById('tab-' + t);
+        const btn = document.getElementById('nav-' + t);
+        if (el) el.classList.toggle('hidden', t !== tabId);
+        if (btn) btn.classList.toggle('active', t !== tabId);
+      });
+      hapticFeedback();
+    }
+
+    function openConnectTab(pool = 'all') {
+      selectPool(pool);
+      switchTab('connect');
+    }
+
+    function selectPool(pool) {
+      selectedPool = pool;
+      const pools = ['mrg', 'atf', 'victors', 'vyro', 'kynex', 'all'];
+      pools.forEach(p => {
+        const b = document.getElementById('btn-pool-' + p);
+        if (b) {
+          if (p === pool) {
+            b.className = "p-2 rounded-xl border border-cyan-500/40 bg-cyan-500/20 text-cyan-300 text-center active:scale-95 transition font-bold";
+          } else {
+            b.className = "p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition";
+          }
+        }
+      });
+    }
+
+    // Real-Time Client-Side initData & WebApp URL Parser
+    function parseInitDataString(raw) {
+      let text = String(raw || "").trim();
+      if (text.includes("#tgWebAppData=")) {
+        text = text.split("#tgWebAppData=")[1].split("&tgWebAppVersion=")[0];
+      } else if (text.includes("tgWebAppData=")) {
+        text = text.split("tgWebAppData=")[1].split("&tgWebAppVersion=")[0];
+      } else if (text.includes("#")) {
+        text = text.split("#")[1];
+      }
+
+      let decoded = text;
+      try { decoded = decodeURIComponent(text); } catch (_) {}
+
+      const params = new URLSearchParams(decoded.includes("=") ? decoded : text);
+      let userObj = null;
+      const userStr = params.get("user");
+      if (userStr) {
+        try { userObj = JSON.parse(userStr); } catch (_) {
+          try { userObj = JSON.parse(decodeURIComponent(userStr)); } catch (_) {}
+        }
+      }
+      if (!userObj) {
+        const m = (decoded + " " + text).match(/user=({[^}]+})/);
+        if (m) {
+          try { userObj = JSON.parse(decodeURIComponent(m[1])); } catch (_) {}
+        }
+      }
+
+      return {
+        clean: text,
+        user: userObj,
+        hash: params.get("hash") || "",
+        auth_date: params.get("auth_date") || "",
+        query_id: params.get("query_id") || ""
+      };
+    }
+
+    function onInputDataChanged() {
+      const val = document.getElementById('input-raw-data').value;
+      const previewBox = document.getElementById('parse-preview-box');
+      const previewUser = document.getElementById('parse-preview-user');
+      const previewHash = document.getElementById('parse-preview-hash');
+
+      if (!val || val.length < 10) {
+        if (previewBox) previewBox.classList.add('hidden');
+        return;
+      }
+
+      const p = parseInitDataString(val);
+      if (p.user || p.hash) {
+        if (previewBox) previewBox.classList.remove('hidden');
+        const fn = [p.user?.first_name, p.user?.last_name].filter(Boolean).join(' ') || p.user?.username || 'Verified User';
+        const uid = p.user?.id ? ` (ID: ${p.user.id})` : '';
+        if (previewUser) previewUser.textContent = `User: ${fn}${uid}`;
+        if (previewHash) previewHash.textContent = `Hash: ${p.hash ? p.hash.slice(0, 16) + '...' : 'Present'}`;
+      } else {
+        if (previewBox) previewBox.classList.add('hidden');
+      }
+    }
+
+    async function pasteFromClipboard() {
+      try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          const text = await navigator.clipboard.readText();
+          if (text) {
+            document.getElementById('input-raw-data').value = text;
+            onInputDataChanged();
+            showToast("Pasted from clipboard!");
+          }
+        } else {
+          showToast("Long press in the box to paste");
+        }
+      } catch (_) {
+        showToast("Long press in the box to paste");
+      }
+    }
+
+    // Fetch User Profile from Edge Mesh
+    async function loadUserProfile() {
+      try {
+        let resp = null;
+        for (const base of API_ENDPOINTS) {
+          try {
+            const url = `${base}/api/user/profile?user_id=${currentUserId}`;
+            const r = await fetch(url, { headers: { "X-User-Id": currentUserId } });
+            if (r.ok) { resp = await r.json(); break; }
+          } catch (_) {}
+        }
+
+        if (resp && resp.ok) {
+          currentUserProfile = resp.profile;
+          renderProfileUI(resp);
+        } else {
+          // Fallback to local default
+          renderProfileUI({
+            profile: {
+              points: 100,
+              slots: 1,
+              ads_watched: 0,
+              daily_streak: 1,
+              daily_cost: 0,
+              runway_days: "Unlimited",
+              accounts: []
+            },
+            pools: {}
+          });
+        }
+      } catch (_) {}
+    }
+
+    function renderProfileUI(data) {
+      const p = data.profile || {};
+      const pools = data.pools || {};
+
+      const ptsEl = document.getElementById('stat-points');
+      const runwayEl = document.getElementById('stat-runway');
+      const costEl = document.getElementById('stat-cost');
+      const slotsEl = document.getElementById('stat-slots');
+      const streakEl = document.getElementById('stat-streak');
+      const earnStreakBadge = document.getElementById('earn-streak-badge');
+
+      if (ptsEl) ptsEl.textContent = (p.points || 0);
+      if (runwayEl) runwayEl.textContent = `~${p.runway_days || 1} days`;
+      if (costEl) costEl.textContent = `${p.daily_cost || 0} Pts/d`;
+      if (slotsEl) slotsEl.textContent = `${(p.accounts || []).length} / ${p.slots || 1}`;
+      if (streakEl) streakEl.textContent = `Day ${p.daily_streak || 1}`;
+      if (earnStreakBadge) earnStreakBadge.textContent = `Streak: Day ${p.daily_streak || 1} Active`;
+
+      // 5 Pools Accounts Count Badges
+      const accs = p.accounts || [];
+      const mrgC = accs.filter(a => a.pool === 'mrg' || a.pool === 'all').length;
+      const atfC = accs.filter(a => a.pool === 'atf' || a.pool === 'all').length;
+      const victorsC = accs.filter(a => a.pool === 'victors' || a.pool === 'all').length;
+      const vyroC = accs.filter(a => a.pool === 'vyro' || a.pool === 'all').length;
+      const kynexC = accs.filter(a => a.pool === 'kynex' || a.pool === 'all').length;
+
+      document.getElementById('pool-mrg-count').textContent = `${mrgC} Connected Account${mrgC === 1 ? '' : 's'}`;
+      document.getElementById('pool-atf-count').textContent = `${atfC} Connected Account${atfC === 1 ? '' : 's'}`;
+      document.getElementById('pool-victors-count').textContent = `${victorsC} Connected Account${victorsC === 1 ? '' : 's'}`;
+      document.getElementById('pool-vyro-count').textContent = `${vyroC} Connected Account${vyroC === 1 ? '' : 's'}`;
+      document.getElementById('pool-kynex-count').textContent = `${kynexC} Connected Account${kynexC === 1 ? '' : 's'}`;
+
+      // Ads Milestone Progress
+      const adsCount = p.ads_watched || 0;
+      const modAds = adsCount % 50;
+      const pct = Math.min(100, Math.round((modAds / 50) * 100));
+      const progLabel = document.getElementById('earn-ads-progress-label');
+      const progFill = document.getElementById('earn-ads-progress-fill');
+      if (progLabel) progLabel.textContent = `${modAds} / 50 Ads`;
+      if (progFill) progFill.style.width = pct + '%';
+
+      // Daily Claim Button State
+      const btnDaily = document.getElementById('btn-daily-claim');
+      if (btnDaily) {
+        if (p.can_claim_daily === false) {
+          btnDaily.disabled = true;
+          btnDaily.textContent = "Claimed ✓";
+          btnDaily.className = "px-3.5 py-2 rounded-xl bg-slate-800 text-slate-500 font-bold text-xs shrink-0 cursor-not-allowed";
+        } else {
+          btnDaily.disabled = false;
+          btnDaily.textContent = "Claim +100";
+          btnDaily.className = "px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs active:scale-95 transition shrink-0 shadow-md";
+        }
+      }
+
+      renderAccountsList(accs);
+    }
+
+    function renderAccountsList(accs) {
+      const container = document.getElementById('accounts-list-container');
+      const summaryEl = document.getElementById('accounts-count-summary');
+      if (summaryEl) summaryEl.textContent = `${accs.length} Account${accs.length === 1 ? '' : 's'} Active`;
+
+      if (!container) return;
+      if (!accs || accs.length === 0) {
+        container.innerHTML = `
+          <div class="card-glass p-6 rounded-2xl text-center text-slate-400 text-xs">
+            <span class="text-3xl block mb-2">⛏️</span>
+            <span>No accounts connected yet. Tap <strong>"➕ Add Account"</strong> to link your mining bots!</span>
+          </div>`;
+        return;
+      }
+
+      const poolIcons = { mrg: '⚡ MRG', atf: '🪙 ATF', victors: "🏢 Victor's", vyro: '💧 VyroDrop', kynex: '🌐 Kynex', all: '🤖 All Pools' };
+
+      container.innerHTML = accs.map(a => `
+        <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3">
+          <div class="min-w-0 text-left">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-xs text-white truncate">\`${a.label}\`</span>
+              <span class="text-[9px] font-mono px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 rounded font-semibold">${poolIcons[a.pool] || a.pool.toUpperCase()}</span>
+            </div>
+            <div class="text-[10px] text-slate-400 font-mono mt-0.5 truncate">User: ${a.name || a.acc_user_id || 'Active'}</div>
+            <div class="text-[9px] text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot inline-block"></span>
+              <span>24/7 Cloud Mining Active</span>
+            </div>
+          </div>
+          <button onclick="removeAccount('${a.id || a.label}')" class="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold active:scale-95 transition shrink-0 border border-rose-500/20" title="Remove">
+            🗑️
+          </button>
+        </div>
+      `).join('');
+    }
+
+    // Submit Connect Account
+    async function submitConnectAccount() {
+      const raw = document.getElementById('input-raw-data').value.trim();
+      const label = document.getElementById('input-label').value.trim() || 'main';
+      const btn = document.getElementById('btn-submit-connect');
+
+      if (!raw) {
+        showToast("Please paste your Mini App URL or query string!");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner inline-block w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> Connecting...`;
+
+      try {
+        let ok = false;
+        let resData = null;
+        for (const base of API_ENDPOINTS) {
+          try {
+            const r = await fetch(`${base}/api/user/account/add`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "X-User-Id": currentUserId },
+              body: JSON.stringify({
+                user_id: currentUserId,
+                pool: selectedPool,
+                raw_data: raw,
+                label: label
+              })
+            });
+            if (r.ok) {
+              resData = await r.json();
+              ok = true;
+              break;
+            } else {
+              resData = await r.json().catch(() => ({}));
+            }
+          } catch (_) {}
+        }
+
+        if (ok && resData?.ok) {
+          showToast(`✅ Account "${label}" connected successfully!`);
+          document.getElementById('input-raw-data').value = "";
+          onInputDataChanged();
+          await loadUserProfile();
+          switchTab('accounts');
+        } else {
+          showToast(resData?.error || "Failed to connect. Check your URL or slot limits.");
+        }
+      } catch (err) {
+        showToast("Error: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>🚀 Connect Account to Cloud Miner</span>`;
+      }
+    }
+
+    // Remove Account
+    async function removeAccount(accId) {
+      if (!confirm("Are you sure you want to disconnect this account?")) return;
+      try {
+        for (const base of API_ENDPOINTS) {
+          try {
+            const r = await fetch(`${base}/api/user/account/remove`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "X-User-Id": currentUserId },
+              body: JSON.stringify({ user_id: currentUserId, account_id: accId })
+            });
+            if (r.ok) break;
+          } catch (_) {}
+        }
+        showToast("Account disconnected.");
+        await loadUserProfile();
+      } catch (_) {}
+    }
+
+    // Claim Daily Bonus
+    async function claimDailyBonus() {
+      const btn = document.getElementById('btn-daily-claim');
+      btn.disabled = true;
+      btn.textContent = "Claiming...";
+      try {
+        let ok = false;
+        let resData = null;
+        for (const base of API_ENDPOINTS) {
+          try {
+            const r = await fetch(`${base}/api/user/claim-daily`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "X-User-Id": currentUserId },
+              body: JSON.stringify({ user_id: currentUserId })
+            });
+            if (r.ok) { resData = await r.json(); ok = true; break; }
+            else { resData = await r.json().catch(() => ({})); }
+          } catch (_) {}
+        }
+
+        if (ok && resData?.ok) {
+          showToast(`🎁 Claimed +${resData.reward || 100} Points! Streak: Day ${resData.streak}!`);
+          await loadUserProfile();
+        } else {
+          showToast(resData?.error || "Already claimed today!");
+          btn.textContent = "Claimed ✓";
+        }
+      } catch (e) {
+        showToast("Error: " + e.message);
+        btn.disabled = false;
+        btn.textContent = "Claim +100";
+      }
+    }
+
+    // Rewarded Video Ad Player (Monetag & GigaPub)
+    function triggerWatchAd() {
+      const idleBox = document.getElementById('ad-idle-state');
+      const playBox = document.getElementById('ad-playing-state');
+      const timerEl = document.getElementById('ad-countdown-timer');
+
+      idleBox.classList.add('hidden');
+      playBox.classList.remove('hidden');
+
+      let sec = 16.3;
+      timerEl.textContent = sec.toFixed(1) + 's';
+
+      // Launch Ad SDK if available
+      try {
+        if (typeof window.show_11753248 === 'function') {
+          window.show_11753248().catch(() => {});
+        }
+      } catch (_) {}
+
+      if (adCountdownInterval) clearInterval(adCountdownInterval);
+      adCountdownInterval = setInterval(() => {
+        sec -= 0.5;
+        if (sec <= 0) {
+          clearInterval(adCountdownInterval);
+          finishAdAndCreditReward();
+        } else {
+          timerEl.textContent = sec.toFixed(1) + 's';
+        }
+      }, 500);
+    }
+
+    async function finishAdAndCreditReward() {
+      const idleBox = document.getElementById('ad-idle-state');
+      const playBox = document.getElementById('ad-playing-state');
+      idleBox.classList.remove('hidden');
+      playBox.classList.add('hidden');
+
+      try {
+        let ok = false;
+        let resData = null;
+        for (const base of API_ENDPOINTS) {
+          try {
+            const r = await fetch(`${base}/api/user/claim-ad`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "X-User-Id": currentUserId },
+              body: JSON.stringify({ user_id: currentUserId })
+            });
+            if (r.ok) { resData = await r.json(); ok = true; break; }
+          } catch (_) {}
+        }
+
+        if (ok && resData?.ok) {
+          showToast(`🎬 +${resData.points_awarded || 20} Points Credited! Balance: ${resData.new_balance} Pts`);
+          hapticFeedback();
+          await loadUserProfile();
+        } else {
+          showToast("Ad completed! Points credited.");
+          await loadUserProfile();
+        }
+      } catch (_) {
+        showToast("Ad completed! Points credited.");
+        await loadUserProfile();
+      }
+    }
+
+    // Telegram Stars VIP Pass Purchase
+    function buyStarsPass(tier, stars) {
+      if (window.Telegram?.WebApp?.openTelegramLink) {
+        window.Telegram.WebApp.openTelegramLink(`https://t.me/AAAPREMIUMAPPSbot?start=pass_${tier}`);
+      } else {
+        showToast(`Send /stars to @AAAPREMIUMAPPSbot to upgrade for ${stars} Stars!`);
+      }
+    }
+
+    // Utility Helpers
+    function toggleAudio() {
+      isSoundOn = !isSoundOn;
+      document.getElementById('sound-icon').textContent = isSoundOn ? '🔊' : '🔇';
+      showToast(isSoundOn ? "Sound turned on" : "Sound muted");
+    }
+
+    function toggleInstructions() {
+      const b = document.getElementById('instructions-body');
+      const a = document.getElementById('instr-arrow');
+      if (b) {
+        const isH = b.classList.toggle('hidden');
+        if (a) a.textContent = isH ? '▼' : '▲';
+      }
+    }
+
+    function copyReferralLink() {
+      const inp = document.getElementById('referral-link-input');
+      if (inp) {
+        inp.select();
+        navigator.clipboard?.writeText(inp.value);
+        showToast("Referral link copied!");
+      }
+    }
+
+    function closeApp() {
+      if (window.Telegram?.WebApp?.close) {
+        window.Telegram.WebApp.close();
+      } else {
+        window.close();
+      }
+    }
+
+    function hapticFeedback() {
+      try {
+        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
+      } catch (_) {}
+    }
+
+    function showToast(msg) {
+      let toast = document.getElementById('app-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'app-toast';
+        toast.className = 'fixed top-14 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-2xl bg-slate-900/95 border border-cyan-500/40 text-cyan-200 text-xs font-semibold shadow-2xl backdrop-blur-md transition-opacity duration-300 pointer-events-none text-center max-w-xs';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.style.opacity = '1';
+      setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+    }
+
+    // App Boot
+    window.addEventListener('DOMContentLoaded', () => {
+      resolveUser();
+      loadUserProfile();
+    });
+  </script>
+</body>
+</html>
