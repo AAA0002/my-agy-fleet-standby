@@ -11,7 +11,7 @@
 If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a new session, or a human operator taking over this workspace, **read this entire document first**. It provides the complete picture of this project, how every component works, where every secret and service lives, and how to operate and extend it without breaking production.
 
 ### What is this Project?
-**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **18 Telegram accounts** (1 Master Account + 17 Worker Accounts) that continuously farm yield, satoshis, and tokens across **5 high-conviction legitimate Telegram WebApp Mini Apps** (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network — all scammer and discontinued bots purged and blacklisted), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin).
+**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **18 Telegram accounts** (1 Master Account + 17 Worker Accounts) that continuously farm yield, satoshis, and tokens across **8 high-conviction legitimate Telegram WebApp Mini Apps** (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, LeafEarn, Astra Airdrop — all scammer and discontinued bots purged and blacklisted), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin).
 
 ### The Golden Directives (Non-Negotiable Rules)
 1. **🛡️ Strict Project Isolation**: Everything relating to this project must remain strictly within this repository (`AAA0002/ATL`). **NEVER** touch, import, mix, or merge context from `@AAATelegramIdBot` (`AAA2743/AA`) or other external projects.
@@ -222,12 +222,15 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     - Name: *AAA AUTO MINING (PREMIUM)*
     - Live Webhook: `https://restore-agy.aaaai2.workers.dev/user-bot-webhook` (Multi-Edge Mesh on Cloudflare Worker Node 1)
     - Role: Multi-bot cloud mining platform, modern dashboard (modeled after `@Allbottesting_bot`), per-pool management across 5 pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network), frictionless WebApp URL / `initData` query string account connector (0 SMS codes) with 24h expiration guard, Points economy (100 Pts/day), Rewarded Adsgram/Monetag video ads (+20 Pts), milestone slots (+1 slot per 50 ads), and Telegram Stars VIP passes.
-  - **Supported Mining Pools (5/5 Legitimate Pools)**:
+  - **Supported Mining Pools (8 Active High-Yield Pools)**:
     1. ⚡ **MRG Miner** (`@mrgminerbot`)
     2. 🪙 **ATF Miner** (`@ATF_AIRDROP_bot`)
     3. 🏢 **Victor's Company** (`@VictorsCompanybot`)
     4. 💧 **VyroDrop** (`@vyrodrop_bot`)
     5. 🌐 **Kynex Network** (`@kynexnetworkbot`)
+    6. ⛏️ **DiggoMiner** (`@Diggominer_bot`)
+    7. 🍃 **LeafEarn** (`@LeafEarnBot`)
+    8. ⭐ **Astra Airdrop** (`@ASTRA_AIRDROP_BOT`)
   - **User WebApp Mini App Frontend**: `https://agy-henna.vercel.app/` (Ads Portal) & `https://agy-henna.vercel.app/miner` (Vector SVG Multi-Miner Dashboard) & `https://restore-agy.aaaai2.workers.dev/app` (Cloudflare Worker Node 1) & `https://atf-miner-app.pages.dev` (Cloudflare Pages)
     - Architecture: Ultra-modern responsive cyberpunk glassmorphic Mini App improving upon `@Allbottesting_bot` with 5 pools (⚡ MRG, 🪙 ATF, 🏢 Victor's Company, 💧 VyroDrop, 🌐 Kynex Network), real-time client-side `#tgWebAppData=...` parser, 24/7 cloud mining telemetry, Rewarded Video Ad player (Monetag + GigaPub), Daily Streak Claim (+100 Pts/d), 50-ad permanent slot milestone tracker, and Telegram Stars VIP passes.
   - **User Distributed Mining Engine & REST APIs**: `https://restore-agy.aaaai2.workers.dev/api/user/` (Endpoints: `/profile`, `/account/add`, `/account/remove`, `/claim-daily`, `/claim-ad`)
@@ -426,10 +429,10 @@ During thorough auditing of `/api/farm/cloud-all`, an investigation revealed why
 ## ⚡ 6.2 Dual-Type Bot Architecture, Channel Engine & Dialog Purge Protocol (October 10, 2026)
 
 ### 1. The Dual-Type Bot & Channel Architecture
-The fleet's 5 active high-conviction legitimate bots and channels are fundamentally divided into two technical architectures:
+The fleet's 8 active high-conviction legitimate bots and channels are fundamentally divided into two technical architectures:
 
-#### Type A: WebApp Mini-Apps / REST Bots (5 Genuine Bots)
-- **Bots Included**: MRG Miner (`@mrg_miner_bot` / `@mrgminerbot`), ATF Miner (`@atf_miner_bot` / `@ATF_AIRDROP_bot`), Victor's Company (`@VictorsCompanybot`), VyroDrop (`@vyrodrop_bot`), Kynex Network (`@Kynex_miningbot`).
+#### Type A: WebApp Mini-Apps / REST Bots (8 Genuine Bots)
+- **Bots Included**: MRG Miner (`@mrg_miner_bot` / `@mrgminerbot`), ATF Miner (`@atf_miner_bot` / `@ATF_AIRDROP_bot`), Victor's Company (`@VictorsCompanybot`), VyroDrop (`@vyrodrop_bot`), Kynex Network (`@Kynex_miningbot`), DiggoMiner (`@Diggominer_bot`), LeafEarn (`@LeafEarnBot`), Astra Airdrop (`@ASTRA_AIRDROP_BOT`).
 - **Mechanism**:
   - Authenticated via Telegram WebApp `initData` (HMAC SHA-256 query string signed by Telegram bot tokens) or Bearer JWT tokens.
   - Executed 100% via asynchronous HTTP REST calls with zero MTProto connection overhead.
@@ -900,8 +903,8 @@ Whenever you perform work in this repository:
 * **Audit Menu Integration**:
   - The Session Audit (`/audit`, `btn_session_audit`) presents **"📱 1-Tap QR #X"** as the primary 1-click option for all revoked nodes.
   - `btn_relink_` provides an explicit choice between 1-Tap QR (Zero Code) and Request 5-Digit Code (for Mini App).
-* **5-Bot Cloud Fleet Auto-Farming Verification**:
-  - All 18 accounts actively cycle through the 5 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex).
+* **8-Bot Cloud Fleet Auto-Farming Verification**:
+  - All 18 accounts actively cycle through the 8 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, LeafEarn, Astra Airdrop).
   - Short 3m–5m retry backoff prevents accounts from getting trapped in hours of cooldown on transient network errors.
 
 ### 6.1 Upstash Redis Pipeline Bug Fix & Full 18-Account Synthesis (October 13, 2026)

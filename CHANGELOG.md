@@ -2,6 +2,29 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌾 8-Bot Fleet Expansion, 100% Account Cloud Farming Bug Fix & User Bot Frictionless Onboarding (October 13, 2026)**:
+  - **🚀 8 Active High-Yield Mining Bots Architecture Expansion**:
+    * Integrated 3 new high-yield mining pools across all cloud tiers:
+      1. **DiggoMiner** (`@Diggominer_bot`): WebApp URL `https://diggominer.com` / `startapp=ref_4088138f11effe8eef4b86ff`. Subroutines `farmDiggo` / `_farm_diggo` with claim, tap, and level upgrade telemetry.
+      2. **LeafEarn** (`@LeafEarnBot`): WebApp URL `https://leafearn.site` / `startapp=6727787768`. Subroutines `farmLeafearn` / `_farm_leafearn` with balance harvest, daily claim, and task checks.
+      3. **Astra Airdrop** (`@ASTRA_AIRDROP_BOT`): WebApp URL `https://astra-airdrop.com` / `startapp=ref_6727787768`. Subroutines `farmAstra` / `_farm_astra` with mining sync and claim routines.
+    * Added full token collection support for DiggoMiner, LeafEarn, and Astra in Render collector (`extract_tokens_with_client`).
+    * Expanded `ALLOWED_FLEET_BOTS`, D1 token queries, REST API `/api/user/account/add`, and supported pools matrix to 8 active pools: MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, LeafEarn, and Astra Airdrop.
+  - **⚡ Cloudflare Edge Scheduled Cron 100% Account Farming Fix**:
+    * Resolved critical sharding drop in `aaaai2` edge cron (`deploy_both_cf_workers.py`): Previously, `aaaai2` filtered accounts with `idx % 5 === nodeIndex` (ignoring 80% of accounts because worker nodes 1–4 early-returned on cron triggers).
+    * Removed index sharding filter in single-node cron: `aaaai2` now iterates and farms **100% of all registered fleet and user accounts** every cycle with randomized jitter delays (250ms–750ms).
+  - **🔄 Render Collector Multi-Account & Expiration Resilience Fix**:
+    * Fixed `is_token_data_expired` in `render_app_latest.py` & `render_standby_app.py`: Accounts missing single bot tokens are no longer falsely flagged as expired or trapped in 45s Telethon extraction timeouts.
+    * Only accounts with 0 tokens or strictly expired timestamps trigger fresh extraction.
+    * Integrated user bot accounts (`ub_registered_users` / `ub_user:*`) into Render farming loop, ensuring both fleet and user-connected accounts are farmed 24/7.
+  - **🤖 User Bot (`@AAAPREMIUMAPPSbot`) Frictionless Account Connection**:
+    * **Eliminated 100-Point Blocker**: Removed `profile.points < 100` requirement for connecting accounts. Adding accounts is now 100% free with 0 points. First account connection awards +100 welcome points.
+    * **1-Tap Telegram ID Connection**: Added inline button `[⚡ 1-Tap Link My Telegram ID (${chatId})]` (`ub_bind_id_`) allowing instant 1-click binding without typing.
+    * **Disarmed Phone Number Trap**: Direct Telegram IDs (`^[1-9][0-9]{6,11}$`) are immediately bound as `auth_type: "telegram_id"`. Conversational text (e.g. *"What can this bot do"*) routes directly to Ari AI Copilot (`runUserAiCascade`) instead of crashing MTProto phone code requests.
+  - **🗄️ Turso LibSQL Active Edge Database Quota Pooling**:
+    * Integrated Turso LibSQL client (`tursoExecute`, `tursoGet`, `tursoSet`, `tursoDel`) into Cloudflare Edge worker with up to 9 Billion operations/month quota.
+    * Active pooling across Turso LibSQL, Upstash Redis, Cloudflare D1, and Supabase ensures zero fleet downtime even if individual database quotas are exhausted.
+
 - **🚀 Admin Dashboard Restoration, User Bot AI Chat Unlocking & Multi-Protocol Mini App Auto-Detector with Expiration Guard (October 13, 2026)**:
   - **👑 Admin Bot (`@myagyai`) Operations Dashboard Restored**:
     * Re-activated official Telegram Chat Menu Button (`setChatMenuButton`) pointing to `👑 Fleet Dashboard` (`https://agy-aaa000.vercel.app/admin`).

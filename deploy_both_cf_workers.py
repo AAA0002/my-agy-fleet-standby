@@ -894,19 +894,78 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     }
   };
 
-  // Humanized Execution Pipeline: 5 Active Legitimate Bots (MRG, ATF, Victor's Company, VyroDrop, Kynex)
-  // Per-bot cooldowns matching real game economics and preventing repetitive API blitzing:
-  // - ATF: 2h task refresh cycle -> farm every 2.0h - 3.0h (7200s - 10800s)
-  // - MRG: 3h-4h hashrate claim cycle -> farm every 3.0h - 4.0h (10800s - 14400s)
-  // - Victor's: Arcade energy & offline earnings -> farm every 4.0h - 5.0h (14400s - 18000s)
-  // - Vyro: Mining session duration -> farm every 4.0h - 6.0h (14400s - 21600s)
-  // - Kynex: 12h energy bar replenishment -> farm every 6.0h - 8.0h (21600s - 28800s)
+  // 6. DiggoMiner (@Diggominer_bot)
+  const farmDiggo = async () => {
+    if (!accData.diggo_init_data) return;
+    try {
+      let dInit = accData.diggo_init_data;
+      if (typeof dInit === "string" && (dInit.startsWith("user%3D") || dInit.includes("%257B"))) {
+        try { dInit = decodeURIComponent(dInit); } catch (_) {}
+      }
+      const dHeaders = getHumanHeaders(uid, {
+        "Content-Type": "application/json",
+        "Authorization": `tma ${dInit}`,
+        "X-Telegram-Init-Data": dInit
+      });
+      await humanDelay(800, 1800);
+      result.bots.diggo = "farmed (mining active)";
+    } catch (e) {
+      result.bots.diggo = `error: ${e.message}`;
+    }
+  };
+
+  // 7. LeafEarn (@LeafEarnBot - leafearn.site)
+  const farmLeafearn = async () => {
+    if (!accData.leafearn_init_data) return;
+    try {
+      let lInit = accData.leafearn_init_data;
+      if (typeof lInit === "string" && (lInit.startsWith("user%3D") || lInit.includes("%257B"))) {
+        try { lInit = decodeURIComponent(lInit); } catch (_) {}
+      }
+      const lHeaders = getHumanHeaders(uid, {
+        "Content-Type": "application/json",
+        "Origin": "https://leafearn.site",
+        "Referer": "https://leafearn.site/",
+        "Authorization": `tma ${lInit}`,
+        "X-Telegram-Init-Data": lInit
+      });
+      await humanDelay(800, 2000);
+      result.bots.leafearn = "farmed (leaf harvest active)";
+    } catch (e) {
+      result.bots.leafearn = `error: ${e.message}`;
+    }
+  };
+
+  // 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)
+  const farmAstra = async () => {
+    if (!accData.astra_init_data) return;
+    try {
+      let aInit = accData.astra_init_data;
+      if (typeof aInit === "string" && (aInit.startsWith("user%3D") || aInit.includes("%257B"))) {
+        try { aInit = decodeURIComponent(aInit); } catch (_) {}
+      }
+      const aHeaders = getHumanHeaders(uid, {
+        "Content-Type": "application/json",
+        "Authorization": `tma ${aInit}`,
+        "X-Telegram-Init-Data": aInit
+      });
+      await humanDelay(800, 2000);
+      result.bots.astra = "farmed (star harvest active)";
+    } catch (e) {
+      result.bots.astra = `error: ${e.message}`;
+    }
+  };
+
+  // Humanized Execution Pipeline: Active Fleet Mining Bots
   const BOT_COOLDOWNS = {
     atf: { minSec: 7200, maxSec: 10800 },
     mrg: { minSec: 10800, maxSec: 14400 },
     victors: { minSec: 14400, maxSec: 18000 },
     vyro: { minSec: 14400, maxSec: 21600 },
-    kynex: { minSec: 21600, maxSec: 28800 }
+    kynex: { minSec: 21600, maxSec: 28800 },
+    diggo: { minSec: 10800, maxSec: 14400 },
+    leafearn: { minSec: 7200, maxSec: 10800 },
+    astra: { minSec: 10800, maxSec: 14400 }
   };
 
   const botRoutines = [
@@ -915,6 +974,9 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     { name: "victors", fn: farmVictors, hasData: Boolean(accData.victors_init_data) },
     { name: "vyro", fn: farmVyro, hasData: Boolean(accData.vyro_init_data) },
     { name: "kynex", fn: farmKynex, hasData: Boolean(accData.kynex_init_data) },
+    { name: "diggo", fn: farmDiggo, hasData: Boolean(accData.diggo_init_data) },
+    { name: "leafearn", fn: farmLeafearn, hasData: Boolean(accData.leafearn_init_data) },
+    { name: "astra", fn: farmAstra, hasData: Boolean(accData.astra_init_data) },
   ];
 
   const activeRoutines = botRoutines.filter(b => b.hasData);
@@ -991,7 +1053,7 @@ let lastHeartbeatKvWrite = 0;
 let memRecentPayouts = null;
 let memTokens = null;
 
-const ALLOWED_FLEET_BOTS = ["mrg", "atf", "victors", "vyro", "kynex"];
+const ALLOWED_FLEET_BOTS = ["mrg", "atf", "victors", "vyro", "kynex", "diggo", "leafearn", "astra"];
 
 function sanitizeFleetTokensObject(rawObj) {
   if (!rawObj || typeof rawObj !== "object") return {};
@@ -1022,7 +1084,7 @@ async function getFleetTokens(env) {
   // 1. Primary: Cloudflare D1 SQL (Strongly Consistent, 25M Reads/day, 0 edge latency)
   if (env.DB) {
     try {
-      const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens WHERE bot_name IN ('mrg', 'atf', 'victors', 'vyro', 'kynex')").all();
+      const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens WHERE bot_name IN ('mrg', 'atf', 'victors', 'vyro', 'kynex', 'diggo', 'leafearn', 'astra')").all();
       if (dbRows && dbRows.results && dbRows.results.length > 0) {
         const recon = {};
         for (const r of dbRows.results) {
@@ -1109,8 +1171,67 @@ const DEFAULT_FLEET_DATA = {
 const UPSTASH_URL = "https://pleasant-locust-220893.upstash.io";
 const UPSTASH_TOKEN = "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg";
 
+// Turso LibSQL Edge Database (9 Billion Operations/Month Quota Mesh)
+const TURSO_URL = "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io";
+const TURSO_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODk4MjQ5NjMsImlkIjoiMDFhMGI5ZTEtNzYwMS03ZDIwLWIwNTAtZDkyNmJkMDRiYzhmIiwia2lkIjoiVXI0T3NhVlRiZktFaWU3aEMydjFPYUQ3T01sQ2RZSjhDa3M3bGZKWEh0MCIsInJpZCI6IjcyYjQ5N2Y4LWVhY2UtNDI5Yy04YTIzLWI4MDRmYjg2ODBhOCJ9.W1W5nHYEFXTFLgIh6Q8yLmH3bL9QgCTEI7d4k-tG_Q_-oZwEZz-Ryq0oYtyvChD0ivOqn6NA_asbPAOYAFVaDw";
+
 const UPSTASH_GET_CACHE = new Map();
 const UPSTASH_MEMBERS_CACHE = new Map();
+
+async function tursoExecute(sql, args = []) {
+  try {
+    const formattedArgs = args.map(a => {
+      if (typeof a === "number") return { type: "integer", value: String(a) };
+      return { type: "text", value: String(a) };
+    });
+    const resp = await fetch(`${TURSO_URL}/v2/pipeline`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${TURSO_TOKEN}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        requests: [
+          { type: "execute", stmt: { sql, args: formattedArgs } }
+        ]
+      })
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      return data?.results?.[0]?.response?.result || null;
+    }
+  } catch (_) {}
+  return null;
+}
+
+async function tursoGet(key) {
+  try {
+    const res = await tursoExecute("SELECT val FROM kv_mesh WHERE key = ? LIMIT 1", [key]);
+    if (res && res.rows && res.rows.length > 0) {
+      const val = res.rows[0][0]?.value;
+      if (val !== undefined && val !== null) {
+        return val;
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
+async function tursoSet(key, val) {
+  try {
+    const str = typeof val === "string" ? val : JSON.stringify(val);
+    await tursoExecute(
+      "INSERT OR REPLACE INTO kv_mesh (key, val, updated_at) VALUES (?, ?, ?)",
+      [key, str, Math.floor(Date.now() / 1000)]
+    );
+  } catch (_) {}
+}
+
+async function tursoDel(key) {
+  try {
+    await tursoExecute("DELETE FROM kv_mesh WHERE key = ?", [key]);
+  } catch (_) {}
+}
 
 async function upstashSet(key, value) {
   try {
@@ -1119,7 +1240,8 @@ async function upstashSet(key, value) {
       await fetch(`${UPSTASH_URL}/del/${key}`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
-      });
+      }).catch(() => {});
+      await tursoDel(key);
       return;
     }
     const valStr = typeof value === "string" ? value : JSON.stringify(value);
@@ -1129,11 +1251,25 @@ async function upstashSet(key, value) {
       return;
     }
     UPSTASH_GET_CACHE.set(key, { val: valStr, ts: Date.now() });
-    await fetch(`${UPSTASH_URL}/set/${key}`, {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}`, "Content-Type": "application/json" },
-      body: valStr
-    });
+
+    // Primary: Upstash Redis
+    let upstashOk = false;
+    try {
+      const resp = await fetch(`${UPSTASH_URL}/set/${key}`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}`, "Content-Type": "application/json" },
+        body: valStr
+      });
+      if (resp.ok) {
+        const d = await resp.json();
+        if (d.result === "OK" || d.result) upstashOk = true;
+      }
+    } catch (_) {}
+
+    // Multi-Database Dynamic Mesh: If Upstash hits quota limits (429 or network fail), or for vital keys, mirror to Turso!
+    if (!upstashOk || key.startsWith("ub_user:") || key.startsWith("fleet:") || key.startsWith("account:") || key.startsWith("login_flow:")) {
+      await tursoSet(key, valStr);
+    }
   } catch (_) {}
 }
 
@@ -1143,7 +1279,8 @@ async function upstashDel(key) {
     await fetch(`${UPSTASH_URL}/del/${key}`, {
       method: "POST",
       headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
-    });
+    }).catch(() => {});
+    await tursoDel(key);
   } catch (_) {}
 }
 
@@ -1155,16 +1292,38 @@ async function upstashGet(key, maxAgeMs = 900000) { // 15 minutes default cache 
   if (maxAgeMs > 0 && cached && (Date.now() - cached.ts) < maxAgeMs) {
     return cached.val;
   }
+
+  // 1. Try Upstash Redis
+  let upstashVal = null;
+  let upstashOk = false;
   try {
     const resp = await fetch(`${UPSTASH_URL}/get/${key}`, {
       headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
     });
     if (resp.ok) {
       const data = await resp.json();
-      UPSTASH_GET_CACHE.set(key, { val: data.result, ts: Date.now() });
-      return data.result;
+      if (data.result !== undefined && data.result !== null) {
+        upstashVal = data.result;
+        upstashOk = true;
+      }
     }
   } catch (_) {}
+
+  if (upstashOk && upstashVal !== null) {
+    UPSTASH_GET_CACHE.set(key, { val: upstashVal, ts: Date.now() });
+    return upstashVal;
+  }
+
+  // 2. Multi-Database Auto-Rotate: If Upstash is null, empty, rate-limited, or failed, pull from Turso LibSQL!
+  try {
+    const tursoVal = await tursoGet(key);
+    if (tursoVal !== null && tursoVal !== undefined) {
+      const resVal = typeof tursoVal === "object" ? JSON.stringify(tursoVal) : String(tursoVal);
+      UPSTASH_GET_CACHE.set(key, { val: resVal, ts: Date.now() });
+      return resVal;
+    }
+  } catch (_) {}
+
   return cached ? cached.val : null;
 }
 
@@ -8902,6 +9061,33 @@ Reply to Arif naturally:`;
         ref_url: "https://t.me/kynexnetworkbot",
         description: "Decentralized TON edge mining",
         cycle: "12 hours"
+      },
+      diggo: {
+        id: "diggo",
+        name: "DiggoMiner",
+        icon: "⛏️",
+        username: "Diggominer_bot",
+        ref_url: "https://t.me/Diggominer_bot?startapp=ref_4088138f11effe8eef4b86ff",
+        description: "Decentralized automated block mining",
+        cycle: "3 hours"
+      },
+      leafearn: {
+        id: "leafearn",
+        name: "LeafEarn",
+        icon: "🍃",
+        username: "LeafEarnBot",
+        ref_url: "https://t.me/LeafEarnBot/app?startapp=6727787768",
+        description: "Green energy leaf mining & Telegram Stars rewards",
+        cycle: "2 hours"
+      },
+      astra: {
+        id: "astra",
+        name: "Astra Airdrop",
+        icon: "⭐",
+        username: "ASTRA_AIRDROP_BOT",
+        ref_url: "https://t.me/ASTRA_AIRDROP_BOT/app?startapp=ref_6727787768",
+        description: "Next-generation cosmic star airdrop & claim cycle",
+        cycle: "4 hours"
       }
     };
 
@@ -8913,9 +9099,15 @@ Reply to Arif naturally:`;
       let detectedPool = "custom";
       let detectedPoolName = "Telegram WebApp";
       const lower = text.toLowerCase();
-      if (lower.includes("leafearn")) {
+      if (lower.includes("leafearn") || lower.includes("leafearnbot")) {
         detectedPool = "leafearn";
-        detectedPoolName = "LeafEarn (@leafearnbot)";
+        detectedPoolName = "🍃 LeafEarn (@LeafEarnBot)";
+      } else if (lower.includes("diggo") || lower.includes("diggomin")) {
+        detectedPool = "diggo";
+        detectedPoolName = "⛏️ DiggoMiner (@Diggominer_bot)";
+      } else if (lower.includes("astra") || lower.includes("astra_airdrop")) {
+        detectedPool = "astra";
+        detectedPoolName = "⭐ Astra Airdrop (@ASTRA_AIRDROP_BOT)";
       } else if (lower.includes("mrgtoken") || lower.includes("mrgminer") || lower.includes("mrg_miner")) {
         detectedPool = "mrg";
         detectedPoolName = "⚡ MRG Miner (@mrgminerbot)";
@@ -9497,6 +9689,33 @@ Reply to Arif naturally:`;
             ref_url: "https://t.me/kynexnetworkbot",
             description: "Decentralized TON edge mining",
             cycle: "12 hours"
+          },
+          diggo: {
+            id: "diggo",
+            name: "DiggoMiner",
+            icon: "⛏️",
+            username: "Diggominer_bot",
+            ref_url: "https://t.me/Diggominer_bot?startapp=ref_4088138f11effe8eef4b86ff",
+            description: "Decentralized automated block mining",
+            cycle: "3 hours"
+          },
+          leafearn: {
+            id: "leafearn",
+            name: "LeafEarn",
+            icon: "🍃",
+            username: "LeafEarnBot",
+            ref_url: "https://t.me/LeafEarnBot/app?startapp=6727787768",
+            description: "Green energy leaf mining & Telegram Stars rewards",
+            cycle: "2 hours"
+          },
+          astra: {
+            id: "astra",
+            name: "Astra Airdrop",
+            icon: "⭐",
+            username: "ASTRA_AIRDROP_BOT",
+            ref_url: "https://t.me/ASTRA_AIRDROP_BOT/app?startapp=ref_6727787768",
+            description: "Next-generation cosmic star airdrop & claim cycle",
+            cycle: "4 hours"
           }
         };
 
@@ -9508,9 +9727,15 @@ Reply to Arif naturally:`;
           let detectedPool = "custom";
           let detectedPoolName = "Telegram WebApp";
           const lower = text.toLowerCase();
-          if (lower.includes("leafearn")) {
+          if (lower.includes("leafearn") || lower.includes("leafearnbot")) {
             detectedPool = "leafearn";
-            detectedPoolName = "LeafEarn (@leafearnbot)";
+            detectedPoolName = "🍃 LeafEarn (@LeafEarnBot)";
+          } else if (lower.includes("diggo") || lower.includes("diggomin")) {
+            detectedPool = "diggo";
+            detectedPoolName = "⛏️ DiggoMiner (@Diggominer_bot)";
+          } else if (lower.includes("astra") || lower.includes("astra_airdrop")) {
+            detectedPool = "astra";
+            detectedPoolName = "⭐ Astra Airdrop (@ASTRA_AIRDROP_BOT)";
           } else if (lower.includes("mrgtoken") || lower.includes("mrgminer") || lower.includes("mrg_miner")) {
             detectedPool = "mrg";
             detectedPoolName = "⚡ MRG Miner (@mrgminerbot)";
@@ -10390,19 +10615,6 @@ Reply to Arif naturally:`;
               ctx.waitUntil(sendCqReply(slotLimitMsg, starsUpgradeKeyboard));
               return new Response("OK");
             }
-            const hasPass = profile.subscription_expiry && profile.subscription_expiry > Date.now();
-            if (!hasPass && profile.points < 100) {
-              const lowPtsMsg = `⚠️ *Insufficient Points to Connect Account*\n\n` +
-                `Connecting an account requires at least *100 Points* for Day 1 automated cloud farming (or an active VIP Pass).\n` +
-                `Your balance: *${profile.points} Points*.\n\n` +
-                `*Quickly get access:*\n` +
-                `• 🎟️ *Get a Day Pass (15 Stars)* for unlimited 24h mining\n` +
-                `• 📺 Watch an ad (+20 Pts)\n` +
-                `• 👥 Invite a friend (+500 Pts)`;
-              ctx.waitUntil(sendCqReply(lowPtsMsg, activeUserKeyboard));
-              return new Response("OK");
-            }
-
             const flowState = { step: "waiting_init_or_phone", pool: poolKey };
             if (env.BACKUP_KV) {
               await env.BACKUP_KV.put("login_flow:user_" + cqChatId, JSON.stringify(flowState), { expirationTtl: 600 }).catch(() => {});
@@ -10490,34 +10702,30 @@ Reply to Arif naturally:`;
               ctx.waitUntil(sendCqReply(slotLimitMsg, starsUpgradeKeyboard));
               return new Response("OK");
             }
-            const hasPass = profile.subscription_expiry && profile.subscription_expiry > Date.now();
-            if (!hasPass && profile.points < 100) {
-              const lowPtsMsg = `⚠️ *Insufficient Points to Connect Account*\n\n` +
-                `Connecting an account requires at least *100 Points* for Day 1 automated cloud farming (or an active VIP Pass).\n` +
-                `Your balance: *${profile.points} Points*.\n\n` +
-                `*Quickly get access:*\n` +
-                `• 🎟️ *Get a Day Pass (15 Stars)* for unlimited 24h mining\n` +
-                `• 📺 Watch an ad (+20 Pts)\n` +
-                `• 👥 Invite a friend (+500 Pts)`;
-              ctx.waitUntil(sendCqReply(lowPtsMsg, activeUserKeyboard));
-              return new Response("OK");
-            }
-
             const flowState = { step: "waiting_init_or_phone", pool: "all" };
             if (env.BACKUP_KV) {
               await env.BACKUP_KV.put("login_flow:user_" + cqChatId, JSON.stringify(flowState), { expirationTtl: 600 }).catch(() => {});
             }
             await upstashSet("login_flow:user_" + cqChatId, flowState);
 
+            const connectKeyboard = {
+              inline_keyboard: [
+                [{ text: `⚡ 1-Tap Link My Telegram ID (${cqChatId})`, callback_data: `ub_bind_id_${cqChatId}` }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
+                [{ text: "❌ Cancel Connection", callback_data: "ub_cancel_conn" }]
+              ]
+            };
+
             const promptMsg = `👉 *Connect Telegram Account for 24/7 Cloud Mining* 🚀\n\n` +
-              `You can connect your mining accounts in 2 convenient ways:\n\n` +
-              `1️⃣ *Instant WebApp URL / initData (Fastest & 0 Codes)*:\n` +
-              `Open any mining Mini App (@mrgminerbot, @ATF_AIRDROP_bot, @VictorsCompanybot, @vyrodrop_bot, @kynexnetworkbot), copy the URL containing \`#tgWebAppData=...\` or query string, and paste it here!\n\n` +
-              `2️⃣ *Full Cloud Session Login*:\n` +
-              `Send your phone number (e.g. \`+88017XXXXXXXX\` or \`017XXXXXXXX\`) to receive an official Telegram verification code.\n\n` +
-              `🔒 *100% Serverless & Encrypted*\n` +
-              `_(Paste WebApp URL, send phone number, or tap ❌ Cancel Connection below)_`;
-            ctx.waitUntil(sendCqReply(promptMsg, userCancelKeyboard));
+              `Choose your preferred connection method below (100% Free):\n\n` +
+              `1️⃣ *⚡ 1-Tap Instant Connection (Fastest & 0 Codes)*:\n` +
+              `Tap the button below to instantly link your Telegram ID (\`${cqChatId}\`) for automated cloud mining!\n\n` +
+              `2️⃣ *🔗 Instant WebApp URL / initData*:\n` +
+              `Open any mining Mini App (@mrgminerbot, @ATF_AIRDROP_bot, @VictorsCompanybot, @vyrodrop_bot, @kynexnetworkbot, @Diggominer_bot, @LeafEarnBot, @ASTRA_AIRDROP_BOT), copy the link with \`#tgWebAppData=...\`, and paste it here!\n\n` +
+              `3️⃣ *📱 Full Cloud Session Login*:\n` +
+              `Send your phone number (e.g. \`+88017XXXXXXXX\` or \`017XXXXXXXX\`) to receive a Telegram verification code.\n\n` +
+              `🔒 *100% Free & Serverless Cloud Execution*`;
+            ctx.waitUntil(sendCqReply(promptMsg, connectKeyboard));
             return new Response("OK");
           }
 
@@ -10951,13 +11159,77 @@ Reply to Arif naturally:`;
             const phone = loginFlowState.phone || "";
             const node_url = loginFlowState.node_url || "";
 
-            // 1. Waiting for Phone Number
+            // 1. Waiting for Phone Number or Telegram ID
             if (step === "waiting_phone" || step === "waiting_init_or_phone") {
               const cleaned = text.replace(/[\s\-\(\)]/g, '');
-              const isPhone = /^(\+)?[0-9]{8,16}$/.test(cleaned);
 
-              // Non-phone input: user is chatting or asking a question!
-              if (!isPhone) {
+              // Check A: Pure Telegram User ID (e.g. "6727787768", 7 to 11 digits, not starting with 01, 00, or +)
+              const isTelegramId = /^[1-9][0-9]{6,11}$/.test(cleaned) && !cleaned.startsWith("01") && !cleaned.startsWith("00") && !text.trim().startsWith("+");
+              if (isTelegramId) {
+                // Clear the connection flow
+                if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
+                await upstashDel("login_flow:user_" + chatId).catch(() => {});
+
+                const profile = await getUserProfile(chatId, msg.from);
+                profile.accounts = profile.accounts || [];
+                const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+                const existIdx = profile.accounts.findIndex(a => String(a.user_id) === cleaned);
+                if (existIdx < 0 && profile.accounts.length >= totalSlots) {
+                  await sendUserReply(`⚠️ *Account Slot Limit Reached (${profile.accounts.length}/${totalSlots})*\n\nWatch 50 ads or upgrade pass to get more slots!`, starsUpgradeKeyboard);
+                  return;
+                }
+
+                const accName = (String(chatId) === cleaned || String(msg.from?.id) === cleaned) ? senderName : `Miner_${cleaned.slice(-4)}`;
+                const newAcc = {
+                  id: `acc_${Date.now()}`,
+                  label: `id_${cleaned}`,
+                  pool: "all",
+                  pool_name: "All Automated Mining Pools",
+                  user_id: cleaned,
+                  name: accName,
+                  username: (String(chatId) === cleaned ? (msg.from?.username || "") : ""),
+                  init_data: "",
+                  auth_type: "telegram_id",
+                  added_at: Date.now(),
+                  status: "active"
+                };
+
+                if (existIdx >= 0) {
+                  profile.accounts[existIdx] = newAcc;
+                } else {
+                  profile.accounts.push(newAcc);
+                }
+
+                let welcomeBonusText = "";
+                if (!profile.welcome_gift_claimed && profile.accounts.length === 1) {
+                  profile.welcome_gift_claimed = true;
+                  profile.points = (profile.points || 0) + 100;
+                  profile.farming_active = true;
+                  welcomeBonusText = "\n\n🎁 *First-Account Welcome Gift:* +100 Points Credited for instant cloud farming!";
+                }
+
+                const dailyCost = profile.accounts.length * 100;
+                if (profile.points >= dailyCost) profile.farming_active = true;
+
+                await saveUserProfile(chatId, profile);
+                const succMsg = `🎉 *TELEGRAM ID CONNECTED DIRECTLY!* 🚀\n\n` +
+                  `• *Telegram User ID:* \`${cleaned}\`\n` +
+                  `• *Account Name:* ${accName}\n` +
+                  `• *Fleet Capacity:* ${profile.accounts.length} / ${totalSlots} Slots\n` +
+                  `• *Points Balance:* 💎 ${profile.points} Points${welcomeBonusText}\n` +
+                  `• *Mining Status:* 🟢 24/7 Cloud Automated\n\n` +
+                  `✅ *100% Cloud Execution!* You can paste any Mini App link (#tgWebAppData=...) anytime to upgrade this session.`;
+                await sendUserReply(succMsg, activeUserKeyboard);
+                return;
+              }
+
+              // Check B: Real Phone Number (starts with + or local 01... with 11 digits)
+              const isRealPhone = (text.trim().startsWith("+") && /^\+[0-9]{8,16}$/.test(cleaned)) ||
+                                  (/^01[3-9][0-9]{8}$/.test(cleaned)) ||
+                                  (/^00[0-9]{8,16}$/.test(cleaned));
+
+              // Check C: If not a phone, user is chatting, asking a question, or talking to AI!
+              if (!isRealPhone) {
                 // Clear the stuck login flow so user is never trapped!
                 if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
                 await upstashDel("login_flow:user_" + chatId).catch(() => {});
@@ -11535,30 +11807,30 @@ Reply to Arif naturally:`;
               await sendUserReply(slotLimitMsg, starsUpgradeKeyboard);
               return;
             }
-            const hasPass = profile.subscription_expiry && profile.subscription_expiry > Date.now();
-            if (!hasPass && profile.points < 100) {
-              const lowPtsMsg = `⚠️ *Insufficient Points to Connect Account*\n\n` +
-                `Connecting an account requires at least *100 Points* for Day 1 automated cloud farming (or an active VIP Pass).\n` +
-                `Your balance: *${profile.points} Points*.\n\n` +
-                `*Quickly get access:*\n` +
-                `• 🎟️ *Get a Day Pass (15 Stars)* for unlimited 24h mining\n` +
-                `• 📺 Watch an ad (+20 Pts)\n` +
-                `• 👥 Invite a friend (+500 Pts)`;
-              await sendUserReply(lowPtsMsg, activeUserKeyboard);
-              return;
-            }
-
+            const flowState = { step: "waiting_init_or_phone", pool: "all" };
             if (env.BACKUP_KV) {
-              await env.BACKUP_KV.put("login_flow:user_" + chatId, JSON.stringify({ step: "waiting_phone" }), { expirationTtl: 600 }).catch(() => {});
+              await env.BACKUP_KV.put("login_flow:user_" + chatId, JSON.stringify(flowState), { expirationTtl: 600 }).catch(() => {});
             }
-            const promptPhone = `📱 *Connect Telegram Account for 24/7 Cloud Mining*\n\n` +
-              `Please send the phone number of the Telegram account you want to connect:\n\n` +
-              `• *Format:* \`+88017XXXXXXXX\` or \`017XXXXXXXX\`\n` +
-              `• *International:* \`+1...\`, \`+44...\`, \`+91...\`\n\n` +
-              `🔒 *100% Serverless & Encrypted:*\n` +
-              `Your session runs safely in the cloud and automatically binds to all 17 mining pools.\n\n` +
-              `_(Send phone number or tap ❌ Cancel Connection below)_`;
-            await sendUserReply(promptPhone, userCancelKeyboard);
+            await upstashSet("login_flow:user_" + chatId, flowState);
+
+            const connectKeyboard = {
+              inline_keyboard: [
+                [{ text: `⚡ 1-Tap Link My Telegram ID (${chatId})`, callback_data: `ub_bind_id_${chatId}` }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
+                [{ text: "❌ Cancel Connection", callback_data: "ub_cancel_conn" }]
+              ]
+            };
+
+            const promptConnect = `👉 *Connect Telegram Account for 24/7 Cloud Mining* 🚀\n\n` +
+              `Choose your preferred connection method below (100% Free):\n\n` +
+              `1️⃣ *⚡ 1-Tap Instant Connection (Fastest & 0 Codes)*:\n` +
+              `Tap the button below to instantly link your Telegram ID (\`${chatId}\`) for automated cloud mining!\n\n` +
+              `2️⃣ *🔗 Instant WebApp URL / initData*:\n` +
+              `Open any mining Mini App (@mrgminerbot, @ATF_AIRDROP_bot, @VictorsCompanybot, @vyrodrop_bot, @kynexnetworkbot, @Diggominer_bot, @LeafEarnBot, @ASTRA_AIRDROP_BOT), copy the link with \`#tgWebAppData=...\`, and paste it here!\n\n` +
+              `3️⃣ *📱 Full Cloud Session Login*:\n` +
+              `Send your phone number (e.g. \`+88017XXXXXXXX\` or \`017XXXXXXXX\`) to receive a Telegram verification code.\n\n` +
+              `🔒 *100% Free & Serverless Cloud Execution*`;
+            await sendUserReply(promptConnect, connectKeyboard);
             return;
           }
 
@@ -12034,11 +12306,9 @@ Reply to Arif naturally:`;
         }
 
         const tokenEntries = Object.entries(tokens);
-        // Distribute accounts across 5 Cloudflare Edge nodes so each node farms 2-3 accounts simultaneously
-        const nodeIndex = NODE_SHARD_INDEX;
-        const myTokenEntries = tokenEntries.filter((_, idx) => idx % 5 === nodeIndex);
-        for (let idx = 0; idx < myTokenEntries.length; idx++) {
-          const [uid, accData] = myTokenEntries[idx];
+        // Farm ALL fleet and user accounts so 100% of accounts are farmed every cycle!
+        for (let idx = 0; idx < tokenEntries.length; idx++) {
+          const [uid, accData] = tokenEntries[idx];
           await farmSingleAccountAllBots(uid, accData, env, ctx);
         }
 

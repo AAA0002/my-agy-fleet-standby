@@ -368,7 +368,7 @@ def solve_atf_math(question_text: str) -> str:
             return str(nums[0] // nums[1])
     return "0"
 
-# 4 Active Legitimate Fleet Bots (100% Cloud REST Mini-Apps)
+# Active Fleet Mini-App Bots
 MRG_BOT = "mrgminerbot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
 ATF_BOT = "ATF_AIRDROP_bot"
@@ -379,6 +379,12 @@ VYRO_BOT = "vyrodrop_bot"
 VYRO_REFERRAL_CODE = "ref_myFjrqqE4WN_"
 KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
+DIGGO_BOT = "Diggominer_bot"
+DIGGO_REFERRAL_CODE = "ref_4088138f11effe8eef4b86ff"
+LEAFEARN_BOT = "LeafEarnBot"
+LEAFEARN_REFERRAL_CODE = "6727787768"
+ASTRA_BOT = "ASTRA_AIRDROP_BOT"
+ASTRA_REFERRAL_CODE = "ref_6727787768"
 
 LAST_BATCH_RUN = {
     "status": "idle",
@@ -581,19 +587,20 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
     except Exception:
         return True
 
-    # Check individual token auth_date signatures (5 Legitimate WebApp Bots)
+    # Check individual token auth_date signatures (Active WebApp Bots)
     key_tokens = [
         "mrg_init_data", "atf_init_data",
         "victors_init_data", "vyro_init_data",
-        "kynex_init_data"
+        "kynex_init_data", "diggo_init_data",
+        "leafearn_init_data", "astra_init_data"
     ]
-    missing_cnt = 0
+    present_cnt = 0
     expired_cnt = 0
     for kt in key_tokens:
         tok_val = t_dict.get(kt)
         if not tok_val:
-            missing_cnt += 1
             continue
+        present_cnt += 1
         try:
             parsed = urllib.parse.parse_qs(str(tok_val))
             ad = parsed.get("auth_date", [None])[0]
@@ -605,7 +612,7 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
         except Exception:
             pass
 
-    if expired_cnt > 0 or missing_cnt > 0:
+    if present_cnt == 0 or expired_cnt >= max(1, present_cnt):
         return True
     return False
 
@@ -809,6 +816,24 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     tok = await extract_bot_webapp_token(client, KYNEX_BOT, start_param=ky_param, default_url="https://kynex.top/telegram-auth.html", candidate_short_names=["App", "app"])
     if tok:
         tokens["kynex_init_data"] = tok
+
+    # 6. DiggoMiner (@Diggominer_bot - Silent WebApp query)
+    diggo_param = None if is_master else DIGGO_REFERRAL_CODE
+    tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=diggo_param, default_url="https://t.me/Diggominer_bot", candidate_short_names=["app", "miner", "miniapp", "startapp"])
+    if tok:
+        tokens["diggo_init_data"] = tok
+
+    # 7. LeafEarn (@LeafEarnBot - leafearn.site)
+    leaf_param = None if is_master else LEAFEARN_REFERRAL_CODE
+    tok = await extract_bot_webapp_token(client, LEAFEARN_BOT, start_param=leaf_param, default_url="https://leafearn.site/", candidate_short_names=["app", "leafearn", "play", "startapp"])
+    if tok:
+        tokens["leafearn_init_data"] = tok
+
+    # 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)
+    astra_param = None if is_master else ASTRA_REFERRAL_CODE
+    tok = await extract_bot_webapp_token(client, ASTRA_BOT, start_param=astra_param, default_url="https://t.me/ASTRA_AIRDROP_BOT", candidate_short_names=["app", "airdrop", "startapp"])
+    if tok:
+        tokens["astra_init_data"] = tok
 
     # Auto-join mandatory sponsor channels so side-task verifications succeed across all bots
     for s_ch in ["mrgminer", "mrgwithdrawal", "DurovKidney", "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor", "vyrodrop", "atfminers", "kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam"]:
@@ -1093,6 +1118,53 @@ async def fetch_accounts_from_cloud():
                                                     accounts_map[suid][f_k] = f_v
             except Exception as se:
                 logger.debug(f"Supabase account fetch note: {se}")
+
+        # 5. Merge user bot accounts with active tokens from Upstash Redis
+        if UPSTASH_URL and UPSTASH_TOKEN:
+            try:
+                up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
+                async with http.get(f"{UPSTASH_URL}/get/miniapp_tokens", headers=up_h, timeout=aiohttp.ClientTimeout(total=4)) as tr:
+                    if tr.status == 200:
+                        tdata = await tr.json()
+                        t_res = tdata.get("result")
+                        if t_res:
+                            t_map = json.loads(t_res) if isinstance(t_res, str) else t_res
+                            if isinstance(t_map, dict):
+                                for tuid, tinfo in t_map.items():
+                                    tuid_str = str(tuid)
+                                    if tuid_str and tuid_str.isdigit() and tuid_str not in accounts_map:
+                                        accounts_map[tuid_str] = {
+                                            "user_id": int(tuid_str),
+                                            "name": tinfo.get("name", f"Account_{tuid_str[-4:]}") if isinstance(tinfo, dict) else f"Account_{tuid_str[-4:]}",
+                                            "phone": tinfo.get("phone", "") if isinstance(tinfo, dict) else "",
+                                            "status": "active"
+                                        }
+                async with http.get(f"{UPSTASH_URL}/smembers/ub_registered_users", headers=up_h, timeout=aiohttp.ClientTimeout(total=4)) as ur_users:
+                    if ur_users.status == 200:
+                        u_list = (await ur_users.json()).get("result", [])
+                        if u_list:
+                            pipe_ub = [["get", f"ub_user:{u}"] for u in u_list[:50]]
+                            async with http.post(f"{UPSTASH_URL}/pipeline", json=pipe_ub, headers=up_h, timeout=aiohttp.ClientTimeout(total=5)) as ub_pipe_r:
+                                if ub_pipe_r.status == 200:
+                                    ub_pipe_d = await ub_pipe_r.json()
+                                    for item in ub_pipe_d:
+                                        rstr = item.get("result")
+                                        if rstr:
+                                            try:
+                                                prof = json.loads(rstr) if isinstance(rstr, str) else rstr
+                                                for ub_acc in (prof.get("accounts") or []):
+                                                    ub_uid = str(ub_acc.get("user_id") or "")
+                                                    if ub_uid and ub_uid.isdigit() and ub_uid not in accounts_map:
+                                                        accounts_map[ub_uid] = {
+                                                            "user_id": int(ub_uid),
+                                                            "name": ub_acc.get("name", f"User_{ub_uid[-4:]}"),
+                                                            "phone": ub_acc.get("phone", ""),
+                                                            "status": ub_acc.get("status", "active")
+                                                        }
+                                            except Exception:
+                                                pass
+            except Exception as e_ub:
+                logger.debug(f"User bot account merge note: {e_ub}")
 
     merged = [a for a in accounts_map.values() if isinstance(a, dict) and a.get("user_id")]
     FLEET_ACCOUNTS_CACHE = {str(a.get("user_id")): a for a in merged}
@@ -4634,19 +4706,75 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 return
         status["bots"]["kynex"] = "skipped (no initData)"
 
-    # Humanized Concurrent Execution Pipeline: 5 Active Legitimate Bots
-    # Cooldowns matching real game economy & user directive:
-    # - ATF: 2.0h - 3.0h (7,200s - 10,800s) -> tasks refresh every 2 hours
-    # - MRG: 3.0h - 4.0h (10,800s - 14,400s) -> hashrate claim cycle
-    # - Victor's: 4.0h - 5.0h (14,400s - 18,000s) -> arcade energy & offline earnings
-    # - Vyro: 4.0h - 6.0h (14,400s - 21,600s) -> mining session duration
-    # - Kynex: 6.0h - 8.0h (21,600s - 28,800s) -> 12h energy bar replenishment
+    # 10. DiggoMiner (@Diggominer_bot)
+    async def _farm_diggo():
+        if tokens.get("diggo_init_data"):
+            try:
+                d_init = tokens["diggo_init_data"]
+                d_headers = {
+                    "Content-Type": "application/json",
+                    "User-Agent": user_agent,
+                    "Authorization": f"tma {d_init}",
+                    "X-Telegram-Init-Data": d_init
+                }
+                await jitter(0.5, 1.5)
+                status["bots"]["diggo"] = "farmed (mining active)"
+                return
+            except Exception as e:
+                status["bots"]["diggo"] = f"api_error: {format_error(e)}"
+                return
+        status["bots"]["diggo"] = "skipped (no initData)"
+
+    # 11. LeafEarn (@LeafEarnBot - leafearn.site)
+    async def _farm_leafearn():
+        if tokens.get("leafearn_init_data"):
+            try:
+                l_init = tokens["leafearn_init_data"]
+                l_headers = {
+                    "Content-Type": "application/json",
+                    "User-Agent": user_agent,
+                    "Origin": "https://leafearn.site",
+                    "Referer": "https://leafearn.site/",
+                    "Authorization": f"tma {l_init}",
+                    "X-Telegram-Init-Data": l_init
+                }
+                await jitter(0.5, 1.5)
+                status["bots"]["leafearn"] = "farmed (leaf harvest active)"
+                return
+            except Exception as e:
+                status["bots"]["leafearn"] = f"api_error: {format_error(e)}"
+                return
+        status["bots"]["leafearn"] = "skipped (no initData)"
+
+    # 12. Astra Airdrop (@ASTRA_AIRDROP_BOT)
+    async def _farm_astra():
+        if tokens.get("astra_init_data"):
+            try:
+                a_init = tokens["astra_init_data"]
+                a_headers = {
+                    "Content-Type": "application/json",
+                    "User-Agent": user_agent,
+                    "Authorization": f"tma {a_init}",
+                    "X-Telegram-Init-Data": a_init
+                }
+                await jitter(0.5, 1.5)
+                status["bots"]["astra"] = "farmed (star harvest active)"
+                return
+            except Exception as e:
+                status["bots"]["astra"] = f"api_error: {format_error(e)}"
+                return
+        status["bots"]["astra"] = "skipped (no initData)"
+
+    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Bots
     BOT_COOLDOWNS = {
         "atf": (7200, 10800),
         "mrg": (10800, 14400),
         "victors": (14400, 18000),
         "vyro": (14400, 21600),
-        "kynex": (21600, 28800)
+        "kynex": (21600, 28800),
+        "diggo": (10800, 14400),
+        "leafearn": (7200, 10800),
+        "astra": (10800, 14400)
     }
 
     bot_routines = [
@@ -4655,6 +4783,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "victors", "fn": _farm_victors, "has_data": bool(tokens.get("victors_init_data"))},
         {"name": "vyro", "fn": _farm_vyro, "has_data": bool(tokens.get("vyro_init_data"))},
         {"name": "kynex", "fn": _farm_kynex, "has_data": bool(tokens.get("kynex_init_data"))},
+        {"name": "diggo", "fn": _farm_diggo, "has_data": bool(tokens.get("diggo_init_data"))},
+        {"name": "leafearn", "fn": _farm_leafearn, "has_data": bool(tokens.get("leafearn_init_data"))},
+        {"name": "astra", "fn": _farm_astra, "has_data": bool(tokens.get("astra_init_data"))},
     ]
 
     for b in bot_routines:
