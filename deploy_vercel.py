@@ -65,7 +65,7 @@ def upload_file(file_name, local_path):
         method='POST'
     )
     try:
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:
             pass
     except urllib.error.HTTPError as e:
         if e.code != 409:
@@ -91,7 +91,7 @@ def deploy_to_project(proj, uploaded_files):
         method='POST'
     )
     
-    with urllib.request.urlopen(req_deploy) as resp:
+    with urllib.request.urlopen(req_deploy, timeout=20) as resp:
         res = json.loads(resp.read().decode())
         uid = res['id']
         url = res.get('url')
@@ -106,7 +106,7 @@ def deploy_to_project(proj, uploaded_files):
             headers={'Authorization': f'Bearer {TOKEN}'}
         )
         try:
-            with urllib.request.urlopen(req_status) as resp:
+            with urllib.request.urlopen(req_status, timeout=15) as resp:
                 status_res = json.loads(resp.read().decode())
                 state = status_res.get('readyState')
                 print(f"  State: {state}")

@@ -213,18 +213,22 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   #### 👥 System 2: Normal User Telegram Ecosystem (Public Mining Platform & Community)
   > 📢 **OPERATOR DIRECTIVE & OVERRIDE APPLIED (October 13, 2026)**:
   > Commander Arif explicitly authorized the upgrade and modification of User Bot (`@AAAPREMIUMAPPSbot`) to mirror the multi-miner dashboard and frictionless account binding interface of `@Allbottesting_bot` ("ATE AUTO Mining"), enhanced with our sustainable **Points System** (100 Pts/day, +100 welcome points) and **Rewarded Video Ads Engine** (+20 Pts/ad, +1 permanent bonus account slot per 50 ads).
+  > **Latest Enhancements**:
+  > 1. **Ari AI Copilot Integration**: Conversational queries (e.g. *"What can this bot do"*) are cleanly routed to Google Gemini AI without triggering phone login traps. Strict phone number validation (`/^(\+)?[0-9]{8,16}$/`) protects natural chat.
+  > 2. **Multi-Platform Mini App Link Auto-Detector & Expiration Guard**: Direct detection of raw links and error logs (LeafEarn, MRG, ATF, Victor's Company, VyroDrop, Kynex Network) with 3-pass URI decoding. Automatically warns user when `auth_date` exceeds 24 hours (Telegram token limit) with clear refresh steps, and auto-binds fresh tokens immediately.
+  > 3. **Strict Web Isolation**: Root path `https://agy-henna.vercel.app/` dedicated exclusively to the Sponsored Video Ads Engine, while `https://agy-henna.vercel.app/miner` hosts the institutional-grade vector SVG Multi-Miner Dashboard.
 
   - **User Bot Identity**: `@AAAPREMIUMAPPSbot` (Bot ID: `8167732110`, Token: `USER_BOT_TOKEN: 8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8`)
     - Name: *AAA AUTO MINING (PREMIUM)*
     - Live Webhook: `https://restore-agy.aaaai2.workers.dev/user-bot-webhook` (Multi-Edge Mesh on Cloudflare Worker Node 1)
-    - Role: Multi-bot cloud mining platform, modern dashboard (modeled after `@Allbottesting_bot`), per-pool management across 5 pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network), frictionless WebApp URL / `initData` query string account connector (0 SMS codes), Points economy (100 Pts/day), Rewarded Adsgram/Monetag video ads (+20 Pts), milestone slots (+1 slot per 50 ads), and Telegram Stars VIP passes.
+    - Role: Multi-bot cloud mining platform, modern dashboard (modeled after `@Allbottesting_bot`), per-pool management across 5 pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network), frictionless WebApp URL / `initData` query string account connector (0 SMS codes) with 24h expiration guard, Points economy (100 Pts/day), Rewarded Adsgram/Monetag video ads (+20 Pts), milestone slots (+1 slot per 50 ads), and Telegram Stars VIP passes.
   - **Supported Mining Pools (5/5 Legitimate Pools)**:
     1. ⚡ **MRG Miner** (`@mrgminerbot`)
     2. 🪙 **ATF Miner** (`@ATF_AIRDROP_bot`)
     3. 🏢 **Victor's Company** (`@VictorsCompanybot`)
     4. 💧 **VyroDrop** (`@vyrodrop_bot`)
     5. 🌐 **Kynex Network** (`@kynexnetworkbot`)
-  - **User WebApp Mini App Frontend**: `https://agy-henna.vercel.app/` (Vercel Global Edge) & `https://restore-agy.aaaai2.workers.dev/app` (Cloudflare Worker Node 1) & `https://atf-miner-app.pages.dev` (Cloudflare Pages)
+  - **User WebApp Mini App Frontend**: `https://agy-henna.vercel.app/` (Ads Portal) & `https://agy-henna.vercel.app/miner` (Vector SVG Multi-Miner Dashboard) & `https://restore-agy.aaaai2.workers.dev/app` (Cloudflare Worker Node 1) & `https://atf-miner-app.pages.dev` (Cloudflare Pages)
     - Architecture: Ultra-modern responsive cyberpunk glassmorphic Mini App improving upon `@Allbottesting_bot` with 5 pools (⚡ MRG, 🪙 ATF, 🏢 Victor's Company, 💧 VyroDrop, 🌐 Kynex Network), real-time client-side `#tgWebAppData=...` parser, 24/7 cloud mining telemetry, Rewarded Video Ad player (Monetag + GigaPub), Daily Streak Claim (+100 Pts/d), 50-ad permanent slot milestone tracker, and Telegram Stars VIP passes.
   - **User Distributed Mining Engine & REST APIs**: `https://restore-agy.aaaai2.workers.dev/api/user/` (Endpoints: `/profile`, `/account/add`, `/account/remove`, `/claim-daily`, `/claim-ad`)
   - **User Database & State**: Upstash Redis (`pleasant-locust-220893.upstash.io`) + Cloudflare D1 `atf-miner-db` (`2659c73b-8144-4f2a-9a06-ef2368a1ce7f`)

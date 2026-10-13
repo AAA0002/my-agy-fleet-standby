@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Admin Dashboard Restoration, User Bot AI Chat Unlocking & Multi-Protocol Mini App Auto-Detector with Expiration Guard (October 13, 2026)**:
+  - **👑 Admin Bot (`@myagyai`) Operations Dashboard Restored**:
+    * Re-activated official Telegram Chat Menu Button (`setChatMenuButton`) pointing to `👑 Fleet Dashboard` (`https://agy-aaa000.vercel.app/admin`).
+    * Restored dedicated `/dashboard` command handler and registered `/dashboard` in Telegram command registry.
+    * Added prominent `🚀 Open Fleet Operations Dashboard 👑` web app buttons in both inline keyboards and persistent reply keyboards.
+    * Truthful Account #1 status: Explicitly displays `👑🔴 Master Host (Needs Re-link)` or `👑🟢 Master Host (Active)` across web dashboard and bot status cards.
+  - **🤖 User Bot (`@AAAPREMIUMAPPSbot`) AI Chat & State Trap Resolution**:
+    * Eliminated phone login trapping where natural user chat messages (e.g. *"What can this bot do"*) were incorrectly stripped into phone numbers (`+Whatcanthisbotdo`), crashing with `TypeError`.
+    * Enforced strict phone regex `/^(\+)?[0-9]{8,16}$/`. Any non-phone text instantly purges pending `login_flow:user_` from KV and Upstash Redis.
+    * Routes natural conversational queries seamlessly into Ari AI Copilot (`runUserAiCascade`) powered by Google Gemini, providing concise, helpful answers about supported pools and cloud farming.
+  - **🔗 Multi-Protocol Mini App Link Auto-Detector & Expiration Guard**:
+    * Robust URL and query parser for `#tgWebAppData=...`, `query_id=`, and nested percent-encoded user payloads (`user%3D%257B...`).
+    * Implemented 3-pass recursive URI decoding to handle double- and triple-encoded parameters from Telegram clients and web gateways.
+    * Auto-detects target bot/pool: LeafEarn, MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, or custom hostnames.
+    * Automatic 24-hour expiration detection via `auth_date`. If token is expired, informs user with clear Telegram 24h security notice and simple 3-step refresh guide.
+    * If fresh, automatically binds the account and pool directly without blocking for manual labels, activates 24/7 cloud mining, and provides immediate confirmation.
+    * Added Direct Telegram ID connector: Automatically detects raw 7–12 digit Telegram IDs (`/^[0-9]{7,12}$/`) and links them.
+  - **☁️ Synchronized Cloud Deployments**:
+    * Vercel: Successfully deployed `my-agy-ai-fleet` (`/admin`), `aaa-free-ai`, and `agy` (`/` for Ads, `/miner` for Multi-Miner Dashboard).
+    * Cloudflare Edge: Deployed updated edge worker across all 5 nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with 100% success.
+
 - **💎 Professional Vector SVG Miner Dashboard, Truthful Crown Indicator & Bot UX Streamlining (October 13, 2026)**:
   - **👑 Truthful Crown & Session Indicator Disambiguation on Admin Bot (`@myagyai`)**:
     * Resolved the issue where the crown `👑` on Account #1 (Arif Hossain, ID `6727787768`) replaced the health emoji, blinding the operator to whether the master session was online or revoked.

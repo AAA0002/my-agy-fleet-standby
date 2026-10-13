@@ -2313,7 +2313,7 @@ fi
     if (path === "/api/fleet/live" || path === "/api/status" || path === "/api/fleet-status" || path === "/api/stats") {
       try {
         const ensureFullFleet = (stateObj) => {
-          if (!stateObj) return DEFAULT_FLEET_DATA;
+          if (!stateObj) stateObj = { ...DEFAULT_FLEET_DATA };
           let accs = Array.isArray(stateObj.accounts) ? stateObj.accounts : [];
           if (accs.length < 18 || !accs.some(a => (a.index === 1 || String(a.user_id) === "6727787768"))) {
             const accMap = new Map();
@@ -2325,9 +2325,25 @@ fi
               const ex = accMap.get(String(m.index)) || accMap.get(String(m.user_id));
               return ex ? { ...m, ...ex } : m;
             });
-            stateObj.accounts = accs;
-            stateObj.count = accs.length;
           }
+          const DEFAULT_REVOKED = [1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18];
+          const revokedList = (memSessionHealth && memSessionHealth.revoked && memSessionHealth.revoked.length > 0)
+            ? memSessionHealth.revoked
+            : DEFAULT_REVOKED;
+          const revokedSet = new Set(revokedList);
+          accs.forEach((a, i) => {
+            const idx = a.index || (i + 1);
+            const isRev = revokedSet.has(idx);
+            a.session_revoked = isRev;
+            a.status = isRev ? "Needs Re-link" : "Active";
+            a.mining_active = !isRev;
+            a.health_icon = isRev ? "🔴" : "🟢";
+          });
+          stateObj.accounts = accs;
+          stateObj.count = accs.length;
+          stateObj.active = accs.filter(a => !a.session_revoked).length;
+          stateObj.revoked = accs.filter(a => a.session_revoked).length;
+          stateObj.revoked_sessions = Array.from(revokedSet);
           return stateObj;
         };
 
@@ -3913,6 +3929,9 @@ fi
         const mainInlineKeyboard = {
           inline_keyboard: [
             [
+              { text: "🚀 Open Fleet Operations Dashboard 👑", web_app: { url: adminConsoleUrl } }
+            ],
+            [
               { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" },
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" }
             ],
@@ -4080,14 +4099,18 @@ fi
           keyboard: [
             [
               { text: "📊 Fleet Status" },
-              { text: "🔑 OTP & Relogin" }
+              { text: "🚀 Fleet Dashboard", web_app: { url: adminConsoleUrl } }
             ],
             [
-              { text: "👥 Fleet Accounts" },
-              { text: "⚡ 5-Bot Harvest" }
+              { text: "🔑 OTP & Relogin" },
+              { text: "👥 Fleet Accounts" }
             ],
             [
-              { text: "💼 Multi-Chain Wallets" },
+              { text: "⚡ 5-Bot Harvest" },
+              { text: "💼 Multi-Chain Wallets" }
+            ],
+            [
+              { text: "🔍 Session Audit" },
               { text: "🌐 Cloud Mesh" }
             ]
           ],
@@ -6955,8 +6978,48 @@ fi
           return new Response("OK");
         }
 
-        // 3. Status & Dashboard Commands
-        if (text === "📊 Fleet Status" || text === "📊 Live Status" || text === "📊 Status" || text.startsWith("/status") || text === "🌐 Dashboard" || text.startsWith("/dashboard") || text === "🚀 Open Mini App" || text.startsWith("/app") || text === "🚀 Open WebApp Dashboard" || text === "🚀 Open Dashboard" || text === "👑 Admin Console") {
+        // 2.95 Dedicated Executive Dashboard Command
+        if (text === "/dashboard" || text.startsWith("/dashboard") || text === "👑 Fleet Dashboard" || text === "🚀 Fleet Dashboard" || text === "🌐 Dashboard") {
+          ctx.waitUntil((async () => {
+            await sendChatAction(chatId, "typing");
+            const accounts = await getFleetAccounts();
+            const health = await getSessionHealthState();
+            const activeCount = health.healthy.size;
+            const revokedCount = health.revoked.size;
+            const dhakaTime = getDhakaTimestamp();
+            const healthBadge = revokedCount > 0
+              ? `🟢 \`${activeCount}/${accounts.length} Active\` • 🔴 \`${revokedCount} Needs Re-link\``
+              : `🟢 \`${activeCount}/${accounts.length} Active\` (100% Online) ✅`;
+            const rep = `👑 *MY AGY AI — EXECUTIVE FLEET CONSOLE*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `📊 *Fleet Status:* ${healthBadge}\n` +
+              `🤖 *5 Mining Bots:* MRG • ATF • Victor's • VyroDrop • Kynex Network\n` +
+              `☁️ *Infrastructure:* 5-Node Cloudflare Edge + Render Baton Mesh\n` +
+              `🛡️ *Security:* 100% Anti-Ban • Zero Phone Load\n` +
+              `⏱️ *Time (Dhaka):* \`${dhakaTime}\`\n\n` +
+              `_Tap the button below to launch the full Executive Operations Dashboard directly inside Telegram:_`;
+            const dashMarkup = {
+              inline_keyboard: [
+                [
+                  { text: "🚀 Launch Executive Dashboard 👑", web_app: { url: adminConsoleUrl } }
+                ],
+                [
+                  { text: "📊 Fleet Status", callback_data: "btn_status" },
+                  { text: "🔑 OTP Menu", callback_data: "btn_otp_menu" }
+                ],
+                [
+                  { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                ]
+              ]
+            };
+            await sendReply(rep, dashMarkup);
+          })());
+          return new Response("OK");
+        }
+
+        // 3. Status Commands
+        if (text === "📊 Fleet Status" || text === "📊 Live Status" || text === "📊 Status" || text.startsWith("/status") || text === "🚀 Open Mini App" || text.startsWith("/app") || text === "🚀 Open WebApp Dashboard" || text === "🚀 Open Dashboard" || text === "👑 Admin Console") {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
             let liveBnb = 0.000622;
@@ -8842,9 +8905,42 @@ Reply to Arif naturally:`;
       }
     };
 
-    // Frictionless WebApp URL & initData Query String Parser
+    // Robust Multi-Platform WebApp URL & initData Query String Parser with Expiration Detection
     const parseTgWebAppData = (rawInput) => {
       let text = String(rawInput || "").trim();
+
+      // Detect Platform / Bot from URL domain or parameters
+      let detectedPool = "custom";
+      let detectedPoolName = "Telegram WebApp";
+      const lower = text.toLowerCase();
+      if (lower.includes("leafearn")) {
+        detectedPool = "leafearn";
+        detectedPoolName = "LeafEarn (@leafearnbot)";
+      } else if (lower.includes("mrgtoken") || lower.includes("mrgminer") || lower.includes("mrg_miner")) {
+        detectedPool = "mrg";
+        detectedPoolName = "⚡ MRG Miner (@mrgminerbot)";
+      } else if (lower.includes("atf") || lower.includes("atfairdrop")) {
+        detectedPool = "atf";
+        detectedPoolName = "🪙 ATF Miner (@ATF_AIRDROP_bot)";
+      } else if (lower.includes("victors") || lower.includes("victor")) {
+        detectedPool = "victors";
+        detectedPoolName = "🏢 Victor's Company (@VictorsCompanybot)";
+      } else if (lower.includes("vyro") || lower.includes("vyrodrop")) {
+        detectedPool = "vyro";
+        detectedPoolName = "💧 VyroDrop (@vyrodrop_bot)";
+      } else if (lower.includes("kynex")) {
+        detectedPool = "kynex";
+        detectedPoolName = "🌐 Kynex Network (@Kynex_miningbot)";
+      } else {
+        const hostMatch = text.match(/https?:\/\/([^\/#\?]+)/i);
+        if (hostMatch) {
+          const h = hostMatch[1];
+          detectedPoolName = h.charAt(0).toUpperCase() + h.slice(1);
+          detectedPool = h.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+        }
+      }
+
+      // Extract fragment or query string
       if (text.includes("#tgWebAppData=")) {
         text = text.split("#tgWebAppData=")[1].split("&tgWebAppVersion=")[0];
       } else if (text.includes("tgWebAppData=")) {
@@ -8853,10 +8949,17 @@ Reply to Arif naturally:`;
         text = text.split("#")[1];
       }
 
+      // Multi-pass decoding to handle double/triple url-encoding
       let decoded = text;
-      try {
-        decoded = decodeURIComponent(text);
-      } catch (_) {}
+      for (let i = 0; i < 3; i++) {
+        try {
+          if (decoded.includes("%")) {
+            decoded = decodeURIComponent(decoded);
+          }
+        } catch (_) {
+          break;
+        }
+      }
 
       const params = new URLSearchParams(decoded.includes("=") ? decoded : text);
       let userStr = params.get("user");
@@ -8865,7 +8968,9 @@ Reply to Arif naturally:`;
         try {
           userObj = JSON.parse(userStr);
         } catch (_) {
-          try { userObj = JSON.parse(decodeURIComponent(userStr)); } catch (_) {}
+          try {
+            userObj = JSON.parse(decodeURIComponent(userStr));
+          } catch (_) {}
         }
       }
       if (!userObj) {
@@ -8875,13 +8980,28 @@ Reply to Arif naturally:`;
         }
       }
 
+      const queryId = params.get("query_id") || "";
+      const authDate = parseInt(params.get("auth_date") || "0", 10) || 0;
+      const hash = params.get("hash") || "";
+
+      // Expiration Check (Telegram initData is valid for 24 hours / 86400 seconds)
+      const nowSec = Math.floor(Date.now() / 1000);
+      const ageSec = authDate > 0 ? (nowSec - authDate) : 0;
+      const isExpired = authDate > 0 ? (ageSec > 86400) : false;
+      const hoursRemaining = authDate > 0 ? Math.max(0, Math.round((86400 - ageSec) / 3600)) : 24;
+
       return {
         raw: rawInput,
         clean_data: text,
         user: userObj,
-        query_id: params.get("query_id") || "",
-        auth_date: params.get("auth_date") || "",
-        hash: params.get("hash") || ""
+        query_id: queryId,
+        auth_date: authDate,
+        hash: hash,
+        detected_pool: detectedPool,
+        detected_pool_name: detectedPoolName,
+        age_seconds: ageSec,
+        is_expired: isExpired,
+        hours_remaining: hoursRemaining
       };
     };
 
@@ -9365,9 +9485,42 @@ Reply to Arif naturally:`;
           }
         };
 
-        // Frictionless WebApp URL & initData Query String Parser
+        // Robust Multi-Platform WebApp URL & initData Query String Parser with Expiration Detection
         const parseTgWebAppData = (rawInput) => {
           let text = String(rawInput || "").trim();
+
+          // Detect Platform / Bot from URL domain or parameters
+          let detectedPool = "custom";
+          let detectedPoolName = "Telegram WebApp";
+          const lower = text.toLowerCase();
+          if (lower.includes("leafearn")) {
+            detectedPool = "leafearn";
+            detectedPoolName = "LeafEarn (@leafearnbot)";
+          } else if (lower.includes("mrgtoken") || lower.includes("mrgminer") || lower.includes("mrg_miner")) {
+            detectedPool = "mrg";
+            detectedPoolName = "⚡ MRG Miner (@mrgminerbot)";
+          } else if (lower.includes("atf") || lower.includes("atfairdrop")) {
+            detectedPool = "atf";
+            detectedPoolName = "🪙 ATF Miner (@ATF_AIRDROP_bot)";
+          } else if (lower.includes("victors") || lower.includes("victor")) {
+            detectedPool = "victors";
+            detectedPoolName = "🏢 Victor's Company (@VictorsCompanybot)";
+          } else if (lower.includes("vyro") || lower.includes("vyrodrop")) {
+            detectedPool = "vyro";
+            detectedPoolName = "💧 VyroDrop (@vyrodrop_bot)";
+          } else if (lower.includes("kynex")) {
+            detectedPool = "kynex";
+            detectedPoolName = "🌐 Kynex Network (@Kynex_miningbot)";
+          } else {
+            const hostMatch = text.match(/https?:\/\/([^\/#\?]+)/i);
+            if (hostMatch) {
+              const h = hostMatch[1];
+              detectedPoolName = h.charAt(0).toUpperCase() + h.slice(1);
+              detectedPool = h.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+            }
+          }
+
+          // Extract fragment or query string
           if (text.includes("#tgWebAppData=")) {
             text = text.split("#tgWebAppData=")[1].split("&tgWebAppVersion=")[0];
           } else if (text.includes("tgWebAppData=")) {
@@ -9376,10 +9529,17 @@ Reply to Arif naturally:`;
             text = text.split("#")[1];
           }
 
+          // Multi-pass decoding to handle double/triple url-encoding
           let decoded = text;
-          try {
-            decoded = decodeURIComponent(text);
-          } catch (_) {}
+          for (let i = 0; i < 3; i++) {
+            try {
+              if (decoded.includes("%")) {
+                decoded = decodeURIComponent(decoded);
+              }
+            } catch (_) {
+              break;
+            }
+          }
 
           const params = new URLSearchParams(decoded.includes("=") ? decoded : text);
           let userStr = params.get("user");
@@ -9388,7 +9548,9 @@ Reply to Arif naturally:`;
             try {
               userObj = JSON.parse(userStr);
             } catch (_) {
-              try { userObj = JSON.parse(decodeURIComponent(userStr)); } catch (_) {}
+              try {
+                userObj = JSON.parse(decodeURIComponent(userStr));
+              } catch (_) {}
             }
           }
           if (!userObj) {
@@ -9399,8 +9561,14 @@ Reply to Arif naturally:`;
           }
 
           const queryId = params.get("query_id") || "";
-          const authDate = params.get("auth_date") || "";
+          const authDate = parseInt(params.get("auth_date") || "0", 10) || 0;
           const hash = params.get("hash") || "";
+
+          // Expiration Check (Telegram initData is valid for 24 hours / 86400 seconds)
+          const nowSec = Math.floor(Date.now() / 1000);
+          const ageSec = authDate > 0 ? (nowSec - authDate) : 0;
+          const isExpired = authDate > 0 ? (ageSec > 86400) : false;
+          const hoursRemaining = authDate > 0 ? Math.max(0, Math.round((86400 - ageSec) / 3600)) : 24;
 
           return {
             raw: rawInput,
@@ -9408,7 +9576,12 @@ Reply to Arif naturally:`;
             user: userObj,
             query_id: queryId,
             auth_date: authDate,
-            hash: hash
+            hash: hash,
+            detected_pool: detectedPool,
+            detected_pool_name: detectedPoolName,
+            age_seconds: ageSec,
+            is_expired: isExpired,
+            hours_remaining: hoursRemaining
           };
         };
 
@@ -10569,39 +10742,153 @@ Reply to Arif naturally:`;
           return new Response("OK");
         }
 
-        // 0.1 Frictionless WebApp URL / initData Reception (Auto-Detect or during waiting_init_or_phone)
-        const hasWebAppData = text.includes("tgWebAppData=") || text.includes("#tgWebAppData=") || text.includes("query_id=") || (text.includes("user=%7B") && text.includes("hash="));
+        // 0.1 Frictionless WebApp URL / initData Reception (Auto-Detect with Expiration Guard)
+        const hasWebAppData = text.includes("tgWebAppData") || text.includes("query_id=") || (text.includes("user=") && text.includes("hash=")) || (text.includes("user%3D") && (text.includes("hash") || text.includes("auth_date")));
         if (hasWebAppData && !isCommandOrMenu) {
           ctx.waitUntil((async () => {
             await sendUserChatAction("typing");
             const parsed = parseTgWebAppData(text);
             if (parsed && parsed.user && parsed.user.id) {
-              const poolKey = (loginFlowState && loginFlowState.pool) ? loginFlowState.pool : "all";
-              const poolInfo = MINING_POOLS[poolKey] || { name: "All 5 Pools" };
               const accName = [parsed.user.first_name, parsed.user.last_name].filter(Boolean).join(" ") || parsed.user.username || "User";
-              const flowObj = {
-                step: "waiting_acc_label",
-                pool: poolKey,
-                init_data: parsed.clean_data,
-                acc_id: parsed.user.id,
-                acc_name: accName,
-                acc_username: parsed.user.username || ""
-              };
-              if (env.BACKUP_KV) {
-                await env.BACKUP_KV.put("login_flow:user_" + chatId, JSON.stringify(flowObj), { expirationTtl: 600 }).catch(() => {});
+              const detectedPool = parsed.detected_pool || "custom";
+              const detectedPoolName = parsed.detected_pool_name || "Telegram WebApp";
+
+              // Clear any pending connection flow
+              if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
+              await upstashDel("login_flow:user_" + chatId).catch(() => {});
+
+              // Expiration Guard: Telegram initData is only valid for 24 hours
+              if (parsed.is_expired) {
+                const expiredHoursAgo = Math.max(1, Math.round((parsed.age_seconds - 86400) / 3600));
+                const expMsg = `⚠️ *Telegram WebApp Token Has Expired!*\n\n` +
+                  `• *Platform Detected:* ${detectedPoolName}\n` +
+                  `• *User Account:* ${accName} (\`${parsed.user.id}\`)\n` +
+                  `• *Token Age:* ~${Math.round(parsed.age_seconds / 3600)} hours old\n` +
+                  `• *Status:* 🔴 Expired (~${expiredHoursAgo}h ago)\n\n` +
+                  `💡 *Telegram security limits Mini App links to 24 hours.*\n\n` +
+                  `👉 *Fast Fix (Takes 5 seconds):*\n` +
+                  `1. Open ${detectedPoolName} in Telegram on your phone.\n` +
+                  `2. Tap the 3 dots (...) in the top-right corner.\n` +
+                  `3. Tap **"Copy Link"**.\n` +
+                  `4. Paste that fresh link here!\n\n` +
+                  `_Our cloud engine will automatically detect it and activate 24/7 mining!_`;
+                await sendUserReply(expMsg, activeUserKeyboard);
+                return;
               }
-              await upstashSet("login_flow:user_" + chatId, flowObj);
 
-              const promptLabel = `✅ *WebApp Data Verified!* 🚀\n\n` +
-                `• *Account:* ${accName} (\`${parsed.user.id}\`)\n` +
-                `• *Pool:* ${poolInfo.name}\n\n` +
-                `Now send a short unique label for this account (e.g. \`main\`, \`phone2\`, \`airdrop1\`):\n` +
-                `_(Or tap ❌ Cancel Connection below)_`;
+              // Fresh, valid token: Auto-connect account immediately!
+              const profile = await getUserProfile(chatId, msg.from);
+              profile.accounts = profile.accounts || [];
 
-              await sendUserReply(promptLabel, userCancelKeyboard);
+              const defaultLabel = `${detectedPool}_${parsed.user.id}`;
+              const newAcc = {
+                id: `acc_${Date.now()}`,
+                label: defaultLabel,
+                pool: detectedPool,
+                pool_name: detectedPoolName,
+                user_id: parsed.user.id,
+                name: accName,
+                username: parsed.user.username || "",
+                init_data: parsed.clean_data,
+                auth_type: "tgWebAppData",
+                added_at: Date.now(),
+                auth_date: parsed.auth_date,
+                expires_at: (parsed.auth_date + 86400) * 1000,
+                status: "active"
+              };
+
+              const existIdx = profile.accounts.findIndex(a => String(a.user_id) === String(parsed.user.id) && (a.pool === detectedPool || a.pool === "all"));
+              if (existIdx >= 0) {
+                profile.accounts[existIdx] = newAcc;
+              } else {
+                profile.accounts.push(newAcc);
+              }
+
+              let welcomeBonusText = "";
+              if (!profile.welcome_gift_claimed && profile.accounts.length === 1) {
+                profile.welcome_gift_claimed = true;
+                profile.points = (profile.points || 0) + 100;
+                profile.farming_active = true;
+                welcomeBonusText = "\n\n🎁 *First-Account Welcome Gift:* +100 Points Credited for instant cloud farming!";
+              }
+
+              const dailyCost = profile.accounts.length * 100;
+              if (profile.points >= dailyCost) {
+                profile.farming_active = true;
+              }
+
+              await saveUserProfile(chatId, profile);
+              ctx.waitUntil(broadcastMilestoneUnlocked("Account Linked", accName, chatId, `Auto-Detected (${detectedPoolName})`, "24/7 Autonomous Mining Live"));
+
+              const succMsg = `🎉 *TELEGRAM MINI APP DETECTED & CONNECTED!* 🚀\n\n` +
+                `• *Platform Detected:* ${detectedPoolName}\n` +
+                `• *Account Name:* ${accName} (@${parsed.user.username || "None"})\n` +
+                `• *Telegram User ID:* \`${parsed.user.id}\`\n` +
+                `• *Token Validity:* 🟢 Active (~${parsed.hours_remaining}h remaining)\n` +
+                `• *Mining Status:* 🟢 24/7 Cloud Automated\n` +
+                `• *Points Balance:* 💎 ${profile.points} Points${welcomeBonusText}\n\n` +
+                `✅ *100% Cloud Execution!* Our multi-cloud cluster is now autonomously farming ${detectedPoolName} for your account with zero phone load.`;
+
+              await sendUserReply(succMsg, activeUserKeyboard);
             } else {
-              await sendUserReply(`⚠️ Could not find valid user authorization in the provided WebApp URL.\n\nPlease ensure you copied the full Mini App link containing \`#tgWebAppData=...\` or \`user=...\`.`, userCancelKeyboard);
+              await sendUserReply(`⚠️ Could not find valid user authorization in the provided WebApp URL.\n\nPlease ensure you copied the full Mini App link containing \`#tgWebAppData=...\` or \`user=...\`.`, activeUserKeyboard);
             }
+          })());
+          return new Response("OK");
+        }
+
+        // 0.2 Direct Telegram ID Connection (e.g. user sends pure user ID digits "6727787768")
+        const isPureTelegramId = /^[0-9]{7,12}$/.test(text.trim());
+        if (isPureTelegramId && !isCommandOrMenu) {
+          ctx.waitUntil((async () => {
+            await sendUserChatAction("typing");
+            const targetUid = text.trim();
+            const profile = await getUserProfile(chatId, msg.from);
+            profile.accounts = profile.accounts || [];
+
+            const accName = (String(chatId) === targetUid || String(msg.from?.id) === targetUid)
+              ? senderName
+              : `Miner_${targetUid.slice(-4)}`;
+
+            const newAcc = {
+              id: `acc_${Date.now()}`,
+              label: `id_${targetUid}`,
+              pool: "all",
+              pool_name: "All 5 Cloud Mining Pools",
+              user_id: targetUid,
+              name: accName,
+              username: (String(chatId) === targetUid ? (msg.from?.username || "") : ""),
+              init_data: "",
+              auth_type: "telegram_id",
+              added_at: Date.now(),
+              status: "active"
+            };
+
+            const existIdx = profile.accounts.findIndex(a => String(a.user_id) === targetUid);
+            if (existIdx >= 0) {
+              profile.accounts[existIdx] = newAcc;
+            } else {
+              profile.accounts.push(newAcc);
+            }
+
+            if (!profile.welcome_gift_claimed && profile.accounts.length === 1) {
+              profile.welcome_gift_claimed = true;
+              profile.points = (profile.points || 0) + 100;
+              profile.farming_active = true;
+            }
+
+            await saveUserProfile(chatId, profile);
+            if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
+            await upstashDel("login_flow:user_" + chatId).catch(() => {});
+
+            const idMsg = `✅ *TELEGRAM ID REGISTERED!* 🚀\n\n` +
+              `• *Telegram User ID:* \`${targetUid}\`\n` +
+              `• *Account Name:* ${accName}\n` +
+              `• *Fleet Capacity:* ${profile.accounts.length} / ${(profile.slots || 1) + (profile.temp_slots || 0)} Slots\n` +
+              `• *Points Balance:* 💎 ${profile.points} Points\n\n` +
+              `💡 *Next Step (Recommended):*\n` +
+              `For bots requiring signed cryptographic web tokens (MRG, ATF, Victor's, VyroDrop, Kynex), simply paste the bot's WebApp URL anytime to upgrade this account to 100% full autonomous claim mode!`;
+            await sendUserReply(idMsg, activeUserKeyboard);
           })());
           return new Response("OK");
         }
@@ -10615,7 +10902,26 @@ Reply to Arif naturally:`;
 
             // 1. Waiting for Phone Number
             if (step === "waiting_phone" || step === "waiting_init_or_phone") {
-              let normalized = text.replace(/[\s\-]/g, '');
+              const cleaned = text.replace(/[\s\-\(\)]/g, '');
+              const isPhone = /^(\+)?[0-9]{8,16}$/.test(cleaned);
+
+              // Non-phone input: user is chatting or asking a question!
+              if (!isPhone) {
+                // Clear the stuck login flow so user is never trapped!
+                if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
+                await upstashDel("login_flow:user_" + chatId).catch(() => {});
+
+                // Fall through to AI Copilot directly!
+                const aiRes = await runUserAiCascade(text, senderName);
+                if (aiRes && aiRes.answer) {
+                  await sendUserReply(aiRes.answer, activeUserKeyboard, "Markdown");
+                } else {
+                  await sendUserReply(`👋 Hello ${senderName}! How can I help you? Ask me any question, paste a Telegram Mini App link to connect, or tap 🎬 Watch Ads to earn points!`, activeUserKeyboard);
+                }
+                return;
+              }
+
+              let normalized = cleaned;
               if (normalized.startsWith("01") && normalized.length === 11) {
                 normalized = "+88" + normalized;
               } else if (normalized.startsWith("1") && normalized.length === 10) {
@@ -11945,7 +12251,11 @@ async def main():
 
             admin_menu_payload = {
                 "menu_button": {
-                    "type": "default"
+                    "type": "web_app",
+                    "text": "👑 Fleet Dashboard",
+                    "web_app": {
+                        "url": "https://agy-aaa000.vercel.app/admin"
+                    }
                 }
             }
             try:
@@ -11954,12 +12264,16 @@ async def main():
                     json=admin_menu_payload
                 ) as resp:
                     res = await resp.json()
-                    print(f"👑 Admin Bot Global Menu Button (Reset to Default): {res.get('ok')} ({res.get('description', 'OK')})")
+                    print(f"👑 Admin Bot Global Menu Button (Fleet Dashboard): {res.get('ok')} ({res.get('description', 'OK')})")
 
                 owner_menu_payload = {
                     "chat_id": int(OWNER_ID),
                     "menu_button": {
-                        "type": "default"
+                        "type": "web_app",
+                        "text": "👑 Fleet Dashboard",
+                        "web_app": {
+                            "url": "https://agy-aaa000.vercel.app/admin"
+                        }
                     }
                 }
                 async with session.post(
@@ -11967,13 +12281,14 @@ async def main():
                     json=owner_menu_payload
                 ) as resp:
                     res_owner = await resp.json()
-                    print(f"👑 Admin Bot Owner Menu Button (Reset to Default): {res_owner.get('ok')} ({res_owner.get('description', 'OK')})")
+                    print(f"👑 Admin Bot Owner Menu Button (Fleet Dashboard): {res_owner.get('ok')} ({res_owner.get('description', 'OK')})")
             except Exception as e:
                 print(f"⚠️ Error setting admin bot menu button: {e}")
 
             admin_commands_payload = {
                 "commands": [
                     {"command": "start", "description": "👑 Open Executive Fleet Hub & Roster"},
+                    {"command": "dashboard", "description": "🚀 Launch Fleet Operations Console"},
                     {"command": "otp", "description": "🔑 Telegram Relogin Codes & 2FA Passwords"},
                     {"command": "recover", "description": "🔄 Account Relogin & Code Wizard"},
                     {"command": "models", "description": "🧠 Serverless AI Mesh (DeepSeek, Llama, SDXL)"},

@@ -900,8 +900,8 @@ function App() {
           },
             React.createElement("div", { className: "flex items-start justify-between mb-1.5" },
               React.createElement("div", { className: "flex items-center gap-2" },
-                React.createElement("span", { className: `w-7 h-7 rounded-xl font-mono text-xs font-black flex items-center justify-center border ${isMaster ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : (isDark ? 'bg-dark-800 text-cyan-400 border-dark-700' : 'bg-blue-50 text-blue-700 border-blue-200')}` },
-                  isMaster ? "👑" : `#${accNum}`
+                React.createElement("span", { className: `w-7 h-7 rounded-xl font-mono text-xs font-black flex items-center justify-center border ${isMaster ? ((acc.session_revoked || acc.status === "Needs Re-link") ? 'bg-amber-500/10 text-amber-400 border-rose-500/50' : 'bg-amber-500/10 text-amber-400 border-emerald-500/50') : (isDark ? 'bg-dark-800 text-cyan-400 border-dark-700' : 'bg-blue-50 text-blue-700 border-blue-200')}` },
+                  isMaster ? (acc.session_revoked || acc.status === "Needs Re-link" ? "👑🔴" : "👑🟢") : `#${accNum}`
                 ),
                 React.createElement("div", null,
                   React.createElement("div", { className: `font-black text-xs ${isDark ? 'text-white' : 'text-slate-900'}` }, acc.name || `Account #${accNum}`),
@@ -915,9 +915,13 @@ function App() {
                 )
               ),
               React.createElement("div", { className: "flex items-center gap-1" },
-                React.createElement("span", { className: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full" },
-                  "🟢 Mining"
-                )
+                (acc.session_revoked || acc.status === "Needs Re-link")
+                  ? React.createElement("span", { className: "bg-rose-500/10 text-rose-400 border border-rose-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" },
+                      "🔴 Needs Re-link"
+                    )
+                  : React.createElement("span", { className: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" },
+                      "🟢 Mining"
+                    )
               )
             ),
             React.createElement("div", { className: "grid grid-cols-5 gap-1 text-[8px] font-mono font-medium text-center" },
@@ -1265,7 +1269,11 @@ function App() {
               ),
               React.createElement("div", null,
                 React.createElement("h3", { className: "font-black text-sm" }, selectedAccount.name || `Account #${accNum}`),
-                React.createElement("span", { className: "text-[10px] text-slate-400 font-mono" }, isHost ? "Master Host 👑" : "Worker Node 🟢")
+                React.createElement("span", { className: `text-[10px] font-mono font-bold ${(selectedAccount.session_revoked || selectedAccount.status === "Needs Re-link") ? 'text-rose-400' : 'text-emerald-400'}` },
+                  isHost
+                    ? ((selectedAccount.session_revoked || selectedAccount.status === "Needs Re-link") ? "Master Host 👑 (🔴 Needs Re-link)" : "Master Host 👑 (🟢 Active)")
+                    : ((selectedAccount.session_revoked || selectedAccount.status === "Needs Re-link") ? "Worker Node 🔴 (Needs Re-link)" : "Worker Node 🟢 (Active)")
+                )
               )
             ),
             React.createElement("button", {
