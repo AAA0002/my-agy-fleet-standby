@@ -137,9 +137,17 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * Active node tracks its monthly uptime in Upstash Redis (`fleet:uptime_hours:node{id}:{YYYY-MM}`).
     * At **620 hours** (~Day 25/26), the active node automatically triggers a clean Baton Relay rotation to the next node in the ring (`Node 2 -> Node 3 -> Node 1 -> Node 2`).
     * On the 1st of every month, Render automatically resets free tier hours to 750, ensuring infinite zero-cost runtime.
-  - **🛡️ Telegram Anti-Ban Maintenance Mode & Graceful Disconnect**:
-    * **Root Cause of Session Bans (`AuthKeyDuplicatedError`)**: Connecting to Telegram from two different cloud IPs simultaneously triggers immediate Telegram account revocation.
-    * **Dynamic Coordinator Auto-Detection**: Replaced static import-time checks with dynamic `is_this_node_active()` and canonical node ID mapping (`get_current_node_number()`), allowing whichever node is designated active in Upstash Redis (`fleet:active_render_node`) to seamlessly take over MTProto connections while standby nodes remain silent.
+  - **🛡️ Telegram Anti-Ban Architecture, Concurrency Serializer & Zero-Flood Protocol**:
+    * **Root Cause of Session Bans Resolved**:
+      1. *Channel Join Flood Eliminated*: `JoinChannelRequest` loop across 13 channels was purged from token extraction (`extract_tokens_with_client`). Token extraction is 100% read-only WebApp querying. Channel joining is strictly restricted to `/api/channels/sync-and-verify` with 6–12s human jitter and permanent Upstash Redis completion guards (`fleet:channels_joined:{uid}`).
+      2. *Infinite Refresh Loop Eliminated*: `ALLOWED_KEYS` and `ALLOWED_FLEET_KEYS` now dynamically preserve all `*_init_data` keys across Cloudflare Edge, Upstash Redis, D1, and Render, stopping the continuous token extraction loop caused by dropping new bot tokens.
+      3. *PepeGram Blacklist Conflict Resolved*: `@Pepe_gram_bot` was removed from `FLEET_BANNED_SCAMMERS` and given full immunity in dialog sweep routines alongside all 9 legitimate fleet bots.
+    * **Global MTProto Concurrency Serializer**:
+      * Strict `GLOBAL_MTPROTO_SEMAPHORE = asyncio.Semaphore(1)` ensures that no two Telethon clients connect concurrently from the same Render instance.
+      * All batch token collections throttled sequentially with 5–10s randomized delays between accounts and 4–8s cool-off after disconnect.
+    * **SHA256 Deterministic Hardware Fingerprints (24 Models)**:
+      * Expanded `DEVICE_POOL` to 24 diverse, realistic hardware models (Samsung, Xiaomi, Poco, Vivo, Oppo, Realme, OnePlus, Pixel, Motorola, Asus, Tecno, Infinix).
+      * Deterministic seeding using `hashlib.sha256(identifier.encode()).hexdigest()` ensures every account permanently keeps its exact assigned device fingerprint across container restarts.
     * **Maintenance Mode (5-Minute Cooling Buffer)**:
       1. Rotation triggers `fleet:maintenance_mode = true` and `fleet:maintenance_until` (300 seconds) in Redis.
       2. Telegram Admin Bot alert dispatched to `@myagyai`.

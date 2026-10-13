@@ -10,6 +10,7 @@ import aiohttp
 import datetime
 import secrets
 import hashlib
+from typing import Any
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 try:
     import ecdsa
@@ -18,19 +19,36 @@ try:
 except ImportError:
     HAS_ECDSA = False
 
+GLOBAL_MTPROTO_SEMAPHORE = asyncio.Semaphore(1)
+
 try:
-    from proxy_manager import get_account_user_agent, get_account_fingerprint, parse_proxy
+    from proxy_manager import get_account_user_agent, get_account_fingerprint, parse_proxy, DEVICE_POOL
 except Exception:
-    def get_account_user_agent(identifier):
-        return "Mozilla/5.0 (Linux; Android 11; SM-A305F Build/RP1A.200720.012) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"
+    FALLBACK_DEVICE_POOL = [
+        {"model": "Samsung Galaxy A30", "sys": "Android 11 (RP1A.200720.012)", "app": "11.1.3 (5221)", "ua": "Mozilla/5.0 (Linux; Android 11; SM-A305F) AppleWebKit/537.36 Telegram-Android/11.1.3"},
+        {"model": "Samsung Galaxy A54 5G", "sys": "Android 14 (OneUI 6.1)", "app": "11.1.2 (5210)", "ua": "Mozilla/5.0 (Linux; Android 14; SM-A546E) AppleWebKit/537.36 Telegram-Android/11.1.2"},
+        {"model": "Xiaomi Redmi Note 12", "sys": "Android 14 (HyperOS 1.0)", "app": "11.1.0 (5202)", "ua": "Mozilla/5.0 (Linux; Android 14; 23021RAAEG) AppleWebKit/537.36 Telegram-Android/11.1.0"},
+        {"model": "Realme C55", "sys": "Android 14 (RealmeUI 5.0)", "app": "11.0.9 (5195)", "ua": "Mozilla/5.0 (Linux; Android 14; RMX3710) AppleWebKit/537.36 Telegram-Android/11.0.9"},
+        {"model": "Vivo Y22", "sys": "Android 14 (FuntouchOS 14)", "app": "11.1.1 (5205)", "ua": "Mozilla/5.0 (Linux; Android 14; V2207) AppleWebKit/537.36 Telegram-Android/11.1.1"},
+        {"model": "Xiaomi Redmi Note 13 Pro", "sys": "Android 14 (HyperOS 1.0)", "app": "11.1.3 (5221)", "ua": "Mozilla/5.0 (Linux; Android 14; 23117RA68G) AppleWebKit/537.36 Telegram-Android/11.1.3"},
+        {"model": "OnePlus Nord CE 3", "sys": "Android 14 (OxygenOS 14)", "app": "11.0.8 (5189)", "ua": "Mozilla/5.0 (Linux; Android 14; CPH2569) AppleWebKit/537.36 Telegram-Android/11.0.8"},
+        {"model": "Samsung Galaxy S23 Ultra", "sys": "Android 14 (OneUI 6.1)", "app": "11.1.3 (5221)", "ua": "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 Telegram-Android/11.1.3"}
+    ]
     def get_account_fingerprint(identifier):
+        ident_str = str(identifier or "default").strip()
+        seed = int(hashlib.sha256(ident_str.encode("utf-8")).hexdigest(), 16)
+        profile = FALLBACK_DEVICE_POOL[seed % len(FALLBACK_DEVICE_POOL)]
         return {
-            "device_model": "Samsung Galaxy A30",
-            "system_version": "Android 11 (RP1A.200720.012)",
-            "app_version": "11.1.3 (5221)",
+            "device_model": profile["model"],
+            "system_version": profile["sys"],
+            "app_version": profile["app"],
             "lang_code": "en",
             "system_lang_code": "en-BD"
         }
+    def get_account_user_agent(identifier):
+        ident_str = str(identifier or "default").strip()
+        seed = int(hashlib.sha256(ident_str.encode("utf-8")).hexdigest(), 16)
+        return FALLBACK_DEVICE_POOL[seed % len(FALLBACK_DEVICE_POOL)]["ua"]
     def parse_proxy(proxy_input):
         return None
 
@@ -356,13 +374,13 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
             ad = parsed.get("auth_date", [None])[0]
             if ad and ad.isdigit():
                 tok_age = now_ts - float(ad)
-                max_bot_age = (1.5 * 3600.0) if kt == "vyro_init_data" else (max_age_hours * 3600.0)
+                max_bot_age = (12.0 * 3600.0) if kt == "vyro_init_data" else (max_age_hours * 3600.0)
                 if tok_age > max_bot_age:
                     expired_cnt += 1
         except Exception:
             pass
 
-    if present_cnt == 0 or expired_cnt >= max(1, present_cnt):
+    if present_cnt == 0 or (present_cnt > 0 and expired_cnt >= present_cnt):
         return True
     return False
 
@@ -542,48 +560,56 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     tok = await extract_bot_webapp_token(client, MRG_BOT, start_param=mrg_param, default_url="https://app.mrgtoken.xyz/", candidate_short_names=["app", "miniapp"])
     if tok:
         tokens["mrg_init_data"] = tok
+    await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 2. ATF Miner (@ATF_AIRDROP_bot - Silent WebApp query, zero chat messages)
     atf_param = None if is_master else ATF_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, ATF_BOT, start_param=atf_param, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"])
     if tok:
         tokens["atf_init_data"] = tok
+    await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 3. Victor's Company (@VictorsCompanybot - Silent WebApp query, zero chat messages)
     v_param = VICTORS_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, VICTORS_BOT, start_param=v_param, default_url="https://app.victors.company/", candidate_short_names=["app", "play"])
     if tok:
         tokens["victors_init_data"] = tok
+    await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 4. VyroDrop (@vyrodrop_bot - Silent WebApp query, zero chat messages)
     vy_param = VYRO_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, VYRO_BOT, start_param=vy_param, default_url="https://vyro.run.place/", candidate_short_names=["app", "vyro", "play", "mine"])
     if tok:
         tokens["vyro_init_data"] = tok
+    await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 5. Kynex Network (@Kynex_miningbot - Silent WebApp query, zero chat messages)
     ky_param = None if is_master else KYNEX_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, KYNEX_BOT, start_param=ky_param, default_url="https://kynex.top/telegram-auth.html", candidate_short_names=["App", "app"])
     if tok:
         tokens["kynex_init_data"] = tok
+    await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 6. DiggoMiner (@Diggominer_bot - Silent WebApp query)
     diggo_param = None if is_master else DIGGO_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=diggo_param, default_url="https://t.me/Diggominer_bot", candidate_short_names=["app", "miner", "miniapp", "startapp"])
     if tok:
         tokens["diggo_init_data"] = tok
+    await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 7. LeafEarn (@LeafEarnBot - leafearn.site)
     leaf_param = None if is_master else LEAFEARN_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, LEAFEARN_BOT, start_param=leaf_param, default_url="https://leafearn.site/", candidate_short_names=["app", "leafearn", "play", "startapp"])
     if tok:
         tokens["leafearn_init_data"] = tok
+    await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)
     astra_param = None if is_master else ASTRA_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, ASTRA_BOT, start_param=astra_param, default_url="https://t.me/ASTRA_AIRDROP_BOT", candidate_short_names=["app", "airdrop", "startapp"])
     if tok:
         tokens["astra_init_data"] = tok
+    await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 9. PepeGram (@Pepe_gram_bot - meme token mining)
     pepe_param = None if is_master else PEPEGRAM_REFERRAL_CODE
@@ -591,14 +617,7 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     if tok:
         tokens["pepegram_init_data"] = tok
 
-    # Auto-join mandatory sponsor channels so side-task verifications succeed across all bots
-    for s_ch in ["mrgminer", "mrgwithdrawal", "DurovKidney", "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor", "vyrodrop", "atfminers", "kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam"]:
-        try:
-            await client(JoinChannelRequest(s_ch))
-            await asyncio.sleep(0.3)
-        except Exception:
-            pass
-
+    # Anti-ban hardening: Zero channel joining during token extraction.
     return tokens
 
 
@@ -610,55 +629,59 @@ async def extract_tokens_for_account(acc: dict) -> dict:
     if not sess_str:
         return {}
 
-    # Acquire account-level distributed lock to guarantee zero concurrent connections
-    if uid:
-        locked = await acquire_account_lock(uid, ttl_seconds=60)
-        if not locked:
-            logger.info(f"[{name}] Account #{idx} currently locked by another node/task; skipping to prevent AuthKeyDuplicatedError.")
-            return {}
-
-    client = create_telethon_client(sess_str=sess_str, identifier=acc.get("phone") or name, proxy_val=acc.get("proxy"))
-    try:
-        connected = False
-        for attempt in range(1, 4):
-            try:
-                await client.connect()
-                if await client.is_user_authorized():
-                    connected = True
-                    if idx:
-                        await sync_account_health_state(idx, is_healthy=True)
-                    break
-                else:
-                    logger.warning(f"[{name}] Session unauthorized")
-                    if idx:
-                        await sync_account_health_state(idx, is_healthy=False, reason="Session unauthorized / logged out")
-                    return {}
-            except Exception as conn_err:
-                err_str = str(conn_err)
-                if "used under two different IP addresses" in err_str or "AUTH_KEY_DUPLICATED" in err_str or "AuthKeyDuplicatedError" in type(conn_err).__name__:
-                    logger.warning(f"[{name}] MTProto session duplicated/revoked")
-                    if idx:
-                        await sync_account_health_state(idx, is_healthy=False, reason="AuthKeyDuplicatedError (multi-IP clash)")
-                    return {}
-                if attempt < 3:
-                    await asyncio.sleep(attempt * 2.0)
-                else:
-                    logger.error(f"[{name}] Connection error after 3 attempts: {conn_err}")
-                    return {}
-        if not connected:
-            return {}
-
-        return await extract_tokens_with_client(client, acc)
-    except Exception as e:
-        logger.error(f"[{name}] Telethon connection error: {e}")
-        return {}
-    finally:
-        try:
-            await client.disconnect()
-        except Exception:
-            pass
+    # Strict MTProto Concurrency Serializer: exactly 1 account connects at a time
+    async with GLOBAL_MTPROTO_SEMAPHORE:
+        # Acquire account-level distributed lock to guarantee zero concurrent connections across nodes
         if uid:
-            await release_account_lock(uid)
+            locked = await acquire_account_lock(uid, ttl_seconds=60)
+            if not locked:
+                logger.info(f"[{name}] Account #{idx} currently locked by another node/task; skipping to prevent AuthKeyDuplicatedError.")
+                return {}
+
+        client = create_telethon_client(sess_str=sess_str, identifier=acc.get("phone") or name, proxy_val=acc.get("proxy"))
+        try:
+            connected = False
+            for attempt in range(1, 4):
+                try:
+                    await client.connect()
+                    if await client.is_user_authorized():
+                        connected = True
+                        if idx:
+                            await sync_account_health_state(idx, is_healthy=True)
+                        break
+                    else:
+                        logger.warning(f"[{name}] Session unauthorized")
+                        if idx:
+                            await sync_account_health_state(idx, is_healthy=False, reason="Session unauthorized / logged out")
+                        return {}
+                except Exception as conn_err:
+                    err_str = str(conn_err)
+                    if "used under two different IP addresses" in err_str or "AUTH_KEY_DUPLICATED" in err_str or "AuthKeyDuplicatedError" in type(conn_err).__name__:
+                        logger.warning(f"[{name}] MTProto session duplicated/revoked")
+                        if idx:
+                            await sync_account_health_state(idx, is_healthy=False, reason="AuthKeyDuplicatedError (multi-IP clash)")
+                        return {}
+                    if attempt < 3:
+                        await asyncio.sleep(attempt * 2.0)
+                    else:
+                        logger.error(f"[{name}] Connection error after 3 attempts: {conn_err}")
+                        return {}
+            if not connected:
+                return {}
+
+            return await extract_tokens_with_client(client, acc)
+        except Exception as e:
+            logger.error(f"[{name}] Telethon connection error: {e}")
+            return {}
+        finally:
+            try:
+                await client.disconnect()
+            except Exception:
+                pass
+            if uid:
+                await release_account_lock(uid)
+            # Randomized human cooldown before next account connection
+            await asyncio.sleep(random.uniform(4.0, 8.0))
 
 @app.post("/collect-tokens")
 @app.get("/collect-tokens")
@@ -707,7 +730,7 @@ async def collect_tokens(request: Request):
         LAST_BATCH_RUN["total"] = len(target_accounts)
         LAST_BATCH_RUN["collected"] = 0
         collected_batch = {}
-        sem = asyncio.Semaphore(3)
+        sem = asyncio.Semaphore(1)
 
         async def _collect_single(acc):
             async with sem:
@@ -718,6 +741,7 @@ async def collect_tokens(request: Request):
                     collected_batch[act_uid] = tokens
                     LAST_BATCH_RUN["collected"] = len(collected_batch)
                     await sync_account_tokens_to_clouds(tokens)
+                await asyncio.sleep(random.uniform(5.0, 10.0))
 
         tasks = [_collect_single(a) for a in target_accounts]
         await asyncio.gather(*tasks, return_exceptions=True)
@@ -1396,8 +1420,7 @@ async def sync_account_tokens_to_clouds(tokens: dict):
                         if raw_res:
                             ex_toks = json.loads(raw_res) if isinstance(raw_res, str) else raw_res
                 merged = {**ex_toks, **tokens}
-                ALLOWED_KEYS = {"account_id", "name", "synced_at", "mrg_init_data", "atf_init_data", "victors_init_data", "vyro_init_data", "kynex_init_data"}
-                clean_merged = {k: v for k, v in merged.items() if k in ALLOWED_KEYS}
+                clean_merged = {k: v for k, v in merged.items() if (k in ("account_id", "name", "synced_at", "updated_at", "phone") or k.endswith("_init_data")) and v}
                 await s.post(
                     f"{UPSTASH_URL}/set/fleet:tokens:{uid}",
                     data=json.dumps(clean_merged),
@@ -1784,11 +1807,71 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
         except Exception as e:
             logger.warning(f"[{name}] Kynex referral bind note: {e}")
 
+    # 6. DiggoMiner (Silent WebApp handshake, ZERO chat messages)
+    if not acc_entry.get("diggo_referral_bound"):
+        try:
+            b_dig_in = await client.get_input_entity(DIGGO_BOT)
+            await client(RequestAppWebViewRequest(
+                peer=b_dig_in,
+                app=InputBotAppShortName(bot_id=b_dig_in, short_name="app"),
+                platform="android",
+                start_param=DIGGO_REFERRAL_CODE
+            ))
+            acc_entry["diggo_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] Diggo referral bind note: {e}")
+
+    # 7. LeafEarn (Silent WebApp handshake, ZERO chat messages)
+    if not acc_entry.get("leafearn_referral_bound"):
+        try:
+            b_leaf_in = await client.get_input_entity(LEAFEARN_BOT)
+            await client(RequestAppWebViewRequest(
+                peer=b_leaf_in,
+                app=InputBotAppShortName(bot_id=b_leaf_in, short_name="app"),
+                platform="android",
+                start_param=LEAFEARN_REFERRAL_CODE
+            ))
+            acc_entry["leafearn_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] LeafEarn referral bind note: {e}")
+
+    # 8. Astra Airdrop (Silent WebApp handshake, ZERO chat messages)
+    if not acc_entry.get("astra_referral_bound"):
+        try:
+            b_ast_in = await client.get_input_entity(ASTRA_BOT)
+            await client(RequestAppWebViewRequest(
+                peer=b_ast_in,
+                app=InputBotAppShortName(bot_id=b_ast_in, short_name="app"),
+                platform="android",
+                start_param=ASTRA_REFERRAL_CODE
+            ))
+            acc_entry["astra_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] Astra referral bind note: {e}")
+
+    # 9. PepeGram (Silent WebApp handshake, ZERO chat messages)
+    if not acc_entry.get("pepegram_referral_bound"):
+        try:
+            b_pep_in = await client.get_input_entity(PEPEGRAM_BOT)
+            await client(RequestAppWebViewRequest(
+                peer=b_pep_in,
+                app=InputBotAppShortName(bot_id=b_pep_in, short_name="app"),
+                platform="android",
+                start_param=PEPEGRAM_REFERRAL_CODE
+            ))
+            acc_entry["pepegram_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] PepeGram referral bind note: {e}")
+
     if is_account_referrals_bound(acc_entry):
         acc_entry["referrals_bound"] = True
         acc_entry["all_4_referrals_bound"] = True
         acc_entry["all_9_referrals_bound"] = True
-        logger.info(f"[{name}] ✅ All 4 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
+        logger.info(f"[{name}] ✅ All 9 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
     else:
         logger.warning(f"[{name}] ⚠️ Some referrals could not be bound immediately. Will retry on next cycle.")
 
@@ -4597,8 +4680,7 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
             async with farm_sem:
                 uid_str = str(a_dict.get("user_id"))
                 has_any_token = any(k.endswith("_init_data") and bool(v) for k, v in t_dict.items())
-                all_expired = is_token_data_expired(t_dict, max_age_hours=22.0)
-                if (not has_any_token or all_expired) and (a_dict.get("session_string") or a_dict.get("session")):
+                if (not has_any_token) and (a_dict.get("session_string") or a_dict.get("session")):
                     try:
                         fresh_toks = await asyncio.wait_for(extract_tokens_for_account(a_dict), timeout=45.0)
                         if fresh_toks:
@@ -4713,8 +4795,8 @@ async def api_farm_single_account(uid: str, request: Request):
         async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as session:
             tokens_map = await fetch_cloud_miniapp_tokens(session)
             acc_tok = tokens_map.get(str(uid), {})
-            missing_or_expired = (not acc_tok) or is_token_data_expired(acc_tok)
-            if missing_or_expired:
+            missing_tokens = (not acc_tok) or not any(k.endswith('_init_data') and bool(v) for k, v in acc_tok.items())
+            if missing_tokens:
                 fresh = await extract_tokens_for_account(target_acc)
                 if fresh:
                     acc_tok = {**acc_tok, **fresh}
@@ -5385,11 +5467,13 @@ MANDATORY_SPONSOR_CHANNELS = [
     "Web3Primeteam"
 ]
 
-# 5 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
+# 9 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
 FLEET_LEGITIMATE_BOTS = [
     "mrgminerbot", "ATF_AIRDROP_bot",
     "VictorsCompanybot", "vyrodrop_bot",
-    "Kynex_miningbot"
+    "Kynex_miningbot", "Diggominer_bot",
+    "LeafEarnBot", "ASTRA_AIRDROP_BOT",
+    "Pepe_gram_bot"
 ]
 
 # Blacklisted & Purged Bots to permanently block and delete from Telegram dialogs
@@ -5407,7 +5491,6 @@ FLEET_BANNED_SCAMMERS = [
     "artairdrop_bot",
     "goldkeepers_bot",
     "earncraft_bot",
-    "pepe_gram_bot",
     # Previously blacklisted scammers
     "ainovum_bot",
     "tensormining_bot",
@@ -5529,9 +5612,13 @@ async def sync_and_verify_channels_endpoint(request: Request):
                             is_chan = hasattr(d.entity, "broadcast") and getattr(d.entity, "broadcast", False)
                             is_bot = getattr(d.entity, "bot", False)
 
+                            # Strict protection: NEVER treat active legitimate fleet bots as scammers
+                            if u_low in [b.lower() for b in FLEET_LEGITIMATE_BOTS]:
+                                continue
+
                             matches = any(b.lower() == u_low for b in FLEET_BANNED_SCAMMERS) or \
                                       any(c.lower() == u_low for c in SCAM_CHANNELS_TO_LEAVE) or \
-                                      any(k in t_low for k in ["finvora", "turbo gram", "turbogram", "ai lab", "ailab", "stones white", "ultra wallet", "ultrawallet", "trx power", "gold keepers", "earncraft", "pepe", "art 🚀", "live withdraw"])
+                                      any(k in t_low for k in ["finvora", "turbo gram", "turbogram", "ai lab", "ailab", "stones white", "ultra wallet", "ultrawallet", "trx power", "gold keepers", "earncraft", "art 🚀", "live withdraw"])
                             if matches:
                                 if is_bot:
                                     try: await cl(functions.contacts.BlockRequest(id=d.entity))
@@ -5590,7 +5677,7 @@ async def sync_and_verify_channels_endpoint(request: Request):
                 else:
                     logger.info(f"[{name}] Dead bots & scam channels already purged previously. Skipping dialog deletion.")
 
-                # 3. Unblock all 4 legitimate fleet bots
+                # 3. Unblock all 9 legitimate fleet bots
                 for b in FLEET_LEGITIMATE_BOTS:
                     try:
                         await cl(functions.contacts.UnblockRequest(id=b))
@@ -5598,16 +5685,44 @@ async def sync_and_verify_channels_endpoint(request: Request):
                     except Exception:
                         pass
 
-                # 4. Join all mandatory legitimate sponsor channels
-                for ch in MANDATORY_SPONSOR_CHANNELS:
+                # 4. Join mandatory legitimate sponsor channels (Idempotent: runs ONCE per account with human delays)
+                channels_already_joined = False
+                if UPSTASH_URL and UPSTASH_TOKEN:
                     try:
-                        await cl(JoinChannelRequest(ch))
-                        acc_res["joined"].append(ch)
-                        await asyncio.sleep(0.5)
-                    except Exception as ce:
-                        err_s = str(ce).lower()
-                        if "already" in err_s:
-                            acc_res["joined"].append(f"{ch} (already)")
+                        async with aiohttp.ClientSession() as up_s:
+                            async with up_s.get(f"{UPSTASH_URL}/get/fleet:channels_joined:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as up_r:
+                                if up_r.status == 200:
+                                    d_j = await up_r.json()
+                                    if d_j.get("result"):
+                                        channels_already_joined = True
+                    except Exception:
+                        pass
+
+                if channels_already_joined:
+                    acc_res["joined"].append("all_sponsor_channels_previously_verified")
+                else:
+                    hit_flood = False
+                    for ch in MANDATORY_SPONSOR_CHANNELS:
+                        try:
+                            await cl(JoinChannelRequest(ch))
+                            acc_res["joined"].append(ch)
+                            await asyncio.sleep(random.uniform(6.0, 12.0))
+                        except FloodWaitError as fwe:
+                            logger.warning(f"[{name}] Flood wait {fwe.seconds}s encountered on @{ch}. Halting joins to protect account.")
+                            acc_res["joined"].append(f"flood_wait_{fwe.seconds}s")
+                            hit_flood = True
+                            break
+                        except Exception as ce:
+                            err_s = str(ce).lower()
+                            if "already" in err_s:
+                                acc_res["joined"].append(f"{ch} (already)")
+
+                    if not hit_flood and UPSTASH_URL and UPSTASH_TOKEN:
+                        try:
+                            async with aiohttp.ClientSession() as up_s:
+                                await up_s.post(f"{UPSTASH_URL}/set/fleet:channels_joined:{uid}", data="1", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
+                        except Exception:
+                            pass
 
                 # 5. Scan ALL dialogs: Erase and delete dialogs for any scammer bot, channel, or group (only if not already purged)
                 muted_cnt = 0
@@ -5616,10 +5731,11 @@ async def sync_and_verify_channels_endpoint(request: Request):
                     uname = (getattr(d.entity, 'username', '') or '').lower()
                     title = (d.name or '').lower()
                     is_scam = (
-                        uname in SCAM_CHANNELS_TO_LEAVE or
-                        uname in [b.lower() for b in FLEET_BANNED_SCAMMERS] or
-                        any(s in uname for s in ["tensorcoin", "tontrader", "tacairdrop", "usdtquad", "apexminer", "ainovum", "trxpower", "bitcoincloud", "artairdrop", "art_airdrop"]) or
-                        any(s in title for s in ["tensorcoin", "ton trader", "tac airdrop", "usdt quad", "apex miner", "ainovum", "trx power", "bitcoin cloud", "art airdrop"])
+                        uname not in [b.lower() for b in FLEET_LEGITIMATE_BOTS] and
+                        (uname in SCAM_CHANNELS_TO_LEAVE or
+                         uname in [b.lower() for b in FLEET_BANNED_SCAMMERS] or
+                         any(s in uname for s in ["tensorcoin", "tontrader", "tacairdrop", "usdtquad", "apexminer", "ainovum", "trxpower", "bitcoincloud", "artairdrop", "art_airdrop"]) or
+                         any(s in title for s in ["tensorcoin", "ton trader", "tac airdrop", "usdt quad", "apex miner", "ainovum", "trx power", "bitcoin cloud", "art airdrop"]))
                     )
                     if is_scam and not already_purged:
                         if d.is_channel or d.is_group:

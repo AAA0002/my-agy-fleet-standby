@@ -17,14 +17,24 @@ import time
 import urllib.parse
 import urllib.request
 from typing import Optional, Tuple, Dict, Any
-import socks
+import hashlib
+try:
+    import socks
+    HAS_SOCKS = True
+except ImportError:
+    HAS_SOCKS = False
+    class _DummySocks:
+        SOCKS5 = 2
+        SOCKS4 = 1
+        HTTP = 3
+    socks = _DummySocks()
 from dotenv import load_dotenv
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
 
-# Pool of realistic hardware device profiles for Bangladesh (BD) mobile environment
+# Pool of 24 realistic hardware device profiles for Bangladesh (BD) mobile environment
 DEVICE_POOL = [
     {"model": "Samsung Galaxy A30", "sys": "Android 11 (RP1A.200720.012)", "app": "11.1.3 (5221)", "ua": "Mozilla/5.0 (Linux; Android 11; SM-A305F Build/RP1A.200720.012) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"},
     {"model": "Samsung Galaxy A54 5G", "sys": "Android 14 (OneUI 6.1)", "app": "11.1.2 (5210)", "ua": "Mozilla/5.0 (Linux; Android 14; SM-A546E Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.2"},
@@ -33,13 +43,31 @@ DEVICE_POOL = [
     {"model": "Vivo Y22", "sys": "Android 14 (FuntouchOS 14)", "app": "11.1.1 (5205)", "ua": "Mozilla/5.0 (Linux; Android 14; V2207 Build/U2UW34.42-32) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.1"},
     {"model": "Xiaomi Redmi Note 13 Pro", "sys": "Android 14 (HyperOS 1.0)", "app": "11.1.3 (5221)", "ua": "Mozilla/5.0 (Linux; Android 14; 23117RA68G Build/UKQ1.231003.002) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"},
     {"model": "OnePlus Nord CE 3", "sys": "Android 14 (OxygenOS 14)", "app": "11.0.8 (5189)", "ua": "Mozilla/5.0 (Linux; Android 14; CPH2569 Build/NothingOS2.5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.0.8"},
-    {"model": "Samsung Galaxy S23 Ultra", "sys": "Android 14 (OneUI 6.1)", "app": "11.1.3 (5221)", "ua": "Mozilla/5.0 (Linux; Android 14; SM-S918B Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"}
+    {"model": "Samsung Galaxy S23 Ultra", "sys": "Android 14 (OneUI 6.1)", "app": "11.1.3 (5221)", "ua": "Mozilla/5.0 (Linux; Android 14; SM-S918B Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"},
+    {"model": "Google Pixel 8", "sys": "Android 14 (UD1A.230803.041)", "app": "11.1.2 (5210)", "ua": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/UD1A.230803.041) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.2"},
+    {"model": "Xiaomi Poco X6 Pro", "sys": "Android 14 (HyperOS 1.0)", "app": "11.1.3 (5221)", "ua": "Mozilla/5.0 (Linux; Android 14; 2311DRK48G Build/UKQ1.231003.002) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"},
+    {"model": "Oppo Reno 11F 5G", "sys": "Android 14 (ColorOS 14)", "app": "11.1.0 (5202)", "ua": "Mozilla/5.0 (Linux; Android 14; CPH2603 Build/UKQ1.230924.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.0"},
+    {"model": "Infinix Note 40 Pro", "sys": "Android 14 (XOS 14)", "app": "11.1.2 (5210)", "ua": "Mozilla/5.0 (Linux; Android 14; X6850 Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.2"},
+    {"model": "Tecno Camon 30 Premier", "sys": "Android 14 (HiOS 14)", "app": "11.1.1 (5205)", "ua": "Mozilla/5.0 (Linux; Android 14; CL9 Build/UKQ1.230917.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.1"},
+    {"model": "Motorola Edge 50 Fusion", "sys": "Android 14 (HelloUI 1.0)", "app": "11.1.3 (5221)", "ua": "Mozilla/5.0 (Linux; Android 14; moto g84 Build/U1TD34.94-12) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"},
+    {"model": "Samsung Galaxy M34 5G", "sys": "Android 14 (OneUI 6.0)", "app": "11.1.0 (5202)", "ua": "Mozilla/5.0 (Linux; Android 14; SM-M346B Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.0"},
+    {"model": "Vivo V30 Lite", "sys": "Android 14 (FuntouchOS 14)", "app": "11.1.2 (5210)", "ua": "Mozilla/5.0 (Linux; Android 14; V2314 Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.2"},
+    {"model": "Realme 12 5G", "sys": "Android 14 (RealmeUI 5.0)", "app": "11.1.3 (5221)", "ua": "Mozilla/5.0 (Linux; Android 14; RMX3999 Build/UKQ1.230924.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"},
+    {"model": "Samsung Galaxy A15 5G", "sys": "Android 14 (OneUI 6.0)", "app": "11.1.1 (5205)", "ua": "Mozilla/5.0 (Linux; Android 14; SM-A156E Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.1"},
+    {"model": "Xiaomi Redmi 13C", "sys": "Android 13 (MIUI 14)", "app": "11.0.9 (5195)", "ua": "Mozilla/5.0 (Linux; Android 13; 23100RN82L Build/TP1A.220624.014) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.0.9"},
+    {"model": "OnePlus 12R", "sys": "Android 14 (OxygenOS 14)", "app": "11.1.3 (5221)", "ua": "Mozilla/5.0 (Linux; Android 14; CPH2585 Build/UKQ1.230924.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"},
+    {"model": "Google Pixel 7a", "sys": "Android 14 (UP1A.231105.001)", "app": "11.1.2 (5210)", "ua": "Mozilla/5.0 (Linux; Android 14; Pixel 7a Build/UP1A.231105.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.2"},
+    {"model": "Samsung Galaxy S22", "sys": "Android 14 (OneUI 6.1)", "app": "11.1.0 (5202)", "ua": "Mozilla/5.0 (Linux; Android 14; SM-S901B Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.0"},
+    {"model": "Asus Zenfone 10", "sys": "Android 14 (ZenUI 11)", "app": "11.1.3 (5221)", "ua": "Mozilla/5.0 (Linux; Android 14; ASUS_AI2302 Build/UKQ1.230924.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.3"},
+    {"model": "Infinix GT 20 Pro", "sys": "Android 14 (XOS 14)", "app": "11.1.2 (5210)", "ua": "Mozilla/5.0 (Linux; Android 14; X6871 Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.2"}
 ]
 
 
 def get_account_fingerprint(identifier: Any) -> Dict[str, str]:
-    """Generates a consistent, unique hardware device fingerprint for an account tailored to Bangladesh (BD)."""
-    seed = abs(hash(str(identifier)))
+    """Generates a consistent, persistent hardware device fingerprint for an account tailored to Bangladesh (BD).
+    Uses sha256 to guarantee the exact same profile is used across process restarts."""
+    ident_str = str(identifier or "default").strip()
+    seed = int(hashlib.sha256(ident_str.encode("utf-8")).hexdigest(), 16)
     profile = DEVICE_POOL[seed % len(DEVICE_POOL)]
     return {
         "device_model": profile["model"],
@@ -52,9 +80,10 @@ def get_account_fingerprint(identifier: Any) -> Dict[str, str]:
 
 def get_account_user_agent(identifier: Any) -> str:
     """Returns the matching human User-Agent for the account's assigned hardware profile."""
-    seed = abs(hash(str(identifier)))
+    ident_str = str(identifier or "default").strip()
+    seed = int(hashlib.sha256(ident_str.encode("utf-8")).hexdigest(), 16)
     profile = DEVICE_POOL[seed % len(DEVICE_POOL)]
-    return profile.get("ua", "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android/11.1.3")
+    return profile.get("ua", "Mozilla/5.0 (Linux; Android 14; SM-A546E Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36 Telegram-Android/11.1.2")
 
 
 def parse_proxy(proxy_input: Any) -> Optional[Tuple]:

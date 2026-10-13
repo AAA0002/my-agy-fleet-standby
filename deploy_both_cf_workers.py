@@ -3482,13 +3482,14 @@ fi
         }
         const ALLOWED_FLEET_KEYS = new Set([
           "account_id", "name", "synced_at", "updated_at", "username", "phone", "uid",
-          "mrg_init_data", "atf_init_data", "victors_init_data", "vyro_init_data", "kynex_init_data"
+          "mrg_init_data", "atf_init_data", "victors_init_data", "vyro_init_data", "kynex_init_data",
+          "diggo_init_data", "leafearn_init_data", "astra_init_data", "pepegram_init_data"
         ]);
         const sanitizeTokens = (obj) => {
           if (!obj || typeof obj !== "object") return {};
           const clean = {};
           for (const [k, v] of Object.entries(obj)) {
-            if (ALLOWED_FLEET_KEYS.has(k) && v) clean[k] = v;
+            if ((ALLOWED_FLEET_KEYS.has(k) || k.endsWith("_init_data")) && v) clean[k] = v;
           }
           return clean;
         };

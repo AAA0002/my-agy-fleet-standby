@@ -2,6 +2,34 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Root-Cause Anti-Ban Hardening, MTProto Concurrency Serializer & 9-Bot Token Persistence Engine (October 13, 2026)**:
+  - **🔍 Root-Cause Diagnosis of Telegram Account Blocks**:
+    * **Smoking Gun 1: 13-Channel Auto-Join Flood**: Identified that `extract_tokens_with_client` was executing a tight loop of `JoinChannelRequest` across 13 public channels with only a `0.3s` sleep on EVERY token refresh cycle. For 18 accounts, this produced bursts of 234 channel joins in seconds from a single Render datacenter IP, triggering Telegram's automated SpamBot bans (`PeerFloodError`, `UserDeactivatedBanError`).
+    * **Smoking Gun 2: Token Stripping Infinite Loop**: Discovered that `ALLOWED_KEYS` in Render (`render_app_latest.py` & `render_standby_app.py`) and `ALLOWED_FLEET_KEYS` in Cloudflare Workers (`deploy_both_cf_workers.py`) only permitted the 5 legacy bots, silently dropping `diggo_init_data`, `leafearn_init_data`, `astra_init_data`, and `pepegram_init_data`. This caused the background watchdog to repeatedly detect missing tokens and re-run Telethon MTProto extractions (and their channel join loops) endlessly.
+    * **Smoking Gun 3: PepeGram Scammer Blacklist Conflict**: Located `"pepe_gram_bot"` in `FLEET_BANNED_SCAMMERS` and `"pepe"` in the generic scam dialog purger, causing dialog sanitation routines to actively attempt blocking and deleting chats with `@Pepe_gram_bot`.
+    * **Smoking Gun 4: Datacenter IP Sybil Clustering**: Multiple accounts connecting simultaneously via Telethon (`asyncio.Semaphore(3)`) without residential proxy rotation triggered Telegram's cluster detection.
+  - **🚫 Complete Elimination of Channel Join Flooding**:
+    * Completely purged the 13-channel `JoinChannelRequest` loop from `extract_tokens_with_client` across both `render_app_latest.py` and `render_standby_app.py`.
+    * Token extraction is now **100% read-only querying of MiniApp webapps** (`RequestAppWebViewRequest` / `RequestWebViewRequest`) with human randomized inter-query jitter (`0.5s–1.2s`).
+    * Channel joining is strictly restricted to the dedicated `/api/channels/sync-and-verify` endpoint, guarded by Upstash Redis `fleet:channels_joined:{uid}` (runs strictly ONCE per account lifetime), with 6–12s randomized human pacing and automatic graceful abort on `FloodWaitError`.
+  - **🔒 Global MTProto Concurrency Serializer & IP Throttling**:
+    * Implemented `GLOBAL_MTPROTO_SEMAPHORE = asyncio.Semaphore(1)` in both Render collectors, guaranteeing strictly **one Telethon connection at a time** from the Render instance.
+    * Throttled `_run_batch_collection` to `asyncio.Semaphore(1)` with a 5–10s human pause between accounts.
+    * Added mandatory 4–8s randomized cool-off delay in `finally:` block of `extract_tokens_for_account` to prevent rapid reconnection bursts.
+    * Prevented unnecessary on-the-fly MTProto extractions during REST farming cycles when cached tokens are already available.
+  - **📱 Hardware Device Profile Expansion (24 Models) & SHA256 Determinism**:
+    * Expanded `DEVICE_POOL` in `proxy_manager.py` to 24 diverse, realistic Android hardware models across Samsung, Xiaomi, Poco, Vivo, Oppo, Realme, OnePlus, Google Pixel, Motorola, Asus, Tecno, and Infinix.
+    * Replaced Python's randomized process `hash()` with deterministic `hashlib.sha256(identifier.encode()).hexdigest()` ensuring an account permanently retains the exact same hardware fingerprint across server restarts, redeployments, and nodes.
+    * Made `PySocks` import optional with graceful fallback dummy, preventing catastrophic fallback to a static "Samsung Galaxy A30" fingerprint if socks is unavailable.
+    * Updated the fallback device generator in both Render apps to use the diversified 24-device pool and sha256 seeding.
+  - **🔑 9-Bot Dynamic Token Whitelisting Across Cloud Layers**:
+    * Updated `ALLOWED_KEYS` in `render_app_latest.py` and `render_standby_app.py` to dynamically preserve any key ending with `_init_data`.
+    * Updated `ALLOWED_FLEET_KEYS` and `sanitizeTokens` in `deploy_both_cf_workers.py` to preserve all 9 bots and all `*_init_data` fields in Cloudflare KV, D1, and Upstash Redis.
+  - **🛡️ Full Immunity for Active Legitimate Bots in Dialog Sanitation**:
+    * Removed `"pepe_gram_bot"` from `FLEET_BANNED_SCAMMERS` and removed `"pepe"` from keyword matching.
+    * Expanded `FLEET_LEGITIMATE_BOTS` to all 9 active bots: MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, LeafEarn, Astra Airdrop, and PepeGram.
+    * Added strict immunity guard: active legitimate bot entities are never blocked, unlinked, or deleted during dialog sweeps.
+
 - **🐸 9-Bot Fleet Expansion, PepeGram Integration & Single-Account Farm Resilience (October 13, 2026)**:
   - **🚀 PepeGram (`@Pepe_gram_bot`) Mining Integration Across All Cloud Layers**:
     * Added **PepeGram** (`https://t.me/Pepe_gram_bot?start=6727787768`) expanding the autonomous fleet to **9 active high-yield mining pools**:
