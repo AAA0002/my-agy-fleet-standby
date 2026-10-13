@@ -3129,7 +3129,7 @@ async def start_qr_login(request: Request):
         data = {}
 
     chat_id = str(data.get("chat_id") or REPORT_CHAT_ID)
-    req_index = data.get("index")
+    req_index = data.get("index") or data.get("account_index")
 
     # Clean existing pending session for this chat
     if chat_id in QR_SESSIONS:

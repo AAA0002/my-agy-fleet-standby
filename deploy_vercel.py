@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import json
 import hashlib
 import time
@@ -123,6 +124,8 @@ def deploy():
     print("=== DEPLOYING DEDICATED ADMIN DASHBOARD TO VERCEL (my-agy-ai-fleet) ===")
     admin_uploaded = []
     for fn, lp in ADMIN_FILES:
+        if not os.path.exists(lp):
+            continue
         info = upload_file(fn, lp)
         admin_uploaded.append(info)
         print(f"  ✓ {fn} ({info['size']} bytes)")
@@ -134,6 +137,8 @@ def deploy():
     print("\n=== DEPLOYING DEDICATED WATCH ADS PORTAL TO VERCEL (agy) ===")
     ads_uploaded = []
     for fn, lp in ADS_FILES:
+        if not os.path.exists(lp):
+            continue
         info = upload_file(fn, lp)
         ads_uploaded.append(info)
         print(f"  ✓ {fn} ({info['size']} bytes)")
@@ -145,8 +150,8 @@ def deploy():
         req = urllib.request.Request("https://agy-aaa000.vercel.app/", headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=10) as r:
             body = r.read().decode('utf-8')
-            if "User Bot Admin Console" in body or "ADMIN SECURITY GATE" in body:
-                print("✓ SUCCESS: Admin Console active on https://agy-aaa000.vercel.app/ (ZERO ADS)")
+            if "AAA AUTO" in body or "Enterprise Fleet" in body:
+                print("✓ SUCCESS: AAA AUTO Mini App active on https://agy-aaa000.vercel.app/")
             else:
                 print("! Notice: Body on agy-aaa000:", body[:100])
     except Exception as e:
@@ -156,8 +161,8 @@ def deploy():
         req = urllib.request.Request("https://aaa-free-ai.vercel.app/", headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=10) as r:
             body = r.read().decode('utf-8')
-            if "User Bot Admin Console" in body or "ADMIN SECURITY GATE" in body:
-                print("✓ SUCCESS: Admin Console active on https://aaa-free-ai.vercel.app/ (ZERO ADS)")
+            if "AAA AUTO" in body or "Enterprise Fleet" in body:
+                print("✓ SUCCESS: AAA AUTO Mini App active on https://aaa-free-ai.vercel.app/")
             else:
                 print("! Notice: Body on aaa-free-ai:", body[:100])
     except Exception as e:

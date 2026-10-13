@@ -3776,8 +3776,8 @@ fi
               revoked: new Set(memSessionHealth.revoked)
             };
           }
-          let healthy = [2, 10, 11, 14, 17];
-          let revoked = [1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18];
+          let healthy = [2, 3, 4, 11, 12, 15, 18];
+          let revoked = [1, 5, 6, 7, 8, 9, 10, 13, 14, 16, 17];
           try {
             const smH = await upstashSmembers("fleet:healthy_sessions", 15000);
             if (Array.isArray(smH) && smH.length > 0) {
@@ -3821,8 +3821,6 @@ fi
           memSessionHealth.lastCheck = Date.now();
           ctx.waitUntil(upstashSadd("fleet:healthy_sessions", String(numIdx)));
           ctx.waitUntil(upstashSrem("fleet:revoked_sessions", String(numIdx)));
-          ctx.waitUntil(upstashSet("fleet:healthy_sessions", memSessionHealth.healthy));
-          ctx.waitUntil(upstashSet("fleet:revoked_sessions", memSessionHealth.revoked));
         };
 
         const renderMainMenuText = async (dhakaTime) => {
@@ -4558,8 +4556,8 @@ fi
                 memSessionHealth.healthy = memSessionHealth.healthy.filter(x => x !== removedIdx);
                 memSessionHealth.revoked = memSessionHealth.revoked.filter(x => x !== removedIdx);
                 memSessionHealth.lastCheck = Date.now();
-                ctx.waitUntil(upstashSet("fleet:healthy_sessions", memSessionHealth.healthy).catch(() => {}));
-                ctx.waitUntil(upstashSet("fleet:revoked_sessions", memSessionHealth.revoked).catch(() => {}));
+                ctx.waitUntil(upstashSrem("fleet:healthy_sessions", String(removedIdx)).catch(() => {}));
+                ctx.waitUntil(upstashSrem("fleet:revoked_sessions", String(removedIdx)).catch(() => {}));
               }
 
               // Update Upstash Redis
@@ -6291,8 +6289,8 @@ fi
               memSessionHealth.healthy = memSessionHealth.healthy.filter(x => x !== removedIdx);
               memSessionHealth.revoked = memSessionHealth.revoked.filter(x => x !== removedIdx);
               memSessionHealth.lastCheck = Date.now();
-              ctx.waitUntil(upstashSet("fleet:healthy_sessions", memSessionHealth.healthy).catch(() => {}));
-              ctx.waitUntil(upstashSet("fleet:revoked_sessions", memSessionHealth.revoked).catch(() => {}));
+              ctx.waitUntil(upstashSrem("fleet:healthy_sessions", String(removedIdx)).catch(() => {}));
+              ctx.waitUntil(upstashSrem("fleet:revoked_sessions", String(removedIdx)).catch(() => {}));
             }
 
             // Update Upstash Redis

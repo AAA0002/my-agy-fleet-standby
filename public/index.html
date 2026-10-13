@@ -841,8 +841,8 @@
             },
             body: JSON.stringify([
               ["GET", "fleet:accounts"],
-              ["GET", "fleet:healthy_sessions"],
-              ["GET", "fleet:revoked_sessions"],
+              ["SMEMBERS", "fleet:healthy_sessions"],
+              ["SMEMBERS", "fleet:revoked_sessions"],
               ["GET", "fleet:wallets:multichain"]
             ])
           }),
@@ -862,13 +862,21 @@
             } catch (_) {}
             try {
               const hRaw = pipeData[1]?.result;
-              const parsedH = typeof hRaw === 'string' ? JSON.parse(hRaw) : (hRaw || []);
-              healthyArr = Array.isArray(parsedH) ? parsedH : [];
+              if (Array.isArray(hRaw)) {
+                healthyArr = hRaw;
+              } else if (typeof hRaw === 'string') {
+                const parsedH = JSON.parse(hRaw);
+                healthyArr = Array.isArray(parsedH) ? parsedH : [];
+              }
             } catch (_) {}
             try {
               const rRaw = pipeData[2]?.result;
-              const parsedR = typeof rRaw === 'string' ? JSON.parse(rRaw) : (rRaw || []);
-              revokedArr = Array.isArray(parsedR) ? parsedR : [];
+              if (Array.isArray(rRaw)) {
+                revokedArr = rRaw;
+              } else if (typeof rRaw === 'string') {
+                const parsedR = JSON.parse(rRaw);
+                revokedArr = Array.isArray(parsedR) ? parsedR : [];
+              }
             } catch (_) {}
             if (pipeData[3]?.result) {
               const wRaw = pipeData[3].result;
@@ -949,7 +957,7 @@
       }
     }
 
-    function fallbackRender(healthySet = new Set(['2', '4', '6', '10', '11', '14', '17'])) {
+    function fallbackRender(healthySet = new Set(['2', '3', '4', '11', '12', '15', '18'])) {
       GLOBAL_ACCOUNTS = Array.from({ length: 18 }, (_, i) => {
         const idx = i + 1;
         const isOnline = healthySet.has(String(idx));
