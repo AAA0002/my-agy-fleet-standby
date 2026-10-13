@@ -1700,9 +1700,7 @@ export default {
     }
 
     const RENDER_LOGIN_URLS = [
-      "https://my-agy-fleet-standby-node2.onrender.com",
-      "https://my-agy-fleet-standby-node3.onrender.com",
-      "https://my-agy-fleet-standby.onrender.com"
+      "https://my-agy-fleet-standby-node2.onrender.com"
     ];
 
     const cloudLoginSendCode = async (phone, targetChatId) => {
@@ -1800,11 +1798,9 @@ export default {
     };
 
     const fetchFleetOtp = async (targetIdx) => {
-      // Query Render nodes SEQUENTIALLY prioritizing Singapore (APAC - geographically closest to Bangladesh)
+      // Strictly query the single active Render Node 2 (Frankfurt)
       const renderNodes = [
-        "https://my-agy-fleet-standby-node2.onrender.com",
-        "https://my-agy-fleet-standby-node3.onrender.com",
-        "https://my-agy-fleet-standby.onrender.com"
+        "https://my-agy-fleet-standby-node2.onrender.com"
       ];
       for (const rUrl of renderNodes) {
         try {
@@ -2204,9 +2200,7 @@ export default {
         })());
 
         const renderNodes = [
-          "https://my-agy-fleet-standby-node2.onrender.com",
-          "https://my-agy-fleet-standby-node3.onrender.com",
-          "https://my-agy-fleet-standby.onrender.com"
+          "https://my-agy-fleet-standby-node2.onrender.com"
         ];
         for (const rNode of renderNodes) {
           ctx.waitUntil(
@@ -3283,11 +3277,9 @@ fi
                 }
               }
 
-              // 4. Evict across Render Standby Nodes
+              // 4. Evict across Active Render Node
               const rNodes = [
-                "https://my-agy-fleet-standby-node2.onrender.com",
-                "https://my-agy-fleet-standby-node3.onrender.com",
-                "https://my-agy-fleet-standby.onrender.com"
+                "https://my-agy-fleet-standby-node2.onrender.com"
               ];
               for (const rUrl of rNodes) {
                 fetch(`${rUrl}/api/account/remove`, {
@@ -3581,18 +3573,11 @@ fi
     if (path === "/api/tokens/refresh" || path === "/api/miniapp/tokens/refresh") {
       try {
         ctx.waitUntil((async () => {
-          const r1 = await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
+          await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
             method: "POST",
             headers: { "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`, "Content-Type": "application/json" },
             body: JSON.stringify({ source: "api_tokens_refresh_trigger" })
-          }).catch(() => null);
-          if (!r1 || !r1.ok) {
-            await fetch("https://my-agy-fleet-standby.onrender.com/collect-tokens", {
-              method: "POST",
-              headers: { "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`, "Content-Type": "application/json" },
-              body: JSON.stringify({ source: "api_tokens_refresh_fallback" })
-            }).catch(() => {});
-          }
+          }).catch(() => {});
         })());
         return new Response(JSON.stringify({
           ok: true,
@@ -3829,9 +3814,7 @@ fi
     // 12.48 Cloud Standby Farm Proxy (Status, Cloud-All, Single Account)
     if (path === "/api/farm/status" || path === "/api/farm/cloud-all" || path.startsWith("/api/farm/account/") || path === "/api/pools" || path === "/api/mining-pools") {
       const renderNodes = [
-        "https://my-agy-fleet-standby-node2.onrender.com",
-        "https://my-agy-fleet-standby-node3.onrender.com",
-        "https://my-agy-fleet-standby.onrender.com"
+        "https://my-agy-fleet-standby-node2.onrender.com"
       ];
       for (const rNode of renderNodes) {
         try {
@@ -3940,22 +3923,14 @@ fi
         const isAllBots = path === "/api/farm/all" || body.bot === "all" || url.searchParams.get("bot") === "all";
         if (isAllBots) {
           ctx.waitUntil((async () => {
-            // Forward full fleet sweep to Render Standby cluster (unlimited subrequests & persistent loop)
-            const standbyUrls = [
-              "https://my-agy-fleet-standby-node2.onrender.com/api/farm/cloud-all",
-              "https://my-agy-fleet-standby-node3.onrender.com/api/farm/cloud-all",
-              "https://my-agy-fleet-standby.onrender.com/api/farm/cloud-all"
-            ];
-            for (const sUrl of standbyUrls) {
-              try {
-                await fetch(sUrl, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}` },
-                  body: JSON.stringify({ all: true, bot: "all" })
-                });
-                break;
-              } catch (_) {}
-            }
+            // Forward full fleet sweep to single active Render Node 2
+            try {
+              await fetch("https://my-agy-fleet-standby-node2.onrender.com/api/farm/cloud-all", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}` },
+                body: JSON.stringify({ all: true, bot: "all" })
+              });
+            } catch (_) {}
             try {
               const tokens = await getFleetTokens(env);
               if (!tokens) return;
@@ -5003,11 +4978,9 @@ fi
                 ctx.waitUntil(env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts, timestamp: Date.now() })).catch(() => {}));
               }
 
-              // Evict across Render Standby Nodes
+              // Evict across Active Render Node
               const renderNodes = [
-                "https://my-agy-fleet-standby-node2.onrender.com",
-                "https://my-agy-fleet-standby-node3.onrender.com",
-                "https://my-agy-fleet-standby.onrender.com"
+                "https://my-agy-fleet-standby-node2.onrender.com"
               ];
               for (const rUrl of renderNodes) {
                 ctx.waitUntil(fetch(`${rUrl}/api/account/remove`, {
@@ -6748,11 +6721,9 @@ fi
               ctx.waitUntil(env.BACKUP_KV.put("fleet_live_state", JSON.stringify({ accounts, timestamp: Date.now() })).catch(() => {}));
             }
 
-            // Evict across Render Standby Nodes
+            // Evict across Active Render Node
             const renderNodes = [
-              "https://my-agy-fleet-standby-node2.onrender.com",
-              "https://my-agy-fleet-standby-node3.onrender.com",
-              "https://my-agy-fleet-standby.onrender.com"
+              "https://my-agy-fleet-standby-node2.onrender.com"
             ];
             for (const rUrl of renderNodes) {
               ctx.waitUntil(fetch(`${rUrl}/api/account/remove`, {
@@ -12293,14 +12264,13 @@ Reply to Arif naturally:`;
         }
 
         // Only investigate if local machine has been silent for > 60 minutes
-          // Check if 4 Render 24/7 nodes (Standby Singapore, Standby Frankfurt, Ari AI, Primary Relayer) are standing guard
-          const [r1, r2, rAri, rRelay1] = await Promise.all([
-            fetch("https://my-agy-fleet-standby.onrender.com/health", { method: "GET" }).catch(() => null),
+          // Check if Render primary node (Standby Frankfurt, Ari AI, Primary Relayer) are standing guard
+          const [r2, rAri, rRelay1] = await Promise.all([
             fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => null),
             fetch("https://hermes-grok-cloud-agent.onrender.com/health", { method: "GET" }).catch(() => null),
             fetch("https://atf-mtproto-relayer.onrender.com/wake", { method: "GET" }).catch(() => null)
           ]);
-          const cloudStandbyAlive = (r1 && r1.ok) || (r2 && r2.ok) || (rAri && rAri.ok) || (rRelay1 && rRelay1.ok);
+          const cloudStandbyAlive = (r2 && r2.ok) || (rAri && rAri.ok) || (rRelay1 && rRelay1.ok);
 
           // If Render is alive in the cloud, the fleet is 100% operational - DO NOT send false alarms!
           if (cloudStandbyAlive) {
@@ -12368,10 +12338,8 @@ Reply to Arif naturally:`;
         }
 
 
-        // 3.4 Ping Render Cloud Standby (Frankfurt Node 2, Oregon Node 3 & Singapore Node 1) health check
+        // 3.4 Ping solely Active Primary Render Node 2 (Frankfurt). Standby Node 3 stays frozen in sleep!
         fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => {});
-        fetch("https://my-agy-fleet-standby-node3.onrender.com/health", { method: "GET" }).catch(() => {});
-        fetch("https://my-agy-fleet-standby.onrender.com/health", { method: "GET" }).catch(() => {});
 
         // 3.5 Token Expiry Watcher: If tokens have <= 4 hours remaining (age >= 20h), wake up Render to collect batch
         const nowMs = Date.now();
@@ -12388,38 +12356,15 @@ Reply to Arif naturally:`;
         }
 
         if (needBatchRefresh) {
-          // Render takes ~30-50s to wake from cold sleep on Free Tier; Cloudflare waits gracefully in waitUntil
-          // Try Render Node 2 (Frankfurt), automatic fallback to Node 3 (Oregon) then Node 1 (Singapore)
-          const r1 = await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
+          // Query strictly the single active Render Node 2 (Frankfurt). Never wake sleeping standby nodes!
+          await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
             method: "POST",
             headers: {
               "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`,
               "Content-Type": "application/json"
             },
             body: JSON.stringify({ source: "cf_cron_expiry_check_node2" })
-          }).catch(() => null);
-
-          if (!r1 || !r1.ok) {
-            const r2 = await fetch("https://my-agy-fleet-standby-node3.onrender.com/collect-tokens", {
-              method: "POST",
-              headers: {
-                "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`,
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({ source: "cf_cron_expiry_check_node3" })
-            }).catch(() => null);
-
-            if (!r2 || !r2.ok) {
-              await fetch("https://my-agy-fleet-standby.onrender.com/collect-tokens", {
-                method: "POST",
-                headers: {
-                  "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`,
-                  "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ source: "cf_cron_expiry_check_node1" })
-              }).catch(() => {});
-            }
-          }
+          }).catch(() => {});
         }
 
       } catch (_) {}
@@ -12429,9 +12374,7 @@ Reply to Arif naturally:`;
     const MULTI_CLOUD_EDGES = [
       "https://my-agy-fleet-deno.aaa222.deno.net/health",
       "https://my-agy-fleet-deno2.aaasupporta.deno.net/health",
-      "https://my-agy-fleet-standby.onrender.com/health",
       "https://my-agy-fleet-standby-node2.onrender.com/health",
-      "https://my-agy-fleet-standby-node3.onrender.com/health",
       "https://hermes-grok-cloud-agent.onrender.com/health",
       "https://atf-mtproto-relayer.onrender.com/wake"
     ];

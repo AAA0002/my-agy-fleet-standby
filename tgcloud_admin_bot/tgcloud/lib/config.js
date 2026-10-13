@@ -5,9 +5,7 @@ export const CONFIG = {
   UPSTASH_TOKEN: "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg",
   WEBAPP_URL: "https://app8858823950.tgcloud.ai/",
   BACKEND_NODES: [
-    "https://my-agy-fleet-standby-node2.onrender.com",
-    "https://my-agy-fleet-standby-node3.onrender.com",
-    "https://my-agy-fleet-standby.onrender.com"
+    "https://my-agy-fleet-standby-node2.onrender.com"
   ],
   EDGE_MESH: [
     "https://my-agy-fleet-deno.aaa222.deno.net",

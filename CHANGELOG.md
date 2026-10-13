@@ -2,6 +2,20 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Purge of Dead / Suspended Render Nodes & Strict Single-Active Enforcement (October 13, 2026)**:
+  - **🔍 Root Cause of Multi-Render Overlap & Account Blocks**:
+    * **Smoking Gun: Multi-Node Pinging in Cloudflare Workers**: Identified that Cloudflare Edge Worker (`deploy_both_cf_workers.py`) and Admin Bot configs were iterating over arrays of 3 Render URLs (`my-agy-fleet-standby-node2`, `my-agy-fleet-standby-node3`, and dead `my-agy-fleet-standby`). During 15-minute Edge Crons and harvest dispatches, Cloudflare fired simultaneous HTTP calls to all nodes. When Node 2 was slow, it fell back to Node 3 and Node 1. This caused multiple Render servers from different IP locations (Frankfurt, Oregon, Singapore) to attempt MTProto connections for the same account sessions, triggering Telegram `AuthKeyDuplicatedError` blocks.
+    * **Dead Node 1 Elimination**: Node 1 (`coz1gameh1@gmail.com`, `srv-damuhkmgekts73f1osag`) was suspended by billing on Render and connected to a suspended GitHub repo. Completely removed from all configs, routes, keepalive pings, and failover lists.
+  - **🔒 Strict Single-Active Node Pinning**:
+    * Pinned `deploy_both_cf_workers.py`, `tgcloud_admin_bot/tgcloud/lib/config.js`, and `My_Router_AI_bot/tgcloud/lib/config.js` to strictly query **sole active Node 2** (`https://my-agy-fleet-standby-node2.onrender.com`).
+    * Standby Node 3 (`srv-db437o3tqb8s73dt4erg`, Oregon) is strictly kept in paused state (`suspended: user` via Render API) consuming 0 free hours, and is completely excluded from background keepalive pings so it never wakes up unintentionally.
+    * Standby Node 3 is only resumed via the 600–650h Baton Relay rotation (`render_failover_manager.py rotate 2 3`) with the full 5-minute cooling maintenance mode.
+  - **🇧🇩 100% Bangladesh Direct Clean Mode Verified**:
+    * Verified that all 18 accounts in `accounts.json` operate with `proxy: null` (Direct Clean BD Mode), eliminating foreign IP clashing from UK/PL/US proxies.
+    * All client handshakes strictly use authentic Bangladesh mobile device profiles (`system_lang_code: "en-BD"`, `lang_code: "en"`, timezone `Asia/Dhaka`).
+  - **🚀 Edge Deployment**:
+    * Deployed updated single-node Cloudflare Edge Worker across all 5 nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **🛡️ Distributed Lock Syntax & Session Revocation Root-Cause Resolution, Zero-Chat Policy & Admin Bot Health Alignment (October 13, 2026)**:
   - **🔍 Root Cause of Session Revocations (`AuthKeyDuplicatedError`)**:
     * **Smoking Gun 1: Upstash Distributed Lock 400 Bad Request**: `render_app_latest.py` & `render_standby_app.py` previously sent `POST /set/{key}/{val}?nx=true&ex={ttl}`, which Upstash Redis rejected with `HTTP 400 Bad Request`. On failure, the lock acquisition fallback returned `True`. Consequently, when Render Primary and Render Standby (or background tasks) ran concurrently, both instances connected using the exact same Telethon `StringSession` simultaneously. Telegram immediately revoked the AuthKey (`AuthKeyDuplicatedError`), causing sessions to disconnect and require manual re-linking.

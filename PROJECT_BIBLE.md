@@ -118,19 +118,18 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * Added explicit support for inline keyboard button `🔄 Refresh Menu` returning the full private console dashboard.
 
 
-- **Render Cloud Fleet (The 3 Official Accounts — 600-650h Baton Relay & Anti-Ban Maintenance Mode)**:
+- **Render Cloud Fleet (Single-Active Primary + Cold Standby Handover Mesh)**:
   - **Account 1: Node 1 (Singapore)**: `https://my-agy-fleet-standby.onrender.com`
-    * Service ID: `srv-damuhkmgekts73f1osag` | Workspace: `My Workspace` (`tea-d8j9clt8nd3s73eb041g`, `coz1gameh1@gmail.com`)
-    * API Key: `RENDER_API_KEY_1: rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1` | Linked Repo: `https://github.com/AAA0002/my-agy-fleet-standby` (main)
-    * Status: ⏸️ **Suspended** (0 hours consumed / cold standby). Protected user service `temp-mail-bot` (`srv-d8j9n867r5hc73dlqvgg`) is blacklisted and permanently isolated.
+    * Service ID: `srv-damuhkmgekts73f1osag` | Workspace: `coz1gameh1@gmail.com`
+    * Status: 🛑 **Decommissioned / Suspended by Billing** — Permanently purged from all Cloudflare Edge crons, routing lists, and keepalive pings.
   - **Account 2: Node 2 (Frankfurt)**: `https://my-agy-fleet-standby-node2.onrender.com`
     * Service ID: `srv-dan5q00ae00c73djummg` | Workspace: `Abid's workspace` (`tea-dan5pgbm8hqs73a5cvig`, `abidhasanch2001@gmail.com`)
     * API Key: `RENDER_API_KEY_2: rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB` | Linked Repo: `https://github.com/AAA0002/my-agy-fleet-standby` (main)
-    * Status: 🟢 **ACTIVE & ONLINE** — Designated Primary MTProto Coordinator.
+    * Status: 🟢 **SOLE ACTIVE PRIMARY NODE** — Exclusively receives all Cloudflare Edge token extraction, OTP fetching, and WebApp farming calls. Strictly one node active.
   - **Account 3: Node 3 (Oregon)**: `https://my-agy-fleet-standby-node3.onrender.com`
     * Service ID: `srv-db437o3tqb8s73dt4erg` | Workspace: `Koram's workspace` (`tea-daoj9nid0e5s738gqp0g`, `koramshah2@gmail.com`)
     * API Key: `RENDER_API_KEY_3: rnd_PqsurfX5D9blSaEEuEDDAUcl393y` | Linked Repo: `https://github.com/koramshah2/my-agy-fleet-standby` (main)
-    * Status: ⏸️ **Suspended** (0 hours consumed / cold standby failover).
+    * Status: ⏸️ **STRICT COLD STANDBY (PAUSED)** — Suspended by user via Render API (`0` hours consumed / meter frozen). Excluded from background pings so it never wakes up unintentionally. Only resumed when Node 2 rotates at 600-650 hours.
   - **🔄 600–650 Hour Baton Relay Handover Protocol**:
     * Render free tier grants 750 hours/month per account (1 calendar month = 744 hours).
     * When a service is suspended via `POST /v1/services/{id}/suspend`, its hour meter freezes to 0.

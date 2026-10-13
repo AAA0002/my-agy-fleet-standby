@@ -11,9 +11,7 @@ export const CF_WORKER_URLS = [
 ];
 
 export const RENDER_NODES = [
-  "https://my-agy-fleet-standby-node2.onrender.com",
-  "https://my-agy-fleet-standby-node3.onrender.com",
-  "https://my-agy-fleet-standby.onrender.com"
+  "https://my-agy-fleet-standby-node2.onrender.com"
 ];
 
 export const UPSTASH_URL = "https://pleasant-locust-220893.upstash.io";
