@@ -8941,12 +8941,27 @@ Reply to Arif naturally:`;
       }
 
       // Extract fragment or query string
+      if (text.includes("%23tgWebAppData")) {
+        try { text = decodeURIComponent(text); } catch (_) {}
+      }
       if (text.includes("#tgWebAppData=")) {
-        text = text.split("#tgWebAppData=")[1].split("&tgWebAppVersion=")[0];
+        text = text.split("#tgWebAppData=")[1];
       } else if (text.includes("tgWebAppData=")) {
-        text = text.split("tgWebAppData=")[1].split("&tgWebAppVersion=")[0];
+        text = text.split("tgWebAppData=")[1];
+      } else if (text.includes("#tgWebAppInitData=")) {
+        text = text.split("#tgWebAppInitData=")[1];
+      } else if (text.includes("tgWebAppInitData=")) {
+        text = text.split("tgWebAppInitData=")[1];
+      } else if (text.includes("initData=")) {
+        text = text.split("initData=")[1];
       } else if (text.includes("#")) {
         text = text.split("#")[1];
+      }
+
+      // Strip whitespace and trailing text (e.g. error messages like "could not be loaded because...")
+      text = text.trim().split(/\s+/)[0];
+      if (text.includes("&tgWebAppVersion=")) {
+        text = text.split("&tgWebAppVersion=")[0];
       }
 
       // Multi-pass decoding to handle double/triple url-encoding
@@ -9521,12 +9536,27 @@ Reply to Arif naturally:`;
           }
 
           // Extract fragment or query string
+          if (text.includes("%23tgWebAppData")) {
+            try { text = decodeURIComponent(text); } catch (_) {}
+          }
           if (text.includes("#tgWebAppData=")) {
-            text = text.split("#tgWebAppData=")[1].split("&tgWebAppVersion=")[0];
+            text = text.split("#tgWebAppData=")[1];
           } else if (text.includes("tgWebAppData=")) {
-            text = text.split("tgWebAppData=")[1].split("&tgWebAppVersion=")[0];
+            text = text.split("tgWebAppData=")[1];
+          } else if (text.includes("#tgWebAppInitData=")) {
+            text = text.split("#tgWebAppInitData=")[1];
+          } else if (text.includes("tgWebAppInitData=")) {
+            text = text.split("tgWebAppInitData=")[1];
+          } else if (text.includes("initData=")) {
+            text = text.split("initData=")[1];
           } else if (text.includes("#")) {
             text = text.split("#")[1];
+          }
+
+          // Strip whitespace and trailing text (e.g. error messages like "could not be loaded because...")
+          text = text.trim().split(/\s+/)[0];
+          if (text.includes("&tgWebAppVersion=")) {
+            text = text.split("&tgWebAppVersion=")[0];
           }
 
           // Multi-pass decoding to handle double/triple url-encoding
@@ -9927,6 +9957,63 @@ Reply to Arif naturally:`;
           }
 
           await answerCq();
+
+          // 0. 1-Tap Bind Telegram ID (from expired token prompt or quick actions)
+          if (cqData.startsWith("ub_bind_id_")) {
+            const targetUid = cqData.replace("ub_bind_id_", "").trim();
+            const profile = await getUserProfile(cqChatId, cq.from);
+            profile.accounts = profile.accounts || [];
+
+            const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+            const existIdx = profile.accounts.findIndex(a => String(a.user_id) === targetUid);
+            if (existIdx < 0 && profile.accounts.length >= totalSlots) {
+              await answerCq("⚠️ Account slot limit reached!", true);
+              await sendCqReply(`⚠️ *Account Slot Limit Reached (${profile.accounts.length}/${totalSlots})*\n\nWatch 50 ads or upgrade pass to get more slots!`);
+              return new Response("OK");
+            }
+
+            const accName = (String(cqChatId) === targetUid || String(cq.from?.id) === targetUid)
+              ? cqSenderName
+              : `Miner_${targetUid.slice(-4)}`;
+
+            const newAcc = {
+              id: `acc_${Date.now()}`,
+              label: `id_${targetUid}`,
+              pool: "all",
+              pool_name: "All 5 Cloud Mining Pools",
+              user_id: targetUid,
+              name: accName,
+              username: (String(cqChatId) === targetUid ? (cq.from?.username || "") : ""),
+              init_data: "",
+              auth_type: "telegram_id",
+              added_at: Date.now(),
+              status: "active"
+            };
+
+            if (existIdx >= 0) {
+              profile.accounts[existIdx] = newAcc;
+            } else {
+              profile.accounts.push(newAcc);
+            }
+
+            if (!profile.welcome_gift_claimed && profile.accounts.length === 1) {
+              profile.welcome_gift_claimed = true;
+              profile.points = (profile.points || 0) + 100;
+              profile.farming_active = true;
+            }
+
+            await saveUserProfile(cqChatId, profile);
+            await answerCq(`✅ Telegram ID ${targetUid} Linked!`, false);
+            const succMsg = `✅ *TELEGRAM ID LINKED DIRECTLY!* 🚀\n\n` +
+              `• *Telegram User ID:* \`${targetUid}\`\n` +
+              `• *Account Name:* ${accName}\n` +
+              `• *Fleet Capacity:* ${profile.accounts.length} / ${totalSlots} Slots\n` +
+              `• *Points Balance:* 💎 ${profile.points} Points\n\n` +
+              `💡 *Next Step:*\n` +
+              `Whenever you copy a fresh Mini App link, paste it anytime to upgrade this account to 100% full autonomous claim mode!`;
+            await sendCqReply(succMsg, activeUserKeyboard);
+            return new Response("OK");
+          }
 
           // B. Watch Ad & Claim Points Callback
           if (cqData === "ub_watch_ad") {
@@ -10766,19 +10853,40 @@ Reply to Arif naturally:`;
                   `• *Token Age:* ~${Math.round(parsed.age_seconds / 3600)} hours old\n` +
                   `• *Status:* 🔴 Expired (~${expiredHoursAgo}h ago)\n\n` +
                   `💡 *Telegram security limits Mini App links to 24 hours.*\n\n` +
-                  `👉 *Fast Fix (Takes 5 seconds):*\n` +
-                  `1. Open ${detectedPoolName} in Telegram on your phone.\n` +
-                  `2. Tap the 3 dots (...) in the top-right corner.\n` +
-                  `3. Tap **"Copy Link"**.\n` +
-                  `4. Paste that fresh link here!\n\n` +
-                  `_Our cloud engine will automatically detect it and activate 24/7 mining!_`;
-                await sendUserReply(expMsg, activeUserKeyboard);
+                  `👉 *Fast Options:*\n` +
+                  `1️⃣ *1-Tap Link ID:* Tap the button below to register your Telegram ID (\`${parsed.user.id}\`) immediately!\n` +
+                  `2️⃣ *Fresh Token:* Open ${detectedPoolName} in Telegram on your phone, tap **...** (3 dots), tap **Copy Link**, and paste it here!`;
+
+                const expKeyboard = {
+                  inline_keyboard: [
+                    [
+                      { text: `⚡ 1-Tap Link Telegram ID (${parsed.user.id})`, callback_data: `ub_bind_id_${parsed.user.id}` }
+                    ],
+                    [
+                      { text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
+                    ]
+                  ]
+                };
+                await sendUserReply(expMsg, expKeyboard);
                 return;
               }
 
               // Fresh, valid token: Auto-connect account immediately!
               const profile = await getUserProfile(chatId, msg.from);
               profile.accounts = profile.accounts || [];
+
+              const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+              const existIdx = profile.accounts.findIndex(a => String(a.user_id) === String(parsed.user.id) && (a.pool === detectedPool || a.pool === "all"));
+              if (existIdx < 0 && profile.accounts.length >= totalSlots) {
+                const slotLimitMsg = `⚠️ *Account Slot Limit Reached (${profile.accounts.length}/${totalSlots})*\n\n` +
+                  `You are currently using all available account slots!\n\n` +
+                  `*How to get more slots:*\n` +
+                  `1. 📺 *Watch 50 Ads*: Earn a permanent bonus slot! (${(profile.ads_watched || 0) % 50}/50 watched)\n` +
+                  `2. 🌟 *Subscription Pass*: Weekly & Monthly Passes include extra slots!\n` +
+                  `3. 🗑️ *Disconnect an account*: Send \`/disconnect <user_id>\` to free a slot.`;
+                await sendUserReply(slotLimitMsg, starsUpgradeKeyboard);
+                return;
+              }
 
               const defaultLabel = `${detectedPool}_${parsed.user.id}`;
               const newAcc = {
@@ -10797,7 +10905,6 @@ Reply to Arif naturally:`;
                 status: "active"
               };
 
-              const existIdx = profile.accounts.findIndex(a => String(a.user_id) === String(parsed.user.id) && (a.pool === detectedPool || a.pool === "all"));
               if (existIdx >= 0) {
                 profile.accounts[existIdx] = newAcc;
               } else {
@@ -10833,62 +10940,6 @@ Reply to Arif naturally:`;
             } else {
               await sendUserReply(`⚠️ Could not find valid user authorization in the provided WebApp URL.\n\nPlease ensure you copied the full Mini App link containing \`#tgWebAppData=...\` or \`user=...\`.`, activeUserKeyboard);
             }
-          })());
-          return new Response("OK");
-        }
-
-        // 0.2 Direct Telegram ID Connection (e.g. user sends pure user ID digits "6727787768")
-        const isPureTelegramId = /^[0-9]{7,12}$/.test(text.trim());
-        if (isPureTelegramId && !isCommandOrMenu) {
-          ctx.waitUntil((async () => {
-            await sendUserChatAction("typing");
-            const targetUid = text.trim();
-            const profile = await getUserProfile(chatId, msg.from);
-            profile.accounts = profile.accounts || [];
-
-            const accName = (String(chatId) === targetUid || String(msg.from?.id) === targetUid)
-              ? senderName
-              : `Miner_${targetUid.slice(-4)}`;
-
-            const newAcc = {
-              id: `acc_${Date.now()}`,
-              label: `id_${targetUid}`,
-              pool: "all",
-              pool_name: "All 5 Cloud Mining Pools",
-              user_id: targetUid,
-              name: accName,
-              username: (String(chatId) === targetUid ? (msg.from?.username || "") : ""),
-              init_data: "",
-              auth_type: "telegram_id",
-              added_at: Date.now(),
-              status: "active"
-            };
-
-            const existIdx = profile.accounts.findIndex(a => String(a.user_id) === targetUid);
-            if (existIdx >= 0) {
-              profile.accounts[existIdx] = newAcc;
-            } else {
-              profile.accounts.push(newAcc);
-            }
-
-            if (!profile.welcome_gift_claimed && profile.accounts.length === 1) {
-              profile.welcome_gift_claimed = true;
-              profile.points = (profile.points || 0) + 100;
-              profile.farming_active = true;
-            }
-
-            await saveUserProfile(chatId, profile);
-            if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
-            await upstashDel("login_flow:user_" + chatId).catch(() => {});
-
-            const idMsg = `✅ *TELEGRAM ID REGISTERED!* 🚀\n\n` +
-              `• *Telegram User ID:* \`${targetUid}\`\n` +
-              `• *Account Name:* ${accName}\n` +
-              `• *Fleet Capacity:* ${profile.accounts.length} / ${(profile.slots || 1) + (profile.temp_slots || 0)} Slots\n` +
-              `• *Points Balance:* 💎 ${profile.points} Points\n\n` +
-              `💡 *Next Step (Recommended):*\n` +
-              `For bots requiring signed cryptographic web tokens (MRG, ATF, Victor's, VyroDrop, Kynex), simply paste the bot's WebApp URL anytime to upgrade this account to 100% full autonomous claim mode!`;
-            await sendUserReply(idMsg, activeUserKeyboard);
           })());
           return new Response("OK");
         }
@@ -11091,6 +11142,100 @@ Reply to Arif naturally:`;
                 `_(Or tap ❌ Cancel Connection to abort)_`;
               await sendUserReply(errMsg, userCancelKeyboard);
             }
+          })());
+          return new Response("OK");
+        }
+
+        // 0.2 Direct Telegram ID Connection (e.g. user sends pure positive user ID digits "6727787768")
+        const isPureTelegramId = /^[1-9][0-9]{6,11}$/.test(text.trim());
+        if (isPureTelegramId && !isCommandOrMenu) {
+          ctx.waitUntil((async () => {
+            await sendUserChatAction("typing");
+            const targetUid = text.trim();
+            const profile = await getUserProfile(chatId, msg.from);
+            profile.accounts = profile.accounts || [];
+
+            const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+            const existIdx = profile.accounts.findIndex(a => String(a.user_id) === targetUid);
+            if (existIdx < 0 && profile.accounts.length >= totalSlots) {
+              const slotLimitMsg = `⚠️ *Account Slot Limit Reached (${profile.accounts.length}/${totalSlots})*\n\n` +
+                `You are currently using all available account slots!\n\n` +
+                `*How to get more slots:*\n` +
+                `1. 📺 *Watch 50 Ads*: Earn a permanent bonus slot! (${(profile.ads_watched || 0) % 50}/50 watched)\n` +
+                `2. 🌟 *Subscription Pass*: Weekly & Monthly Passes include extra slots!\n` +
+                `3. 🗑️ *Disconnect an account*: Send \`/disconnect <user_id>\` to free a slot.`;
+              await sendUserReply(slotLimitMsg, starsUpgradeKeyboard);
+              return;
+            }
+
+            const accName = (String(chatId) === targetUid || String(msg.from?.id) === targetUid)
+              ? senderName
+              : `Miner_${targetUid.slice(-4)}`;
+
+            const newAcc = {
+              id: `acc_${Date.now()}`,
+              label: `id_${targetUid}`,
+              pool: "all",
+              pool_name: "All 5 Cloud Mining Pools",
+              user_id: targetUid,
+              name: accName,
+              username: (String(chatId) === targetUid ? (msg.from?.username || "") : ""),
+              init_data: "",
+              auth_type: "telegram_id",
+              added_at: Date.now(),
+              status: "active"
+            };
+
+            if (existIdx >= 0) {
+              profile.accounts[existIdx] = newAcc;
+            } else {
+              profile.accounts.push(newAcc);
+            }
+
+            if (!profile.welcome_gift_claimed && profile.accounts.length === 1) {
+              profile.welcome_gift_claimed = true;
+              profile.points = (profile.points || 0) + 100;
+              profile.farming_active = true;
+            }
+
+            await saveUserProfile(chatId, profile);
+            if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
+            await upstashDel("login_flow:user_" + chatId).catch(() => {});
+
+            const idMsg = `✅ *TELEGRAM ID REGISTERED!* 🚀\n\n` +
+              `• *Telegram User ID:* \`${targetUid}\`\n` +
+              `• *Account Name:* ${accName}\n` +
+              `• *Fleet Capacity:* ${profile.accounts.length} / ${totalSlots} Slots\n` +
+              `• *Points Balance:* 💎 ${profile.points} Points\n\n` +
+              `💡 *Next Step (Recommended):*\n` +
+              `For bots requiring signed cryptographic web tokens (MRG, ATF, Victor's, VyroDrop, Kynex), simply paste the bot's WebApp URL anytime to upgrade this account to 100% full autonomous claim mode!`;
+            await sendUserReply(idMsg, activeUserKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 0.3 Telegram Mini App or Referral Link Guidance (e.g. user pasted https://t.me/mrgminerbot or https://t.me/VictorsCompanybot/app...)
+        const isTmeBotLink = (text.includes("t.me/") && (text.includes("bot") || text.includes("/app") || text.includes("start="))) && !hasWebAppData && !isCommandOrMenu;
+        if (isTmeBotLink) {
+          ctx.waitUntil((async () => {
+            await sendUserChatAction("typing");
+            let detectedName = "Telegram Mini App";
+            const lowerT = text.toLowerCase();
+            if (lowerT.includes("mrg")) detectedName = "⚡ MRG Miner";
+            else if (lowerT.includes("atf")) detectedName = "🪙 ATF Miner";
+            else if (lowerT.includes("victor")) detectedName = "🏢 Victor's Company";
+            else if (lowerT.includes("vyro")) detectedName = "💧 VyroDrop";
+            else if (lowerT.includes("kynex")) detectedName = "🌐 Kynex Network";
+            else if (lowerT.includes("leafearn")) detectedName = "LeafEarn";
+
+            const helpMsg = `💡 *${detectedName} Launch Link Detected!*\n\n` +
+              `To connect this bot to 24/7 cloud mining, you need the web authorization token:\n\n` +
+              `1️⃣ Open **${detectedName}** in Telegram on your phone.\n` +
+              `2️⃣ Tap the **3 dots (\`...\`)** in the top-right corner of the Mini App screen.\n` +
+              `3️⃣ Tap **"Copy Link"**.\n` +
+              `4️⃣ Paste that link right here!\n\n` +
+              `_Our cloud engine will automatically detect it and activate 24/7 autonomous mining!_`;
+            await sendUserReply(helpMsg, activeUserKeyboard);
           })());
           return new Response("OK");
         }
@@ -12065,23 +12210,35 @@ async def deploy_account(acc):
 
     url = f"https://api.cloudflare.com/client/v4/accounts/{acc['account_id']}/workers/scripts/{WORKER_NAME}"
 
-    form = aiohttp.FormData()
-    form.add_field("metadata", json.dumps(metadata), content_type="application/json", filename="metadata.json")
-    form.add_field("index.js", worker_code, content_type="application/javascript+module", filename="index.js")
+    res = None
+    for attempt in range(1, 4):
+        form = aiohttp.FormData()
+        form.add_field("metadata", json.dumps(metadata), content_type="application/json", filename="metadata.json")
+        form.add_field("index.js", worker_code, content_type="application/javascript+module", filename="index.js")
+
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=90, sock_connect=30, sock_read=60)) as session:
+            try:
+                async with session.put(url, headers=headers, data=form) as resp:
+                    res = await resp.json()
+                    if res.get("success"):
+                        break
+                    else:
+                        print(f"⚠️ [{acc['name']}] Attempt {attempt} failed: {res.get('errors')}")
+            except Exception as up_err:
+                if attempt < 3:
+                    print(f"⚠️ [{acc['name']}] Attempt {attempt} network error ({up_err}). Retrying in 2s...")
+                    await asyncio.sleep(2)
+                else:
+                    print(f"❌ [{acc['name']}] Upload network error after 3 attempts: {up_err}")
+                    return False
+
+    if not res or not res.get("success"):
+        print(f"❌ [{acc['name']}] Deployment failed: {res.get('errors') if res else 'No response'}")
+        return False
+
+    print(f"✅ [{acc['name']}] Script uploaded successfully!")
 
     async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
-        try:
-            async with session.put(url, headers=headers, data=form) as resp:
-                res = await resp.json()
-        except Exception as up_err:
-            print(f"❌ [{acc['name']}] Upload network error: {up_err}")
-            return False
-
-        if not res.get("success"):
-            print(f"❌ [{acc['name']}] Deployment failed: {res.get('errors')}")
-            return False
-
-        print(f"✅ [{acc['name']}] Script uploaded successfully!")
 
         try:
             subdomain_url = f"https://api.cloudflare.com/client/v4/accounts/{acc['account_id']}/workers/scripts/{WORKER_NAME}/subdomain"

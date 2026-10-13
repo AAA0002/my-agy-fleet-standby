@@ -17,11 +17,15 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
     * Implemented 3-pass recursive URI decoding to handle double- and triple-encoded parameters from Telegram clients and web gateways.
     * Auto-detects target bot/pool: LeafEarn, MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, or custom hostnames.
     * Automatic 24-hour expiration detection via `auth_date`. If token is expired, informs user with clear Telegram 24h security notice and simple 3-step refresh guide.
-    * If fresh, automatically binds the account and pool directly without blocking for manual labels, activates 24/7 cloud mining, and provides immediate confirmation.
-    * Added Direct Telegram ID connector: Automatically detects raw 7–12 digit Telegram IDs (`/^[0-9]{7,12}$/`) and links them.
+    * **1-Tap Telegram ID Auto-Link Button**: When a token is expired, user is offered a direct inline button (`ub_bind_id_`) to immediately bind their Telegram ID without manual typing.
+    * **Resilient Fragment Extraction**: Strips trailing whitespace, browser error text (e.g. `could not be loaded because: net::ERR_INTERNET_DISCONNECTED`), percent-encoded `#` hashes (`%23tgWebAppData`), and supports `tgWebAppInitData=` and `initData=`.
+    * **Failsafe Router Sequencing**: Evaluates active phone login flow (`loginFlowState`) before direct Telegram ID parsing, preventing phone numbers or codes from being intercepted.
+    * **Strict ID Regex**: Enforced `/^[1-9][0-9]{6,11}$/` for Direct Telegram IDs, ensuring local phone numbers with leading zeroes (e.g. `017...`) are never mistaken for Telegram User IDs.
+    * **Raw `t.me` Link Guide**: Detects direct `t.me` bot or referral links and automatically provides 4-step instructions on copying the authenticated WebApp link via the 3 dots.
+    * **Account Slot Enforcement**: Strictly validates account slot capacity (`profile.slots + temp_slots`) before creating new accounts.
   - **☁️ Synchronized Cloud Deployments**:
     * Vercel: Successfully deployed `my-agy-ai-fleet` (`/admin`), `aaa-free-ai`, and `agy` (`/` for Ads, `/miner` for Multi-Miner Dashboard).
-    * Cloudflare Edge: Deployed updated edge worker across all 5 nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with 100% success.
+    * Cloudflare Edge: Deployed updated edge worker across all 5 nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with 100% success and 3x auto-retry upload resilience.
 
 - **💎 Professional Vector SVG Miner Dashboard, Truthful Crown Indicator & Bot UX Streamlining (October 13, 2026)**:
   - **👑 Truthful Crown & Session Indicator Disambiguation on Admin Bot (`@myagyai`)**:
