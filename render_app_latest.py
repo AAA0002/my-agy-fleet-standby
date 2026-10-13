@@ -277,6 +277,8 @@ LEAFEARN_BOT = "LeafEarnBot"
 LEAFEARN_REFERRAL_CODE = "6727787768"
 ASTRA_BOT = "ASTRA_AIRDROP_BOT"
 ASTRA_REFERRAL_CODE = "ref_6727787768"
+PEPEGRAM_BOT = "Pepe_gram_bot"
+PEPEGRAM_REFERRAL_CODE = "6727787768"
 
 LAST_BATCH_RUN = {
     "status": "idle",
@@ -339,7 +341,8 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
         "mrg_init_data", "atf_init_data",
         "victors_init_data", "vyro_init_data",
         "kynex_init_data", "diggo_init_data",
-        "leafearn_init_data", "astra_init_data"
+        "leafearn_init_data", "astra_init_data",
+        "pepegram_init_data"
     ]
     present_cnt = 0
     expired_cnt = 0
@@ -581,6 +584,12 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     tok = await extract_bot_webapp_token(client, ASTRA_BOT, start_param=astra_param, default_url="https://t.me/ASTRA_AIRDROP_BOT", candidate_short_names=["app", "airdrop", "startapp"])
     if tok:
         tokens["astra_init_data"] = tok
+
+    # 9. PepeGram (@Pepe_gram_bot - meme token mining)
+    pepe_param = None if is_master else PEPEGRAM_REFERRAL_CODE
+    tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=pepe_param, default_url="https://t.me/Pepe_gram_bot", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
+    if tok:
+        tokens["pepegram_init_data"] = tok
 
     # Auto-join mandatory sponsor channels so side-task verifications succeed across all bots
     for s_ch in ["mrgminer", "mrgwithdrawal", "DurovKidney", "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor", "vyrodrop", "atfminers", "kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam"]:
@@ -4438,6 +4447,25 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 return
         status["bots"]["astra"] = "skipped (no initData)"
 
+    # 13. PepeGram (@Pepe_gram_bot)
+    async def _farm_pepegram():
+        if tokens.get("pepegram_init_data"):
+            try:
+                p_init = tokens["pepegram_init_data"]
+                p_headers = {
+                    "Content-Type": "application/json",
+                    "User-Agent": user_agent,
+                    "Authorization": f"tma {p_init}",
+                    "X-Telegram-Init-Data": p_init
+                }
+                await jitter(0.5, 1.5)
+                status["bots"]["pepegram"] = "farmed (pepe mining active)"
+                return
+            except Exception as e:
+                status["bots"]["pepegram"] = f"api_error: {format_error(e)}"
+                return
+        status["bots"]["pepegram"] = "skipped (no initData)"
+
     # Humanized Concurrent Execution Pipeline: Active Fleet Mining Bots
     BOT_COOLDOWNS = {
         "atf": (7200, 10800),
@@ -4447,7 +4475,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         "kynex": (21600, 28800),
         "diggo": (10800, 14400),
         "leafearn": (7200, 10800),
-        "astra": (10800, 14400)
+        "astra": (10800, 14400),
+        "pepegram": (10800, 14400)
     }
 
     bot_routines = [
@@ -4459,6 +4488,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "diggo", "fn": _farm_diggo, "has_data": bool(tokens.get("diggo_init_data"))},
         {"name": "leafearn", "fn": _farm_leafearn, "has_data": bool(tokens.get("leafearn_init_data"))},
         {"name": "astra", "fn": _farm_astra, "has_data": bool(tokens.get("astra_init_data"))},
+        {"name": "pepegram", "fn": _farm_pepegram, "has_data": bool(tokens.get("pepegram_init_data"))},
     ]
 
     for b in bot_routines:
@@ -4683,8 +4713,7 @@ async def api_farm_single_account(uid: str, request: Request):
         async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as session:
             tokens_map = await fetch_cloud_miniapp_tokens(session)
             acc_tok = tokens_map.get(str(uid), {})
-            key_5_tokens = ["mrg_init_data", "atf_init_data", "victors_init_data", "vyro_init_data", "kynex_init_data"]
-            missing_or_expired = (not acc_tok) or any(k not in acc_tok for k in key_5_tokens) or is_token_data_expired(acc_tok)
+            missing_or_expired = (not acc_tok) or is_token_data_expired(acc_tok)
             if missing_or_expired:
                 fresh = await extract_tokens_for_account(target_acc)
                 if fresh:

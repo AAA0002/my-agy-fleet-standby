@@ -2,6 +2,30 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐸 9-Bot Fleet Expansion, PepeGram Integration & Single-Account Farm Resilience (October 13, 2026)**:
+  - **🚀 PepeGram (`@Pepe_gram_bot`) Mining Integration Across All Cloud Layers**:
+    * Added **PepeGram** (`https://t.me/Pepe_gram_bot?start=6727787768`) expanding the autonomous fleet to **9 active high-yield mining pools**:
+      1. ⚡ **MRG Miner** (`@mrgminerbot`)
+      2. 🪙 **ATF Miner** (`@ATF_AIRDROP_bot`)
+      3. 🏢 **Victor's Company** (`@VictorsCompanybot`)
+      4. 💧 **VyroDrop** (`@vyrodrop_bot`)
+      5. 🌐 **Kynex Network** (`@kynexnetworkbot`)
+      6. ⛏️ **DiggoMiner** (`@Diggominer_bot`)
+      7. 🍃 **LeafEarn** (`@LeafEarnBot`)
+      8. ⭐ **Astra Airdrop** (`@ASTRA_AIRDROP_BOT`)
+      9. 🐸 **PepeGram** (`@Pepe_gram_bot`): PEPE meme community mining, silent WebApp extraction, claim subroutines (`farmPepegram` on Edge & `_farm_pepegram` on Render).
+    * Updated `ALLOWED_FLEET_BOTS`, D1 SQL query, and `parseTgWebAppData` regex pattern to auto-detect PepeGram WebApp links (`#tgWebAppData=...` and direct URL formats).
+    * Added `PEPEGRAM_BOT = "Pepe_gram_bot"` and `PEPEGRAM_REFERRAL_CODE = "6727787768"` in both `render_app_latest.py` & `render_standby_app.py`.
+  - **🛡️ Single-Account Farm Endpoint Hang Prevention Fix**:
+    * Eliminated obsolete requirement `any(k not in acc_tok for k in key_5_tokens)` in `/api/accounts/{uid}/farm` across `render_app_latest.py` & `render_standby_app.py`.
+    * Accounts that have active tokens are no longer forced into 45-second Telethon extraction timeouts on routine individual farm calls; now strictly checks `is_token_data_expired(acc_tok)`.
+  - **🎨 Multi-Miner WebApp Console Sync (`public_ads/miner/index.html`)**:
+    * Added sleek vector cards for all new pools: DiggoMiner, LeafEarn, Astra Airdrop, and PepeGram.
+    * Expanded protocol chips to select each individual pool plus "All 9 Pools".
+    * Dynamically tracks per-pool account metrics and renders status for all 9 pools simultaneously.
+  - **🤖 User Bot Telegram Menus Updated**:
+    * `renderMiningDashboard` and `renderMiningPoolsMenu` in `deploy_both_cf_workers.py` now feature high-density 2-column inline buttons for all 9 pools with live account counts.
+
 - **🌾 8-Bot Fleet Expansion, 100% Account Cloud Farming Bug Fix & User Bot Frictionless Onboarding (October 13, 2026)**:
   - **🚀 8 Active High-Yield Mining Bots Architecture Expansion**:
     * Integrated 3 new high-yield mining pools across all cloud tiers:

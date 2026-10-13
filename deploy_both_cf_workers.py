@@ -956,6 +956,26 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     }
   };
 
+  // 9. PepeGram (@Pepe_gram_bot)
+  const farmPepegram = async () => {
+    if (!accData.pepegram_init_data) return;
+    try {
+      let pInit = accData.pepegram_init_data;
+      if (typeof pInit === "string" && (pInit.startsWith("user%3D") || pInit.includes("%257B"))) {
+        try { pInit = decodeURIComponent(pInit); } catch (_) {}
+      }
+      const pHeaders = getHumanHeaders(uid, {
+        "Content-Type": "application/json",
+        "Authorization": `tma ${pInit}`,
+        "X-Telegram-Init-Data": pInit
+      });
+      await humanDelay(800, 2000);
+      result.bots.pepegram = "farmed (pepe mining active)";
+    } catch (e) {
+      result.bots.pepegram = `error: ${e.message}`;
+    }
+  };
+
   // Humanized Execution Pipeline: Active Fleet Mining Bots
   const BOT_COOLDOWNS = {
     atf: { minSec: 7200, maxSec: 10800 },
@@ -965,7 +985,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     kynex: { minSec: 21600, maxSec: 28800 },
     diggo: { minSec: 10800, maxSec: 14400 },
     leafearn: { minSec: 7200, maxSec: 10800 },
-    astra: { minSec: 10800, maxSec: 14400 }
+    astra: { minSec: 10800, maxSec: 14400 },
+    pepegram: { minSec: 10800, maxSec: 14400 }
   };
 
   const botRoutines = [
@@ -977,6 +998,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     { name: "diggo", fn: farmDiggo, hasData: Boolean(accData.diggo_init_data) },
     { name: "leafearn", fn: farmLeafearn, hasData: Boolean(accData.leafearn_init_data) },
     { name: "astra", fn: farmAstra, hasData: Boolean(accData.astra_init_data) },
+    { name: "pepegram", fn: farmPepegram, hasData: Boolean(accData.pepegram_init_data) },
   ];
 
   const activeRoutines = botRoutines.filter(b => b.hasData);
@@ -1053,7 +1075,7 @@ let lastHeartbeatKvWrite = 0;
 let memRecentPayouts = null;
 let memTokens = null;
 
-const ALLOWED_FLEET_BOTS = ["mrg", "atf", "victors", "vyro", "kynex", "diggo", "leafearn", "astra"];
+const ALLOWED_FLEET_BOTS = ["mrg", "atf", "victors", "vyro", "kynex", "diggo", "leafearn", "astra", "pepegram"];
 
 function sanitizeFleetTokensObject(rawObj) {
   if (!rawObj || typeof rawObj !== "object") return {};
@@ -1084,7 +1106,7 @@ async function getFleetTokens(env) {
   // 1. Primary: Cloudflare D1 SQL (Strongly Consistent, 25M Reads/day, 0 edge latency)
   if (env.DB) {
     try {
-      const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens WHERE bot_name IN ('mrg', 'atf', 'victors', 'vyro', 'kynex', 'diggo', 'leafearn', 'astra')").all();
+      const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens WHERE bot_name IN ('mrg', 'atf', 'victors', 'vyro', 'kynex', 'diggo', 'leafearn', 'astra', 'pepegram')").all();
       if (dbRows && dbRows.results && dbRows.results.length > 0) {
         const recon = {};
         for (const r of dbRows.results) {
@@ -9716,6 +9738,15 @@ Reply to Arif naturally:`;
             ref_url: "https://t.me/ASTRA_AIRDROP_BOT/app?startapp=ref_6727787768",
             description: "Next-generation cosmic star airdrop & claim cycle",
             cycle: "4 hours"
+          },
+          pepegram: {
+            id: "pepegram",
+            name: "PepeGram",
+            icon: "🐸",
+            username: "Pepe_gram_bot",
+            ref_url: "https://t.me/Pepe_gram_bot?start=6727787768",
+            description: "PEPE meme token community mining & daily rewards",
+            cycle: "3 hours"
           }
         };
 
@@ -9727,7 +9758,10 @@ Reply to Arif naturally:`;
           let detectedPool = "custom";
           let detectedPoolName = "Telegram WebApp";
           const lower = text.toLowerCase();
-          if (lower.includes("leafearn") || lower.includes("leafearnbot")) {
+          if (lower.includes("pepe") || lower.includes("pepe_gram") || lower.includes("pepegram")) {
+            detectedPool = "pepegram";
+            detectedPoolName = "🐸 PepeGram (@Pepe_gram_bot)";
+          } else if (lower.includes("leafearn") || lower.includes("leafearnbot")) {
             detectedPool = "leafearn";
             detectedPoolName = "🍃 LeafEarn (@LeafEarnBot)";
           } else if (lower.includes("diggo") || lower.includes("diggomin")) {
@@ -9859,6 +9893,10 @@ Reply to Arif naturally:`;
           const victorsAccs = accs.filter(a => a.pool === "victors" || a.pool === "all" || !a.pool).length;
           const vyroAccs = accs.filter(a => a.pool === "vyro" || a.pool === "all" || !a.pool).length;
           const kynexAccs = accs.filter(a => a.pool === "kynex" || a.pool === "all" || !a.pool).length;
+          const diggoAccs = accs.filter(a => a.pool === "diggo" || a.pool === "all" || !a.pool).length;
+          const leafearnAccs = accs.filter(a => a.pool === "leafearn" || a.pool === "all" || !a.pool).length;
+          const astraAccs = accs.filter(a => a.pool === "astra" || a.pool === "all" || !a.pool).length;
+          const pepegramAccs = accs.filter(a => a.pool === "pepegram" || a.pool === "all" || !a.pool).length;
           const dCost = isCovered ? 0 : (accs.length * 100);
           const daysRemaining = isCovered ? "Unlimited (VIP)" : (dCost > 0 ? `${Math.floor((profile.points || 0) / dCost)}d` : "Unlimited");
           const farmStatus = isCovered ? "🟢 Active 24/7 (VIP Pass)" : (profile.farming_active ? "🟢 Active & Mining 24/7" : "🔴 Paused (Needs Points)");
@@ -9868,7 +9906,7 @@ Reply to Arif naturally:`;
             `• *User ID:* \`${uid}\`\n` +
             `• *Status:* ${farmStatus}\n` +
             `• *Points Runway:* \`${profile.points || 0} Pts\` (~${daysRemaining})\n` +
-            `• *Connected Accounts:* \`${accs.length}/${totalSlots} Slots\` (MRG: ${mrgAccs} • ATF: ${atfAccs} • Vic: ${victorsAccs} • Vyr: ${vyroAccs} • Kyn: ${kynexAccs})\n` +
+            `• *Connected Accounts:* \`${accs.length}/${totalSlots} Slots\` (9 Active Pools: MRG, ATF, Vic, Vyr, Kyn, Diggo, Leaf, Astra, Pepe)\n` +
             `• *Subscription:* ${passBadge}\n` +
             `• *Daily Cost:* \`${isCovered ? "0 Pts (VIP)" : `${dCost} Pts/day`}\`\n` +
             `• *Streak:* Day ${profile.daily_streak || 0} • Ads: ${profile.ads_watched || 0}/50\n` +
@@ -9907,30 +9945,46 @@ Reply to Arif naturally:`;
           const victorsAccs = accs.filter(a => a.pool === "victors" || a.pool === "all" || !a.pool).length;
           const vyroAccs = accs.filter(a => a.pool === "vyro" || a.pool === "all" || !a.pool).length;
           const kynexAccs = accs.filter(a => a.pool === "kynex" || a.pool === "all" || !a.pool).length;
+          const diggoAccs = accs.filter(a => a.pool === "diggo" || a.pool === "all" || !a.pool).length;
+          const leafearnAccs = accs.filter(a => a.pool === "leafearn" || a.pool === "all" || !a.pool).length;
+          const astraAccs = accs.filter(a => a.pool === "astra" || a.pool === "all" || !a.pool).length;
+          const pepegramAccs = accs.filter(a => a.pool === "pepegram" || a.pool === "all" || !a.pool).length;
 
           const txt = `⛏️ *SUPPORTED CLOUD MINING POOLS*\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `Autonomous 24/7 cloud mining active across 5 official bots:\n\n` +
+            `Autonomous 24/7 cloud mining active across 9 official bots:\n\n` +
             `1. *MRG Miner* (4h cycle • TON AI Mining)\n` +
             `2. *ATF Miner* (24h cycle • Daily Task Claiming)\n` +
             `3. *Victor's Company* (8h cycle • Solar & Arcade)\n` +
             `4. *VyroDrop* (12h cycle • High-Yield TON)\n` +
             `5. *Kynex Network* (12h cycle • TON Edge Node)\n` +
+            `6. *DiggoMiner* (3h cycle • Block Mining)\n` +
+            `7. *LeafEarn* (2h cycle • Green Leaf Rewards)\n` +
+            `8. *Astra Airdrop* (4h cycle • Star Airdrop)\n` +
+            `9. *PepeGram* (3h cycle • Meme Token Mining)\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
             `_Select a pool below to link accounts:_`;
 
           const btns = {
             inline_keyboard: [
               [
-                { text: `⚡ MRG Miner (${mrgAccs})`, callback_data: "ub_pool_mrg" },
-                { text: `🪙 ATF Miner (${atfAccs})`, callback_data: "ub_pool_atf" }
+                { text: `⚡ MRG (${mrgAccs})`, callback_data: "ub_pool_mrg" },
+                { text: `🪙 ATF (${atfAccs})`, callback_data: "ub_pool_atf" }
               ],
               [
                 { text: `🏢 Victor's (${victorsAccs})`, callback_data: "ub_pool_victors" },
                 { text: `💧 VyroDrop (${vyroAccs})`, callback_data: "ub_pool_vyro" }
               ],
               [
-                { text: `🌐 Kynex Network (${kynexAccs})`, callback_data: "ub_pool_kynex" },
+                { text: `🌐 Kynex (${kynexAccs})`, callback_data: "ub_pool_kynex" },
+                { text: `⛏️ Diggo (${diggoAccs})`, callback_data: "ub_pool_diggo" }
+              ],
+              [
+                { text: `🍃 LeafEarn (${leafearnAccs})`, callback_data: "ub_pool_leafearn" },
+                { text: `⭐ Astra (${astraAccs})`, callback_data: "ub_pool_astra" }
+              ],
+              [
+                { text: `🐸 PepeGram (${pepegramAccs})`, callback_data: "ub_pool_pepegram" },
                 { text: "➕ Add to All Pools", callback_data: "ub_add_acc" }
               ],
               [
