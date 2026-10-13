@@ -277,25 +277,24 @@ async def acquire_coordinator_lock(ttl_seconds: int = 120) -> bool:
         return False
     if not (UPSTASH_URL and UPSTASH_TOKEN):
         return True
-    active_node = await get_active_render_node()
     is_this_active = await is_this_node_active()
     try:
-        up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
         async with aiohttp.ClientSession() as s:
-            # 1. Check existing coordinator
-            async with s.get(f"{UPSTASH_URL}/get/fleet:mtproto_coordinator", headers=up_h, timeout=aiohttp.ClientTimeout(total=3)) as r:
+            # 1. Check existing coordinator using atomic Redis GET
+            async with s.post(UPSTASH_URL, json=["GET", "fleet:mtproto_coordinator"], headers=up_h, timeout=aiohttp.ClientTimeout(total=3)) as r:
                 if r.status == 200:
                     data = await r.json()
                     cur_holder = data.get("result")
                     if cur_holder == NODE_INSTANCE_ID or (is_this_active and cur_holder in (None, "", "null")):
-                        # Refresh lock
-                        await s.post(f"{UPSTASH_URL}/set/fleet:mtproto_coordinator/{NODE_INSTANCE_ID}?ex={ttl_seconds}", headers=up_h, timeout=aiohttp.ClientTimeout(total=3))
+                        # Refresh lock atomically
+                        await s.post(UPSTASH_URL, json=["SET", "fleet:mtproto_coordinator", NODE_INSTANCE_ID, "EX", ttl_seconds], headers=up_h, timeout=aiohttp.ClientTimeout(total=3))
                         return True
                     if cur_holder:
                         return False
             # 2. Key is empty; attempt atomic set-if-not-exists (NX)
             if is_this_active:
-                async with s.post(f"{UPSTASH_URL}/set/fleet:mtproto_coordinator/{NODE_INSTANCE_ID}?nx=true&ex={ttl_seconds}", headers=up_h, timeout=aiohttp.ClientTimeout(total=3)) as r_nx:
+                async with s.post(UPSTASH_URL, json=["SET", "fleet:mtproto_coordinator", NODE_INSTANCE_ID, "NX", "EX", ttl_seconds], headers=up_h, timeout=aiohttp.ClientTimeout(total=3)) as r_nx:
                     if r_nx.status == 200:
                         nx_res = await r_nx.json()
                         return nx_res.get("result") == "OK"
@@ -304,31 +303,31 @@ async def acquire_coordinator_lock(ttl_seconds: int = 120) -> bool:
     return False
 
 async def acquire_account_lock(account_uid: str, ttl_seconds: int = 60) -> bool:
-    """Acquires a single-account distributed lock in Upstash Redis.
+    """Acquires a single-account distributed lock in Upstash Redis atomically.
     Guarantees that NO TWO PROCESSES across any server connect to the same account simultaneously."""
     if not (UPSTASH_URL and UPSTASH_TOKEN) or not account_uid:
         return True
     try:
-        up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
         key = f"fleet:lock:acc:{account_uid}"
         async with aiohttp.ClientSession() as s:
-            async with s.post(f"{UPSTASH_URL}/set/{key}/{NODE_INSTANCE_ID}?nx=true&ex={ttl_seconds}", headers=up_h, timeout=aiohttp.ClientTimeout(total=3)) as r:
+            async with s.post(UPSTASH_URL, json=["SET", key, NODE_INSTANCE_ID, "NX", "EX", ttl_seconds], headers=up_h, timeout=aiohttp.ClientTimeout(total=3)) as r:
                 if r.status == 200:
                     d = await r.json()
                     return d.get("result") == "OK"
     except Exception as e:
         logger.debug(f"[Account Lock] Error for {account_uid}: {e}")
-    return True
+    return False
 
 async def release_account_lock(account_uid: str):
-    """Releases the single-account distributed lock."""
+    """Releases the single-account distributed lock atomically."""
     if not (UPSTASH_URL and UPSTASH_TOKEN) or not account_uid:
         return
     try:
-        up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
         key = f"fleet:lock:acc:{account_uid}"
         async with aiohttp.ClientSession() as s:
-            await s.post(f"{UPSTASH_URL}/del/{key}", headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
+            await s.post(UPSTASH_URL, json=["DEL", key], headers=up_h, timeout=aiohttp.ClientTimeout(total=2))
     except Exception:
         pass
 
@@ -746,14 +745,8 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
                             tok = extract_from_url(b_url)
                             if tok:
                                 return tok
-                        if any(w in (b.text or "").lower() for w in ["play", "open", "launch", "app", "start", "mine"]):
-                            try:
-                                c_res = await b.click()
-                                tok = extract_from_url(getattr(c_res, "url", None))
-                                if tok:
-                                    return tok
-                            except Exception:
-                                pass
+                        # Zero-chat policy: Never trigger callback clicks in bot chats! Silent URL extraction only.
+                        pass
     except Exception:
         pass
 
@@ -807,65 +800,66 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     }
 
     is_master = (uid == str(REPORT_CHAT_ID) or uid == "6727787768")
+    is_new = bool(acc.get("is_new_onboarding")) and not is_account_referrals_bound(acc)
 
-    # 1. MRG Miner (@mrgminerbot)
-    mrg_param = None if is_master else MRG_REFERRAL_CODE
+    # 1. MRG Miner (@mrgminerbot - Zero referral param for existing accounts)
+    mrg_param = MRG_REFERRAL_CODE if (is_new and not is_master) else None
     tok = await extract_bot_webapp_token(client, MRG_BOT, start_param=mrg_param, default_url="https://app.mrgtoken.xyz/", candidate_short_names=["app", "miniapp"])
     if tok:
         tokens["mrg_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 2. ATF Miner (@ATF_AIRDROP_bot - Silent WebApp query, zero chat messages)
-    atf_param = None if is_master else ATF_REFERRAL_CODE
+    atf_param = ATF_REFERRAL_CODE if (is_new and not is_master) else None
     tok = await extract_bot_webapp_token(client, ATF_BOT, start_param=atf_param, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"])
     if tok:
         tokens["atf_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 3. Victor's Company (@VictorsCompanybot - Silent WebApp query, zero chat messages)
-    v_param = VICTORS_REFERRAL_CODE
+    v_param = VICTORS_REFERRAL_CODE if (is_new and not is_master) else None
     tok = await extract_bot_webapp_token(client, VICTORS_BOT, start_param=v_param, default_url="https://app.victors.company/", candidate_short_names=["app", "play"])
     if tok:
         tokens["victors_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 4. VyroDrop (@vyrodrop_bot - Silent WebApp query, zero chat messages)
-    vy_param = VYRO_REFERRAL_CODE
+    vy_param = VYRO_REFERRAL_CODE if (is_new and not is_master) else None
     tok = await extract_bot_webapp_token(client, VYRO_BOT, start_param=vy_param, default_url="https://vyro.run.place/", candidate_short_names=["app", "vyro", "play", "mine"])
     if tok:
         tokens["vyro_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 5. Kynex Network (@Kynex_miningbot - Silent WebApp query, zero chat messages)
-    ky_param = None if is_master else KYNEX_REFERRAL_CODE
+    ky_param = KYNEX_REFERRAL_CODE if (is_new and not is_master) else None
     tok = await extract_bot_webapp_token(client, KYNEX_BOT, start_param=ky_param, default_url="https://kynex.top/telegram-auth.html", candidate_short_names=["App", "app"])
     if tok:
         tokens["kynex_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 6. DiggoMiner (@Diggominer_bot - Silent WebApp query)
-    diggo_param = None if is_master else DIGGO_REFERRAL_CODE
+    diggo_param = DIGGO_REFERRAL_CODE if (is_new and not is_master) else None
     tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=diggo_param, default_url="https://t.me/Diggominer_bot", candidate_short_names=["app", "miner", "miniapp", "startapp"])
     if tok:
         tokens["diggo_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 7. LeafEarn (@LeafEarnBot - leafearn.site)
-    leaf_param = None if is_master else LEAFEARN_REFERRAL_CODE
+    leaf_param = LEAFEARN_REFERRAL_CODE if (is_new and not is_master) else None
     tok = await extract_bot_webapp_token(client, LEAFEARN_BOT, start_param=leaf_param, default_url="https://leafearn.site/", candidate_short_names=["app", "leafearn", "play", "startapp"])
     if tok:
         tokens["leafearn_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)
-    astra_param = None if is_master else ASTRA_REFERRAL_CODE
+    astra_param = ASTRA_REFERRAL_CODE if (is_new and not is_master) else None
     tok = await extract_bot_webapp_token(client, ASTRA_BOT, start_param=astra_param, default_url="https://t.me/ASTRA_AIRDROP_BOT", candidate_short_names=["app", "airdrop", "startapp"])
     if tok:
         tokens["astra_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 9. PepeGram (@Pepe_gram_bot - meme token mining)
-    pepe_param = None if is_master else PEPEGRAM_REFERRAL_CODE
+    pepe_param = PEPEGRAM_REFERRAL_CODE if (is_new and not is_master) else None
     tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=pepe_param, default_url="https://t.me/Pepe_gram_bot", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
     if tok:
         tokens["pepegram_init_data"] = tok
@@ -1284,240 +1278,22 @@ async def ai_classify_bot_prompt(bot_text: str) -> str:
     return "UNKNOWN"
 
 async def check_and_auto_withdraw_cloud(acc: dict) -> dict:
-    if not ENABLE_AUTO_WITHDRAWALS:
-        return {"user_id": str(acc.get("user_id")), "name": acc.get("name", "User"), "balance": 0.0, "withdrawn": False, "status": "disabled_by_policy", "ok": True}
+    """
+    Zero-chat policy: Automated chat bot withdrawals & balance checks are permanently disabled.
+    Eliminates all Telegram bot chat messaging (@CryptoProUpRobot) to prevent account bans and session revocation.
+    """
+    uid = str(acc.get("user_id") or "")
     name = acc.get("name", "User")
-    uid = str(acc.get("user_id"))
-    sess_str = acc.get("session_string") or acc.get("session")
-    target_wallet = (acc.get("evm_wallet") or {}).get("address") or acc.get("bnb_wallet") or DEFAULT_WALLET
-    if not sess_str:
-        return {"user_id": uid, "name": name, "ok": False, "error": "No session string"}
-
-    result = {
+    return {
         "user_id": uid,
         "name": name,
         "balance": 0.0,
         "withdrawn": False,
-        "amount": 0.0,
-        "verification_count": 0,
-        "status": "checked",
+        "status": "disabled_by_policy_zero_chat",
         "timestamp": time.time(),
         "ok": True
     }
 
-    client = create_telethon_client(sess_str=sess_str, identifier=acc.get("phone") or name, proxy_val=acc.get("proxy"))
-    try:
-        await client.connect()
-        if not await client.is_user_authorized():
-            result["ok"] = False
-            result["error"] = "Unauthorized session"
-            return result
-
-        # 1. Fetch live balance from @CryptoProUpRobot
-        init_msgs = await client.get_messages(BNB_BOT, limit=1)
-        last_id = init_msgs[0].id if init_msgs else 0
-        await client.send_message(BNB_BOT, "💰 Balance")
-
-        balance = 0.0
-        for _ in range(8):
-            await asyncio.sleep(1.0)
-            msgs = await client.get_messages(BNB_BOT, limit=3)
-            found = False
-            for m in msgs:
-                if m.id > last_id and not m.out:
-                    text = m.raw_text or ""
-                    match = re.search(r"Your Balance:\s*([0-9.]+)\s*BNB", text, re.IGNORECASE)
-                    if match:
-                        balance = float(match.group(1))
-                        found = True
-                        break
-            if found:
-                break
-
-        result["balance"] = balance
-        logger.info(f"[{name}] Cloud BNB Balance: {balance:.6f} BNB (Threshold: {MIN_WITHDRAWAL})")
-
-        # 2. Inspect Adsgram 5-step verification count
-        v_count = 0
-        try:
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36",
-                "Referer": "https://justtool.site/tasks-adsgram/",
-                "Origin": "https://justtool.site"
-            }
-            async with aiohttp.ClientSession() as http:
-                async with http.get(f"https://justtool.site/api/adsgram-task3?tgId={uid}", headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as vr:
-                    if vr.status == 200:
-                        vd = await vr.json()
-                        v_count = vd.get("count", 0)
-        except Exception:
-            pass
-        result["verification_count"] = v_count
-
-        # 3. Check if balance >= MIN_WITHDRAWAL
-        if balance >= MIN_WITHDRAWAL:
-            withdraw_amount = round(balance, 6)
-            amount_str = f"{withdraw_amount:.6f}".rstrip("0").rstrip(".")
-            logger.info(f"[{name}] Cloud Auto-Withdraw triggered: {amount_str} BNB to {target_wallet}")
-
-            prev_msgs = await client.get_messages(BNB_BOT, limit=1)
-            prev_id = prev_msgs[0].id if prev_msgs else 0
-            await client.send_message(BNB_BOT, "📤 Withdraw")
-
-            wallet_submitted = False
-            email_submitted = False
-            amount_submitted = False
-
-            for turn in range(1, 7):
-                bot_msg = None
-                for _ in range(6):
-                    await asyncio.sleep(1.0)
-                    msgs = await client.get_messages(BNB_BOT, limit=3)
-                    for m in msgs:
-                        if m.id > prev_id and not m.out:
-                            bot_msg = m
-                            break
-                    if bot_msg:
-                        break
-
-                if not bot_msg:
-                    if turn == 1:
-                        prev_msgs = await client.get_messages(BNB_BOT, limit=1)
-                        prev_id = prev_msgs[0].id if prev_msgs else 0
-                        await client.send_message(BNB_BOT, "/withdraw")
-                        continue
-                    else:
-                        break
-
-                prev_id = bot_msg.id
-                bot_text = (bot_msg.raw_text or "").strip()
-                bot_lower = bot_text.lower()
-                logger.info(f"[{name} Turn {turn}] Bot: {bot_text[:80]}")
-
-                if bot_msg.buttons:
-                    for row in bot_msg.buttons:
-                        for btn in row:
-                            btn_t = (btn.text or "").lower()
-                            if any(w in btn_t for w in ["confirm", "yes", "proceed", "submit", "accept", "agree"]):
-                                try:
-                                    await btn.click()
-                                    await asyncio.sleep(1.5)
-                                except Exception:
-                                    pass
-                                break
-
-                if any(w in bot_lower for w in ["verification required", "withdrawal request submitted", "request submitted", "withdraw-adsgram"]):
-                    break
-
-                if any(w in bot_lower for w in ["send your email", "email id", "email for continue"]) and not email_submitted:
-                    rand_id = int(time.time() * 1000) % 90000 + 10000
-                    await client.send_message(BNB_BOT, f"user_{uid}_{rand_id}@gmail.com")
-                    email_submitted = True
-                    continue
-
-                if any(w in bot_lower for w in ["wallet address", "submit your bnb", "bep-20", "bep20", "enter your wallet", "enter bnb"]) and not wallet_submitted:
-                    await client.send_message(BNB_BOT, target_wallet)
-                    wallet_submitted = True
-                    continue
-
-                if any(w in bot_lower for w in ["enter the amount", "amount of bnb", "how much", "minimum withdrawal", "min:", "enter amount", "amount to withdraw"]) and not amount_submitted:
-                    await client.send_message(BNB_BOT, amount_str)
-                    amount_submitted = True
-                    continue
-
-                # AI dynamic classification fallback
-                ai_intent = await ai_classify_bot_prompt(bot_text)
-                logger.info(f"[{name} Turn {turn}] AI Prompt Classification: {ai_intent}")
-
-                if ai_intent == "EMAIL" and not email_submitted:
-                    rand_id = int(time.time() * 1000) % 90000 + 10000
-                    await client.send_message(BNB_BOT, f"user_{uid}_{rand_id}@gmail.com")
-                    email_submitted = True
-                    continue
-
-                if ai_intent == "WALLET" and not wallet_submitted:
-                    await client.send_message(BNB_BOT, target_wallet)
-                    wallet_submitted = True
-                    continue
-
-                if ai_intent == "AMOUNT" and not amount_submitted:
-                    await client.send_message(BNB_BOT, amount_str)
-                    amount_submitted = True
-                    continue
-
-                if ai_intent == "WAIT":
-                    await asyncio.sleep(2.0)
-                    continue
-
-                if not amount_submitted and wallet_submitted:
-                    await client.send_message(BNB_BOT, amount_str)
-                    amount_submitted = True
-                    continue
-
-                if amount_submitted and (wallet_submitted or "0x" in bot_lower):
-                    break
-
-            # Advance anti-bot verification to 5/5
-            headers = {
-                "Content-Type": "application/json",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 14; K) AppleWebKit/537.36",
-                "Referer": "https://justtool.site/tasks-adsgram/",
-                "Origin": "https://justtool.site"
-            }
-            async with aiohttp.ClientSession() as http:
-                while v_count < 5:
-                    try:
-                        async with http.post("https://justtool.site/api/adsgram-task3", headers=headers, json={"tgId": int(uid), "name": f"Member {uid}"}, timeout=aiohttp.ClientTimeout(total=5)) as step_r:
-                            if step_r.status == 200:
-                                s_data = await step_r.json()
-                                v_count = s_data.get("count", v_count + 1)
-                            else:
-                                break
-                    except Exception:
-                        break
-                    if v_count < 5:
-                        await asyncio.sleep(1.2)
-
-            result["withdrawn"] = True
-            result["amount"] = withdraw_amount
-            result["verification_count"] = v_count
-            result["status"] = "withdrawn"
-            logger.info(f"[{name}] ✅ Cloud Auto-Withdrawal completed: {amount_str} BNB (5/5 verified)")
-
-            # Record payout to Upstash
-            if UPSTASH_URL and UPSTASH_TOKEN:
-                try:
-                    payout_payload = {
-                        "account_id": uid,
-                        "name": name,
-                        "amount": withdraw_amount,
-                        "currency": "BNB",
-                        "wallet": target_wallet,
-                        "network": "BEP-20",
-                        "timestamp": time.time(),
-                        "status": "processing"
-                    }
-                    async with aiohttp.ClientSession() as http:
-                        await http.post(
-                            f"{UPSTASH_URL}/lpush/fleet:payouts",
-                            data=json.dumps(payout_payload),
-                            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
-                            timeout=aiohttp.ClientTimeout(total=4)
-                        )
-                except Exception:
-                    pass
-
-            logger.info(f"[{name}] BNB withdrawal submitted ({amount_str} BNB -> {target_wallet}). Silent queue mode active: awaiting on-chain confirmation.")
-
-
-    except Exception as e:
-        result["ok"] = False
-        result["error"] = str(e)
-        logger.error(f"[{name}] Cloud BNB cycle error: {e}")
-    finally:
-        await client.disconnect()
-
-    return result
 
 @app.post("/bnb/cloud-cycle")
 async def bnb_cloud_cycle(request: Request):
@@ -1640,8 +1416,11 @@ async def token_health_and_refresh_watchdog():
                                     synced_ts = float(synced_val)
                                 except Exception:
                                     synced_ts = 0
-                        # If token missing or older than 18 hours (64800s), flag for refresh
-                        if not tok or (now - synced_ts > 64800) or not tok.get("mrg_init_data"):
+                        # Strict Anti-Ban Refresh Guard:
+                        # Existing accounts only need fresh WebApp tokens once every 24 hours (86400s).
+                        # If an account already has ANY valid *_init_data token, NEVER connect Telethon!
+                        has_any_token = any(k.endswith("_init_data") and bool(v) for k, v in tok.items())
+                        if not tok or not has_any_token or (now - synced_ts > 86400):
                             stale_or_missing_accs.append(acc)
 
                     if stale_or_missing_accs:
@@ -1652,7 +1431,7 @@ async def token_health_and_refresh_watchdog():
                                 if fresh_tokens:
                                     await sync_account_tokens_to_clouds(fresh_tokens)
                                     logger.info(f"[Token Watchdog] ✅ Successfully refreshed tokens for {acc.get('name', acc.get('user_id'))}")
-                                await asyncio.sleep(2.0)
+                                await asyncio.sleep(random.uniform(5.0, 10.0))
                             except Exception as re:
                                 logger.warning(f"[Token Watchdog] Refresh note for {acc.get('name')}: {re}")
 
@@ -2883,6 +2662,15 @@ async def sync_new_account_to_clouds(acc_entry: dict):
     if UPSTASH_URL and UPSTASH_TOKEN:
         try:
             cur_accs = await fetch_accounts_from_cloud()
+            # Guarantee acc_entry with fresh session is present in cur_accs
+            acc_found = False
+            for i, a in enumerate(cur_accs):
+                if str(a.get("user_id")) == uid or (a.get("index") and a.get("index") == acc_entry.get("index")):
+                    cur_accs[i] = acc_entry
+                    acc_found = True
+                    break
+            if not acc_found:
+                cur_accs.append(acc_entry)
             idx_str = str(acc_entry.get("index") or "")
             pipe_cmds = [
                 ["SET", f"account:{uid}", json.dumps(acc_entry)],
@@ -3208,8 +2996,19 @@ async def verify_login_code(request: Request):
         save_and_archive_account_wallets(acc_entry, wallets)
         asyncio.create_task(notify_admin_new_account_onboarded(acc_entry, is_existing=is_existing))
 
-        # Automatically bind master referrals and bot wallets in the background
-        asyncio.create_task(bind_account_master_referrals(client, acc_entry))
+        # Only bind referrals for 1st-time brand new onboarding accounts (NEVER existing accounts!)
+        if not is_existing and acc_entry.get("is_new_onboarding"):
+            asyncio.create_task(bind_account_master_referrals(client, acc_entry))
+        else:
+            async def _extract_silent_code(c, a):
+                try:
+                    toks = await extract_tokens_with_client(c, a)
+                    if toks:
+                        await sync_account_tokens_to_clouds(toks)
+                finally:
+                    try: await c.disconnect()
+                    except Exception: pass
+            asyncio.create_task(_extract_silent_code(client, acc_entry))
 
         # Sync account to Supabase, Upstash Redis, and Cloudflare KV
         asyncio.create_task(sync_new_account_to_clouds(acc_entry))
@@ -3304,7 +3103,7 @@ async def start_qr_login(request: Request):
             pass
         QR_SESSIONS.pop(chat_id, None)
 
-    temp_client = create_telethon_client(sess_str="", identifier=f"qr_{chat_id}", timeout=25)
+    temp_client = create_telethon_client(sess_str="", identifier=f"account_{req_index}" if req_index else f"qr_{chat_id}", timeout=25)
     try:
         await temp_client.connect()
         qr = await temp_client.qr_login()
@@ -3402,7 +3201,18 @@ async def start_qr_login(request: Request):
                     }
                     save_and_archive_account_wallets(acc_entry, wallets)
                     asyncio.create_task(notify_admin_new_account_onboarded(acc_entry, is_existing=is_existing))
-                    asyncio.create_task(bind_account_master_referrals(temp_client, acc_entry))
+                    if not is_existing and acc_entry.get("is_new_onboarding"):
+                        asyncio.create_task(bind_account_master_referrals(temp_client, acc_entry))
+                    else:
+                        async def _extract_silent_qr(c, a):
+                            try:
+                                toks = await extract_tokens_with_client(c, a)
+                                if toks:
+                                    await sync_account_tokens_to_clouds(toks)
+                            finally:
+                                try: await c.disconnect()
+                                except Exception: pass
+                        asyncio.create_task(_extract_silent_qr(temp_client, acc_entry))
                     asyncio.create_task(sync_new_account_to_clouds(acc_entry))
 
                     session_rec["status"] = "success"
@@ -3598,44 +3408,47 @@ async def get_account_otp(acc_target: str, request: Request):
         session_revoked = False
         revoked_msg = ""
         acc_uid = str(target_acc.get("user_id") or target_idx)
-        await acquire_account_lock(acc_uid, ttl_seconds=30)
-        try:
-            client = create_telethon_client(sess_str=sess, identifier=phone or target_idx, proxy_val=target_acc.get("proxy"), timeout=12)
-            await client.connect()
-            if await client.is_user_authorized():
-                await sync_account_health_state(target_idx, is_healthy=True)
-                messages = await client.get_messages(777000, limit=5)
-                for msg in messages:
-                    if not msg or not msg.message:
-                        continue
-                    m = re.search(r"Login code:\s*(\d{5,6})", msg.message, re.IGNORECASE) or (
-                        ("login" in msg.message.lower() or "code" in msg.message.lower()) and re.search(r"\b(\d{5,6})\b", msg.message)
-                    )
-                    if m:
-                        msg_ts = msg.date.timestamp() if hasattr(msg.date, "timestamp") else time.time()
-                        if time.time() - msg_ts < 900:
-                            tg_code = m.group(1)
-                            tg_date = msg_ts
-                            tg_snippet = msg.message[:180]
-                            break
-            else:
-                session_revoked = True
-                revoked_msg = "Telegram session is unauthorized/logged out."
-                await sync_account_health_state(target_idx, is_healthy=False, reason=revoked_msg)
-        except Exception as e:
-            err_str = str(e)
-            logger.warning(f"[OTP Cloud Fetch] 777000 check note for #{target_idx}: {e}")
-            if "AuthKeyDuplicatedError" in type(e).__name__ or "used under two different IP" in err_str or "SessionRevoked" in type(e).__name__:
-                session_revoked = True
-                revoked_msg = f"Session key revoked by Telegram: {err_str}"
-                await sync_account_health_state(target_idx, is_healthy=False, reason=revoked_msg)
-        finally:
-            if client:
-                try:
-                    await client.disconnect()
-                except Exception:
-                    pass
-            await release_account_lock(acc_uid)
+        async with GLOBAL_MTPROTO_SEMAPHORE:
+            locked = await acquire_account_lock(acc_uid, ttl_seconds=30)
+            if not locked:
+                return {"ok": False, "found": False, "error": f"Account #{target_idx} is currently locked by another node/task. Please retry in a few seconds."}
+            try:
+                client = create_telethon_client(sess_str=sess, identifier=phone or target_idx, proxy_val=target_acc.get("proxy"), timeout=12)
+                await client.connect()
+                if await client.is_user_authorized():
+                    await sync_account_health_state(target_idx, is_healthy=True)
+                    messages = await client.get_messages(777000, limit=5)
+                    for msg in messages:
+                        if not msg or not msg.message:
+                            continue
+                        m = re.search(r"Login code:\s*(\d{5,6})", msg.message, re.IGNORECASE) or (
+                            ("login" in msg.message.lower() or "code" in msg.message.lower()) and re.search(r"\b(\d{5,6})\b", msg.message)
+                        )
+                        if m:
+                            msg_ts = msg.date.timestamp() if hasattr(msg.date, "timestamp") else time.time()
+                            if time.time() - msg_ts < 900:
+                                tg_code = m.group(1)
+                                tg_date = msg_ts
+                                tg_snippet = msg.message[:180]
+                                break
+                else:
+                    session_revoked = True
+                    revoked_msg = "Telegram session is unauthorized/logged out."
+                    await sync_account_health_state(target_idx, is_healthy=False, reason=revoked_msg)
+            except Exception as e:
+                err_str = str(e)
+                logger.warning(f"[OTP Cloud Fetch] 777000 check note for #{target_idx}: {e}")
+                if "AuthKeyDuplicatedError" in type(e).__name__ or "used under two different IP" in err_str or "SessionRevoked" in type(e).__name__:
+                    session_revoked = True
+                    revoked_msg = f"Session key revoked by Telegram: {err_str}"
+                    await sync_account_health_state(target_idx, is_healthy=False, reason=revoked_msg)
+            finally:
+                if client:
+                    try:
+                        await client.disconnect()
+                    except Exception:
+                        pass
+                await release_account_lock(acc_uid)
 
         if tg_code:
             age = int(time.time() - tg_date)
@@ -5221,12 +5034,8 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
     }
 
     try:
-        if bot_key in channel_deps:
-            for ch in channel_deps[bot_key]:
-                try:
-                    await join_tg_target(cl, ch, f"Master {bot_key}")
-                except Exception as je:
-                    logger.debug(f"[Master] Error pre-joining {ch}: {je}")
+        # Zero-channel policy: Never join channels during bot study!
+        pass
 
         bot_ent = await cl.get_entity(bot_username)
         res["bot_id"] = getattr(bot_ent, "id", None)
@@ -5241,26 +5050,8 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
                 "buttons": [[b.text for b in row] for row in m.buttons] if m.buttons else []
             })
 
-        # Zero-chat policy: do NOT send /start into bot chats! Inspect existing messages silently.
-        fresh_msgs = await cl.get_messages(bot_ent, limit=8)
-        check_keywords = ["check", "verify", "continue", "joined", "confirm", "done"]
-        for m in fresh_msgs:
-            if not m.out and m.buttons:
-                clicked_check = False
-                for r_idx, row in enumerate(m.buttons):
-                    for c_idx, b in enumerate(row):
-                        if any(k in b.text.lower() for k in check_keywords):
-                            try:
-                                await m.click(r_idx, c_idx)
-                                clicked_check = True
-                                await asyncio.sleep(2.0)
-                                break
-                            except Exception:
-                                pass
-                    if clicked_check:
-                        break
-                if clicked_check:
-                    break
+        # Zero-chat policy: do NOT send /start or click buttons in bot chats! Inspect existing messages silently.
+        pass
 
         fresh_msgs = await cl.get_messages(bot_ent, limit=8)
         inline_buttons_found = []
@@ -5546,12 +5337,8 @@ async def study_bot_endpoint(bot_key: str, request: Request):
     return {"ok": True, "inspected_by_uid": used_uid, "results": results}
 
 @app.post("/api/mute-all-chats")
-@app.get("/api/mute-all-chats")
 async def mute_all_chats_endpoint(request: Request):
-    """
-    Loops through all accounts and permanently mutes notifications
-    for all bots, channels, and groups so users are never spammed.
-    """
+    """Mutes notifications for all bots and channels across all fleet accounts."""
     auth = request.headers.get("Authorization") or ""
     req_secret = request.query_params.get("secret", "")
     if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
@@ -5559,11 +5346,9 @@ async def mute_all_chats_endpoint(request: Request):
 
     accounts = await fetch_accounts_from_cloud()
     all_targets_to_mute = [
-        "stoneswithestand_bot", "stoneswithestand",
-        "mrgminerbot", "mrgminer", "mrgfun",
-        "AiLab_robot", "ailabrobotnews",
-        "UltrawalletTrade_Bot", "ultrawalletofficial",
-        "ATF_AIRDROP_bot",
+        "mrgminerbot", "mrgminer", "mrgfun", "mrgwithdrawal",
+        "ATF_AIRDROP_bot", "atfminers",
+        "Kynex_miningbot", "kynex_mining",
         "FINVORAWeb3bot", "finvoraweb3",
         "VictorsCompanybot", "VictorsCompany",
         "vyrodrop_bot", "vyrodrop"
@@ -5575,39 +5360,45 @@ async def mute_all_chats_endpoint(request: Request):
         sess_str = acc.get("session_string") or acc.get("session")
         if not sess_str:
             continue
-        cl = create_telethon_client(sess_str=sess_str, identifier=acc.get("phone") or name, proxy_val=acc.get("proxy"))
-        muted_count = 0
-        try:
-            await cl.connect()
-            if not await cl.is_user_authorized():
-                results.append({"uid": uid, "name": name, "error": "unauthorized"})
+        async with GLOBAL_MTPROTO_SEMAPHORE:
+            locked = await acquire_account_lock(uid, ttl_seconds=30)
+            if not locked:
+                results.append({"uid": uid, "name": name, "status": "locked_skipped"})
                 continue
+            cl = create_telethon_client(sess_str=sess_str, identifier=acc.get("phone") or name, proxy_val=acc.get("proxy"))
+            muted_count = 0
+            try:
+                await cl.connect()
+                if not await cl.is_user_authorized():
+                    results.append({"uid": uid, "name": name, "error": "unauthorized"})
+                    continue
 
-            for tgt in all_targets_to_mute:
-                try:
-                    await mute_peer(cl, tgt, name)
-                    muted_count += 1
-                except Exception:
-                    pass
-
-            # Also mute all dialogs that are channels or bots
-            dialogs = await cl.get_dialogs(limit=50)
-            for d in dialogs:
-                if d.is_channel or d.is_group or getattr(d.entity, 'bot', False):
+                for tgt in all_targets_to_mute:
                     try:
-                        await mute_peer(cl, d.input_entity, name)
+                        await mute_peer(cl, tgt, name)
                         muted_count += 1
                     except Exception:
                         pass
 
-            results.append({"uid": uid, "name": name, "muted_chats": muted_count})
-        except Exception as e:
-            results.append({"uid": uid, "name": name, "error": str(e)})
-        finally:
-            try:
-                await cl.disconnect()
-            except Exception:
-                pass
+                # Also mute all dialogs that are channels or bots
+                dialogs = await cl.get_dialogs(limit=50)
+                for d in dialogs:
+                    if d.is_channel or d.is_group or getattr(d.entity, 'bot', False):
+                        try:
+                            await mute_peer(cl, d.input_entity, name)
+                            muted_count += 1
+                        except Exception:
+                            pass
+
+                results.append({"uid": uid, "name": name, "muted_chats": muted_count})
+            except Exception as e:
+                results.append({"uid": uid, "name": name, "error": str(e)})
+            finally:
+                try:
+                    await cl.disconnect()
+                except Exception:
+                    pass
+                await release_account_lock(uid)
 
     return {"ok": True, "results": results}
 
@@ -5626,69 +5417,74 @@ async def inspect_bot_chat(uid: str, request: Request):
         raise HTTPException(status_code=404, detail="Account not found")
 
     sess_str = target_acc.get("session_string") or target_acc.get("session")
-    cl = create_telethon_client(sess_str=sess_str, identifier=target_acc.get("phone") or target_acc.get("name") or uid, proxy_val=target_acc.get("proxy"))
-    bots_to_check = [
-        ("mrg", "mrgminerbot"),
-        ("atf", "ATF_AIRDROP_bot"),
-        ("victors", "VictorsCompanybot"),
-        ("vyro", "vyrodrop_bot"),
-        ("kynex", "Kynex_miningbot")
-    ]
-    chats = {}
-    try:
+    async with GLOBAL_MTPROTO_SEMAPHORE:
+        locked = await acquire_account_lock(uid, ttl_seconds=30)
+        if not locked:
+            return {"ok": False, "uid": uid, "error": "Account is locked by another process"}
+        cl = create_telethon_client(sess_str=sess_str, identifier=target_acc.get("phone") or target_acc.get("name") or uid, proxy_val=target_acc.get("proxy"))
+        bots_to_check = [
+            ("mrg", "mrgminerbot"),
+            ("atf", "ATF_AIRDROP_bot"),
+            ("victors", "VictorsCompanybot"),
+            ("vyro", "vyrodrop_bot"),
+            ("kynex", "Kynex_miningbot")
+        ]
+        chats = {}
         try:
-            await cl.connect()
-        except Exception as conn_err:
-            import traceback
-            return {"ok": False, "uid": uid, "error": f"Connection error: {type(conn_err).__name__}: {conn_err}", "traceback": traceback.format_exc()}
-
-        try:
-            is_auth = await cl.is_user_authorized()
-            if not is_auth:
-                return {"ok": False, "uid": uid, "error": "Account session not authorized in Telegram"}
-        except Exception as auth_err:
-            import traceback
-            return {"ok": False, "uid": uid, "error": f"Auth check error: {type(auth_err).__name__}: {auth_err}", "traceback": traceback.format_exc()}
-
-        for name, b_user in bots_to_check:
             try:
-                b_ent = await cl.get_entity(b_user)
-                msgs = await cl.get_messages(b_ent, limit=4)
-                msg_list = []
-                for m in reversed(msgs):
-                    btns = []
-                    if m.buttons:
-                        for row in m.buttons:
-                            row_btns = []
-                            for b in row:
-                                raw_b = getattr(b, "button", b)
-                                b_type = type(raw_b).__name__
-                                b_url = getattr(b, "url", None) or getattr(raw_b, "url", None) or getattr(getattr(raw_b, "web_app", None), "url", None)
-                                b_data = getattr(raw_b, "data", None)
-                                if isinstance(b_data, bytes):
-                                    try: b_data = b_data.decode()
-                                    except Exception: b_data = str(b_data)
-                                row_btns.append({
-                                    "text": b.text,
-                                    "type": b_type,
-                                    "url": b_url,
-                                    "data": b_data
-                                })
-                            btns.append(row_btns)
-                    msg_list.append({"id": m.id, "out": m.out, "text": m.raw_text, "buttons": btns})
-                chats[name] = msg_list
-            except Exception as ex:
-                chats[name] = [{"error": str(ex)}]
-    except Exception as e:
-        import traceback
-        return {"ok": False, "uid": uid, "error": f"{type(e).__name__}: {str(e)}", "traceback": traceback.format_exc()}
-    finally:
-        try:
-            await cl.disconnect()
-        except Exception:
-            pass
+                await cl.connect()
+            except Exception as conn_err:
+                import traceback
+                return {"ok": False, "uid": uid, "error": f"Connection error: {type(conn_err).__name__}: {conn_err}", "traceback": traceback.format_exc()}
 
-    return {"ok": True, "uid": uid, "chats": chats}
+            try:
+                is_auth = await cl.is_user_authorized()
+                if not is_auth:
+                    return {"ok": False, "uid": uid, "error": "Account session not authorized in Telegram"}
+            except Exception as auth_err:
+                import traceback
+                return {"ok": False, "uid": uid, "error": f"Auth check error: {type(auth_err).__name__}: {auth_err}", "traceback": traceback.format_exc()}
+
+            for name, b_user in bots_to_check:
+                try:
+                    b_ent = await cl.get_entity(b_user)
+                    msgs = await cl.get_messages(b_ent, limit=4)
+                    msg_list = []
+                    for m in reversed(msgs):
+                        btns = []
+                        if m.buttons:
+                            for row in m.buttons:
+                                row_btns = []
+                                for b in row:
+                                    raw_b = getattr(b, "button", b)
+                                    b_type = type(raw_b).__name__
+                                    b_url = getattr(b, "url", None) or getattr(raw_b, "url", None) or getattr(getattr(raw_b, "web_app", None), "url", None)
+                                    b_data = getattr(raw_b, "data", None)
+                                    if isinstance(b_data, bytes):
+                                        try: b_data = b_data.decode()
+                                        except Exception: b_data = str(b_data)
+                                    row_btns.append({
+                                        "text": b.text,
+                                        "type": b_type,
+                                        "url": b_url,
+                                        "data": b_data
+                                    })
+                                btns.append(row_btns)
+                        msg_list.append({"id": m.id, "out": m.out, "text": m.raw_text, "buttons": btns})
+                    chats[name] = msg_list
+                except Exception as ex:
+                    chats[name] = [{"error": str(ex)}]
+        except Exception as e:
+            import traceback
+            return {"ok": False, "uid": uid, "error": f"{type(e).__name__}: {str(e)}", "traceback": traceback.format_exc()}
+        finally:
+            try:
+                await cl.disconnect()
+            except Exception:
+                pass
+            await release_account_lock(uid)
+
+        return {"ok": True, "uid": uid, "chats": chats}
 
 
 @app.get("/api/debug-account-session/{uid}")
@@ -5728,41 +5524,46 @@ async def debug_account_session(uid: str, request: Request):
         return {"ok": False, "error": f"Account {uid} has no session string"}
 
     results = {"uid": uid, "name": target_acc.get("name"), "steps": {}}
-    cl = create_telethon_client(sess_str=sess_str, identifier=target_acc.get("phone") or target_acc.get("name") or uid, proxy_val=target_acc.get("proxy"))
-    try:
-        results["steps"]["connecting"] = "started"
-        await cl.connect()
-        results["steps"]["connecting"] = "connected"
-
-        results["steps"]["authorizing"] = "checking"
-        is_auth = await cl.is_user_authorized()
-        results["steps"]["authorizing"] = is_auth
-        if not is_auth:
-            return {"ok": False, "results": results, "error": "Session is NOT authorized (may have expired or logged out)"}
-
-        me = await cl.get_me()
-        results["me"] = {"id": me.id, "first_name": me.first_name, "username": me.username, "phone": me.phone}
-
-        # Try extracting tokens for all 4 bots
-        extracted = await extract_tokens_with_client(cl, target_acc)
-        results["extracted_tokens"] = {k: (v[:30] + "..." if isinstance(v, str) and len(v) > 30 else v) for k, v in extracted.items()}
-        
-        # If tokens extracted, sync to Upstash Redis
-        if extracted:
-            await sync_account_tokens_to_clouds(extracted)
-            results["synced_to_cloud"] = True
-
-        return {"ok": True, "results": results}
-    except Exception as e:
-        import traceback
-        results["exception"] = f"{type(e).__name__}: {str(e)}"
-        results["traceback"] = traceback.format_exc()
-        return {"ok": False, "results": results, "error": str(e)}
-    finally:
+    async with GLOBAL_MTPROTO_SEMAPHORE:
+        locked = await acquire_account_lock(uid, ttl_seconds=60)
+        if not locked:
+            return {"ok": False, "uid": uid, "error": "Account is locked by another process"}
+        cl = create_telethon_client(sess_str=sess_str, identifier=target_acc.get("phone") or target_acc.get("name") or uid, proxy_val=target_acc.get("proxy"))
         try:
-            await cl.disconnect()
-        except Exception:
-            pass
+            results["steps"]["connecting"] = "started"
+            await cl.connect()
+            results["steps"]["connecting"] = "connected"
+
+            results["steps"]["authorizing"] = "checking"
+            is_auth = await cl.is_user_authorized()
+            results["steps"]["authorizing"] = is_auth
+            if not is_auth:
+                return {"ok": False, "results": results, "error": "Session is NOT authorized (may have expired or logged out)"}
+
+            me = await cl.get_me()
+            results["me"] = {"id": me.id, "first_name": me.first_name, "username": me.username, "phone": me.phone}
+
+            # Try extracting tokens for all 4 bots
+            extracted = await extract_tokens_with_client(cl, target_acc)
+            results["extracted_tokens"] = {k: (v[:30] + "..." if isinstance(v, str) and len(v) > 30 else v) for k, v in extracted.items()}
+            
+            # If tokens extracted, sync to Upstash Redis
+            if extracted:
+                await sync_account_tokens_to_clouds(extracted)
+                results["synced_to_cloud"] = True
+
+            return {"ok": True, "results": results}
+        except Exception as e:
+            import traceback
+            results["exception"] = f"{type(e).__name__}: {str(e)}"
+            results["traceback"] = traceback.format_exc()
+            return {"ok": False, "results": results, "error": str(e)}
+        finally:
+            try:
+                await cl.disconnect()
+            except Exception:
+                pass
+            await release_account_lock(uid)
 
 
 
@@ -6196,7 +5997,7 @@ async def cleanup_purged_bots_once_endpoint(request: Request):
 
                     matches = any(b.lower() == u_low for b in FLEET_BANNED_SCAMMERS) or \
                               any(c.lower() == u_low for c in SCAM_CHANNELS_TO_LEAVE) or \
-                              any(k in t_low for k in ["finvora", "turbo gram", "turbogram", "ai lab", "ailab", "stones white", "ultra wallet", "ultrawallet", "trx power", "gold keepers", "earncraft", "pepe", "art 🚀", "live withdraw"])
+                              any(k in t_low for k in ["finvora", "turbo gram", "turbogram", "ai lab", "ailab", "stones white", "ultra wallet", "ultrawallet", "trx power", "gold keepers", "earncraft", "art 🚀", "live withdraw"])
                     if matches:
                         if is_bot:
                             try: await cl(functions.contacts.BlockRequest(id=d.entity))
@@ -6332,30 +6133,46 @@ async def onboard_new_bots(request: Request):
                 continue
 
             acc_res = {"uid": uid, "name": name, "bots": {}}
-            cl = create_telethon_client(sess_str=sess_str, identifier=acc.get("phone") or name, proxy_val=acc.get("proxy"))
-            try:
-                await cl.connect()
-                if not await cl.is_user_authorized():
-                    acc_res["error"] = "unauthorized"
+
+            # STRICT ZERO-CHAT IMMUNITY: Existing fleet accounts are 100% immune from onboarding reconnection
+            if is_account_referrals_bound(acc) or not acc.get("is_new_onboarding"):
+                acc_res["status"] = "already_onboarded_skipped"
+                results.append(acc_res)
+                LAST_ONBOARD_STATUS["processed"] += 1
+                continue
+
+            async with GLOBAL_MTPROTO_SEMAPHORE:
+                locked = await acquire_account_lock(uid, ttl_seconds=90)
+                if not locked:
+                    acc_res["status"] = "locked_by_other_node"
                     results.append(acc_res)
+                    LAST_ONBOARD_STATUS["processed"] += 1
                     continue
-
-                # Onboard and bind master referrals across the 4 legitimate fleet bots
+                cl = create_telethon_client(sess_str=sess_str, identifier=acc.get("phone") or name, proxy_val=acc.get("proxy"))
                 try:
-                    await bind_account_master_referrals(cl, acc)
-                    for b_name in ["mrg", "atf", "victors", "vyro"]:
-                        acc_res["bots"][b_name] = "verified" if acc.get(f"{b_name}_referral_bound") else "pending"
-                except Exception as e:
-                    acc_res["error"] = str(e)
+                    await cl.connect()
+                    if not await cl.is_user_authorized():
+                        acc_res["error"] = "unauthorized"
+                        results.append(acc_res)
+                        continue
 
-                if is_account_referrals_bound(acc):
-                    acc["referrals_bound"] = True
-                await sync_new_account_to_clouds(acc)
-            finally:
-                try:
-                    await cl.disconnect()
-                except Exception:
-                    pass
+                    # Onboard and bind master referrals across the 4 legitimate fleet bots
+                    try:
+                        await bind_account_master_referrals(cl, acc)
+                        for b_name in ["mrg", "atf", "victors", "vyro"]:
+                            acc_res["bots"][b_name] = "verified" if acc.get(f"{b_name}_referral_bound") else "pending"
+                    except Exception as e:
+                        acc_res["error"] = str(e)
+
+                    if is_account_referrals_bound(acc):
+                        acc["referrals_bound"] = True
+                    await sync_new_account_to_clouds(acc)
+                finally:
+                    try:
+                        await cl.disconnect()
+                    except Exception:
+                        pass
+                    await release_account_lock(uid)
             results.append(acc_res)
             LAST_ONBOARD_STATUS["processed"] += 1
             LAST_ONBOARD_STATUS["results"].append(acc_res)

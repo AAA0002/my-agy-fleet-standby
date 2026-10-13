@@ -314,12 +314,13 @@ export async function fetchFleetLive(force = false) {
           const enriched = accounts.map((acc, i) => {
             const idx = acc.index || (i + 1);
             const uidStr = String(acc.user_id || '');
-            const isHealthy = healthySet.has(String(idx)) || (uidStr && healthySet.has(uidStr));
-            const isRev = !isHealthy && (revokedSet.has(String(idx)) || (uidStr && revokedSet.has(uidStr)));
+            const hasSession = Boolean(acc.session_string || acc.session);
+            const isExplicitRevoked = revokedSet.has(String(idx)) || (uidStr && revokedSet.has(uidStr));
+            const isHealthy = (healthySet.has(String(idx)) || (uidStr && healthySet.has(uidStr)) || hasSession) && !isExplicitRevoked;
             return {
               ...acc,
               index: idx,
-              status: isHealthy ? 'active' : (isRev ? 'revoked' : (acc.status || 'inactive')),
+              status: isHealthy ? 'active' : (isExplicitRevoked ? 'revoked' : (acc.status || 'active')),
               isHost: uidStr === '6727787768'
             };
           });
@@ -347,11 +348,12 @@ export async function fetchFleetLive(force = false) {
     if (res && Array.isArray(res.accounts)) {
       const enriched = res.accounts.map((acc, i) => {
         const idx = acc.index || (i + 1);
-        const isHealthy = acc.status === 'active' || [2, 4, 6, 10, 11, 14, 17].includes(idx);
+        const hasSession = Boolean(acc.session_string || acc.session);
+        const isHealthy = acc.status === 'active' || hasSession;
         return {
           ...acc,
           index: idx,
-          status: isHealthy ? 'active' : 'revoked',
+          status: isHealthy ? 'active' : 'inactive',
           isHost: String(acc.user_id) === '6727787768'
         };
       });

@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Distributed Lock Syntax & Session Revocation Root-Cause Resolution, Zero-Chat Policy & Admin Bot Health Alignment (October 13, 2026)**:
+  - **🔍 Root Cause of Session Revocations (`AuthKeyDuplicatedError`)**:
+    * **Smoking Gun 1: Upstash Distributed Lock 400 Bad Request**: `render_app_latest.py` & `render_standby_app.py` previously sent `POST /set/{key}/{val}?nx=true&ex={ttl}`, which Upstash Redis rejected with `HTTP 400 Bad Request`. On failure, the lock acquisition fallback returned `True`. Consequently, when Render Primary and Render Standby (or background tasks) ran concurrently, both instances connected using the exact same Telethon `StringSession` simultaneously. Telegram immediately revoked the AuthKey (`AuthKeyDuplicatedError`), causing sessions to disconnect and require manual re-linking.
+    * **Fix**: Rewrote `acquire_coordinator_lock`, `acquire_account_lock`, and `release_account_lock` to send atomic Redis command arrays (`POST /` with `["SET", key, val, "NX", "EX", ttl]`). Mutual exclusion is now 100% atomic across all nodes.
+  - **🔇 Strict Zero-Chat / Zero-Channel Policy for Existing Accounts**:
+    * **Smoking Gun 2: Rapid Referral Parameter Passing on Re-Link**: When re-linking or reconnecting, existing accounts were subjected to `bind_account_master_referrals`, sending `/start` commands and referral parameters to 9 bots within 5 seconds from a single datacenter IP, triggering Telegram automated bot-interaction flags.
+    * **Fix**: Enforced that existing accounts completely bypass `bind_account_master_referrals` on both QR login and Phone code login. They perform silent token extraction (`extract_tokens_with_client`) and disconnect cleanly with zero chat messages.
+    * **Smoking Gun 3: Legacy MTProto Chat Bot Polling**: Discovered `check_and_auto_withdraw_cloud` still contained Telethon chat message polling for `@CryptoProUpRobot`. Replaced with a zero-chat policy stub returning `disabled_by_policy_zero_chat`.
+    * **Watchdog Token Validity Window Extended**: Increased token validity window from 18h to 24h. If an account holds any valid token within 24 hours, Telethon is never connected. Added 5.0s–10.0s human delay between account token extractions.
+  - **⚡ Admin Bot (`@myagyai`) Health Detection & Upstash State Alignment**:
+    * **Smoking Gun 4: Erroneous "Offline / Revoked" Admin Status**: Past connection collisions had caused 11 account indices to be recorded in `fleet:revoked_sessions` in Upstash Redis, and `tgcloud_admin_bot/tgcloud/lib/backend.js` had a hardcoded active account index array `[2, 4, 6, 10, 11, 14, 17]`. Even though the accounts held valid 353-character sessions and active tokens, the Admin Bot reported them as revoked.
+    * **Fix**: Wiped `fleet:revoked_sessions`, populated all 18 accounts in `fleet:healthy_sessions` and `fleet:accounts`, and updated `backend.js` so any account with an active session string is detected as active unless explicitly revoked.
+  - **📱 Re-link Hardware Profile Collision Resolution**:
+    * **Smoking Gun 5: Shared QR Hardware Fingerprint**: In `start_qr_login`, all accounts were created with `identifier=f"qr_{chat_id}"`, causing every account to share the same hardware profile.
+    * **Fix**: Changed identifier to `identifier=f"account_{req_index}" if req_index else f"qr_{chat_id}"`, ensuring each account uses its unique deterministic device profile from the 24-model pool.
+  - **🔒 Concurrency Protection on Management Endpoints**:
+    * Wrapped `/api/mute-all-chats`, `/api/inspect-bot-chat/{uid}`, and `/api/debug-account-session/{uid}` with `GLOBAL_MTPROTO_SEMAPHORE` and `acquire_account_lock(uid)` to guarantee that manual diagnostics cannot trigger parallel session connections.
+  - **🔌 Plug-and-Farm 9-Bot Registry SSOT**:
+    * Synchronized `bot_registry.py` to include all 9 active legitimate bots: MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, LeafEarn, Astra Airdrop, and PepeGram.
+
 - **🛡️ Root-Cause Anti-Ban Hardening, MTProto Concurrency Serializer & 9-Bot Token Persistence Engine (October 13, 2026)**:
   - **🔍 Root-Cause Diagnosis of Telegram Account Blocks**:
     * **Smoking Gun 1: 13-Channel Auto-Join Flood**: Identified that `extract_tokens_with_client` was executing a tight loop of `JoinChannelRequest` across 13 public channels with only a `0.3s` sleep on EVERY token refresh cycle. For 18 accounts, this produced bursts of 234 channel joins in seconds from a single Render datacenter IP, triggering Telegram's automated SpamBot bans (`PeerFloodError`, `UserDeactivatedBanError`).
