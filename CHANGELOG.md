@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Telegram Anti-Phishing Code Interception Fix, 1-Tap QR Login & 2FA Resolution (October 13, 2026)**:
+  - **🚫 Root Cause Resolved (Telegram "Code Previously Shared" Block)**:
+    * When users typed their 5-digit Telegram verification code directly into bot chat messages (`@myagyai`), Telegram's anti-phishing scanner intercepted the code in the chat, flagged it as compromised/leaked, and revoked it (`PHONE_CODE_EXPIRED`).
+    * The subsequent login attempt failed with `PhoneCodeExpiredError` and dropped the session. When the user then sent their 2FA password (`Arif216@`), the login session was no longer active, causing it to fall through to AI chat.
+  - **📱 1-Tap QR Code Login Implementation (`btn_qr_login_`, `/qr` & `/qrlogin`)**:
+    * Added full **1-Tap QR Login** support directly in `@myagyai` (`btn_qr_login_${idx}` and `/qr <1-18>` command).
+    * Connects to Render Node 2 (`/api/account/login/qr-start`), generating an official Telegram device linking URL (`tg://login?token=...`).
+    * **Zero Codes / Zero SMS**: Bypasses Telegram chat code scanning 100%. User taps the link to authorize immediately in Telegram Settings → Devices.
+    * **Automatic 2FA**: Render Node 2 automatically authenticates 2FA with master fleet password (`Arif216@`) upon QR authorization.
+  - **🔐 Safe Mini App Code Input Routing**:
+    * Updated login/relink prompts in `@myagyai` to explicitly warn against typing codes into Telegram chats.
+    * Routed users directly to the **AAA Telegram Mini App** (`https://agy-aaa000.vercel.app`), where verification codes are submitted via direct encrypted HTTPS, completely hidden from Telegram chat message scanners.
+  - **🔒 2FA Password Interception & Session Protection (`deploy_both_cf_workers.py`)**:
+    * Added pattern matching for 2FA passwords (e.g. `Arif216@`). If sent when a code was invalidated or expired, the bot intelligently recognizes it and guides the user to 1-Tap QR Login instead of confusing it with normal chat.
+  - **⚡ Error Transparency in Render Backend (`render_standby_app.py`, `render_app_latest.py`)**:
+    * Updated `PhoneCodeExpiredError` messaging to clearly state why Telegram blocked the code (code sharing in chat) and direct users to QR / Mini App.
+
 - **💎 Restoration & Perfection of Authentic AAA AUTO Telegram Mini App & Admin Bot Integration (October 12, 2026)**:
   - **📱 Authentic Mini App Restored (`public/index.html`)**:
     * Restored the authentic production application (`AAA AUTO — Enterprise Fleet & Multi-Chain Treasury`) from commit `844b738`.

@@ -608,7 +608,24 @@ To prevent resource leakages, unbounded database list growth, and local disk bal
 
 ---
 
-## 🛠️ 7. Operator & AI Cheat Sheet
+## ⚡ 6.8 Telegram Anti-Phishing Code Interception & 1-Tap QR Authentication (October 13, 2026)
+
+### 1. The "Code Previously Shared" Block Mechanism
+- **The Phenomenon**: When an operator enters a 5-digit Telegram login code directly as a message in a bot chat (`@myagyai`), Telegram's automated anti-phishing scanner intercepts the text. Telegram instantly invalidates the code and notifies the account:
+  > *"Nobody gained access to your chats because the login was not completed. The code was entered correctly, but sign in was not allowed, because this code was previously shared by your account."*
+- **Backend Consequence**: Telegram's API returns `PHONE_CODE_EXPIRED` to the MTProto client, which drops the login session. Any subsequent attempt to enter 2FA passwords (`Arif216@`) fails because the login session has already been evicted.
+
+### 2. Dual Anti-Block Protocols
+1. **1-Tap QR Code Login (`/qr <index>`, `btn_qr_login_<index>`)**:
+   - Generates official MTProto QR tokens via Render Node 2 (`temp_client.qr_login()`).
+   - Returns a `tg://login?token=...` deep-link.
+   - The operator authorizes the session with one tap inside the official Telegram app (**Settings → Devices → Link Desktop Device**).
+   - **Zero Codes / Zero SMS**: Immune to Telegram's chat scanning engine.
+   - **Automatic 2FA Execution**: Render Node 2 automatically submits the fleet master password (`Arif216@`) upon QR confirmation.
+2. **Mini App Direct HTTPS Form**:
+   - Verification codes entered in the **AAA Telegram Mini App** (`https://agy-aaa000.vercel.app`) are dispatched directly via HTTPS POST (`/api/account/login/verify-code`), completely isolated from Telegram's chat message inspection layers.
+
+---
 
 Here are the exact commands to run for everyday operations:
 

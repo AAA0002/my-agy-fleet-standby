@@ -4742,15 +4742,63 @@ fi
                 }
                 const codeRep = `📨 *Verification Code Sent for Account #${relinkIdx}!*\n\n` +
                   `Telegram sent a 5-digit verification code to \`${phoneToRelink}\`.\n\n` +
-                  `Please reply directly with the code (e.g. \`12345\`):\n` +
-                  `_(Or tap ❌ Cancel Login below to abort)_`;
-                await sendResilientMessage(chatId, codeRep, cancelKeyboard, "Markdown");
+                  `⚠️ *DO NOT TYPE THIS CODE IN THIS CHAT!*\n` +
+                  `Telegram automatically revokes and blocks login codes typed directly into chat messages ("code previously shared" security policy)!\n\n` +
+                  `🛡️ *2 Safe Ways to Finish Login:*\n` +
+                  `1️⃣ *Option 1 (Recommended):* Tap *🔐 Enter Code in Mini App* below (100% private HTTPS form).\n` +
+                  `2️⃣ *Option 2:* Tap *📱 1-Tap QR Login* to connect immediately with zero codes!`;
+                await sendResilientMessage(chatId, codeRep, {
+                  inline_keyboard: [
+                    [{ text: "🔐 Enter Code in Mini App (Safe)", web_app: { url: appUrl } }],
+                    [{ text: `📱 1-Tap QR Login (#${relinkIdx})`, callback_data: `btn_qr_login_${relinkIdx}` }],
+                    [{ text: "❌ Cancel Login", callback_data: "btn_cancel_login" }]
+                  ]
+                }, "Markdown");
               } else {
                 const errDetail = res ? (res.error || res.message) : "Failed to connect to Telegram MTProto Gateway";
                 const errRep = `❌ *Could Not Request Code for Account #${relinkIdx}*\n\n` +
                   `*Error:* ${errDetail}\n\n` +
                   `Please check the phone number or try again in a few moments:`;
                 await sendResilientMessage(chatId, errRep, cancelKeyboard, "Markdown");
+              }
+            } else if (cbData.startsWith("btn_qr_login_")) {
+              const targetIdx = parseInt(cbData.replace("btn_qr_login_", ""), 10) || 1;
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, `📱 *Connecting to Render Cloud & Generating QR Session for Account #${targetIdx}...*\n\nPlease wait a moment...`, cancelKeyboard);
+              try {
+                const qRes = await fetch("https://my-agy-fleet-standby-node2.onrender.com/api/account/login/qr-start", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`
+                  },
+                  body: JSON.stringify({ chat_id: String(chatId), index: targetIdx, secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026" }),
+                  signal: AbortSignal.timeout(25000)
+                });
+                const qData = await qRes.json();
+                if (qData && qData.ok && qData.url) {
+                  const qrRep = `📱 *1-Tap Telegram QR Login for Account #${targetIdx}*\n` +
+                    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                    `✅ *Zero SMS or OTP codes required!*\n` +
+                    `Telegram will NEVER block this login because it uses official direct device linking.\n\n` +
+                    `👉 *How to Complete (Choose either option):*\n` +
+                    `1️⃣ *Method 1 (Instant):* Tap the button below to authorize this session directly in Telegram.\n` +
+                    `2️⃣ *Method 2:* Open Telegram on your phone → *Settings* → *Devices* → *Link Desktop Device* and scan or confirm.\n\n` +
+                    `🔒 *2FA Password:* Automatic (\`Arif216@\`)\n` +
+                    `⏱️ *Link Expiry:* 2 minutes\n` +
+                    `━━━━━━━━━━━━━━━━━━━━━━`;
+                  await editOrSendResilientMessage(chatId, cbMsgId, qrRep, {
+                    inline_keyboard: [
+                      [{ text: "⚡ Link Device in Telegram Now", url: qData.url }],
+                      [{ text: "🔄 Refresh QR Link", callback_data: `btn_qr_login_${targetIdx}` }],
+                      [{ text: "🔙 Main Menu", callback_data: "btn_back_main" }]
+                    ]
+                  });
+                } else {
+                  await editOrSendResilientMessage(chatId, cbMsgId, `❌ *Could Not Start QR Session:*\n${qData?.error || "Cluster timeout"}\n\nPlease try again or use the Mini App:`, cancelKeyboard);
+                }
+              } catch (err) {
+                await editOrSendResilientMessage(chatId, cbMsgId, `❌ *QR Connection Error:*\n${err.message}\n\nPlease retry in a moment:`, cancelKeyboard);
               }
             } else if (cbData === "btn_mesh") {
               const rep = `🌐 *MY AGY AI — Multi-Cloud Unified Mesh*\n` +
@@ -5635,6 +5683,51 @@ fi
           return new Response("OK");
         }
 
+        // 1.16 Dedicated QR Code Login Command (/qr, /qrlogin)
+        if (text === "/qr" || text.startsWith("/qr")) {
+          ctx.waitUntil((async () => {
+            const parts = text.split(" ").filter(Boolean);
+            const reqIdx = parts.length > 1 ? parseInt(parts[1], 10) : 1;
+            await sendChatAction(chatId, "typing");
+            try {
+              const qRes = await fetch("https://my-agy-fleet-standby-node2.onrender.com/api/account/login/qr-start", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`
+                },
+                body: JSON.stringify({ chat_id: String(chatId), index: reqIdx, secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026" }),
+                signal: AbortSignal.timeout(25000)
+              });
+              const qData = await qRes.json();
+              if (qData && qData.ok && qData.url) {
+                const qrRep = `📱 *1-Tap Telegram QR Login for Account #${reqIdx}*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `✅ *Zero SMS or OTP codes required!*\n` +
+                  `Telegram will NEVER block this login because it uses official direct device linking.\n\n` +
+                  `👉 *How to Complete (Choose either option):*\n` +
+                  `1️⃣ *Method 1 (Instant):* Tap the button below to authorize this session directly in Telegram.\n` +
+                  `2️⃣ *Method 2:* Open Telegram on your phone → *Settings* → *Devices* → *Link Desktop Device* and scan or confirm.\n\n` +
+                  `🔒 *2FA Password:* Automatic (\`Arif216@\`)\n` +
+                  `⏱️ *Link Expiry:* 2 minutes\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━`;
+                await sendReply(qrRep, {
+                  inline_keyboard: [
+                    [{ text: "⚡ Link Device in Telegram Now", url: qData.url }],
+                    [{ text: "🔄 Refresh QR Link", callback_data: `btn_qr_login_${reqIdx}` }],
+                    [{ text: "🔙 Main Menu", callback_data: "btn_back_main" }]
+                  ]
+                });
+              } else {
+                await sendReply(`❌ *Could Not Start QR Session:*\n${qData?.error || "Cluster timeout"}\n\nPlease try again or use the Mini App.`);
+              }
+            } catch (err) {
+              await sendReply(`❌ *QR Connection Error:*\n${err.message}\n\nPlease retry in a moment.`);
+            }
+          })());
+          return new Response("OK");
+        }
+
         // 1.4 Dedicated Stones Miners Notice (/stones)
         if (text === "/stones" || text.startsWith("/stones")) {
           ctx.waitUntil((async () => {
@@ -6242,10 +6335,21 @@ fi
               await sendAnimatedReply(chatId, [succMsg], mainKeyboard);
             } else {
               const errDetail = res ? (res.error || res.message) : "Verification code rejected";
-              const errMsg = `❌ *Verification Failed*\n\n` +
-                `*Error:* ${errDetail}\n\n` +
-                `Please check the 5-digit code and reply again (or tap ❌ Cancel Login to restart):`;
-              await sendAnimatedReply(chatId, [errMsg], cancelKeyboard);
+              const isSharedOrExpired = String(errDetail).toLowerCase().includes("expired") || String(errDetail).toLowerCase().includes("share");
+              const errMsg = isSharedOrExpired
+                ? `❌ *Verification Failed (Code Blocked by Telegram)*\n\n` +
+                  `*Telegram Security Notice:* Telegram automatically blocked & invalidated this code because it was typed into a chat message ("code previously shared").\n\n` +
+                  `👉 *Fast Permanent Solution:* Use *1-Tap QR Login* below (100% immune to Telegram code blocks) or enter code inside the Mini App!`
+                : `❌ *Verification Failed*\n\n` +
+                  `*Error:* ${errDetail}\n\n` +
+                  `Please check the code and try again, or use 1-Tap QR Login:`;
+              await sendResilientMessage(chatId, errMsg, {
+                inline_keyboard: [
+                  [{ text: `📱 1-Tap QR Login (#${targetRelinkIdx || 1})`, callback_data: `btn_qr_login_${targetRelinkIdx || 1}` }],
+                  [{ text: "🔐 Open Mini App (Safe)", web_app: { url: appUrl } }],
+                  [{ text: "❌ Cancel Login", callback_data: "btn_cancel_login" }]
+                ]
+              }, "Markdown");
             }
           })());
           return new Response("OK");
@@ -6285,6 +6389,26 @@ fi
                 `_(Or tap ❌ Cancel Login to abort)_`;
               await sendAnimatedReply(chatId, [errMsg], cancelKeyboard);
             }
+          })());
+          return new Response("OK");
+        }
+
+        // PRIORITY 2.5: Password detected while not in waiting_2fa (e.g. Arif216@ sent after code expired or without waiting_2fa)
+        const isPasswordPattern = trimmed === "Arif216@" || (trimmed.length >= 6 && trimmed.includes("@") && /[A-Za-z]/.test(trimmed) && /\d/.test(trimmed));
+        if (isPasswordPattern && (!loginFlowState || loginFlowState.step !== "waiting_2fa") && !isCommandOrMenu) {
+          ctx.waitUntil((async () => {
+            const rep = `🔒 *Two-Factor Password Detected (${trimmed})*\n\n` +
+              `The verification code step has not been completed yet (or Telegram expired the code because it was sent in a chat message).\n\n` +
+              `👉 *To connect your account cleanly without Telegram blocking your codes:*\n` +
+              `1️⃣ *Option 1 (Instant):* Tap **[ 📱 1-Tap QR Login ]** below (100% zero codes, auto-applies this 2FA password).\n` +
+              `2️⃣ *Option 2:* Open the **Mini App** to enter verification codes safely via private encrypted HTTPS!`;
+            await sendReply(rep, {
+              inline_keyboard: [
+                [{ text: "📱 1-Tap QR Login (Zero Code)", callback_data: "btn_qr_login_1" }],
+                [{ text: "🔐 Open Mini App", web_app: { url: appUrl } }],
+                [{ text: "🔙 Main Menu", callback_data: "btn_back_main" }]
+              ]
+            });
           })());
           return new Response("OK");
         }
@@ -6333,11 +6457,21 @@ fi
                 if (env.BACKUP_KV) {
                   ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify(flowState), { expirationTtl: 600 }).catch(() => {}));
                 }
+                const matchedRelink = matchedIdx || 1;
                 const msg = `📨 *Verification Code Sent!*\n\n` +
                   `Telegram sent a 5-digit verification code to \`${normalized}\`.\n\n` +
-                  `Please reply with the code (e.g. \`12345\`):\n` +
-                  `_(Or tap ❌ Cancel Login below to abort)_`;
-                await sendAnimatedReply(chatId, [msg], cancelKeyboard);
+                  `⚠️ *DO NOT TYPE THIS CODE IN THIS CHAT!*\n` +
+                  `Telegram automatically revokes and blocks login codes typed directly into chat messages ("code previously shared" security policy)!\n\n` +
+                  `🛡️ *2 Safe Ways to Finish Login:*\n` +
+                  `1️⃣ *Option 1 (Recommended):* Tap *🔐 Enter Code in Mini App* below (100% private HTTPS form).\n` +
+                  `2️⃣ *Option 2:* Tap *📱 1-Tap QR Login* to connect immediately with zero codes!`;
+                await sendResilientMessage(chatId, msg, {
+                  inline_keyboard: [
+                    [{ text: "🔐 Enter Code in Mini App (Safe)", web_app: { url: appUrl } }],
+                    [{ text: `📱 1-Tap QR Login (#${matchedRelink})`, callback_data: `btn_qr_login_${matchedRelink}` }],
+                    [{ text: "❌ Cancel Login", callback_data: "btn_cancel_login" }]
+                  ]
+                }, "Markdown");
               } else {
                 const errDetail = res ? (res.error || res.message) : "Failed to connect to Telegram MTProto Gateway";
                 const errMsg = `❌ *Could Not Request Code*\n\n` +

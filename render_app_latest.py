@@ -2759,7 +2759,7 @@ async def verify_login_code(request: Request):
         except Exception:
             pass
         LOGIN_SESSIONS.pop(chat_id, None)
-        return {"ok": False, "need_2fa": False, "expired": True, "error": "Verification code expired. Tap Request Fresh Code to receive a new one."}
+        return {"ok": False, "need_2fa": False, "expired": True, "error": "Verification code expired or invalidated by Telegram (code was shared in chat). Please use 1-Tap QR Login or enter code in Mini App."}
     except Exception as e:
         logger.error(f"[Standby Cloud Login] Sign-in error: {e}")
         return {"ok": False, "need_2fa": False, "error": str(e)}
