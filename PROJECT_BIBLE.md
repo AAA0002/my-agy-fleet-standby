@@ -749,10 +749,10 @@ To facilitate seamless login on new devices (e.g., after phone resets) without S
   - Generates an on-screen numeric keypad `[1][2][3]`...`[⌫ Del][0][✅ Verify]` inside `@myagyai` with real-time slot state `[ • • • • • ]`.
   - Digit taps send Telegram Callback Queries (`pin_digit_0..9`) rather than chat text messages, completely bypassing Telegram's chat text anti-phishing scanner and preventing "code previously shared" revocation blocks.
   - Automatically submits on 5th digit (or `✅ Verify`), calls Render Node 2 MTProto coordinator, and auto-applies 2FA password (`Arif216@` / `Arif-Abid`).
-* **Real Telegram Login Portal with Touch PIN Pad (Mini App `public/index.html`)**:
-  - Provides an in-app HTTPS modal with 5 visual styled PIN slot boxes and an on-screen 3x4 Touch PIN Pad.
-  - Supports deep-link parameter routing (`?action=login&index=X` and `startapp=login_X`) to open the portal directly for any target node.
-  - Performs 100% private HTTPS authentication with automatic 2FA resolution.
+* **Complete Removal of Mini App & `web_app` Buttons from Admin Bot (`@myagyai`)**:
+  - Per operator directive, all Mini App buttons, `web_app` launchers, and external links have been completely purged from `@myagyai` (inline keyboards, persistent reply keyboard, bot commands, `/app`, `/relink`, and audit screens).
+  - The persistent bottom menu button (`setChatMenuButton`) on `@myagyai` has been reset from custom web app (`[ 👑 Fleet Console ]`) to default standard Telegram menu (`{"type": "default"}`).
+  - All fleet management, account re-linking, OTP code retrieval, and session operations execute 100% natively in Telegram chat via the on-screen PIN Pad and bot text commands.
 
 ### 4. Dynamic Session Health Synchronization & Active-Passive Edge Failback
 * **Dynamic Health State Machine**: Managed dynamically via Upstash Redis sets (`fleet:healthy_sessions` and `fleet:revoked_sessions`) with 60s in-memory edge caching.

@@ -3872,18 +3872,13 @@ fi
             { text: "🗑️ Remove Account", callback_data: "btn_admin_remove_menu" }
           ]);
           rows.push([
-            { text: "🔙 Back to Main Menu", callback_data: "btn_back_main" },
-            { text: "📱 Open Mini App", web_app: { url: appUrl } }
+            { text: "🔙 Back to Main Menu", callback_data: "btn_back_main" }
           ]);
           return { inline_keyboard: rows };
         };
 
         const mainInlineKeyboard = {
           inline_keyboard: [
-            [
-              { text: "📱 AAA Telegram App", web_app: { url: appUrl } },
-              { text: "👑 Fleet Console", web_app: { url: adminConsoleUrl } }
-            ],
             [
               { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" },
               { text: "🔍 Session Audit", callback_data: "btn_session_audit" }
@@ -3915,8 +3910,7 @@ fi
               { text: "🗑️ Remove Account", callback_data: "btn_admin_remove_menu" }
             ],
             [
-              { text: "🔙 Back to Main Menu", callback_data: "btn_back_main" },
-              { text: "📱 Open Mini App", web_app: { url: appUrl } }
+              { text: "🔙 Back to Main Menu", callback_data: "btn_back_main" }
             ]
           ]
         };
@@ -3954,10 +3948,7 @@ fi
                 { text: "✅ Verify", callback_data: "pin_submit" }
               ],
               [
-                { text: "🔐 Open Mini App Login Portal ↗️", web_app: { url: `${appUrl}?action=login&index=${accountIndex}` } }
-              ],
-              [
-                { text: `📱 Switch to 1-Tap QR (#${padIdx})`, callback_data: `btn_qr_login_${accountIndex}` },
+                { text: `🔄 Request Fresh Code (#${padIdx})`, callback_data: `btn_request_code_${accountIndex}` },
                 { text: "❌ Cancel", callback_data: "btn_cancel_login" }
               ]
             ]
@@ -3977,10 +3968,6 @@ fi
         const mainKeyboard = {
           keyboard: [
             [
-              { text: "📱 AAA Telegram App", web_app: { url: appUrl } },
-              { text: "👑 Admin Console", web_app: { url: adminConsoleUrl } }
-            ],
-            [
               { text: "📊 Fleet Status" },
               { text: "🔑 OTP & Relogin" }
             ],
@@ -3990,7 +3977,11 @@ fi
             ],
             [
               { text: "👥 Fleet Accounts" },
-              { text: "🔄 Refresh Menu" }
+              { text: "⚡ 5-Bot Harvest" }
+            ],
+            [
+              { text: "🔄 Refresh Menu" },
+              { text: "🌐 Cloud Mesh" }
             ]
           ],
           resize_keyboard: true,
@@ -4566,8 +4557,7 @@ fi
               const walletMarkup = {
                 inline_keyboard: [
                   [
-                    { text: "🔙 Back to Main Menu", callback_data: "btn_back_main" },
-                    { text: "📱 Open Mini App", web_app: { url: appUrl } }
+                    { text: "🔙 Back to Main Menu", callback_data: "btn_back_main" }
                   ]
                 ]
               };
@@ -4688,7 +4678,7 @@ fi
               ]);
               relinkBtns.push([
                 { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
-                { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }
+                { text: "🔙 Main Menu", callback_data: "btn_back_main" }
               ]);
 
               const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -4779,7 +4769,7 @@ fi
               const repMarkup = {
                 inline_keyboard: [
                   [{ text: `👥 Fleet Accounts (${accounts.length})`, callback_data: "btn_accounts" }, { text: "🗑️ Remove Another", callback_data: "btn_admin_remove_menu" }],
-                  [{ text: "🔑 OTP Menu", callback_data: "btn_otp_menu" }, { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }]
+                  [{ text: "🔑 OTP Menu", callback_data: "btn_otp_menu" }, { text: "🔙 Main Menu", callback_data: "btn_back_main" }]
                 ]
               };
               const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -4958,8 +4948,8 @@ fi
 
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, markup);
-            } else if (cbData.startsWith("btn_relink_")) {
-              const relinkIdx = parseInt(cbData.replace("btn_relink_", ""), 10) || 1;
+            } else if (cbData.startsWith("btn_relink_") || cbData.startsWith("btn_request_code_")) {
+              const relinkIdx = parseInt(cbData.replace("btn_relink_", "").replace("btn_request_code_", ""), 10) || 1;
               const accounts = await getFleetAccounts();
               const targetAcc = accounts.find(a => (a.index === relinkIdx) || (accounts.indexOf(a) + 1 === relinkIdx));
               const phoneToRelink = (targetAcc && targetAcc.phone && targetAcc.phone.length >= 8 && targetAcc.phone !== "N/A" && targetAcc.phone !== "Hidden")
@@ -4969,36 +4959,11 @@ fi
                 await sendResilientMessage(chatId, `❌ Phone number for Account #${relinkIdx} not found. Please tap ➕ Add Account.`, cancelKeyboard, "Markdown");
                 return;
               }
-              const rep = `🔄 *Re-link Account #${relinkIdx}*\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              const rep = `🔄 *Requesting Verification Code for Account #${relinkIdx}*\n\n` +
                 `• *Account:* #${relinkIdx} (${targetAcc ? targetAcc.name : "Node " + relinkIdx})\n` +
                 `• *Phone:* \`${phoneToRelink}\`\n\n` +
-                `👉 *Choose Connection Method:*\n\n` +
-                `1️⃣ *Option 1 (Interactive PIN Pad — Recommended):*\n` +
-                `Tap **[ 📨 Request Code & Open PIN Pad ]** below. Telegram sends a 5-digit code, and you tap it directly on the on-screen keypad with zero chat typing!\n\n` +
-                `2️⃣ *Option 2 (Mini App Portal):* Tap **[ 🔐 Open Mini App Login Portal ]**.\n` +
-                `3️⃣ *Option 3 (QR Link):* Tap **[ 📱 1-Tap QR Login ]**.\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━`;
-              const cbMsgId = cb.message ? cb.message.message_id : null;
-              await editOrSendResilientMessage(chatId, cbMsgId, rep, {
-                inline_keyboard: [
-                  [{ text: `📨 Request Code & Open PIN Pad (#${relinkIdx})`, callback_data: `btn_request_code_${relinkIdx}` }],
-                  [{ text: "🔐 Open Mini App Login Portal ↗️", web_app: { url: `${appUrl}?action=login&index=${relinkIdx}` } }],
-                  [{ text: `📱 1-Tap QR Login (#${relinkIdx})`, callback_data: `btn_qr_login_${relinkIdx}` }],
-                  [{ text: "🔙 Cancel", callback_data: "btn_cancel_login" }]
-                ]
-              });
-            } else if (cbData.startsWith("btn_request_code_")) {
-              const relinkIdx = parseInt(cbData.replace("btn_request_code_", ""), 10) || 1;
-              const accounts = await getFleetAccounts();
-              const targetAcc = accounts.find(a => (a.index === relinkIdx) || (accounts.indexOf(a) + 1 === relinkIdx));
-              const phoneToRelink = (targetAcc && targetAcc.phone && targetAcc.phone.length >= 8 && targetAcc.phone !== "N/A" && targetAcc.phone !== "Hidden")
-                ? targetAcc.phone
-                : (KNOWN_PHONES_BY_INDEX[relinkIdx] || "");
-              const rep = `🔄 *Requesting Verification Code for Account #${relinkIdx}*\n\n` +
-                `• *Phone:* \`${phoneToRelink}\`\n\n` +
                 `Connecting to Telegram MTProto...`;
-              const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, cancelKeyboard);
 
               const res = await cloudLoginSendCode(phoneToRelink, chatId);
@@ -5312,7 +5277,7 @@ fi
                     { text: "💎 Verified Wallets", callback_data: "btn_atf_wallets" }
                   ],
                   [
-                    { text: "🚀 Open Executive Dashboard", web_app: { url: dashUrl } }
+                    { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                   ]
                 ]
               };
@@ -5478,7 +5443,7 @@ fi
                     ],
                     [
                       { text: "📊 Community Roster", callback_data: "btn_community" },
-                      { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }
+                      { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                     ]
                   ]
                 };
@@ -5523,7 +5488,7 @@ fi
                       { text: "📊 Community Roster", callback_data: "btn_community" }
                     ],
                     [
-                      { text: "🚀 Open Executive Dashboard", web_app: { url: dashUrl } }
+                      { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                     ]
                   ]
                 };
@@ -5553,7 +5518,7 @@ fi
                 const whalesMarkup = {
                   inline_keyboard: [
                     [{ text: "🔄 Refresh Whales", callback_data: "btn_whales" }, { text: "🔥 Economy Stats", callback_data: "btn_burn" }],
-                    [{ text: "🚀 Open Dashboard", web_app: { url: dashUrl } }]
+                    [{ text: "🔙 Main Menu", callback_data: "btn_back_main" }]
                   ]
                 };
                 const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -5586,7 +5551,7 @@ fi
                 const pausedMarkup = {
                   inline_keyboard: [
                     [{ text: "⚡ Run Daily Sweep", callback_data: "btn_sweep_daily" }, { text: "🔄 Refresh List", callback_data: "btn_paused" }],
-                    [{ text: "🚀 Open Dashboard", web_app: { url: dashUrl } }]
+                    [{ text: "🔙 Main Menu", callback_data: "btn_back_main" }]
                   ]
                 };
                 const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -5655,7 +5620,7 @@ fi
                       { text: "🔄 Re-Audit Fleet", callback_data: "btn_sybil" }
                     ],
                     [
-                      { text: "🚀 Open Admin Console", web_app: { url: dashUrl } }
+                      { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                     ]
                   ]
                 };
@@ -5877,27 +5842,16 @@ fi
           return new Response("OK");
         }
 
-        // 1.1 Dedicated AAA Telegram Mini App Command (/app)
+        // 1.1 Dedicated Fleet Status Command (/app, /miniapp)
         if (text === "/app" || text === "📱 AAA Telegram App" || text === "/miniapp" || text === "📱 Mini App") {
           ctx.waitUntil((async () => {
-            const rep = `📱 *AAA Telegram — Premium Mini App*\n` +
+            const rep = `👑 *AAA AUTO Operations Hub*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `Manage multiple Telegram accounts and active MTProto sessions from one simple workspace.\n\n` +
-              `🌐 *Direct WebApp Link:* \`${appUrl}\`\n` +
-              `👑 *Fleet Admin Console:* \`${adminConsoleUrl}\`\n\n` +
-              `_Tap the button below to launch inside Telegram:_`;
-            const appMarkup = {
-              inline_keyboard: [
-                [
-                  { text: "📱 Launch AAA Telegram", web_app: { url: appUrl } },
-                  { text: "👑 Launch Admin Console", web_app: { url: adminConsoleUrl } }
-                ],
-                [
-                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
-                ]
-              ]
-            };
-            await sendReply(rep, appMarkup);
+              `All 18 Telegram accounts and 5 cloud mining bots are managed directly in this chat.\n\n` +
+              `• ⌨️ *PIN Pad Login:* Tap /relink or *🔑 OTP & Relogin* to restore sessions\n` +
+              `• ⚡ *Zero Phone Load:* 100% Cloud MTProto active on Render & Cloudflare Edge\n` +
+              `• 🛡️ *Anti-Ban:* Callback queries bypass Telegram code sharing blocks`;
+            await sendReply(rep, mainInlineKeyboard);
           })());
           return new Response("OK");
         }
@@ -5948,11 +5902,10 @@ fi
               }
             }
             if (row.length > 0) relinkBtns.push(row);
-            relinkBtns.push([{ text: "📱 Open AAA Telegram App", web_app: { url: appUrl } }]);
             relinkBtns.push([{ text: "🔙 Main Menu", callback_data: "btn_back_main" }]);
 
             const rep = `🔄 *Select Fleet Account to Re-link Session:*\n━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `Tap an account number to dispatch a new Telegram login code, or manage all sessions directly inside the Mini App.`;
+              `Tap any account number below to dispatch a verification code and open the on-screen PIN Pad.`;
             await sendReply(rep, { inline_keyboard: relinkBtns });
           })());
           return new Response("OK");
@@ -6042,10 +5995,8 @@ fi
                   { text: "⚡ Claim Yield", callback_data: "btn_kynex_claim" }
                 ],
                 [
-                  { text: "🚀 Open Visual Mini App", web_app: { url: dashUrl } }
-                ],
-                [
-                  { text: "🔄 Refresh Status", callback_data: "btn_status" }
+                  { text: "🔄 Refresh Status", callback_data: "btn_status" },
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                 ]
               ]
             };
@@ -6076,10 +6027,8 @@ fi
                   { text: "👛 Verified Wallets", callback_data: "btn_wallets" }
                 ],
                 [
-                  { text: "🚀 Open Visual Mini App", web_app: { url: dashUrl } }
-                ],
-                [
-                  { text: "🔄 Refresh Status", callback_data: "btn_status" }
+                  { text: "🔄 Refresh Status", callback_data: "btn_status" },
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                 ]
               ]
             };
@@ -6093,7 +6042,7 @@ fi
               `• *TON Connect 2.0:* Cryptographically Bound Wallets ✅\n` +
               `• *Deep Mine Arcade:* Automated Expeditions & Loot\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `⚡ _Tap the buttons below to check telemetry or open mini app:_`;
+              `⚡ _Tap the buttons below to check telemetry:_`;
             await sendReply(vicMsg, vicInlineKeyboard);
           })());
           return new Response("OK");
@@ -6109,10 +6058,8 @@ fi
                   { text: "👛 Verified Wallets", callback_data: "btn_wallets" }
                 ],
                 [
-                  { text: "🚀 Open Visual Mini App", web_app: { url: dashUrl } }
-                ],
-                [
-                  { text: "🔄 Refresh Status", callback_data: "btn_status" }
+                  { text: "🔄 Refresh Status", callback_data: "btn_status" },
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                 ]
               ]
             };
@@ -6124,7 +6071,7 @@ fi
               `• *TON Wallets:* 18/18 Bound & Connected\n` +
               `• *Turnstile Pass:* Autonomous Headless Cloud Solver ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `⚡ _Tap the buttons below to check telemetry or open mini app:_`;
+              `⚡ _Tap the buttons below to check telemetry:_`;
             await sendReply(vyroMsg, vyroInlineKeyboard);
           })());
           return new Response("OK");
@@ -6140,10 +6087,8 @@ fi
                   { text: "👛 Verified Wallets", callback_data: "btn_wallets" }
                 ],
                 [
-                  { text: "🚀 Open Visual Mini App", web_app: { url: dashUrl } }
-                ],
-                [
-                  { text: "🔄 Refresh Status", callback_data: "btn_status" }
+                  { text: "🔄 Refresh Status", callback_data: "btn_status" },
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                 ]
               ]
             };
@@ -6155,7 +6100,7 @@ fi
               `• *Cryptographic TON Connect 2.0 Proof:* 18/18 Connected\n` +
               `• *Anti-Bot Defense:* User-Agent & Signature Isolation ✅\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `⚡ _Tap the buttons below to check telemetry or open mini app:_`;
+              `⚡ _Tap the buttons below to check telemetry:_`;
             await sendReply(mrgMsg, mrgInlineKeyboard);
           })());
           return new Response("OK");
@@ -6184,10 +6129,8 @@ fi
                   { text: "💎 Verified Wallets", callback_data: "btn_atf_wallets" }
                 ],
                 [
-                  { text: "🚀 Open Visual Mini App", web_app: { url: dashUrl } }
-                ],
-                [
-                  { text: "🔄 Refresh Status", callback_data: "btn_status" }
+                  { text: "🔄 Refresh Status", callback_data: "btn_status" },
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                 ]
               ]
             };
@@ -6523,7 +6466,7 @@ fi
             const repMarkup = {
               inline_keyboard: [
                 [{ text: `👥 Fleet Accounts (${accounts.length})`, callback_data: "btn_accounts" }, { text: "🗑️ Remove Another", callback_data: "btn_admin_remove_menu" }],
-                [{ text: "🔑 OTP Menu", callback_data: "btn_otp_menu" }, { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }]
+                [{ text: "🔑 OTP Menu", callback_data: "btn_otp_menu" }, { text: "🔙 Main Menu", callback_data: "btn_back_main" }]
               ]
             };
             await sendReply(rep, repMarkup);
@@ -6638,20 +6581,15 @@ fi
             } else {
               const errDetail = res ? (res.error || res.message) : "Verification code rejected";
               const isSharedOrExpired = String(errDetail).toLowerCase().includes("expired") || String(errDetail).toLowerCase().includes("share");
+              const targetIdx = targetRelinkIdx || 1;
               const errMsg = isSharedOrExpired
-                ? `❌ *Verification Failed (Code Blocked by Telegram)*\n\n` +
-                  `*Telegram Security Notice:* Telegram automatically blocked & invalidated this code because it was typed into a chat message ("code previously shared").\n\n` +
-                  `👉 *Fast Permanent Solution:* Use *1-Tap QR Login* below (100% immune to Telegram code blocks) or enter code inside the Mini App!`
+                ? `❌ *Verification Failed (Code Expired or Blocked)*\n\n` +
+                  `*Telegram Security Notice:* Telegram invalidated this code or it expired.\n\n` +
+                  `👉 *Fast Solution:* Tap **[ 🔄 Request Fresh Code ]** below and enter the 5-digit code immediately using the on-screen PIN Pad!`
                 : `❌ *Verification Failed*\n\n` +
                   `*Error:* ${errDetail}\n\n` +
-                  `Please check the code and try again, or use 1-Tap QR Login:`;
-              await sendResilientMessage(chatId, errMsg, {
-                inline_keyboard: [
-                  [{ text: `📱 1-Tap QR Login (#${targetRelinkIdx || 1})`, callback_data: `btn_qr_login_${targetRelinkIdx || 1}` }],
-                  [{ text: "🔐 Open Mini App (Safe)", web_app: { url: appUrl } }],
-                  [{ text: "❌ Cancel Login", callback_data: "btn_cancel_login" }]
-                ]
-              }, "Markdown");
+                  `Please check the code and try again via the on-screen PIN Pad:`;
+              await sendResilientMessage(chatId, errMsg, buildPinPadKeyboard(targetIdx, "", phone), "Markdown");
             }
           })());
           return new Response("OK");
@@ -6700,14 +6638,12 @@ fi
         if (isPasswordPattern && (!loginFlowState || loginFlowState.step !== "waiting_2fa") && !isCommandOrMenu) {
           ctx.waitUntil((async () => {
             const rep = `🔒 *Two-Factor Password Detected (${trimmed})*\n\n` +
-              `The verification code step has not been completed yet (or Telegram expired the code because it was sent in a chat message).\n\n` +
-              `👉 *To connect your account cleanly without Telegram blocking your codes:*\n` +
-              `1️⃣ *Option 1 (Instant):* Tap **[ 📱 1-Tap QR Login ]** below (100% zero codes, auto-applies this 2FA password).\n` +
-              `2️⃣ *Option 2:* Open the **Mini App** to enter verification codes safely via private encrypted HTTPS!`;
+              `The verification code step has not been completed yet.\n\n` +
+              `👉 *To connect or relink your account:*\n` +
+              `Tap **[ 🔑 Re-link Account ]** below to request a fresh code and enter it via the on-screen PIN Pad!`;
             await sendReply(rep, {
               inline_keyboard: [
-                [{ text: "📱 1-Tap QR Login (Zero Code)", callback_data: "btn_qr_login_1" }],
-                [{ text: "🔐 Open Mini App", web_app: { url: appUrl } }],
+                [{ text: "🔑 Re-link Account", callback_data: "btn_otp_menu" }],
                 [{ text: "🔙 Main Menu", callback_data: "btn_back_main" }]
               ]
             });
@@ -7470,7 +7406,7 @@ fi
             ]);
             relinkBtns.push([
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
-              { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }
+              { text: "🔙 Main Menu", callback_data: "btn_back_main" }
             ]);
             await sendReply(rep, { inline_keyboard: relinkBtns });
           })());
@@ -7591,7 +7527,7 @@ fi
                 ],
                 [
                   { text: "📊 Community Roster", callback_data: "btn_community" },
-                  { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                 ]
               ]
             };
@@ -7631,7 +7567,7 @@ fi
                   { text: "📊 Community Roster", callback_data: "btn_community" }
                 ],
                 [
-                  { text: "🚀 Open Executive Dashboard", web_app: { url: dashUrl } }
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                 ]
               ]
             };
@@ -7665,7 +7601,7 @@ fi
             const whalesMarkup = {
               inline_keyboard: [
                 [{ text: "🔄 Refresh Whales", callback_data: "btn_whales" }, { text: "🔥 Economy Stats", callback_data: "btn_burn" }],
-                [{ text: "🚀 Open Dashboard", web_app: { url: dashUrl } }]
+                [{ text: "🔙 Main Menu", callback_data: "btn_back_main" }]
               ]
             };
             await sendReply(rep, whalesMarkup);
@@ -7695,7 +7631,7 @@ fi
             const pausedMarkup = {
               inline_keyboard: [
                 [{ text: "⚡ Run Daily Sweep", callback_data: "btn_sweep_daily" }, { text: "🔄 Refresh List", callback_data: "btn_paused" }],
-                [{ text: "🚀 Open Dashboard", web_app: { url: dashUrl } }]
+                [{ text: "🔙 Main Menu", callback_data: "btn_back_main" }]
               ]
             };
             await sendReply(rep, pausedMarkup);
@@ -7747,7 +7683,7 @@ fi
             const summaryMarkup = {
               inline_keyboard: [
                 [{ text: "⚡ Run Daily Sweep", callback_data: "btn_sweep_daily" }, { text: "🏆 Top Whales", callback_data: "btn_whales" }],
-                [{ text: "👛 Destination Wallets", callback_data: "btn_wallets" }, { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }]
+                [{ text: "👛 Destination Wallets", callback_data: "btn_wallets" }, { text: "🔙 Main Menu", callback_data: "btn_back_main" }]
               ]
             };
             await sendReply(rep, summaryMarkup);
@@ -8176,7 +8112,7 @@ fi
                   { text: "🔄 Re-Audit Fleet", callback_data: "btn_sybil" }
                 ],
                 [
-                  { text: "🚀 Open Admin Console", web_app: { url: dashUrl } }
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
                 ]
               ]
             };
@@ -8312,7 +8248,7 @@ fi
             ]);
             relinkBtns.push([
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
-              { text: "🚀 Open Dashboard", web_app: { url: dashUrl } }
+              { text: "🔙 Main Menu", callback_data: "btn_back_main" }
             ]);
             await sendReply(rep, { inline_keyboard: relinkBtns });
             return;
@@ -11379,11 +11315,7 @@ async def main():
 
             admin_menu_payload = {
                 "menu_button": {
-                    "type": "web_app",
-                    "text": "👑 Fleet Console",
-                    "web_app": {
-                        "url": "https://restore-agy.aaaai2.workers.dev/admin"
-                    }
+                    "type": "default"
                 }
             }
             try:
@@ -11392,16 +11324,12 @@ async def main():
                     json=admin_menu_payload
                 ) as resp:
                     res = await resp.json()
-                    print(f"👑 Admin Bot Global Menu Button: {res.get('ok')} ({res.get('description', 'OK')})")
+                    print(f"👑 Admin Bot Global Menu Button (Reset to Default): {res.get('ok')} ({res.get('description', 'OK')})")
 
                 owner_menu_payload = {
                     "chat_id": int(OWNER_ID),
                     "menu_button": {
-                        "type": "web_app",
-                        "text": "👑 Fleet Console",
-                        "web_app": {
-                            "url": "https://restore-agy.aaaai2.workers.dev/admin"
-                        }
+                        "type": "default"
                     }
                 }
                 async with session.post(
@@ -11409,13 +11337,13 @@ async def main():
                     json=owner_menu_payload
                 ) as resp:
                     res_owner = await resp.json()
-                    print(f"👑 Admin Bot Owner Menu Button: {res_owner.get('ok')} ({res_owner.get('description', 'OK')})")
+                    print(f"👑 Admin Bot Owner Menu Button (Reset to Default): {res_owner.get('ok')} ({res_owner.get('description', 'OK')})")
             except Exception as e:
                 print(f"⚠️ Error setting admin bot menu button: {e}")
 
             admin_commands_payload = {
                 "commands": [
-                    {"command": "start", "description": "👑 Open Executive Fleet Console & Roster"},
+                    {"command": "start", "description": "👑 Open Executive Fleet Hub & Roster"},
                     {"command": "otp", "description": "🔑 Telegram Relogin Codes & 2FA Passwords"},
                     {"command": "recover", "description": "🔄 Account Relogin & Code Wizard"},
                     {"command": "models", "description": "🧠 Serverless AI Mesh (DeepSeek, Llama, SDXL)"},
@@ -11423,7 +11351,7 @@ async def main():
                     {"command": "llama", "description": "🦙 Meta Llama Fast Intelligence"},
                     {"command": "image", "description": "🎨 Stable Diffusion XL Image Generator"},
                     {"command": "ai", "description": "💬 Google Gemini Flash & Ari Copilot"},
-                    {"command": "dashboard", "description": "🚀 Launch Vercel Fleet Operations Console"},
+                    {"command": "status", "description": "📊 Fleet Status & Live Mining Telemetry"},
                     {"command": "wallets", "description": "👛 Verified Destination Wallets & Balances"},
                     {"command": "harvest", "description": "⚡ Trigger Instant 5-Bot Multi-Cloud Harvest"},
                     {"command": "accounts", "description": "👥 Manage Fleet Accounts & Roster"},
