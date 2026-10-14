@@ -3754,37 +3754,13 @@ async def fetch_cloud_miniapp_tokens(session: aiohttp.ClientSession) -> dict:
         "Authorization": f"Bearer {SECRET_KEY}"
     }
     tokens_map = {}
-    for cf_url in CF_WORKER_URLS:
-        for ep in ["/api/miniapp/tokens", "/api/fleet/tokens"]:
-            try:
-                async with session.get(f"{cf_url}{ep}", headers=headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                    if r.status == 200:
-                        data = await r.json()
-                        tokens = data.get("tokens", data) if isinstance(data, dict) else {}
-                        if isinstance(tokens, dict):
-                            for k, v in tokens.items():
-                                if k.isdigit() and isinstance(v, dict):
-                                    if k not in tokens_map:
-                                        tokens_map[k] = v
-                                    else:
-                                        for tk, tv in v.items():
-                                            if tk not in tokens_map[k] or not tokens_map[k][tk]:
-                                                tokens_map[k][tk] = tv
-            except Exception:
-                pass
-
-    # Merge from Upstash Redis (fleet:tokens:*) via batched pipeline (with 30-minute cache to protect 10k request limit)
-    global UPSTASH_TOKENS_CACHE
     now_t = time.time()
+
+    # 1. Primary SSOT: Upstash Redis (fleet:tokens:*) - fresh tokens extracted directly by Telethon
+    global UPSTASH_TOKENS_CACHE
     if UPSTASH_URL and UPSTASH_TOKEN:
-        if (now_t - UPSTASH_TOKENS_CACHE.get("ts", 0) < 1800) and UPSTASH_TOKENS_CACHE.get("data"):
-            for acc_id, t_obj in UPSTASH_TOKENS_CACHE["data"].items():
-                if acc_id not in tokens_map:
-                    tokens_map[acc_id] = t_obj
-                else:
-                    for tk, tv in t_obj.items():
-                        if tk not in tokens_map[acc_id] or not tokens_map[acc_id][tk]:
-                            tokens_map[acc_id][tk] = tv
+        if (now_t - UPSTASH_TOKENS_CACHE.get("ts", 0) < 60) and UPSTASH_TOKENS_CACHE.get("data"):
+            tokens_map = {acc_id: dict(t_obj) for acc_id, t_obj in UPSTASH_TOKENS_CACHE["data"].items()}
         else:
             try:
                 upstash_headers = {"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
@@ -3807,20 +3783,54 @@ async def fetch_cloud_miniapp_tokens(session: aiohttp.ClientSession) -> dict:
                                                 acc_id = str(t_obj.get("account_id", k.split(":")[-1]))
                                                 if acc_id.isdigit():
                                                     cached_tokens[acc_id] = t_obj
-                                                    if acc_id not in tokens_map:
-                                                        tokens_map[acc_id] = t_obj
-                                                    else:
-                                                        if is_token_data_expired(tokens_map[acc_id]) and not is_token_data_expired(t_obj):
-                                                            tokens_map[acc_id] = {**tokens_map[acc_id], **t_obj}
-                                                        else:
-                                                            for tk, tv in t_obj.items():
-                                                                if tk not in tokens_map[acc_id] or not tokens_map[acc_id][tk]:
-                                                                    tokens_map[acc_id][tk] = tv
+                                                    tokens_map[acc_id] = t_obj
                                             except Exception:
                                                 pass
                                     UPSTASH_TOKENS_CACHE = {"data": cached_tokens, "ts": now_t}
             except Exception as ue:
-                logger.warning(f"Upstash token merge error: {ue}")
+                logger.warning(f"Upstash token load note: {ue}")
+
+    # Also check Upstash miniapp_tokens fallback if any account missing
+    if UPSTASH_URL and UPSTASH_TOKEN and len(tokens_map) < 18:
+        try:
+            up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+            async with session.get(f"{UPSTASH_URL}/get/miniapp_tokens", headers=up_h, timeout=aiohttp.ClientTimeout(total=4)) as mr:
+                if mr.status == 200:
+                    md = await mr.json()
+                    raw_m = md.get("result")
+                    if raw_m:
+                        parsed_m = json.loads(raw_m) if isinstance(raw_m, str) else raw_m
+                        if isinstance(parsed_m, dict):
+                            for acc_id, t_obj in parsed_m.items():
+                                if acc_id.isdigit() and isinstance(t_obj, dict):
+                                    if acc_id not in tokens_map:
+                                        tokens_map[acc_id] = t_obj
+                                    else:
+                                        for tk, tv in t_obj.items():
+                                            if tk not in tokens_map[acc_id] or not tokens_map[acc_id][tk]:
+                                                tokens_map[acc_id][tk] = tv
+        except Exception:
+            pass
+
+    # 2. Secondary: Fallback to Cloudflare Worker edge nodes ONLY for accounts missing from Upstash
+    for cf_url in CF_WORKER_URLS:
+        for ep in ["/api/miniapp/tokens", "/api/fleet/tokens"]:
+            try:
+                async with session.get(f"{cf_url}{ep}", headers=headers, timeout=aiohttp.ClientTimeout(total=6)) as r:
+                    if r.status == 200:
+                        data = await r.json()
+                        tokens = data.get("tokens", data) if isinstance(data, dict) else {}
+                        if isinstance(tokens, dict):
+                            for k, v in tokens.items():
+                                if k.isdigit() and isinstance(v, dict):
+                                    if k not in tokens_map:
+                                        tokens_map[k] = v
+                                    else:
+                                        for tk, tv in v.items():
+                                            if tk not in tokens_map[k] or not tokens_map[k][tk]:
+                                                tokens_map[k][tk] = tv
+            except Exception:
+                pass
 
     return tokens_map
 

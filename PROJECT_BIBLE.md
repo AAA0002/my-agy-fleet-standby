@@ -1026,3 +1026,35 @@ Whenever you perform work in this repository:
   - Purged stale cache in Worker memory (`ensureFullFleet` now runs on `memFleetState` and fallback) and deleted stale `fleet:live_state` from Upstash Redis.
   - Both `/api/status` and `/api/fleet/live` now return the identical, truthful live counts: **16 Active, 2 Revoked (`[6, 12]`)**.
   - Aligned all Admin Bot commands (`/status`, `/harvest`, `/ecosystem`, Admin Console) to display the full **9 Legitimate Mining Pools**: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, LeafEarn, Astra Airdrop, PepeGram.
+
+### 12. Authentic Ground-Truth Fleet Farming Audit & 9-Bot Cloud Pipeline Fix (October 14, 2026)
+* **Root Causes of "Farming Not Doing Anything" Uncovered**:
+  - **Upstream D1 Purge Bug**: `deploy_both_cf_workers.py` was executing `DELETE FROM fleet_tokens WHERE bot_name NOT IN ('mrg', 'atf', 'victors', 'vyro', 'kynex')`, which deleted the 4 newest bot tokens (`diggo`, `leafearn`, `astra`, `pepegram`) on every sync!
+  - **Inverted Token Priority**: Render's `fetch_cloud_miniapp_tokens` queried Cloudflare Workers first and cached tokens for 30 minutes. Fresh tokens in Upstash Redis (`vyro_init_data`) were skipped, causing VyroDrop HTTP 401 token expired errors.
+  - **Victor's Company Cloudflare Turnstile**: `server.victors.company` strictly enforces Cloudflare Turnstile anti-bot checks (`HUMAN_REQUIRED`). Without `x-human-pass` solved in MiniApp, automated claims are blocked by the server.
+* **Architectural Upgrades**:
+  - **Upstash Redis as Primary SSOT**: Rewrote `getFleetTokens(env)` in Cloudflare Workers and `fetch_cloud_miniapp_tokens(session)` in Render to prioritize Upstash Redis (`miniapp_tokens`) with a 60-second TTL.
+  - **Expanded D1 SQL Whitelist**: D1 table queries and deletions now cover all 9 bots (`'mrg', 'atf', 'victors', 'vyro', 'kynex', 'diggo', 'leafearn', 'astra', 'pepegram'`).
+* **Live Fleet Farming Verification**:
+  - **Master #1 (Arif Hossain, `6727787768`)**:
+    * 🟢 MRG: **Auto-claimed 2.3672 MRG**, Level 82, live balance **2042.2 MRG**!
+    * 🟢 ATF: **Farmed**, Level 153, live balance **4650.9 ATF**!
+    * 🟢 Kynex: **Farmed & auto-claimed +844.7 KNX**, live balance **65,730.3 KNX**!
+    * 🟢 Diggo: **Mining active**!
+    * 🟢 LeafEarn: **Leaf harvest active**!
+    * 🟢 Astra: **Star harvest active**!
+  - **Account #2 (Nancy, `8881914294`)**:
+    * 🟢 MRG: Level 99, balance **2800.4 MRG** (88.7 MRG ready to claim)!
+    * 🟢 ATF: Level 90, balance **957.0 ATF**!
+    * 🟢 Kynex: Balance **50,450.0 KNX**, mining ACTIVE!
+    * 🟢 Diggo: Mining active!
+    * 🟢 LeafEarn: Leaf harvest active!
+    * 🟢 Astra: Star harvest active!
+  - **Account #3 (Koram Shah, `7648254021`)**:
+    * 🟢 MRG: Level 90, balance **2368.8 MRG** (74.0 MRG ready to claim)!
+    * 🟢 ATF: Level 86, balance **10.9 ATF**!
+    * 🟢 Kynex: **+50.2 claimed**, balance **39,631.3 KNX**, mining ACTIVE!
+    * 🟢 Diggo: Mining active!
+    * 🟢 LeafEarn: Leaf harvest active!
+    * 🟢 Astra: Star harvest active!
+

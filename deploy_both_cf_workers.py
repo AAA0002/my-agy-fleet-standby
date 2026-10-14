@@ -1101,9 +1101,26 @@ function sanitizeFleetTokensObject(rawObj) {
 
 async function getFleetTokens(env) {
   if (memTokens && Object.keys(memTokens).length > 0) {
-    return sanitizeFleetTokensObject(memTokens);
+    const sample = memTokens["6727787768"] || Object.values(memTokens)[0];
+    if (sample && (sample.diggo_init_data || sample.leafearn_init_data || sample.astra_init_data)) {
+      return sanitizeFleetTokensObject(memTokens);
+    }
   }
-  // 1. Primary: Cloudflare D1 SQL (Strongly Consistent, 25M Reads/day, 0 edge latency)
+  // 1. Primary: Upstash Redis (miniapp_tokens has all verified bot tokens from Telethon)
+  try {
+    const uResp = await fetch(`${UPSTASH_URL}/get/miniapp_tokens`, { headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` } }).catch(() => null);
+    if (uResp && uResp.ok) {
+      const uD = await uResp.json().catch(() => ({}));
+      if (uD.result) {
+        const parsed = typeof uD.result === "string" ? JSON.parse(uD.result) : uD.result;
+        if (parsed && Object.keys(parsed).length > 0) {
+          memTokens = sanitizeFleetTokensObject(parsed);
+          return memTokens;
+        }
+      }
+    }
+  } catch (_) {}
+  // 2. Secondary: Cloudflare D1 SQL (Strongly Consistent, 25M Reads/day, 0 edge latency)
   if (env.DB) {
     try {
       const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens WHERE bot_name IN ('mrg', 'atf', 'victors', 'vyro', 'kynex', 'diggo', 'leafearn', 'astra', 'pepegram')").all();
@@ -1118,7 +1135,7 @@ async function getFleetTokens(env) {
       }
     } catch (_) {}
   }
-  // 2. Secondary: Cloudflare KV
+  // 3. Tertiary: Cloudflare KV
   try {
     const raw = await env.BACKUP_KV.get("miniapp_tokens");
     if (raw) {
@@ -1126,20 +1143,6 @@ async function getFleetTokens(env) {
       if (parsed && Object.keys(parsed).length > 0) {
         memTokens = sanitizeFleetTokensObject(parsed);
         return memTokens;
-      }
-    }
-  } catch (_) {}
-  // 3. Tertiary: Upstash Redis (miniapp_tokens)
-  try {
-    const uResp = await fetch(`${UPSTASH_URL}/get/miniapp_tokens`, { headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` } }).catch(() => null);
-    if (uResp && uResp.ok) {
-      const uD = await uResp.json().catch(() => ({}));
-      if (uD.result) {
-        const parsed = typeof uD.result === "string" ? JSON.parse(uD.result) : uD.result;
-        if (parsed && Object.keys(parsed).length > 0) {
-          memTokens = sanitizeFleetTokensObject(parsed);
-          return memTokens;
-        }
       }
     }
   } catch (_) {}
@@ -1157,7 +1160,7 @@ async function getFleetTokens(env) {
       }
     }
   } catch (_) {}
-  return null;
+  return sanitizeFleetTokensObject(memTokens || {});
 }
 
 const DEFAULT_FLEET_DATA = {
@@ -3546,7 +3549,7 @@ fi
             }
             if (ctx && ctx.waitUntil) {
               ctx.waitUntil(env.DB.prepare(
-                "DELETE FROM fleet_tokens WHERE bot_name NOT IN ('mrg', 'atf', 'victors', 'vyro', 'kynex')"
+                "DELETE FROM fleet_tokens WHERE bot_name NOT IN ('mrg', 'atf', 'victors', 'vyro', 'kynex', 'diggo', 'leafearn', 'astra', 'pepegram')"
               ).run().catch(() => {}));
             }
           } catch (_) {}

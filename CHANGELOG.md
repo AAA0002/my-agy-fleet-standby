@@ -2,7 +2,44 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
-- **🚀 Single-Active Render Enforcement, 650-Hour Baton Relay & True Telegram DC Session Audit (October 14, 2026)**:
+- **🌾 Authentic Ground-Truth Fleet Farming Audit & 9-Bot Cloud Pipeline Fix (October 14, 2026)**:
+  - **🔍 Root Cause of "Farming Not Doing Anything" Identified**:
+    * **Smoking Gun 1: Upstream D1 Purge**: `deploy_both_cf_workers.py` was executing `DELETE FROM fleet_tokens WHERE bot_name NOT IN ('mrg', 'atf', 'victors', 'vyro', 'kynex')`, which deleted the 4 newest bot tokens (`diggo`, `leafearn`, `astra`, `pepegram`) on every sync!
+    * **Smoking Gun 2: Stale Edge Worker Token Cache**: Cloudflare Worker's `getFleetTokens()` returned cached `memTokens` with only the original 5 bots and missed the remaining bots.
+    * **Smoking Gun 3: Inverted Priority in Render `fetch_cloud_miniapp_tokens`**: Render queried Cloudflare Workers first (which had old tokens) and cached them for 30 minutes. When merging Upstash tokens, it skipped any key already present, so fresh `vyro_init_data` was ignored and expired tokens were used (causing VyroDrop HTTP 401).
+    * **Smoking Gun 4: Cloudflare Turnstile on Victor's Company**: Direct probe against `https://server.victors.company/api/me` confirmed it enforces Cloudflare Turnstile (`HUMAN_REQUIRED`). Without `x-human-pass` solved in MiniApp, automated claims are rejected by the server.
+  - **🛠️ Pipeline & Architecture Fixes**:
+    * Rewrote `getFleetTokens(env)` in `deploy_both_cf_workers.py` to query Upstash Redis (`miniapp_tokens`) as Primary SSOT, falling back to D1 SQL, Cloudflare KV, and secondary Redis.
+    * Expanded D1 SQL whitelist and queries to include all 9 bots (`'mrg', 'atf', 'victors', 'vyro', 'kynex', 'diggo', 'leafearn', 'astra', 'pepegram'`).
+    * Rewrote `fetch_cloud_miniapp_tokens(session)` in `render_standby_app.py` and `render_app_latest.py` with Upstash Redis as Primary SSOT and 60-second in-memory TTL.
+  - **🚀 Live Deployment & Verification**:
+    * Pushed updated `app.py` to `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`. Live Render Node 2 deployment: `dep-db7fstfavr4c7383q7b0`.
+    * Deployed updated Cloudflare Workers across all 5 nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Executed live on-chain/in-app farming across fleet accounts:
+      - **Master #1 (Arif Hossain, `6727787768`)**:
+        * 🟢 MRG: **Auto-claimed 2.3672 MRG**, Level 82, balance **2042.2 MRG**!
+        * 🟢 ATF: **Farmed**, Level 153, balance **4650.9 ATF**!
+        * 🟢 Kynex: **Farmed & auto-claimed +844.7 KNX**, balance **65,730.3 KNX**!
+        * 🟢 Diggo: **Mining active**!
+        * 🟢 LeafEarn: **Leaf harvest active**!
+        * 🟢 Astra: **Star harvest active**!
+        * 🟡 VyroDrop: Authenticated, Level 1, TonConnect wallet required for claiming.
+        * 🟡 Victor's Company: Authenticated, Turnstile human pass needed.
+      - **Account #2 (Nancy, `8881914294`)**:
+        * 🟢 MRG: Level 99, balance **2800.4 MRG** (88.7 MRG ready to claim)!
+        * 🟢 ATF: Level 90, balance **957.0 ATF**!
+        * 🟢 Kynex: Balance **50,450.0 KNX**, mining ACTIVE!
+        * 🟢 Diggo: Mining active!
+        * 🟢 LeafEarn: Leaf harvest active!
+        * 🟢 Astra: Star harvest active!
+      - **Account #3 (Koram Shah, `7648254021`)**:
+        * 🟢 MRG: Level 90, balance **2368.8 MRG** (74.0 MRG ready to claim)!
+        * 🟢 ATF: Level 86, balance **10.9 ATF**!
+        * 🟢 Kynex: **+50.2 claimed**, balance **39,631.3 KNX**, mining ACTIVE!
+        * 🟢 Diggo: Mining active!
+        * 🟢 LeafEarn: Leaf harvest active!
+        * 🟢 Astra: Star harvest active!
+
   - **🔒 Strict Single-Active Render Compute (Multi-Render Overlap Eliminated)**:
     * **Smoking Gun: `hermes-grok-cloud-agent` Running on Account 3**: User noticed 2 Render accounts active simultaneously. Discovered `hermes-grok-cloud-agent` (`srv-daojdt5g1s2s738jsjmg`) on `koramshah2@gmail.com` was running in parallel with Node 2 Frankfurt (`srv-dan5q00ae00c73djummg`) on `abidhasanch2001@gmail.com`.
     * **Fix**: Suspended `hermes-grok-cloud-agent` via Render REST API (`POST /v1/services/srv-daojdt5g1s2s738jsjmg/suspend`).
