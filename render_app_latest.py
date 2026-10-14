@@ -1970,29 +1970,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
     except Exception as te:
         logger.error(f"[{name}] Token extraction note: {te}")
 
-    try:
-        await client.disconnect()
-    except Exception:
-        pass
-
-    # Fallback: if tokens is missing required bot keys, re-extract with fresh standalone client (All 10 Bots)
-    req_keys = [
-        "mrg_init_data", "atf_init_data",
-        "victors_init_data", "vyro_init_data",
-        "kynex_init_data", "diggo_init_data",
-        "leafearn_init_data", "astra_init_data",
-        "pepegram_init_data", "adxearn_init_data"
-    ]
-    if not tokens or any(not tokens.get(k) for k in req_keys):
-        logger.info(f"[{name}] Missing some bot tokens after direct extraction. Re-extracting with standalone client...")
-        try:
-            fresh = await extract_tokens_for_account(acc_entry)
-            if fresh:
-                tokens.update(fresh)
-        except Exception as fe:
-            logger.warning(f"[{name}] Standalone token extraction note: {fe}")
-
-    # Synchronize tokens to 5x Cloudflare KV + Upstash Redis
+    # Synchronize tokens to Cloudflare KV + Upstash Redis
     if tokens:
         await sync_account_tokens_to_clouds(tokens)
         # Bind dedicated wallets to WebApp bots
@@ -6162,10 +6140,16 @@ async def onboard_new_bots(request: Request):
             uid = str(acc.get("user_id"))
             name = acc.get("name", "User")
             if uid == "6727787768":
+                acc_res = {"uid": uid, "name": name, "status": "master_skipped", "bots": {b: "verified" for b in ALL_10_BOT_KEYS}}
+                results.append(acc_res)
+                LAST_ONBOARD_STATUS["processed"] += 1
                 continue
 
             sess_str = acc.get("session_string") or acc.get("session")
             if not sess_str:
+                acc_res = {"uid": uid, "name": name, "status": "no_session", "bots": {}}
+                results.append(acc_res)
+                LAST_ONBOARD_STATUS["processed"] += 1
                 continue
 
             acc_res = {"uid": uid, "name": name, "bots": {}}
