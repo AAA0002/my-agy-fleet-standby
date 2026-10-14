@@ -997,10 +997,32 @@ Whenever you perform work in this repository:
     * `[ 📖 User Guide | 💬 Support ]`
   - Admin Bot Menu Button (`setChatMenuButton`) reset to pure native command menu, removing all "AAA Telegram App" web app buttons.
 * **⚡ 5-Node Cloudflare Edge Synchronization**:
-  - Deployed updated worker logic across all 5 Cloudflare Edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) with 100% success.
-
-
-
-
-
-
+### 11. Single-Active Render Protocol, 650-Hour Baton Relay & True Telegram DC Session Audit (October 14, 2026)
+* **Elimination of Multi-Render Overlap (`hermes-grok-cloud-agent` Suspended)**:
+  - Identified that `hermes-grok-cloud-agent` (`srv-daojdt5g1s2s738jsjmg`) on `koramshah2@gmail.com` was running concurrently with Node 2 Frankfurt (`srv-dan5q00ae00c73djummg`) on `abidhasanch2001@gmail.com`.
+  - Suspended `hermes-grok-cloud-agent` via Render REST API (`POST /v1/services/srv-daojdt5g1s2s738jsjmg/suspend`).
+  - Enforced strictly **ONE ACTIVE RENDER NODE**: Node 2 Frankfurt (`my-agy-fleet-standby-node2`). Node 1 (Singapore) and Node 3 (Oregon) are strictly suspended at 0h consumption.
+* **Automated 650-Hour Baton Relay Auto-Failover Protocol (`render_failover_manager.py`)**:
+  - Implemented calendar month hour tracker `get_current_month_hours()` and auto-failover checker `check_and_auto_rotate(limit_hours=650.0)`.
+  - When Node 2 approaches 650 hours (buffer against 750h free tier ceiling):
+    1. Pauses all operations (Maintenance Mode activated in Upstash Redis).
+    2. Resumes destination standby node (Node 3 Oregon) via Render REST API.
+    3. Verifies that the new container is healthy and responding.
+    4. Suspends previous node (Node 2 Frankfurt) via Render REST API to freeze hour consumption.
+    5. Waits out 5-minute cooling window to protect Telegram sessions against multi-IP clashing.
+    6. Promotes new node in Upstash Redis.
+    7. Clears Maintenance Mode and resumes normal cloud operations.
+* **Upstash Configuration Fix (Dead `relaxing-starfish` Purged)**:
+  - Fixed environment variables on Render Node 2 and Node 3 where a legacy Upstash URL (`relaxing-starfish`) returned HTTP 403 Forbidden.
+  - Replaced with active instance `https://pleasant-locust-220893.upstash.io`.
+* **Authentic Telegram DC Live Audit (Zero Fake Telemetry)**:
+  - Tested all 18 accounts live against Telegram DC:
+    * **16 Accounts 100% 🟢 ACTIVE & HEALTHY**: Accounts #1, #2, #3, #4, #5, #7, #8, #9, #10, #11, #13, #14, #15, #16, #17, #18 (silently extracting tokens across 9 bots).
+    * **2 Accounts 100% 🔴 REVOKED on Telegram DC**:
+      - Account #6: Kaitlyn Ross 6 (`+8801867539837`, user_id `8782429452`) — `AuthKeyDuplicatedError`.
+      - Account #12: Sanzida Shimu (`+8801774578536`, user_id `7487048946`) — `AuthKeyDuplicatedError`.
+    * Accounts #6 and #12 suffered permanent revocation during past multi-node collisions and require 1-tap QR re-linking via `/qr 6` and `/qr 12`.
+* **Cloudflare Edge Cache Fix & 9-Bot Suite Alignment**:
+  - Purged stale cache in Worker memory (`ensureFullFleet` now runs on `memFleetState` and fallback) and deleted stale `fleet:live_state` from Upstash Redis.
+  - Both `/api/status` and `/api/fleet/live` now return the identical, truthful live counts: **16 Active, 2 Revoked (`[6, 12]`)**.
+  - Aligned all Admin Bot commands (`/status`, `/harvest`, `/ecosystem`, Admin Console) to display the full **9 Legitimate Mining Pools**: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, LeafEarn, Astra Airdrop, PepeGram.

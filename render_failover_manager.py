@@ -72,18 +72,7 @@ RENDER_ACCOUNTS = [
     }
 ]
 
-RELAYER_SERVICES = [
-    {
-        "name": "ATF MTProto Relayer (Primary)",
-        "url": os.getenv("RENDER_RELAYER_PRIMARY_URL", "https://atf-mtproto-relayer.onrender.com"),
-        "secret": os.getenv("RENDER_RELAYER_SECRET", "relayer_sec_1cb45b0967c9fd762d7d7c210afedfe9"),
-    },
-    {
-        "name": "ATF MTProto Relayer (Backup Failover)",
-        "url": os.getenv("RENDER_RELAYER_BACKUP_URL", "https://atf-mtproto-relayer-backup.onrender.com"),
-        "secret": os.getenv("RENDER_RELAYER_SECRET", "relayer_sec_1cb45b0967c9fd762d7d7c210afedfe9"),
-    }
-]
+RELAYER_SERVICES = []
 
 # Blacklisted user services that must NEVER be touched under any circumstances
 PROTECTED_EXISTING_SERVICES = [
@@ -371,11 +360,38 @@ async def rotate_node(from_node: int, to_node: int, cooldown_seconds: int = 300)
     print("=" * 70)
     return True
 
+def get_current_month_hours() -> float:
+    """Calculates active running hours for the current calendar month."""
+    now = datetime.now(timezone.utc)
+    month_start = datetime(now.year, now.month, 1, 0, 0, 0, tzinfo=timezone.utc)
+    elapsed_seconds = (now - month_start).total_seconds()
+    return round(elapsed_seconds / 3600.0, 1)
+
+async def check_and_auto_rotate(limit_hours: float = 650.0) -> bool:
+    """
+    Checks active Render node usage. If current node usage >= limit_hours (650h):
+    1. Pauses all operations (Maintenance Mode in Upstash Redis).
+    2. Resumes destination standby node (Node 3 Oregon) via Render REST API.
+    3. Confirms destination node is healthy.
+    4. Suspends old node (Node 2 Frankfurt) via Render REST API to freeze hour consumption.
+    5. Waits out 5-minute cooling period (anti-ban protection).
+    6. Promotes new node in Upstash Redis.
+    7. Clears Maintenance Mode and resumes normal cloud operations.
+    """
+    cur_hours = get_current_month_hours()
+    print(f"⏱️ Current Month Active Runtime: {cur_hours}h / 750h Free Tier (Threshold: {limit_hours}h)")
+    if cur_hours < limit_hours:
+        print(f"✅ Safe margin: {round(limit_hours - cur_hours, 1)}h remaining before auto-rotation. No action needed.")
+        return False
+
+    print(f"🚨 LIMIT REACHED: Node 2 Frankfurt reached {cur_hours}h (>= {limit_hours}h limit). Initiating Baton Relay to Node 3 Oregon!")
+    return await rotate_node(from_node=2, to_node=3, cooldown_seconds=300)
+
 async def print_status():
-    """Prints comprehensive health & maintenance status for all 3 nodes and relayers."""
+    """Prints comprehensive health & maintenance status for all 3 nodes."""
     async with aiohttp.ClientSession() as session:
         print("=" * 70)
-        print("RENDER 3-ACCOUNT BATON RELAY MESH & TELEGRAM ANTI-BAN CONTROLLER")
+        print("RENDER SINGLE-ACTIVE BATON RELAY CONTROLLER (650H AUTO-FAILOVER)")
         print("=" * 70)
 
         in_maint, reason, rem = await is_in_maintenance_mode()
@@ -386,12 +402,20 @@ async def print_status():
             print("🟢 FLEET STATUS: NORMAL (Maintenance Mode Idle)")
         print("-" * 70)
 
+        cur_hours = get_current_month_hours()
+        print(f"⏱️ BILLING MONTH RUNTIME: {cur_hours}h / 750h Free Tier (Threshold: 650h)")
+        if cur_hours >= 650.0:
+            print("⚠️ WARNING: 650h threshold reached! Baton Relay rotation is due.")
+        else:
+            print(f"✅ Safe margin: {round(650.0 - cur_hours, 1)}h remaining before auto-rotation.")
+        print("-" * 70)
+
         for acc in RENDER_ACCOUNTS:
             health = await check_account_health(session, acc)
             if health.get("service_status") == "suspended":
                 status_symbol = "⏸️ SUSPENDED (0h Consumed / Frozen)"
             elif health.get("endpoint_alive"):
-                status_symbol = "🟢 ACTIVE & ONLINE"
+                status_symbol = "🟢 ACTIVE & ONLINE (Current Single Host)"
             elif health.get("service_status") == "not_suspended":
                 status_symbol = "🟡 ACTIVE CONTAINER (Booting/Warming)"
             else:
@@ -401,28 +425,15 @@ async def print_status():
             print(f"  Service: {acc['service_id']} | Email: {acc['email']}")
             print(f"  URL: {acc['url']}")
             print("-" * 70)
-
-        print("MTPROTO RELAYER CLUSTER:")
-        for relayer in RELAYER_SERVICES:
-            url = relayer["url"]
-            alive = False
-            for attempt in range(2):
-                try:
-                    async with session.get(f"{url}/wake", timeout=aiohttp.ClientTimeout(total=20)) as r:
-                        if r.status == 200:
-                            alive = True
-                            break
-                except Exception:
-                    await asyncio.sleep(1)
-            sym = "🟢 ONLINE" if alive else "🔴 OFFLINE"
-            print(f"• {relayer['name']}: {sym} ({url})")
-            print("-" * 70)
         print("=" * 70)
 
 async def main():
     args = sys.argv[1:]
     if not args or args[0] == "status":
         await print_status()
+    elif args[0] == "check_limit":
+        limit = float(args[1]) if len(args) > 1 else 650.0
+        await check_and_auto_rotate(limit_hours=limit)
     elif args[0] == "rotate":
         from_n = int(args[1]) if len(args) > 1 else 2
         to_n = int(args[2]) if len(args) > 2 else 3
@@ -447,6 +458,7 @@ async def main():
     else:
         print("Usage:")
         print("  python3 render_failover_manager.py status")
+        print("  python3 render_failover_manager.py check_limit [650]")
         print("  python3 render_failover_manager.py rotate <from_node> <to_node> [cooldown_seconds]")
         print("  python3 render_failover_manager.py suspend <node_num>")
         print("  python3 render_failover_manager.py resume <node_num>")

@@ -2534,6 +2534,7 @@ fi
         };
 
         if (memFleetState && Array.isArray(memFleetState.accounts) && memFleetState.accounts.length >= 18) {
+          memFleetState = ensureFullFleet(memFleetState);
           return new Response(JSON.stringify(memFleetState), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
         }
         // 1. Check Upstash Serverless Redis fleet:live_state
@@ -2578,9 +2579,10 @@ fi
         } catch (_) {}
 
         // 3. Fallback to robust DEFAULT_FLEET_DATA (18 Accounts)
-        memFleetState = DEFAULT_FLEET_DATA;
-        ctx.waitUntil(upstashSet("fleet:live_state", DEFAULT_FLEET_DATA));
-        return new Response(JSON.stringify(DEFAULT_FLEET_DATA), {
+        const fallbackFleet = ensureFullFleet({ ...DEFAULT_FLEET_DATA });
+        memFleetState = fallbackFleet;
+        ctx.waitUntil(upstashSet("fleet:live_state", fallbackFleet));
+        return new Response(JSON.stringify(fallbackFleet), {
           headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders }
         });
       } catch (e) {
@@ -5598,10 +5600,10 @@ fi
                 const frames = [
                   `⚡ *MY AGY AI — Private Admin Console*\n\`[▰▰▰▰▰▰▰▰▰▰] Synchronized ✅\`\n\n` +
                   healthLine +
-                  `🤖 *Active Bots (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n` +
+                  `🤖 *Active Bots (9/9):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network • DiggoMiner • LeafEarn • Astra Airdrop • PepeGram\n` +
                   `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • ${accounts.length} Configured TON Wallets\n` +
                   `⏱️ *Last Synced:* \`${dhakaTime}\`\n` +
-                  `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
+                  `🛡️ *Security:* 9/9 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
                   summaryLine
                 ];
                 const cbMsgId = cb.message ? cb.message.message_id : null;
@@ -6064,9 +6066,9 @@ fi
                 const revokedCount = health.revoked.size;
                 const rep = `⚡ *MY AGY AI — Fleet Operations*\n\n` +
                   (revokedCount > 0 ? `🟢 *Fleet Health:* \`${activeCount}/${accounts.length} Active\` • 🔴 \`${revokedCount} Needs Re-link\`\n` : `🟢 *Fleet Health:* \`${activeCount}/${accounts.length} Active\` (100% Online)\n`) +
-                  `🤖 *Active Bots (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n` +
+                  `🤖 *Active Bots (9/9):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network • DiggoMiner • LeafEarn • Astra Airdrop • PepeGram\n` +
                   `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • ${accounts.length} Verified TON Wallets\n` +
-                  `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
+                  `🛡️ *Security:* 9/9 Anti-Bot Verified • Triple Cloudflare Sharding\n\n` +
                   (revokedCount > 0 ? `⚡ *${activeCount} accounts active & mining.* ⚠️ *${revokedCount} accounts require session re-link via Session Audit.*` : `⚡ *All ${accounts.length} accounts are active and autonomously mining in the cloud.*`);
                 const cbMsgId = cb.message ? cb.message.message_id : null;
                 if (cbMsgId) {
@@ -7198,9 +7200,9 @@ fi
 
             const rep = `⚡ *MY AGY AI — Fleet Operations*\n\n` +
               healthLine +
-              `🤖 *Active Bots (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n` +
+              `🤖 *Active Bots (9/9):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network • DiggoMiner • LeafEarn • Astra Airdrop • PepeGram\n` +
               `💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • ${accounts.length} Configured TON Wallets\n` +
-              `🛡️ *Security:* 5/5 Anti-Bot Verified • Triple Cloudflare Edge Shards\n\n` +
+              `🛡️ *Security:* 9/9 Anti-Bot Verified • Triple Cloudflare Edge Shards\n\n` +
               summaryLine;
             const frames = [
               "📊 *Querying Fleet Live State...*\n`[▰▰▰▱▱▱▱▱▱▱] 30%` • Polling Accounts & Edge Nodes",
@@ -7966,7 +7968,7 @@ fi
             const health = await getSessionHealthState();
             const rep = `⚡ *MY AGY AI — EXECUTIVE ECOSYSTEM SUMMARY* 📊\n━━━━━━━━━━━━━━━━━━━━━━\n` +
               `🤖 *Fleet Automation:* \`${health.healthy.size}/18 Accounts Online\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
-              `⛏️ *Active Mining Pools (5/5):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network\n` +
+              `⛏️ *Active Mining Pools (9/9):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, LeafEarn, Astra Airdrop, PepeGram\n` +
               `👥 *Community Users:* \`${totalUsers || userList.length}\` Registered Miners\n` +
               `📱 *Community Accounts:* \`${activeAccountsCount}\` Connected Phones\n` +
               `🟢 *Active 24/7 Miners:* \`${activeMiners}\` Active | ⚠️ Paused: \`${pausedMiners}\`\n` +
