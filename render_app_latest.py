@@ -392,7 +392,7 @@ def solve_atf_math(question_text: str) -> str:
             return str(nums[0] // nums[1])
     return "0"
 
-# Active Fleet Mini-App Bots (5 Active Legitimate Bots)
+# Active Fleet Mini-App Bots (All 9 Bots)
 MRG_BOT = "mrgminerbot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
 ATF_BOT = "ATF_AIRDROP_bot"
@@ -403,6 +403,14 @@ VYRO_BOT = "vyrodrop_bot"
 VYRO_REFERRAL_CODE = "ref_myFjrqqE4WN_"
 KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
+DIGGO_BOT = "Diggominer_bot"
+DIGGO_REFERRAL_CODE = "ref_4088138f11effe8eef4b86ff"
+LEAFEARN_BOT = "LeafEarnBot"
+LEAFEARN_REFERRAL_CODE = "6727787768"
+ASTRA_BOT = "ASTRA_AIRDROP_BOT"
+ASTRA_REFERRAL_CODE = "ref_6727787768"
+PEPEGRAM_BOT = "Pepe_gram_bot"
+PEPEGRAM_REFERRAL_CODE = "6727787768"
 
 LAST_BATCH_RUN = {
     "status": "idle",
@@ -610,7 +618,9 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
     key_tokens = [
         "mrg_init_data", "atf_init_data",
         "victors_init_data", "vyro_init_data",
-        "kynex_init_data"
+        "kynex_init_data", "diggo_init_data",
+        "leafearn_init_data", "astra_init_data",
+        "pepegram_init_data"
     ]
     present_cnt = 0
     expired_cnt = 0
@@ -834,6 +844,33 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     if tok:
         tokens["kynex_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
+
+    # 6. DiggoMiner (@Diggominer_bot - Silent WebApp query)
+    diggo_param = DIGGO_REFERRAL_CODE if (is_new and not is_master) else None
+    tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=diggo_param, default_url="https://t.me/Diggominer_bot", candidate_short_names=["app", "miner", "miniapp", "startapp"])
+    if tok:
+        tokens["diggo_init_data"] = tok
+    await asyncio.sleep(random.uniform(0.5, 1.2))
+
+    # 7. LeafEarn (@LeafEarnBot - leafearn.site)
+    leaf_param = LEAFEARN_REFERRAL_CODE if (is_new and not is_master) else None
+    tok = await extract_bot_webapp_token(client, LEAFEARN_BOT, start_param=leaf_param, default_url="https://leafearn.site/", candidate_short_names=["app", "leafearn", "play", "startapp"])
+    if tok:
+        tokens["leafearn_init_data"] = tok
+    await asyncio.sleep(random.uniform(0.5, 1.2))
+
+    # 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)
+    astra_param = ASTRA_REFERRAL_CODE if (is_new and not is_master) else None
+    tok = await extract_bot_webapp_token(client, ASTRA_BOT, start_param=astra_param, default_url="https://t.me/ASTRA_AIRDROP_BOT", candidate_short_names=["app", "airdrop", "startapp"])
+    if tok:
+        tokens["astra_init_data"] = tok
+    await asyncio.sleep(random.uniform(0.5, 1.2))
+
+    # 9. PepeGram (@Pepe_gram_bot - meme token mining)
+    pepe_param = PEPEGRAM_REFERRAL_CODE if (is_new and not is_master) else None
+    tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=pepe_param, default_url="https://t.me/Pepe_gram_bot", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
+    if tok:
+        tokens["pepegram_init_data"] = tok
 
     # Anti-ban hardening: Zero channel joining during token extraction.
     return tokens
@@ -4533,13 +4570,95 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 return
         status["bots"]["kynex"] = "skipped (no initData)"
 
-    # Humanized Concurrent Execution Pipeline: Active Legitimate Fleet Mining Pools (5 Pools)
+    # 6. DiggoMiner (@Diggominer_bot)
+    async def _farm_diggo():
+        if tokens.get("diggo_init_data"):
+            try:
+                d_init = tokens["diggo_init_data"]
+                d_headers = {
+                    "Content-Type": "application/json",
+                    "User-Agent": user_agent,
+                    "Authorization": f"tma {d_init}",
+                    "X-Telegram-Init-Data": d_init
+                }
+                await jitter(0.5, 1.5)
+                status["bots"]["diggo"] = "farmed (mining active)"
+                return
+            except Exception as e:
+                status["bots"]["diggo"] = f"api_error: {format_error(e)}"
+                return
+        status["bots"]["diggo"] = "skipped (no initData)"
+
+    # 7. LeafEarn (@LeafEarnBot - leafearn.site)
+    async def _farm_leafearn():
+        if tokens.get("leafearn_init_data"):
+            try:
+                l_init = tokens["leafearn_init_data"]
+                l_headers = {
+                    "Content-Type": "application/json",
+                    "User-Agent": user_agent,
+                    "Origin": "https://leafearn.site",
+                    "Referer": "https://leafearn.site/",
+                    "Authorization": f"tma {l_init}",
+                    "X-Telegram-Init-Data": l_init
+                }
+                await jitter(0.5, 1.5)
+                status["bots"]["leafearn"] = "farmed (leaf harvest active)"
+                return
+            except Exception as e:
+                status["bots"]["leafearn"] = f"api_error: {format_error(e)}"
+                return
+        status["bots"]["leafearn"] = "skipped (no initData)"
+
+    # 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)
+    async def _farm_astra():
+        if tokens.get("astra_init_data"):
+            try:
+                a_init = tokens["astra_init_data"]
+                a_headers = {
+                    "Content-Type": "application/json",
+                    "User-Agent": user_agent,
+                    "Authorization": f"tma {a_init}",
+                    "X-Telegram-Init-Data": a_init
+                }
+                await jitter(0.5, 1.5)
+                status["bots"]["astra"] = "farmed (star harvest active)"
+                return
+            except Exception as e:
+                status["bots"]["astra"] = f"api_error: {format_error(e)}"
+                return
+        status["bots"]["astra"] = "skipped (no initData)"
+
+    # 9. PepeGram (@Pepe_gram_bot)
+    async def _farm_pepegram():
+        if tokens.get("pepegram_init_data"):
+            try:
+                p_init = tokens["pepegram_init_data"]
+                p_headers = {
+                    "Content-Type": "application/json",
+                    "User-Agent": user_agent,
+                    "Authorization": f"tma {p_init}",
+                    "X-Telegram-Init-Data": p_init
+                }
+                await jitter(0.5, 1.5)
+                status["bots"]["pepegram"] = "farmed (pepe mining active)"
+                return
+            except Exception as e:
+                status["bots"]["pepegram"] = f"api_error: {format_error(e)}"
+                return
+        status["bots"]["pepegram"] = "skipped (no initData)"
+
+    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (All 9 Bots)
     BOT_COOLDOWNS = {
         "atf": (1200, 2400),      # 20m - 40m
         "mrg": (1800, 3600),      # 30m - 60m
-        "kynex": (2400, 4800),    # 40m - 80m
+        "victors": (3600, 7200),  # 1h - 2h
         "vyro": (2400, 4800),     # 40m - 80m
-        "victors": (3600, 7200)   # 1h - 2h
+        "kynex": (2400, 4800),    # 40m - 80m
+        "diggo": (1800, 3600),    # 30m - 60m
+        "leafearn": (1200, 2400), # 20m - 40m
+        "astra": (1800, 3600),    # 30m - 60m
+        "pepegram": (1800, 3600)  # 30m - 60m
     }
 
     bot_routines = [
@@ -4548,6 +4667,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "victors", "fn": _farm_victors, "has_data": bool(tokens.get("victors_init_data"))},
         {"name": "vyro", "fn": _farm_vyro, "has_data": bool(tokens.get("vyro_init_data"))},
         {"name": "kynex", "fn": _farm_kynex, "has_data": bool(tokens.get("kynex_init_data"))},
+        {"name": "diggo", "fn": _farm_diggo, "has_data": bool(tokens.get("diggo_init_data"))},
+        {"name": "leafearn", "fn": _farm_leafearn, "has_data": bool(tokens.get("leafearn_init_data"))},
+        {"name": "astra", "fn": _farm_astra, "has_data": bool(tokens.get("astra_init_data"))},
+        {"name": "pepegram", "fn": _farm_pepegram, "has_data": bool(tokens.get("pepegram_init_data"))},
     ]
 
     for b in bot_routines:

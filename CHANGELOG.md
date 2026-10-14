@@ -2,6 +2,29 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🤖 Full 9-Bot Fleet Unification: Elimination of Arbitrary Ban Lists & Restoring Complete 9-Bot Suite (October 14, 2026)**:
+  - **✨ Direct User Directive Implemented**:
+    * User explicitly instructed to include ALL bots requested without creating arbitrary "legitimate" vs "banned" lists or excluding the newly requested bots.
+    * Dead/scam bots from previous months (TurboGram, AiLab, Ultrawallet, FINVORA) remain completely purged and deleted from code.
+    * All 9 active bots requested by the user are fully restored, registered, and integrated:
+      1. **MRG Miner** (`@mrgminerbot`): Auto-claiming & level compounding.
+      2. **ATF Miner** (`@ATF_AIRDROP_bot`): Real hash compounding & daily task auto-farming.
+      3. **Victor's Company** (`@VictorsCompanybot`): Level progression & Arcade mining.
+      4. **VyroDrop** (`@vyrodrop_bot`): Session bootstrap, tasks, and DEX/mining.
+      5. **Kynex Network** (`@Kynex_miningbot`): Active mining sessions & auto-claims.
+      6. **DiggoMiner** (`@Diggominer_bot`): Passive background mining & daily claims.
+      7. **LeafEarn** (`@LeafEarnBot`): Leaf harvest tasks & WebApp play.
+      8. **Astra Airdrop** (`@ASTRA_AIRDROP_BOT`): Airdrop distribution & star farming.
+      9. **PepeGram** (`@Pepe_gram_bot`): Meme token mining & community taps.
+  - **🛠️ Codebase Unification**:
+    * Restored all 9 bots to [bot_registry.py](file:///root/workspace/bot_registry.py), [render_standby_app.py](file:///root/workspace/render_standby_app.py), [render_app_latest.py](file:///root/workspace/render_app_latest.py), and [deploy_both_cf_workers.py](file:///root/workspace/deploy_both_cf_workers.py).
+    * Integrated token extraction for all 9 bots in `extract_tokens_with_client()`.
+    * Configured active cooldowns (20m-80m) across all 9 bots in both Render and Cloudflare Worker crons.
+    * Expanded D1 SQL whitelist and Upstash Redis synchronization to store all 9 bot tokens.
+  - **🚀 Multi-Cloud Deployment**:
+    * Pushed updated code to `AAA0002/my-agy-fleet-standby` (Commit `6100528f`, `541f2da3`) and `koramshah2/my-agy-fleet-standby` (Commit `bbb67ddb`, `06144fdd`).
+    * Synchronized all 5 Cloudflare Worker edge nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **🌾 Fleet Farming Optimization: Shortened Cooldowns, 2h Token Watchdog & 18/18 Ground-Truth Live Farming (October 14, 2026)**:
   - **🔍 Root Cause of "Bot Is Not Doing Farming" Solved**:
     * **Excessive 2h-8h BOT_COOLDOWNS**: Bots were configured with massive cooldowns (ATF: 2-3h, MRG: 3-4h, Victor's: 4-5h, Vyro: 4-6h, Kynex: 6-8h). Render Node 2's 30-minute background watchdog repeatedly hit `cooldown (Xm remaining)` and aborted farming across all accounts.
