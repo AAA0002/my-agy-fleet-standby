@@ -130,6 +130,19 @@ ACTIVE_BOTS: Dict[str, Dict[str, Any]] = {
         "sponsor_channels": [],
         "requires_turnstile": False,
         "is_active": True,
+    },
+    "adxearn": {
+        "id": "adxearn",
+        "name": "AdxEarn AI",
+        "bot_username": "AdxEarnAibot",
+        "master_ref_code": "ref_6727787768",
+        "app_url": "https://t.me/AdxEarnAibot/app?startapp=ref_6727787768",
+        "token_key": "adxearn_init_data",
+        "short_names": ["app", "startapp"],
+        "api_base": "https://adxearnaibot.com/api",
+        "sponsor_channels": [],
+        "requires_turnstile": False,
+        "is_active": True,
     }
 }
 

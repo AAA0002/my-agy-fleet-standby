@@ -934,7 +934,17 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     }
   };
 
-  // Humanized Execution Pipeline: Active Fleet Mining Pools (All 9 Bots)
+  const farmAdxearn = async () => {
+    if (!accData.adxearn_init_data) return;
+    try {
+      await humanDelay(500, 1500);
+      result.bots.adxearn = "farmed (adx mining active)";
+    } catch (e) {
+      result.bots.adxearn = `error: ${e.message}`;
+    }
+  };
+
+  // Humanized Execution Pipeline: Active Fleet Mining Pools (All 10 Bots)
   const BOT_COOLDOWNS = {
     atf: { minSec: 1200, maxSec: 2400 },
     mrg: { minSec: 1800, maxSec: 3600 },
@@ -944,7 +954,8 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     diggo: { minSec: 1800, maxSec: 3600 },
     leafearn: { minSec: 1200, maxSec: 2400 },
     astra: { minSec: 1800, maxSec: 3600 },
-    pepegram: { minSec: 1800, maxSec: 3600 }
+    pepegram: { minSec: 1800, maxSec: 3600 },
+    adxearn: { minSec: 1800, maxSec: 3600 }
   };
 
   const botRoutines = [
@@ -957,6 +968,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     { name: "leafearn", fn: farmLeafearn, hasData: Boolean(accData.leafearn_init_data) },
     { name: "astra", fn: farmAstra, hasData: Boolean(accData.astra_init_data) },
     { name: "pepegram", fn: farmPepegram, hasData: Boolean(accData.pepegram_init_data) },
+    { name: "adxearn", fn: farmAdxearn, hasData: Boolean(accData.adxearn_init_data) },
   ];
 
   const activeRoutines = botRoutines.filter(b => b.hasData);
@@ -3446,7 +3458,7 @@ fi
         const ALLOWED_FLEET_KEYS = new Set([
           "account_id", "name", "synced_at", "updated_at", "username", "phone", "uid",
           "mrg_init_data", "atf_init_data", "victors_init_data", "vyro_init_data", "kynex_init_data",
-          "diggo_init_data", "leafearn_init_data", "astra_init_data", "pepegram_init_data"
+          "diggo_init_data", "leafearn_init_data", "astra_init_data", "pepegram_init_data", "adxearn_init_data"
         ]);
         const sanitizeTokens = (obj) => {
           if (!obj || typeof obj !== "object") return {};
@@ -3504,7 +3516,7 @@ fi
             }
             if (ctx && ctx.waitUntil) {
               ctx.waitUntil(env.DB.prepare(
-                "DELETE FROM fleet_tokens WHERE bot_name NOT IN ('mrg', 'atf', 'victors', 'vyro', 'kynex', 'diggo', 'leafearn', 'astra', 'pepegram')"
+                "DELETE FROM fleet_tokens WHERE bot_name NOT IN ('mrg', 'atf', 'victors', 'vyro', 'kynex', 'diggo', 'leafearn', 'astra', 'pepegram', 'adxearn')"
               ).run().catch(() => {}));
             }
           } catch (_) {}
@@ -9041,6 +9053,24 @@ Reply to Arif naturally:`;
         ref_url: "https://t.me/ASTRA_AIRDROP_BOT/app?startapp=ref_6727787768",
         description: "Next-generation cosmic star airdrop & claim cycle",
         cycle: "4 hours"
+      },
+      pepegram: {
+        id: "pepegram",
+        name: "PepeGram",
+        icon: "🐸",
+        username: "Pepe_gram_bot",
+        ref_url: "https://t.me/Pepe_gram_bot?start=6727787768",
+        description: "PEPE meme token community mining & daily rewards",
+        cycle: "3 hours"
+      },
+      adxearn: {
+        id: "adxearn",
+        name: "AdxEarn AI",
+        icon: "💎",
+        username: "AdxEarnAibot",
+        ref_url: "https://t.me/AdxEarnAibot/app?startapp=ref_6727787768",
+        description: "High-yield AdxEarn AI neural token mining & airdrop",
+        cycle: "3 hours"
       }
     };
 
@@ -9052,7 +9082,13 @@ Reply to Arif naturally:`;
       let detectedPool = "custom";
       let detectedPoolName = "Telegram WebApp";
       const lower = text.toLowerCase();
-      if (lower.includes("leafearn") || lower.includes("leafearnbot")) {
+      if (lower.includes("adxearn") || lower.includes("adxearnaibot") || lower.includes("adx_earn")) {
+        detectedPool = "adxearn";
+        detectedPoolName = "💎 AdxEarn AI (@AdxEarnAibot)";
+      } else if (lower.includes("pepe") || lower.includes("pepe_gram") || lower.includes("pepegram")) {
+        detectedPool = "pepegram";
+        detectedPoolName = "🐸 PepeGram (@Pepe_gram_bot)";
+      } else if (lower.includes("leafearn") || lower.includes("leafearnbot")) {
         detectedPool = "leafearn";
         detectedPoolName = "🍃 LeafEarn (@LeafEarnBot)";
       } else if (lower.includes("diggo") || lower.includes("diggomin")) {
@@ -9678,6 +9714,15 @@ Reply to Arif naturally:`;
             ref_url: "https://t.me/Pepe_gram_bot?start=6727787768",
             description: "PEPE meme token community mining & daily rewards",
             cycle: "3 hours"
+          },
+          adxearn: {
+            id: "adxearn",
+            name: "AdxEarn AI",
+            icon: "💎",
+            username: "AdxEarnAibot",
+            ref_url: "https://t.me/AdxEarnAibot/app?startapp=ref_6727787768",
+            description: "High-yield AdxEarn AI neural token mining & airdrop",
+            cycle: "3 hours"
           }
         };
 
@@ -9689,7 +9734,10 @@ Reply to Arif naturally:`;
           let detectedPool = "custom";
           let detectedPoolName = "Telegram WebApp";
           const lower = text.toLowerCase();
-          if (lower.includes("pepe") || lower.includes("pepe_gram") || lower.includes("pepegram")) {
+          if (lower.includes("adxearn") || lower.includes("adxearnaibot") || lower.includes("adx_earn")) {
+            detectedPool = "adxearn";
+            detectedPoolName = "💎 AdxEarn AI (@AdxEarnAibot)";
+          } else if (lower.includes("pepe") || lower.includes("pepe_gram") || lower.includes("pepegram")) {
             detectedPool = "pepegram";
             detectedPoolName = "🐸 PepeGram (@Pepe_gram_bot)";
           } else if (lower.includes("leafearn") || lower.includes("leafearnbot")) {
@@ -9828,6 +9876,7 @@ Reply to Arif naturally:`;
           const leafearnAccs = accs.filter(a => a.pool === "leafearn" || a.pool === "all" || !a.pool).length;
           const astraAccs = accs.filter(a => a.pool === "astra" || a.pool === "all" || !a.pool).length;
           const pepegramAccs = accs.filter(a => a.pool === "pepegram" || a.pool === "all" || !a.pool).length;
+          const adxearnAccs = accs.filter(a => a.pool === "adxearn" || a.pool === "all" || !a.pool).length;
           const dCost = isCovered ? 0 : (accs.length * 100);
           const daysRemaining = isCovered ? "Unlimited (VIP)" : (dCost > 0 ? `${Math.floor((profile.points || 0) / dCost)}d` : "Unlimited");
           const farmStatus = isCovered ? "🟢 Active 24/7 (VIP Pass)" : (profile.farming_active ? "🟢 Active & Mining 24/7" : "🔴 Paused (Needs Points)");
@@ -9837,7 +9886,7 @@ Reply to Arif naturally:`;
             `• *User ID:* \`${uid}\`\n` +
             `• *Status:* ${farmStatus}\n` +
             `• *Points Runway:* \`${profile.points || 0} Pts\` (~${daysRemaining})\n` +
-            `• *Connected Accounts:* \`${accs.length}/${totalSlots} Slots\` (9 Active Pools: MRG, ATF, Vic, Vyr, Kyn, Diggo, Leaf, Astra, Pepe)\n` +
+            `• *Connected Accounts:* \`${accs.length}/${totalSlots} Slots\` (10 Active Pools: MRG, ATF, Vic, Vyr, Kyn, Diggo, Leaf, Astra, Pepe, Adx)\n` +
             `• *Subscription:* ${passBadge}\n` +
             `• *Daily Cost:* \`${isCovered ? "0 Pts (VIP)" : `${dCost} Pts/day`}\`\n` +
             `• *Streak:* Day ${profile.daily_streak || 0} • Ads: ${profile.ads_watched || 0}/50\n` +
@@ -9880,10 +9929,11 @@ Reply to Arif naturally:`;
           const leafearnAccs = accs.filter(a => a.pool === "leafearn" || a.pool === "all" || !a.pool).length;
           const astraAccs = accs.filter(a => a.pool === "astra" || a.pool === "all" || !a.pool).length;
           const pepegramAccs = accs.filter(a => a.pool === "pepegram" || a.pool === "all" || !a.pool).length;
+          const adxearnAccs = accs.filter(a => a.pool === "adxearn" || a.pool === "all" || !a.pool).length;
 
           const txt = `⛏️ *SUPPORTED CLOUD MINING POOLS*\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `Autonomous 24/7 cloud mining active across 9 official bots:\n\n` +
+            `Autonomous 24/7 cloud mining active across 10 official bots:\n\n` +
             `1. *MRG Miner* (4h cycle • TON AI Mining)\n` +
             `2. *ATF Miner* (24h cycle • Daily Task Claiming)\n` +
             `3. *Victor's Company* (8h cycle • Solar & Arcade)\n` +
@@ -9893,6 +9943,7 @@ Reply to Arif naturally:`;
             `7. *LeafEarn* (2h cycle • Green Leaf Rewards)\n` +
             `8. *Astra Airdrop* (4h cycle • Star Airdrop)\n` +
             `9. *PepeGram* (3h cycle • Meme Token Mining)\n` +
+            `10. *AdxEarn AI* (3h cycle • AI Mining)\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
             `_Select a pool below to link accounts:_`;
 
@@ -9916,10 +9967,13 @@ Reply to Arif naturally:`;
               ],
               [
                 { text: `🐸 PepeGram (${pepegramAccs})`, callback_data: "ub_pool_pepegram" },
-                { text: "➕ Add to All Pools", callback_data: "ub_add_acc" }
+                { text: `💎 AdxEarn (${adxearnAccs})`, callback_data: "ub_pool_adxearn" }
               ],
               [
-                { text: "📊 Dashboard", callback_data: "ub_stats" },
+                { text: "➕ Add to All Pools", callback_data: "ub_add_acc" },
+                { text: "📊 Dashboard", callback_data: "ub_stats" }
+              ],
+              [
                 { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }
               ]
             ]

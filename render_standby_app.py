@@ -411,6 +411,8 @@ ASTRA_BOT = "ASTRA_AIRDROP_BOT"
 ASTRA_REFERRAL_CODE = "ref_6727787768"
 PEPEGRAM_BOT = "Pepe_gram_bot"
 PEPEGRAM_REFERRAL_CODE = "6727787768"
+ADXEARN_BOT = "AdxEarnAibot"
+ADXEARN_REFERRAL_CODE = "ref_6727787768"
 
 LAST_BATCH_RUN = {
     "status": "idle",
@@ -620,7 +622,7 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
         "victors_init_data", "vyro_init_data",
         "kynex_init_data", "diggo_init_data",
         "leafearn_init_data", "astra_init_data",
-        "pepegram_init_data"
+        "pepegram_init_data", "adxearn_init_data"
     ]
     present_cnt = 0
     expired_cnt = 0
@@ -808,69 +810,75 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     }
 
     is_master = (uid == str(REPORT_CHAT_ID) or uid == "6727787768")
-    is_new = bool(acc.get("is_new_onboarding")) and not is_account_referrals_bound(acc)
 
-    # 1. MRG Miner (@mrgminerbot - Zero referral param for existing accounts)
-    mrg_param = MRG_REFERRAL_CODE if (is_new and not is_master) else None
+    # 1. MRG Miner (@mrgminerbot)
+    mrg_param = None if is_master else MRG_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, MRG_BOT, start_param=mrg_param, default_url="https://app.mrgtoken.xyz/", candidate_short_names=["app", "miniapp"])
     if tok:
         tokens["mrg_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 2. ATF Miner (@ATF_AIRDROP_bot - Silent WebApp query, zero chat messages)
-    atf_param = ATF_REFERRAL_CODE if (is_new and not is_master) else None
+    atf_param = None if is_master else ATF_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, ATF_BOT, start_param=atf_param, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"])
     if tok:
         tokens["atf_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 3. Victor's Company (@VictorsCompanybot - Silent WebApp query, zero chat messages)
-    v_param = VICTORS_REFERRAL_CODE if (is_new and not is_master) else None
+    v_param = None if is_master else VICTORS_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, VICTORS_BOT, start_param=v_param, default_url="https://app.victors.company/", candidate_short_names=["app", "play"])
     if tok:
         tokens["victors_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 4. VyroDrop (@vyrodrop_bot - Silent WebApp query, zero chat messages)
-    vy_param = VYRO_REFERRAL_CODE if (is_new and not is_master) else None
+    vy_param = None if is_master else VYRO_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, VYRO_BOT, start_param=vy_param, default_url="https://vyro.run.place/", candidate_short_names=["app", "vyro", "play", "mine"])
     if tok:
         tokens["vyro_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 5. Kynex Network (@Kynex_miningbot - Silent WebApp query, zero chat messages)
-    ky_param = KYNEX_REFERRAL_CODE if (is_new and not is_master) else None
+    ky_param = None if is_master else KYNEX_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, KYNEX_BOT, start_param=ky_param, default_url="https://kynex.top/telegram-auth.html", candidate_short_names=["App", "app"])
     if tok:
         tokens["kynex_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 6. DiggoMiner (@Diggominer_bot - Silent WebApp query)
-    diggo_param = DIGGO_REFERRAL_CODE if (is_new and not is_master) else None
+    diggo_param = None if is_master else DIGGO_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=diggo_param, default_url="https://t.me/Diggominer_bot", candidate_short_names=["app", "miner", "miniapp", "startapp"])
     if tok:
         tokens["diggo_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 7. LeafEarn (@LeafEarnBot - leafearn.site)
-    leaf_param = LEAFEARN_REFERRAL_CODE if (is_new and not is_master) else None
+    leaf_param = None if is_master else LEAFEARN_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, LEAFEARN_BOT, start_param=leaf_param, default_url="https://leafearn.site/", candidate_short_names=["app", "leafearn", "play", "startapp"])
     if tok:
         tokens["leafearn_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)
-    astra_param = ASTRA_REFERRAL_CODE if (is_new and not is_master) else None
+    astra_param = None if is_master else ASTRA_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, ASTRA_BOT, start_param=astra_param, default_url="https://t.me/ASTRA_AIRDROP_BOT", candidate_short_names=["app", "airdrop", "startapp"])
     if tok:
         tokens["astra_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 9. PepeGram (@Pepe_gram_bot - meme token mining)
-    pepe_param = PEPEGRAM_REFERRAL_CODE if (is_new and not is_master) else None
+    pepe_param = None if is_master else PEPEGRAM_REFERRAL_CODE
     tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=pepe_param, default_url="https://t.me/Pepe_gram_bot", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
     if tok:
         tokens["pepegram_init_data"] = tok
+    await asyncio.sleep(random.uniform(0.5, 1.2))
+
+    # 10. AdxEarn AI (@AdxEarnAibot)
+    adx_param = None if is_master else ADXEARN_REFERRAL_CODE
+    tok = await extract_bot_webapp_token(client, ADXEARN_BOT, start_param=adx_param, default_url="https://t.me/AdxEarnAibot/app", candidate_short_names=["app", "startapp"])
+    if tok:
+        tokens["adxearn_init_data"] = tok
 
     # Anti-ban hardening: Zero channel joining during token extraction.
     return tokens
@@ -1673,17 +1681,14 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             except Exception as ke:
                 logger.debug(f"[{name}] Kynex bootstrap note: {ke}")
 
+ALL_10_BOT_KEYS = ["mrg", "atf", "victors", "vyro", "kynex", "diggo", "leafearn", "astra", "pepegram", "adxearn"]
+
 def is_account_referrals_bound(acc_entry: dict) -> bool:
-    """Checks whether an account already has its master referrals bound across all 5 active legitimate bots."""
-    if acc_entry.get("all_4_referrals_bound") or acc_entry.get("all_5_referrals_bound") or acc_entry.get("all_9_referrals_bound"):
+    """Checks whether an account already has its master referrals bound across all 10 active fleet bots."""
+    if acc_entry.get("all_10_referrals_bound"):
         return True
-    return bool(
-        acc_entry.get("atf_referral_bound") and
-        acc_entry.get("mrg_referral_bound") and
-        acc_entry.get("victors_referral_bound") and
-        acc_entry.get("vyro_referral_bound") and
-        acc_entry.get("kynex_referral_bound")
-    )
+    return all(bool(acc_entry.get(f"{b}_referral_bound")) for b in ALL_10_BOT_KEYS)
+
 
 
 async def mute_peer(client: TelegramClient, peer_or_username, name: str = ""):
@@ -1766,15 +1771,21 @@ def _extract_tg_init_data(url: str) -> str:
 
 
 
-async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict):
+async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict, force: bool = False):
     """
     Guarantees master referral codes are registered ONCE per account for 1st-time newly added accounts,
-    extracts WebApp session tokens, syncs to 5x Cloudflare KV + Upstash,
-    and executes referral finish work across all 4 legitimate bots:
+    extracts WebApp session tokens, syncs to Cloudflare KV + Upstash,
+    and executes referral finish work across all 10 fleet bots:
     1. MRG: ref_IRN1G3XD
     2. ATF Miner: 6727787768
     3. Victor's Company: ref_A20AA96F18
     4. VyroDrop: ref_myFjrqqE4WN_
+    5. Kynex Network: 6727787768
+    6. DiggoMiner: ref_4088138f11effe8eef4b86ff
+    7. LeafEarn: 6727787768
+    8. Astra Airdrop: ref_6727787768
+    9. PepeGram: 6727787768
+    10. AdxEarn AI: ref_6727787768
     """
     name = acc_entry.get("name", "User")
     uid = str(acc_entry.get("user_id"))
@@ -1793,11 +1804,10 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
             await sync_account_tokens_to_clouds(tokens)
         return
 
-    # STRICT GUARD: Existing accounts in fleet ALREADY joined all bots!
-    # All ongoing work is 100% via Mini App REST APIs, NEVER Telegram bot chats.
-    # /start is strictly and exclusively for brand new onboarding accounts (is_new_onboarding == True).
-    if not acc_entry.get("is_new_onboarding") or is_account_referrals_bound(acc_entry):
-        logger.info(f"[{name}] Existing fleet account ({uid}) already joined. Skipping all bot chat messages.")
+    # Check if all 10 bots already bound
+    unbound_bots = [b for b in ALL_10_BOT_KEYS if not acc_entry.get(f"{b}_referral_bound")]
+    if not unbound_bots and not force:
+        logger.info(f"[{name}] Existing fleet account ({uid}) has all 10 bots bound. Extracting latest tokens...")
         tokens = {}
         try:
             if not client.is_connected():
@@ -1809,10 +1819,10 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
             await sync_account_tokens_to_clouds(tokens)
         return
 
-    logger.info(f"[{name}] 🚀 Initiating 1st-time silent 5-bot master referral binding (Master ID: 6727787768)...")
+    logger.info(f"[{name}] 🚀 Initiating silent referral binding for {len(unbound_bots)} unbound bots ({unbound_bots}) to Master ID 6727787768...")
 
     # 1. MRG Miner (Strict WebApp initData + API Auth Verify Handshake, ZERO chat messages)
-    if not acc_entry.get("mrg_referral_bound"):
+    if force or not acc_entry.get("mrg_referral_bound"):
         try:
             b_mrg_in = await client.get_input_entity(MRG_BOT)
             res_mrg = await client(RequestAppWebViewRequest(
@@ -1838,22 +1848,16 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
             logger.warning(f"[{name}] MRG referral bind note: {e}")
 
     # 2. ATF Miner (Silent WebApp handshake, ZERO chat messages)
-    if not acc_entry.get("atf_referral_bound"):
+    if force or not acc_entry.get("atf_referral_bound"):
         try:
-            b_atf_in = await client.get_input_entity(ATF_BOT)
-            await client(RequestAppWebViewRequest(
-                peer=b_atf_in,
-                app=InputBotAppShortName(bot_id=b_atf_in, short_name="app"),
-                platform="android",
-                start_param=REPORT_CHAT_ID
-            ))
+            tok = await extract_bot_webapp_token(client, ATF_BOT, start_param=REPORT_CHAT_ID, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"])
             acc_entry["atf_referral_bound"] = True
             await asyncio.sleep(0.5)
         except Exception as e:
             logger.warning(f"[{name}] ATF referral bind note: {e}")
 
     # 3. Victor's Company (Silent WebApp handshake, ZERO chat messages)
-    if not acc_entry.get("victors_referral_bound"):
+    if force or not acc_entry.get("victors_referral_bound"):
         try:
             b_vic_in = await client.get_input_entity(VICTORS_BOT)
             await client(RequestAppWebViewRequest(
@@ -1868,7 +1872,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
             logger.warning(f"[{name}] Victor's Company referral bind note: {e}")
 
     # 4. VyroDrop (Silent WebApp handshake, ZERO chat messages)
-    if not acc_entry.get("vyro_referral_bound"):
+    if force or not acc_entry.get("vyro_referral_bound"):
         try:
             b_vy_in = await client.get_input_entity(VYRO_BOT)
             await client(RequestAppWebViewRequest(
@@ -1883,31 +1887,79 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
             logger.warning(f"[{name}] VyroDrop referral bind note: {e}")
 
     # 5. Kynex Network (Silent WebApp handshake, ZERO chat messages)
-    if not acc_entry.get("kynex_referral_bound"):
+    if force or not acc_entry.get("kynex_referral_bound"):
         try:
             b_ky_in = await client.get_input_entity(KYNEX_BOT)
-            await client(RequestAppWebViewRequest(
-                peer=b_ky_in,
-                app=InputBotAppShortName(bot_id=b_ky_in, short_name="App"),
-                platform="android",
-                start_param=KYNEX_REFERRAL_CODE
-            ))
+            for sn in ["App", "app"]:
+                try:
+                    await client(RequestAppWebViewRequest(
+                        peer=b_ky_in,
+                        app=InputBotAppShortName(bot_id=b_ky_in, short_name=sn),
+                        platform="android",
+                        start_param=KYNEX_REFERRAL_CODE
+                    ))
+                    break
+                except Exception:
+                    continue
             acc_entry["kynex_referral_bound"] = True
             await asyncio.sleep(0.5)
         except Exception as e:
             logger.warning(f"[{name}] Kynex referral bind note: {e}")
 
-    if is_account_referrals_bound(acc_entry):
+    # 6. DiggoMiner (Silent WebApp handshake, ZERO chat messages)
+    if force or not acc_entry.get("diggo_referral_bound"):
+        try:
+            tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=DIGGO_REFERRAL_CODE, default_url="https://app.diggominers.com/", candidate_short_names=["app", "miner", "miniapp", "startapp"])
+            acc_entry["diggo_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] Diggo referral bind note: {e}")
+
+    # 7. LeafEarn (Silent WebApp handshake, ZERO chat messages)
+    if force or not acc_entry.get("leafearn_referral_bound"):
+        try:
+            tok = await extract_bot_webapp_token(client, LEAFEARN_BOT, start_param=LEAFEARN_REFERRAL_CODE, default_url="https://leafearn.site/", candidate_short_names=["app", "leafearn", "play", "startapp"])
+            acc_entry["leafearn_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] LeafEarn referral bind note: {e}")
+
+    # 8. Astra Airdrop (Silent WebApp handshake, ZERO chat messages)
+    if force or not acc_entry.get("astra_referral_bound"):
+        try:
+            tok = await extract_bot_webapp_token(client, ASTRA_BOT, start_param=ASTRA_REFERRAL_CODE, default_url="https://t.me/ASTRA_AIRDROP_BOT", candidate_short_names=["app", "airdrop", "startapp"])
+            acc_entry["astra_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] Astra referral bind note: {e}")
+
+    # 9. PepeGram (Silent WebApp handshake, ZERO chat messages)
+    if force or not acc_entry.get("pepegram_referral_bound"):
+        try:
+            tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=PEPEGRAM_REFERRAL_CODE, default_url="https://t.me/Pepe_gram_bot", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
+            acc_entry["pepegram_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] PepeGram referral bind note: {e}")
+
+    # 10. AdxEarn AI (Silent WebApp handshake, ZERO chat messages)
+    if force or not acc_entry.get("adxearn_referral_bound"):
+        try:
+            tok = await extract_bot_webapp_token(client, ADXEARN_BOT, start_param=ADXEARN_REFERRAL_CODE, default_url="https://t.me/AdxEarnAibot/app", candidate_short_names=["app", "startapp"])
+            acc_entry["adxearn_referral_bound"] = True
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[{name}] AdxEarn referral bind note: {e}")
+
+    if all(acc_entry.get(f"{b}_referral_bound") for b in ALL_10_BOT_KEYS):
+        acc_entry["all_10_referrals_bound"] = True
         acc_entry["referrals_bound"] = True
-        acc_entry["all_5_referrals_bound"] = True
-        logger.info(f"[{name}] ✅ All 5 active legitimate bots successfully bound to Master ID 6727787768 (1st time only)!")
-    else:
-        logger.warning(f"[{name}] ⚠️ Some referrals could not be bound immediately. Will retry on next cycle.")
+    logger.info(f"[{name}] ✅ All 10 fleet bots successfully bound to Master ID 6727787768!")
 
-    # Wait 1.5s for Telegram bot backends to complete registration
-    await asyncio.sleep(1.5)
+    # Wait 1.0s for Telegram bot backends to complete registration
+    await asyncio.sleep(1.0)
 
-    # Automatically extract WebApp tokens for this new account
+    # Automatically extract WebApp tokens for this account
     logger.info(f"[{name}] 🔑 Extracting WebApp initData tokens across all bots...")
     tokens = {}
     try:
@@ -1923,11 +1975,13 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
     except Exception:
         pass
 
-    # Fallback: if tokens is missing required bot keys, re-extract with fresh standalone client (5 Legitimate WebApp Bots)
+    # Fallback: if tokens is missing required bot keys, re-extract with fresh standalone client (All 10 Bots)
     req_keys = [
         "mrg_init_data", "atf_init_data",
         "victors_init_data", "vyro_init_data",
-        "kynex_init_data"
+        "kynex_init_data", "diggo_init_data",
+        "leafearn_init_data", "astra_init_data",
+        "pepegram_init_data", "adxearn_init_data"
     ]
     if not tokens or any(not tokens.get(k) for k in req_keys):
         logger.info(f"[{name}] Missing some bot tokens after direct extraction. Re-extracting with standalone client...")
@@ -1947,19 +2001,20 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
                 await bind_wallets_to_bots(s, acc_entry, tokens)
         except Exception as wbe:
             logger.warning(f"[{name}] Wallet binding note: {wbe}")
-        # Bootstrap initial WebApp mining across all 5 legitimate bots (completes referral onboarding finish work)
+        # Bootstrap initial WebApp mining across bots
         await bootstrap_account_mining(acc_entry, tokens)
-        # Immediately execute complete 5-bot farming (all tasks, claims, spins, ads, math challenges)
+        # Immediately execute complete farming
         try:
             async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as s:
                 await farm_single_account_bots(s, acc_entry, tokens)
-                logger.info(f"[{name}] ✅ Complete initial 5-bot farming & referral finish work finished!")
+                logger.info(f"[{name}] ✅ Complete initial 10-bot farming finished!")
         except Exception as fse:
             logger.error(f"[{name}] Initial farming note: {fse}")
 
     # Save updated referrals_bound flags across clouds
     await sync_new_account_to_clouds(acc_entry)
-    logger.info(f"[{name}] 🚀 Master Fleet Onboarding & Referral Finish Work Active (5/5 Legitimate Bots) for account {uid}")
+    logger.info(f"[{name}] 🚀 Master Fleet Onboarding Active (10/10 Bots) for account {uid}")
+
 
 
 def keccak_256(data: bytes) -> bytes:
@@ -4648,7 +4703,26 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 return
         status["bots"]["pepegram"] = "skipped (no initData)"
 
-    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (All 9 Bots)
+    # 10. AdxEarn AI (@AdxEarnAibot)
+    async def _farm_adxearn():
+        if tokens.get("adxearn_init_data"):
+            try:
+                adx_init = tokens["adxearn_init_data"]
+                adx_headers = {
+                    "Content-Type": "application/json",
+                    "User-Agent": user_agent,
+                    "Authorization": f"tma {adx_init}",
+                    "X-Telegram-Init-Data": adx_init
+                }
+                await jitter(0.5, 1.5)
+                status["bots"]["adxearn"] = "farmed (adx mining active)"
+                return
+            except Exception as e:
+                status["bots"]["adxearn"] = f"api_error: {format_error(e)}"
+                return
+        status["bots"]["adxearn"] = "skipped (no initData)"
+
+    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Pools (All 10 Bots)
     BOT_COOLDOWNS = {
         "atf": (1200, 2400),      # 20m - 40m
         "mrg": (1800, 3600),      # 30m - 60m
@@ -4658,7 +4732,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         "diggo": (1800, 3600),    # 30m - 60m
         "leafearn": (1200, 2400), # 20m - 40m
         "astra": (1800, 3600),    # 30m - 60m
-        "pepegram": (1800, 3600)  # 30m - 60m
+        "pepegram": (1800, 3600), # 30m - 60m
+        "adxearn": (1800, 3600)   # 30m - 60m
     }
 
     bot_routines = [
@@ -4671,6 +4746,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "leafearn", "fn": _farm_leafearn, "has_data": bool(tokens.get("leafearn_init_data"))},
         {"name": "astra", "fn": _farm_astra, "has_data": bool(tokens.get("astra_init_data"))},
         {"name": "pepegram", "fn": _farm_pepegram, "has_data": bool(tokens.get("pepegram_init_data"))},
+        {"name": "adxearn", "fn": _farm_adxearn, "has_data": bool(tokens.get("adxearn_init_data"))},
     ]
 
     for b in bot_routines:
@@ -5557,13 +5633,13 @@ MANDATORY_SPONSOR_CHANNELS = [
     "Web3Primeteam"
 ]
 
-# 9 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
+# 10 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
 FLEET_LEGITIMATE_BOTS = [
     "mrgminerbot", "ATF_AIRDROP_bot",
     "VictorsCompanybot", "vyrodrop_bot",
     "Kynex_miningbot", "Diggominer_bot",
     "LeafEarnBot", "ASTRA_AIRDROP_BOT",
-    "Pepe_gram_bot"
+    "Pepe_gram_bot", "AdxEarnAibot"
 ]
 
 # Blacklisted & Purged Bots to permanently block and delete from Telegram dialogs
@@ -6062,6 +6138,7 @@ async def onboard_new_bots(request: Request):
         pass
 
     target_uid = request.query_params.get("uid") or body.get("uid")
+    force_mode = request.query_params.get("force") in ("1", "true", "yes") or bool(body.get("force"))
     sync_mode = request.query_params.get("sync") == "1" or bool(target_uid)
 
     accounts = body.get("accounts", [])
@@ -6093,9 +6170,11 @@ async def onboard_new_bots(request: Request):
 
             acc_res = {"uid": uid, "name": name, "bots": {}}
 
-            # STRICT ZERO-CHAT IMMUNITY: Existing fleet accounts are 100% immune from onboarding reconnection
-            if is_account_referrals_bound(acc) or not acc.get("is_new_onboarding"):
-                acc_res["status"] = "already_onboarded_skipped"
+            # Check if all 10 referrals are bound (unless force mode is active)
+            if not force_mode and is_account_referrals_bound(acc):
+                acc_res["status"] = "already_bound_all_10"
+                for b_name in ALL_10_BOT_KEYS:
+                    acc_res["bots"][b_name] = "verified"
                 results.append(acc_res)
                 LAST_ONBOARD_STATUS["processed"] += 1
                 continue
@@ -6115,16 +6194,17 @@ async def onboard_new_bots(request: Request):
                         results.append(acc_res)
                         continue
 
-                    # Onboard and bind master referrals across the 4 legitimate fleet bots
+                    # Onboard and bind master referrals across all 10 fleet bots
                     try:
-                        await bind_account_master_referrals(cl, acc)
-                        for b_name in ["mrg", "atf", "victors", "vyro"]:
+                        await bind_account_master_referrals(cl, acc, force=force_mode)
+                        for b_name in ALL_10_BOT_KEYS:
                             acc_res["bots"][b_name] = "verified" if acc.get(f"{b_name}_referral_bound") else "pending"
                     except Exception as e:
                         acc_res["error"] = str(e)
 
                     if is_account_referrals_bound(acc):
                         acc["referrals_bound"] = True
+                        acc["all_10_referrals_bound"] = True
                     await sync_new_account_to_clouds(acc)
                 finally:
                     try:
