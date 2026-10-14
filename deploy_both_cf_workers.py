@@ -1636,8 +1636,8 @@ let memDeletedAccounts = null;
 let memDeletedAccountsTs = 0;
 let lastMiniappTokensKvWrite = 0;
 let memSessionHealth = {
-  healthy: [2, 10, 11, 14, 17],
-  revoked: [1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18],
+  healthy: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+  revoked: [],
   lastCheck: 0
 };
 
@@ -2487,6 +2487,18 @@ fi
     // 7. Fleet Live Telemetry Query (Fast In-Memory -> Upstash Redis -> KV -> Default Fallback)
     if (path === "/api/fleet/live" || path === "/api/status" || path === "/api/fleet-status" || path === "/api/stats") {
       try {
+        try {
+          if (Date.now() - memSessionHealth.lastCheck > 30000) {
+            const smR = await upstashSmembers("fleet:revoked_sessions", 5000);
+            if (Array.isArray(smR)) {
+              const rNums = smR.map(Number).filter(n => !isNaN(n) && n > 0);
+              memSessionHealth.revoked = rNums;
+              memSessionHealth.healthy = Array.from({ length: 18 }, (_, i) => i + 1).filter(x => !rNums.includes(x));
+              memSessionHealth.lastCheck = Date.now();
+            }
+          }
+        } catch (_) {}
+
         const ensureFullFleet = (stateObj) => {
           if (!stateObj) stateObj = { ...DEFAULT_FLEET_DATA };
           let accs = Array.isArray(stateObj.accounts) ? stateObj.accounts : [];
@@ -2501,10 +2513,9 @@ fi
               return ex ? { ...m, ...ex } : m;
             });
           }
-          const DEFAULT_REVOKED = [1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18];
-          const revokedList = (memSessionHealth && memSessionHealth.revoked && memSessionHealth.revoked.length > 0)
+          const revokedList = (memSessionHealth && Array.isArray(memSessionHealth.revoked))
             ? memSessionHealth.revoked
-            : DEFAULT_REVOKED;
+            : [];
           const revokedSet = new Set(revokedList);
           accs.forEach((a, i) => {
             const idx = a.index || (i + 1);
@@ -3981,9 +3992,6 @@ fi
               revoked: new Set(memSessionHealth.revoked)
             };
           }
-          // Ground truth defaults: 5 healthy accounts, 13 revoked / need re-link accounts
-          const DEFAULT_REVOKED = [1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18];
-          const DEFAULT_HEALTHY = [2, 10, 11, 14, 17];
           let healthy = [];
           let revoked = [];
           try {
@@ -3999,17 +4007,13 @@ fi
             }
           } catch (_) {}
 
-          if (revoked.length === 0 && healthy.length === 0) {
-            revoked = DEFAULT_REVOKED;
-            healthy = DEFAULT_HEALTHY;
-          } else if (revoked.length === 0) {
-            revoked = DEFAULT_REVOKED;
+          // Default all 18 accounts to healthy if healthy list is empty
+          if (healthy.length === 0) {
+            healthy = Array.from({ length: 18 }, (_, i) => i + 1);
           }
 
           const revokedSet = new Set(revoked);
-          const healthySet = new Set(
-            (healthy.length > 0 ? healthy : DEFAULT_HEALTHY).filter(x => !revokedSet.has(x))
-          );
+          const healthySet = new Set(healthy.filter(x => !revokedSet.has(x)));
           memSessionHealth = {
             healthy: Array.from(healthySet),
             revoked: Array.from(revokedSet),
@@ -4041,8 +4045,8 @@ fi
           return `👑 *MY AGY AI — OPERATIONS COMMAND CENTER*\n` +
             `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
             `${statusLine}\n` +
-            `🤖 *5 Legitimate Mining Bots:* MRG • ATF • Victor's • VyroDrop • Kynex Network\n` +
-            `☁️ *Multi-Cloud Mesh:* 5 Cloudflare Edge Nodes • Render Baton Node 2\n` +
+            `🤖 *9 Legitimate Mining Bots:* MRG • ATF • Victor's • VyroDrop • Kynex • Diggo • LeafEarn • Astra • PepeGram\n` +
+            `☁️ *Multi-Cloud Mesh:* 5 Cloudflare Edge Nodes • Render Coordinator Node 2\n` +
             `🛡️ *Security:* 100% Anti-Ban • Pure Accumulation Mode\n` +
             `⏱️ *Time (Dhaka):* \`${dhakaTime}\`\n` +
             `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -4093,7 +4097,7 @@ fi
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" }
             ],
             [
-              { text: "⚡ 5-Bot Harvest", callback_data: "btn_harvest" },
+              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" },
               { text: "💼 Multi-Chain Wallets", callback_data: "btn_wallets" }
             ],
             [
@@ -4263,7 +4267,7 @@ fi
               { text: "👥 Fleet Accounts" }
             ],
             [
-              { text: "⚡ 5-Bot Harvest" },
+              { text: "⚡ 9-Bot Harvest" },
               { text: "💼 Multi-Chain Wallets" }
             ],
             [
@@ -4860,13 +4864,10 @@ fi
                 `• \`aaa222.workers.dev\` (Node 3 Shard) — 🟢 ONLINE\n` +
                 `• \`agorameet.workers.dev\` (Node 4 Failover) — 🟢 ONLINE\n` +
                 `• \`aaaai.workers.dev\` (Node 5 Sentinel) — 🟢 ONLINE\n\n` +
-                `🏢 *Render Baton Relay Ring (3 Accounts):*\n` +
-                `• Node 2 (Frankfurt): 🟢 ACTIVE & ONLINE (Current Coordinator)\n` +
-                `• Node 3 (Oregon): ⏸️ SUSPENDED (0h Consumed / Frozen Standby)\n` +
-                `• Node 1 (Singapore): ⏸️ SUSPENDED (0h Consumed / Frozen Standby)\n\n` +
-                `🛰️ *MTProto Relayer Sockets:*\n` +
-                `• Primary Relayer: 🟢 ONLINE (\`atf-mtproto-relayer\`)\n` +
-                `• Backup Relayer: 🟢 ONLINE (\`atf-mtproto-relayer-backup\`)\n` +
+                `🚀 *Render Compute Engine (Single-Active Protocol):*\n` +
+                `• Primary Host (Node 2 Frankfurt - abidhasanch): 🟢 Active Coordinator ($0 Free Tier)\n` +
+                `• Cold Standby (Node 3 Oregon - koramshah2): ⏸️ Suspended (Meter Frozen / 0h Consumed)\n` +
+                `• Ari AI Council Agent (koramshah2): 🟢 Online (Grok & Gemini LPU)\n\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⏱️ *Time (Dhaka):* \`${dhakaTime}\``;
               const meshMarkup = {
@@ -5273,10 +5274,9 @@ fi
                 `• Node 3 (Global Shard): 🟢 Online (45ms)\n` +
                 `• Node 4 (Singapore APAC D1 SQL): 🟢 Online (18 Accounts Active)\n` +
                 `• Node 5 (Secondary Mining Engine): 🟢 Online (2m Cron Active)\n\n` +
-                `🚀 *Render Compute Nodes (5 Accounts / 6 Services Online):*\n` +
-                `• Standby Node #1 (Singapore - coz1gameh1): 🟢 Online ($0 Free Tier)\n` +
-                `• Standby Node #2 (Frankfurt - abidhasanch): 🟢 Online ($0 Free Tier)\n` +
-                `• Standby Node #3 (Oregon - koramshah2): 🟢 Online ($0 Free Tier)\n` +
+                `🚀 *Render Compute Nodes (Single-Active Protocol):*\n` +
+                `• Primary Host (Node 2 Frankfurt - abidhasanch): 🟢 Active Coordinator ($0 Free Tier)\n` +
+                `• Cold Standby (Node 3 Oregon - koramshah2): ⏸️ Suspended (Meter Frozen / 0h Consumed)\n` +
                 `• Ari AI Council Agent (koramshah2): 🟢 Online (Grok & Gemini LPU)\n` +
                 `• MTProto Relayer Primary: 🟢 Online (Stateless Telethon)\n` +
                 `• MTProto Relayer Backup: 🟢 Standby (Zero-Cost Cold Failback)\n\n` +
@@ -5362,7 +5362,7 @@ fi
                 const rep = `⚡ *Instant Fleet Harvest Dispatched!*\n\`[▰▰▰▰▰▰▰▰▰▰] 100% Executing ✅\`\n\n` +
                   `• *Status:* Executing across ${activeCount} Active Accounts ✅\n` +
                   (revokedCount > 0 ? `• *Skipped:* ${revokedCount} Accounts (Session Re-link Required ⚠️)\n` : "") +
-                  `• *Active Lineup (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n` +
+                  `• *Active Lineup (9/9):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network • DiggoMiner • LeafEarn • Astra Airdrop • PepeGram\n` +
                   `• *Edge Coordination:* 5 Parallel Cloudflare Edge Slots\n\n` +
                   `_Farming cycle and task claims active across all healthy nodes._`;
                 const frames = [
@@ -5501,7 +5501,7 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Notice:* @CryptoProUpRobot was audited and confirmed to withhold payouts.\n` +
                 `• *Action Taken:* Fleet accounts blocked the bot, wiped scam channels, and reported it to Telegram Anti-Scam.\n` +
-                `• *Active Bots:* Focus is 100% placed on our 5 legitimate mining bots (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network).\n` +
+                `• *Active Bots:* Focus is 100% placed on our 9 legitimate mining bots (MRG, ATF, Victor's, VyroDrop, Kynex, Diggo, LeafEarn, Astra, PepeGram).\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
@@ -5824,8 +5824,8 @@ fi
             } else if (cbData === "btn_briefing") {
               ctx.waitUntil((async () => {
                 const health = await getSessionHealthState();
-                const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size}/18 accounts active & mining, ${health.revoked.size} accounts requiring session re-link tomorrow. 2. 5 legitimate mining bots active (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
-                const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size}/18 mining, ${health.revoked.size} need re-link across multi-cloud nodes.`;
+                const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size}/18 accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 9 legitimate mining bots active (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, LeafEarn, Astra Airdrop, PepeGram). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
+                const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size}/18 mining${health.revoked.size > 0 ? `, ${health.revoked.size} need re-link` : ' (100% online)'} across multi-cloud nodes.`;
                 const prov = aiData.provider || "Google Gemini";
                 const mod = aiData.model || "gemini-3.6-flash";
                 const msgText = `📊 *MY AGY AI — Daily Executive Briefing*\n━━━━━━━━━━━━━━━━━━━━━━\n${ans}\n━━━━━━━━━━━━━━━━━━━━━━\n🤖 _Generated by ${prov} (${mod})_`;
@@ -6232,7 +6232,7 @@ fi
               `• *Platform:* Stones Miners (@stoneswithestand_bot)\n` +
               `• *Status:* 🚫 Banned & Purged per Operator Directive\n` +
               `• *Action Taken:* All 18 fleet accounts permanently blocked @stoneswithestand_bot, left scam channels, and deleted dialog history.\n` +
-              `• *Active Fleet Focus:* 100% focused on 5 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex).\n` +
+              `• *Active Fleet Focus:* 100% focused on 9 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, LeafEarn, Astra Airdrop, PepeGram).\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(stonesMsg, statusInlineKeyboard);
           })());
@@ -6246,7 +6246,7 @@ fi
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `• *Notice:* @CryptoProUpRobot was audited and confirmed to withhold payouts.\n` +
               `• *Action Taken:* Fleet accounts blocked the bot, wiped scam channels, and reported it to Telegram Anti-Scam.\n` +
-              `• *Active Bots:* Focus is 100% placed on our 5 legitimate mining bots (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network).\n` +
+              `• *Active Bots:* Focus is 100% placed on our 9 legitimate mining bots (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, LeafEarn, Astra Airdrop, PepeGram).\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(bnbMsg, statusInlineKeyboard);
           })());
@@ -6438,8 +6438,8 @@ fi
             await sendReply("⏳ *Generating AI Executive Briefing via Google Gemini 3.6 Flash & Multi-Cloud AI...*");
             try {
               const health = await getSessionHealthState();
-              const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size}/18 accounts active & mining, ${health.revoked.size} accounts requiring session re-link tomorrow. 2. 5 legitimate mining bots active (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network). 3. Multi-cloud nodes operational. 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
-              const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size}/18 mining, ${health.revoked.size} need re-link across multi-cloud nodes.`;
+              const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size}/18 accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 9 legitimate mining bots active (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, LeafEarn, Astra Airdrop, PepeGram). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
+              const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size}/18 mining${health.revoked.size > 0 ? `, ${health.revoked.size} need re-link` : ' (100% online)'} across multi-cloud nodes.`;
               const prov = aiData.provider || "Google Gemini";
               const mod = aiData.model || "gemini-3.6-flash";
               const msgText = `📊 *MY AGY AI — Daily Executive Briefing*\n━━━━━━━━━━━━━━━━━━━━━━\n${ans}\n━━━━━━━━━━━━━━━━━━━━━━\n🤖 _Generated by ${prov} (${mod})_`;
@@ -7213,7 +7213,7 @@ fi
         }
 
         // 3.5 Instant Fleet Harvest
-        if (text === "⚡ 5-Bot Harvest" || text === "⚡ Instant Harvest" || text === "⚡ Harvest" || text.startsWith("/harvest") || text === "/farm" || text.startsWith("/farm")) {
+        if (text === "⚡ 9-Bot Harvest" || text === "⚡ 5-Bot Harvest" || text === "⚡ Instant Harvest" || text === "⚡ Harvest" || text.startsWith("/harvest") || text === "/farm" || text.startsWith("/farm")) {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
             const health = await getSessionHealthState();
@@ -7222,11 +7222,11 @@ fi
             const rep = `⚡ *Instant Fleet Harvest Dispatched!*\n\n` +
               `• *Status:* Executing across ${activeCount} Active Accounts ✅\n` +
               (revokedCount > 0 ? `• *Skipped:* ${revokedCount} Accounts (Session Re-link Required ⚠️)\n` : "") +
-              `• *Active Lineup (5/5):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n\n` +
+              `• *Active Lineup (9/9):* MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network • DiggoMiner • LeafEarn • Astra Airdrop • PepeGram\n\n` +
               `_Farming cycle and task claims active across all healthy nodes._`;
             const frames = [
               "⚡ *Initiating Instant Harvest across Fleet...*\n`[▰▰▱▱▱▱▱▱▱▱] 20%` • Syncing Edge Nodes & Relayers",
-              `⚡ *Harvesting Multi-Bot Rewards...*\n\`[▰▰▰▰▰▰▱▱▱] 65%\` • Dispatched ${activeCount} Active Accounts across all 5 mining pools`,
+              `⚡ *Harvesting Multi-Bot Rewards...*\n\`[▰▰▰▰▰▰▱▱▱] 65%\` • Dispatched ${activeCount} Active Accounts across all 9 mining pools`,
               rep
             ];
             const harvestPromise = queueHarvestAction();
@@ -7721,10 +7721,9 @@ fi
               `• Node 3 (Global Shard): 🟢 Online (45ms)\n` +
               `• Node 4 (Singapore APAC D1 SQL): 🟢 Online (18 Accounts Active)\n` +
               `• Node 5 (Secondary Mining Engine): 🟢 Online (2m Cron Active)\n\n` +
-              `🚀 *Render Compute Nodes (5 Accounts / 6 Services Online):*\n` +
-              `• Standby Node #1 (Singapore - coz1gameh1): 🟢 Online ($0 Free Tier)\n` +
-              `• Standby Node #2 (Frankfurt - abidhasanch): 🟢 Online ($0 Free Tier)\n` +
-              `• Standby Node #3 (Oregon - koramshah2): 🟢 Online ($0 Free Tier)\n` +
+              `🚀 *Render Compute Nodes (Single-Active Protocol):*\n` +
+              `• Primary Host (Node 2 Frankfurt - abidhasanch): 🟢 Active Coordinator ($0 Free Tier)\n` +
+              `• Cold Standby (Node 3 Oregon - koramshah2): ⏸️ Suspended (Meter Frozen / 0h Consumed)\n` +
               `• Ari AI Council Agent (koramshah2): 🟢 Online (Grok & Gemini LPU)\n` +
               `• MTProto Relayer Primary: 🟢 Online (Stateless Telethon)\n` +
               `• MTProto Relayer Backup: 🟢 Standby (Zero-Cost Cold Failback)\n\n` +
@@ -8507,7 +8506,7 @@ fi
           if (userLower.includes("harvest") || userLower.includes("farm all") || userLower.includes("claim all")) {
             await queueHarvestAction();
             const health = await getSessionHealthState();
-            await sendReply(`🌾 *Fleet Harvest Dispatched!*\n\n${health.healthy.size}/18 active accounts across all 5 active mining pools (MRG, ATF, Victor's, VyroDrop, Kynex) have been queued for harvesting on Cloudflare Edge.${health.revoked.size > 0 ? `\n\n⚠️ ${health.revoked.size} accounts skipped — session re-link required via Session Audit.` : ""}`, statusInlineKeyboard);
+            await sendReply(`🌾 *Fleet Harvest Dispatched!*\n\n${health.healthy.size}/18 active accounts across all 9 active mining pools (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, LeafEarn, Astra Airdrop, PepeGram) have been queued for harvesting on Cloudflare Edge.${health.revoked.size > 0 ? `\n\n⚠️ ${health.revoked.size} accounts skipped — session re-link required via Session Audit.` : ""}`, statusInlineKeyboard);
             return;
           }
 
@@ -8523,7 +8522,7 @@ fi
           }
 
           if (userLower.includes("stones") && (userLower.includes("status") || userLower.includes("balance") || userLower.includes("wd") || userLower.includes("cooldown"))) {
-            await sendReply(`🚫 *STONES MINERS DECOMMISSIONED & PURGED*\n\n• *Status:* 🚫 Banned & Purged per Operator Directive\n• *Action Taken:* All 18 fleet accounts permanently blocked @stoneswithestand_bot, left scam channels, and deleted dialog history.\n• *Fleet Focus:* 100% active on the 5 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex).`, statusInlineKeyboard);
+            await sendReply(`🚫 *STONES MINERS DECOMMISSIONED & PURGED*\n\n• *Status:* 🚫 Banned & Purged per Operator Directive\n• *Action Taken:* All 18 fleet accounts permanently blocked @stoneswithestand_bot, left scam channels, and deleted dialog history.\n• *Fleet Focus:* 100% active on the 9 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, LeafEarn, Astra Airdrop, PepeGram).`, statusInlineKeyboard);
             return;
           }
 
@@ -8558,13 +8557,13 @@ fi
 
             const systemPrompt = `You are Ari, the personal cloud AI assistant for Arif's 18-account automated crypto and mining fleet (MY AGY AI).
 Live Fleet Context:
-- 18 active accounts mining 24/7 across the 5 active legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, and Kynex Network. All discontinued & scammer bots (Stones, AI Lab, UltraWallet, FINVORA, ART, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, USDT QUAD, TAC, Ominix) have been permanently purged and blocked.
+- 18 active accounts mining 24/7 across the 9 active legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, LeafEarn, Astra Airdrop, and PepeGram. All discontinued & scammer bots (Stones, AI Lab, UltraWallet, FINVORA, ART, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, USDT QUAD, TAC, Ominix) have been permanently purged and blocked.
 - Policy: ATF Miner is in 100% farming & accumulation mode (NO withdrawals; let balance grow).
 - Policy (Admin Fleet Accounts): MRG Miner is strictly in 100% Holding & Compounding mode (NO auto-withdrawals) to preserve peak levels (Level 1..50), maximum hashrate (5.5 TH/s), and squad referral qualifications.
 - Vault BEP-20 (BNB, USDT): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Live Balance: ${liveBnb.toFixed(6)} BNB).
 - Main TON Vault: UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT.
 - ATF Mined: ~${totalAtf.toFixed(1)} ATF accumulating across all accounts.
-- Infrastructure: 100% running in the cloud (Triple Cloudflare Edge Nodes, Render Singapore, Cron-job.org). No VPS or local dependencies.
+- Infrastructure: 100% running in the cloud (5 Cloudflare Edge Nodes, Render Frankfurt Node 2 Active Coordinator, Upstash Redis). No VPS or local dependencies.
 Personality:
 - Talk like a normal, friendly, intelligent human companion (like ChatGPT or Claude).
 - Sound natural, conversational, and genuinely helpful.
@@ -12265,12 +12264,11 @@ Reply to Arif naturally:`;
 
         // Only investigate if local machine has been silent for > 60 minutes
           // Check if Render primary node (Standby Frankfurt, Ari AI, Primary Relayer) are standing guard
-          const [r2, rAri, rRelay1] = await Promise.all([
+          const [r2, rAri] = await Promise.all([
             fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => null),
-            fetch("https://hermes-grok-cloud-agent.onrender.com/health", { method: "GET" }).catch(() => null),
-            fetch("https://atf-mtproto-relayer.onrender.com/wake", { method: "GET" }).catch(() => null)
+            fetch("https://hermes-grok-cloud-agent.onrender.com/health", { method: "GET" }).catch(() => null)
           ]);
-          const cloudStandbyAlive = (r2 && r2.ok) || (rAri && rAri.ok) || (rRelay1 && rRelay1.ok);
+          const cloudStandbyAlive = (r2 && r2.ok) || (rAri && rAri.ok);
 
           // If Render is alive in the cloud, the fleet is 100% operational - DO NOT send false alarms!
           if (cloudStandbyAlive) {
@@ -12375,8 +12373,7 @@ Reply to Arif naturally:`;
       "https://my-agy-fleet-deno.aaa222.deno.net/health",
       "https://my-agy-fleet-deno2.aaasupporta.deno.net/health",
       "https://my-agy-fleet-standby-node2.onrender.com/health",
-      "https://hermes-grok-cloud-agent.onrender.com/health",
-      "https://atf-mtproto-relayer.onrender.com/wake"
+      "https://hermes-grok-cloud-agent.onrender.com/health"
     ];
     for (const edgeUrl of MULTI_CLOUD_EDGES) {
       ctx.waitUntil(fetch(edgeUrl).catch(() => {}));
@@ -12651,12 +12648,13 @@ async def main():
         if ALERT_BOT_TOKEN:
             admin_desc = (
                 "👑 MY AGY AI — Operations & Executive Fleet Console ⚡\n\n"
-                "Autonomous multi-cloud command & control center for 18 accounts and 5 legitimate crypto mining bots:\n"
+                "Autonomous multi-cloud command & control center for 18 accounts and 9 legitimate crypto mining bots:\n"
                 "• MRG Miner • ATF Miner • Victor\'s Company\n"
-                "• VyroDrop • Kynex Network\n\n"
+                "• VyroDrop • Kynex Network • DiggoMiner\n"
+                "• LeafEarn • Astra Airdrop • PepeGram\n\n"
                 "🛡️ 100% Cloud-Powered • Zero Phone Load • Multi-Edge Mesh"
             )
-            admin_short_desc = "👑 MY AGY AI Operations Console — 18 Accounts & 5 Mining Bots across Multi-Cloud Edge."
+            admin_short_desc = "👑 MY AGY AI Operations Console — 18 Accounts & 9 Mining Bots across Multi-Cloud Edge."
             try:
                 async with session.post(
                     f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/setMyDescription",
@@ -12723,7 +12721,7 @@ async def main():
                     {"command": "ai", "description": "💬 Google Gemini Flash & Ari Copilot"},
                     {"command": "status", "description": "📊 Fleet Status & Live Mining Telemetry"},
                     {"command": "wallets", "description": "👛 Verified Destination Wallets & Balances"},
-                    {"command": "harvest", "description": "⚡ Trigger Instant 5-Bot Multi-Cloud Harvest"},
+                    {"command": "harvest", "description": "⚡ Trigger Instant 9-Bot Multi-Cloud Harvest"},
                     {"command": "accounts", "description": "👥 Manage Fleet Accounts & Roster"},
                     {"command": "kynex", "description": "💎 Kynex Network Cloud Mining Center"},
                     {"command": "victors", "description": "🏢 Victor's Company Deep Mine & HumanPass"},

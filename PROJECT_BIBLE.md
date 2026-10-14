@@ -1,7 +1,7 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
-> **Universal Onboarding, System Architecture, 5-Bot Fleet Engine & Operational Manual**
+> **Universal Onboarding, System Architecture, 9-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
-> *Last Updated: October 13, 2026*
+> *Last Updated: October 14, 2026*
 > *Classification: Mission-Critical Living Technical Documentation*
 
 ---
@@ -50,20 +50,19 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 │                                 CLOUD ARCHITECTURE                                     │
 │                                                                                        │
 │  ┌────────────────────────────────────────┐  ┌──────────────────────────────────────┐  │
-│  │    Triple Render Standby Mesh (3 Nodes)│  │      Cloudflare Edge Mesh (5 Nodes)  │  │
-│  │  • Node 2 (Frankfurt): Shard 1 (Acc 1-9│  │  • aaaai2.workers.dev (Shard 0)      │  │
-│  │    + Primary MTProto Auth & OTP Gateway│  │  • aaa-bot.workers.dev (Shard 1)     │  │
-│  │  • Node 3 (Oregon): Shard 2 (Acc 10-18)│  │  • aaa222.workers.dev (Shard 2)      │  │
-│  │    + Failover MTProto Gateway          │  │  • agorameet.workers.dev (Shard 3)   │  │
-│  │  • Node 1 (Singapore): Standby Archive │  │  • aaaai.workers.dev (Shard 4)       │  │
+│  │ Single-Active Render Engine (Node 2)   │  │      Cloudflare Edge Mesh (5 Nodes)  │  │
+│  │  • Node 2 (Frankfurt): 🟢 ACTIVE       │  │  • aaaai2.workers.dev (Primary)      │  │
+│  │    Sole MTProto Auth & Token Collector │  │  • aaa-bot.workers.dev (Shard 1)     │  │
+│  │  • Node 3 (Oregon): ⏸️ COLD STANDBY    │  │  • aaa222.workers.dev (Shard 2)      │  │
+│  │    Suspended / Ready for auto-failover │  │  • agorameet.workers.dev (Shard 3)   │  │
+│  │  • Node 1 (Singapore): Purged          │  │  • aaaai.workers.dev (Shard 4)       │  │
 │  │                                        │  │                                      │  │
-│  │  Role: Parallel MTProto & Farming Shard│  │  Role: 24/7 Edge Autonomous Farming   │  │
-│  │  - Partitioned Shard 1 (1-9) & 2 (10-18│  │  - Runs cron every 15 mins           │  │
-│  │  - Cuts memory, CPU & MTProto load 50% │  │  - Farms all 5 legitimate bots        │  │
-│  │  - Debounced anti-duplicate code retry │  │  - Executes side tasks & check-ins   │  │
-│  │  - Extracts fresh 24h WebApp initData  │  │  - Fast, serverless, zero ban risk   │  │
-│  │  - Syncs tokens to D1, Upstash & KV     │  │  - Propagates cached Turnstile passes │  │
-│  │  - Endpoint: POST /collect-tokens      │  │                                      │  │
+│  │  Role: 100% Single-Active MTProto Gate │  │  Role: 24/7 Edge Autonomous Farming   │  │
+│  │  - Single IP prevents Telegram ban     │  │  - Runs cron every 15 mins           │  │
+│  │  - Zero multi-DC session clashes       │  │  - Farms all 9 legitimate bots        │  │
+│  │  - Extracts fresh 24h WebApp initData  │  │  - Executes side tasks & claims       │  │
+│  │  - Syncs tokens to Upstash Redis & KV  │  │  - Fast, serverless, zero ban risk   │  │
+│  │  - Endpoint: POST /collect-tokens      │  │  - Propagates cached Turnstile passes │  │
 │  └───────────────────┬────────────────────┘  └──────────────────▲───────────────────┘  │
 │                      ▼                                          │ Reads Fresh Tokens   │
 │  ┌──────────────────────────────────────────────────────────────┴───────────────────┐  │
@@ -73,6 +72,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 │  │  • Key: fleet:wallets:ton (Contains isolated TON wallets & recovery mnemonics)   │  │
 │  │  • Key: victors:pass:<uid> (Contains fresh Cloudflare Turnstile humanPass)       │  │
 │  │  • Key: fleet:live_state (Contains latest real-time farming results)             │  │
+│  │  • Key: fleet:mtproto_coordinator (Single coordinator lock: "node2")            │  │
 │  └──────────────────────────────────────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```

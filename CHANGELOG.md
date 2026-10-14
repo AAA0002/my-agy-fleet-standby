@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Admin Bot False Re-link Root-Cause Fix, Single-Active Render Protocol & 9-Bot Suite Alignment (October 14, 2026)**:
+  - **🔍 Root Cause of False "Needs Re-link" Warning Eliminated**:
+    * **Smoking Gun 1: Hardcoded In-Memory Default State (`memSessionHealth`)**: In `deploy_both_cf_workers.py`, `memSessionHealth` was statically initialized with `healthy: [2, 10, 11, 14, 17]` and `revoked: [1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 15, 16, 18]`. Whenever `/api/status` or `/api/fleet/live` was queried before an explicit Redis smembers check, it defaulted to reporting 13 healthy accounts as revoked!
+    * **Smoking Gun 2: `DEFAULT_REVOKED` Fallback**: In `getSessionHealthState()` and `getFleetAccounts()`, if `revoked.length === 0` (which is true when all accounts are healthy in Upstash Redis), an old fallback `else if (revoked.length === 0) revoked = DEFAULT_REVOKED;` forcibly overwrote the empty revoked set with 13 account indices, artificially forcing healthy accounts into `session_revoked: true`.
+    * **Fix**: Completely purged `DEFAULT_REVOKED` and initialized `memSessionHealth` with `healthy: [1..18]` and `revoked: []`. Updated `/api/status` to synchronously pull real revoked sets directly from `fleet:revoked_sessions` in Upstash. Live endpoint verified: **18/18 accounts active, 0 revoked, 0 false alarms**.
+  - **🔒 Single-Active Render Node Protocol (Telegram Multi-IP Protection)**:
+    * **Sole Active Coordinator**: Primary Node 2 Frankfurt (`my-agy-fleet-standby-node2.onrender.com`, `srv-dan5q00ae00c73djummg`, `abidhasanch2001@gmail.com`) is the single active compute node handling MTProto token collection and QR code generation.
+    * **Cold Standby Suspended**: Node 3 Oregon (`my-agy-fleet-standby-node3.onrender.com`, `srv-db437o3tqb8s73dt4erg`, `koramshah2@gmail.com`) is strictly suspended with hour meter frozen at 0h consumed.
+    * **Dead Relayer & Node 1 Purge**: Completely removed `atf-mtproto-relayer` and Node 1 Singapore from Cloudflare sentinel keepalive pings and `MULTI_CLOUD_EDGES`.
+    * **Coordinator Lock String Normalization**: In `render_standby_app.py` and `render_app_latest.py`, normalized lock holder comparison so `"node2"` in `fleet:mtproto_coordinator` correctly matches `my-agy-fleet-standby-node2`, allowing the background token watchdog to execute without skipping.
+  - **🤖 Full 9-Bot Suite Alignment across Telegram Bot & Dashboards**:
+    * Upgraded `@myagyai` Telegram Admin Bot menu, commands, `/status`, `/harvest`, and AI briefings to accurately reflect all **9 Legitimate Mining Bots**: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, LeafEarn, Astra Airdrop, and PepeGram.
+    * Synchronized `public_admin/admin.html` and Telegram Bot Descriptions via `setMyDescription` and `setMyShortDescription` to show all 9 active pools.
+    * Confirmed Telegram Webhook is 100% cloud-hosted on Cloudflare Workers (`https://restore-agy.aaaai2.workers.dev/telegram-webhook`) with zero reliance on legacy `tgcloud.ai`.
+  - **☁️ Multi-Cloud Redeployment**:
+    * Pushed updated `app.py` to `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`, triggering live deployment on Render Node 2 (`dep-db7erg7avr4c73fvska0`).
+    * Deployed synchronized code across all 5 Cloudflare Worker nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+
 - **⚡ Purge of Dead / Suspended Render Nodes & Strict Single-Active Enforcement (October 13, 2026)**:
   - **🔍 Root Cause of Multi-Render Overlap & Account Blocks**:
     * **Smoking Gun: Multi-Node Pinging in Cloudflare Workers**: Identified that Cloudflare Edge Worker (`deploy_both_cf_workers.py`) and Admin Bot configs were iterating over arrays of 3 Render URLs (`my-agy-fleet-standby-node2`, `my-agy-fleet-standby-node3`, and dead `my-agy-fleet-standby`). During 15-minute Edge Crons and harvest dispatches, Cloudflare fired simultaneous HTTP calls to all nodes. When Node 2 was slow, it fell back to Node 3 and Node 1. This caused multiple Render servers from different IP locations (Frankfurt, Oregon, Singapore) to attempt MTProto connections for the same account sessions, triggering Telegram `AuthKeyDuplicatedError` blocks.

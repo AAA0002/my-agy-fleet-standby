@@ -260,7 +260,14 @@ async def acquire_coordinator_lock(ttl_seconds: int = 120) -> bool:
                 if r.status == 200:
                     data = await r.json()
                     cur_holder = data.get("result")
-                    if cur_holder == NODE_INSTANCE_ID or (is_this_active and cur_holder in (None, "", "null")):
+                    cur_node_num = get_current_node_number()
+                    is_same_node = (
+                        cur_holder == NODE_INSTANCE_ID
+                        or (cur_holder and f"node{cur_node_num}" in str(cur_holder).lower())
+                        or (cur_holder and str(cur_holder).lower().strip('"') in (f"node{cur_node_num}", str(cur_node_num)))
+                        or (cur_node_num == 2 and cur_holder and "node2" in str(cur_holder).lower())
+                    )
+                    if is_same_node or (is_this_active and cur_holder in (None, "", "null")):
                         # Refresh lock atomically
                         await s.post(UPSTASH_URL, json=["SET", "fleet:mtproto_coordinator", NODE_INSTANCE_ID, "EX", ttl_seconds], headers=up_h, timeout=aiohttp.ClientTimeout(total=3))
                         return True
@@ -580,7 +587,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
         pass
 
     # Strategy D: Direct RequestWebViewRequest with known default URL
-    if default_url:
+    if default_url and not default_url.startswith("https://t.me/"):
         try:
             req_p = {
                 "peer": bot_ent,
