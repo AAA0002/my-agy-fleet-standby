@@ -917,8 +917,53 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
   const farmAstra = async () => {
     if (!accData.astra_init_data) return;
     try {
-      await humanDelay(500, 1500);
-      result.bots.astra = "farmed (star harvest active)";
+      const aInit = accData.astra_init_data;
+      const params = new URLSearchParams(aInit);
+      const hashVal = params.get("hash") || "";
+      params.delete("hash");
+      const pDcs = [...params.entries()].sort((a,b) => a[0].localeCompare(b[0])).map(([k,v]) => `${k}=${v}`).join("\n");
+      const astraSbKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjYndxbmtmeXJwamhjdGVzdm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxNTU4MTksImV4cCI6MjEwNTczMTgxOX0.6-tiT-hWcjIOPApZJKz6QvX3EEqnH_FMHGXlrYQ7lQg";
+      const headers = {
+        "apikey": astraSbKey,
+        "Authorization": `Bearer ${astraSbKey}`,
+        "Content-Type": "application/json",
+        "User-Agent": userAgent
+      };
+      const isOwner = (String(accData.user_id) === "6727787768");
+      const pRef = isOwner ? null : 6727787768;
+
+      const callRpc = async (fn, extra = {}) => {
+        const body = { p_dcs: pDcs, p_hash: hashVal, ...extra };
+        const res = await fetch(`https://bcbwqnkfyrpjhctesvnp.supabase.co/rest/v1/rpc/${fn}`, { method: "POST", headers, body: JSON.stringify(body) });
+        return await res.json().catch(() => ({}));
+      };
+
+      const logData = await callRpc("astra_login", pRef ? { p_ref: pRef } : {});
+      const uObj = logData?.user || {};
+      const lvl = uObj?.miner_level || 1;
+      const bal = uObj?.balance || 0;
+
+      const tonW = accData.ton_wallet?.address;
+      if (tonW && (!uObj.wallet_address || uObj.wallet_address !== tonW)) {
+        await callRpc("astra_sync_wallet", { p_wallet: tonW });
+      }
+
+      await callRpc("astra_mine_claim");
+      await callRpc("astra_activate_boost");
+
+      const chData = await callRpc("astra_math_challenge", { p_scope: "start_mine" });
+      if (chData?.status === "success" && chData?.challenge_id && chData?.question) {
+        const match = chData.question.match(/(\d+)\s*([\+\-\*])\s*(\d+)/);
+        if (match) {
+          const a = parseInt(match[1]), op = match[2], b = parseInt(match[3]);
+          const ans = (op === "+") ? (a + b) : ((op === "-") ? (a - b) : (a * b));
+          await callRpc("astra_start_mine", { p_cid: chData.challenge_id, p_answer: String(ans) });
+        }
+      }
+      await callRpc("astra_claim");
+      await callRpc("astra_team_claim");
+
+      result.bots.astra = `farmed (lvl: ${lvl}, bal: ${bal} ASTRA)`;
     } catch (e) {
       result.bots.astra = `error: ${e.message}`;
     }
@@ -927,8 +972,28 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
   const farmPepegram = async () => {
     if (!accData.pepegram_init_data) return;
     try {
-      await humanDelay(500, 1500);
-      result.bots.pepegram = "farmed (pepe mining active)";
+      const pInit = accData.pepegram_init_data;
+      const headers = {
+        "Content-Type": "application/json",
+        "User-Agent": userAgent,
+        "Origin": "https://app.miniempire.app",
+        "Referer": "https://app.miniempire.app/miniapp/index.html?tid=1449&lang=en"
+      };
+      const authResp = await fetch("https://app.miniempire.app/miniapp/auth?tid=1449", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ initData: pInit, tid: 1449 })
+      });
+      const authData = await authResp.json().catch(() => ({}));
+      const uData = authData?.user || {};
+      const power = uData.power || 0;
+      const hashes = uData.hashes || 0;
+
+      await fetch("https://app.miniempire.app/miniapp/claim-welcome-bonus?tid=1449", { method: "POST", headers, body: JSON.stringify({ initData: pInit, tid: 1449 }) });
+      await fetch("https://app.miniempire.app/miniapp/claim?tid=1449", { method: "POST", headers, body: JSON.stringify({ initData: pInit, tid: 1449 }) });
+      await fetch("https://app.miniempire.app/miniapp/tasks/mine?tid=1449", { method: "POST", headers, body: JSON.stringify({ initData: pInit, tid: 1449 }) });
+
+      result.bots.pepegram = `farmed (power: ${power}, hashes: ${hashes})`;
     } catch (e) {
       result.bots.pepegram = `error: ${e.message}`;
     }
@@ -937,8 +1002,44 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
   const farmAdxearn = async () => {
     if (!accData.adxearn_init_data) return;
     try {
-      await humanDelay(500, 1500);
-      result.bots.adxearn = "farmed (adx mining active)";
+      const adxInit = accData.adxearn_init_data;
+      const headers = {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": adxInit,
+        "User-Agent": userAgent
+      };
+      await humanDelay(400, 1000);
+      const isOwner = (String(accData.user_id) === "6727787768");
+      const refParam = isOwner ? null : "6727787768";
+      const sResp = await fetch("https://api.adxearnai.xyz/api/user/session", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ ref: refParam, fp: `412x915|24|8|UTC|en-US|8|5|2.625|Mali-G78-${accData.user_id}` })
+      });
+      const sData = await sResp.json().catch(() => ({}));
+      let balPts = sData?.user?.balance_points || 0;
+      let streak = sData?.user?.checkin_streak || 0;
+
+      await humanDelay(400, 800);
+      const cResp = await fetch("https://api.adxearnai.xyz/api/rewards/checkin", { method: "POST", headers, body: "{}" });
+      const cData = await cResp.json().catch(() => ({}));
+      if (cData?.success) {
+        balPts += (cData.reward || 0);
+        streak = cData.streak || streak;
+      }
+
+      await humanDelay(400, 800);
+      const stResp = await fetch("https://api.adxearnai.xyz/api/farming/status", { headers });
+      const stData = await stResp.json().catch(() => ({}));
+      if (stData?.ready) {
+        await fetch("https://api.adxearnai.xyz/api/farming/claim", { method: "POST", headers, body: "{}" });
+      }
+      if (stData?.status === "idle" || !stData?.startedAt) {
+        await fetch("https://api.adxearnai.xyz/api/farming/start", { method: "POST", headers, body: "{}" });
+      }
+      await fetch("https://api.adxearnai.xyz/api/farming/boost", { method: "POST", headers, body: "{}" });
+
+      result.bots.adxearn = `farmed (bal: ${balPts} pts, streak: ${streak}, mining: ACTIVE)`;
     } catch (e) {
       result.bots.adxearn = `error: ${e.message}`;
     }

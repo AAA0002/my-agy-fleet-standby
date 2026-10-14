@@ -229,7 +229,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     - Name: *AAA AUTO MINING (PREMIUM)*
     - Live Webhook: `https://restore-agy.aaaai2.workers.dev/user-bot-webhook` (Multi-Edge Mesh on Cloudflare Worker Node 1)
     - Role: Multi-bot cloud mining platform, modern dashboard (modeled after `@Allbottesting_bot`), per-pool management across 5 pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network), frictionless WebApp URL / `initData` query string account connector (0 SMS codes) with 24h expiration guard, Points economy (100 Pts/day), Rewarded Adsgram/Monetag video ads (+20 Pts), milestone slots (+1 slot per 50 ads), and Telegram Stars VIP passes.
-  - **Supported Mining Pools (9 Active High-Yield Pools)**:
+  - **Supported Mining Pools (10 Active High-Yield Pools)**:
     1. ⚡ **MRG Miner** (`@mrgminerbot`)
     2. 🪙 **ATF Miner** (`@ATF_AIRDROP_bot`)
     3. 🏢 **Victor's Company** (`@VictorsCompanybot`)

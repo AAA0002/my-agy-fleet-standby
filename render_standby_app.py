@@ -862,21 +862,21 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
 
     # 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)
     astra_param = None if is_master else ASTRA_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, ASTRA_BOT, start_param=astra_param, default_url="https://t.me/ASTRA_AIRDROP_BOT", candidate_short_names=["app", "airdrop", "startapp"])
+    tok = await extract_bot_webapp_token(client, ASTRA_BOT, start_param=astra_param, default_url="https://amazing-alpaca-eb7e2b.netlify.app/", candidate_short_names=["app", "airdrop", "startapp"])
     if tok:
         tokens["astra_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 9. PepeGram (@Pepe_gram_bot - meme token mining)
     pepe_param = None if is_master else PEPEGRAM_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=pepe_param, default_url="https://t.me/Pepe_gram_bot", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
+    tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=pepe_param, default_url="https://app.miniempire.app/miniapp/index.html?tid=1449&lang=en", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
     if tok:
         tokens["pepegram_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 10. AdxEarn AI (@AdxEarnAibot)
     adx_param = None if is_master else ADXEARN_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, ADXEARN_BOT, start_param=adx_param, default_url="https://t.me/AdxEarnAibot/app", candidate_short_names=["app", "startapp"])
+    tok = await extract_bot_webapp_token(client, ADXEARN_BOT, start_param=adx_param, default_url="https://app.adxearnai.xyz/index.html", candidate_short_names=["app", "startapp"])
     if tok:
         tokens["adxearn_init_data"] = tok
 
@@ -1927,7 +1927,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
     # 8. Astra Airdrop (Silent WebApp handshake, ZERO chat messages)
     if force or not acc_entry.get("astra_referral_bound"):
         try:
-            tok = await extract_bot_webapp_token(client, ASTRA_BOT, start_param=ASTRA_REFERRAL_CODE, default_url="https://t.me/ASTRA_AIRDROP_BOT", candidate_short_names=["app", "airdrop", "startapp"])
+            tok = await extract_bot_webapp_token(client, ASTRA_BOT, start_param=ASTRA_REFERRAL_CODE, default_url="https://amazing-alpaca-eb7e2b.netlify.app/", candidate_short_names=["app", "airdrop", "startapp"])
             acc_entry["astra_referral_bound"] = True
             await asyncio.sleep(0.5)
         except Exception as e:
@@ -1936,7 +1936,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
     # 9. PepeGram (Silent WebApp handshake, ZERO chat messages)
     if force or not acc_entry.get("pepegram_referral_bound"):
         try:
-            tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=PEPEGRAM_REFERRAL_CODE, default_url="https://t.me/Pepe_gram_bot", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
+            tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=PEPEGRAM_REFERRAL_CODE, default_url="https://app.miniempire.app/miniapp/index.html?tid=1449&lang=en", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
             acc_entry["pepegram_referral_bound"] = True
             await asyncio.sleep(0.5)
         except Exception as e:
@@ -1945,7 +1945,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
     # 10. AdxEarn AI (Silent WebApp handshake, ZERO chat messages)
     if force or not acc_entry.get("adxearn_referral_bound"):
         try:
-            tok = await extract_bot_webapp_token(client, ADXEARN_BOT, start_param=ADXEARN_REFERRAL_CODE, default_url="https://t.me/AdxEarnAibot/app", candidate_short_names=["app", "startapp"])
+            tok = await extract_bot_webapp_token(client, ADXEARN_BOT, start_param=ADXEARN_REFERRAL_CODE, default_url="https://app.adxearnai.xyz/index.html", candidate_short_names=["app", "startapp"])
             acc_entry["adxearn_referral_bound"] = True
             await asyncio.sleep(0.5)
         except Exception as e:
@@ -4648,14 +4648,59 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         if tokens.get("astra_init_data"):
             try:
                 a_init = tokens["astra_init_data"]
-                a_headers = {
+                # Parse initData into p_dcs and p_hash for Supabase RPC
+                q = urllib.parse.parse_qs(a_init, keep_blank_values=True)
+                flat_q = {k: v[0] for k, v in q.items()}
+                hash_val = flat_q.pop("hash", "")
+                p_dcs = "\n".join(f"{k}={v}" for k, v in sorted(flat_q.items()))
+
+                astra_sb_url = "https://bcbwqnkfyrpjhctesvnp.supabase.co"
+                astra_sb_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjYndxbmtmeXJwamhjdGVzdm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxNTU4MTksImV4cCI6MjEwNTczMTgxOX0.6-tiT-hWcjIOPApZJKz6QvX3EEqnH_FMHGXlrYQ7lQg"
+                astra_headers = {
+                    "apikey": astra_sb_key,
+                    "Authorization": f"Bearer {astra_sb_key}",
                     "Content-Type": "application/json",
-                    "User-Agent": user_agent,
-                    "Authorization": f"tma {a_init}",
-                    "X-Telegram-Init-Data": a_init
+                    "User-Agent": user_agent
                 }
-                await jitter(0.5, 1.5)
-                status["bots"]["astra"] = "farmed (star harvest active)"
+
+                async def astra_rpc(fn, extra=None):
+                    args = {"p_dcs": p_dcs, "p_hash": hash_val}
+                    if extra: args.update(extra)
+                    _, res_d = await safe_post(f"{astra_sb_url}/rest/v1/rpc/{fn}", args, req_headers=astra_headers)
+                    return res_d if isinstance(res_d, dict) else {}
+
+                # 1. Login & Master Referral Binding
+                p_ref = None if is_owner else int(ASTRA_REFERRAL_CODE.replace("ref_", "") if ASTRA_REFERRAL_CODE.replace("ref_", "").isdigit() else "6727787768")
+                log_d = await astra_rpc("astra_login", {"p_ref": p_ref} if p_ref else {})
+                u_obj = (log_d.get("user") if isinstance(log_d, dict) else {}) or {}
+                miner_lvl = u_obj.get("miner_level", 1)
+                astra_bal = u_obj.get("balance", 0)
+
+                # 2. Sync Dedicated Account TON Wallet if available
+                target_ton_w = (acc.get("ton_wallet") or {}).get("address") or (PRIMARY_TON_WALLET if is_owner else None)
+                if target_ton_w and (not u_obj.get("wallet_address") or u_obj.get("wallet_address") != target_ton_w):
+                    await astra_rpc("astra_sync_wallet", {"p_wallet": str(target_ton_w)})
+
+                # 3. Mine Claim & Boost Activation
+                await jitter(0.5, 1.2)
+                await astra_rpc("astra_mine_claim")
+                await astra_rpc("astra_activate_boost")
+
+                # 4. Math Challenge Solver & Start Mining
+                await jitter(0.5, 1.2)
+                ch_d = await astra_rpc("astra_math_challenge", {"p_scope": "start_mine"})
+                if ch_d and ch_d.get("status") == "success" and ch_d.get("challenge_id"):
+                    q_str = ch_d.get("question", "")
+                    ans = solve_atf_math(q_str)
+                    await jitter(1.5, 3.0)
+                    await astra_rpc("astra_start_mine", {"p_cid": ch_d["challenge_id"], "p_answer": str(ans)})
+
+                # 5. Referral & Team Claims
+                await jitter(0.5, 1.0)
+                await astra_rpc("astra_claim")
+                await astra_rpc("astra_team_claim")
+
+                status["bots"]["astra"] = f"farmed (lvl: {miner_lvl}, bal: {astra_bal} ASTRA)"
                 return
             except Exception as e:
                 status["bots"]["astra"] = f"api_error: {format_error(e)}"
@@ -4667,14 +4712,31 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         if tokens.get("pepegram_init_data"):
             try:
                 p_init = tokens["pepegram_init_data"]
-                p_headers = {
+                pepe_base = "https://app.miniempire.app/miniapp"
+                pepe_headers = {
                     "Content-Type": "application/json",
                     "User-Agent": user_agent,
-                    "Authorization": f"tma {p_init}",
-                    "X-Telegram-Init-Data": p_init
+                    "Origin": "https://app.miniempire.app",
+                    "Referer": "https://app.miniempire.app/miniapp/index.html?tid=1449&lang=en"
                 }
-                await jitter(0.5, 1.5)
-                status["bots"]["pepegram"] = "farmed (pepe mining active)"
+
+                # 1. Auth & Profile
+                await jitter(0.5, 1.2)
+                _, auth_d = await safe_post(f"{pepe_base}/auth?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers)
+                u_data = (auth_d.get("user") if isinstance(auth_d, dict) else {}) or {}
+                power_val = u_data.get("power", 0)
+                hashes_val = u_data.get("hashes", 0)
+
+                # 2. Welcome bonus & Claim
+                await jitter(0.5, 1.2)
+                await safe_post(f"{pepe_base}/claim-welcome-bonus?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers)
+                await safe_post(f"{pepe_base}/claim?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers)
+
+                # 3. Mine tap / task execution
+                await jitter(0.5, 1.2)
+                await safe_post(f"{pepe_base}/tasks/mine?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers)
+
+                status["bots"]["pepegram"] = f"farmed (power: {power_val}, hashes: {hashes_val})"
                 return
             except Exception as e:
                 status["bots"]["pepegram"] = f"api_error: {format_error(e)}"
@@ -4686,14 +4748,72 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         if tokens.get("adxearn_init_data"):
             try:
                 adx_init = tokens["adxearn_init_data"]
+                adx_base = "https://api.adxearnai.xyz/api"
                 adx_headers = {
                     "Content-Type": "application/json",
                     "User-Agent": user_agent,
-                    "Authorization": f"tma {adx_init}",
                     "X-Telegram-Init-Data": adx_init
                 }
-                await jitter(0.5, 1.5)
-                status["bots"]["adxearn"] = "farmed (adx mining active)"
+                await jitter(0.5, 1.2)
+
+                # 1. User Session & Master Referral Binding
+                ref_param = None if is_owner else ADXEARN_REFERRAL_CODE.replace("ref_", "")
+                fp = f"412x915|24|8|UTC|en-US|8|5|2.625|Mali-G78-{uid}"
+                s_code, s_d = await safe_post(f"{adx_base}/user/session", {"ref": ref_param, "fp": fp}, req_headers=adx_headers)
+
+                user_info = (s_d.get("user") if isinstance(s_d, dict) else None) or {}
+                bal_pts = user_info.get("balance_points", 0)
+                streak = user_info.get("checkin_streak", 0)
+
+                # 2. Daily Check-in Reward
+                await jitter(0.5, 1.2)
+                c_code, c_d = await safe_post(f"{adx_base}/rewards/checkin", {}, req_headers=adx_headers)
+                if isinstance(c_d, dict) and c_d.get("success"):
+                    rew = c_d.get("reward", 0)
+                    streak = c_d.get("streak", streak)
+                    bal_pts += rew
+
+                # 3. Mining / Farming Status & Lifecycle
+                await jitter(0.5, 1.2)
+                st_code, st_d = await safe_get(f"{adx_base}/farming/status", req_headers=adx_headers)
+                mining_stat = "ACTIVE"
+                if isinstance(st_d, dict):
+                    if st_d.get("ready"):
+                        await jitter(0.5, 1.0)
+                        await safe_post(f"{adx_base}/farming/claim", {}, req_headers=adx_headers)
+                    if st_d.get("status") == "idle" or not st_d.get("startedAt"):
+                        await jitter(0.5, 1.0)
+                        await safe_post(f"{adx_base}/farming/start", {}, req_headers=adx_headers)
+
+                # 4. Farming Boost
+                await jitter(0.4, 0.8)
+                await safe_post(f"{adx_base}/farming/boost", {}, req_headers=adx_headers)
+
+                # 5. Dynamic Task Discovery & Completion
+                await jitter(0.5, 1.2)
+                t_code, t_d = await safe_get(f"{adx_base}/rewards/tasks", req_headers=adx_headers)
+                if isinstance(t_d, dict) and t_d.get("tasks"):
+                    tasks = t_d.get("tasks", [])
+                    for t in tasks:
+                        if isinstance(t, dict):
+                            t_id = t.get("id")
+                            v_type = t.get("verify_type")
+                            delay = int(t.get("verify_delay_seconds") or 15)
+                            if t_id and (not v_type or v_type == "other" or "offer" in str(t.get("title", "")).lower() or "bonus" in str(t.get("title", "")).lower()):
+                                try:
+                                    await safe_post(f"{adx_base}/rewards/task-start", {"taskId": t_id}, req_headers=adx_headers)
+                                    async def _delayed_adx_task_claim(task_id, wait_s):
+                                        await asyncio.sleep(wait_s + 1)
+                                        await safe_post(f"{adx_base}/rewards/task-claim", {"taskId": task_id}, req_headers=adx_headers)
+                                    bg_tasks.append(asyncio.create_task(_delayed_adx_task_claim(t_id, min(delay, 16))))
+                                except Exception:
+                                    pass
+
+                # 6. Referral Milestones Claim
+                if is_owner:
+                    await safe_post(f"{adx_base}/referrals/milestones/claim", {}, req_headers=adx_headers)
+
+                status["bots"]["adxearn"] = f"farmed (bal: {bal_pts} pts, streak: {streak}, mining: {mining_stat})"
                 return
             except Exception as e:
                 status["bots"]["adxearn"] = f"api_error: {format_error(e)}"
