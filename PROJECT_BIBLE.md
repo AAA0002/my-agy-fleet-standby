@@ -1121,6 +1121,28 @@ Whenever you perform work in this repository:
   - Render Node 2 (Frankfurt: `srv-dan5q00ae00c73djummg`, deploy `dep-db7r3ifavr4c73995obg`) 🟢 Live.
   - Phone Load: Strictly 0 python processes running locally on Samsung Galaxy A30.
 
-
-
-
+### 16. DiggoMiner Authentic Live API Engine & Zero-Stub Fleet Hardening (October 14, 2026)
+* **Authentic DiggoMiner Backend Reverse Engineering (`https://diggo.linkpc.net/api/`)**:
+  - Reverse-engineered DiggoMiner's WebApp runtime (`https://diggo.linkpc.net/`) and backend client scripts (`backend-client.js`, `routes.js`).
+  - Identified the authentic REST API architecture:
+    1. **Authentication**: `POST /api/auth/telegram` with `{"initData": initData}`. Returns JWT bearer token, player profile, current balance, miner level, holding, and pending mining rewards.
+    2. **Mining Claim**: `POST /api/claims/mining` with header `Authorization: Bearer <token>` and UUID `Idempotency-Key`. Collects accrued crystal cave mining rewards every 8 hours.
+    3. **Referral Commission Claim**: `POST /api/referrals/claim` with `{}` and `Idempotency-Key` for automated referral earnings.
+    4. **Daily Check-in Task**: `POST /api/tasks/claim` with `{"taskId": "checkin"}` (+10 DIGGO daily reward).
+    5. **Daily Streak**: `POST /api/streak/claim` with `{"day": ...}`.
+  - Replaced mock `await jitter()` placeholder stubs in `render_standby_app.py`, `render_app_latest.py`, and `deploy_both_cf_workers.py` with this authentic live implementation.
+  - Live verified on worker account `7648254021`: `farmed (bal: 73.39 DIGGO, lvl: 1)` with real balances straight from Diggo's production database!
+* **Diagnostic & WebApp Discovery Bug Elimination**:
+  - **Bug #1 - Incomplete `bot_map` in `study_bot_endpoint`**: Added bots 6-10 (`diggo`, `leafearn`, `astra`, `pepegram`, `adxearn`) to `bot_map`, preventing fallback to invalid usernames.
+  - **Bug #2 - Incomplete `bots_to_check` in `inspect_bot_chat`**: Expanded `bots_to_check` to all 10 bots and purged legacy banned bot `FINVORAWeb3bot`.
+  - **Bug #3 - `study_bot_deep` Deep-Link Misinterpretation**: Fixed webview discovery logic which previously treated `t.me` deep-links as final webview URLs instead of extracting app short names (`openapp`/`startapp`) and invoking `RequestAppWebViewRequest`.
+  - **Bug #4 - NameError `uuid` in `_farm_diggo`**: Resolved missing `import uuid` in `render_standby_app.py` which threw `NameError: name 'uuid' is not defined` when generating idempotency keys.
+  - **Bug #5 - Outdated Referral Domain**: Corrected `default_url` from `https://app.diggominers.com/` to `https://diggo.linkpc.net/` in `bind_account_master_referrals`.
+* **Single Source of Truth Registry Hardening ([bot_registry.py](file:///data/data/com.termux/files/home/bot_registry.py))**:
+  - Set `app_url` to `https://diggo.linkpc.net/`, `api_base` to `https://diggo.linkpc.net/api`, `sponsor_channels` to `["diggo_community"]`, and prioritized candidate short names with `openapp` and `startapp`.
+  - Updated `deploy_both_cf_workers.py` keyboard buttons and admin commands to announce `⚡ 10-Bot Harvest`.
+* **Multi-Cloud Synchronization & Zero Phone Load**:
+  - Cloudflare Edge Mesh deployed across all 5 nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+  - Standby repos synchronized (`AAA0002/my-agy-fleet-standby` Commit `9173e9b2`, `koramshah2/my-agy-fleet-standby` Commit `e3442d14`).
+  - Render Node 2 (Frankfurt: `srv-dan5q00ae00c73djummg`, deploy `dep-db7sqkek1f9s73ct9ti0`) deployed 🟢 Live.
+  - Phone Load: Strictly 0 python processes running locally on Samsung Galaxy A30.

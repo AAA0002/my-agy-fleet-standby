@@ -12,6 +12,7 @@ import secrets
 import hashlib
 import hmac
 import traceback
+import uuid
 from typing import Any
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 try:
@@ -710,7 +711,7 @@ async def extract_bot_webapp_token(client: TelegramClient, bot_username: str, st
         return None
 
     # Strategy A: Try RequestAppWebViewRequest with candidate short names
-    names_to_try = candidate_short_names or ["app", "play", "myapp", "miniapp", "bot", "game"]
+    names_to_try = candidate_short_names or ["openapp", "app", "play", "myapp", "miniapp", "miner", "startapp", "bot", "game"]
     for sn in names_to_try:
         try:
             req_p = {
@@ -871,7 +872,7 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
 
     # 6. DiggoMiner (@Diggominer_bot - Silent WebApp query)
     diggo_param = None if is_master else DIGGO_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=diggo_param, default_url="https://t.me/Diggominer_bot", candidate_short_names=["app", "miner", "miniapp", "startapp"])
+    tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=diggo_param, default_url="https://t.me/Diggominer_bot", candidate_short_names=["openapp", "app", "miner", "miniapp", "startapp"])
     if tok:
         tokens["diggo_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
@@ -1932,7 +1933,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
     # 6. DiggoMiner (Silent WebApp handshake, ZERO chat messages)
     if force or not acc_entry.get("diggo_referral_bound"):
         try:
-            tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=DIGGO_REFERRAL_CODE, default_url="https://app.diggominers.com/", candidate_short_names=["app", "miner", "miniapp", "startapp"])
+            tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=DIGGO_REFERRAL_CODE, default_url="https://diggo.linkpc.net/", candidate_short_names=["openapp", "startapp", "app", "miner", "miniapp"])
             acc_entry["diggo_referral_bound"] = True
             await asyncio.sleep(0.5)
         except Exception as e:
@@ -4626,19 +4627,82 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 return
         status["bots"]["kynex"] = "skipped (no initData)"
 
-    # 6. DiggoMiner (@Diggominer_bot)
+    # 6. DiggoMiner (@Diggominer_bot - diggo.linkpc.net)
     async def _farm_diggo():
         if tokens.get("diggo_init_data"):
             try:
                 d_init = tokens["diggo_init_data"]
-                d_headers = {
+                if "%25" in d_init or "%3D" in d_init or "user%3D" in d_init:
+                    d_init = urllib.parse.unquote(d_init)
+
+                base_url = "https://diggo.linkpc.net"
+                init_headers = {
                     "Content-Type": "application/json",
                     "User-Agent": user_agent,
-                    "Authorization": f"tma {d_init}",
-                    "X-Telegram-Init-Data": d_init
+                    "Origin": base_url,
+                    "Referer": f"{base_url}/?tgWebAppStartParam=ref_4088138f11effe8eef4b86ff"
                 }
-                await jitter(0.5, 1.5)
-                status["bots"]["diggo"] = "farmed (mining active)"
+
+                # 1. Telegram Auth
+                a_code, a_d = await safe_post(f"{base_url}/api/auth/telegram", json_data={"initData": d_init}, req_headers=init_headers)
+                if a_code == 401 or (isinstance(a_d, dict) and a_d.get("error") == "expired_init_data"):
+                    status["bots"]["diggo"] = "token_expired (needs MTProto refresh)"
+                    return
+                if not a_d or not isinstance(a_d, dict) or not a_d.get("token"):
+                    status["bots"]["diggo"] = f"skipped (auth {a_code or 'error'})"
+                    return
+
+                jwt_token = a_d["token"]
+                st = a_d.get("state", {})
+                bal = st.get("balance", 0)
+                lvl = st.get("currentLevel", 1)
+                mining = st.get("mining") or {}
+                pending_mined = mining.get("pending", 0)
+
+                auth_headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {jwt_token}",
+                    "User-Agent": user_agent,
+                    "Origin": base_url,
+                    "Referer": f"{base_url}/?tgWebAppStartParam=ref_4088138f11effe8eef4b86ff"
+                }
+
+                # 2. Mining claim (if pending rewards accrued)
+                claimed_amt = 0
+                if pending_mined and float(pending_mined) > 0:
+                    await jitter(0.5, 1.2)
+                    c_code, c_d = await safe_post(
+                        f"{base_url}/api/claims/mining",
+                        json_data={},
+                        req_headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}
+                    )
+                    if isinstance(c_d, dict) and c_d.get("amount"):
+                        claimed_amt = c_d["amount"]
+                        bal = c_d.get("state", {}).get("balance", bal)
+
+                # 3. Referrals claim
+                await jitter(0.4, 0.9)
+                await safe_post(
+                    f"{base_url}/api/referrals/claim",
+                    json_data={},
+                    req_headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}
+                )
+
+                # 4. Check-in daily task
+                tasks = st.get("tasks") or {}
+                checkin_task = tasks.get("checkin") or {}
+                if checkin_task.get("enabled") and not checkin_task.get("claimed") and (checkin_task.get("progress", 0) >= checkin_task.get("total", 1)):
+                    await jitter(0.4, 0.9)
+                    t_code, t_d = await safe_post(
+                        f"{base_url}/api/tasks/claim",
+                        json_data={"taskId": "checkin"},
+                        req_headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}
+                    )
+                    if isinstance(t_d, dict) and t_d.get("amount"):
+                        bal = t_d.get("state", {}).get("balance", bal)
+
+                claim_str = f", +{claimed_amt:.2f} claimed" if claimed_amt else ""
+                status["bots"]["diggo"] = f"farmed (bal: {bal:.2f} DIGGO, lvl: {lvl}{claim_str})"
                 return
             except Exception as e:
                 status["bots"]["diggo"] = f"api_error: {format_error(e)}"
@@ -5178,7 +5242,15 @@ async def inspect_referrals_master(request: Request):
     cl = create_telethon_client(sess_str=sess_str, identifier=master_acc.get("phone") or "Master", proxy_val=master_acc.get("proxy"))
     bots_to_query = [
         ("mrg", "mrgminerbot", ["/start"]),
-        ("atf", "ATF_AIRDROP_bot", ["/start"])
+        ("atf", "ATF_AIRDROP_bot", ["/start"]),
+        ("victors", "VictorsCompanybot", ["/start"]),
+        ("vyro", "vyrodrop_bot", ["/start"]),
+        ("kynex", "Kynex_miningbot", ["/start"]),
+        ("diggo", "Diggominer_bot", ["/start"]),
+        ("leafearn", "LeafEarnBot", ["/start"]),
+        ("astra", "ASTRA_AIRDROP_BOT", ["/start"]),
+        ("pepegram", "Pepe_gram_bot", ["/start"]),
+        ("adxearn", "AdxEarnAibot", ["/start"])
     ]
     results = {}
     try:
@@ -5336,15 +5408,32 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
         res["tested_actions"] = tested_actions
 
         webapp_info = {"has_webapp": False}
-        candidate_short_names = ["app", "myapp", "Trade", "trade", "bot", "game", "miniapp"]
+        candidate_short_names = ["openapp", "app", "miner", "miniapp", "startapp", "play", "game", "trade", "myapp"]
         found_webview_url = None
 
+        # 1. Inspect inline buttons for direct WebApp URLs or deep-links
         for btn in inline_buttons_found:
             url = btn.get("url") or ""
-            if "tgWebApp" in url or ("t.me" in url and "app" in url):
+            if not url:
+                continue
+            if "t.me/" in url:
+                try:
+                    parsed_u = urllib.parse.urlparse(url)
+                    p_parts = [p for p in parsed_u.path.split('/') if p]
+                    if len(p_parts) >= 2 and p_parts[1] not in candidate_short_names:
+                        candidate_short_names.insert(0, p_parts[1])
+                    qs = urllib.parse.parse_qs(parsed_u.query)
+                    if "startapp" in qs:
+                        sa_val = qs["startapp"][0]
+                        if sa_val and sa_val not in candidate_short_names and not sa_val.startswith("ref_"):
+                            candidate_short_names.insert(0, sa_val)
+                except Exception:
+                    pass
+            elif "tgWebApp" in url:
                 found_webview_url = url
                 break
 
+        # 2. Inspect message raw buttons for web_app attribute
         if not found_webview_url:
             for m in fresh_msgs:
                 if not m.out and m.buttons:
@@ -5352,32 +5441,36 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
                         for c_idx, b in enumerate(row):
                             raw_b = getattr(b, 'button', b)
                             if hasattr(raw_b, 'url') and raw_b.url:
-                                if "tgWebApp" in raw_b.url or ("t.me" in raw_b.url and "app" in raw_b.url):
+                                if "tgWebApp" in raw_b.url:
                                     found_webview_url = raw_b.url
                                     break
+                                elif "t.me/" in raw_b.url:
+                                    try:
+                                        parsed_u = urllib.parse.urlparse(raw_b.url)
+                                        p_parts = [p for p in parsed_u.path.split('/') if p]
+                                        if len(p_parts) >= 2 and p_parts[1] not in candidate_short_names:
+                                            candidate_short_names.insert(0, p_parts[1])
+                                        qs = urllib.parse.parse_qs(parsed_u.query)
+                                        if "startapp" in qs:
+                                            sa_val = qs["startapp"][0]
+                                            if sa_val and sa_val not in candidate_short_names and not sa_val.startswith("ref_"):
+                                                candidate_short_names.insert(0, sa_val)
+                                    except Exception:
+                                        pass
                             if hasattr(raw_b, 'web_app') and getattr(raw_b.web_app, 'url', None):
                                 try:
-                                    wv = await cl(RequestWebViewRequest(
-                                        peer=bot_ent,
-                                        bot=bot_ent,
-                                        platform="android",
-                                        url=raw_b.web_app.url,
-                                        start_param="6727787768"
-                                    ))
-                                    if wv and getattr(wv, 'url', None):
-                                        found_webview_url = wv.url
-                                        break
-                                except Exception:
-                                    pass
-                            if any(w in b.text.lower() for w in ["open", "app", "mini app", "launch", "play"]):
-                                try:
-                                    c_ans = await m.click(r_idx, c_idx)
-                                    if hasattr(c_ans, 'url') and c_ans.url:
-                                        found_webview_url = c_ans.url
-                                        break
-                                    elif isinstance(c_ans, str) and c_ans.startswith("http"):
-                                        found_webview_url = c_ans
-                                        break
+                                    w_raw_url = raw_b.web_app.url
+                                    if not w_raw_url.startswith("https://t.me/"):
+                                        wv = await cl(RequestWebViewRequest(
+                                            peer=bot_ent,
+                                            bot=bot_ent,
+                                            platform="android",
+                                            url=w_raw_url,
+                                            start_param="ref_4088138f11effe8eef4b86ff" if "diggo" in bot_key.lower() else "6727787768"
+                                        ))
+                                        if wv and getattr(wv, 'url', None):
+                                            found_webview_url = wv.url
+                                            break
                                 except Exception:
                                     pass
                         if found_webview_url:
@@ -5385,23 +5478,51 @@ async def study_bot_deep(cl: TelegramClient, bot_key: str, bot_username: str) ->
                 if found_webview_url:
                     break
 
+        # 3. Check Bot Menu Button
         b_input = await cl.get_input_entity(bot_ent)
+        if not found_webview_url:
+            try:
+                menu = await cl(functions.bots.GetBotMenuButtonRequest(user_id=b_input))
+                menu_btn = getattr(menu, "button", None)
+                if menu_btn and hasattr(menu_btn, "url") and menu_btn.url:
+                    webapp_info["menu_button_url"] = menu_btn.url
+                    if not menu_btn.url.startswith("https://t.me/"):
+                        wv = await cl(RequestWebViewRequest(
+                            peer=bot_ent,
+                            bot=bot_ent,
+                            platform="android",
+                            url=menu_btn.url,
+                            start_param="ref_4088138f11effe8eef4b86ff" if "diggo" in bot_key.lower() else "6727787768"
+                        ))
+                        if wv and getattr(wv, "url", None):
+                            found_webview_url = wv.url
+            except Exception as me_err:
+                webapp_info["menu_button_error"] = str(me_err)
+
+        # 4. Try RequestAppWebViewRequest with discovered candidate short names
+        ref_start_param = "ref_4088138f11effe8eef4b86ff" if "diggo" in bot_key.lower() else "6727787768"
         for sn in candidate_short_names:
-            if found_webview_url and "tgWebAppData" in found_webview_url:
+            if found_webview_url and "tgWebAppData" in found_webview_url and not found_webview_url.startswith("https://t.me/"):
                 break
             try:
                 wv_res = await cl(RequestAppWebViewRequest(
                     peer=b_input,
                     app=InputBotAppShortName(bot_id=b_input, short_name=sn),
                     platform="android",
-                    start_param="6727787768"
+                    start_param=ref_start_param
                 ))
                 if wv_res and getattr(wv_res, 'url', None):
-                    found_webview_url = wv_res.url
-                    webapp_info["short_name"] = sn
-                    break
+                    cand_url = wv_res.url
+                    if not cand_url.startswith("https://t.me/"):
+                        found_webview_url = cand_url
+                        webapp_info["short_name"] = sn
+                        break
             except Exception:
                 continue
+
+        # Reject any t.me link as final webview URL
+        if found_webview_url and found_webview_url.startswith("https://t.me/"):
+            found_webview_url = None
 
         if found_webview_url:
             webapp_info["has_webapp"] = True
@@ -5499,7 +5620,12 @@ async def study_bot_endpoint(bot_key: str, request: Request):
         "atf": "ATF_AIRDROP_bot",
         "victors": "VictorsCompanybot",
         "vyro": "vyrodrop_bot",
-        "kynex": "Kynex_miningbot"
+        "kynex": "Kynex_miningbot",
+        "diggo": "Diggominer_bot",
+        "leafearn": "LeafEarnBot",
+        "astra": "ASTRA_AIRDROP_BOT",
+        "pepegram": "Pepe_gram_bot",
+        "adxearn": "AdxEarnAibot"
     }
 
     if bot_key == "all":
@@ -5552,9 +5678,13 @@ async def mute_all_chats_endpoint(request: Request):
         "mrgminerbot", "mrgminer", "mrgfun", "mrgwithdrawal",
         "ATF_AIRDROP_bot", "atfminers",
         "Kynex_miningbot", "kynex_mining",
-        "FINVORAWeb3bot", "finvoraweb3",
         "VictorsCompanybot", "VictorsCompany",
-        "vyrodrop_bot", "vyrodrop"
+        "vyrodrop_bot", "vyrodrop",
+        "Diggominer_bot", "diggo_community",
+        "LeafEarnBot",
+        "ASTRA_AIRDROP_BOT",
+        "Pepe_gram_bot",
+        "AdxEarnAibot"
     ]
     results = []
     for acc in accounts:
@@ -5630,7 +5760,12 @@ async def inspect_bot_chat(uid: str, request: Request):
             ("atf", "ATF_AIRDROP_bot"),
             ("victors", "VictorsCompanybot"),
             ("vyro", "vyrodrop_bot"),
-            ("kynex", "Kynex_miningbot")
+            ("kynex", "Kynex_miningbot"),
+            ("diggo", "Diggominer_bot"),
+            ("leafearn", "LeafEarnBot"),
+            ("astra", "ASTRA_AIRDROP_BOT"),
+            ("pepegram", "Pepe_gram_bot"),
+            ("adxearn", "AdxEarnAibot")
         ]
         chats = {}
         try:

@@ -897,8 +897,98 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
   const farmDiggo = async () => {
     if (!accData.diggo_init_data) return;
     try {
-      await humanDelay(500, 1500);
-      result.bots.diggo = "farmed (mining active)";
+      let dInit = accData.diggo_init_data;
+      if (dInit.includes("%25") || dInit.includes("%3D") || dInit.includes("user%3D")) {
+        try { dInit = decodeURIComponent(dInit); } catch (_) {}
+      }
+      const baseUrl = "https://diggo.linkpc.net";
+      const initHeaders = getHumanHeaders(uid, {
+        "Content-Type": "application/json",
+        "Origin": baseUrl,
+        "Referer": `${baseUrl}/?tgWebAppStartParam=ref_4088138f11effe8eef4b86ff`
+      });
+
+      // 1. Telegram Auth
+      const aResp = await fetchWithRetry(`${baseUrl}/api/auth/telegram`, {
+        method: "POST",
+        headers: initHeaders,
+        body: JSON.stringify({ initData: dInit })
+      }, 1, 1000).catch(() => null);
+
+      if (!aResp) {
+        result.bots.diggo = "skipped (auth network error)";
+        return;
+      }
+      if (aResp.status === 401) {
+        result.bots.diggo = "token_expired (needs MTProto refresh)";
+        return;
+      }
+      const aData = await aResp.json().catch(() => ({}));
+      if (!aData || !aData.token) {
+        result.bots.diggo = `skipped (auth ${aResp.status || 'error'})`;
+        return;
+      }
+
+      const jwtToken = aData.token;
+      const st = aData.state || {};
+      let bal = Number(st.balance || 0);
+      const lvl = st.currentLevel || 1;
+      const mining = st.mining || {};
+      const pendingMined = Number(mining.pending || 0);
+
+      const authHeaders = getHumanHeaders(uid, {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${jwtToken}`,
+        "Origin": baseUrl,
+        "Referer": `${baseUrl}/?tgWebAppStartParam=ref_4088138f11effe8eef4b86ff`
+      });
+
+      // 2. Mining claim (if pending rewards accrued)
+      let claimedAmt = 0;
+      if (pendingMined > 0) {
+        await humanDelay(500, 1200);
+        const cResp = await fetchWithRetry(`${baseUrl}/api/claims/mining`, {
+          method: "POST",
+          headers: { ...authHeaders, "Idempotency-Key": crypto.randomUUID() },
+          body: JSON.stringify({})
+        }, 1, 800).catch(() => null);
+        if (cResp && cResp.ok) {
+          const cData = await cResp.json().catch(() => ({}));
+          if (cData && cData.amount) {
+            claimedAmt = Number(cData.amount);
+            bal = Number(cData.state?.balance || bal);
+          }
+        }
+      }
+
+      // 3. Referrals claim
+      await humanDelay(400, 900);
+      await fetchWithRetry(`${baseUrl}/api/referrals/claim`, {
+        method: "POST",
+        headers: { ...authHeaders, "Idempotency-Key": crypto.randomUUID() },
+        body: JSON.stringify({})
+      }, 1, 600).catch(() => {});
+
+      // 4. Check-in daily task
+      const tasks = st.tasks || {};
+      const checkinTask = tasks.checkin || {};
+      if (checkinTask.enabled && !checkinTask.claimed && (Number(checkinTask.progress || 0) >= Number(checkinTask.total || 1))) {
+        await humanDelay(400, 900);
+        const tResp = await fetchWithRetry(`${baseUrl}/api/tasks/claim`, {
+          method: "POST",
+          headers: { ...authHeaders, "Idempotency-Key": crypto.randomUUID() },
+          body: JSON.stringify({ taskId: "checkin" })
+        }, 1, 800).catch(() => null);
+        if (tResp && tResp.ok) {
+          const tData = await tResp.json().catch(() => ({}));
+          if (tData && tData.amount) {
+            bal = Number(tData.state?.balance || bal);
+          }
+        }
+      }
+
+      const claimStr = claimedAmt > 0 ? `, +${claimedAmt.toFixed(2)} claimed` : "";
+      result.bots.diggo = `farmed (bal: ${bal.toFixed(2)} DIGGO, lvl: ${lvl}${claimStr})`;
     } catch (e) {
       result.bots.diggo = `error: ${e.message}`;
     }
@@ -4250,7 +4340,7 @@ fi
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" }
             ],
             [
-              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" },
+              { text: "⚡ 10-Bot Harvest", callback_data: "btn_harvest" },
               { text: "💼 Multi-Chain Wallets", callback_data: "btn_wallets" }
             ],
             [
@@ -4420,7 +4510,7 @@ fi
               { text: "👥 Fleet Accounts" }
             ],
             [
-              { text: "⚡ 9-Bot Harvest" },
+              { text: "⚡ 10-Bot Harvest" },
               { text: "💼 Multi-Chain Wallets" }
             ],
             [
@@ -7366,7 +7456,7 @@ fi
         }
 
         // 3.5 Instant Fleet Harvest
-        if (text === "⚡ 9-Bot Harvest" || text === "⚡ 5-Bot Harvest" || text === "⚡ Instant Harvest" || text === "⚡ Harvest" || text.startsWith("/harvest") || text === "/farm" || text.startsWith("/farm")) {
+        if (text === "⚡ 10-Bot Harvest" || text === "⚡ 9-Bot Harvest" || text === "⚡ 5-Bot Harvest" || text === "⚡ Instant Harvest" || text === "⚡ Harvest" || text.startsWith("/harvest") || text === "/farm" || text.startsWith("/farm")) {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
             const health = await getSessionHealthState();
@@ -12921,7 +13011,7 @@ async def main():
                     {"command": "ai", "description": "💬 Google Gemini Flash & Ari Copilot"},
                     {"command": "status", "description": "📊 Fleet Status & Live Mining Telemetry"},
                     {"command": "wallets", "description": "👛 Verified Destination Wallets & Balances"},
-                    {"command": "harvest", "description": "⚡ Trigger Instant 9-Bot Multi-Cloud Harvest"},
+                    {"command": "harvest", "description": "⚡ Trigger Instant 10-Bot Multi-Cloud Harvest"},
                     {"command": "accounts", "description": "👥 Manage Fleet Accounts & Roster"},
                     {"command": "kynex", "description": "💎 Kynex Network Cloud Mining Center"},
                     {"command": "victors", "description": "🏢 Victor's Company Deep Mine & HumanPass"},

@@ -2,6 +2,29 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⛏️ DiggoMiner Authentic Live API Engine, Multi-Bot Diagnostic Fixes & Zero-Stub Fleet Hardening (October 14, 2026)**:
+  - **🚀 DiggoMiner Authentic Live Backend Integration (`_farm_diggo` & `farmDiggo`)**:
+    * Reverse-engineered DiggoMiner's WebApp runtime (`https://diggo.linkpc.net/`) and backend client scripts (`backend-client.js`, `routes.js`).
+    * Implemented `POST /api/auth/telegram` for Telegram WebApp session acquisition, returning JWT bearer token, player state, level, holding, and pending mining balance.
+    * Implemented `POST /api/claims/mining` with unique UUID `Idempotency-Key` headers for collecting accrued crystal cave mining rewards every 8 hours.
+    * Implemented `POST /api/referrals/claim` for automatic referral bonuses collection.
+    * Implemented dynamic task auto-completion for `checkin` via `POST /api/tasks/claim` (+10 DIGGO daily reward).
+    * Verified live on worker account `7648254021`: `farmed (bal: 73.39 DIGGO, lvl: 1)` with authentic balance and metrics straight from Diggo's production database.
+  - **🔍 Root Cause Bug Fixes Across Diagnostic & Extraction Engine**:
+    * **Bug #1 - DiggoMiner Placeholder Stub**: Replaced mock `jitter(0.5, 1.5)` routines in [render_standby_app.py](file:///data/data/com.termux/files/home/render_standby_app.py), [render_app_latest.py](file:///data/data/com.termux/files/home/render_app_latest.py), and [deploy_both_cf_workers.py](file:///data/data/com.termux/files/home/deploy_both_cf_workers.py) with authentic live REST API calls.
+    * **Bug #2 - `study_bot_endpoint` Incomplete `bot_map`**: Added bots 6 through 10 (`diggo`: `Diggominer_bot`, `leafearn`: `LeafEarnBot`, `astra`: `ASTRA_AIRDROP_BOT`, `pepegram`: `Pepe_gram_bot`, `adxearn`: `AdxEarnAibot`) to `bot_map`, preventing fallback to invalid usernames.
+    * **Bug #3 - `inspect_bot_chat` Omission**: Expanded `bots_to_check` and `all_targets_to_mute` to cover all 10 active bots and purged legacy banned bot `FINVORAWeb3bot`.
+    * **Bug #4 - `study_bot_deep` Deep-Link Misinterpretation**: Fixed webview discovery logic which previously treated `t.me` deep-links as the final webview URL instead of extracting the app short name (`openapp`/`startapp`) and invoking `RequestAppWebViewRequest`.
+    * **Bug #5 - NameError `uuid` in `_farm_diggo`**: Resolved missing `import uuid` in [render_standby_app.py](file:///data/data/com.termux/files/home/render_standby_app.py) which threw `NameError: name 'uuid' is not defined` when generating idempotency keys.
+  - **📖 Single Source of Truth Registry Hardening ([bot_registry.py](file:///data/data/com.termux/files/home/bot_registry.py))**:
+    * Updated `diggo` configuration: `app_url` set to `https://diggo.linkpc.net/`, `api_base` set to `https://diggo.linkpc.net/api`, `sponsor_channels` set to `["diggo_community"]`, and candidate short names prioritized with `openapp` and `startapp`.
+    * Updated `deploy_both_cf_workers.py` UI buttons and admin commands to announce `⚡ 10-Bot Harvest`.
+  - **🌐 Edge Mesh & Render Standby Synchronization**:
+    * Deployed upgraded engine across all 5 Cloudflare Edge Worker nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Synchronized standby repos `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`.
+    * Render Node 2 (Frankfurt: `srv-dan5q00ae00c73djummg`, deploy `dep-db7sqkek1f9s73ct9ti0`) deployed 🟢 Live.
+  - **📱 Zero Phone Load Directive**: 0 background python processes on mobile (`ps aux | grep python` clean).
+
 - **🚀 18-Account Full Fleet Verification & User Bot 10-Pool Experience Upgrade (October 14, 2026)**:
   - **👑 100% 18-Account Production Fleet Verification Across All 10 Bots**:
     * Dispatched batch token extraction and fleet farming cycle across Render Node 2 (Frankfurt: `srv-dan5q00ae00c73djummg`).
