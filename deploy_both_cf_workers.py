@@ -907,8 +907,83 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
   const farmLeafearn = async () => {
     if (!accData.leafearn_init_data) return;
     try {
-      await humanDelay(500, 1500);
-      result.bots.leafearn = "farmed (leaf harvest active)";
+      const lInit = accData.leafearn_init_data;
+      const isOwner = (String(accData.user_id) === "6727787768");
+      const leafKey = new Uint8Array([0x11, 0x1e, 0x3e, 0x2f, 0xb3, 0xec, 0x09, 0xdd, 0x0b, 0xea, 0xef, 0xf0, 0xdd, 0xde, 0x12, 0xe9, 0xd4, 0xdc, 0x9d, 0x8e, 0xc6, 0x0f, 0x5d, 0x1f, 0x0d, 0x28, 0x17, 0x2b, 0xcb, 0xd8, 0xf2, 0xda]);
+      const leafRev = "536425909";
+
+      const toHex = (buf) => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+      const sha256Hex = async (data) => toHex(await crypto.subtle.digest("SHA-256", typeof data === "string" ? new TextEncoder().encode(data) : data));
+      const hmacSha256Hex = async (keyBytes, text) => {
+        const cryptoKey = await crypto.subtle.importKey("raw", keyBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+        const sig = await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(text));
+        return toHex(sig);
+      };
+
+      const callLeafRpc = async (service, method, bodyObj = {}) => {
+        const nonce = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        const bodyJson = JSON.stringify(bodyObj);
+        const bodyHash = await sha256Hex(Object.keys(bodyObj).length === 0 ? new Uint8Array(0) : new TextEncoder().encode(bodyJson));
+        const initHash = await sha256Hex(lInit);
+        const signingStr = `${service}/${method}|${nonce}|${bodyHash}|${initHash}`;
+        const sig = await hmacSha256Hex(leafKey, signingStr);
+        const hint = `${nonce}.${sig}`;
+
+        const resp = await fetch(`https://leafearn.site/${service}/${method}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Connect-Protocol-Version": "1",
+            "x-init-data": lInit,
+            "x-app-rev": leafRev,
+            "x-view-hint": hint,
+            "User-Agent": userAgent,
+            "Origin": "https://leafearn.site",
+            "Referer": "https://leafearn.site/"
+          },
+          body: bodyJson
+        });
+        return await resp.json().catch(() => ({}));
+      };
+
+      if (!isOwner) {
+        await callLeafRpc("leaf.v1.AuthService", "Init", { start_param: "6727787768" });
+        await humanDelay(300, 600);
+      }
+
+      const syncD = await callLeafRpc("leaf.v1.AuthService", "Sync", {});
+      const uObj = (syncD && syncD.user) || {};
+      let leafBal = uObj.leaf || uObj.balance || "0";
+      const refsActive = uObj.referralActive || 0;
+
+      await humanDelay(400, 800);
+      const stD = await callLeafRpc("leaf.v1.MineService", "Status", {});
+      if (stD && stD.balance) leafBal = stD.balance;
+
+      await humanDelay(300, 600);
+      await callLeafRpc("leaf.v1.MineService", "Claim", {});
+
+      await humanDelay(400, 800);
+      await callLeafRpc("leaf.v1.MineService", "Mine", { adsShown: 1, adsClicked: 0, adsOffered: 1 });
+
+      await humanDelay(400, 800);
+      const tasksD = await callLeafRpc("leaf.v1.ReadService", "Tasks", {});
+      const taskList = (tasksD && Array.isArray(tasksD.tasks)) ? tasksD.tasks : [];
+      let claimedCount = 0;
+      for (const t of taskList) {
+        if (t && !t.completed && t.id && ["LINK", "TELEGRAM", "BIO", "OTHERS", "X", "APP"].includes(t.type)) {
+          await humanDelay(200, 500);
+          const cRes = await callLeafRpc("leaf.v1.TaskService", "CompleteTask", { taskId: String(t.id) });
+          if (cRes && cRes.ok) claimedCount++;
+        }
+      }
+
+      await humanDelay(300, 600);
+      await callLeafRpc("leaf.v1.AdsgramTaskService", "Claim", {});
+
+      const taskStr = claimedCount > 0 ? `, +${claimedCount} tasks` : "";
+      const refStr = (isOwner && refsActive) ? `, refs: ${refsActive}` : "";
+      result.bots.leafearn = `farmed (bal: ${leafBal} Stars${taskStr}${refStr})`;
     } catch (e) {
       result.bots.leafearn = `error: ${e.message}`;
     }

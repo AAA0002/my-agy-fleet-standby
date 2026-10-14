@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🍃 LeafEarn Live Connect-RPC Engine, WebAssembly Signature Emulation & 10-Bot Cloud Fleet Hardening (October 14, 2026)**:
+  - **🚀 LeafEarn Real Connect-RPC Pipeline (`_farm_leafearn` & `farmLeafearn`)**:
+    * Reverse-engineered LeafEarn's Connect-RPC protocol (`https://leafearn.site/leaf.v1.*`) and anti-bot WebAssembly binary (`/fx/tone-d27e853a.wasm`).
+    * Decompiled WASM mathematical routine and derived the exact deterministic 32-byte signing key (`111e3e2fb3ec09dd0beaeff0ddde12e9d4dc9d8ec60f5d1f0d28172bcbd8f2da`) and application revision (`536425909`).
+    * Implemented zero-dependency HMAC-SHA256 signature generator (`build_leaf_headers`) producing valid `x-app-rev` and `x-view-hint` headers for every Connect-RPC call.
+    * Implemented `leaf.v1.AuthService/Init` binding Master referral (`6727787768`) across worker accounts.
+    * Implemented `leaf.v1.AuthService/Sync` retrieving authentic live balance and referral metrics.
+    * Implemented `leaf.v1.MineService/Status` and `leaf.v1.MineService/Claim` for automatic leaf star harvests.
+    * Implemented `leaf.v1.MineService/Mine` for active mining cycle progression.
+    * Implemented dynamic task discovery and completion via `leaf.v1.ReadService/Tasks` and `leaf.v1.TaskService/CompleteTask`.
+    * Implemented `leaf.v1.AdsgramTaskService/Claim` for bonus advertising rewards.
+    * Live verified on Master Account `6727787768` returning live profile: `leaf: 265 Stars`, `commission: 4`, `referrals: 6`.
+  - **🛡️ Cloud Turnstile Solver Dispatch & Zero VPS Reliance**:
+    * Dispatched `mrg_turnstile_solver.yml` on GitHub Actions runner (`koramshah2/AAA_AUTO`) to refresh `victors:pass:{uid}` tokens in Upstash Redis.
+  - **🌐 Edge Mesh & Render Standby Synchronization**:
+    * Deployed upgraded 10-bot engine across all 5 Cloudflare Edge Worker nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+    * Pushed updated standby code to `AAA0002/my-agy-fleet-standby` (Commit `f020461`) and `koramshah2/my-agy-fleet-standby`.
+    * Render Node 2 (Frankfurt: `srv-dan5q00ae00c73djummg`, deploy `dep-db7qbh6k1f9s738lo85g`) deployed 🟢 Live.
+  - **📱 Zero Phone Load Directive**: 0 background python processes on mobile (`ps aux | grep python` clean).
+
 - **🌾 Real Autonomous 10-Bot Production Farming Engine Upgrade (October 14, 2026)**:
   - **🚀 AdxEarn AI Live API Integration (`_farm_adxearn`)**:
     * Transitioned from basic placeholder to full live authenticated backend integration (`https://api.adxearnai.xyz/api`).

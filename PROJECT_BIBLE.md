@@ -1073,4 +1073,33 @@ Whenever you perform work in this repository:
   - Account #2: 2,805.4 MRG, 962.2 ATF, 50,496.2 KNX (+46.2 claimed).
   - Account #3: 2,368.8 MRG, 16.0 ATF, 40,477.3 KNX (+846.0 claimed).
 
+### 14. 10-Bot Production Suite & Authentic LeafEarn Connect-RPC Reverse Engineering (October 14, 2026)
+* **The 10-Bot Complete Suite**:
+  1. **MRG Miner** (`@mrgminerbot`): Live on-chain auto-compounding miners.
+  2. **ATF Miner** (`@ATF_AIRDROP_bot`): Live mining with auto-math challenge solving.
+  3. **Victor's Company** (`@VictorsCompanybot`): Level 1000 mining with Turnstile solver (`mrg_turnstile_solver.yml`).
+  4. **VyroDrop** (`@vyrodrop_bot`): Authenticated bootstrap, task completions & referral commissions.
+  5. **Kynex Network** (`@Kynex_miningbot`): Firebase callable RPCs, continuous mining & claims.
+  6. **DiggoMiner** (`@Diggominer_bot`): MiniApp token extraction with `startapp=ref_4088138f11effe8eef4b86ff`.
+  7. **LeafEarn** (`@LeafEarnBot`): Full Connect-RPC engine (`leaf.v1.*`) with anti-bot WASM HMAC signature.
+  8. **Astra Airdrop** (`@ASTRA_AIRDROP_BOT`): Supabase RPC protocol (`astra_login`, `astra_sync_wallet`, `astra_math_challenge`, `astra_start_mine`, `astra_mine_claim`).
+  9. **PepeGram** (`@Pepe_gram_bot`): Mini Empire multi-tenant backend (`tid=1449`, auth, claim-welcome-bonus, claim, tasks/mine).
+  10. **AdxEarn AI** (`@AdxEarnAibot`): Dynamic REST API (`/user/session`, `/rewards/checkin`, `/farming/status`, `/farming/claim`, `/farming/start`, `/farming/boost`, `/rewards/tasks`).
+* **LeafEarn Connect-RPC & Anti-Bot WebAssembly Discovery**:
+  - **The Anti-Bot Protection**: LeafEarn uses a client-side WebAssembly binary (`https://leafearn.site/fx/tone-d27e853a.wasm`) that validates every request with mandatory HTTP headers `x-app-rev` and `x-view-hint`. Requests without valid signatures fail with `400 failed_precondition: Please close and reopen Leaf to update`.
+  - **Deterministic Decompilation**: We reverse-engineered the WASM functions (`grain()`, `ease()`, `tone()`) and discovered that `ease() = 18394`, `grain() = 536425909`, and `tone()` uses a static 5x32 byte table.
+  - **Zero-WASM Native Signing**: Evaluated the mathematical permutations (`patternFor`, `mixTone`, `envelope`) to yield the permanent 32-byte signing key:
+    `111e3e2fb3ec09dd0beaeff0ddde12e9d4dc9d8ec60f5d1f0d28172bcbd8f2da`.
+  - **100% Native Emulation**: Implemented `build_leaf_headers()` in Python and JavaScript using native HMAC-SHA256, generating sub-millisecond valid signatures.
+  - **Verified Live State for Master (`6727787768`)**:
+    * Balance: `265 Stars`
+    * Commission Earned: `4`
+    * Referrals Active: `2`, Referrals Pending: `4`
+    * Tasks Completed: `#2` (Bio), `#4` (Channel), `#5` (Group), `#13` (X like), `#3` (X follow).
+* **Multi-Node Deployment**:
+  - Cloudflare Workers Edge Mesh deployed across all 5 nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+  - Render Node 2 (Frankfurt: `srv-dan5q00ae00c73djummg`, deploy `dep-db7qbh6k1f9s738lo85g`) deployed 🟢 Live.
+  - Zero Phone Load: 0 python processes running locally on the mobile terminal.
+
+
 

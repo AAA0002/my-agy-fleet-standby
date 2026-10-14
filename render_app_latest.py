@@ -10,6 +10,7 @@ import aiohttp
 import datetime
 import secrets
 import hashlib
+import hmac
 import traceback
 from typing import Any
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -391,6 +392,28 @@ def solve_atf_math(question_text: str) -> str:
         if "/" in question_text and nums[1] != 0:
             return str(nums[0] // nums[1])
     return "0"
+
+LEAF_KEY = bytes.fromhex("111e3e2fb3ec09dd0beaeff0ddde12e9d4dc9d8ec60f5d1f0d28172bcbd8f2da")
+LEAF_REV = "536425909"
+
+def build_leaf_headers(service: str, method: str, init_data: str, body_bin: bytes = b"", ua: str = None) -> dict:
+    now_ms = int(time.time() * 1000)
+    nonce = f"{hex(now_ms)[2:]}-{hex(random.randint(0x100000, 0xffffff))[2:]}"
+    body_hash = hashlib.sha256(body_bin).hexdigest()
+    init_hash = hashlib.sha256(init_data.encode("utf-8")).hexdigest()
+    signing_str = f"{service}/{method}|{nonce}|{body_hash}|{init_hash}"
+    sig = hmac.new(LEAF_KEY, signing_str.encode("utf-8"), hashlib.sha256).hexdigest()
+    hint = f"{nonce}.{sig}"
+    return {
+        "Content-Type": "application/json",
+        "Connect-Protocol-Version": "1",
+        "x-init-data": init_data,
+        "x-app-rev": LEAF_REV,
+        "x-view-hint": hint,
+        "User-Agent": ua or "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android",
+        "Origin": "https://leafearn.site",
+        "Referer": "https://leafearn.site/"
+    }
 
 # Active Fleet Mini-App Bots (All 9 Bots)
 MRG_BOT = "mrgminerbot"
@@ -4622,21 +4645,65 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 return
         status["bots"]["diggo"] = "skipped (no initData)"
 
-    # 7. LeafEarn (@LeafEarnBot - leafearn.site)
+    # 7. LeafEarn (@LeafEarnBot - leafearn.site Connect-RPC Engine)
     async def _farm_leafearn():
         if tokens.get("leafearn_init_data"):
             try:
                 l_init = tokens["leafearn_init_data"]
-                l_headers = {
-                    "Content-Type": "application/json",
-                    "User-Agent": user_agent,
-                    "Origin": "https://leafearn.site",
-                    "Referer": "https://leafearn.site/",
-                    "Authorization": f"tma {l_init}",
-                    "X-Telegram-Init-Data": l_init
-                }
-                await jitter(0.5, 1.5)
-                status["bots"]["leafearn"] = "farmed (leaf harvest active)"
+
+                async def leaf_rpc(service: str, method: str, body_obj: dict = None):
+                    body_obj = body_obj or {}
+                    body_bytes = json.dumps(body_obj).encode("utf-8") if body_obj else b"{}"
+                    sign_bin = b"" if not body_obj else body_bytes
+                    h = build_leaf_headers(service, method, l_init, sign_bin, user_agent)
+                    url = f"https://leafearn.site/{service}/{method}"
+                    status_c, res_d = await safe_post(url, json_data=body_obj, req_headers=h)
+                    return res_d if isinstance(res_d, dict) else {}
+
+                # 1. Init & Master Referral Binding (if worker account)
+                if not is_owner:
+                    await leaf_rpc("leaf.v1.AuthService", "Init", {"start_param": "6727787768"})
+                    await jitter(0.4, 0.8)
+
+                # 2. Sync account profile & live leaf balance
+                sync_d = await leaf_rpc("leaf.v1.AuthService", "Sync", {})
+                u_obj = (sync_d.get("user") if isinstance(sync_d, dict) else {}) or {}
+                leaf_bal = u_obj.get("leaf") or u_obj.get("balance", "0")
+                refs_active = u_obj.get("referralActive", 0)
+
+                # 3. Mine Status & Claim pending rewards
+                await jitter(0.5, 1.0)
+                st_d = await leaf_rpc("leaf.v1.MineService", "Status", {})
+                if isinstance(st_d, dict) and st_d.get("balance"):
+                    leaf_bal = st_d.get("balance", leaf_bal)
+
+                await jitter(0.4, 0.8)
+                await leaf_rpc("leaf.v1.MineService", "Claim", {})
+
+                await jitter(0.5, 1.2)
+                await leaf_rpc("leaf.v1.MineService", "Mine", {"adsShown": 1, "adsClicked": 0, "adsOffered": 1})
+
+                # 4. Tasks Discovery & Auto-Completion
+                await jitter(0.5, 1.0)
+                tasks_d = await leaf_rpc("leaf.v1.ReadService", "Tasks", {})
+                task_list = tasks_d.get("tasks", []) if isinstance(tasks_d, dict) else []
+                claimed_tasks = 0
+                for t in task_list:
+                    if isinstance(t, dict) and not t.get("completed") and t.get("id"):
+                        t_type = t.get("type", "")
+                        if t_type in ("LINK", "TELEGRAM", "BIO", "OTHERS", "X", "APP"):
+                            await jitter(0.3, 0.7)
+                            comp_res = await leaf_rpc("leaf.v1.TaskService", "CompleteTask", {"taskId": str(t["id"])})
+                            if comp_res.get("ok"):
+                                claimed_tasks += 1
+
+                # 5. Adsgram Task Claim
+                await jitter(0.4, 0.8)
+                await leaf_rpc("leaf.v1.AdsgramTaskService", "Claim", {})
+
+                task_str = f", +{claimed_tasks} tasks" if claimed_tasks > 0 else ""
+                ref_str = f", refs: {refs_active}" if is_owner and refs_active else ""
+                status["bots"]["leafearn"] = f"farmed (bal: {leaf_bal} Stars{task_str}{ref_str})"
                 return
             except Exception as e:
                 status["bots"]["leafearn"] = f"api_error: {format_error(e)}"
