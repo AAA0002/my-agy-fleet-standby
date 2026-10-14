@@ -1387,11 +1387,13 @@ async def token_health_and_refresh_watchdog():
                                     synced_ts = float(synced_val)
                                 except Exception:
                                     synced_ts = 0
-                        # Strict Anti-Ban Refresh Guard:
-                        # Existing accounts only need fresh WebApp tokens once every 24 hours (86400s).
-                        # If an account already has ANY valid *_init_data token, NEVER connect Telethon!
+                        # Dynamic WebApp Session Freshness Guard:
+                        # MiniApp WebApp tokens (especially VyroDrop) have ~1.5h - 2h TTL.
+                        # Refresh tokens if missing or older than 2 hours (7200s).
                         has_any_token = any(k.endswith("_init_data") and bool(v) for k, v in tok.items())
-                        if not tok or not has_any_token or (now - synced_ts > 86400):
+                        has_vyro = bool(tok.get("vyro_init_data"))
+                        is_stale = (now - synced_ts > 7200) or (not has_vyro and (now - synced_ts > 1800))
+                        if not tok or not has_any_token or is_stale:
                             stale_or_missing_accs.append(acc)
 
                     if stale_or_missing_accs:
@@ -4533,11 +4535,11 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
     # Humanized Concurrent Execution Pipeline: Active Legitimate Fleet Mining Pools (5 Pools)
     BOT_COOLDOWNS = {
-        "atf": (7200, 10800),
-        "mrg": (10800, 14400),
-        "victors": (14400, 18000),
-        "vyro": (14400, 21600),
-        "kynex": (21600, 28800)
+        "atf": (1200, 2400),      # 20m - 40m
+        "mrg": (1800, 3600),      # 30m - 60m
+        "kynex": (2400, 4800),    # 40m - 80m
+        "vyro": (2400, 4800),     # 40m - 80m
+        "victors": (3600, 7200)   # 1h - 2h
     }
 
     bot_routines = [
@@ -4560,7 +4562,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
     async def _run_single_routine(b):
         b_name = b["name"]
-        min_s, max_s = BOT_COOLDOWNS.get(b_name, (7200, 10800))
+        min_s, max_s = BOT_COOLDOWNS.get(b_name, (1800, 3600))
         cd_key = f"fleet:last_farm:{b_name}:{uid}"
 
         should_farm = True

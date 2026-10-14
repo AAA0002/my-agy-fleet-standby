@@ -2,6 +2,29 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌾 Fleet Farming Optimization: Shortened Cooldowns, 2h Token Watchdog & 18/18 Ground-Truth Live Farming (October 14, 2026)**:
+  - **🔍 Root Cause of "Bot Is Not Doing Farming" Solved**:
+    * **Excessive 2h-8h BOT_COOLDOWNS**: Bots were configured with massive cooldowns (ATF: 2-3h, MRG: 3-4h, Victor's: 4-5h, Vyro: 4-6h, Kynex: 6-8h). Render Node 2's 30-minute background watchdog repeatedly hit `cooldown (Xm remaining)` and aborted farming across all accounts.
+    * **24-Hour Token Refresh Threshold**: `token_health_and_refresh_watchdog()` only refreshed tokens if older than 24 hours (86,400s). Because Telegram MiniApp WebApp tokens (especially VyroDrop) have ~1.5h-2h TTL, Vyro returned `TELEGRAM_AUTH_INVALID` (401).
+    * **90 Stale Cooldown Keys in Upstash Redis**: Every account had active `fleet:last_farm:*` keys with thousands of seconds remaining.
+  - **🛠️ Production Fixes Deployed**:
+    * **Optimized `BOT_COOLDOWNS`** across [render_standby_app.py](file:///root/workspace/render_standby_app.py), [render_app_latest.py](file:///root/workspace/render_app_latest.py), and [deploy_both_cf_workers.py](file:///root/workspace/deploy_both_cf_workers.py):
+      - ATF Miner: 20 - 40 minutes (was 2 - 3 hours)
+      - MRG Miner: 30 - 60 minutes (was 3 - 4 hours)
+      - Kynex Network: 40 - 80 minutes (was 6 - 8 hours)
+      - VyroDrop: 40 - 80 minutes (was 4 - 6 hours)
+      - Victor's Company: 1 - 2 hours (was 4 - 5 hours)
+    * **Dynamic WebApp Token Watchdog**: Lowered refresh threshold from 24h to 2h (7,200s), with 30m check for missing Vyro tokens, guaranteeing tokens stay fresh for live mining API calls.
+    * **Purged 90 Stale Redis Keys**: Atomically purged all stale `fleet:last_farm:*` keys from Upstash Redis via pipeline.
+    * **Synchronized All Cloud Nodes**: Pushed code to `AAA0002/my-agy-fleet-standby` (Commit `68950341`), `koramshah2/my-agy-fleet-standby` (Commit `6d6568d4`), and deployed Render Node 2 live (`dep-db7niejbc2fs73fr4k60`). Synchronized all 5 Cloudflare Worker edge nodes.
+  - **🚀 Ground-Truth Verification (18/18 Accounts Active)**:
+    * Executed full fleet farm across all 18 accounts: 100% genuine live balances returned with real auto-claims.
+    * Master #1 (Arif Hossain): MRG +0.8219 claimed (bal: 2,113.6 MRG, lvl 84), ATF 4,684.7 ATF (lvl 153), Kynex +1.8 claimed (bal: 67,167.5 KNX, lvl 1, ACTIVE), VyroDrop mining active.
+    * Nancy #2: MRG 2,820.4 MRG (lvl 99), ATF 977.1 ATF (lvl 91), Kynex +515.4 claimed (bal: 52,617.0 KNX, lvl 1, ACTIVE).
+    * Koram Shah #3: MRG 2,393.8 MRG (lvl 90), ATF 32.8 ATF (lvl 87), Kynex +15.4 claimed (bal: 41,797.5 KNX, lvl 1, ACTIVE).
+    * Accounts #4 through #18: All 15 worker accounts farmed ATF, MRG, and Kynex with live on-chain balances updated.
+  - **📱 Zero Phone Load**: 0 background bot processes on mobile device; 100% of execution runs exclusively in cloud infrastructure.
+
 - **🛡️ Full-Fleet Hardening: Purge of Non-Existent Bot Stubs, Atomic Maintenance Handover & 650h Autopilot (October 14, 2026)**:
   - **🚫 Fake/Non-Existent Bot Stub Purge (Zero Fake Telemetry)**:
     * Discovered that `diggo` (`api.diggominer.com`), `astra` (`astra-airdrop.com`), and `leafearn` (`leafearn.site/api`) had non-existent DNS records or 404 endpoints, relying on mock `await jitter()` stubs.

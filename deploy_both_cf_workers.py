@@ -896,11 +896,11 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
 
   // Humanized Execution Pipeline: Active Legitimate Fleet Mining Pools (5 Pools)
   const BOT_COOLDOWNS = {
-    atf: { minSec: 7200, maxSec: 10800 },
-    mrg: { minSec: 10800, maxSec: 14400 },
-    victors: { minSec: 14400, maxSec: 18000 },
-    vyro: { minSec: 14400, maxSec: 21600 },
-    kynex: { minSec: 21600, maxSec: 28800 }
+    atf: { minSec: 1200, maxSec: 2400 },
+    mrg: { minSec: 1800, maxSec: 3600 },
+    victors: { minSec: 3600, maxSec: 7200 },
+    vyro: { minSec: 2400, maxSec: 4800 },
+    kynex: { minSec: 2400, maxSec: 4800 }
   };
 
   const botRoutines = [
@@ -919,7 +919,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
 
   const nowSec = Math.floor(Date.now() / 1000);
   for (const b of activeRoutines) {
-    const cdConfig = BOT_COOLDOWNS[b.name] || { minSec: 7200, maxSec: 10800 };
+    const cdConfig = BOT_COOLDOWNS[b.name] || { minSec: 1800, maxSec: 3600 };
     let shouldFarm = true;
     try {
       const lastFarmRaw = await upstashGet(`fleet:last_farm:${b.name}:${uid}`);

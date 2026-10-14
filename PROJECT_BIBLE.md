@@ -607,8 +607,9 @@ To prevent resource leakages, unbounded database list growth, and local disk bal
 ### 1. Human Cooldown Economy vs. Error Backoff Fix
 - **The Issue**: Previously, in both Cloudflare Edge (`deploy_both_cf_workers.py`) and Render apps (`render_standby_app.py`, `render_app_latest.py`), any bot run (even timeouts or 401 token expirations) received a standard 2h–8h cooldown. This created a cooldown trap where accounts with refreshed tokens were blocked from farming for hours.
 - **The Solution**:
-  * **Success Condition**: Only genuine successful harvests (`ok`, `farmed`, `auto-claimed`) apply the full human cooldown (ATF: 2h–3h, MRG: 3h–4h, Victor's: 4h–5h, Vyro: 4h–6h, Kynex: 6h–8h).
+  * **Success Condition**: Only genuine successful harvests (`ok`, `farmed`, `auto-claimed`) apply the optimized human cooldown (ATF: 20m–40m, MRG: 30m–60m, Victor's: 1h–2h, Vyro: 40m–80m, Kynex: 40m–80m).
   * **Failure / Expired Condition**: If a bot returns an error, timeout, or expired status, it is assigned a short **180s–300s (3m–5m)** retry backoff. When fresh tokens are ingested, the fleet resumes harvesting within minutes instead of hours.
+  * **2-Hour Token TTL Watchdog**: `token_health_and_refresh_watchdog()` refreshes Telegram WebApp tokens if older than 2 hours (7,200s), ensuring tokens for VyroDrop and other bots never expire silently in the background.
 
 ### 2. Edge-to-Render Cloud Secret Key Hardening
 - Replaced vulnerable default fallback secret key (`"YOUR_SHARED_SECRET_KEY"`) in Cloudflare Edge dispatcher with production shared secret (`"agy_cf_secret_7d36994e_2026"`), guaranteeing that automated edge failover triggers to Render Standby Nodes never fail with HTTP 401 Unauthorized.
