@@ -1097,9 +1097,30 @@ Whenever you perform work in this repository:
     * Referrals Active: `2`, Referrals Pending: `4`
     * Tasks Completed: `#2` (Bio), `#4` (Channel), `#5` (Group), `#13` (X like), `#3` (X follow).
 * **Multi-Node Deployment**:
-  - Cloudflare Workers Edge Mesh deployed across all 5 nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
-  - Render Node 2 (Frankfurt: `srv-dan5q00ae00c73djummg`, deploy `dep-db7qbh6k1f9s738lo85g`) deployed 🟢 Live.
-  - Zero Phone Load: 0 python processes running locally on the mobile terminal.
+### 15. 18-Account Full Fleet Verification & User Bot 10-Pool Experience Upgrade (October 14, 2026)
+* **100% Fleet Production Verification Across All 18 Accounts**:
+  - Successfully refreshed MTProto tokens and executed cloud farming across all 18 fleet accounts via Render Node 2 (Frankfurt: `srv-dan5q00ae00c73djummg`).
+  - **Account Verification Matrix**:
+    * Account #1 (Master, `6727787768`): Active cooldown & harvests on `leafearn` (265 Stars), `kynex` (67.5k KNX), `astra`, `pepegram` (power 503), `diggo`, `mrg` (2.1k MRG), `adxearn` (8.7k pts), `atf` (4.7k ATF).
+    * Account #2 (Nancy, `8881914294`): ALL 10 BOTS ACTIVE (`pepegram`, `diggo`, `atf`, `kynex`, `vyro`, `victors`, `mrg`, `adxearn`, `astra`, `leafearn`).
+    * Accounts #3 to #18 (`7648254021`, `8826375659`, `8450010161`, `8782429452`, `7734849205`, `8025472383`, `8851426148`, `8203342513`, `8190649727`, `7487048946`, `8741547543`, `8727040932`, `7749125802`, `7954290138`, `8841038141`, `8975442879`): 100% farming active across `diggo`, `pepegram`, `adxearn`, `leafearn`, `astra`, `kynex`, `mrg`, `atf`, `vyro`.
+* **Automated Token Watchdog & Incomplete Token Guard**:
+  - Hardened `api_farm_single_account` in `render_standby_app.py` and `render_app_latest.py`:
+    `key_tokens = [f"{b}_init_data" for b in ALL_10_BOT_KEYS]`
+    `missing_any = not all(k in acc_tok and bool(acc_tok.get(k)) for k in key_tokens)`
+    `missing_tokens = refresh_mode or (not acc_tok) or missing_any`
+  - Guarantees that any account missing any of the 10 bot tokens immediately triggers automated token extraction and cloud sync.
+* **User Bot (@AAAPREMIUMAPPSbot) Full 10-Pool Integration**:
+  - Eliminated callback query early interception of `ub_pools`, allowing direct routing to `renderMiningPoolsMenu(profile)` displaying real-time connected account metrics for each of the 10 pools.
+  - Upgraded `ub_withdraw` and `/pools` guides with official bot handles, cycles, and reward structures for all 10 pools.
+  - Upgraded public web dashboard (`public/index.html`) with interactive cards and one-tap farm buttons for Bots 6 through 10 (`DiggoMiner`, `LeafEarn`, `Astra Airdrop`, `PepeGram`, and `AdxEarn AI`).
+  - Updated `public_admin/admin.html` fleet telemetry to track non-custodial TON wallet bindings across all 10 bots.
+* **Multi-Cloud Synchronization & Zero Phone Load**:
+  - Cloudflare Edge Mesh deployed across all 5 nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`).
+  - Standby repos synchronized (`AAA0002/my-agy-fleet-standby` Commit `c080370`, `koramshah2/my-agy-fleet-standby` Commit `fe80a2a`).
+  - Render Node 2 (Frankfurt: `srv-dan5q00ae00c73djummg`, deploy `dep-db7r3ifavr4c73995obg`) 🟢 Live.
+  - Phone Load: Strictly 0 python processes running locally on Samsung Galaxy A30.
+
 
 
 

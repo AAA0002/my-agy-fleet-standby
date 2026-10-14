@@ -5127,6 +5127,7 @@ async def api_farm_single_account(uid: str, request: Request):
     """Executes on-demand cloud farming & token bootstrap for a single account in the fleet."""
     try:
         force_mode = request.query_params.get("force") == "1"
+        refresh_mode = request.query_params.get("refresh") == "1"
         accounts = await fetch_accounts_from_cloud()
         target_acc = next((a for a in accounts if str(a.get("user_id")) == str(uid)), None)
         if not target_acc:
@@ -5135,7 +5136,9 @@ async def api_farm_single_account(uid: str, request: Request):
         async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as session:
             tokens_map = await fetch_cloud_miniapp_tokens(session)
             acc_tok = tokens_map.get(str(uid), {})
-            missing_tokens = (not acc_tok) or not any(k.endswith('_init_data') and bool(v) for k, v in acc_tok.items())
+            key_tokens = [f"{b}_init_data" for b in ALL_10_BOT_KEYS]
+            missing_any = not all(k in acc_tok and bool(acc_tok.get(k)) for k in key_tokens)
+            missing_tokens = refresh_mode or (not acc_tok) or missing_any
             if missing_tokens:
                 fresh = await extract_tokens_for_account(target_acc)
                 if fresh:

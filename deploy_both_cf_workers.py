@@ -2256,25 +2256,30 @@ export default {
         fallbackAns = `⚡ *AAA AUTO MINING* was created and engineered by *AAA*.\n\n` +
           `• *Created by:* AAA\n` +
           `• *Ecosystem:* Autonomous 24/7 Cloud Mining Platform.\n` +
-          `• *Supported Bots:* Auto-farms 5 Telegram crypto bots 24/7 (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network).`;
+          `• *Supported Bots:* Auto-farms 10 Telegram crypto bots 24/7 (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, LeafEarn, Astra, PepeGram, AdxEarn AI).`;
       } else if (pLow.includes("what can this bot do") || pLow.includes("what can you do") || pLow.includes("what does this bot do") || pLow.includes("features") || pLow.includes("bot list") || pLow.includes("which bots")) {
         fallbackAns = `🌟 *AAA AUTO MINING* (Created by AAA) 🚀\n\n` +
-          `This bot **automatically mines 5 Telegram crypto bots 24/7 in the cloud**! It executes mining starts, daily claims, task completions, and point rewards continuously.\n\n` +
-          `🤖 *The 5 Automated Mining Pools & Links:*\n` +
+          `This bot **automatically mines 10 Telegram crypto bots 24/7 in the cloud**! It executes mining starts, daily claims, task completions, and point rewards continuously.\n\n` +
+          `🤖 *The 10 Automated Mining Pools & Links:*\n` +
           `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
           `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
           `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade minigame\n` +
           `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n` +
-          `5️⃣ 💎 [Kynex Network](https://t.me/Kynex_miningbot/App?startapp=6727787768) — High-yield cloud mining & 12h energy reserve\n\n` +
-          `📱 *How to Start:* Tap *➕ Connect Account*, send your phone number & Telegram login code. Your account will automatically farm all 5 pools 24/7 in the cloud!`;
+          `5️⃣ 💎 [Kynex Network](https://t.me/Kynex_miningbot/App?startapp=6727787768) — High-yield cloud mining & 12h energy reserve\n` +
+          `6️⃣ ⛏️ [DiggoMiner](https://t.me/Diggominer_bot?startapp=ref_4088138f11effe8eef4b86ff) — Decentralized automated block mining\n` +
+          `7️⃣ 🍃 [LeafEarn](https://t.me/LeafEarnBot/app?startapp=6727787768) — Green energy leaf mining & Telegram Stars rewards\n` +
+          `8️⃣ ⭐ [Astra Airdrop](https://t.me/ASTRA_AIRDROP_BOT/app?startapp=ref_6727787768) — Cosmic star airdrop & math mining cycle\n` +
+          `9️⃣ 🐸 [PepeGram](https://t.me/Pepe_gram_bot?start=6727787768) — PEPE meme token community mining & daily rewards\n` +
+          `🔟 💎 [AdxEarn AI](https://t.me/AdxEarnAibot/app?startapp=ref_6727787768) — Neural token mining, daily streaks & task rewards\n\n` +
+          `📱 *How to Start:* Tap *➕ Connect Account*, send your phone number & Telegram login code. Your account will automatically farm all 10 pools 24/7 in the cloud!`;
       } else if (pLow.includes("connect") || pLow.includes("add account") || pLow.includes("login")) {
         fallbackAns = `📱 *How to Connect Your Account:*\n\n` +
           `1. Tap *➕ Connect Account* in the menu.\n` +
-          `2. Send your phone number in international format (e.g. \`+880...\` or \`+1...\`).\n` +
+          `2. Send your phone number in international format (e.g. \`+880...\` or \`+1...\`), OR paste your WebApp URL / initData.\n` +
           `3. Reply with the 5-digit verification code sent to your Telegram.\n` +
           `4. Enter your 2FA Cloud Password if enabled.\n\n` +
           `🔒 *Automated 24/7 Cloud Mining:*\n` +
-          `Once connected, your account automatically farms all 5 pools 24/7 in the cloud!`;
+          `Once connected, your account automatically farms all 10 pools 24/7 in the cloud!`;
       } else if (pLow.includes("remove") || pLow.includes("disconnect") || pLow.includes("delete account")) {
         fallbackAns = `🗑️ *How to Disconnect / Remove Accounts:*\n\n` +
           `1. Tap *👥 My Accounts* or *🗑️ Remove Account* in the menu.\n` +
@@ -10420,7 +10425,7 @@ Reply to Arif naturally:`;
               id: `acc_${Date.now()}`,
               label: `id_${targetUid}`,
               pool: "all",
-              pool_name: "All 5 Cloud Mining Pools",
+              pool_name: "All 10 Cloud Mining Pools",
               user_id: targetUid,
               name: accName,
               username: (String(cqChatId) === targetUid ? (cq.from?.username || "") : ""),
@@ -10581,7 +10586,7 @@ Reply to Arif naturally:`;
                 `• *Pass Status:* ${passBadge}\n` +
                 `• *Points Balance:* ${profile.points} Pts\n\n` +
                 `📱 *Active Accounts:*\n${accList}\n\n` +
-                `💡 _Every account automatically farms all 5 pools 24/7 in the cloud._`;
+                `💡 _Every account automatically farms all 10 pools 24/7 in the cloud._`;
               const inlineBtns = [
                 [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
                 [{ text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
@@ -10733,23 +10738,28 @@ Reply to Arif naturally:`;
             return new Response("OK");
           }
 
-          // C2.6 5 Mining Pools & Auto-Farming Guide
-          if (cqData === "ub_withdraw" || cqData === "ub_pools") {
-            const poolsMsg = `⛏️ *5 SUPPORTED CLOUD MINING POOLS & BOTS* 🤖\n\n` +
-              `Our cloud engines automatically farm and claim all 5 bots 24/7 across your connected accounts:\n\n` +
+          // C2.6 10 Supported Mining Pools & Auto-Farming Guide
+          if (cqData === "ub_withdraw") {
+            const poolsMsg = `⛏️ *10 SUPPORTED CLOUD MINING POOLS & BOTS* 🤖\n\n` +
+              `Our cloud engines automatically farm and claim all 10 bots 24/7 across your connected accounts:\n\n` +
               `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
               `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
               `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade\n` +
               `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n` +
-              `5️⃣ 🌐 [Kynex Network](https://t.me/kynexnetworkbot) — Decentralized TON edge node mining\n\n` +
+              `5️⃣ 🌐 [Kynex Network](https://t.me/kynexnetworkbot) — Decentralized TON edge node mining\n` +
+              `6️⃣ ⛏️ [DiggoMiner](https://t.me/Diggominer_bot?startapp=ref_4088138f11effe8eef4b86ff) — Decentralized automated block mining\n` +
+              `7️⃣ 🍃 [LeafEarn](https://t.me/LeafEarnBot/app?startapp=6727787768) — Green energy leaf mining & Telegram Stars rewards\n` +
+              `8️⃣ ⭐ [Astra Airdrop](https://t.me/ASTRA_AIRDROP_BOT/app?startapp=ref_6727787768) — Cosmic star airdrop & claim cycle\n` +
+              `9️⃣ 🐸 [PepeGram](https://t.me/Pepe_gram_bot?start=6727787768) — PEPE meme token community mining & daily rewards\n` +
+              `🔟 💎 [AdxEarn AI](https://t.me/AdxEarnAibot/app?startapp=ref_6727787768) — Neural token mining, daily streaks & task rewards\n\n` +
               `☁️ *What Our Bot Does:*\n` +
-              `• Automatically runs 24/7 cloud auto-farming across all 5 bots for your connected accounts.\n` +
+              `• Automatically runs 24/7 cloud auto-farming across all 10 bots for your connected accounts.\n` +
               `• Executes daily claims, starts, tasks, and point rewards without keeping your phone or app open.\n` +
               `• All mined tokens accumulate directly in your accounts inside each respective official bot.`;
             ctx.waitUntil(sendCqReply(poolsMsg, {
               inline_keyboard: [
-                [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "👥 My Accounts", callback_data: "ub_accounts" }],
-                [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }]
+                [{ text: "⛏️ View 10 Pools Menu", callback_data: "ub_pools" }, { text: "➕ Connect Account", callback_data: "ub_add_acc" }],
+                [{ text: "👥 My Accounts", callback_data: "ub_accounts" }, { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }]
               ]
             }));
             return new Response("OK");
@@ -11236,7 +11246,7 @@ Reply to Arif naturally:`;
             await saveUserProfile(chatId, profile);
             ctx.waitUntil(broadcastMilestoneUnlocked("Account Linked", accName, chatId, `WebApp Connected (${label})`, "24/7 Autonomous Mining Live"));
 
-            const poolInfo = MINING_POOLS[poolKey] || { name: "All 5 Pools" };
+            const poolInfo = MINING_POOLS[poolKey] || { name: "All 10 Pools" };
             const succMsg = `🎉 *ACCOUNT CONNECTED SUCCESSFULLY!* 🚀\n\n` +
               `• *Label:* \`${label}\`\n` +
               `• *Account:* ${accName} (@${accUsername || "None"})\n` +
@@ -11540,7 +11550,7 @@ Reply to Arif naturally:`;
                   `• *Username:* @${res.username || "None"}\n` +
                   `• *User ID:* \`${res.user_id}\`\n` +
                   `• *Mining Status:* 🟢 24/7 Cloud Automated\n` +
-                  `• *Pools Active (5/5):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network\n` +
+                  `• *Pools Active (10/10):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, LeafEarn, Astra Airdrop, PepeGram, AdxEarn AI\n` +
                   `• *Balance:* ${profile.points} Points${welcomeBonusText}\n\n` +
                   `✅ 100% Cloud Mining active! 100 points/day will be deducted while farming is live.`;
                 await sendUserReply(succMsg, activeUserKeyboard);
@@ -11617,7 +11627,7 @@ Reply to Arif naturally:`;
                 `• *Username:* @${res.username || "None"}\n` +
                 `• *User ID:* \`${res.user_id}\`\n` +
                 `• *Mining Status:* 🟢 24/7 Cloud Automated\n` +
-                `• *Pools Active (5/5):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network\n` +
+                `• *Pools Active (10/10):* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, LeafEarn, Astra Airdrop, PepeGram, AdxEarn AI\n` +
                 `• *Balance:* ${profile.points} Points${welcomeBonusText}\n\n` +
                 `✅ 100% Cloud Mining active! 100 points/day will be deducted while farming is live.`;
               await sendUserReply(succMsg, activeUserKeyboard);
@@ -11663,7 +11673,7 @@ Reply to Arif naturally:`;
               id: `acc_${Date.now()}`,
               label: `id_${targetUid}`,
               pool: "all",
-              pool_name: "All 5 Cloud Mining Pools",
+              pool_name: "All 10 Cloud Mining Pools",
               user_id: targetUid,
               name: accName,
               username: (String(chatId) === targetUid ? (msg.from?.username || "") : ""),
