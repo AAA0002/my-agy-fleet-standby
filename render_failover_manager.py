@@ -110,17 +110,17 @@ async def set_maintenance_mode(enabled: bool, duration_seconds: int = 300, reaso
     """Sets or clears the distributed Maintenance Mode in Upstash Redis."""
     if not (UPSTASH_URL and UPSTASH_TOKEN):
         return
-    up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+    up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
     now = time.time()
     async with aiohttp.ClientSession() as s:
         if enabled:
             until = now + duration_seconds
-            await s.post(f"{UPSTASH_URL}/set/fleet:maintenance_mode/{reason or 'Render Node Rotation'}?ex={duration_seconds + 60}", headers=up_h, timeout=aiohttp.ClientTimeout(total=5))
-            await s.post(f"{UPSTASH_URL}/set/fleet:maintenance_until/{until}?ex={duration_seconds + 60}", headers=up_h, timeout=aiohttp.ClientTimeout(total=5))
+            ex_ttl = duration_seconds + 60
+            await s.post(UPSTASH_URL, json=["SET", "fleet:maintenance_mode", reason or "Render Node Rotation", "EX", ex_ttl], headers=up_h, timeout=aiohttp.ClientTimeout(total=5))
+            await s.post(UPSTASH_URL, json=["SET", "fleet:maintenance_until", str(until), "EX", ex_ttl], headers=up_h, timeout=aiohttp.ClientTimeout(total=5))
             print(f"🔒 [Maintenance Mode] ENABLED for {duration_seconds}s (Until: {datetime.fromtimestamp(until, tz=timezone.utc).strftime('%H:%M:%S UTC')}). Reason: {reason}")
         else:
-            await s.post(f"{UPSTASH_URL}/del/fleet:maintenance_mode", headers=up_h, timeout=aiohttp.ClientTimeout(total=5))
-            await s.post(f"{UPSTASH_URL}/del/fleet:maintenance_until", headers=up_h, timeout=aiohttp.ClientTimeout(total=5))
+            await s.post(UPSTASH_URL, json=["DEL", "fleet:maintenance_mode", "fleet:maintenance_until"], headers=up_h, timeout=aiohttp.ClientTimeout(total=5))
             print("🔓 [Maintenance Mode] DISABLED. Normal cloud operations resumed.")
 
 async def is_in_maintenance_mode() -> tuple[bool, str, int]:

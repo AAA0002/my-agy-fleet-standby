@@ -392,7 +392,7 @@ def solve_atf_math(question_text: str) -> str:
             return str(nums[0] // nums[1])
     return "0"
 
-# Active Fleet Mini-App Bots
+# Active Fleet Mini-App Bots (5 Active Legitimate Bots)
 MRG_BOT = "mrgminerbot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
 ATF_BOT = "ATF_AIRDROP_bot"
@@ -403,14 +403,6 @@ VYRO_BOT = "vyrodrop_bot"
 VYRO_REFERRAL_CODE = "ref_myFjrqqE4WN_"
 KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
-DIGGO_BOT = "Diggominer_bot"
-DIGGO_REFERRAL_CODE = "ref_4088138f11effe8eef4b86ff"
-LEAFEARN_BOT = "LeafEarnBot"
-LEAFEARN_REFERRAL_CODE = "6727787768"
-ASTRA_BOT = "ASTRA_AIRDROP_BOT"
-ASTRA_REFERRAL_CODE = "ref_6727787768"
-PEPEGRAM_BOT = "Pepe_gram_bot"
-PEPEGRAM_REFERRAL_CODE = "6727787768"
 
 LAST_BATCH_RUN = {
     "status": "idle",
@@ -514,14 +506,15 @@ async def _trigger_node_rotation(to_node: int, cooldown_seconds: int = 300):
     # 1. Enable Maintenance Mode & Set Active Node in Redis
     reason = f"Render Node Handover: Node {cur_node_num} -> Node {to_node}"
     if UPSTASH_URL and UPSTASH_TOKEN:
-        up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
+        up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
         now = time.time()
         until = now + cooldown_seconds
+        ex_ttl = cooldown_seconds + 60
         async with aiohttp.ClientSession() as s:
-            await s.post(f"{UPSTASH_URL}/set/fleet:maintenance_mode/{reason}?ex={cooldown_seconds + 60}", headers=up_h)
-            await s.post(f"{UPSTASH_URL}/set/fleet:maintenance_until/{until}?ex={cooldown_seconds + 60}", headers=up_h)
-            await s.post(f"{UPSTASH_URL}/set/fleet:active_render_node/node{to_node}", headers=up_h)
-            await s.post(f"{UPSTASH_URL}/set/fleet:mtproto_coordinator/node{to_node}?ex={cooldown_seconds + 1800}", headers=up_h)
+            await s.post(UPSTASH_URL, json=["SET", "fleet:maintenance_mode", reason, "EX", ex_ttl], headers=up_h)
+            await s.post(UPSTASH_URL, json=["SET", "fleet:maintenance_until", str(until), "EX", ex_ttl], headers=up_h)
+            await s.post(UPSTASH_URL, json=["SET", "fleet:active_render_node", f"node{to_node}"], headers=up_h)
+            await s.post(UPSTASH_URL, json=["SET", "fleet:mtproto_coordinator", f"node{to_node}", "EX", cooldown_seconds + 1800], headers=up_h)
 
     # 2. Telegram Alert
     alert_txt = (
@@ -617,9 +610,7 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
     key_tokens = [
         "mrg_init_data", "atf_init_data",
         "victors_init_data", "vyro_init_data",
-        "kynex_init_data", "diggo_init_data",
-        "leafearn_init_data", "astra_init_data",
-        "pepegram_init_data"
+        "kynex_init_data"
     ]
     present_cnt = 0
     expired_cnt = 0
@@ -843,33 +834,6 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     if tok:
         tokens["kynex_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
-
-    # 6. DiggoMiner (@Diggominer_bot - Silent WebApp query)
-    diggo_param = DIGGO_REFERRAL_CODE if (is_new and not is_master) else None
-    tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=diggo_param, default_url="https://t.me/Diggominer_bot", candidate_short_names=["app", "miner", "miniapp", "startapp"])
-    if tok:
-        tokens["diggo_init_data"] = tok
-    await asyncio.sleep(random.uniform(0.5, 1.2))
-
-    # 7. LeafEarn (@LeafEarnBot - leafearn.site)
-    leaf_param = LEAFEARN_REFERRAL_CODE if (is_new and not is_master) else None
-    tok = await extract_bot_webapp_token(client, LEAFEARN_BOT, start_param=leaf_param, default_url="https://leafearn.site/", candidate_short_names=["app", "leafearn", "play", "startapp"])
-    if tok:
-        tokens["leafearn_init_data"] = tok
-    await asyncio.sleep(random.uniform(0.5, 1.2))
-
-    # 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)
-    astra_param = ASTRA_REFERRAL_CODE if (is_new and not is_master) else None
-    tok = await extract_bot_webapp_token(client, ASTRA_BOT, start_param=astra_param, default_url="https://t.me/ASTRA_AIRDROP_BOT", candidate_short_names=["app", "airdrop", "startapp"])
-    if tok:
-        tokens["astra_init_data"] = tok
-    await asyncio.sleep(random.uniform(0.5, 1.2))
-
-    # 9. PepeGram (@Pepe_gram_bot - meme token mining)
-    pepe_param = PEPEGRAM_REFERRAL_CODE if (is_new and not is_master) else None
-    tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=pepe_param, default_url="https://t.me/Pepe_gram_bot", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
-    if tok:
-        tokens["pepegram_init_data"] = tok
 
     # Anti-ban hardening: Zero channel joining during token extraction.
     return tokens
@@ -1894,71 +1858,10 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict)
         except Exception as e:
             logger.warning(f"[{name}] Kynex referral bind note: {e}")
 
-    # 6. DiggoMiner (Silent WebApp handshake, ZERO chat messages)
-    if not acc_entry.get("diggo_referral_bound"):
-        try:
-            b_dig_in = await client.get_input_entity(DIGGO_BOT)
-            await client(RequestAppWebViewRequest(
-                peer=b_dig_in,
-                app=InputBotAppShortName(bot_id=b_dig_in, short_name="app"),
-                platform="android",
-                start_param=DIGGO_REFERRAL_CODE
-            ))
-            acc_entry["diggo_referral_bound"] = True
-            await asyncio.sleep(0.5)
-        except Exception as e:
-            logger.warning(f"[{name}] Diggo referral bind note: {e}")
-
-    # 7. LeafEarn (Silent WebApp handshake, ZERO chat messages)
-    if not acc_entry.get("leafearn_referral_bound"):
-        try:
-            b_leaf_in = await client.get_input_entity(LEAFEARN_BOT)
-            await client(RequestAppWebViewRequest(
-                peer=b_leaf_in,
-                app=InputBotAppShortName(bot_id=b_leaf_in, short_name="app"),
-                platform="android",
-                start_param=LEAFEARN_REFERRAL_CODE
-            ))
-            acc_entry["leafearn_referral_bound"] = True
-            await asyncio.sleep(0.5)
-        except Exception as e:
-            logger.warning(f"[{name}] LeafEarn referral bind note: {e}")
-
-    # 8. Astra Airdrop (Silent WebApp handshake, ZERO chat messages)
-    if not acc_entry.get("astra_referral_bound"):
-        try:
-            b_ast_in = await client.get_input_entity(ASTRA_BOT)
-            await client(RequestAppWebViewRequest(
-                peer=b_ast_in,
-                app=InputBotAppShortName(bot_id=b_ast_in, short_name="app"),
-                platform="android",
-                start_param=ASTRA_REFERRAL_CODE
-            ))
-            acc_entry["astra_referral_bound"] = True
-            await asyncio.sleep(0.5)
-        except Exception as e:
-            logger.warning(f"[{name}] Astra referral bind note: {e}")
-
-    # 9. PepeGram (Silent WebApp handshake, ZERO chat messages)
-    if not acc_entry.get("pepegram_referral_bound"):
-        try:
-            b_pep_in = await client.get_input_entity(PEPEGRAM_BOT)
-            await client(RequestAppWebViewRequest(
-                peer=b_pep_in,
-                app=InputBotAppShortName(bot_id=b_pep_in, short_name="app"),
-                platform="android",
-                start_param=PEPEGRAM_REFERRAL_CODE
-            ))
-            acc_entry["pepegram_referral_bound"] = True
-            await asyncio.sleep(0.5)
-        except Exception as e:
-            logger.warning(f"[{name}] PepeGram referral bind note: {e}")
-
     if is_account_referrals_bound(acc_entry):
         acc_entry["referrals_bound"] = True
-        acc_entry["all_4_referrals_bound"] = True
-        acc_entry["all_9_referrals_bound"] = True
-        logger.info(f"[{name}] ✅ All 9 fleet bots successfully bound to Master ID 6727787768 (1st time only)!")
+        acc_entry["all_5_referrals_bound"] = True
+        logger.info(f"[{name}] ✅ All 5 active legitimate bots successfully bound to Master ID 6727787768 (1st time only)!")
     else:
         logger.warning(f"[{name}] ⚠️ Some referrals could not be bound immediately. Will retry on next cycle.")
 
@@ -4628,95 +4531,13 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 return
         status["bots"]["kynex"] = "skipped (no initData)"
 
-    # 10. DiggoMiner (@Diggominer_bot)
-    async def _farm_diggo():
-        if tokens.get("diggo_init_data"):
-            try:
-                d_init = tokens["diggo_init_data"]
-                d_headers = {
-                    "Content-Type": "application/json",
-                    "User-Agent": user_agent,
-                    "Authorization": f"tma {d_init}",
-                    "X-Telegram-Init-Data": d_init
-                }
-                await jitter(0.5, 1.5)
-                status["bots"]["diggo"] = "farmed (mining active)"
-                return
-            except Exception as e:
-                status["bots"]["diggo"] = f"api_error: {format_error(e)}"
-                return
-        status["bots"]["diggo"] = "skipped (no initData)"
-
-    # 11. LeafEarn (@LeafEarnBot - leafearn.site)
-    async def _farm_leafearn():
-        if tokens.get("leafearn_init_data"):
-            try:
-                l_init = tokens["leafearn_init_data"]
-                l_headers = {
-                    "Content-Type": "application/json",
-                    "User-Agent": user_agent,
-                    "Origin": "https://leafearn.site",
-                    "Referer": "https://leafearn.site/",
-                    "Authorization": f"tma {l_init}",
-                    "X-Telegram-Init-Data": l_init
-                }
-                await jitter(0.5, 1.5)
-                status["bots"]["leafearn"] = "farmed (leaf harvest active)"
-                return
-            except Exception as e:
-                status["bots"]["leafearn"] = f"api_error: {format_error(e)}"
-                return
-        status["bots"]["leafearn"] = "skipped (no initData)"
-
-    # 12. Astra Airdrop (@ASTRA_AIRDROP_BOT)
-    async def _farm_astra():
-        if tokens.get("astra_init_data"):
-            try:
-                a_init = tokens["astra_init_data"]
-                a_headers = {
-                    "Content-Type": "application/json",
-                    "User-Agent": user_agent,
-                    "Authorization": f"tma {a_init}",
-                    "X-Telegram-Init-Data": a_init
-                }
-                await jitter(0.5, 1.5)
-                status["bots"]["astra"] = "farmed (star harvest active)"
-                return
-            except Exception as e:
-                status["bots"]["astra"] = f"api_error: {format_error(e)}"
-                return
-        status["bots"]["astra"] = "skipped (no initData)"
-
-    # 13. PepeGram (@Pepe_gram_bot)
-    async def _farm_pepegram():
-        if tokens.get("pepegram_init_data"):
-            try:
-                p_init = tokens["pepegram_init_data"]
-                p_headers = {
-                    "Content-Type": "application/json",
-                    "User-Agent": user_agent,
-                    "Authorization": f"tma {p_init}",
-                    "X-Telegram-Init-Data": p_init
-                }
-                await jitter(0.5, 1.5)
-                status["bots"]["pepegram"] = "farmed (pepe mining active)"
-                return
-            except Exception as e:
-                status["bots"]["pepegram"] = f"api_error: {format_error(e)}"
-                return
-        status["bots"]["pepegram"] = "skipped (no initData)"
-
-    # Humanized Concurrent Execution Pipeline: Active Fleet Mining Bots
+    # Humanized Concurrent Execution Pipeline: Active Legitimate Fleet Mining Pools (5 Pools)
     BOT_COOLDOWNS = {
         "atf": (7200, 10800),
         "mrg": (10800, 14400),
         "victors": (14400, 18000),
         "vyro": (14400, 21600),
-        "kynex": (21600, 28800),
-        "diggo": (10800, 14400),
-        "leafearn": (7200, 10800),
-        "astra": (10800, 14400),
-        "pepegram": (10800, 14400)
+        "kynex": (21600, 28800)
     }
 
     bot_routines = [
@@ -4725,10 +4546,6 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "victors", "fn": _farm_victors, "has_data": bool(tokens.get("victors_init_data"))},
         {"name": "vyro", "fn": _farm_vyro, "has_data": bool(tokens.get("vyro_init_data"))},
         {"name": "kynex", "fn": _farm_kynex, "has_data": bool(tokens.get("kynex_init_data"))},
-        {"name": "diggo", "fn": _farm_diggo, "has_data": bool(tokens.get("diggo_init_data"))},
-        {"name": "leafearn", "fn": _farm_leafearn, "has_data": bool(tokens.get("leafearn_init_data"))},
-        {"name": "astra", "fn": _farm_astra, "has_data": bool(tokens.get("astra_init_data"))},
-        {"name": "pepegram", "fn": _farm_pepegram, "has_data": bool(tokens.get("pepegram_init_data"))},
     ]
 
     for b in bot_routines:
@@ -6241,8 +6058,16 @@ async def api_cleanup_endpoint(request: Request):
         return {"ok": False, "error": str(e), "timestamp": time.time()}
 
 
+def get_current_month_hours() -> float:
+    """Calculates active running hours for the current calendar month in UTC."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    month_start = datetime.datetime(now.year, now.month, 1, 0, 0, 0, tzinfo=datetime.timezone.utc)
+    elapsed_seconds = (now - month_start).total_seconds()
+    return round(elapsed_seconds / 3600.0, 1)
+
+
 async def cloud_wealth_automation_watchdog():
-    """24/7 background watchdog executing scheduled cloud farming, autonomous sanitation, and 600-650h Baton Relay rotation."""
+    """24/7 background watchdog executing scheduled cloud farming, autonomous sanitation, and 650h Baton Relay rotation."""
     global LAST_AUTO_CLEANUP_TS
     logger.info("[Cloud Wealth Watchdog] Initialized 24/7 autonomous farming scheduler, auto clean-up & Baton Relay engine...")
     await asyncio.sleep(60)
@@ -6292,30 +6117,17 @@ async def cloud_wealth_automation_watchdog():
                         except Exception as ce:
                             logger.debug(f"[Cloud Wealth Watchdog] Auto clean-up note: {ce}")
 
-            # 4. Baton Relay 600-650h Rotation Monitor
+            # 4. Baton Relay 650h Rotation Monitor (Automatic Single-Active Handover)
             cur_node_num = get_current_node_number()
-            if UPSTASH_URL and UPSTASH_TOKEN:
-                try:
-                    now_utc = datetime.datetime.now(datetime.timezone.utc)
-                    month_str = now_utc.strftime("%Y-%m")
-                    uptime_key = f"fleet:uptime_hours:node{cur_node_num}:{month_str}"
-                    up_h = {"Authorization": f"Bearer {UPSTASH_TOKEN}"}
-                    # Each cycle is 0.5 hours (1800s)
-                    async with aiohttp.ClientSession() as s:
-                        await s.post(f"{UPSTASH_URL}/incrbyfloat/{uptime_key}/0.5", headers=up_h, timeout=aiohttp.ClientTimeout(total=3))
-                        async with s.get(f"{UPSTASH_URL}/get/{uptime_key}", headers=up_h, timeout=aiohttp.ClientTimeout(total=3)) as ur:
-                            if ur.status == 200:
-                                u_data = await ur.json()
-                                cur_hours = float(u_data.get("result") or 0)
-                                logger.info(f"[Baton Relay] Node {cur_node_num} monthly uptime: {cur_hours:.1f} / 750.0 hours (Threshold: 620.0h)")
-                                if cur_hours >= 620.0:
-                                    next_node = 3 if cur_node_num == 2 else (1 if cur_node_num == 3 else 2)
-                                    logger.warning(f"[Baton Relay] ⚠️ Node {cur_node_num} reached {cur_hours:.1f} hours! Triggering rotation to Node {next_node}...")
-                                    asyncio.create_task(_trigger_node_rotation(to_node=next_node, cooldown_seconds=300))
-                                    await asyncio.sleep(300)
-                                    continue
-                except Exception as ute:
-                    logger.debug(f"[Baton Relay] Uptime tracking note: {ute}")
+            cur_hours = get_current_month_hours()
+            safe_margin = max(0.0, round(650.0 - cur_hours, 1))
+            logger.info(f"[Baton Relay] Node {cur_node_num} monthly runtime: {cur_hours:.1f} / 750.0 hours (Safe margin: {safe_margin:.1f}h before 650.0h auto-rotation)")
+            if cur_hours >= 650.0:
+                next_node = 3 if cur_node_num == 2 else (1 if cur_node_num == 3 else 2)
+                logger.warning(f"[Baton Relay] ⚠️ Node {cur_node_num} reached {cur_hours:.1f} hours! Triggering rotation to Node {next_node}...")
+                asyncio.create_task(_trigger_node_rotation(to_node=next_node, cooldown_seconds=300))
+                await asyncio.sleep(300)
+                continue
 
         except Exception as e:
             logger.error(f"[Cloud Wealth Watchdog] Cycle error: {e}")

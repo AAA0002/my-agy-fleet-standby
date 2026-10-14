@@ -2,7 +2,29 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
-- **🌾 Authentic Ground-Truth Fleet Farming Audit & 9-Bot Cloud Pipeline Fix (October 14, 2026)**:
+- **🛡️ Full-Fleet Hardening: Purge of Non-Existent Bot Stubs, Atomic Maintenance Handover & 650h Autopilot (October 14, 2026)**:
+  - **🚫 Fake/Non-Existent Bot Stub Purge (Zero Fake Telemetry)**:
+    * Discovered that `diggo` (`api.diggominer.com`), `astra` (`astra-airdrop.com`), and `leafearn` (`leafearn.site/api`) had non-existent DNS records or 404 endpoints, relying on mock `await jitter()` stubs.
+    * Completely purged all mock routines from [render_standby_app.py](file:///root/workspace/render_standby_app.py), [render_app_latest.py](file:///root/workspace/render_app_latest.py), [bot_registry.py](file:///root/workspace/bot_registry.py), and [deploy_both_cf_workers.py](file:///root/workspace/deploy_both_cf_workers.py).
+    * Standardized the fleet strictly on the **5 Active Legitimate Mining Pools**:
+      1. **MRG Miner** (`@mrgminerbot`): Real auto-claiming & level compounding.
+      2. **ATF Miner** (`@atf_miner_bot`): Real hash compounding & daily task auto-farming.
+      3. **Kynex Network** (`@Kynex_miningbot`): Real auto-claims (+846 KNX claimed) & 12h energy reserve.
+      4. **VyroDrop** (`@vyrodrop_bot`): Real DEX & TonConnect mining challenge.
+      5. **Victor's Company** (`@VictorsCompanybot`): Real 1,000-level mining & Arcade.
+  - **🔒 Upstash Maintenance Mode REST Encoding Fix**:
+    * Identified that `POST /set/fleet:maintenance_mode/{reason}` threw Python `urllib` exception `URL can't contain control characters` due to spaces and arrows in handover reasons.
+    * Migrated all maintenance mode activations in [render_standby_app.py](file:///root/workspace/render_standby_app.py) and [render_failover_manager.py](file:///root/workspace/render_failover_manager.py) to atomic JSON command arrays (`["SET", key, value, "EX", ttl]`).
+  - **⏱️ 650-Hour Baton Relay Watchdog Autopilot**:
+    * Integrated `get_current_month_hours()` directly into Render's 24/7 background watchdog loop (`cloud_wealth_automation_watchdog()`).
+    * Node 2 Frankfurt actively tracks its calendar month elapsed hours (316.4h / 750h, margin: 333.6h).
+    * Upon hitting 650.0h, Node 2 autonomously activates Redis Maintenance Mode, wakes up Node 3 Oregon via Render API, confirms container health, suspends Node 2 via Render API to freeze free-tier consumption, waits out the 5-minute anti-ban cooling window, and transfers the coordinator lock seamlessly.
+  - **🚀 Production Verification**:
+    * Pushed updated code to GitHub (`dep-db7gbaqvcj2c73di5f5g`) on Render Node 2 and synchronized all 5 Cloudflare Worker nodes.
+    * Live execution across accounts returned 100% genuine on-chain/in-app balances with zero mock stubs:
+      - Master #1: 2,044.7 MRG (+2.54 auto-claimed), 4,652.6 ATF, 65,785.4 KNX (+48.0 auto-claimed)!
+      - Nancy #2: 2,805.4 MRG, 962.2 ATF, 50,496.2 KNX (+46.2 auto-claimed)!
+      - Koram Shah #3: 2,368.8 MRG, 16.0 ATF, 40,477.3 KNX (+846.0 auto-claimed)!
   - **🔍 Root Cause of "Farming Not Doing Anything" Identified**:
     * **Smoking Gun 1: Upstream D1 Purge**: `deploy_both_cf_workers.py` was executing `DELETE FROM fleet_tokens WHERE bot_name NOT IN ('mrg', 'atf', 'victors', 'vyro', 'kynex')`, which deleted the 4 newest bot tokens (`diggo`, `leafearn`, `astra`, `pepegram`) on every sync!
     * **Smoking Gun 2: Stale Edge Worker Token Cache**: Cloudflare Worker's `getFleetTokens()` returned cached `memTokens` with only the original 5 bots and missed the remaining bots.

@@ -1050,11 +1050,25 @@ Whenever you perform work in this repository:
     * 🟢 Diggo: Mining active!
     * 🟢 LeafEarn: Leaf harvest active!
     * 🟢 Astra: Star harvest active!
-  - **Account #3 (Koram Shah, `7648254021`)**:
-    * 🟢 MRG: Level 90, balance **2368.8 MRG** (74.0 MRG ready to claim)!
-    * 🟢 ATF: Level 86, balance **10.9 ATF**!
-    * 🟢 Kynex: **+50.2 claimed**, balance **39,631.3 KNX**, mining ACTIVE!
-    * 🟢 Diggo: Mining active!
-    * 🟢 LeafEarn: Leaf harvest active!
-    * 🟢 Astra: Star harvest active!
+### 13. Full-Fleet Hardening: Purge of Non-Existent Bot Stubs, Atomic Handover & 650h Autopilot (October 14, 2026)
+* **Zero Fake Telemetry: Purge of Mock Routines**:
+  - Investigated API connectivity for recently introduced bots and discovered non-existent domains (`api.diggominer.com`, `astra-airdrop.com`) and 404 endpoints (`leafearn.site/api`).
+  - Purged all mock `await jitter()` stubs from `render_standby_app.py`, `render_app_latest.py`, `bot_registry.py`, and `deploy_both_cf_workers.py`.
+  - Re-anchored the entire fleet strictly to the **5 Active Legitimate Mining Pools**:
+    1. **MRG Miner** (`@mrgminerbot`): Active real on-chain balance, auto-compounding miners.
+    2. **ATF Miner** (`@atf_miner_bot`): Active real mining, daily tasks, compounding hash.
+    3. **Kynex Network** (`@Kynex_miningbot`): Active real claims (+846 KNX claimed live), 12h energy reserve.
+    4. **VyroDrop** (`@vyrodrop_bot`): Authenticated session, active bootstrap, requires TonConnect wallet onboarding challenge for new sessions.
+    5. **Victor's Company** (`@VictorsCompanybot`): Authenticated session, level 1000 mining, requires Turnstile human pass for automated claims.
+* **Upstash Maintenance Mode Atomic Handover**:
+  - Replaced unencoded query string paths (`/set/key/val?ex=...`) with atomic JSON command arrays (`["SET", key, value, "EX", ttl]`), eliminating Python `urllib` `URL can't contain control characters` exceptions permanently.
+* **650-Hour Baton Relay Autopilot**:
+  - Implemented calendar month hour tracker `get_current_month_hours()` inside Render's 24/7 background watchdog (`cloud_wealth_automation_watchdog()`).
+  - Active node automatically monitors elapsed hours (316.4h / 750h, 333.6h safe margin remaining).
+  - Automatically rotates to Node 3 Oregon at 650.0h, suspends Node 2 to freeze billing, enforces the 5-minute cooling window, and resumes cloud mining seamlessly.
+* **Verified Live Real Results**:
+  - Master #1: 2,044.7 MRG (+2.54 claimed), 4,652.6 ATF, 65,785.4 KNX (+48.0 claimed).
+  - Account #2: 2,805.4 MRG, 962.2 ATF, 50,496.2 KNX (+46.2 claimed).
+  - Account #3: 2,368.8 MRG, 16.0 ATF, 40,477.3 KNX (+846.0 claimed).
+
 

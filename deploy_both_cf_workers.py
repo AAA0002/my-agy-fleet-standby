@@ -894,99 +894,13 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     }
   };
 
-  // 6. DiggoMiner (@Diggominer_bot)
-  const farmDiggo = async () => {
-    if (!accData.diggo_init_data) return;
-    try {
-      let dInit = accData.diggo_init_data;
-      if (typeof dInit === "string" && (dInit.startsWith("user%3D") || dInit.includes("%257B"))) {
-        try { dInit = decodeURIComponent(dInit); } catch (_) {}
-      }
-      const dHeaders = getHumanHeaders(uid, {
-        "Content-Type": "application/json",
-        "Authorization": `tma ${dInit}`,
-        "X-Telegram-Init-Data": dInit
-      });
-      await humanDelay(800, 1800);
-      result.bots.diggo = "farmed (mining active)";
-    } catch (e) {
-      result.bots.diggo = `error: ${e.message}`;
-    }
-  };
-
-  // 7. LeafEarn (@LeafEarnBot - leafearn.site)
-  const farmLeafearn = async () => {
-    if (!accData.leafearn_init_data) return;
-    try {
-      let lInit = accData.leafearn_init_data;
-      if (typeof lInit === "string" && (lInit.startsWith("user%3D") || lInit.includes("%257B"))) {
-        try { lInit = decodeURIComponent(lInit); } catch (_) {}
-      }
-      const lHeaders = getHumanHeaders(uid, {
-        "Content-Type": "application/json",
-        "Origin": "https://leafearn.site",
-        "Referer": "https://leafearn.site/",
-        "Authorization": `tma ${lInit}`,
-        "X-Telegram-Init-Data": lInit
-      });
-      await humanDelay(800, 2000);
-      result.bots.leafearn = "farmed (leaf harvest active)";
-    } catch (e) {
-      result.bots.leafearn = `error: ${e.message}`;
-    }
-  };
-
-  // 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)
-  const farmAstra = async () => {
-    if (!accData.astra_init_data) return;
-    try {
-      let aInit = accData.astra_init_data;
-      if (typeof aInit === "string" && (aInit.startsWith("user%3D") || aInit.includes("%257B"))) {
-        try { aInit = decodeURIComponent(aInit); } catch (_) {}
-      }
-      const aHeaders = getHumanHeaders(uid, {
-        "Content-Type": "application/json",
-        "Authorization": `tma ${aInit}`,
-        "X-Telegram-Init-Data": aInit
-      });
-      await humanDelay(800, 2000);
-      result.bots.astra = "farmed (star harvest active)";
-    } catch (e) {
-      result.bots.astra = `error: ${e.message}`;
-    }
-  };
-
-  // 9. PepeGram (@Pepe_gram_bot)
-  const farmPepegram = async () => {
-    if (!accData.pepegram_init_data) return;
-    try {
-      let pInit = accData.pepegram_init_data;
-      if (typeof pInit === "string" && (pInit.startsWith("user%3D") || pInit.includes("%257B"))) {
-        try { pInit = decodeURIComponent(pInit); } catch (_) {}
-      }
-      const pHeaders = getHumanHeaders(uid, {
-        "Content-Type": "application/json",
-        "Authorization": `tma ${pInit}`,
-        "X-Telegram-Init-Data": pInit
-      });
-      await humanDelay(800, 2000);
-      result.bots.pepegram = "farmed (pepe mining active)";
-    } catch (e) {
-      result.bots.pepegram = `error: ${e.message}`;
-    }
-  };
-
-  // Humanized Execution Pipeline: Active Fleet Mining Bots
+  // Humanized Execution Pipeline: Active Legitimate Fleet Mining Pools (5 Pools)
   const BOT_COOLDOWNS = {
     atf: { minSec: 7200, maxSec: 10800 },
     mrg: { minSec: 10800, maxSec: 14400 },
     victors: { minSec: 14400, maxSec: 18000 },
     vyro: { minSec: 14400, maxSec: 21600 },
-    kynex: { minSec: 21600, maxSec: 28800 },
-    diggo: { minSec: 10800, maxSec: 14400 },
-    leafearn: { minSec: 7200, maxSec: 10800 },
-    astra: { minSec: 10800, maxSec: 14400 },
-    pepegram: { minSec: 10800, maxSec: 14400 }
+    kynex: { minSec: 21600, maxSec: 28800 }
   };
 
   const botRoutines = [
@@ -995,10 +909,6 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     { name: "victors", fn: farmVictors, hasData: Boolean(accData.victors_init_data) },
     { name: "vyro", fn: farmVyro, hasData: Boolean(accData.vyro_init_data) },
     { name: "kynex", fn: farmKynex, hasData: Boolean(accData.kynex_init_data) },
-    { name: "diggo", fn: farmDiggo, hasData: Boolean(accData.diggo_init_data) },
-    { name: "leafearn", fn: farmLeafearn, hasData: Boolean(accData.leafearn_init_data) },
-    { name: "astra", fn: farmAstra, hasData: Boolean(accData.astra_init_data) },
-    { name: "pepegram", fn: farmPepegram, hasData: Boolean(accData.pepegram_init_data) },
   ];
 
   const activeRoutines = botRoutines.filter(b => b.hasData);
@@ -1075,7 +985,7 @@ let lastHeartbeatKvWrite = 0;
 let memRecentPayouts = null;
 let memTokens = null;
 
-const ALLOWED_FLEET_BOTS = ["mrg", "atf", "victors", "vyro", "kynex", "diggo", "leafearn", "astra", "pepegram"];
+const ALLOWED_FLEET_BOTS = ["mrg", "atf", "victors", "vyro", "kynex"];
 
 function sanitizeFleetTokensObject(rawObj) {
   if (!rawObj || typeof rawObj !== "object") return {};
@@ -1101,10 +1011,7 @@ function sanitizeFleetTokensObject(rawObj) {
 
 async function getFleetTokens(env) {
   if (memTokens && Object.keys(memTokens).length > 0) {
-    const sample = memTokens["6727787768"] || Object.values(memTokens)[0];
-    if (sample && (sample.diggo_init_data || sample.leafearn_init_data || sample.astra_init_data)) {
-      return sanitizeFleetTokensObject(memTokens);
-    }
+    return sanitizeFleetTokensObject(memTokens);
   }
   // 1. Primary: Upstash Redis (miniapp_tokens has all verified bot tokens from Telethon)
   try {
@@ -1123,7 +1030,7 @@ async function getFleetTokens(env) {
   // 2. Secondary: Cloudflare D1 SQL (Strongly Consistent, 25M Reads/day, 0 edge latency)
   if (env.DB) {
     try {
-      const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens WHERE bot_name IN ('mrg', 'atf', 'victors', 'vyro', 'kynex', 'diggo', 'leafearn', 'astra', 'pepegram')").all();
+      const dbRows = await env.DB.prepare("SELECT user_id, bot_name, init_data FROM fleet_tokens WHERE bot_name IN ('mrg', 'atf', 'victors', 'vyro', 'kynex')").all();
       if (dbRows && dbRows.results && dbRows.results.length > 0) {
         const recon = {};
         for (const r of dbRows.results) {
@@ -3549,7 +3456,7 @@ fi
             }
             if (ctx && ctx.waitUntil) {
               ctx.waitUntil(env.DB.prepare(
-                "DELETE FROM fleet_tokens WHERE bot_name NOT IN ('mrg', 'atf', 'victors', 'vyro', 'kynex', 'diggo', 'leafearn', 'astra', 'pepegram')"
+                "DELETE FROM fleet_tokens WHERE bot_name NOT IN ('mrg', 'atf', 'victors', 'vyro', 'kynex')"
               ).run().catch(() => {}));
             }
           } catch (_) {}
