@@ -1,5 +1,5 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
-> **Universal Onboarding, System Architecture, 9-Bot Fleet Engine & Operational Manual**
+> **Universal Onboarding, System Architecture, 10-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
 > *Last Updated: October 14, 2026*
 > *Classification: Mission-Critical Living Technical Documentation*
@@ -11,7 +11,7 @@
 If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a new session, or a human operator taking over this workspace, **read this entire document first**. It provides the complete picture of this project, how every component works, where every secret and service lives, and how to operate and extend it without breaking production.
 
 ### What is this Project?
-**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **18 Telegram accounts** (1 Master Account + 17 Worker Accounts) that continuously farm yield, satoshis, and tokens across **9 high-conviction legitimate Telegram WebApp Mini Apps** (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, LeafEarn, Astra Airdrop, PepeGram — all scammer and discontinued bots purged and blacklisted), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin).
+**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **18 Telegram accounts** (1 Master Account + 17 Worker Accounts) that continuously farm yield, satoshis, and tokens across **10 high-conviction fleet Telegram WebApp Mini Apps** (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, LeafEarn, Astra Airdrop, PepeGram, AdxEarn AI — all scammer and discontinued bots purged and permanently deleted), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin).
 
 ### The Golden Directives (Non-Negotiable Rules)
 1. **🛡️ Strict Project Isolation**: Everything relating to this project must remain strictly within this repository (`AAA0002/ATL`). **NEVER** touch, import, mix, or merge context from `@AAATelegramIdBot` (`AAA2743/AA`) or other external projects.
@@ -239,6 +239,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     7. 🍃 **LeafEarn** (`@LeafEarnBot`)
     8. ⭐ **Astra Airdrop** (`@ASTRA_AIRDROP_BOT`)
     9. 🐸 **PepeGram** (`@Pepe_gram_bot`)
+    10. 💎 **AdxEarn AI** (`@AdxEarnAibot`)
   - **User WebApp Mini App Frontend**: `https://agy-henna.vercel.app/` (Ads Portal) & `https://agy-henna.vercel.app/miner` (Vector SVG Multi-Miner Dashboard) & `https://restore-agy.aaaai2.workers.dev/app` (Cloudflare Worker Node 1) & `https://atf-miner-app.pages.dev` (Cloudflare Pages)
     - Architecture: Ultra-modern responsive cyberpunk glassmorphic Mini App improving upon `@Allbottesting_bot` with 5 pools (⚡ MRG, 🪙 ATF, 🏢 Victor's Company, 💧 VyroDrop, 🌐 Kynex Network), real-time client-side `#tgWebAppData=...` parser, 24/7 cloud mining telemetry, Rewarded Video Ad player (Monetag + GigaPub), Daily Streak Claim (+100 Pts/d), 50-ad permanent slot milestone tracker, and Telegram Stars VIP passes.
   - **User Distributed Mining Engine & REST APIs**: `https://restore-agy.aaaai2.workers.dev/api/user/` (Endpoints: `/profile`, `/account/add`, `/account/remove`, `/claim-daily`, `/claim-ad`)
@@ -437,10 +438,10 @@ During thorough auditing of `/api/farm/cloud-all`, an investigation revealed why
 ## ⚡ 6.2 Dual-Type Bot Architecture, Channel Engine & Dialog Purge Protocol (October 10, 2026)
 
 ### 1. The Dual-Type Bot & Channel Architecture
-The fleet's 9 active high-conviction legitimate bots and channels are fundamentally divided into two technical architectures:
+The fleet's 10 active high-conviction legitimate bots and channels are fundamentally divided into two technical architectures:
 
-#### Type A: WebApp Mini-Apps / REST Bots (9 Genuine Bots)
-- **Bots Included**: MRG Miner (`@mrg_miner_bot` / `@mrgminerbot`), ATF Miner (`@atf_miner_bot` / `@ATF_AIRDROP_bot`), Victor's Company (`@VictorsCompanybot`), VyroDrop (`@vyrodrop_bot`), Kynex Network (`@Kynex_miningbot`), DiggoMiner (`@Diggominer_bot`), LeafEarn (`@LeafEarnBot`), Astra Airdrop (`@ASTRA_AIRDROP_BOT`), PepeGram (`@Pepe_gram_bot`).
+#### Type A: WebApp Mini-Apps / REST Bots (10 Genuine Bots)
+- **Bots Included**: MRG Miner (`@mrg_miner_bot` / `@mrgminerbot`), ATF Miner (`@atf_miner_bot` / `@ATF_AIRDROP_bot`), Victor's Company (`@VictorsCompanybot`), VyroDrop (`@vyrodrop_bot`), Kynex Network (`@Kynex_miningbot`), DiggoMiner (`@Diggominer_bot`), LeafEarn (`@LeafEarnBot`), Astra Airdrop (`@ASTRA_AIRDROP_BOT`), PepeGram (`@Pepe_gram_bot`), AdxEarn AI (`@AdxEarnAibot`).
 - **Mechanism**:
   - Authenticated via Telegram WebApp `initData` (HMAC SHA-256 query string signed by Telegram bot tokens) or Bearer JWT tokens.
   - Executed 100% via asynchronous HTTP REST calls with zero MTProto connection overhead.
