@@ -715,6 +715,25 @@ To prevent resource leakages, unbounded database list growth, and local disk bal
 
 ---
 
+## 🚀 6.12 Full 10-Bot Token Refresher Expansion, 18-Account Onboarding & Referral Qualification (October 15, 2026)
+
+### 1. 10-Bot Cloud Token Refresher Architecture ([refresh_cloud_tokens.py](file:///data/data/com.termux/files/home/refresh_cloud_tokens.py))
+- **10-Bot Expansion**: Upgraded cloud token refreshers from 5 bots to all 10 active bots (`mrg`, `atf`, `victors`, `vyro`, `kynex`, `diggo`, `leafearn`, `astra`, `pepegram`, `adxearn`).
+- **Proactive PepeGram `/start` Auto-Registration**: Integrated `/start {PEPEGRAM_REF}` transmission directly into `refresh_cloud_tokens.py` prior to WebApp token query for recruits, permanently eliminating `not_registered (needs bot /start)`.
+- **Candidate Short Names & Resilient Strategies**: Added candidate short names (`openapp`, `app`, `miner`, `miniapp`, `startapp`) and default URLs across bots 6 through 10.
+- **Sponsor Channel Synchronization**: Added Diggo, LeafEarn, Astra, PepeGram, and AdxEarn official sponsor channels to `MANDATORY_SPONSOR_CHANNELS`.
+
+### 2. 100% Fleet Onboarding & Zero-Pending Referral Completion
+- **All 18 Accounts Verified**: Ran automated cloud onboarding (`/api/onboard-new-bots`) across Accounts 16, 17, and 18 (`7954290138`, `8841038141`, `8975442879`), verifying 10/10 bots across all 18 accounts.
+- **PepeGram Fleet Farming Active**: Confirmed 0 accounts pending registration; all accounts actively farming or in cooldown.
+- **DiggoMiner & AdxEarn Live Mining**: Verified active mining, checkin streaks, and claim cycles across all 18 accounts.
+
+### 3. Robust Multi-Type TON Wallet Resolver ([finish_all_fleet_sidetasks.py](file:///data/data/com.termux/files/home/finish_all_fleet_sidetasks.py))
+- Created `get_ton_wallet_address(acc, uid)` helper with string and integer key resolution, guaranteeing zero skipped wallet bindings in MRG, ATF, Victor's Company, and Astra Airdrop.
+- Pushed all updates to `AAA0002/my-agy-fleet-standby` (Commit `f338c323`) and `koramshah2/my-agy-fleet-standby` (Commit `5102a360`), and triggered Render Node 2 deploy (`dep-db8fnug473hc73ai78jg`).
+
+---
+
 Here are the exact commands to run for everyday operations:
 
 ### 1. Check Fleet Farming Status

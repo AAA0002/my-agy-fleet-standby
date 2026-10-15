@@ -139,6 +139,12 @@ def push_app():
     evm_f = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
     if os.path.exists(evm_f):
         push_file(evm_f, "fleet_evm_wallets.json", "feat: 18-account authentic EVM wallets cache")
+    rct_f = os.path.join(BASE_DIR, "refresh_cloud_tokens.py")
+    if os.path.exists(rct_f):
+        push_file(rct_f, "refresh_cloud_tokens.py", "feat: 10-bot cloud token refresher")
+    emt_f = os.path.join(BASE_DIR, "extract_all_missing_fleet_tokens.py")
+    if os.path.exists(emt_f):
+        push_file(emt_f, "extract_all_missing_fleet_tokens.py", "feat: 10-bot missing tokens batch extractor")
     
     # Strictly Pin Deployment EXCLUSIVELY to Render Node 2 (Frankfurt - Abid)
     # Node 1 (Singapore) and Node 3 (Oregon) are suspended to guarantee ZERO IP collisions

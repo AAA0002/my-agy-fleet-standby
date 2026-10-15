@@ -46,23 +46,34 @@ CF_NODES = [
     "https://restore-agy.aaaai.workers.dev"
 ]
 
-# 5 Active Legitimate Fleet Bots & Referral Codes
+# 10 Active Legitimate Fleet Bots & Referral Codes
 MRG_BOT = "mrgminerbot"
 ATF_BOT = "ATF_AIRDROP_bot"
 VICTORS_BOT = "VictorsCompanybot"
 VYRO_BOT = "vyrodrop_bot"
 KYNEX_BOT = "Kynex_miningbot"
+DIGGO_BOT = "Diggominer_bot"
+LEAFEARN_BOT = "LeafEarnBot"
+ASTRA_BOT = "ASTRA_AIRDROP_BOT"
+PEPEGRAM_BOT = "Pepe_gram_bot"
+ADXEARN_BOT = "AdxEarnAibot"
 
 MRG_REF = "ref_IRN1G3XD"
 ATF_REF = "6727787768"
 VICTORS_REF = "ref_A20AA96F18"
 VYRO_REF = "ref_myFjrqqE4WN_"
 KYNEX_REF = "6727787768"
+DIGGO_REF = "ref_4088138f11effe8eef4b86ff"
+LEAFEARN_REF = "6727787768"
+ASTRA_REF = "ref_6727787768"
+PEPEGRAM_REF = "6727787768"
+ADXEARN_REF = "ref_6727787768"
 
 MANDATORY_SPONSOR_CHANNELS = [
     "mrgminer", "mrgwithdrawal", "DurovKidney",
     "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor",
-    "vyrodrop", "atfminers", "kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam"
+    "vyrodrop", "atfminers", "kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam",
+    "Diggominer", "diggominer_news", "LeafEarn", "AstraAirdrop", "Pepe_gram", "AdxEarn"
 ]
 
 
@@ -309,27 +320,31 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
         if tok:
             tokens["mrg_init_data"] = tok
             print(f"  ⛏️ MRG Miner: Collected")
+        await asyncio.sleep(0.5)
 
-        # 3. ATF Miner
+        # 2. ATF Miner
         atf_p = None if is_master else str(REPORT_CHAT_ID)
         tok = await extract_bot_webapp_token(cl, ATF_BOT, start_param=atf_p, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"])
         if tok:
             tokens["atf_init_data"] = tok
             print(f"  🪙 ATF Miner: Collected")
+        await asyncio.sleep(0.5)
 
-        # 4. Victor's Company
-        vic_p = VICTORS_REF
+        # 3. Victor's Company
+        vic_p = None if is_master else VICTORS_REF
         tok = await extract_bot_webapp_token(cl, VICTORS_BOT, start_param=vic_p, default_url="https://app.victors.company/", candidate_short_names=["app", "play"])
         if tok:
             tokens["victors_init_data"] = tok
             print(f"  🏢 Victor's Company: Collected")
+        await asyncio.sleep(0.5)
 
         # 4. VyroDrop
-        vy_p = VYRO_REF
+        vy_p = None if is_master else VYRO_REF
         tok = await extract_bot_webapp_token(cl, VYRO_BOT, start_param=vy_p, default_url="https://vyro.run.place/", candidate_short_names=["app", "vyro", "play", "mine"])
         if tok:
             tokens["vyro_init_data"] = tok
             print(f"  💧 VyroDrop: Collected")
+        await asyncio.sleep(0.5)
 
         # 5. Kynex Network (@Kynex_miningbot)
         ky_p = None if is_master else KYNEX_REF
@@ -337,6 +352,53 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
         if tok:
             tokens["kynex_init_data"] = tok
             print(f"  💎 Kynex Network: Collected")
+        await asyncio.sleep(0.5)
+
+        # 6. DiggoMiner (@Diggominer_bot)
+        diggo_p = None if is_master else DIGGO_REF
+        tok = await extract_bot_webapp_token(cl, DIGGO_BOT, start_param=diggo_p, default_url="https://t.me/Diggominer_bot", candidate_short_names=["openapp", "app", "miner", "miniapp", "startapp"])
+        if tok:
+            tokens["diggo_init_data"] = tok
+            print(f"  ⛏️ DiggoMiner: Collected")
+        await asyncio.sleep(0.5)
+
+        # 7. LeafEarn (@LeafEarnBot)
+        leaf_p = None if is_master else LEAFEARN_REF
+        tok = await extract_bot_webapp_token(cl, LEAFEARN_BOT, start_param=leaf_p, default_url="https://leafearn.site/", candidate_short_names=["app", "leafearn", "play", "startapp"])
+        if tok:
+            tokens["leafearn_init_data"] = tok
+            print(f"  🍃 LeafEarn: Collected")
+        await asyncio.sleep(0.5)
+
+        # 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)
+        astra_p = None if is_master else ASTRA_REF
+        tok = await extract_bot_webapp_token(cl, ASTRA_BOT, start_param=astra_p, default_url="https://amazing-alpaca-eb7e2b.netlify.app/", candidate_short_names=["app", "airdrop", "startapp"])
+        if tok:
+            tokens["astra_init_data"] = tok
+            print(f"  🚀 Astra Airdrop: Collected")
+        await asyncio.sleep(0.5)
+
+        # 9. PepeGram (@Pepe_gram_bot)
+        pepe_p = None if is_master else PEPEGRAM_REF
+        if not is_master and not acc.get("pepegram_referral_bound"):
+            try:
+                await cl.send_message(PEPEGRAM_BOT, f"/start {pepe_p}")
+                await asyncio.sleep(0.8)
+                acc["pepegram_referral_bound"] = True
+            except Exception:
+                pass
+        tok = await extract_bot_webapp_token(cl, PEPEGRAM_BOT, start_param=pepe_p, default_url="https://app.miniempire.app/miniapp/index.html?tid=1449&lang=en", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
+        if tok:
+            tokens["pepegram_init_data"] = tok
+            print(f"  🐸 PepeGram: Collected")
+        await asyncio.sleep(0.5)
+
+        # 10. AdxEarn AI (@AdxEarnAibot)
+        adx_p = None if is_master else ADXEARN_REF
+        tok = await extract_bot_webapp_token(cl, ADXEARN_BOT, start_param=adx_p, default_url="https://app.adxearnai.xyz/index.html", candidate_short_names=["app", "startapp"])
+        if tok:
+            tokens["adxearn_init_data"] = tok
+            print(f"  📈 AdxEarn AI: Collected")
 
         # Auto-join mandatory sponsor channels for side-task verification
         for s_ch in MANDATORY_SPONSOR_CHANNELS:

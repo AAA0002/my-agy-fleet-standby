@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Full 10-Bot Token Refresher Expansion, 18-Account Onboarding Completion & Referral Qualification (October 15, 2026)**:
+  - **🔑 Universal 10-Bot Token Refresher ([refresh_cloud_tokens.py](file:///data/data/com.termux/files/home/refresh_cloud_tokens.py) & [extract_all_missing_fleet_tokens.py](file:///data/data/com.termux/files/home/extract_all_missing_fleet_tokens.py))**:
+    * **10-Bot Expansion**: Upgraded cloud token refreshers from 5 bots to all 10 active bots (`mrg`, `atf`, `victors`, `vyro`, `kynex`, `diggo`, `leafearn`, `astra`, `pepegram`, `adxearn`).
+    * **Proactive PepeGram `/start` Auto-Registration**: Integrated `/start {PEPEGRAM_REF}` transmission directly into `refresh_cloud_tokens.py` prior to WebApp token query for recruits, permanently eliminating `not_registered (needs bot /start)`.
+    * **Comprehensive Short Names & Endpoints**: Added candidate short names and default WebApp URLs for bots 6-10 (`openapp`, `app`, `miner`, `miniapp`, `startapp`).
+    * **Sponsor Channel Synchronization**: Added Diggo, LeafEarn, Astra, PepeGram, and AdxEarn official channels to `MANDATORY_SPONSOR_CHANNELS`.
+  - **🏆 100% Fleet Onboarding & Zero-Pending Referral Completion**:
+    * **All 18 Accounts Verified**: Ran automated cloud onboarding (`/api/onboard-new-bots`) for Accounts 16, 17, and 18 (`7954290138`, `8841038141`, `8975442879`), verifying 10/10 bots across all accounts.
+    * **PepeGram Fleet Farming Active**: Triggered immediate cloud farming across all 18 accounts; confirmed 0 accounts pending registration.
+    * **DiggoMiner & AdxEarn Live Mining**: Verified active mining, checkin streaks, and claim cycles across all 18 accounts.
+  - **⚡ Robust Multi-Type TON Wallet Resolver ([finish_all_fleet_sidetasks.py](file:///data/data/com.termux/files/home/finish_all_fleet_sidetasks.py))**:
+    * Created `get_ton_wallet_address(acc, uid)` helper with string and integer key resolution, guaranteeing zero skipped wallet bindings in MRG, ATF, Victor's Company, and Astra Airdrop.
+  - **🌐 Standby Repositories & Render Node 2 Synchronization ([push_to_standby_repo.py](file:///data/data/com.termux/files/home/push_to_standby_repo.py))**:
+    * Added `refresh_cloud_tokens.py` and `extract_all_missing_fleet_tokens.py` to `push_app()`.
+    * Synchronized all updates to `AAA0002/my-agy-fleet-standby` (Commit `f338c323`) and `koramshah2/my-agy-fleet-standby` (Commit `5102a360`).
+    * Triggered Render Node 2 deploy (`dep-db8fnug473hc73ai78jg`) 🟢 Live.
+  - **📱 Zero Phone Load Directive**: 0 python background processes on Samsung Galaxy A30 (`ps aux | grep python` clean).
+
 - **💎 Fleet Wallet Sync, PepeGram Auto-Registration & Autonomous Side-Tasks Engine (October 15, 2026)**:
   - **⚡ Fleet Wallet Triple-Redundancy & Upstash In-Memory Sync**:
     * **Instant Cloud Wallet Cache**: Populated `fleet:wallets:ton` and `fleet:wallets:evm` directly in Upstash Redis, enabling sub-millisecond wallet lookup across cloud nodes without streaming the 1.3MB `backup.zip`.

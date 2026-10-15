@@ -116,6 +116,19 @@ if not ton_wallets and UPSTASH_URL and UPSTASH_TOKEN:
         pass
 
 
+def get_ton_wallet_address(acc: dict, uid: str) -> str:
+    """Returns dedicated TON address for account with robust type conversion."""
+    if acc and acc.get("ton_wallet") and acc["ton_wallet"].get("address"):
+        return acc["ton_wallet"]["address"]
+    s_uid = str(uid)
+    w_entry = ton_wallets.get(s_uid)
+    if not w_entry and s_uid.isdigit():
+        w_entry = ton_wallets.get(int(s_uid))
+    if isinstance(w_entry, dict) and w_entry.get("address"):
+        return w_entry["address"]
+    return ""
+
+
 def solve_atf_math(question_text: str) -> str:
     """Evaluates arithmetic questions like 'What is 12 + 15?' safely."""
     try:
@@ -254,7 +267,7 @@ async def sweep_mrg_tasks(session: aiohttp.ClientSession, uid: str, name: str, m
 
         # 2. Bind TON Wallet
         is_ton_conn = u_obj.get("isTonConnected", False)
-        target_ton_w = (acc.get("ton_wallet") or {}).get("address") or ton_wallets.get(uid, {}).get("address")
+        target_ton_w = get_ton_wallet_address(acc, uid)
         if target_ton_w and not is_ton_conn:
             async with session.post("https://mrg.up.railway.app/api/user/connect-wallet", json={"initData": m_init, "address": target_ton_w, "balance": 0}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as cr:
                 if cr.status == 200:
@@ -368,7 +381,7 @@ async def sweep_atf_tasks(session: aiohttp.ClientSession, uid: str, name: str, a
         async with session.post(f"{atf_base}?action=record_daily_interaction&t={int(time.time()*1000)}", json=payload(), headers=atf_h) as r: pass
 
         # 3. Dedicated TON wallet sync
-        ton_addr = (acc.get("ton_wallet") or {}).get("address") or ton_wallets.get(uid, {}).get("address")
+        ton_addr = get_ton_wallet_address(acc, uid)
         if ton_addr:
             async with session.post(f"{atf_base}?action=sync_wallet&t={int(time.time()*1000)}", json=payload({"wallet": ton_addr}), headers=atf_h) as r:
                 res["notes"].append("wallet_synced")
@@ -478,7 +491,7 @@ async def sweep_victors_tasks(session: aiohttp.ClientSession, uid: str, name: st
             if cr.status == 200: res["notes"].append("checkin_done")
 
         # 4. Connect TON wallet if needed
-        ton_addr = (acc.get("ton_wallet") or {}).get("address") or ton_wallets.get(uid, {}).get("address")
+        ton_addr = get_ton_wallet_address(acc, uid)
         if ton_addr and not me.get("walletAddress"):
             async with session.post("https://server.victors.company/api/wallet/connect", json={"address": ton_addr}, headers=v_h) as wr:
                 if wr.status == 200:
@@ -777,7 +790,7 @@ async def sweep_astra_tasks(session: aiohttp.ClientSession, uid: str, name: str,
         res["balance"] = float(u_obj.get("mined_balance", 0) or u_obj.get("balance", 0))
 
         # 2. TON wallet sync
-        ton_addr = (acc.get("ton_wallet") or {}).get("address") or ton_wallets.get(uid, {}).get("address")
+        ton_addr = get_ton_wallet_address(acc, uid)
         if ton_addr and (not u_obj.get("wallet_address") or u_obj.get("wallet_address") != ton_addr):
             await astra_rpc("astra_sync_wallet", {"p_wallet": str(ton_addr)})
             res["notes"].append("ton_wallet_synced")

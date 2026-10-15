@@ -32,25 +32,71 @@ TARGET_BOTS = [
         "key": "mrg_init_data",
         "bot": "mrgminerbot",
         "url": "https://app.mrgtoken.xyz/",
+        "short_names": ["app", "miniapp"],
         "name": "MRG Miner"
     },
     {
         "key": "atf_init_data",
         "bot": "ATF_AIRDROP_bot",
-        "url": "https://atfminers.asloni.online/miner/index.php",
+        "url": "https://atfminers.asloni.online/miner/index.html?entry=bot_start",
+        "short_names": ["app", "miner", "play"],
         "name": "ATF Miner"
     },
     {
         "key": "victors_init_data",
         "bot": "VictorsCompanybot",
         "url": "https://app.victors.company/",
+        "short_names": ["app", "play"],
         "name": "Victor's Company"
     },
     {
         "key": "vyro_init_data",
         "bot": "vyrodrop_bot",
         "url": "https://vyro.run.place/",
+        "short_names": ["app", "vyro", "play", "mine"],
         "name": "VyroDrop"
+    },
+    {
+        "key": "kynex_init_data",
+        "bot": "Kynex_miningbot",
+        "url": "https://kynex.top/telegram-auth.html",
+        "short_names": ["App", "app"],
+        "name": "Kynex Network"
+    },
+    {
+        "key": "diggo_init_data",
+        "bot": "Diggominer_bot",
+        "url": "https://t.me/Diggominer_bot",
+        "short_names": ["openapp", "app", "miner", "miniapp", "startapp"],
+        "name": "DiggoMiner"
+    },
+    {
+        "key": "leafearn_init_data",
+        "bot": "LeafEarnBot",
+        "url": "https://leafearn.site/",
+        "short_names": ["app", "leafearn", "play", "startapp"],
+        "name": "LeafEarn"
+    },
+    {
+        "key": "astra_init_data",
+        "bot": "ASTRA_AIRDROP_BOT",
+        "url": "https://amazing-alpaca-eb7e2b.netlify.app/",
+        "short_names": ["app", "airdrop", "startapp"],
+        "name": "Astra Airdrop"
+    },
+    {
+        "key": "pepegram_init_data",
+        "bot": "Pepe_gram_bot",
+        "url": "https://app.miniempire.app/miniapp/index.html?tid=1449&lang=en",
+        "short_names": ["app", "game", "miner", "miniapp", "startapp"],
+        "name": "PepeGram"
+    },
+    {
+        "key": "adxearn_init_data",
+        "bot": "AdxEarnAibot",
+        "url": "https://app.adxearnai.xyz/index.html",
+        "short_names": ["app", "startapp"],
+        "name": "AdxEarn AI"
     }
 ]
 
