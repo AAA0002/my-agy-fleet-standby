@@ -449,10 +449,25 @@ def run_pipeline_for_account(uid: int, v_init: str, human_pass: str, is_master: 
                         if c_code in (200, 201) and isinstance(c_res, dict) and c_res.get("success"):
                             logger.info(f"🎁 UID {uid}: Claimed task {tid} (+{c_res.get('reward', t.get('reward', 0))} VIC)")
 
-        # 4. Mining claim
-        safe_post(f"{VICTORS_API}/mining/claim", {}, extra_headers=v_headers)
+        # 4. Hire Level 1 Miner (removes home.noJob and starts mining)
+        u_code, u_res = safe_post(f"{VICTORS_API}/levels/unlock", {"level": 1}, extra_headers=v_headers)
+        logger.info(f"⛏️ UID {uid}: Unlock Level 1 Miner response: {u_code} {u_res}")
 
-        # 5. Autonomous Deep Mine Arcade Solver (Rows 0-1 safe mining)
+        # Check for higher level unlocks eligible with current balance
+        m_code, m_res = safe_get(f"{VICTORS_API}/me", extra_headers=v_headers)
+        if m_code == 200 and isinstance(m_res, dict):
+            st = m_res.get("state", {})
+            u_obj = st.get("user") or m_res.get("user") or {}
+            unlocked_lvl = u_obj.get("unlockedLevel", 1)
+            cur_lvl = u_obj.get("peakLevel") or u_obj.get("level", 1)
+            if unlocked_lvl > cur_lvl:
+                safe_post(f"{VICTORS_API}/levels/unlock", {"level": unlocked_lvl}, extra_headers=v_headers)
+
+        # 5. Mining claim (harvests accrued mining tokens)
+        c_code, c_res = safe_post(f"{VICTORS_API}/mining/claim", {}, extra_headers=v_headers)
+        logger.info(f"⛏️ UID {uid}: Mining claim response: {c_code} {c_res}")
+
+        # 6. Autonomous Deep Mine Arcade Solver (Rows 0-1 safe mining)
         play_deep_mine_sync(uid, v_headers)
     except Exception as e:
         logger.error(f"UID {uid} pipeline execution exception: {e}")
@@ -541,11 +556,15 @@ def solve_victors_with_seleniumbase():
         sweep_master_bonuses(6727787768)
         return
 
-    ws_proxy = get_webshare_proxy()
+    # Cloudflare Turnstile blocks datacenter proxies. By default in GitHub Actions, run directly.
+    use_proxy = os.getenv("USE_PROXY", "").lower() in ("1", "true", "yes")
+    ws_proxy = get_webshare_proxy() if use_proxy else None
     sb_kwargs = {"uc": True, "test": True, "xvfb": True, "locale": "en"}
     if ws_proxy:
         logger.info(f"🌐 Routing SeleniumBase through Webshare proxy: {ws_proxy.split('@')[-1]}")
         sb_kwargs["proxy"] = ws_proxy
+    else:
+        logger.info("⚡ Running SeleniumBase directly (proxy-less runner IP for maximum Turnstile pass rate)")
 
     with SB(**sb_kwargs) as sb:
         for acc in active_accounts:
@@ -564,122 +583,143 @@ def solve_victors_with_seleniumbase():
                 f"&tgWebAppThemeParams=%7B%22bg_color%22%3A%22%231a1147%22%2C%22text_color%22%3A%22%23ffffff%22%7D"
             )
 
-            try:
-                sb.uc_open(target_url)
+            mock_telegram_js = f"""
+                Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
+                window.__victorsTurnstileToken = null;
+                window.__victorsHumanPass = null;
 
-                # 1. Inject Telegram mock object & sessionStorage
-                sb.execute_script(f"""
-                    try {{
-                        sessionStorage.setItem('__telegram__initParams', JSON.stringify({{
-                            tgWebAppData: {json.dumps(v_init)},
-                            tgWebAppPlatform: 'android',
-                            tgWebAppVersion: '8.0'
-                        }}));
-                        sessionStorage.setItem('initParams', JSON.stringify({{
-                            tgWebAppData: {json.dumps(v_init)},
-                            tgWebAppPlatform: 'android',
-                            tgWebAppVersion: '8.0'
-                        }}));
-                    }} catch(e) {{}}
-                """)
-                sb.sleep(0.5)
+                try {{
+                    sessionStorage.setItem('__telegram__initParams', JSON.stringify({{
+                        tgWebAppData: {json.dumps(v_init)},
+                        tgWebAppPlatform: 'android',
+                        tgWebAppVersion: '8.0'
+                    }}));
+                    sessionStorage.setItem('initParams', JSON.stringify({{
+                        tgWebAppData: {json.dumps(v_init)},
+                        tgWebAppPlatform: 'android',
+                        tgWebAppVersion: '8.0'
+                    }}));
+                }} catch(e) {{}}
 
-                # 2. Refresh page so React bundle immediately detects valid Telegram WebApp session
-                sb.refresh()
-                sb.sleep(2.0)
-
-                # 3. Mount programmatic Turnstile slot with script injection
-                sb.execute_script(f"""
-                    window.__victorsTurnstileToken = null;
-                    window.__victorsTurnstileError = null;
-
-                    if (!document.getElementById('cf-turnstile-script')) {{
-                        const s = document.createElement('script');
-                        s.id = 'cf-turnstile-script';
-                        s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-                        s.async = true;
-                        document.head.appendChild(s);
-                    }}
-
-                    function mountTurnstile() {{
-                        if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                            let container = document.getElementById('cf-victors-manual-slot');
-                            if (!container) {{
-                                container = document.createElement('div');
-                                container.id = 'cf-victors-manual-slot';
-                                container.style.position = 'fixed';
-                                container.style.top = '50%';
-                                container.style.left = '50%';
-                                container.style.transform = 'translate(-50%, -50%)';
-                                container.style.zIndex = '9999999';
-                                container.style.background = '#1a1147';
-                                container.style.padding = '12px';
-                                container.style.borderRadius = '10px';
-                                container.style.boxShadow = '0 0 20px rgba(0,0,0,0.8)';
-                                document.body.appendChild(container);
+                const mockWebApp = {{
+                    initData: {json.dumps(v_init)},
+                    initDataUnsafe: {{
+                        start_param: {json.dumps(ref_to_bind)},
+                        user: {{ id: {uid} }}
+                    }},
+                    version: '8.0',
+                    platform: 'android',
+                    colorScheme: 'dark',
+                    themeParams: {{
+                        bg_color: '#1a1147',
+                        text_color: '#ffffff',
+                        hint_color: '#8b8b8b',
+                        link_color: '#ffd700',
+                        button_color: '#ffd700',
+                        button_text_color: '#000000'
+                    }},
+                    isExpanded: true,
+                    viewportHeight: 915,
+                    viewportStableHeight: 915,
+                    ready: () => {{}},
+                    expand: () => {{}},
+                    close: () => {{}},
+                    onEvent: () => {{}},
+                    offEvent: () => {{}},
+                    sendData: () => {{}}
+                }};
+                let _tg = {{ WebApp: mockWebApp }};
+                try {{
+                    Object.defineProperty(window, 'Telegram', {{
+                        configurable: true,
+                        enumerable: true,
+                        get: () => _tg,
+                        set: (v) => {{
+                            _tg = v || {{}};
+                            if (!_tg.WebApp) _tg.WebApp = mockWebApp;
+                            else {{
+                                _tg.WebApp.initData = {json.dumps(v_init)};
+                                _tg.WebApp.initDataUnsafe = {{
+                                    start_param: {json.dumps(ref_to_bind)},
+                                    user: {{ id: {uid} }}
+                                }};
                             }}
-                            try {{
-                                window.turnstile.render(container, {{
-                                    sitekey: '0x4AAAAAAFD0KRgPRFVwDvgn',
-                                    action: 'login',
-                                    theme: 'light',
-                                    appearance: 'always',
-                                    callback: function(tok) {{
-                                        window.__victorsTurnstileToken = tok;
-                                    }},
-                                    'error-callback': function(err) {{
-                                        window.__victorsTurnstileError = String(err);
-                                    }}
-                                }});
-                            }} catch(e) {{}}
                         }}
+                    }});
+                }} catch(e) {{}}
+
+                // Intercept fetch to capture humanPass from /auth/login response directly
+                const origFetch = window.fetch;
+                window.fetch = async function(...args) {{
+                    const url = String(args[0] || '');
+                    if (url.includes('/auth/login')) {{
+                        try {{
+                            const b = JSON.parse(args[1]?.body || '{{}}');
+                            if (b.turnstileToken) {{
+                                window.__victorsTurnstileToken = b.turnstileToken;
+                            }}
+                        }} catch(e) {{}}
                     }}
+                    const res = await origFetch.apply(this, args);
+                    if (url.includes('/auth/login')) {{
+                        try {{
+                            const clone = res.clone();
+                            const data = await clone.json();
+                            if (data && data.humanPass) {{
+                                window.__victorsHumanPass = data.humanPass;
+                            }}
+                        }} catch(e) {{}}
+                    }}
+                    return res;
+                }};
+            """
 
-                    let attempts = 0;
-                    const iv = setInterval(() => {{
-                        attempts++;
-                        if (window.turnstile && typeof window.turnstile.render === 'function') {{
-                            clearInterval(iv);
-                            mountTurnstile();
-                        }} else if (attempts > 50) {{
-                            clearInterval(iv);
-                        }}
-                    }}, 200);
-                """)
-
-                # 4. Attempt native or GUI solve
-                sb.sleep(2.5)
-                for _ in range(8):
-                    if sb.is_element_present("iframe[src*='challenges.cloudflare.com']"):
-                        break
-                    sb.sleep(0.5)
-
+            try:
                 try:
-                    sb.solve_captcha()
+                    sb.driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": mock_telegram_js})
+                except Exception as cdp_err:
+                    logger.warning(f"CDP script injection note: {cdp_err}")
+
+                sb.uc_open(target_url)
+                sb.sleep(1.0)
+                try:
+                    sb.execute_script(mock_telegram_js)
                 except Exception:
                     pass
+                sb.sleep(2.0)
 
-                for _ in range(4):
-                    try:
-                        if sb.is_element_present("iframe[src*='challenges.cloudflare.com']"):
-                            sb.uc_gui_click_captcha()
-                            break
-                    except Exception:
-                        pass
-                    sb.sleep(0.5)
-
-                # 5. Poll for Turnstile token
                 token = None
-                for _ in range(20):
-                    token = sb.execute_script("""
-                        return window.__victorsTurnstileToken || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null;
+                human_pass = None
+
+                for attempt in range(25):
+                    captured = sb.execute_script("""
+                        return {
+                            humanPass: window.__victorsHumanPass || null,
+                            token: window.__victorsTurnstileToken || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null
+                        };
                     """)
-                    if token and len(token) > 20:
-                        break
+                    if captured:
+                        human_pass = captured.get("humanPass")
+                        token = captured.get("token")
+                        if human_pass:
+                            break
+                        if token and len(token) > 20:
+                            break
+
+                    if sb.is_element_present("iframe[src*='challenges.cloudflare.com']"):
+                        try:
+                            sb.solve_captcha()
+                        except Exception:
+                            pass
+                        try:
+                            sb.uc_gui_click_captcha()
+                        except Exception:
+                            pass
+
                     sb.sleep(1.0)
 
-                if token and len(token) > 20:
-                    logger.info(f"✅ UID {uid}: Cloudflare Turnstile SOLVED ({token[:16]}...)!")
+                if token and not human_pass:
+                    logger.info(f"✅ UID {uid}: Cloudflare Turnstile token obtained ({token[:16]}...)!")
                     login_p = {"turnstileToken": token}
                     if not is_master:
                         login_p["startParam"] = VICTORS_REF
@@ -693,15 +733,16 @@ def solve_victors_with_seleniumbase():
                     }
                     st_code, body = safe_post(f"{VICTORS_API}/auth/login", login_p, extra_headers=headers)
                     if st_code in (200, 201) and isinstance(body, dict):
-                        hp = body.get("humanPass") or (body.get("data", {}).get("humanPass") if isinstance(body.get("data"), dict) else None)
-                        if hp:
-                            save_victors_pass_to_upstash(uid, str(hp))
-                            logger.info(f"🎉 UID {uid}: Acquired humanPass! Executing qualification pipeline...")
-                            run_pipeline_for_account(uid, v_init, str(hp), is_master, ton_wallets)
-                            solved_count += 1
-                            send_tg_alert(f"✅ <b>Victor's Recruit Qualified ({solved_count}/{len(raw_accounts)})</b>\nUID: <code>{uid}</code> bound to <code>{VICTORS_REF}</code>!")
+                        human_pass = body.get("humanPass") or (body.get("data", {}).get("humanPass") if isinstance(body.get("data"), dict) else None)
                     else:
                         logger.warning(f"UID {uid} /auth/login error: {st_code} {body}")
+
+                if human_pass:
+                    logger.info(f"🎉 UID {uid}: Acquired humanPass ({human_pass[:16]}...)! Executing qualification pipeline...")
+                    save_victors_pass_to_upstash(uid, str(human_pass))
+                    run_pipeline_for_account(uid, v_init, str(human_pass), is_master, ton_wallets)
+                    solved_count += 1
+                    send_tg_alert(f"✅ <b>Victor's Recruit Qualified ({solved_count}/{len(raw_accounts)})</b>\nUID: <code>{uid}</code> bound to <code>{VICTORS_REF}</code>!")
                 else:
                     logger.warning(f"UID {uid}: Turnstile could not be solved in this cycle.")
 

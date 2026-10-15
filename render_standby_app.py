@@ -4574,15 +4574,19 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     await safe_post("https://server.victors.company/api/wallet/connect", json_data={"address": v_ton_w}, req_headers=v_h)
                     await safe_post("https://server.victors.company/api/tasks/claim", json_data={"taskId": "connect-wallet"}, req_headers=v_h)
 
-                # 4. Mining claim
-                await jitter(0.8, 1.8)
-                await safe_post("https://server.victors.company/api/mining/claim", json_data={}, req_headers=v_h)
-
-                # 5. Levels unlock
+                # 4. Levels unlock (Hire Level 1 Miner to start mining and eliminate home.noJob)
+                manual_lvl = me.get("manualUnlockedLevel", 0)
+                if manual_lvl < 1 or lvl < 1:
+                    await jitter(0.4, 0.9)
+                    await safe_post("https://server.victors.company/api/levels/unlock", json_data={"level": 1}, req_headers=v_h)
                 unlocked = me.get("unlockedLevel", lvl)
                 if unlocked > lvl:
                     await jitter(0.5, 1.2)
                     await safe_post("https://server.victors.company/api/levels/unlock", json_data={"level": unlocked}, req_headers=v_h)
+
+                # 5. Mining claim
+                await jitter(0.8, 1.8)
+                await safe_post("https://server.victors.company/api/mining/claim", json_data={}, req_headers=v_h)
 
                 # 6. Tasks discovery & claim
                 await jitter(0.8, 1.6)

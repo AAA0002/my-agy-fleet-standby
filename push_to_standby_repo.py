@@ -124,6 +124,9 @@ def push_app():
     login_acc = os.path.join(BASE_DIR, "login_account.py")
     if os.path.exists(login_acc):
         push_file(login_acc, "login_account.py", "feat: Dual-layer Telegram /start and WebApp start_param referral binding")
+    vic_sb = os.path.join(BASE_DIR, "victors_sb_solver.py")
+    if os.path.exists(vic_sb):
+        push_file(vic_sb, "victors_sb_solver.py", "feat: Victor's Company CDP stealth Turnstile solver and Level 1 unlock")
     req_file = os.path.join(BASE_DIR, "requirements.txt")
     if os.path.exists(req_file):
         push_file(req_file, "requirements.txt", "deps: update dependencies")
