@@ -575,7 +575,7 @@ def solve_victors_with_seleniumbase():
             ref_to_bind = "" if is_master else VICTORS_REF
 
             logger.info(f"🚀 Processing UID {uid} ({name}, is_master={is_master})...")
-            encoded_init = urllib.parse.quote(v_init)
+            encoded_init = urllib.parse.quote(v_init, safe="%")
             target_url = (
                 f"{VICTORS_ORIGIN}/#tgWebAppData={encoded_init}"
                 f"&tgWebAppPlatform=android"
@@ -687,7 +687,14 @@ def solve_victors_with_seleniumbase():
                 except Exception:
                     pass
                 sb.sleep(2.0)
-
+                try:
+                    title = sb.get_title()
+                    current_url = sb.get_current_url()
+                    body_snippet = sb.get_text("body")[:250].replace("\n", " ")
+                    iframe_count = len(sb.find_elements("iframe"))
+                    logger.info(f"🔎 UID {uid} page state: Title='{title}', URL='{current_url}', Iframes={iframe_count}, Body='{body_snippet}'")
+                except Exception as diag_err:
+                    logger.warning(f"Diagnostics error: {diag_err}")
                 token = None
                 human_pass = None
 
