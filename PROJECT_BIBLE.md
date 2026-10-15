@@ -672,6 +672,32 @@ To prevent resource leakages, unbounded database list growth, and local disk bal
 
 ---
 
+## ⚡ 6.10 10-Bot Fleet Autofarming Engine Upgrade & Token Freshness Protocol (October 15, 2026)
+
+### 1. DiggoMiner & VyroDrop 45-Minute Token Freshness Architecture
+- **Root Cause of `token_expired`**: DiggoMiner (`https://diggo.linkpc.net/`) enforces strict server-side validation rejecting Telegram WebApp `initData` older than 60 minutes (`HTTP 401 {"error":"expired_init_data"}`).
+- **Watchdog & Pre-Farm Guard**: Updated `token_health_and_refresh_watchdog` and `_farm_with_sem` in `render_standby_app.py` and `render_app_latest.py`:
+  - Tokens older than 45 minutes (`now - synced_ts > 2700`) or missing Diggo/Vyro tokens trigger automatic on-the-fly extraction via Telethon on Render Node 2.
+  - Automatic Retry: If any bot returns `token_expired` during farming, the engine immediately calls `extract_tokens_for_account`, syncs fresh tokens to Upstash & Cloudflare, and retries the farm cycle automatically once.
+  - Social Tasks Claim: Automatically claims `telegram`, `community_react`, and `social-tasks` on every farm cycle.
+
+### 2. TonConnect 2.0 Wallet Binding for VyroDrop
+- **Root Cause of `wallet_required`**: VyroDrop requires a verified TonConnect 2.0 wallet proof to unlock cloud mining rewards (`POST /api/wallet/connect`).
+- **Cryptographic Solution**:
+  - Automatically queries `/api/wallet/challenge` for an authentic server nonce.
+  - Signs `ton-proof-item-v2` using the account's dedicated 24-word TON mnemonic (`v4r2` contract address, `domain: vyro.run.place`, timestamp, SHA-256 + HMAC-SHA256 signature via PyNaCl).
+  - Dual support added for both `mnemonic` and `ton_mnemonic` in `FLEET_TON_CACHE`.
+
+### 3. Astra Airdrop Supabase Balance Fix
+- **Root Cause**: The user's mined tokens in Astra (`@ASTRA_AIRDROP_BOT`) are stored in Supabase under `mined_balance`, while `balance` is reserved for TON Grams (always 0).
+- **Fix**: Updated balance extraction across Render apps and Cloudflare Edge Workers: `bal = float(u_obj.get("mined_balance", 0) or u_obj.get("balance", 0))`. Shows accurate balance (e.g. Master account ~105.1 ASTRA).
+
+### 4. Dynamic Side-Tasks Sweeper Engine ([finish_all_fleet_sidetasks.py](file:///data/data/com.termux/files/home/finish_all_fleet_sidetasks.py))
+- Upgraded side-tasks engine from 5 to all 10 bots (`diggo`, `leafearn`, `astra`, `pepegram`, `adxearn`, `mrg`, `atf`, `victors`, `vyro`, `kynex`).
+- Added cloud endpoints `/api/tasks/sweep-all` and `/api/tasks/sweep-status` on Render Node 2 to trigger full 10-bot task sweeps with zero phone load.
+
+---
+
 Here are the exact commands to run for everyday operations:
 
 ### 1. Check Fleet Farming Status

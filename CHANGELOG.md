@@ -2,6 +2,29 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 10-Bot Fleet Autofarming Engine Upgrade, TonConnect 2.0 Integration & Automated Token Freshness Guard (October 15, 2026)**:
+  - **🚀 Proactive Token Freshness & Expiration Elimination**:
+    * **Diggo & Vyro Token TTL Optimization**: Discovered DiggoMiner rejects Telegram `initData` older than 60 minutes (`expired_init_data`). Updated `token_health_and_refresh_watchdog` and pre-farm freshness guards in [render_standby_app.py](file:///data/data/com.termux/files/home/render_standby_app.py) and [render_app_latest.py](file:///data/data/com.termux/files/home/render_app_latest.py) from 2 hours to 45 minutes (`now - synced_ts > 2700`).
+    * **Automated On-the-Fly Token Freshness & Retry**: Enhanced `_farm_with_sem` and `api_farm_single_account`: automatically checks if tokens are stale (>2700s) or missing Diggo/Vyro before farming, extracts fresh tokens via Telethon in the cloud, and retries automatically if any bot reports `token_expired`.
+    * **DiggoMiner Social Tasks Auto-Claim**: Added automated claims for `telegram`, `community_react`, and `social-tasks` across both Render apps and Cloudflare Edge Workers.
+  - **⚡ Authentic TonConnect 2.0 Wallet Binding for VyroDrop**:
+    * Implemented programmatic TonConnect 2.0 proof generator (`_farm_vyro`): requests `/api/wallet/challenge`, parses challenge nonce, signs `ton-proof-item-v2` with dedicated 24-word TON mnemonics using PyNaCl, and connects to `POST /api/wallet/connect`.
+    * Added dual support for `mnemonic` and `ton_mnemonic` in `FLEET_TON_CACHE` across worker accounts.
+  - **⭐ Astra Airdrop True Mined Balance Fix**:
+    * Fixed Supabase balance extraction in `_farm_astra` and `farmAstra`: changed `u_obj.get("balance")` (which returns 0 TON Grams) to `float(u_obj.get("mined_balance", 0) or u_obj.get("balance", 0))`. Live output immediately restored accurate user balances (e.g. Master account `105.1 ASTRA`).
+  - **🐸 PepeGram MiniEmpire Registration & Dynamic Task Claims**:
+    * Handled `user not registered` error by checking `/auth` return and added dynamic task polling and claims from `GET /miniapp/tasks` and `POST /miniapp/tasks/claim`.
+  - **🍃 LeafEarn Anti-Ban Hardening**:
+    * Handled multi-account IP referral ban (`account_banned`) safely in `_farm_leafearn` and `farmLeafearn`, preventing other bots from being interrupted.
+  - **🎯 10-Bot Side-Task Harvester Upgrade ([finish_all_fleet_sidetasks.py](file:///data/data/com.termux/files/home/finish_all_fleet_sidetasks.py))**:
+    * Upgraded `finish_all_fleet_sidetasks.py` from 5 to all 10 bots with dedicated sweep functions for DiggoMiner, LeafEarn, Astra Airdrop, PepeGram, and AdxEarn AI.
+    * Added `/api/tasks/sweep-all` and `/api/tasks/sweep-status` endpoints on Render Node 2 for zero-phone-load cloud sweeps.
+  - **🌐 Edge Mesh & Render Standby Synchronization**:
+    * Deployed upgraded engine across all 5 Cloudflare Edge Worker nodes (`aaaai2`, `aaa-bot`, `aaa222`, `agorameet`, `aaaai`) via `deploy_both_cf_workers.py`.
+    * Synchronized code to `AAA0002/my-agy-fleet-standby` and `koramshah2/my-agy-fleet-standby`.
+    * Render Node 2 (Frankfurt: `srv-dan5q00ae00c73djummg`, deploy `dep-db8b4c8m7kps73doo5hg`) deployed 🟢 Live.
+  - **📱 Zero Phone Load Directive**: 0 background python processes on mobile (`ps aux | grep python` clean).
+
 - **⛏️ DiggoMiner Authentic Live API Engine, Multi-Bot Diagnostic Fixes & Zero-Stub Fleet Hardening (October 14, 2026)**:
   - **🚀 DiggoMiner Authentic Live Backend Integration (`_farm_diggo` & `farmDiggo`)**:
     * Reverse-engineered DiggoMiner's WebApp runtime (`https://diggo.linkpc.net/`) and backend client scripts (`backend-client.js`, `routes.js`).
