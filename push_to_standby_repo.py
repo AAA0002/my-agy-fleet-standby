@@ -118,6 +118,12 @@ def push_app():
     sidetasks_file = os.path.join(BASE_DIR, "finish_all_fleet_sidetasks.py")
     if os.path.exists(sidetasks_file):
         push_file(sidetasks_file, "finish_all_fleet_sidetasks.py", "feat: 10-bot fleet side tasks auto-sweep engine")
+    mrg_solver = os.path.join(BASE_DIR, "mrg_turnstile_solver.py")
+    if os.path.exists(mrg_solver):
+        push_file(mrg_solver, "mrg_turnstile_solver.py", "feat: MRG total holding level qualification and solver")
+    login_acc = os.path.join(BASE_DIR, "login_account.py")
+    if os.path.exists(login_acc):
+        push_file(login_acc, "login_account.py", "feat: Dual-layer Telegram /start and WebApp start_param referral binding")
     req_file = os.path.join(BASE_DIR, "requirements.txt")
     if os.path.exists(req_file):
         push_file(req_file, "requirements.txt", "deps: update dependencies")

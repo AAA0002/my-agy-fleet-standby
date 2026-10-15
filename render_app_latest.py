@@ -1856,9 +1856,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
 
     logger.info(f"[{name}] 🚀 Initiating silent referral binding for {len(unbound_bots)} unbound bots ({unbound_bots}) to Master ID 6727787768...")
 
-    # 1. MRG Miner (Strict WebApp initData + API Auth Verify Handshake, ZERO chat messages)
+    # 1. MRG Miner (Dual-Layer: Chat /start + WebApp initData handshake)
     if force or not acc_entry.get("mrg_referral_bound"):
         try:
+            try:
+                await client.send_message(MRG_BOT, f"/start {MRG_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
             b_mrg_in = await client.get_input_entity(MRG_BOT)
             res_mrg = await client(RequestAppWebViewRequest(
                 peer=b_mrg_in,
@@ -1882,18 +1887,28 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] MRG referral bind note: {e}")
 
-    # 2. ATF Miner (Silent WebApp handshake, ZERO chat messages)
+    # 2. ATF Miner (Dual-Layer: Chat /start + WebApp login handshake)
     if force or not acc_entry.get("atf_referral_bound"):
         try:
+            try:
+                await client.send_message(ATF_BOT, f"/start {REPORT_CHAT_ID}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
             tok = await extract_bot_webapp_token(client, ATF_BOT, start_param=REPORT_CHAT_ID, default_url="https://atfminers.asloni.online/miner/index.html?entry=bot_start", candidate_short_names=["app", "miner", "play"])
             acc_entry["atf_referral_bound"] = True
             await asyncio.sleep(0.5)
         except Exception as e:
             logger.warning(f"[{name}] ATF referral bind note: {e}")
 
-    # 3. Victor's Company (Silent WebApp handshake, ZERO chat messages)
+    # 3. Victor's Company (Dual-Layer: Chat /start + WebApp handshake)
     if force or not acc_entry.get("victors_referral_bound"):
         try:
+            try:
+                await client.send_message(VICTORS_BOT, f"/start {VICTORS_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
             b_vic_in = await client.get_input_entity(VICTORS_BOT)
             await client(RequestAppWebViewRequest(
                 peer=b_vic_in,
@@ -1906,9 +1921,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Victor's Company referral bind note: {e}")
 
-    # 4. VyroDrop (Silent WebApp handshake, ZERO chat messages)
+    # 4. VyroDrop (Dual-Layer: Chat /start + WebApp handshake)
     if force or not acc_entry.get("vyro_referral_bound"):
         try:
+            try:
+                await client.send_message(VYRO_BOT, f"/start {VYRO_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
             b_vy_in = await client.get_input_entity(VYRO_BOT)
             await client(RequestAppWebViewRequest(
                 peer=b_vy_in,
@@ -1921,9 +1941,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] VyroDrop referral bind note: {e}")
 
-    # 5. Kynex Network (Silent WebApp handshake, ZERO chat messages)
+    # 5. Kynex Network (Dual-Layer: Chat /start + WebApp handshake)
     if force or not acc_entry.get("kynex_referral_bound"):
         try:
+            try:
+                await client.send_message(KYNEX_BOT, f"/start {KYNEX_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
             b_ky_in = await client.get_input_entity(KYNEX_BOT)
             for sn in ["App", "app"]:
                 try:
@@ -1941,34 +1966,49 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Kynex referral bind note: {e}")
 
-    # 6. DiggoMiner (Silent WebApp handshake, ZERO chat messages)
+    # 6. DiggoMiner (Dual-Layer: Chat /start + WebApp handshake)
     if force or not acc_entry.get("diggo_referral_bound"):
         try:
+            try:
+                await client.send_message(DIGGO_BOT, f"/start {DIGGO_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
             tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=DIGGO_REFERRAL_CODE, default_url="https://diggo.linkpc.net/", candidate_short_names=["openapp", "startapp", "app", "miner", "miniapp"])
             acc_entry["diggo_referral_bound"] = True
             await asyncio.sleep(0.5)
         except Exception as e:
             logger.warning(f"[{name}] Diggo referral bind note: {e}")
 
-    # 7. LeafEarn (Silent WebApp handshake, ZERO chat messages)
+    # 7. LeafEarn (Dual-Layer: Chat /start + WebApp handshake)
     if force or not acc_entry.get("leafearn_referral_bound"):
         try:
+            try:
+                await client.send_message(LEAFEARN_BOT, f"/start {LEAFEARN_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
             tok = await extract_bot_webapp_token(client, LEAFEARN_BOT, start_param=LEAFEARN_REFERRAL_CODE, default_url="https://leafearn.site/", candidate_short_names=["app", "leafearn", "play", "startapp"])
             acc_entry["leafearn_referral_bound"] = True
             await asyncio.sleep(0.5)
         except Exception as e:
             logger.warning(f"[{name}] LeafEarn referral bind note: {e}")
 
-    # 8. Astra Airdrop (Silent WebApp handshake, ZERO chat messages)
+    # 8. Astra Airdrop (Dual-Layer: Chat /start + WebApp handshake)
     if force or not acc_entry.get("astra_referral_bound"):
         try:
+            try:
+                await client.send_message(ASTRA_BOT, f"/start {ASTRA_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
             tok = await extract_bot_webapp_token(client, ASTRA_BOT, start_param=ASTRA_REFERRAL_CODE, default_url="https://amazing-alpaca-eb7e2b.netlify.app/", candidate_short_names=["app", "airdrop", "startapp"])
             acc_entry["astra_referral_bound"] = True
             await asyncio.sleep(0.5)
         except Exception as e:
             logger.warning(f"[{name}] Astra referral bind note: {e}")
 
-    # 9. PepeGram (MiniApp profile registration + start param)
+    # 9. PepeGram (Dual-Layer: Chat /start + WebApp handshake)
     if force or not acc_entry.get("pepegram_referral_bound"):
         try:
             try:
@@ -1982,9 +2022,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] PepeGram referral bind note: {e}")
 
-    # 10. AdxEarn AI (Silent WebApp handshake, ZERO chat messages)
+    # 10. AdxEarn AI (Dual-Layer: Chat /start + WebApp handshake)
     if force or not acc_entry.get("adxearn_referral_bound"):
         try:
+            try:
+                await client.send_message(ADXEARN_BOT, f"/start {ADXEARN_REFERRAL_CODE}")
+                await asyncio.sleep(0.5)
+            except Exception:
+                pass
             tok = await extract_bot_webapp_token(client, ADXEARN_BOT, start_param=ADXEARN_REFERRAL_CODE, default_url="https://app.adxearnai.xyz/index.html", candidate_short_names=["app", "startapp"])
             acc_entry["adxearn_referral_bound"] = True
             await asyncio.sleep(0.5)

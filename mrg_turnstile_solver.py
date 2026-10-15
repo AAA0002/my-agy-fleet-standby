@@ -258,12 +258,16 @@ def check_account_status(init_data: str) -> dict:
         return {
             "success": True,
             "inAppBalance": float(user.get("inAppBalance") or 0),
+            "tonWalletBalance": float(user.get("tonWalletBalance") or 0),
             "unclaimed": float(user.get("unclaimedMiningBalance") or 0),
             "humanVerifiedUntil": user.get("humanVerifiedUntil"),
             "manualUnlockedLevel": int(user.get("manualUnlockedLevel") or 1),
+            "peakLevel": int(user.get("peakLevel") or 1),
             "isVerified": user.get("isVerified", False),
             "isTonConnected": user.get("isTonConnected", False),
-            "tonWalletAddress": user.get("tonWalletAddress", "")
+            "tonWalletAddress": user.get("tonWalletAddress", ""),
+            "referrerId": user.get("referrerId"),
+            "isQualified": user.get("isQualified", False)
         }
     return {"success": False, "error": body.get("error", "Unknown error")}
 
@@ -2012,8 +2016,8 @@ async def run_mrg_auto_solver():
                     total_claimed_mrg += claimed_amt
                     logger.info(f"⛏️ UID {uid}: Successfully claimed {claimed_amt:.2f} MRG! Miner restarted.")
 
-                    # Auto-upgrade level if balance allows
-                    new_bal = acc["stat"]["inAppBalance"] + claimed_amt
+                    # Auto-upgrade level if balance allows (including dedicated TON wallet balance)
+                    new_bal = acc["stat"]["inAppBalance"] + claimed_amt + acc["stat"].get("tonWalletBalance", 0.0)
                     auto_unlock_mrg_level(m_init, acc["stat"]["manualUnlockedLevel"], new_bal)
 
                 await asyncio.sleep(1.0)
@@ -2149,7 +2153,8 @@ async def run_mrg_auto_solver():
                     claimed_amt = float(claim_res.get("claimedAmount") or acc["stat"]["unclaimed"])
                     total_claimed_mrg += claimed_amt
                     logger.info(f"⛏️ UID {uid}: Auto-claimed active pass reward: {claimed_amt:.2f} MRG.")
-                    new_bal = acc["stat"]["inAppBalance"] + claimed_amt
+                    # Auto-upgrade level if balance allows (including dedicated TON wallet balance)
+                    new_bal = acc["stat"]["inAppBalance"] + claimed_amt + acc["stat"].get("tonWalletBalance", 0.0)
                     auto_unlock_mrg_level(m_init, acc["stat"]["manualUnlockedLevel"], new_bal)
 
     # 4. Master Account Referral Sweep

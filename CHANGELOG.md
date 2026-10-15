@@ -2,7 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
-- **🚀 Full 10-Bot Token Refresher Expansion, 18-Account Onboarding Completion & Referral Qualification (October 15, 2026)**:
+- **🚀 Dual-Layer Referral Binding, Fleet Task Automation & Qualification Hardening (October 15, 2026)**:
+  - **🔗 Dual-Layer `/start {ref}` Referral Binding Engine ([render_standby_app.py](file:///data/data/com.termux/files/home/render_standby_app.py), [render_app_latest.py](file:///data/data/com.termux/files/home/render_app_latest.py), [login_account.py](file:///data/data/com.termux/files/home/login_account.py))**:
+    * **Root Cause Elimination**: Identified that bot backends (e.g. MRG, Victor's, Diggo, Astra) listen to Telegram Bot webhook updates for the `/start {ref}` command to map users to referrers in their SQL databases. Previously, only PepeGram had chat `/start` transmission while the other 9 bots only sent `start_param` in WebApp iframe initData, resulting in `referrerId: None` for some recruits.
+    * **Dual-Layer Architecture**: Upgraded `bind_account_master_referrals` across all 10 bots (`MRG`, `ATF`, `Victor's`, `VyroDrop`, `Kynex`, `Diggo`, `LeafEarn`, `Astra`, `PepeGram`, `AdxEarn`) to execute Layer 1 (transmits `/start {ref}` to bot chat) and Layer 2 (`RequestAppWebViewRequest` with `start_param` + API verify handshake).
+  - **⛏️ MRG Miner Level 100+ Qualification & Total Holding Fix ([mrg_turnstile_solver.py](file:///data/data/com.termux/files/home/mrg_turnstile_solver.py), [finish_all_fleet_sidetasks.py](file:///data/data/com.termux/files/home/finish_all_fleet_sidetasks.py))**:
+    * **Holding Calculation Fix**: Discovered that MRG miner levels are governed by total holding (`inAppBalance + tonWalletBalance`). Added `tonWalletBalance`, `peakLevel`, `referrerId`, and `isQualified` to `check_account_status`, and updated `new_bal` in level auto-upgrade calculations so recruits' TON balances are properly counted toward unlocking Level 100+ (`2842 MRG`).
+    * **Master Bonus Sweeper**: Added `POST /api/user/claim-one-time-bonus` call for Master Account (`6727787768`) in `finish_all_fleet_sidetasks.py` alongside `claim-commission`.
+  - **🏢 Victor's Company TonConnect 2.0 Proof & Hiring Bonus Pipeline ([finish_all_fleet_sidetasks.py](file:///data/data/com.termux/files/home/finish_all_fleet_sidetasks.py), [victors_sb_solver.py](file:///data/data/com.termux/files/home/victors_sb_solver.py))**:
+    * **TonConnect 2.0 Proof Integration**: Integrated `create_victors_ton_proof` into `sweep_victors_tasks`, generating authentic Ed25519-signed proof payloads to connect dedicated TON wallets, unlocking `walletOwned: True` on recruit accounts.
+    * **Master Recruitment Bonus Claims**: Dispatched `victors_sb_solver.yml` (run `38776532081`) in GitHub Actions using SeleniumBase UC mode to solve Turnstile and claim hiring bonuses (+100 VIC/recruit).
+  - **🐸 PepeGram Dynamic Task Claiming & Invite Reward Verification**:
+    * **Payload Parameter Standardization**: Fixed task claim payload in `finish_all_fleet_sidetasks.py` to send both `task_id` and `taskId` to `POST /tasks/claim?tid=1449`.
+    * **Invite Milestones & Ad Rewards**: Added automatic discovery and claiming of eligible invite milestones (`invite_1`, `invite_5`, etc.) and verified live rewards (`+100 pips` power per task).
+  - **⭐ Astra Airdrop Supabase Realignment & Team Claim Verification**:
+    * Realigned `check_all_referrals.py` to production Supabase cluster `https://bcbwqnkfyrpjhctesvnp.supabase.co` with `p_dcs` and `p_hash`.
+    * Verified live team commissions for Master: `RPC 'astra_team_claim'` returning `status: success, claimed_amount: 0.0114 ASTRA`.
+  - **🌐 Standby Repositories & Render Node 2 Synchronization**:
+    * Synchronized all updates to `AAA0002/my-agy-fleet-standby` (Commit `242a317c`, `35b12e35`) and `koramshah2/my-agy-fleet-standby` (Commit `fd10baf3`, `3b281d18`).
+    * Redeployed Render Node 2 (`srv-dan5q00ae00c73djummg`, deploy `dep-db8gnsnavr4c73ajbcgg`) 🟢 Live.
+    * Triggered autonomous 10-bot side-task sweeper via `POST /api/tasks/sweep-all` on Render Node 2.
+  - **📱 Zero Phone Load Directive**: 0 python background processes on Samsung Galaxy A30 (`ps aux | grep -i python` clean).
   - **🔑 Universal 10-Bot Token Refresher ([refresh_cloud_tokens.py](file:///data/data/com.termux/files/home/refresh_cloud_tokens.py) & [extract_all_missing_fleet_tokens.py](file:///data/data/com.termux/files/home/extract_all_missing_fleet_tokens.py))**:
     * **10-Bot Expansion**: Upgraded cloud token refreshers from 5 bots to all 10 active bots (`mrg`, `atf`, `victors`, `vyro`, `kynex`, `diggo`, `leafearn`, `astra`, `pepegram`, `adxearn`).
     * **Proactive PepeGram `/start` Auto-Registration**: Integrated `/start {PEPEGRAM_REF}` transmission directly into `refresh_cloud_tokens.py` prior to WebApp token query for recruits, permanently eliminating `not_registered (needs bot /start)`.

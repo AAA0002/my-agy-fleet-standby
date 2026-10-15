@@ -294,8 +294,10 @@ async def sweep_mrg_tasks(session: aiohttp.ClientSession, uid: str, name: str, m
                                 res["tasks_claimed"] += 1
                                 res["notes"].append(f"claimed_wait_{tid}")
 
-        # 4. Level Auto-Upgrade (if enough balance)
-        if in_bal >= 100:
+        # 4. Level Auto-Upgrade (if enough balance, including TON wallet balance)
+        ton_holding = float(u_obj.get("tonWalletBalance", 0) or 0)
+        total_mrg_bal = in_bal + ton_holding
+        if total_mrg_bal >= 100:
             def wp_calc(e):
                 if e <= 0: return 0
                 if e == 1: return 100
@@ -304,7 +306,7 @@ async def sweep_mrg_tasks(session: aiohttp.ClientSession, uid: str, name: str, m
             lo, hi, target_lvl = 1, 203, cur_lvl
             while lo <= hi:
                 mid = (lo + hi) // 2
-                if in_bal >= wp_calc(mid):
+                if total_mrg_bal >= wp_calc(mid):
                     target_lvl = mid
                     lo = mid + 1
                 else:
@@ -315,11 +317,14 @@ async def sweep_mrg_tasks(session: aiohttp.ClientSession, uid: str, name: str, m
                         res["notes"].append(f"upgraded_lvl_{target_lvl}")
                         res["level"] = target_lvl
 
-        # 5. Master Referral Commission
+        # 5. Master Referral Commission & One-Time Bonus
         if str(uid) == MASTER_UID:
             async with session.post("https://mrg.up.railway.app/api/user/claim-commission", json={"initData": m_init}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as cr:
                 if cr.status == 200:
                     res["notes"].append("master_commission_claimed")
+            async with session.post("https://mrg.up.railway.app/api/user/claim-one-time-bonus", json={"initData": m_init}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as br:
+                if br.status == 200:
+                    res["notes"].append("master_one_time_bonus_claimed")
 
     except Exception as e:
         res["notes"].append(f"err: {str(e)[:50]}")
@@ -490,13 +495,44 @@ async def sweep_victors_tasks(session: aiohttp.ClientSession, uid: str, name: st
         async with session.post("https://server.victors.company/api/checkin", json={}, headers=v_h) as cr:
             if cr.status == 200: res["notes"].append("checkin_done")
 
-        # 4. Connect TON wallet if needed
+        # 4. Connect TON wallet if needed (TonConnect 2.0 Proof-of-Ownership)
         ton_addr = get_ton_wallet_address(acc, uid)
-        if ton_addr and not me.get("walletAddress"):
-            async with session.post("https://server.victors.company/api/wallet/connect", json={"address": ton_addr}, headers=v_h) as wr:
-                if wr.status == 200:
-                    async with session.post("https://server.victors.company/api/tasks/claim", json={"taskId": "connect-wallet"}, headers=v_h) as twr:
-                        if twr.status == 200: res["notes"].append("wallet_task_claimed")
+        if ton_addr and (not me.get("walletAddress") or not me.get("walletOwned")):
+            connected = False
+            try:
+                from victors_sb_solver import create_victors_ton_proof, load_fleet_ton_wallets
+                tw = load_fleet_ton_wallets()
+                w_entry = tw.get(str(uid)) or tw.get(int(uid) if uid.isdigit() else uid) or acc.get("ton_wallet")
+                if w_entry and isinstance(w_entry, dict) and w_entry.get("mnemonic"):
+                    async with session.get("https://server.victors.company/api/wallet/proof-payload", headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as npr:
+                        if npr.status == 200:
+                            np_d = await npr.json()
+                            nonce = np_d.get("payload") if isinstance(np_d, dict) else None
+                            if nonce:
+                                proof_item, state_init_b64, pub_key_hex, friendly_addr = create_victors_ton_proof(w_entry, nonce)
+                                if proof_item:
+                                    conn_body = {
+                                        "address": friendly_addr,
+                                        "proof": proof_item,
+                                        "stateInit": state_init_b64,
+                                        "publicKey": pub_key_hex
+                                    }
+                                    async with session.post("https://server.victors.company/api/wallet/connect", json=conn_body, headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as cwr:
+                                        if cwr.status in (200, 201):
+                                            connected = True
+                                            res["notes"].append("ton_wallet_proof_connected")
+            except Exception as pe:
+                logger.debug(f"[{name}] Victor's proof connect note: {pe}")
+
+            if not connected:
+                async with session.post("https://server.victors.company/api/wallet/connect", json={"address": ton_addr}, headers=v_h) as wr:
+                    if wr.status == 200:
+                        connected = True
+                        res["notes"].append("ton_wallet_connected")
+
+            if connected:
+                async with session.post("https://server.victors.company/api/tasks/claim", json={"taskId": "connect-wallet"}, headers=v_h) as twr:
+                    if twr.status == 200: res["notes"].append("wallet_task_claimed")
 
         # 5. Discover & Claim tasks
         async with session.get("https://server.victors.company/api/tasks", headers=v_h, timeout=aiohttp.ClientTimeout(total=8)) as tr:
@@ -513,11 +549,12 @@ async def sweep_victors_tasks(session: aiohttp.ClientSession, uid: str, name: st
                                     res["tasks_claimed"] += 1
                                     res["notes"].append(f"task_{tid}")
 
-        # 6. Referral claims
-        async with session.post("https://server.victors.company/api/referral/claim-bonus", json={}, headers=v_h) as rbr:
-            if rbr.status == 200: res["notes"].append("ref_bonus_claimed")
-        async with session.post("https://server.victors.company/api/referral/claim-commission", json={}, headers=v_h) as rcr:
-            if rcr.status == 200: res["notes"].append("ref_commission_claimed")
+        # 6. Referral claims (Hiring Bonus + Commission)
+        if str(uid) == MASTER_UID or vic_pass:
+            async with session.post("https://server.victors.company/api/referral/claim-bonus", json={}, headers=v_h) as rbr:
+                if rbr.status == 200: res["notes"].append("ref_bonus_claimed")
+            async with session.post("https://server.victors.company/api/referral/claim-commission", json={}, headers=v_h) as rcr:
+                if rcr.status == 200: res["notes"].append("ref_commission_claimed")
 
         # 7. Deep Mine Arcade Expeditions
         try:
@@ -876,9 +913,11 @@ async def sweep_pepegram_tasks(session: aiohttp.ClientSession, uid: str, name: s
                 t_d = await tr.json()
                 for tk in (t_d.get("tasks", []) if isinstance(t_d, dict) else []):
                     tk_id = tk.get("id")
-                    if tk_id and not tk.get("completed") and not tk.get("pending"):
+                    is_done = tk.get("completed")
+                    is_eligible = tk.get("eligible")
+                    if tk_id and not is_done and (not tk.get("pending") or is_eligible):
                         await jitter(0.4, 0.8)
-                        async with session.post(f"{pepe_base}/tasks/claim?tid=1449", json={"initData": p_init, "tid": 1449, "taskId": tk_id}, headers=pepe_headers) as cr:
+                        async with session.post(f"{pepe_base}/tasks/claim?tid=1449", json={"initData": p_init, "tid": 1449, "task_id": tk_id, "taskId": tk_id}, headers=pepe_headers) as cr:
                             if cr.status in (200, 201):
                                 res["tasks_claimed"] += 1
                                 res["notes"].append(f"task_{tk_id}")

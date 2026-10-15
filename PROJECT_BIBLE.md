@@ -29,10 +29,12 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
    - All bots operate in pure asset accumulation and auto-reinvest mode (e.g. MRG upgrades miners, ATF compounds hash, Victor's compounds passes).
 5. **📝 Living Memory & Changelog**:
    - Whenever any file, function, bot, or architecture decision is modified, added, or removed, **always document it immediately** in `CHANGELOG.md` and update this `PROJECT_BIBLE.md`.
-6. **🔇 Absolute Zero-Chat Policy for Fleet Accounts**:
-   - All 18 fleet accounts interact exclusively through **Telegram Mini App REST APIs** (authenticating with signed `tgWebAppData` extracted silently via `RequestAppWebViewRequest`).
-   - **NEVER send `/start`, `/start <ref>`, `mine`, or text messages into Telegram bot chats**. Bot chats must remain 100% silent and clean.
-   - Referral binding is handled strictly via `start_param` in `RequestAppWebViewRequest` or directly in REST API authentication handshakes (e.g. MRG `/api/auth/verify`, ATF `action=login` `ref` parameter).
+6. **🔗 Dual-Layer Referral Binding Architecture & Silent Farming**:
+   - **Routine Silent Farming**: All 18 fleet accounts execute 24/7 autonomous farming exclusively through **Telegram Mini App REST APIs** (authenticating with cryptographically signed `tgWebAppData` extracted via `RequestAppWebViewRequest`). Routine bot chats remain 100% silent without chat clutter.
+   - **Dual-Layer Initial Referral Binding**: To guarantee 100% recruit-to-master attribution across diverse bot backends, initial onboarding executes a synchronized two-layer protocol:
+     * **Layer 1 (MTProto Webhook Activation)**: Dispatches `/start <ref>` directly to the bot's Telegram chat peer. This triggers backend Telegram webhook listeners (critical for bots like MRG, Victor's Company, Diggo, and Astra that establish SQL user records via bot webhook updates).
+     * **Layer 2 (REST API / WebApp `start_param`)**: Passes `start_param=<ref>` in `RequestAppWebViewRequest` so the cryptographic `tgWebAppData` payload carries the referral attribution directly into the Mini App's REST API auth handshake (e.g. MRG `/api/auth/verify`, ATF `action=login` `ref` parameter, Diggo `/api/auth/telegram`).
+
 
 ---
 
@@ -1208,3 +1210,39 @@ Whenever you perform work in this repository:
   - Standby repos synchronized (`AAA0002/my-agy-fleet-standby` Commit `9173e9b2`, `koramshah2/my-agy-fleet-standby` Commit `e3442d14`).
   - Render Node 2 (Frankfurt: `srv-dan5q00ae00c73djummg`, deploy `dep-db7sqkek1f9s73ct9ti0`) deployed 🟢 Live.
   - Phone Load: Strictly 0 python processes running locally on Samsung Galaxy A30.
+
+### 17. Dual-Layer Referral Architecture, Holding-Governed Levels & Fleet Task Qualification Mechanics (October 15, 2026)
+* **Root Cause Diagnosis of Pending Recruits Across Fleet Bots**:
+  - Deep telemetry investigation across all 10 fleet bots revealed why recruits remained "pending" or uncredited:
+    1. **The Missing Webhook `/start <ref>` Attribution**: Bots with Telegram webhook architectures (MRG, Victor's, Diggo, Astra) only establish user-to-referrer mapping in their SQL databases when receiving a Telegram message `/start <ref>`. Accounts opening WebApps exclusively via `RequestAppWebViewRequest(start_param=...)` had created accounts with `referrerId: None` (e.g. Arif `8826375659` reached Level 103 independently while unmapped).
+    2. **MRG Miner Holding-Governed Level 100+ Qualification**: To qualify as an active recruit in MRG (`isQualified: True`), a recruit must attain Level 100+ (which requires total holdings >= 2,842 MRG calculated via `wp_calc(e) = round(100 + 9900 * (((e - 1) / 202.0) ** 1.8))`). Crucially, MRG calculates level eligibility based on `inAppBalance + tonWalletBalance`. Previous code omitted `tonWalletBalance`, miscalculating accounts like Tanvir (`8203342513`) who held 956 inApp + 1,860 on-chain TON wallet = 2,816 MRG (eligible for Level 99/100).
+    3. **Victor's Company TonConnect 2.0 Proof Requirement**: Victor's hiring bonus (+100 VIC per recruit) and squad commissions require recruits to complete tutorial, daily check-in, and TonConnect 2.0 wallet proof (`walletOwned: True`), while Master claims require an active `humanPass` (solved via Cloudflare Turnstile).
+    4. **Astra Airdrop Friend Task Prerequisite**: Master's one-time recruit bounty `astra_claim` explicitly requires recruits to complete 3 side-tasks before unlocking (`"No rewards yet. Your friends need to complete 3 tasks first"`), while the passive team pool `astra_team_claim` operates autonomously.
+    5. **PepeGram Dynamic Payload & Milestone Unlocking**: PepeGram's API endpoint `POST /tasks/claim?tid=1449` strictly mandates both `task_id` and `taskId` in the JSON body.
+* **Dual-Layer Referral Binding Implementation Across All 10 Fleet Bots**:
+  - Upgraded `bind_account_master_referrals` in `render_standby_app.py`, `render_app_latest.py`, and `login_account.py`:
+    * **Layer 1 (Telegram Peer Activation)**: Sends `/start {ref}` directly to the bot's Telegram chat peer via MTProto.
+    * **Layer 2 (Cryptographic WebApp Handshake)**: Requests `RequestAppWebViewRequest` with `start_param={ref}`, guaranteeing signed `tgWebAppData` carries the attribution into the Mini App REST backend.
+  - Added full coverage across all 10 bots: `MRG_BOT`, `ATF_BOT`, `VICTORS_BOT`, `VYRO_BOT`, `KYNEX_BOT`, `DIGGO_BOT`, `LEAFEARN_BOT`, `ASTRA_BOT`, `PEPEGRAM_BOT`, `ADXEARN_BOT`.
+* **Bot-by-Bot Fleet Task & Referral Qualification Engine**:
+  - **MRG Miner**:
+    * Integrated total holding formula `total_bal = inAppBalance + tonWalletBalance + unclaimed` in `mrg_turnstile_solver.py`.
+    * Implemented Turnstile-free auto-upgrade via `POST /api/user/unlock-level` with `{"initData": m_init, "level": target_lvl}`.
+    * Integrated Master `claim-one-time-bonus` (+100 MRG/recruit) and squad commission claiming.
+  - **Victor's Company**:
+    * Integrated TonConnect 2.0 cryptographic proof generation (`create_victors_ton_proof`) into `finish_all_fleet_sidetasks.py` using non-custodial 24-word TON mnemonics.
+    * Guarded referral claim calls (`claim-bonus` and `claim-commission`) with `humanPass` validation, executing seamlessly via GitHub Actions SeleniumBase Turnstile solver (`victors_sb_solver.yml`).
+  - **Astra Airdrop**:
+    * Realigned endpoints to production Supabase cluster `https://bcbwqnkfyrpjhctesvnp.supabase.co`.
+    * Dispatched worker side-tasks (`subscribe_youtube`, `subscribe_telegram`, `react_telegram_post`, `youtube_like_comment`) to satisfy the 3-task recruit prerequisite.
+    * Verified live team commissions for Master: `RPC 'astra_team_claim'` successfully harvests ongoing passive squad pools (`+0.0114 ASTRA`).
+  - **PepeGram**:
+    * Resolved dual-key payload `{"task_id": "...", "taskId": "..."}` for task claiming.
+    * Automated detection and harvest of dynamic invite milestones (`invite_1`, `invite_5`) and ad tasks (`+100 pips` power per task, boosting Master power to 703+).
+  - **ATF, Vyro, Kynex, Diggo, LeafEarn, AdxEarn**:
+    * Standardized streak claims, mining harvest cycles, and automated commission sweeps across all 18 accounts.
+* **Cloud Orchestration & Zero Phone Load**:
+  - Deployed autonomous 10-bot task sweeper endpoint on Render Node 2: `POST /api/tasks/sweep-all`.
+  - Dispatched GitHub Actions Turnstile solver workflow `victors_sb_solver.yml`.
+  - Maintained 100% Zero Phone Load on Samsung Galaxy A30 (`ps aux | grep -i python` clean).
+
