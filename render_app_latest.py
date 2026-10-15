@@ -5298,6 +5298,44 @@ async def api_farm_status():
     return {"ok": True, "last_farm_run": LAST_FARM_RUN, "timestamp": time.time()}
 
 
+LAST_SWEEP_RUN = {"status": "idle", "timestamp": 0, "output": ""}
+
+
+@app.post("/api/tasks/sweep-all")
+async def api_tasks_sweep_all(request: Request):
+    """Executes on-demand cloud side-tasks sweep across all 10 bots on Render Node 2."""
+    auth = request.headers.get("Authorization") or ""
+    req_secret = request.query_params.get("secret", "")
+    if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    async def _run_sweep():
+        global LAST_SWEEP_RUN
+        LAST_SWEEP_RUN["status"] = "running"
+        LAST_SWEEP_RUN["timestamp"] = time.time()
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                sys.executable, "finish_all_fleet_sidetasks.py",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT
+            )
+            stdout, _ = await proc.communicate()
+            LAST_SWEEP_RUN["status"] = "completed" if proc.returncode == 0 else "failed"
+            LAST_SWEEP_RUN["output"] = stdout.decode("utf-8", errors="ignore")[-2000:]
+        except Exception as e:
+            LAST_SWEEP_RUN["status"] = "error"
+            LAST_SWEEP_RUN["output"] = str(e)
+
+    asyncio.create_task(_run_sweep())
+    return {"ok": True, "status": "dispatched", "message": "10-Bot fleet side-task sweep dispatched on Render Node 2."}
+
+
+@app.get("/api/tasks/sweep-status")
+async def api_tasks_sweep_status():
+    """Returns the latest status of the 10-bot side-task sweep."""
+    return {"ok": True, "last_sweep_run": LAST_SWEEP_RUN}
+
+
 @app.post("/api/farm/account/{uid}")
 async def api_farm_single_account(uid: str, request: Request):
     """Executes on-demand cloud farming & token bootstrap for a single account in the fleet."""
