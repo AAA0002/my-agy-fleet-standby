@@ -774,6 +774,21 @@ def save_victors_pass_to_upstash(uid: int, human_pass: str):
         logger.warning(f"Error saving Victor's pass to Redis for UID {uid}: {e}")
 
 
+def save_vyro_pass_to_upstash(uid: int, turnstile_token: str):
+    """Saves valid VyroDrop Turnstile pass to Upstash Redis for edge nodes and Render."""
+    try:
+        req = urllib.request.Request(
+            f"{UPSTASH_URL}/set/vyro:pass:{uid}",
+            data=json.dumps({"turnstileToken": turnstile_token, "updated_at": time.time()}).encode(),
+            headers={"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            pass
+    except Exception as e:
+        logger.warning(f"Error saving Vyro pass to Redis for UID {uid}: {e}")
+
+
 async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: bool) -> bool:
     """
     Solves Turnstile for Victor's Company, logs in, binds referral, and saves humanPass.
@@ -1348,6 +1363,7 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
         api_token = solve_turnstile_via_api(ts_sitekey, VYRO_ORIGIN, action=ts_action, cdata=ts_cdata)
         if api_token:
             logger.info(f"✅ [VyroDrop] UID {uid}: Turnstile solved via API: {api_token[:16]}...")
+            save_vyro_pass_to_upstash(uid, api_token)
             ch_code2, ch_body2 = safe_post(f"{VYRO_API}/wallet/challenge", {"turnstileToken": api_token}, extra_headers=v_headers)
             if ch_code2 in (200, 201) and isinstance(ch_body2, dict) and ch_body2.get("payload"):
                 nonce = ch_body2["payload"]
@@ -1559,6 +1575,7 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                 if render_res and render_res.get("success") and render_res.get("token"):
                     tok = render_res["token"]
                     logger.info(f"✅ [VyroDrop] UID {uid}: Turnstile solved: {tok[:16]}...")
+                    save_vyro_pass_to_upstash(uid, tok)
                     ch_code2, ch_body2 = safe_post(f"{VYRO_API}/wallet/challenge", {"turnstileToken": tok}, extra_headers=v_headers)
                     if ch_code2 in (200, 201) and isinstance(ch_body2, dict) and ch_body2.get("payload"):
                         nonce = ch_body2["payload"]

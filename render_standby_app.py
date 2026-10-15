@@ -4617,6 +4617,17 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         if w_entry and raw_m:
                             ch_headers = {**vy_h, "Content-Type": "application/json"}
                             v_pass = get_cached_upstash_pass(f"vyro:pass:{uid}")
+                            if v_pass is None and UPSTASH_URL and UPSTASH_TOKEN:
+                                try:
+                                    async with session.get(f"{UPSTASH_URL}/get/vyro:pass:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3)) as vr:
+                                        if vr.status == 200:
+                                            vd = await vr.json()
+                                            if vd.get("result"):
+                                                parsed_v = json.loads(vd["result"]) if isinstance(vd["result"], str) else vd["result"]
+                                                v_pass = parsed_v.get("turnstileToken") or parsed_v.get("humanPass") if isinstance(parsed_v, dict) else parsed_v
+                                                set_cached_upstash_pass(f"vyro:pass:{uid}", v_pass, ttl=1800)
+                                except Exception:
+                                    pass
                             ch_body = {"turnstileToken": v_pass} if v_pass else {}
                             c_code, c_resp = await safe_post("https://vyro.run.place/api/wallet/challenge", json_data=ch_body, req_headers=ch_headers)
                             if c_code in (200, 201) and isinstance(c_resp, dict) and c_resp.get("payload"):
