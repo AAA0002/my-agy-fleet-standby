@@ -13,6 +13,7 @@ import hashlib
 import hmac
 import traceback
 import uuid
+import struct
 from typing import Any
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 try:
@@ -1457,11 +1458,12 @@ async def token_health_and_refresh_watchdog():
                                 except Exception:
                                     synced_ts = 0
                         # Dynamic WebApp Session Freshness Guard:
-                        # MiniApp WebApp tokens (especially VyroDrop) have ~1.5h - 2h TTL.
-                        # Refresh tokens if missing or older than 2 hours (7200s).
+                        # DiggoMiner expires in 1h (3600s), VyroDrop in ~1.5h.
+                        # Proactively refresh tokens if missing or older than 45 minutes (2700s).
                         has_any_token = any(k.endswith("_init_data") and bool(v) for k, v in tok.items())
                         has_vyro = bool(tok.get("vyro_init_data"))
-                        is_stale = (now - synced_ts > 7200) or (not has_vyro and (now - synced_ts > 1800))
+                        has_diggo = bool(tok.get("diggo_init_data"))
+                        is_stale = (now - synced_ts > 2700) or ((not has_vyro or not has_diggo) and (now - synced_ts > 900))
                         if not tok or not has_any_token or is_stale:
                             stale_or_missing_accs.append(acc)
 
@@ -1957,9 +1959,14 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Astra referral bind note: {e}")
 
-    # 9. PepeGram (Silent WebApp handshake, ZERO chat messages)
+    # 9. PepeGram (MiniApp profile registration + start param)
     if force or not acc_entry.get("pepegram_referral_bound"):
         try:
+            try:
+                await client.send_message(PEPEGRAM_BOT, f"/start {PEPEGRAM_REFERRAL_CODE}")
+                await asyncio.sleep(0.8)
+            except Exception:
+                pass
             tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=PEPEGRAM_REFERRAL_CODE, default_url="https://app.miniempire.app/miniapp/index.html?tid=1449&lang=en", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
             acc_entry["pepegram_referral_bound"] = True
             await asyncio.sleep(0.5)
@@ -4603,6 +4610,54 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 await safe_post("https://vyro.run.place/api/referrals/claim", json_data={"kind": "MINING", "idempotencyKey": str(uuid.uuid4())}, req_headers=vy_h)
 
                 if wallet_required:
+                    # Attempt automated TonConnect 2.0 wallet binding if dedicated TON wallet is available
+                    try:
+                        w_entry = FLEET_TON_CACHE.get(str(uid)) or (acc.get("ton_wallet") or {})
+                        if w_entry and w_entry.get("mnemonic"):
+                            ch_headers = {**vy_h, "Content-Type": "application/json"}
+                            v_pass = get_cached_upstash_pass(f"vyro:pass:{uid}")
+                            ch_body = {"turnstileToken": v_pass} if v_pass else {}
+                            c_code, c_resp = await safe_post("https://vyro.run.place/api/wallet/challenge", json_data=ch_body, req_headers=ch_headers)
+                            if c_code in (200, 201) and isinstance(c_resp, dict) and c_resp.get("payload"):
+                                nonce = c_resp["payload"]
+                                words = w_entry["mnemonic"].split() if isinstance(w_entry["mnemonic"], str) else w_entry["mnemonic"]
+                                _, pub_key_bytes, priv_key_bytes, wallet_contract = Wallets.from_mnemonics(
+                                    mnemonics=words, version=WalletVersionEnum.v4r2
+                                )
+                                state_init_res = wallet_contract.create_state_init()
+                                state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
+                                t_addr = wallet_contract.address
+                                friendly_addr = t_addr.to_string(is_user_friendly=True, is_bounceable=False, is_url_safe=True)
+                                domain_bytes = b"vyro.run.place"
+                                ts_now = int(time.time())
+                                msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_bytes)) + domain_bytes + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
+                                digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
+                                from nacl.signing import SigningKey
+                                sig = SigningKey(priv_key_bytes[:32]).sign(digest).signature
+                                sig_b64 = base64.b64encode(sig).decode("utf-8")
+                                conn_body = {
+                                    "address": friendly_addr,
+                                    "chain": "-239",
+                                    "publicKey": pub_key_bytes.hex(),
+                                    "walletStateInit": state_init_b64,
+                                    "proof": {
+                                        "timestamp": ts_now,
+                                        "domain": {"lengthBytes": len(domain_bytes), "value": "vyro.run.place"},
+                                        "signature": sig_b64,
+                                        "payload": nonce
+                                    }
+                                }
+                                conn_code, conn_resp = await safe_post("https://vyro.run.place/api/wallet/connect", json_data=conn_body, req_headers=ch_headers)
+                                if conn_code in (200, 201):
+                                    logger.info(f"[{name}] ✅ [VyroDrop] Bound dedicated TON wallet {friendly_addr[:12]}...")
+                                    await jitter(0.8, 1.5)
+                                    st_c2, _ = await safe_post("https://vyro.run.place/api/mining/start", json_data={"idempotencyKey": str(uuid.uuid4())}, req_headers=vy_h)
+                                    if st_c2 in (200, 201):
+                                        wallet_required = False
+                    except Exception as vw_err:
+                        logger.debug(f"[{name}] Vyro wallet connect note: {vw_err}")
+
+                if wallet_required:
                     status["bots"]["vyro"] = f"wallet_required (TonConnect needed, lvl: {lvl})"
                 else:
                     speed = m_obj.get('currentSpeed', 0) if m_obj else 0
@@ -4700,6 +4755,19 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     )
                     if isinstance(t_d, dict) and t_d.get("amount"):
                         bal = t_d.get("state", {}).get("balance", bal)
+
+                # 5. Social & Community tasks
+                for sid in ["telegram", "community_react", "social-tasks"]:
+                    s_task = tasks.get(sid) or {}
+                    if s_task.get("enabled") and not s_task.get("claimed"):
+                        await jitter(0.3, 0.7)
+                        t_code, t_d = await safe_post(
+                            f"{base_url}/api/tasks/claim",
+                            json_data={"taskId": sid},
+                            req_headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}
+                        )
+                        if isinstance(t_d, dict) and t_d.get("amount"):
+                            bal = t_d.get("state", {}).get("balance", bal)
 
                 claim_str = f", +{claimed_amt:.2f} claimed" if claimed_amt else ""
                 status["bots"]["diggo"] = f"farmed (bal: {bal:.2f} DIGGO, lvl: {lvl}{claim_str})"
@@ -4805,7 +4873,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 log_d = await astra_rpc("astra_login", {"p_ref": p_ref} if p_ref else {})
                 u_obj = (log_d.get("user") if isinstance(log_d, dict) else {}) or {}
                 miner_lvl = u_obj.get("miner_level", 1)
-                astra_bal = u_obj.get("balance", 0)
+                astra_bal = float(u_obj.get("mined_balance", 0) or u_obj.get("balance", 0))
 
                 # 2. Sync Dedicated Account TON Wallet if available
                 target_ton_w = (acc.get("ton_wallet") or {}).get("address") or (PRIMARY_TON_WALLET if is_owner else None)
@@ -4831,7 +4899,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 await astra_rpc("astra_claim")
                 await astra_rpc("astra_team_claim")
 
-                status["bots"]["astra"] = f"farmed (lvl: {miner_lvl}, bal: {astra_bal} ASTRA)"
+                status["bots"]["astra"] = f"farmed (lvl: {miner_lvl}, bal: {astra_bal:.1f} ASTRA)"
                 return
             except Exception as e:
                 status["bots"]["astra"] = f"api_error: {format_error(e)}"
@@ -4854,6 +4922,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 # 1. Auth & Profile
                 await jitter(0.5, 1.2)
                 _, auth_d = await safe_post(f"{pepe_base}/auth?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers)
+                if isinstance(auth_d, dict) and auth_d.get("error") == "user not registered":
+                    status["bots"]["pepegram"] = "not_registered (needs bot /start)"
+                    return
+
                 u_data = (auth_d.get("user") if isinstance(auth_d, dict) else {}) or {}
                 power_val = u_data.get("power", 0)
                 hashes_val = u_data.get("hashes", 0)
@@ -4866,6 +4938,16 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 # 3. Mine tap / task execution
                 await jitter(0.5, 1.2)
                 await safe_post(f"{pepe_base}/tasks/mine?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers)
+
+                # 4. Tasks list & claim
+                await jitter(0.4, 0.8)
+                _, t_data = await safe_get(f"{pepe_base}/tasks?initData={urllib.parse.quote(p_init)}&tid=1449", req_headers=pepe_headers)
+                if isinstance(t_data, dict) and t_data.get("tasks"):
+                    for tk in t_data["tasks"]:
+                        tk_id = tk.get("id")
+                        if tk_id and not tk.get("completed") and not tk.get("pending"):
+                            await jitter(0.3, 0.7)
+                            await safe_post(f"{pepe_base}/tasks/claim?tid=1449", {"initData": p_init, "tid": 1449, "taskId": tk_id}, req_headers=pepe_headers)
 
                 status["bots"]["pepegram"] = f"farmed (power: {power_val}, hashes: {hashes_val})"
                 return
@@ -5083,8 +5165,26 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
         async def _farm_with_sem(a_dict, t_dict):
             async with farm_sem:
                 uid_str = str(a_dict.get("user_id"))
+                now_s = time.time()
+                synced_val = t_dict.get("synced_at", 0) or t_dict.get("updated_at", 0) or 0
+                synced_ts = 0
+                if isinstance(synced_val, (int, float)):
+                    synced_ts = float(synced_val)
+                elif isinstance(synced_val, str):
+                    try:
+                        synced_ts = datetime.datetime.fromisoformat(synced_val.replace("Z", "+00:00")).timestamp()
+                    except Exception:
+                        try:
+                            synced_ts = float(synced_val)
+                        except Exception:
+                            synced_ts = 0
+
                 has_any_token = any(k.endswith("_init_data") and bool(v) for k, v in t_dict.items())
-                if (not has_any_token) and (a_dict.get("session_string") or a_dict.get("session")):
+                has_vyro = bool(t_dict.get("vyro_init_data"))
+                has_diggo = bool(t_dict.get("diggo_init_data"))
+                is_stale = (now_s - synced_ts > 2700) or ((not has_vyro or not has_diggo) and (now_s - synced_ts > 900))
+
+                if ((not has_any_token) or is_stale) and (a_dict.get("session_string") or a_dict.get("session")):
                     try:
                         fresh_toks = await asyncio.wait_for(extract_tokens_for_account(a_dict), timeout=45.0)
                         if fresh_toks:
@@ -5094,7 +5194,19 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                     except Exception as ex_e:
                         logger.warning(f"[Farm Task] On-the-fly extraction note for {uid_str}: {ex_e}")
                 try:
-                    return await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=force), timeout=75.0)
+                    res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=force), timeout=75.0)
+                    if isinstance(res, dict) and any("token_expired" in str(v).lower() for v in res.get("bots", {}).values()):
+                        if a_dict.get("session_string") or a_dict.get("session"):
+                            try:
+                                fresh_toks = await asyncio.wait_for(extract_tokens_for_account(a_dict), timeout=45.0)
+                                if fresh_toks:
+                                    t_dict.update(fresh_toks)
+                                    tokens_map[uid_str] = t_dict
+                                    asyncio.create_task(sync_account_tokens_to_clouds(t_dict))
+                                    res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=True), timeout=75.0)
+                            except Exception:
+                                pass
+                    return res
                 except asyncio.TimeoutError:
                     return {"uid": uid_str, "name": a_dict.get("name", uid_str), "bots": {"status": "timeout_75s"}}
 

@@ -26,6 +26,8 @@ import asyncio
 import aiohttp
 import re
 import uuid
+import hashlib
+import hmac
 import logging
 import urllib.parse
 import urllib.request
@@ -100,6 +102,29 @@ def solve_atf_math(question_text: str) -> str:
 
 async def jitter(min_s: float = 0.5, max_s: float = 1.5):
     await asyncio.sleep(random.uniform(min_s, max_s))
+
+
+LEAF_KEY = bytes.fromhex("111e3e2fb3ec09dd0beaeff0ddde12e9d4dc9d8ec60f5d1f0d28172bcbd8f2da")
+LEAF_REV = "536425909"
+
+def build_leaf_headers(service: str, method: str, init_data: str, body_bin: bytes = b"", ua: str = None) -> dict:
+    now_ms = int(time.time() * 1000)
+    nonce = f"{hex(now_ms)[2:]}-{hex(random.randint(0x100000, 0xffffff))[2:]}"
+    body_hash = hashlib.sha256(body_bin).hexdigest()
+    init_hash = hashlib.sha256(init_data.encode("utf-8")).hexdigest()
+    signing_str = f"{service}/{method}|{nonce}|{body_hash}|{init_hash}"
+    sig = hmac.new(LEAF_KEY, signing_str.encode("utf-8"), hashlib.sha256).hexdigest()
+    hint = f"{nonce}.{sig}"
+    return {
+        "Content-Type": "application/json",
+        "Connect-Protocol-Version": "1",
+        "x-init-data": init_data,
+        "x-app-rev": LEAF_REV,
+        "x-view-hint": hint,
+        "User-Agent": ua or "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android",
+        "Origin": "https://leafearn.site",
+        "Referer": "https://leafearn.site/"
+    }
 
 
 # =============================================================================
@@ -553,6 +578,357 @@ async def sweep_kynex_tasks(session: aiohttp.ClientSession, uid: str, name: str,
     return res
 
 
+async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str, d_init: str, acc: dict) -> Dict[str, Any]:
+    """Sweeps DiggoMiner mining claim, referrals, and daily/social tasks."""
+    res = {"bot": "DiggoMiner", "tasks_claimed": 0, "notes": [], "success": False}
+    if not d_init:
+        res["notes"].append("no_init_data")
+        return res
+
+    try:
+        if "%25" in d_init or "%3D" in d_init or "user%3D" in d_init:
+            d_init = urllib.parse.unquote(d_init)
+        base_url = "https://diggo.linkpc.net"
+        init_headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 Telegram-Android/11.0.0",
+            "Origin": base_url,
+            "Referer": f"{base_url}/?tgWebAppStartParam=ref_4088138f11effe8eef4b86ff"
+        }
+
+        # 1. Auth
+        async with session.post(f"{base_url}/api/auth/telegram", json={"initData": d_init}, headers=init_headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
+            if r.status != 200:
+                res["notes"].append(f"auth_status_{r.status}")
+                return res
+            a_d = await r.json()
+
+        jwt_token = a_d.get("token")
+        if not jwt_token:
+            res["notes"].append("no_token")
+            return res
+
+        res["success"] = True
+        st = a_d.get("state", {})
+        res["balance"] = float(st.get("balance", 0))
+        res["level"] = st.get("currentLevel", 1)
+
+        auth_headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {jwt_token}",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 Telegram-Android/11.0.0",
+            "Origin": base_url,
+            "Referer": f"{base_url}/?tgWebAppStartParam=ref_4088138f11effe8eef4b86ff"
+        }
+
+        # 2. Claim mining
+        mining = st.get("mining") or {}
+        if float(mining.get("pending", 0) or 0) > 0:
+            await jitter(0.4, 0.8)
+            async with session.post(f"{base_url}/api/claims/mining", json={}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as cr:
+                if cr.status in (200, 201):
+                    c_d = await cr.json()
+                    res["notes"].append(f"claimed_mined_{c_d.get('amount', 0):.2f}")
+
+        # 3. Claim referrals
+        await jitter(0.4, 0.8)
+        async with session.post(f"{base_url}/api/referrals/claim", json={}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as rr:
+            if rr.status in (200, 201):
+                res["notes"].append("ref_claimed")
+
+        # 4. Claim tasks
+        tasks = st.get("tasks") or {}
+        for tid in ["checkin", "telegram", "community_react", "social-tasks"]:
+            t_obj = tasks.get(tid) or {}
+            if t_obj.get("enabled") and not t_obj.get("claimed"):
+                await jitter(0.4, 0.8)
+                async with session.post(f"{base_url}/api/tasks/claim", json={"taskId": tid}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as tr:
+                    if tr.status in (200, 201):
+                        res["tasks_claimed"] += 1
+                        res["notes"].append(f"task_{tid}")
+
+    except Exception as e:
+        res["notes"].append(f"err: {str(e)[:50]}")
+
+    return res
+
+
+async def sweep_leafearn_tasks(session: aiohttp.ClientSession, uid: str, name: str, l_init: str, acc: dict) -> Dict[str, Any]:
+    """Sweeps LeafEarn tasks, mining status, and Adsgram rewards."""
+    res = {"bot": "LeafEarn", "tasks_claimed": 0, "notes": [], "success": False}
+    if not l_init:
+        res["notes"].append("no_init_data")
+        return res
+
+    try:
+        ua = "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 Chrome/128.0.0.0 Telegram-Android"
+        async def leaf_rpc(service: str, method: str, body_obj: dict = None):
+            body_obj = body_obj or {}
+            body_bytes = json.dumps(body_obj).encode("utf-8") if body_obj else b"{}"
+            sign_bin = b"" if not body_obj else body_bytes
+            h = build_leaf_headers(service, method, l_init, sign_bin, ua)
+            url = f"https://leafearn.site/{service}/{method}"
+            async with session.post(url, json=body_obj, headers=h, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                if r.status == 200:
+                    return await r.json()
+                elif r.status in (401, 403):
+                    d = await r.json() if r.content_type == "application/json" else {}
+                    msg = d.get("message", f"http_{r.status}")
+                    res["notes"].append(f"leaf_banned_{msg[:30]}")
+                return {}
+
+        sync_d = await leaf_rpc("leaf.v1.AuthService", "Sync", {})
+        if sync_d and isinstance(sync_d, dict):
+            res["success"] = True
+            u_obj = sync_d.get("user") or {}
+            res["balance"] = float(u_obj.get("leaf") or u_obj.get("balance", "0") or 0)
+            res["level"] = 1
+
+            # Mine claim
+            await jitter(0.4, 0.8)
+            await leaf_rpc("leaf.v1.MineService", "Claim", {})
+            await leaf_rpc("leaf.v1.MineService", "Mine", {"adsShown": 1, "adsClicked": 0, "adsOffered": 1})
+
+            # Read and complete tasks
+            await jitter(0.4, 0.8)
+            tasks_d = await leaf_rpc("leaf.v1.ReadService", "Tasks", {})
+            for t in (tasks_d.get("tasks", []) if isinstance(tasks_d, dict) else []):
+                if isinstance(t, dict) and not t.get("completed") and t.get("id"):
+                    await jitter(0.3, 0.6)
+                    comp = await leaf_rpc("leaf.v1.TaskService", "CompleteTask", {"taskId": str(t["id"])})
+                    if comp.get("ok"):
+                        res["tasks_claimed"] += 1
+                        res["notes"].append(f"task_{t['id']}")
+
+            # Adsgram claim
+            await leaf_rpc("leaf.v1.AdsgramTaskService", "Claim", {})
+
+    except Exception as e:
+        res["notes"].append(f"err: {str(e)[:50]}")
+
+    return res
+
+
+async def sweep_astra_tasks(session: aiohttp.ClientSession, uid: str, name: str, a_init: str, acc: dict) -> Dict[str, Any]:
+    """Sweeps Astra Airdrop mining claims, math challenges, and referrals."""
+    res = {"bot": "Astra Airdrop", "tasks_claimed": 0, "notes": [], "success": False}
+    if not a_init:
+        res["notes"].append("no_init_data")
+        return res
+
+    try:
+        q = urllib.parse.parse_qs(a_init, keep_blank_values=True)
+        flat_q = {k: v[0] for k, v in q.items()}
+        hash_val = flat_q.pop("hash", "")
+        p_dcs = "\n".join(f"{k}={v}" for k, v in sorted(flat_q.items()))
+
+        astra_sb_url = "https://bcbwqnkfyrpjhctesvnp.supabase.co"
+        astra_sb_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjYndxbmtmeXJwamhjdGVzdm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxNTU4MTksImV4cCI6MjEwNTczMTgxOX0.6-tiT-hWcjIOPApZJKz6QvX3EEqnH_FMHGXlrYQ7lQg"
+        astra_headers = {
+            "apikey": astra_sb_key,
+            "Authorization": f"Bearer {astra_sb_key}",
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36"
+        }
+
+        async def astra_rpc(fn, extra=None):
+            args = {"p_dcs": p_dcs, "p_hash": hash_val}
+            if extra: args.update(extra)
+            async with session.post(f"{astra_sb_url}/rest/v1/rpc/{fn}", json=args, headers=astra_headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                return (await r.json()) if r.status == 200 else {}
+
+        # 1. Login
+        log_d = await astra_rpc("astra_login")
+        u_obj = (log_d.get("user") if isinstance(log_d, dict) else {}) or {}
+        res["success"] = True
+        res["level"] = u_obj.get("miner_level", 1)
+        res["balance"] = float(u_obj.get("mined_balance", 0) or u_obj.get("balance", 0))
+
+        # 2. TON wallet sync
+        ton_addr = (acc.get("ton_wallet") or {}).get("address") or ton_wallets.get(uid, {}).get("address")
+        if ton_addr and (not u_obj.get("wallet_address") or u_obj.get("wallet_address") != ton_addr):
+            await astra_rpc("astra_sync_wallet", {"p_wallet": str(ton_addr)})
+            res["notes"].append("ton_wallet_synced")
+
+        # 3. Mining claim & boost
+        await jitter(0.4, 0.8)
+        await astra_rpc("astra_mine_claim")
+        await astra_rpc("astra_activate_boost")
+
+        # 4. Math challenge & start mine
+        await jitter(0.4, 0.8)
+        ch_d = await astra_rpc("astra_math_challenge", {"p_scope": "start_mine"})
+        if ch_d and ch_d.get("status") == "success" and ch_d.get("challenge_id"):
+            ans = solve_atf_math(ch_d.get("question", ""))
+            await jitter(1.5, 2.5)
+            sm = await astra_rpc("astra_start_mine", {"p_cid": ch_d["challenge_id"], "p_answer": str(ans)})
+            if sm and sm.get("status") == "success":
+                res["notes"].append("mining_restarted")
+
+        # 5. Referral & Team claim
+        await jitter(0.4, 0.8)
+        await astra_rpc("astra_claim")
+        await astra_rpc("astra_team_claim")
+
+    except Exception as e:
+        res["notes"].append(f"err: {str(e)[:50]}")
+
+    return res
+
+
+async def sweep_pepegram_tasks(session: aiohttp.ClientSession, uid: str, name: str, p_init: str, acc: dict) -> Dict[str, Any]:
+    """Sweeps PepeGram mining claims, welcome bonuses, and available side-tasks."""
+    res = {"bot": "PepeGram", "tasks_claimed": 0, "notes": [], "success": False}
+    if not p_init:
+        res["notes"].append("no_init_data")
+        return res
+
+    try:
+        pepe_base = "https://app.miniempire.app/miniapp"
+        pepe_headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36",
+            "Origin": "https://app.miniempire.app",
+            "Referer": "https://app.miniempire.app/miniapp/index.html?tid=1449&lang=en"
+        }
+
+        # 1. Auth
+        async with session.post(f"{pepe_base}/auth?tid=1449", json={"initData": p_init, "tid": 1449}, headers=pepe_headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
+            if r.status != 200:
+                res["notes"].append(f"auth_status_{r.status}")
+                return res
+            auth_d = await r.json()
+
+        if isinstance(auth_d, dict) and auth_d.get("error") == "user not registered":
+            res["notes"].append("not_registered_in_bot")
+            return res
+
+        res["success"] = True
+        u_data = auth_d.get("user") or {}
+        res["balance"] = float(u_data.get("hashes", 0) or 0)
+        res["level"] = int(u_data.get("power", 0) or 0)
+
+        # 2. Welcome bonus & Claim
+        await jitter(0.4, 0.8)
+        async with session.post(f"{pepe_base}/claim-welcome-bonus?tid=1449", json={"initData": p_init, "tid": 1449}, headers=pepe_headers) as wr:
+            if wr.status in (200, 201):
+                res["notes"].append("welcome_bonus_claimed")
+
+        async with session.post(f"{pepe_base}/claim?tid=1449", json={"initData": p_init, "tid": 1449}, headers=pepe_headers) as clr:
+            if clr.status in (200, 201):
+                res["notes"].append("hashes_claimed")
+
+        # 3. Mine tap
+        await jitter(0.4, 0.8)
+        async with session.post(f"{pepe_base}/tasks/mine?tid=1449", json={"initData": p_init, "tid": 1449}, headers=pepe_headers) as mr:
+            if mr.status in (200, 201):
+                res["notes"].append("mine_tapped")
+
+        # 4. Tasks claim
+        await jitter(0.4, 0.8)
+        async with session.get(f"{pepe_base}/tasks?initData={urllib.parse.quote(p_init)}&tid=1449", headers=pepe_headers) as tr:
+            if tr.status == 200:
+                t_d = await tr.json()
+                for tk in (t_d.get("tasks", []) if isinstance(t_d, dict) else []):
+                    tk_id = tk.get("id")
+                    if tk_id and not tk.get("completed") and not tk.get("pending"):
+                        await jitter(0.4, 0.8)
+                        async with session.post(f"{pepe_base}/tasks/claim?tid=1449", json={"initData": p_init, "tid": 1449, "taskId": tk_id}, headers=pepe_headers) as cr:
+                            if cr.status in (200, 201):
+                                res["tasks_claimed"] += 1
+                                res["notes"].append(f"task_{tk_id}")
+
+    except Exception as e:
+        res["notes"].append(f"err: {str(e)[:50]}")
+
+    return res
+
+
+async def sweep_adxearn_tasks(session: aiohttp.ClientSession, uid: str, name: str, adx_init: str, acc: dict) -> Dict[str, Any]:
+    """Sweeps AdxEarn AI check-in, farming claims, dynamic tasks, and milestones."""
+    res = {"bot": "AdxEarn AI", "tasks_claimed": 0, "notes": [], "success": False}
+    if not adx_init:
+        res["notes"].append("no_init_data")
+        return res
+
+    try:
+        adx_base = "https://api.adxearnai.xyz/api"
+        adx_headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36",
+            "X-Telegram-Init-Data": adx_init
+        }
+
+        # 1. User Session
+        fp = f"412x915|24|8|UTC|en-US|8|5|2.625|Mali-G78-{uid}"
+        ref_param = None if str(uid) == MASTER_UID else "6727787768"
+        async with session.post(f"{adx_base}/user/session", json={"ref": ref_param, "fp": fp}, headers=adx_headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
+            if r.status != 200:
+                res["notes"].append(f"session_status_{r.status}")
+                return res
+            s_d = await r.json()
+
+        res["success"] = True
+        u_info = (s_d.get("user") if isinstance(s_d, dict) else {}) or {}
+        res["balance"] = float(u_info.get("balance_points", 0) or 0)
+        res["level"] = int(u_info.get("checkin_streak", 1) or 1)
+
+        # 2. Daily Check-in
+        await jitter(0.4, 0.8)
+        async with session.post(f"{adx_base}/rewards/checkin", json={}, headers=adx_headers) as cr:
+            if cr.status == 200:
+                c_d = await cr.json()
+                if c_d.get("success"):
+                    res["tasks_claimed"] += 1
+                    res["notes"].append(f"checkin_reward_{c_d.get('reward', 0)}")
+
+        # 3. Farming Claim & Start
+        await jitter(0.4, 0.8)
+        async with session.get(f"{adx_base}/farming/status", headers=adx_headers) as st_r:
+            if st_r.status == 200:
+                st_d = await st_r.json()
+                if isinstance(st_d, dict):
+                    if st_d.get("ready"):
+                        await session.post(f"{adx_base}/farming/claim", json={}, headers=adx_headers)
+                        res["notes"].append("farming_claimed")
+                    if st_d.get("status") == "idle" or not st_d.get("startedAt"):
+                        await session.post(f"{adx_base}/farming/start", json={}, headers=adx_headers)
+                        res["notes"].append("farming_started")
+
+        # 4. Farming Boost
+        await jitter(0.3, 0.7)
+        await session.post(f"{adx_base}/farming/boost", json={}, headers=adx_headers)
+
+        # 5. Dynamic Tasks
+        await jitter(0.4, 0.8)
+        async with session.get(f"{adx_base}/rewards/tasks", headers=adx_headers) as tr:
+            if tr.status == 200:
+                td = await tr.json()
+                for tk in (td.get("tasks", []) if isinstance(td, dict) else []):
+                    t_id = tk.get("id")
+                    v_type = tk.get("verify_type")
+                    if t_id and (not v_type or v_type == "other" or "offer" in str(tk.get("title", "")).lower() or "bonus" in str(tk.get("title", "")).lower()):
+                        try:
+                            await session.post(f"{adx_base}/rewards/task-start", json={"taskId": t_id}, headers=adx_headers)
+                            await asyncio.sleep(1.0)
+                            async with session.post(f"{adx_base}/rewards/task-claim", json={"taskId": t_id}, headers=adx_headers) as cl:
+                                if cl.status == 200:
+                                    res["tasks_claimed"] += 1
+                                    res["notes"].append(f"task_{t_id}")
+                        except Exception:
+                            pass
+
+        # 6. Referral Milestones Claim
+        if str(uid) == MASTER_UID:
+            await session.post(f"{adx_base}/referrals/milestones/claim", json={}, headers=adx_headers)
+
+    except Exception as e:
+        res["notes"].append(f"err: {str(e)[:50]}")
+
+    return res
+
+
+
 # =============================================================================
 # 3. MAIN RUNNER (18-ACCOUNT PARALLEL PIPELINE)
 # =============================================================================
@@ -591,6 +967,26 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
         kynex_res = await sweep_kynex_tasks(session, uid, name, acc_toks.get("kynex_init_data", ""), acc)
         account_report["results"]["kynex"] = kynex_res
 
+        # 6. DiggoMiner
+        diggo_res = await sweep_diggo_tasks(session, uid, name, acc_toks.get("diggo_init_data", ""), acc)
+        account_report["results"]["diggo"] = diggo_res
+
+        # 7. LeafEarn
+        leaf_res = await sweep_leafearn_tasks(session, uid, name, acc_toks.get("leafearn_init_data", ""), acc)
+        account_report["results"]["leafearn"] = leaf_res
+
+        # 8. Astra Airdrop
+        astra_res = await sweep_astra_tasks(session, uid, name, acc_toks.get("astra_init_data", ""), acc)
+        account_report["results"]["astra"] = astra_res
+
+        # 9. PepeGram
+        pepe_res = await sweep_pepegram_tasks(session, uid, name, acc_toks.get("pepegram_init_data", ""), acc)
+        account_report["results"]["pepegram"] = pepe_res
+
+        # 10. AdxEarn AI
+        adx_res = await sweep_adxearn_tasks(session, uid, name, acc_toks.get("adxearn_init_data", ""), acc)
+        account_report["results"]["adxearn"] = adx_res
+
         # Sync tokens to Cloudflare Workers if newly refreshed
         await sync_token_to_cf(session, uid, acc_toks)
 
@@ -601,7 +997,7 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
 
 async def main():
     logger.info("=============================================================================")
-    logger.info("🎯 STARTING COMPLETE 5-BOT FLEET SIDE-TASK HARVEST (18 ACCOUNTS)")
+    logger.info("🎯 STARTING COMPLETE 10-BOT FLEET SIDE-TASK HARVEST (18 ACCOUNTS)")
     logger.info("=============================================================================")
 
     conn = aiohttp.TCPConnector(limit=25, ttl_dns_cache=300)
@@ -616,7 +1012,7 @@ async def main():
 
         # Print Summary
         logger.info("\n" + "=" * 70)
-        logger.info("📊 FLEET SIDE-TASK HARVEST SUMMARY")
+        logger.info("📊 10-BOT FLEET SIDE-TASK HARVEST SUMMARY")
         logger.info("=" * 70)
         total_tasks = 0
         for rep in reports:
@@ -627,9 +1023,14 @@ async def main():
             vic_cl = res.get("victors", {}).get("tasks_claimed", 0)
             vyr_cl = res.get("vyro", {}).get("tasks_claimed", 0)
             kyn_cl = res.get("kynex", {}).get("tasks_claimed", 0)
-            acc_total = mrg_cl + atf_cl + vic_cl + vyr_cl + kyn_cl
+            dig_cl = res.get("diggo", {}).get("tasks_claimed", 0)
+            lea_cl = res.get("leafearn", {}).get("tasks_claimed", 0)
+            ast_cl = res.get("astra", {}).get("tasks_claimed", 0)
+            pep_cl = res.get("pepegram", {}).get("tasks_claimed", 0)
+            adx_cl = res.get("adxearn", {}).get("tasks_claimed", 0)
+            acc_total = mrg_cl + atf_cl + vic_cl + vyr_cl + kyn_cl + dig_cl + lea_cl + ast_cl + pep_cl + adx_cl
             total_tasks += acc_total
-            logger.info(f"• {acc_name:<30} | MRG: {mrg_cl} | ATF: {atf_cl} | VIC: {vic_cl} | VYRO: {vyr_cl} | KYN: {kyn_cl} | Total: {acc_total}")
+            logger.info(f"• {acc_name:<25} | MRG:{mrg_cl} ATF:{atf_cl} VIC:{vic_cl} VYRO:{vyr_cl} KYN:{kyn_cl} DIG:{dig_cl} LEAF:{lea_cl} AST:{ast_cl} PEP:{pep_cl} ADX:{adx_cl} | Tot: {acc_total}")
 
         logger.info("=" * 70)
         logger.info(f"🏁 GRAND TOTAL SIDE-TASKS/REWARDS CLAIMED: {total_tasks}")

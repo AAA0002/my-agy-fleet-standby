@@ -987,6 +987,25 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         }
       }
 
+      // 5. Social & Community tasks
+      for (const sid of ["telegram", "community_react", "social-tasks"]) {
+        const sTask = tasks[sid] || {};
+        if (sTask.enabled && !sTask.claimed) {
+          await humanDelay(300, 700);
+          const stResp = await fetchWithRetry(`${baseUrl}/api/tasks/claim`, {
+            method: "POST",
+            headers: { ...authHeaders, "Idempotency-Key": crypto.randomUUID() },
+            body: JSON.stringify({ taskId: sid })
+          }, 1, 800).catch(() => null);
+          if (stResp && stResp.ok) {
+            const stData = await stResp.json().catch(() => ({}));
+            if (stData && stData.amount) {
+              bal = Number(stData.state?.balance || bal);
+            }
+          }
+        }
+      }
+
       const claimStr = claimedAmt > 0 ? `, +${claimedAmt.toFixed(2)} claimed` : "";
       result.bots.diggo = `farmed (bal: ${bal.toFixed(2)} DIGGO, lvl: ${lvl}${claimStr})`;
     } catch (e) {
@@ -1042,6 +1061,10 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
       }
 
       const syncD = await callLeafRpc("leaf.v1.AuthService", "Sync", {});
+      if (syncD && (syncD.code === "permission_denied" || String(syncD.message || "").includes("account_banned"))) {
+        result.bots.leafearn = "account_banned (IP referral ban)";
+        return;
+      }
       const uObj = (syncD && syncD.user) || {};
       let leafBal = uObj.leaf || uObj.balance || "0";
       const refsActive = uObj.referralActive || 0;
@@ -1106,7 +1129,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
       const logData = await callRpc("astra_login", pRef ? { p_ref: pRef } : {});
       const uObj = logData?.user || {};
       const lvl = uObj?.miner_level || 1;
-      const bal = uObj?.balance || 0;
+      const bal = Number(uObj?.mined_balance || uObj?.balance || 0);
 
       const tonW = accData.ton_wallet?.address;
       if (tonW && (!uObj.wallet_address || uObj.wallet_address !== tonW)) {
@@ -1128,7 +1151,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
       await callRpc("astra_claim");
       await callRpc("astra_team_claim");
 
-      result.bots.astra = `farmed (lvl: ${lvl}, bal: ${bal} ASTRA)`;
+      result.bots.astra = `farmed (lvl: ${lvl}, bal: ${bal.toFixed(1)} ASTRA)`;
     } catch (e) {
       result.bots.astra = `error: ${e.message}`;
     }
@@ -1150,6 +1173,10 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         body: JSON.stringify({ initData: pInit, tid: 1449 })
       });
       const authData = await authResp.json().catch(() => ({}));
+      if (authData && authData.error === "user not registered") {
+        result.bots.pepegram = "not_registered (needs bot /start)";
+        return;
+      }
       const uData = authData?.user || {};
       const power = uData.power || 0;
       const hashes = uData.hashes || 0;
@@ -1157,6 +1184,24 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
       await fetch("https://app.miniempire.app/miniapp/claim-welcome-bonus?tid=1449", { method: "POST", headers, body: JSON.stringify({ initData: pInit, tid: 1449 }) });
       await fetch("https://app.miniempire.app/miniapp/claim?tid=1449", { method: "POST", headers, body: JSON.stringify({ initData: pInit, tid: 1449 }) });
       await fetch("https://app.miniempire.app/miniapp/tasks/mine?tid=1449", { method: "POST", headers, body: JSON.stringify({ initData: pInit, tid: 1449 }) });
+
+      // Dynamic task claim
+      try {
+        const tResp = await fetch(`https://app.miniempire.app/miniapp/tasks?initData=${encodeURIComponent(pInit)}&tid=1449`, { headers });
+        const tData = await tResp.json().catch(() => ({}));
+        if (tData && Array.isArray(tData.tasks)) {
+          for (const tk of tData.tasks) {
+            if (tk && tk.id && !tk.completed && !tk.pending) {
+              await humanDelay(300, 700);
+              await fetch("https://app.miniempire.app/miniapp/tasks/claim?tid=1449", {
+                method: "POST",
+                headers,
+                body: JSON.stringify({ initData: pInit, tid: 1449, taskId: tk.id })
+              });
+            }
+          }
+        }
+      } catch (tkErr) {}
 
       result.bots.pepegram = `farmed (power: ${power}, hashes: ${hashes})`;
     } catch (e) {

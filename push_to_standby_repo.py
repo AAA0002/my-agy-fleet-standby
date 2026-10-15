@@ -115,6 +115,9 @@ def push_app():
     arc_file = os.path.join(BASE_DIR, "victors_arcade_solver.py")
     if os.path.exists(arc_file):
         push_file(arc_file, "victors_arcade_solver.py", "feat: Victor's Company Deep Mine arcade solver engine")
+    sidetasks_file = os.path.join(BASE_DIR, "finish_all_fleet_sidetasks.py")
+    if os.path.exists(sidetasks_file):
+        push_file(sidetasks_file, "finish_all_fleet_sidetasks.py", "feat: 10-bot fleet side tasks auto-sweep engine")
     req_file = os.path.join(BASE_DIR, "requirements.txt")
     if os.path.exists(req_file):
         push_file(req_file, "requirements.txt", "deps: update dependencies")
