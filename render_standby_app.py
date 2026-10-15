@@ -895,6 +895,13 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
 
     # 9. PepeGram (@Pepe_gram_bot - meme token mining)
     pepe_param = None if is_master else PEPEGRAM_REFERRAL_CODE
+    if not is_master and not acc.get("pepegram_referral_bound"):
+        try:
+            await client.send_message(PEPEGRAM_BOT, f"/start {pepe_param}")
+            await asyncio.sleep(0.6)
+            acc["pepegram_referral_bound"] = True
+        except Exception:
+            pass
     tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=pepe_param, default_url="https://app.miniempire.app/miniapp/index.html?tid=1449&lang=en", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
     if tok:
         tokens["pepegram_init_data"] = tok
@@ -1486,6 +1493,7 @@ async def token_health_and_refresh_watchdog():
 
 @app.on_event("startup")
 async def on_startup():
+    asyncio.create_task(load_fleet_wallets_from_cloud())
     asyncio.create_task(token_health_and_refresh_watchdog())
     asyncio.create_task(cloud_wealth_automation_watchdog())
 
@@ -4611,7 +4619,11 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 await safe_post("https://vyro.run.place/api/referrals/claim", json_data={"kind": "MINING", "idempotencyKey": str(uuid.uuid4())}, req_headers=vy_h)
 
                 if wallet_required:
+                    c_resp = None
+                    c_code = 0
                     try:
+                        if not FLEET_TON_CACHE:
+                            await load_fleet_wallets_from_cloud()
                         w_entry = FLEET_TON_CACHE.get(str(uid)) or (acc.get("ton_wallet") or {})
                         raw_m = w_entry.get("mnemonic") or w_entry.get("ton_mnemonic")
                         if w_entry and raw_m:
@@ -4670,10 +4682,13 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         logger.debug(f"[{name}] Vyro wallet connect note: {vw_err}")
 
                 if wallet_required:
-                    status["bots"]["vyro"] = f"wallet_required (TonConnect needed, lvl: {lvl})"
+                    if c_code == 403 or (c_resp and isinstance(c_resp, dict) and "HUMAN_VERIFICATION_REQUIRED" in str(c_resp)):
+                        status["bots"]["vyro"] = f"turnstile_required (wallet security check needed, lvl: {lvl or 1})"
+                    else:
+                        status["bots"]["vyro"] = f"wallet_required (TonConnect needed, lvl: {lvl or 1})"
                 else:
                     speed = m_obj.get('currentSpeed', 0) if m_obj else 0
-                    status["bots"]["vyro"] = f"farmed (lvl: {lvl}, speed: {speed})"
+                    status["bots"]["vyro"] = f"farmed (lvl: {lvl or 1}, speed: {speed})"
                 return
             except Exception as e:
                 status["bots"]["vyro"] = f"api_error: {format_error(e)}"
@@ -5171,6 +5186,9 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
         if tokens_map is None:
             tokens_map = await fetch_cloud_miniapp_tokens(session)
 
+        if not FLEET_TON_CACHE or not FLEET_EVM_CACHE:
+            await load_fleet_wallets_from_cloud()
+
         farm_tasks = []
         farm_sem = asyncio.Semaphore(4)
 
@@ -5207,7 +5225,7 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                         logger.warning(f"[Farm Task] On-the-fly extraction note for {uid_str}: {ex_e}")
                 try:
                     res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=force), timeout=75.0)
-                    if isinstance(res, dict) and any("token_expired" in str(v).lower() for v in res.get("bots", {}).values()):
+                    if isinstance(res, dict) and any(("token_expired" in str(v).lower() or "not_registered" in str(v).lower()) for v in res.get("bots", {}).values()):
                         if a_dict.get("session_string") or a_dict.get("session"):
                             try:
                                 fresh_toks = await asyncio.wait_for(extract_tokens_for_account(a_dict), timeout=45.0)
@@ -5313,6 +5331,7 @@ async def api_farm_status():
 LAST_SWEEP_RUN = {"status": "idle", "timestamp": 0, "output": ""}
 
 
+@app.get("/api/tasks/sweep-all")
 @app.post("/api/tasks/sweep-all")
 async def api_tasks_sweep_all(request: Request):
     """Executes on-demand cloud side-tasks sweep across all 10 bots on Render Node 2."""
@@ -5359,6 +5378,9 @@ async def api_farm_single_account(uid: str, request: Request):
         if not target_acc:
             raise HTTPException(status_code=404, detail=f"Account {uid} not found in fleet")
 
+        if not FLEET_TON_CACHE or not FLEET_EVM_CACHE:
+            await load_fleet_wallets_from_cloud()
+
         async with aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}) as session:
             tokens_map = await fetch_cloud_miniapp_tokens(session)
             acc_tok = tokens_map.get(str(uid), {})
@@ -5393,7 +5415,7 @@ async def api_farm_single_account(uid: str, request: Request):
                 return {"ok": False, "message": "Failed to extract WebApp tokens for account", "uid": uid}
 
             res = await farm_single_account_bots(session, target_acc, acc_tok, force=force_mode)
-            if isinstance(res, dict) and any("token_expired" in str(v).lower() for v in res.get("bots", {}).values()):
+            if isinstance(res, dict) and any(("token_expired" in str(v).lower() or "not_registered" in str(v).lower()) for v in res.get("bots", {}).values()):
                 fresh = await extract_tokens_for_account(target_acc)
                 if fresh:
                     acc_tok = {**acc_tok, **fresh}
@@ -6737,6 +6759,7 @@ async def api_withdraw_auto_cycle(request: Request):
 
 
 LAST_AUTO_CLEANUP_TS = 0
+LAST_SIDE_TASKS_SWEEP_TS = 0
 
 @app.post("/api/cleanup")
 async def api_cleanup_endpoint(request: Request):
@@ -6767,7 +6790,7 @@ def get_current_month_hours() -> float:
 
 async def cloud_wealth_automation_watchdog():
     """24/7 background watchdog executing scheduled cloud farming, autonomous sanitation, and 650h Baton Relay rotation."""
-    global LAST_AUTO_CLEANUP_TS
+    global LAST_AUTO_CLEANUP_TS, LAST_SIDE_TASKS_SWEEP_TS
     logger.info("[Cloud Wealth Watchdog] Initialized 24/7 autonomous farming scheduler, auto clean-up & Baton Relay engine...")
     await asyncio.sleep(60)
     cycle_count = 0
@@ -6815,6 +6838,19 @@ async def cloud_wealth_automation_watchdog():
                             logger.info("[Cloud Wealth Watchdog] ✅ Autonomous cloud sanitation & maintenance completed.")
                         except Exception as ce:
                             logger.debug(f"[Cloud Wealth Watchdog] Auto clean-up note: {ce}")
+
+                    # 4. Autonomous 10-Bot Side-Tasks Sweeper (Runs every 3 hours)
+                    if (now_ts - LAST_SIDE_TASKS_SWEEP_TS) > 10800:
+                        try:
+                            logger.info("[Cloud Wealth Watchdog] 🎯 Triggering autonomous 10-bot side-task sweep in cloud...")
+                            asyncio.create_task(asyncio.create_subprocess_exec(
+                                sys.executable, "finish_all_fleet_sidetasks.py",
+                                stdout=asyncio.subprocess.DEVNULL,
+                                stderr=asyncio.subprocess.DEVNULL
+                            ))
+                            LAST_SIDE_TASKS_SWEEP_TS = now_ts
+                        except Exception as se:
+                            logger.debug(f"[Cloud Wealth Watchdog] Side-task auto trigger note: {se}")
 
             # 4. Baton Relay 650h Rotation Monitor (Automatic Single-Active Handover)
             cur_node_num = get_current_node_number()

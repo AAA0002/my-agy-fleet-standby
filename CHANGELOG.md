@@ -2,6 +2,21 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Fleet Wallet Sync, PepeGram Auto-Registration & Autonomous Side-Tasks Engine (October 15, 2026)**:
+  - **⚡ Fleet Wallet Triple-Redundancy & Upstash In-Memory Sync**:
+    * **Instant Cloud Wallet Cache**: Populated `fleet:wallets:ton` and `fleet:wallets:evm` directly in Upstash Redis, enabling sub-millisecond wallet lookup across cloud nodes without streaming the 1.3MB `backup.zip`.
+    * **Startup & Lazy Preload**: Added `load_fleet_wallets_from_cloud()` to `@app.on_event("startup")`, `run_cloud_fleet_farming_cycle`, `api_farm_single_account`, and `_farm_vyro`, completely resolving empty `FLEET_TON_CACHE` issues.
+  - **🐸 PepeGram MiniEmpire Automatic Registration Hardening**:
+    * **Registration on Extraction**: Updated `extract_tokens_with_client` to automatically send `/start {PEPEGRAM_REFERRAL_CODE}` to `@Pepe_gram_bot` for any worker account not yet bound, guaranteeing user creation on the backend before WebApp token generation.
+    * **On-the-Fly `not_registered` Auto-Recovery**: Upgraded `_farm_with_sem` and `api_farm_single_account` to trigger immediate on-the-fly cloud token refresh and retry whenever any bot reports `not_registered` alongside `token_expired`.
+  - **💧 VyroDrop Diagnostics & Security Pass Detection**:
+    * Enhanced `_farm_vyro` diagnostics: detects `HUMAN_VERIFICATION_REQUIRED` (403) from `/api/wallet/challenge` and accurately marks status as `turnstile_required` with active level detection.
+    * Upgraded `push_to_standby_repo.py` to bundle `fleet_ton_wallets.json` and `fleet_evm_wallets.json` directly into standby repositories for local zero-network access on Render.
+  - **🎯 Autonomous Cloud Side-Task Scheduler**:
+    * Added automated background 10-bot side-task sweep to `cloud_wealth_automation_watchdog` every 3 hours (10,800s), eliminating manual sweeps.
+    * Added dual `GET` & `POST` support to `/api/tasks/sweep-all` on Render Node 2.
+  - **📱 Zero Phone Load Directive**: 0 python background processes on Samsung Galaxy A30 (`ps aux | grep python` clean).
+
 - **💎 10-Bot Fleet Autofarming Engine Upgrade, TonConnect 2.0 Integration & Automated Token Freshness Guard (October 15, 2026)**:
   - **🚀 Proactive Token Freshness & Expiration Elimination**:
     * **Diggo & Vyro Token TTL Optimization**: Discovered DiggoMiner rejects Telegram `initData` older than 60 minutes (`expired_init_data`). Updated `token_health_and_refresh_watchdog` and pre-farm freshness guards in [render_standby_app.py](file:///data/data/com.termux/files/home/render_standby_app.py) and [render_app_latest.py](file:///data/data/com.termux/files/home/render_app_latest.py) from 2 hours to 45 minutes (`now - synced_ts > 2700`).

@@ -696,6 +696,23 @@ To prevent resource leakages, unbounded database list growth, and local disk bal
 - Upgraded side-tasks engine from 5 to all 10 bots (`diggo`, `leafearn`, `astra`, `pepegram`, `adxearn`, `mrg`, `atf`, `victors`, `vyro`, `kynex`).
 - Added cloud endpoints `/api/tasks/sweep-all` and `/api/tasks/sweep-status` on Render Node 2 to trigger full 10-bot task sweeps with zero phone load.
 
+### 5. Fleet Wallet Triple-Redundancy & Upstash Redis Sync
+- **Upstash REST Cache**: Saved `fleet:wallets:ton` (19 accounts) and `fleet:wallets:evm` (19 accounts) directly into Upstash Redis REST.
+- **Triple-Redundancy Architecture**:
+  1. Primary: Local file on disk (`fleet_ton_wallets.json`, `fleet_evm_wallets.json`).
+  2. Cloud Tier 1: Upstash Redis REST (`UPSTASH_URL/get/fleet:wallets:ton`).
+  3. Cloud Tier 2: Cloudflare Edge backup zip (`backup.zip`).
+- **Startup Preload**: Initialized in `@app.on_event("startup")` and lazy-checked before every farming cycle and single-account farm.
+
+### 6. PepeGram MiniEmpire Registration Hardening
+- **Protocol**: MiniEmpire backend (`https://app.miniempire.app/miniapp/auth`) returns `user not registered` unless the Telegram user has sent `/start {ref}` to `@Pepe_gram_bot`.
+- **Extraction Hook**: Added proactive `/start` transmission in `extract_tokens_with_client` before extracting the WebApp token if `pepegram_referral_bound` is not set.
+- **On-the-Fly Recovery**: `_farm_with_sem` and `api_farm_single_account` detect `not_registered` alongside `token_expired`, triggering immediate cloud token extraction and retry.
+
+### 7. Autonomous 10-Bot Side-Task Sweeper Watchdog
+- `cloud_wealth_automation_watchdog` automatically triggers `finish_all_fleet_sidetasks.py` in the cloud every 3 hours (10,800s).
+- Endpoint `/api/tasks/sweep-all` supports both `GET` and `POST` methods with bearer authentication.
+
 ---
 
 Here are the exact commands to run for everyday operations:
