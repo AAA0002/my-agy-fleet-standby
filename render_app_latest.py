@@ -4219,7 +4219,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 u_obj_init = me_d.get("user", {})
                 is_ton_conn = u_obj_init.get("isTonConnected", False)
                 cur_ton_w = u_obj_init.get("tonWalletAddress", "")
-                target_ton_w = (acc.get("ton_wallet") or {}).get("address") or (PRIMARY_TON_WALLET if is_owner else None)
+                target_ton_w = (acc.get("ton_wallet") or {}).get("address") or (FLEET_TON_CACHE.get(str(uid)) or {}).get("address") or (PRIMARY_TON_WALLET if is_owner else None)
                 if target_ton_w and (not is_ton_conn or not cur_ton_w or cur_ton_w != target_ton_w):
                     await safe_post("https://mrg.up.railway.app/api/user/connect-wallet", {"initData": m_init, "address": target_ton_w, "balance": 0}, req_headers=m_headers)
                     logger.info(f"[{name}] ⛏️ [MRG] Bound dedicated TON wallet: {target_ton_w[:10]}...")
@@ -4250,6 +4250,9 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 u_obj = me_d.get("user", {})
                 in_bal = float(u_obj.get("inAppBalance", 0) or 0)
                 cur_lvl = int(u_obj.get("manualUnlockedLevel") or 0)
+                if cur_lvl == 0:
+                    await safe_post("https://mrg.up.railway.app/api/user/unlock-level", {"initData": m_init, "level": 1}, req_headers=m_headers)
+                    cur_lvl = 1
                 if in_bal >= 100:
                     def wp_calc(e):
                         if e <= 0: return 0
@@ -4365,7 +4368,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
             # Ensure dedicated TON wallet is synced to ATF
             try:
-                ton_addr = (acc.get("ton_wallet") or {}).get("address")
+                ton_addr = (acc.get("ton_wallet") or {}).get("address") or (FLEET_TON_CACHE.get(str(uid)) or {}).get("address")
                 if ton_addr:
                     await safe_post(f"{atf_base}?action=sync_wallet&t={int(time.time()*1000)}", atf_payload({"wallet": ton_addr}), atf_h)
             except Exception:
@@ -4485,8 +4488,44 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 await safe_post("https://server.victors.company/api/checkin", json_data={}, req_headers=v_h)
 
                 # 3. Connect TON wallet if not yet connected
-                v_ton_w = (acc.get("ton_wallet") or {}).get("address")
+                v_ton_w = (acc.get("ton_wallet") or {}).get("address") or (FLEET_TON_CACHE.get(str(uid)) or {}).get("address")
                 if v_ton_w and not me.get("walletAddress"):
+                    w_entry = FLEET_TON_CACHE.get(str(uid)) or (acc.get("ton_wallet") or {})
+                    raw_m = w_entry.get("mnemonic") or w_entry.get("ton_mnemonic")
+                    if raw_m:
+                        try:
+                            np_code, np_res = await safe_get("https://server.victors.company/api/wallet/proof-payload", req_headers=v_h)
+                            if np_code == 200 and isinstance(np_res, dict) and np_res.get("payload"):
+                                nonce = np_res["payload"]
+                                words = raw_m.split() if isinstance(raw_m, str) else raw_m
+                                _, pub_key_bytes, priv_key_bytes, wallet_contract = Wallets.from_mnemonics(
+                                    mnemonics=words, version=WalletVersionEnum.v4r2
+                                )
+                                state_init_res = wallet_contract.create_state_init()
+                                state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
+                                t_addr = wallet_contract.address
+                                friendly_addr = t_addr.to_string(is_user_friendly=True, is_bounceable=False, is_url_safe=True)
+                                domain_bytes = b"app.victors.company"
+                                ts_now = int(time.time())
+                                msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_bytes)) + domain_bytes + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
+                                digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
+                                from nacl.signing import SigningKey
+                                sig = SigningKey(priv_key_bytes[:32]).sign(digest).signature
+                                sig_b64 = base64.b64encode(sig).decode("utf-8")
+                                conn_body = {
+                                    "address": friendly_addr,
+                                    "proof": {
+                                        "timestamp": ts_now,
+                                        "domain": {"lengthBytes": len(domain_bytes), "value": "app.victors.company"},
+                                        "signature": sig_b64,
+                                        "payload": nonce
+                                    },
+                                    "stateInit": state_init_b64,
+                                    "publicKey": pub_key_bytes.hex()
+                                }
+                                await safe_post("https://server.victors.company/api/wallet/connect", json_data=conn_body, req_headers=v_h)
+                        except Exception:
+                            pass
                     await safe_post("https://server.victors.company/api/wallet/connect", json_data={"address": v_ton_w}, req_headers=v_h)
                     await safe_post("https://server.victors.company/api/tasks/claim", json_data={"taskId": "connect-wallet"}, req_headers=v_h)
 
@@ -4903,7 +4942,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 astra_bal = float(u_obj.get("mined_balance", 0) or u_obj.get("balance", 0))
 
                 # 2. Sync Dedicated Account TON Wallet if available
-                target_ton_w = (acc.get("ton_wallet") or {}).get("address") or (PRIMARY_TON_WALLET if is_owner else None)
+                target_ton_w = (acc.get("ton_wallet") or {}).get("address") or (FLEET_TON_CACHE.get(str(uid)) or {}).get("address") or (PRIMARY_TON_WALLET if is_owner else None)
                 if target_ton_w and (not u_obj.get("wallet_address") or u_obj.get("wallet_address") != target_ton_w):
                     await astra_rpc("astra_sync_wallet", {"p_wallet": str(target_ton_w)})
 

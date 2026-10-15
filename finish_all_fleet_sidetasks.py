@@ -105,6 +105,16 @@ if os.path.exists(wallets_path):
     except Exception:
         pass
 
+if not ton_wallets and UPSTASH_URL and UPSTASH_TOKEN:
+    try:
+        req = urllib.request.Request(f"{UPSTASH_URL}/get/fleet:wallets:ton", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            d = json.loads(resp.read().decode())
+            if d.get("result"):
+                ton_wallets = json.loads(d["result"]) if isinstance(d["result"], str) else d["result"]
+    except Exception:
+        pass
+
 
 def solve_atf_math(question_text: str) -> str:
     """Evaluates arithmetic questions like 'What is 12 + 15?' safely."""

@@ -6,6 +6,12 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
   - **⚡ Fleet Wallet Triple-Redundancy & Upstash In-Memory Sync**:
     * **Instant Cloud Wallet Cache**: Populated `fleet:wallets:ton` and `fleet:wallets:evm` directly in Upstash Redis, enabling sub-millisecond wallet lookup across cloud nodes without streaming the 1.3MB `backup.zip`.
     * **Startup & Lazy Preload**: Added `load_fleet_wallets_from_cloud()` to `@app.on_event("startup")`, `run_cloud_fleet_farming_cycle`, `api_farm_single_account`, and `_farm_vyro`, completely resolving empty `FLEET_TON_CACHE` issues.
+    * **Universal Wallet Fallback**: Updated wallet binding in MRG, ATF Miner, Victor's Company, and Astra Airdrop to read from `FLEET_TON_CACHE` when local account object lacks wallet address.
+  - **🏆 Fleet Referral Qualification & Milestone Automation**:
+    * **MRG Miner**: Auto-unlocks Level 1 for new recruits with `cur_lvl == 0`, immediately making recruits active and claiming one-time bonuses for the inviter.
+    * **Victor's Company**: Enhanced `_farm_victors` with programmatic TonConnect 2.0 proof-of-ownership, establishing `walletOwned: True` to qualify pending recruits. Dispatched `victors_sb_solver.yml` (SeleniumBase UC mode) in GitHub Actions.
+    * **ATF & Astra**: Synchronized dedicated TON addresses from `FLEET_TON_CACHE`, completing wallet requirements and team mining contributions.
+    * **Side-Tasks Harvester**: Added Upstash Redis fallback to load `ton_wallets` directly in ephemeral cloud environments.
   - **🐸 PepeGram MiniEmpire Automatic Registration Hardening**:
     * **Registration on Extraction**: Updated `extract_tokens_with_client` to automatically send `/start {PEPEGRAM_REFERRAL_CODE}` to `@Pepe_gram_bot` for any worker account not yet bound, guaranteeing user creation on the backend before WebApp token generation.
     * **On-the-Fly `not_registered` Auto-Recovery**: Upgraded `_farm_with_sem` and `api_farm_single_account` to trigger immediate on-the-fly cloud token refresh and retry whenever any bot reports `not_registered` alongside `token_expired`.
