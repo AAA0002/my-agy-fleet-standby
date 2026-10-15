@@ -68,10 +68,32 @@ CF_WORKERS = [
 MASTER_UID = "6727787768"
 PRIMARY_TON_WALLET = "UQAWuK6X9s1fA0LzXGzM_81n1xL_T6_xY8Z_1x1x1x1x1x1"
 
-# Load Accounts
+# Load Accounts (with cloud backup fallback for Render/Cloud VMs)
+ACCOUNTS = []
 accounts_path = os.path.join(BASE_DIR, "accounts.json")
-with open(accounts_path, "r") as f:
-    ACCOUNTS = json.load(f)
+if os.path.exists(accounts_path):
+    try:
+        with open(accounts_path, "r") as f:
+            ACCOUNTS = json.load(f)
+    except Exception:
+        pass
+
+if not ACCOUNTS:
+    import zipfile
+    import io
+    for cf_url in CF_WORKERS:
+        try:
+            req = urllib.request.Request(f"{cf_url}/backup.zip", headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                if resp.status == 200:
+                    zip_bytes = resp.read()
+                    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+                        if "accounts.json" in zf.namelist():
+                            ACCOUNTS = json.loads(zf.read("accounts.json").decode("utf-8"))
+                            if ACCOUNTS:
+                                break
+        except Exception:
+            pass
 
 # Load TON Wallets
 ton_wallets = {}
