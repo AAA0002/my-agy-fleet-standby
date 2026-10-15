@@ -340,6 +340,12 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
 
         # 4. VyroDrop
         vy_p = None if is_master else VYRO_REF
+        if vy_p:
+            try:
+                await cl.send_message(VYRO_BOT, f"/start {vy_p}")
+                await asyncio.sleep(0.4)
+            except Exception:
+                pass
         tok = await extract_bot_webapp_token(cl, VYRO_BOT, start_param=vy_p, default_url="https://vyro.run.place/", candidate_short_names=["app", "vyro", "play", "mine"])
         if tok:
             tokens["vyro_init_data"] = tok

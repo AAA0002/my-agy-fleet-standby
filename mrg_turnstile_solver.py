@@ -12,6 +12,7 @@ import os
 import sys
 import json
 import time
+import random
 import struct
 import hashlib
 import base64
@@ -1210,6 +1211,10 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
         if p_code == 200 and isinstance(p_res, dict):
             u_info = p_res.get("user") or p_res
             cur_lvl = u_info.get("level", 1)
+            manual_lvl = u_info.get("manualUnlockedLevel", 0)
+            if manual_lvl < 1 or cur_lvl < 1:
+                safe_post(f"{VICTORS_API}/levels/unlock", {"level": 1}, extra_headers=v_authed_headers)
+                logger.info(f"⬆️ [Victor's] UID {uid}: Hired Level 1 Miner to start auto mining!")
             unlocked = u_info.get("unlockedLevel", cur_lvl)
             if unlocked > cur_lvl:
                 safe_post(f"{VICTORS_API}/levels/unlock", {"level": unlocked}, extra_headers=v_authed_headers)
@@ -2051,6 +2056,9 @@ async def run_mrg_auto_solver():
                         safe_post(f"{VICTORS_API}/mining/claim", {}, extra_headers=test_h)
                         safe_post(f"{VICTORS_API}/checkin", {}, extra_headers=test_h)
                         safe_post(f"{VICTORS_API}/me/tutorial", {}, extra_headers=test_h)
+                        u_res = t_d.get("user") or t_d
+                        if isinstance(u_res, dict) and u_res.get("manualUnlockedLevel", 0) < 1:
+                            safe_post(f"{VICTORS_API}/levels/unlock", {"level": 1}, extra_headers=test_h)
                         safe_post(f"{VICTORS_API}/referral/claim-bonus", {}, extra_headers=test_h)
                         safe_post(f"{VICTORS_API}/referral/claim-commission", {}, extra_headers=test_h)
                         # Fetch and claim pending tasks

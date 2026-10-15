@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛠️ Fleet Referral Qualification Audit, Turnstile Proxy Fix & Level 1 Mining Unlock (October 16, 2026)**:
+  - **🔧 Turnstile Solver Webshare Proxy & Missing Import Fix ([mrg_turnstile_solver.py](file:///data/data/com.termux/files/home/mrg_turnstile_solver.py))**:
+    * **Root Cause Elimination**: Discovered `mrg_turnstile_solver.py` was missing `import random`, which threw `NameError: name 'random' is not defined` whenever `get_webshare_proxy()` attempted `random.choice(results)`. This caused the solver to silently drop the valid Webshare proxies (`1r347t4h...`, `e9lkjm26...`) and fall back to the blocked GitHub Actions datacenter runner IP, triggering Cloudflare 403 blocks.
+    * **Resolution**: Added `import random` and verified active proxy fetching from Webshare (10 valid proxies per key).
+  - **⛏️ Victor's Company Level 1 Miner Hire Enforcement ([mrg_turnstile_solver.py](file:///data/data/com.termux/files/home/mrg_turnstile_solver.py))**:
+    * Added Level 1 Miner hiring (`POST /api/levels/unlock {"level": 1}`) to both the primary pipeline and cached pass sweeper routines in `mrg_turnstile_solver.py`, permanently eliminating the `"home.noJob"` state across all accounts.
+  - **💧 VyroDrop Pre-Seed Referral Binding ([refresh_cloud_tokens.py](file:///data/data/com.termux/files/home/refresh_cloud_tokens.py))**:
+    * Added proactive `/start {VYRO_REF}` message transmission to `@vyrodrop_bot` prior to `RequestAppWebViewRequest` token extraction for worker accounts, ensuring Telegram records the referral binding in the bot's database.
+  - **📊 Fleet 18-Account & 10-Bot Referral Audit**:
+    * **MRG Miner**: 18/18 accounts connected with active tokens. 7 accounts mapped in Master's squad. Nancy is qualified at Level 101 (`isQualified: True, isEligible: True`, 100 MRG bonus claimed). Recruits at Levels 88–95 are actively accumulating to cross the Level 100 qualification threshold (2,842 MRG). Master generates 45.7 MRG/day in team commissions.
+    * **ATF Miner**: Master is Level 154 with 4,783.7 ATF mined, 13 referrals claimed, 2,266.5 ATF claimed, actively mining with 100% active boosts.
+    * **Kynex Network**: Firebase callable `verifyTelegramAuth` verified operational (HTTP 200) with custom token exchange across the fleet.
+    * **PepeGram**: Authenticated and farming (HTTP 200 `{"ok": true}`).
+    * **Victor's Company**: Decompiled bundle proves auto-mining prerequisite requires `x-human-pass` Turnstile validation and Level 1 unlock.
+  - **📱 Zero Phone Load Directive**: Verified 0 python background processes on Samsung Galaxy A30 (`ps aux | grep -i python` clean).
+
 - **🚀 Dual-Layer Referral Binding, Fleet Task Automation & Qualification Hardening (October 15, 2026)**:
   - **🔗 Dual-Layer `/start {ref}` Referral Binding Engine ([render_standby_app.py](file:///data/data/com.termux/files/home/render_standby_app.py), [render_app_latest.py](file:///data/data/com.termux/files/home/render_app_latest.py), [login_account.py](file:///data/data/com.termux/files/home/login_account.py))**:
     * **Root Cause Elimination**: Identified that bot backends (e.g. MRG, Victor's, Diggo, Astra) listen to Telegram Bot webhook updates for the `/start {ref}` command to map users to referrers in their SQL databases. Previously, only PepeGram had chat `/start` transmission while the other 9 bots only sent `start_param` in WebApp iframe initData, resulting in `referrerId: None` for some recruits.
