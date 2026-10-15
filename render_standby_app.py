@@ -4610,17 +4610,17 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 await safe_post("https://vyro.run.place/api/referrals/claim", json_data={"kind": "MINING", "idempotencyKey": str(uuid.uuid4())}, req_headers=vy_h)
 
                 if wallet_required:
-                    # Attempt automated TonConnect 2.0 wallet binding if dedicated TON wallet is available
                     try:
                         w_entry = FLEET_TON_CACHE.get(str(uid)) or (acc.get("ton_wallet") or {})
-                        if w_entry and w_entry.get("mnemonic"):
+                        raw_m = w_entry.get("mnemonic") or w_entry.get("ton_mnemonic")
+                        if w_entry and raw_m:
                             ch_headers = {**vy_h, "Content-Type": "application/json"}
                             v_pass = get_cached_upstash_pass(f"vyro:pass:{uid}")
                             ch_body = {"turnstileToken": v_pass} if v_pass else {}
                             c_code, c_resp = await safe_post("https://vyro.run.place/api/wallet/challenge", json_data=ch_body, req_headers=ch_headers)
                             if c_code in (200, 201) and isinstance(c_resp, dict) and c_resp.get("payload"):
                                 nonce = c_resp["payload"]
-                                words = w_entry["mnemonic"].split() if isinstance(w_entry["mnemonic"], str) else w_entry["mnemonic"]
+                                words = raw_m.split() if isinstance(raw_m, str) else raw_m
                                 _, pub_key_bytes, priv_key_bytes, wallet_contract = Wallets.from_mnemonics(
                                     mnemonics=words, version=WalletVersionEnum.v4r2
                                 )
@@ -5314,7 +5314,24 @@ async def api_farm_single_account(uid: str, request: Request):
             acc_tok = tokens_map.get(str(uid), {})
             key_tokens = [f"{b}_init_data" for b in ALL_10_BOT_KEYS]
             missing_any = not all(k in acc_tok and bool(acc_tok.get(k)) for k in key_tokens)
-            missing_tokens = refresh_mode or (not acc_tok) or missing_any
+            now_s = time.time()
+            synced_val = acc_tok.get("synced_at", 0) or acc_tok.get("updated_at", 0) or 0
+            synced_ts = 0
+            if isinstance(synced_val, (int, float)):
+                synced_ts = float(synced_val)
+            elif isinstance(synced_val, str):
+                try:
+                    synced_ts = datetime.datetime.fromisoformat(synced_val.replace("Z", "+00:00")).timestamp()
+                except Exception:
+                    try:
+                        synced_ts = float(synced_val)
+                    except Exception:
+                        synced_ts = 0
+
+            has_vyro = bool(acc_tok.get("vyro_init_data"))
+            has_diggo = bool(acc_tok.get("diggo_init_data"))
+            is_stale = (now_s - synced_ts > 2700) or ((not has_vyro or not has_diggo) and (now_s - synced_ts > 900))
+            missing_tokens = refresh_mode or (not acc_tok) or missing_any or is_stale
             if missing_tokens:
                 fresh = await extract_tokens_for_account(target_acc)
                 if fresh:
@@ -5326,6 +5343,12 @@ async def api_farm_single_account(uid: str, request: Request):
                 return {"ok": False, "message": "Failed to extract WebApp tokens for account", "uid": uid}
 
             res = await farm_single_account_bots(session, target_acc, acc_tok, force=force_mode)
+            if isinstance(res, dict) and any("token_expired" in str(v).lower() for v in res.get("bots", {}).values()):
+                fresh = await extract_tokens_for_account(target_acc)
+                if fresh:
+                    acc_tok = {**acc_tok, **fresh}
+                    await sync_account_tokens_to_clouds(acc_tok)
+                    res = await farm_single_account_bots(session, target_acc, acc_tok, force=True)
             return {"ok": True, "result": res}
     except HTTPException:
         raise
