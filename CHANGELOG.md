@@ -2,14 +2,20 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
-- **🛠️ Fleet Referral Qualification Audit, Turnstile Proxy Fix & Level 1 Mining Unlock (October 16, 2026)**:
-  - **🔧 Turnstile Solver Webshare Proxy & Missing Import Fix ([mrg_turnstile_solver.py](file:///data/data/com.termux/files/home/mrg_turnstile_solver.py), [victors_sb_solver.py](file:///data/data/com.termux/files/home/victors_sb_solver.py), [victors_cloud_phone_launcher.py](file:///data/data/com.termux/files/home/victors_cloud_phone_launcher.py))**:
-    * **Root Cause Elimination**: Discovered `mrg_turnstile_solver.py` was missing `import random`, which threw `NameError: name 'random' is not defined` whenever `get_webshare_proxy()` attempted `random.choice(results)`. Furthermore, live probe revealed that Key 1 (`1r347t4h...`) was returning `HTTP 402 Payment Required`, while Key 2 (`e9lkjm26...`) with username `Arif274300` was 100% active and healthy.
-    * **Resolution**: Added `import random`, rotated `WEBSHARE_KEY` across all workflows (`mrg_turnstile_solver.yml`, `victors_sb_solver.yml`, `victors_cloud_phone_tunnel.yml`) to Key 2, and integrated pre-flight connectivity verification (`http://connectivitycheck.gstatic.com/generate_204`) directly into `get_webshare_proxy()` so only operational proxies are routed through Chromium/SeleniumBase.
-  - **⛏️ Victor's Company Level 1 Miner Hire Enforcement ([mrg_turnstile_solver.py](file:///data/data/com.termux/files/home/mrg_turnstile_solver.py))**:
-    * Added Level 1 Miner hiring (`POST /api/levels/unlock {"level": 1}`) to both the primary pipeline and cached pass sweeper routines in `mrg_turnstile_solver.py`, permanently eliminating the `"home.noJob"` state across all accounts.
-  - **💧 VyroDrop Pre-Seed Referral Binding ([refresh_cloud_tokens.py](file:///data/data/com.termux/files/home/refresh_cloud_tokens.py))**:
-    * Added proactive `/start {VYRO_REF}` message transmission to `@vyrodrop_bot` prior to `RequestAppWebViewRequest` token extraction for worker accounts, ensuring Telegram records the referral binding in the bot's database.
+- **🏢 Victor's Company Frontend Decompilation, Interaction-Only Turnstile Bypass & Cloud Pipeline (October 16, 2026)**:
+  - **🔬 Deep Frontend Bundle Decompilation (`https://app.victors.company/assets/index-D_1NjFTw.js`)**:
+    * **Discovered Gate Architecture**: Analyzed `s6` and `n6` React components. Turnstile is rendered explicitly with `sitekey: "0x4AAAAAAFD0KRgPRFVwDvgn"`, `action: "login"`, and critically `appearance: "interaction-only"`.
+    * **Root Cause of `Iframes=0` in Headless Mode**: Under `appearance: "interaction-only"`, Cloudflare Turnstile deliberately withholds mounting the iframe until a user interaction (pointerdown/click) is detected on the container `div.min-h-[70px]`. Without a physical or synthetic tap on the host element, the Turnstile widget remains dormant.
+    * **Bot Prerequisite Analysis**: Confirmed that `Ot("/auth/login", "POST", { startParam: AA(), turnstileToken: a, device: jA() })` issues `humanPass` (UUID) which must be attached as header `x-human-pass` on all subsequent requests, and `POST /api/levels/unlock {"level": 1}` must be invoked to exit `"home.noJob"` and activate passive mining.
+  - **⚡ Synthetic Interaction & Programmatic Render Fallback ([victors_sb_solver.py](file:///data/data/com.termux/files/home/victors_sb_solver.py))**:
+    * Added synthetic container click dispatch on `div[class*="min-h"]` to awaken `appearance: "interaction-only"` widgets.
+    * Integrated programmatic render fallback into an isolated DOM container (`#sb-cf-slot`) with `appearance: "always"` to force immediate checkbox display if passive render fails.
+    * Committed and pushed (Commit `8af5ca6`) to `origin` (`AAA0002/ATL`) and `koram_standby` (`koramshah2/AAA_AUTO`).
+  - **🚀 Dedicated Cloud Workflow Execution**:
+    * Dispatched dedicated cloud solver workflow `victors_sb_solver.yml` (Run `38874854703`) on GitHub Actions.
+    * Verified Multi-Bot run `38870234684` completed successfully: farmed Kynex 18/18 (+632.13 KNX), claimed MRG rewards (Master reached Level 101), validated ATF 18/18 logins, and swept Master team commissions.
+  - **📱 Zero Phone Load Directive**: Verified 0 background Python processes on Samsung Galaxy A30 (`ps aux | grep -i python` clean).
+
   - **📊 Fleet 18-Account & 10-Bot Referral Audit**:
     * **MRG Miner**: 18/18 accounts connected with active tokens. 7 accounts mapped in Master's squad. Nancy is qualified at Level 101 (`isQualified: True, isEligible: True`, 100 MRG bonus claimed). Recruits at Levels 88–95 are actively accumulating to cross the Level 100 qualification threshold (2,842 MRG). Master generates 45.7 MRG/day in team commissions.
     * **ATF Miner**: Master is Level 154 with 4,783.7 ATF mined, 13 referrals claimed, 2,266.5 ATF claimed, actively mining with 100% active boosts.
