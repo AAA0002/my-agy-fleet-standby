@@ -2,6 +2,16 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔒 GitGuardian Secret Leak Remediation & Standby Deployment Hardening (October 17, 2026)**:
+  - **🔍 Root Cause of GitGuardian Alert in `koramshah2/my-agy-fleet-standby`**:
+    * Identified that `push_to_standby_repo.py` previously contained programmatic pushes of `fleet_wallets_data.json`, `fleet_ton_wallets.json`, `fleet_evm_wallets.json`, and `public_admin/fleet_wallets_data.json` to the public repository `koramshah2/my-agy-fleet-standby`.
+    * GitGuardian's entropy scanner detected 64-character EVM private keys and base58 Solana keys as "Generic High Entropy Secret".
+  - **🛡️ Immediate Hardening Actions Implemented**:
+    * **Permanently Removed Wallet Pushes**: Stripped all code pushing wallet JSON files from `push_to_standby_repo.py`. Wallets are exclusively managed in Cloudflare KV, Render Environment variables, and Upstash Redis.
+    * **Decoupled Deprecated Standby Repo**: Removed `koramshah2/my-agy-fleet-standby` from `push_to_standby_repo.py` targets (Render Node 3 was permanently suspended; Render Node 2 deploys exclusively from `AAA0002/my-agy-fleet-standby`).
+    * **Scrubbed Local Remote Config**: Removed expired/revoked `koram_standby` git remote and pinned default upstream branch to `origin/main` (`AAA0002/ATL`).
+  - **📱 Zero Phone Load & Immutability**: Kept Samsung Galaxy A30 at 0 Python background processes and user bot (`@AAAPREMIUMAPPSbot`) 100% untouched.
+
 - **🔒 Complete Repository-Wide Secret Neutralization, 0-Leak Verification & Multi-Cloud Defense (October 16, 2026)**:
   - **🛡️ 100% Elimination of Raw Secrets Across Tracked Git Files**:
     * **Scrubbed Upstash REST Tokens**: Neutralized hardcoded `gQAAAAAAA...` tokens across 37 files, replacing all with dynamic `os.getenv("UPSTASH_TOKEN")`, `process.env.UPSTASH_TOKEN`, or `${{ secrets.UPSTASH_TOKEN }}`.

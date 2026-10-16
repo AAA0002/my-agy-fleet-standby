@@ -24,10 +24,8 @@ with open(os.path.join(BASE_DIR, ".env")) as f:
             env[k.strip()] = v.strip().strip('"').strip("'")
 
 PAT = env.get("GITHUB_USERBOT_PAT") or env.get("GITHUB_FINE_GRAINED_PAT")
-KORAM_PAT = env.get("KORAM_PAT") or os.getenv("KORAM_PAT", "")
 REPOS = [
-    ("AAA0002/my-agy-fleet-standby", PAT),
-    ("koramshah2/my-agy-fleet-standby", KORAM_PAT)
+    ("AAA0002/my-agy-fleet-standby", PAT)
 ]
 FILE_PATH = "app.py"
 
@@ -133,21 +131,6 @@ def push_app():
     clean_file = os.path.join(BASE_DIR, "clean_up_system.py")
     if os.path.exists(clean_file):
         push_file(clean_file, "clean_up_system.py", "feat: autonomous multi-tier clean up engine")
-    wallets_file = os.path.join(BASE_DIR, "fleet_wallets_data.json")
-    if os.path.exists(wallets_file):
-        push_file(wallets_file, "fleet_wallets_data.json", "feat: 18-account authentic fleet wallets registry")
-    prov_file = os.path.join(BASE_DIR, "fleet_wallet_provisioner.py")
-    if os.path.exists(prov_file):
-        push_file(prov_file, "fleet_wallet_provisioner.py", "feat: authentic multichain wallet suite provisioner")
-    pub_wallets = os.path.join(BASE_DIR, "public_admin", "fleet_wallets_data.json")
-    if os.path.exists(pub_wallets):
-        push_file(pub_wallets, "public_admin/fleet_wallets_data.json", "feat: public admin fleet wallets registry")
-    ton_f = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
-    if os.path.exists(ton_f):
-        push_file(ton_f, "fleet_ton_wallets.json", "feat: 18-account authentic TON wallets cache")
-    evm_f = os.path.join(BASE_DIR, "fleet_evm_wallets.json")
-    if os.path.exists(evm_f):
-        push_file(evm_f, "fleet_evm_wallets.json", "feat: 18-account authentic EVM wallets cache")
     rct_f = os.path.join(BASE_DIR, "refresh_cloud_tokens.py")
     if os.path.exists(rct_f):
         push_file(rct_f, "refresh_cloud_tokens.py", "feat: 10-bot cloud token refresher")
