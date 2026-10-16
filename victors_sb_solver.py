@@ -58,30 +58,45 @@ FLEET_UIDS = [
 
 
 def get_webshare_proxy() -> str | None:
-    """Fetches active proxy string from Webshare in user:pass@host:port format."""
+    """Fetches active, pre-tested proxy string from Webshare in user:pass@host:port format."""
     webshare_keys = [
-        os.getenv("WEBSHARE_KEY") or "1r347t4h8dwfkpoa4ifmmyajvmu3oxyn2guzs5k0",
-        "e9lkjm26eqqah0s5zg26lk8tuiuxr9deznbp0aql"
+        "e9lkjm26eqqah0s5zg26lk8tuiuxr9deznbp0aql",
+        os.getenv("WEBSHARE_KEY") or "e9lkjm26eqqah0s5zg26lk8tuiuxr9deznbp0aql",
+        "1r347t4h8dwfkpoa4ifmmyajvmu3oxyn2guzs5k0"
     ]
+    seen_keys = set()
     for key in webshare_keys:
-        if not key:
+        if not key or key in seen_keys:
             continue
+        seen_keys.add(key)
         try:
             req = urllib.request.Request(
                 "https://proxy.webshare.io/api/v2/proxy/list/?mode=direct&page=1&page_size=25",
                 headers={"Authorization": f"Token {key}"}
             )
-            with urllib.request.urlopen(req, timeout=8) as resp:
+            with urllib.request.urlopen(req, timeout=6) as resp:
                 data = json.loads(resp.read().decode())
                 results = [p for p in data.get("results", []) if p.get("valid", True)]
                 if results:
                     import random
-                    p = random.choice(results)
-                    u = p.get("username", "Arif2743")
-                    pw = p.get("password", "Arif2743")
-                    return f"{u}:{pw}@{p['proxy_address']}:{p['port']}"
+                    random.shuffle(results)
+                    for candidate in results[:4]:
+                        u = candidate.get("username", "Arif274300")
+                        pw = candidate.get("password", "Arif2743")
+                        host = candidate["proxy_address"]
+                        port = candidate["port"]
+                        proxy_str = f"http://{u}:{pw}@{host}:{port}"
+                        try:
+                            ph = urllib.request.ProxyHandler({"http": proxy_str, "https": proxy_str})
+                            opener = urllib.request.build_opener(ph)
+                            with opener.open("http://connectivitycheck.gstatic.com/generate_204", timeout=4) as test_resp:
+                                if test_resp.status in (200, 204):
+                                    logger.info(f"🌐 Verified live Webshare proxy: {host}:{port} via key {key[:8]}...")
+                                    return f"{u}:{pw}@{host}:{port}"
+                        except Exception:
+                            continue
         except Exception as e:
-            logger.warning(f"Webshare proxy fetch warning: {e}")
+            logger.warning(f"Webshare proxy fetch warning ({key[:8]}...): {e}")
     return None
 
 
@@ -556,15 +571,13 @@ def solve_victors_with_seleniumbase():
         sweep_master_bonuses(6727787768)
         return
 
-    # Cloudflare Turnstile blocks datacenter proxies. By default in GitHub Actions, run directly.
-    use_proxy = os.getenv("USE_PROXY", "").lower() in ("1", "true", "yes")
-    ws_proxy = get_webshare_proxy() if use_proxy else None
+    ws_proxy = get_webshare_proxy()
     sb_kwargs = {"uc": True, "test": True, "xvfb": True, "locale": "en"}
     if ws_proxy:
-        logger.info(f"🌐 Routing SeleniumBase through Webshare proxy: {ws_proxy.split('@')[-1]}")
+        logger.info(f"🌐 Routing SeleniumBase through verified Webshare proxy: {ws_proxy.split('@')[-1]}")
         sb_kwargs["proxy"] = ws_proxy
     else:
-        logger.info("⚡ Running SeleniumBase directly (proxy-less runner IP for maximum Turnstile pass rate)")
+        logger.info("⚡ Running SeleniumBase directly (proxy-less runner IP)")
 
     with SB(**sb_kwargs) as sb:
         for acc in active_accounts:
