@@ -735,6 +735,47 @@ def solve_victors_with_seleniumbase():
                             sb.uc_gui_click_captcha()
                         except Exception:
                             pass
+                    else:
+                        # 1. Trigger interaction-only activation by clicking the Turnstile host container
+                        try:
+                            sb.execute_script("""
+                                const el = document.querySelector('div[class*="min-h"]') || document.querySelector('h1') || document.body;
+                                if (el) {
+                                    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+                                }
+                            """)
+                        except Exception:
+                            pass
+
+                        # 2. Programmatic render fallback with appearance: always
+                        if attempt > 4:
+                            try:
+                                sb.execute_script(f"""
+                                    if (window.turnstile && typeof window.turnstile.render === 'function' && !document.getElementById('sb-cf-slot')) {{
+                                        let slot = document.createElement('div');
+                                        slot.id = 'sb-cf-slot';
+                                        slot.style.position = 'fixed';
+                                        slot.style.top = '50%';
+                                        slot.style.left = '50%';
+                                        slot.style.transform = 'translate(-50%, -50%)';
+                                        slot.style.width = '300px';
+                                        slot.style.height = '65px';
+                                        slot.style.zIndex = '9999999';
+                                        slot.style.background = '#1a1147';
+                                        document.body.appendChild(slot);
+                                        window.turnstile.render(slot, {{
+                                            sitekey: '{VICTORS_SITEKEY}',
+                                            action: 'login',
+                                            theme: 'dark',
+                                            appearance: 'always',
+                                            callback: function(tok) {{
+                                                window.__victorsTurnstileToken = tok;
+                                            }}
+                                        }});
+                                    }}
+                                """)
+                            except Exception:
+                                pass
 
                     sb.sleep(1.0)
 
