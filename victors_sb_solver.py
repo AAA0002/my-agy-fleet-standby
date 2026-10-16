@@ -571,13 +571,9 @@ def solve_victors_with_seleniumbase():
         sweep_master_bonuses(6727787768)
         return
 
-    ws_proxy = get_webshare_proxy()
-    sb_kwargs = {"uc": True, "test": True, "xvfb": True, "locale": "en"}
-    if ws_proxy:
-        logger.info(f"🌐 Routing SeleniumBase through verified Webshare proxy: {ws_proxy.split('@')[-1]}")
-        sb_kwargs["proxy"] = ws_proxy
-    else:
-        logger.info("⚡ Running SeleniumBase directly (proxy-less runner IP)")
+    # Run SeleniumBase directly (proxy-less) to prevent Chrome proxy authentication extension blank page hangs (Body='')
+    sb_kwargs = {"uc": True, "test": True, "xvfb": True, "locale": "en", "ad_block": False}
+    logger.info("⚡ Running SeleniumBase directly on clean runner IP (eliminates proxy auth extension hangs)")
 
     with SB(**sb_kwargs) as sb:
         for acc in active_accounts:
@@ -693,7 +689,10 @@ def solve_victors_with_seleniumbase():
                 except Exception as cdp_err:
                     logger.warning(f"CDP script injection note: {cdp_err}")
 
-                sb.uc_open(target_url)
+                try:
+                    sb.uc_open_with_reconnect(target_url, reconnect_time=4)
+                except Exception:
+                    sb.uc_open(target_url)
                 sb.sleep(1.0)
                 try:
                     sb.execute_script(mock_telegram_js)
