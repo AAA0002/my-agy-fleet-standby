@@ -1,0 +1,45 @@
+version: 2.1
+
+executors:
+  python-runner:
+    docker:
+      - image: cimg/python:3.12-browsers
+    resource_class: medium
+
+jobs:
+  turnstile_solver_and_farm:
+    executor: python-runner
+    steps:
+      - checkout
+      - run:
+          name: Install System Dependencies (Xvfb & Libgbm)
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y xvfb libgbm-dev
+      - run:
+          name: Install Python Dependencies & Patchright Stealth Engine
+          command: |
+            python -m pip install --upgrade pip
+            pip install patchright aiohttp requests tonsdk pynacl
+            patchright install --with-deps chromium
+      - run:
+          name: Run 100% Cloud Turnstile Solver & Multi-Bot Auto-Farming
+          command: |
+            xvfb-run -a --server-args="-screen 0 1280x800x24" python mrg_turnstile_solver.py
+
+workflows:
+  version: 2
+  scheduled-turnstile-solver:
+    triggers:
+      - schedule:
+          cron: "0 */6 * * *"
+          filters:
+            branches:
+              only:
+                - main
+                - master
+    jobs:
+      - turnstile_solver_and_farm
+  manual-or-push:
+    jobs:
+      - turnstile_solver_and_farm

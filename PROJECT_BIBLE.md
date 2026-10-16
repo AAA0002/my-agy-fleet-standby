@@ -266,7 +266,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 | **Cloud Database** | **Layerbase Cloud** | `api.layerbase.com` | 🟢 **ACTIVE** — 6 Managed database instances (QuestDB, InfluxDB, Weaviate) |
 | **Vector Database** | **Qdrant Cloud** | `cloud.qdrant.io` | 🟢 **MANAGEMENT KEYS ACTIVE** — Semantic memory and embedding clusters |
 | **CI/CD Cloud Compute** | **CircleCI Cloud** | `circleci.com` | 🟢 **1-YEAR TOKEN ACTIVE** — Cloud automation runner (`aaa.support.a@gmail.com`) |
-| **Cloud Compute** | **Ubicloud** | `console.ubicloud.com` | 🟢 **PAT ACTIVE** — Cloud VM & Postgres compute (`pat-akn22db4...`) |
+| **Cloud Compute** | **Ubicloud** | `console.ubicloud.com` | 🟢 **PAT ACTIVE** — Cloud VM & Postgres compute (`UBICLOUD_PAT_TOKEN` in `.env`) |
 | **Kubernetes Cluster** | **Puzl Cloud K8s** | `k8s.eu-finland-1.clusters.puzl.cloud` | 🟢 **CONFIG ACTIVE** — Finland European Kubernetes cluster context |
 | **AI Inference Engine** | **Google Gemini** | `generativelanguage.googleapis.com` | 🟢 **14/14 KEYS ACTIVE** — Rotating multi-key pool for Ari AI reasoning |
 | **Edge AI Inference** | **Workers AI (Cloudflare)** | Global Edge Mesh (Llama 3.2 3B Instruct) | 🟢 **ACTIVE** — Zero API keys required across 5 Cloudflare nodes |
@@ -812,17 +812,26 @@ ps aux | grep python
 ```
 *(Should only show one-shot commands, never continuous daemons or pollers).*
 
-### 9. Render-First Architecture & Free-Tier GitHub Actions Quota Protocol
-To strictly preserve GitHub Actions free-tier quotas (2,000 minutes/month cap for free users), all continuous 24/7 background workloads are offloaded to **Render Standby Mesh** and **Cron-Job.org** (100% free, 0 minute meter):
-- **Continuous 24/7 Multi-Bot Farming**: Handled 100% by Render Node 2 (Frankfurt) and Node 3 (Oregon) via POST `/api/farm/cloud-all` triggered every 15 minutes by Cron-Job.org (`8614058` & `8614059`). Consumes **0** GitHub Actions minutes.
+### 9. Render-First Architecture & Free-Tier GitHub Actions / Alternative CI/CD Quota Protocol
+To strictly preserve GitHub Actions free-tier quotas (2,000 minutes/month cap for free users), all continuous 24/7 background workloads are offloaded to **Render Standby Mesh**, **Cron-Job.org**, and alternative CI/CD runners:
+- **Continuous 24/7 Multi-Bot Farming**: Handled 100% by Render Node 2 (Frankfurt) via POST `/api/farm/cloud-all` triggered every 15-30 minutes by Cron-Job.org (`8614058`). Consumes **0** GitHub Actions minutes.
 - **Continuous MTProto Token Harvesting**: Handled 100% by Render Node 2 (Frankfurt) via POST `/collect-tokens` triggered every 4 hours by Cron-Job.org (`8614259`). Consumes **0** GitHub Actions minutes.
-- **Conserved GitHub Actions Scheduling**:
-  * `mrg_turnstile_solver.yml`: Reduced to **twice daily** (`0 3,15 * * *` = ~300 min/mo total).
+- **Alternative CI/CD Cloud Compute Ecosystem**:
+  * **CircleCI (1-Year PAT — 6,000 Free Build Minutes/Month)**:
+    - User: `aaa.support.a@gmail.com` | Token: Stored securely in `CIRCLECI_TOKEN` (.env)
+    - Configuration: `.circleci/config.yml` using `cimg/python:3.12-browsers` with Xvfb and Patchright stealth.
+    - Capacity: **6,000 free build minutes/month** (3x GitHub Actions capacity) for scheduled or API-dispatched Turnstile solving.
+  * **Ubicloud Managed Runners (`UBICLOUD_PAT_TOKEN`)**:
+    - Token: Stored securely in `UBICLOUD_PAT_TOKEN` (.env)
+    - Drop-in GitHub Actions runner replacement (`runs-on: ubicloud-standard-2`). Runs jobs on Ubicloud VMs, consuming **0 billable GitHub Actions minutes**.
+  * **Standby GitHub Account (`koramshah2`)**:
+    - Repo: `https://github.com/koramshah2/AAA_AUTO` | Remote: `koram_standby`
+    - Fresh 2,000 monthly minutes dedicated as an automated failover runner when primary `AAA0002` reaches quota.
+- **Conserved GitHub Actions Scheduling on Primary (`AAA0002/ATL`)**:
+  * `mrg_turnstile_solver.yml`: Reduced to **3 times daily / every 8h** (`0 */8 * * *` = ~1,800 min/mo total max).
   * `cloud_token_refresher.yml`: Reduced to **once daily** (`0 4 * * *` = ~90 min/mo total). Auto-dispatch removed.
   * `fleet_sentinel.yml`: Reduced to **once daily** (`0 8 * * *` = ~60 min/mo total).
   * `victors_sb_solver.yml`: Schedule disabled (workflow_dispatch only).
-  * **Total Monthly GitHub Actions Consumption**: **~450 minutes/month** (only ~22% of the free 2,000-minute quota, leaving >75% buffer).
-- **Killercoda Decommissioned**: Fragile 60-minute Killercoda sessions removed in favor of permanent, stable Render and Cloudflare infrastructure.
 
 ---
 

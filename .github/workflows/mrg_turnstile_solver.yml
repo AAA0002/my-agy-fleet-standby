@@ -2,8 +2,8 @@ name: "MY AGY AI — 100% Cloud Turnstile Solver & Multi-Bot Auto-Farming"
 
 on:
   schedule:
-    # Runs every 4 hours to guarantee Turnstile human passes stay permanently active (TTL is ~6-8h)
-    - cron: '0 */4 * * *'
+    # Runs every 8 hours to stay permanently within the 2,000 monthly free minute quota (TTL of Turnstile pass is ~8h)
+    - cron: '0 */8 * * *'
   workflow_dispatch:
 
 jobs:

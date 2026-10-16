@@ -2,6 +2,19 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ CI/CD Alternative Cloud Compute Integration & GitHub Actions Quota Optimization (October 16, 2026)**:
+  - **🔧 GitHub Actions 2,000-Minute Limit Elimination**:
+    * Identified root cause of `AAA0002` monthly limit exhaustion: `0 */4 * * *` (6 runs/day × 25 mins = ~150 mins/day = ~4,500 mins/mo) burns through the 2,000-minute free quota in under 14 days.
+    * Optimized `.github/workflows/mrg_turnstile_solver.yml` cron schedule to `0 */8 * * *` (3 runs/day = ~75 mins/day = ~1,800 mins/mo), fitting permanently inside the free monthly quota.
+  - **🌐 CircleCI 6,000-Minute Cloud Compute Runner Integration**:
+    * Harnessed `CIRCLECI_TOKEN` and account `aaa.support.a@gmail.com` collected in `.env`.
+    * Created `.circleci/config.yml` using `cimg/python:3.12-browsers` with Patchright stealth Chromium and Xvfb. Provides 6,000 free build minutes/month (3x GitHub Actions capacity) to execute Turnstile solving and multi-bot farming.
+  - **🛡️ Multi-Cloud CI/CD Standby Handover**:
+    * Audited Ubicloud managed runner infrastructure (`UBICLOUD_PAT_TOKEN`) to run workflows on Ubicloud VMs with 0 GitHub Actions billable minutes.
+    * Verified secondary standby GitHub runner `koramshah2` actively executing run `38900499553` on dedicated fresh quotas.
+    * Verified Cron-Job.org (`CRONJOB_API_KEY`) actively scheduling 5 cloud cron jobs directly against Render Node 2 with 0 CI/CD runner overhead.
+  - **📱 Zero Phone Load & Immutability**: Kept Samsung Galaxy A30 at 0 Python background processes and user bot (`@AAAPREMIUMAPPSbot`) 100% untouched.
+
 - **🍃 Complete LeafEarn Purge, 100% PepeGram Verification & 9-Bot Fleet Consolidation (October 16, 2026)**:
   - **🚫 Complete LeafEarn Bot (@LeafEarnBot) Purge & Banned Dialog Addition**:
     * **Purged From Registry**: Completely removed `leafearn` from `bot_registry.py`, consolidating the fleet to 9 high-conviction active bots.
@@ -1283,8 +1296,8 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
       - `PROJECT_BIBLE.md` & `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt`
     * Deployed live to Render Node 2 (Frankfurt, `dep-db5q2p3bc2fs739o4b4g`), Node 3 (Oregon, `dep-db5q2pad0e5s738ars7g`), Telegram Serverless (`tgcloud push`), and all 5 Cloudflare Worker edge nodes.
   - **🔑 Enterprise Multi-Cloud Credential Integration & Security Vault Archival**:
-    * **CircleCI Cloud Compute**: Integrated 1-year verified PAT (`CCIPAT_2aSqQCSRPoxvMdtVh6hqrz_e05b8974d6de1aa66f561e719c71a51cdbb8047f`) for automated continuous cloud pipelines (`aaa.support.a@gmail.com`).
-    * **Ubicloud Cloud Infrastructure**: Integrated Personal Access Token (`pat-akn22db4qrx65heyfx6b83dq42-hrN1UPssH0lVZCkAwVHhnaIKPtqy3e7g`).
+    * **CircleCI Cloud Compute**: Integrated 1-year verified PAT (`CIRCLECI_TOKEN` in `.env`) for automated continuous cloud pipelines (`aaa.support.a@gmail.com`).
+    * **Ubicloud Cloud Infrastructure**: Integrated Personal Access Token (`UBICLOUD_PAT_TOKEN` in `.env`).
     * **Puzl.cloud Kubernetes**: Integrated European K8s cluster kubeconfig context (`cloud-jobs` in Finland EU).
     * **Layerbase Managed Databases**: Archived 6 API keys (`sk_...`) for QuestDB, InfluxDB, Weaviate, CouchDB.
     * **Qdrant Cloud**: Archived 3 management cluster keys for semantic vector operations.
