@@ -127,7 +127,7 @@ ACTIVE_BOTS: Dict[str, Dict[str, Any]] = {
         "token_key": "pepegram_init_data",
         "short_names": ["app", "game", "miner", "miniapp", "startapp"],
         "api_base": "https://app.miniempire.app/miniapp",
-        "sponsor_channels": [],
+        "sponsor_channels": ["pepe_grammmm"],
         "requires_turnstile": False,
         "is_active": True,
     },
