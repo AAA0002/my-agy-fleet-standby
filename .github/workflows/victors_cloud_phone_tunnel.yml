@@ -38,10 +38,10 @@ jobs:
       - name: Start Cloud Virtual Phone & Cloudflare Tunnel
         env:
           UPSTASH_URL: "https://pleasant-locust-220893.upstash.io"
-          UPSTASH_TOKEN: "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg"
-          ALERT_BOT_TOKEN: "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8"
+          UPSTASH_TOKEN: "${{ secrets.UPSTASH_TOKEN }}"
+          ALERT_BOT_TOKEN: ${{ secrets.ALERT_BOT_TOKEN }}
           OWNER_ID: "6727787768"
-          WEBSHARE_KEY: "e9lkjm26eqqah0s5zg26lk8tuiuxr9deznbp0aql"
+          WEBSHARE_KEY: ${{ secrets.WEBSHARE_KEY }}
         run: |
           # 1. Start Xvfb display on :99 with mobile phone resolution (450x950)
           Xvfb :99 -screen 0 450x950x24 &

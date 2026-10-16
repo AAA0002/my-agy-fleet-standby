@@ -48,7 +48,7 @@ WALLET_ADDRESS = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 WALLETS = [
     "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 ]
-REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8")
+REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "")
 PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
 ADMIN_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
 
@@ -56,8 +56,8 @@ ADMIN_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://znbbaozpevurvbfkxakz.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_ANON_KEY")
 UPSTASH_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://pleasant-locust-220893.upstash.io")
-UPSTASH_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg")
-TONAPI_KEY = os.getenv("TONAPI_KEY", "AGCD63WTWLGKKWYAAAAKRKZU45HTYMDI3PV7UBKKL6QDVIHG54NQDVNSQF7W3LQJ3X77QKY")
+UPSTASH_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
+TONAPI_KEY = os.getenv("TONAPI_KEY", "DVNSQF7W3LQJ3X77QKY")
 
 async def get_live_rates(session: aiohttp.ClientSession) -> dict:
     rates = {"bnb": 750.0, "ton": 1.60, "arb": 0.21, "bdt": 122.50}
@@ -84,7 +84,7 @@ async def get_live_rates(session: aiohttp.ClientSession) -> dict:
     return rates
 
 async def get_onchain_bnb(session: aiohttp.ClientSession) -> float:
-    drpc_key = os.getenv("DRPC_API_KEY", "AqfE-vxQsEgZrdrPasY_EsnLP3satOIR8YH4El_NDNxu")
+    drpc_key = os.getenv("DRPC_API_KEY", "")
     rpc_nodes = [
         "https://bsc-dataseed.binance.org",
         "https://bsc-dataseed1.defibit.io",
@@ -161,8 +161,8 @@ async def get_ai_market_briefing(session: aiohttp.ClientSession, rates: dict, to
 
     # 2. Groq LPU Fallback (Qwen 3.8 27B)
     groq_keys = [
-        os.getenv("GROQ_API_KEY_1", "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"),
-        os.getenv("GROQ_API_KEY_2", "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")
+        os.getenv("GROQ_API_KEY_1", ""),
+        os.getenv("GROQ_API_KEY_2", "")
     ]
     for gk in groq_keys:
         try:

@@ -48,7 +48,7 @@ if os.path.exists(env_file):
                 env[k.strip()] = v.strip().strip('"').strip("'")
 
 UPSTASH_URL = env.get("UPSTASH_URL") or env.get("UPSTASH_REDIS_REST_URL") or "https://pleasant-locust-220893.upstash.io"
-UPSTASH_TOKEN = env.get("UPSTASH_TOKEN") or env.get("UPSTASH_REDIS_REST_TOKEN") or "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg"
+UPSTASH_TOKEN = env.get("UPSTASH_TOKEN") or env.get("UPSTASH_REDIS_REST_TOKEN") or ""
 SECRET_KEY = env.get("SECRET_KEY") or "agy_cf_secret_7d36994e_2026"
 
 CF_WORKERS = [

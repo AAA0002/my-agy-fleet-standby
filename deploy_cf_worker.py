@@ -9,14 +9,14 @@ import json
 import asyncio
 import aiohttp
 
-CF_EMAIL = "korimhaji210@gmail.com"
-CF_API_KEY = "cfk_1NzkotzLPy3htYaju8Ha6KolPDuNCMGiECzsyx6Gb7e6ad9f"
-CF_ACCOUNT_ID = "c9f92ab4a8b26b15f958ac25c22300bc"
+CF_EMAIL = os.getenv("CF_EMAIL_NODE_1", "korimhaji210@gmail.com")
+CF_API_KEY = os.getenv("CF_API_KEY_NODE_1", "")
+CF_ACCOUNT_ID = os.getenv("CF_ACCOUNT_ID_NODE_1", "c9f92ab4a8b26b15f958ac25c22300bc")
 KV_NAMESPACE_ID = "315ff9eee275466ba24c01dc2c3f9653"
 WORKER_NAME = "restore-agy"
-SECRET_KEY = "agy_cf_secret_7d36994e_2026"
-OWNER_ID = "6727787768"
-ALERT_BOT_TOKEN = "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8"
+SECRET_KEY = os.getenv("SECRET_KEY", "agy_cf_secret_7d36994e_2026")
+OWNER_ID = os.getenv("OWNER_ID", "6727787768")
+ALERT_BOT_TOKEN = os.getenv("ALERT_BOT_TOKEN", "")
 
 WORKER_JS = """
 export default {

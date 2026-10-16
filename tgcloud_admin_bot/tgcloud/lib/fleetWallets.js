@@ -24,15 +24,15 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+8801943805617",
     "user_id": "8881914294",
     "ton": "UQA0aO4Ybdg76l2ewtiGxA7vtk8CHbVaGvrcpA0G1kionhsP",
-    "ton_mnemonic": "emerge floor involve rookie enroll army social alien swing wasp thank panel kiwi feature tenant dog dust use garlic when ocean vintage unveil chase",
+    "ton_mnemonic": "",
     "evm": "0xA203269B8a970d5b74361B406345e1BBF5A0623B",
-    "evm_key": "aa2eda911e13e78fc83f32daef9425f952369aed79b16a5f6e6192c40a17eaf7",
+    "evm_key": "Archived in Telegram Vault",
     "tron": "TQjrF4JNZLBXTH64Vrs9P5ZLGdqM8UdrTY",
-    "tron_key": "aa2eda911e13e78fc83f32daef9425f952369aed79b16a5f6e6192c40a17eaf7",
+    "tron_key": "Archived in Telegram Vault",
     "sol": "5bnRudWyU1Sjhe2XXXFNFRLWCAmq3c7K1ZEHWtRxHszU",
-    "sol_key": "61t3godJxXGsnV9AAeiWMSnem311ja5jdBH21ryk6ynKmUudci4gkUiAbATccy5MRVQiqtuArgqpC2DjazgkNcvx",
+    "sol_key": "Archived in Telegram Vault",
     "btc": "1Ny6K4ktywSbvXo9eVEniHchfn8ihFugdK",
-    "btc_key": "aa2eda911e13e78fc83f32daef9425f952369aed79b16a5f6e6192c40a17eaf7"
+    "btc_key": "Archived in Telegram Vault"
   },
   {
     "index": 3,
@@ -40,15 +40,15 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+8801790208077",
     "user_id": "7648254021",
     "ton": "UQC8xeCT2LQHUOceVFozYqRR8xEnxdZeo4Hsy_B9_jrkpp-1",
-    "ton_mnemonic": "fitness what silver basic solution wing spray window raven ability bulk clutch core document civil bag rhythm bike jacket address glow minimum match path",
+    "ton_mnemonic": "",
     "evm": "0x65DB0FA942144a2A89630c4975FA5f5469f97411",
-    "evm_key": "9a198a0266af226f7b72d124dab07552bfef1d5484a5133c82fd896da0d11ca3",
+    "evm_key": "Archived in Telegram Vault",
     "tron": "TKFmg55vVkbHGLNznmh5vXq3hgbmj5b4qk",
-    "tron_key": "9a198a0266af226f7b72d124dab07552bfef1d5484a5133c82fd896da0d11ca3",
+    "tron_key": "Archived in Telegram Vault",
     "sol": "6f6XoV3hnAC48swXcCi2A32X24f3fqrfF2xqcfMB7XNh",
-    "sol_key": "2YhGMXP6jMdQgYFHfXJPAnwb4T2FBjQo29MXoiok4tK9KwEVWbUW1TiGWgtgdcp4Aa7YUNCuEiRtuPfgZPwm9nCZ",
+    "sol_key": "Archived in Telegram Vault",
     "btc": "13TQRdfLP2C45b3jiAMt6ZaF6LtrrkpnN3",
-    "btc_key": "9a198a0266af226f7b72d124dab07552bfef1d5484a5133c82fd896da0d11ca3"
+    "btc_key": "Archived in Telegram Vault"
   },
   {
     "index": 4,
@@ -56,15 +56,15 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+8801575842094",
     "user_id": "8826375659",
     "ton": "UQAOfjJtPFrKKWVqHGF0Fmo6BkTLyTTmE3Oq0vABlQYZoPBD",
-    "ton_mnemonic": "rubber fun tongue tortoise shine unknown nose indicate ritual stomach true simple moon quote ritual rebuild all help motion cotton crowd brave knock toast",
+    "ton_mnemonic": "",
     "evm": "0x24718F037aA61e3873073098D121ba3ced8C9daB",
-    "evm_key": "7517fc4097944d56cedfa09abff7964831a993a6f3c831298fc60b838bcb1354",
+    "evm_key": "Archived in Telegram Vault",
     "tron": "TDHuNA7ma8YmdTWZyTShAvdQsg6NKeuyxP",
-    "tron_key": "7517fc4097944d56cedfa09abff7964831a993a6f3c831298fc60b838bcb1354",
+    "tron_key": "Archived in Telegram Vault",
     "sol": "CYcguQk4Pk8Z8RqtJVp9mBVepUvXFdc7eLw7G85uC3FM",
-    "sol_key": "3bkLLtWcBQpE85BJSH3z2Aavy7YwhF8n7Axjn5nYQwNLS57hEjTg2LM66B3qFwRxHmncSgzvxz8HLXfVnxFP5tzj",
+    "sol_key": "Archived in Telegram Vault",
     "btc": "1Ldi4Ze1U54zhbzqS18AfkaHpcd3YKxBny",
-    "btc_key": "7517fc4097944d56cedfa09abff7964831a993a6f3c831298fc60b838bcb1354"
+    "btc_key": "Archived in Telegram Vault"
   },
   {
     "index": 5,
@@ -72,15 +72,15 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+14302084365",
     "user_id": "8450010161",
     "ton": "UQBrmX45swcSdxBfgg4vQUjoaBxD-_48zwqvofbpndAsMOBQ",
-    "ton_mnemonic": "kidney witness embody neglect hero input addict enjoy account honey brand guess slush gospel curtain express umbrella section size side obtain page hybrid tiny",
+    "ton_mnemonic": "",
     "evm": "0x0c649480FC33DfB9216756cB28e2e2efd6b0725D",
-    "evm_key": "88d39e51a85fdaad28642a11fb640299b03ddc6a74781b5253f26be661e90578",
+    "evm_key": "Archived in Telegram Vault",
     "tron": "TB6jbngGfmtLGG3CrAAYF8kDt1w7UEp1Wn",
-    "tron_key": "88d39e51a85fdaad28642a11fb640299b03ddc6a74781b5253f26be661e90578",
+    "tron_key": "Archived in Telegram Vault",
     "sol": "2UXL1Eb5RE2uNRmJsrqmYr46XEGHLa7vGtLhRr6DiGYE",
-    "sol_key": "RJVkQousgE4yHeokTEtyKDFmFEo8i9uytqukzaAwUmBZPHTQ4FN5bPbtmYGhC9KgrgtpenGTjFqUGhyrzgTtRot",
+    "sol_key": "Archived in Telegram Vault",
     "btc": "13xKtWd7m5xrcxmrXoovrCULHYnC9fiKwZ",
-    "btc_key": "88d39e51a85fdaad28642a11fb640299b03ddc6a74781b5253f26be661e90578"
+    "btc_key": "Archived in Telegram Vault"
   },
   {
     "index": 6,
@@ -88,15 +88,15 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+8801867539837",
     "user_id": "8782429452",
     "ton": "UQAid8oL7Qm8TFhLMhQAk-BjL39iqQW4Zfik77XCMqjhjk9q",
-    "ton_mnemonic": "cycle chaos wash debris bargain lady glove picture install human hat donate wise fat shine network nuclear visa twenty jacket ill knock radar pear",
+    "ton_mnemonic": "",
     "evm": "0xC3afc38b8E59E529174fbE4ff7f0CE053A89B8F3",
-    "evm_key": "a32fedee393c78981be9d3c00513eb00912c0a2cad0deb43181af83e8c4d49cd",
+    "evm_key": "Archived in Telegram Vault",
     "tron": "TTouKkaeynFqAcK8Gp7ESQgToMrmBtdsg9",
-    "tron_key": "a32fedee393c78981be9d3c00513eb00912c0a2cad0deb43181af83e8c4d49cd",
+    "tron_key": "Archived in Telegram Vault",
     "sol": "3F2tuAc82TxZzj4DPQ5DDU2oxQcEctTeCgCKUf38gtMF",
-    "sol_key": "41XfhozHmxfDUVZxkJxw1fAk6T94j18e2MSnPbUTom6s2FBCNkce1vGcFxPaeBVDqANKQPhh8uyoub62LFigM2vu",
+    "sol_key": "Archived in Telegram Vault",
     "btc": "19v6xuzTgCr2dbfVdefZ4VGBsYWtNTikLk",
-    "btc_key": "a32fedee393c78981be9d3c00513eb00912c0a2cad0deb43181af83e8c4d49cd"
+    "btc_key": "Archived in Telegram Vault"
   },
   {
     "index": 7,
@@ -104,15 +104,15 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+8801718056423",
     "user_id": "7734849205",
     "ton": "UQAtcq_XsUwbFXGV23EZTOYibfvV5DhP70GAXuJLRSXRfVXU",
-    "ton_mnemonic": "meat parade color upset steel recall wheel since pulse always speed swallow civil chuckle sick shell total invite attitude turkey fury sudden mesh nothing",
+    "ton_mnemonic": "",
     "evm": "0x0262A7E950A9dd872FeB5CF8aD99d6a28Df053f0",
-    "evm_key": "5d272d2049b67eb62ef106e47ed39a16485fc709fed00e1879b2c108d56d5953",
+    "evm_key": "Archived in Telegram Vault",
     "tron": "TABpYB74SSLdNrCYmomgYg2YJxNrphPSVN",
-    "tron_key": "5d272d2049b67eb62ef106e47ed39a16485fc709fed00e1879b2c108d56d5953",
+    "tron_key": "Archived in Telegram Vault",
     "sol": "FejVyL2VcE9QKJimKh6GFgtg58ZBAmYsGS7VRgeCf36h",
-    "sol_key": "49G7k1xSxt1LHFu5Uwt5J4yfdJsuAc4sepjziKzVwxyXmP5gJjBr879JSArbuR6LEvp8YZXiKgAPoySYFR4NCTVj",
+    "sol_key": "Archived in Telegram Vault",
     "btc": "1Nryb1xMq5cdApLL8zVZo8zQBvL1BVtreQ",
-    "btc_key": "5d272d2049b67eb62ef106e47ed39a16485fc709fed00e1879b2c108d56d5953"
+    "btc_key": "Archived in Telegram Vault"
   },
   {
     "index": 8,
@@ -120,15 +120,15 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+8801797795624",
     "user_id": "8025472383",
     "ton": "UQCIPXAV-BxflwdqW43gAm98CL3_cIbxmbQwv9_hLFvBLydV",
-    "ton_mnemonic": "music peasant tomato plug limb brisk eternal salon brisk potato salt umbrella exotic normal scan patrol fetch muffin review naive either domain reunion upon",
+    "ton_mnemonic": "",
     "evm": "0xc3Cbd377872bCB69Fa01F5945eADFDFf053E1Bd4",
-    "evm_key": "158ad0edf5e9bb512dce6bc3c127a6ac51251357d6ff9fd0894831f2b1e59d93",
+    "evm_key": "Archived in Telegram Vault",
     "tron": "TTpUwYiYbeRoSBXZb2BVgcjQAwYEkdaxdQ",
-    "tron_key": "158ad0edf5e9bb512dce6bc3c127a6ac51251357d6ff9fd0894831f2b1e59d93",
+    "tron_key": "Archived in Telegram Vault",
     "sol": "BU8cCsvHVFe1ws74a27tCy5rbW22sUKeezfiuyyZQRie",
-    "sol_key": "4XNhuTuYszeh7m8RUs37ehP8TwGXZ8KGXznvpYWD2ZyaQ4FcMsQzUhx12e7x4K31kqeyxZfCPapDisvP2BecbeCN",
+    "sol_key": "Archived in Telegram Vault",
     "btc": "1B97Fu4fwicrLruRkqgbStMJUAaeS4zgcB",
-    "btc_key": "158ad0edf5e9bb512dce6bc3c127a6ac51251357d6ff9fd0894831f2b1e59d93"
+    "btc_key": "Archived in Telegram Vault"
   },
   {
     "index": 9,
@@ -136,15 +136,15 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+8801727651288",
     "user_id": "8851426148",
     "ton": "UQDF-a-AcQ_A3vn4nLQ5KlVPHr0NO5fvTchJNczOPLBucweI",
-    "ton_mnemonic": "real short seat night doctor kit fitness settle thunder proud slab matrix open stereo rural sign vapor tilt license bleak myself stick drill various",
+    "ton_mnemonic": "",
     "evm": "0x996292A277E5038efB413247dc7B58AC5209812C",
-    "evm_key": "c056a0bf25fcb1b985b952e6d26e9c9e1e5ecd00b2b0f95a830311cb8bb0d8d3",
+    "evm_key": "Archived in Telegram Vault",
     "tron": "TPxEUNDmkmHFeBx5ZAvHuCWB4amavPYyPb",
-    "tron_key": "c056a0bf25fcb1b985b952e6d26e9c9e1e5ecd00b2b0f95a830311cb8bb0d8d3",
+    "tron_key": "Archived in Telegram Vault",
     "sol": "GkfPAfL1pxe9C8RaLLCn5KKpcN3FirKJdRyYnYqwWZxg",
-    "sol_key": "5KSRTYseBwKVL6Uajw1utkhvf518nQxGMinREvsLcwPA4AA3zhtXNXNQVTVTuBWvN4L7WqU1bRPuoFhKZbh7aH5N",
+    "sol_key": "Archived in Telegram Vault",
     "btc": "1B5fEfjmU2k3TMyDEKYkHotfKtrDb19YXn",
-    "btc_key": "c056a0bf25fcb1b985b952e6d26e9c9e1e5ecd00b2b0f95a830311cb8bb0d8d3"
+    "btc_key": "Archived in Telegram Vault"
   },
   {
     "index": 10,
@@ -152,7 +152,7 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+8801729892810",
     "user_id": "8203342513",
     "ton": "UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH",
-    "ton_mnemonic": "Binance Web3 Wallet 2 (AAA) - Managed via Binance Mobile App",
+    "ton_mnemonic": "",
     "evm": "0x017841f26d5b79cc8c5eb20c65367bb645cc2610",
     "evm_key": "Binance Web3 Wallet 2 (AAA) - Direct Custody in Binance App",
     "tron": "TA6yjtuWh6Sz5uE8RywLZxFQBBvhHYP9FP",
@@ -168,15 +168,15 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+8801571089931",
     "user_id": "8190649727",
     "ton": "UQBgy3ImJtesjl7-R8g6hOEAUHGV2SdB2jBx7IOpEWoRVHrB",
-    "ton_mnemonic": "limb arrange front frog kiwi random payment once oppose receive search spread story deposit axis bounce liquid figure later match suggest universe vehicle pact",
+    "ton_mnemonic": "",
     "evm": "0x91B5cd7EfCBd5bc552479f5Eb70221C5E026228A",
-    "evm_key": "76e9a47bb7703b5a976d80da9a8d4a1d23a1f24a4f6668780571b1e648f163db",
+    "evm_key": "Archived in Telegram Vault",
     "tron": "TPFemkP8B5TusgAFEL42eesTborpNUTTJ5",
-    "tron_key": "76e9a47bb7703b5a976d80da9a8d4a1d23a1f24a4f6668780571b1e648f163db",
+    "tron_key": "Archived in Telegram Vault",
     "sol": "36uTS575QfYWVgR1M28Mn6RfHDkKLuUdnPiVUAE3RZ3v",
-    "sol_key": "eNzu4g4cTpLXpuJPuYaEvh1ezhXkAFaFct5pZLcAErscVFe7ur7HBSfh8JH12itdQq2hLWBRTwVtViYdjGCDe2C",
+    "sol_key": "Archived in Telegram Vault",
     "btc": "17eVfiKD5wf1CdRL5QEkzHBTAG1Knwk9vz",
-    "btc_key": "76e9a47bb7703b5a976d80da9a8d4a1d23a1f24a4f6668780571b1e648f163db"
+    "btc_key": "Archived in Telegram Vault"
   },
   {
     "index": 12,
@@ -184,15 +184,15 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+8801774578536",
     "user_id": "7487048946",
     "ton": "UQBOdyZlFAsbI9aW0ExiRSo-MATOU076H39bP139WaHIBMQo",
-    "ton_mnemonic": "vessel common shoulder logic head buffalo uniform various will helmet favorite inner shield effort rotate people glare fee crop actor brisk solve tongue ride",
+    "ton_mnemonic": "",
     "evm": "0x3129386b118892238EF48428e2e5d19B9F7D8215",
-    "evm_key": "7780fac4016e412f04c8cc229247dd686eeb0cf9ef447f6d82de407a67274c2b",
+    "evm_key": "Archived in Telegram Vault",
     "tron": "TET9VW2ANNS4P1VhMpdv3rexNXS7PR6rbE",
-    "tron_key": "7780fac4016e412f04c8cc229247dd686eeb0cf9ef447f6d82de407a67274c2b",
+    "tron_key": "Archived in Telegram Vault",
     "sol": "8LYrvyAdUXnoFJy9Q9GqiGSpQFPTD9y56RSo5XjoBHXU",
-    "sol_key": "2cUvzvEfTUv8rgBgQjDMMDqatb4AB6xJjH6paf9Re9ZdwwfzTdejRAeM7vQFdsHbkKFJS7FETWnxKBbji9Hqp1eW",
+    "sol_key": "Archived in Telegram Vault",
     "btc": "13Lks34KhE6my8VWHhvPMg7jwQgCRHsnVT",
-    "btc_key": "7780fac4016e412f04c8cc229247dd686eeb0cf9ef447f6d82de407a67274c2b"
+    "btc_key": "Archived in Telegram Vault"
   },
   {
     "index": 13,
@@ -200,15 +200,15 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+8801838268380",
     "user_id": "8741547543",
     "ton": "UQAy5w840mgWqZwlUEIKLnCBVNrh9t4KlZ2EpRijeHw0fDkN",
-    "ton_mnemonic": "flight lonely real insane receive sad depend zone riot noble machine mechanic subway wall also audit melody merit bind express squeeze panther payment pony",
+    "ton_mnemonic": "",
     "evm": "0xE27Df3117501e3a46cf29848Df3414C4542E6A5c",
-    "evm_key": "2af5968a62eecdcc45f4c776e15daabdf02ba6075c30aaf5cafdffe504be464b",
+    "evm_key": "Archived in Telegram Vault",
     "tron": "TWcnbY4RmCxbBoiKPC6BjExJ58VSR259xa",
-    "tron_key": "2af5968a62eecdcc45f4c776e15daabdf02ba6075c30aaf5cafdffe504be464b",
+    "tron_key": "Archived in Telegram Vault",
     "sol": "HdgcKpPQaiqJYY7FELpsWhnKKHQYR4zfcEJgJBKyG4sJ",
-    "sol_key": "Ak8y3RieMufhFkoTeEidbJTW9YSR1WGs2CUZLM4c8iYHMCfhvmAydpf18QdVk4SXxzkuEtUxBQCu4gmxSZH6nY8",
+    "sol_key": "Archived in Telegram Vault",
     "btc": "1PbwGPz5wXEPDCY6LXErUJzqyjrwR3H5Ej",
-    "btc_key": "2af5968a62eecdcc45f4c776e15daabdf02ba6075c30aaf5cafdffe504be464b"
+    "btc_key": "Archived in Telegram Vault"
   },
   {
     "index": 14,
@@ -216,15 +216,15 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+918930504750",
     "user_id": "8727040932",
     "ton": "UQCbqkSPVKS2aNWkk_LZ2r98aorh4O-1OuPCarCpsVIPUsLo",
-    "ton_mnemonic": "young affair lawsuit physical assist notice tool pledge hen record uniform license argue that step rapid claim turkey public seek fitness sauce fall basic",
+    "ton_mnemonic": "",
     "evm": "0x117a66bf79f63E5cC1dAB047047d62c651Eae335",
-    "evm_key": "4474c9b8c0b4b007b7723409e1d7484f1e7fe09e1257b30b4bc2292d20f0768f",
+    "evm_key": "Archived in Telegram Vault",
     "tron": "TBZd7v4VomGZv8sk4Qp17o6YA4xUoYCvPm",
-    "tron_key": "4474c9b8c0b4b007b7723409e1d7484f1e7fe09e1257b30b4bc2292d20f0768f",
+    "tron_key": "Archived in Telegram Vault",
     "sol": "Hj688RAe6UpB786ANVhwkLgf8RiCtA4sKDxjoitKkBY3",
-    "sol_key": "3hpE4TTdGkKDbtpgLNTTHpbihv9phHXobwwFf7m9vuj6SLSobnpqkwPLqJYNtPwoG4V622BWDizYJse7FXLcSm8j",
+    "sol_key": "Archived in Telegram Vault",
     "btc": "1B3EhejQeuAdJYvvgMZyMU9eqb3Yu91gS2",
-    "btc_key": "4474c9b8c0b4b007b7723409e1d7484f1e7fe09e1257b30b4bc2292d20f0768f"
+    "btc_key": "Archived in Telegram Vault"
   },
   {
     "index": 15,
@@ -232,15 +232,15 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+8801906045479",
     "user_id": "7749125802",
     "ton": "UQBhpe9uI3JXldv_pfVYqmjs8dtB6H6za8rctPSZB0rekcaR",
-    "ton_mnemonic": "coast pluck armor puppy escape senior knee large window law autumn material rich rude ask balance visit brisk alert asset gasp inspire sauce lens",
+    "ton_mnemonic": "",
     "evm": "0xC54F4e10f7b09287DDF95E1eC4eEdA8A88d82719",
-    "evm_key": "407e50be897e5c0f62b7bb231fde7207b19bacc8712793defeaaa59bcc8a7dcd",
+    "evm_key": "Archived in Telegram Vault",
     "tron": "TTxV845U4yrJRSJhgGK5HSkcJjKrxW3VjX",
-    "tron_key": "407e50be897e5c0f62b7bb231fde7207b19bacc8712793defeaaa59bcc8a7dcd",
+    "tron_key": "Archived in Telegram Vault",
     "sol": "8XqsTQEh3VhhwPSPUfBrcDHGLki7vakbp9YDT8dbLSLy",
-    "sol_key": "2awNRthsq61LMZRYkPCcQ49PsrAiVMPkvUhtx7HuaDXQ6V4WMUVVsuJndobMvC9iTNQT4VWeicec6tW8NrSZ1y61",
+    "sol_key": "Archived in Telegram Vault",
     "btc": "1EN542R2PQGyVAnQx5G638n35rK5MLeLCC",
-    "btc_key": "407e50be897e5c0f62b7bb231fde7207b19bacc8712793defeaaa59bcc8a7dcd"
+    "btc_key": "Archived in Telegram Vault"
   },
   {
     "index": 16,
@@ -248,15 +248,15 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+8801304151082",
     "user_id": "7954290138",
     "ton": "UQANs0f0XTPPfIXW27MxyqUChFsvNmi9Y3zulAB5InKs0gYH",
-    "ton_mnemonic": "arctic provide lawn coach turtle infant journey top aim involve pizza indoor march you core peanut office margin seminar yellow minimum hybrid observe agent",
+    "ton_mnemonic": "",
     "evm": "0xDCd79258596291a4071b88303D919218bfF087B9",
-    "evm_key": "ae73352a01e3efc3aaf05edc8e596bb4bc177e1155ab243023fee752fb1d1aca",
+    "evm_key": "Archived in Telegram Vault",
     "tron": "TW6uuSfN7p824Cqvg6UKf6UBA35dvFd2ye",
-    "tron_key": "ae73352a01e3efc3aaf05edc8e596bb4bc177e1155ab243023fee752fb1d1aca",
+    "tron_key": "Archived in Telegram Vault",
     "sol": "Df5QF3TehYHNMjBWLnGPRBcuKnzGLoa5ZE1dNmvCn9tM",
-    "sol_key": "Biyfr6fjQHdw4E8zjAENtCMGWwKZ4uh8QotkBQGXLKqo7UTmiaMnGB2J87WVEivrwS3jY6dbWReJD6BocFd7bxm",
+    "sol_key": "Archived in Telegram Vault",
     "btc": "1F7X1s1qAKfrVgES8QagZCfQxyAQYkzTdb",
-    "btc_key": "ae73352a01e3efc3aaf05edc8e596bb4bc177e1155ab243023fee752fb1d1aca"
+    "btc_key": "Archived in Telegram Vault"
   },
   {
     "index": 17,
@@ -264,15 +264,15 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+8801879273559",
     "user_id": "8841038141",
     "ton": "UQCDqlebQ9GGXwocS-afgknJq6JAuYw3enYi0MKYRi4kdY5j",
-    "ton_mnemonic": "crucial flush fit salon zebra denial client furnace adult coil ancient stable govern present crash emotion antique mechanic say candy enough liquid adjust jealous",
+    "ton_mnemonic": "",
     "evm": "0xFb5450C077B0956ae3e7Efa8cfa017dA6e99F940",
-    "evm_key": "8d2d9dc7b27d2998ae2e899b39018e574a3cf1c1e75b6908f51b7fb175bb704c",
+    "evm_key": "Archived in Telegram Vault",
     "tron": "TYt7cYigHyd88JQrSXrVdoAEV64ReayQhY",
-    "tron_key": "8d2d9dc7b27d2998ae2e899b39018e574a3cf1c1e75b6908f51b7fb175bb704c",
+    "tron_key": "Archived in Telegram Vault",
     "sol": "F17bSUHS2ps8WQPdV2VdMxHLwVvLFLmeSdhum7NcbZGy",
-    "sol_key": "2qvsYPR24Z9JUQtP9VkEmiGBwFzGZ3JQZc1B5fWJXWo7C1gYr6XdA1ePFYHAs3vp74qJPjncbJPKHDGyX5XsWFkZ",
+    "sol_key": "Archived in Telegram Vault",
     "btc": "15XPTJ8MhEceQWJNBAyArvcWkypMMp9BEj",
-    "btc_key": "8d2d9dc7b27d2998ae2e899b39018e574a3cf1c1e75b6908f51b7fb175bb704c"
+    "btc_key": "Archived in Telegram Vault"
   },
   {
     "index": 18,
@@ -280,15 +280,15 @@ export const FLEET_STATIC_WALLETS = [
     "phone": "+8801839716506",
     "user_id": "8975442879",
     "ton": "UQBcHzN-pIk6WEy1pV_g4LkcJ4ePuzcJ-iwcw5ltOjC-49fL",
-    "ton_mnemonic": "coral good cool horn walk inside detect misery budget limit toward jealous swallow silly bonus photo vessel scrub plug try taste elite menu dance",
+    "ton_mnemonic": "",
     "evm": "0x349C1c924E556dc7694aA6e0c5d773414b83d241",
-    "evm_key": "7f2686208fa06a824f35f24770f3248075d324e2eee5275a05c2cd33fb7c1f88",
+    "evm_key": "Archived in Telegram Vault",
     "tron": "TEmP9rmLeZAFog8eqnrvZhXFPABnyGxGMb",
-    "tron_key": "7f2686208fa06a824f35f24770f3248075d324e2eee5275a05c2cd33fb7c1f88",
+    "tron_key": "Archived in Telegram Vault",
     "sol": "9TKyt87Kf3kFZvtmYQMEtgwEqSTq15XV85kddGoTak3P",
-    "sol_key": "QJeW94ACWQ5yWvpTwkghpmE1Bu6gfQRrfjEbcKmiTYXvcxrPvvKatSn472yKNa4KVjKsLUQ5eKvPJzdd2FKLpUD",
+    "sol_key": "Archived in Telegram Vault",
     "btc": "18mgSUQZk2HhK2PwQvuF9fMLeCRnnUw4AK",
-    "btc_key": "7f2686208fa06a824f35f24770f3248075d324e2eee5275a05c2cd33fb7c1f88"
+    "btc_key": "Archived in Telegram Vault"
   }
 ];
 
@@ -348,8 +348,8 @@ export function formatWalletDossier(targetIdx) {
     `🔴 <b>TRON:</b> <code>${w.tron}</code>\n` +
     `🟣 <b>Solana:</b> <code>${w.sol}</code>\n` +
     `🟠 <b>Bitcoin:</b> <code>${w.btc}</code>\n\n` +
-    `🔑 <b>EVM Private Key (1-Tap Copy):</b>\n<code>${w.evm_key || 'Archived in Vault'}</code>\n\n` +
-    `🔐 <b>TON 24-Word Seed Phrase (1-Tap Copy):</b>\n<pre>${w.ton_mnemonic || 'Archived in Vault'}</pre>\n\n` +
+    `🔑 <b>EVM Private Key (1-Tap Copy):</b>\n<code>Archived in Telegram Vault</code>\n\n` +
+    `🔐 <b>TON 24-Word Seed Phrase (1-Tap Copy):</b>\n<pre>Archived in Telegram Vault</pre>\n\n` +
     `💾 <i>Archive: FLEET_WALLETS_SECRETS_MASTER_VAULT.txt</i>`;
 }
 

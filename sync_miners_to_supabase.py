@@ -11,9 +11,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 UPSTASH_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://pleasant-locust-220893.upstash.io")
-UPSTASH_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg")
+UPSTASH_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://znbbaozpevurvbfkxakz.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYmJhb3pwZXZ1cnZiZmt4YWt6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTgxNjE1NCwiZXhwIjoyMTA1MzkyMTU0fQ.rPI9mpzfVGauoF8gVgzWB0E1lZZiONEuVnkUgvU7bzM")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 
 def sync_miners():
     upstash_headers = {'Authorization': f'Bearer {UPSTASH_TOKEN}'}

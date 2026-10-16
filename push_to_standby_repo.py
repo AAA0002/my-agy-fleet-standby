@@ -24,7 +24,7 @@ with open(os.path.join(BASE_DIR, ".env")) as f:
             env[k.strip()] = v.strip().strip('"').strip("'")
 
 PAT = env.get("GITHUB_USERBOT_PAT") or env.get("GITHUB_FINE_GRAINED_PAT")
-KORAM_PAT = "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"
+KORAM_PAT = env.get("KORAM_PAT") or os.getenv("KORAM_PAT", "")
 REPOS = [
     ("AAA0002/my-agy-fleet-standby", PAT),
     ("koramshah2/my-agy-fleet-standby", KORAM_PAT)
@@ -157,7 +157,7 @@ def push_app():
     
     # Strictly Pin Deployment EXCLUSIVELY to Render Node 2 (Frankfurt - Abid)
     # Node 1 (Singapore) and Node 3 (Oregon) are suspended to guarantee ZERO IP collisions
-    node2_key = env.get("RENDER_API_KEY_2", "rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB")
+    node2_key = env.get("RENDER_API_KEY_2", "")
     srv_node2 = "srv-dan5q00ae00c73djummg"
     try:
         req_dep2 = urllib.request.Request(

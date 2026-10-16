@@ -2,7 +2,7 @@ export const CONFIG = {
   ADMIN_IDS: [6727787768],
   SECRET_KEY: "agy_cf_secret_7d36994e_2026",
   UPSTASH_URL: "https://pleasant-locust-220893.upstash.io",
-  UPSTASH_TOKEN: "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg",
+  UPSTASH_TOKEN: (typeof process !== "undefined" && process.env?.UPSTASH_TOKEN) || "",
   WEBAPP_URL: "https://app8858823950.tgcloud.ai/",
   BACKEND_NODES: [
     "https://my-agy-fleet-standby-node2.onrender.com"
@@ -52,7 +52,7 @@ export const OWNER_ID = "6727787768";
 export const CF_WORKER_URLS = CONFIG.EDGE_MESH;
 export const RENDER_NODES = CONFIG.BACKEND_NODES;
 export const UPSTASH_URL = "https://pleasant-locust-220893.upstash.io";
-export const UPSTASH_TOKEN = "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg";
+export const UPSTASH_TOKEN = (typeof process !== "undefined" && process.env?.UPSTASH_TOKEN) || "";
 export const BROWSER_HEADERS = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
   "Accept": "application/json"

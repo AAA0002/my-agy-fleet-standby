@@ -26,8 +26,8 @@ logging.basicConfig(
 logger = logging.getLogger("victors_sb_solver")
 
 UPSTASH_URL = os.getenv("UPSTASH_URL") or "https://pleasant-locust-220893.upstash.io"
-UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg"
-ALERT_BOT_TOKEN = os.getenv("ALERT_BOT_TOKEN") or "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8"
+UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or ""
+ALERT_BOT_TOKEN = os.getenv("ALERT_BOT_TOKEN") or ""
 OWNER_ID = os.getenv("OWNER_ID") or "6727787768"
 
 VICTORS_SITEKEY = "0x4AAAAAAFD0KRgPRFVwDvgn"
@@ -60,8 +60,8 @@ FLEET_UIDS = [
 def get_webshare_proxy() -> str | None:
     """Fetches active, pre-tested proxy string from Webshare in user:pass@host:port format."""
     webshare_keys = [
-        "e9lkjm26eqqah0s5zg26lk8tuiuxr9deznbp0aql",
-        os.getenv("WEBSHARE_KEY") or "e9lkjm26eqqah0s5zg26lk8tuiuxr9deznbp0aql",
+        "",
+        os.getenv("WEBSHARE_KEY") or "",
         "1r347t4h8dwfkpoa4ifmmyajvmu3oxyn2guzs5k0"
     ]
     seen_keys = set()

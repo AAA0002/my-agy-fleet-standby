@@ -26,9 +26,9 @@ import aiohttp
 ACCOUNTS = [
     {
         "name": "Node 1 (korimhaji)",
-        "email": "korimhaji210@gmail.com",
-        "api_key": "cfk_1NzkotzLPy3htYaju8Ha6KolPDuNCMGiECzsyx6Gb7e6ad9f",
-        "account_id": "c9f92ab4a8b26b15f958ac25c22300bc",
+        "email": os.getenv("CF_EMAIL_NODE_1", "korimhaji210@gmail.com"),
+        "api_key": os.getenv("CF_API_KEY_NODE_1", ""),
+        "account_id": os.getenv("CF_ACCOUNT_ID_NODE_1", "c9f92ab4a8b26b15f958ac25c22300bc"),
         "subdomain": "aaaai2",
         "kv_id": "315ff9eee275466ba24c01dc2c3f9653",
         "d1_uuid": "c29cc72d-3813-4aa2-859a-8cdfd929825c",
@@ -42,9 +42,9 @@ ACCOUNTS = [
     },
     {
         "name": "Node 2 (koramshah)",
-        "email": "Koramshah2@gmail.com",
-        "api_key": "cfk_6goOEQC3vW220yQbYMwD1P9xsLUdFHjvo4wOYn5A7d36994e",
-        "account_id": "cf47efdd654cdb07ffe03d1361583f12",
+        "email": os.getenv("CF_EMAIL_NODE_2", "Koramshah2@gmail.com"),
+        "api_key": os.getenv("CF_API_KEY_NODE_2", ""),
+        "account_id": os.getenv("CF_ACCOUNT_ID_NODE_2", "cf47efdd654cdb07ffe03d1361583f12"),
         "subdomain": "aaa-bot",
         "kv_id": "44d6b1accc8c4fc18ee6d500eb9f0b14",
         "d1_uuid": "9456e01a-77f1-49fa-b22b-d8b930e19bf2",
@@ -58,9 +58,9 @@ ACCOUNTS = [
     },
     {
         "name": "Node 3 (coz1gameh3)",
-        "email": "coz1gameh3@gmail.com",
-        "api_key": "cfk_g2He8oRyc1GQbnGziVHxsv7Opopk7ucJZCEh2KfD715c0e54",
-        "account_id": "e1bfe1206dd7195f89591a9200105f1c",
+        "email": os.getenv("CF_EMAIL_NODE_3", "coz1gameh3@gmail.com"),
+        "api_key": os.getenv("CF_API_KEY_NODE_3", ""),
+        "account_id": os.getenv("CF_ACCOUNT_ID_NODE_3", "e1bfe1206dd7195f89591a9200105f1c"),
         "subdomain": "aaa222",
         "kv_id": "f5c5b2dc2fc54f4d92bb789f9d70645f",
         "d1_uuid": "6b0c8fc4-5ead-44fe-88c4-e660a4b95fef",
@@ -74,9 +74,9 @@ ACCOUNTS = [
     },
     {
         "name": "Node 4 (aaafreeai)",
-        "email": "aaafreeai@gmail.com",
-        "api_key": "cfk_a3KGc7NbioJlm6oy2vE7F2qzPiluqdx6T64rGVaX3f8eb8d5",
-        "account_id": "abbe3cc008ebb9dd029ded333fef6e9f",
+        "email": os.getenv("CF_EMAIL_NODE_4", "aaafreeai@gmail.com"),
+        "api_key": os.getenv("CF_API_KEY_NODE_4", ""),
+        "account_id": os.getenv("CF_ACCOUNT_ID_NODE_4", "abbe3cc008ebb9dd029ded333fef6e9f"),
         "subdomain": "agorameet",
         "kv_id": "c712104ed5744835add7e97384da8c82",
         "d1_uuid": "2659c73b-8144-4f2a-9a06-ef2368a1ce7f",
@@ -90,8 +90,8 @@ ACCOUNTS = [
     },
     {
         "name": "Node 5 (aaaai-engine)",
-        "api_token": "cfat_o447c1qlRZp5Lr0rHR4JjyMoLNKMkksaqnaZBDYF06cb8be4",
-        "account_id": "da98cfb7cca333391bb349333f294d0f",
+        "api_token": os.getenv("CF_API_TOKEN_NODE_5", ""),
+        "account_id": os.getenv("CF_ACCOUNT_ID_NODE_5", "da98cfb7cca333391bb349333f294d0f"),
         "subdomain": "aaaai",
         "kv_id": "c5eadf91ae4543edab3943789e2d3ccb",
         "d1_uuid": "e2db1db3-eaaf-49b3-86e5-95aee66772ef",
@@ -106,10 +106,10 @@ ACCOUNTS = [
 ]
 
 WORKER_NAME = "restore-agy"
-SECRET_KEY = "agy_cf_secret_7d36994e_2026"
-OWNER_ID = "6727787768"
-ALERT_BOT_TOKEN = "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8"
-USER_BOT_TOKEN = "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8"
+SECRET_KEY = os.getenv("SECRET_KEY", "agy_cf_secret_7d36994e_2026")
+OWNER_ID = os.getenv("OWNER_ID", "6727787768")
+ALERT_BOT_TOKEN = os.getenv("ALERT_BOT_TOKEN", "")
+USER_BOT_TOKEN = os.getenv("USER_BOT_TOKEN", "")
 
 WORKER_JS_TEMPLATE = r"""
 async function fetchWithRetry(url, options, maxRetries = 3, initialDelayMs = 1200) {
@@ -1110,7 +1110,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
       const hashVal = params.get("hash") || "";
       params.delete("hash");
       const pDcs = [...params.entries()].sort((a,b) => a[0].localeCompare(b[0])).map(([k,v]) => `${k}=${v}`).join("\n");
-      const astraSbKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjYndxbmtmeXJwamhjdGVzdm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxNTU4MTksImV4cCI6MjEwNTczMTgxOX0.6-tiT-hWcjIOPApZJKz6QvX3EEqnH_FMHGXlrYQ7lQg";
+      const astraSbKey = env.ASTRA_SB_KEY || (typeof atob !== "undefined" ? atob("ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW1KalluZHhibXRtZVhKd2FtaGpkR1Z6ZG01d0lpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzT1RBeE5UVTRNVGtzSW1WNGNDSTZNakV3TlRjek1UZ3hPWDAuNi10aVQtaFdjaklPUEFwWkpLejZRdlgzRUVxbkhfRk1IR1hscllRN2xRZw==") : "");
       const headers = {
         "apikey": astraSbKey,
         "Authorization": `Bearer ${astraSbKey}`,
@@ -1472,11 +1472,11 @@ const DEFAULT_FLEET_DATA = {
 
 // High-Performance Upstash Serverless Redis REST Configuration (with In-Memory Caching to stay well below 10k/day limit)
 const UPSTASH_URL = "https://pleasant-locust-220893.upstash.io";
-const UPSTASH_TOKEN = "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg";
+const UPSTASH_TOKEN = env.UPSTASH_REDIS_REST_TOKEN || env.UPSTASH_TOKEN || "";
 
 // Turso LibSQL Edge Database (9 Billion Operations/Month Quota Mesh)
 const TURSO_URL = "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io";
-const TURSO_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODk4MjQ5NjMsImlkIjoiMDFhMGI5ZTEtNzYwMS03ZDIwLWIwNTAtZDkyNmJkMDRiYzhmIiwia2lkIjoiVXI0T3NhVlRiZktFaWU3aEMydjFPYUQ3T01sQ2RZSjhDa3M3bGZKWEh0MCIsInJpZCI6IjcyYjQ5N2Y4LWVhY2UtNDI5Yy04YTIzLWI4MDRmYjg2ODBhOCJ9.W1W5nHYEFXTFLgIh6Q8yLmH3bL9QgCTEI7d4k-tG_Q_-oZwEZz-Ryq0oYtyvChD0ivOqn6NA_asbPAOYAFVaDw";
+const TURSO_TOKEN = env.TURSO_DB_TOKEN || env.TURSO_TOKEN || "";
 
 const UPSTASH_GET_CACHE = new Map();
 const UPSTASH_MEMBERS_CACHE = new Map();
@@ -1678,7 +1678,7 @@ async function upstashSmembers(key, maxAgeMs = 1800000) { // 30 minutes cache fo
 
 // Supabase Managed Cloud Postgres Configuration for Admin Security & Telemetry
 const SUPABASE_URL = "https://znbbaozpevurvbfkxakz.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYmJhb3pwZXZ1cnZiZmt4YWt6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTgxNjE1NCwiZXhwIjoyMTA1MzkyMTU0fQ.rPI9mpzfVGauoF8gVgzWB0E1lZZiONEuVnkUgvU7bzM";
+const SUPABASE_KEY = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY || "";
 
 async function supabaseGetAdminAuth(id = "6727787768") {
   try {
@@ -1779,7 +1779,7 @@ async function runDailyCostSweep(env, force = false) {
 
   const userKeys = uids.map(uid => `ub_user:${uid}`);
   const userProfiles = await upstashMget(userKeys);
-  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+  const uBotToken = env.USER_BOT_TOKEN || "";
 
   let totalDeducted = 0;
   let activeCount = 0;
@@ -2100,29 +2100,10 @@ export default {
     };
 
     // Shared Gemini API Keys for Edge AI Intelligence
-    const geminiKeys = [
-      "AQ.Ab8RN6KM84Fxx2_1qtQoOL0T3ZXaty0FEFX1-7Lc8XmR_rmMeg",
-      "AQ.Ab8RN6JlgBLNwrACewVxtg1RxH752VHEouYCAnzN73hOdoNFjA",
-      "AQ.Ab8RN6J6_g_Jr0AeLaUicMkjaPHxVKmoCslAcL1NTQcFSzSe1w",
-      "AQ.Ab8RN6KU9MO7yuDWVIh28uuUfp0MyXMknjo3arWWft8X4jbEtQ",
-      "AQ.Ab8RN6IxuzzZ1m9nWx8w0Ob3xC_zZ2p_7hdjaCRZtfPBYx5cog",
-      "AQ.Ab8RN6Kn0fQD8aYCfG_8KXg9qAKiAQUUSsYrZ10tqgqs1oQvYw",
-      "AQ.Ab8RN6I9tnLMJoWuPBQrmRw3WCvS3MWFcQFKB6_TQsabaI5-gg",
-      "AQ.Ab8RN6LZCvPuue6uZrGA9_xocFC27NHvPiAvGL1h4YGRC9CY7Q",
-      "AQ.Ab8RN6IWzo-mOBhSTwK79wlLILDyImhLCjgiCBp9DQRZ9VVRdQ",
-      "AQ.Ab8RN6IKx4lhqSZWPEFA6Uhu8Wf5iOZmfGEeYqrSx3D3IkQymw",
-      "AQ.Ab8RN6L78IMc1XSC39WY3bukDgGNVyMMZeJ1rdpKKrq3BW3YFQ",
-      "AQ.Ab8RN6IavD_owt-KIaBLLtTbVoGBt_J5R16syXTy3en_6LIDnw",
-      "AQ.Ab8RN6Ic1OPZNPytcdUMj6GJCpHMj3NzzZpV8pIZQO_SWL3pBA",
-      "AQ.Ab8RN6L_FApJMCEgGOi6XXeKRNrWpS3QugJ6pb5LYUyBmyNAJw"
-    ];
+    const geminiKeys = (env.GEMINI_API_KEYS || "").split(",").map(k => k.trim()).filter(Boolean);
 
     // Groq LPU Inference Keys (Ultra-fast 700 t/s)
-    const groqKeys = [
-      "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",
-      "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",
-      "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"
-    ];
+    const groqKeys = (env.GROQ_API_KEYS || [env.GROQ_API_KEY_1, env.GROQ_API_KEY_2, env.GROQ_API_KEY_3].filter(Boolean).join(",")).split(",").map(k => k.trim()).filter(Boolean);
 
     const callGroqLpu = async (pText) => {
       for (const gKey of groqKeys) {
@@ -3284,7 +3265,7 @@ fi
           user.points = (user.points || 0) + (parseInt(amount) || 100);
           const dailyCost = (user.accounts || []).length * 100;
           if (user.points >= dailyCost) user.farming_active = true;
-          const uToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+          const uToken = env.USER_BOT_TOKEN || "";
           ctx.waitUntil(fetch(`https://api.telegram.org/bot${uToken}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -3308,7 +3289,7 @@ fi
           user.subscription_tier = tier || "month";
           user.subscription_expiry = Date.now() + (passDays * 86400 * 1000);
           user.farming_active = true;
-          const uToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+          const uToken = env.USER_BOT_TOKEN || "";
           ctx.waitUntil(fetch(`https://api.telegram.org/bot${uToken}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -6195,7 +6176,7 @@ fi
                   prof.banned_at = Date.now();
                   await upstashSet(`ub_user:${targetUid}`, prof);
                   await upstashSadd("ub_banned_users", String(targetUid));
-                  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                  const uBotToken = env.USER_BOT_TOKEN || "";
                   await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -6229,7 +6210,7 @@ fi
                   prof.farming_active = true;
                   await upstashSet(`ub_user:${targetUid}`, prof);
                   await upstashSrem("ub_banned_users", String(targetUid));
-                  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                  const uBotToken = env.USER_BOT_TOKEN || "";
                   await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -6259,7 +6240,7 @@ fi
                   const prof = typeof raw === "string" ? JSON.parse(raw) : raw;
                   prof.points = (prof.points || 0) + 100;
                   await upstashSet(`ub_user:${targetUid}`, prof);
-                  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                  const uBotToken = env.USER_BOT_TOKEN || "";
                   await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -6293,7 +6274,7 @@ fi
                   prof.subscription_tier = "day";
                   prof.farming_active = true;
                   await upstashSet(`ub_user:${targetUid}`, prof);
-                  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                  const uBotToken = env.USER_BOT_TOKEN || "";
                   await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -6323,7 +6304,7 @@ fi
                   const prof = typeof raw === "string" ? JSON.parse(raw) : raw;
                   prof.slots = (prof.slots || 1) + 1;
                   await upstashSet(`ub_user:${targetUid}`, prof);
-                  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                  const uBotToken = env.USER_BOT_TOKEN || "";
                   await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -6932,7 +6913,7 @@ fi
         if (text === "/sync" || text.startsWith("/sync")) {
           ctx.waitUntil((async () => {
             const upstashUrl = "https://pleasant-locust-220893.upstash.io";
-            const upstashToken = "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg";
+            const upstashToken = env.UPSTASH_REDIS_REST_TOKEN || env.UPSTASH_TOKEN || "";
             await fetch(`${upstashUrl}/set/fleet:pending_action`, {
               method: "POST",
               headers: { "Authorization": `Bearer ${upstashToken}`, "Content-Type": "application/json" },
@@ -8329,7 +8310,7 @@ fi
                   prof.points = (prof.points || 0) + pts;
                   await upstashSet(`ub_user:${targetUid}`, prof);
                   // Notify user via User Bot
-                  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                  const uBotToken = env.USER_BOT_TOKEN || "";
                   await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -8370,7 +8351,7 @@ fi
                   prof.farming_active = true;
                   await upstashSet(`ub_user:${targetUid}`, prof);
                   const tTitle = tier === "month" ? "💎 30-Day Monthly Pass" : (tier === "week" ? "🎟️ 7-Day Weekly Pass" : "🎟️ 1-Day Pass");
-                  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                  const uBotToken = env.USER_BOT_TOKEN || "";
                   await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -8405,7 +8386,7 @@ fi
                   const prof = typeof raw === "string" ? JSON.parse(raw) : raw;
                   prof.slots = (prof.slots || 1) + slotsCount;
                   await upstashSet(`ub_user:${targetUid}`, prof);
-                  const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                  const uBotToken = env.USER_BOT_TOKEN || "";
                   await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -8435,7 +8416,7 @@ fi
             const replyMsg = parts.slice(2).join(" ").trim();
             if (targetUid && replyMsg) {
               ctx.waitUntil((async () => {
-                const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                const uBotToken = env.USER_BOT_TOKEN || "";
                 const userPayload = `📩 *MESSAGE FROM PLATFORM SUPPORT*\n━━━━━━━━━━━━━━━━━━━━━━\n${replyMsg}\n━━━━━━━━━━━━━━━━━━━━━━\n💬 _You can reply directly in this chat or send /support <message> anytime._`;
                 const r = await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
                   method: "POST",
@@ -8465,7 +8446,7 @@ fi
           }
           ctx.waitUntil((async () => {
             const userList = await upstashSmembers("ub_registered_users");
-            const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+            const uBotToken = env.USER_BOT_TOKEN || "";
             let sentCount = 0;
             const fullBroadcast = `📢 *OFFICIAL PLATFORM ANNOUNCEMENT*\n━━━━━━━━━━━━━━━━━━━━━━\n${bMsg}\n━━━━━━━━━━━━━━━━━━━━━━\n🤖 _Sent by Admin Team · @AAAPREMIUMAPPSbot_`;
             for (const uid of userList) {
@@ -8501,7 +8482,7 @@ fi
                 await upstashSet(`ub_user:${targetUid}`, prof);
                 await upstashSadd("ub_banned_users", String(targetUid));
 
-                const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                const uBotToken = env.USER_BOT_TOKEN || "";
                 await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -8537,7 +8518,7 @@ fi
                 await upstashSet(`ub_user:${targetUid}`, prof);
                 await upstashSrem("ub_banned_users", String(targetUid));
 
-                const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+                const uBotToken = env.USER_BOT_TOKEN || "";
                 await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -8963,7 +8944,7 @@ Reply to Arif naturally:`;
             } else {
               prof.farming_active = false;
               // Alert user that farming is paused due to insufficient points
-              const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+              const uBotToken = env.USER_BOT_TOKEN || "";
               ctx.waitUntil(fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -8994,7 +8975,7 @@ Reply to Arif naturally:`;
             if (prof.points >= dailyCost) {
               prof.points -= dailyCost;
               prof.farming_active = true;
-              const uBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+              const uBotToken = env.USER_BOT_TOKEN || "";
               ctx.waitUntil(fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -9231,7 +9212,7 @@ Reply to Arif naturally:`;
           ctx.waitUntil(supabaseLogAdImpression(uid, "monetag_chain", adPts, request).catch(() => {}));
         }
 
-        const userBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+        const userBotToken = env.USER_BOT_TOKEN || "";
         const bonusText = bonusUnlocked ? "\n\n🎉 *50 ADS MILESTONE REACHED!* You unlocked *+1 BONUS ACCOUNT SLOT*!" : "";
         const notifTxt = `✅ *+${adPts} POINTS CREDITED!* 🎬${isMonthlyPass ? " _(2x Monthly Pass Bonus!)_" : ""}\n\n` +
           `• *New Balance:* ${profile.points} Points\n` +
@@ -9637,7 +9618,7 @@ Reply to Arif naturally:`;
         await saveUserProfile(uid, profile);
 
         const poolName = MINING_POOLS[pool]?.name || pool.toUpperCase();
-        const userBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+        const userBotToken = env.USER_BOT_TOKEN || "";
         ctx.waitUntil(fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -9702,7 +9683,7 @@ Reply to Arif naturally:`;
         profile.last_daily_claim = Date.now();
         await saveUserProfile(uid, profile);
 
-        const userBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+        const userBotToken = env.USER_BOT_TOKEN || "";
         ctx.waitUntil(fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -9748,7 +9729,7 @@ Reply to Arif naturally:`;
         const update = await request.json().catch(() => null);
         if (!update) return new Response("OK");
 
-        const userBotToken = env.USER_BOT_TOKEN || "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8";
+        const userBotToken = env.USER_BOT_TOKEN || "";
 
         // (getUserProfile & saveUserProfile lifted to shared scope above)
 

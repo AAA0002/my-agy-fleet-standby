@@ -126,11 +126,11 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * Status: 🛑 **Decommissioned / Suspended by Billing** — Permanently purged from all Cloudflare Edge crons, routing lists, and keepalive pings.
   - **Account 2: Node 2 (Frankfurt)**: `https://my-agy-fleet-standby-node2.onrender.com`
     * Service ID: `srv-dan5q00ae00c73djummg` | Workspace: `Abid's workspace` (`tea-dan5pgbm8hqs73a5cvig`, `abidhasanch2001@gmail.com`)
-    * API Key: `RENDER_API_KEY_2: rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB` | Linked Repo: `https://github.com/AAA0002/my-agy-fleet-standby` (main)
+    * API Key: `RENDER_API_KEY_2: [REDACTED]` | Linked Repo: `https://github.com/AAA0002/my-agy-fleet-standby` (main)
     * Status: 🟢 **SOLE ACTIVE PRIMARY NODE** — Exclusively receives all Cloudflare Edge token extraction, OTP fetching, and WebApp farming calls. Strictly one node active.
   - **Account 3: Node 3 (Oregon)**: `https://my-agy-fleet-standby-node3.onrender.com`
     * Service ID: `srv-db437o3tqb8s73dt4erg` | Workspace: `Koram's workspace` (`tea-daoj9nid0e5s738gqp0g`, `koramshah2@gmail.com`)
-    * API Key: `RENDER_API_KEY_3: rnd_PqsurfX5D9blSaEEuEDDAUcl393y` | Linked Repo: `https://github.com/koramshah2/my-agy-fleet-standby` (main)
+    * API Key: `RENDER_API_KEY_3: [REDACTED]` | Linked Repo: `https://github.com/koramshah2/my-agy-fleet-standby` (main)
     * Status: ⏸️ **STRICT COLD STANDBY (PAUSED)** — Suspended by user via Render API (`0` hours consumed / meter frozen). Excluded from background pings so it never wakes up unintentionally. Only resumed when Node 2 rotates at 600-650 hours.
   - **🔄 600–650 Hour Baton Relay Handover Protocol**:
     * Render free tier grants 750 hours/month per account (1 calendar month = 744 hours).
@@ -172,7 +172,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * Mirror Standby Repo: `https://github.com/koramshah2/AAA_AUTO` (main)
     * Hermes Standby Repo: `https://github.com/koramshah2/hermes-cloud-agent` (main)
     * Quota: 2,000 free minutes/month for GitHub Actions runners.
-    * Tokens: Classic PAT `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`, Fine-grained PAT `github_pat_11CQ4P67Y0...`.
+    * Tokens: Classic PAT `[REDACTED_PAT]`, Fine-grained PAT `[REDACTED_PAT]`.
     * Synchronized Git Remotes: `origin` (`AAA0002/ATL`) and `koram_standby` (`koramshah2/AAA_AUTO`).
   - Suspended 3rd Account Note (`AAA2743`):
     * GitHub account `AAA2743` was suspended by GitHub. All production dependencies have been migrated to `AAA0002` and `koramshah2`. Render services were updated via API to point to active repos.
@@ -195,7 +195,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 
   #### 🛡️ System 1: Admin Telegram Ecosystem (Control, Telemetry, Vault, Disaster Recovery)
   *Dedicated exclusively to system administrators, automated disaster recovery, on-chain telemetry, and AI command execution.*
-  - **Admin Bot**: `@myagyai` (Bot ID: `8858823950`, Token: `REPORT_BOT_TOKEN: 8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8`)
+  - **Admin Bot**: `@myagyai` (Bot ID: `8858823950`, Token: `REPORT_BOT_TOKEN: [REDACTED]`)
     - Purpose: Autonomous execution reporting, harvest alerts, multi-model AI copilot, Better Stack dead-man pings, and automated backup broadcasts.
     - **Serverless Cloud AI Mesh**:
       * `/deepseek <prompt>`: DeepSeek R1 32B reasoning on Cloudflare Edge GPUs.
@@ -227,7 +227,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   > 2. **Multi-Platform Mini App Link Auto-Detector & Expiration Guard**: Direct detection of raw links and error logs (LeafEarn, MRG, ATF, Victor's Company, VyroDrop, Kynex Network) with 3-pass URI decoding. Automatically warns user when `auth_date` exceeds 24 hours (Telegram token limit) with clear refresh steps, and auto-binds fresh tokens immediately.
   > 3. **Strict Web Isolation**: Root path `https://agy-henna.vercel.app/` dedicated exclusively to the Sponsored Video Ads Engine, while `https://agy-henna.vercel.app/miner` hosts the institutional-grade vector SVG Multi-Miner Dashboard.
 
-  - **User Bot Identity**: `@AAAPREMIUMAPPSbot` (Bot ID: `8167732110`, Token: `USER_BOT_TOKEN: 8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8`)
+  - **User Bot Identity**: `@AAAPREMIUMAPPSbot` (Bot ID: `8167732110`, Token: `USER_BOT_TOKEN: [REDACTED]`)
     - Name: *AAA AUTO MINING (PREMIUM)*
     - Live Webhook: `https://restore-agy.aaaai2.workers.dev/user-bot-webhook` (Multi-Edge Mesh on Cloudflare Worker Node 1)
     - Role: Multi-bot cloud mining platform, modern dashboard (modeled after `@Allbottesting_bot`), per-pool management across 5 pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network), frictionless WebApp URL / `initData` query string account connector (0 SMS codes) with 24h expiration guard, Points economy (100 Pts/day), Rewarded Adsgram/Monetag video ads (+20 Pts), milestone slots (+1 slot per 50 ads), and Telegram Stars VIP passes.
@@ -964,7 +964,7 @@ Whenever you perform work in this repository:
   - `https://aaa-free-ai.vercel.app/`
 
 ### 5. Admin Bot Redesign, De-duplication & Mini App Merger (`deploy_both_cf_workers.py`)
-* **Bot Handle & Token**: `@myagyai` (`8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8`)
+* **Bot Handle & Token**: `@myagyai` (`[REDACTED]`)
 * **Live Edge Webhook**: `https://restore-agy.aaaai2.workers.dev/telegram-webhook` (Primary Gateway on Cloudflare Workers)
 * **Single-Message Philosophy**:
   - Zero duplicate double-messages on `/start` or `/menu`. The bot replies with a single authoritative Markdown console.

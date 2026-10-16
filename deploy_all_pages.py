@@ -16,44 +16,44 @@ import sys
 PAGES_CONFIGS = [
     {
         "name": "Node 1 - aaa-admin-portal (Admin Dashboard)",
-        "account_id": "c9f92ab4a8b26b15f958ac25c22300bc",
-        "email": "korimhaji210@gmail.com",
-        "api_key": "cfk_1NzkotzLPy3htYaju8Ha6KolPDuNCMGiECzsyx6Gb7e6ad9f",
+        "account_id": os.getenv("CF_ACCOUNT_ID_NODE_1", "c9f92ab4a8b26b15f958ac25c22300bc"),
+        "email": os.getenv("CF_EMAIL_NODE_1", "korimhaji210@gmail.com"),
+        "api_key": os.getenv("CF_API_KEY_NODE_1", ""),
         "project": "aaa-admin-portal",
         "folder": "public_admin",
         "type": "admin"
     },
     {
         "name": "Node 5 - aaa-ai-engine (Admin Dashboard Mirror)",
-        "account_id": "da98cfb7cca333391bb349333f294d0f",
-        "api_token": "cfat_o447c1qlRZp5Lr0rHR4JjyMoLNKMkksaqnaZBDYF06cb8be4",
+        "account_id": os.getenv("CF_ACCOUNT_ID_NODE_5", "da98cfb7cca333391bb349333f294d0f"),
+        "api_token": os.getenv("CF_API_TOKEN_NODE_5", ""),
         "project": "aaa-ai-engine",
         "folder": "public_admin",
         "type": "admin"
     },
     {
         "name": "Node 4 - atf-miner-app (Primary Watch Ads)",
-        "account_id": "abbe3cc008ebb9dd029ded333fef6e9f",
-        "email": "aaafreeai@gmail.com",
-        "api_key": "cfk_a3KGc7NbioJlm6oy2vE7F2qzPiluqdx6T64rGVaX3f8eb8d5",
+        "account_id": os.getenv("CF_ACCOUNT_ID_NODE_4", "abbe3cc008ebb9dd029ded333fef6e9f"),
+        "email": os.getenv("CF_EMAIL_NODE_4", "aaafreeai@gmail.com"),
+        "api_key": os.getenv("CF_API_KEY_NODE_4", ""),
         "project": "atf-miner-app",
         "folder": "public_ads",
         "type": "ads"
     },
     {
         "name": "Node 2 - aaa-watch-ads (Watch Ads Mirror 2)",
-        "account_id": "cf47efdd654cdb07ffe03d1361583f12",
-        "email": "Koramshah2@gmail.com",
-        "api_key": "cfk_6goOEQC3vW220yQbYMwD1P9xsLUdFHjvo4wOYn5A7d36994e",
+        "account_id": os.getenv("CF_ACCOUNT_ID_NODE_2", "cf47efdd654cdb07ffe03d1361583f12"),
+        "email": os.getenv("CF_EMAIL_NODE_2", "Koramshah2@gmail.com"),
+        "api_key": os.getenv("CF_API_KEY_NODE_2", ""),
         "project": "aaa-watch-ads",
         "folder": "public_ads",
         "type": "ads"
     },
     {
         "name": "Node 3 - aaa-community-ads (Watch Ads Mirror 3)",
-        "account_id": "e1bfe1206dd7195f89591a9200105f1c",
-        "email": "coz1gameh3@gmail.com",
-        "api_key": "cfk_g2He8oRyc1GQbnGziVHxsv7Opopk7ucJZCEh2KfD715c0e54",
+        "account_id": os.getenv("CF_ACCOUNT_ID_NODE_3", "e1bfe1206dd7195f89591a9200105f1c"),
+        "email": os.getenv("CF_EMAIL_NODE_3", "coz1gameh3@gmail.com"),
+        "api_key": os.getenv("CF_API_KEY_NODE_3", ""),
         "project": "aaa-community-ads",
         "folder": "public_ads",
         "type": "ads"

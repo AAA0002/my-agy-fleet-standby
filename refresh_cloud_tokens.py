@@ -36,7 +36,7 @@ REPORT_CHAT_ID = int(os.getenv("REPORT_CHAT_ID", "6727787768"))
 CF_SECRET_KEY = os.getenv("CF_SECRET_KEY", "agy_cf_secret_7d36994e_2026")
 
 UPSTASH_URL = os.getenv("UPSTASH_URL") or "https://pleasant-locust-220893.upstash.io"
-UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg"
+UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or ""
 
 CF_NODES = [
     "https://restore-agy.aaaai2.workers.dev",

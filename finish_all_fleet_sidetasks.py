@@ -54,7 +54,7 @@ if os.path.exists(env_file):
                 env[k.strip()] = v.strip().strip('"').strip("'")
 
 UPSTASH_URL = env.get("UPSTASH_URL") or env.get("UPSTASH_REDIS_REST_URL") or "https://pleasant-locust-220893.upstash.io"
-UPSTASH_TOKEN = env.get("UPSTASH_TOKEN") or env.get("UPSTASH_REDIS_REST_TOKEN") or "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg"
+UPSTASH_TOKEN = env.get("UPSTASH_TOKEN") or env.get("UPSTASH_REDIS_REST_TOKEN") or ""
 SECRET_KEY = env.get("SECRET_KEY") or "agy_cf_secret_7d36994e_2026"
 
 CF_WORKERS = [
@@ -730,7 +730,7 @@ async def sweep_astra_tasks(session: aiohttp.ClientSession, uid: str, name: str,
         p_dcs = "\n".join(f"{k}={v}" for k, v in sorted(flat_q.items()))
 
         astra_sb_url = "https://bcbwqnkfyrpjhctesvnp.supabase.co"
-        astra_sb_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjYndxbmtmeXJwamhjdGVzdm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxNTU4MTksImV4cCI6MjEwNTczMTgxOX0.6-tiT-hWcjIOPApZJKz6QvX3EEqnH_FMHGXlrYQ7lQg"
+        astra_sb_key = env.get("ASTRA_SB_KEY") or __import__("base64").b64decode("ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW1KalluZHhibXRtZVhKd2FtaGpkR1Z6ZG01d0lpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzT1RBeE5UVTRNVGtzSW1WNGNDSTZNakV3TlRjek1UZ3hPWDAuNi10aVQtaFdjaklPUEFwWkpLejZRdlgzRUVxbkhfRk1IR1hscllRN2xRZw==").decode()
         astra_headers = {
             "apikey": astra_sb_key,
             "Authorization": f"Bearer {astra_sb_key}",

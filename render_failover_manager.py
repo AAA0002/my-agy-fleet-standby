@@ -31,17 +31,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_URL = "https://api.render.com/v1"
-REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8")
+REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "")
 REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
 UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://pleasant-locust-220893.upstash.io"
-UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg"
+UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or ""
 
 RENDER_ACCOUNTS = [
     {
         "node": 1,
         "name": "Render Node 1 (Singapore)",
         "email": "coz1gameh1@gmail.com",
-        "api_key": os.getenv("RENDER_API_KEY_1", "rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1"),
+        "api_key": os.getenv("RENDER_API_KEY_1", ""),
         "owner_id": "tea-d8j9clt8nd3s73eb041g",
         "service_name": "my-agy-fleet-standby",
         "service_id": "srv-damuhkmgekts73f1osag",
@@ -52,7 +52,7 @@ RENDER_ACCOUNTS = [
         "node": 2,
         "name": "Render Node 2 (Frankfurt)",
         "email": "abidhasanch2001@gmail.com",
-        "api_key": os.getenv("RENDER_API_KEY_2", "rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB"),
+        "api_key": os.getenv("RENDER_API_KEY_2", ""),
         "owner_id": "tea-dan5pgbm8hqs73a5cvig",
         "service_name": "my-agy-fleet-standby-node2",
         "service_id": "srv-dan5q00ae00c73djummg",
@@ -63,7 +63,7 @@ RENDER_ACCOUNTS = [
         "node": 3,
         "name": "Render Node 3 (Oregon)",
         "email": "koramshah2@gmail.com",
-        "api_key": os.getenv("RENDER_API_KEY_3") or os.getenv("RENDER_API_KEY", "rnd_PqsurfX5D9blSaEEuEDDAUcl393y"),
+        "api_key": os.getenv("RENDER_API_KEY_3") or os.getenv("RENDER_API_KEY", ""),
         "owner_id": "tea-daoj9nid0e5s738gqp0g",
         "service_name": "my-agy-fleet-standby-node3",
         "service_id": "srv-db437o3tqb8s73dt4erg",

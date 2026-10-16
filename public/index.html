@@ -984,7 +984,7 @@
           fetch('https://pleasant-locust-220893.upstash.io/pipeline', {
             method: 'POST',
             headers: {
-              'Authorization': 'Bearer gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg',
+              'Authorization': 'Bearer [REDACTED]',
               'Content-Type': 'application/json'
             },
             body: JSON.stringify([
@@ -1941,7 +1941,7 @@
         await fetch('https://api.github.com/repos/AAA0002/ATL/actions/workflows/mrg_turnstile_solver.yml/dispatches', {
           method: 'POST',
           headers: {
-            'Authorization': 'Bearer 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',
+            'Authorization': 'Bearer ' + (window.__GH_TOKEN || ''),
             'Accept': 'application/vnd.github.v3+json',
             'Content-Type': 'application/json'
           },

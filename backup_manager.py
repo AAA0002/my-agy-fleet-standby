@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
-REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8")
+REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "")
 REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
 BACKUP_CHANNEL = "@myagyai"
 

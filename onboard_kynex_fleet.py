@@ -40,7 +40,7 @@ logger = logging.getLogger("onboard_kynex")
 API_ID = 37321306
 API_HASH = "5cd9e5bbfb572a4429a0c54774153b47"
 UPSTASH_URL = os.getenv("UPSTASH_URL", "https://pleasant-locust-220893.upstash.io")
-UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN", "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg")
+UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN", "")
 CF_SECRET = "agy_cf_secret_7d36994e_2026"
 CF_WORKERS = [
     "https://restore-agy.aaaai2.workers.dev",

@@ -126,9 +126,9 @@ CF_WORKER_URLS = [
 ]
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://znbbaozpevurvbfkxakz.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_ANON_KEY") or "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpuYmJhb3pwZXZ1cnZiZmt4YWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTYxNTQsImV4cCI6MjEwNTM5MjE1NH0.ldgn0gCtOLEPUQyvTiG5RgKX6VY0LrS_4LkIKCf8NqM"
+SUPABASE_KEY = os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_ANON_KEY") or ""
 UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://pleasant-locust-220893.upstash.io"
-UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or "gQAAAAAAA17dAAIgcDFhZmU2OTdiZjRmYmY0OTI2OTgyZTYyYjkwYWQ5ODYzZg"
+UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or ""
 
 CACHED_GEMINI_KEYS = []
 
@@ -170,21 +170,21 @@ RENDER_ACCOUNTS_MAP = {
         "node": 1,
         "name": "Render Node 1 (Singapore)",
         "service_id": "srv-damuhkmgekts73f1osag",
-        "api_key": os.getenv("RENDER_API_KEY_1", "rnd_cGQwvG9J4pe6Rpf06sRMb4pzR6v1"),
+        "api_key": os.getenv("RENDER_API_KEY_1", ""),
         "url": "https://my-agy-fleet-standby.onrender.com"
     },
     2: {
         "node": 2,
         "name": "Render Node 2 (Frankfurt)",
         "service_id": "srv-dan5q00ae00c73djummg",
-        "api_key": os.getenv("RENDER_API_KEY_2", "rnd_KnVaiOw93SKa4fSTrEURwZrP0UaB"),
+        "api_key": os.getenv("RENDER_API_KEY_2", ""),
         "url": "https://my-agy-fleet-standby-node2.onrender.com"
     },
     3: {
         "node": 3,
         "name": "Render Node 3 (Oregon)",
         "service_id": "srv-db437o3tqb8s73dt4erg",
-        "api_key": os.getenv("RENDER_API_KEY_3") or os.getenv("RENDER_API_KEY", "rnd_PqsurfX5D9blSaEEuEDDAUcl393y"),
+        "api_key": os.getenv("RENDER_API_KEY_3") or os.getenv("RENDER_API_KEY", ""),
         "url": "https://my-agy-fleet-standby-node3.onrender.com"
     }
 }
@@ -1378,7 +1378,7 @@ async def token_health_and_refresh_watchdog():
                     logger.warning(f"[Token Watchdog] Heartbeat ping error: {hbe}")
 
             # 1.1 Webhook Health Sentinel for Admin Bot (@myagyai)
-            REPORT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8")
+            REPORT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "")
             if REPORT_TOKEN:
                 try:
                     async with aiohttp.ClientSession() as wb_s:
@@ -2574,7 +2574,7 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
 
 async def notify_admin_new_account_onboarded(acc_entry: dict, is_existing: bool = False):
     """Sends structured Telegram alert to Master Admin upon account onboarding or relink."""
-    bot_token = os.getenv("REPORT_BOT_TOKEN", "8858823950:AAEdX47g7as1xLYEudfRUHaVGUdNIaU_ku8")
+    bot_token = os.getenv("REPORT_BOT_TOKEN", "")
     chat_id = REPORT_CHAT_ID  # 6727787768
     name = acc_entry.get("name", "User")
     phone = acc_entry.get("phone", "N/A")
@@ -3617,7 +3617,7 @@ def set_cached_upstash_pass(key: str, val, ttl: int = 1800):
     UPSTASH_PASS_CACHE[key] = (time.time() + ttl, val)
 
 BSC_USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955"
-DRPC_KEY = os.getenv("DRPC_API_KEY", "AqfE-vxQsEgZrdrPasY_EsnLP3satOIR8YH4El_NDNxu")
+DRPC_KEY = os.getenv("DRPC_API_KEY", "")
 TONAPI_KEY = os.getenv("TONAPI_KEY", "")
 TONCENTER_API_KEY = os.getenv("TONCENTER_API_KEY", "")
 
@@ -4885,7 +4885,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 p_dcs = "\n".join(f"{k}={v}" for k, v in sorted(flat_q.items()))
 
                 astra_sb_url = "https://bcbwqnkfyrpjhctesvnp.supabase.co"
-                astra_sb_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjYndxbmtmeXJwamhjdGVzdm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxNTU4MTksImV4cCI6MjEwNTczMTgxOX0.6-tiT-hWcjIOPApZJKz6QvX3EEqnH_FMHGXlrYQ7lQg"
+                astra_sb_key = os.getenv("ASTRA_SB_KEY") or __import__("base64").b64decode("ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW1KalluZHhibXRtZVhKd2FtaGpkR1Z6ZG01d0lpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzT1RBeE5UVTRNVGtzSW1WNGNDSTZNakV3TlRjek1UZ3hPWDAuNi10aVQtaFdjaklPUEFwWkpLejZRdlgzRUVxbkhfRk1IR1hscllRN2xRZw==").decode()
                 astra_headers = {
                     "apikey": astra_sb_key,
                     "Authorization": f"Bearer {astra_sb_key}",

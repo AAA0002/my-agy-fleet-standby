@@ -1,7 +1,7 @@
 // tgcloud/endpoints/triggerTurnstile.js — Triggers cloud Turnstile solver in GitHub Actions
 import { fetch } from 'sdk';
 
-const GH_TOKEN = "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";
+const GH_TOKEN = (typeof process !== 'undefined' && process.env && process.env.GH_TOKEN) || "";
 const REPO = "AAA0002/ATL";
 
 export default async function (input, ctx) {
