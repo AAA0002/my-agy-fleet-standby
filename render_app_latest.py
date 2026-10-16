@@ -2008,14 +2008,40 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
         except Exception as e:
             logger.warning(f"[{name}] Astra referral bind note: {e}")
 
-    # 9. PepeGram (Dual-Layer: Chat /start + WebApp handshake)
+    # 9. PepeGram (Dual-Layer: Chat /start + Channel Join + Verification Click + WebApp handshake)
     if force or not acc_entry.get("pepegram_referral_bound"):
         try:
             try:
                 await client.send_message(PEPEGRAM_BOT, f"/start {PEPEGRAM_REFERRAL_CODE}")
-                await asyncio.sleep(0.8)
+                await asyncio.sleep(1.0)
             except Exception:
                 pass
+
+            # Step A: Auto-join mandatory official channels required by PepeGram
+            for p_ch in ["pepe_grammmm", "Pepe_gram"]:
+                try:
+                    await client(JoinChannelRequest(p_ch))
+                except Exception:
+                    pass
+            await asyncio.sleep(1.0)
+
+            # Step B: Inspect incoming message for inline verification button and click it
+            try:
+                b_pepe = await client.get_input_entity(PEPEGRAM_BOT)
+                msgs = await client.get_messages(b_pepe, limit=4)
+                for m in msgs:
+                    if not m.out and m.buttons:
+                        for r_idx, row in enumerate(m.buttons):
+                            for c_idx, btn in enumerate(row):
+                                b_txt = (btn.text or "").lower()
+                                if any(k in b_txt for k in ["verify", "verification", "check", "joined"]):
+                                    await m.click(r_idx, c_idx)
+                                    logger.info(f"[{name}] 🐸 PepeGram: Clicked inline verification button '{btn.text}'!")
+                                    await asyncio.sleep(1.5)
+                                    break
+            except Exception as v_err:
+                logger.warning(f"[{name}] PepeGram verification click note: {v_err}")
+
             tok = await extract_bot_webapp_token(client, PEPEGRAM_BOT, start_param=PEPEGRAM_REFERRAL_CODE, default_url="https://app.miniempire.app/miniapp/index.html?tid=1449&lang=en", candidate_short_names=["app", "game", "miner", "miniapp", "startapp"])
             acc_entry["pepegram_referral_bound"] = True
             await asyncio.sleep(0.5)
@@ -6118,6 +6144,92 @@ async def inspect_bot_chat(uid: str, request: Request):
             await release_account_lock(uid)
 
         return {"ok": True, "uid": uid, "chats": chats}
+
+
+@app.get("/api/pepegram/verify-fleet")
+@app.post("/api/pepegram/verify-fleet")
+async def verify_pepegram_fleet_endpoint(request: Request):
+    """
+    Autonomously joins @pepe_grammmm and clicks the 'Verify' button in @Pepe_gram_bot across all worker accounts.
+    Eliminates 'Channel Membership Required' barrier and fully qualifies recruit referrals under Master 6727787768.
+    """
+    auth = request.headers.get("Authorization") or ""
+    req_secret = request.query_params.get("secret", "")
+    if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    accounts = await fetch_accounts_from_cloud()
+    results = []
+
+    for acc in accounts:
+        uid = str(acc.get("user_id"))
+        name = acc.get("name", f"Acc {uid}")
+        if uid == "6727787768" or acc.get("is_primary"):
+            continue
+
+        sess = acc.get("session_string") or acc.get("session")
+        if not sess:
+            continue
+
+        acc_res = {"uid": uid, "name": name, "joined": False, "verified": False}
+        cl = create_telethon_client(sess_str=sess, identifier=acc.get("phone") or name or uid, proxy_val=acc.get("proxy"))
+        try:
+            await cl.connect()
+            if not await cl.is_user_authorized():
+                acc_res["error"] = "not_authorized"
+                results.append(acc_res)
+                continue
+
+            # 1. Join official required channel @pepe_grammmm
+            try:
+                await cl(JoinChannelRequest("pepe_grammmm"))
+                acc_res["joined"] = True
+                logger.info(f"[{name}] Joined @pepe_grammmm")
+            except Exception as je:
+                acc_res["join_note"] = str(je)
+
+            await asyncio.sleep(0.8)
+
+            # 2. Send /start {MASTER_UID} to ensure referral link is seeded
+            b_pepe = await cl.get_input_entity("Pepe_gram_bot")
+            try:
+                await cl.send_message(b_pepe, "/start 6727787768")
+                await asyncio.sleep(1.2)
+            except Exception:
+                pass
+
+            # 3. Locate verification inline button and click it
+            msgs = await cl.get_messages(b_pepe, limit=5)
+            for m in msgs:
+                if not m.out and m.buttons:
+                    for r_idx, row in enumerate(m.buttons):
+                        for c_idx, btn in enumerate(row):
+                            b_txt = (btn.text or "").lower()
+                            if any(k in b_txt for k in ["verify", "verification", "check", "joined"]):
+                                try:
+                                    await m.click(r_idx, c_idx)
+                                    acc_res["verified"] = True
+                                    acc_res["button_text"] = btn.text
+                                    logger.info(f"[{name}] Clicked PepeGram '{btn.text}' button!")
+                                    await asyncio.sleep(1.5)
+                                    break
+                                except Exception as ce:
+                                    acc_res["click_error"] = str(ce)
+                    if acc_res["verified"]:
+                        break
+
+            results.append(acc_res)
+        except Exception as e:
+            acc_res["error"] = str(e)
+            results.append(acc_res)
+        finally:
+            try:
+                await cl.disconnect()
+            except Exception:
+                pass
+        await asyncio.sleep(1.0)
+
+    return {"ok": True, "total": len(results), "accounts": results}
 
 
 @app.get("/api/debug-account-session/{uid}")

@@ -73,7 +73,7 @@ MANDATORY_SPONSOR_CHANNELS = [
     "mrgminer", "mrgwithdrawal", "DurovKidney",
     "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor",
     "vyrodrop", "atfminers", "kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam",
-    "Diggominer", "diggominer_news", "LeafEarn", "AstraAirdrop", "Pepe_gram", "AdxEarn"
+    "Diggominer", "diggominer_news", "LeafEarn", "AstraAirdrop", "Pepe_gram", "pepe_grammmm", "AdxEarn"
 ]
 
 
@@ -389,7 +389,29 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
         if not is_master and not acc.get("pepegram_referral_bound"):
             try:
                 await cl.send_message(PEPEGRAM_BOT, f"/start {pepe_p}")
-                await asyncio.sleep(0.8)
+                await asyncio.sleep(1.0)
+                # Auto-join required PepeGram channel @pepe_grammmm
+                try:
+                    await cl(JoinChannelRequest("pepe_grammmm"))
+                except Exception:
+                    pass
+                await asyncio.sleep(1.0)
+                # Click the inline "Verify" button sent by bot
+                try:
+                    b_pepe = await cl.get_input_entity(PEPEGRAM_BOT)
+                    msgs = await cl.get_messages(b_pepe, limit=4)
+                    for m in msgs:
+                        if not m.out and m.buttons:
+                            for r_idx, row in enumerate(m.buttons):
+                                for c_idx, btn in enumerate(row):
+                                    b_txt = (btn.text or "").lower()
+                                    if any(k in b_txt for k in ["verify", "verification", "check", "joined"]):
+                                        await m.click(r_idx, c_idx)
+                                        print(f"  🐸 PepeGram: Clicked '{btn.text}' button!")
+                                        await asyncio.sleep(1.5)
+                                        break
+                except Exception:
+                    pass
                 acc["pepegram_referral_bound"] = True
             except Exception:
                 pass
