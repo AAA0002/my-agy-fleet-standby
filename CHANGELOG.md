@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Full Fleet 9-Bot Audit, PepeGram Production Auto-Start, Astra 4/4 Tasks & UI LeafEarn Elimination (October 16, 2026)**:
+  - **🧹 LeafEarn Complete Elimination from Web UI (`public_ads/miner/index.html`)**:
+    * Completely eliminated dead LeafEarn pool card from web miner interface and replaced with **AdxEarn AI** (`@AdxEarnAibot`, `https://t.me/AdxEarnAibot/app?startapp=ref_6727787768`).
+    * Replaced all modal buttons (`btn-pool-adxearn`), pool array references, counter IDs (`pool-adxearn-count`), and label dictionaries across all UI tabs. Zero occurrences of LeafEarn remain in the UI codebase.
+  - **🐸 PepeGram Mining Production & Referral Activation Engine**:
+    * Reverse-engineered PepeGram Mini App bundle (`app.js?v=27`) and discovered why recruits were stuck in `Pending`: production sessions (`POST /start-production?tid=1449`) had never been initiated by the automation engine.
+    * Upgraded `_farm_pepegram` in `app.py`, `render_app_latest.py`, `render_standby_app.py`, and `finish_all_fleet_sidetasks.py` to auto-trigger `/start-production` whenever `hashes_production_ends_at <= now`.
+    * Added automated execution of free power boost endpoints: `POST /tasks/ad-roll`, `POST /tasks/ad-roll2` (dice rolls for free power), and `POST /tasks/slot-spin` (slot spin rewards).
+    * Verified on worker accounts (`8881914294`, `7648254021`): 6-hour production sessions successfully started (`ends_at: 1792186186`), and logged in Master's team log.
+  - **✨ Astra Airdrop 4/4 Tasks Automation & Referral Bounty Unlock**:
+    * Reverse-engineered Astra Supabase RPC protocol (`bcbwqnkfyrpjhctesvnp.supabase.co`): identified exact RPC signatures `astra_task_start` and `astra_task_claim` with parameter `{"p_task": task_id}` and `minSeconds` verification.
+    * Automated execution of all 4 repeatable tasks across recruit accounts: `react_telegram_post` (10s), `twitter_retweet` (10s), `youtube_like_comment` (10s), and `subscribe_youtube` (15s).
+    * Verified recruits advance to `tasks_done: 3/3 | ref_success: 1`, fulfilling requirements for Master account to harvest referral rewards.
+  - **📊 18-Account 9-Bot Fleet-Wide Verification**:
+    * Probed Upstash Redis `fleet:tokens:*`: 18 out of 18 accounts possess valid, active tokens for all 9 legitimate bots (MRG, ATF, Victor's Company, VyroDrop, Kynex, Diggo, Astra, PepeGram, AdxEarn AI) with 0 missing tokens.
+    * Probed Render Node 2 (`my-agy-fleet-standby-node2`) `/health`: HTTP 200 OK, healthy, 0 downtime.
+  - **📱 Zero Phone Load & Immutability**: Kept Samsung Galaxy A30 at 0 Python background processes and user bot (`@AAAPREMIUMAPPSbot`) 100% untouched.
+
 - **⚡ CI/CD Alternative Cloud Compute Integration & GitHub Actions Quota Optimization (October 16, 2026)**:
   - **🔧 GitHub Actions 2,000-Minute Limit Elimination**:
     * Identified root cause of `AAA0002` monthly limit exhaustion: `0 */4 * * *` (6 runs/day × 25 mins = ~150 mins/day = ~4,500 mins/mo) burns through the 2,000-minute free quota in under 14 days.

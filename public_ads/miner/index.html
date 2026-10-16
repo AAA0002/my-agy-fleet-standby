@@ -387,26 +387,26 @@
           </div>
         </div>
 
-        <!-- Pool 7: LeafEarn -->
-        <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3 hover:border-emerald-500/30 transition">
+        <!-- Pool 7: AdxEarn AI -->
+        <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3 hover:border-purple-500/30 transition">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 font-black text-sm">
-              🍃
+            <div class="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0 font-black text-sm">
+              🤖
             </div>
             <div class="min-w-0 text-left">
               <div class="flex items-center gap-2">
-                <span class="font-bold text-xs text-white">LeafEarn</span>
-                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded">2h cycle</span>
+                <span class="font-bold text-xs text-white">AdxEarn AI</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-purple-500/20 text-purple-300 rounded">8h cycle</span>
               </div>
-              <div class="text-[10px] text-slate-400 truncate mt-0.5">Green Energy Leaf Harvest & Stars</div>
-              <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-leafearn-count">0 Connected Accounts</div>
+              <div class="text-[10px] text-slate-400 truncate mt-0.5">AI Cloud Node Mining & Daily Rewards</div>
+              <div class="text-[9px] font-mono text-cyan-300 mt-0.5" id="pool-adxearn-count">0 Connected Accounts</div>
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
-            <button onclick="openConnectTab('leafearn')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
+            <button onclick="openConnectTab('adxearn')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
               Connect
             </button>
-            <a href="https://t.me/LeafEarnBot/app?startapp=6727787768" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition" title="Open Official Bot">
+            <a href="https://t.me/AdxEarnAibot/app?startapp=ref_6727787768" target="_blank" class="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition" title="Open Official Bot">
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>
           </div>
@@ -501,8 +501,8 @@
             <button type="button" onclick="selectPool('diggo')" id="btn-pool-diggo" class="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition">
               DiggoMiner
             </button>
-            <button type="button" onclick="selectPool('leafearn')" id="btn-pool-leafearn" class="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition">
-              LeafEarn
+            <button type="button" onclick="selectPool('adxearn')" id="btn-pool-adxearn" class="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition">
+              AdxEarn AI
             </button>
             <button type="button" onclick="selectPool('astra')" id="btn-pool-astra" class="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition">
               Astra
@@ -899,7 +899,7 @@
 
     function selectPool(pool) {
       selectedPool = pool;
-      const pools = ['mrg', 'atf', 'victors', 'vyro', 'kynex', 'diggo', 'leafearn', 'astra', 'pepegram', 'all'];
+      const pools = ['mrg', 'atf', 'victors', 'vyro', 'kynex', 'diggo', 'adxearn', 'astra', 'pepegram', 'all'];
       pools.forEach(p => {
         const b = document.getElementById('btn-pool-' + p);
         if (b) {
@@ -1047,7 +1047,7 @@
       const vyroC = accs.filter(a => a.pool === 'vyro' || a.pool === 'all').length;
       const kynexC = accs.filter(a => a.pool === 'kynex' || a.pool === 'all').length;
       const diggoC = accs.filter(a => a.pool === 'diggo' || a.pool === 'all').length;
-      const leafearnC = accs.filter(a => a.pool === 'leafearn' || a.pool === 'all').length;
+      const adxearnC = accs.filter(a => a.pool === 'adxearn' || a.pool === 'all').length;
       const astraC = accs.filter(a => a.pool === 'astra' || a.pool === 'all').length;
       const pepegramC = accs.filter(a => a.pool === 'pepegram' || a.pool === 'all').length;
 
@@ -1057,7 +1057,7 @@
       const vyrEl = document.getElementById('pool-vyro-count');
       const kynEl = document.getElementById('pool-kynex-count');
       const diggoEl = document.getElementById('pool-diggo-count');
-      const leafearnEl = document.getElementById('pool-leafearn-count');
+      const adxearnEl = document.getElementById('pool-adxearn-count');
       const astraEl = document.getElementById('pool-astra-count');
       const pepegramEl = document.getElementById('pool-pepegram-count');
 
@@ -1067,7 +1067,7 @@
       if (vyrEl) vyrEl.textContent = `${vyroC} Connected Account${vyroC === 1 ? '' : 's'}`;
       if (kynEl) kynEl.textContent = `${kynexC} Connected Account${kynexC === 1 ? '' : 's'}`;
       if (diggoEl) diggoEl.textContent = `${diggoC} Connected Account${diggoC === 1 ? '' : 's'}`;
-      if (leafearnEl) leafearnEl.textContent = `${leafearnC} Connected Account${leafearnC === 1 ? '' : 's'}`;
+      if (adxearnEl) adxearnEl.textContent = `${adxearnC} Connected Account${adxearnC === 1 ? '' : 's'}`;
       if (astraEl) astraEl.textContent = `${astraC} Connected Account${astraC === 1 ? '' : 's'}`;
       if (pepegramEl) pepegramEl.textContent = `${pepegramC} Connected Account${pepegramC === 1 ? '' : 's'}`;
 
@@ -1112,7 +1112,7 @@
         return;
       }
 
-      const poolLabels = { mrg: 'MRG Miner', atf: 'ATF Miner', victors: "Victor's", vyro: 'VyroDrop', kynex: 'Kynex', diggo: 'DiggoMiner', leafearn: 'LeafEarn', astra: 'Astra', pepegram: 'PepeGram', all: 'All 9 Pools' };
+      const poolLabels = { mrg: 'MRG Miner', atf: 'ATF Miner', victors: "Victor's", vyro: 'VyroDrop', kynex: 'Kynex', diggo: 'DiggoMiner', adxearn: 'AdxEarn AI', astra: 'Astra', pepegram: 'PepeGram', all: 'All 9 Pools' };
 
       container.innerHTML = accs.map(a => `
         <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3">

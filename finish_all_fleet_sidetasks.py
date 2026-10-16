@@ -772,7 +772,25 @@ async def sweep_astra_tasks(session: aiohttp.ClientSession, uid: str, name: str,
             if sm and sm.get("status") == "success":
                 res["notes"].append("mining_restarted")
 
-        # 5. Referral & Team claim
+        # 5. Side-Task Automation (Complete 3/3 tasks to unlock +100 ASTRA bonus per recruit for Master)
+        tasks_to_run = ["react_telegram_post", "twitter_retweet", "youtube_like_comment", "subscribe_youtube"]
+        started_tasks = []
+        for t in tasks_to_run:
+            st = await astra_rpc("astra_task_start", {"p_task": t})
+            if isinstance(st, dict) and st.get("status") == "success":
+                started_tasks.append(t)
+            await asyncio.sleep(0.3)
+
+        if started_tasks:
+            await asyncio.sleep(15)  # satisfy minSeconds
+            for t in started_tasks:
+                cl = await astra_rpc("astra_task_claim", {"p_task": t})
+                if isinstance(cl, dict) and cl.get("status") == "success":
+                    res["tasks_claimed"] += 1
+                    res["notes"].append(f"task_{t}")
+                await asyncio.sleep(0.3)
+
+        # 6. Referral & Team claim
         await jitter(0.4, 0.8)
         await astra_rpc("astra_claim")
         await astra_rpc("astra_team_claim")
@@ -814,6 +832,7 @@ async def sweep_pepegram_tasks(session: aiohttp.ClientSession, uid: str, name: s
         u_data = auth_d.get("user") or {}
         res["balance"] = float(u_data.get("hashes", 0) or 0)
         res["level"] = int(u_data.get("power", 0) or 0)
+        ends_at = int(u_data.get("hashes_production_ends_at", 0) or 0)
 
         # 2. Welcome bonus & Claim
         await jitter(0.4, 0.8)
@@ -831,7 +850,21 @@ async def sweep_pepegram_tasks(session: aiohttp.ClientSession, uid: str, name: s
             if mr.status in (200, 201):
                 res["notes"].append("mine_tapped")
 
-        # 4. Tasks claim
+        # 4. Production Start (6-Hour Mining Session & Referral Power Activation)
+        now_ts = int(time.time())
+        if now_ts >= ends_at:
+            await jitter(0.4, 0.8)
+            async with session.post(f"{pepe_base}/start-production?tid=1449", json={"initData": p_init, "tid": 1449}, headers=pepe_headers) as spr:
+                if spr.status in (200, 201):
+                    res["notes"].append("production_started")
+
+        # 5. Free Power Boosts (Ad rolls & Slot spins)
+        await jitter(0.3, 0.6)
+        await session.post(f"{pepe_base}/tasks/ad-roll?tid=1449", json={"initData": p_init, "tid": 1449}, headers=pepe_headers)
+        await session.post(f"{pepe_base}/tasks/ad-roll2?tid=1449", json={"initData": p_init, "tid": 1449}, headers=pepe_headers)
+        await session.post(f"{pepe_base}/tasks/slot-spin?tid=1449", json={"initData": p_init, "tid": 1449}, headers=pepe_headers)
+
+        # 6. Tasks claim
         await jitter(0.4, 0.8)
         async with session.get(f"{pepe_base}/tasks?initData={urllib.parse.quote(p_init)}&tid=1449", headers=pepe_headers) as tr:
             if tr.status == 200:

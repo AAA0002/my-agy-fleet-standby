@@ -4925,7 +4925,23 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     await jitter(1.5, 3.0)
                     await astra_rpc("astra_start_mine", {"p_cid": ch_d["challenge_id"], "p_answer": str(ans)})
 
-                # 5. Referral & Team Claims
+                # 5. Side-Task Automation (Complete 3/3 tasks to unlock +100 ASTRA bonus per recruit for Master)
+                # 4 repeatable tasks: react_telegram_post, twitter_retweet, youtube_like_comment, subscribe_youtube
+                tasks_to_run = ["react_telegram_post", "twitter_retweet", "youtube_like_comment", "subscribe_youtube"]
+                started_tasks = []
+                for t in tasks_to_run:
+                    st = await astra_rpc("astra_task_start", {"p_task": t})
+                    if isinstance(st, dict) and st.get("status") == "success":
+                        started_tasks.append(t)
+                    await asyncio.sleep(0.3)
+
+                if started_tasks:
+                    await asyncio.sleep(15)  # satisfy minSeconds
+                    for t in started_tasks:
+                        await astra_rpc("astra_task_claim", {"p_task": t})
+                        await asyncio.sleep(0.3)
+
+                # 6. Referral & Team Claims
                 await jitter(0.5, 1.0)
                 await astra_rpc("astra_claim")
                 await astra_rpc("astra_team_claim")
@@ -4960,6 +4976,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 u_data = (auth_d.get("user") if isinstance(auth_d, dict) else {}) or {}
                 power_val = u_data.get("power", 0)
                 hashes_val = u_data.get("hashes", 0)
+                ends_at = int(u_data.get("hashes_production_ends_at", 0) or 0)
 
                 # 2. Welcome bonus & Claim
                 await jitter(0.5, 1.2)
@@ -4970,7 +4987,21 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 await jitter(0.5, 1.2)
                 await safe_post(f"{pepe_base}/tasks/mine?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers)
 
-                # 4. Tasks list & claim
+                # 4. Production Start (6-Hour Mining Session & Referral Power Activation)
+                now_ts = int(time.time())
+                if now_ts >= ends_at:
+                    await jitter(0.4, 0.9)
+                    _, sp_d = await safe_post(f"{pepe_base}/start-production?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers)
+                    if isinstance(sp_d, dict) and sp_d.get("ends_at"):
+                        ends_at = int(sp_d["ends_at"])
+
+                # 5. Free Power Boosts (Ad rolls & Slot spins)
+                await jitter(0.3, 0.7)
+                await safe_post(f"{pepe_base}/tasks/ad-roll?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers)
+                await safe_post(f"{pepe_base}/tasks/ad-roll2?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers)
+                await safe_post(f"{pepe_base}/tasks/slot-spin?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers)
+
+                # 6. Tasks list & claim
                 await jitter(0.4, 0.8)
                 _, t_data = await safe_get(f"{pepe_base}/tasks?initData={urllib.parse.quote(p_init)}&tid=1449", req_headers=pepe_headers)
                 if isinstance(t_data, dict) and t_data.get("tasks"):
@@ -4980,7 +5011,11 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                             await jitter(0.3, 0.7)
                             await safe_post(f"{pepe_base}/tasks/claim?tid=1449", {"initData": p_init, "tid": 1449, "taskId": tk_id}, req_headers=pepe_headers)
 
-                status["bots"]["pepegram"] = f"farmed (power: {power_val}, hashes: {hashes_val})"
+                # 7. Team / Referral Commission Harvest
+                await jitter(0.3, 0.6)
+                await safe_post(f"{pepe_base}/claim?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers)
+
+                status["bots"]["pepegram"] = f"farmed (power: {power_val}, hashes: {hashes_val}, active_until: {ends_at})"
                 return
             except Exception as e:
                 status["bots"]["pepegram"] = f"api_error: {format_error(e)}"
