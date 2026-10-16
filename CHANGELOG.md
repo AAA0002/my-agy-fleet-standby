@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐸 PepeGram Referral Gate Bypass, Victor's Company Resolution & MRG Storage Recovery (October 16, 2026)**:
+  - **🐸 PepeGram (@Pepe_gram_bot) Channel Membership Gate Bypassed & Automated**:
+    * **Root Cause Elimination**: Identified that recruits were frozen in `"⏳ Initializing connection (Pending validation)"` due to an inline gate: `"⚠️ Channel Membership Required: Join @pepe_grammmm and press the verification button"`. Master rewards (+800 POWER and 15% commission) were withheld until verified.
+    * **Autonomous Cloud Solver**: Upgraded `render_app_latest.py`, `render_standby_app.py`, and `refresh_cloud_tokens.py` to auto-join `@pepe_grammmm` via `JoinChannelRequest` and programmatically click `"✅ Verify"`.
+    * **Fleet Verification**: Deployed `dep-db8uq4eq1p3s739fpea0` to Render Node 2 and triggered `/api/pepegram/verify-fleet`: 15/17 worker accounts joined and verified immediately (`"⚡ Your mining rig is firing up!"`).
+    * **Task Sweep Results**: Dispatched `/api/tasks/sweep-all` on Render Node 2: 267 total tasks claimed across fleet, Master account (`6727787768`) credited with 17 registered referrals, 446.1 PEPE, and 703 POWER. Added `"pepe_grammmm"` into `bot_registry.py` sponsor channels.
+  - **🏢 Victor's Company (@VictorsCompanybot) Game Task, Mining & Side-Task Root Causes**:
+    * **Turnstile Pass Gate (`x-human-pass`)**: Reverse-engineered frontend bundle proving all claim endpoints (`/mining/claim`, `/tasks`, `/arcade`, `/levels/unlock`) enforce `HTTP 403 HUMAN_REQUIRED` unless authorized with `x-human-pass`.
+    * **Arcade Entry Barrier (25 VIC Shovel)**: Deep Mine arcade game requires 25 VIC balance to buy a shovel before entering. If mining has not been claimed yet, balance is 0 VIC, halting expeditions.
+    * **Level 1 Miner Unlock Requirement**: Mining accumulation does not accrue until Level 1 Miner (`/api/levels/unlock`) is unlocked with an active Turnstile pass.
+  - **⚙️ MRG Miner (@mrgminerbot) Storage Capacity Saturation & Cloud Solver Recovery**:
+    * **Root Cause Diagnosed**: Worker accounts 2–16 had reached maximum storage capacity (70–91.5 MRG unclaimed each). When storage fills and `humanVerifiedUntil` expires, mining halts until claimed.
+    * **Autonomous Recovery Dispatched**: Dispatched GitHub Actions workflow `378454181` (`mrg_turnstile_solver.yml`, Run `38880964394`) to solve Turnstiles, extend `humanVerifiedUntil` for 8h, claim accrued MRG, and resume active mining across all 18 accounts.
+  - **📱 Zero Phone Load Directive**: Verified 0 Python background processes on Samsung Galaxy A30 (`ps aux | grep -i python` clean).
+  - **🛡️ User Bot Immutability**: Kept `@AAAPREMIUMAPPSbot` (`8167732110`) and user channels 100% untouched.
+
 - **🏢 Victor's Company Frontend Decompilation, Interaction-Only Turnstile Bypass & Cloud Pipeline (October 16, 2026)**:
   - **🔬 Deep Frontend Bundle Decompilation (`https://app.victors.company/assets/index-D_1NjFTw.js`)**:
     * **Discovered Gate Architecture**: Analyzed `s6` and `n6` React components. Turnstile is rendered explicitly with `sitekey: "0x4AAAAAAFD0KRgPRFVwDvgn"`, `action: "login"`, and critically `appearance: "interaction-only"`.
