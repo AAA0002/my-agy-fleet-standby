@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🍃 Complete LeafEarn Purge, 100% PepeGram Verification & 9-Bot Fleet Consolidation (October 16, 2026)**:
+  - **🚫 Complete LeafEarn Bot (@LeafEarnBot) Purge & Banned Dialog Addition**:
+    * **Purged From Registry**: Completely removed `leafearn` from `bot_registry.py`, consolidating the fleet to 9 high-conviction active bots.
+    * **Purged From Cloud Runtimes**: Removed all `_farm_leafearn`, `build_leaf_headers`, `LEAF_KEY`, `LEAF_REV`, and `leafearn_init_data` token extraction from `render_app_latest.py`, `render_standby_app.py`, `refresh_cloud_tokens.py`, and `extract_all_missing_fleet_tokens.py`.
+    * **Purged From Side-Tasks Sweeper**: Removed `sweep_leafearn_tasks` and LeafEarn Connect-RPC helpers from `finish_all_fleet_sidetasks.py`.
+    * **Added to Banned Scammers List**: Added `LeafEarnBot` to `FLEET_BANNED_SCAMMERS` in `render_app_latest.py` and `render_standby_app.py` to ensure it is permanently muted, blocked, and deleted from all Telegram account dialogs on scheduled sweeps.
+    * **Purged From UI & Upstash Redis**: Deleted LeafEarn card and name mapping from `public/index.html`. Deleted all 18 `fleet:last_farm:leafearn:*` Redis keys and purged `leafearn_init_data` from all 18 `fleet:tokens:*` records in Upstash Redis.
+  - **🐸 PepeGram 100% Channel Join & Verification Completion**:
+    * Confirmed all 17 recruit worker accounts have `joined: true` for official channel `@pepe_grammmm`.
+    * Accounts clicked `"✅ Verify"` and received confirmation (`"⚡ Your mining rig is firing up!"`).
+    * Master account (`6727787768`) verified with **703 POWER** and **446.1 PEPE hashes**. Recruits actively farming (e.g., Nancy at 1400 POWER).
+  - **📊 Fleet 9-Bot Farming Status Verified**:
+    * 6 bots are 100% operational across all 18 accounts (AdxEarn, Astra, ATF, Kynex, MRG, PepeGram).
+    * DiggoMiner is awaiting developer host recovery (`34.147.183.101` ports 80/443 connection timed out).
+    * Victor's Company & VyroDrop are awaiting Cloudflare Turnstile token injection.
+  - **📱 Zero Phone Load & Immutability**: Samsung Galaxy A30 verified clean (`ps aux | grep -i python` returns 0 processes) and User Bot (`@AAAPREMIUMAPPSbot`) 100% untouched.
+
 - **🔍 10-Bot Deep MTProto Inspection, Turnstile Clean-IP Architecture & 24h Mining Preservation (October 16, 2026)**:
   - **👁️ Live MTProto Deep Inspection Across All 10 Bots (`/api/study-bot/all`)**:
     * Authenticated through worker session `8881914294` directly into Telegram cloud MTProto on Render Node 2.

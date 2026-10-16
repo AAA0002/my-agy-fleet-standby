@@ -53,7 +53,6 @@ VICTORS_BOT = "VictorsCompanybot"
 VYRO_BOT = "vyrodrop_bot"
 KYNEX_BOT = "Kynex_miningbot"
 DIGGO_BOT = "Diggominer_bot"
-LEAFEARN_BOT = "LeafEarnBot"
 ASTRA_BOT = "ASTRA_AIRDROP_BOT"
 PEPEGRAM_BOT = "Pepe_gram_bot"
 ADXEARN_BOT = "AdxEarnAibot"
@@ -64,7 +63,6 @@ VICTORS_REF = "ref_A20AA96F18"
 VYRO_REF = "ref_myFjrqqE4WN_"
 KYNEX_REF = "6727787768"
 DIGGO_REF = "ref_4088138f11effe8eef4b86ff"
-LEAFEARN_REF = "6727787768"
 ASTRA_REF = "ref_6727787768"
 PEPEGRAM_REF = "6727787768"
 ADXEARN_REF = "ref_6727787768"
@@ -366,14 +364,6 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
         if tok:
             tokens["diggo_init_data"] = tok
             print(f"  ⛏️ DiggoMiner: Collected")
-        await asyncio.sleep(0.5)
-
-        # 7. LeafEarn (@LeafEarnBot)
-        leaf_p = None if is_master else LEAFEARN_REF
-        tok = await extract_bot_webapp_token(cl, LEAFEARN_BOT, start_param=leaf_p, default_url="https://leafearn.site/", candidate_short_names=["app", "leafearn", "play", "startapp"])
-        if tok:
-            tokens["leafearn_init_data"] = tok
-            print(f"  🍃 LeafEarn: Collected")
         await asyncio.sleep(0.5)
 
         # 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)

@@ -71,13 +71,6 @@ TARGET_BOTS = [
         "name": "DiggoMiner"
     },
     {
-        "key": "leafearn_init_data",
-        "bot": "LeafEarnBot",
-        "url": "https://leafearn.site/",
-        "short_names": ["app", "leafearn", "play", "startapp"],
-        "name": "LeafEarn"
-    },
-    {
         "key": "astra_init_data",
         "bot": "ASTRA_AIRDROP_BOT",
         "url": "https://amazing-alpaca-eb7e2b.netlify.app/",

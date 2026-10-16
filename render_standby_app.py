@@ -396,28 +396,6 @@ def solve_atf_math(question_text: str) -> str:
             return str(nums[0] // nums[1])
     return "0"
 
-LEAF_KEY = bytes.fromhex("111e3e2fb3ec09dd0beaeff0ddde12e9d4dc9d8ec60f5d1f0d28172bcbd8f2da")
-LEAF_REV = "536425909"
-
-def build_leaf_headers(service: str, method: str, init_data: str, body_bin: bytes = b"", ua: str = None) -> dict:
-    now_ms = int(time.time() * 1000)
-    nonce = f"{hex(now_ms)[2:]}-{hex(random.randint(0x100000, 0xffffff))[2:]}"
-    body_hash = hashlib.sha256(body_bin).hexdigest()
-    init_hash = hashlib.sha256(init_data.encode("utf-8")).hexdigest()
-    signing_str = f"{service}/{method}|{nonce}|{body_hash}|{init_hash}"
-    sig = hmac.new(LEAF_KEY, signing_str.encode("utf-8"), hashlib.sha256).hexdigest()
-    hint = f"{nonce}.{sig}"
-    return {
-        "Content-Type": "application/json",
-        "Connect-Protocol-Version": "1",
-        "x-init-data": init_data,
-        "x-app-rev": LEAF_REV,
-        "x-view-hint": hint,
-        "User-Agent": ua or "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android",
-        "Origin": "https://leafearn.site",
-        "Referer": "https://leafearn.site/"
-    }
-
 # Active Fleet Mini-App Bots (All 9 Bots)
 MRG_BOT = "mrgminerbot"
 MRG_REFERRAL_CODE = "ref_IRN1G3XD"
@@ -431,8 +409,6 @@ KYNEX_BOT = "Kynex_miningbot"
 KYNEX_REFERRAL_CODE = "6727787768"
 DIGGO_BOT = "Diggominer_bot"
 DIGGO_REFERRAL_CODE = "ref_4088138f11effe8eef4b86ff"
-LEAFEARN_BOT = "LeafEarnBot"
-LEAFEARN_REFERRAL_CODE = "6727787768"
 ASTRA_BOT = "ASTRA_AIRDROP_BOT"
 ASTRA_REFERRAL_CODE = "ref_6727787768"
 PEPEGRAM_BOT = "Pepe_gram_bot"
@@ -647,8 +623,8 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
         "mrg_init_data", "atf_init_data",
         "victors_init_data", "vyro_init_data",
         "kynex_init_data", "diggo_init_data",
-        "leafearn_init_data", "astra_init_data",
-        "pepegram_init_data", "adxearn_init_data"
+        "astra_init_data", "pepegram_init_data",
+        "adxearn_init_data"
     ]
     present_cnt = 0
     expired_cnt = 0
@@ -877,13 +853,6 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=diggo_param, default_url="https://t.me/Diggominer_bot", candidate_short_names=["openapp", "app", "miner", "miniapp", "startapp"])
     if tok:
         tokens["diggo_init_data"] = tok
-    await asyncio.sleep(random.uniform(0.5, 1.2))
-
-    # 7. LeafEarn (@LeafEarnBot - leafearn.site)
-    leaf_param = None if is_master else LEAFEARN_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, LEAFEARN_BOT, start_param=leaf_param, default_url="https://leafearn.site/", candidate_short_names=["app", "leafearn", "play", "startapp"])
-    if tok:
-        tokens["leafearn_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)
@@ -1716,7 +1685,7 @@ async def bootstrap_account_mining(acc_entry: dict, tokens: dict):
             except Exception as ke:
                 logger.debug(f"[{name}] Kynex bootstrap note: {ke}")
 
-ALL_10_BOT_KEYS = ["mrg", "atf", "victors", "vyro", "kynex", "diggo", "leafearn", "astra", "pepegram", "adxearn"]
+ALL_10_BOT_KEYS = ["mrg", "atf", "victors", "vyro", "kynex", "diggo", "astra", "pepegram", "adxearn"]
 
 def is_account_referrals_bound(acc_entry: dict) -> bool:
     """Checks whether an account already has its master referrals bound across all 10 active fleet bots."""
@@ -1810,17 +1779,16 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
     """
     Guarantees master referral codes are registered ONCE per account for 1st-time newly added accounts,
     extracts WebApp session tokens, syncs to Cloudflare KV + Upstash,
-    and executes referral finish work across all 10 fleet bots:
+    and executes referral finish work across all 9 fleet bots:
     1. MRG: ref_IRN1G3XD
     2. ATF Miner: 6727787768
     3. Victor's Company: ref_A20AA96F18
     4. VyroDrop: ref_myFjrqqE4WN_
     5. Kynex Network: 6727787768
     6. DiggoMiner: ref_4088138f11effe8eef4b86ff
-    7. LeafEarn: 6727787768
-    8. Astra Airdrop: ref_6727787768
-    9. PepeGram: 6727787768
-    10. AdxEarn AI: ref_6727787768
+    7. Astra Airdrop: ref_6727787768
+    8. PepeGram: 6727787768
+    9. AdxEarn AI: ref_6727787768
     """
     name = acc_entry.get("name", "User")
     uid = str(acc_entry.get("user_id"))
@@ -1979,20 +1947,6 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
             await asyncio.sleep(0.5)
         except Exception as e:
             logger.warning(f"[{name}] Diggo referral bind note: {e}")
-
-    # 7. LeafEarn (Dual-Layer: Chat /start + WebApp handshake)
-    if force or not acc_entry.get("leafearn_referral_bound"):
-        try:
-            try:
-                await client.send_message(LEAFEARN_BOT, f"/start {LEAFEARN_REFERRAL_CODE}")
-                await asyncio.sleep(0.5)
-            except Exception:
-                pass
-            tok = await extract_bot_webapp_token(client, LEAFEARN_BOT, start_param=LEAFEARN_REFERRAL_CODE, default_url="https://leafearn.site/", candidate_short_names=["app", "leafearn", "play", "startapp"])
-            acc_entry["leafearn_referral_bound"] = True
-            await asyncio.sleep(0.5)
-        except Exception as e:
-            logger.warning(f"[{name}] LeafEarn referral bind note: {e}")
 
     # 8. Astra Airdrop (Dual-Layer: Chat /start + WebApp handshake)
     if force or not acc_entry.get("astra_referral_bound"):
@@ -4918,70 +4872,6 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 return
         status["bots"]["diggo"] = "skipped (no initData)"
 
-    # 7. LeafEarn (@LeafEarnBot - leafearn.site Connect-RPC Engine)
-    async def _farm_leafearn():
-        if tokens.get("leafearn_init_data"):
-            try:
-                l_init = tokens["leafearn_init_data"]
-
-                async def leaf_rpc(service: str, method: str, body_obj: dict = None):
-                    body_obj = body_obj or {}
-                    body_bytes = json.dumps(body_obj).encode("utf-8") if body_obj else b"{}"
-                    sign_bin = b"" if not body_obj else body_bytes
-                    h = build_leaf_headers(service, method, l_init, sign_bin, user_agent)
-                    url = f"https://leafearn.site/{service}/{method}"
-                    status_c, res_d = await safe_post(url, json_data=body_obj, req_headers=h)
-                    return res_d if isinstance(res_d, dict) else {}
-
-                # 1. Init & Master Referral Binding (if worker account)
-                if not is_owner:
-                    await leaf_rpc("leaf.v1.AuthService", "Init", {"start_param": "6727787768"})
-                    await jitter(0.4, 0.8)
-
-                # 2. Sync account profile & live leaf balance
-                sync_d = await leaf_rpc("leaf.v1.AuthService", "Sync", {})
-                u_obj = (sync_d.get("user") if isinstance(sync_d, dict) else {}) or {}
-                leaf_bal = u_obj.get("leaf") or u_obj.get("balance", "0")
-                refs_active = u_obj.get("referralActive", 0)
-
-                # 3. Mine Status & Claim pending rewards
-                await jitter(0.5, 1.0)
-                st_d = await leaf_rpc("leaf.v1.MineService", "Status", {})
-                if isinstance(st_d, dict) and st_d.get("balance"):
-                    leaf_bal = st_d.get("balance", leaf_bal)
-
-                await jitter(0.4, 0.8)
-                await leaf_rpc("leaf.v1.MineService", "Claim", {})
-
-                await jitter(0.5, 1.2)
-                await leaf_rpc("leaf.v1.MineService", "Mine", {"adsShown": 1, "adsClicked": 0, "adsOffered": 1})
-
-                # 4. Tasks Discovery & Auto-Completion
-                await jitter(0.5, 1.0)
-                tasks_d = await leaf_rpc("leaf.v1.ReadService", "Tasks", {})
-                task_list = tasks_d.get("tasks", []) if isinstance(tasks_d, dict) else []
-                claimed_tasks = 0
-                for t in task_list:
-                    if isinstance(t, dict) and not t.get("completed") and t.get("id"):
-                        t_type = t.get("type", "")
-                        if t_type in ("LINK", "TELEGRAM", "BIO", "OTHERS", "X", "APP"):
-                            await jitter(0.3, 0.7)
-                            comp_res = await leaf_rpc("leaf.v1.TaskService", "CompleteTask", {"taskId": str(t["id"])})
-                            if comp_res.get("ok"):
-                                claimed_tasks += 1
-
-                # 5. Adsgram Task Claim
-                await jitter(0.4, 0.8)
-                await leaf_rpc("leaf.v1.AdsgramTaskService", "Claim", {})
-
-                task_str = f", +{claimed_tasks} tasks" if claimed_tasks > 0 else ""
-                ref_str = f", refs: {refs_active}" if is_owner and refs_active else ""
-                status["bots"]["leafearn"] = f"farmed (bal: {leaf_bal} Stars{task_str}{ref_str})"
-                return
-            except Exception as e:
-                status["bots"]["leafearn"] = f"api_error: {format_error(e)}"
-                return
-        status["bots"]["leafearn"] = "skipped (no initData)"
 
     # 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)
     async def _farm_astra():
@@ -5182,7 +5072,6 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         "vyro": (2400, 4800),     # 40m - 80m
         "kynex": (2400, 4800),    # 40m - 80m
         "diggo": (1800, 3600),    # 30m - 60m
-        "leafearn": (1200, 2400), # 20m - 40m
         "astra": (1800, 3600),    # 30m - 60m
         "pepegram": (1800, 3600), # 30m - 60m
         "adxearn": (1800, 3600)   # 30m - 60m
@@ -5195,7 +5084,6 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         {"name": "vyro", "fn": _farm_vyro, "has_data": bool(tokens.get("vyro_init_data"))},
         {"name": "kynex", "fn": _farm_kynex, "has_data": bool(tokens.get("kynex_init_data"))},
         {"name": "diggo", "fn": _farm_diggo, "has_data": bool(tokens.get("diggo_init_data"))},
-        {"name": "leafearn", "fn": _farm_leafearn, "has_data": bool(tokens.get("leafearn_init_data"))},
         {"name": "astra", "fn": _farm_astra, "has_data": bool(tokens.get("astra_init_data"))},
         {"name": "pepegram", "fn": _farm_pepegram, "has_data": bool(tokens.get("pepegram_init_data"))},
         {"name": "adxearn", "fn": _farm_adxearn, "has_data": bool(tokens.get("adxearn_init_data"))},
@@ -5568,7 +5456,6 @@ async def inspect_referrals_master(request: Request):
         ("vyro", "vyrodrop_bot", ["/start"]),
         ("kynex", "Kynex_miningbot", ["/start"]),
         ("diggo", "Diggominer_bot", ["/start"]),
-        ("leafearn", "LeafEarnBot", ["/start"]),
         ("astra", "ASTRA_AIRDROP_BOT", ["/start"]),
         ("pepegram", "Pepe_gram_bot", ["/start"]),
         ("adxearn", "AdxEarnAibot", ["/start"])
@@ -5943,7 +5830,6 @@ async def study_bot_endpoint(bot_key: str, request: Request):
         "vyro": "vyrodrop_bot",
         "kynex": "Kynex_miningbot",
         "diggo": "Diggominer_bot",
-        "leafearn": "LeafEarnBot",
         "astra": "ASTRA_AIRDROP_BOT",
         "pepegram": "Pepe_gram_bot",
         "adxearn": "AdxEarnAibot"
@@ -6002,7 +5888,6 @@ async def mute_all_chats_endpoint(request: Request):
         "VictorsCompanybot", "VictorsCompany",
         "vyrodrop_bot", "vyrodrop",
         "Diggominer_bot", "diggo_community",
-        "LeafEarnBot",
         "ASTRA_AIRDROP_BOT",
         "Pepe_gram_bot",
         "AdxEarnAibot"
@@ -6083,7 +5968,6 @@ async def inspect_bot_chat(uid: str, request: Request):
             ("vyro", "vyrodrop_bot"),
             ("kynex", "Kynex_miningbot"),
             ("diggo", "Diggominer_bot"),
-            ("leafearn", "LeafEarnBot"),
             ("astra", "ASTRA_AIRDROP_BOT"),
             ("pepegram", "Pepe_gram_bot"),
             ("adxearn", "AdxEarnAibot")
@@ -6343,18 +6227,19 @@ MANDATORY_SPONSOR_CHANNELS = [
     "Web3Primeteam"
 ]
 
-# 10 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
+# 9 High-Conviction Legitimate Fleet Bots (100% REST-Based Mini-Apps)
 FLEET_LEGITIMATE_BOTS = [
     "mrgminerbot", "ATF_AIRDROP_bot",
     "VictorsCompanybot", "vyrodrop_bot",
     "Kynex_miningbot", "Diggominer_bot",
-    "LeafEarnBot", "ASTRA_AIRDROP_BOT",
-    "Pepe_gram_bot", "AdxEarnAibot"
+    "ASTRA_AIRDROP_BOT", "Pepe_gram_bot",
+    "AdxEarnAibot"
 ]
 
 # Blacklisted & Purged Bots to permanently block and delete from Telegram dialogs
 FLEET_BANNED_SCAMMERS = [
     # Purged per user directive
+    "LeafEarnBot",
     "stoneswithestand_bot",
     "AiLab_robot",
     "UltrawalletTrade_Bot",

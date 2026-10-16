@@ -11,7 +11,7 @@
 If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a new session, or a human operator taking over this workspace, **read this entire document first**. It provides the complete picture of this project, how every component works, where every secret and service lives, and how to operate and extend it without breaking production.
 
 ### What is this Project?
-**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **18 Telegram accounts** (1 Master Account + 17 Worker Accounts) that continuously farm yield, satoshis, and tokens across **10 high-conviction fleet Telegram WebApp Mini Apps** (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, LeafEarn, Astra Airdrop, PepeGram, AdxEarn AI — all scammer and discontinued bots purged and permanently deleted), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin).
+**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **18 Telegram accounts** (1 Master Account + 17 Worker Accounts) that continuously farm yield, satoshis, and tokens across **9 high-conviction fleet Telegram WebApp Mini Apps** (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI — LeafEarn and all scammer/discontinued bots permanently purged), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin).
 
 ### The Golden Directives (Non-Negotiable Rules)
 1. **🛡️ Strict Project Isolation**: Everything relating to this project must remain strictly within this repository (`AAA0002/ATL`). **NEVER** touch, import, mix, or merge context from `@AAATelegramIdBot` (`AAA2743/AA`) or other external projects.
@@ -1295,6 +1295,29 @@ Whenever you perform work in this repository:
   - Cloudflare's Challenge Platform flags Webshare datacenter proxies with `HTTP 401 Unauthorized` on `challenges.cloudflare.com`.
   - Configured CI runner execution to run directly on clean runner IPs (Microsoft Azure GitHub Actions runner), eliminating proxy rejection and achieving 100% Turnstile acceptance.
 * **24-Hour Mining Session Preservation Protocol**:
-  - Diggo (24h), AdxEarn (24h), LeafEarn (24h), ATF (24h), Kynex (12h), PepeGram (6h), and MRG (12–24h tank) are polled and farmed every 30–60 minutes by Render Node 2 `cloud_wealth_automation_watchdog`, permanently preventing any bot from pausing or pushing back uncollected yields.
+  - Diggo (24h), AdxEarn (24h), ATF (24h), Kynex (12h), PepeGram (6h), and MRG (12–24h tank) are polled and farmed every 30–60 minutes by Render Node 2 `cloud_wealth_automation_watchdog`, permanently preventing any bot from pausing or pushing back uncollected yields.
+
+### 19. Complete LeafEarn Purge, 100% PepeGram Verification & 9-Bot Consolidation (October 16, 2026)
+* **Complete LeafEarn Purge Across Codebase & Cloud**:
+  - **Registry Removal**: Deleted `leafearn` from `bot_registry.py` (active bots reduced from 10 to 9).
+  - **Cloud Engine Purge**: Removed `_farm_leafearn`, `build_leaf_headers`, `LEAF_KEY`, `LEAF_REV`, and `leafearn_init_data` token extraction from `render_app_latest.py`, `render_standby_app.py`, `refresh_cloud_tokens.py`, and `extract_all_missing_fleet_tokens.py`.
+  - **Side-Tasks Sweeper Purge**: Removed `sweep_leafearn_tasks` and LeafEarn Connect-RPC helpers from `finish_all_fleet_sidetasks.py`.
+  - **Banned Scammers Addition**: Added `LeafEarnBot` to `FLEET_BANNED_SCAMMERS` in `render_app_latest.py` and `render_standby_app.py` ensuring it is permanently muted, blocked, and purged from all Telegram account dialogs.
+  - **Database & UI Clean**: Deleted LeafEarn UI card and name mapping from `public/index.html`. Deleted all 18 `fleet:last_farm:leafearn:*` Redis keys and purged `leafearn_init_data` from all 18 `fleet:tokens:*` records in Upstash Redis.
+* **PepeGram 100% Verification Completion**:
+  - Confirmed 100% of worker recruit accounts (17/17) have `joined: true` for official channel `@pepe_grammmm`.
+  - All accounts clicked `"✅ Verify"` and received confirmation (`"⚡ Your mining rig is firing up!"`).
+  - Master account (`6727787768`) verified with **703 POWER** and **446.1 PEPE hashes**. Recruits actively farming (e.g., Nancy at 1400 POWER).
+* **Consolidated 9 High-Conviction Fleet Bots**:
+  1. MRG Miner (`@mrgminerbot`)
+  2. ATF Miner (`@ATF_AIRDROP_bot`)
+  3. Victor's Company (`@VictorsCompanybot`)
+  4. VyroDrop (`@vyrodrop_bot`)
+  5. Kynex Network (`@Kynex_miningbot`)
+  6. DiggoMiner (`@Diggominer_bot`)
+  7. Astra Airdrop (`@ASTRA_AIRDROP_BOT`)
+  8. PepeGram (`@Pepe_gram_bot`)
+  9. AdxEarn AI (`@AdxEarnAibot`)
+
 
 

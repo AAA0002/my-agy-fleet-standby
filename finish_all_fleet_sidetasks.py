@@ -149,27 +149,6 @@ async def jitter(min_s: float = 0.5, max_s: float = 1.5):
     await asyncio.sleep(random.uniform(min_s, max_s))
 
 
-LEAF_KEY = bytes.fromhex("111e3e2fb3ec09dd0beaeff0ddde12e9d4dc9d8ec60f5d1f0d28172bcbd8f2da")
-LEAF_REV = "536425909"
-
-def build_leaf_headers(service: str, method: str, init_data: str, body_bin: bytes = b"", ua: str = None) -> dict:
-    now_ms = int(time.time() * 1000)
-    nonce = f"{hex(now_ms)[2:]}-{hex(random.randint(0x100000, 0xffffff))[2:]}"
-    body_hash = hashlib.sha256(body_bin).hexdigest()
-    init_hash = hashlib.sha256(init_data.encode("utf-8")).hexdigest()
-    signing_str = f"{service}/{method}|{nonce}|{body_hash}|{init_hash}"
-    sig = hmac.new(LEAF_KEY, signing_str.encode("utf-8"), hashlib.sha256).hexdigest()
-    hint = f"{nonce}.{sig}"
-    return {
-        "Content-Type": "application/json",
-        "Connect-Protocol-Version": "1",
-        "x-init-data": init_data,
-        "x-app-rev": LEAF_REV,
-        "x-view-hint": hint,
-        "User-Agent": ua or "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36 Telegram-Android",
-        "Origin": "https://leafearn.site",
-        "Referer": "https://leafearn.site/"
-    }
 
 
 # =============================================================================
@@ -735,60 +714,6 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
     return res
 
 
-async def sweep_leafearn_tasks(session: aiohttp.ClientSession, uid: str, name: str, l_init: str, acc: dict) -> Dict[str, Any]:
-    """Sweeps LeafEarn tasks, mining status, and Adsgram rewards."""
-    res = {"bot": "LeafEarn", "tasks_claimed": 0, "notes": [], "success": False}
-    if not l_init:
-        res["notes"].append("no_init_data")
-        return res
-
-    try:
-        ua = "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 Chrome/128.0.0.0 Telegram-Android"
-        async def leaf_rpc(service: str, method: str, body_obj: dict = None):
-            body_obj = body_obj or {}
-            body_bytes = json.dumps(body_obj).encode("utf-8") if body_obj else b"{}"
-            sign_bin = b"" if not body_obj else body_bytes
-            h = build_leaf_headers(service, method, l_init, sign_bin, ua)
-            url = f"https://leafearn.site/{service}/{method}"
-            async with session.post(url, json=body_obj, headers=h, timeout=aiohttp.ClientTimeout(total=8)) as r:
-                if r.status == 200:
-                    return await r.json()
-                elif r.status in (401, 403):
-                    d = await r.json() if r.content_type == "application/json" else {}
-                    msg = d.get("message", f"http_{r.status}")
-                    res["notes"].append(f"leaf_banned_{msg[:30]}")
-                return {}
-
-        sync_d = await leaf_rpc("leaf.v1.AuthService", "Sync", {})
-        if sync_d and isinstance(sync_d, dict):
-            res["success"] = True
-            u_obj = sync_d.get("user") or {}
-            res["balance"] = float(u_obj.get("leaf") or u_obj.get("balance", "0") or 0)
-            res["level"] = 1
-
-            # Mine claim
-            await jitter(0.4, 0.8)
-            await leaf_rpc("leaf.v1.MineService", "Claim", {})
-            await leaf_rpc("leaf.v1.MineService", "Mine", {"adsShown": 1, "adsClicked": 0, "adsOffered": 1})
-
-            # Read and complete tasks
-            await jitter(0.4, 0.8)
-            tasks_d = await leaf_rpc("leaf.v1.ReadService", "Tasks", {})
-            for t in (tasks_d.get("tasks", []) if isinstance(tasks_d, dict) else []):
-                if isinstance(t, dict) and not t.get("completed") and t.get("id"):
-                    await jitter(0.3, 0.6)
-                    comp = await leaf_rpc("leaf.v1.TaskService", "CompleteTask", {"taskId": str(t["id"])})
-                    if comp.get("ok"):
-                        res["tasks_claimed"] += 1
-                        res["notes"].append(f"task_{t['id']}")
-
-            # Adsgram claim
-            await leaf_rpc("leaf.v1.AdsgramTaskService", "Claim", {})
-
-    except Exception as e:
-        res["notes"].append(f"err: {str(e)[:50]}")
-
-    return res
 
 
 async def sweep_astra_tasks(session: aiohttp.ClientSession, uid: str, name: str, a_init: str, acc: dict) -> Dict[str, Any]:
@@ -1055,19 +980,15 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
         diggo_res = await sweep_diggo_tasks(session, uid, name, acc_toks.get("diggo_init_data", ""), acc)
         account_report["results"]["diggo"] = diggo_res
 
-        # 7. LeafEarn
-        leaf_res = await sweep_leafearn_tasks(session, uid, name, acc_toks.get("leafearn_init_data", ""), acc)
-        account_report["results"]["leafearn"] = leaf_res
-
-        # 8. Astra Airdrop
+        # 7. Astra Airdrop
         astra_res = await sweep_astra_tasks(session, uid, name, acc_toks.get("astra_init_data", ""), acc)
         account_report["results"]["astra"] = astra_res
 
-        # 9. PepeGram
+        # 8. PepeGram
         pepe_res = await sweep_pepegram_tasks(session, uid, name, acc_toks.get("pepegram_init_data", ""), acc)
         account_report["results"]["pepegram"] = pepe_res
 
-        # 10. AdxEarn AI
+        # 9. AdxEarn AI
         adx_res = await sweep_adxearn_tasks(session, uid, name, acc_toks.get("adxearn_init_data", ""), acc)
         account_report["results"]["adxearn"] = adx_res
 
@@ -1081,7 +1002,7 @@ async def process_account(session: aiohttp.ClientSession, acc: dict, tokens_db: 
 
 async def main():
     logger.info("=============================================================================")
-    logger.info("🎯 STARTING COMPLETE 10-BOT FLEET SIDE-TASK HARVEST (18 ACCOUNTS)")
+    logger.info("🎯 STARTING COMPLETE 9-BOT FLEET SIDE-TASK HARVEST (18 ACCOUNTS)")
     logger.info("=============================================================================")
 
     conn = aiohttp.TCPConnector(limit=25, ttl_dns_cache=300)
@@ -1096,7 +1017,7 @@ async def main():
 
         # Print Summary
         logger.info("\n" + "=" * 70)
-        logger.info("📊 10-BOT FLEET SIDE-TASK HARVEST SUMMARY")
+        logger.info("📊 9-BOT FLEET SIDE-TASK HARVEST SUMMARY")
         logger.info("=" * 70)
         total_tasks = 0
         for rep in reports:
@@ -1108,13 +1029,12 @@ async def main():
             vyr_cl = res.get("vyro", {}).get("tasks_claimed", 0)
             kyn_cl = res.get("kynex", {}).get("tasks_claimed", 0)
             dig_cl = res.get("diggo", {}).get("tasks_claimed", 0)
-            lea_cl = res.get("leafearn", {}).get("tasks_claimed", 0)
             ast_cl = res.get("astra", {}).get("tasks_claimed", 0)
             pep_cl = res.get("pepegram", {}).get("tasks_claimed", 0)
             adx_cl = res.get("adxearn", {}).get("tasks_claimed", 0)
-            acc_total = mrg_cl + atf_cl + vic_cl + vyr_cl + kyn_cl + dig_cl + lea_cl + ast_cl + pep_cl + adx_cl
+            acc_total = mrg_cl + atf_cl + vic_cl + vyr_cl + kyn_cl + dig_cl + ast_cl + pep_cl + adx_cl
             total_tasks += acc_total
-            logger.info(f"• {acc_name:<25} | MRG:{mrg_cl} ATF:{atf_cl} VIC:{vic_cl} VYRO:{vyr_cl} KYN:{kyn_cl} DIG:{dig_cl} LEAF:{lea_cl} AST:{ast_cl} PEP:{pep_cl} ADX:{adx_cl} | Tot: {acc_total}")
+            logger.info(f"• {acc_name:<25} | MRG:{mrg_cl} ATF:{atf_cl} VIC:{vic_cl} VYRO:{vyr_cl} KYN:{kyn_cl} DIG:{dig_cl} AST:{ast_cl} PEP:{pep_cl} ADX:{adx_cl} | Tot: {acc_total}")
 
         logger.info("=" * 70)
         logger.info(f"🏁 GRAND TOTAL SIDE-TASKS/REWARDS CLAIMED: {total_tasks}")
