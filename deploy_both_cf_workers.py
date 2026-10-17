@@ -1743,7 +1743,7 @@ async function runDailyCostSweep(env, force = false) {
                 reply_markup: {
                   inline_keyboard: [
                     [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }],
-                    [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                    [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
                     [{ text: "🌟 VIP Passes", callback_data: "ub_buy_stars" }]
                   ]
                 }
@@ -1773,7 +1773,7 @@ async function runDailyCostSweep(env, force = false) {
               reply_markup: {
                 inline_keyboard: [
                   [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }],
-                  [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                  [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
                   [{ text: "🌟 VIP Passes", callback_data: "ub_buy_stars" }]
                 ]
               }
@@ -8868,7 +8868,7 @@ Reply to Arif naturally:`;
                   reply_markup: {
                     inline_keyboard: [
                       [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }],
-                      [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                      [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
                       [{ text: "🌟 VIP Passes", callback_data: "ub_buy_stars" }]
                     ]
                   }
@@ -8965,7 +8965,7 @@ Reply to Arif naturally:`;
 
     // 13.6 Multi-Network Ad Portal Route (Monetag, GigaPub, Adsterra 7 Formats, HilltopAds VAST 3.0, A-Ads)
     if (path === "/ads" || path === "/app/ad" || path === "/ad" || path === "/adsgram") {
-      const redirectTarget = "https://atf-miner-app.pages.dev/app/ad/" + (url.search || "");
+      const redirectTarget = "https://agy-henna.vercel.app/" + (url.search || "");
       return Response.redirect(redirectTarget, 302);
     }
 
@@ -9176,7 +9176,7 @@ Reply to Arif naturally:`;
       return new Response(JSON.stringify({
         ok: true,
         block_id: currentBlockId,
-        webapp_url: "https://atf-miner-app.pages.dev/app/ad/",
+        webapp_url: "https://agy-henna.vercel.app/",
         cooldown_sec: 15,
         default_pts: 20,
         monthly_pass_pts: 40,
@@ -10069,26 +10069,12 @@ Reply to Arif naturally:`;
             `• *Subscription:* ${passBadge}\n` +
             `• *Daily Cost:* \`${isCovered ? "0 Pts (VIP)" : `${dCost} Pts/day`}\`\n` +
             `• *Streak:* Day ${profile.daily_streak || 0} • Ads: ${profile.ads_watched || 0}/50\n` +
-            `━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `_Select an action below:_`;
+            `_Tap below or use the keyboard buttons to control mining:_`;
 
           const btns = {
             inline_keyboard: [
               [
-                { text: "🚀 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev/miner" } },
-                { text: "➕ Connect Account", callback_data: "ub_add_acc" }
-              ],
-              [
-                { text: "⛏️ Mining Pools", callback_data: "ub_pools" },
-                { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/" } }
-              ],
-              [
-                { text: "🎁 Daily Bonus", callback_data: "ub_daily_claim" },
-                { text: "🌟 VIP Passes", callback_data: "ub_buy_stars" }
-              ],
-              [
-                { text: "👥 My Accounts", callback_data: "ub_accounts" },
-                { text: "👥 Invite Friends", callback_data: "ub_referral" }
+                { text: "🚀 Open Web App Mining Console ⚡", web_app: { url: "https://agy-henna.vercel.app/miner" } }
               ]
             ]
           };
@@ -10148,7 +10134,7 @@ Reply to Arif naturally:`;
               ],
               [
                 { text: "📊 Dashboard", callback_data: "ub_stats" },
-                { text: "🚀 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev/miner" } }
+                { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }
               ]
             ]
           };
@@ -10244,20 +10230,8 @@ Reply to Arif naturally:`;
         const userWelcomeInlineKeyboard = {
           inline_keyboard: [
             [
-              { text: "🚀 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev/miner" } },
-              { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/" } }
-            ],
-            [
-              { text: "⛏️ Mining Pools", callback_data: "ub_pools" },
-              { text: "➕ Connect Account", callback_data: "ub_add_acc" }
-            ],
-            [
-              { text: "🎁 Daily Bonus", callback_data: "ub_daily_claim" },
-              { text: "👥 Invite Friends", callback_data: "ub_referral" }
-            ],
-            [
-              { text: "🌟 VIP Passes", callback_data: "ub_buy_stars" },
-              { text: "📖 User Guide", callback_data: "ub_guide" }
+              { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } },
+              { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
             ]
           ]
         };
@@ -10277,7 +10251,7 @@ Reply to Arif naturally:`;
               { text: "🌟 +1 Permanent Slot (50 Stars)", callback_data: "ub_stars_slot1" }
             ],
             [
-              { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/" } },
+              { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } },
               { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }
             ]
           ]
@@ -10286,11 +10260,7 @@ Reply to Arif naturally:`;
         const adClaimKeyboard = {
           inline_keyboard: [
             [
-              { text: "🎬 Watch Real Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }
-            ],
-            [
-              { text: "🎁 Claim Reward Directly", callback_data: "ub_claim_ad" },
-              { text: "📢 Official Channel", url: "https://t.me/AAAAUTOMINING" }
+              { text: "🎬 Watch Sponsored Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }
             ]
           ]
         };
@@ -10465,7 +10435,7 @@ Reply to Arif naturally:`;
               `👇 *Tap below to launch the video ad:*`;
             ctx.waitUntil(sendCqReply(adMsg, {
               inline_keyboard: [
-                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/" } }],
+                [{ text: "🎬 Watch Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "🎁 Claim Directly (Fallback)", callback_data: "ub_claim_ad" }]
               ]
             }));
@@ -10526,7 +10496,7 @@ Reply to Arif naturally:`;
             ctx.waitUntil(sendCqReply(refMsg, {
               inline_keyboard: [
                 [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
-                [{ text: "🚀 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev/miner" } }]
+                [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }]
               ]
             }));
             return new Response("OK");
@@ -10609,7 +10579,7 @@ Reply to Arif naturally:`;
               `Earn free points below:`;
             const rewBtns = {
               inline_keyboard: [
-                [{ text: `🎬 Watch Video Ad (+${adPts} Pts)`, web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } }],
+                [{ text: `🎬 Watch Video Ad (+${adPts} Pts)`, web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
@@ -10641,8 +10611,8 @@ Reply to Arif naturally:`;
                 `• 🌟 *Upgrade with Telegram Stars* (0 point daily fee)`;
               const kb = {
                 inline_keyboard: [
-                  [{ text: "🚀 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev/miner" } }],
-                  [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/" } }],
+                  [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }],
+                  [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
                   [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
                 ]
               };
@@ -10681,7 +10651,7 @@ Reply to Arif naturally:`;
               `💡 _Come back in 24 hours to keep your streak burning!_`;
             const succKb = {
               inline_keyboard: [
-                [{ text: "🚀 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev/miner" } }],
+                [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }],
                 [{ text: "💎 View Points & Passes", callback_data: "ub_points" }]
               ]
             };
@@ -10724,7 +10694,7 @@ Reply to Arif naturally:`;
 
             const ptsKb = {
               inline_keyboard: [
-                [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/" } }],
+                [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes", callback_data: "ub_buy_stars" }]
               ]
@@ -10753,7 +10723,7 @@ Reply to Arif naturally:`;
             ctx.waitUntil(sendCqReply(poolsMsg, {
               inline_keyboard: [
                 [{ text: "⛏️ View 9 Pools Menu", callback_data: "ub_pools" }, { text: "➕ Connect Account", callback_data: "ub_add_acc" }],
-                [{ text: "👥 My Accounts", callback_data: "ub_accounts" }, { text: "🚀 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev/miner" } }]
+                [{ text: "👥 My Accounts", callback_data: "ub_accounts" }, { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }]
               ]
             }));
             return new Response("OK");
@@ -10930,7 +10900,6 @@ Reply to Arif naturally:`;
             const connectKeyboard = {
               inline_keyboard: [
                 [{ text: `⚡ 1-Tap Link My Telegram ID (${cqChatId})`, callback_data: `ub_bind_id_${cqChatId}` }],
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/" } }],
                 [{ text: "❌ Cancel Connection", callback_data: "ub_cancel_conn" }]
               ]
             };
@@ -11290,7 +11259,7 @@ Reply to Arif naturally:`;
                       { text: `⚡ 1-Tap Link Telegram ID (${parsed.user.id})`, callback_data: `ub_bind_id_${parsed.user.id}` }
                     ],
                     [
-                      { text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/" } }
+                      { text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
                     ]
                   ]
                 };
@@ -11870,7 +11839,7 @@ Reply to Arif naturally:`;
             await sendUserReply(refMsg, {
               inline_keyboard: [
                 [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
-                [{ text: "🚀 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev/miner" } }]
+                [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }]
               ]
             });
             return;
@@ -11887,7 +11856,7 @@ Reply to Arif naturally:`;
               `Earn free points below:`;
             const rewBtns = {
               inline_keyboard: [
-                [{ text: `🎬 Watch Ads (+${adPts} Pts)`, web_app: { url: "https://atf-miner-app.pages.dev/" } }],
+                [{ text: `🎬 Watch Ads (+${adPts} Pts)`, web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes & Slots", callback_data: "ub_buy_stars" }]
               ]
@@ -11899,6 +11868,16 @@ Reply to Arif naturally:`;
           if (text === "📊 Dashboard" || text === "Dashboard" || text === "📊 My Stats" || text === "My Stats" || text === "📊 Stats" || text.startsWith("/dashboard") || text.startsWith("/start stats") || text === "/stats" || text.startsWith("/stats") || text === "/status" || text.startsWith("/status")) {
             const dash = renderMiningDashboard(profile, chatId, senderName);
             await sendUserReply(dash.text, dash.markup);
+            await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: "⚡ *Navigation Ready:* Tap buttons below or open Web App:",
+                parse_mode: "Markdown",
+                reply_markup: activeUserKeyboard
+              })
+            }).catch(() => {});
             return;
           }
 
@@ -11906,6 +11885,16 @@ Reply to Arif naturally:`;
           if (text.startsWith("/start") || text === "/menu") {
             const dash = renderMiningDashboard(profile, chatId, senderName);
             await sendUserReply(dash.text, dash.markup);
+            await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: "⚡ *Welcome to AAA AUTO MINING!* Tap buttons below to control cloud mining:",
+                parse_mode: "Markdown",
+                reply_markup: activeUserKeyboard
+              })
+            }).catch(() => {});
 
             // Ensure persistent Chat Menu Button on User Bot is ALWAYS set to Watch Ads
             if (ctx && ctx.waitUntil) {
@@ -11915,7 +11904,7 @@ Reply to Arif naturally:`;
                   type: "web_app",
                   text: "🎬 Watch Ads",
                   web_app: {
-                    url: "https://atf-miner-app.pages.dev/"
+                    url: "https://agy-henna.vercel.app/"
                   }
                 }
               };
@@ -12038,7 +12027,6 @@ Reply to Arif naturally:`;
             const connectKeyboard = {
               inline_keyboard: [
                 [{ text: `⚡ 1-Tap Link My Telegram ID (${chatId})`, callback_data: `ub_bind_id_${chatId}` }],
-                [{ text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/" } }],
                 [{ text: "❌ Cancel Connection", callback_data: "ub_cancel_conn" }]
               ]
             };
@@ -12089,7 +12077,7 @@ Reply to Arif naturally:`;
 
             await sendUserReply(ptsMsg, {
               inline_keyboard: [
-                [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/" } }],
+                [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "🎁 Claim Daily Bonus", callback_data: "ub_daily_claim" }, { text: "👥 Invite Friends", callback_data: "ub_referral" }],
                 [{ text: "🌟 Upgrade VIP Passes", callback_data: "ub_buy_stars" }]
               ]
@@ -12119,8 +12107,8 @@ Reply to Arif naturally:`;
                 `• 🌟 *Upgrade with Telegram Stars* (VIP Pass - unlimited mining)`;
               const kb = {
                 inline_keyboard: [
-                  [{ text: "🚀 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev/miner" } }],
-                  [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/" } }],
+                  [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }],
+                  [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
                   [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
                 ]
               };
@@ -12159,7 +12147,7 @@ Reply to Arif naturally:`;
               `💡 _Come back in 24 hours to keep your streak burning!_`;
             const succKb = {
               inline_keyboard: [
-                [{ text: "🚀 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev/miner" } }],
+                [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }],
                 [{ text: "💎 View Points & Passes", callback_data: "ub_points" }]
               ]
             };
@@ -12184,11 +12172,7 @@ Reply to Arif naturally:`;
               `👇 *Tap below to launch the video ad:*`;
             await sendUserReply(adMsg, {
               inline_keyboard: [
-                [{ text: "🎬 Launch Video Ads Portal ⚡", web_app: { url: "https://atf-miner-app.pages.dev/" } }],
-                [
-                  { text: "⚡ Mirror 1", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } },
-                  { text: "🌐 Mirror 2", web_app: { url: "https://aaa-watch-ads.pages.dev/" } }
-                ]
+                [{ text: "🎬 Watch Sponsored Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }]
               ]
             });
             return;
@@ -12208,7 +12192,7 @@ Reply to Arif naturally:`;
             await sendUserReply(refMsg, {
               inline_keyboard: [
                 [{ text: "📤 Share to Telegram ↗️", url: `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Join AAA Auto Mining to earn crypto 24/7 automatically!")}` }],
-                [{ text: "🚀 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev/miner" } }],
+                [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }],
                 [{ text: "🎁 My Rewards Hub", callback_data: "ub_rewards" }]
               ]
             });
@@ -12255,8 +12239,8 @@ Reply to Arif naturally:`;
               `💡 _Watch ads & invite friends to climb the leaderboard!_`;
             await sendUserReply(boardMsg, {
               inline_keyboard: [
-                [{ text: "🚀 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev/miner" } }],
-                [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/" } }],
+                [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }],
+                [{ text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }],
                 [{ text: "👥 Invite Friends (+500 Pts)", callback_data: "ub_referral" }]
               ]
             });
@@ -12275,7 +12259,7 @@ Reply to Arif naturally:`;
               }
               const newBlockId = rawInput.replace(/^bot-/, "").trim();
               await upstashSet("config:adsgram_block_id", newBlockId);
-              await sendUserReply(`✅ *Adsgram Block ID Updated!*\n\n• *New Block ID:* \`${newBlockId}\`\n• *Status:* Live across all Cloudflare Edge nodes\n• *WebApp URL:* https://atf-miner-app.pages.dev/app/ad`);
+              await sendUserReply(`✅ *Adsgram Block ID Updated!*\n\n• *New Block ID:* \`${newBlockId}\`\n• *Status:* Live across all Cloudflare Edge nodes\n• *WebApp URL:* https://agy-henna.vercel.app/app/ad`);
               return;
             }
           }
@@ -12283,7 +12267,7 @@ Reply to Arif naturally:`;
           if (text === "/get_block_id" || text === "/adsgram_info" || text === "/adsgram") {
             if (String(chatId) === "6727787768" || String(chatId) === env.OWNER_ID) {
               const currentBlockId = (await upstashGet("config:adsgram_block_id")) || env.ADSGRAM_BLOCK_ID || "50527";
-              await sendUserReply(`📊 *Adsgram Configuration:*\n\n• *Active Block ID:* \`${currentBlockId}\`\n• *WebApp URL:* https://atf-miner-app.pages.dev/app/ad\n• *Update ID:* Send \`/set_block_id <id>\` anytime!`);
+              await sendUserReply(`📊 *Adsgram Configuration:*\n\n• *Active Block ID:* \`${currentBlockId}\`\n• *WebApp URL:* https://agy-henna.vercel.app/app/ad\n• *Update ID:* Send \`/set_block_id <id>\` anytime!`);
               return;
             }
           }
@@ -12347,8 +12331,8 @@ Reply to Arif naturally:`;
             const chatAiKeyboard = {
               inline_keyboard: [
                 [
-                  { text: "🚀 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev/miner" } },
-                  { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/" } }
+                  { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } },
+                  { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
                 ],
                 [
                   { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" }
@@ -12396,8 +12380,8 @@ Reply to Arif naturally:`;
           const aiInlineMarkup = {
             inline_keyboard: [
               [
-                { text: "🚀 Open Web App", web_app: { url: "https://atf-miner-app.pages.dev/miner" } },
-                { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://atf-miner-app.pages.dev/" } }
+                { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } },
+                { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
               ],
               [
                 { text: "🌟 Upgrade Passes (Telegram Stars)", callback_data: "ub_buy_stars" }
@@ -12773,7 +12757,7 @@ async def main():
             print(f"⚠️ Error checking webhooks: {e}")
 
         # 1. Synchronize User Bot (@AAAPREMIUMAPPSbot) Webhook, Menu & Commands
-        user_wh_url = f"https://restore-agy.aaaai2.workers.dev/user-bot-webhook"
+        user_wh_url = f"https://restore-agy.agorameet.workers.dev/user-bot-webhook"
         try:
             async with session.post(
                 f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setWebhook",
@@ -12816,7 +12800,7 @@ async def main():
                     "type": "web_app",
                     "text": "🎬 Watch Ads",
                     "web_app": {
-                        "url": "https://atf-miner-app.pages.dev/"
+                        "url": "https://agy-henna.vercel.app/"
                     }
                 }
             }

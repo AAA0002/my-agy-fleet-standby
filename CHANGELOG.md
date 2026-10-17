@@ -2,18 +2,20 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
-- **⚡ User Bot Direct WebApp Keyboards, Multi-Miner / Ads Separation & Edge Deployment (October 17, 2026)**:
-  - **📱 Direct Telegram WebApp Keyboards & Duplicate Purge**:
-    * Upgraded User Bot (`@AAAPREMIUMAPPSbot`) main reply keyboard (`userMainKeyboard` & `ownerUserKeyboard`) Row 1 with native `web_app` buttons:
-      - `🚀 Open Web App` (`https://agy-henna.vercel.app/miner` / `restore-agy.agorameet.workers.dev/miner`) -> Opens live Autonomous Cloud Mining Dashboard directly upon tapping.
-      - `🎬 Watch Ads (+20 Pts)` (`https://agy-henna.vercel.app/` / `atf-miner-app.pages.dev/`) -> Launches sponsored video ad portal instantly without intermediate text roundtrip messages.
-    * Completely eliminated duplicate inline keyboard buttons (`ub_claim_ad` fallback) and redundant menu options across chat flows.
-    * Synchronized persistent Telegram Bot Menu Button (`🎬 Watch Ads`) and 9 cloud mining pool commands on the live Telegram Bot API.
-  - **🌐 Edge Route Separation & Worker Node 4 Deployment**:
-    * Separated route handlers in Cloudflare Workers edge template: `/miner` and `/dashboard` cleanly serve `public_ads/miner/index.html` (Autonomous Cloud Mining Dashboard), while `/`, `/ads`, and `/app/ad` cleanly serve `public_ads/index.html` (Sponsored Video Ads Portal).
-    * Fixed ES module top-level `ReferenceError: env is not defined` bug by injecting `__UPSTASH_TOKEN__`, `__TURSO_TOKEN__`, and `__SUPABASE_KEY__` dynamically at worker compile time.
-    * Successfully deployed script to Node 4 (`https://restore-agy.agorameet.workers.dev`) and set live User Bot webhook to `https://restore-agy.agorameet.workers.dev/user-bot-webhook`.
-    * Added `/miner/* /miner/index.html 200` rewrite rule to `public_ads/_redirects` to prevent Cloudflare Pages catch-all redirect conflicts.
+- **⚡ User Bot Complete Duplicate Elimination, Direct WebApp Keyboards & Edge Deployment (October 17, 2026)**:
+  - **🧹 Complete Purge of Duplicate Inline Buttons & Redundant Menus**:
+    * **Purged 8 Duplicate Buttons from Dashboard**: Eliminated the redundant inline buttons (`Connect Account`, `Mining Pools`, `Watch Ads`, `Daily Bonus`, `VIP Passes`, `My Accounts`, `Invite Friends`) that previously repeated the bottom keyboard options in the message body. Dashboard message now presents a single, elegant `[🚀 Open Web App Mining Console ⚡]` button pointing to `https://agy-henna.vercel.app/miner`.
+    * **Purged Duplicate Ad Mirrors**: Replaced redundant `Mirror 1` and `Mirror 2` buttons in video ad prompts with a single direct `[🎬 Watch Sponsored Video Ad (+20 Pts) ⚡]` button pointing to `https://agy-henna.vercel.app/`.
+    * **Purged Redundant Ad Button from Connect Account**: Removed out-of-place video ad button from the account connection menu.
+  - **📱 Instant Keyboard Refresh & Direct WebApp Launchers**:
+    * Fixed client-side keyboard caching by actively delivering `activeUserKeyboard` whenever `/start` or `📊 Dashboard` is called.
+    * User Bot reply keyboard Row 1 features native Telegram `web_app` buttons:
+      - `🚀 Open Web App`: Direct full-screen launch of the Autonomous Cloud Mining Dashboard (`https://agy-henna.vercel.app/miner`).
+      - `🎬 Watch Ads (+20 Pts)`: Direct launch of the Rewarded Video Ads Portal (`https://agy-henna.vercel.app/`).
+    * Tapping either button opens the respective Mini App instantly without sending text messages or cluttering the chat.
+  - **🌐 Cloudflare Edge Node 4 (`agorameet`) Deployment**:
+    * Deployed updated edge worker code live to `https://restore-agy.agorameet.workers.dev`.
+    * Synchronized User Bot Webhook (`https://restore-agy.agorameet.workers.dev/user-bot-webhook`) and chat menu button (`🎬 Watch Ads`) on Telegram API.
   - **📱 Termux Session Protection & Samsung One UI Durability**:
     * Implemented CPU wake-lock and auto-attaching `tmux` session `agy` inside Ubuntu PRoot for Android 11 / Samsung Galaxy A30 session persistence.
     * Maintained strictly 0 local Python background farming processes (Rule 4: Zero Phone Load).
