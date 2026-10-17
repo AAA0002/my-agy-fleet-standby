@@ -1,3 +1,16 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Launches Antigravity CLI directly inside Ubuntu container with full glibc support
-proot-distro login ubuntu --bind /data/data/com.termux/files/home:/root/workspace --work-dir /root/workspace -- /usr/local/bin/agy "$@"
+# =============================================================================
+# Launches Antigravity CLI inside Ubuntu container with TMUX & WakeLock
+# =============================================================================
+
+# 1. Keep Android CPU awake
+if [ -x /data/data/com.termux/files/usr/bin/termux-wake-lock ]; then
+    /data/data/com.termux/files/usr/bin/termux-wake-lock 2>/dev/null
+fi
+
+# 2. Launch inside Ubuntu with tmux persistence
+if [ $# -gt 0 ]; then
+    proot-distro login ubuntu --bind /data/data/com.termux/files/home:/root/workspace --work-dir /root/workspace -- /usr/local/bin/agy "$@"
+else
+    proot-distro login ubuntu --bind /data/data/com.termux/files/home:/root/workspace --work-dir /root/workspace -- /root/workspace/run_protected_agy.sh
+fi

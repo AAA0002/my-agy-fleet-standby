@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Fleet 9-Bot Token Verification, User Bot Cloudflare Pages Harmonization & Samsung Session Durability (October 17, 2026)**:
+  - **📱 Termux Session Protection & Samsung One UI Durability**:
+    * Resolved mobile session drop issues on Samsung Galaxy A30 (Android 11) caused by Samsung background task killers and CPU sleep.
+    * Installed `tmux 3.6` inside Ubuntu 26.04 PRoot environment.
+    * Engineered `run_protected_agy.sh` with automatic `termux-wake-lock` acquisition and `tmux` session management (`agy`), allowing seamless reattachment whenever Termux is reopened.
+    * Upgraded `ubuntu-agy` launcher script in Termux with automated wake-lock execution and tmux fallback.
+    * Confirmed strictly 0 background Python mining processes running locally on the phone (Rule 4: Zero Phone Load).
+  - **🧹 LeafEarn Elimination & 9-Bot Harmonization in Cloudflare Workers (`deploy_both_cf_workers.py`)**:
+    * Completely purged `farmLeafearn` function, cooldown dictionary entry, and execution pipeline from Cloudflare Workers edge script.
+    * Removed LeafEarn from all admin and user bot messages, command descriptions, and token sanitizers.
+    * Synchronized all 9 legitimate bots across edge telemetry and commands: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, and AdxEarn AI.
+  - **🤖 User Bot (`@AAAPREMIUMAPPSbot`) Upgrades**:
+    * Harmonized User Bot dashboard and `/pools` menu to exclusively display the 9 legitimate pools with live account counts.
+    * Upgraded all WebApp URLs from legacy Vercel domains to high-speed Cloudflare Pages (`https://atf-miner-app.pages.dev/` and `/miner`).
+    * Upgraded Mini App link detector to recognize all 9 bots when users paste direct launch links.
+    * Synchronized official Telegram Bot description, short description, commands, and chat menu button (`🎬 Watch Ads`).
+  - **📊 Fleet 18-Account 9-Bot Audit**:
+    * Executed comprehensive audit across all 18 fleet accounts via Upstash Redis.
+    * Verified 100% token coverage: 18/18 accounts have active, valid tokens for all 9 bots (162/162 active tokens).
+    * Confirmed active Render coordinator: `my-agy-fleet-standby-node2` (Node 2 Frankfurt).
+
 - **🔒 GitGuardian Secret Leak Remediation & Standby Deployment Hardening (October 17, 2026)**:
   - **🔍 Root Cause of GitGuardian Alert in `koramshah2/my-agy-fleet-standby`**:
     * Identified that `push_to_standby_repo.py` previously contained programmatic pushes of `fleet_wallets_data.json`, `fleet_ton_wallets.json`, `fleet_evm_wallets.json`, and `public_admin/fleet_wallets_data.json` to the public repository `koramshah2/my-agy-fleet-standby`.
