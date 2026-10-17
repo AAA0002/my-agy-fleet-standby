@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **👑 Admin Dashboard Single-Button Consolidation & /dashboard Route Fix (October 18, 2026)**:
+  - **🧹 Elimination of 3 Duplicate Admin Dashboard Buttons**:
+    * Identified and eliminated the redundant 3-button block (`Open Admin Dashboard (Node 1 Pages)`, `Open Admin Dashboard (Node 5 Pages)`, and `Open Admin Dashboard (Vercel Mirror)`).
+    * Replaced all 3 mirror buttons with a single, clean launcher: `[👑 Launch Admin Dashboard ⚡]` (`https://aaa-admin-portal.pages.dev/`).
+  - **🚀 Decoupled `/dashboard` from Admin Router**:
+    * Removed `/dashboard` and `text.startsWith("/dashboard")` from the executive admin command handler.
+    * `/dashboard` now exclusively opens the real Autonomous Cloud Mining Dashboard for all users and admins alike, without mistakenly triggering the admin management console.
+  - **📖 9-Pool Guide Harmonization**:
+    * Updated the User Bot comprehensive guide to explicitly document all 9 active legitimate mining pools: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, and AdxEarn AI.
+  - **🌐 Cloudflare Edge Node 4 (`agorameet`) Deployment**:
+    * Re-deployed updated script to Node 4: `https://restore-agy.agorameet.workers.dev`.
+
 - **⚡ User Bot Complete Duplicate Elimination, Direct WebApp Keyboards & Edge Deployment (October 17, 2026)**:
   - **🧹 Complete Purge of Duplicate Inline Buttons & Redundant Menus**:
     * **Purged 8 Duplicate Buttons from Dashboard**: Eliminated the redundant inline buttons (`Connect Account`, `Mining Pools`, `Watch Ads`, `Daily Bonus`, `VIP Passes`, `My Accounts`, `Invite Friends`) that previously repeated the bottom keyboard options in the message body. Dashboard message now presents a single, elegant `[🚀 Open Web App Mining Console ⚡]` button pointing to `https://agy-henna.vercel.app/miner`.

@@ -229,19 +229,18 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 
   - **User Bot Identity**: `@AAAPREMIUMAPPSbot` (Bot ID: `8167732110`, Token: `USER_BOT_TOKEN: [REDACTED]`)
     - Name: *AAA AUTO MINING (PREMIUM)*
-    - Live Webhook: `https://restore-agy.aaaai2.workers.dev/user-bot-webhook` (Multi-Edge Mesh on Cloudflare Worker Node 1)
-    - Role: Multi-bot cloud mining platform, modern dashboard (modeled after `@Allbottesting_bot`), per-pool management across 5 pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network), frictionless WebApp URL / `initData` query string account connector (0 SMS codes) with 24h expiration guard, Points economy (100 Pts/day), Rewarded Adsgram/Monetag video ads (+20 Pts), milestone slots (+1 slot per 50 ads), and Telegram Stars VIP passes.
-  - **Supported Mining Pools (10 Active High-Yield Pools)**:
+    - Live Webhook: `https://restore-agy.agorameet.workers.dev/user-bot-webhook` (Multi-Edge Mesh on Cloudflare Worker Node 4)
+    - Role: Multi-bot cloud mining platform, modern dashboard (modeled after `@Allbottesting_bot`), per-pool management across 9 pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI), frictionless WebApp URL / `initData` query string account connector (0 SMS codes) with 24h expiration guard, Points economy (100 Pts/day), Rewarded Adsgram/Monetag video ads (+20 Pts), milestone slots (+1 slot per 50 ads), and Telegram Stars VIP passes.
+  - **Supported Mining Pools (9 Active High-Yield Pools)**:
     1. ⚡ **MRG Miner** (`@mrgminerbot`)
     2. 🪙 **ATF Miner** (`@ATF_AIRDROP_bot`)
     3. 🏢 **Victor's Company** (`@VictorsCompanybot`)
     4. 💧 **VyroDrop** (`@vyrodrop_bot`)
     5. 🌐 **Kynex Network** (`@kynexnetworkbot`)
     6. ⛏️ **DiggoMiner** (`@Diggominer_bot`)
-    7. 🍃 **LeafEarn** (`@LeafEarnBot`)
-    8. ⭐ **Astra Airdrop** (`@ASTRA_AIRDROP_BOT`)
-    9. 🐸 **PepeGram** (`@Pepe_gram_bot`)
-    10. 💎 **AdxEarn AI** (`@AdxEarnAibot`)
+    7. ⭐ **Astra Airdrop** (`@ASTRA_AIRDROP_BOT`)
+    8. 🐸 **PepeGram** (`@Pepe_gram_bot`)
+    9. 💎 **AdxEarn AI** (`@AdxEarnAibot`)
   - **User WebApp Mini App Frontend**: `https://agy-henna.vercel.app/` (Ads Portal) & `https://agy-henna.vercel.app/miner` (Vector SVG Multi-Miner Dashboard) & `https://restore-agy.aaaai2.workers.dev/app` (Cloudflare Worker Node 1) & `https://atf-miner-app.pages.dev` (Cloudflare Pages)
     - Architecture: Ultra-modern responsive cyberpunk glassmorphic Mini App improving upon `@Allbottesting_bot` with 5 pools (⚡ MRG, 🪙 ATF, 🏢 Victor's Company, 💧 VyroDrop, 🌐 Kynex Network), real-time client-side `#tgWebAppData=...` parser, 24/7 cloud mining telemetry, Rewarded Video Ad player (Monetag + GigaPub), Daily Streak Claim (+100 Pts/d), 50-ad permanent slot milestone tracker, and Telegram Stars VIP passes.
   - **User Distributed Mining Engine & REST APIs**: `https://restore-agy.aaaai2.workers.dev/api/user/` (Endpoints: `/profile`, `/account/add`, `/account/remove`, `/claim-daily`, `/claim-ad`)

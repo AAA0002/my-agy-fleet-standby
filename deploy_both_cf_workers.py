@@ -11771,25 +11771,22 @@ Reply to Arif naturally:`;
 
           // E. Process Standard Bot Commands & Menu Buttons
 
-          // 0.0 Executive Admin Router (/admin, /dashboard, /users, "👑 User Admin Dashboard", "👑 Admin Console")
-          if (text === "👑 User Admin Dashboard" || text === "👑 User Admin Console" || text === "👑 Admin Console" || text === "⚡ Executive Console" || text === "/admin" || text.startsWith("/admin") || text === "/dashboard" || text.startsWith("/dashboard") || text === "/users" || text.startsWith("/users")) {
+          // 0.0 Executive Admin Router (/admin, "👑 User Admin Dashboard")
+          if (text === "👑 User Admin Dashboard" || text === "👑 User Admin Console" || text === "👑 Admin Console" || text === "⚡ Executive Console" || text === "/admin" || text.startsWith("/admin ") || text === "/users_admin") {
             if (String(chatId) !== "6727787768" && String(chatId) !== (env.OWNER_ID || "6727787768")) {
               await sendUserReply("⚠️ Access restricted to Platform Administrator Arif.", activeUserKeyboard);
               return;
             }
-            const adminMsg = `👑 *USER BOT ADMIN CONSOLE (DASHBOARD 2)* 🚀\n\n` +
-              `Hello Commander Arif! Here is your dedicated *User Bot Admin Dashboard* for managing community miners, accounts, and points:\n\n` +
+            const adminMsg = `👑 *USER BOT ADMIN CONSOLE* ⚡\n\n` +
+              `Hello Commander Arif! Here is your dedicated *User Bot Admin Dashboard*:\n\n` +
               `• 👥 *Miners Hub:* Community accounts & balances\n` +
               `• 💎 *Points Economy:* Daily cost sweeps & grants\n` +
               `• 🛡️ *Moderation:* Ban/Unban & VIP passes\n` +
-              `• 🔐 *Biometrics & Supabase:* Protected by WebAuthn Passkey + Master Password\n` +
-              `• 🌐 *Dedicated Node 1 Cloudflare Account:* Zero ads, pure admin console\n\n` +
-              `👇 *Tap button below to launch the User Bot Admin Dashboard:*`;
+              `• 🔐 *Biometrics & Supabase:* WebAuthn Passkey protected\n\n` +
+              `👇 *Tap below to launch the Admin Dashboard:*`;
             await sendUserReply(adminMsg, {
               inline_keyboard: [
-                [{ text: "🚀 Open Admin Dashboard (Node 1 Pages)", web_app: { url: "https://aaa-admin-portal.pages.dev/" } }],
-                [{ text: "🤖 Open Admin Dashboard (Node 5 Pages)", web_app: { url: "https://aaa-ai-engine.pages.dev/" } }],
-                [{ text: "🌐 Open Admin Dashboard (Vercel Mirror)", web_app: { url: "https://agy-aaa000.vercel.app/" } }]
+                [{ text: "👑 Launch Admin Dashboard ⚡", web_app: { url: "https://aaa-admin-portal.pages.dev/" } }]
               ]
             });
             return;
@@ -11800,12 +11797,16 @@ Reply to Arif naturally:`;
             const helpMsg = `📖 *AAA CLOUD MINING — COMPREHENSIVE USER GUIDE* 🤖\n` +
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Hello ${senderName}! Here is your complete guide to automated cloud mining:\n\n` +
-              `🤖 *5 Automated Mining Pools & Links:*\n` +
+              `🤖 *9 Automated Mining Pools & Links:*\n` +
               `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier TON AI mining (4h cycle)\n` +
               `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming (24h cycle)\n` +
               `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level solar & arcade yield (8h cycle)\n` +
               `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining (12h cycle)\n` +
-              `5️⃣ 🌐 [Kynex Network](https://t.me/kynexnetworkbot) — Decentralized TON edge node mining (12h cycle)\n\n` +
+              `5️⃣ 🌐 [Kynex Network](https://t.me/kynexnetworkbot) — Decentralized TON edge node mining (12h cycle)\n` +
+              `6️⃣ ⛏️ [DiggoMiner](https://t.me/Diggominer_bot) — High-hashrate block mining (3h cycle)\n` +
+              `7️⃣ ⭐ [Astra Airdrop](https://t.me/ASTRA_AIRDROP_BOT) — Multi-cloud star farming (4h cycle)\n` +
+              `8️⃣ 🐸 [PepeGram](https://t.me/Pepe_gram_bot) — Meme token cloud mining (3h cycle)\n` +
+              `9️⃣ 💎 [AdxEarn AI](https://t.me/AdxEarnAibot) — AI computational mining node (3h cycle)\n\n` +
               `1️⃣ *How to Connect & Remove Accounts*\n` +
               `• *Method A (Mini App Link):* Launch any bot, tap ⋮ (three dots) -> Copy Link, then tap *➕ Connect Account* and paste!\n` +
               `• *Method B (Phone & PIN Pad):* Send phone number and enter 5-digit code via our secure PIN Pad.\n` +
