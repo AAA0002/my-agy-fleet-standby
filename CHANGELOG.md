@@ -8,6 +8,7 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
     * Installed `tmux 3.6` inside Ubuntu 26.04 PRoot environment.
     * Engineered `run_protected_agy.sh` with automatic `termux-wake-lock` acquisition and `tmux` session management (`agy`), allowing seamless reattachment whenever Termux is reopened.
     * Upgraded `ubuntu-agy` launcher script in Termux with automated wake-lock execution and tmux fallback.
+    * Configured automatic `tmux` auto-attach for `agy` and `ubuntu-agy` across Termux `.bashrc`, symlinks, and Ubuntu `/etc/bash.bashrc`, allowing typing `agy` from anywhere to seamlessly connect to the persistent tmux session.
     * Confirmed strictly 0 background Python mining processes running locally on the phone (Rule 4: Zero Phone Load).
   - **🧹 LeafEarn Elimination & 9-Bot Harmonization in Cloudflare Workers (`deploy_both_cf_workers.py`)**:
     * Completely purged `farmLeafearn` function, cooldown dictionary entry, and execution pipeline from Cloudflare Workers edge script.

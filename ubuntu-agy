@@ -3,14 +3,34 @@
 # Launches Antigravity CLI inside Ubuntu container with TMUX & WakeLock
 # =============================================================================
 
-# 1. Keep Android CPU awake
+# 1. Keep Android CPU awake so screen-off or background doesn't sleep
 if [ -x /data/data/com.termux/files/usr/bin/termux-wake-lock ]; then
     /data/data/com.termux/files/usr/bin/termux-wake-lock 2>/dev/null
 fi
 
-# 2. Launch inside Ubuntu with tmux persistence
+# 2. Automatically launch or attach to protected tmux session inside Ubuntu
 if [ $# -gt 0 ]; then
-    proot-distro login ubuntu --bind /data/data/com.termux/files/home:/root/workspace --work-dir /root/workspace -- /usr/local/bin/agy "$@"
+    exec proot-distro login ubuntu --bind /data/data/com.termux/files/home:/root/workspace --work-dir /root/workspace -- bash -c '
+        if [ -n "$TMUX" ]; then
+            exec /usr/local/bin/agy "$@"
+        elif tmux has-session -t agy 2>/dev/null; then
+            echo "🔄 Reattaching to active Antigravity session in tmux..."
+            exec tmux attach-session -t agy
+        else
+            echo "🚀 Starting Antigravity inside protected tmux session..."
+            exec tmux new-session -s agy "/usr/local/bin/agy \"$@\""
+        fi
+    ' -- "$@"
 else
-    proot-distro login ubuntu --bind /data/data/com.termux/files/home:/root/workspace --work-dir /root/workspace -- /root/workspace/run_protected_agy.sh
+    exec proot-distro login ubuntu --bind /data/data/com.termux/files/home:/root/workspace --work-dir /root/workspace -- bash -c '
+        if [ -n "$TMUX" ]; then
+            exec /usr/local/bin/agy
+        elif tmux has-session -t agy 2>/dev/null; then
+            echo "🔄 Reattaching to active Antigravity session in tmux..."
+            exec tmux attach-session -t agy
+        else
+            echo "🚀 Starting Antigravity inside protected tmux session..."
+            exec tmux new-session -s agy "/usr/local/bin/agy"
+        fi
+    '
 fi
