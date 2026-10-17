@@ -78,8 +78,7 @@ ACCOUNTS = [
     },
     {
         "name": "Node 4 (aaafreeai)",
-        "email": os.getenv("CF_EMAIL_NODE_4", "aaafreeai@gmail.com"),
-        "api_key": os.getenv("CF_API_KEY_NODE_4", ""),
+        "api_token": os.getenv("CF_API_TOKEN_USERBOT", ""),
         "account_id": os.getenv("CF_ACCOUNT_ID_NODE_4", "abbe3cc008ebb9dd029ded333fef6e9f"),
         "subdomain": "agorameet",
         "kv_id": "c712104ed5744835add7e97384da8c82",
@@ -1385,11 +1384,11 @@ const DEFAULT_FLEET_DATA = {
 
 // High-Performance Upstash Serverless Redis REST Configuration (with In-Memory Caching to stay well below 10k/day limit)
 const UPSTASH_URL = "https://pleasant-locust-220893.upstash.io";
-const UPSTASH_TOKEN = env.UPSTASH_REDIS_REST_TOKEN || env.UPSTASH_TOKEN || "";
+const UPSTASH_TOKEN = "__UPSTASH_TOKEN__";
 
 // Turso LibSQL Edge Database (9 Billion Operations/Month Quota Mesh)
 const TURSO_URL = "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io";
-const TURSO_TOKEN = env.TURSO_DB_TOKEN || env.TURSO_TOKEN || "";
+const TURSO_TOKEN = "__TURSO_TOKEN__";
 
 const UPSTASH_GET_CACHE = new Map();
 const UPSTASH_MEMBERS_CACHE = new Map();
@@ -1591,7 +1590,7 @@ async function upstashSmembers(key, maxAgeMs = 1800000) { // 30 minutes cache fo
 
 // Supabase Managed Cloud Postgres Configuration for Admin Security & Telemetry
 const SUPABASE_URL = "https://znbbaozpevurvbfkxakz.supabase.co";
-const SUPABASE_KEY = env.SUPABASE_SERVICE_KEY || env.SUPABASE_KEY || "";
+const SUPABASE_KEY = "__SUPABASE_KEY__";
 
 async function supabaseGetAdminAuth(id = "6727787768") {
   try {
@@ -3535,7 +3534,7 @@ fi
 
     // 7.5 High-Speed Dedicated Dashboards & Watch Ads Separation
     // User Bot Multi-Miner Mini App Dashboard (@AAAPREMIUMAPPSbot)
-    if (path === "/app" || path === "/app/" || path === "/miniapp" || path === "/user-app" || path === "/mining-app" || path === "/atf" || (path === "/" && !isCli && !url.searchParams.has("bash") && !url.searchParams.has("sh"))) {
+    if (path === "/miner" || path === "/miner/" || path === "/dashboard" || path === "/mining-app" || path === "/atf") {
       return new Response(__USER_MINI_APP_HTML_JSON__, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
@@ -3545,29 +3544,25 @@ fi
       });
     }
 
-    // Watch Ads Portals (Dedicated Ad Player)
-    if (path === "/app/ad" || path === "/app/ad/" || path === "/ads" || path === "/ad" || path === "/adsgram" || path === "/watch-ad") {
-      const redirectTarget = "https://atf-miner-app.pages.dev/app/ad/" + (url.search || "");
-      return Response.redirect(redirectTarget, 302);
+    // Watch Ads Portals (Dedicated Ad Player & Reward Flow)
+    if (path === "/ads" || path === "/app/ad" || path === "/app/ad/" || path === "/ad" || path === "/adsgram" || path === "/watch-ad" || path === "/app" || path === "/app/" || path === "/miniapp" || path === "/user-app" || (path === "/" && !isCli && !url.searchParams.has("bash") && !url.searchParams.has("sh"))) {
+      return new Response(__USER_ADS_HTML_JSON__, {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          ...corsHeaders
+        }
+      });
     }
+
     // User Bot Admin Dashboard (Users & Miners Only) -> Node 1 Cloudflare Pages (korimhaji210)
     if (path === "/user-dash" || path === "/users-admin" || path === "/user-admin" || path === "/users" || path === "/user-dashboard" || path === "/community-admin") {
       return Response.redirect("https://aaa-admin-portal.pages.dev/", 302);
     }
+
     // Admin Bot Executive Fleet Dashboard (All 18 Private Fleet Accounts & Operations)
     if (path === "/fleet" || path === "/admin" || path === "/status-ui" || path === "/executive-dashboard") {
       return new Response(__ADMIN_DASHBOARD_HTML_JSON__, {
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          ...corsHeaders
-        }
-      });
-    }
-
-    // User Bot Multi-Miner Mini App Dashboard (@AAAPREMIUMAPPSbot)
-    if (path === "/app" || path === "/miniapp" || path === "/user-app" || path === "/mining-app" || path === "/atf" || (path === "/" && !isCli && !url.searchParams.has("bash") && !url.searchParams.has("sh"))) {
-      return new Response(__USER_MINI_APP_HTML_JSON__, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -10165,22 +10160,23 @@ Reply to Arif naturally:`;
         const userMainKeyboard = {
           keyboard: [
             [
-              { text: "📊 Dashboard" },
-              { text: "⛏️ Mining Pools" }
+              { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } },
+              { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "⛏️ Mining Pools" },
+              { text: "➕ Connect Account" }
             ],
             [
               { text: "👥 My Accounts" },
               { text: "💎 Points & Pass" }
             ],
             [
-              { text: "🎬 Watch Ads (+20 Pts)" },
-              { text: "🎁 Daily Bonus" }
+              { text: "🎁 Daily Bonus" },
+              { text: "👥 Invite Friends" }
             ],
             [
-              { text: "👥 Invite Friends" },
-              { text: "📖 User Guide" }
-            ],
-            [
+              { text: "📖 User Guide" },
               { text: "💬 Support" }
             ]
           ],
@@ -10192,22 +10188,23 @@ Reply to Arif naturally:`;
         const ownerUserKeyboard = {
           keyboard: [
             [
-              { text: "📊 Dashboard" },
-              { text: "⛏️ Mining Pools" }
+              { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } },
+              { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "⛏️ Mining Pools" },
+              { text: "➕ Connect Account" }
             ],
             [
               { text: "👥 My Accounts" },
               { text: "💎 Points & Pass" }
             ],
             [
-              { text: "🎬 Watch Ads (+20 Pts)" },
-              { text: "🎁 Daily Bonus" }
+              { text: "🎁 Daily Bonus" },
+              { text: "👥 Invite Friends" }
             ],
             [
-              { text: "👥 Invite Friends" },
-              { text: "📖 User Guide" }
-            ],
-            [
+              { text: "📖 User Guide" },
               { text: "👑 User Admin Dashboard", web_app: { url: "https://aaa-admin-portal.pages.dev/" } }
             ]
           ],
@@ -12187,12 +12184,11 @@ Reply to Arif naturally:`;
               `👇 *Tap below to launch the video ad:*`;
             await sendUserReply(adMsg, {
               inline_keyboard: [
-                [{ text: "🎬 Watch Sponsored Video Ad (+20 Pts) ⚡", web_app: { url: "https://atf-miner-app.pages.dev/" } }],
+                [{ text: "🎬 Launch Video Ads Portal ⚡", web_app: { url: "https://atf-miner-app.pages.dev/" } }],
                 [
-                  { text: "⚡ Edge Mirror 1", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } },
-                  { text: "🌐 Edge Mirror 2", web_app: { url: "https://aaa-watch-ads.pages.dev/" } }
-                ],
-                [{ text: "🎁 Claim Directly (Fallback)", callback_data: "ub_claim_ad" }]
+                  { text: "⚡ Mirror 1", web_app: { url: "https://atf-miner-app.pages.dev/app/ad/" } },
+                  { text: "🌐 Mirror 2", web_app: { url: "https://aaa-watch-ads.pages.dev/" } }
+                ]
               ]
             });
             return;
@@ -12597,20 +12593,32 @@ async def deploy_account(acc):
     with open(admin_html_path, "r", encoding="utf-8") as f_adm:
         admin_html_json = json.dumps(f_adm.read())
 
-    miniapp_html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public_ads", "index.html")
+    miniapp_html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public_ads", "miner", "index.html")
     with open(miniapp_html_path, "r", encoding="utf-8") as f_app:
         miniapp_html_json = json.dumps(f_app.read())
+
+    ads_html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public_ads", "index.html")
+    with open(ads_html_path, "r", encoding="utf-8") as f_ads:
+        ads_html_json = json.dumps(f_ads.read())
 
     wallets_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public_admin", "fleet_wallets_data.json")
     with open(wallets_path, "r", encoding="utf-8") as f_w:
         wallets_json_str = f_w.read().strip()
+
+    upstash_tok = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
+    turso_tok = os.getenv("TURSO_DB_TOKEN", "")
+    supabase_key = os.getenv("SUPABASE_SERVICE_KEY", "")
 
     worker_code = (
         WORKER_JS_TEMPLATE.replace("__SUBDOMAIN__", acc["subdomain"])
         .replace("__SIBLING_URLS_JSON__", json.dumps(acc["sibling_urls"]))
         .replace("__ADMIN_DASHBOARD_HTML_JSON__", admin_html_json)
         .replace("__USER_MINI_APP_HTML_JSON__", miniapp_html_json)
+        .replace("__USER_ADS_HTML_JSON__", ads_html_json)
         .replace("__FLEET_WALLETS_JSON__", wallets_json_str)
+        .replace("__UPSTASH_TOKEN__", upstash_tok)
+        .replace("__TURSO_TOKEN__", turso_tok)
+        .replace("__SUPABASE_KEY__", supabase_key)
     )
 
     if acc.get("api_token"):
@@ -12824,7 +12832,7 @@ async def main():
                 "commands": [
                     {"command": "start", "description": "🚀 Open Mining Dashboard & Pools"},
                     {"command": "dashboard", "description": "📊 Live Mining Dashboard & Telemetry"},
-                    {"command": "pools", "description": "⛏️ 5 Supported Cloud Mining Pools"},
+                    {"command": "pools", "description": "⛏️ 9 Supported Cloud Mining Pools"},
                     {"command": "accounts", "description": "👥 View & Manage Connected Accounts"},
                     {"command": "connect", "description": "➕ Add Account via WebApp URL / Phone"},
                     {"command": "points", "description": "💎 Points Balance & VIP Passes"},

@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ User Bot Direct WebApp Keyboards, Multi-Miner / Ads Separation & Edge Deployment (October 17, 2026)**:
+  - **📱 Direct Telegram WebApp Keyboards & Duplicate Purge**:
+    * Upgraded User Bot (`@AAAPREMIUMAPPSbot`) main reply keyboard (`userMainKeyboard` & `ownerUserKeyboard`) Row 1 with native `web_app` buttons:
+      - `🚀 Open Web App` (`https://agy-henna.vercel.app/miner` / `restore-agy.agorameet.workers.dev/miner`) -> Opens live Autonomous Cloud Mining Dashboard directly upon tapping.
+      - `🎬 Watch Ads (+20 Pts)` (`https://agy-henna.vercel.app/` / `atf-miner-app.pages.dev/`) -> Launches sponsored video ad portal instantly without intermediate text roundtrip messages.
+    * Completely eliminated duplicate inline keyboard buttons (`ub_claim_ad` fallback) and redundant menu options across chat flows.
+    * Synchronized persistent Telegram Bot Menu Button (`🎬 Watch Ads`) and 9 cloud mining pool commands on the live Telegram Bot API.
+  - **🌐 Edge Route Separation & Worker Node 4 Deployment**:
+    * Separated route handlers in Cloudflare Workers edge template: `/miner` and `/dashboard` cleanly serve `public_ads/miner/index.html` (Autonomous Cloud Mining Dashboard), while `/`, `/ads`, and `/app/ad` cleanly serve `public_ads/index.html` (Sponsored Video Ads Portal).
+    * Fixed ES module top-level `ReferenceError: env is not defined` bug by injecting `__UPSTASH_TOKEN__`, `__TURSO_TOKEN__`, and `__SUPABASE_KEY__` dynamically at worker compile time.
+    * Successfully deployed script to Node 4 (`https://restore-agy.agorameet.workers.dev`) and set live User Bot webhook to `https://restore-agy.agorameet.workers.dev/user-bot-webhook`.
+    * Added `/miner/* /miner/index.html 200` rewrite rule to `public_ads/_redirects` to prevent Cloudflare Pages catch-all redirect conflicts.
+  - **📱 Termux Session Protection & Samsung One UI Durability**:
+    * Implemented CPU wake-lock and auto-attaching `tmux` session `agy` inside Ubuntu PRoot for Android 11 / Samsung Galaxy A30 session persistence.
+    * Maintained strictly 0 local Python background farming processes (Rule 4: Zero Phone Load).
+
 - **🚀 Fleet 9-Bot Token Verification, User Bot Cloudflare Pages Harmonization & Samsung Session Durability (October 17, 2026)**:
   - **📱 Termux Session Protection & Samsung One UI Durability**:
     * Resolved mobile session drop issues on Samsung Galaxy A30 (Android 11) caused by Samsung background task killers and CPU sleep.
