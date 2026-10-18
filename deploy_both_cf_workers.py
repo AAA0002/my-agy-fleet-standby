@@ -4473,7 +4473,7 @@ fi
               { text: "👥 Fleet Accounts" }
             ],
             [
-              { text: "⚡ 10-Bot Harvest" },
+              { text: "⚡ 9-Bot Harvest" },
               { text: "💼 Multi-Chain Wallets" }
             ],
             [
