@@ -1524,7 +1524,7 @@ async function upstashExpire(key, seconds) {
 }
 
 async function upstashGet(key, maxAgeMs = 900000) { // 15 minutes default cache to protect 10k/day quota
-  if (key.startsWith("login_flow:") || key.startsWith("last_login_phone:") || key.startsWith("fleet:lock:") || key.startsWith("fleet:pending_action") || key.startsWith("tg_login_flow:")) {
+  if (key.startsWith("login_flow:") || key.startsWith("last_login_phone:") || key.startsWith("fleet:lock:") || key.startsWith("fleet:pending_action") || key.startsWith("tg_login_flow:") || key.startsWith("ub_user:") || key.startsWith("fleet:daily_ads:")) {
     maxAgeMs = 0; // Interactive real-time flow keys bypass caching completely
   }
   const cached = UPSTASH_GET_CACHE.get(key);

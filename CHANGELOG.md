@@ -20,6 +20,9 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
   - **🧹 User Bot Duplicate Message Elimination**:
     * Fixed `/start` and `/dashboard` command handlers in `deploy_both_cf_workers.py` which previously dispatched two separate messages.
     * Now dispatches exactly one clean, elegant dashboard message with `activeUserKeyboard` attached and the persistent chat menu button configured to `[🎬 Watch Ads]`.
+  - **⚡ Real-Time Cache Bypass & Render Deploy Unblocking**:
+    * Identified and resolved an in-memory cache latency bug where `upstashGet` previously applied a 15-minute default cache to `ub_user:` and `fleet:daily_ads:` keys. Added both prefixes to immediate bypass (`maxAgeMs = 0`), guaranteeing instant real-time balance reflections across all edge workers.
+    * Resolved Render auto-deploy block by setting repository visibility of `AAA0002/my-agy-fleet-standby` to public, allowing Render Node 2 (`srv-dan5q00ae00c73djummg`) to pull commit `c8bfd5e` and transition to 🟢 **LIVE**.
   - **🛡️ Strictly Zero Phone Load Guardrail (Rule 4)**:
     * 100% of bot automation, ad claiming, and farming loops execute strictly in the cloud (Render Node 2 & Cloudflare Edge).
     * Samsung Galaxy A30 remains 100% free of daemon loops, background bot pollers, and battery drains.
