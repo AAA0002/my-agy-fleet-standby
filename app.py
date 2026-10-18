@@ -5505,7 +5505,7 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                         logger.warning(f"[Farm Task] On-the-fly extraction note for {uid_str}: {ex_e}")
                 try:
                     res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=force), timeout=120.0)
-                    if isinstance(res, dict) and any(("token_expired" in str(v).lower() or "not_registered" in str(v).lower()) for v in res.get("bots", {}).values()):
+                    if isinstance(res, dict) and any(("token_expired" in str(v).lower() or "token_invalid" in str(v).lower() or "unauthorized" in str(v).lower()) for v in res.get("bots", {}).values()):
                         if a_dict.get("session_string") or a_dict.get("session"):
                             try:
                                 fresh_toks = await asyncio.wait_for(extract_tokens_for_account(a_dict), timeout=45.0)
