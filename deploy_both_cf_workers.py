@@ -2612,7 +2612,7 @@ fi
       memHeartbeat = heartbeat;
 
       // KV WRITE SAVER: Throttle to at most once per 30 minutes (max 48 writes/day on primary node only)
-      let shouldWrite = (CURRENT_SUBDOMAIN === "aaaai2") && (Date.now() - lastHeartbeatKvWrite >= 1800000);
+      let shouldWrite = (CURRENT_SUBDOMAIN === "aaaai2" || CURRENT_SUBDOMAIN === "agorameet") && (Date.now() - lastHeartbeatKvWrite >= 1800000);
       if (shouldWrite) {
         lastHeartbeatKvWrite = Date.now();
         try {
@@ -2647,7 +2647,7 @@ fi
 
         // 3. KV WRITE SAVER: Throttle to at most once per 30 minutes on primary node only
         let kvWritten = false;
-        if (CURRENT_SUBDOMAIN === "aaaai2" && (Date.now() - lastFleetKvWrite >= 1800000)) {
+        if ((CURRENT_SUBDOMAIN === "aaaai2" || CURRENT_SUBDOMAIN === "agorameet") && (Date.now() - lastFleetKvWrite >= 1800000)) {
           lastFleetKvWrite = Date.now();
           kvWritten = true;
           try {
@@ -3720,7 +3720,7 @@ fi
           current[k] = sanitizeTokens(v);
         }
         memTokens = current;
-        if (CURRENT_SUBDOMAIN === "aaaai2" && (Date.now() - lastMiniappTokensKvWrite >= 3600000)) {
+        if ((CURRENT_SUBDOMAIN === "aaaai2" || CURRENT_SUBDOMAIN === "agorameet") && (Date.now() - lastMiniappTokensKvWrite >= 3600000)) {
           lastMiniappTokensKvWrite = Date.now();
           try {
             await env.BACKUP_KV.put("miniapp_tokens", JSON.stringify(current));
@@ -13106,7 +13106,7 @@ Reply to Arif naturally:`;
         if (!tokens) return;
 
         // 3.3 Keep-alive sentinel ping to Primary Render Node 2 (keeps MTProto gateway warm for instant OTP/login)
-        if (CURRENT_SUBDOMAIN === "aaaai2") {
+        if (CURRENT_SUBDOMAIN === "aaaai2" || CURRENT_SUBDOMAIN === "agorameet") {
           fetch("https://my-agy-fleet-standby-node2.onrender.com/health", {
             method: "GET",
             headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
@@ -13351,7 +13351,7 @@ async def deploy_account(acc):
         # Standby failover nodes (2, 3, 4, 5) get [] (no cron) to prevent hitting 1,000 daily KV write limits.
         try:
             sched_url = f"https://api.cloudflare.com/client/v4/accounts/{acc['account_id']}/workers/scripts/{WORKER_NAME}/schedules"
-            cron_payload = [{"cron": "*/15 * * * *"}] if acc.get("subdomain") == "aaaai2" else []
+            cron_payload = [{"cron": "*/15 * * * *"}] if acc.get("subdomain") in ("aaaai2", "agorameet") else []
             async with session.put(sched_url, headers=headers, json=cron_payload) as resp_sched:
                 res_sched = await resp_sched.json()
                 if res_sched.get("success"):
@@ -13380,17 +13380,28 @@ async def main():
     print("  🔧 Synchronizing Telegram Bot Menu Button & Commands...")
     print("=" * 60)
     async with aiohttp.ClientSession() as session:
-        # 0. Preserve official Telegram Serverless webhook for Admin Bot (@myagyai)
+        # 0. Ensure official Telegram webhook for Admin Bot (@myagyai)
         try:
+            admin_target_wh = "https://restore-agy.agorameet.workers.dev/telegram-webhook"
             async with session.get(f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/getWebhookInfo") as resp:
                 cur_wh = await resp.json()
                 cur_url = (cur_wh.get("result") or {}).get("url", "")
-                if "cloud.telegram.org" in cur_url:
-                    print(f"📡 Admin Bot Webhook: Preserved on Telegram Serverless ({cur_url})")
+                if cur_url != admin_target_wh:
+                    print(f"📡 Setting Admin Bot Webhook to {admin_target_wh}...")
+                    async with session.post(
+                        f"https://api.telegram.org/bot{ALERT_BOT_TOKEN}/setWebhook",
+                        json={
+                            "url": admin_target_wh,
+                            "allowed_updates": ["message", "edited_message", "callback_query"],
+                            "drop_pending_updates": False
+                        }
+                    ) as s_resp:
+                        s_data = await s_resp.json()
+                        print(f"📡 Admin Bot Webhook bound: {s_data.get('ok')} ({s_data.get('description')})")
                 else:
-                    print(f"📡 Admin Bot Webhook current: {cur_url}")
+                    print(f"📡 Admin Bot Webhook current & healthy: {cur_url}")
         except Exception as e:
-            print(f"⚠️ Error checking webhooks: {e}")
+            print(f"⚠️ Error setting admin bot webhook: {e}")
 
         # 1. USER BOT STRICT IMMUTABILITY (RULE 1 & USER DIRECTIVE)
         # The User Bot (@AAAPREMIUMAPPSbot) is strictly reserved for end-users and must NEVER be modified or redeployed.

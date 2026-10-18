@@ -5228,24 +5228,25 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         ends_at = int(sp_d["ends_at"])
 
                 # 5. Free Power Boosts (Ad rolls & Slot spins)
-                await jitter(0.3, 0.7)
-                await safe_post(f"{pepe_base}/tasks/ad-roll?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers)
-                await safe_post(f"{pepe_base}/tasks/ad-roll2?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers)
-                await safe_post(f"{pepe_base}/tasks/slot-spin?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers)
+                await jitter(0.2, 0.5)
+                await safe_post(f"{pepe_base}/tasks/ad-roll?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers, timeout_sec=4, retries=1)
+                await safe_post(f"{pepe_base}/tasks/ad-roll2?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers, timeout_sec=4, retries=1)
+                await safe_post(f"{pepe_base}/tasks/slot-spin?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers, timeout_sec=4, retries=1)
 
-                # 6. Tasks list & claim
-                await jitter(0.4, 0.8)
-                _, t_data = await safe_get(f"{pepe_base}/tasks?initData={urllib.parse.quote(p_init)}&tid=1449", req_headers=pepe_headers)
+                # 6. Tasks list & claim (cap to 3 per cycle with fast timeouts)
+                await jitter(0.2, 0.5)
+                _, t_data = await safe_get(f"{pepe_base}/tasks?initData={urllib.parse.quote(p_init)}&tid=1449", req_headers=pepe_headers, timeout_sec=4, retries=1)
                 if isinstance(t_data, dict) and t_data.get("tasks"):
-                    for tk in t_data["tasks"]:
+                    unclaimed = [tk for tk in t_data["tasks"] if not tk.get("completed") and not tk.get("pending")]
+                    for tk in unclaimed[:3]:
                         tk_id = tk.get("id")
-                        if tk_id and not tk.get("completed") and not tk.get("pending"):
-                            await jitter(0.3, 0.7)
-                            await safe_post(f"{pepe_base}/tasks/claim?tid=1449", {"initData": p_init, "tid": 1449, "taskId": tk_id}, req_headers=pepe_headers)
+                        if tk_id:
+                            await jitter(0.2, 0.4)
+                            await safe_post(f"{pepe_base}/tasks/claim?tid=1449", {"initData": p_init, "tid": 1449, "taskId": tk_id}, req_headers=pepe_headers, timeout_sec=4, retries=1)
 
                 # 7. Team / Referral Commission Harvest
-                await jitter(0.3, 0.6)
-                await safe_post(f"{pepe_base}/claim?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers)
+                await jitter(0.2, 0.4)
+                await safe_post(f"{pepe_base}/claim?tid=1449", {"initData": p_init, "tid": 1449}, req_headers=pepe_headers, timeout_sec=4, retries=1)
 
                 status["bots"]["pepegram"] = f"farmed (power: {power_val}, hashes: {hashes_val}, active_until: {ends_at})"
                 return
@@ -5408,7 +5409,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         async with sem_bot:
             try:
                 await jitter(0.2, 0.6)
-                await asyncio.wait_for(b["fn"](), timeout=45.0)
+                await asyncio.wait_for(b["fn"](), timeout=60.0)
                 # Store randomized cooldown: 2h-8h on success, 3m-5m retry on error/expired
                 bot_res = str(status["bots"].get(b_name, "")).lower()
                 is_success = bot_res.startswith("farmed") or bot_res.startswith("ok")
@@ -5422,7 +5423,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     except Exception:
                         pass
             except asyncio.TimeoutError:
-                status["bots"][b_name] = "timeout (45s)"
+                status["bots"][b_name] = "timeout (60s)"
                 fail_cd = random.randint(180, 300)
                 FLEET_LAST_FARM_CACHE[f"{b_name}:{uid}"] = json.dumps({"timestamp": now_ts, "cooldown": fail_cd})
             except Exception as err:
@@ -5448,7 +5449,16 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
 
     try:
         if accounts is None:
-            accounts = await fetch_accounts_from_cloud()
+            raw_accs = await fetch_accounts_from_cloud()
+            accounts = [
+                a for a in raw_accs
+                if str(a.get("user_id")) in {
+                    "6727787768", "8881914294", "7648254021", "8826375659", "8450010161",
+                    "8782429452", "7734849205", "8025472383", "8851426148", "8203342513",
+                    "8190649727", "7487048946", "8741547543", "8727040932", "7749125802",
+                    "7954290138", "8841038141", "8975442879"
+                } or a.get("session_string") or a.get("session") or (tokens_map and any(str(a.get("user_id")) in k for k in tokens_map.keys()))
+            ]
         if not accounts:
             return {"ok": False, "message": "No accounts found for farming cycle", "farmed_count": 0}
 

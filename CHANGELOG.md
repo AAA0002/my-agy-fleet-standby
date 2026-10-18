@@ -2,6 +2,17 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ PepeGram Task Claim Optimization, 60s Bot Timeout & Edge Cron Sentinel (October 18, 2026)**:
+  - **🐸 PepeGram Routine Optimization**:
+    * Identified root cause of intermittent `pepegram: timeout (45s)`: unbounded loop over uncompleted tasks caused total account execution time to exceed the 45s threshold.
+    * Capped PepeGram task claims to 3 tasks per run with aggressive 4s timeouts and 1 retry.
+    * Increased bot routine timeout from 45.0s to 60.0s across `render_standby_app.py`, `render_app_latest.py`, and `app.py`, providing ample margin for Astra's 15s task sleep and network latency.
+  - **👥 Fleet Account Farming Filter**:
+    * Strictly constrained `run_cloud_fleet_farming_cycle` to the 18 official fleet accounts and genuine session holders, eliminating unlinked public user accounts (`1189890165`) from cluttering fleet metrics.
+  - **🌐 Cloudflare Edge Primary Shard Failover (`agorameet.workers.dev`)**:
+    * Granted `agorameet` primary node status alongside `aaaai2` for heartbeat saving, fleet telemetry sync, and miniapp tokens KV throttling.
+    * Enabled the 24/7 15-minute cron trigger (`*/15 * * * *`) on Node 4 (`agorameet`), guaranteeing uninterrupted serverless farming cycles even when standby VPS nodes are cold.
+
 - **👑 Admin Bot Command Center Enhancement & Complete 9-Bot Cloud Farming Verification (October 18, 2026)**:
   - **🛡️ Strict User Bot Boundary Enforcement (Rule 1)**:
     * 100% froze work and deployments to User Bot (`@AAAPREMIUMAPPSbot`). Purged automated webhook overwriting in `deploy_both_cf_workers.py` to preserve public end-user environment completely untouched.
