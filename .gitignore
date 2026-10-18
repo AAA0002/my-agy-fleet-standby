@@ -2,7 +2,16 @@
 .env
 .env.*
 !.env.example
+.git-credentials
 .cloudflare_credentials
+*credentials*
+*credentials*.*
+*.session
+*.session-journal
+*.key
+*.pem
+*.cert
+*.crt
 accounts.json
 fleet_*.json
 payouts.json
@@ -14,6 +23,8 @@ FLEET_*.txt
 FLEET_MULTICHAIN_WALLETS_DASHBOARD.md
 generate_wallet_doc.py
 *SECRETS*
+*secrets*
+*vault*
 ARCHIVED_*
 antigravity_session/
 cloudflared_config/

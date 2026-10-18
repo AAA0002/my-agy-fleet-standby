@@ -49,3 +49,16 @@
   - Regularly sync critical architectural decisions and state to Walrus Memory.
   - Keep Git checkpoints clean and documented in `CHANGELOG.md`.
 - **1-Click Disaster Recovery**: Ensure the self-contained 1-click restore mechanism (`restore.sh` / Telegram one-liner) always works out-of-the-box anywhere.
+
+---
+
+## 6. 🔐 Zero Plaintext Secrets & Cloud Secret Isolation ("Strict Secret Hygiene")
+- **Zero Plaintext Secrets**: NEVER expose, hardcode, or echo raw API keys, Telegram bot tokens, GitHub Personal Access Tokens (PATs), mnemonic seed phrases, private keys, database passwords, or auth headers in chat outputs, Git commit messages, command strings, or tracked repository files.
+- **Clean Git Remotes & Credential Store**: Never embed auth tokens or PATs inside Git remote URLs (e.g. `https://<token>@github.com/...`). All Git remotes MUST use clean HTTPS URLs (`https://github.com/org/repo.git`), and authentication must be handled solely via local secure credential helper (`~/.git-credentials` with `chmod 600`), completely isolated from repository tracking.
+- **Cloud-Native Secret Vaults**: All runtime secrets, API keys, and service tokens MUST be provisioned, stored, and accessed strictly through native cloud secret managers:
+  - **Cloudflare Workers**: Cloudflare Worker Secrets & environment bindings (`wrangler secret put`, dashboard variables, or `env.*` bindings).
+  - **Vercel**: Vercel Project Environment Variables (`vercel env add`, Project Settings > Environment Variables).
+  - **Render**: Render Environment Variables (`os.getenv(...)` populated via Render service environment settings).
+  - **Upstash Redis**: Authenticated HTTPS REST key-value storage with cloud-managed bearer tokens.
+  - **Local Development / Node**: Local untracked `.env` file that is strictly `.gitignore`'d and NEVER committed, pushed, or printed in terminal logs.
+- **Automatic Sanitization & Masking**: If logging or referencing sensitive entities in terminal output, status reports, or error logs, always mask or redact the token (e.g. `ghp_...`, `816...:AAE...`, `Bearer ***`).

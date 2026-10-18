@@ -34,6 +34,16 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
    - **Dual-Layer Initial Referral Binding**: To guarantee 100% recruit-to-master attribution across diverse bot backends, initial onboarding executes a synchronized two-layer protocol:
      * **Layer 1 (MTProto Webhook Activation)**: Dispatches `/start <ref>` directly to the bot's Telegram chat peer. This triggers backend Telegram webhook listeners (critical for bots like MRG, Victor's Company, Diggo, and Astra that establish SQL user records via bot webhook updates).
      * **Layer 2 (REST API / WebApp `start_param`)**: Passes `start_param=<ref>` in `RequestAppWebViewRequest` so the cryptographic `tgWebAppData` payload carries the referral attribution directly into the Mini App's REST API auth handshake (e.g. MRG `/api/auth/verify`, ATF `action=login` `ref` parameter, Diggo `/api/auth/telegram`).
+7. **🔐 Zero Plaintext Secrets & Cloud Secret Isolation (Strict Secret Hygiene)**:
+   - **Zero Plaintext Secrets**: NEVER expose, hardcode, or print raw API keys, Telegram bot tokens, GitHub Personal Access Tokens (PATs), mnemonic seed phrases, private keys, database passwords, or auth headers in chat outputs, Git commit messages, command strings, or tracked repository files.
+   - **Clean Git Remotes & Credential Store**: Never embed auth tokens or PATs inside Git remote URLs. All Git remotes MUST use clean HTTPS URLs (`https://github.com/org/repo.git`), and authentication must be handled solely via local secure credential helper (`~/.git-credentials` with `chmod 600`), completely isolated from repository tracking.
+   - **Cloud-Native Secret Vaults**: All runtime secrets, API keys, and service tokens MUST be provisioned, stored, and accessed strictly through native cloud secret managers:
+     * **Cloudflare Workers**: Cloudflare Worker Secrets & environment bindings (`wrangler secret put`, dashboard variables, or `env.*` bindings).
+     * **Vercel**: Vercel Project Environment Variables (`vercel env add`, Project Settings > Environment Variables).
+     * **Render**: Render Environment Variables (`os.getenv(...)` populated via Render service environment settings).
+     * **Upstash Redis**: Authenticated HTTPS REST key-value storage with cloud-managed bearer tokens.
+     * **Local Development / Node**: Local untracked `.env` file that is strictly `.gitignore`'d and NEVER committed, pushed, or printed in terminal logs.
+   - **Zero Phone Load**: 0 bots on Samsung Galaxy A30; all automated execution stays in the cloud.
 
 
 ---
@@ -637,7 +647,7 @@ To prevent resource leakages, unbounded database list growth, and local disk bal
 ### 1. The "Code Previously Shared" Block Mechanism
 - **The Phenomenon**: When an operator enters a 5-digit Telegram login code directly as a message in a bot chat (`@myagyai`), Telegram's automated anti-phishing scanner intercepts the text. Telegram instantly invalidates the code and notifies the account:
   > *"Nobody gained access to your chats because the login was not completed. The code was entered correctly, but sign in was not allowed, because this code was previously shared by your account."*
-- **Backend Consequence**: Telegram's API returns `PHONE_CODE_EXPIRED` to the MTProto client, which drops the login session. Any subsequent attempt to enter 2FA passwords (`Arif216@`) fails because the login session has already been evicted.
+- **Backend Consequence**: Telegram's API returns `PHONE_CODE_EXPIRED` to the MTProto client, which drops the login session. Any subsequent attempt to enter 2FA passwords (from environment variable `FLEET_2FA_PASSWORD`) fails because the login session has already been evicted.
 
 ### 2. Dual Anti-Block Protocols
 1. **1-Tap QR Code Login (`/qr <index>`, `btn_qr_login_<index>`)**:
@@ -645,7 +655,7 @@ To prevent resource leakages, unbounded database list growth, and local disk bal
    - Returns a `tg://login?token=...` deep-link.
    - The operator authorizes the session with one tap inside the official Telegram app (**Settings → Devices → Link Desktop Device**).
    - **Zero Codes / Zero SMS**: Immune to Telegram's chat scanning engine.
-   - **Automatic 2FA Execution**: Render Node 2 automatically submits the fleet master password (`Arif216@`) upon QR confirmation.
+   - **Automatic 2FA Execution**: Render Node 2 automatically submits the fleet master password (`FLEET_2FA_PASSWORD`) upon QR confirmation.
 2. **Mini App Direct HTTPS Form**:
    - Verification codes entered in the **AAA Telegram Mini App** (`https://agy-aaa000.vercel.app`) are dispatched directly via HTTPS POST (`/api/account/login/verify-code`), completely isolated from Telegram's chat message inspection layers.
 
@@ -847,9 +857,9 @@ To ensure zero-trust off-machine durability and seamless authentication automati
 * **Local Master `.env`**: Complete local reference for Termux pair programming tools.
 
 ### 2. Google App Password & IMAP Verification Engine (`auto_bind_login_emails.py`)
-* Google App Password (`kuqevwndvabevefx` for `aaa.support.a@gmail.com`) allows hands-free MTProto verification code extraction via Python standard `imaplib`.
+* Google App Password (loaded dynamically from `GMAIL_APP_PASSWORD` for `aaa.support.a@gmail.com`) allows hands-free MTProto verification code extraction via Python standard `imaplib`.
 * **Login Email vs. 2FA Recovery Email**:
-  - **2FA Recovery Email**: Set via `account.UpdatePasswordSettingsRequest`. 100% active on all 10 purchased accounts with password `Arif216@` and recovery `aaa.support.a@gmail.com`.
+  - **2FA Recovery Email**: Set via `account.UpdatePasswordSettingsRequest`. 100% active on all 10 purchased accounts with password managed via `FLEET_2FA_PASSWORD` and recovery email `aaa.support.a@gmail.com`.
   - **Login Email (OTP)**: Bound via `account.SendVerifyEmailCodeRequest` + `account.VerifyEmailRequest`. Account #14 and #16 bound to `aaa.support.a+14@gmail.com` and `aaa.support.a+16@gmail.com`.
 
 ### 3. Telegram Admin Bot Relogin & OTP Hub (`@myagyai`)
@@ -857,7 +867,7 @@ To facilitate seamless login on new devices (e.g., after phone resets) without S
 * **Endpoint (`GET /api/fleet/otp/{target}`)**: Hosted on Render Standby Node 2 & Node 3.
   - Queries Telegram official service notification messages (`peer=777000`: `Login code: XXXXX`) directly from active cloud MTProto sessions.
   - Falls back to Gmail IMAP inbox extraction (`aaa.support.a@gmail.com`) if Telegram sends the code via email.
-  - Returns account name, phone number, formatted copyable `code`, 2FA password (`Arif216@`), source, and age in seconds.
+  - Returns account name, phone number, formatted copyable `code`, 2FA password (from `FLEET_2FA_PASSWORD`), source, and age in seconds.
 * **Telegram Admin Bot UI**:
   - `🔑 OTP & Relogin` button in persistent reply keyboard and inline keyboards.
   - Interactive Dynamic Grid Picker (`btn_otp_menu`) with real-time badges: `👑` (Master Host), `🟢` (Active), `🔴` (Needs Re-link).
@@ -867,7 +877,7 @@ To facilitate seamless login on new devices (e.g., after phone resets) without S
   - Solves the single mobile device constraint: users cannot scan a QR code displayed on their own smartphone screen.
   - Generates an on-screen numeric keypad `[1][2][3]`...`[⌫ Del][0][✅ Verify]` inside `@myagyai` with real-time slot state `[ • • • • • ]`.
   - Digit taps send Telegram Callback Queries (`pin_digit_0..9`) rather than chat text messages, completely bypassing Telegram's chat text anti-phishing scanner and preventing "code previously shared" revocation blocks.
-  - Automatically submits on 5th digit (or `✅ Verify`), calls Render Node 2 MTProto coordinator, and auto-applies 2FA password (`Arif216@` / `Arif-Abid`).
+  - Automatically submits on 5th digit (or `✅ Verify`), calls Render Node 2 MTProto coordinator, and auto-applies 2FA password (`FLEET_2FA_PASSWORD` / `FLEET_2FA_FALLBACK`).
 * **Complete Removal of Mini App & `web_app` Buttons from Admin Bot (`@myagyai`)**:
   - Per operator directive, all Mini App buttons, `web_app` launchers, and external links have been completely purged from `@myagyai` (inline keyboards, persistent reply keyboard, bot commands, `/app`, `/relink`, and audit screens).
   - The persistent bottom menu button (`setChatMenuButton`) on `@myagyai` has been reset from custom web app (`[ 👑 Fleet Console ]`) to default standard Telegram menu (`{"type": "default"}`).
@@ -935,7 +945,7 @@ Whenever you perform work in this repository:
 
 ### 3. Dedicated Admin Authentication & Standalone Login Portal
 * **Edge Password Hash Fix**: Corrected variable definition order in `deploy_both_cf_workers.py` line 2473 (`hexHash` buffer computation before validation), resolving `hexHash is not defined` error.
-* **Client-Side SHA-256 Fallback**: Integrated offline SHA-256 validation (`Arif-Abid` / `Arif216@` / master hash) directly into `AdminAuthGate`.
+* **Client-Side SHA-256 Fallback**: Integrated offline SHA-256 validation (derived securely from `FLEET_2FA_PASSWORD` / master hash) directly into `AdminAuthGate`.
 * **Multi-Cloud Dedicated Deployments**:
   - Primary Admin Console: `https://agy-aaa000.vercel.app/admin` & `https://aaa-free-ai.vercel.app/admin`
   - Standalone Login Portal: `https://agy-aaa000.vercel.app/login` & `https://aaa-free-ai.vercel.app/login`
@@ -1003,7 +1013,7 @@ Whenever you perform work in this repository:
   - **Zero SMS / Zero Codes**: Telethon on Render Node 2 (`/api/account/login/qr-start`) generates an official device pairing URI (`tg://login?token=...`).
   - When the user taps **[ ⚡ Link Device in Telegram Now ]**, Telegram natively opens the device authorization prompt (`Link aaaserver2026?`).
   - The operator confirms with 1 tap. Because NO code was ever typed into chat, Telegram's anti-phishing scanner NEVER triggers.
-  - **Automated 2FA Pipeline**: When Telegram demands a 2FA cloud password upon QR confirmation (`SessionPasswordNeededError`), Render Node 2 automatically submits the master fleet password (`Arif216@`, with fallback `Arif-Abid`), finalizing authorization without user friction.
+  - **Automated 2FA Pipeline**: When Telegram demands a 2FA cloud password upon QR confirmation (`SessionPasswordNeededError`), Render Node 2 automatically submits the master fleet password (`FLEET_2FA_PASSWORD`, with fallback `FLEET_2FA_FALLBACK`), finalizing authorization without user friction.
 * **Mini App Safe HTTPS Form (`modalEnterCode`)**:
   - Codes entered in the Mini App WebApp form are submitted directly over encrypted HTTPS POST to Render Node 2 (`/api/account/login/verify-code`).
   - Because HTTPS payloads are not Telegram chat messages, Telegram's chat inspection cannot detect them, ensuring clean verification.

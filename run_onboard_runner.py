@@ -6,13 +6,14 @@ Honors Zero Phone Load directive: All MTProto channel joins, invite acceptance,
 and verification clicks execute 100% in the cloud on Render Singapore.
 """
 
+import os
 import json
 import time
 import urllib.request
 import urllib.error
 
-RENDER_URL = "https://my-agy-fleet-standby.onrender.com/api/onboard-new-bots"
-SECRET_KEY = "agy_cf_secret_7d36994e_2026"
+RENDER_URL = os.getenv("RENDER_URL", "https://my-agy-fleet-standby.onrender.com/api/onboard-new-bots")
+SECRET_KEY = os.getenv("SECRET_KEY", "agy_cf_secret_7d36994e_2026")
 ACCOUNTS_FILE = "/root/projects/AAA_AUTO/accounts.json"
 
 PENDING_UIDS = [

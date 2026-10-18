@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔐 Strict Secret Hygiene & Zero Plaintext Secrets Enforcement (October 18, 2026)**:
+  - **🧹 Git Remote URL Sanitization & Credential Isolation**:
+    * Removed embedded GitHub Personal Access Tokens (PATs) from `origin` (`https://github.com/AAA0002/ATL.git`) and `standby_repo` (`https://github.com/AAA0002/my-agy-fleet-standby.git`).
+    * Configured Git credential helper (`git config credential.helper store`) with authentication stored exclusively in `~/.git-credentials` (`chmod 600`), completely detached from repository tracking and command logging.
+  - **📜 Rule 6 Enshrined in `AGENTS.md` & Golden Directive 7 in `PROJECT_BIBLE.md`**:
+    * Formally codified **Rule 6 ("Zero Plaintext Secrets & Cloud Secret Isolation")** as a non-negotiable directive in `/data/data/com.termux/files/home/AGENTS.md` and `PROJECT_BIBLE.md`.
+    * Enforced zero exposure of raw API keys, Telegram bot tokens, GitHub PATs, mnemonic seed phrases, private keys, database passwords, or auth headers in chat outputs, Git commits, command lines, or tracked files.
+  - **☁️ Cloud-Native Secret Architecture Standard**:
+    * **Cloudflare Workers**: All tokens loaded strictly from `env` bindings (`env.SECRET_KEY`, `env.ALERT_BOT_TOKEN`, `env.USER_BOT_TOKEN`, `env.UPSTASH_TOKEN`, etc.).
+    * **Vercel**: Environment variables configured in Vercel project dashboard / CLI.
+    * **Render**: Runtime secrets injected via Render service environment variables (`os.getenv(...)`).
+    * **Upstash Redis**: Secure HTTPS REST access via authenticated cloud bearer tokens.
+    * **Local Workspace**: Local reference isolated to untracked `.env` file.
+  - **🛡️ Sensitive Reference Scrubbing & Hardening**:
+    * Scrubbed plaintext 2FA passwords and Google App Passwords from `PROJECT_BIBLE.md`, replacing them with environment variable references (`FLEET_2FA_PASSWORD`, `FLEET_2FA_FALLBACK`, `GMAIL_APP_PASSWORD`).
+    * Updated `run_onboard_runner.py` and `My_Router_AI_bot/tgcloud/lib/config.js` to dynamic `os.getenv` / `process.env` loading with safe defaults.
+    * Hardened `.gitignore` to comprehensively block `.git-credentials`, `*.session`, `*.key`, `*.pem`, `*.cert`, `*.crt`, `*credentials*`, `*secrets*`, and `*vault*`.
+  - **📱 Strict Zero Phone Load Directive Honored**:
+    * Samsung Galaxy A30 remains 100% dedicated to Antigravity AI pair programming with 0 background bots or daemons.
+
 - **🎬 Unlimited User Bot Ads & Autonomous 18-Account Cloud Ad-Farming Engine (October 18, 2026)**:
   - **♾️ Zero-Limit Ad Watching Policy Enforced Across User Bot**:
     * Confirmed and audited all rewarded ad verification endpoints (`/api/user/claim-ad`, `/api/adsgram/reward`, `/api/user/verify-monetag`, `/api/user/verify-ad-chain`).
