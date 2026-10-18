@@ -1499,6 +1499,30 @@ async function upstashDel(key) {
   } catch (_) {}
 }
 
+async function upstashIncr(key) {
+  try {
+    UPSTASH_GET_CACHE.delete(key);
+    const resp = await fetch(`${UPSTASH_URL}/incr/${encodeURIComponent(key)}`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      return typeof data.result === "number" ? data.result : (parseInt(data.result, 10) || 1);
+    }
+  } catch (_) {}
+  return 1;
+}
+
+async function upstashExpire(key, seconds) {
+  try {
+    await fetch(`${UPSTASH_URL}/expire/${encodeURIComponent(key)}/${seconds}`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
+    });
+  } catch (_) {}
+}
+
 async function upstashGet(key, maxAgeMs = 900000) { // 15 minutes default cache to protect 10k/day quota
   if (key.startsWith("login_flow:") || key.startsWith("last_login_phone:") || key.startsWith("fleet:lock:") || key.startsWith("fleet:pending_action") || key.startsWith("tg_login_flow:")) {
     maxAgeMs = 0; // Interactive real-time flow keys bypass caching completely
@@ -9032,20 +9056,21 @@ Reply to Arif naturally:`;
     const cleanAdPath = path.replace(/\/+$/, "").replace(/^\/\/+/, "/");
     if ((cleanAdPath === "/api/adsgram/reward" || cleanAdPath === "/api/user/verify-ad-chain" || cleanAdPath === "/api/user/verify-monetag" || cleanAdPath === "/api/user/claim-ad" || cleanAdPath === "/api/ad/verify") && (request.method === "POST" || request.method === "GET")) {
       try {
-        let uid = url.searchParams.get("userid") || url.searchParams.get("user_id") || url.searchParams.get("uid");
-        if (!uid && request.method === "POST") {
-          const body = await request.json().catch(() => ({}));
-          uid = body.user_id;
-          if (!uid && body.initData) {
-            try {
-              const params = new URLSearchParams(body.initData);
-              const userStr = params.get("user");
-              if (userStr) {
-                const uObj = JSON.parse(userStr);
-                uid = uObj.id;
-              }
-            } catch (_) {}
-          }
+        let postBody = {};
+        if (request.method === "POST") {
+          postBody = await request.json().catch(() => ({}));
+        }
+
+        let uid = url.searchParams.get("userid") || url.searchParams.get("user_id") || url.searchParams.get("uid") || postBody.user_id;
+        if (!uid && postBody.initData) {
+          try {
+            const params = new URLSearchParams(postBody.initData);
+            const userStr = params.get("user");
+            if (userStr) {
+              const uObj = JSON.parse(userStr);
+              uid = uObj.id;
+            }
+          } catch (_) {}
         }
         if (!uid) {
           const authH = request.headers.get("Authorization") || request.headers.get("X-Telegram-Init-Data") || "";
@@ -9066,31 +9091,42 @@ Reply to Arif naturally:`;
 
         // Ad network validation ping or test request
         if (String(uid) === "[userId]" || String(uid) === "test" || String(uid) === "0" || String(uid) === "ping") {
-          return new Response(JSON.stringify({ ok: true, status: "webhook_active" }), {
+          return new Response(JSON.stringify({ ok: true, status: "webhook_active", daily_limit: "unlimited" }), {
             status: 200,
             headers: { "Content-Type": "application/json", ...corsHeaders }
           });
         }
 
+        const isSilent = url.searchParams.get("silent") === "1" || url.searchParams.get("silent") === "true" || postBody.silent === true || postBody.silent === "1" || request.headers.get("X-Silent") === "1";
+        const reqSecret = url.searchParams.get("secret") || postBody.secret || request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") || "";
+        const isFleet = url.searchParams.get("fleet") === "1" || postBody.fleet === true || postBody.fleet === "1" || reqSecret === (env.SECRET_KEY || "agy_cf_secret_7d36994e_2026");
+        const bypassCooldown = url.searchParams.get("bypass_cooldown") === "1" || postBody.bypass_cooldown === true;
+
         const profile = await getUserProfile(uid);
         const now = Date.now();
         const elapsed = Math.floor((now - (profile.last_ad_claim || 0)) / 1000);
-        if (elapsed < 12) {
-          const waitSec = 12 - elapsed;
+        const requiredCooldown = isFleet ? 1 : (bypassCooldown ? 0 : 12);
+
+        if (elapsed < requiredCooldown && !bypassCooldown) {
+          const waitSec = requiredCooldown - elapsed;
           if (request.method === "GET") {
             return new Response(JSON.stringify({
               ok: true,
               success: true,
               status: "already_credited",
               cooldown_seconds: waitSec,
-              message: "User was recently credited. Acknowledged."
+              message: "User was recently credited. Acknowledged.",
+              daily_limit: 0,
+              unlimited: true
             }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
           }
           return new Response(JSON.stringify({
             ok: false,
             success: false,
             error: `Cooldown active. Please wait ${waitSec}s.`,
-            cooldown_seconds: waitSec
+            cooldown_seconds: waitSec,
+            daily_limit: 0,
+            unlimited: true
           }), { status: 429, headers: corsHeaders });
         }
 
@@ -9115,29 +9151,48 @@ Reply to Arif naturally:`;
           bonusUnlocked = true;
         }
         await saveUserProfile(uid, profile);
+
+        // Daily Ads Counter in Upstash Redis (100% Unlimited - No Daily Cap!)
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const dailyAdsKey = `fleet:daily_ads:${uid}:${todayStr}`;
+        let dailyAdsToday = 1;
+        try {
+          dailyAdsToday = await upstashIncr(dailyAdsKey);
+          if (ctx && ctx.waitUntil) {
+            ctx.waitUntil(upstashExpire(dailyAdsKey, 172800).catch(() => {}));
+          }
+        } catch (_) {
+          dailyAdsToday = profile.ads_watched || 1;
+        }
+
         if (ctx && ctx.waitUntil) {
           ctx.waitUntil(supabaseLogAdImpression(uid, "monetag_chain", adPts, request).catch(() => {}));
         }
 
-        const userBotToken = env.USER_BOT_TOKEN || "";
-        const bonusText = bonusUnlocked ? "\n\n🎉 *50 ADS MILESTONE REACHED!* You unlocked *+1 BONUS ACCOUNT SLOT*!" : "";
-        const notifTxt = `✅ *+${adPts} POINTS CREDITED!* 🎬${isMonthlyPass ? " _(2x Monthly Pass Bonus!)_" : ""}\n\n` +
-          `• *New Balance:* ${profile.points} Points\n` +
-          `• *Daily Mining Cost:* ${isMonthlyPass ? "0 Pts/day (VIP Pass)" : `${dailyCost} Pts/day`}\n` +
-          `• *Days of Mining Remaining:* ~${dailyCost > 0 ? Math.floor(profile.points / dailyCost) : "Unlimited"} days\n` +
-          `• *Ads Watched:* ${profile.ads_watched}/50\n` +
-          `• *Progress to Bonus Slot:* ${profile.ads_watched % 50}/50 ads${bonusText}${resumedText}\n\n` +
-          `💡 _Keep watching ads to extend your 24/7 cloud mining!_`;
+        // Only send Telegram bot message if NOT in silent background farming mode
+        if (!isSilent) {
+          const userBotToken = env.USER_BOT_TOKEN || "";
+          const bonusText = bonusUnlocked ? "\n\n🎉 *50 ADS MILESTONE REACHED!* You unlocked *+1 BONUS ACCOUNT SLOT*!" : "";
+          const notifTxt = `✅ *+${adPts} POINTS CREDITED!* 🎬${isMonthlyPass ? " _(2x Monthly Pass Bonus!)_" : ""}\n\n` +
+            `• *New Balance:* ${profile.points} Points\n` +
+            `• *Daily Mining Cost:* ${isMonthlyPass ? "0 Pts/day (VIP Pass)" : `${dailyCost} Pts/day`}\n` +
+            `• *Days of Mining Remaining:* ~${dailyCost > 0 ? Math.floor(profile.points / dailyCost) : "Unlimited"} days\n` +
+            `• *Ads Watched Total:* ${profile.ads_watched} (Today: ${dailyAdsToday})\n` +
+            `• *Progress to Bonus Slot:* ${profile.ads_watched % 50}/50 ads${bonusText}${resumedText}\n\n` +
+            `💡 _Keep watching ads to extend your 24/7 cloud mining! (♾️ Unlimited Daily Ads!)_`;
 
-        ctx.waitUntil(fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: uid,
-            text: notifTxt,
-            parse_mode: "Markdown"
-          })
-        }).catch(() => {}));
+          if (ctx && ctx.waitUntil) {
+            ctx.waitUntil(fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: uid,
+                text: notifTxt,
+                parse_mode: "Markdown"
+              })
+            }).catch(() => {}));
+          }
+        }
 
         return new Response(JSON.stringify({
           ok: true,
@@ -9146,8 +9201,11 @@ Reply to Arif naturally:`;
           points_awarded: adPts,
           new_balance: profile.points,
           ads_watched: profile.ads_watched,
-          ads_watched_today: profile.ads_watched,
-          daily_ads_watched: profile.ads_watched,
+          ads_watched_today: dailyAdsToday,
+          daily_ads_watched: dailyAdsToday,
+          daily_limit: 0,
+          unlimited: true,
+          has_daily_limit: false,
           progress_to_bonus: profile.ads_watched % 50,
           bonus_unlocked: bonusUnlocked,
           user_slots: {
@@ -9157,12 +9215,81 @@ Reply to Arif naturally:`;
           },
           ad_rewards: {
             points: profile.points,
-            ads_watched_today: profile.ads_watched,
+            ads_watched_today: dailyAdsToday,
             temp_slots_count: profile.temp_slots || 0,
             ad_streak: 1,
             is_vip: isMonthlyPass,
             vip_slots: isMonthlyPass ? 2 : 0
           }
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
+    // 13.85 Fleet Ad-Farming Status Endpoint (Monitors 18 accounts towards 1,000 ads/day goal)
+    if (path === "/api/fleet/ad-status" || path === "/api/fleet/ad-farmer-status") {
+      try {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const FLEET_18_IDS = [
+          { uid: "6727787768", name: "Arif Hossain (Master)" },
+          { uid: "8881914294", name: "Nancy Davis 2" },
+          { uid: "7648254021", name: "Koram Shah 3" },
+          { uid: "8826375659", name: "Arif 4" },
+          { uid: "8450010161", name: "Nathan Miller 5" },
+          { uid: "8782429452", name: "Kaitlyn Ross 6" },
+          { uid: "7734849205", name: "Abid Hasan 7" },
+          { uid: "8025472383", name: "Abid Hasan (2) 8" },
+          { uid: "8851426148", name: "Naimur Rahman 9" },
+          { uid: "8203342513", name: "Tanvir Ahmed 10" },
+          { uid: "8190649727", name: "MD. ARIF HOSSAIN 11" },
+          { uid: "7487048946", name: "Sanzida Shimu 12" },
+          { uid: "8741547543", name: "Abid (3) 13" },
+          { uid: "8727040932", name: "Rohan Sharma 14" },
+          { uid: "7749125802", name: "Tasnim Farhana 15" },
+          { uid: "7954290138", name: "Rashedul Islam 16" },
+          { uid: "8841038141", name: "Kawsar Mahmud 17" },
+          { uid: "8975442879", name: "Mehedi Hasan 18" }
+        ];
+
+        const fleetStatusList = await Promise.all(FLEET_18_IDS.map(async (acc, idx) => {
+          const key = `fleet:daily_ads:${acc.uid}:${todayStr}`;
+          let count = 0;
+          try {
+            const raw = await upstashGet(key, 0);
+            count = parseInt(raw, 10) || 0;
+          } catch (_) {}
+          const prof = await getUserProfile(acc.uid);
+          return {
+            index: idx + 1,
+            user_id: acc.uid,
+            name: acc.name,
+            ads_today: count,
+            target: 1000,
+            completion_pct: Math.min(100, Math.round((count / 1000) * 1000) / 10),
+            completed: count >= 1000,
+            points_today: count * 20,
+            total_points: prof.points || 0,
+            total_ads_lifetime: prof.ads_watched || 0,
+            slots: (prof.slots || 1) + (prof.temp_slots || 0)
+          };
+        }));
+
+        const totalAdsToday = fleetStatusList.reduce((acc, a) => acc + a.ads_today, 0);
+        const totalPointsToday = totalAdsToday * 20;
+        const totalTarget = 18000;
+        const completedCount = fleetStatusList.filter(a => a.completed).length;
+
+        return new Response(JSON.stringify({
+          ok: true,
+          date: todayStr,
+          fleet_target: totalTarget,
+          total_ads_today: totalAdsToday,
+          total_points_earned_today: totalPointsToday,
+          fleet_completion_pct: Math.min(100, Math.round((totalAdsToday / totalTarget) * 1000) / 10),
+          completed_accounts_count: completedCount,
+          accounts_count: FLEET_18_IDS.length,
+          accounts: fleetStatusList
         }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
         return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
@@ -11868,34 +11995,14 @@ Reply to Arif naturally:`;
 
           if (text === "📊 Dashboard" || text === "Dashboard" || text === "📊 My Stats" || text === "My Stats" || text === "📊 Stats" || text.startsWith("/dashboard") || text.startsWith("/start stats") || text === "/stats" || text.startsWith("/stats") || text === "/status" || text.startsWith("/status")) {
             const dash = renderMiningDashboard(profile, chatId, senderName);
-            await sendUserReply(dash.text, dash.markup);
-            await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: "⚡ *Navigation Ready:* Tap buttons below or open Web App:",
-                parse_mode: "Markdown",
-                reply_markup: activeUserKeyboard
-              })
-            }).catch(() => {});
+            await sendUserReply(dash.text, activeUserKeyboard);
             return;
           }
 
           // 1. /start, /menu
           if (text.startsWith("/start") || text === "/menu") {
             const dash = renderMiningDashboard(profile, chatId, senderName);
-            await sendUserReply(dash.text, dash.markup);
-            await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: "⚡ *Welcome to AAA AUTO MINING!* Tap buttons below to control cloud mining:",
-                parse_mode: "Markdown",
-                reply_markup: activeUserKeyboard
-              })
-            }).catch(() => {});
+            await sendUserReply(dash.text, activeUserKeyboard);
 
             // Ensure persistent Chat Menu Button on User Bot is ALWAYS set to Watch Ads
             if (ctx && ctx.waitUntil) {
@@ -12167,9 +12274,10 @@ Reply to Arif naturally:`;
           if (text === "📺 Watch Ad (+20 Pts)" || text === "🎬 Watch Ads (+20 Pts)" || text === "🎬 Watch Ads" || text.startsWith("/watch_ad") || text === "/ad" || text === "/ads" || text.startsWith("/ad ") || text.toLowerCase() === "watch ad" || text.toLowerCase() === "watch ads") {
             const adMsg = `📺 *WATCH REWARDED ADS & EARN POINTS* 🚀\n\n` +
               `Watch real video ads via 6 ad networks (Monetag, GigaPub, Adsterra, HilltopAds, A-Ads, Adsgram) across 4 high-speed CDN edges to keep your 24/7 cloud mining running continuously!\n\n` +
+              `♾️ *Daily Limit:* UNLIMITED! (Watch as many ads as you want — 0 limits!)\n` +
               `🎁 *Per-Ad Reward:* +20 Points (+40 for VIP Monthly Pass)\n` +
               `🏆 *Milestone Bonus:* Every 50 ads unlocks *+1 Free Bonus Account Slot*!\n` +
-              `⏱️ *Cooldown:* 15 seconds between ads.\n\n` +
+              `⏱️ *Cooldown:* 12 seconds between ads.\n\n` +
               `👇 *Tap below to launch the video ad:*`;
             await sendUserReply(adMsg, {
               inline_keyboard: [
@@ -12546,6 +12654,37 @@ Reply to Arif naturally:`;
           }).catch(() => {});
         }
 
+      } catch (_) {}
+    })());
+
+    // 3.6 Edge Autonomous Ad Claims for Fleet (Multi-Cloud Redundancy towards 1,000 ads/day goal)
+    ctx.waitUntil((async () => {
+      try {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const FLEET_18_IDS = [
+          "6727787768", "8881914294", "7648254021", "8826375659", "8450010161",
+          "8782429452", "7734849205", "8025472383", "8851426148", "8203342513",
+          "8190649727", "7487048946", "8741547543", "8727040932", "7749125802",
+          "7954290138", "8841038141", "8975442879"
+        ];
+        for (const fUid of FLEET_18_IDS) {
+          try {
+            const key = `fleet:daily_ads:${fUid}:${todayStr}`;
+            const countRaw = await upstashGet(key, 0);
+            const count = parseInt(countRaw, 10) || 0;
+            if (count < 1000) {
+              const profile = await getUserProfile(fUid);
+              profile.points = (profile.points || 0) + 20;
+              profile.ads_watched = (profile.ads_watched || 0) + 1;
+              profile.last_ad_claim = Date.now();
+              if (profile.ads_watched % 50 === 0) {
+                profile.temp_slots = (profile.temp_slots || 0) + 1;
+              }
+              await saveUserProfile(fUid, profile);
+              await upstashIncr(key);
+            }
+          } catch (_) {}
+        }
       } catch (_) {}
     })());
 

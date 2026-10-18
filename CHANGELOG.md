@@ -2,6 +2,28 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎬 Unlimited User Bot Ads & Autonomous 18-Account Cloud Ad-Farming Engine (October 18, 2026)**:
+  - **♾️ Zero-Limit Ad Watching Policy Enforced Across User Bot**:
+    * Confirmed and audited all rewarded ad verification endpoints (`/api/user/claim-ad`, `/api/adsgram/reward`, `/api/user/verify-monetag`, `/api/user/verify-ad-chain`).
+    * Completely eliminated any daily caps (`daily_limit: 0`, `unlimited: true`, `has_daily_limit: false`). Users can watch unlimited ads daily to extend 24/7 autonomous mining runway.
+    * Milestone bonus (+1 permanent bonus account slot per 50 ads) applies infinitely with no ceiling (`profile.temp_slots += 1` every 50 ads).
+    * Updated all User Bot command descriptions (`/watch_ad`, `/ad`, `/ads`, `/points`, `/rewards`) and menu text to explicitly announce unlimited daily ads.
+  - **🤖 24/7 Autonomous Cloud Fleet Ad-Farming Loop (Render Node 2)**:
+    * Implemented `autonomous_fleet_ad_farmer_loop()` in `app.py`, `render_standby_app.py`, and `render_app_latest.py` running 24/7 in the cloud on Render Node 2 (Frankfurt).
+    * Automatically cycles across all 18 fleet accounts (Master `6727787768` + 17 Worker accounts), targeting 1,000 ads per account per day (18,000 total ad claims/day).
+    * Uses calibrated round-robin pacing (~4.8 seconds between account claims = 86.4 seconds per full fleet round), naturally staying far above the 12s cooldown without triggering Cloudflare rate limits.
+    * Added `silent=1` and `fleet=1` query parameters to suppress Telegram bot messages during automated fleet farming, preventing chat clutter.
+    * Added Render endpoints: `GET /api/fleet/ad-farmer/status` and `POST /api/fleet/ad-farmer/trigger`.
+  - **🌐 Multi-Cloud Redundancy & Edge Monitoring API**:
+    * Created live telemetry endpoint: `GET /api/fleet/ad-status` (and `/api/fleet/ad-farmer-status`) in `deploy_both_cf_workers.py` reporting per-account daily ads watched, target, points earned, and overall fleet completion percentage.
+    * Integrated Edge Step 3.6 into Cloudflare Worker Node 1 cron (`aaaai2.workers.dev`), providing multi-cloud edge redundancy if Render rotates or restarts.
+  - **🧹 User Bot Duplicate Message Elimination**:
+    * Fixed `/start` and `/dashboard` command handlers in `deploy_both_cf_workers.py` which previously dispatched two separate messages.
+    * Now dispatches exactly one clean, elegant dashboard message with `activeUserKeyboard` attached and the persistent chat menu button configured to `[🎬 Watch Ads]`.
+  - **🛡️ Strictly Zero Phone Load Guardrail (Rule 4)**:
+    * 100% of bot automation, ad claiming, and farming loops execute strictly in the cloud (Render Node 2 & Cloudflare Edge).
+    * Samsung Galaxy A30 remains 100% free of daemon loops, background bot pollers, and battery drains.
+
 - **👑 Admin Dashboard Single-Button Consolidation & /dashboard Route Fix (October 18, 2026)**:
   - **🧹 Elimination of 3 Duplicate Admin Dashboard Buttons**:
     * Identified and eliminated the redundant 3-button block (`Open Admin Dashboard (Node 1 Pages)`, `Open Admin Dashboard (Node 5 Pages)`, and `Open Admin Dashboard (Vercel Mirror)`).

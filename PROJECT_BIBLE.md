@@ -220,17 +220,19 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   ---
 
   #### 👥 System 2: Normal User Telegram Ecosystem (Public Mining Platform & Community)
-  > 📢 **OPERATOR DIRECTIVE & OVERRIDE APPLIED (October 13, 2026)**:
+  > 📢 **OPERATOR DIRECTIVE & OVERRIDE APPLIED (October 13–18, 2026)**:
   > Commander Arif explicitly authorized the upgrade and modification of User Bot (`@AAAPREMIUMAPPSbot`) to mirror the multi-miner dashboard and frictionless account binding interface of `@Allbottesting_bot` ("ATE AUTO Mining"), enhanced with our sustainable **Points System** (100 Pts/day, +100 welcome points) and **Rewarded Video Ads Engine** (+20 Pts/ad, +1 permanent bonus account slot per 50 ads).
-  > **Latest Enhancements**:
-  > 1. **Ari AI Copilot Integration**: Conversational queries (e.g. *"What can this bot do"*) are cleanly routed to Google Gemini AI without triggering phone login traps. Strict phone number validation (`/^(\+)?[0-9]{8,16}$/`) protects natural chat.
-  > 2. **Multi-Platform Mini App Link Auto-Detector & Expiration Guard**: Direct detection of raw links and error logs (LeafEarn, MRG, ATF, Victor's Company, VyroDrop, Kynex Network) with 3-pass URI decoding. Automatically warns user when `auth_date` exceeds 24 hours (Telegram token limit) with clear refresh steps, and auto-binds fresh tokens immediately.
-  > 3. **Strict Web Isolation**: Root path `https://agy-henna.vercel.app/` dedicated exclusively to the Sponsored Video Ads Engine, while `https://agy-henna.vercel.app/miner` hosts the institutional-grade vector SVG Multi-Miner Dashboard.
+  > **Key Policies & Autonomous Cloud Infrastructure**:
+  > 1. **♾️ Unlimited Ad Watching (Zero Daily Caps)**: Confirmed and enforced strictly 0 limits on watching ads. Users and fleet accounts can watch unlimited ads daily to extend 24/7 cloud mining. Every 50 ads permanently unlocks +1 Free Account Slot with no maximum ceiling.
+  > 2. **🤖 24/7 Autonomous Cloud Fleet Ad-Farmer (Render Node 2)**: Dedicated 24/7 background worker `autonomous_fleet_ad_farmer_loop()` continuously farms 1,000 ads per day for each of our 18 fleet accounts (18,000 total ad claims/day) across the Cloudflare Edge mesh with `silent=1` and `fleet=1` to prevent Telegram chat clutter. Monitored via `GET /api/fleet/ad-status` and `GET /api/fleet/ad-farmer/status`.
+  > 3. **Ari AI Copilot Integration**: Conversational queries (e.g. *"What can this bot do"*) are cleanly routed to Google Gemini AI without triggering phone login traps. Strict phone number validation (`/^(\+)?[0-9]{8,16}$/`) protects natural chat.
+  > 4. **Multi-Platform Mini App Link Auto-Detector & Expiration Guard**: Direct detection of raw links and error logs (MRG, ATF, Victor's Company, VyroDrop, Kynex Network) with 3-pass URI decoding. Automatically warns user when `auth_date` exceeds 24 hours (Telegram token limit) with clear refresh steps, and auto-binds fresh tokens immediately.
+  > 5. **Strict Web Isolation**: Root path `https://agy-henna.vercel.app/` dedicated exclusively to the Sponsored Video Ads Engine, while `https://agy-henna.vercel.app/miner` hosts the institutional-grade vector SVG Multi-Miner Dashboard.
 
   - **User Bot Identity**: `@AAAPREMIUMAPPSbot` (Bot ID: `8167732110`, Token: `USER_BOT_TOKEN: [REDACTED]`)
     - Name: *AAA AUTO MINING (PREMIUM)*
     - Live Webhook: `https://restore-agy.agorameet.workers.dev/user-bot-webhook` (Multi-Edge Mesh on Cloudflare Worker Node 4)
-    - Role: Multi-bot cloud mining platform, modern dashboard (modeled after `@Allbottesting_bot`), per-pool management across 9 pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI), frictionless WebApp URL / `initData` query string account connector (0 SMS codes) with 24h expiration guard, Points economy (100 Pts/day), Rewarded Adsgram/Monetag video ads (+20 Pts), milestone slots (+1 slot per 50 ads), and Telegram Stars VIP passes.
+    - Role: Multi-bot cloud mining platform, modern dashboard (modeled after `@Allbottesting_bot`), per-pool management across 9 pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI), frictionless WebApp URL / `initData` query string account connector (0 SMS codes) with 24h expiration guard, Points economy (100 Pts/day), Rewarded Adsgram/Monetag video ads (+20 Pts, 0 daily limit), milestone slots (+1 slot per 50 ads), and Telegram Stars VIP passes.
   - **Supported Mining Pools (9 Active High-Yield Pools)**:
     1. ⚡ **MRG Miner** (`@mrgminerbot`)
     2. 🪙 **ATF Miner** (`@ATF_AIRDROP_bot`)
