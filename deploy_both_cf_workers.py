@@ -1947,8 +1947,9 @@ export default {
       return { ok: false, error: "Cloud login servers unreachable. Please retry in a few moments." };
     };
 
-    const cloudLoginVerify = async (targetChatId, { code, password, phone, node_url, index }) => {
+    const cloudLoginVerify = async (targetChatId, { code, password, phone, node_url, index, is_user_bot }) => {
       const urls = node_url ? [node_url, ...RENDER_LOGIN_URLS.filter(u => u !== node_url)] : RENDER_LOGIN_URLS;
+      const isUser = is_user_bot !== undefined ? Boolean(is_user_bot) : String(targetChatId).startsWith("ub_");
       for (const baseUrl of urls) {
         try {
           const res = await fetch(`${baseUrl}/api/account/login/verify-code`, {
@@ -1963,7 +1964,8 @@ export default {
               password: password || "",
               chat_id: String(targetChatId),
               secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026",
-              index: index || null
+              index: index || null,
+              is_user_bot: isUser
             }),
             signal: AbortSignal.timeout(35000)
           });
@@ -4978,6 +4980,26 @@ fi
                       return new Response("OK");
                     }
                   }
+
+                  // Tier 3: Standard fleet passwords failed. Transition to waiting_admin_custom_2fa:
+                  const flowAdmin2fa = {
+                    step: "waiting_admin_custom_2fa",
+                    phone: phoneToRelink,
+                    node_url: flowData.node_url,
+                    index: targetIdx
+                  };
+                  memLoginFlow.set(String(chatId), flowAdmin2fa);
+                  ctx.waitUntil(upstashSet("login_flow:" + chatId, flowAdmin2fa));
+                  if (env.BACKUP_KV) ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify(flowAdmin2fa), { expirationTtl: 600 }).catch(() => {}));
+
+                  const adminCustomPrompt = `🔐 *Custom 2FA Password Required for Account #${targetIdx}*\n\n` +
+                    `• *Target Account:* Account #${targetIdx}\n` +
+                    `• *Phone:* \`${phoneToRelink}\`\n\n` +
+                    `Standard fleet 2FA passwords were not accepted for this account.\n\n` +
+                    `👉 *Please reply directly in this chat with the 2FA cloud password for this account:*\n\n` +
+                    `_(Your password will be verified in the cloud, saved for future relinks, and your message deleted immediately for privacy. Send /cancel to abort)_`;
+                  await editOrSendResilientMessage(chatId, cbMsgId, adminCustomPrompt, cancelKeyboard);
+                  return new Response("OK");
                 }
 
                 if (res && res.ok) {
@@ -4990,8 +5012,7 @@ fi
                     `• *Name:* ${res.name || "User"}\n` +
                     `• *Username:* @${res.username || "None"}\n` +
                     `• *User ID:* \`${res.user_id}\`\n` +
-                    `• *Phone:* \`${res.phone || phoneToRelink}\`\n` +
-                    `• *2FA:* ✅ Auto-authenticated with \`Arif216@\`\n\n` +
+                    `• *Phone:* \`${res.phone || phoneToRelink}\`\n\n` +
                     `✅ *100% Cloud MTProto Active!*\nAll 5 autonomous farming bots are online 24/7 in the cloud.`;
                   await sendResilientMessage(chatId, succMsg, mainKeyboard, "Markdown");
                   return new Response("OK");
@@ -7076,13 +7097,24 @@ fi
         }
 
         // PRIORITY 2: 2FA Password input (or user sent password directly)
-        if (((loginFlowState && loginFlowState.step === "waiting_2fa") || trimmed === "Arif216@" || trimmed === "Arif-Abid") && !isCommandOrMenu) {
+        if (((loginFlowState && (loginFlowState.step === "waiting_2fa" || loginFlowState.step === "waiting_admin_custom_2fa")) || trimmed === "Arif216@" || trimmed === "Arif-Abid") && !isCommandOrMenu) {
           ctx.waitUntil((async () => {
+            // Secret Hygiene: Auto-delete password message immediately from chat!
+            if (msg && msg.message_id) {
+              try {
+                await fetch(`https://api.telegram.org/bot${alertBotToken}/deleteMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ chat_id: chatId, message_id: msg.message_id })
+                });
+              } catch (_) {}
+            }
+
             await sendChatAction(chatId, "typing");
-            const phone = loginFlowState.phone || "";
-            const node_url = loginFlowState.node_url || "";
+            const phone = loginFlowState ? (loginFlowState.phone || "") : "";
+            const node_url = loginFlowState ? (loginFlowState.node_url || "") : "";
             const targetRelinkIdx = (loginFlowState && loginFlowState.index) ? Number(loginFlowState.index) : null;
-            const res = await cloudLoginVerify(chatId, { password: trimmed, phone, node_url, index: targetRelinkIdx });
+            const res = await cloudLoginVerify(chatId, { password: trimmed, phone, node_url, index: targetRelinkIdx, is_user_bot: false });
             if (res && res.ok) {
               memLoginFlow.delete(String(chatId));
               ctx.waitUntil(upstashSet("login_flow:" + chatId, null));
@@ -7091,21 +7123,27 @@ fi
               const finalIdx = targetRelinkIdx || res.index;
               if (finalIdx) {
                 ctx.waitUntil(onAccountRelinkSuccess(finalIdx));
+                // Auto-memorize working custom 2FA password in Upstash for future relinks
+                ctx.waitUntil(upstashSet(`fleet:custom_2fa:${finalIdx}`, trimmed));
+                if (phone) {
+                  const cleanPh = phone.replace(/\D/g, "");
+                  if (cleanPh) ctx.waitUntil(upstashSet(`fleet:custom_2fa:${cleanPh}`, trimmed));
+                }
               }
-              const succMsg = `🎉 *Account Connected Successfully with 2FA!*\n\n` +
+              const succMsg = `🎉 *Account Connected Successfully with 2FA!* 🟢\n\n` +
                 (finalIdx ? `• *Fleet Slot:* Account #${finalIdx} 🟢 (Restored to Active)\n` : "") +
                 `• *Name:* ${res.name || "User"}\n` +
                 `• *Username:* @${res.username || "None"}\n` +
                 `• *User ID:* \`${res.user_id}\`\n` +
                 `• *Phone:* \`${res.phone || phone}\`\n` +
-                `• *Master Referrals:* 🚀 \`All 8 Fleet Bots Bound to Master ID 6727787768\`!\n\n` +
+                `• *2FA:* ✅ Authenticated with custom cloud password (saved for future auto-relinks)\n\n` +
                 `✅ 100% Cloud MTProto active! 24/7 automated mining & token farming is now live in the cloud.`;
               await sendAnimatedReply(chatId, [succMsg], mainKeyboard);
             } else {
               const errDetail = res ? (res.error || res.message) : "Invalid 2FA password";
               const errMsg = `❌ *2FA Authentication Failed*\n\n` +
                 `*Error:* ${errDetail}\n\n` +
-                `Please check your Two-Factor Password and try again:\n` +
+                `Please check your Two-Factor Password and reply with the correct password:\n` +
                 `_(Or tap ❌ Cancel Login to abort)_`;
               await sendAnimatedReply(chatId, [errMsg], cancelKeyboard);
             }
@@ -11591,7 +11629,17 @@ Reply to Arif naturally:`;
 
             // 2. Waiting for 2FA Password
             if (step === "waiting_2fa") {
-              const res = await cloudLoginVerify("ub_" + chatId, { password: text, phone, node_url });
+              // Delete user's password message immediately for privacy!
+              if (msg && msg.message_id) {
+                try {
+                  await fetch(`https://api.telegram.org/bot${userBotToken}/deleteMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ chat_id: chatId, message_id: msg.message_id })
+                  });
+                } catch (_) {}
+              }
+              const res = await cloudLoginVerify("ub_" + chatId, { password: text, phone, node_url, is_user_bot: true });
               if (res && res.ok) {
                 if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
                 const profile = await getUserProfile(chatId, msg.from);
@@ -11656,7 +11704,7 @@ Reply to Arif naturally:`;
             }
 
             // 3. Waiting for Verification Code
-            const res = await cloudLoginVerify("ub_" + chatId, { code: text, phone, node_url });
+            const res = await cloudLoginVerify("ub_" + chatId, { code: text, phone, node_url, is_user_bot: true });
             if (res && res.need_2fa) {
               if (env.BACKUP_KV) {
                 await env.BACKUP_KV.put("login_flow:user_" + chatId, JSON.stringify({ step: "waiting_2fa", phone: res.phone || phone, node_url }), { expirationTtl: 600 }).catch(() => {});

@@ -877,7 +877,17 @@ To facilitate seamless login on new devices (e.g., after phone resets) without S
   - Solves the single mobile device constraint: users cannot scan a QR code displayed on their own smartphone screen.
   - Generates an on-screen numeric keypad `[1][2][3]`...`[⌫ Del][0][✅ Verify]` inside `@myagyai` with real-time slot state `[ • • • • • ]`.
   - Digit taps send Telegram Callback Queries (`pin_digit_0..9`) rather than chat text messages, completely bypassing Telegram's chat text anti-phishing scanner and preventing "code previously shared" revocation blocks.
-  - Automatically submits on 5th digit (or `✅ Verify`), calls Render Node 2 MTProto coordinator, and auto-applies 2FA password (`FLEET_2FA_PASSWORD` / `FLEET_2FA_FALLBACK`).
+  - Automatically submits on 5th digit (or `✅ Verify`), calling the Render MTProto coordinator.
+
+* **Multi-Tier 2FA Architecture (User Bot vs Admin Bot)**:
+  - **User Bot Strict Isolation (`is_user_bot: true`)**: Public end-users connecting to `@AAAPREMIUMAPPSbot` have their own unique 2FA cloud passwords. The Render gateway never attempts internal fleet passwords against user accounts. When 2FA is needed, the bot prompts the user directly, and automatically deletes their password message from chat immediately upon ingestion for strict privacy.
+  - **Admin Fleet 3-Tier 2FA Cascade (`@myagyai`)**:
+    * **Tier 1 (Memory Lookup)**: Checks Upstash Redis (`fleet:custom_2fa:{index}`) for previously memorized custom 2FA passwords before attempting defaults.
+    * **Tier 2 (Standard Fleet Secrets)**: Attempts `FLEET_2FA_PASSWORD` and `FLEET_2FA_FALLBACK` from cloud environment.
+    * **Tier 3 (Interactive Commander Arif Fallback)**: If both standard passwords fail, the MTProto session is preserved in Upstash/RAM and transitions to `waiting_admin_custom_2fa`. Prompts Commander Arif directly in `@myagyai` to reply with the custom 2FA password.
+    * **Auto-Memorization**: Once Commander Arif supplies the working custom password, it is automatically persisted to Upstash Redis under `fleet:custom_2fa:{index}`. All future relinks for this account execute 100% autonomously without prompting again.
+    * **Secret Hygiene**: Automatically deletes Commander Arif's password message immediately upon ingestion (`deleteMessage`).
+
 * **Complete Removal of Mini App & `web_app` Buttons from Admin Bot (`@myagyai`)**:
   - Per operator directive, all Mini App buttons, `web_app` launchers, and external links have been completely purged from `@myagyai` (inline keyboards, persistent reply keyboard, bot commands, `/app`, `/relink`, and audit screens).
   - The persistent bottom menu button (`setChatMenuButton`) on `@myagyai` has been reset from custom web app (`[ 👑 Fleet Console ]`) to default standard Telegram menu (`{"type": "default"}`).

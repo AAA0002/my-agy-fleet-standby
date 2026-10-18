@@ -3015,6 +3015,8 @@ async def verify_login_code(request: Request):
     chat_id = str(data.get("chat_id") or REPORT_CHAT_ID)
     code = str(data.get("code") or "").strip()
     password = str(data.get("password") or "").strip()
+    target_idx = data.get("index")
+    is_user_bot = bool(data.get("is_user_bot")) or str(chat_id).startswith("ub_")
 
     session_data = LOGIN_SESSIONS.get(chat_id)
     # If session not in local RAM, restore from distributed Upstash Redis
@@ -3058,8 +3060,31 @@ async def verify_login_code(request: Request):
             await client.connect()
 
         if password:
-            logger.info(f"[Standby Cloud Login] Attempting 2FA sign in for {phone}...")
+            logger.info(f"[Standby Cloud Login] Attempting 2FA sign in for {phone} (is_user_bot={is_user_bot})...")
             await asyncio.wait_for(client.sign_in(password=password), timeout=25)
+            # If sign-in succeeds and this is an Admin fleet account, save custom password in Upstash for future auto-relinks!
+            if not is_user_bot and UPSTASH_URL and UPSTASH_TOKEN:
+                try:
+                    async with aiohttp.ClientSession() as up_sess:
+                        if target_idx:
+                            await up_sess.post(
+                                f"{UPSTASH_URL}/set/fleet:custom_2fa:{target_idx}",
+                                headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+                                data=password,
+                                timeout=aiohttp.ClientTimeout(total=3)
+                            )
+                        if phone:
+                            clean_ph = re.sub(r"\D", "", str(phone))
+                            if clean_ph:
+                                await up_sess.post(
+                                    f"{UPSTASH_URL}/set/fleet:custom_2fa:{clean_ph}",
+                                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+                                    data=password,
+                                    timeout=aiohttp.ClientTimeout(total=3)
+                                )
+                    logger.info(f"[Standby Cloud Login] 💾 Persisted custom 2FA password in Upstash for Account #{target_idx or phone}")
+                except Exception as e_pw:
+                    logger.warning(f"[Standby Cloud Login] Could not persist custom 2FA in Upstash: {e_pw}")
         else:
             clean_code = re.sub(r"[^0-9]", "", code)
             if not clean_code or len(clean_code) < 3:
@@ -3068,28 +3093,14 @@ async def verify_login_code(request: Request):
             try:
                 await asyncio.wait_for(client.sign_in(phone=phone, code=clean_code, phone_code_hash=phone_code_hash), timeout=25)
             except SessionPasswordNeededError:
-                logger.info(f"[Standby Cloud Login] 🔒 2FA password required for {phone}. Auto-authenticating with fleet 2FA password...")
-                two_fa_passwords = [
-                    os.getenv("FLEET_2FA_PASSWORD", "Arif216@"),
-                    os.getenv("FLEET_2FA_FALLBACK", "Arif-Abid"),
-                    "Arif216@",
-                    "Arif-Abid"
-                ]
-                two_fa_ok = False
-                for p in two_fa_passwords:
-                    if not p:
-                        continue
-                    try:
-                        await asyncio.wait_for(client.sign_in(password=p), timeout=20)
-                        two_fa_ok = True
-                        logger.info(f"[Standby Cloud Login] 🎉 2FA auto-authentication SUCCESSFUL for {phone}!")
-                        break
-                    except Exception as err2fa:
-                        logger.warning(f"[Standby Cloud Login] 2FA attempt failed with {p[:3]}***: {err2fa}")
-                if not two_fa_ok:
-                    sess_str_saved = client.session.save()
-                    if chat_id in LOGIN_SESSIONS:
-                        LOGIN_SESSIONS[chat_id]["session_string"] = sess_str_saved
+                sess_str_saved = client.session.save()
+                if chat_id in LOGIN_SESSIONS:
+                    LOGIN_SESSIONS[chat_id]["session_string"] = sess_str_saved
+
+                if is_user_bot:
+                    # STRICT USER BOT DIRECTIVE: Public end-users have their own unique 2FA cloud password!
+                    # NEVER attempt internal admin fleet passwords against end-user accounts!
+                    logger.info(f"[Standby Cloud Login] 🔒 2FA password required for User Bot caller {phone}. Prompting user directly...")
                     if UPSTASH_URL and UPSTASH_TOKEN:
                         try:
                             async with aiohttp.ClientSession() as up_sess:
@@ -3097,7 +3108,8 @@ async def verify_login_code(request: Request):
                                     "phone": phone,
                                     "phone_code_hash": phone_code_hash,
                                     "session_string": sess_str_saved,
-                                    "created_at": time.time()
+                                    "created_at": time.time(),
+                                    "is_user_bot": True
                                 }
                                 await up_sess.post(
                                     f"{UPSTASH_URL}/set/tg_login_flow:{chat_id}?ex=900",
@@ -3110,8 +3122,88 @@ async def verify_login_code(request: Request):
                     return {
                         "ok": False,
                         "need_2fa": True,
+                        "is_user_bot": True,
                         "phone": phone,
                         "message": "Two-Factor Cloud Password required"
+                    }
+
+                # ADMIN FLEET 3-TIER CASCADE:
+                logger.info(f"[Standby Cloud Login] 🔒 2FA password required for Fleet Account {phone} (#{target_idx}). Cascading 3-tier 2FA resolution...")
+                two_fa_passwords = []
+                # Tier 1: Check Upstash for previously memorized custom password for this account
+                if UPSTASH_URL and UPSTASH_TOKEN:
+                    try:
+                        async with aiohttp.ClientSession() as up_sess:
+                            lookup_keys = []
+                            if target_idx:
+                                lookup_keys.append(f"fleet:custom_2fa:{target_idx}")
+                            if phone:
+                                clean_ph = re.sub(r"\D", "", str(phone))
+                                if clean_ph:
+                                    lookup_keys.append(f"fleet:custom_2fa:{clean_ph}")
+                            for lk in lookup_keys:
+                                async with up_sess.get(
+                                    f"{UPSTASH_URL}/get/{lk}",
+                                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+                                    timeout=aiohttp.ClientTimeout(total=3)
+                                ) as lk_resp:
+                                    if lk_resp.status == 200:
+                                        res_j = await lk_resp.json()
+                                        val = res_j.get("result")
+                                        if val and isinstance(val, str) and len(val.strip()) > 0:
+                                            two_fa_passwords.append(val.strip())
+                                            logger.info(f"[Standby Cloud Login] 🧠 Found memorized custom 2FA password in Upstash for Account #{target_idx or phone}")
+                                            break
+                    except Exception as e_mem:
+                        logger.warning(f"[Standby Cloud Login] Upstash custom 2FA lookup error: {e_mem}")
+
+                # Tier 2: Standard Fleet Passwords from cloud environment
+                env_pw1 = os.getenv("FLEET_2FA_PASSWORD", "Arif216@")
+                env_pw2 = os.getenv("FLEET_2FA_FALLBACK", "Arif-Abid")
+                for p_env in [env_pw1, env_pw2, "Arif216@", "Arif-Abid"]:
+                    if p_env and p_env not in two_fa_passwords:
+                        two_fa_passwords.append(p_env)
+
+                two_fa_ok = False
+                for p in two_fa_passwords:
+                    if not p:
+                        continue
+                    try:
+                        await asyncio.wait_for(client.sign_in(password=p), timeout=20)
+                        two_fa_ok = True
+                        logger.info(f"[Standby Cloud Login] 🎉 2FA auto-authentication SUCCESSFUL for fleet account {phone}!")
+                        break
+                    except Exception as err2fa:
+                        logger.warning(f"[Standby Cloud Login] 2FA attempt failed with {p[:3]}***: {err2fa}")
+
+                if not two_fa_ok:
+                    # Tier 3: Both standard passwords failed! Keep session alive in Upstash and prompt Commander Arif for custom password!
+                    logger.warning(f"[Standby Cloud Login] ⚠️ All standard 2FA passwords failed for {phone} (#{target_idx}). Awaiting custom password from admin...")
+                    if UPSTASH_URL and UPSTASH_TOKEN:
+                        try:
+                            async with aiohttp.ClientSession() as up_sess:
+                                up_data = {
+                                    "phone": phone,
+                                    "phone_code_hash": phone_code_hash,
+                                    "session_string": sess_str_saved,
+                                    "created_at": time.time(),
+                                    "index": target_idx
+                                }
+                                await up_sess.post(
+                                    f"{UPSTASH_URL}/set/tg_login_flow:{chat_id}?ex=900",
+                                    headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"},
+                                    data=json.dumps(up_data),
+                                    timeout=aiohttp.ClientTimeout(total=4)
+                                )
+                        except Exception:
+                            pass
+                    return {
+                        "ok": False,
+                        "need_2fa": True,
+                        "fleet_passwords_failed": True,
+                        "phone": phone,
+                        "index": target_idx,
+                        "message": "Standard fleet 2FA passwords failed. Custom 2FA password required."
                     }
 
         # Authenticated successfully!

@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔑 Multi-Tier 2FA Architecture: User Bot Isolation & Admin Custom 2FA Cascade (October 18, 2026)**:
+  - **🛡️ Strict User Bot 2FA Isolation (`is_user_bot: true`)**:
+    * Render `/api/account/login/verify-code` now explicitly inspects caller identity (`is_user_bot: true` or `chat_id.startswith("ub_")`).
+    * Completely purged automatic fleet password attempts against public end-user accounts. Users are never subjected to invalid admin password trials.
+    * If an end-user account demands Two-Step Verification, the gateway immediately returns `need_2fa: true` and the User Bot prompts the user for *their* unique cloud password.
+    * Added automated chat message sanitization (`deleteMessage` on user 2FA replies) ensuring user passwords are never persisted in Telegram chat history.
+  - **👑 Admin Fleet 3-Tier 2FA Cascade & Custom Fallback (`@myagyai`)**:
+    * **Tier 1 (Memory Lookup)**: Checks Upstash Redis (`fleet:custom_2fa:{index}`) for previously memorized custom 2FA passwords before attempting defaults.
+    * **Tier 2 (Standard Fleet Secrets)**: Attempts `FLEET_2FA_PASSWORD` and `FLEET_2FA_FALLBACK` from cloud environment.
+    * **Tier 3 (Interactive Commander Arif Fallback)**: If both standard passwords fail, the MTProto session is preserved in Upstash/RAM and transitions to `waiting_admin_custom_2fa`. Prompts Commander Arif directly in `@myagyai` to reply with the custom 2FA password.
+    * **Auto-Memorization**: Once Commander Arif supplies the working custom password, it is automatically persisted to Upstash Redis under `fleet:custom_2fa:{index}`. All future relinks for this account execute 100% autonomously without prompting again.
+    * **Secret Hygiene**: Automatically deletes Commander Arif's password message immediately upon ingestion (`deleteMessage`).
+  - **📱 Termux Samsung Galaxy A30 Session Durability**:
+    * Executed `termux-wake-lock` to counter Samsung One UI aggressive Phantom Process Killer.
+    * Cleaned system caches and freed available memory buffer to preserve CLI responsiveness.
+
 - **🔐 Strict Secret Hygiene & Zero Plaintext Secrets Enforcement (October 18, 2026)**:
   - **🧹 Git Remote URL Sanitization & Credential Isolation**:
     * Removed embedded GitHub Personal Access Tokens (PATs) from `origin` (`https://github.com/AAA0002/ATL.git`) and `standby_repo` (`https://github.com/AAA0002/my-agy-fleet-standby.git`).
