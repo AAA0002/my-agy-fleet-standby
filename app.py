@@ -1388,14 +1388,14 @@ async def token_health_and_refresh_watchdog():
                                 cur_wb = wb_d.get("result", {}).get("url", "")
                                 if not cur_wb or "tgcloud" in cur_wb or "cloud.telegram.org" in cur_wb:
                                     logger.warning("[Webhook Sentinel] ⚠️ Admin Bot Webhook needed update! Binding to Cloudflare Edge...")
-                                    restore_url = "https://restore-agy.aaaai2.workers.dev/telegram-webhook"
+                                    restore_url = "https://restore-agy.agorameet.workers.dev/telegram-webhook"
                                     async with wb_s.post(
                                         f"https://api.telegram.org/bot{REPORT_TOKEN}/setWebhook",
                                         json={"url": restore_url, "allowed_updates": ["message", "callback_query"]},
                                         timeout=aiohttp.ClientTimeout(total=5)
                                     ) as set_r:
                                         if set_r.status == 200:
-                                            logger.info("[Webhook Sentinel] ✅ Admin Bot Webhook bound to Cloudflare Edge: https://restore-agy.aaaai2.workers.dev/telegram-webhook")
+                                            logger.info("[Webhook Sentinel] ✅ Admin Bot Webhook bound to Cloudflare Edge: https://restore-agy.agorameet.workers.dev/telegram-webhook")
                 except Exception as wbe:
                     logger.debug(f"[Webhook Sentinel] Note: {wbe}")
 

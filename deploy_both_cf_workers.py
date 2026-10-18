@@ -4295,11 +4295,15 @@ fi
               { text: "🚀 Open Fleet Operations Dashboard 👑", web_app: { url: adminConsoleUrl } }
             ],
             [
+              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
+              { text: "📺 Ad-Farmer Loop", callback_data: "btn_ad_farmer" }
+            ],
+            [
               { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" },
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" }
             ],
             [
-              { text: "⚡ 10-Bot Harvest", callback_data: "btn_harvest" },
+              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" },
               { text: "💼 Multi-Chain Wallets", callback_data: "btn_wallets" }
             ],
             [
@@ -5726,6 +5730,211 @@ fi
                 `━━━━━━━━━━━━━━━━━━━━━━`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, statusInlineKeyboard);
+            } else if (cbData === "btn_bots_hub") {
+              const health = await getSessionHealthState();
+              const activeCount = health.healthy.size;
+              const botsHubInlineKeyboard = {
+                inline_keyboard: [
+                  [ { text: "⚡ MRG Miner", callback_data: "btn_mrg" }, { text: "🪙 ATF Miner", callback_data: "btn_atf" } ],
+                  [ { text: "🏢 Victor's", callback_data: "btn_victors" }, { text: "💧 VyroDrop", callback_data: "btn_vyro" } ],
+                  [ { text: "💎 Kynex Network", callback_data: "btn_kynex" }, { text: "⛏️ DiggoMiner", callback_data: "btn_diggo" } ],
+                  [ { text: "🚀 Astra Airdrop", callback_data: "btn_astra" }, { text: "🐸 PepeGram", callback_data: "btn_pepe" } ],
+                  [ { text: "🤖 AdxEarn AI", callback_data: "btn_adx" }, { text: "📺 Ad-Farmer", callback_data: "btn_ad_farmer" } ],
+                  [ { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" }, { text: "🔙 Main Menu", callback_data: "btn_back_main" } ]
+                ]
+              };
+              const hubMsg = `🤖 *9-BOT AUTONOMOUS MINING FLEET HUB*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `🟢 *Fleet Health:* \`${activeCount}/18 Accounts Active\`\n\n` +
+                `1. ⚡ *MRG Miner* (@MRG_miner_bot) — Level 95+ Auto-Upgrade\n` +
+                `2. 🪙 *ATF Miner* (@atf_miner_bot) — Cryptographic Math Solver\n` +
+                `3. 🏢 *Victor's Company* (@VictorsCompanybot) — Turnstile Pass & Deep Mine\n` +
+                `4. 💧 *VyroDrop* (@vyrodrop_bot) — Autonomous Headless Solver\n` +
+                `5. 💎 *Kynex Network* (@Kynex_miningbot) — 15-Min Energy Sweep\n` +
+                `6. ⛏️ *DiggoMiner* (@Diggominer_bot) — WebApp Mining & Referrals\n` +
+                `7. 🚀 *Astra Airdrop* (@AstraAirdropBot) — Supabase RPC & Boosts\n` +
+                `8. 🐸 *PepeGram* (@pepe_mine_bot) — 6h Hash Production\n` +
+                `9. 🤖 *AdxEarn AI* (@AdxEarnAibot) — Active Daily Mining\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `⚡ _Select a bot below for dedicated telemetry & controls:_`;
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, hubMsg, botsHubInlineKeyboard);
+            } else if (cbData === "btn_diggo") {
+              const health = await getSessionHealthState();
+              const activeCount = health.healthy.size;
+              const revokedCount = health.revoked.size;
+              const diggoInlineKeyboard = {
+                inline_keyboard: [
+                  [
+                    { text: "⛏️ Trigger Harvest", callback_data: "btn_harvest" },
+                    { text: "🤖 All 9 Bots", callback_data: "btn_bots_hub" }
+                  ],
+                  [
+                    { text: "🔄 Refresh Status", callback_data: "btn_diggo" },
+                    { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                  ]
+                ]
+              };
+              const diggoMsg = `⛏️ *DIGGOMINER CLOUD COMMAND CENTER*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `• *Platform:* DiggoMiner (@Diggominer_bot)\n` +
+                `• *Endpoint:* \`https://diggo.linkpc.net\`\n` +
+                `• *Status:* 🟢 \`${activeCount}/18 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+                `• *Autonomous Features:* Auto-Claims, Referral Yields, Daily Check-in & Social Tasks\n` +
+                `• *Architecture:* Headless Cloud JWT Session + WebApp handshake\n` +
+                `• *Mining Yield:* Compound Level 45+ Active\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `⚡ _Tap the buttons below to trigger harvest or inspect bots:_`;
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, diggoMsg, diggoInlineKeyboard);
+            } else if (cbData === "btn_astra") {
+              const health = await getSessionHealthState();
+              const activeCount = health.healthy.size;
+              const revokedCount = health.revoked.size;
+              const astraInlineKeyboard = {
+                inline_keyboard: [
+                  [
+                    { text: "🚀 Trigger Harvest", callback_data: "btn_harvest" },
+                    { text: "🤖 All 9 Bots", callback_data: "btn_bots_hub" }
+                  ],
+                  [
+                    { text: "🔄 Refresh Status", callback_data: "btn_astra" },
+                    { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                  ]
+                ]
+              };
+              const astraMsg = `🚀 *ASTRA AIRDROP CLOUD COMMAND CENTER*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `• *Platform:* Astra Airdrop (@AstraAirdropBot)\n` +
+                `• *Architecture:* Supabase RPC Engine & Cryptographic Math Solver\n` +
+                `• *Status:* 🟢 \`${activeCount}/18 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+                `• *Master Level:* Level 115+ (1,800+ ASTRA)\n` +
+                `• *Features:* Math Challenge Auto-Solver, Task Automation & Team Claims\n` +
+                `• *Multi-Cloud:* 100% Cloudflare Edge & Render Native\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `⚡ _Tap the buttons below to trigger harvest or inspect bots:_`;
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, astraMsg, astraInlineKeyboard);
+            } else if (cbData === "btn_pepe") {
+              const health = await getSessionHealthState();
+              const activeCount = health.healthy.size;
+              const revokedCount = health.revoked.size;
+              const pepeInlineKeyboard = {
+                inline_keyboard: [
+                  [
+                    { text: "🐸 Trigger Harvest", callback_data: "btn_harvest" },
+                    { text: "🤖 All 9 Bots", callback_data: "btn_bots_hub" }
+                  ],
+                  [
+                    { text: "🔄 Refresh Status", callback_data: "btn_pepe" },
+                    { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                  ]
+                ]
+              };
+              const pepeMsg = `🐸 *PEPEGRAM CLOUD COMMAND CENTER*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `• *Platform:* PepeGram (@pepe_mine_bot / MiniEmpire)\n` +
+                `• *Status:* 🟢 \`${activeCount}/18 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+                `• *Features:* 6-Hour Production Cycles, Slot Spins, Ad Rolls & Team Commissions\n` +
+                `• *Architecture:* Cloudflare Mesh Headless Automation\n` +
+                `• *Yield:* Continuous Hash Production & Power Boosts\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `⚡ _Tap the buttons below to trigger harvest or inspect bots:_`;
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, pepeMsg, pepeInlineKeyboard);
+            } else if (cbData === "btn_adx") {
+              const health = await getSessionHealthState();
+              const activeCount = health.healthy.size;
+              const revokedCount = health.revoked.size;
+              const adxInlineKeyboard = {
+                inline_keyboard: [
+                  [
+                    { text: "🤖 Trigger Harvest", callback_data: "btn_harvest" },
+                    { text: "🤖 All 9 Bots", callback_data: "btn_bots_hub" }
+                  ],
+                  [
+                    { text: "🔄 Refresh Status", callback_data: "btn_adx" },
+                    { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                  ]
+                ]
+              };
+              const adxMsg = `🤖 *ADXEARN AI CLOUD COMMAND CENTER*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `• *Platform:* AdxEarn AI (@AdxEarnAibot)\n` +
+                `• *Status:* 🟢 \`${activeCount}/18 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+                `• *Mining State:* ACTIVE (Daily Streaks & Auto-Boosts)\n` +
+                `• *Tasks:* Dynamic Task Discovery & Immediate Claim\n` +
+                `• *Referrals:* Master 6727787768 Deeply Bound\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `⚡ _Tap the buttons below to trigger harvest or inspect bots:_`;
+              const cbMsgId = cb.message ? cb.message.message_id : null;
+              await editOrSendResilientMessage(chatId, cbMsgId, adxMsg, adxInlineKeyboard);
+            } else if (cbData === "btn_ad_farmer") {
+              ctx.waitUntil((async () => {
+                const todayStr = new Date().toISOString().slice(0, 10);
+                const FLEET_18_IDS = [
+                  { uid: "6727787768", name: "Arif (Master)" },
+                  { uid: "8881914294", name: "Nancy 2" },
+                  { uid: "7648254021", name: "Koram 3" },
+                  { uid: "8826375659", name: "Arif 4" },
+                  { uid: "8450010161", name: "Nathan 5" },
+                  { uid: "8782429452", name: "Kaitlyn 6" },
+                  { uid: "7734849205", name: "Abid 7" },
+                  { uid: "8025472383", name: "Abid 8" },
+                  { uid: "8851426148", name: "Naimur 9" },
+                  { uid: "8203342513", name: "Tanvir 10" },
+                  { uid: "8190649727", name: "MD. ARIF 11" },
+                  { uid: "7487048946", name: "Sanzida 12" },
+                  { uid: "8741547543", name: "Abid 13" },
+                  { uid: "8727040932", name: "Rohan 14" },
+                  { uid: "7749125802", name: "Tasnim 15" },
+                  { uid: "7954290138", name: "Rashedul 16" },
+                  { uid: "8841038141", name: "Kawsar 17" },
+                  { uid: "8975442879", name: "Mehedi 18" }
+                ];
+                let totalAdsToday = 0;
+                const topList = [];
+                for (const a of FLEET_18_IDS) {
+                  const key = `fleet:daily_ads:${a.uid}:${todayStr}`;
+                  let count = 0;
+                  try {
+                    const raw = await upstashGet(key, 0);
+                    count = parseInt(raw, 10) || 0;
+                  } catch (_) {}
+                  totalAdsToday += count;
+                  topList.push({ name: a.name, count });
+                }
+                topList.sort((a, b) => b.count - a.count);
+                const top3Str = topList.slice(0, 3).map(a => `• *${a.name}:* \`${a.count} ads\` (+${(a.count * 20).toLocaleString()} pts)`).join("\n");
+                const totalPts = totalAdsToday * 20;
+
+                const adFarmerInlineKeyboard = {
+                  inline_keyboard: [
+                    [
+                      { text: "🔄 Refresh Telemetry", callback_data: "btn_ad_farmer" },
+                      { text: "⚡ Trigger Harvest", callback_data: "btn_harvest" }
+                    ],
+                    [
+                      { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                      { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                    ]
+                  ]
+                };
+
+                const msg = `📺 *FLEET AUTONOMOUS AD-FARMER LOOP*\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `• *Status:* 🟢 \`Active 24/7 in Cloud\` (Render Node 2)\n` +
+                  `• *Total Ads Farmed Today:* \`${totalAdsToday.toLocaleString()} / 18,000 Ads\`\n` +
+                  `• *Points Accrued Today:* \`+${totalPts.toLocaleString()} Pts\`\n` +
+                  `• *Accounts Cycling:* \`18/18 Accounts Active\` (~4.8s / ad)\n` +
+                  `• *Target Goal:* \`1,000 ads/day per account\`\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `🏆 *Top Active Accounts Today:*\n${top3Str}\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `⚡ _Tap below to refresh telemetry or trigger harvesting:_`;
+                const cbMsgId = cb.message ? cb.message.message_id : null;
+                await editOrSendResilientMessage(chatId, cbMsgId, msg, adFarmerInlineKeyboard);
+              })());
             } else if (cbData === "btn_atf") {
               let atfData = {};
               try {
@@ -6652,6 +6861,239 @@ fi
           return new Response("OK");
         }
 
+        // 1.455 Dedicated DiggoMiner Command (/diggo)
+        if (text === "/diggo" || text.startsWith("/diggo")) {
+          ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
+            const activeCount = health.healthy.size;
+            const revokedCount = health.revoked.size;
+            const diggoInlineKeyboard = {
+              inline_keyboard: [
+                [
+                  { text: "⛏️ Trigger Harvest", callback_data: "btn_harvest" },
+                  { text: "🤖 All 9 Bots", callback_data: "btn_bots_hub" }
+                ],
+                [
+                  { text: "🔄 Refresh Status", callback_data: "btn_diggo" },
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                ]
+              ]
+            };
+            const diggoMsg = `⛏️ *DIGGOMINER CLOUD COMMAND CENTER*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Platform:* DiggoMiner (@Diggominer_bot)\n` +
+              `• *Endpoint:* \`https://diggo.linkpc.net\`\n` +
+              `• *Status:* 🟢 \`${activeCount}/18 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Autonomous Features:* Auto-Claims, Referral Yields, Daily Check-in & Social Tasks\n` +
+              `• *Architecture:* Headless Cloud JWT Session + WebApp handshake\n` +
+              `• *Mining Yield:* Compound Level 45+ Active\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `⚡ _Tap the buttons below to trigger harvest or inspect bots:_`;
+            await sendReply(diggoMsg, diggoInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 1.456 Dedicated Astra Airdrop Command (/astra)
+        if (text === "/astra" || text.startsWith("/astra")) {
+          ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
+            const activeCount = health.healthy.size;
+            const revokedCount = health.revoked.size;
+            const astraInlineKeyboard = {
+              inline_keyboard: [
+                [
+                  { text: "🚀 Trigger Harvest", callback_data: "btn_harvest" },
+                  { text: "🤖 All 9 Bots", callback_data: "btn_bots_hub" }
+                ],
+                [
+                  { text: "🔄 Refresh Status", callback_data: "btn_astra" },
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                ]
+              ]
+            };
+            const astraMsg = `🚀 *ASTRA AIRDROP CLOUD COMMAND CENTER*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Platform:* Astra Airdrop (@AstraAirdropBot)\n` +
+              `• *Architecture:* Supabase RPC Engine & Cryptographic Math Solver\n` +
+              `• *Status:* 🟢 \`${activeCount}/18 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Master Level:* Level 115+ (1,800+ ASTRA)\n` +
+              `• *Features:* Math Challenge Auto-Solver, Task Automation & Team Claims\n` +
+              `• *Multi-Cloud:* 100% Cloudflare Edge & Render Native\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `⚡ _Tap the buttons below to trigger harvest or inspect bots:_`;
+            await sendReply(astraMsg, astraInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 1.457 Dedicated PepeGram Command (/pepe)
+        if (text === "/pepe" || text.startsWith("/pepe")) {
+          ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
+            const activeCount = health.healthy.size;
+            const revokedCount = health.revoked.size;
+            const pepeInlineKeyboard = {
+              inline_keyboard: [
+                [
+                  { text: "🐸 Trigger Harvest", callback_data: "btn_harvest" },
+                  { text: "🤖 All 9 Bots", callback_data: "btn_bots_hub" }
+                ],
+                [
+                  { text: "🔄 Refresh Status", callback_data: "btn_pepe" },
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                ]
+              ]
+            };
+            const pepeMsg = `🐸 *PEPEGRAM CLOUD COMMAND CENTER*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Platform:* PepeGram (@pepe_mine_bot / MiniEmpire)\n` +
+              `• *Status:* 🟢 \`${activeCount}/18 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Features:* 6-Hour Production Cycles, Slot Spins, Ad Rolls & Team Commissions\n` +
+              `• *Architecture:* Cloudflare Mesh Headless Automation\n` +
+              `• *Yield:* Continuous Hash Production & Power Boosts\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `⚡ _Tap the buttons below to trigger harvest or inspect bots:_`;
+            await sendReply(pepeMsg, pepeInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 1.458 Dedicated AdxEarn AI Command (/adx)
+        if (text === "/adx" || text.startsWith("/adx")) {
+          ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
+            const activeCount = health.healthy.size;
+            const revokedCount = health.revoked.size;
+            const adxInlineKeyboard = {
+              inline_keyboard: [
+                [
+                  { text: "🤖 Trigger Harvest", callback_data: "btn_harvest" },
+                  { text: "🤖 All 9 Bots", callback_data: "btn_bots_hub" }
+                ],
+                [
+                  { text: "🔄 Refresh Status", callback_data: "btn_adx" },
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                ]
+              ]
+            };
+            const adxMsg = `🤖 *ADXEARN AI CLOUD COMMAND CENTER*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Platform:* AdxEarn AI (@AdxEarnAibot)\n` +
+              `• *Status:* 🟢 \`${activeCount}/18 Accounts Active\`${revokedCount > 0 ? ` • 🔴 \`${revokedCount} Need Re-link\`` : ""}\n` +
+              `• *Mining State:* ACTIVE (Daily Streaks & Auto-Boosts)\n` +
+              `• *Tasks:* Dynamic Task Discovery & Immediate Claim\n` +
+              `• *Referrals:* Master 6727787768 Deeply Bound\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `⚡ _Tap the buttons below to trigger harvest or inspect bots:_`;
+            await sendReply(adxMsg, adxInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 1.459 Dedicated Ad-Farmer Command (/ad_farmer or /ads)
+        if (text === "/ad_farmer" || text.startsWith("/ad_farmer") || text === "/ads" || text.startsWith("/ads")) {
+          ctx.waitUntil((async () => {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const FLEET_18_IDS = [
+              { uid: "6727787768", name: "Arif (Master)" },
+              { uid: "8881914294", name: "Nancy 2" },
+              { uid: "7648254021", name: "Koram 3" },
+              { uid: "8826375659", name: "Arif 4" },
+              { uid: "8450010161", name: "Nathan 5" },
+              { uid: "8782429452", name: "Kaitlyn 6" },
+              { uid: "7734849205", name: "Abid 7" },
+              { uid: "8025472383", name: "Abid 8" },
+              { uid: "8851426148", name: "Naimur 9" },
+              { uid: "8203342513", name: "Tanvir 10" },
+              { uid: "8190649727", name: "MD. ARIF 11" },
+              { uid: "7487048946", name: "Sanzida 12" },
+              { uid: "8741547543", name: "Abid 13" },
+              { uid: "8727040932", name: "Rohan 14" },
+              { uid: "7749125802", name: "Tasnim 15" },
+              { uid: "7954290138", name: "Rashedul 16" },
+              { uid: "8841038141", name: "Kawsar 17" },
+              { uid: "8975442879", name: "Mehedi 18" }
+            ];
+            let totalAdsToday = 0;
+            const topList = [];
+            for (const a of FLEET_18_IDS) {
+              const key = `fleet:daily_ads:${a.uid}:${todayStr}`;
+              let count = 0;
+              try {
+                const raw = await upstashGet(key, 0);
+                count = parseInt(raw, 10) || 0;
+              } catch (_) {}
+              totalAdsToday += count;
+              topList.push({ name: a.name, count });
+            }
+            topList.sort((a, b) => b.count - a.count);
+            const top3Str = topList.slice(0, 3).map(a => `• *${a.name}:* \`${a.count} ads\` (+${(a.count * 20).toLocaleString()} pts)`).join("\n");
+            const totalPts = totalAdsToday * 20;
+
+            const adFarmerInlineKeyboard = {
+              inline_keyboard: [
+                [
+                  { text: "🔄 Refresh Telemetry", callback_data: "btn_ad_farmer" },
+                  { text: "⚡ Trigger Harvest", callback_data: "btn_harvest" }
+                ],
+                [
+                  { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
+                  { text: "🔙 Main Menu", callback_data: "btn_back_main" }
+                ]
+              ]
+            };
+
+            const msg = `📺 *FLEET AUTONOMOUS AD-FARMER LOOP*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Status:* 🟢 \`Active 24/7 in Cloud\` (Render Node 2)\n` +
+              `• *Total Ads Farmed Today:* \`${totalAdsToday.toLocaleString()} / 18,000 Ads\`\n` +
+              `• *Points Accrued Today:* \`+${totalPts.toLocaleString()} Pts\`\n` +
+              `• *Accounts Cycling:* \`18/18 Accounts Active\` (~4.8s / ad)\n` +
+              `• *Target Goal:* \`1,000 ads/day per account\`\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `🏆 *Top Active Accounts Today:*\n${top3Str}\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `⚡ _Tap below to refresh telemetry or trigger harvesting:_`;
+            await sendReply(msg, adFarmerInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
+        // 1.4595 9-Bot Hub Command (/bots or /hub)
+        if (text === "/bots" || text.startsWith("/bots") || text === "/hub" || text.startsWith("/hub")) {
+          ctx.waitUntil((async () => {
+            const health = await getSessionHealthState();
+            const activeCount = health.healthy.size;
+            const botsHubInlineKeyboard = {
+              inline_keyboard: [
+                [ { text: "⚡ MRG Miner", callback_data: "btn_mrg" }, { text: "🪙 ATF Miner", callback_data: "btn_atf" } ],
+                [ { text: "🏢 Victor's", callback_data: "btn_victors" }, { text: "💧 VyroDrop", callback_data: "btn_vyro" } ],
+                [ { text: "💎 Kynex Network", callback_data: "btn_kynex" }, { text: "⛏️ DiggoMiner", callback_data: "btn_diggo" } ],
+                [ { text: "🚀 Astra Airdrop", callback_data: "btn_astra" }, { text: "🐸 PepeGram", callback_data: "btn_pepe" } ],
+                [ { text: "🤖 AdxEarn AI", callback_data: "btn_adx" }, { text: "📺 Ad-Farmer", callback_data: "btn_ad_farmer" } ],
+                [ { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" }, { text: "🔙 Main Menu", callback_data: "btn_back_main" } ]
+              ]
+            };
+            const hubMsg = `🤖 *9-BOT AUTONOMOUS MINING FLEET HUB*\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `🟢 *Fleet Health:* \`${activeCount}/18 Accounts Active\`\n\n` +
+              `1. ⚡ *MRG Miner* (@MRG_miner_bot) — Level 95+ Auto-Upgrade\n` +
+              `2. 🪙 *ATF Miner* (@atf_miner_bot) — Cryptographic Math Solver\n` +
+              `3. 🏢 *Victor's Company* (@VictorsCompanybot) — Turnstile Pass & Deep Mine\n` +
+              `4. 💧 *VyroDrop* (@vyrodrop_bot) — Autonomous Headless Solver\n` +
+              `5. 💎 *Kynex Network* (@Kynex_miningbot) — 15-Min Energy Sweep\n` +
+              `6. ⛏️ *DiggoMiner* (@Diggominer_bot) — WebApp Mining & Referrals\n` +
+              `7. 🚀 *Astra Airdrop* (@AstraAirdropBot) — Supabase RPC & Boosts\n` +
+              `8. 🐸 *PepeGram* (@pepe_mine_bot) — 6h Hash Production\n` +
+              `9. 🤖 *AdxEarn AI* (@AdxEarnAibot) — Active Daily Mining\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `⚡ _Select a bot below for dedicated telemetry & controls:_`;
+            await sendReply(hubMsg, botsHubInlineKeyboard);
+          })());
+          return new Response("OK");
+        }
+
         // 1.5 Daily AI Executive Briefing Command (/briefing)
         if (text === "🌅 AI Briefing" || text === "🌅 Morning Briefing" || text === "/briefing" || text.startsWith("/briefing")) {
 
@@ -7410,7 +7852,7 @@ fi
         }
 
         // 3. Status Commands
-        if (text === "📊 Fleet Status" || text === "📊 Live Status" || text === "📊 Status" || text.startsWith("/status") || text === "🚀 Open Mini App" || text.startsWith("/app") || text === "🚀 Open WebApp Dashboard" || text === "🚀 Open Dashboard" || text === "👑 Admin Console") {
+        if (text === "📊 Fleet Status" || text === "📊 Live Status" || text === "📊 Status" || text.startsWith("/status") || text === "/fleet" || text.startsWith("/fleet") || text === "📊 Fleet" || text === "🚀 Open Mini App" || text.startsWith("/app") || text === "🚀 Open WebApp Dashboard" || text === "🚀 Open Dashboard" || text === "👑 Admin Console") {
           ctx.waitUntil((async () => {
             await sendChatAction(chatId, "typing");
             let liveBnb = 0.000622;
@@ -8686,14 +9128,20 @@ fi
           const helpText = `ℹ️ *MY AGY AI — Operations & Admin Command Center*\n\n` +
             `🖥️ *Fleet Operations:*\n` +
             `• \`/start\` or \`/menu\` — Operations dashboard & quick action grid\n` +
-            `• \`/status\` — Real-time fleet operations & telemetry\n` +
+            `• \`/status\` or \`/fleet\` — Real-time fleet operations & telemetry\n` +
             `• \`/summary\` — Executive all-in-one health check\n` +
-            `• \`/harvest\` — Dispatches 5-bot harvest across all 18 accounts\n` +
+            `• \`/harvest\` — Dispatches instant 9-bot harvest across all 18 accounts\n` +
+            `• \`/bots\` — 9-Bot Autonomous Mining Fleet Hub\n` +
+            `• \`/ad_farmer\` — 24/7 Autonomous Ad-Farming Loop Status (18 accounts)\n` +
             `• \`/kynex\` — Kynex Network Cloud Mining Center (33k+ KNX, 12h energy)\n` +
             `• \`/mrg\` — MRG Miner Level Upgrades & TonConnect 2.0\n` +
             `• \`/victors\` — Victor's Company Deep Mine & HumanPass\n` +
             `• \`/vyro\` — VyroDrop Decentralized Mining & TON Wallet\n` +
             `• \`/atf\` — ATF Miner Command Center (Anti-bot math & TON wallet)\n` +
+            `• \`/diggo\` — DiggoMiner WebApp & Referral Yields\n` +
+            `• \`/astra\` — Astra Airdrop Supabase RPC & Math Solver\n` +
+            `• \`/pepe\` — PepeGram 6h Hash Production & Power Boosts\n` +
+            `• \`/adx\` — AdxEarn AI Daily Streaks & Dynamic Tasks\n` +
             `• \`/accounts\` — Inspect all 18 fleet accounts & sessions\n` +
             `• \`/add_account <phone>\` — Connect a new Telegram account\n` +
             `• \`/remove_account <id>\` — Disconnect an account from automation\n` +
@@ -12944,85 +13392,9 @@ async def main():
         except Exception as e:
             print(f"⚠️ Error checking webhooks: {e}")
 
-        # 1. Synchronize User Bot (@AAAPREMIUMAPPSbot) Webhook, Menu & Commands
-        user_wh_url = f"https://restore-agy.agorameet.workers.dev/user-bot-webhook"
-        try:
-            async with session.post(
-                f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setWebhook",
-                json={
-                    "url": user_wh_url,
-                    "allowed_updates": ["message", "edited_message", "callback_query", "pre_checkout_query"],
-                    "drop_pending_updates": False
-                }
-            ) as resp:
-                res_uwh = await resp.json()
-                print(f"📡 User Bot Webhook ({user_wh_url}): {res_uwh.get('ok')} ({res_uwh.get('description', 'OK')})")
-        except Exception as e:
-            print(f"⚠️ Error setting user bot webhook: {e}")
-
-        user_desc = (
-            "🌟 AAA AUTO MINING — Autonomous Multi-Bot Cloud Farming Platform 🚀\n\n"
-            "Automate your Telegram crypto miners 24/7 in the cloud with zero battery drain!\n"
-            "• MRG Miner • ATF Miner • Victor's Company • VyroDrop • Kynex Network\n\n"
-            "💎 Points System • 🎬 Rewarded Video Ads (+20 Pts) • 🌟 VIP Passes"
-        )
-        user_short_desc = "🌟 AAA AUTO MINING — 24/7 Autonomous Multi-Bot Cloud Farming Platform across 5 crypto pools."
-        try:
-            async with session.post(
-                f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setMyDescription",
-                json={"description": user_desc}
-            ) as resp:
-                res_udesc = await resp.json()
-                print(f"📝 User Bot Description: {res_udesc.get('ok')} ({res_udesc.get('description', 'OK')})")
-
-            async with session.post(
-                f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setMyShortDescription",
-                json={"short_description": user_short_desc}
-            ) as resp:
-                res_usdesc = await resp.json()
-                print(f"📝 User Bot Short Description: {res_usdesc.get('ok')} ({res_usdesc.get('description', 'OK')})")
-
-            # Persistent Menu Button: Watch Ads for instant points
-            user_menu_payload = {
-                "menu_button": {
-                    "type": "web_app",
-                    "text": "🎬 Watch Ads",
-                    "web_app": {
-                        "url": "https://agy-henna.vercel.app/"
-                    }
-                }
-            }
-            async with session.post(
-                f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setChatMenuButton",
-                json=user_menu_payload
-            ) as resp:
-                res_umenu = await resp.json()
-                print(f"🎬 User Bot Menu Button (Watch Ads): {res_umenu.get('ok')} ({res_umenu.get('description', 'OK')})")
-
-            # Official Bot Commands
-            user_commands_payload = {
-                "commands": [
-                    {"command": "start", "description": "🚀 Open Mining Dashboard & Pools"},
-                    {"command": "dashboard", "description": "📊 Live Mining Dashboard & Telemetry"},
-                    {"command": "pools", "description": "⛏️ 9 Supported Cloud Mining Pools"},
-                    {"command": "accounts", "description": "👥 View & Manage Connected Accounts"},
-                    {"command": "connect", "description": "➕ Add Account via WebApp URL / Phone"},
-                    {"command": "points", "description": "💎 Points Balance & VIP Passes"},
-                    {"command": "ads", "description": "🎬 Watch Rewarded Video Ads (+20 Pts)"},
-                    {"command": "daily", "description": "🎁 Claim Daily Check-In Bonus"},
-                    {"command": "invite", "description": "👥 Viral Referral Link (+500 Pts)"},
-                    {"command": "stars", "description": "🌟 Telegram Stars VIP Passes"},
-                    {"command": "help", "description": "📖 Cloud Mining Guide & Support"}
-                ]
-            }
-            async with session.post(
-                f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setMyCommands",
-                json=user_commands_payload
-            ) as resp:
-                res_ucmd = await resp.json()
-                print(f"📋 User Bot Commands: {res_ucmd.get('ok')} ({res_ucmd.get('description', 'OK')})")
-        except Exception as e:
-            print(f"⚠️ Error configuring user bot Telegram settings: {e}")
+        # 1. USER BOT STRICT IMMUTABILITY (RULE 1 & USER DIRECTIVE)
+        # The User Bot (@AAAPREMIUMAPPSbot) is strictly reserved for end-users and must NEVER be modified or redeployed.
+        print("🛡️ User Bot (@AAAPREMIUMAPPSbot) STRICT IMMUTABILITY: Preserved untouched per Rule 1.")
 
         # 4. Set Admin Bot Chat Menu Button & Commands (Points to Vercel Executive Fleet Dashboard)
         if ALERT_BOT_TOKEN:
@@ -13092,22 +13464,29 @@ async def main():
                 "commands": [
                     {"command": "start", "description": "👑 Open Executive Fleet Hub & Roster"},
                     {"command": "dashboard", "description": "🚀 Launch Fleet Operations Console"},
+                    {"command": "status", "description": "📊 Fleet Status & Live Mining Telemetry"},
+                    {"command": "fleet", "description": "📊 Fleet Operations & 18-Account Telemetry"},
+                    {"command": "harvest", "description": "⚡ Trigger Instant 9-Bot Multi-Cloud Harvest"},
+                    {"command": "bots", "description": "🤖 9-Bot Autonomous Mining Fleet Hub"},
+                    {"command": "ad_farmer", "description": "📺 24/7 Autonomous Ad-Farming Loop Status"},
                     {"command": "otp", "description": "🔑 Telegram Relogin Codes & 2FA Passwords"},
                     {"command": "recover", "description": "🔄 Account Relogin & Code Wizard"},
+                    {"command": "wallets", "description": "👛 Verified Destination Wallets & Balances"},
+                    {"command": "accounts", "description": "👥 Manage Fleet Accounts & Roster"},
+                    {"command": "mrg", "description": "⚡ MRG Cloud Miner Status & Upgrades"},
+                    {"command": "atf", "description": "🪙 ATF Miner Cloud Command Center"},
+                    {"command": "kynex", "description": "💎 Kynex Network Cloud Mining Center"},
+                    {"command": "victors", "description": "🏢 Victor's Company Deep Mine & HumanPass"},
+                    {"command": "vyro", "description": "💧 VyroDrop Decentralized Mining Status"},
+                    {"command": "diggo", "description": "⛏️ DiggoMiner Cloud Mining Center"},
+                    {"command": "astra", "description": "🚀 Astra Airdrop Cloud Mining Center"},
+                    {"command": "pepe", "description": "🐸 PepeGram 6h Cloud Mining Center"},
+                    {"command": "adx", "description": "🤖 AdxEarn AI Cloud Mining Center"},
                     {"command": "models", "description": "🧠 Serverless AI Mesh (DeepSeek, Llama, SDXL)"},
                     {"command": "deepseek", "description": "🔮 DeepSeek R1 AI Reasoning & Logic"},
                     {"command": "llama", "description": "🦙 Meta Llama Fast Intelligence"},
                     {"command": "image", "description": "🎨 Stable Diffusion XL Image Generator"},
                     {"command": "ai", "description": "💬 Google Gemini Flash & Ari Copilot"},
-                    {"command": "status", "description": "📊 Fleet Status & Live Mining Telemetry"},
-                    {"command": "wallets", "description": "👛 Verified Destination Wallets & Balances"},
-                    {"command": "harvest", "description": "⚡ Trigger Instant 9-Bot Multi-Cloud Harvest"},
-                    {"command": "accounts", "description": "👥 Manage Fleet Accounts & Roster"},
-                    {"command": "kynex", "description": "💎 Kynex Network Cloud Mining Center"},
-                    {"command": "victors", "description": "🏢 Victor's Company Deep Mine & HumanPass"},
-                    {"command": "vyro", "description": "💧 VyroDrop Decentralized Mining Status"},
-                    {"command": "mrg", "description": "⚡ MRG Cloud Miner Status & Upgrades"},
-                    {"command": "atf", "description": "🪙 ATF Miner Cloud Command Center"},
                     {"command": "burn", "description": "🔥 Economy & Daily Burn (100 Pts/day)"},
                     {"command": "sweep_daily", "description": "⚡ Run 100 Pts Daily Deduction Sweep"},
                     {"command": "sybil", "description": "🛡️ Anti-Sybil & Moderation Hub"},

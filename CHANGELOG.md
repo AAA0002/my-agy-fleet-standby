@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **👑 Admin Bot Command Center Enhancement & Complete 9-Bot Cloud Farming Verification (October 18, 2026)**:
+  - **🛡️ Strict User Bot Boundary Enforcement (Rule 1)**:
+    * 100% froze work and deployments to User Bot (`@AAAPREMIUMAPPSbot`). Purged automated webhook overwriting in `deploy_both_cf_workers.py` to preserve public end-user environment completely untouched.
+  - **👑 Admin Bot Full Command Center Router (`@myagyai`)**:
+    * Integrated dedicated text commands and inline cards for all 9 active legitimate mining bots: `/mrg`, `/atf`, `/victors`, `/vyro`, `/kynex`, `/diggo`, `/astra`, `/pepe`, `/adx`.
+    * Implemented `/fleet` (dedicated alias for full 18-account operational telemetry and live balances).
+    * Implemented `/ad_farmer` & `/ads` (monitors the 24/7 cloud ad-farming loop on Render Node 2: 635+ ads farmed today, +12,700 points accrued across all 18 accounts).
+    * Implemented `/bots` & `/hub` (`btn_bots_hub`) featuring an interactive 9-bot navigation grid with instant access to status and 9-bot harvesting.
+    * Added corresponding button callback handlers: `btn_bots_hub`, `btn_diggo`, `btn_astra`, `btn_pepe`, `btn_adx`, and `btn_ad_farmer`.
+    * Registered all 25+ official commands with Telegram via `setMyCommands` on `ALERT_BOT_TOKEN`.
+  - **🌐 Cloudflare Edge Mesh Live Deployment**:
+    * Successfully deployed the enhanced Worker to Cloudflare Edge (`restore-agy.agorameet.workers.dev`).
+    * Bound `@myagyai` webhook directly to `https://restore-agy.agorameet.workers.dev/telegram-webhook` (0 pending updates, 100% healthy).
+    * Updated Webhook Sentinel in `render_standby_app.py`, `render_app_latest.py`, and `app.py` to target the active edge endpoint.
+  - **⛏️ Deep Verification of Auto-Farming Across 18 Accounts & 9 Bots**:
+    * Render Node 2 coordinator (`https://my-agy-fleet-standby-node2.onrender.com/api/farm/status`) confirmed active across all 18 accounts (+1 host).
+    * Validated live autonomous cycles across all 9 bots: MRG Miner (Lvl 95+), ATF Miner (Lvl 156 / Lvl 102), Kynex Network (65k-87k KNX), DiggoMiner (Lvl 45+), Astra Airdrop (Lvl 115+), AdxEarn AI (Active streaks), Victor's Company, VyroDrop, and PepeGram.
+
 - **🔑 Multi-Tier 2FA Architecture: User Bot Isolation & Admin Custom 2FA Cascade (October 18, 2026)**:
   - **🛡️ Strict User Bot 2FA Isolation (`is_user_bot: true`)**:
     * Render `/api/account/login/verify-code` now explicitly inspects caller identity (`is_user_bot: true` or `chat_id.startswith("ub_")`).

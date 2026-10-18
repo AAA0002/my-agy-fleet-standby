@@ -44,6 +44,9 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
      * **Upstash Redis**: Authenticated HTTPS REST key-value storage with cloud-managed bearer tokens.
      * **Local Development / Node**: Local untracked `.env` file that is strictly `.gitignore`'d and NEVER committed, pushed, or printed in terminal logs.
    - **Zero Phone Load**: 0 bots on Samsung Galaxy A30; all automated execution stays in the cloud.
+8. **🛡️ User Bot Strict Immutability ("DO NOT TOUCH USER BOT")**:
+   - The User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`, webhook `atf-miner-worker.agorameet.workers.dev`) and its community channels (`-1003684868577`, `@AAAATFAUTOMINING`, `@AAAATF_ACTIVITY`) are exclusively for public end-users and must **NEVER** be modified, redeployed, or tampered with.
+   - Keep all admin operations, monitoring, bot routing, and fleet controls strictly on the Admin Bot (`@myagyai`) and admin channels.
 
 
 ---
