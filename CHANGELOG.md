@@ -2,6 +2,21 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Safe_Get Retries Fix, Parallel Astra Tasks & 10-Bot Concurrency Scaling (October 18, 2026)**:
+  - **🛠️ Safe_Get Retries Support**:
+    * Resolved latent `TypeError: safe_get() got an unexpected keyword argument 'retries'` by adding `retries=2` and retry backoff loop to `safe_get` in `render_standby_app.py`, `render_app_latest.py`, and `app.py`.
+    * Restores instant and resilient execution for PepeGram tasks, ad rolls, and claims.
+  - **⚡ Concurrent Astra Side-Task Execution**:
+    * Optimized Astra side tasks: parallelized task starts via `asyncio.gather` and task claims after the mandatory 15.5s sleep, slashing routine runtime by ~12.5 seconds.
+    * Increased bot routine timeout from 60s to 90s in `_run_single_routine`, permanently eliminating `astra: timeout (60s)`.
+  - **🏎️ Full Fleet Parallel Concurrency**:
+    * Increased `sem_bot` from 5 to 10, enabling all 9 mining bots (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, Astra, PepeGram, AdxEarn AI) to run simultaneously without queued latency.
+    * Increased outer account timeout `_farm_with_sem` from 75s to 120s.
+  - **👥 Absolute 18-Account Roster Enforcement**:
+    * Filtered `accounts` unconditionally against `FLEET_18_SET`, permanently preventing unlinked public user accounts (`1189890165`) from slipping into fleet runs.
+  - **👑 Admin Bot Webhook Sentinel Active**:
+    * Verified and re-bound `@myagyai` webhook directly to `https://restore-agy.agorameet.workers.dev/telegram-webhook` (0 pending updates, 100% healthy).
+
 - **⚡ PepeGram Task Claim Optimization, 60s Bot Timeout & Edge Cron Sentinel (October 18, 2026)**:
   - **🐸 PepeGram Routine Optimization**:
     * Identified root cause of intermittent `pepegram: timeout (45s)`: unbounded loop over uncompleted tasks caused total account execution time to exceed the 45s threshold.

@@ -4405,18 +4405,21 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         return 0, None
 
     # Helper for safe get
-    async def safe_get(url, req_headers=None, timeout_sec=6):
+    async def safe_get(url, req_headers=None, timeout_sec=6, retries=2):
         h = req_headers or headers
-        try:
-            async with session.get(url, headers=h, timeout=aiohttp.ClientTimeout(total=timeout_sec)) as resp:
-                data = None
-                try:
-                    data = await resp.json()
-                except Exception:
-                    pass
-                return resp.status, data
-        except Exception:
-            return 0, None
+        for attempt in range(retries):
+            try:
+                async with session.get(url, headers=h, timeout=aiohttp.ClientTimeout(total=timeout_sec)) as resp:
+                    data = None
+                    try:
+                        data = await resp.json()
+                    except Exception:
+                        pass
+                    return resp.status, data
+            except Exception:
+                if attempt < retries - 1:
+                    await asyncio.sleep(0.8)
+        return 0, None
 
     # Helper for formatted error string (never returns empty string)
     def format_error(e: Exception) -> str:
@@ -5160,18 +5163,15 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 # 5. Side-Task Automation (Complete 3/3 tasks to unlock +100 ASTRA bonus per recruit for Master)
                 # 4 repeatable tasks: react_telegram_post, twitter_retweet, youtube_like_comment, subscribe_youtube
                 tasks_to_run = ["react_telegram_post", "twitter_retweet", "youtube_like_comment", "subscribe_youtube"]
-                started_tasks = []
-                for t in tasks_to_run:
-                    st = await astra_rpc("astra_task_start", {"p_task": t})
-                    if isinstance(st, dict) and st.get("status") == "success":
-                        started_tasks.append(t)
-                    await asyncio.sleep(0.3)
+                started_res = await asyncio.gather(*[astra_rpc("astra_task_start", {"p_task": t}) for t in tasks_to_run], return_exceptions=True)
+                started_tasks = [
+                    tasks_to_run[i] for i, st in enumerate(started_res)
+                    if isinstance(st, dict) and st.get("status") == "success"
+                ]
 
                 if started_tasks:
-                    await asyncio.sleep(15)  # satisfy minSeconds
-                    for t in started_tasks:
-                        await astra_rpc("astra_task_claim", {"p_task": t})
-                        await asyncio.sleep(0.3)
+                    await asyncio.sleep(15.5)  # satisfy minSeconds
+                    await asyncio.gather(*[astra_rpc("astra_task_claim", {"p_task": t}) for t in started_tasks], return_exceptions=True)
 
                 # 6. Referral & Team Claims
                 await jitter(0.5, 1.0)
@@ -5365,7 +5365,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
     random.shuffle(active_routines)
 
     now_ts = int(time.time())
-    sem_bot = asyncio.Semaphore(5)
+    sem_bot = asyncio.Semaphore(10)
 
     async def _run_single_routine(b):
         b_name = b["name"]
@@ -5409,7 +5409,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         async with sem_bot:
             try:
                 await jitter(0.2, 0.6)
-                await asyncio.wait_for(b["fn"](), timeout=60.0)
+                await asyncio.wait_for(b["fn"](), timeout=90.0)
                 # Store randomized cooldown: 2h-8h on success, 3m-5m retry on error/expired
                 bot_res = str(status["bots"].get(b_name, "")).lower()
                 is_success = bot_res.startswith("farmed") or bot_res.startswith("ok")
@@ -5423,7 +5423,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     except Exception:
                         pass
             except asyncio.TimeoutError:
-                status["bots"][b_name] = "timeout (60s)"
+                status["bots"][b_name] = "timeout (90s)"
                 fail_cd = random.randint(180, 300)
                 FLEET_LAST_FARM_CACHE[f"{b_name}:{uid}"] = json.dumps({"timestamp": now_ts, "cooldown": fail_cd})
             except Exception as err:
@@ -5448,17 +5448,18 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
         created_session = True
 
     try:
+        FLEET_18_SET = {
+            "6727787768", "8881914294", "7648254021", "8826375659", "8450010161",
+            "8782429452", "7734849205", "8025472383", "8851426148", "8203342513",
+            "8190649727", "7487048946", "8741547543", "8727040932", "7749125802",
+            "7954290138", "8841038141", "8975442879"
+        }
         if accounts is None:
-            raw_accs = await fetch_accounts_from_cloud()
-            accounts = [
-                a for a in raw_accs
-                if str(a.get("user_id")) in {
-                    "6727787768", "8881914294", "7648254021", "8826375659", "8450010161",
-                    "8782429452", "7734849205", "8025472383", "8851426148", "8203342513",
-                    "8190649727", "7487048946", "8741547543", "8727040932", "7749125802",
-                    "7954290138", "8841038141", "8975442879"
-                } or a.get("session_string") or a.get("session") or (tokens_map and any(str(a.get("user_id")) in k for k in tokens_map.keys()))
-            ]
+            accounts = await fetch_accounts_from_cloud()
+        accounts = [
+            a for a in (accounts or [])
+            if str(a.get("user_id")) in FLEET_18_SET or a.get("session_string") or a.get("session")
+        ]
         if not accounts:
             return {"ok": False, "message": "No accounts found for farming cycle", "farmed_count": 0}
 
@@ -5503,7 +5504,7 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                     except Exception as ex_e:
                         logger.warning(f"[Farm Task] On-the-fly extraction note for {uid_str}: {ex_e}")
                 try:
-                    res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=force), timeout=75.0)
+                    res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=force), timeout=120.0)
                     if isinstance(res, dict) and any(("token_expired" in str(v).lower() or "not_registered" in str(v).lower()) for v in res.get("bots", {}).values()):
                         if a_dict.get("session_string") or a_dict.get("session"):
                             try:
@@ -5512,12 +5513,12 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                                     t_dict.update(fresh_toks)
                                     tokens_map[uid_str] = t_dict
                                     asyncio.create_task(sync_account_tokens_to_clouds(t_dict))
-                                    res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=True), timeout=75.0)
+                                    res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=True), timeout=120.0)
                             except Exception:
                                 pass
                     return res
                 except asyncio.TimeoutError:
-                    return {"uid": uid_str, "name": a_dict.get("name", uid_str), "bots": {"status": "timeout_75s"}}
+                    return {"uid": uid_str, "name": a_dict.get("name", uid_str), "bots": {"status": "timeout_120s"}}
 
         for acc in accounts:
             uid = str(acc.get("user_id"))
