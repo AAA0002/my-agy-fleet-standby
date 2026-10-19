@@ -71,7 +71,7 @@ MANDATORY_SPONSOR_CHANNELS = [
     "mrgminer", "mrgwithdrawal", "DurovKidney",
     "VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor",
     "vyrodrop", "atfminers", "kynex_mining", "EarnVaulte", "solanamemes001", "Web3Primeteam",
-    "Diggominer", "diggominer_news", "LeafEarn", "AstraAirdrop", "Pepe_gram", "pepe_grammmm", "AdxEarn"
+    "Diggominer", "diggominer_news", "AstraAirdrop", "Pepe_gram", "pepe_grammmm", "AdxEarn"
 ]
 
 
@@ -360,7 +360,7 @@ async def extract_account_tokens(acc: dict, session: aiohttp.ClientSession):
 
         # 6. DiggoMiner (@Diggominer_bot)
         diggo_p = None if is_master else DIGGO_REF
-        tok = await extract_bot_webapp_token(cl, DIGGO_BOT, start_param=diggo_p, default_url="https://t.me/Diggominer_bot", candidate_short_names=["openapp", "app", "miner", "miniapp", "startapp"])
+        tok = await extract_bot_webapp_token(cl, DIGGO_BOT, start_param=diggo_p, default_url="https://diggo.linkpc.net/", candidate_short_names=["openapp", "app", "miner", "miniapp", "startapp"])
         if tok:
             tokens["diggo_init_data"] = tok
             print(f"  ⛏️ DiggoMiner: Collected")

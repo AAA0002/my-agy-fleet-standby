@@ -5,7 +5,8 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
 - **🛠️ DiggoMiner MTProto WebApp URL Repair & Edge Webhook Drift Sentinel (October 19, 2026)**:
   - **⛏️ DiggoMiner Direct WebApp URL Resolution**:
     * Identified root cause of `diggo: token_expired (needs MTProto refresh)` on accounts 01, 05, 11, 13: `extract_tokens_with_client` was passing `default_url="https://t.me/Diggominer_bot"`, which caused Strategy D (`RequestWebViewRequest`) to be bypassed.
-    * Corrected `default_url` to `https://diggo.linkpc.net/` across `render_standby_app.py`, `render_app_latest.py`, and `app.py`.
+    * Corrected `default_url` to `https://diggo.linkpc.net/` across `render_standby_app.py`, `render_app_latest.py`, `app.py`, `refresh_cloud_tokens.py`, and `extract_all_missing_fleet_tokens.py`.
+    * Removed lingering purged bot `LeafEarn` from mandatory sponsor channels in `refresh_cloud_tokens.py`.
     * Restored instant Strategy D token generation on MTProto refresh for all accounts.
   - **🌐 Cloudflare Edge Node 4 Sentinel & Webhook Drift Auto-Heal**:
     * Deployed Node 4 Worker (`restore-agy.agorameet.workers.dev`) with automated 15-minute cron trigger (`*/15 * * * *`).

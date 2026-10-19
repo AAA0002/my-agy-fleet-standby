@@ -66,7 +66,7 @@ TARGET_BOTS = [
     {
         "key": "diggo_init_data",
         "bot": "Diggominer_bot",
-        "url": "https://t.me/Diggominer_bot",
+        "url": "https://diggo.linkpc.net/",
         "short_names": ["openapp", "app", "miner", "miniapp", "startapp"],
         "name": "DiggoMiner"
     },
