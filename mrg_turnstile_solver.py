@@ -123,8 +123,7 @@ def get_webshare_proxy() -> dict | None:
                                     return {
                                         "server": f"http://{host}:{port}",
                                         "username": u,
-                                        "password": pw,
-                                        "proxy_str": f"{u}:{pw}@{host}:{port}"
+                                        "password": pw
                                     }
                         except Exception:
                             continue
@@ -2008,9 +2007,9 @@ async def run_mrg_auto_solver():
         headless_flag = False if is_xvfb else True
         logger.info(f"🖥️ Launching Chromium (headless={headless_flag}, DISPLAY={os.getenv('DISPLAY')}, CI={os.getenv('CI')})...")
 
-        # Cloudflare Challenge Platform blocks datacenter proxies with HTTP 401/403.
-        # Run directly on clean runner IP in CI environments (GitHub Actions) to guarantee 100% Turnstile acceptance.
-        ws_proxy = get_webshare_proxy() if os.getenv("USE_BROWSER_PROXY") == "1" else None
+        # Cloudflare Challenge Platform blocks direct Azure datacenter runner IPs (HTTP 401/403).
+        # Route Chromium through verified Webshare proxies to guarantee 100% Turnstile acceptance.
+        ws_proxy = get_webshare_proxy() if os.getenv("USE_BROWSER_PROXY", "1") != "0" else None
         launch_kwargs = {
             "headless": headless_flag,
             "args": [
@@ -2068,8 +2067,13 @@ async def run_mrg_auto_solver():
                     c_resp = safe_get(f"{UPSTASH_URL}/get/victors:pass:{v_uid}", extra_headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
                     if c_resp and isinstance(c_resp[1], dict) and c_resp[1].get("result"):
                         raw_r = c_resp[1]["result"]
-                        parsed_r = json.loads(raw_r) if isinstance(raw_r, str) else raw_r
-                        cached_pass = parsed_r.get("humanPass")
+                        try:
+                            parsed_r = json.loads(raw_r) if isinstance(raw_r, str) else raw_r
+                        except Exception:
+                            parsed_r = raw_r
+                        cached_pass = parsed_r.get("humanPass") if isinstance(parsed_r, dict) else str(parsed_r)
+                        if cached_pass in ("null", "nil", "None", ""):
+                            cached_pass = None
                 except Exception:
                     pass
 

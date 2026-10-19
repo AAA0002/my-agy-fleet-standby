@@ -4459,9 +4459,15 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         if pr.status == 200:
                             pd = await pr.json()
                             if pd.get("result"):
-                                parsed_p = json.loads(pd["result"]) if isinstance(pd["result"], str) else pd["result"]
-                                mrg_turnstile_tok = parsed_p.get("turnstileToken")
-                                set_cached_upstash_pass(f"mrg:pass:{uid}", mrg_turnstile_tok, ttl=1800)
+                                try:
+                                    parsed_p = json.loads(pd["result"]) if isinstance(pd["result"], str) else pd["result"]
+                                except Exception:
+                                    parsed_p = pd["result"]
+                                mrg_turnstile_tok = parsed_p.get("turnstileToken") if isinstance(parsed_p, dict) else str(parsed_p)
+                                if mrg_turnstile_tok and str(mrg_turnstile_tok).strip() not in ("null", "nil", "None", ""):
+                                    set_cached_upstash_pass(f"mrg:pass:{uid}", str(mrg_turnstile_tok), ttl=1800)
+                                else:
+                                    mrg_turnstile_tok = None
                 except Exception:
                     pass
 
@@ -4714,9 +4720,15 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                             if vr.status == 200:
                                 vd = await vr.json()
                                 if vd.get("result"):
-                                    parsed_v = json.loads(vd["result"]) if isinstance(vd["result"], str) else vd["result"]
-                                    vic_pass = parsed_v.get("humanPass")
-                                    set_cached_upstash_pass(f"victors:pass:{uid}", vic_pass, ttl=1800)
+                                    try:
+                                        parsed_v = json.loads(vd["result"]) if isinstance(vd["result"], str) else vd["result"]
+                                    except Exception:
+                                        parsed_v = vd["result"]
+                                    vic_pass = parsed_v.get("humanPass") or parsed_v.get("turnstileToken") if isinstance(parsed_v, dict) else str(parsed_v)
+                                    if vic_pass and str(vic_pass).strip() not in ("null", "nil", "None", ""):
+                                        set_cached_upstash_pass(f"victors:pass:{uid}", str(vic_pass), ttl=1800)
+                                    else:
+                                        vic_pass = None
                     except Exception:
                         pass
                 if vic_pass:
@@ -4964,9 +4976,15 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                                         if vr.status == 200:
                                             vd = await vr.json()
                                             if vd.get("result"):
-                                                parsed_v = json.loads(vd["result"]) if isinstance(vd["result"], str) else vd["result"]
-                                                v_pass = parsed_v.get("turnstileToken") or parsed_v.get("humanPass") if isinstance(parsed_v, dict) else parsed_v
-                                                set_cached_upstash_pass(f"vyro:pass:{uid}", v_pass, ttl=1800)
+                                                try:
+                                                    parsed_v = json.loads(vd["result"]) if isinstance(vd["result"], str) else vd["result"]
+                                                except Exception:
+                                                    parsed_v = vd["result"]
+                                                v_pass = parsed_v.get("turnstileToken") or parsed_v.get("humanPass") if isinstance(parsed_v, dict) else str(parsed_v)
+                                                if v_pass and str(v_pass).strip() not in ("null", "nil", "None", ""):
+                                                    set_cached_upstash_pass(f"vyro:pass:{uid}", str(v_pass), ttl=1800)
+                                                else:
+                                                    v_pass = None
                                 except Exception:
                                     pass
                             ch_body = {"turnstileToken": v_pass} if v_pass else {}
@@ -5013,6 +5031,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 if wallet_required:
                     if c_code == 403 or (c_resp and isinstance(c_resp, dict) and "HUMAN_VERIFICATION_REQUIRED" in str(c_resp)):
                         status["bots"]["vyro"] = f"turnstile_required (wallet security check needed, lvl: {lvl or 1})"
+                    elif not raw_m:
+                        status["bots"]["vyro"] = f"wallet_unbound (external deposit address, lvl: {lvl or 1})"
                     else:
                         status["bots"]["vyro"] = f"wallet_required (TonConnect needed, lvl: {lvl or 1})"
                 else:

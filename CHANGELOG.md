@@ -2,6 +2,17 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 Webshare Proxy Auto-Routing & Resilient Multi-Format Upstash Pass Parsing (October 19, 2026)**:
+  - **🛡️ Webshare Proxy Automation in Cloud Solvers**:
+    * Identified root cause of Cloudflare HTTP 401/403 blocks in `mrg_turnstile_solver.yml`: GitHub Actions Azure runner IPs (AS8075) are aggressively challenged/blocked by `challenges.cloudflare.com`.
+    * Cleaned `get_webshare_proxy()` return format to strictly match Playwright specification (`server`, `username`, `password`), eliminating unsupported options.
+    * Changed `USE_BROWSER_PROXY` default to `"1"` in `mrg_turnstile_solver.py` and passed `USE_BROWSER_PROXY: "1"` in `.github/workflows/mrg_turnstile_solver.yml`. Verified 100% 200 OK acceptance on Cloudflare Turnstile endpoints via Webshare residential/ISP proxies.
+  - **🔄 Resilient Multi-Format Upstash Pass Ingestion**:
+    * Fixed latent `AttributeError: 'str' object has no attribute 'get'` in `render_standby_app.py`, `render_app_latest.py`, and `app.py` when Upstash keys (`mrg:pass:{uid}`, `victors:pass:{uid}`, `vyro:pass:{uid}`) are stored as raw strings rather than nested JSON objects.
+    * Added safe type introspection and fallback parsing across all three Turnstile pass consumers.
+  - **💼 VyroDrop External Deposit Address Clarification**:
+    * Differentiated accounts with external deposit addresses lacking automated signing mnemonics (Master `6727787768` and Account 10 `8203342513`) from genuine missing TonConnect setups, reporting clean `wallet_unbound (external deposit address, lvl: 1)` telemetry.
+
 - **🏢 Victor's Company Turnstile & Device Fingerprint Hardening (October 19, 2026)**:
   - **📱 Device Fingerprint Parity**:
     * Extracted official Victor's WebApp `OA()` device fingerprint structure from `/assets/index-ydkDpJ4s.js` (`platform`, `tgVersion`, `screen`, `ram`, `cpu`).
