@@ -746,7 +746,22 @@ def solve_victors_with_seleniumbase():
                         except Exception:
                             pass
 
-                        # 2. Programmatic render fallback with appearance: always
+                        # 2. Programmatic render fallback with script tag injection & appearance: always
+                        if attempt > 2:
+                            try:
+                                sb.execute_script("""
+                                    if (!window.turnstile || typeof window.turnstile.render !== 'function') {
+                                        if (!document.getElementById('sb-cf-script')) {
+                                            let s = document.createElement('script');
+                                            s.id = 'sb-cf-script';
+                                            s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                                            document.head.appendChild(s);
+                                        }
+                                    }
+                                """)
+                            except Exception:
+                                pass
+
                         if attempt > 4:
                             try:
                                 sb.execute_script(f"""
@@ -780,7 +795,16 @@ def solve_victors_with_seleniumbase():
 
                 if token and not human_pass:
                     logger.info(f"✅ UID {uid}: Cloudflare Turnstile token obtained ({token[:16]}...)!")
-                    login_p = {"turnstileToken": token}
+                    login_p = {
+                        "turnstileToken": token,
+                        "device": {
+                            "platform": "android",
+                            "tgVersion": "8.0",
+                            "screen": "430x932@3",
+                            "ram": 8,
+                            "cpu": 8
+                        }
+                    }
                     if not is_master:
                         login_p["startParam"] = VICTORS_REF
 

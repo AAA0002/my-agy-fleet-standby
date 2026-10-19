@@ -1158,7 +1158,14 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
     if not acquired_pass and acquired_token:
         logger.info(f"✅ [Victor's] UID {uid}: Turnstile solved ({acquired_token[:16]}...)! Calling /auth/login...")
         login_p = {
-            "turnstileToken": acquired_token
+            "turnstileToken": acquired_token,
+            "device": {
+                "platform": "android",
+                "tgVersion": "8.0",
+                "screen": "430x932@3",
+                "ram": 8,
+                "cpu": 8
+            }
         }
         if not is_master:
             login_p["startParam"] = VICTORS_REF

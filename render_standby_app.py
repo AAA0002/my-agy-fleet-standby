@@ -4730,6 +4730,32 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 me = (st.get("user") or m_d.get("user") or m_d) if (is_auth_ok and isinstance(m_d, dict)) else {}
 
                 if not is_auth_ok or not me:
+                    # Attempt silent auth/login with mobile device payload
+                    lg_p = {
+                        "device": {
+                            "platform": "android",
+                            "tgVersion": "8.0",
+                            "screen": "430x932@3",
+                            "ram": 8,
+                            "cpu": 8
+                        }
+                    }
+                    if not is_owner:
+                        lg_p["startParam"] = VICTORS_REFERRAL_CODE
+                    await jitter(0.3, 0.7)
+                    l_code, l_d = await safe_post("https://server.victors.company/api/auth/login", json_data=lg_p, req_headers=v_h)
+                    if l_code in (200, 201) and isinstance(l_d, dict):
+                        new_hp = l_d.get("humanPass") or (l_d.get("data", {}).get("humanPass") if isinstance(l_d.get("data"), dict) else None)
+                        if new_hp:
+                            vic_pass = str(new_hp)
+                            v_h["x-human-pass"] = vic_pass
+                            set_cached_upstash_pass(f"victors:pass:{uid}", vic_pass, ttl=7200)
+                            m_code, m_d = await safe_get("https://server.victors.company/api/me", req_headers=v_h)
+                            is_auth_ok = (m_code == 200 and isinstance(m_d, dict) and (m_d.get("success") is True or "state" in m_d or "user" in m_d))
+                            st = m_d.get("state", {}) if isinstance(m_d, dict) else {}
+                            me = (st.get("user") or m_d.get("user") or m_d) if (is_auth_ok and isinstance(m_d, dict)) else {}
+
+                if not is_auth_ok or not me:
                     if (not vic_pass) or m_code in (401, 403) or (isinstance(m_d, dict) and m_d.get("code") == "HUMAN_REQUIRED"):
                         set_cached_upstash_pass(f"victors:pass:{uid}", None, ttl=1)
                         status["bots"]["victors"] = "human_pass_required (Turnstile needed)"

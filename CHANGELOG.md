@@ -2,6 +2,16 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🏢 Victor's Company Turnstile & Device Fingerprint Hardening (October 19, 2026)**:
+  - **📱 Device Fingerprint Parity**:
+    * Extracted official Victor's WebApp `OA()` device fingerprint structure from `/assets/index-ydkDpJ4s.js` (`platform`, `tgVersion`, `screen`, `ram`, `cpu`).
+    * Added full `device` payload to `/auth/login` requests across `mrg_turnstile_solver.py`, `victors_sb_solver.py`, `render_standby_app.py`, `render_app_latest.py`, and `app.py`.
+    * Implemented opportunistic silent `/api/auth/login` handshake in `_farm_victors()` before raising `human_pass_required`, capturing `humanPass` on-the-fly and caching to Upstash Redis with a 2-hour TTL.
+  - **🧩 Dynamic Turnstile Script Tag Injection**:
+    * In `victors_sb_solver.py`, added dynamic `<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit">` injection when `window.turnstile` is absent from initial DOM, eliminating the `Iframes=0` silent failure mode.
+  - **🔐 GitHub Actions Secrets Provisioning**:
+    * Provisioned missing `UPSTASH_TOKEN`, `ALERT_BOT_TOKEN`, and `WEBSHARE_KEY` secrets into GitHub Actions repository `AAA0002/ATL`, permanently resolving `HTTP Error 401: Unauthorized` in cloud workflows.
+
 - **🛠️ DiggoMiner MTProto WebApp URL Repair & Edge Webhook Drift Sentinel (October 19, 2026)**:
   - **⛏️ DiggoMiner Direct WebApp URL Resolution**:
     * Identified root cause of `diggo: token_expired (needs MTProto refresh)` on accounts 01, 05, 11, 13: `extract_tokens_with_client` was passing `default_url="https://t.me/Diggominer_bot"`, which caused Strategy D (`RequestWebViewRequest`) to be bypassed.
