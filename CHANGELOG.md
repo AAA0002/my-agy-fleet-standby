@@ -8,6 +8,11 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
     * Corrected `default_url` to `https://diggo.linkpc.net/` across `render_standby_app.py`, `render_app_latest.py`, `app.py`, `refresh_cloud_tokens.py`, and `extract_all_missing_fleet_tokens.py`.
     * Removed lingering purged bot `LeafEarn` from mandatory sponsor channels in `refresh_cloud_tokens.py`.
     * Restored instant Strategy D token generation on MTProto refresh for all accounts.
+  - **⚡ Token Expiration Precision & MTProto Queue Headroom**:
+    * Identified stampede race condition where `now_s - synced_ts > 2700` caused all 18 accounts to attempt MTProto token extraction at the same time every 45m.
+    * Refactored `_farm_with_sem` to use cryptographic `is_token_data_expired(t_dict, max_age_hours=18.0)`.
+    * Upgraded `is_token_data_expired` to flag expiration when `expired_cnt > 0` and enforce a 12h threshold for both `vyro_init_data` and `diggo_init_data`.
+    * Doubled MTProto semaphore extraction timeout from `45.0s` to `90.0s` and outer farming timeout from `120.0s` to `180.0s`, allowing queued accounts to finish without timeout errors.
   - **🌐 Cloudflare Edge Node 4 Sentinel & Webhook Drift Auto-Heal**:
     * Deployed Node 4 Worker (`restore-agy.agorameet.workers.dev`) with automated 15-minute cron trigger (`*/15 * * * *`).
     * Node 4 cron periodically validates `@myagyai` webhook against Telegram Bot API and automatically repairs the webhook binding if drift occurs.

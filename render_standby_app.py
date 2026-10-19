@@ -638,13 +638,13 @@ def is_token_data_expired(t_dict: dict, max_age_hours: float = 20.0) -> bool:
             ad = parsed.get("auth_date", [None])[0]
             if ad and ad.isdigit():
                 tok_age = now_ts - float(ad)
-                max_bot_age = (12.0 * 3600.0) if kt == "vyro_init_data" else (max_age_hours * 3600.0)
+                max_bot_age = (12.0 * 3600.0) if kt in ("vyro_init_data", "diggo_init_data") else (max_age_hours * 3600.0)
                 if tok_age > max_bot_age:
                     expired_cnt += 1
         except Exception:
             pass
 
-    if present_cnt == 0 or (present_cnt > 0 and expired_cnt >= present_cnt):
+    if present_cnt == 0 or expired_cnt > 0:
         return True
     return False
 
@@ -5492,11 +5492,11 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                 has_any_token = any(k.endswith("_init_data") and bool(v) for k, v in t_dict.items())
                 has_vyro = bool(t_dict.get("vyro_init_data"))
                 has_diggo = bool(t_dict.get("diggo_init_data"))
-                is_stale = (now_s - synced_ts > 2700) or ((not has_vyro or not has_diggo) and (now_s - synced_ts > 900))
+                needs_refresh = (not has_any_token) or (not has_vyro) or (not has_diggo) or is_token_data_expired(t_dict, max_age_hours=18.0)
 
-                if ((not has_any_token) or is_stale) and (a_dict.get("session_string") or a_dict.get("session")):
+                if needs_refresh and (a_dict.get("session_string") or a_dict.get("session")):
                     try:
-                        fresh_toks = await asyncio.wait_for(extract_tokens_for_account(a_dict), timeout=45.0)
+                        fresh_toks = await asyncio.wait_for(extract_tokens_for_account(a_dict), timeout=90.0)
                         if fresh_toks:
                             t_dict.update(fresh_toks)
                             tokens_map[uid_str] = t_dict
@@ -5504,21 +5504,21 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                     except Exception as ex_e:
                         logger.warning(f"[Farm Task] On-the-fly extraction note for {uid_str}: {ex_e}")
                 try:
-                    res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=force), timeout=120.0)
+                    res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=force), timeout=180.0)
                     if isinstance(res, dict) and any(("token_expired" in str(v).lower() or "token_invalid" in str(v).lower() or "unauthorized" in str(v).lower()) for v in res.get("bots", {}).values()):
                         if a_dict.get("session_string") or a_dict.get("session"):
                             try:
-                                fresh_toks = await asyncio.wait_for(extract_tokens_for_account(a_dict), timeout=45.0)
+                                fresh_toks = await asyncio.wait_for(extract_tokens_for_account(a_dict), timeout=90.0)
                                 if fresh_toks:
                                     t_dict.update(fresh_toks)
                                     tokens_map[uid_str] = t_dict
                                     asyncio.create_task(sync_account_tokens_to_clouds(t_dict))
-                                    res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=True), timeout=120.0)
+                                    res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=True), timeout=180.0)
                             except Exception:
                                 pass
                     return res
                 except asyncio.TimeoutError:
-                    return {"uid": uid_str, "name": a_dict.get("name", uid_str), "bots": {"status": "timeout_120s"}}
+                    return {"uid": uid_str, "name": a_dict.get("name", uid_str), "bots": {"status": "timeout_180s"}}
 
         for acc in accounts:
             uid = str(acc.get("user_id"))
