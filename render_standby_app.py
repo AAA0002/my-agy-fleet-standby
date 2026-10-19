@@ -850,7 +850,7 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
 
     # 6. DiggoMiner (@Diggominer_bot - Silent WebApp query)
     diggo_param = None if is_master else DIGGO_REFERRAL_CODE
-    tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=diggo_param, default_url="https://t.me/Diggominer_bot", candidate_short_names=["openapp", "app", "miner", "miniapp", "startapp"])
+    tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=diggo_param, default_url="https://diggo.linkpc.net/", candidate_short_names=["openapp", "app", "miner", "miniapp", "startapp"])
     if tok:
         tokens["diggo_init_data"] = tok
     await asyncio.sleep(random.uniform(0.5, 1.2))

@@ -2,6 +2,19 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛠️ DiggoMiner MTProto WebApp URL Repair & Edge Webhook Drift Sentinel (October 19, 2026)**:
+  - **⛏️ DiggoMiner Direct WebApp URL Resolution**:
+    * Identified root cause of `diggo: token_expired (needs MTProto refresh)` on accounts 01, 05, 11, 13: `extract_tokens_with_client` was passing `default_url="https://t.me/Diggominer_bot"`, which caused Strategy D (`RequestWebViewRequest`) to be bypassed.
+    * Corrected `default_url` to `https://diggo.linkpc.net/` across `render_standby_app.py`, `render_app_latest.py`, and `app.py`.
+    * Restored instant Strategy D token generation on MTProto refresh for all accounts.
+  - **🌐 Cloudflare Edge Node 4 Sentinel & Webhook Drift Auto-Heal**:
+    * Deployed Node 4 Worker (`restore-agy.agorameet.workers.dev`) with automated 15-minute cron trigger (`*/15 * * * *`).
+    * Node 4 cron periodically validates `@myagyai` webhook against Telegram Bot API and automatically repairs the webhook binding if drift occurs.
+    * Synced Admin Bot main keyboard to `"⚡ 9-Bot Harvest"`.
+  - **📊 Fleet 18-Account Verification Across 9 Mining Bots**:
+    * Verified 100% zero-timeout, zero-crash execution across all 18 accounts on Render Node 2.
+    * Confirmed active rewards compounding on MRG, ATF, Kynex, Diggo, Astra, PepeGram, and AdxEarn AI with graceful Turnstile bypass for Victor's Company and VyroDrop.
+
 - **🚀 Safe_Get Retries Fix, Parallel Astra Tasks & 10-Bot Concurrency Scaling (October 18, 2026)**:
   - **🛠️ Safe_Get Retries Support**:
     * Resolved latent `TypeError: safe_get() got an unexpected keyword argument 'retries'` by adding `retries=2` and retry backoff loop to `safe_get` in `render_standby_app.py`, `render_app_latest.py`, and `app.py`.

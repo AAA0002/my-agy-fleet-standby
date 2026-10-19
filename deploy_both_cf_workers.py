@@ -13021,13 +13021,38 @@ Reply to Arif naturally:`;
 
   async scheduled(event, env, ctx) {
     const CURRENT_SUBDOMAIN = "__SUBDOMAIN__";
-    if (CURRENT_SUBDOMAIN !== "aaaai2") {
+    if (CURRENT_SUBDOMAIN !== "aaaai2" && CURRENT_SUBDOMAIN !== "agorameet") {
       // Passive standby failover node: immediately abort with 0 operations / 0 KV writes
       return;
     }
     const NODE_SHARD_INDEX = ({ "aaaai2": 0, "aaa-bot": 1, "aaa222": 2, "agorameet": 3, "aaaai": 4 })[CURRENT_SUBDOMAIN] ?? 0;
 
-    // 0. D1 SQL Serverless Execution Audit Log
+    // 0. Automated Webhook Sentinel for Admin Bot (@myagyai)
+    if (env.ALERT_BOT_TOKEN) {
+      ctx.waitUntil((async () => {
+        try {
+          const whResp = await fetch(`https://api.telegram.org/bot${env.ALERT_BOT_TOKEN}/getWebhookInfo`).catch(() => null);
+          if (whResp && whResp.ok) {
+            const whData = await whResp.json();
+            const curUrl = ((whData.result || {}).url) || "";
+            const targetUrl = `https://restore-agy.${CURRENT_SUBDOMAIN}.workers.dev/telegram-webhook`;
+            if (curUrl !== targetUrl) {
+              await fetch(`https://api.telegram.org/bot${env.ALERT_BOT_TOKEN}/setWebhook`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  url: targetUrl,
+                  allowed_updates: ["message", "edited_message", "callback_query"],
+                  drop_pending_updates: false
+                })
+              }).catch(() => null);
+            }
+          }
+        } catch (_) {}
+      })());
+    }
+
+    // 0.1 D1 SQL Serverless Execution Audit Log
     if (env.DB) {
       ctx.waitUntil(env.DB.prepare("INSERT INTO fleet_logs (event, details) VALUES (?, ?)").bind("cron_cycle", JSON.stringify({ node: CURRENT_SUBDOMAIN, shard: NODE_SHARD_INDEX, time: new Date().toISOString() })).run().catch(() => {}));
     }
