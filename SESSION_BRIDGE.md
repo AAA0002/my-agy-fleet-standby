@@ -13,13 +13,17 @@
 * **Git Repository**: `AAA0002/ATL` (clean HTTPS remotes: `origin` and `standby_repo`).
 * **Architecture**: 100% Cloud-First Autonomous Telegram Mini-App Mining & Multi-Chain Wallet Fleet.
 * **Accounts**: **18 Telegram Accounts** (1 Master Account + 17 Worker Accounts) farming in parallel.
-* **5 Active Legitimate Fleet Bots**:
-  1. **MRG Miner** (`@mrg_miner_bot` / Merge Cat bot) — Autonomous Turnstile solving, 24h human verification pass persistence, auto-claiming, auto-leveling cat miners.
+* **9 Active Legitimate Fleet Bots**:
+  1. **MRG Miner** (`@mrg_miner_bot`) — Level 95+ Auto-Upgrade & Turnstile Solver.
   2. **ATF Miner** (`@atf_miner_bot`) — Cloud hash compounding, balance tracking.
-  3. **Victor's Company** (`@victorscompany_bot`) — Autonomous pass compounding and shift automation.
-  4. **VyroDrop** (`@vyrodrop_bot`) — Mini-app farming.
-  5. **Kynex Network** (`@kynexnetwork_bot`) — High-conviction node farming.
-  *(All scammer/discontinued bots such as LeafEarn have been permanently purged).*
+  3. **Victor's Company** (`@victorscompany_bot`) — HumanPass compounding and deep mining.
+  4. **VyroDrop** (`@vyrodrop_bot`) — Autonomous 0.05 VYRO/h Cloud Solver.
+  5. **Kynex Network** (`@kynexnetwork_bot`) — 15-Min Energy Sweep & node farming.
+  6. **DiggoMiner** (`@diggominer_bot`) — 30-Day JWT Session Mining.
+  7. **Astra Airdrop** (`@AstraAirdropBot`) — Supabase RPC & Boosts.
+  8. **PepeGram** (`@pepe_mine_bot`) — 6h Hash Production Loop.
+  9. **AdxEarn AI** (`@AdxEarnAibot`) — Daily Ads & Point Farming.
+  *(All scammer/unneeded bots like LeafEarn, PumpkinEarn, etc., permanently purged).*
 
 ---
 
