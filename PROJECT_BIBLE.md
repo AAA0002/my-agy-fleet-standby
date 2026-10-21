@@ -1,5 +1,5 @@
 # 📖 PROJECT BIBLE — AAA AUTO / MY AGY AI
-> **Universal Onboarding, System Architecture, 10-Bot Fleet Engine & Operational Manual**
+> **Universal Onboarding, System Architecture, 9-Bot Fleet Engine & Operational Manual**
 > *Maintainer: Antigravity AI Pair Programming System*
 > *Last Updated: October 21, 2026*
 > *Classification: Mission-Critical Living Technical Documentation*

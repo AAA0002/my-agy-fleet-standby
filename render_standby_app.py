@@ -5753,7 +5753,7 @@ async def api_tasks_sweep_all(request: Request):
             LAST_SWEEP_RUN["output"] = str(e)
 
     asyncio.create_task(_run_sweep())
-    return {"ok": True, "status": "dispatched", "message": "10-Bot fleet side-task sweep dispatched on Render Node 2."}
+    return {"ok": True, "status": "dispatched", "message": "9-Bot fleet side-task sweep dispatched on Render Node 2."}
 
 
 @app.get("/api/tasks/sweep-status")
@@ -6653,6 +6653,7 @@ FLEET_LEGITIMATE_BOTS = [
 # Blacklisted & Purged Bots to permanently block and delete from Telegram dialogs
 FLEET_BANNED_SCAMMERS = [
     # Purged per user directive
+    "PumpkinEarnBot",
     "LeafEarnBot",
     "stoneswithestand_bot",
     "AiLab_robot",
@@ -7338,7 +7339,7 @@ async def cloud_wealth_automation_watchdog():
                         except Exception as ce:
                             logger.debug(f"[Cloud Wealth Watchdog] Auto clean-up note: {ce}")
 
-                    # 4. Autonomous 10-Bot Side-Tasks Sweeper (Runs every 3 hours)
+                    # 4. Autonomous 9-Bot Side-Tasks Sweeper (Runs every 3 hours)
                     if (now_ts - LAST_SIDE_TASKS_SWEEP_TS) > 10800:
                         try:
                             logger.info("[Cloud Wealth Watchdog] 🎯 Triggering autonomous 10-bot side-task sweep in cloud...")
