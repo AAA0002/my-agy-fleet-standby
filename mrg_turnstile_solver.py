@@ -30,8 +30,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger("mrg_turnstile_solver")
 
-UPSTASH_URL = os.getenv("UPSTASH_URL") or "https://pleasant-locust-220893.upstash.io"
-UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or ""
+UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://pleasant-locust-220893.upstash.io"
+UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or ""
 ALERT_BOT_TOKEN = os.getenv("ALERT_BOT_TOKEN") or ""
 OWNER_ID = os.getenv("OWNER_ID") or "6727787768"
 CAPSOLVER_KEY = os.getenv("CAPSOLVER_KEY") or ""
