@@ -1394,3 +1394,15 @@ Whenever you perform work in this repository:
   - Maintained 100% cloud-first automation across the 9 high-conviction pools: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, and AdxEarn AI.
   - All non-essential, scam, or unneeded bots (e.g. LeafEarn, PumpkinEarn, CryptoProUpRobot, Ainovum, AI Lab) permanently decommissioned and purged from edge handlers, commands, and repositories.
   - Re-synchronized edge worker and streamed disaster recovery snapshot to Telegram vault (`@myagyai`).
+
+### 22. Victor's Company Full-Fleet Audit, 0-Second Token Minting & Shadow-Root Turnstile Piercing (October 21, 2026)
+* **Comprehensive Root Cause Analysis Across All 18 Accounts**:
+  - **Issue 1: 9-Day Old Stale initData**: Discovered `fleet_miniapp_tokens.json` stored `victors_init_data` with `auth_date` ~213 hours ago (9 days old), causing immediate rejection with `401 TG_AUTH ("Session expired")` on the Victor's API.
+  - **Issue 2: URL Hash Encoding Truncation**: In `victors_sb_solver.py`, `urllib.parse.quote(v_init, safe="%")` failed to escape `&` and `=`, causing `telegram-web-app.js` to split on `&` and truncate `tgWebAppData`, leaving `initData` empty. As a result, React evaluated `Z1 = !be.isDemo && !OA() && !0` as `true`, locking the UI on a static "Runs in Telegram" placeholder screen and never mounting the Turnstile component.
+  - **Issue 3: Shadow-Root Encapsulation**: Cloudflare Turnstile's widget renders inside an open shadow root attached to `div.min-h-[70px]`. Standard Selenium `find_elements` cannot penetrate shadow boundaries, falsely logging `Iframes=0`.
+  - **Issue 4: Zero `humanPass` in Upstash Redis**: Verified Upstash Redis had 0 `victors:pass:*` keys, preventing headless REST calls from bypassing the Cloudflare gate.
+* **Full Fleet Remediation & Resolution**:
+  - **18/18 Fresh Token Minting**: Built and executed `extract_victors_fresh.py`. Connected via Telethon MTProto to all 18 accounts, requested fresh `app` WebApp URL from `@VictorsCompanybot`, and achieved 100% fresh initData (0s old). Master Account `6727787768` extracted with `start_param=None` (preventing self-referral). All 17 sub-accounts sent `/start ref_A20AA96F18` and extracted with `start_param=ref_A20AA96F18`.
+  - **18/18 Live REST Validation**: Probed `/api/auth/login` across all 18 accounts with newly minted initData: 100% returned `HTTP 403 HUMAN_REQUIRED` (0% session expired), confirming Telegram MiniApp authentication is completely healthy.
+  - **Shadow-Root Piercing Solver**: Upgraded `victors_sb_solver.py` and `mrg_turnstile_solver.py` with shadow-root recursive DOM traversers, strict `safe=""` URL encoding, Turnstile `appearance: always` render hooks, and Playwright `frame_locator` direct checkbox clicking.
+  - **Edge Worker & Disaster Recovery Sync**: Synced all 18 tokens to Upstash Redis `miniapp_tokens` and `fleet:tokens:{uid}`. Streamed disaster recovery snapshot to Telegram vault (`@myagyai`) via `backup_manager.py`.
