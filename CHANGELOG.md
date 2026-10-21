@@ -2,6 +2,19 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 Dynamic Per-Context Proxy Isolation, Touch Emulation & Turnstile Self-Healing (October 21, 2026)**:
+  - **🛡️ Elimination of Global Browser Proxy Single-Point-of-Failure**:
+    * Identified root cause of `net::ERR_TUNNEL_CONNECTION_FAILED` in GitHub Actions run #68: Chromium was launched globally with a single static `--proxy-server`. When that single Webshare tunnel closed mid-run, all subsequent navigations across Victor's Company and VyroDrop failed.
+    * Decoupled proxy attachment from global browser startup: `p.chromium.launch()` now launches cleanly without global proxy bindings.
+    * Route contexts dynamically: Victor's Company (`app.victors.company`) and VyroDrop (`vyro.run.place`) run directly on clean runner IPs (100% 200 OK reachability), while MRG Miner attaches verified proxies per-context to bypass Cloudflare WAF on `app.mrgtoken.xyz`.
+  - **⚡ Pre-Flight Direct Endpoint Proxy Validation**:
+    * Upgraded `get_webshare_proxy()` to pre-validate candidate proxies directly against `https://app.mrgtoken.xyz` with 6-second timeouts, automatically dropping exhausted or 402 Payment Required proxies.
+    * Caches verified live proxies in `_VERIFIED_MRG_PROXIES` with round-robin shuffling.
+  - **📱 Mobile Touchscreen Tap Emulation for Turnstile Checkboxes**:
+    * Fixed Cloudflare 403 bot detection on mobile emulation contexts: added `page.touchscreen.tap(click_x, click_y)` alongside humanized mouse movements, aligning pointer events with `is_mobile=True, has_touch=True`.
+    * Applied across MRG Miner, Victor's Company, and VyroDrop solver routines.
+
+
 - **🌉 Master Session Bridge & Clean Session Handover Architecture (October 21, 2026)**:
   - **Created**: `SESSION_BRIDGE.md` at workspace root and in artifact directory, providing complete architectural handover, bot registry, current operational state, and links to previous 63,307-step history.
   - **Updated**: `AGENTS.md` to establish mandatory pre-execution reading of `SESSION_BRIDGE.md` for all new agent/Gemini sessions.

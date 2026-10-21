@@ -197,9 +197,9 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     * Script: `refresh_cloud_tokens.py` (Connects MTProto in cloud, harvests fresh 24h WebApp `initData`, syncs to 5x Cloudflare Nodes and Upstash Redis).
     * Auto-Dispatch Pipeline: Automatically triggers `.github/workflows/mrg_turnstile_solver.yml` and Render Standby multi-node farming upon completion.
   - **100% Cloud Multi-Bot Turnstile Solver & Auto-Farming Workflow**:
-    * Workflow File: `.github/workflows/mrg_turnstile_solver.yml` (Runs every 4 hours: `0 */4 * * *`, ensuring Victor's Company and MRG human passes stay perpetually fresh before their 6–8h expiration).
+    * Workflow File: `.github/workflows/mrg_turnstile_solver.yml` (Runs on schedule: `0 */8 * * *`, ensuring Victor's Company and MRG human passes stay perpetually fresh before expiration).
     * Timeout: 40 minutes (`timeout-minutes: 40`), preventing premature cancellation across 18 fleet accounts.
-    * Script: `mrg_turnstile_solver.py` (Patchright Chromium stealth engine, Turnstile script loader race guard, dual-action targeted iframe element and frame locator clicks on `#challenge-stage, .ctp-checkbox-label, .mark`, real Telegram `initData` simulation, TonConnect 2.0 wallet onboarding, Turnstile iframe solver, and full reward auto-compounder).
+    * Script: `mrg_turnstile_solver.py` (Patchright Chromium stealth engine with per-context dynamic proxy isolation: MRG contexts attach verified Webshare proxies to bypass Cloudflare WAF on `app.mrgtoken.xyz`, while Victor's Company and VyroDrop execute directly on clean runner IPs eliminating tunnel failures; native `touchscreen.tap` mobile pointer emulation; server-side 24h pass persistence via `/api/user/verify-human`; and automated multi-bot claims across MRG, Victor's Company, VyroDrop, ATF, and Kynex Network).
     * Zero Phone Load: Runs 100% inside GitHub's cloud runner environment (Ubuntu 24.04, 7GB RAM).
 
 - **Retired Telegram Serverless Platform (`tgcloud.ai` - Deprecated for Bot Webhooks)**:

@@ -82,12 +82,20 @@ def load_fleet_ton_wallets() -> dict:
     return {}
 
 
+_VERIFIED_MRG_PROXIES = []
+
 def get_webshare_proxy() -> dict | None:
     """
     Fetches an active high-speed proxy from Webshare to bypass Cloudflare WAF
     datacenter blocks in GitHub Actions and cloud runner environments.
-    Validates tunnel connectivity against Cloudflare Turnstile before returning.
+    Validates tunnel connectivity against app.mrgtoken.xyz before returning.
     """
+    global _VERIFIED_MRG_PROXIES
+    if _VERIFIED_MRG_PROXIES:
+        # Shuffle and return an already verified live proxy
+        random.shuffle(_VERIFIED_MRG_PROXIES)
+        return _VERIFIED_MRG_PROXIES[0]
+
     env_keys = []
     env_path = os.path.join(BASE_DIR, ".env")
     if os.path.exists(env_path):
@@ -128,7 +136,7 @@ def get_webshare_proxy() -> dict | None:
 
     if candidate_proxies:
         random.shuffle(candidate_proxies)
-        for candidate in candidate_proxies[:8]:
+        for candidate in candidate_proxies:
             u = candidate.get("username", "Arif2743")
             pw = candidate.get("password", "Arif2743")
             host = candidate["proxy_address"]
@@ -138,20 +146,26 @@ def get_webshare_proxy() -> dict | None:
                 ph = urllib.request.ProxyHandler({"http": proxy_str, "https": proxy_str})
                 opener = urllib.request.build_opener(ph)
                 test_req = urllib.request.Request(
-                    "https://challenges.cloudflare.com/turnstile/v0/api.js",
-                    headers={"User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36"}
+                    "https://app.mrgtoken.xyz",
+                    headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"}
                 )
-                with opener.open(test_req, timeout=7) as test_resp:
+                with opener.open(test_req, timeout=6) as test_resp:
                     if test_resp.status == 200:
-                        logger.info(f"🌐 Verified live Webshare proxy for Turnstile: {host}:{port} ({candidate.get('country_code', 'US')})")
-                        return {
+                        verified = {
                             "server": f"http://{host}:{port}",
                             "username": u,
                             "password": pw
                         }
+                        if verified not in _VERIFIED_MRG_PROXIES:
+                            _VERIFIED_MRG_PROXIES.append(verified)
+                        logger.info(f"🌐 Verified live Webshare proxy for MRG: {host}:{port} ({candidate.get('country_code', 'US')})")
+                        if len(_VERIFIED_MRG_PROXIES) >= 3:
+                            break
             except Exception:
                 continue
 
+    if _VERIFIED_MRG_PROXIES:
+        return _VERIFIED_MRG_PROXIES[0]
     return None
 
 
@@ -401,15 +415,19 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
             save_mrg_pass_to_upstash(uid, api_tok)
             return True
 
-    context = await browser.new_context(
-        bypass_csp=True,
-        user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
-        viewport={"width": 412, "height": 915},
-        is_mobile=True,
-        has_touch=True,
-        locale="en-US",
-        timezone_id="UTC"
-    )
+    ws_proxy = get_webshare_proxy() if os.getenv("USE_BROWSER_PROXY", "1") != "0" else None
+    context_kwargs = {
+        "bypass_csp": True,
+        "user_agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
+        "viewport": {"width": 412, "height": 915},
+        "is_mobile": True,
+        "has_touch": True,
+        "locale": "en-US",
+        "timezone_id": "UTC"
+    }
+    if ws_proxy:
+        context_kwargs["proxy"] = ws_proxy
+    context = await browser.new_context(**context_kwargs)
 
     page = await context.new_page()
 
@@ -559,7 +577,11 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                     if box and box["width"] >= 200 and box["height"] >= 45:
                         click_x = box["x"] + 32.0
                         click_y = box["y"] + (box["height"] / 2.0)
-                        logger.info(f"🖱️ Found visible Turnstile checkbox for MRG UID {uid}! Humanized click at ({click_x:.1f}, {click_y:.1f})...")
+                        logger.info(f"🖱️ Found visible Turnstile checkbox for MRG UID {uid}! Humanized interaction at ({click_x:.1f}, {click_y:.1f})...")
+                        try:
+                            await page.touchscreen.tap(click_x, click_y)
+                        except Exception:
+                            pass
                         await page.mouse.move(click_x - 30, click_y - 15)
                         await asyncio.sleep(0.1)
                         await page.mouse.move(click_x, click_y, steps=8)
@@ -682,6 +704,10 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                     click_x = box["x"] + 32.0
                     click_y = box["y"] + (box["height"] / 2.0)
                     logger.info(f"🖱️ Clicking MRG programmatic Turnstile checkbox at ({click_x:.1f}, {click_y:.1f})...")
+                    try:
+                        await page.touchscreen.tap(click_x, click_y)
+                    except Exception:
+                        pass
                     await page.mouse.move(click_x - 20, click_y - 10)
                     await asyncio.sleep(0.1)
                     await page.mouse.move(click_x, click_y, steps=8)
@@ -1023,7 +1049,11 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                     if box and box["width"] >= 200 and box["height"] >= 45:
                         click_x = box["x"] + 32.0
                         click_y = box["y"] + (box["height"] / 2.0)
-                        logger.info(f"🖱️ [Victor's] Found visible Turnstile checkbox for UID {uid}! Humanized click at ({click_x:.1f}, {click_y:.1f})...")
+                        logger.info(f"🖱️ [Victor's] Found visible Turnstile checkbox for UID {uid}! Humanized interaction at ({click_x:.1f}, {click_y:.1f})...")
+                        try:
+                            await page.touchscreen.tap(click_x, click_y)
+                        except Exception:
+                            pass
                         await page.mouse.move(click_x - 30, click_y - 15)
                         await asyncio.sleep(0.1)
                         await page.mouse.move(click_x, click_y, steps=8)
@@ -1133,6 +1163,10 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                             click_x = box["x"] + 32.0
                             click_y = box["y"] + (box["height"] / 2.0)
                             logger.info(f"🖱️ [Victor's] Clicking programmatic Turnstile checkbox at ({click_x:.1f}, {click_y:.1f})...")
+                            try:
+                                await page.touchscreen.tap(click_x, click_y)
+                            except Exception:
+                                pass
                             await page.mouse.move(click_x - 20, click_y - 10)
                             await asyncio.sleep(0.1)
                             await page.mouse.move(click_x, click_y, steps=8)
@@ -1584,7 +1618,11 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                             if box and box["width"] >= 200 and box["height"] >= 45:
                                 click_x = box["x"] + 32.0
                                 click_y = box["y"] + (box["height"] / 2.0)
-                                logger.info(f"🖱️ [VyroDrop] Click Turnstile checkbox for UID {uid} at ({click_x:.1f}, {click_y:.1f})...")
+                                logger.info(f"🖱️ [VyroDrop] Interaction with Turnstile checkbox for UID {uid} at ({click_x:.1f}, {click_y:.1f})...")
+                                try:
+                                    await page.touchscreen.tap(click_x, click_y)
+                                except Exception:
+                                    pass
                                 await page.mouse.move(click_x - 20, click_y - 10)
                                 await asyncio.sleep(0.1)
                                 await page.mouse.move(click_x, click_y, steps=8)
@@ -1998,9 +2036,7 @@ async def run_mrg_auto_solver():
         headless_flag = False if is_xvfb else True
         logger.info(f"🖥️ Launching Chromium (headless={headless_flag}, DISPLAY={os.getenv('DISPLAY')}, CI={os.getenv('CI')})...")
 
-        # Cloudflare Challenge Platform blocks direct Azure datacenter runner IPs (HTTP 401/403).
-        # Route Chromium through verified Webshare proxies to guarantee 100% Turnstile acceptance.
-        ws_proxy = get_webshare_proxy() if os.getenv("USE_BROWSER_PROXY", "1") != "0" else None
+        # Cloudflare Challenge Platform proxies are attached dynamically per context (MRG uses Webshare residential proxies, Victor's/Vyro run directly).
         launch_kwargs = {
             "headless": headless_flag,
             "args": [
@@ -2010,11 +2046,7 @@ async def run_mrg_auto_solver():
                 "--window-size=1280,800"
             ]
         }
-        if ws_proxy:
-            logger.info(f"🌐 Routing browser through Webshare proxy: {ws_proxy['server']}")
-            launch_kwargs["proxy"] = ws_proxy
-        else:
-            logger.info("🛡️ Running directly on clean runner IP.")
+        logger.info("🛡️ Launching Chromium with per-context dynamic proxy isolation.")
 
         async with async_playwright() as p:
             browser = await p.chromium.launch(**launch_kwargs)
