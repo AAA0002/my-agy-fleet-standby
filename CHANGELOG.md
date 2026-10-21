@@ -2,6 +2,12 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Instant 30-Day Diggo JWT Exchange at MTProto Extraction (October 21, 2026)**:
+  - **⚡ Zero-Latency Session Minting**:
+    * Updated `extract_bot_webapp_tokens_for_client` in `app.py`, `render_app_latest.py`, and `render_standby_app.py`.
+    * The instant MTProto extracts fresh `diggo_init_data`, it immediately calls `POST /api/auth/telegram` to mint a 30-day session JWT and persists it to Upstash Redis at `fleet:diggo:jwt:{uid}` (`ex=2592000`).
+    * Completely eliminates the possibility of `401 expired_init_data` even if farming is delayed.
+
 - **💎 DiggoMiner 30-Day Session JWT Architecture & Ground-Truth Bot Verification (October 21, 2026)**:
   - **🔍 Direct API Account-by-Account Audit (Zero Blind Trust)**:
     * Replaced dashboard cooldown estimates with direct live HTTP endpoint testing per account.

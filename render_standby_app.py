@@ -853,6 +853,23 @@ async def extract_tokens_with_client(client: TelegramClient, acc: dict) -> dict:
     tok = await extract_bot_webapp_token(client, DIGGO_BOT, start_param=diggo_param, default_url="https://diggo.linkpc.net/", candidate_short_names=["openapp", "app", "miner", "miniapp", "startapp"])
     if tok:
         tokens["diggo_init_data"] = tok
+        if UPSTASH_URL and UPSTASH_TOKEN and uid and uid != "unknown":
+            try:
+                async with aiohttp.ClientSession() as http_dig:
+                    h_dig = {
+                        "Content-Type": "application/json",
+                        "Origin": "https://diggo.linkpc.net",
+                        "Referer": f"https://diggo.linkpc.net/?tgWebAppStartParam={diggo_param or 'ref_4088138f11effe8eef4b86ff'}",
+                        "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 Telegram-Android/11.0.0"
+                    }
+                    async with http_dig.post("https://diggo.linkpc.net/api/auth/telegram", json={"initData": tok}, headers=h_dig, timeout=aiohttp.ClientTimeout(total=8)) as dr:
+                        if dr.status == 200:
+                            dd = await dr.json()
+                            if dd.get("token"):
+                                await http_dig.post(f"{UPSTASH_URL}/set/fleet:diggo:jwt:{uid}?ex=2592000", data=dd["token"], headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=3))
+                                logger.info(f"🔑 [DiggoMiner] Successfully exchanged & cached 30-day JWT for UID {uid}")
+            except Exception as dig_err:
+                logger.debug(f"[DiggoMiner] JWT exchange note for {uid}: {dig_err}")
     await asyncio.sleep(random.uniform(0.5, 1.2))
 
     # 8. Astra Airdrop (@ASTRA_AIRDROP_BOT)
