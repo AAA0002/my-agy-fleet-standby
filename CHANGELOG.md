@@ -2,6 +2,15 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎯 Dedicated Single-Render Account Mode & Zero-Rotation Policy (October 21, 2026)**:
+  - **🔒 Single-Account Free Tier Standardization**:
+    * Standardized fleet execution onto **1 single Render account** (Node 2: Frankfurt / `srv-dan5q00ae00c73djummg`).
+    * In any 31-day month, 24/7 runtime requires exactly 744 hours ($31 \times 24 = 744\text{h}$), which is strictly within Render's 750 free monthly hours.
+    * Added `ENABLE_BATON_RELAY` flag (default: `0` / disabled) to `app.py`, `render_app_latest.py`, and `render_standby_app.py`.
+    * Node 2 will never attempt to auto-rotate, suspend itself, or switch to other Render accounts at month-end.
+    * Eliminates all multi-account management overhead and guarantees zero Telegram MTProto session collisions or session revocations.
+
+
 - **☁️ Multi-Cloud Free Tier Fleet Expansion & CronJob.org 401 Authorization Fix (October 21, 2026)**:
   - **🆓 De-risking GitHub Actions via Free Cloud Ecosystem (.env Audit)**:
     * Identified that relying exclusively on GitHub Actions' 2,000 monthly minutes creates a bottleneck for frequent cron runs.

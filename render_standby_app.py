@@ -7284,17 +7284,22 @@ async def cloud_wealth_automation_watchdog():
                         except Exception as se:
                             logger.debug(f"[Cloud Wealth Watchdog] Side-task auto trigger note: {se}")
 
-            # 4. Baton Relay 650h Rotation Monitor (Automatic Single-Active Handover)
+            # 4. Monthly Runtime Monitor & Optional Baton Relay Rotation
             cur_node_num = get_current_node_number()
             cur_hours = get_current_month_hours()
-            safe_margin = max(0.0, round(650.0 - cur_hours, 1))
-            logger.info(f"[Baton Relay] Node {cur_node_num} monthly runtime: {cur_hours:.1f} / 750.0 hours (Safe margin: {safe_margin:.1f}h before 650.0h auto-rotation)")
-            if cur_hours >= 650.0:
-                next_node = 3 if cur_node_num == 2 else (1 if cur_node_num == 3 else 2)
-                logger.warning(f"[Baton Relay] ⚠️ Node {cur_node_num} reached {cur_hours:.1f} hours! Triggering rotation to Node {next_node}...")
-                asyncio.create_task(_trigger_node_rotation(to_node=next_node, cooldown_seconds=300))
-                await asyncio.sleep(300)
-                continue
+            enable_baton_relay = os.getenv("ENABLE_BATON_RELAY", "0").lower() in ("1", "true", "yes")
+
+            if not enable_baton_relay:
+                logger.info(f"[Single Render Mode] Node {cur_node_num} active 24/7. Month runtime: {cur_hours:.1f}h / 744.0h max (100% free within 750h quota, zero rotation risk).")
+            else:
+                safe_margin = max(0.0, round(650.0 - cur_hours, 1))
+                logger.info(f"[Baton Relay] Node {cur_node_num} monthly runtime: {cur_hours:.1f} / 750.0 hours (Safe margin: {safe_margin:.1f}h before 650.0h auto-rotation)")
+                if cur_hours >= 650.0:
+                    next_node = 3 if cur_node_num == 2 else (1 if cur_node_num == 3 else 2)
+                    logger.warning(f"[Baton Relay] ⚠️ Node {cur_node_num} reached {cur_hours:.1f} hours! Triggering rotation to Node {next_node}...")
+                    asyncio.create_task(_trigger_node_rotation(to_node=next_node, cooldown_seconds=300))
+                    await asyncio.sleep(300)
+                    continue
 
         except Exception as e:
             logger.error(f"[Cloud Wealth Watchdog] Cycle error: {e}")
