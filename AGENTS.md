@@ -42,12 +42,15 @@
 ---
 
 ## 5. ☁️ Zero-Trust Ephemeral Infrastructure ("Never Trust VPS or Local")
-- **Ephemeral Mindset**: Always assume any VPS or local machine can die, expire, or get wiped at any moment without warning.
+- **Ephemeral Mindset & Zero-Trust VMs**: Always assume ANY VPS, ephemeral container (e.g. `api.instabox.sh`), or local PRoot container can die, expire, or get wiped at any moment without warning. Never store unbacked-up data solely on an ephemeral VM.
+- **MANDATORY AUTOMATIC TELEGRAM BACKUP (DO NOT FORGET)**:
+  - ALWAYS execute `python3 backup_manager.py` to stream disaster recovery archives directly to the Telegram vault channel (`@myagyai`) before and after any major sync, transfer, code edit, or deployment.
+  - Never finish a major milestone or workspace migration without verifying that a fresh backup archive was successfully delivered to `@myagyai`.
 - **Continuous Off-Machine Durability**:
   - Keep automated disaster recovery archives flowing to the Telegram vault (`@myagyai`) via `backup_manager.py`.
   - Replicate state, heartbeat sentinel, and telemetry across the 3-node Cloudflare Edge mesh.
   - Regularly sync critical architectural decisions and state to Walrus Memory.
-  - Keep Git checkpoints clean and documented in `CHANGELOG.md`.
+  - Keep Git checkpoints clean, pushed to both `origin` and `standby_repo`, and documented in `CHANGELOG.md`.
 - **1-Click Disaster Recovery**: Ensure the self-contained 1-click restore mechanism (`restore.sh` / Telegram one-liner) always works out-of-the-box anywhere.
 
 ---
