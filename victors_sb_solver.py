@@ -151,7 +151,7 @@ def load_fleet_ton_wallets() -> dict:
 
 
 def load_all_miniapp_tokens() -> dict:
-    """Fetch miniapp_tokens master dictionary from Upstash Redis."""
+    """Fetch miniapp_tokens master dictionary from Upstash Redis with local file fallback."""
     try:
         req = urllib.request.Request(
             f"{UPSTASH_URL}/get/miniapp_tokens",
@@ -164,6 +164,14 @@ def load_all_miniapp_tokens() -> dict:
                 return json.loads(res) if isinstance(res, str) else res
     except Exception as e:
         logger.warning(f"Error fetching miniapp_tokens: {e}")
+
+    local_file = os.path.join(os.path.dirname(__file__), "fleet_miniapp_tokens.json")
+    if os.path.exists(local_file):
+        try:
+            with open(local_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
     return {}
 
 
@@ -599,7 +607,7 @@ def solve_victors_with_seleniumbase():
             ref_to_bind = "" if is_master else VICTORS_REF
 
             logger.info(f"🚀 Processing UID {uid} ({name}, is_master={is_master})...")
-            encoded_init = urllib.parse.quote(v_init, safe="%")
+            encoded_init = urllib.parse.quote(v_init, safe="")
             target_url = (
                 f"{VICTORS_ORIGIN}/#tgWebAppData={encoded_init}"
                 f"&tgWebAppPlatform=android"
@@ -672,6 +680,27 @@ def solve_victors_with_seleniumbase():
                     }});
                 }} catch(e) {{}}
 
+                // Intercept window.turnstile.render to force appearance: 'always' and hook callback
+                let _cfPoll = setInterval(() => {{
+                    if (window.turnstile && typeof window.turnstile.render === 'function') {{
+                        clearInterval(_cfPoll);
+                        const _origRender = window.turnstile.render;
+                        window.turnstile.render = function(container, options) {{
+                            try {{
+                                if (options) {{
+                                    options.appearance = 'always';
+                                    const _origCb = options.callback;
+                                    options.callback = function(tok) {{
+                                        window.__victorsTurnstileToken = tok;
+                                        if (_origCb) _origCb(tok);
+                                    }};
+                                }}
+                            }} catch(e) {{}}
+                            return _origRender.call(this, container, options);
+                        }};
+                    }}
+                }}, 30);
+
                 // Intercept fetch to capture humanPass from /auth/login response directly
                 const origFetch = window.fetch;
                 window.fetch = async function(...args) {{
@@ -725,11 +754,11 @@ def solve_victors_with_seleniumbase():
                 token = None
                 human_pass = None
 
-                for attempt in range(25):
+                for attempt in range(35):
                     captured = sb.execute_script("""
                         return {
                             humanPass: window.__victorsHumanPass || null,
-                            token: window.__victorsTurnstileToken || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null
+                            token: window.__victorsTurnstileToken || (document.querySelector('[name="cf-turnstile-response"]')?.value) || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null
                         };
                     """)
                     if captured:
