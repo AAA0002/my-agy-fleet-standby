@@ -77,7 +77,7 @@ async def authenticate_kynex(session: aiohttp.ClientSession, init_data: str) -> 
             if resp.status != 200:
                 err_text = await resp.text()
                 logger.warning(f"[Kynex Auth] verifyTelegramAuth returned HTTP {resp.status}: {err_text[:200]}")
-                return None
+                return {"_error": f"upstream_{resp.status} (server maintenance)" if resp.status == 503 else f"auth_status_{resp.status}"}
             verify_data = await resp.json()
 
         res = verify_data.get("result", {})
@@ -241,8 +241,9 @@ async def farm_kynex_account(
 
     # 1. Authenticate
     auth_res = await authenticate_kynex(session, init_data)
-    if not auth_res:
-        result["status"] = "auth_failed"
+    if not auth_res or (isinstance(auth_res, dict) and auth_res.get("_error")):
+        err_msg = auth_res.get("_error", "auth_failed") if isinstance(auth_res, dict) else "auth_failed"
+        result["status"] = err_msg
         return result
 
     id_token = auth_res["id_token"]
