@@ -19,8 +19,11 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
    - The local Samsung Galaxy A30 running Ubuntu 26.04 PRoot is **EXCLUSIVELY dedicated to running the Antigravity AI CLI for pair programming**.
    - **NEVER** run bots, daemon loops, supervisor loops, scrapers, queue pollers, or MTProto relay listeners locally on the phone. Keep CPU and RAM 100% free for the coding session.
    - **100% of all mining, farming, token refreshers, and webhooks MUST run in the cloud** (Cloudflare Workers, Render, Upstash Redis).
-3. **☁️ Zero-Trust Ephemeral Infrastructure**:
-   - Assume any local machine, container, or VPS can die, expire, or get wiped at any moment.
+3. **☁️ Zero-Trust Ephemeral Infrastructure & Mandatory Telegram Vault Backups ("Never Trust Any VM")**:
+   - **Ephemeral Mindset**: Always assume ANY VPS, temporary container (e.g. `api.instabox.sh`), or local PRoot container can die, expire, or get wiped at any moment without warning. Never store unbacked-up data solely on an ephemeral VM.
+   - **MANDATORY AUTOMATIC TELEGRAM BACKUP (DO NOT FORGET)**:
+     * ALWAYS execute `python3 backup_manager.py` to stream disaster recovery archives directly to the Telegram vault channel (`@myagyai`) before and after any major sync, transfer, code edit, or deployment.
+     * Never finish a major milestone or workspace migration without verifying that a fresh backup archive was successfully delivered to `@myagyai`.
    - Disaster recovery archives continuously flow to the Telegram vault (`@myagyai`) via `backup_manager.py`.
    - The 1-click restore mechanism (`restore.sh`) must always work out-of-the-box anywhere.
 4. **🛑 Permanent Auto-Withdrawal Ban (100% Accumulation & Compounding Mode)**:
