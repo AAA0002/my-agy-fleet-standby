@@ -756,10 +756,24 @@ def solve_victors_with_seleniumbase():
 
                 for attempt in range(35):
                     captured = sb.execute_script("""
-                        return {
-                            humanPass: window.__victorsHumanPass || null,
-                            token: window.__victorsTurnstileToken || (document.querySelector('[name="cf-turnstile-response"]')?.value) || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null
-                        };
+                        let hp = window.__victorsHumanPass || null;
+                        let tok = window.__victorsTurnstileToken || null;
+                        if (!tok) {
+                            let el = document.querySelector('[name="cf-turnstile-response"]');
+                            if (el && el.value) tok = el.value;
+                            if (!tok) {
+                                for (const e of document.querySelectorAll('*')) {
+                                    if (e.shadowRoot) {
+                                        let s_el = e.shadowRoot.querySelector('[name="cf-turnstile-response"]');
+                                        if (s_el && s_el.value) { tok = s_el.value; break; }
+                                    }
+                                }
+                            }
+                        }
+                        if (!tok && window.turnstile && typeof window.turnstile.getResponse === 'function') {
+                            try { tok = window.turnstile.getResponse() || null; } catch(e) {}
+                        }
+                        return { humanPass: hp, token: tok };
                     """)
                     if captured:
                         human_pass = captured.get("humanPass")
@@ -769,7 +783,22 @@ def solve_victors_with_seleniumbase():
                         if token and len(token) > 20:
                             break
 
-                    if sb.is_element_present("iframe[src*='challenges.cloudflare.com']"):
+                    iframe_info = sb.execute_script("""
+                        let iframes = Array.from(document.querySelectorAll('iframe'));
+                        for (const el of document.querySelectorAll('*')) {
+                            if (el.shadowRoot) {
+                                iframes.push(...Array.from(el.shadowRoot.querySelectorAll('iframe')));
+                            }
+                        }
+                        let cf_if = iframes.find(f => f.src && (f.src.includes('challenges.cloudflare.com') || f.src.includes('turnstile')));
+                        if (cf_if) {
+                            let rect = cf_if.getBoundingClientRect();
+                            return { present: true, x: rect.left, y: rect.top, width: rect.width, height: rect.height };
+                        }
+                        return { present: false };
+                    """)
+
+                    if (iframe_info and iframe_info.get("present")) or sb.is_element_present("iframe[src*='challenges.cloudflare.com']"):
                         try:
                             sb.solve_captcha()
                         except Exception:
@@ -778,6 +807,15 @@ def solve_victors_with_seleniumbase():
                             sb.uc_gui_click_captcha()
                         except Exception:
                             pass
+                        if iframe_info and iframe_info.get("present"):
+                            try:
+                                bx = iframe_info.get("x", 0) + 32
+                                by = iframe_info.get("y", 0) + (iframe_info.get("height", 65) / 2)
+                                sb.driver.execute_cdp_cmd("Input.dispatchMouseEvent", {"type": "mousePressed", "x": bx, "y": by, "button": "left", "clickCount": 1})
+                                time.sleep(0.1)
+                                sb.driver.execute_cdp_cmd("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": bx, "y": by, "button": "left", "clickCount": 1})
+                            except Exception:
+                                pass
                     else:
                         # 1. Trigger interaction-only activation by clicking the Turnstile host container
                         try:

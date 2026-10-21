@@ -124,10 +124,10 @@ def get_webshare_proxy() -> dict | None:
         seen_keys.add(key)
         try:
             req = urllib.request.Request(
-                "https://proxy.webshare.io/api/v2/proxy/list/?mode=direct&page=1&page_size=25",
+                "https://proxy.webshare.io/api/v2/proxy/list/?mode=direct&page=1&page_size=10",
                 headers={"Authorization": f"Token {key}"}
             )
-            with urllib.request.urlopen(req, timeout=8) as resp:
+            with urllib.request.urlopen(req, timeout=5) as resp:
                 data = json.loads(resp.read().decode())
                 results = [p for p in data.get("results", []) if p.get("valid", True)]
                 candidate_proxies.extend(results)
@@ -1067,15 +1067,22 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
             try:
                 ts_iframe = page.locator("iframe[src*='challenges.cloudflare.com']").first
                 if await ts_iframe.count() > 0:
+                    # Method A: Direct DOM click inside iframe via frame_locator
+                    try:
+                        cf_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']").first
+                        chk = cf_frame.locator("input[type='checkbox'], label, #cf-stage, .ctp-checkbox-label").first
+                        if await chk.count() > 0:
+                            logger.info(f"🖱️ [Victor's] UID {uid}: Clicking Turnstile element directly via frame_locator...")
+                            await chk.click(timeout=3500)
+                    except Exception as fce:
+                        logger.info(f"[Victor's] UID {uid} frame_locator click note: {fce}")
+
+                    # Method B: Humanized mouse movement & click at checkbox coordinates
                     box = await ts_iframe.bounding_box()
                     if box and box["width"] >= 200 and box["height"] >= 45:
                         click_x = box["x"] + 32.0
                         click_y = box["y"] + (box["height"] / 2.0)
-                        logger.info(f"🖱️ [Victor's] Found visible Turnstile checkbox for UID {uid}! Humanized interaction at ({click_x:.1f}, {click_y:.1f})...")
-                        try:
-                            await page.touchscreen.tap(click_x, click_y)
-                        except Exception:
-                            pass
+                        logger.info(f"🖱️ [Victor's] Humanized mouse interaction at ({click_x:.1f}, {click_y:.1f}) for UID {uid}...")
                         await page.mouse.move(click_x - 30, click_y - 15)
                         await asyncio.sleep(0.1)
                         await page.mouse.move(click_x, click_y, steps=8)
