@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🧹 Complete Decommission & Purge of @PumpkinEarnBot & 17 Web Sessions Export (October 21, 2026)**:
+  - **📦 Authenticated Web Sessions Transmitted to Telegram**:
+    * Extracted complete authenticated `tgWebAppData` WebApp URLs for all 17 fleet sub-accounts (Accounts #2 through #18).
+    * Delivered interactive 1-click login links directly to the owner's Telegram admin chat (`6727787768`) and channel (`@myagyai`) in structured chunks.
+    * Transmitted full `pumpkin_web_sessions.txt` file as an unclipped document directly to the Telegram Admin Bot.
+  - **🚫 Total Removal of @PumpkinEarnBot from Active Fleet**:
+    * Removed `@PumpkinEarnBot` completely from all active mining pools, button handlers, status matrix, and commands menu across Cloudflare Edge workers.
+    * Reverted active pool catalog strictly back to the 9 authentic, high-conviction pools: MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, and AdxEarn AI.
+    * Purged `pumpkin_fleet_farmer.py`, protobuf descriptors in `proto_desc/`, and temporary scripts.
+    * Deleted `fleet:pumpkin_state` in Upstash Redis and cleaned transient fields from `accounts.json`.
+    * Synchronized and redeployed Cloudflare Edge Node 4 (`restore-agy.agorameet.workers.dev`).
+
 - **🎃 Full Fleet Pumpkin Farming & Complete 18/18 Session Restoration (October 21, 2026)**:
   - **🚀 Targeted Execution for Accounts #4, #6, and #12**:
     * Ran `pumpkin_fleet_farmer.py` with fresh sessions for Account 4 (Arif `8826375659`), Account 6 (Kaitlyn Ross 6 `8782429452`), and Account 12 (Sanzida Shimu `7487048946`).

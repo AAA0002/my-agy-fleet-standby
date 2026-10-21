@@ -11,7 +11,7 @@
 If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a new session, or a human operator taking over this workspace, **read this entire document first**. It provides the complete picture of this project, how every component works, where every secret and service lives, and how to operate and extend it without breaking production.
 
 ### What is this Project?
-**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **18 Telegram accounts** (1 Master Account + 17 Worker Accounts) that continuously farm yield, satoshis, and tokens across **10 high-conviction fleet Telegram WebApp Mini Apps** (MRG Miner, ATF Miner, PumpkinEarn, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI — LeafEarn and all scammer/discontinued bots permanently purged), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin).
+**AAA AUTO** (also known as **MY AGY AI Fleet**) is an enterprise-grade, cloud-first autonomous crypto farming and userbot fleet management infrastructure. It manages **18 Telegram accounts** (1 Master Account + 17 Worker Accounts) that continuously farm yield, satoshis, and tokens across **9 high-conviction fleet Telegram WebApp Mini Apps** (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI — LeafEarn, PumpkinEarn, and all scammer/discontinued bots permanently purged), while managing dedicated multi-chain non-custodial wallets (EVM/BSC, TON, TRON, Solana, Bitcoin).
 
 ### The Golden Directives (Non-Negotiable Rules)
 1. **🛡️ Strict Project Isolation**: Everything relating to this project must remain strictly within this repository (`AAA0002/ATL`). **NEVER** touch, import, mix, or merge context from `@AAATelegramIdBot` (`AAA2743/AA`) or other external projects.
@@ -1402,4 +1402,9 @@ Whenever you perform work in this repository:
   - Restored Accounts #4 (Arif), #6 (Kaitlyn), and #12 (Sanzida Shimu) using their fresh Telethon session strings stored in Upstash Redis.
   - Cleared Redis set `fleet:revoked_sessions` and updated `fleet:healthy_sessions` to all 18 accounts (1..18).
   - Purged hardcoded `[4, 6, 12]` revoked fallback in `deploy_both_cf_workers.py` so Admin Bot `@myagyai` and Cloudflare Edge Node 4 report genuine real-time fleet health.
+* **Complete Decommission, Web Session Export & Clean Purge**:
+  - Exported authenticated WebApp web sessions for all 17 sub-accounts (Accounts #2 through #18) and transmitted them directly to the admin Telegram chat (`6727787768`) and `@myagyai` vault channel both as chunked messages and a full `.txt` document file.
+  - Purged `@PumpkinEarnBot` completely from all active mining pools, button handlers, status matrix, and commands menu across Cloudflare Edge workers.
+  - Reverted active pool catalog strictly back to the 9 authentic, high-conviction pools: MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, and AdxEarn AI.
+  - Deleted `pumpkin_fleet_farmer.py`, protobuf descriptors in `proto_desc/`, and `fleet:pumpkin_state` in Upstash Redis.
   - Re-synchronized edge worker and streamed disaster recovery snapshot to Telegram vault (`@myagyai`).

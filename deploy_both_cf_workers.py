@@ -1527,7 +1527,7 @@ async function upstashGet(key, maxAgeMs = 900000) { // 15 minutes default cache 
   if (key.startsWith("login_flow:") || key.startsWith("last_login_phone:") || key.startsWith("fleet:lock:") || key.startsWith("fleet:pending_action") || key.startsWith("tg_login_flow:") || key.startsWith("ub_user:") || key.startsWith("fleet:daily_ads:")) {
     maxAgeMs = 0; // Interactive real-time flow keys bypass caching completely
   }
-  if (key.startsWith("fleet:revoked_sessions") || key.startsWith("fleet:healthy_sessions") || key.startsWith("fleet:live_state") || key.startsWith("fleet:status") || key.startsWith("fleet:pumpkin_state") || key.startsWith("fleet:tokens_state") || key.startsWith("fleet:accounts")) {
+  if (key.startsWith("fleet:revoked_sessions") || key.startsWith("fleet:healthy_sessions") || key.startsWith("fleet:live_state") || key.startsWith("fleet:status") || key.startsWith("fleet:tokens_state") || key.startsWith("fleet:accounts")) {
     maxAgeMs = 15000; // 15 seconds max cache for live fleet state & revoked sessions
   }
   const cached = UPSTASH_GET_CACHE.get(key);
@@ -4270,7 +4270,7 @@ fi
           return `👑 *MY AGY AI — OPERATIONS COMMAND CENTER*\n` +
             `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
             `${statusLine}\n` +
-            `🤖 *10 Active Mining Pools:* MRG • ATF • PumpkinEarn • Victor's • VyroDrop • Kynex • Diggo • Astra • PepeGram • AdxEarn AI\n` +
+            `🤖 *9 Active Mining Pools:* MRG • ATF • Victor's • VyroDrop • Kynex • Diggo • Astra • PepeGram • AdxEarn AI\n` +
             `☁️ *Multi-Cloud Mesh:* 5 Cloudflare Edge Nodes • Render Coordinator Node 2\n` +
             `🛡️ *Zero Phone Load:* 100% Cloud-First • Pure Accumulation Mode\n` +
             `⏱️ *Time (Dhaka):* \`${dhakaTime}\`\n` +
@@ -4319,22 +4319,21 @@ fi
             ],
             [
               { text: "📊 Fleet Live Status", callback_data: "btn_status" },
-              { text: "🎃 Pumpkin Farm", callback_data: "btn_pumpkin" }
+              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ],
             [
-              { text: "🤖 10-Bot Mining Hub", callback_data: "btn_bots_hub" },
+              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" },
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" }
             ],
             [
-              { text: "⚡ 10-Bot Harvest", callback_data: "btn_harvest" },
-              { text: "🔍 Session Audit", callback_data: "btn_session_audit" }
+              { text: "🔍 Session Audit", callback_data: "btn_session_audit" },
+              { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" }
             ],
             [
-              { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" },
-              { text: "💼 Multi-Chain Wallets", callback_data: "btn_wallets" }
+              { text: "💼 Multi-Chain Wallets", callback_data: "btn_wallets" },
+              { text: "🌐 Cloud Mesh", callback_data: "btn_mesh" }
             ],
             [
-              { text: "🌐 Cloud Mesh", callback_data: "btn_mesh" },
               { text: "📺 Ad-Farmer Loop", callback_data: "btn_ad_farmer" }
             ]
           ]
@@ -4347,15 +4346,14 @@ fi
               { text: "🔍 Session Audit", callback_data: "btn_session_audit" }
             ],
             [
-              { text: "🎃 Pumpkin Farm", callback_data: "btn_pumpkin" },
-              { text: "🤖 10-Bot Mining Hub", callback_data: "btn_bots_hub" }
+              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" },
+              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" }
             ],
             [
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
               { text: "🔑 OTP Menu", callback_data: "btn_otp_menu" }
             ],
             [
-              { text: "⚡ 10-Bot Harvest", callback_data: "btn_harvest" },
               { text: "🔙 Main Menu", callback_data: "btn_back_main" }
             ]
           ]
@@ -4365,11 +4363,11 @@ fi
           inline_keyboard: [
             [
               { text: "🔍 Session Audit", callback_data: "btn_session_audit" },
-              { text: "🎃 Pumpkin Farm", callback_data: "btn_pumpkin" }
+              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ],
             [
               { text: "🔑 OTP & Relogin", callback_data: "btn_otp_menu" },
-              { text: "⚡ 10-Bot Harvest", callback_data: "btn_harvest" }
+              { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" }
             ],
             [
               { text: "➕ Add Account", callback_data: "btn_add_account" },
@@ -4387,12 +4385,6 @@ fi
           const activeCount = health.healthy.size;
           const revokedCount = health.revoked.size;
 
-          let pumpkinData = null;
-          try {
-            const pRaw = await upstashGet("fleet:pumpkin_state", 15000);
-            if (pRaw) pumpkinData = typeof pRaw === "string" ? JSON.parse(pRaw) : pRaw;
-          } catch (_) {}
-
           let liveBnb = 0.000622;
           try {
             const rawMC = await env.BACKUP_KV.get("multichain_balances_state");
@@ -4402,37 +4394,29 @@ fi
             }
           } catch (_) {}
 
-          const pFarmed = pumpkinData ? pumpkinData.farmed_count : 13;
-          const pCoins = pumpkinData ? pumpkinData.pumpkins_earned : 9750;
-          const pUsd = pumpkinData ? pumpkinData.usd_value.toFixed(4) : "0.1300";
-
           return `⚡ *MY AGY AI — LIVE OPERATIONS COMMAND CENTER*\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
             `📊 *Fleet Telegram Sessions (18 Nodes):*\n` +
-            `• 🟢 *MTProto Online:* \`${activeCount}/${accounts.length} Accounts\` (83.3% Cloud Connected)\n` +
-            `• 🔴 *Needs Re-link:* \`${revokedCount} Accounts\` (#4 Arif, #6 Kaitlyn, #12 Sanzida Shimu)\n` +
-            `  _Reason: AUTH_KEY_DUPLICATED (Parallel cloud IP connection)_\n` +
-            `• ⚡ *REST WebApp Automation:* \`18/18 Accounts\` (100% Active via cached tokens)\n\n` +
-            `🤖 *10-Pool Mining Farm Live Telemetry:*\n` +
-            `• 🎃 *PumpkinEarn:* \`${pFarmed}/17 Farmed\` • Master Arif: \`+${pCoins.toLocaleString()} 🎃 ($${pUsd})\`\n` +
-            `  └ _13 Completed (2 Games Played) • 1 Banned (#3) • 3 Pending Re-link_\n` +
+            `• 🟢 *MTProto Online:* \`${activeCount}/${accounts.length} Accounts\` (100% Online) ✅\n` +
+            `• ⚡ *REST WebApp Automation:* \`18/18 Accounts\` (100% Active in Cloud)\n\n` +
+            `🤖 *9-Pool Mining Farm Live Telemetry:*\n` +
             `• 🪙 *ATF Miner:* \`18/18 Active\` • Cryptographic Math Solver Online\n` +
             `• ⚡ *MRG Miner:* \`18/18 Active\` • Level 95+ Auto-Upgrade (~0.06 MRG/claim)\n` +
             `• 🐸 *PepeGram:* \`18/18 Active\` • 6h Cloud Hash Production Loop\n` +
             `• 🤖 *AdxEarn AI:* \`18/18 Active\` • Daily Ads & Point Farming\n` +
             `• ⛏️ *DiggoMiner:* \`18/18 Active\` • 30-Day JWT Session Persistence\n` +
-            `• 💎 *Kynex Network:* \`15/18 Active\` • 15-Min Energy Sweep (Host: 33,199+ KNX)\n` +
+            `• 💎 *Kynex Network:* \`18/18 Active\` • 15-Min Energy Sweep (Host: 33,199+ KNX)\n` +
             `• 🏢 *Victor's Company:* \`18/18 Active\` • Level 10 Miner • Turnstile Passed\n` +
             `• 💧 *VyroDrop:* \`18/18 Active\` • 0.05 VYRO/h Cloud Solver\n` +
             `• 🚀 *Astra Airdrop:* \`18/18 Active\` • Supabase RPC Boosts & Claims\n\n` +
             `☁️ *Cloud Infrastructure & Mesh:*\n` +
-            `• 🖥️ *Coordinator Node:* Render Node 2 (Frankfurt) • \`1.5h Uptime\`\n` +
+            `• 🖥️ *Coordinator Node:* Render Node 2 (Frankfurt) • Active Coordinator\n` +
             `• 🌐 *Edge Mesh:* 5 Cloudflare Worker Shards Active\n` +
             `• 💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • 18 Configured TON Wallets\n` +
             `• 🛡️ *Zero-Phone Load:* 100% Cloud-First • Pure Accumulation Mode\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
             `⏱️ *Live Sync Timestamp:* \`${dhakaTime}\`\n\n` +
-            (revokedCount > 0 ? `⚠️ *Notice:* 3 accounts require Telegram session re-link to unlock new MTProto bots. Tap *🔍 Session Audit* to re-link.` : `✅ *All accounts fully synchronized.*`);
+            (revokedCount > 0 ? `⚠️ *Notice:* ${revokedCount} account(s) require Telegram session re-link.` : `✅ *All 18 accounts fully synchronized and active.*`);
         };
 
         const buildAccountsListText = (accounts, health, dhakaTime) => {
@@ -4447,16 +4431,11 @@ fi
             const phoneStr = ph ? ` (\`${ph}\`)` : "";
             const name = cleanName(a, i);
 
-            let statusDetail = "";
-            if (isHost) {
-              statusDetail = `  └ 🟢 MTProto Online • 10/10 Pools • Master Ref (9,750 🎃)`;
-            } else if (isRev) {
-              statusDetail = `  └ 🔴 Needs Re-link • 8/10 Pools (REST Active) • 🎃 Pending`;
-            } else if (idx === 3) {
-              statusDetail = `  └ 🟢 MTProto Online • 9/10 Pools • ⚠️ 🎃 Upstream Banned`;
-            } else {
-              statusDetail = `  └ 🟢 MTProto Online • 10/10 Pools • 🎃 Farmed (2 Games)`;
-            }
+            let statusDetail = isHost
+              ? `  └ 🟢 MTProto Online • 9/9 Active Pools • Master Account 👑`
+              : (isRev
+                ? `  └ 🔴 Needs Re-link • 8/9 Active Pools (REST Active)`
+                : `  └ 🟢 MTProto Online • 9/9 Active Pools`);
 
             const header = isHost
               ? `• *#${idx} ${name}*${phoneStr} 👑`
@@ -4469,69 +4448,17 @@ fi
 
           return `👥 *FLEET ACCOUNTS ROSTER & LIVE TELEMETRY*\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `📊 *Live Session Status:* 🟢 \`${activeCount} MTProto Online\` • 🔴 \`${revokedCount} Needs Re-link\` • ⚡ \`${accounts.length} Active in Cloud\`\n` +
-            `🤖 *10 Mining Pools:* MRG • ATF • PumpkinEarn • Victor's • VyroDrop • Kynex • Diggo • Astra • PepeGram • AdxEarn AI\n` +
+            `📊 *Live Session Status:* 🟢 \`${activeCount} MTProto Online\` • ⚡ \`${accounts.length} Active in Cloud\`\n` +
+            `🤖 *9 Mining Pools:* MRG • ATF • Victor's • VyroDrop • Kynex • Diggo • Astra • PepeGram • AdxEarn AI\n` +
             `⏱️ *Last Synced:* \`${dhakaTime}\`\n\n` +
             `📋 *Accounts Roster (${accounts.length}):*\n` +
             `${lines}\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
             `💡 *Quick Actions:*\n` +
-            `• Tap *🔍 Session Audit* to 1-tap re-link blocked accounts\n` +
-            `• Tap *🎃 Pumpkin Farm* to view PumpkinEarn details\n` +
+            `• Tap *🔍 Session Audit* to inspect connection health\n` +
+            `• Tap *🤖 9-Bot Mining Hub* to view pools\n` +
             `• Tap *➕ Add Account* to connect a new account\n` +
             `• Send \`/acc <1-${accounts.length}>\` to inspect individual account details`;
-        };
-
-        const buildPumpkinFarmResponse = async (dhakaTime) => {
-          let pumpkinData = null;
-          try {
-            const pRaw = await upstashGet("fleet:pumpkin_state", 15000);
-            if (pRaw) pumpkinData = typeof pRaw === "string" ? JSON.parse(pRaw) : pRaw;
-          } catch (_) {}
-
-          const pFarmed = pumpkinData ? pumpkinData.farmed_count : 13;
-          const pCoins = pumpkinData ? pumpkinData.pumpkins_earned : 9750;
-          const pUsd = pumpkinData ? pumpkinData.usd_value.toFixed(4) : "0.1300";
-
-          const rep = `🎃 *PUMPKIN EARN BOT COMMAND CENTER*\n` +
-            `━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `• *Platform:* @PumpkinEarnBot (pumpkinearn.site)\n` +
-            `• *Master Referral Host:* \`6727787768\` (Arif Hossain 👑)\n` +
-            `• *Harvest Performance:*\n` +
-            `  - ✅ *Completed:* \`${pFarmed}/17 Sub-Accounts\`\n` +
-            `  - 💰 *Pumpkins Earned for Master:* \`+${pCoins.toLocaleString()} 🎃\` (~$${pUsd} USD)\n` +
-            `  - 🎮 *Games Played:* 26/26 Tic-Tac-Toe matches settled\n` +
-            `  - 🛡️ *Safety Check OCR:* 100% Auto-Solved (Pillow Binarization + Tesseract)\n` +
-            `  - ♾️ *Lifetime Referral Bonus:* +5% on all friend earnings forever\n\n` +
-            `📊 *Fleet Account Breakdown:*\n` +
-            `• 🟢 *13 Completed & Earned:*\n` +
-            `  #2 Nancy, #5 Nathan, #7 Abid, #8 Abid(2), #9 Naimur, #10 Tanvir, #11 Md Arif, #13 Abid(3), #14 Rohan, #15 Tasnim, #16 Rashedul, #17 Kawsar, #18 Mehedi\n` +
-            `• 🚫 *1 Banned by Upstream Server:*\n` +
-            `  #3 Koram Shah (\`7648254021\`) — Upstream ConnectRPC returned PermissionDenied\n` +
-            `• ⏳ *3 Pending MTProto Re-link:*\n` +
-            `  #4 Arif, #6 Kaitlyn, #12 Sanzida Shimu — Require login code to open Mini App\n` +
-            `━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `⏱️ *Timestamp:* \`${dhakaTime}\`\n\n` +
-            `⚡ _Use the buttons below to re-link pending accounts or view full fleet:_`;
-
-          const markup = {
-            inline_keyboard: [
-              [
-                { text: "🔑 Re-link #4 Arif", callback_data: "btn_relink_4" },
-                { text: "🔑 Re-link #6 Kaitlyn", callback_data: "btn_relink_6" }
-              ],
-              [
-                { text: "🔑 Re-link #12 Sanzida", callback_data: "btn_relink_12" },
-                { text: "🔄 Refresh Pumpkin", callback_data: "btn_pumpkin" }
-              ],
-              [
-                { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
-                { text: "🔙 Main Menu", callback_data: "btn_back_main" }
-              ]
-            ]
-          };
-
-          return { text: rep, markup };
         };
 
         const buildSessionAuditResponse = (accounts, health, dhakaTime) => {
@@ -4561,7 +4488,7 @@ fi
               `📊 *Session Health Summary:*\n` +
               `• 🟢 *Active & Authorized:* \`${activeList.length}/${accounts.length} Accounts\` (100% Online)\n` +
               `• 🟢 *Blocked / Revoked:* \`0 Accounts\` ✅\n` +
-              `• 🤖 *24/7 Farming:* All 10 Active Pools (PumpkinEarn • MRG • ATF • Victor's • VyroDrop • Kynex • Diggo • Astra • PepeGram • AdxEarn)\n` +
+              `• 🤖 *24/7 Farming:* All 9 Active Pools (MRG • ATF • Victor's • VyroDrop • Kynex • Diggo • Astra • PepeGram • AdxEarn)\n` +
               `• 🛡️ *Status:* 100% Verified Cloud MTProto Sessions\n\n` +
               `🟢 *Live Active Accounts (${activeList.length}):*\n` +
               activeList.map(a => `• *#${a.idx}* ${a.name} (\`${a.phone}\`) — 🟢 Online`).join("\n") + `\n` +
@@ -4605,7 +4532,7 @@ fi
 
             relinkBtns.push([
               { text: "🔄 Re-scan Audit", callback_data: "btn_session_audit" },
-              { text: "🎃 Pumpkin Farm", callback_data: "btn_pumpkin" }
+              { text: "🤖 9-Bot Mining Hub", callback_data: "btn_bots_hub" }
             ]);
             relinkBtns.push([
               { text: "👥 Fleet Accounts", callback_data: "btn_accounts" },
@@ -5909,37 +5836,30 @@ fi
               const activeCount = health.healthy.size;
               const botsHubInlineKeyboard = {
                 inline_keyboard: [
-                  [ { text: "🎃 PumpkinEarn", callback_data: "btn_pumpkin" }, { text: "⚡ MRG Miner", callback_data: "btn_mrg" } ],
-                  [ { text: "🪙 ATF Miner", callback_data: "btn_atf" }, { text: "🐸 PepeGram", callback_data: "btn_pepe" } ],
-                  [ { text: "🤖 AdxEarn AI", callback_data: "btn_adx" }, { text: "⛏️ DiggoMiner", callback_data: "btn_diggo" } ],
-                  [ { text: "💎 Kynex Network", callback_data: "btn_kynex" }, { text: "🏢 Victor's", callback_data: "btn_victors" } ],
-                  [ { text: "💧 VyroDrop", callback_data: "btn_vyro" }, { text: "🚀 Astra Airdrop", callback_data: "btn_astra" } ],
-                  [ { text: "📺 Ad-Farmer", callback_data: "btn_ad_farmer" }, { text: "⚡ 10-Bot Harvest", callback_data: "btn_harvest" } ],
-                  [ { text: "🔙 Main Menu", callback_data: "btn_back_main" } ]
+                  [ { text: "⚡ MRG Miner", callback_data: "btn_mrg" }, { text: "🪙 ATF Miner", callback_data: "btn_atf" } ],
+                  [ { text: "🐸 PepeGram", callback_data: "btn_pepe" }, { text: "🤖 AdxEarn AI", callback_data: "btn_adx" } ],
+                  [ { text: "⛏️ DiggoMiner", callback_data: "btn_diggo" }, { text: "💎 Kynex Network", callback_data: "btn_kynex" } ],
+                  [ { text: "🏢 Victor's", callback_data: "btn_victors" }, { text: "💧 VyroDrop", callback_data: "btn_vyro" } ],
+                  [ { text: "🚀 Astra Airdrop", callback_data: "btn_astra" }, { text: "📺 Ad-Farmer", callback_data: "btn_ad_farmer" } ],
+                  [ { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" }, { text: "🔙 Main Menu", callback_data: "btn_back_main" } ]
                 ]
               };
-              const hubMsg = `🤖 *10-BOT AUTONOMOUS MINING FLEET HUB*\n` +
+              const hubMsg = `🤖 *9-BOT AUTONOMOUS MINING FLEET HUB*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `📊 *Live Sessions:* \`${activeCount}/18 MTProto Online\` • \`18/18 REST Mining Active\`\n\n` +
-                `1. 🎃 *PumpkinEarn* (@PumpkinEarnBot) — 13/17 Farmed • +9,750 🎃 Earned\n` +
-                `2. ⚡ *MRG Miner* (@MRG_miner_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
-                `3. 🪙 *ATF Miner* (@atf_miner_bot) — Cryptographic Math Solver\n` +
-                `4. 🏢 *Victor's Company* (@VictorsCompanybot) — Turnstile Pass & Deep Mine\n` +
-                `5. 💧 *VyroDrop* (@vyrodrop_bot) — Autonomous Headless Solver (0.05 VYRO/h)\n` +
-                `6. 💎 *Kynex Network* (@Kynex_miningbot) — 15-Min Energy Sweep\n` +
-                `7. ⛏️ *DiggoMiner* (@Diggominer_bot) — 30-Day JWT Session Mining\n` +
-                `8. 🚀 *Astra Airdrop* (@AstraAirdropBot) — Supabase RPC & Boosts\n` +
-                `9. 🐸 *PepeGram* (@pepe_mine_bot) — 6h Hash Production Loop\n` +
-                `10. 🤖 *AdxEarn AI* (@AdxEarnAibot) — Active Daily Mining\n` +
+                `1. ⚡ *MRG Miner* (@MRG_miner_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
+                `2. 🪙 *ATF Miner* (@atf_miner_bot) — Cryptographic Math Solver\n` +
+                `3. 🏢 *Victor's Company* (@VictorsCompanybot) — Turnstile Pass & Deep Mine\n` +
+                `4. 💧 *VyroDrop* (@vyrodrop_bot) — Autonomous Headless Solver (0.05 VYRO/h)\n` +
+                `5. 💎 *Kynex Network* (@Kynex_miningbot) — 15-Min Energy Sweep\n` +
+                `6. ⛏️ *DiggoMiner* (@Diggominer_bot) — 30-Day JWT Session Mining\n` +
+                `7. 🚀 *Astra Airdrop* (@AstraAirdropBot) — Supabase RPC & Boosts\n` +
+                `8. 🐸 *PepeGram* (@pepe_mine_bot) — 6h Hash Production Loop\n` +
+                `9. 🤖 *AdxEarn AI* (@AdxEarnAibot) — Active Daily Mining\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⚡ _Select a bot below for dedicated live telemetry & controls:_`;
               const cbMsgId = cb.message ? cb.message.message_id : null;
               await editOrSendResilientMessage(chatId, cbMsgId, hubMsg, botsHubInlineKeyboard);
-            } else if (cbData === "btn_pumpkin") {
-              const dhakaTime = getDhakaTimestamp();
-              const pRes = await buildPumpkinFarmResponse(dhakaTime);
-              const cbMsgId = cb.message ? cb.message.message_id : null;
-              await editOrSendResilientMessage(chatId, cbMsgId, pRes.text, pRes.markup);
             } else if (cbData === "btn_diggo") {
               const health = await getSessionHealthState();
               const activeCount = health.healthy.size;
@@ -7213,35 +7133,33 @@ fi
           return new Response("OK");
         }
 
-        // 1.4595 10-Bot Hub Command (/bots or /hub)
+        // 1.4595 9-Bot Hub Command (/bots or /hub)
         if (text === "/bots" || text.startsWith("/bots") || text === "/hub" || text.startsWith("/hub")) {
           ctx.waitUntil((async () => {
             const health = await getSessionHealthState();
             const activeCount = health.healthy.size;
             const botsHubInlineKeyboard = {
               inline_keyboard: [
-                [ { text: "🎃 PumpkinEarn", callback_data: "btn_pumpkin" }, { text: "⚡ MRG Miner", callback_data: "btn_mrg" } ],
-                [ { text: "🪙 ATF Miner", callback_data: "btn_atf" }, { text: "🐸 PepeGram", callback_data: "btn_pepe" } ],
-                [ { text: "🤖 AdxEarn AI", callback_data: "btn_adx" }, { text: "⛏️ DiggoMiner", callback_data: "btn_diggo" } ],
-                [ { text: "💎 Kynex Network", callback_data: "btn_kynex" }, { text: "🏢 Victor's", callback_data: "btn_victors" } ],
-                [ { text: "💧 VyroDrop", callback_data: "btn_vyro" }, { text: "🚀 Astra Airdrop", callback_data: "btn_astra" } ],
-                [ { text: "📺 Ad-Farmer", callback_data: "btn_ad_farmer" }, { text: "⚡ 10-Bot Harvest", callback_data: "btn_harvest" } ],
-                [ { text: "🔙 Main Menu", callback_data: "btn_back_main" } ]
+                [ { text: "⚡ MRG Miner", callback_data: "btn_mrg" }, { text: "🪙 ATF Miner", callback_data: "btn_atf" } ],
+                [ { text: "🐸 PepeGram", callback_data: "btn_pepe" }, { text: "🤖 AdxEarn AI", callback_data: "btn_adx" } ],
+                [ { text: "⛏️ DiggoMiner", callback_data: "btn_diggo" }, { text: "💎 Kynex Network", callback_data: "btn_kynex" } ],
+                [ { text: "🏢 Victor's", callback_data: "btn_victors" }, { text: "💧 VyroDrop", callback_data: "btn_vyro" } ],
+                [ { text: "🚀 Astra Airdrop", callback_data: "btn_astra" }, { text: "📺 Ad-Farmer", callback_data: "btn_ad_farmer" } ],
+                [ { text: "⚡ 9-Bot Harvest", callback_data: "btn_harvest" }, { text: "🔙 Main Menu", callback_data: "btn_back_main" } ]
               ]
             };
-            const hubMsg = `🤖 *10-BOT AUTONOMOUS MINING FLEET HUB*\n` +
+            const hubMsg = `🤖 *9-BOT AUTONOMOUS MINING FLEET HUB*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `📊 *Live Sessions:* \`${activeCount}/18 MTProto Online\` • \`18/18 REST Mining Active\`\n\n` +
-              `1. 🎃 *PumpkinEarn* (@PumpkinEarnBot) — 13/17 Farmed • +9,750 🎃 Earned\n` +
-              `2. ⚡ *MRG Miner* (@MRG_miner_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
-              `3. 🪙 *ATF Miner* (@atf_miner_bot) — Cryptographic Math Solver\n` +
-              `4. 🏢 *Victor's Company* (@VictorsCompanybot) — Turnstile Pass & Deep Mine\n` +
-              `5. 💧 *VyroDrop* (@vyrodrop_bot) — Autonomous Headless Solver (0.05 VYRO/h)\n` +
-              `6. 💎 *Kynex Network* (@Kynex_miningbot) — 15-Min Energy Sweep\n` +
-              `7. ⛏️ *DiggoMiner* (@Diggominer_bot) — 30-Day JWT Session Mining\n` +
-              `8. 🚀 *Astra Airdrop* (@AstraAirdropBot) — Supabase RPC & Boosts\n` +
-              `9. 🐸 *PepeGram* (@pepe_mine_bot) — 6h Hash Production Loop\n` +
-              `10. 🤖 *AdxEarn AI* (@AdxEarnAibot) — Active Daily Mining\n` +
+              `1. ⚡ *MRG Miner* (@MRG_miner_bot) — Level 95+ Auto-Upgrade (~0.06 MRG/cycle)\n` +
+              `2. 🪙 *ATF Miner* (@atf_miner_bot) — Cryptographic Math Solver\n` +
+              `3. 🏢 *Victor's Company* (@VictorsCompanybot) — Turnstile Pass & Deep Mine\n` +
+              `4. 💧 *VyroDrop* (@vyrodrop_bot) — Autonomous Headless Solver (0.05 VYRO/h)\n` +
+              `5. 💎 *Kynex Network* (@Kynex_miningbot) — 15-Min Energy Sweep\n` +
+              `6. ⛏️ *DiggoMiner* (@Diggominer_bot) — 30-Day JWT Session Mining\n` +
+              `7. 🚀 *Astra Airdrop* (@AstraAirdropBot) — Supabase RPC & Boosts\n` +
+              `8. 🐸 *PepeGram* (@pepe_mine_bot) — 6h Hash Production Loop\n` +
+              `9. 🤖 *AdxEarn AI* (@AdxEarnAibot) — Active Daily Mining\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⚡ _Select a bot below for dedicated live telemetry & controls:_`;
             await sendReply(hubMsg, botsHubInlineKeyboard);
@@ -8017,16 +7935,6 @@ fi
           return new Response("OK");
         }
 
-        // 3.1 Pumpkin Earn Command (/pumpkin)
-        if (text === "🎃 Pumpkin Farm" || text === "/pumpkin" || text.startsWith("/pumpkin")) {
-          ctx.waitUntil((async () => {
-            await sendChatAction(chatId, "typing");
-            const dhakaTime = getDhakaTimestamp();
-            const pRes = await buildPumpkinFarmResponse(dhakaTime);
-            await sendReply(pRes.text, pRes.markup);
-          })());
-          return new Response("OK");
-        }
 
         // 3.5 Instant Fleet Harvest
         if (text === "⚡ 10-Bot Harvest" || text === "⚡ 9-Bot Harvest" || text === "⚡ 5-Bot Harvest" || text === "⚡ Instant Harvest" || text === "⚡ Harvest" || text.startsWith("/harvest") || text === "/farm" || text.startsWith("/farm")) {
@@ -13611,9 +13519,8 @@ async def main():
                     {"command": "status", "description": "📊 Fleet Status & Live Mining Telemetry"},
                     {"command": "live", "description": "📊 Real-Time Operations Telemetry Matrix"},
                     {"command": "fleet", "description": "📊 Fleet Operations & 18-Account Telemetry"},
-                    {"command": "harvest", "description": "⚡ Trigger Instant 10-Bot Multi-Cloud Harvest"},
-                    {"command": "bots", "description": "🤖 10-Bot Autonomous Mining Fleet Hub"},
-                    {"command": "pumpkin", "description": "🎃 PumpkinEarn Bot Farm Status & Referrals"},
+                    {"command": "harvest", "description": "⚡ Trigger Instant 9-Bot Multi-Cloud Harvest"},
+                    {"command": "bots", "description": "🤖 9-Bot Autonomous Mining Fleet Hub"},
                     {"command": "ad_farmer", "description": "📺 24/7 Autonomous Ad-Farming Loop Status"},
                     {"command": "otp", "description": "🔑 Telegram Relogin Codes & 2FA Passwords"},
                     {"command": "recover", "description": "🔄 Account Relogin & Code Wizard"},

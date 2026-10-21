@@ -1,44 +1,0 @@
-
-pumpkin/v1/games.proto
-pumpkin.v1"Ž
-	GameSlots
-game (	
-used (
-total (
-next_slot_at_ms (
-up_to (
-pending_run_id (	
-pending_reward ("
-SlotsRequest"5
-SlotsResponse$
-games (2.pumpkin.v1.GameSlots",
-OpenRunRequest
-game (	
-diff (	".
-OpenRunResponse
-token (	
-paid ("1
-StartClaimRequest
-game (	
-run_id (	"I
-StartClaimResponse
-ad_token (	!
-ads (2.pumpkin.v1.AdChoice"ž
-ClaimRunRequest
-game (	
-run_id (	
-ad_token (	
-	ads_shown (
-ads_clicked (
-ads_offered (
-network (	
-ad_id (	"3
-ClaimRunResponse
-reward (
-balance (2£
-GameService<
-Slots.pumpkin.v1.SlotsRequest.pumpkin.v1.SlotsResponseB
-OpenRun.pumpkin.v1.OpenRunRequest.pumpkin.v1.OpenRunResponseK
-
-StartClaim.pumpkin.v1.StartClaimRequest.pumpkin.v1.StartClaimResponseE
-ClaimRun.pumpkin.v1.ClaimRunRequest.pumpkin.v1.ClaimRunResponsebproto3

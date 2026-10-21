@@ -69,3 +69,5 @@ AAAPREMIUMAPPSbot/
 .bashrc.bak
 *.mjs
 session_audit_report.json
+pumpkin_web_sessions.*
+proto_desc/
