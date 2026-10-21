@@ -95,6 +95,17 @@ if not ACCOUNTS:
         except Exception:
             pass
 
+if not ACCOUNTS and UPSTASH_URL and UPSTASH_TOKEN:
+    try:
+        req = urllib.request.Request(f"{UPSTASH_URL}/get/fleet:accounts", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode())
+            res = data.get("result")
+            if res:
+                ACCOUNTS = json.loads(res) if isinstance(res, str) else res
+    except Exception:
+        pass
+
 # Load TON Wallets
 ton_wallets = {}
 wallets_path = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
