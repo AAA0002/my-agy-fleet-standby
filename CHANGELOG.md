@@ -2,6 +2,14 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⏱️ GitHub Actions Free Minutes Quota Protection & Multi-Cloud Optimization (October 21, 2026)**:
+  - **🛡️ 70% Minute Reduction to Secure 2,000 Quota**:
+    * Audited monthly GitHub Actions usage: ~1,271 minutes consumed across October runs on `AAA0002/ATL`, leaving ~728 minutes before the 2,000 quota reset on November 1st.
+    * Adjusted `mrg_turnstile_solver.yml` schedule from every 8 hours (`0 */8 * * *`) to every 12 hours (`0 */12 * * *`), reducing consumption to ~14 min/day (~140 min for remainder of October), leaving a comfortable 580+ minute safety margin.
+    * Disabled redundant scheduled crons on `cloud_token_refresher.yml` and `cloud_sweeper.yml` (now `workflow_dispatch`), since Render Node 2 already handles continuous token harvesting every 4 hours via CronJob.org without consuming GitHub Actions minutes.
+    * Validated backup GitHub account `koramshah2` (`KORAM_PAT` in `.env`) as standby CI runner with its own independent 2,000 minutes.
+
+
 - **🎯 Dedicated Single-Render Account Mode & Zero-Rotation Policy (October 21, 2026)**:
   - **🔒 Single-Account Free Tier Standardization**:
     * Standardized fleet execution onto **1 single Render account** (Node 2: Frankfurt / `srv-dan5q00ae00c73djummg`).

@@ -1,10 +1,8 @@
 name: "MY AGY AI — 100% Cloud MTProto Token Refresher (Zero VPS Reliance)"
 
 on:
-  schedule:
-    # Runs once a day (04:00 UTC) as a safety-net backup.
-    # Continuous token collection is handled 100% by Render standby mesh via Cron-Job.org (zero GitHub minutes)
-    - cron: '0 4 * * *'
+  # Schedule disabled to strictly conserve GitHub Actions free quota.
+  # Continuous token collection is handled 100% by Render Node 2 via CronJob.org (zero GitHub minutes consumed).
   workflow_dispatch:
 
 permissions:

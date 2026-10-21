@@ -1,9 +1,7 @@
 name: "MY AGY AI — 100% Cloud Autonomous Multi-Chain Sweeper & Vault Consolidation"
 
 on:
-  schedule:
-    # Runs autonomously once daily at 18:00 UTC to minimize on-chain fees and conserve GitHub Actions minutes
-    - cron: '0 18 * * *'
+  # Schedule disabled to strictly preserve GitHub Actions free minutes quota.
   workflow_dispatch:
     inputs:
       execute_sweep:

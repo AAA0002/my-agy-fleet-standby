@@ -2,8 +2,8 @@ name: "MY AGY AI — 100% Cloud Turnstile Solver & Multi-Bot Auto-Farming"
 
 on:
   schedule:
-    # Runs every 8 hours to stay permanently within the 2,000 monthly free minute quota (TTL of Turnstile pass is ~8h)
-    - cron: '0 */8 * * *'
+    # Runs twice a day (every 12h) to conserve free minutes (leaving 580+ min safety margin on 2,000 quota)
+    - cron: '0 */12 * * *'
   workflow_dispatch:
 
 jobs:
