@@ -966,25 +966,25 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
             window.__victorsHumanPass = null;
 
             // Hook window.turnstile.render to force appearance: 'always' and hook callback
-            let _cfPoll = setInterval(() => {
-                if (window.turnstile && typeof window.turnstile.render === 'function') {
+            let _cfPoll = setInterval(() => {{
+                if (window.turnstile && typeof window.turnstile.render === 'function') {{
                     clearInterval(_cfPoll);
                     const _origRender = window.turnstile.render;
-                    window.turnstile.render = function(container, options) {
-                        try {
-                            if (options) {
+                    window.turnstile.render = function(container, options) {{
+                        try {{
+                            if (options) {{
                                 options.appearance = 'always';
                                 const _origCb = options.callback;
-                                options.callback = function(tok) {
+                                options.callback = function(tok) {{
                                     window.__victorsTurnstileToken = tok;
                                     if (_origCb) _origCb(tok);
-                                };
-                            }
-                        } catch(e) {}
+                                }};
+                            }}
+                        }} catch(e) {{}}
                         return _origRender.call(this, container, options);
-                    };
-                }
-            }, 30);
+                    }};
+                }}
+            }}, 30);
     
             // 3. Hook fetch to intercept /auth/login payload & response directly
             const origFetch = window.fetch;

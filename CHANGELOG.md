@@ -2,6 +2,17 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛠️ GitHub Actions Turnstile Render Hook Bugfix & CI/CD Verification (October 21, 2026)**:
+  - **🔍 Root Cause Analysis for Workflow Run `39632428023`**:
+    * Run failed with `SyntaxError: f-string: expecting a valid expression after '{'` at line 970 in `mrg_turnstile_solver.py`.
+    * Root cause was unescaped JavaScript curly braces inside an injected Python f-string script template (`window.turnstile.render` hook), NOT GitHub Actions quota exhaustion.
+    * GitHub Actions runner booted and set up dependencies cleanly in ~1m before hitting the Python syntax parsing error.
+  - **⚡ Fix & Verification**:
+    * Doubled all JavaScript function braces (`{{` and `}}`) in the Turnstile render hook in `mrg_turnstile_solver.py`.
+    * Successfully verified compilation with `python3 -m py_compile mrg_turnstile_solver.py` (Exit code 0).
+    * Confirmed GitHub Actions minute quotas are healthy and verified 18/18 fleet operational readiness.
+
+
 - **🏢 Victor's Company Fleet Audit, 0-Second Fresh Token Minting & Turnstile Resolution (October 21, 2026)**:
   - **🔍 Root Cause Analysis Across All 18 Accounts**:
     * **Issue 1: 9-Day Old Stale initData**: Local `fleet_miniapp_tokens.json` stored `victors_init_data` with `auth_date` from ~213 hours ago (9 days old), causing immediate `401 TG_AUTH ("Session expired")` on the Victor's API.
