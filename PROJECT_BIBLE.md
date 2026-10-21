@@ -1374,6 +1374,12 @@ Whenever you perform work in this repository:
   - Installed and enabled standard MCP servers: `fetch` (uvx), `filesystem` (npx), `git` (uvx), `memory` (npx), and `time` (uvx).
   - Packaged and enabled `aaa-fleet-plugin` with `fleet-ops` and `cloud-sentinel` skills.
   - Configured terminal productivity aliases (`fleet-status`, `fleet-backup`, `sentinel-check`, `vm-alive`, `mcp-status`, `plugin-status`) and tmux persistent terminal configuration.
+* **Webshare Key 2 Secret Migration & Full-Fleet Proxy Attachment**:
+  - Resolved Webshare Key 1 bandwidth exhaustion (`402 Payment Required`) by updating GitHub Secrets across both repositories (`AAA0002/ATL` and `AAA0002/my-agy-fleet-standby`) with verified `WEBSHARE_KEY_2` (10/10 proxies verified 100% 200 OK).
+  - Extended verified Webshare proxy attachment to Victor's Company, VyroDrop, and ATF Miner contexts.
+  - Added direct token extraction from hidden DOM input elements (`[name="cf-turnstile-response"]` and `[name="g-recaptcha-response"]`).
+
+  - Configured terminal productivity aliases (`fleet-status`, `fleet-backup`, `sentinel-check`, `vm-alive`, `mcp-status`, `plugin-status`) and tmux persistent terminal configuration.
 
 
 

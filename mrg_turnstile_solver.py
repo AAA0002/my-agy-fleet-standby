@@ -111,9 +111,9 @@ def get_webshare_proxy() -> dict | None:
             pass
 
     webshare_keys = [
+        os.getenv("WEBSHARE_KEY_2") or "",
         os.getenv("WEBSHARE_KEY") or "",
         os.getenv("WEBSHARE_KEY_1") or "",
-        os.getenv("WEBSHARE_KEY_2") or "",
         *env_keys
     ]
     seen_keys = set()
@@ -146,10 +146,10 @@ def get_webshare_proxy() -> dict | None:
                 ph = urllib.request.ProxyHandler({"http": proxy_str, "https": proxy_str})
                 opener = urllib.request.build_opener(ph)
                 test_req = urllib.request.Request(
-                    "https://app.mrgtoken.xyz",
+                    "https://challenges.cloudflare.com/turnstile/v0/api.js",
                     headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"}
                 )
-                with opener.open(test_req, timeout=6) as test_resp:
+                with opener.open(test_req, timeout=5) as test_resp:
                     if test_resp.status == 200:
                         verified = {
                             "server": f"http://{host}:{port}",
@@ -158,8 +158,8 @@ def get_webshare_proxy() -> dict | None:
                         }
                         if verified not in _VERIFIED_MRG_PROXIES:
                             _VERIFIED_MRG_PROXIES.append(verified)
-                        logger.info(f"🌐 Verified live Webshare proxy for MRG: {host}:{port} ({candidate.get('country_code', 'US')})")
-                        if len(_VERIFIED_MRG_PROXIES) >= 3:
+                        logger.info(f"🌐 Verified live Webshare proxy: {host}:{port} ({candidate.get('country_code', 'US')})")
+                        if len(_VERIFIED_MRG_PROXIES) >= 4:
                             break
             except Exception:
                 continue
@@ -871,15 +871,19 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
     acquired_pass = None
 
     if not acquired_token:
-        context = await browser.new_context(
-            bypass_csp=True,
-            user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
-            viewport={"width": 412, "height": 915},
-            is_mobile=True,
-            has_touch=True,
-            locale="en-US",
-            timezone_id="UTC"
-        )
+        ws_proxy = get_webshare_proxy() if os.getenv("USE_BROWSER_PROXY", "1") != "0" else None
+        context_kwargs = {
+            "bypass_csp": True,
+            "user_agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
+            "viewport": {"width": 412, "height": 915},
+            "is_mobile": True,
+            "has_touch": True,
+            "locale": "en-US",
+            "timezone_id": "UTC"
+        }
+        if ws_proxy:
+            context_kwargs["proxy"] = ws_proxy
+        context = await browser.new_context(**context_kwargs)
         page = await context.new_page()
 
         encoded_init = urllib.parse.quote(v_init)
@@ -1030,7 +1034,7 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
     
         # Step 1: Check if Turnstile solved passively / automatically
         for _ in range(8):
-            tok = await page.evaluate("() => window.__victorsTurnstileToken || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null")
+            tok = await page.evaluate("() => window.__victorsTurnstileToken || (document.querySelector('[name=\"cf-turnstile-response\"]')?.value) || (document.querySelector('[name=\"g-recaptcha-response\"]')?.value) || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null")
             acquired_token = tok or acquired_token_dict.get("token")
             if acquired_token and len(acquired_token) > 20:
                 break
@@ -1066,7 +1070,7 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
     
             # Wait up to 15s after click for token or humanPass
             for _ in range(15):
-                tok = await page.evaluate("() => window.__victorsTurnstileToken || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null")
+                tok = await page.evaluate("() => window.__victorsTurnstileToken || (document.querySelector('[name=\"cf-turnstile-response\"]')?.value) || (document.querySelector('[name=\"g-recaptcha-response\"]')?.value) || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null")
                 acquired_token = tok or acquired_token_dict.get("token")
                 if acquired_token and len(acquired_token) > 20:
                     break
@@ -1439,15 +1443,19 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                 logger.info(f"🔑 [VyroDrop] UID {uid}: Nonce received via API solved challenge: {nonce[:12]}...")
 
         if not nonce:
-            context = await browser.new_context(
-                bypass_csp=True,
-                user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
-                viewport={"width": 412, "height": 915},
-                is_mobile=True,
-                has_touch=True,
-                locale="en-US",
-                timezone_id="UTC"
-            )
+            ws_proxy = get_webshare_proxy() if os.getenv("USE_BROWSER_PROXY", "1") != "0" else None
+            context_kwargs = {
+                "bypass_csp": True,
+                "user_agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
+                "viewport": {"width": 412, "height": 915},
+                "is_mobile": True,
+                "has_touch": True,
+                "locale": "en-US",
+                "timezone_id": "UTC"
+            }
+            if ws_proxy:
+                context_kwargs["proxy"] = ws_proxy
+            context = await browser.new_context(**context_kwargs)
             page = await context.new_page()
             
             json_vyro_init = json.dumps(vyro_init)
@@ -1697,13 +1705,17 @@ async def solve_atf_turnstile(browser, uid: int, atf_init: str) -> bool:
     acquired_token = solve_turnstile_via_api(ATF_SITEKEY, ATF_ORIGIN, action="verify_entry_captcha")
     if not acquired_token and browser:
         try:
-            context = await browser.new_context(
-                bypass_csp=True,
-                user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
-                viewport={"width": 412, "height": 915},
-                is_mobile=True,
-                has_touch=True
-            )
+            ws_proxy = get_webshare_proxy() if os.getenv("USE_BROWSER_PROXY", "1") != "0" else None
+            context_kwargs = {
+                "bypass_csp": True,
+                "user_agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
+                "viewport": {"width": 412, "height": 915},
+                "is_mobile": True,
+                "has_touch": True
+            }
+            if ws_proxy:
+                context_kwargs["proxy"] = ws_proxy
+            context = await browser.new_context(**context_kwargs)
             page = await context.new_page()
             target_url = f"{ATF_ORIGIN}/miner/index.html?entry=bot_start#tgWebAppData={urllib.parse.quote(atf_init, safe='')}"
             json_atf_init = json.dumps(atf_init)

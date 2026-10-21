@@ -2,6 +2,19 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 Webshare Key 2 Secret Migration, Turnstile Input Extraction & Multi-Bot Proxy Hardening (October 21, 2026)**:
+  - **🔑 Dual-Repository Secret Update (Key 2 Activation)**:
+    * Discovered Webshare Key 1 hit bandwidth exhaustion (`402 Payment Required`), causing GitHub Actions solvers to fall back to raw Azure runner IPs (blocked by Cloudflare Turnstile).
+    * Updated GitHub Secrets on both `origin` (`AAA0002/ATL`) and `standby_repo` (`AAA0002/my-agy-fleet-standby`) with active `WEBSHARE_KEY_2` (10/10 proxies verified 100% 200 OK).
+    * Updated `.github/workflows/mrg_turnstile_solver.yml` to pass `WEBSHARE_KEY_2`.
+  - **🛡️ Full-Fleet Proxy Attachment & DOM Input Token Extraction**:
+    * Attached verified Webshare proxies to browser contexts across all solvers: Victor's Company (`solve_victors_turnstile`), VyroDrop (`solve_vyro_wallet_onboarding`), and ATF Miner (`solve_atf_turnstile`).
+    * Added direct extraction of Cloudflare Turnstile tokens from hidden DOM inputs (`[name="cf-turnstile-response"]` and `[name="g-recaptcha-response"]`), ensuring tokens are captured instantly upon solve.
+  - **⚡ Cloud Token Synchronization & Farming Dispatch**:
+    * Triggered authenticated cloud batch token collection across all 18 accounts on Render Node 2 (`/collect-tokens?secret=...`).
+    * Dispatched on-demand cloud fleet farming cycle (`/api/farm/cloud-all`) and side-task sweep (`/api/tasks/sweep-all`).
+
+
 - **🚀 Instabox VM 30-Minute Pause Resolution, Antigravity MCP Suite & Plugin Expansion (October 21, 2026)**:
   - **🛡️ 30-Minute Inactivity Auto-Pause Eliminated (>9.5h Continuous Uptime Verified)**:
     * Dissected `/usr/local/sbin/instabox-guest-agent` binary and reverse-engineered the hypervisor's vsock activity monitoring protocol (port 1024).
