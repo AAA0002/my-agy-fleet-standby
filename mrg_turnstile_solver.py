@@ -437,8 +437,6 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
     json_m_init = json.dumps(m_init)
 
     await page.add_init_script(f"""
-        Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
-
         // 0. Pre-fill sessionStorage so telegram-web-app.js SDK initializes full initData
         try {{
             sessionStorage.setItem('__telegram__initParams', JSON.stringify({{
@@ -899,7 +897,6 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
         json_ref_to_bind = json.dumps(ref_to_bind)
     
         await page.add_init_script(f"""
-            Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
     
             // 0. Pre-fill sessionStorage so telegram-web-app.js parses valid initData
             try {{
@@ -1462,7 +1459,6 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
             target_url = f"{VYRO_ORIGIN}/profile/wallet#tgWebAppData={urllib.parse.quote(vyro_init, safe='')}"
 
             await page.add_init_script(f"""
-                Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
 
                 // 0. Pre-fill sessionStorage for telegram-web-app.js SDK
                 try {{
@@ -1720,7 +1716,6 @@ async def solve_atf_turnstile(browser, uid: int, atf_init: str) -> bool:
             target_url = f"{ATF_ORIGIN}/miner/index.html?entry=bot_start#tgWebAppData={urllib.parse.quote(atf_init, safe='')}"
             json_atf_init = json.dumps(atf_init)
             await page.add_init_script(f"""
-                Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
                 try {{
                     sessionStorage.setItem('__telegram__initParams', JSON.stringify({{ tgWebAppData: {json_atf_init} }}));
                     sessionStorage.setItem('initParams', JSON.stringify({{ tgWebAppData: {json_atf_init} }}));
