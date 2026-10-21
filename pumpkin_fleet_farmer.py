@@ -108,30 +108,31 @@ def call_grpc_web(service_method: str, proto_msg, raw_init_data: str, device_fp:
     return None
 
 def solve_captcha_image(img_path: str, code_len: int = 3) -> Optional[str]:
-    """High-accuracy thresholding OCR solver for Telegram OTP cards."""
+    """Robust multi-PSM consensus OCR solver for Telegram OTP cards."""
     try:
+        from collections import Counter
         img = Image.open(img_path).convert('L')
-        # Threshold: white text on dark/colored background
-        binary = img.point(lambda p: 0 if p > 220 else 255)
+        thresh = img.point(lambda p: 0 if p > 220 else 255)
         thresh_path = img_path + ".thresh.png"
-        binary.save(thresh_path)
+        thresh.save(thresh_path)
 
-        res = subprocess.run([
-            "tesseract", thresh_path, "stdout",
-            "--psm", "8",
-            "-c", "tessedit_char_whitelist=0123456789"
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        
-        txt = res.stdout.strip()
-        digits = "".join(re.findall(r'\d', txt))
-        if len(digits) >= code_len:
-            return digits[:code_len]
-        
-        # Fallback to general OCR
-        res2 = subprocess.run(["tesseract", img_path, "stdout", "--oem", "1", "-l", "eng"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        digits2 = "".join(re.findall(r'\d', res2.stdout))
-        if len(digits2) >= code_len:
-            return digits2[:code_len]
+        candidates = []
+        for path in [img_path, thresh_path]:
+            for psm in ['6', '7', '8', '3', '11']:
+                res = subprocess.run([
+                    "tesseract", path, "stdout",
+                    "--psm", psm,
+                    "-c", "tessedit_char_whitelist=0123456789"
+                ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                digits = "".join(re.findall(r'\d', res.stdout))
+                if len(digits) == code_len:
+                    candidates.append(digits)
+                elif len(digits) > code_len:
+                    candidates.append(digits[:code_len])
+
+        if candidates:
+            best_code = Counter(candidates).most_common(1)[0][0]
+            return best_code
             
     except Exception as e:
         print(f"OCR Error: {e}")

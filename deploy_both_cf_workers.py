@@ -1859,8 +1859,8 @@ let memDeletedAccounts = null;
 let memDeletedAccountsTs = 0;
 let lastMiniappTokensKvWrite = 0;
 let memSessionHealth = {
-  healthy: [1, 2, 3, 5, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18],
-  revoked: [4, 6, 12],
+  healthy: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+  revoked: [],
   lastCheck: 0
 };
 
@@ -2702,7 +2702,7 @@ fi
             const smR = await upstashSmembers("fleet:revoked_sessions", 5000);
             if (Array.isArray(smR)) {
               const rNums = smR.map(Number).filter(n => !isNaN(n) && n > 0 && n <= 18);
-              memSessionHealth.revoked = rNums.length > 0 ? rNums : [4, 6, 12];
+              memSessionHealth.revoked = rNums;
               memSessionHealth.healthy = Array.from({ length: 18 }, (_, i) => i + 1).filter(x => !memSessionHealth.revoked.includes(x));
               memSessionHealth.lastCheck = Date.now();
             }
@@ -2722,9 +2722,9 @@ fi
             return ex ? { ...m, ...ex, index: m.index } : Object.assign({}, m);
           });
 
-          const revokedList = (memSessionHealth && Array.isArray(memSessionHealth.revoked) && memSessionHealth.revoked.length > 0)
+          const revokedList = (memSessionHealth && Array.isArray(memSessionHealth.revoked))
             ? memSessionHealth.revoked
-            : [4, 6, 12];
+            : [];
           const revokedSet = new Set(revokedList.map(String));
           accs.forEach((a) => {
             const isRev = revokedSet.has(String(a.index)) || revokedSet.has(String(a.user_id));
