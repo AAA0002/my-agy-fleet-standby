@@ -2,6 +2,12 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌉 Master Session Bridge & Clean Session Handover Architecture (October 21, 2026)**:
+  - **Created**: `SESSION_BRIDGE.md` at workspace root and in artifact directory, providing complete architectural handover, bot registry, current operational state, and links to previous 63,307-step history.
+  - **Updated**: `AGENTS.md` to establish mandatory pre-execution reading of `SESSION_BRIDGE.md` for all new agent/Gemini sessions.
+  - **Optimized**: Cloud VM Antigravity CLI configuration (`Gemini 3.8 Flash (Medium)`, SQLite WAL mode, 64MB RAM cache) to eliminate 60s thinking latency.
+  - **Preserved**: Previous 63,307-step database (`ab0db110-aa04-4d2f-808c-08e45816f8cd.db`, 647 MB) preserved intact on disk and backed up to Telegram vault channel (`@myagyai`).
+
 - **🛡️ MRG Miner Turnstile Resolution, Invisible Frame Protection & 24h Server-Side Verification (October 21, 2026)**:
   - **⛏️ Root Cause Resolution for MRG "Stopped" Farming State**:
     * Full fleet audit confirmed 18/18 accounts retain active TON wallet connections (`isTonConnected: True`, valid `UQ...` addresses).

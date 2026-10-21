@@ -1,7 +1,7 @@
 # Antigravity Rules & Directives for AAA AUTO
 
 > 📖 **MANDATORY PROJECT REFERENCE**:
-> Before executing ANY plan, modifying code, or starting a new session, **every AI agent must read [PROJECT_BIBLE.md](./PROJECT_BIBLE.md)** for full system architecture, 5 active legitimate bots (MRG, ATF, Victor's Company, VyroDrop, Kynex Network), 24h Render session collector workflows, and operational protocols. Whenever you build or modify features, you MUST update `PROJECT_BIBLE.md` and `CHANGELOG.md`.
+> Before executing ANY plan, modifying code, or starting a new session, **every AI agent must read [SESSION_BRIDGE.md](./SESSION_BRIDGE.md) and [PROJECT_BIBLE.md](./PROJECT_BIBLE.md)** for complete instant handover context, full system architecture, 5 active legitimate bots (MRG, ATF, Victor's Company, VyroDrop, Kynex Network), 24h Render session collector workflows, and operational protocols. Whenever you build or modify features, you MUST update `PROJECT_BIBLE.md` and `CHANGELOG.md`.
 
 ---
 
