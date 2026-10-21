@@ -5062,10 +5062,10 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
     # 6. DiggoMiner (@Diggominer_bot - diggo.linkpc.net)
     async def _farm_diggo():
-        if tokens.get("diggo_init_data"):
+        d_init = tokens.get("diggo_init_data")
+        if d_init or UPSTASH_URL:
             try:
-                d_init = tokens["diggo_init_data"]
-                if "%25" in d_init or "%3D" in d_init or "user%3D" in d_init:
+                if d_init and ("%25" in d_init or "%3D" in d_init or "user%3D" in d_init):
                     d_init = urllib.parse.unquote(d_init)
 
                 base_url = "https://diggo.linkpc.net"
@@ -5076,29 +5076,70 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                     "Referer": f"{base_url}/?tgWebAppStartParam=ref_4088138f11effe8eef4b86ff"
                 }
 
-                # 1. Telegram Auth
-                a_code, a_d = await safe_post(f"{base_url}/api/auth/telegram", json_data={"initData": d_init}, req_headers=init_headers)
-                if a_code == 401 or (isinstance(a_d, dict) and a_d.get("error") == "expired_init_data"):
-                    status["bots"]["diggo"] = "token_expired (needs MTProto refresh)"
-                    return
-                if not a_d or not isinstance(a_d, dict) or not a_d.get("token"):
-                    status["bots"]["diggo"] = f"skipped (auth {a_code or 'error'})"
-                    return
+                jwt_token = None
+                st = {}
 
-                jwt_token = a_d["token"]
-                st = a_d.get("state", {})
+                # 0. Check cached 30-day Diggo JWT in Upstash Redis
+                if UPSTASH_URL and UPSTASH_TOKEN:
+                    try:
+                        async with session.get(f"{UPSTASH_URL}/get/fleet:diggo:jwt:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as jr:
+                            if jr.status == 200:
+                                jd = await jr.json()
+                                if jd.get("result"):
+                                    jwt_token = str(jd["result"]).strip()
+                    except Exception:
+                        pass
+
+                auth_headers = None
+                if jwt_token:
+                    candidate_h = {
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {jwt_token}",
+                        "User-Agent": user_agent,
+                        "Origin": base_url,
+                        "Referer": f"{base_url}/?tgWebAppStartParam=ref_4088138f11effe8eef4b86ff"
+                    }
+                    p_code, p_d = await safe_get(f"{base_url}/api/state", req_headers=candidate_h)
+                    if p_code == 200 and isinstance(p_d, dict) and p_d.get("state"):
+                        st = p_d["state"]
+                        auth_headers = candidate_h
+                    else:
+                        jwt_token = None
+
+                # 1. Telegram Auth (if no valid cached JWT)
+                if not jwt_token or not auth_headers:
+                    if not d_init:
+                        status["bots"]["diggo"] = "skipped (no initData)"
+                        return
+                    a_code, a_d = await safe_post(f"{base_url}/api/auth/telegram", json_data={"initData": d_init}, req_headers=init_headers)
+                    if a_code == 401 or (isinstance(a_d, dict) and a_d.get("error") == "expired_init_data"):
+                        status["bots"]["diggo"] = "token_expired (needs MTProto refresh)"
+                        return
+                    if not a_d or not isinstance(a_d, dict) or not a_d.get("token"):
+                        status["bots"]["diggo"] = f"skipped (auth {a_code or 'error'})"
+                        return
+
+                    jwt_token = a_d["token"]
+                    st = a_d.get("state", {})
+                    # Cache JWT in Upstash Redis (valid for 30 days)
+                    if UPSTASH_URL and UPSTASH_TOKEN and jwt_token:
+                        try:
+                            await session.post(f"{UPSTASH_URL}/set/fleet:diggo:jwt:{uid}?ex=2592000", data=jwt_token, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
+                        except Exception:
+                            pass
+
+                    auth_headers = {
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {jwt_token}",
+                        "User-Agent": user_agent,
+                        "Origin": base_url,
+                        "Referer": f"{base_url}/?tgWebAppStartParam=ref_4088138f11effe8eef4b86ff"
+                    }
+
                 bal = st.get("balance", 0)
                 lvl = st.get("currentLevel", 1)
                 mining = st.get("mining") or {}
                 pending_mined = mining.get("pending", 0)
-
-                auth_headers = {
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {jwt_token}",
-                    "User-Agent": user_agent,
-                    "Origin": base_url,
-                    "Referer": f"{base_url}/?tgWebAppStartParam=ref_4088138f11effe8eef4b86ff"
-                }
 
                 # 2. Mining claim (if pending rewards accrued)
                 claimed_amt = 0
@@ -5135,10 +5176,19 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                         bal = t_d.get("state", {}).get("balance", bal)
 
                 # 5. Social & Community tasks
-                for sid in ["telegram", "community_react", "social-tasks"]:
+                for sid in ["telegram", "community_react"]:
                     s_task = tasks.get(sid) or {}
                     if s_task.get("enabled") and not s_task.get("claimed"):
                         await jitter(0.3, 0.7)
+                        if sid == "telegram":
+                            await safe_post(f"{base_url}/api/tasks/verify", json_data={"taskId": "telegram"}, req_headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())})
+                        elif s_task.get("verification") == "self_reported":
+                            v_code, v_d = await safe_post(f"{base_url}/api/tasks/social/start", json_data={"taskId": sid}, req_headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())})
+                            if isinstance(v_d, dict) and v_d.get("attempt"):
+                                att_id = v_d["attempt"].get("attemptId")
+                                if att_id:
+                                    await safe_post(f"{base_url}/api/tasks/social/confirm", json_data={"taskId": sid, "attemptId": att_id, "confirmed": True}, req_headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())})
+
                         t_code, t_d = await safe_post(
                             f"{base_url}/api/tasks/claim",
                             json_data={"taskId": sid},

@@ -642,45 +642,81 @@ async def sweep_kynex_tasks(session: aiohttp.ClientSession, uid: str, name: str,
 async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str, d_init: str, acc: dict) -> Dict[str, Any]:
     """Sweeps DiggoMiner mining claim, referrals, and daily/social tasks."""
     res = {"bot": "DiggoMiner", "tasks_claimed": 0, "notes": [], "success": False}
-    if not d_init:
-        res["notes"].append("no_init_data")
-        return res
-
     try:
-        if "%25" in d_init or "%3D" in d_init or "user%3D" in d_init:
-            d_init = urllib.parse.unquote(d_init)
         base_url = "https://diggo.linkpc.net"
-        init_headers = {
-            "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 Telegram-Android/11.0.0",
-            "Origin": base_url,
-            "Referer": f"{base_url}/?tgWebAppStartParam=ref_4088138f11effe8eef4b86ff"
-        }
+        jwt_token = None
+        st = {}
 
-        # 1. Auth
-        async with session.post(f"{base_url}/api/auth/telegram", json={"initData": d_init}, headers=init_headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
-            if r.status != 200:
-                res["notes"].append(f"auth_status_{r.status}")
+        # 0. Check cached JWT from Upstash Redis
+        if UPSTASH_URL and UPSTASH_TOKEN:
+            try:
+                async with session.get(f"{UPSTASH_URL}/get/fleet:diggo:jwt:{uid}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2)) as jr:
+                    if jr.status == 200:
+                        jd = await jr.json()
+                        if jd.get("result"):
+                            jwt_token = str(jd["result"]).strip()
+            except Exception:
+                pass
+
+        auth_headers = None
+        if jwt_token:
+            candidate_h = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {jwt_token}",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 Telegram-Android/11.0.0",
+                "Origin": base_url,
+                "Referer": f"{base_url}/?tgWebAppStartParam=ref_4088138f11effe8eef4b86ff"
+            }
+            async with session.get(f"{base_url}/api/state", headers=candidate_h, timeout=aiohttp.ClientTimeout(total=5)) as pr:
+                if pr.status == 200:
+                    p_d = await pr.json()
+                    if isinstance(p_d, dict) and p_d.get("state"):
+                        st = p_d["state"]
+                        auth_headers = candidate_h
+                        res["success"] = True
+                else:
+                    jwt_token = None
+
+        # 1. Auth (if no valid cached JWT)
+        if not jwt_token or not auth_headers:
+            if not d_init:
+                res["notes"].append("no_init_data_and_no_jwt")
                 return res
-            a_d = await r.json()
 
-        jwt_token = a_d.get("token")
-        if not jwt_token:
-            res["notes"].append("no_token")
-            return res
+            if "%25" in d_init or "%3D" in d_init or "user%3D" in d_init:
+                d_init = urllib.parse.unquote(d_init)
+            init_headers = {
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 Telegram-Android/11.0.0",
+                "Origin": base_url,
+                "Referer": f"{base_url}/?tgWebAppStartParam=ref_4088138f11effe8eef4b86ff"
+            }
+            async with session.post(f"{base_url}/api/auth/telegram", json={"initData": d_init}, headers=init_headers, timeout=aiohttp.ClientTimeout(total=8)) as r:
+                if r.status != 200:
+                    res["notes"].append(f"auth_status_{r.status}")
+                    return res
+                a_d = await r.json()
 
-        res["success"] = True
-        st = a_d.get("state", {})
-        res["balance"] = float(st.get("balance", 0))
-        res["level"] = st.get("currentLevel", 1)
+            jwt_token = a_d.get("token")
+            if not jwt_token:
+                res["notes"].append("no_token")
+                return res
 
-        auth_headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {jwt_token}",
-            "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 Telegram-Android/11.0.0",
-            "Origin": base_url,
-            "Referer": f"{base_url}/?tgWebAppStartParam=ref_4088138f11effe8eef4b86ff"
-        }
+            res["success"] = True
+            st = a_d.get("state", {})
+            if UPSTASH_URL and UPSTASH_TOKEN and jwt_token:
+                try:
+                    await session.post(f"{UPSTASH_URL}/set/fleet:diggo:jwt:{uid}?ex=2592000", data=jwt_token, headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
+                except Exception:
+                    pass
+
+            auth_headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {jwt_token}",
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 Telegram-Android/11.0.0",
+                "Origin": base_url,
+                "Referer": f"{base_url}/?tgWebAppStartParam=ref_4088138f11effe8eef4b86ff"
+            }
 
         # 2. Claim mining
         mining = st.get("mining") or {}
@@ -699,10 +735,26 @@ async def sweep_diggo_tasks(session: aiohttp.ClientSession, uid: str, name: str,
 
         # 4. Claim tasks
         tasks = st.get("tasks") or {}
-        for tid in ["checkin", "telegram", "community_react", "social-tasks"]:
+        for tid in ["checkin", "telegram", "community_react"]:
             t_obj = tasks.get(tid) or {}
             if t_obj.get("enabled") and not t_obj.get("claimed"):
                 await jitter(0.4, 0.8)
+                if tid == "telegram":
+                    try:
+                        await session.post(f"{base_url}/api/tasks/verify", json={"taskId": "telegram"}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())})
+                    except Exception:
+                        pass
+                elif t_obj.get("verification") == "self_reported":
+                    try:
+                        async with session.post(f"{base_url}/api/tasks/social/start", json={"taskId": tid}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as vs:
+                            if vs.status == 200:
+                                vd = await vs.json()
+                                att_id = vd.get("attempt", {}).get("attemptId")
+                                if att_id:
+                                    await session.post(f"{base_url}/api/tasks/social/confirm", json={"taskId": tid, "attemptId": att_id, "confirmed": True}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())})
+                    except Exception:
+                        pass
+
                 async with session.post(f"{base_url}/api/tasks/claim", json={"taskId": tid}, headers={**auth_headers, "Idempotency-Key": str(uuid.uuid4())}) as tr:
                     if tr.status in (200, 201):
                         res["tasks_claimed"] += 1

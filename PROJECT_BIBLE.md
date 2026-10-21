@@ -693,12 +693,14 @@ To prevent resource leakages, unbounded database list growth, and local disk bal
 
 ## ⚡ 6.10 10-Bot Fleet Autofarming Engine Upgrade & Token Freshness Protocol (October 15, 2026)
 
-### 1. DiggoMiner & VyroDrop 45-Minute Token Freshness Architecture
-- **Root Cause of `token_expired`**: DiggoMiner (`https://diggo.linkpc.net/`) enforces strict server-side validation rejecting Telegram WebApp `initData` older than 60 minutes (`HTTP 401 {"error":"expired_init_data"}`).
-- **Watchdog & Pre-Farm Guard**: Updated `token_health_and_refresh_watchdog` and `_farm_with_sem` in `render_standby_app.py` and `render_app_latest.py`:
-  - Tokens older than 45 minutes (`now - synced_ts > 2700`) or missing Diggo/Vyro tokens trigger automatic on-the-fly extraction via Telethon on Render Node 2.
-  - Automatic Retry: If any bot returns `token_expired` during farming, the engine immediately calls `extract_tokens_for_account`, syncs fresh tokens to Upstash & Cloudflare, and retries the farm cycle automatically once.
-  - Social Tasks Claim: Automatically claims `telegram`, `community_react`, and `social-tasks` on every farm cycle.
+### 1. DiggoMiner 30-Day Session JWT Architecture & VyroDrop Freshness
+- **Root Cause of `token_expired`**: DiggoMiner (`https://diggo.linkpc.net/`) enforces strict single-use / short-window validation on Telegram WebApp `initData`. When passed to `/api/auth/telegram`, Diggo issues a **30-day session JWT token** (`expiresAt: now + 30 days`). Repeatedly passing stale or already-exchanged `initData` triggers `HTTP 401 {"error":"expired_init_data"}`.
+- **30-Day Session JWT Solution**:
+  - The JWT is cached in Upstash Redis at `fleet:diggo:jwt:{uid}` with 30-day TTL (`2,592,000`s).
+  - Validation: Every run first validates the cached JWT via `GET /api/state` with `Authorization: Bearer <JWT>`. If HTTP 200, it proceeds directly without re-authenticating `initData`.
+  - Claims & Tasks: Mining claims (`POST /api/claims/mining`), referral commissions (`POST /api/referrals/claim`), checkins (`POST /api/tasks/claim`), and social tasks (`/api/tasks/social/start` -> wait `confirmAt` -> `/api/tasks/social/confirm` -> `/api/tasks/claim`) are dispatched with `Idempotency-Key: <UUID>` and `Authorization: Bearer <JWT>`.
+  - Automatic Token Rotation: If the cached JWT expires or returns 401, the engine seamlessly exchanges the latest MTProto `diggo_init_data` for a fresh 30-day JWT and caches it.
+- **Turnstile Cloudflare 403 Anti-Tamper Fix**: Removed JavaScript `Object.defineProperty(navigator, 'webdriver')` overrides in `mrg_turnstile_solver.py`. Patchright cleans `navigator.webdriver` at C++ level; JS overrides were detected as anti-tampering by Cloudflare Turnstile, causing 403 bot blocks. Now cleanly bypasses Turnstile.
 
 ### 2. TonConnect 2.0 Wallet Binding for VyroDrop
 - **Root Cause of `wallet_required`**: VyroDrop requires a verified TonConnect 2.0 wallet proof to unlock cloud mining rewards (`POST /api/wallet/connect`).

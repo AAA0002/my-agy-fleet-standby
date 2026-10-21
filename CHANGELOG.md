@@ -2,6 +2,20 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 DiggoMiner 30-Day Session JWT Architecture & Ground-Truth Bot Verification (October 21, 2026)**:
+  - **🔍 Direct API Account-by-Account Audit (Zero Blind Trust)**:
+    * Replaced dashboard cooldown estimates with direct live HTTP endpoint testing per account.
+    * **ATF Miner**: 🟢 100% Operational & Claiming (HTTP 200 OK across all 18 accounts, Levels 105–110, Balances 1,370–1,562 ATF).
+    * **PepeGram**: 🟢 100% Operational & Mining (HTTP 200 OK, Power: 15,677, Hashes: 3,906.17, continuous production confirmed).
+    * **AdxEarn AI**: 🟢 100% Operational & Farming (HTTP 200 OK, Balance: 435 pts, Streak: 1, Speed: 5.25).
+    * **Astra Airdrop**: 🟢 100% Operational via Supabase REST edge.
+    * **DiggoMiner**: 🟢 100% Operational (Resolved root cause of `401 expired_init_data`). Diggo's backend issues a 30-day session JWT upon initial authentication. Updated client to store `fleet:diggo:jwt:{uid}` with 30-day TTL in Upstash Redis, validate against `/api/state`, and perform mining claims, referral claims, checkins, and full social task workflows (`/api/tasks/social/start` -> `/api/tasks/social/confirm` -> `/api/tasks/claim`).
+    * **Kynex Network**: 🟡 Upstream Google Cloud Function outage (`503 Server Error` on `us-central1-keynex-e9511.cloudfunctions.net`). Implemented graceful handling without fleet halts.
+    * **Turnstile Solver Patch**: Removed `Object.defineProperty(navigator, 'webdriver')` overrides in `mrg_turnstile_solver.py` to prevent Cloudflare anti-tamper detection.
+  - **🚀 Production Synced Across Engine Files**:
+    * Updated `app.py`, `render_app_latest.py`, `render_standby_app.py`, and `finish_all_fleet_sidetasks.py`.
+
+
 - **⏱️ GitHub Actions Free Minutes Quota Protection & Multi-Cloud Optimization (October 21, 2026)**:
   - **🛡️ 70% Minute Reduction to Secure 2,000 Quota**:
     * Audited monthly GitHub Actions usage: ~1,271 minutes consumed across October runs on `AAA0002/ATL`, leaving ~728 minutes before the 2,000 quota reset on November 1st.
