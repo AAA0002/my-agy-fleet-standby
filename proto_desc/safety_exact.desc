@@ -1,0 +1,18 @@
+
+pumpkin/v1/safety.proto
+pumpkin.v1"#
+SafetySendRequest
+resend ("Z
+SafetySendResponse
+length (
+resend_at_ms (
+passed (
+reward ("#
+SafetyVerifyRequest
+code (	"7
+SafetyVerifyResponse
+reward (
+balance (2£
+SafetyServiceE
+Send.pumpkin.v1.SafetySendRequest.pumpkin.v1.SafetySendResponseK
+Verify.pumpkin.v1.SafetyVerifyRequest .pumpkin.v1.SafetyVerifyResponsebproto3
