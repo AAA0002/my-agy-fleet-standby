@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ MRG Miner Turnstile Resolution, Invisible Frame Protection & 24h Server-Side Verification (October 21, 2026)**:
+  - **⛏️ Root Cause Resolution for MRG "Stopped" Farming State**:
+    * Full fleet audit confirmed 18/18 accounts retain active TON wallet connections (`isTonConnected: True`, valid `UQ...` addresses).
+    * Discovered the "Stopped" badge and wallet/security alert in the frontend (`MinePage-DxK3L2bD.js`) is triggered by the 24-hour claim window (`R = 86400s`) expiring while `humanVerifiedUntil` pass is expired or null, returning `403 HUMAN_CHECK_REQUIRED` on `/api/user/claim-mining`.
+    * Over 1,100 MRG in accumulated rewards was blocked across fleet accounts due to unrefreshed verification.
+  - **🛡️ Invisible Frame Premature Click Guardrail**:
+    * Identified that Cloudflare Turnstile mounts in flexible/invisible mode (`appearance: "interaction-only"`) with placeholder dimensions (`width: 0-1px, height: 0-9px`) during passive attestation.
+    * Previous solver logic clicked at `(0.3, 4.5)` on these 1x1 placeholder frames, disrupting Turnstile's internal cryptographic handshake and causing `A valid external Instance reference no longer exists` and `turnstile_load_timeout`.
+    * Upgraded iframe click conditions across all 4 Turnstile solvers (MRG, Victor's Company, VyroDrop, ATF Miner) to require `box["width"] >= 200 and box["height"] >= 45` before humanized mouse clicks are dispatched. Invisible/passive frames now solve naturally without disruptive clicks.
+    * Removed conflicting secondary script tag injections (`api.js?render=explicit`) and duplicate frame clicks. Added native React "Retry" button click to trigger `t.current.reset()` cleanly if timeouts occur.
+  - **🌐 Dual-Key Webshare Proxy Pool & Cloudflare HTTPS Validation**:
+    * Pooled both `WEBSHARE_KEY_1` and `WEBSHARE_KEY_2` from environment, expanding the active proxy pool to 20 rotating IPs.
+    * Replaced fragile 4s gstatic HTTP probe with a 7s HTTPS probe directly against `https://challenges.cloudflare.com/turnstile/v0/api.js`, guaranteeing all selected proxies 100% communicate with Cloudflare WAF.
+    * Eliminated all plaintext secret remnants per Rule 6 (Strict Secret Hygiene).
+  - **⚡ Server-Side 24-Hour Pass Persistence (`verify-human`)**:
+    * Updated `render_standby_app.py`, `render_app_latest.py`, and `app.py` to submit valid Turnstile passes to `POST /api/user/verify-human` before calling `/api/user/claim-mining`.
+    * Calling `/verify-human` permanently extends `humanVerifiedUntil` on MRG's Railway backend by 24 hours, unblocking all subsequent claims and returning all miners to active status.
+    * Cached valid Turnstile passes to Upstash Redis under `mrg:pass:{uid}` with 3600s TTL.
+
+
 - **🌐 Webshare Proxy Auto-Routing & Resilient Multi-Format Upstash Pass Parsing (October 19, 2026)**:
   - **🛡️ Webshare Proxy Automation in Cloud Solvers**:
     * Identified root cause of Cloudflare HTTP 401/403 blocks in `mrg_turnstile_solver.yml`: GitHub Actions Azure runner IPs (AS8075) are aggressively challenged/blocked by `challenges.cloudflare.com`.

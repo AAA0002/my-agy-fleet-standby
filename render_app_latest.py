@@ -4473,6 +4473,8 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
             claim_payload = {"initData": m_init, "deviceInfo": device_info}
             if mrg_turnstile_tok:
+                # Also submit to verify-human to guarantee humanVerifiedUntil is persisted server-side for 24h
+                await safe_post("https://mrg.up.railway.app/api/user/verify-human", {"initData": m_init, "turnstileToken": mrg_turnstile_tok}, req_headers=m_headers)
                 claim_payload["turnstileToken"] = mrg_turnstile_tok
             await jitter(1.2, 2.5)
             _, claim_d = await safe_post("https://mrg.up.railway.app/api/user/claim-mining", claim_payload, req_headers=m_headers)

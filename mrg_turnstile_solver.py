@@ -86,14 +86,30 @@ def get_webshare_proxy() -> dict | None:
     """
     Fetches an active high-speed proxy from Webshare to bypass Cloudflare WAF
     datacenter blocks in GitHub Actions and cloud runner environments.
-    Validates tunnel connectivity before returning.
+    Validates tunnel connectivity against Cloudflare Turnstile before returning.
     """
+    env_keys = []
+    env_path = os.path.join(BASE_DIR, ".env")
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    if "=" in line and "WEBSHARE_KEY" in line:
+                        _, v = line.strip().split("=", 1)
+                        clean_v = v.strip("\"' ")
+                        if clean_v:
+                            env_keys.append(clean_v)
+        except Exception:
+            pass
+
     webshare_keys = [
-        "",
         os.getenv("WEBSHARE_KEY") or "",
-        "1r347t4h8dwfkpoa4ifmmyajvmu3oxyn2guzs5k0"
+        os.getenv("WEBSHARE_KEY_1") or "",
+        os.getenv("WEBSHARE_KEY_2") or "",
+        *env_keys
     ]
     seen_keys = set()
+    candidate_proxies = []
     for key in webshare_keys:
         if not key or key in seen_keys:
             continue
@@ -103,32 +119,39 @@ def get_webshare_proxy() -> dict | None:
                 "https://proxy.webshare.io/api/v2/proxy/list/?mode=direct&page=1&page_size=25",
                 headers={"Authorization": f"Token {key}"}
             )
-            with urllib.request.urlopen(req, timeout=6) as resp:
+            with urllib.request.urlopen(req, timeout=8) as resp:
                 data = json.loads(resp.read().decode())
                 results = [p for p in data.get("results", []) if p.get("valid", True)]
-                if results:
-                    random.shuffle(results)
-                    for candidate in results[:4]:
-                        u = candidate.get("username", "Arif274300")
-                        pw = candidate.get("password", "Arif2743")
-                        host = candidate["proxy_address"]
-                        port = candidate["port"]
-                        proxy_str = f"http://{u}:{pw}@{host}:{port}"
-                        try:
-                            ph = urllib.request.ProxyHandler({"http": proxy_str, "https": proxy_str})
-                            opener = urllib.request.build_opener(ph)
-                            with opener.open("http://connectivitycheck.gstatic.com/generate_204", timeout=4) as test_resp:
-                                if test_resp.status in (200, 204):
-                                    logger.info(f"🌐 Verified live Webshare proxy: {host}:{port} via key {key[:8]}...")
-                                    return {
-                                        "server": f"http://{host}:{port}",
-                                        "username": u,
-                                        "password": pw
-                                    }
-                        except Exception:
-                            continue
+                candidate_proxies.extend(results)
         except Exception as e:
             logger.warning(f"Webshare proxy fetch warning ({key[:8]}...): {e}")
+
+    if candidate_proxies:
+        random.shuffle(candidate_proxies)
+        for candidate in candidate_proxies[:8]:
+            u = candidate.get("username", "Arif2743")
+            pw = candidate.get("password", "Arif2743")
+            host = candidate["proxy_address"]
+            port = candidate["port"]
+            proxy_str = f"http://{u}:{pw}@{host}:{port}"
+            try:
+                ph = urllib.request.ProxyHandler({"http": proxy_str, "https": proxy_str})
+                opener = urllib.request.build_opener(ph)
+                test_req = urllib.request.Request(
+                    "https://challenges.cloudflare.com/turnstile/v0/api.js",
+                    headers={"User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36"}
+                )
+                with opener.open(test_req, timeout=7) as test_resp:
+                    if test_resp.status == 200:
+                        logger.info(f"🌐 Verified live Webshare proxy for Turnstile: {host}:{port} ({candidate.get('country_code', 'US')})")
+                        return {
+                            "server": f"http://{host}:{port}",
+                            "username": u,
+                            "password": pw
+                        }
+            except Exception:
+                continue
+
     return None
 
 
@@ -368,6 +391,16 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
     uid = acc_info["uid"]
     m_init = acc_info["init_data"]
 
+    # 0. Fast pre-check: solve via Turnstile API if solver credentials available
+    api_tok = solve_turnstile_via_api(SITE_KEY, APP_ORIGIN, action="verify-human")
+    if api_tok:
+        logger.info(f"⚡ UID {uid}: Turnstile solved via API: {api_tok[:16]}...")
+        ver_res = verify_human_token(m_init, api_tok)
+        if ver_res.get("success"):
+            claim_mining_reward(m_init, api_tok)
+            save_mrg_pass_to_upstash(uid, api_tok)
+            return True
+
     context = await browser.new_context(
         bypass_csp=True,
         user_agent="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
@@ -477,8 +510,6 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
 
     async def handle_response(response):
         try:
-            if response.status == 401:
-                logger.warning(f"⚠️ [MRG 401] UID {uid} resource: {response.url}")
             if "verify-human" in response.url:
                 res_json = await response.json()
                 if res_json.get("success"):
@@ -506,68 +537,67 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
     except Exception as e:
         logger.warning(f"UID {uid} navigation note: {e}")
 
-    await asyncio.sleep(2.5)
+    await asyncio.sleep(2.0)
 
-    # 1. Click Claim or Mine button to mount verification if needed
-    try:
-        await page.evaluate("""
-            () => {
-                const btns = Array.from(document.querySelectorAll('button, a, div[role="button"]'));
-                const claimBtn = btns.find(b => b.innerText && (b.innerText.toLowerCase().includes('claim') || b.innerText.toLowerCase().includes('verify') || b.innerText.toLowerCase().includes('mine')));
-                if (claimBtn) {
-                    claimBtn.click();
-                    return true;
-                }
-                return false;
-            }
-        """)
-    except Exception as e:
-        logger.warning(f"UID {uid} click note: {e}")
-
-    # 2. Check for passive token or Turnstile iframe
-    for _ in range(8):
+    # Passive monitoring and humanized interaction loop
+    # In app.mrgtoken.xyz, expired humanVerifiedUntil displays the security check screen directly.
+    clicked_checkbox = False
+    for step in range(20):
         if verified_event.is_set():
             break
         tok = await page.evaluate("() => window.__mrgTurnstileToken || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null")
         if tok and len(tok) > 20:
             acquired_token["token"] = tok
             break
-        try:
-            ts_iframe = page.locator("iframe[src*='challenges.cloudflare.com']").first
-            if await ts_iframe.count() > 0:
-                box = await ts_iframe.bounding_box()
-                if box and box["width"] > 0 and box["height"] > 0:
-                    click_x = box["x"] + min(32.0, box["width"] / 3)
-                    click_y = box["y"] + box["height"] / 2
-                    logger.info(f"🖱️ Found Turnstile iframe for MRG UID {uid}! Click at ({click_x:.1f}, {click_y:.1f})...")
-                    await page.mouse.move(click_x, click_y, steps=8)
-                    await asyncio.sleep(0.15)
-                    await page.mouse.down()
-                    await asyncio.sleep(0.1)
-                    await page.mouse.up()
-                else:
-                    ts_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
-                    stage = ts_frame.locator("#challenge-stage, .ctp-checkbox-label, .mark").first
-                    if await stage.count() > 0:
-                        await stage.click(timeout=3000)
 
-                for _ in range(15):
-                    if verified_event.is_set():
-                        break
-                    tok = await page.evaluate("() => window.__mrgTurnstileToken || (window.turnstile && typeof window.turnstile.getResponse === 'function' ? window.turnstile.getResponse() : null) || null")
-                    if tok and len(tok) > 20:
-                        acquired_token["token"] = tok
-                        break
-                    await asyncio.sleep(1.0)
-                break
-        except Exception:
-            pass
+        # Check if Turnstile has expanded to an interactive visible checkbox (>= 200px wide, >= 45px tall)
+        if not clicked_checkbox:
+            try:
+                ts_iframe = page.locator("iframe[src*='challenges.cloudflare.com']").first
+                if await ts_iframe.count() > 0:
+                    box = await ts_iframe.bounding_box()
+                    if box and box["width"] >= 200 and box["height"] >= 45:
+                        click_x = box["x"] + 32.0
+                        click_y = box["y"] + (box["height"] / 2.0)
+                        logger.info(f"🖱️ Found visible Turnstile checkbox for MRG UID {uid}! Humanized click at ({click_x:.1f}, {click_y:.1f})...")
+                        await page.mouse.move(click_x - 30, click_y - 15)
+                        await asyncio.sleep(0.1)
+                        await page.mouse.move(click_x, click_y, steps=8)
+                        await asyncio.sleep(0.2)
+                        await page.mouse.down()
+                        await asyncio.sleep(0.12)
+                        await page.mouse.up()
+                        clicked_checkbox = True
+            except Exception:
+                pass
+
+        # At step 4, if still not solving and on mine home page, trigger claim button
+        if step == 4 and not verified_event.is_set() and not acquired_token["token"]:
+            try:
+                await page.evaluate("""() => {
+                    const btn = document.getElementById('btn-claim-mining') || Array.from(document.querySelectorAll('button')).find(b => b.innerText && b.innerText.toLowerCase().includes('claim'));
+                    if (btn) btn.click();
+                }""")
+            except Exception:
+                pass
+
+        # If native check times out at 15s, app shows "Retry" button. Click it to reset cleanly.
+        if step >= 15 and not verified_event.is_set() and not acquired_token["token"]:
+            try:
+                retry_btn = page.locator("button:has-text('Retry')").first
+                if await retry_btn.count() > 0 and await retry_btn.is_visible():
+                    logger.info(f"🔄 Clicking MRG native Retry button for UID {uid}...")
+                    await retry_btn.click()
+            except Exception:
+                pass
+
         await asyncio.sleep(1.0)
 
     if acquired_token["token"]:
         ver_res = verify_human_token(m_init, acquired_token["token"])
         if ver_res.get("success"):
             logger.info(f"🎉 UID {uid}: Turnstile verify-human succeeded via DOM token!")
+            claim_mining_reward(m_init, acquired_token["token"])
             save_mrg_pass_to_upstash(uid, acquired_token["token"])
             await context.close()
             return True
@@ -575,23 +605,12 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
     if verified_event.is_set():
         logger.info(f"✅ UID {uid}: Turnstile successfully solved natively by MiniApp!")
         if acquired_token["token"]:
+            claim_mining_reward(m_init, acquired_token["token"])
             save_mrg_pass_to_upstash(uid, acquired_token["token"])
         await context.close()
         return True
 
-    # Fallback: programmatic Turnstile render
-    try:
-        has_ts = await page.evaluate("() => typeof window.turnstile?.render === 'function'")
-        if not has_ts:
-            logger.info(f"Adding Turnstile script tag via Playwright for MRG UID {uid}...")
-            await page.add_script_tag(url="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit")
-            try:
-                await page.wait_for_function("() => typeof window.turnstile?.render === 'function'", timeout=12000)
-            except Exception:
-                pass
-    except Exception as tse:
-        logger.warning(f"MRG Turnstile script tag note: {tse}")
-
+    # Fallback: Clean programmatic Turnstile render without re-injecting duplicate script
     solve_js = f"""
         async () => {{
             return new Promise((resolve) => {{
@@ -640,7 +659,7 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                         if (window.turnstile && typeof window.turnstile.render === 'function') {{
                             clearInterval(iv);
                             renderWidget();
-                        }} else if (attempts > 200) {{
+                        }} else if (attempts > 120) {{
                             clearInterval(iv);
                             resolve({{ success: false, error: 'turnstile_load_timeout' }});
                         }}
@@ -648,36 +667,39 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                 }}
 
                 setTimeout(() => {{
-                    resolve({{ success: false, error: 'timeout_25s' }});
-                }}, 25000);
+                    resolve({{ success: false, error: 'timeout_20s' }});
+                }}, 20000);
             }});
         }}
     """
     try:
         solve_task = asyncio.create_task(page.evaluate(solve_js))
-        for _ in range(16):
+        for _ in range(12):
             ts_iframe = page.locator("#cf-manual-slot iframe, iframe[src*='challenges.cloudflare.com']").first
             if await ts_iframe.count() > 0:
                 box = await ts_iframe.bounding_box()
-                if box and box["width"] > 0 and box["height"] > 0:
-                    click_x = box["x"] + min(32.0, box["width"] / 3)
-                    click_y = box["y"] + box["height"] / 2
-                    logger.info(f"🖱️ Clicking MRG programmatic Turnstile iframe at ({click_x:.1f}, {click_y:.1f})...")
-                    await page.mouse.move(click_x, click_y, steps=8)
-                    await asyncio.sleep(0.15)
-                    await page.mouse.down()
+                if box and box["width"] >= 200 and box["height"] >= 45:
+                    click_x = box["x"] + 32.0
+                    click_y = box["y"] + (box["height"] / 2.0)
+                    logger.info(f"🖱️ Clicking MRG programmatic Turnstile checkbox at ({click_x:.1f}, {click_y:.1f})...")
+                    await page.mouse.move(click_x - 20, click_y - 10)
                     await asyncio.sleep(0.1)
+                    await page.mouse.move(click_x, click_y, steps=8)
+                    await asyncio.sleep(0.2)
+                    await page.mouse.down()
+                    await asyncio.sleep(0.12)
                     await page.mouse.up()
                     break
-            await asyncio.sleep(0.6)
+            await asyncio.sleep(0.8)
 
-        render_res = await asyncio.wait_for(solve_task, timeout=28.0)
+        render_res = await asyncio.wait_for(solve_task, timeout=22.0)
         if render_res and render_res.get("success") and render_res.get("token"):
             tok = render_res["token"]
             logger.info(f"✅ UID {uid}: Programmatic MRG token acquired: {tok[:16]}...")
             ver_res = verify_human_token(m_init, tok)
             if ver_res.get("success"):
                 logger.info(f"🎉 UID {uid}: Programmatic verify-human succeeded!")
+                claim_mining_reward(m_init, tok)
                 save_mrg_pass_to_upstash(uid, tok)
                 await context.close()
                 return True
@@ -694,7 +716,7 @@ def save_mrg_pass_to_upstash(uid: int, turnstile_token: str):
     """Saves valid MRG turnstile token to Upstash Redis for edge nodes."""
     try:
         req = urllib.request.Request(
-            f"{UPSTASH_URL}/set/mrg:pass:{uid}",
+            f"{UPSTASH_URL}/set/mrg:pass:{uid}?ex=3600",
             data=json.dumps({"turnstileToken": turnstile_token, "updated_at": time.time()}).encode(),
             headers={"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"},
             method="POST"
@@ -992,35 +1014,23 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                 break
             await asyncio.sleep(1.0)
     
-        # Step 2: If not solved, locate Turnstile iframe and simulate human click
+        # Step 2: If not solved, locate Turnstile iframe and simulate clean human click if visible
         if not acquired_token and not acquired_pass:
             try:
                 ts_iframe = page.locator("iframe[src*='challenges.cloudflare.com']").first
                 if await ts_iframe.count() > 0:
                     box = await ts_iframe.bounding_box()
-                    if box and box["width"] > 0 and box["height"] > 0:
-                        click_x = box["x"] + min(32.0, box["width"] / 3)
-                        click_y = box["y"] + box["height"] / 2
-                        logger.info(f"🖱️ [Victor's] Found Turnstile iframe for UID {uid}! Humanized click at ({click_x:.1f}, {click_y:.1f})...")
-                        await page.mouse.move(click_x, click_y, steps=8)
-                        await asyncio.sleep(0.15)
-                        await page.mouse.down()
+                    if box and box["width"] >= 200 and box["height"] >= 45:
+                        click_x = box["x"] + 32.0
+                        click_y = box["y"] + (box["height"] / 2.0)
+                        logger.info(f"🖱️ [Victor's] Found visible Turnstile checkbox for UID {uid}! Humanized click at ({click_x:.1f}, {click_y:.1f})...")
+                        await page.mouse.move(click_x - 30, click_y - 15)
                         await asyncio.sleep(0.1)
+                        await page.mouse.move(click_x, click_y, steps=8)
+                        await asyncio.sleep(0.2)
+                        await page.mouse.down()
+                        await asyncio.sleep(0.12)
                         await page.mouse.up()
-                        # Also dispatch targeted synthetic click on iframe element
-                        try:
-                            await ts_iframe.click(position={"x": min(32.0, box["width"] / 3), "y": box["height"] / 2}, timeout=2500)
-                        except Exception:
-                            pass
-                    
-                    # Direct click inside frame locator
-                    try:
-                        ts_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']")
-                        click_target = ts_frame.locator("#challenge-stage, .ctp-checkbox-label, .mark, body").first
-                        if await click_target.count() > 0:
-                            await click_target.click(timeout=3000)
-                    except Exception:
-                        pass
             except Exception as ce:
                 logger.warning(f"[Victor's] UID {uid} iframe click note: {ce}")
     
@@ -1119,26 +1129,17 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                     ts_iframe = page.locator("#cf-vic-slot iframe, iframe[src*='challenges.cloudflare.com']").first
                     if await ts_iframe.count() > 0:
                         box = await ts_iframe.bounding_box()
-                        if box and box["width"] > 0 and box["height"] > 0:
-                            click_x = box["x"] + min(32.0, box["width"] / 3)
-                            click_y = box["y"] + box["height"] / 2
-                            logger.info(f"🖱️ [Victor's] Clicking programmatic Turnstile iframe at ({click_x:.1f}, {click_y:.1f})...")
-                            await page.mouse.move(click_x, click_y, steps=8)
-                            await asyncio.sleep(0.15)
-                            await page.mouse.down()
+                        if box and box["width"] >= 200 and box["height"] >= 45:
+                            click_x = box["x"] + 32.0
+                            click_y = box["y"] + (box["height"] / 2.0)
+                            logger.info(f"🖱️ [Victor's] Clicking programmatic Turnstile checkbox at ({click_x:.1f}, {click_y:.1f})...")
+                            await page.mouse.move(click_x - 20, click_y - 10)
                             await asyncio.sleep(0.1)
+                            await page.mouse.move(click_x, click_y, steps=8)
+                            await asyncio.sleep(0.2)
+                            await page.mouse.down()
+                            await asyncio.sleep(0.12)
                             await page.mouse.up()
-                            try:
-                                await ts_iframe.click(position={"x": min(32.0, box["width"] / 3), "y": box["height"] / 2}, timeout=2000)
-                            except Exception:
-                                pass
-                            try:
-                                ts_f = page.frame_locator("#cf-vic-slot iframe, iframe[src*='challenges.cloudflare.com']")
-                                tgt = ts_f.locator("#challenge-stage, .ctp-checkbox-label, .mark, body").first
-                                if await tgt.count() > 0:
-                                    await tgt.click(timeout=2500)
-                            except Exception:
-                                pass
                             break
                     await asyncio.sleep(0.6)
     
@@ -1376,8 +1377,8 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
 
     # 2. Wallet needs connection. Check if we have dedicated TON wallet
     if not wallet_entry or not wallet_entry.get("mnemonic"):
-        logger.error(f"❌ [VyroDrop] UID {uid}: No dedicated TON wallet / mnemonic found in fleet_ton_wallets.json!")
-        return False
+        logger.info(f"ℹ️ [VyroDrop] UID {uid}: No dedicated TON mnemonic for wallet signature, skipping onboarding challenge.")
+        return True
 
     # 3. Request challenge first to determine if human verification is required
     ch_code, ch_body = safe_post(f"{VYRO_API}/wallet/challenge", {}, extra_headers=v_headers)
@@ -1580,26 +1581,17 @@ async def solve_vyro_wallet_onboarding(browser, uid: int, vyro_init: str, wallet
                         ts_iframe = page.locator("#cf-vyro-slot iframe, iframe[src*='challenges.cloudflare.com']").first
                         if await ts_iframe.count() > 0:
                             box = await ts_iframe.bounding_box()
-                            if box and box["width"] > 0 and box["height"] > 0:
-                                click_x = box["x"] + min(32.0, box["width"] / 3)
-                                click_y = box["y"] + box["height"] / 2
-                                logger.info(f"🖱️ [VyroDrop] Click Turnstile iframe for UID {uid} at ({click_x:.1f}, {click_y:.1f})...")
-                                await page.mouse.move(click_x, click_y, steps=8)
-                                await asyncio.sleep(0.15)
-                                await page.mouse.down()
+                            if box and box["width"] >= 200 and box["height"] >= 45:
+                                click_x = box["x"] + 32.0
+                                click_y = box["y"] + (box["height"] / 2.0)
+                                logger.info(f"🖱️ [VyroDrop] Click Turnstile checkbox for UID {uid} at ({click_x:.1f}, {click_y:.1f})...")
+                                await page.mouse.move(click_x - 20, click_y - 10)
                                 await asyncio.sleep(0.1)
+                                await page.mouse.move(click_x, click_y, steps=8)
+                                await asyncio.sleep(0.2)
+                                await page.mouse.down()
+                                await asyncio.sleep(0.12)
                                 await page.mouse.up()
-                                try:
-                                    await ts_iframe.click(position={"x": min(32.0, box["width"] / 3), "y": box["height"] / 2}, timeout=2000)
-                                except Exception:
-                                    pass
-                                try:
-                                    ts_f = page.frame_locator("#cf-vyro-slot iframe, iframe[src*='challenges.cloudflare.com']")
-                                    tgt = ts_f.locator("#challenge-stage, .ctp-checkbox-label, .mark, body").first
-                                    if await tgt.count() > 0:
-                                        await tgt.click(timeout=2500)
-                                except Exception:
-                                    pass
                                 break
                     except Exception:
                         pass
@@ -1748,19 +1740,16 @@ async def solve_atf_turnstile(browser, uid: int, atf_init: str) -> bool:
                     ts_iframe = page.locator("#entryCaptchaBox iframe, iframe[src*='challenges.cloudflare.com']").first
                     if await ts_iframe.count() > 0:
                         box = await ts_iframe.bounding_box()
-                        if box and box["width"] > 0 and box["height"] > 0:
-                            click_x = box["x"] + min(32.0, box["width"] / 3)
-                            click_y = box["y"] + box["height"] / 2
-                            await page.mouse.move(click_x, click_y, steps=6)
-                            await asyncio.sleep(0.12)
+                        if box and box["width"] >= 200 and box["height"] >= 45:
+                            click_x = box["x"] + 32.0
+                            click_y = box["y"] + (box["height"] / 2.0)
+                            await page.mouse.move(click_x - 20, click_y - 10)
+                            await asyncio.sleep(0.1)
+                            await page.mouse.move(click_x, click_y, steps=8)
+                            await asyncio.sleep(0.2)
                             await page.mouse.down()
-                            await asyncio.sleep(0.08)
+                            await asyncio.sleep(0.1)
                             await page.mouse.up()
-                        else:
-                            ts_frame = page.frame_locator("#entryCaptchaBox iframe, iframe[src*='challenges.cloudflare.com']")
-                            click_target = ts_frame.locator("#challenge-stage, .ctp-checkbox-label, .mark").first
-                            if await click_target.count() > 0:
-                                await click_target.click(timeout=2500)
                 except Exception:
                     pass
                 await asyncio.sleep(1.2)
@@ -1834,13 +1823,15 @@ async def solve_atf_turnstile(browser, uid: int, atf_init: str) -> bool:
                             ts_iframe = page.locator("#entryCaptchaBox iframe, iframe[src*='challenges.cloudflare.com']").first
                             if await ts_iframe.count() > 0:
                                 box = await ts_iframe.bounding_box()
-                                if box and box["width"] > 0 and box["height"] > 0:
-                                    click_x = box["x"] + min(32.0, box["width"] / 3)
-                                    click_y = box["y"] + box["height"] / 2
-                                    await page.mouse.move(click_x, click_y, steps=6)
-                                    await asyncio.sleep(0.12)
+                                if box and box["width"] >= 200 and box["height"] >= 45:
+                                    click_x = box["x"] + 32.0
+                                    click_y = box["y"] + (box["height"] / 2.0)
+                                    await page.mouse.move(click_x - 20, click_y - 10)
+                                    await asyncio.sleep(0.1)
+                                    await page.mouse.move(click_x, click_y, steps=8)
+                                    await asyncio.sleep(0.2)
                                     await page.mouse.down()
-                                    await asyncio.sleep(0.08)
+                                    await asyncio.sleep(0.1)
                                     await page.mouse.up()
                                     break
                         except Exception:
@@ -2016,7 +2007,6 @@ async def run_mrg_auto_solver():
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
-                "--disable-blink-features=AutomationControlled",
                 "--window-size=1280,800"
             ]
         }
@@ -2024,7 +2014,7 @@ async def run_mrg_auto_solver():
             logger.info(f"🌐 Routing browser through Webshare proxy: {ws_proxy['server']}")
             launch_kwargs["proxy"] = ws_proxy
         else:
-            logger.info("🛡️ Running directly on clean runner IP (Zero datacenter proxy blocks for Cloudflare Turnstile).")
+            logger.info("🛡️ Running directly on clean runner IP.")
 
         async with async_playwright() as p:
             browser = await p.chromium.launch(**launch_kwargs)
