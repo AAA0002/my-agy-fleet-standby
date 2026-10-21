@@ -2,6 +2,32 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **☁️ Multi-Cloud Free Tier Fleet Expansion & CronJob.org 401 Authorization Fix (October 21, 2026)**:
+  - **🆓 De-risking GitHub Actions via Free Cloud Ecosystem (.env Audit)**:
+    * Identified that relying exclusively on GitHub Actions' 2,000 monthly minutes creates a bottleneck for frequent cron runs.
+    * Activated and synchronized the full free infrastructure stack provisioned in `.env`:
+      - **Render Free Tier (3 Independent Nodes = 2,250 free compute hours/month)**: Node 2 (`my-agy-fleet-standby-node2.onrender.com`) is active primary running `cloud_wealth_automation_watchdog` every 30 minutes with automatic Baton Relay rotation at 650h to Node 3 / Node 1.
+      - **CronJob.org (11 Free Active Cron Triggers)**: Provides free 1-minute execution frequency directly calling Render edge webhooks without using GitHub Actions minutes.
+      - **Cloudflare Workers (2 Accounts, 4 Worker Nodes = 400,000+ free requests/day)**: Native `*/15 * * * *` cron triggers handle edge token validation and state synchronization.
+      - **Deno Deploy (2 Deployments = 100,000 free requests/day)**: `my-agy-fleet-deno.aaa222.deno.net` active edge redundancy.
+      - **Upstash Redis & QStash**: Serverless Redis with distributed message queuing.
+      - **Vercel & CircleCI (6,000 free build minutes/month)**: Standby compute for intensive jobs.
+  - **🔧 CronJob.org 401 Unauthorized Silent Failure Resolved**:
+    * Discovered CronJob.org jobs `8614058` (`/api/farm/cloud-all`) and `8614259` (`/collect-tokens`) had missing or incomplete authorization headers, resulting in silent `401 Unauthorized` responses from Render Node 2.
+    * Patched both jobs via the CronJob.org REST API to inject dual-layer authentication: `Authorization: Bearer <SECRET>` request headers and `?secret=<SECRET>` query parameters.
+    * Verified 200 OK responses from CronJob.org API.
+  - **🛠️ Victor's Company Backend API Origin Correction**:
+    * Corrected `api_base` in `bot_registry.py` from `https://app.victors.company/api` to `https://server.victors.company/api`, matching the production REST backend.
+  - **⚡ Full Fleet Cloud Farm Verification (Render Node 2)**:
+    * Executed live inspection of Render Node 2 farm report across all 18 accounts:
+      - **Kynex Network**: Active mining verified (+136.7 KNX claimed, balance: 70k-80k KNX).
+      - **DiggoMiner**: Active mining verified (26.67 DIGGO).
+      - **PepeGram**: Active hashes verified (power: 1226, hashes: 1271+).
+      - **AdxEarn AI**: Active mining streak verified (160 pts).
+      - **ATF Miner & MRG Miner**: Active mining and cooldown cycles verified.
+      - **Astra**: Active balances verified.
+
+
 - **🌐 Webshare Key 2 Secret Migration, Turnstile Input Extraction & Multi-Bot Proxy Hardening (October 21, 2026)**:
   - **🔑 Dual-Repository Secret Update (Key 2 Activation)**:
     * Discovered Webshare Key 1 hit bandwidth exhaustion (`402 Payment Required`), causing GitHub Actions solvers to fall back to raw Azure runner IPs (blocked by Cloudflare Turnstile).

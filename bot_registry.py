@@ -48,7 +48,7 @@ ACTIVE_BOTS: Dict[str, Dict[str, Any]] = {
         "app_url": "https://app.victors.company/",
         "token_key": "victors_init_data",
         "short_names": ["app", "play"],
-        "api_base": "https://app.victors.company/api",
+        "api_base": "https://server.victors.company/api",
         "sponsor_channels": ["VictorsCompany", "victors_company", "VICWithdrawals", "TheBoss_Victor"],
         "requires_turnstile": True,
         "is_active": True,

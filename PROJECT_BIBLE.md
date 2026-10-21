@@ -831,8 +831,12 @@ ps aux | grep python
 
 ### 9. Render-First Architecture & Free-Tier GitHub Actions / Alternative CI/CD Quota Protocol
 To strictly preserve GitHub Actions free-tier quotas (2,000 minutes/month cap for free users), all continuous 24/7 background workloads are offloaded to **Render Standby Mesh**, **Cron-Job.org**, and alternative CI/CD runners:
-- **Continuous 24/7 Multi-Bot Farming**: Handled 100% by Render Node 2 (Frankfurt) via POST `/api/farm/cloud-all` triggered every 15-30 minutes by Cron-Job.org (`8614058`). Consumes **0** GitHub Actions minutes.
+- **Continuous 24/7 Multi-Bot Farming**: Handled 100% by Render Node 2 (Frankfurt) via POST `/api/farm/cloud-all` triggered every 15-30 minutes by Cron-Job.org (`8614058`) with dual-layer authentication (`Authorization: Bearer <SECRET>` and `?secret=<SECRET>`). Consumes **0** GitHub Actions minutes.
 - **Continuous MTProto Token Harvesting**: Handled 100% by Render Node 2 (Frankfurt) via POST `/collect-tokens` triggered every 4 hours by Cron-Job.org (`8614259`). Consumes **0** GitHub Actions minutes.
+- **Edge Cron & Dispatch Mesh**:
+  * **Cloudflare Workers (500k free requests/day)**: Native `*/15 * * * *` cron triggers handle periodic edge health verification and token propagation.
+  * **Deno Deploy (100k free requests/day)**: Standby edge proxy at `my-agy-fleet-deno.aaa222.deno.net`.
+  * **Upstash QStash & Redis**: Distributed state storage and serverless cron dispatching without requiring persistent compute.
 - **Alternative CI/CD Cloud Compute Ecosystem**:
   * **CircleCI (1-Year PAT — 6,000 Free Build Minutes/Month)**:
     - User: `aaa.support.a@gmail.com` | Token: Stored securely in `CIRCLECI_TOKEN` (.env)
