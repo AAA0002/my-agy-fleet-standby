@@ -18,6 +18,21 @@ logger = logging.getLogger("fleet_arcade")
 
 UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://pleasant-locust-220893.upstash.io"
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or ""
+
+if not UPSTASH_TOKEN:
+    env_file = os.path.join(os.path.dirname(__file__), ".env")
+    if os.path.exists(env_file):
+        try:
+            with open(env_file, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    if "=" in line and "UPSTASH" in line:
+                        k, v = line.strip().split("=", 1)
+                        if "URL" in k and not os.getenv("UPSTASH_URL"):
+                            UPSTASH_URL = v.strip("\"' ")
+                        if "TOKEN" in k and not UPSTASH_TOKEN:
+                            UPSTASH_TOKEN = v.strip("\"' ")
+        except Exception:
+            pass
 VICTORS_API = "https://server.victors.company/api"
 VICTORS_ORIGIN = "https://app.victors.company"
 
