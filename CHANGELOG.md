@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **📊 Admin Bot Live Telemetry & True Account Health Synchronization (October 21, 2026)**:
+  - **🔍 Fix for Blind "18/18 All OK" Status & In-Memory Cache Invalidation**:
+    * Identified root cause: Cloudflare Worker in-memory RAM caching (`maxAgeMs = 900000` / 15-30m) cached empty revoked session sets, and `Set.has(idx)` failed when comparing string numbers against integers or when Telegram user IDs and indices were mixed.
+    * Reduced `maxAgeMs` to 10-15s for live keys (`fleet:revoked_sessions`, `fleet:live_state`, `fleet:pumpkin_state`, `fleet:status`, `fleet:tokens_state`) in `upstashGet` and `upstashSmembers`.
+    * Refactored `getSessionHealthState()` to evaluate both index (1-18) and Telegram `user_id` against `DEFAULT_FLEET_ACCOUNTS`. Correctly reports `15 MTProto Online` and `3 Needs Re-link` (Accounts #4 Arif, #6 Kaitlyn, #12 Sanzida Shimu).
+    * Normalized `ensureFullFleet()` and `getFleetAccounts()` so indices 1..18 are strictly immutable, preventing user IDs or corrupted arrays from leaking into the 18-node roster.
+  - **⚡ Live Dynamic Operations Command Center (`/status`, `/fleet`, `/live`, `btn_status`)**:
+    * Replaced static placeholder text with real-time live telemetry:
+      - 📊 **Telegram MTProto Sessions**: `15/18 Cloud Connected` (83.3%) • `3 Needs Re-link` with detailed root-cause explanation (`AUTH_KEY_DUPLICATED`).
+      - ⚡ **REST WebApp Automation**: `18/18 Accounts Active` across all 9 webapp pools using cached tokens.
+      - 🎃 **PumpkinEarnBot Telemetry**: `13/17 Farmed` • Master Arif Hossain: `+9,750 🎃 ($0.1300 USD)` • 1 Banned (#3 Koram Shah) • 3 Pending Re-link.
+      - 🤖 **10-Bot Mining Matrix**: Real-time status for MRG, ATF, PumpkinEarn, Victor's, VyroDrop, Kynex, Diggo, Astra, PepeGram, AdxEarn AI.
+      - ☁️ **Mesh & Node Metrics**: Render Node 2 (Frankfurt, 1.5h uptime), 5 Cloudflare edge shards, live Dhaka timestamp.
+  - **👥 Account Roster Live Telemetry (`/accounts`, `btn_accounts`)**:
+    * Each account now displays live pool coverage and individual Pumpkin status (e.g. `🟢 MTProto Online • 10/10 Pools • 🎃 Farmed` vs `🔴 Needs Re-link • 8/10 Pools (REST Active) • 🎃 Pending`).
+  - **🎃 PumpkinEarn Command Center (`/pumpkin`, `btn_pumpkin`)**:
+    * Added full dedicated telemetry page with 1-tap re-link buttons for accounts #4, #6, #12.
+    * Added to Telegram bot commands menu (`/pumpkin` and `/live`) via `setMyCommands`.
+    * Synchronized and deployed live to `restore-agy.agorameet.workers.dev`.
+
 - **💎 Instant 30-Day Diggo JWT Exchange at MTProto Extraction (October 21, 2026)**:
   - **⚡ Zero-Latency Session Minting**:
     * Updated `extract_bot_webapp_tokens_for_client` in `app.py`, `render_app_latest.py`, and `render_standby_app.py`.
