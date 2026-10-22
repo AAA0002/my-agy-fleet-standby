@@ -2,6 +2,17 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎯 Turnstile Solver Single-Click Deconfliction & Fleet Roster Alignment (October 22, 2026)**:
+  - **Turnstile Double-Click Elimination (`mrg_turnstile_solver.py`)**:
+    * Identified root cause of Turnstile solving timeouts: `mrg_turnstile_solver.py` was firing both touchscreen tap AND synthetic mouse down/up on the Turnstile iframe bounding box, or firing Method A (`frame_locator`) followed immediately by Method B (mouse coordinates), double-clicking the checkbox and causing Cloudflare Turnstile to invalidate or reset the challenge.
+    * Gated interaction: `frame_locator` is checked first. If clicked successfully, coordinate clicking is skipped. Replaced dual touch/mouse events with a single clean humanized mouse click.
+  - **Fleet Account Hygiene & Rogue UID Purge**:
+    * Purged unlinked public user account `1189890165` ("Thaib") from Upstash Redis `fleet:accounts`.
+    * Aligned Redis `fleet:accounts` strictly to the 18 legitimate fleet accounts from `accounts.json`.
+    * Cleaned up 18 legacy `fleet:last_farm:leafearn:*` keys from Upstash Redis.
+    * Verified 18/18 accounts reporting 100% `🟢 Active` across all active pools in `audit_fleet_live.py`.
+
+
 - **🔄 Dual CI/CD Redundancy & CircleCI Failback Architecture (October 22, 2026)**:
   - **Failback Pipeline Optimization (`.circleci/config.yml`)**:
     * Gated CircleCI workflow with pipeline parameter `is_failover: boolean` and branch filter `failover` to prevent rapid exhaustion of the 300 free monthly build credits on routine git pushes.

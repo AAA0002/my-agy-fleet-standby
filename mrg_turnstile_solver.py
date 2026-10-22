@@ -576,17 +576,27 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                         click_x = box["x"] + 32.0
                         click_y = box["y"] + (box["height"] / 2.0)
                         logger.info(f"🖱️ Found visible Turnstile checkbox for MRG UID {uid}! Humanized interaction at ({click_x:.1f}, {click_y:.1f})...")
+                        mrg_clicked = False
+                        # Try direct frame_locator click first
                         try:
-                            await page.touchscreen.tap(click_x, click_y)
+                            cf_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']").first
+                            chk = cf_frame.locator("input[type='checkbox'], .ctp-checkbox-label, #cf-stage").first
+                            if await chk.count() > 0:
+                                await chk.click(timeout=3500)
+                                mrg_clicked = True
+                                logger.info(f"✅ MRG UID {uid}: Clicked Turnstile checkbox cleanly via frame_locator.")
                         except Exception:
                             pass
-                        await page.mouse.move(click_x - 30, click_y - 15)
-                        await asyncio.sleep(0.1)
-                        await page.mouse.move(click_x, click_y, steps=8)
-                        await asyncio.sleep(0.2)
-                        await page.mouse.down()
-                        await asyncio.sleep(0.12)
-                        await page.mouse.up()
+
+                        # If frame_locator was not clickable, use a single clean mouse click (never double-click)
+                        if not mrg_clicked:
+                            await page.mouse.move(click_x - 30, click_y - 15)
+                            await asyncio.sleep(0.1)
+                            await page.mouse.move(click_x, click_y, steps=8)
+                            await asyncio.sleep(0.15)
+                            await page.mouse.down()
+                            await asyncio.sleep(0.1)
+                            await page.mouse.up()
                         clicked_checkbox = True
             except Exception:
                 pass
@@ -1067,6 +1077,7 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
             try:
                 ts_iframe = page.locator("iframe[src*='challenges.cloudflare.com']").first
                 if await ts_iframe.count() > 0:
+                    v_clicked = False
                     # Method A: Direct DOM click inside iframe via frame_locator
                     try:
                         cf_frame = page.frame_locator("iframe[src*='challenges.cloudflare.com']").first
@@ -1074,22 +1085,24 @@ async def solve_victors_turnstile(browser, uid: int, v_init: str, is_master: boo
                         if await chk.count() > 0:
                             logger.info(f"🖱️ [Victor's] UID {uid}: Clicking Turnstile element directly via frame_locator...")
                             await chk.click(timeout=3500)
+                            v_clicked = True
                     except Exception as fce:
                         logger.info(f"[Victor's] UID {uid} frame_locator click note: {fce}")
 
-                    # Method B: Humanized mouse movement & click at checkbox coordinates
-                    box = await ts_iframe.bounding_box()
-                    if box and box["width"] >= 200 and box["height"] >= 45:
-                        click_x = box["x"] + 32.0
-                        click_y = box["y"] + (box["height"] / 2.0)
-                        logger.info(f"🖱️ [Victor's] Humanized mouse interaction at ({click_x:.1f}, {click_y:.1f}) for UID {uid}...")
-                        await page.mouse.move(click_x - 30, click_y - 15)
-                        await asyncio.sleep(0.1)
-                        await page.mouse.move(click_x, click_y, steps=8)
-                        await asyncio.sleep(0.2)
-                        await page.mouse.down()
-                        await asyncio.sleep(0.12)
-                        await page.mouse.up()
+                    # Method B: Humanized mouse movement & click at checkbox coordinates (ONLY if Method A didn't click)
+                    if not v_clicked:
+                        box = await ts_iframe.bounding_box()
+                        if box and box["width"] >= 200 and box["height"] >= 45:
+                            click_x = box["x"] + 32.0
+                            click_y = box["y"] + (box["height"] / 2.0)
+                            logger.info(f"🖱️ [Victor's] Humanized mouse interaction at ({click_x:.1f}, {click_y:.1f}) for UID {uid}...")
+                            await page.mouse.move(click_x - 30, click_y - 15)
+                            await asyncio.sleep(0.1)
+                            await page.mouse.move(click_x, click_y, steps=8)
+                            await asyncio.sleep(0.15)
+                            await page.mouse.down()
+                            await asyncio.sleep(0.1)
+                            await page.mouse.up()
             except Exception as ce:
                 logger.warning(f"[Victor's] UID {uid} iframe click note: {ce}")
     

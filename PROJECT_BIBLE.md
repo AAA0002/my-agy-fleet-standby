@@ -1433,4 +1433,15 @@ Whenever you perform work in this repository:
   - **Tier 3 (Emergency Failback)**: CircleCI on `AAA0002/ATL` (300 min/mo).
   - **Tier 4 (24/7 Zero-Minute Edge Mesh)**: Cloudflare Edge Workers & Render Node 2.
 
+### 25. Turnstile Solver Single-Click Deconfliction & Strict 18-Account Alignment (October 22, 2026)
+* **Turnstile Event Deconfliction (`mrg_turnstile_solver.py`)**:
+  - Eliminated dual event firing (`touchscreen.tap` followed by `mouse.down/up`) on Turnstile iframe bounding boxes that previously caused Cloudflare to register automated double-clicks and reset challenges.
+  - Implemented strict gating: direct iframe `frame_locator` click executes first; coordinate mouse interaction only runs as fallback if the frame locator fails.
+* **Strict 18-Account Roster Alignment in Upstash Redis**:
+  - Removed unlinked public user account `1189890165` ("Thaib") from Redis key `fleet:accounts`.
+  - Re-synchronized `fleet:accounts` to match `accounts.json` (exactly 18 accounts).
+  - Purged 18 legacy `fleet:last_farm:leafearn:*` residual keys.
+  - Confirmed 100% green coverage across all active pools in `audit_fleet_live.py`.
+
+
 
