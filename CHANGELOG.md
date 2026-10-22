@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Authentic Ground-Truth Fleet Telemetry & Anti-Fake Reporting Architecture (October 22, 2026)**:
+  - **Eliminated Fake/Optimistic Reporting**:
+    * Identified root cause of inaccurate fleet status: `deploy_both_cf_workers.py` was previously writing `fleet:last_farm:{bot}:{uid}` even on errors or `403 HUMAN_REQUIRED`, and hardcoding `18/18 Active • Turnstile Passed` in the Admin Bot status output.
+    * Refactored `deploy_both_cf_workers.py`:
+      - MRG Miner now accurately flags `turnstile_required` and `auth_failed`, only setting success on authentic claim/mining confirmation.
+      - Worker now isolates genuine completions (`fleet:last_farm`) from failures (`fleet:farm_error`), ensuring error states are immediately visible rather than masked.
+      - Replaced hardcoded status strings in `buildFleetLiveStatusText` with dynamic live checks using `upstashMget` across all 18 accounts.
+  - **Rebuilt `audit_fleet_live.py` for 100% Live Backend Verification**:
+    * Rewrote `audit_fleet_live.py` to concurrently probe real bot APIs across all 18 accounts:
+      - ATF Miner: `https://atfminers.asloni.online/miner/index.php?action=login`
+      - MRG Miner: `https://mrg.up.railway.app/api/user/me`
+      - Victor's Company: `https://server.victors.company/api/me`
+      - VyroDrop: `https://vyro.run.place/api/bootstrap`
+      - Kynex Network: `https://us-central1-keynex-e9511.cloudfunctions.net/verifyTelegramAuth`
+    * Output displays genuine ground truth: live balances, miner levels, and exact challenge states (`🟢 Active`, `🟡 Turnstile Required`, `🔴 Expired`).
+  - **Refreshed Stale MTProto Tokens on Render Node 2**:
+    * Triggered MTProto token refresher on Render Node 2 coordinator in Frankfurt, refreshing 17 out of 18 accounts from 12-day-old expired sessions to fresh tokens.
+  - **Cloudflare Edge Node 4 Redeployment**:
+    * Deployed updated JavaScript engine to `restore-agy.agorameet.workers.dev` with zero syntax errors.
+
+
 - **🤖 Admin Bot Telemetry Overhaul & Multi-Cloud Ingress Integration (October 22, 2026)**:
   - **New Admin Bot Commands & Callbacks (`@myagyai`)**:
     * Added `/vm` and `btn_vm` (Instabox VM Sentinel): real-time monitoring of port 2000 external HTTPS ingress, VM load average, uptime, and quad-layer anti-pause keepalive status.
