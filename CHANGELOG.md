@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🤖 User Bot (@AAAPREMIUMAPPSbot) Complete Modernization & Cloudflare Edge Deployment (October 22, 2026)**:
+  - **24-Hour Welcome Grace Period & Point Drain Fix**:
+    * Resolved the Day 1 point drain issue where newly registered users who joined with 100 welcome points had their points deducted immediately by the daily sweep before having a chance to earn or explore.
+    * Updated `runDailyPointsSweep` and `getUserProfile` in `deploy_both_cf_workers.py` to exempt accounts added within the last 24 hours (`now - added_at < 86400000`).
+    * Manually refunded real user `1189890165` (Thaib) +100 points and restored `farming_active: True` in Upstash Redis.
+  - **Upgraded Daily Streak Bonus (100% Free Daily Cloud Mining)**:
+    * Boosted daily check-in streak rewards: Day 1: +50 Pts, Day 2: +60 Pts, Day 3: +75 Pts, Day 4: +85 Pts, Day 5+: +100 Pts.
+    * Users with a 5-day streak earn 100 Pts daily, fully covering the daily cost of 1 account indefinitely without mandatory ad watching or payments.
+  - **Unified 9-Pool Roster & Modernized Dashboards**:
+    * Upgraded pool listings across both bot messages and inline keyboards from outdated 5/7/10 bot lists to the 9 official active pools: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI.
+    * Added visual ad progress indicators (`[████░░░░]`), direct Mini App links, and 1-tap connection helpers.
+  - **1-Tap Token Upgrade Flow**:
+    * Implemented `ub_upgrade_acc_<uid>` callback query handler in `hasWebAppData`, allowing users with existing ID-only accounts to link their Mini App WebAppData tokens directly and receive a +50 Pts upgrade bonus.
+  - **Automated Telegram Metadata & Command Synchronization**:
+    * Programmed automatic synchronization of Telegram Bot description (413 chars detailing 9 pools), short description, 12 slash commands (`/start`, `/pools`, `/accounts`, `/connect`, `/points`, `/ads`, `/daily`, `/invite`, `/stars`, `/leaderboard`, `/help`, `/support`), and persistent global menu button (`🎬 Watch Ads` pointing to `https://agy-henna.vercel.app/`).
+  - **Cloudflare V8 Syntax Error Resolution & Deployment**:
+    * Fixed rogue duplicate `return; }` block at line 13113 of `deploy_both_cf_workers.py` that triggered `Uncaught SyntaxError: Unexpected token 'if'`.
+    * Successfully deployed to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`) with primary 24/7 cron trigger active (`*/15 * * * *`).
+  - **Live Webhook End-to-End Verification**:
+    * Confirmed `https://restore-agy.agorameet.workers.dev/user-bot-webhook` processes `/start`, `/pools`, `/accounts`, and callback queries with HTTP 200 OK and 0 pending updates in `getWebhookInfo`.
+
 - **🚀 Victor's Company Native Turnstile Breakthrough, Termux/TMUX Zero-Lag, & Admin Bot Live 9-Bot Hub (October 22, 2026)**:
   - **Victor's Company Native Turnstile Breakthrough (`solve_all_victors.py`)**:
     * **Discovered Native Turnstile Widget Geometry**: Discovered that `https://app.victors.company` natively embeds a Cloudflare Turnstile iframe at `(x: 56, y: 543, w: 300, h: 65)`. Synthetic container injection (`cf-vic-slot`) was causing widget collisions.

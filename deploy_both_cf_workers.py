@@ -1764,13 +1764,25 @@ async function runDailyCostSweep(env, force = false) {
     const now = Date.now();
     const hasActivePass = prof.subscription_expiry && prof.subscription_expiry > now;
 
+    // Filter accounts that have passed the 24-hour welcome grace period
+    const eligibleAccounts = (prof.accounts || []).filter(a => {
+      const added = a.added_at || 0;
+      return (now - added) >= (24 * 3600 * 1000);
+    });
+
     if (hasActivePass) {
       vipCount++;
       prof.farming_active = true;
       prof.last_deduction_date = today;
       await upstashSet(`ub_user:${prof.user_id}`, prof);
+    } else if (eligibleAccounts.length === 0) {
+      // All accounts are within the 24h grace period: Keep active for free today!
+      activeCount++;
+      prof.farming_active = true;
+      prof.last_deduction_date = today;
+      await upstashSet(`ub_user:${prof.user_id}`, prof);
     } else {
-      const dailyCost = prof.accounts.length * 100;
+      const dailyCost = eligibleAccounts.length * 100;
       if (prof.farming_active !== false) {
         if ((prof.points || 0) >= dailyCost) {
           prof.points = (prof.points || 0) - dailyCost;
@@ -9527,14 +9539,20 @@ Reply to Arif naturally:`;
       }
 
       // Daily Automated Point Deduction (100 Pts per active connected account per day)
+      // Exemption: Give newly added accounts a 24-hour welcome grace period before deducting points!
       const today = new Date().toISOString().slice(0, 10);
+      const eligibleAccounts = (prof.accounts || []).filter(a => {
+        const added = a.added_at || 0;
+        return (now - added) >= (24 * 3600 * 1000); // 24h grace period
+      });
+
       if (prof.last_deduction_date !== today && prof.accounts && prof.accounts.length > 0) {
-        if (hasActivePass) {
+        if (hasActivePass || eligibleAccounts.length === 0) {
           prof.farming_active = true;
           prof.last_deduction_date = today;
           await upstashSet(key, prof);
         } else {
-          const dailyCost = prof.accounts.length * 100;
+          const dailyCost = eligibleAccounts.length * 100;
           if (prof.farming_active !== false) {
             if (prof.points >= dailyCost) {
               prof.points -= dailyCost;
@@ -10841,34 +10859,48 @@ Reply to Arif naturally:`;
           }
 
           const accs = profile.accounts || [];
-          const mrgAccs = accs.filter(a => a.pool === "mrg" || a.pool === "all" || !a.pool).length;
-          const atfAccs = accs.filter(a => a.pool === "atf" || a.pool === "all" || !a.pool).length;
-          const victorsAccs = accs.filter(a => a.pool === "victors" || a.pool === "all" || !a.pool).length;
-          const vyroAccs = accs.filter(a => a.pool === "vyro" || a.pool === "all" || !a.pool).length;
-          const kynexAccs = accs.filter(a => a.pool === "kynex" || a.pool === "all" || !a.pool).length;
-          const diggoAccs = accs.filter(a => a.pool === "diggo" || a.pool === "all" || !a.pool).length;
-          const astraAccs = accs.filter(a => a.pool === "astra" || a.pool === "all" || !a.pool).length;
-          const pepegramAccs = accs.filter(a => a.pool === "pepegram" || a.pool === "all" || !a.pool).length;
-          const adxearnAccs = accs.filter(a => a.pool === "adxearn" || a.pool === "all" || !a.pool).length;
           const dCost = isCovered ? 0 : (accs.length * 100);
-          const daysRemaining = isCovered ? "Unlimited (VIP)" : (dCost > 0 ? `${Math.floor((profile.points || 0) / dCost)}d` : "Unlimited");
+          const daysRemaining = isCovered ? "Unlimited (VIP)" : (dCost > 0 ? `${Math.floor((profile.points || 0) / dCost)} days` : "Unlimited");
           const farmStatus = isCovered ? "🟢 Active 24/7 (VIP Pass)" : (profile.farming_active ? "🟢 Active & Mining 24/7" : "🔴 Paused (Needs Points)");
 
-          const txt = `⚡ *AAA AUTO MINING — DASHBOARD*\n` +
+          // Ad progress bar
+          const currentAdInCycle = (profile.ads_watched || 0) % 50;
+          const filledBlocks = Math.round((currentAdInCycle / 50) * 8);
+          const emptyBlocks = 8 - filledBlocks;
+          const adBar = "█".repeat(filledBlocks) + "░".repeat(emptyBlocks);
+
+          const txt = `⚡ *AAA AUTO MINING — CLOUD DASHBOARD* 🚀\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `• *User ID:* \`${uid}\`\n` +
-            `• *Status:* ${farmStatus}\n` +
-            `• *Points Runway:* \`${profile.points || 0} Pts\` (~${daysRemaining})\n` +
-            `• *Connected Accounts:* \`${accs.length}/${totalSlots} Slots\` (9 Active Pools: MRG, ATF, Vic, Vyr, Kyn, Diggo, Astra, Pepe, Adx)\n` +
-            `• *Subscription:* ${passBadge}\n` +
-            `• *Daily Cost:* \`${isCovered ? "0 Pts (VIP)" : `${dCost} Pts/day`}\`\n` +
-            `• *Streak:* Day ${profile.daily_streak || 0} • Ads: ${profile.ads_watched || 0}/50\n` +
+            `👤 *Miner:* ${senderName} (\`${uid}\`)\n` +
+            `⚡ *Mining Engine:* ${farmStatus}\n` +
+            `💎 *Points Balance:* \`${profile.points || 0} Pts\` (~${daysRemaining})\n` +
+            `👥 *Connected Slots:* \`${accs.length}/${totalSlots} Slots in use\`\n` +
+            `🎟️ *Membership:* ${passBadge}\n` +
+            `🔥 *Daily Streak:* Day ${profile.daily_streak || 0} Streak\n` +
+            `📺 *Free Slot Progress:* [${adBar}] ${currentAdInCycle}/50 Ads\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `⛏️ *9 Automated Pools Active:*\n` +
+            `⚡ MRG • 🪙 ATF • 🏢 Victor's • 💧 VyroDrop • 🌐 Kynex\n` +
+            `⛏️ Diggo • ⭐ Astra • 🐸 PepeGram • 💎 AdxEarn AI\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━\n` +
             `_Tap below or use the keyboard buttons to control mining:_`;
 
           const btns = {
             inline_keyboard: [
               [
                 { text: "🚀 Open Web App Mining Console ⚡", web_app: { url: "https://agy-henna.vercel.app/miner" } }
+              ],
+              [
+                { text: "⛏️ 9 Mining Pools", callback_data: "ub_pools" },
+                { text: "➕ Connect Account", callback_data: "ub_add_acc" }
+              ],
+              [
+                { text: "👥 My Accounts", callback_data: "ub_accounts" },
+                { text: "🎁 Daily Bonus", callback_data: "ub_daily_claim" }
+              ],
+              [
+                { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } },
+                { text: "🌟 VIP Passes", callback_data: "ub_buy_stars" }
               ]
             ]
           };
@@ -10889,20 +10921,20 @@ Reply to Arif naturally:`;
           const pepegramAccs = accs.filter(a => a.pool === "pepegram" || a.pool === "all" || !a.pool).length;
           const adxearnAccs = accs.filter(a => a.pool === "adxearn" || a.pool === "all" || !a.pool).length;
 
-          const txt = `⛏️ *SUPPORTED CLOUD MINING POOLS*\n` +
+          const txt = `⛏️ *SUPPORTED CLOUD MINING POOLS (9/9)* 🚀\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `Autonomous 24/7 cloud mining active across 9 official bots:\n\n` +
-            `1. *MRG Miner* (4h cycle • TON AI Mining)\n` +
-            `2. *ATF Miner* (24h cycle • Daily Task Claiming)\n` +
-            `3. *Victor's Company* (8h cycle • Solar & Arcade)\n` +
-            `4. *VyroDrop* (12h cycle • High-Yield TON)\n` +
-            `5. *Kynex Network* (12h cycle • TON Edge Node)\n` +
-            `6. *DiggoMiner* (3h cycle • Block Mining)\n` +
-            `7. *Astra Airdrop* (4h cycle • Star Airdrop)\n` +
-            `8. *PepeGram* (3h cycle • Meme Token Mining)\n` +
-            `9. *AdxEarn AI* (3h cycle • AI Mining)\n` +
+            `Autonomous 24/7 cloud mining active across 9 official bots with zero battery or RAM usage:\n\n` +
+            `1️⃣ ⚡ *MRG Miner* — 4h cycle • TON AI Mining (@mrgminerbot)\n` +
+            `2️⃣ 🪙 *ATF Miner* — 24h cycle • Auto-Claim & Daily Tasks (@ATF_AIRDROP_bot)\n` +
+            `3️⃣ 🏢 *Victor's Company* — 8h cycle • Solar Energy & Arcade (@VictorsCompanybot)\n` +
+            `4️⃣ 💧 *VyroDrop* — 12h cycle • High-Yield TON Mining (@vyrodrop_bot)\n` +
+            `5️⃣ 🌐 *Kynex Network* — 12h cycle • Decentralized Edge Node (@kynexnetworkbot)\n` +
+            `6️⃣ ⛏️ *DiggoMiner* — 3h cycle • Automated Block Mining (@Diggominer_bot)\n` +
+            `7️⃣ ⭐ *Astra Airdrop* — 4h cycle • Cosmic Star Mining (@ASTRA_AIRDROP_BOT)\n` +
+            `8️⃣ 🐸 *PepeGram* — 3h cycle • Meme Token Community Mining (@Pepe_gram_bot)\n` +
+            `9️⃣ 💎 *AdxEarn AI* — 3h cycle • Neural AI Mining Node (@AdxEarnAibot)\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `_Select a pool below to link accounts:_`;
+            `_Select any pool below to launch the bot or link an account:_`;
 
           const btns = {
             inline_keyboard: [
@@ -10924,7 +10956,11 @@ Reply to Arif naturally:`;
               ],
               [
                 { text: `💎 AdxEarn (${adxearnAccs})`, callback_data: "ub_pool_adxearn" },
-                { text: "➕ Add to All Pools", callback_data: "ub_add_acc" }
+                { text: "➕ Connect Account", callback_data: "ub_add_acc" }
+              ],
+              [
+                { text: "📖 Connection Guide", callback_data: "ub_guide_general" },
+                { text: "👥 My Accounts", callback_data: "ub_accounts" }
               ],
               [
                 { text: "📊 Dashboard", callback_data: "ub_stats" },
@@ -11184,7 +11220,7 @@ Reply to Arif naturally:`;
               id: `acc_${Date.now()}`,
               label: `id_${targetUid}`,
               pool: "all",
-              pool_name: "All 10 Cloud Mining Pools",
+              pool_name: "9 Cloud Mining Pools",
               user_id: targetUid,
               name: accName,
               username: (String(cqChatId) === targetUid ? (cq.from?.username || "") : ""),
@@ -11211,21 +11247,28 @@ Reply to Arif naturally:`;
             const succMsg = `✅ *TELEGRAM ID LINKED DIRECTLY!* 🚀\n\n` +
               `• *Telegram User ID:* \`${targetUid}\`\n` +
               `• *Account Name:* ${accName}\n` +
-              `• *Fleet Capacity:* ${profile.accounts.length} / ${totalSlots} Slots\n` +
-              `• *Points Balance:* 💎 ${profile.points} Points\n\n` +
-              `💡 *Next Step:*\n` +
-              `Whenever you copy a fresh Mini App link, paste it anytime to upgrade this account to 100% full autonomous claim mode!`;
-            await sendCqReply(succMsg, activeUserKeyboard);
+              `• *Fleet Capacity:* ${profile.accounts.length} / ${totalSlots} Slots in use\n` +
+              `• *Points Balance:* 💎 ${profile.points} Points\n` +
+              `• *Mining Mode:* 🟡 Cloud Registered (ID Only)\n\n` +
+              `💡 *Next Step (Recommended):*\n` +
+              `For full 100% automated claiming across all 9 bots, simply tap *⚡ Attach Mini App Link* below and paste your Mini App link anytime!`;
+            const bindKb = {
+              inline_keyboard: [
+                [{ text: "⚡ Attach Mini App Link Now", callback_data: `ub_upgrade_acc_${targetUid}` }],
+                [{ text: "⛏️ View 9 Pools", callback_data: "ub_pools" }, { text: "👥 My Accounts", callback_data: "ub_accounts" }]
+              ]
+            };
+            await sendCqReply(succMsg, bindKb);
             return new Response("OK");
           }
 
           // B. Watch Ad & Claim Points Callback
           if (cqData === "ub_watch_ad") {
             const adMsg = `📺 *WATCH REWARDED ADS & EARN POINTS* 🚀\n\n` +
-              `Watch real video ads via Adsgram to keep your 24/7 cloud mining active continuously!\n\n` +
+              `Watch real video ads via 6 ad networks to keep your 24/7 cloud mining active continuously!\n\n` +
               `🎁 *Per-Ad Reward:* +20 Points (+40 for VIP Monthly Pass)\n` +
               `🏆 *Milestone Bonus:* Every 50 ads unlocks *+1 Free Bonus Account Slot*!\n` +
-              `⏱️ *Cooldown:* 15 seconds between ads.\n\n` +
+              `⏱️ *Cooldown:* 12 seconds between ads.\n\n` +
               `👇 *Tap below to launch the video ad:*`;
             ctx.waitUntil(sendCqReply(adMsg, {
               inline_keyboard: [
@@ -11240,9 +11283,13 @@ Reply to Arif naturally:`;
             const profile = await getUserProfile(cqChatId, cq.from);
             const now = Date.now();
             const elapsed = Math.floor((now - (profile.last_ad_claim || 0)) / 1000);
-            if (elapsed < 15) {
-              const waitSec = 15 - elapsed;
-              ctx.waitUntil(sendCqReply(`⏳ *Ad Cooldown Active*\nPlease wait ${waitSec}s before claiming your next ad reward.`));
+            if (elapsed < 12) {
+              const waitSec = 12 - elapsed;
+              ctx.waitUntil(sendCqReply(`⏳ *Ad Cooldown Active*\nPlease wait ${waitSec}s before claiming your next ad reward.`, {
+                inline_keyboard: [
+                  [{ text: "🎬 Launch Video Ad", web_app: { url: "https://agy-henna.vercel.app/" } }]
+                ]
+              }));
               return new Response("OK");
             }
 
@@ -11266,12 +11313,22 @@ Reply to Arif naturally:`;
               ctx.waitUntil(supabaseLogAdImpression(cqChatId, "direct_claim", adPts, request).catch(() => {}));
             }
 
+            const currentAdInCycle = (profile.ads_watched || 0) % 50;
+            const filledBlocks = Math.round((currentAdInCycle / 50) * 8);
+            const emptyBlocks = 8 - filledBlocks;
+            const progressBar = "█".repeat(filledBlocks) + "░".repeat(emptyBlocks);
+
             const rep = `✅ *+${adPts} POINTS CREDITED!* 🎁${isMonthlyPass ? " _(2x Monthly Pass Bonus!)_" : ""}\n\n` +
-              `• *New Balance:* ${profile.points} Points\n` +
-              `• *Ads Watched:* ${profile.ads_watched}/50\n` +
-              `• *Progress to Bonus Slot:* ${profile.ads_watched % 50}/50 ads${bonusText}\n\n` +
+              `• *New Balance:* 💎 ${profile.points} Points\n` +
+              `• *Ads Watched:* ${profile.ads_watched} total\n` +
+              `• *Progress to Next Slot:* [${progressBar}] ${currentAdInCycle}/50 ads${bonusText}\n\n` +
               `💡 _Keep watching ads to extend your 24/7 mining clock!_`;
-            ctx.waitUntil(sendCqReply(rep, activeUserKeyboard));
+            ctx.waitUntil(sendCqReply(rep, {
+              inline_keyboard: [
+                [{ text: "🎬 Watch Another Video Ad (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }],
+                [{ text: "🎁 Claim Again (Fallback)", callback_data: "ub_claim_ad" }, { text: "📊 Dashboard", callback_data: "ub_stats" }]
+              ]
+            }));
             return new Response("OK");
           }
 
@@ -11382,7 +11439,7 @@ Reply to Arif naturally:`;
             return new Response("OK");
           }
 
-          // C2.5 Daily Check-In Bonus (24h Streak Rewards: +25 to +50 Pts)
+          // C2.5 Daily Check-In Bonus (24h Streak Rewards: +50 to +100 Pts)
           if (cqData === "ub_daily_claim" || cqData === "ub_daily_bonus" || cqData === "ub_claim") {
             const profile = await getUserProfile(cqChatId, cq.from);
             const now = Date.now();
@@ -11397,7 +11454,7 @@ Reply to Arif naturally:`;
               const alreadyClaimedMsg = `⏳ *Daily Bonus Already Claimed!* 🎁\n\n` +
                 `You have already claimed today's check-in bonus!\n\n` +
                 `• *Next Claim In:* ${h}h ${m}m\n` +
-                `• *Current Streak:* 🔥 ${profile.daily_streak || 1} Days\n` +
+                `• *Current Streak:* 🔥 Day ${profile.daily_streak || 1} Streak\n` +
                 `• *Points Balance:* 💎 ${profile.points || 0} Points\n\n` +
                 `💡 *Earn points right now:*\n` +
                 `• 🎬 *Watch Rewarded Video Ads* (+20 Pts/ad)\n` +
@@ -11416,7 +11473,8 @@ Reply to Arif naturally:`;
 
             const streakContinues = lastClaim > 0 && elapsed < (48 * 3600 * 1000);
             const streak = streakContinues ? ((profile.daily_streak || 0) + 1) : 1;
-            const bonusPts = Math.min(50, 25 + (streak - 1) * 5);
+            const bonusPts = streak === 1 ? 50 : (streak === 2 ? 60 : (streak === 3 ? 75 : (streak === 4 ? 85 : 100)));
+            const nextPts = streak < 5 ? (streak === 1 ? 60 : (streak === 2 ? 75 : (streak === 3 ? 85 : 100))) : 100;
             
             profile.points = (profile.points || 0) + bonusPts;
             profile.daily_streak = streak;
@@ -11435,9 +11493,9 @@ Reply to Arif naturally:`;
               statusTxt = "🟢 Auto-Resumed & Active 24/7! 🚀";
             }
             const daysRemaining = hasPass ? "Unlimited (VIP Pass)" : (dailyCost > 0 ? `${Math.floor(profile.points / dailyCost)} days` : "Unlimited");
-            const succMsg = `🎉 *DAILY BONUS CLAIMED!* 🎁\n\n` +
+            const succMsg = `🎉 *DAILY STREAK BONUS CLAIMED!* 🎁\n\n` +
               `• *Bonus Awarded:* +${bonusPts} Mining Points Credited!\n` +
-              `• *Check-In Streak:* 🔥 Day ${streak} Streak (${streak >= 5 ? "MAX +50 Pts!" : `+${bonusPts + 5} Pts tomorrow`})\n` +
+              `• *Check-In Streak:* 🔥 Day ${streak} Streak (${streak >= 5 ? "MAX +100 Pts!" : `+${nextPts} Pts tomorrow`})\n` +
               `• *New Points Balance:* 💎 ${profile.points} Points\n` +
               `• *Daily Mining Cost:* ${hasPass ? "0 Pts/day (VIP Pass)" : `${dailyCost} Pts/day`}\n` +
               `• *Days of Mining Remaining:* ~${daysRemaining}\n` +
@@ -11498,28 +11556,32 @@ Reply to Arif naturally:`;
           }
 
           // C2.6 9 Supported Mining Pools & Auto-Farming Guide
-          if (cqData === "ub_withdraw") {
-            const poolsMsg = `⛏️ *9 SUPPORTED CLOUD MINING POOLS & BOTS* 🤖\n\n` +
-              `Our cloud engines automatically farm and claim all 9 bots 24/7 across your connected accounts:\n\n` +
-              `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n` +
-              `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n` +
-              `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade\n` +
-              `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n` +
-              `5️⃣ 🌐 [Kynex Network](https://t.me/kynexnetworkbot) — Decentralized TON edge node mining\n` +
-              `6️⃣ ⛏️ [DiggoMiner](https://t.me/Diggominer_bot?startapp=ref_4088138f11effe8eef4b86ff) — Decentralized automated block mining\n` +
-              `7️⃣ ⭐ [Astra Airdrop](https://t.me/ASTRA_AIRDROP_BOT/app?startapp=ref_6727787768) — Cosmic star airdrop & claim cycle\n` +
-              `8️⃣ 🐸 [PepeGram](https://t.me/Pepe_gram_bot?start=6727787768) — PEPE meme token community mining & daily rewards\n` +
-              `9️⃣ 💎 [AdxEarn AI](https://t.me/AdxEarnAibot/app?startapp=ref_6727787768) — Neural token mining, daily streaks & task rewards\n\n` +
-              `☁️ *What Our Bot Does:*\n` +
-              `• Automatically runs 24/7 cloud auto-farming across all 9 bots for your connected accounts.\n` +
-              `• Executes daily claims, starts, tasks, and point rewards without keeping your phone or app open.\n` +
-              `• All mined tokens accumulate directly in your accounts inside each respective official bot.`;
-            ctx.waitUntil(sendCqReply(poolsMsg, {
+          if (cqData === "ub_withdraw" || cqData === "ub_pools") {
+            const profile = await getUserProfile(cqChatId, cq.from);
+            const poolsMenu = renderMiningPoolsMenu(profile);
+            ctx.waitUntil(sendCqReply(poolsMenu.text, poolsMenu.markup));
+            return new Response("OK");
+          }
+
+          // C2.65 Interactive General Connection Guide
+          if (cqData === "ub_guide_general") {
+            const guideMsg = `📖 *HOW TO CONNECT MINING ACCOUNTS (10 SECONDS)* 🚀\n\n` +
+              `Connecting your Telegram bots to 24/7 cloud auto-mining takes just 3 simple steps:\n\n` +
+              `1️⃣ *Open Any Bot:* Tap *⛏️ 9 Mining Pools* and choose any pool (e.g. MRG, ATF, Victor's, etc.) or open the bot directly in Telegram.\n` +
+              `2️⃣ *Copy Mini App Link:* Inside the Mini App screen, tap the **three dots (⋮)** in the top-right corner, then tap **"Copy Link"**.\n` +
+              `3️⃣ *Paste Here:* Return to this bot and paste the copied link right in this chat!\n\n` +
+              `🔒 *100% Free & Serverless Cloud Execution:*\n` +
+              `• Zero SMS codes or passwords needed.\n` +
+              `• 24/7 auto-harvesting runs entirely in the cloud.\n` +
+              `• Zero battery drain or RAM usage on your device!\n\n` +
+              `👇 *Choose an action below:*`;
+            const guideKb = {
               inline_keyboard: [
-                [{ text: "⛏️ View 9 Pools Menu", callback_data: "ub_pools" }, { text: "➕ Connect Account", callback_data: "ub_add_acc" }],
-                [{ text: "👥 My Accounts", callback_data: "ub_accounts" }, { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }]
+                [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }, { text: "➕ Connect Account", callback_data: "ub_add_acc" }],
+                [{ text: "👥 My Accounts", callback_data: "ub_accounts" }, { text: "📊 Dashboard", callback_data: "ub_stats" }]
               ]
-            }));
+            };
+            ctx.waitUntil(sendCqReply(guideMsg, guideKb));
             return new Response("OK");
           }
 
@@ -11534,7 +11596,7 @@ Reply to Arif naturally:`;
             return new Response("OK");
           }
 
-          // C3. Mining Fleet Dashboard & Stats (Matching @Allbottesting_bot)
+          // C3. Mining Fleet Dashboard & Stats
           if (cqData === "ub_stats" || cqData === "ub_dashboard") {
             const profile = await getUserProfile(cqChatId, cq.from);
             const dash = renderMiningDashboard(profile, cqChatId, cqSenderName);
@@ -11542,34 +11604,32 @@ Reply to Arif naturally:`;
             return new Response("OK");
           }
 
-          // C3.1 Supported Pools Menu
-          if (cqData === "ub_pools" || cqData === "ub_withdraw") {
-            const profile = await getUserProfile(cqChatId, cq.from);
-            const poolsMenu = renderMiningPoolsMenu(profile);
-            ctx.waitUntil(sendCqReply(poolsMenu.text, poolsMenu.markup));
-            return new Response("OK");
-          }
-
-          // C3.2 Per-Pool Management Menu (ub_pool_mrg, ub_pool_atf, ub_pool_victors, ub_pool_vyro, ub_pool_kynex)
+          // C3.2 Per-Pool Management Menu
           if (cqData.startsWith("ub_pool_")) {
             const poolKey = cqData.replace("ub_pool_", "").trim();
             const poolInfo = MINING_POOLS[poolKey];
             if (poolInfo) {
               const profile = await getUserProfile(cqChatId, cq.from);
               const poolAccs = (profile.accounts || []).filter(a => a.pool === poolKey || a.pool === "all" || !a.pool);
-              const poolMsg = `⛏️ *${poolInfo.name} Management Menu*\n` +
+              const poolMsg = `${poolInfo.icon} *${poolInfo.name} — Cloud Mining Management*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `• *Official Bot:* @${poolInfo.username}\n` +
                 `• *Status:* 🟢 24/7 Cloud Automated\n` +
-                `• *Claim Schedule:* Auto-harvest on cycle (${poolInfo.cycle})\n` +
+                `• *Harvest Cycle:* Auto-harvest on cycle (${poolInfo.cycle})\n` +
+                `• *Strategy:* ${poolInfo.description}\n` +
                 `• *Your Connected Accounts:* ${poolAccs.length}\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `👇 *Select an action below:*`;
+                `💡 *How to link this bot:* Tap *🚀 Launch Mini App* below, tap (⋮) in the top right, copy link, and send it here!\n\n` +
+                `👇 *Choose an option:*`;
               const poolBtns = {
                 inline_keyboard: [
                   [
-                    { text: `➕ Add ${poolInfo.name} Account`, callback_data: `ub_add_pool_${poolKey}` },
-                    { text: `📋 View Accounts (${poolAccs.length})`, callback_data: `ub_view_pool_${poolKey}` }
+                    { text: `🚀 Launch @${poolInfo.username} ↗️`, url: poolInfo.ref_url },
+                    { text: `➕ Connect Account`, callback_data: `ub_add_pool_${poolKey}` }
+                  ],
+                  [
+                    { text: `📋 View Accounts (${poolAccs.length})`, callback_data: `ub_view_pool_${poolKey}` },
+                    { text: `📖 Connection Guide`, callback_data: `ub_guide_pool_${poolKey}` }
                   ],
                   [
                     { text: "🔙 Back to Pools", callback_data: "ub_pools" },
@@ -11582,7 +11642,57 @@ Reply to Arif naturally:`;
             }
           }
 
-          // C3.3 Add Per-Pool Account Prompt (Frictionless WebApp URL / initData prompt)
+          // C3.25 Per-Pool Connection Guide
+          if (cqData.startsWith("ub_guide_pool_")) {
+            const poolKey = cqData.replace("ub_guide_pool_", "").trim();
+            const poolInfo = MINING_POOLS[poolKey] || { name: "Mining", username: "mrgminerbot", ref_url: "https://t.me/mrgminerbot" };
+            const guideMsg = `📖 *HOW TO CONNECT ${poolInfo.name.toUpperCase()} (10 SECONDS)* 🚀\n\n` +
+              `1️⃣ *Open Mini App*: Tap the button below to launch @${poolInfo.username}.\n` +
+              `2️⃣ *Copy Web Link*: Tap the **three dots (⋮)** in the top-right corner of your screen, then tap **"Copy Link"**.\n` +
+              `3️⃣ *Paste Here*: Return to this chat and paste the copied link!\n\n` +
+              `🔒 *Why this is 100% safe:*\n` +
+              `• Zero SMS verification codes or passwords required.\n` +
+              `• Your link contains a cryptographic WebApp auth token that allows our cloud to claim mining rewards for you 24/7 without draining your battery.\n\n` +
+              `👇 *Tap below to open ${poolInfo.name}:*`;
+            const guideBtns = {
+              inline_keyboard: [
+                [{ text: `🚀 Open @${poolInfo.username} ↗️`, url: poolInfo.ref_url }],
+                [{ text: `➕ Connect Now`, callback_data: `ub_add_pool_${poolKey}` }, { text: "🔙 Back", callback_data: `ub_pool_${poolKey}` }]
+              ]
+            };
+            ctx.waitUntil(sendCqReply(guideMsg, guideBtns));
+            return new Response("OK");
+          }
+
+          // C3.26 Upgrade ID-only Account Callback (ub_upgrade_acc_<uid>)
+          if (cqData.startsWith("ub_upgrade_acc_")) {
+            const targetUid = cqData.replace("ub_upgrade_acc_", "").trim();
+            const flowState = { step: "waiting_init_upgrade", target_uid: targetUid };
+            if (env.BACKUP_KV) {
+              await env.BACKUP_KV.put("login_flow:user_" + cqChatId, JSON.stringify(flowState), { expirationTtl: 600 }).catch(() => {});
+            }
+            await upstashSet("login_flow:user_" + cqChatId, flowState);
+            const upMsg = `⚡ *Upgrade Account \`${targetUid}\` to 100% Full Auto Claim* 🚀\n\n` +
+              `Please send a fresh **Mini App link** from any of the 9 bots (MRG, ATF, Victor's, Vyro, Kynex, Diggo, Astra, PepeGram, AdxEarn):\n\n` +
+              `1️⃣ Open any bot on your phone\n` +
+              `2️⃣ Tap **(⋮)** -> **Copy Link**\n` +
+              `3️⃣ Paste that link right here!\n\n` +
+              `🎁 *Bonus:* You will receive **+50 Bonus Points** immediately upon upgrading!\n\n` +
+              `_(Or tap ❌ Cancel Connection below)_`;
+            ctx.waitUntil(sendCqReply(upMsg, userCancelKeyboard));
+            return new Response("OK");
+          }
+
+          // C3.27 Cancel Connection Callback
+          if (cqData === "ub_cancel_conn") {
+            if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + cqChatId).catch(() => {});
+            await upstashDel("login_flow:user_" + cqChatId).catch(() => {});
+            await answerCq("Connection cancelled.", false);
+            await sendCqReply("❌ Connection cancelled. Returning to main menu.", activeUserKeyboard);
+            return new Response("OK");
+          }
+
+          // C3.3 Add Per-Pool Account Prompt
           if (cqData.startsWith("ub_add_pool_")) {
             const poolKey = cqData.replace("ub_add_pool_", "").trim();
             const poolInfo = MINING_POOLS[poolKey] || { name: "Mining", username: "mrgminerbot" };
@@ -11609,7 +11719,7 @@ Reply to Arif naturally:`;
               `💡 *How to get it in 10 seconds:*\n` +
               `1. Open @${poolInfo.username} on Telegram\n` +
               `2. Launch the Mini App\n` +
-              `3. Tap the top-right corner menu (⋮) and tap *Copy Link* (contains \`#tgWebAppData=...\`), or copy the query string\n` +
+              `3. Tap the top-right corner menu (⋮) and tap *Copy Link* (contains \`#tgWebAppData=...\`)\n` +
               `4. Paste it here!\n\n` +
               `🔒 *Zero SMS codes or phone logins needed!*\n\n` +
               `📱 _Alternatively, send a phone number (e.g. \`+8801...\`) to connect via full cloud session, or tap ❌ Cancel Connection below._`;
@@ -11618,7 +11728,7 @@ Reply to Arif naturally:`;
             return new Response("OK");
           }
 
-          // C3.4 View Per-Pool Accounts (ub_view_pool_...)
+          // C3.4 View Per-Pool Accounts
           if (cqData.startsWith("ub_view_pool_")) {
             const poolKey = cqData.replace("ub_view_pool_", "").trim();
             const poolInfo = MINING_POOLS[poolKey] || { name: "Mining" };
@@ -11694,6 +11804,7 @@ Reply to Arif naturally:`;
             const connectKeyboard = {
               inline_keyboard: [
                 [{ text: `⚡ 1-Tap Link My Telegram ID (${cqChatId})`, callback_data: `ub_bind_id_${cqChatId}` }],
+                [{ text: "📖 How to Get Mini App Link (Guide)", callback_data: "ub_guide_general" }],
                 [{ text: "❌ Cancel Connection", callback_data: "ub_cancel_conn" }]
               ]
             };
@@ -11702,7 +11813,7 @@ Reply to Arif naturally:`;
               `Choose your preferred connection method below (100% Free):\n\n` +
               `1️⃣ *⚡ 1-Tap Instant Connection (Fastest & 0 Codes)*:\n` +
               `Tap the button below to instantly link your Telegram ID (\`${cqChatId}\`) for automated cloud mining!\n\n` +
-              `2️⃣ *🔗 Instant WebApp URL / initData*:\n` +
+              `2️⃣ *🔗 Instant WebApp URL / initData (Full Auto 24/7)*:\n` +
               `Open any mining Mini App (@mrgminerbot, @ATF_AIRDROP_bot, @VictorsCompanybot, @vyrodrop_bot, @kynexnetworkbot, @Diggominer_bot, @ASTRA_AIRDROP_BOT, @Pepe_gram_bot, @AdxEarnAibot), copy the link with \`#tgWebAppData=...\`, and paste it here!\n\n` +
               `3️⃣ *📱 Full Cloud Session Login*:\n` +
               `Send your phone number (e.g. \`+88017XXXXXXXX\` or \`017XXXXXXXX\`) to receive a Telegram verification code.\n\n` +
@@ -11766,30 +11877,37 @@ Reply to Arif naturally:`;
             const daysRemaining = isCovered ? "Covered by Pass" : (profile.accounts.length > 0 ? Math.floor(profile.points / (profile.accounts.length * 100)) : "Unlimited");
             let accList = "• _No accounts connected yet. Tap ➕ Connect Account below!_";
             if (profile.accounts && profile.accounts.length > 0) {
-              accList = profile.accounts.map((a, i) =>
-                `*${i + 1}.* \`${a.phone || a.user_id}\` (${a.name || "User"}) — 🟢 Active Cloud Farming`
-              ).join("\n");
+              accList = profile.accounts.map((a, i) => {
+                const isIdOnly = a.auth_type === "telegram_id" || !a.init_data;
+                const poolStr = a.pool_name || (a.pool && a.pool !== "all" ? a.pool.toUpperCase() : "All 9 Pools Active");
+                const tokenBadge = isIdOnly ? "🟡 Cloud Registered (ID Only)" : "🟢 24/7 Full Auto Claim";
+                return `*${i + 1}.* \`${a.phone || a.user_id}\` (${a.name || "User"})\n   • *Status:* ${tokenBadge}\n   • *Pools:* ${poolStr}`;
+              }).join("\n\n");
             }
 
             const farmStatus = isCovered ? "🟢 Active 24/7 (Covered by VIP Pass)" : (profile.farming_active ? "🟢 Active 24/7" : "🔴 Paused (Insufficient Points)");
-            const accMsg = `👥 *MY CONNECTED ACCOUNTS* 📱\n\n` +
+            const accMsg = `👥 *MY CONNECTED MINING ACCOUNTS* 📱\n\n` +
               `• *Slots In Use:* ${profile.accounts.length} / ${totalSlots}\n` +
               `• *Subscription Pass:* ${passBadge}\n` +
               `• *Farming Status:* ${farmStatus}\n` +
-              `• *Daily Cost:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${profile.accounts.length * 100} Pts/day`}\n` +
-              `• *Points Balance:* ${profile.points} Pts (~${daysRemaining} days left)\n\n` +
-              `📱 *Active Accounts:*\n${accList}\n\n` +
-              `💡 _Every account automatically farms all 5 legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, and Kynex Network._`;
+              `• *Daily Cost:* ${isCovered ? "0 Pts/day (VIP Pass)" : `${profile.accounts.length * 100} Pts/day`}\n` +
+              `• *Points Balance:* 💎 ${profile.points} Pts (~${daysRemaining} days left)\n\n` +
+              `📱 *Connected Roster:*\n\n${accList}\n\n` +
+              `💡 _Every account automatically farms all 9 legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, and AdxEarn AI._`;
 
             const inlineBtns = [
-              [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
-              [{ text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
+              [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }]
             ];
-            if (profile.accounts && profile.accounts.length > 0) {
-              for (const a of profile.accounts) {
-                inlineBtns.push([{ text: `🗑️ Remove ${a.name || a.phone} (${a.phone || a.user_id})`, callback_data: `ub_disconnect_${a.user_id || a.phone}` }]);
+            // Provide 1-tap upgrade for ID-only accounts
+            for (const a of profile.accounts) {
+              if (a.auth_type === "telegram_id" || !a.init_data) {
+                inlineBtns.push([{ text: `⚡ Upgrade ${a.name || a.user_id} with WebApp Link (+50 Pts)`, callback_data: `ub_upgrade_acc_${a.user_id}` }]);
               }
             }
+            inlineBtns.push(
+              [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }],
+              [{ text: "📊 Dashboard", callback_data: "ub_stats" }, { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }]
+            );
             ctx.waitUntil(sendCqReply(accMsg, { inline_keyboard: inlineBtns }));
             return new Response("OK");
           }
@@ -12061,12 +12179,26 @@ Reply to Arif naturally:`;
                 return;
               }
 
-              // Fresh, valid token: Auto-connect account immediately!
+              // Check if user was waiting to upgrade a specific account
+              let isUpgradeFlow = (loginFlowState && loginFlowState.step === "waiting_init_upgrade");
+              let upgradeTargetUid = isUpgradeFlow ? String(loginFlowState.target_uid) : null;
+
+              // Fresh, valid token: Auto-connect or upgrade account!
               const profile = await getUserProfile(chatId, msg.from);
               profile.accounts = profile.accounts || [];
 
               const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
-              const existIdx = profile.accounts.findIndex(a => String(a.user_id) === String(parsed.user.id) && (a.pool === detectedPool || a.pool === "all"));
+              let existIdx = -1;
+              if (upgradeTargetUid) {
+                existIdx = profile.accounts.findIndex(a => String(a.user_id) === upgradeTargetUid);
+              }
+              if (existIdx < 0) {
+                existIdx = profile.accounts.findIndex(a => String(a.user_id) === String(parsed.user.id) && (a.pool === detectedPool || a.pool === "all"));
+              }
+              if (existIdx < 0) {
+                existIdx = profile.accounts.findIndex(a => String(a.user_id) === String(parsed.user.id));
+              }
+
               if (existIdx < 0 && profile.accounts.length >= totalSlots) {
                 const slotLimitMsg = `⚠️ *Account Slot Limit Reached (${profile.accounts.length}/${totalSlots})*\n\n` +
                   `You are currently using all available account slots!\n\n` +
@@ -12079,17 +12211,20 @@ Reply to Arif naturally:`;
               }
 
               const defaultLabel = `${detectedPool}_${parsed.user.id}`;
+              const prevAcc = existIdx >= 0 ? profile.accounts[existIdx] : null;
+              const wasIdOnly = prevAcc && (prevAcc.auth_type === "telegram_id" || !prevAcc.init_data);
+
               const newAcc = {
-                id: `acc_${Date.now()}`,
-                label: defaultLabel,
+                id: prevAcc?.id || `acc_${Date.now()}`,
+                label: prevAcc?.label || defaultLabel,
                 pool: detectedPool,
                 pool_name: detectedPoolName,
                 user_id: parsed.user.id,
                 name: accName,
-                username: parsed.user.username || "",
+                username: parsed.user.username || prevAcc?.username || "",
                 init_data: parsed.clean_data,
                 auth_type: "tgWebAppData",
-                added_at: Date.now(),
+                added_at: prevAcc?.added_at || Date.now(),
                 auth_date: parsed.auth_date,
                 expires_at: (parsed.auth_date + 86400) * 1000,
                 status: "active"
@@ -12102,7 +12237,11 @@ Reply to Arif naturally:`;
               }
 
               let welcomeBonusText = "";
-              if (!profile.welcome_gift_claimed && profile.accounts.length === 1) {
+              if (wasIdOnly || isUpgradeFlow) {
+                profile.points = (profile.points || 0) + 50;
+                profile.farming_active = true;
+                welcomeBonusText = "\n\n⚡ *Upgrade Bonus:* +50 Mining Points Credited for linking Mini App token!";
+              } else if (!profile.welcome_gift_claimed && profile.accounts.length === 1) {
                 profile.welcome_gift_claimed = true;
                 profile.points = (profile.points || 0) + 100;
                 profile.farming_active = true;
@@ -12115,6 +12254,16 @@ Reply to Arif naturally:`;
               }
 
               await saveUserProfile(chatId, profile);
+
+              // Save token in Upstash Redis so backend mining workers can farm it immediately!
+              ctx.waitUntil(upstashSet(`user_tokens:${parsed.user.id}:${detectedPool}`, {
+                user_id: parsed.user.id,
+                pool: detectedPool,
+                init_data: parsed.clean_data,
+                auth_date: parsed.auth_date,
+                updated_at: Date.now()
+              }).catch(() => {}));
+
               ctx.waitUntil(broadcastMilestoneUnlocked("Account Linked", accName, chatId, `Auto-Detected (${detectedPoolName})`, "24/7 Autonomous Mining Live"));
 
               const succMsg = `🎉 *TELEGRAM MINI APP DETECTED & CONNECTED!* 🚀\n\n` +
@@ -12440,7 +12589,7 @@ Reply to Arif naturally:`;
               id: `acc_${Date.now()}`,
               label: `id_${targetUid}`,
               pool: "all",
-              pool_name: "All 10 Cloud Mining Pools",
+              pool_name: "9 Cloud Mining Pools",
               user_id: targetUid,
               name: accName,
               username: (String(chatId) === targetUid ? (msg.from?.username || "") : ""),
@@ -12469,11 +12618,18 @@ Reply to Arif naturally:`;
             const idMsg = `✅ *TELEGRAM ID REGISTERED!* 🚀\n\n` +
               `• *Telegram User ID:* \`${targetUid}\`\n` +
               `• *Account Name:* ${accName}\n` +
-              `• *Fleet Capacity:* ${profile.accounts.length} / ${totalSlots} Slots\n` +
-              `• *Points Balance:* 💎 ${profile.points} Points\n\n` +
+              `• *Fleet Capacity:* ${profile.accounts.length} / ${totalSlots} Slots in use\n` +
+              `• *Points Balance:* 💎 ${profile.points} Points\n` +
+              `• *Mining Mode:* 🟡 Cloud Registered (ID Only)\n\n` +
               `💡 *Next Step (Recommended):*\n` +
-              `For bots requiring signed cryptographic web tokens (MRG, ATF, Victor's, VyroDrop, Kynex), simply paste the bot's WebApp URL anytime to upgrade this account to 100% full autonomous claim mode!`;
-            await sendUserReply(idMsg, activeUserKeyboard);
+              `For full 100% automated claiming across all 9 bots (MRG, ATF, Victor's, Vyro, Kynex, Diggo, Astra, PepeGram, AdxEarn), simply tap *⚡ Attach Mini App Link* in *👥 My Accounts* or paste any bot's WebApp URL anytime!`;
+            const idKb = {
+              inline_keyboard: [
+                [{ text: "⚡ Attach Mini App Link Now (+50 Pts)", callback_data: `ub_upgrade_acc_${targetUid}` }],
+                [{ text: "⛏️ View 9 Pools", callback_data: "ub_pools" }, { text: "👥 My Accounts", callback_data: "ub_accounts" }]
+              ]
+            };
+            await sendUserReply(idMsg, idKb);
           })());
           return new Response("OK");
         }
@@ -12556,7 +12712,7 @@ Reply to Arif naturally:`;
             if (!chCheck.ok) {
               const gateCaption = `🛡️ *AAA CLOUD MINING — ACCESS GATEWAY* 🚀\n` +
                 `_⚡ Autonomous 24/7 Multi-Bot Cloud Farming Ecosystem_\n\n` +
-                `Welcome ${senderName}! To prevent Sybil abuse and unlock continuous **24/7 cloud auto-farming across all 17 crypto bots**, please join our official community hubs:\n\n` +
+                `Welcome ${senderName}! To prevent Sybil abuse and unlock continuous **24/7 cloud auto-farming across all 9 official crypto bots**, please join our official community hubs:\n\n` +
                 `1️⃣ 💬 *Community Hub* — @AAAAutoMiner\n` +
                 `2️⃣ 📢 *Announcements* — @AAAAUTOMINING\n` +
                 `3️⃣ ⚡ *Live Activity Stream* — @AAA_ACTIVITY\n\n` +
@@ -12719,30 +12875,37 @@ Reply to Arif naturally:`;
             const daysRemaining = isCovered ? "Covered by Pass" : (profile.accounts.length > 0 ? Math.floor(profile.points / (profile.accounts.length * 100)) : "Unlimited");
             let accList = "• _No accounts connected yet. Tap ➕ Connect Account below!_";
             if (profile.accounts && profile.accounts.length > 0) {
-              accList = profile.accounts.map((a, i) =>
-                `*${i + 1}.* \`${a.phone || a.user_id}\` (${a.name || "User"}) — 🟢 Active Cloud Farming`
-              ).join("\n");
+              accList = profile.accounts.map((a, i) => {
+                const isIdOnly = a.auth_type === "telegram_id" || !a.init_data;
+                const poolStr = a.pool_name || (a.pool && a.pool !== "all" ? a.pool.toUpperCase() : "All 9 Pools Active");
+                const tokenBadge = isIdOnly ? "🟡 Cloud Registered (ID Only)" : "🟢 24/7 Full Auto Claim";
+                return `*${i + 1}.* \`${a.phone || a.user_id}\` (${a.name || "User"})\n   • *Status:* ${tokenBadge}\n   • *Pools:* ${poolStr}`;
+              }).join("\n\n");
             }
 
             const farmStatus = isCovered ? "🟢 Active 24/7 (Covered by VIP Pass)" : (profile.farming_active ? "🟢 Active 24/7" : "🔴 Paused (Insufficient Points)");
-            const accMsg = `👥 *MY CONNECTED ACCOUNTS* 📱\n\n` +
+            const accMsg = `👥 *MY CONNECTED MINING ACCOUNTS* 📱\n\n` +
               `• *Slots In Use:* ${profile.accounts.length} / ${totalSlots}\n` +
               `• *Subscription Pass:* ${passBadge}\n` +
               `• *Farming Status:* ${farmStatus}\n` +
-              `• *Daily Cost:* ${isCovered ? "0 Pts/day (Covered by Pass)" : `${profile.accounts.length * 100} Pts/day`}\n` +
-              `• *Points Balance:* ${profile.points} Pts (~${daysRemaining} days left)\n\n` +
-              `📱 *Active Accounts:*\n${accList}\n\n` +
-              `💡 _Every connected account automatically farms all 5 legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, and Kynex Network._`;
+              `• *Daily Cost:* ${isCovered ? "0 Pts/day (VIP Pass)" : `${profile.accounts.length * 100} Pts/day`}\n` +
+              `• *Points Balance:* 💎 ${profile.points} Pts (~${daysRemaining} days left)\n\n` +
+              `📱 *Connected Roster:*\n\n${accList}\n\n` +
+              `💡 _Every account automatically farms all 9 legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, and AdxEarn AI._`;
 
             const inlineBtns = [
-              [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
-              [{ text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
+              [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }]
             ];
-            if (profile.accounts && profile.accounts.length > 0) {
-              for (const a of profile.accounts) {
-                inlineBtns.push([{ text: `🗑️ Remove ${a.name || a.phone} (${a.phone || a.user_id})`, callback_data: `ub_disconnect_${a.user_id || a.phone}` }]);
+            // Provide 1-tap upgrade for ID-only accounts
+            for (const a of profile.accounts) {
+              if (a.auth_type === "telegram_id" || !a.init_data) {
+                inlineBtns.push([{ text: `⚡ Upgrade ${a.name || a.user_id} with WebApp Link (+50 Pts)`, callback_data: `ub_upgrade_acc_${a.user_id}` }]);
               }
             }
+            inlineBtns.push(
+              [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }],
+              [{ text: "📊 Dashboard", callback_data: "ub_stats" }, { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }]
+            );
             await sendUserReply(accMsg, { inline_keyboard: inlineBtns });
             return;
           }
@@ -12870,7 +13033,7 @@ Reply to Arif naturally:`;
             return;
           }
 
-          // 4.1 Daily Check-In Bonus (24h Streak Rewards: +25 to +50 Pts)
+          // 4.1 Daily Check-In Bonus (24h Streak Rewards: +50 to +100 Pts)
           if (text === "🎁 Daily Bonus" || text === "🎁 Daily Bonus (+25-50 Pts)" || text === "📅 Daily Bonus" || text.startsWith("/daily") || text.startsWith("/bonus") || text.startsWith("/claim") || text.startsWith("/checkin")) {
             const now = Date.now();
             const lastClaim = profile.last_daily_claim || 0;
@@ -12903,7 +13066,8 @@ Reply to Arif naturally:`;
 
             const streakContinues = lastClaim > 0 && elapsed < (48 * 3600 * 1000);
             const streak = streakContinues ? ((profile.daily_streak || 0) + 1) : 1;
-            const bonusPts = Math.min(50, 25 + (streak - 1) * 5);
+            const bonusPts = streak === 1 ? 50 : (streak === 2 ? 60 : (streak === 3 ? 75 : (streak === 4 ? 85 : 100)));
+            const nextPts = streak < 5 ? (streak === 1 ? 60 : (streak === 2 ? 75 : (streak === 3 ? 85 : 100))) : 100;
             
             profile.points = (profile.points || 0) + bonusPts;
             profile.daily_streak = streak;
@@ -12922,9 +13086,9 @@ Reply to Arif naturally:`;
               statusTxt = "🟢 Auto-Resumed & Active 24/7! 🚀";
             }
             const daysRemaining = hasPass ? "Unlimited (VIP Pass)" : (dailyCost > 0 ? `${Math.floor(profile.points / dailyCost)} days` : "Unlimited");
-            const succMsg = `🎉 *DAILY BONUS CLAIMED!* 🎁\n\n` +
+            const succMsg = `🎉 *DAILY STREAK BONUS CLAIMED!* 🎁\n\n` +
               `• *Bonus Awarded:* +${bonusPts} Mining Points Credited!\n` +
-              `• *Check-In Streak:* 🔥 Day ${streak} Streak (${streak >= 5 ? "MAX +50 Pts!" : `+${bonusPts + 5} Pts tomorrow`})\n` +
+              `• *Check-In Streak:* 🔥 Day ${streak} Streak (${streak >= 5 ? "MAX +100 Pts!" : `+${nextPts} Pts tomorrow`})\n` +
               `• *New Points Balance:* 💎 ${profile.points} Points\n` +
               `• *Daily Mining Cost:* ${hasPass ? "0 Pts/day (VIP Pass)" : `${dailyCost} Pts/day`}\n` +
               `• *Days of Mining Remaining:* ~${daysRemaining}\n` +
@@ -12940,7 +13104,7 @@ Reply to Arif naturally:`;
             return;
           }
 
-          // 4.2 ⛏️ 5 Supported Mining Pools & Bots (/pools, /bots, /farm, "⛏️ Mining Pools")
+          // 4.2 ⛏️ 9 Supported Mining Pools & Bots (/pools, /bots, /farm, "⛏️ Mining Pools")
           if (text === "⛏️ Mining Pools" || text === "Mining Pools" || text === "⛏️ Farming Bots" || text === "🤖 Farming Bots" || text.startsWith("/pools") || text.startsWith("/bots") || text.startsWith("/farm") || text.startsWith("/farming") || text.startsWith("/withdraw")) {
             const poolsMenu = renderMiningPoolsMenu(profile);
             await sendUserReply(poolsMenu.text, poolsMenu.markup);
@@ -13103,15 +13267,20 @@ Reply to Arif naturally:`;
             const chatAiMsg = `💬 *AAA AI MINING COPILOT & SUPPORT* 🤖\n` +
               `_⚡ Created by AAA — Autonomous Cloud Mining Ecosystem_\n\n` +
               `Hello ${senderName}! How can I help you today?\n\n` +
-              `🤖 *4 Automated Mining Pools Active (24/7):*\n` +
+              `🤖 *9 Automated Mining Pools Active (24/7):*\n` +
               `1️⃣ ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD)\n` +
               `2️⃣ 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768)\n` +
               `3️⃣ 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18)\n` +
               `4️⃣ 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_)\n` +
+              `5️⃣ 🌐 [Kynex Network](https://t.me/kynexnetworkbot)\n` +
+              `6️⃣ ⛏️ [DiggoMiner](https://t.me/Diggominer_bot?startapp=ref_4088138f11effe8eef4b86ff)\n` +
+              `7️⃣ ⭐ [Astra Airdrop](https://t.me/ASTRA_AIRDROP_BOT/app?startapp=ref_6727787768)\n` +
+              `8️⃣ 🐸 [PepeGram](https://t.me/Pepe_gram_bot?start=6727787768)\n` +
+              `9️⃣ 💎 [AdxEarn AI](https://t.me/AdxEarnAibot/app?startapp=ref_6727787768)\n\n` +
               `*Quick Actions:*\n` +
               `• *Ask Questions:* Simply type any question in this chat!\n` +
-              `• *Manage Accounts:* Tap *👥 My Accounts* or *🗑️ Remove Account* anytime.\n` +
-              `• *Mining Pools:* Send \`/pools\` to view all 7 automated bots.\n` +
+              `• *Manage Accounts:* Tap *👥 My Accounts* or *➕ Connect Account* anytime.\n` +
+              `• *Mining Pools:* Send \`/pools\` to view all 9 automated bots.\n` +
               `• *Support Team:* Send \`/support <your message>\` to message Platform Support directly.\n\n` +
               `👉 Ask me anything or tap the buttons below!`;
             const chatAiKeyboard = {
@@ -13609,9 +13778,102 @@ async def main():
         except Exception as e:
             print(f"⚠️ Error setting admin bot webhook: {e}")
 
-        # 1. USER BOT STRICT IMMUTABILITY (RULE 1 & USER DIRECTIVE)
-        # The User Bot (@AAAPREMIUMAPPSbot) is strictly reserved for end-users and must NEVER be modified or redeployed.
-        print("🛡️ User Bot (@AAAPREMIUMAPPSbot) STRICT IMMUTABILITY: Preserved untouched per Rule 1.")
+        # 1. USER BOT SYNCHRONIZATION (@AAAPREMIUMAPPSbot - Dedicated Public Community Platform)
+        if USER_BOT_TOKEN:
+            user_target_wh = "https://restore-agy.agorameet.workers.dev/user-bot-webhook"
+            try:
+                async with session.get(f"https://api.telegram.org/bot{USER_BOT_TOKEN}/getWebhookInfo") as resp:
+                    cur_uwh = await resp.json()
+                    cur_uurl = (cur_uwh.get("result") or {}).get("url", "")
+                    if cur_uurl != user_target_wh:
+                        print(f"📡 Setting User Bot Webhook to {user_target_wh}...")
+                        async with session.post(
+                            f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setWebhook",
+                            json={
+                                "url": user_target_wh,
+                                "allowed_updates": ["message", "edited_message", "callback_query", "pre_checkout_query"],
+                                "drop_pending_updates": False
+                            }
+                        ) as s_resp:
+                            s_data = await s_resp.json()
+                            print(f"📡 User Bot Webhook bound: {s_data.get('ok')} ({s_data.get('description')})")
+                    else:
+                        print(f"📡 User Bot Webhook current & healthy: {cur_uurl}")
+            except Exception as e:
+                print(f"⚠️ Error checking User Bot webhook: {e}")
+
+            user_desc = (
+                "🌟 AAA AUTO MINING — Autonomous Cloud Mining Platform 🚀\n\n"
+                "Automate your crypto mining 24/7 in the cloud with zero battery drain!\n\n"
+                "⛏️ 9 Supported Mining Pools:\n"
+                "• ⚡ MRG • 🪙 ATF • 🏢 Victor\'s • 💧 VyroDrop\n"
+                "• 🌐 Kynex • ⛏️ Diggo • ⭐ Astra • 🐸 Pepe • 💎 AdxEarn\n\n"
+                "💎 Free Welcome Points • 📅 Daily Streak (+50-100 Pts)\n"
+                "🎬 Unlimited Rewarded Ads (+20 Pts) • 👥 Referrals (+500 Pts)\n"
+                "🌟 Telegram Stars VIP Passes • 🔒 100% Cloud-First"
+            )
+            user_short_desc = "⚡ Autonomous 24/7 Cloud Mining across 9 crypto bots with zero phone load!"
+            try:
+                async with session.post(
+                    f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setMyDescription",
+                    json={"description": user_desc}
+                ) as resp:
+                    res_udesc = await resp.json()
+                    print(f"📝 User Bot Description: {res_udesc.get('ok')} ({res_udesc.get('description', 'OK')})")
+
+                async with session.post(
+                    f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setMyShortDescription",
+                    json={"short_description": user_short_desc}
+                ) as resp:
+                    res_usdesc = await resp.json()
+                    print(f"📝 User Bot Short Description: {res_usdesc.get('ok')} ({res_usdesc.get('description', 'OK')})")
+            except Exception as e:
+                print(f"⚠️ Error setting User Bot descriptions: {e}")
+
+            user_menu_payload = {
+                "menu_button": {
+                    "type": "web_app",
+                    "text": "🎬 Watch Ads",
+                    "web_app": {
+                        "url": "https://agy-henna.vercel.app/"
+                    }
+                }
+            }
+            try:
+                async with session.post(
+                    f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setChatMenuButton",
+                    json=user_menu_payload
+                ) as resp:
+                    res_umenu = await resp.json()
+                    print(f"🎬 User Bot Global Menu Button (Watch Ads): {res_umenu.get('ok')} ({res_umenu.get('description', 'OK')})")
+            except Exception as e:
+                print(f"⚠️ Error setting User Bot menu button: {e}")
+
+            user_commands_payload = {
+                "commands": [
+                    {"command": "start", "description": "🚀 Open Mining Dashboard & Pools"},
+                    {"command": "pools", "description": "⛏️ 9 Supported Cloud Mining Pools"},
+                    {"command": "accounts", "description": "👥 View & Manage Connected Accounts"},
+                    {"command": "connect", "description": "➕ Add Account via WebApp URL / 1-Tap"},
+                    {"command": "points", "description": "💎 Points Balance & VIP Passes"},
+                    {"command": "ads", "description": "🎬 Watch Rewarded Video Ads (+20 Pts)"},
+                    {"command": "daily", "description": "🎁 Claim Daily Streak Bonus (+50-100 Pts)"},
+                    {"command": "invite", "description": "👥 Viral Referral Link (+500 Pts)"},
+                    {"command": "stars", "description": "🌟 Telegram Stars VIP Passes & Slots"},
+                    {"command": "leaderboard", "description": "🏆 Community Miners Leaderboard"},
+                    {"command": "help", "description": "📖 Cloud Mining Guide & Support"},
+                    {"command": "support", "description": "💬 Platform Support Ticket"}
+                ]
+            }
+            try:
+                async with session.post(
+                    f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setMyCommands",
+                    json=user_commands_payload
+                ) as resp:
+                    res_ucmd = await resp.json()
+                    print(f"📋 User Bot Commands: {res_ucmd.get('ok')} ({res_ucmd.get('description', 'OK')})")
+            except Exception as e:
+                print(f"⚠️ Error setting User Bot commands: {e}")
 
         # 4. Set Admin Bot Chat Menu Button & Commands (Points to Vercel Executive Fleet Dashboard)
         if ALERT_BOT_TOKEN:
