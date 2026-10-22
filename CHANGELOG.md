@@ -2,6 +2,16 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 Instabox Port 2000 External HTTPS Ingress Keepalive Architecture (October 22, 2026)**:
+  - **Exposed Ingress Sentinel (`https://2000-agqvyhmhjo2ajhpryq6lz5ewcy.instabox.tech`)**:
+    * Deployed lightweight, native HTTP keepalive status daemon on port 2000 (`/usr/local/bin/instabox-web-server.py`).
+    * Configured managed systemd daemon `instabox-web-keepalive.service` with auto-restart.
+    * Responds to `GET /`, `/ping`, `/health` with live JSON system health, uptime, and 18-account fleet telemetry.
+    * Solves Instabox idle suspension from the outside: incoming external HTTPS ingress traffic keeps the VM awake indefinitely, even when Termux is disconnected.
+  - **Quad-Layer Anti-Pause Loop**:
+    * Integrated external HTTPS ping into `/usr/local/bin/instabox-keepalive.sh` alongside PTY touches, fractional CPU pulses, and Cloudflare Edge mesh heartbeats.
+
+
 - **🎯 Turnstile Solver Single-Click Deconfliction & Fleet Roster Alignment (October 22, 2026)**:
   - **Turnstile Double-Click Elimination (`mrg_turnstile_solver.py`)**:
     * Identified root cause of Turnstile solving timeouts: `mrg_turnstile_solver.py` was firing both touchscreen tap AND synthetic mouse down/up on the Turnstile iframe bounding box, or firing Method A (`frame_locator`) followed immediately by Method B (mouse coordinates), double-clicking the checkbox and causing Cloudflare Turnstile to invalidate or reset the challenge.
