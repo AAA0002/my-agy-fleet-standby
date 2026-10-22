@@ -1420,3 +1420,17 @@ Whenever you perform work in this repository:
   - 18/18 accounts verified online with fresh tokens in Upstash Redis and zero revoked sessions.
   - Instabox VM keepalive daemon continuously active with zero idle suspension.
 
+### 24. Dual CI/CD Redundancy & CircleCI Failback System (October 22, 2026)
+* **CircleCI Failback Architecture (`.circleci/config.yml`)**:
+  - Configured pipeline parameter `is_failover: boolean` to prevent premature consumption of the 300 free monthly build credits.
+  - CircleCI operates strictly as an on-demand and scheduled failback engine when GitHub Actions is undergoing maintenance or experiencing outages.
+  - Uses `cimg/python:3.12-browsers` with Xvfb and Patchright Chromium stealth engine.
+* **CircleCI Failover Dispatcher (`trigger_circleci_failover.py`)**:
+  - Direct REST integration with CircleCI API v2 to dispatch failover pipelines with parameter `is_failover=true`.
+* **Multi-Cloud Runner Tiering**:
+  - **Tier 1 (Primary)**: GitHub Actions on `AAA0002/ATL` (2,000 min/mo).
+  - **Tier 2 (Secondary Mirror)**: GitHub Actions on `AAA0002/my-agy-fleet-standby` (2,000 min/mo).
+  - **Tier 3 (Emergency Failback)**: CircleCI on `AAA0002/ATL` (300 min/mo).
+  - **Tier 4 (24/7 Zero-Minute Edge Mesh)**: Cloudflare Edge Workers & Render Node 2.
+
+

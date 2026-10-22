@@ -1,5 +1,11 @@
 version: 2.1
 
+parameters:
+  is_failover:
+    type: boolean
+    default: false
+    description: "Manual or automated failover trigger when GitHub Actions is unavailable"
+
 executors:
   python-runner:
     docker:
@@ -29,17 +35,10 @@ jobs:
 
 workflows:
   version: 2
-  scheduled-turnstile-solver:
-    triggers:
-      - schedule:
-          cron: "0 */6 * * *"
-          filters:
-            branches:
-              only:
-                - main
-                - master
-    jobs:
-      - turnstile_solver_and_farm
-  manual-or-push:
+  failover-turnstile-solver:
+    when:
+      or:
+        - equal: [ true, << pipeline.parameters.is_failover >> ]
+        - equal: [ "failover", << pipeline.git.branch >> ]
     jobs:
       - turnstile_solver_and_farm

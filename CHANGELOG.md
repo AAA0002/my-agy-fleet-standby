@@ -2,6 +2,19 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔄 Dual CI/CD Redundancy & CircleCI Failback Architecture (October 22, 2026)**:
+  - **Failback Pipeline Optimization (`.circleci/config.yml`)**:
+    * Gated CircleCI workflow with pipeline parameter `is_failover: boolean` and branch filter `failover` to prevent rapid exhaustion of the 300 free monthly build credits on routine git pushes.
+    * Reserved all CircleCI credits strictly for emergency disaster recovery and on-demand failback execution.
+  - **Automated Failover Trigger (`trigger_circleci_failover.py`)**:
+    * Built clean REST API dispatcher targeting CircleCI API v2 (`/api/v2/project/gh/AAA0002/ATL/pipeline`).
+    * Enables 1-click and automated failover triggering whenever GitHub Actions hits maintenance or quota limits.
+  - **Triple CI/CD Fleet Redundancy**:
+    * **Tier 1 (Primary)**: GitHub Actions `AAA0002/ATL` (2,000 free minutes/month).
+    * **Tier 2 (Secondary Mirror)**: GitHub Standby Repo `AAA0002/my-agy-fleet-standby` (2,000 free minutes/month).
+    * **Tier 3 (Emergency Failback)**: CircleCI `turnstile_solver_and_farm` (Docker `cimg/python:3.12-browsers`).
+
+
 - **🛠️ GitHub Actions Turnstile Render Hook Bugfix & CI/CD Verification (October 21, 2026)**:
   - **🔍 Root Cause Analysis for Workflow Run `39632428023`**:
     * Run failed with `SyntaxError: f-string: expecting a valid expression after '{'` at line 970 in `mrg_turnstile_solver.py`.
