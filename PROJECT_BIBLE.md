@@ -1466,6 +1466,24 @@ Whenever you perform work in this repository:
 * **Live Deployment to Cloudflare Edge Mesh**:
   - Deployed updated script to Node 4 (`https://restore-agy.agorameet.workers.dev`) with active 15-minute cron triggers (`*/15 * * * *`).
 
+### 28. Turnstile Pure CDP Hardware Input Enforcement, Victor's Company Stealth & Account 11 Restoration (October 22, 2026)
+* **Cloudflare Turnstile Stealth Hardening (`mrg_turnstile_solver.py` & `victors_sb_solver.py`)**:
+  - **Eliminated Synthetic DOM Frame Clicks**: Discovered that `cf_frame.locator(...).click()` in cross-origin Cloudflare iframes dispatches synthetic in-page events with `isTrusted: false`, which Cloudflare immediately flags with HTTP 403 Forbidden (`Failed to load resource: the server responded with a status of 403 ()`). Replaced with pure CDP hardware mouse coordinates (`page.mouse.move()`, `page.mouse.down()`, `page.mouse.up()`) and native touchscreen taps (`page.touchscreen.tap()`), which register with genuine OS-level `isTrusted: true`.
+  - **Removed Forced Appearance Overrides**: Both solvers previously intercepted `window.turnstile.render` and forced `options.appearance = 'always'`. The native applications (`app.victors.company` and `app.mrgtoken.xyz`) use `appearance: "interaction-only"`. Forcing `always` stripped out Cloudflare's non-interactive/passive solve and forced a visible interactive checkbox challenge on every request. Restored native `interaction-only` parameters.
+  - **Removed `navigator.webdriver` Tamper Override in `victors_sb_solver.py`**: Removed `Object.defineProperty(navigator, 'webdriver', ...)` which is an anti-bot detection trigger in modern Chromium.
+  - **Eliminated Secondary Widget Collision**: Removed secondary `#sb-cf-slot` render call in `victors_sb_solver.py` that was conflicting with the React app's active Turnstile widget.
+* **Account 11 (`8190649727`, MD. ARIF HOSSAIN) Verification & MTProto Session Health**:
+  - Confirmed via Render Node 2 Telethon MTProto coordinator that Account 11 was **never revoked by Telegram**.
+  - Account 11 is 100% online on ATF Miner (`0.0 ATF`), MRG Miner (`3,338.0 MRG`), and Kynex Network.
+  - Clarified root cause of perceived dropped session: the temporary miniapp access token had expired, while the Telegram MTProto session key remained fully valid. Render Node 2 extracted fresh tokens without requiring any user re-login or SMS code.
+* **Termux SSH Auto-Attach Detachment Fixed**:
+  - Removed blocking `exec tmux attach -t agy` from `~/.bashrc`. Exiting Termux now cleanly closes the SSH connection without killing the background TMUX session.
+  - Configured `set-option -g destroy-unattached off` in `~/.tmux.conf` so Antigravity CLI and keepalive daemons continue running 24/7 on the cloud VM.
+* **Exhaustive 18-Account Ground-Truth Verification (`deep_audit_18_accounts.py`)**:
+  - Created dedicated multi-threaded deep audit engine querying all 5 active bot backends concurrently.
+  - Confirmed 18/18 active on ATF Miner, 18/18 active on Kynex Network, 18 valid on MRG, and Victor's accounts ready for Turnstile qualification.
+
+
 
 
 

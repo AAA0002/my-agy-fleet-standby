@@ -616,7 +616,6 @@ def solve_victors_with_seleniumbase():
             )
 
             mock_telegram_js = f"""
-                Object.defineProperty(navigator, 'webdriver', {{ get: () => undefined }});
                 window.__victorsTurnstileToken = null;
                 window.__victorsHumanPass = null;
 
@@ -680,7 +679,7 @@ def solve_victors_with_seleniumbase():
                     }});
                 }} catch(e) {{}}
 
-                // Intercept window.turnstile.render to force appearance: 'always' and hook callback
+                // Intercept window.turnstile.render to hook callback
                 let _cfPoll = setInterval(() => {{
                     if (window.turnstile && typeof window.turnstile.render === 'function') {{
                         clearInterval(_cfPoll);
@@ -688,7 +687,6 @@ def solve_victors_with_seleniumbase():
                         window.turnstile.render = function(container, options) {{
                             try {{
                                 if (options) {{
-                                    options.appearance = 'always';
                                     const _origCb = options.callback;
                                     options.callback = function(tok) {{
                                         window.__victorsTurnstileToken = tok;
@@ -863,7 +861,7 @@ def solve_victors_with_seleniumbase():
                                             sitekey: '{VICTORS_SITEKEY}',
                                             action: 'login',
                                             theme: 'dark',
-                                            appearance: 'always',
+                                            appearance: 'interaction-only',
                                             callback: function(tok) {{
                                                 window.__victorsTurnstileToken = tok;
                                             }}
