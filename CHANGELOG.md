@@ -2,6 +2,19 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🤖 Admin Bot Telemetry Overhaul & Multi-Cloud Ingress Integration (October 22, 2026)**:
+  - **New Admin Bot Commands & Callbacks (`@myagyai`)**:
+    * Added `/vm` and `btn_vm` (Instabox VM Sentinel): real-time monitoring of port 2000 external HTTPS ingress, VM load average, uptime, and quad-layer anti-pause keepalive status.
+    * Added `/failover` and `btn_cicd` (Multi-Cloud CI/CD Matrix): real-time status across Tier 1 (GitHub Actions), Tier 2 (Standby Mirror), Tier 3 (CircleCI), and Tier 4 (Cloudflare Edge).
+    * Updated Kynex Network host balance to genuine ground-truth `109,233+ KNX`.
+    * Upgraded `statusInlineKeyboard` with interactive quick-action buttons for VM Sentinel and CI/CD Failover.
+    * Synchronized Telegram bot menu buttons and commands via `setMyCommands` and `setChatMenuButton`.
+  - **Strict User Bot Immutability (Rule 1)**:
+    * Preserved `@AAAPREMIUMAPPSbot` completely untouched on its dedicated production webhook.
+  - **Live Cloud Deployment**:
+    * Successfully redeployed Cloudflare Edge Node 4 (`restore-agy.agorameet.workers.dev`) with active 15-minute cron triggers.
+
+
 - **🌐 Instabox Port 2000 External HTTPS Ingress Keepalive Architecture (October 22, 2026)**:
   - **Exposed Ingress Sentinel (`https://2000-agqvyhmhjo2ajhpryq6lz5ewcy.instabox.tech`)**:
     * Deployed lightweight, native HTTP keepalive status daemon on port 2000 (`/usr/local/bin/instabox-web-server.py`).

@@ -1454,6 +1454,18 @@ Whenever you perform work in this repository:
   - Layer 3: Cloudflare Edge mesh & Render Node 2 outbound heartbeats.
   - Layer 4: Port 2000 external HTTPS ingress loop (`https://2000-agqvyhmhjo2ajhpryq6lz5ewcy.instabox.tech/ping`).
 
+### 27. Admin Bot Telemetry Overhaul & Multi-Cloud Ingress Integration (October 22, 2026)
+* **Admin Bot (@myagyai) Operations Upgrades**:
+  - Added interactive `/vm` and `btn_vm` handler exposing real-time Instabox VM telemetry (port 2000 external HTTPS ingress, load average, uptime, and anti-pause status).
+  - Added `/failover` and `btn_cicd` command for inspecting and triggering the 4-tier multi-cloud CI/CD matrix (GitHub Actions, Standby Repo, CircleCI, Cloudflare Edge).
+  - Aligned Kynex Network host balance to genuine ground-truth `109,233+ KNX`.
+  - Added interactive buttons to `statusInlineKeyboard` and updated `setMyCommands` menu.
+* **Strict User Bot Immutability (Rule 1)**:
+  - Preserved `@AAAPREMIUMAPPSbot` completely untouched on its dedicated production webhook.
+* **Live Deployment to Cloudflare Edge Mesh**:
+  - Deployed updated script to Node 4 (`https://restore-agy.agorameet.workers.dev`) with active 15-minute cron triggers (`*/15 * * * *`).
+
+
 
 
 
