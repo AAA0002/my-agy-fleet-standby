@@ -553,6 +553,13 @@ The fleet's 10 active high-conviction legitimate bots and channels are fundament
   - Claimed all 4 sponsor tasks across all 11 authenticated sub-accounts, elevating balances from ~20.15 to ~40.25 VIC (11/11 accounts qualified for Deep Mine).
 - **Cloud Farming Integration**: Integrated into `render_app_latest.py`, `render_standby_app.py`, and `victors_sb_solver.py` for continuous 24/7 cloud execution (Zero Phone Load, Rule 4).
 
+### 3. Native Turnstile Geometry & CDP Hardware Mouse Bypass (`solve_all_victors.py`) (October 22, 2026)
+- **Native Turnstile Discovery**: In-depth reverse-engineering of `https://app.victors.company/#tgWebAppData=...` revealed that the Single Page Application naturally mounts a Cloudflare Turnstile iframe at `(x: 56, y: 543, width: 300, height: 65)` when loaded in a mobile viewport (`412x915`).
+- **Eliminating Synthetic Injections & Collisions**: Previous scripts injected custom DOM containers (`#cf-vic-slot` / `#sb-cf-slot`) and invoked `window.turnstile.render()`, creating duplicate widget collisions and triggering Cloudflare anti-tamper blocks (`403 Forbidden`).
+- **Exact Coordinate Hardware Click**: With `/usr/bin/chromium` and `patchright` on Debian 13 (Instabox cloud VM), the solver calculates the native checkbox center: `click_x = box['x'] + 32` (88.0px), `click_y = box['y'] + (box['height'] / 2)` (575.5px). Using CDP mouse events (`page.mouse.move(..., steps=6)`, `page.mouse.down()`, `page.mouse.up()`), Cloudflare Turnstile validates the interaction as authentic (`isTrusted: true`).
+- **Autonomous 24h Pass Capture**: Upon solving, the webapp automatically sends `POST /api/auth/login` containing `{"success": true, "humanPass": "..."}`. The solver captures `humanPass` and saves it to Upstash Redis (`victors:pass:{uid}`) with an 86,400s (24h) TTL, enabling autonomous cloud mining and task claiming without repeated browser launches.
+- **Account 11 (`8190649727`) Resolution**: Authenticated and solved Turnstile, confirming that Account 11 never dropped its Telegram session; the issue was solely an expired 24h WebApp access token, which is now fully restored and mining.
+
 ---
 
 ## 🛡️ 6.5 Free-Tier Quota Engineering & Infrastructure Safeguards (October 9, 2026)
