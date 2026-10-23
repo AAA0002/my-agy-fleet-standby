@@ -409,10 +409,10 @@ function App() {
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   const CF_NODES = [
+    "https://restore-agy.agorameet.workers.dev",
     "https://restore-agy.aaaai2.workers.dev",
     "https://restore-agy.aaa-bot.workers.dev",
     "https://restore-agy.aaa222.workers.dev",
-    "https://restore-agy.agorameet.workers.dev",
     "https://restore-agy.aaaai.workers.dev"
   ];
 
@@ -432,7 +432,10 @@ function App() {
           "Authorization": activeToken ? `Bearer ${activeToken}` : (tg?.initData ? `tma ${tg.initData}` : ""),
           "X-Admin-Token": activeToken || ""
         };
-        const resp = await fetch(url, { ...options, headers });
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 6000);
+        const resp = await fetch(url, { ...options, headers, signal: ctrl.signal });
+        clearTimeout(timer);
         if (resp.ok) return await resp.json();
       } catch (_) {}
     }

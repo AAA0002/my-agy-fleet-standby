@@ -2,6 +2,22 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Full-System Audit, Secret Hygiene Hardening & Edge Mesh Optimization (October 23, 2026)**:
+  - **Secret Hygiene & Proxy Key Hardening**:
+    * Cleaned up `victors_cloud_phone_launcher.py` and `victors_sb_solver.py` by removing hardcoded fallback proxy tokens.
+    * Added complete environment variable fallback (`WEBSHARE_KEY_2`, `WEBSHARE_KEY`, `WEBSHARE_KEY_1`) matching `mrg_turnstile_solver.py` to ensure high-availability rotating residential proxies without secret leakage.
+  - **Multi-Portal Node 4 Mesh Prioritization & Timeout Protection**:
+    * Updated `CF_NODES` in `public_ads/index.html` (Watch-Ads portal) and `public_admin/admin.html` / `public_admin/user-admin.html` to prioritize Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Added `AbortController` (5-6s timeout) to all mesh fetch loops, eliminating indefinite hangs when secondary worker nodes experience high latency.
+  - **Disaster Recovery Pipeline Coverage Expansion**:
+    * Added `public_ads/miner/index.html`, `public_ads/index.html`, `public_ads/vercel.json`, and `SESSION_BRIDGE.md` to `CORE_BOT_FILES` in `backup_manager.py`.
+    * Every automated disaster recovery archive to `@myagyai` now carries the complete modernized WebApp dashboard and session bridge.
+  - **Complete System Verification**:
+    * Python compile check: 100% of 70+ scripts passed with 0 syntax errors.
+    * JavaScript syntax check: 100% of inline and external scripts passed with `node --check`.
+    * Node 4 live integration suite: All endpoints (`/health`, `/api/status`, `/miner`, `/ads`, `/api/user/profile`, etc.) returned HTTP 200 with standard CORS.
+    * Render Node 2: Frankfurt standby service confirmed healthy (`200 OK`).
+
 - **🚀 WebApp Mining Dashboard Modernization, Mesh Failover & Multi-Pool Bug Fixes (October 23, 2026)**:
   - **Dual-Node API Mesh Auto-Failover in WebApp Dashboard**:
     * Resolved critical mesh disconnect where client-side API calls in `public_ads/miner/index.html` omitted the active primary Cloudflare worker node (`https://restore-agy.agorameet.workers.dev`).

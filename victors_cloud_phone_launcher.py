@@ -62,9 +62,9 @@ FLEET_UIDS = [
 def get_webshare_proxy() -> dict | None:
     """Fetches active, pre-tested residential/datacenter proxy from Webshare."""
     webshare_keys = [
-        "",
+        os.getenv("WEBSHARE_KEY_2") or "",
         os.getenv("WEBSHARE_KEY") or "",
-        "1r347t4h8dwfkpoa4ifmmyajvmu3oxyn2guzs5k0"
+        os.getenv("WEBSHARE_KEY_1") or "",
     ]
     seen_keys = set()
     for key in webshare_keys:

@@ -75,9 +75,9 @@ FLEET_UIDS = [
 def get_webshare_proxy() -> str | None:
     """Fetches active, pre-tested proxy string from Webshare in user:pass@host:port format."""
     webshare_keys = [
-        "",
+        os.getenv("WEBSHARE_KEY_2") or "",
         os.getenv("WEBSHARE_KEY") or "",
-        "1r347t4h8dwfkpoa4ifmmyajvmu3oxyn2guzs5k0"
+        os.getenv("WEBSHARE_KEY_1") or "",
     ]
     seen_keys = set()
     for key in webshare_keys:
