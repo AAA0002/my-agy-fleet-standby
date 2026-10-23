@@ -2271,21 +2271,25 @@ export default {
       const userSystemPrompt = "You are 'Ari AI', the friendly assistant for AAA Auto Mining (@AAAPREMIUMAPPSbot).\n" +
         "CRITICAL RULES:\n" +
         "- KEEP RESPONSES SHORT, CLEAR, AND SIMPLE.\n" +
-        "- When asked what this bot can do, how it works, or what bots are supported, ALWAYS showcase the 4 verified mining pools with their names and links:\n" +
-        "  1. ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier hashrate & TON auto-mining\n" +
-        "  2. 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming\n" +
-        "  3. 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade minigame\n" +
-        "  4. 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining\n" +
-        "  5. 💎 [Kynex Network](https://t.me/Kynex_miningbot/App?startapp=6727787768) — High-yield cloud mining & 12h energy reserve\n" +
-        "- Explain that the bot automatically farms and claims all 5 bots 24/7 in the cloud without needing to keep apps or devices open.\n" +
+        "- When asked what this bot can do, how it works, or what bots are supported, showcase the 9 verified mining pools with their names and links:\n" +
+        "  1. ⚡ [MRG Miner](https://t.me/mrgminerbot?start=ref_IRN1G3XD) — Peak tier TON AI mining (4h cycle)\n" +
+        "  2. 🪙 [ATF Miner](https://t.me/ATF_AIRDROP_bot?start=6727787768) — Auto 24h mining & daily task claiming (24h cycle)\n" +
+        "  3. 🏢 [Victor's Company](https://t.me/VictorsCompanybot/app?startapp=ref_A20AA96F18) — 1,000-level TON mining & arcade yield (8h cycle)\n" +
+        "  4. 💧 [VyroDrop](https://t.me/vyrodrop_bot?startapp=ref_myFjrqqE4WN_) — High-yield TON cloud mining (12h cycle)\n" +
+        "  5. 🌐 [Kynex Network](https://t.me/kynexnetworkbot) — Decentralized TON edge node mining (12h cycle)\n" +
+        "  6. ⛏️ [DiggoMiner](https://t.me/Diggominer_bot) — High-hashrate block mining (3h cycle)\n" +
+        "  7. ⭐ [Astra Airdrop](https://t.me/ASTRA_AIRDROP_BOT) — Multi-cloud star farming (4h cycle)\n" +
+        "  8. 🐸 [PepeGram](https://t.me/Pepe_gram_bot) — Meme token cloud mining (3h cycle)\n" +
+        "  9. 💎 [AdxEarn AI](https://t.me/AdxEarnAibot) — AI computational mining node (3h cycle)\n" +
+        "- Explain that the bot automatically farms and claims all 9 bots 24/7 in the cloud without needing to keep apps or devices open.\n" +
         "- BRANDING: This bot was created and engineered by 'AAA'. When asked who created or made this bot, state clearly that it was created and engineered by AAA.\n" +
         "- NEVER mention internal developer terms like 'Zero Phone Load', 'serverless MTProto', 'Samsung Galaxy', Termux, or system architecture.\n" +
         "- NEVER show personal admin names (like 'Arif'). Always refer to the team simply as 'Support' or 'Support Team'.\n" +
         "- Address the user warmly: " + senderName + ".\n\n" +
         "CORE INFORMATION (User perspective only):\n" +
         "• Creator: Created and engineered by AAA.\n" +
-        "• What the bot does: Automatically farms 5 Telegram crypto bots (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network) 24/7 in the cloud.\n" +
-        "• How to connect: Tap '➕ Connect Account' below, send your phone number (+...), and enter the Telegram login code.\n" +
+        "• What the bot does: Automatically farms 9 Telegram crypto bots 24/7 in the cloud.\n" +
+        "• How to connect: Tap '➕ Connect Account' -> '⚡ 1-Tap Link My Account' to connect instantly, or connect via phone or numeric Telegram ID.\n" +
         "• How to manage: Tap '👥 My Accounts' to view or tap '🗑️ Remove' to disconnect anytime.\n" +
         "• Points & Rewards: 100 points/day to mine. Earn free points by tapping '🎬 Watch Video Ad' (+20 Pts) or '👥 Invite Friends' (+500 Pts), or upgrade with Telegram Stars.\n" +
         "• Support: Send /support <your message> to reach Support.\n\n" +
@@ -2391,9 +2395,9 @@ export default {
           `Each connected account uses 100 points/day for continuous 24/7 cloud mining.`;
       } else if (pLow.includes("withdraw") || pLow.includes("payout") || pLow.includes("cashout") || pLow.includes("balance")) {
         fallbackAns = `⛏️ *Autonomous Cloud Auto-Farming:*\n\n` +
-          `• Our bot is dedicated strictly to 24/7 cloud auto-farming, task completion, and mining accumulation across all 5 bots.\n` +
+          `• Our bot is dedicated strictly to 24/7 cloud auto-farming, task completion, and mining accumulation across all 9 bots.\n` +
           `• All mined tokens, coins, and rewards accumulate directly inside each official Telegram bot.\n` +
-          `• Tap */pools* to see the complete list of 5 supported crypto mining pools.`;
+          `• Tap */pools* to see the complete list of 9 supported crypto mining pools.`;
       } else if (pLow.includes("support") || pLow.includes("admin") || pLow.includes("help") || pLow.includes("ticket")) {
         fallbackAns = `💬 *How to Contact Platform Support:*\n\n` +
           `• *Direct Ticket:* Send \`/support <your message>\` in this chat to reach Platform Support directly.\n` +
@@ -11849,7 +11853,7 @@ Reply to Arif naturally:`;
                 `• *Format:* \`+88017XXXXXXXX\` or \`017XXXXXXXX\`\n` +
                 `• *International:* \`+1...\`, \`+44...\`, \`+91...\`\n\n` +
                 `🔒 *100% Serverless & Encrypted:*\n` +
-                `Your session runs safely in the cloud and automatically binds to all 17 mining pools.\n\n` +
+                `Your session runs safely in the cloud and automatically binds to all 9 mining pools.\n\n` +
                 `_(Send phone number or tap ❌ Cancel Connection below)_`;
               ctx.waitUntil(sendCqReply(promptPhone, userCancelKeyboard));
               return new Response("OK");
@@ -12071,10 +12075,13 @@ Reply to Arif naturally:`;
                 `• *Strategy:* ${poolInfo.description}\n` +
                 `• *Your Connected Accounts:* ${poolAccs.length}\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `💡 *How to link this bot:* Tap *🚀 Launch Mini App* below, tap (⋮) in the top right, copy link, and send it here!\n\n` +
+                `⚡ *100% Cloud Automated:* Harvests rewards 24/7 without battery or device load!\n\n` +
                 `👇 *Choose an option:*`;
               const poolBtns = {
                 inline_keyboard: [
+                  [
+                    { text: `⚡ 1-Tap Link My Account (${cqChatId})`, callback_data: `ub_bind_id_${cqChatId}` }
+                  ],
                   [
                     { text: `🚀 Launch @${poolInfo.username} ↗️`, url: poolInfo.ref_url },
                     { text: `➕ Connect Account`, callback_data: `ub_add_pool_${poolKey}` }
@@ -12582,7 +12589,7 @@ Reply to Arif naturally:`;
             await saveUserProfile(chatId, profile);
             ctx.waitUntil(broadcastMilestoneUnlocked("Account Linked", accName, chatId, `WebApp Connected (${label})`, "24/7 Autonomous Mining Live"));
 
-            const poolInfo = MINING_POOLS[poolKey] || { name: "All 10 Pools" };
+            const poolInfo = MINING_POOLS[poolKey] || { name: "All 9 Pools" };
             const succMsg = `🎉 *ACCOUNT CONNECTED SUCCESSFULLY!* 🚀\n\n` +
               `• *Label:* \`${label}\`\n` +
               `• *Account:* ${accName} (@${accUsername || "None"})\n` +
@@ -13329,14 +13336,14 @@ Reply to Arif naturally:`;
 
           if (text === "📊 Dashboard" || text === "Dashboard" || text === "📊 My Stats" || text === "My Stats" || text === "📊 Stats" || text.startsWith("/dashboard") || text.startsWith("/start stats") || text === "/stats" || text.startsWith("/stats") || text === "/status" || text.startsWith("/status")) {
             const dash = renderMiningDashboard(profile, chatId, senderName);
-            await sendUserReply(dash.text, activeUserKeyboard);
+            await sendUserReply(dash.text, dash.markup);
             return;
           }
 
           // 1. /start, /menu
           if (text.startsWith("/start") || text === "/menu") {
             const dash = renderMiningDashboard(profile, chatId, senderName);
-            await sendUserReply(dash.text, activeUserKeyboard);
+            await sendUserReply(dash.text, dash.markup);
 
             // Ensure persistent Chat Menu Button on User Bot is ALWAYS set to Watch Ads
             if (ctx && ctx.waitUntil) {

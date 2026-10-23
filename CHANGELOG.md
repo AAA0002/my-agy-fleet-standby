@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌟 9-Pool Full Alignment, Tactile Haptics, Dashboard Grid Fix & Menu Action Enhancement (October 23, 2026)**:
+  - **9-Pool Complete Alignment & AI Prompt Upgrade**:
+    * Upgraded `runUserAiCascade` in `deploy_both_cf_workers.py`: Ari AI Copilot now references all 9 verified active mining pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI) with updated official bot links, replacing legacy 5-pool prompts.
+    * Fixed fallback answers and phone prompt in `deploy_both_cf_workers.py` to reference all 9 mining pools.
+    * Removed lingering "All 10 Pools" and legacy 17-pool text in per-pool management menus.
+  - **Tactile Telegram WebApp Haptics & Visual Feedback**:
+    * Enhanced `hapticFeedback(type)` in `public_ads/miner/index.html` and `public/app/index.html` to support native Telegram WebApp notification triggers (`success`, `error`, `warning`) and impact responses (`light`, `medium`).
+    * Bound haptics to `showToast`, tab navigation, daily bonus claim, ad completions, and 1-tap connections.
+  - **Responsive CSS Grid & Multi-Pool Counting Fix**:
+    * Fixed `col-span-3` CSS class reset bug in `selectPool(pool)`: Selecting specific pools no longer strips the full-width grid layout from `btn-pool-all`.
+    * Upgraded pool account count filtering (`const matchPool = (a, pKey) => a.pool === pKey || a.pool === 'all' || !a.pool;`) so all-pool and unassigned accounts accurately increment live connected counts across all 9 pool cards.
+  - **Rich Action Keyboard Attachment on Dashboard Commands**:
+    * Updated text commands `/start`, `/menu`, and `📊 Dashboard` to attach `dash.markup` (inline buttons) directly under the dashboard card so users have one-tap access to Open Web App, 9 Pools, Connect Account, Accounts list, and Daily Bonus.
+  - **Full Frontend Synchronization**:
+    * Synchronized `public/app/index.html` with `public_ads/miner/index.html` so all webapp entry points (`/miner`, `/app`, Cloudflare Pages) share identical modern UX, 9-pool architecture, and 1-tap connection.
+  - **Production Deployment**:
+    * Deployed to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified `/health` and `/miner` (86.5 KB) return HTTP 200.
+
 - **⚡ Frictionless 1-Tap Account Connection, Zero "WebApp Link" UX Overhaul & Dashboard Upgrade (October 23, 2026)**:
   - **Complete Elimination of `*WebApp Link:*` Prompts**:
     * Completely removed all user-facing references to `*WebApp Link:*`, `#tgWebAppData=...`, and prompts instructing users to extract links via three dots (⋮) across all menus, callbacks, commands, and error messages in `deploy_both_cf_workers.py`.

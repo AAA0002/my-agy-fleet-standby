@@ -951,10 +951,11 @@
       pools.forEach(p => {
         const b = document.getElementById('btn-pool-' + p);
         if (b) {
+          const colSpan = (p === 'all') ? "col-span-3 " : "";
           if (p === pool) {
-            b.className = "p-2 rounded-xl border border-cyan-500/40 bg-cyan-500/20 text-cyan-300 text-center active:scale-95 transition font-bold";
+            b.className = colSpan + "p-2 rounded-xl border border-cyan-500/40 bg-cyan-500/20 text-cyan-300 text-center active:scale-95 transition font-bold";
           } else {
-            b.className = "p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition";
+            b.className = colSpan + "p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-center active:scale-95 transition";
           }
         }
       });
@@ -1145,15 +1146,16 @@
 
       // 9 Pools Badges
       const accs = p.accounts || [];
-      const mrgC = accs.filter(a => a.pool === 'mrg' || a.pool === 'all').length;
-      const atfC = accs.filter(a => a.pool === 'atf' || a.pool === 'all').length;
-      const victorsC = accs.filter(a => a.pool === 'victors' || a.pool === 'all').length;
-      const vyroC = accs.filter(a => a.pool === 'vyro' || a.pool === 'all').length;
-      const kynexC = accs.filter(a => a.pool === 'kynex' || a.pool === 'all').length;
-      const diggoC = accs.filter(a => a.pool === 'diggo' || a.pool === 'all').length;
-      const adxearnC = accs.filter(a => a.pool === 'adxearn' || a.pool === 'all').length;
-      const astraC = accs.filter(a => a.pool === 'astra' || a.pool === 'all').length;
-      const pepegramC = accs.filter(a => a.pool === 'pepegram' || a.pool === 'all').length;
+      const matchPool = (a, pKey) => a.pool === pKey || a.pool === 'all' || !a.pool;
+      const mrgC = accs.filter(a => matchPool(a, 'mrg')).length;
+      const atfC = accs.filter(a => matchPool(a, 'atf')).length;
+      const victorsC = accs.filter(a => matchPool(a, 'victors')).length;
+      const vyroC = accs.filter(a => matchPool(a, 'vyro')).length;
+      const kynexC = accs.filter(a => matchPool(a, 'kynex')).length;
+      const diggoC = accs.filter(a => matchPool(a, 'diggo')).length;
+      const adxearnC = accs.filter(a => matchPool(a, 'adxearn')).length;
+      const astraC = accs.filter(a => matchPool(a, 'astra')).length;
+      const pepegramC = accs.filter(a => matchPool(a, 'pepegram')).length;
 
       const mrgEl = document.getElementById('pool-mrg-count');
       const atfEl = document.getElementById('pool-atf-count');
@@ -1466,13 +1468,18 @@
       }
     }
 
-    function hapticFeedback() {
+    function hapticFeedback(type = 'medium') {
       try {
-        window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium');
+        if (type === 'success' || type === 'error' || type === 'warning') {
+          window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred(type);
+        } else {
+          window.Telegram?.WebApp?.HapticFeedback?.impactOccurred(type);
+        }
       } catch (_) {}
     }
 
-    function showToast(msg) {
+    function showToast(msg, type = 'info') {
+      hapticFeedback(type === 'error' ? 'error' : (type === 'success' ? 'success' : 'light'));
       let toast = document.getElementById('app-toast');
       if (!toast) {
         toast = document.createElement('div');
