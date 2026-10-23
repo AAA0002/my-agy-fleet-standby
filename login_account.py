@@ -9,6 +9,7 @@ import sys
 import re
 import json
 import asyncio
+import time
 from datetime import datetime, timezone
 import random
 import string
@@ -135,6 +136,15 @@ def ensure_account_ton_wallet(acc: dict) -> str:
         return fwallets[uid]["address"]
 
     try:
+        from fleet_wallet_provisioner import find_existing_account_wallets
+        _, ex_wallets, _ = find_existing_account_wallets(user_id=uid, phone=acc.get("phone"))
+        if ex_wallets and ex_wallets.get("ton", {}).get("address"):
+            acc["ton_wallet"] = ex_wallets["ton"]
+            return ex_wallets["ton"]["address"]
+    except Exception:
+        pass
+
+    try:
         from tonsdk.contract.wallet import Wallets, WalletVersionEnum
         mnemonics, pub_k, priv_k, wallet = Wallets.create(WalletVersionEnum.v4r2, workchain=0)
         addr_non_bounce = wallet.address.to_string(is_user_friendly=True, is_bounceable=False, is_url_safe=True)
@@ -187,6 +197,15 @@ def ensure_account_evm_wallet(acc: dict) -> str:
         return ewallets[uid]["address"]
 
     try:
+        from fleet_wallet_provisioner import find_existing_account_wallets
+        _, ex_wallets, _ = find_existing_account_wallets(user_id=uid, phone=acc.get("phone"))
+        if ex_wallets and ex_wallets.get("evm", {}).get("address"):
+            acc["evm_wallet"] = ex_wallets["evm"]
+            return ex_wallets["evm"]["address"]
+    except Exception:
+        pass
+
+    try:
         from eth_account import Account
         acct = Account.create()
         worker_count = len([k for k in ewallets if not str(k).startswith("_")])
@@ -227,6 +246,15 @@ def ensure_account_tron_wallet(acc: dict) -> str:
     if uid in twallets and twallets[uid].get("address"):
         acc["tron_wallet"] = {"address": twallets[uid]["address"], "private_key": twallets[uid].get("private_key", ""), "network": "TRON (TRX / TRC-20)"}
         return twallets[uid]["address"]
+
+    try:
+        from fleet_wallet_provisioner import find_existing_account_wallets
+        _, ex_wallets, _ = find_existing_account_wallets(user_id=uid, phone=acc.get("phone"))
+        if ex_wallets and ex_wallets.get("tron", {}).get("address"):
+            acc["tron_wallet"] = ex_wallets["tron"]
+            return ex_wallets["tron"]["address"]
+    except Exception:
+        pass
 
     try:
         from fleet_wallet_provisioner import generate_multichain_wallet_suite
@@ -612,33 +640,28 @@ async def interactive_login():
 
     # Preserve authentic static fleet wallets or generate isolated 5-chain wallets for genuinely new worker account
     try:
-        from fleet_wallet_provisioner import get_fleet_static_account, build_suite_from_static, generate_multichain_wallet_suite, save_and_archive_account_wallets
-        matched_static = get_fleet_static_account(user_id=me.id, phone=phone)
-        if matched_static:
-            next_idx = matched_static["index"]
-            name = matched_static.get("name") or name
-            wallets = build_suite_from_static(matched_static)
+        from fleet_wallet_provisioner import (
+            find_existing_account_wallets,
+            generate_multichain_wallet_suite,
+            save_and_archive_account_wallets
+        )
+        cur_accs = load_accounts()
+        existing_idx, existing_wallets, existing_name = find_existing_account_wallets(
+            user_id=me.id,
+            phone=phone,
+            cloud_accounts=cur_accs
+        )
+        if existing_wallets:
+            next_idx = existing_idx or (len(cur_accs) + 1)
+            name = existing_name or name
+            wallets = existing_wallets
+            print(f"🔒 [IMMUTABILITY PRESERVED] Re-using authentic wallet suite for account #{next_idx} ({name})")
         else:
-            cur_accs = load_accounts()
-            existing_acc = None
-            clean_phone = re.sub(r"\D", "", str(phone or ""))
-            for a in cur_accs:
-                clean_a_p = re.sub(r"\D", "", str(a.get("phone") or ""))
-                if str(a.get("user_id")) == str(me.id) or (clean_phone and clean_a_p == clean_phone):
-                    existing_acc = a
-                    break
+            all_indices = [a.get("index", 0) for a in (cur_accs or []) if isinstance(a, dict) and a.get("index")]
+            next_idx = (max(all_indices) + 1) if all_indices else (len(cur_accs) + 1)
+            wallets = generate_multichain_wallet_suite(next_idx, name, me.id, phone, username)
+            print(f"💎 [NEW ACCOUNT ONBOARDED] Generated dedicated 5-chain wallets for account #{next_idx} ({name})")
 
-            next_idx = existing_acc.get("index") if (existing_acc and existing_acc.get("index")) else (len(cur_accs) + 1)
-            if existing_acc and (existing_acc.get("ton_wallet") or existing_acc.get("evm_wallet")):
-                wallets = {
-                    "ton": existing_acc.get("ton_wallet") or {},
-                    "evm": existing_acc.get("evm_wallet") or {},
-                    "tron": existing_acc.get("tron_wallet") or {},
-                    "solana": existing_acc.get("solana_wallet") or {},
-                    "btc": existing_acc.get("btc_wallet") or {}
-                }
-            else:
-                wallets = generate_multichain_wallet_suite(next_idx, name, me.id, phone, username)
         acc_entry.update({
             "name": name,
             "index": next_idx,
@@ -650,7 +673,7 @@ async def interactive_login():
             "bnb_wallet": wallets["evm"]["address"]
         })
         save_and_archive_account_wallets(acc_entry, wallets)
-        print(f"💎 Generated & Archived 5-chain isolated wallets for {name}:")
+        print(f"💎 Saved & Archived 5-chain isolated wallets for {name}:")
         print(f"   • TON (v4r2): {wallets['ton']['address']}")
         print(f"   • EVM (BSC):  {wallets['evm']['address']}")
         print(f"   • TRON:       {wallets['tron']['address']}")

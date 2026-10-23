@@ -51,6 +51,11 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 8. **🛡️ User Bot Strict Immutability ("DO NOT TOUCH USER BOT")**:
    - The User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`, webhook `atf-miner-worker.agorameet.workers.dev`) and its community channels (`-1003684868577`, `@AAAATFAUTOMINING`, `@AAAATF_ACTIVITY`) are exclusively for public end-users and must **NEVER** be modified, redeployed, or tampered with.
    - Keep all admin operations, monitoring, bot routing, and fleet controls strictly on the Admin Bot (`@myagyai`) and admin channels.
+9. **💎 Strict Multi-Chain Wallet Immutability & Master Secrets Vault**:
+   - The system **ONLY creates new wallets for genuinely brand-new accounts**, NEVER for old or existing accounts.
+   - When an account logs in or reconnects, the system checks `FLEET_STATIC_REGISTRY`, chain-specific JSON vaults (`fleet_*_wallets.json`), and `accounts.json` to 100% preserve existing authentic wallets and private keys with zero regeneration.
+   - Brand-new accounts generate dedicated 5-chain non-custodial suites (TON v4r2, EVM BSC/Arb, TRON, Solana, Bitcoin) and automatically archive all secrets across `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt` (local master secrets vault, strictly gitignored), `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md`, `public_admin/fleet_wallets_data.json`, `fleet_*_wallets.json`, `accounts.json`, and Upstash Redis.
+   - Farming bots requiring wallet connections (Victor's Company, VyroDrop, MRG, ATF, Astra) automatically bind authentic wallets and initiate mining upon onboarding.
 
 
 ---
