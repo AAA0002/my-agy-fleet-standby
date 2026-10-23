@@ -1,3 +1,8 @@
-/ai  https://restore-agy.aaaai2.workers.dev/ai  200
-/api/*  https://restore-agy.aaaai2.workers.dev/api/:splat  200
+/ai  https://restore-agy.agorameet.workers.dev/ai  200
+/api/*  https://restore-agy.agorameet.workers.dev/api/:splat  200
+/miner/*  /app/index.html  200
+/miner  /app/index.html  200
+/ad/*  /app/ad/index.html  200
+/ad  /app/ad/index.html  200
+/ads  /app/ad/index.html  200
 /fleet  https://agy-aaa000.vercel.app/  302

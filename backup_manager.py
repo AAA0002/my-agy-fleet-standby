@@ -90,8 +90,10 @@ CORE_BOT_FILES = [
     "ARCHIVED_ACCOUNT_10_OLD_WALLETS.json",
     "public_ads/miner/index.html",
     "public_ads/index.html",
+    "public_ads/app/ad/index.html",
     "public_ads/vercel.json",
     "public/app/index.html",
+    "public/app/ad/index.html",
     "SESSION_BRIDGE.md"
 ]
 

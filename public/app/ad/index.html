@@ -875,10 +875,10 @@
 
   <script>
     const CF_NODES = [
+      "https://restore-agy.agorameet.workers.dev",
       "https://restore-agy.aaaai2.workers.dev",
       "https://restore-agy.aaa-bot.workers.dev",
       "https://restore-agy.aaa222.workers.dev",
-      "https://restore-agy.agorameet.workers.dev",
       "https://restore-agy.aaaai.workers.dev"
     ];
     const API_BASE = (typeof window !== "undefined" && window.location.hostname.includes("workers.dev"))
@@ -900,7 +900,10 @@
       
       for (const url of candidateUrls) {
         try {
-          const resp = await fetch(url, options);
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 5000);
+          const resp = await fetch(url, { ...options, signal: ctrl.signal });
+          clearTimeout(timer);
           if (resp && resp.ok) return resp;
         } catch (_) {}
       }

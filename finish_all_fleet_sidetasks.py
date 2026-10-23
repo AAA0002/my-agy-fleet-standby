@@ -6,12 +6,16 @@ COMPREHENSIVE MULTI-BOT FLEET SIDE-TASK HARVESTER & AUTOMATION ENGINE
 =============================================================================
 Sweeps and completes all available side-tasks, daily check-ins, social joins,
 cooldown missions, wallet verifications, and referral commission claims across
-all 18 accounts in the fleet for all 5 legitimate bots:
+all 18 accounts in the fleet for all 9 legitimate bots:
   1. MRG Miner (@mrg_miner_bot)
   2. ATF Miner (@atf_miner_bot)
   3. Victor's Company (@VictorsCompanybot)
   4. VyroDrop (@vyrodrop_bot)
   5. Kynex Network (@Kynex_miningbot)
+  6. DiggoMiner (@diggominer_bot)
+  7. Astra Airdrop (@AstraAirdropBot)
+  8. PepeGram (@pepe_mine_bot)
+  9. AdxEarn AI (@AdxEarnAibot)
 
 Zero Phone Load (Rule 4): Runs once as a clean batch script in cloud/container,
 exits cleanly, and persists updated tokens to Upstash Redis and Cloudflare Edge.

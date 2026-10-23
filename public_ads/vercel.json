@@ -7,6 +7,8 @@
     { "source": "/api/:path*", "destination": "https://restore-agy.agorameet.workers.dev/api/:path*" },
     { "source": "/miner", "destination": "/miner/index.html" },
     { "source": "/miner/(.*)", "destination": "/miner/index.html" },
+    { "source": "/ad", "destination": "/index.html" },
+    { "source": "/ad/(.*)", "destination": "/index.html" },
     { "source": "/app/ad", "destination": "/index.html" },
     { "source": "/app/ad/(.*)", "destination": "/index.html" },
     { "source": "/ads", "destination": "/index.html" },

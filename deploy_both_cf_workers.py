@@ -2347,8 +2347,8 @@ export default {
       // 3. Intelligent Edge Keyword-Aware Fallback (Answers user guides directly even if offline)
       const pLow = prompt.toLowerCase();
       let fallbackAns = `Hello ${senderName}! I am Ari AI, your official copilot for AAA Auto Mining (Created by AAA).\n\n` +
-        `• *What I Do:* Automatically farm 5 Telegram crypto bots 24/7 in the cloud.\n` +
-        `• *5 Supported Bots:* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network.\n` +
+        `• *What I Do:* Automatically farm 9 Telegram crypto bots 24/7 in the cloud.\n` +
+        `• *9 Supported Bots:* MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI.\n` +
         `• *Connect Account:* Tap *➕ Connect Account* in the menu to add your account.\n` +
         `• *Manage / Disconnect:* Tap *👥 My Accounts* or *🗑️ Remove Account* anytime.\n` +
         `• *Earn Points:* 100 Pts/day cost. Earn free points by watching ads (+20 Pts) or inviting friends (+500 Pts).\n` +
@@ -4167,7 +4167,7 @@ fi
       return new Response(JSON.stringify({ ok: false, error: "Standby mesh unavailable" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // 12.5 Autonomous Cloud Farming Engine (5 Legitimate Bots: MRG, ATF, Victor's Company, VyroDrop, Kynex Network)
+    // 12.5 Autonomous Cloud Farming Engine (9 Legitimate Bots: MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI)
     if (path === "/api/farm/all" || path === "/api/fleet/claim-all" || path === "/api/farm/bnb" || path === "/api/farm/execute" || path === "/api/fleet/harvest" || path === "/api/harvest") {
       try {
         const body = await request.json().catch(() => ({}));
@@ -4287,6 +4287,28 @@ fi
 
     // 13. 24/7 Telegram Bot Webhook Endpoint (Hosted 100% on Cloudflare Edge)
     if (path === "/telegram-webhook" || path === "/webhook") {
+      if (request.method === "GET") {
+        return new Response(JSON.stringify({
+          ok: true,
+          bot: "myagyai",
+          role: "Executive Operations & Fleet Command Bot",
+          status: "online",
+          version: "5.0-executive",
+          fleet_size: 18,
+          active_bots: 9,
+          supported_bots: [
+            "MRG Miner (@mrgminerbot)",
+            "ATF Miner (@atf_miner_bot)",
+            "Victor's Company (@victorscompany_bot)",
+            "VyroDrop (@vyrodrop_bot)",
+            "Kynex Network (@kynexnetworkbot)",
+            "DiggoMiner (@diggominer_bot)",
+            "Astra Airdrop (@AstraAirdropBot)",
+            "PepeGram (@pepe_mine_bot)",
+            "AdxEarn AI (@AdxEarnAibot)"
+          ]
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
       if (request.method !== "POST") {
         return new Response("Method not allowed", { status: 405 });
       }
@@ -5257,7 +5279,7 @@ fi
                         `• *User ID:* \`${res2fa.user_id}\`\n` +
                         `• *Phone:* \`${res2fa.phone || phoneToRelink}\`\n` +
                         `• *2FA:* ✅ Auto-authenticated with \`${fallbackPw}\`\n\n` +
-                        `✅ *100% Cloud MTProto Active!*\nAll 5 autonomous farming bots are online 24/7 in the cloud.`;
+                        `✅ *100% Cloud MTProto Active!*\nAll 9 autonomous farming bots are online 24/7 in the cloud.`;
                       await sendResilientMessage(chatId, succMsg, mainKeyboard, "Markdown");
                       return new Response("OK");
                     }
@@ -5295,7 +5317,7 @@ fi
                     `• *Username:* @${res.username || "None"}\n` +
                     `• *User ID:* \`${res.user_id}\`\n` +
                     `• *Phone:* \`${res.phone || phoneToRelink}\`\n\n` +
-                    `✅ *100% Cloud MTProto Active!*\nAll 5 autonomous farming bots are online 24/7 in the cloud.`;
+                    `✅ *100% Cloud MTProto Active!*\nAll 9 autonomous farming bots are online 24/7 in the cloud.`;
                   await sendResilientMessage(chatId, succMsg, mainKeyboard, "Markdown");
                   return new Response("OK");
                 }
@@ -6813,7 +6835,7 @@ fi
           ctx.waitUntil((async () => {
             const rep = `👑 *AAA AUTO Operations Hub*\n` +
               `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `All 18 Telegram accounts and 5 cloud mining bots are managed directly in this chat.\n\n` +
+              `All 18 Telegram accounts and 9 cloud mining bots are managed directly in this chat.\n\n` +
               `• ⌨️ *PIN Pad Login:* Tap /relink or *🔑 OTP & Relogin* to restore sessions\n` +
               `• ⚡ *Zero Phone Load:* 100% Cloud MTProto active on Render & Cloudflare Edge\n` +
               `• 🛡️ *Anti-Ban:* Callback queries bypass Telegram code sharing blocks`;
@@ -10678,6 +10700,7 @@ Reply to Arif naturally:`;
         let uid = body.user_id || body.uid;
         if (!uid) return new Response(JSON.stringify({ ok: false, error: "Missing user_id" }), { status: 400, headers: corsHeaders });
         const accId = body.account_id || body.id;
+        if (!accId) return new Response(JSON.stringify({ ok: false, error: "Missing account_id" }), { status: 400, headers: corsHeaders });
         const profile = await getUserProfile(uid);
         const prevCount = (profile.accounts || []).length;
         profile.accounts = (profile.accounts || []).filter(a =>

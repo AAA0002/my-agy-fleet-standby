@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🌐 Multi-Cloud Route Parity, 9-Bot Message Standardization, Failover Hardening & Vercel Cleanup (October 23, 2026)**:
+  - **Ad Portal & Miner Routing Parity (Vercel & Static Hosting)**:
+    * Created dedicated `public_ads/ad/index.html` and `public/ad/index.html` mirroring `public_ads/index.html` to prevent 404 Not Found errors on `/ad` across Vercel and static hosting providers.
+    * Updated `public_ads/vercel.json`, `vercel.json`, and `public_admin/vercel.json` with explicit rewrite rules for `/ad` and `/ad/(.*)`.
+    * Upgraded `_redirects` across `public/`, `public_ads/`, and `public_admin/` to proxy `/api/*` and `/ai` directly to Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Synchronized `AbortController` 5s timeout failover across `public/app/ad/index.html` and `public_ads/app/ad/index.html`.
+  - **9-Bot Messaging & Docstring Consistency**:
+    * Purged legacy "5 bots" references in `deploy_both_cf_workers.py` (Ari AI edge keyword-aware fallback answer, relink confirmation messages, hub overview comment, and `/app` operations overview).
+    * Updated farming dispatcher docstrings and success responses from "Full 5-bot cloud farming cycle" to "Full 9-bot cloud farming cycle" across `app.py`, `render_app_latest.py`, and `render_standby_app.py`.
+    * Updated header in `finish_all_fleet_sidetasks.py` to document all 9 automated bots.
+  - **Edge Deployment & Health Validation**:
+    * Deployed updated worker template to Node 4 (`restore-agy.agorameet.workers.dev`) with active 15-minute primary cron trigger.
+    * Synchronized Telegram Bot commands, descriptions, and WebApp menu buttons.
+    * Verified all 8 critical endpoints returning HTTP 200 with 0 errors.
+  - **Disaster Recovery Coverage Expansion**:
+    * Added `public_ads/app/ad/index.html` and `public/app/ad/index.html` to `CORE_BOT_FILES` in `backup_manager.py`.
+
 - **🚀 End-to-End System Hardening, Referral Welcome Bonus & Workflow Optimization (October 23, 2026)**:
   - **Cancellation Flow Upstash Redis Sync**:
     * Fixed state persistence bug on `/cancel`: Now calls `await upstashDel("login_flow:user_" + chatId)` synchronously alongside KV deletion, ensuring cancelled phone/token login flows don't linger in Redis across edge nodes.

@@ -5556,7 +5556,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
 
 
 async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, accounts: list = None, tokens_map: dict = None, force: bool = False) -> dict:
-    """Executes full autonomous cloud farming and task completions across all 5 legitimate bots for all fleet accounts."""
+    """Executes full autonomous cloud farming and task completions across all 9 legitimate bots for all fleet accounts."""
     created_session = False
     if session is None:
         session = aiohttp.ClientSession(headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
@@ -5665,7 +5665,7 @@ LAST_FARM_RUN = {
 
 @app.post("/api/farm/cloud-all")
 async def api_farm_cloud_all(request: Request):
-    """Executes on-demand cloud fleet farming cycle across all 5 legitimate bots for accounts."""
+    """Executes on-demand cloud fleet farming cycle across all 9 legitimate bots for accounts."""
     auth = request.headers.get("Authorization") or ""
     req_secret = request.query_params.get("secret", "")
     if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
@@ -5712,7 +5712,7 @@ async def api_farm_cloud_all(request: Request):
         "ok": True,
         "status": "dispatched",
         "shard": shard_param,
-        "message": f"Full 5-bot cloud farming cycle dispatched for Shard {shard_param}.",
+        "message": f"Full 9-bot cloud farming cycle dispatched for Shard {shard_param}.",
         "timestamp": time.time()
     }
 
