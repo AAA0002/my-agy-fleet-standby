@@ -145,19 +145,80 @@ def get_ton_wallet_address(acc: dict, uid: str) -> str:
 
 
 def solve_atf_math(question_text: str) -> str:
-    """Evaluates arithmetic questions like 'What is 12 + 15?' safely."""
-    try:
-        clean = re.sub(r"[^0-9\+\-\*\/\(\)\s]", "", question_text)
-        parts = clean.split()
-        if len(parts) >= 3:
-            num1, op, num2 = parts[0], parts[1], parts[2]
-            if op == "+": return str(int(num1) + int(num2))
-            if op == "-": return str(int(num1) - int(num2))
-            if op == "*": return str(int(num1) * int(num2))
-            if op == "/": return str(int(num1) // int(num2))
-    except Exception:
-        pass
-    return "0"
+    """100% local, instant, deterministic arithmetic & challenge solver (0 network latency, 0 AI dependency)."""
+    if not question_text:
+        return "0"
+    q_lower = question_text.lower().strip()
+
+    if "days in a week" in q_lower or "days a week" in q_lower: return "7"
+    if "hours in a day" in q_lower: return "24"
+    if "minutes in an hour" in q_lower or "seconds in a minute" in q_lower: return "60"
+    if "months in a year" in q_lower: return "12"
+    if "days in a year" in q_lower: return "365"
+    if "even or odd" in q_lower or "odd or even" in q_lower:
+        m_num = re.search(r"\b(\d+)\b", q_lower)
+        if m_num: return "even" if int(m_num.group(1)) % 2 == 0 else "odd"
+
+    word_to_num = {
+        "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
+        "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+        "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
+        "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17,
+        "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30,
+        "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70,
+        "eighty": 80, "ninety": 90, "hundred": 100, "thousand": 1000
+    }
+    tokens = re.findall(r"[a-z0-9\+\-\*\/\%\=]+", q_lower)
+    converted_tokens = []
+    i = 0
+    while i < len(tokens):
+        w = tokens[i]
+        if w in word_to_num:
+            val = word_to_num[w]
+            while i + 1 < len(tokens) and tokens[i+1] in word_to_num:
+                next_val = word_to_num[tokens[i+1]]
+                if next_val in (100, 1000):
+                    val = val * next_val
+                    i += 1
+                elif val >= 20 and next_val < 10:
+                    val += next_val
+                    i += 1
+                else:
+                    break
+            converted_tokens.append(str(val))
+        elif w in ("plus", "add", "added", "+"): converted_tokens.append("+")
+        elif w in ("minus", "subtract", "subtracted", "take", "-"): converted_tokens.append("-")
+        elif w in ("times", "multiplied", "multiply", "*", "x"): converted_tokens.append("*")
+        elif w in ("divided", "divide", "/"): converted_tokens.append("/")
+        elif w in ("mod", "modulo", "remainder", "%"): converted_tokens.append("%")
+        elif w.isdigit() or re.match(r"^\d+[\+\-\*\/\%]\d+$", w): converted_tokens.append(w)
+        i += 1
+
+    normalized = " ".join(converted_tokens)
+    m = re.search(r"(\d+)\s*([\+\-\*\/\%])\s*(\d+)", normalized)
+    if m:
+        a, op, b = int(m.group(1)), m.group(2), int(m.group(3))
+        if op == "+": return str(a + b)
+        if op == "-": return str(a - b)
+        if op == "*": return str(a * b)
+        if op == "/" and b != 0: return str(a // b)
+        if op == "%" and b != 0: return str(a % b)
+
+    nums = [int(n) for n in re.findall(r"\d+", normalized)]
+    if nums:
+        if ("half of" in q_lower or "half" in q_lower) and len(nums) == 1: return str(nums[0] // 2)
+        if ("double of" in q_lower or "twice" in q_lower) and len(nums) == 1: return str(nums[0] * 2)
+        if "square of" in q_lower and len(nums) == 1: return str(nums[0] * nums[0])
+        if any(w in q_lower for w in ["larger", "greater", "bigger", "highest", "maximum", "max", "most"]): return str(max(nums))
+        if any(w in q_lower for w in ["smaller", "less", "lowest", "minimum", "least", "min"]): return str(min(nums))
+
+    if len(nums) >= 2:
+        if any(op in q_lower for op in ["plus", "add", "sum", "total", "+"]): return str(nums[0] + nums[1])
+        if any(op in q_lower for op in ["minus", "subtract", "difference", "take", "-"]): return str(nums[0] - nums[1])
+        if any(op in q_lower for op in ["times", "multipl", "product", "*"]): return str(nums[0] * nums[1])
+        if any(op in q_lower for op in ["divid", "quotient", "/"]): return str(nums[0] // nums[1]) if nums[1] != 0 else "0"
+
+    return str(nums[0]) if nums else "0"
 
 
 async def jitter(min_s: float = 0.5, max_s: float = 1.5):
