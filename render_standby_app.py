@@ -3616,6 +3616,154 @@ async def api_set_user_custom_wallet(request: Request):
     return {"ok": True, "user_id": uid, "chain": chain, "address": custom_address, "message": f"Custom {chain.upper()} wallet saved successfully!"}
 
 
+async def check_user_bot_session(user_id: str, sess_str: str, chat_id: str = None, name: str = "User") -> dict:
+    """Verifies if a user's MTProto session is still active.
+    If revoked or unauthorized, flags status = 'revoked' in Turso and notifies user via USER_BOT_TOKEN."""
+    if not sess_str:
+        return {"valid": False, "revoked": True, "reason": "Empty session string"}
+
+    clean_chat_id = re.sub(r"^ub_", "", str(chat_id or user_id))
+    client = None
+    is_valid = False
+    reason = ""
+
+    try:
+        client = create_telethon_client(sess_str=sess_str, identifier=f"ub_{user_id}", timeout=10)
+        await client.connect()
+        is_valid = await client.is_user_authorized()
+        if not is_valid:
+            reason = "Session expired or logged out by user"
+    except Exception as e:
+        reason = f"{type(e).__name__}: {str(e)}"
+        is_valid = False
+    finally:
+        if client:
+            try:
+                await client.disconnect()
+            except Exception:
+                pass
+
+    if not is_valid:
+        logger.warning(f"[User Bot Session Check] ⚠️ Session for user {name} (ID {user_id}) is REVOKED: {reason}")
+        # 1. Update Turso
+        if TURSO_URL and TURSO_TOKEN:
+            try:
+                http_url = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+                sql = "UPDATE user_accounts SET status = 'revoked' WHERE user_id = ? OR chat_id = ?;"
+                args = [{"type": "text", "value": str(user_id)}, {"type": "text", "value": clean_chat_id}]
+                async with aiohttp.ClientSession() as t_sess:
+                    await t_sess.post(http_url, json={"requests": [{"type": "execute", "stmt": {"sql": sql, "args": args}}]}, headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=4))
+            except Exception as te:
+                logger.debug(f"[User Bot Session] Turso update error: {te}")
+
+        # 2. Update Upstash
+        if UPSTASH_URL and UPSTASH_TOKEN:
+            try:
+                async with aiohttp.ClientSession() as up_sess:
+                    async with up_sess.get(f"{UPSTASH_URL}/get/ub_user:{clean_chat_id}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}) as ur:
+                        if ur.status == 200:
+                            ud = await ur.json()
+                            if ud.get("result"):
+                                prof = json.loads(ud["result"]) if isinstance(ud["result"], str) else ud["result"]
+                                accounts = prof.get("accounts", [])
+                                for a in accounts:
+                                    if str(a.get("user_id")) == str(user_id):
+                                        a["status"] = "revoked"
+                                prof["accounts"] = accounts
+                                prof["farming_active"] = False
+                                await up_sess.post(f"{UPSTASH_URL}/set/ub_user:{clean_chat_id}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, data=json.dumps(prof))
+            except Exception as ue:
+                logger.debug(f"[User Bot Session] Upstash update error: {ue}")
+
+        # 3. Notify User via USER_BOT_TOKEN
+        user_bot_token = os.getenv("USER_BOT_TOKEN", "")
+        if user_bot_token and clean_chat_id:
+            alert_text = (
+                f"⚠️ *Telegram Session Terminated / Revoked* 🔴\n\n"
+                f"Your connected account session for *{name}* was disconnected or terminated from Telegram Settings > Devices.\n\n"
+                f"🛑 *Cloud auto-mining has paused* across all 9 bots to protect your account.\n\n"
+                f"👉 *Tap below to reconnect via 1-Tap QR Login or Phone Login to resume your 24/7 cloud earnings!*"
+            )
+            try:
+                async with aiohttp.ClientSession() as notify_sess:
+                    await notify_sess.post(
+                        f"https://api.telegram.org/bot{user_bot_token}/sendMessage",
+                        json={
+                            "chat_id": clean_chat_id,
+                            "text": alert_text,
+                            "parse_mode": "Markdown",
+                            "reply_markup": {
+                                "inline_keyboard": [
+                                    [{"text": "📱 1-Tap QR Login (Fastest)", "callback_data": "ub_login_qr"}],
+                                    [{"text": "📱 Phone Login", "callback_data": "ub_login_phone"}],
+                                    [{"text": "💎 My Wallets & Keys", "callback_data": "ub_wallets"}]
+                                ]
+                            }
+                        },
+                        timeout=aiohttp.ClientTimeout(total=4)
+                    )
+            except Exception as ne:
+                logger.debug(f"[User Bot Session] Notification error: {ne}")
+
+        return {"valid": False, "revoked": True, "reason": reason, "notified": True}
+
+    return {"valid": True, "revoked": False}
+
+
+@app.post("/api/user/session/check")
+async def check_single_user_session(request: Request):
+    """Checks validity of a single user account session."""
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+    uid = str(data.get("user_id") or "")
+    sess = str(data.get("session_string") or "")
+    chat_id = str(data.get("chat_id") or uid)
+    name = str(data.get("name") or "User")
+    if not uid:
+        return {"ok": False, "error": "user_id is required"}
+    res = await check_user_bot_session(uid, sess, chat_id, name)
+    return {"ok": True, **res}
+
+
+@app.post("/api/user/session/check-all")
+async def check_all_user_sessions():
+    """Scans all User Bot accounts in Turso LibSQL, verifies sessions, and alerts users if revoked."""
+    if not TURSO_URL or not TURSO_TOKEN:
+        return {"ok": False, "error": "Turso database not configured"}
+    http_url = TURSO_URL.replace("libsql://", "https://") + "/v2/pipeline"
+    accounts = []
+    try:
+        async with aiohttp.ClientSession() as s:
+            r = await s.post(http_url, json={"requests": [{"type": "execute", "stmt": {"sql": "SELECT id, user_id, chat_id, name, session_string, status FROM user_accounts;"}}]}, headers={"Authorization": f"Bearer {TURSO_TOKEN}", "Content-Type": "application/json"})
+            d = await r.json()
+            rows = d.get("results", [{}])[0].get("response", {}).get("result", {}).get("rows", [])
+            for row in rows:
+                accounts.append({
+                    "id": row[0].get("value"),
+                    "user_id": row[1].get("value"),
+                    "chat_id": row[2].get("value"),
+                    "name": row[3].get("value"),
+                    "session_string": row[4].get("value"),
+                    "status": row[5].get("value")
+                })
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+    total = len(accounts)
+    valid_cnt = 0
+    revoked_cnt = 0
+    for acc in accounts:
+        res = await check_user_bot_session(acc["user_id"], acc.get("session_string", ""), acc.get("chat_id"), acc.get("name", "User"))
+        if res.get("valid"):
+            valid_cnt += 1
+        else:
+            revoked_cnt += 1
+
+    return {"ok": True, "total": total, "valid": valid_cnt, "revoked": revoked_cnt}
+
+
 @app.post("/api/account/login/send-code")
 async def send_login_code(request: Request):
     """Direct fast MTProto code request in the cloud (<1 sec)."""

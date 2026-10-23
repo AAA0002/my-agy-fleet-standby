@@ -528,57 +528,28 @@
           </button>
         </div>
 
-        <div class="relative flex py-1 items-center mb-3">
-          <div class="flex-grow border-t border-white/10"></div>
-          <span class="flex-shrink mx-2 text-[10px] uppercase font-bold text-slate-500">Or Manual Input</span>
-          <div class="flex-grow border-t border-white/10"></div>
-        </div>
-
-        <!-- Telegram ID / Phone / Auth Input -->
-        <div class="my-3">
-          <div class="flex items-center justify-between mb-1">
-            <label class="block text-[10px] uppercase font-bold text-slate-400">Telegram ID, Phone, or Auth Link</label>
-            <button type="button" onclick="pasteFromClipboard()" class="text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
-              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
-              <span>Paste</span>
-            </button>
+        <!-- Security & Real Device Linking Notice -->
+        <div class="mt-3 p-3 rounded-xl bg-slate-950/60 border border-white/5 space-y-2 text-left">
+          <div class="flex items-center gap-2 text-xs font-bold text-white">
+            <span class="text-blue-400">🛡️</span>
+            <span>Cryptographic MTProto Device Security</span>
           </div>
-          <textarea id="input-raw-data" oninput="onInputDataChanged()" rows="2" class="w-full p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition" placeholder="Enter numeric Telegram ID (e.g. 6727787768), phone (+8801...), or auth link"></textarea>
-        </div>
-
-        <!-- Live Parsed Validation Card -->
-        <div id="parse-preview-box" class="hidden mb-3 p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-[11px] text-emerald-200 space-y-1">
-          <div class="flex items-center gap-1.5 font-bold text-emerald-300">
-            <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            <span id="parse-preview-title">Verified Telegram Account Detected</span>
-          </div>
-          <div id="parse-preview-user" class="font-mono text-[10px] text-slate-300">User: --</div>
-          <div id="parse-preview-hash" class="font-mono text-[9px] text-slate-400 truncate">Status: Active Cloud Farming</div>
-        </div>
-
-        <!-- Account Label Input -->
-        <div class="mb-3">
-          <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1">Account Label</label>
-          <input type="text" id="input-label" class="w-full p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition" placeholder="e.g. main, node2, phone2, worker" value="main" />
-        </div>
-
-        <!-- Submit Button -->
-        <button id="btn-submit-connect" onclick="submitConnectAccount()" class="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 via-indigo-600 to-cyan-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs active:scale-[0.98] transition flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          <span>Connect Account to Cloud Miner</span>
-        </button>
-
-        <!-- Instructions Accordion -->
-        <div class="mt-4 pt-3 border-t border-white/10">
-          <button type="button" onclick="toggleInstructions()" class="w-full flex items-center justify-between text-[11px] font-bold text-slate-300 hover:text-white">
-            <span>How to Connect Your Account (10s Guide)</span>
-            <span id="instr-arrow" class="font-mono text-xs">▼</span>
-          </button>
-          <div id="instructions-body" class="hidden text-[10px] text-slate-400 mt-2 space-y-1.5 leading-relaxed bg-black/30 p-2.5 rounded-xl border border-white/5">
-            <p>1. <strong>⚡ 1-Tap Connect:</strong> Tap the green button above to immediately connect your current account with zero typing.</p>
-            <p>2. <strong>🆔 Telegram User ID:</strong> Or enter any numeric Telegram ID (numbers only) in the box above.</p>
-            <p>3. <strong>📱 Phone Number:</strong> Or enter your phone number with country code (e.g. +8801...).</p>
-            <p>4. <strong>🔒 100% Cloud Automated:</strong> Your accounts mine 24/7 in our multi-cloud mesh with zero device battery drain.</p>
+          <p class="text-[11px] text-slate-300 leading-relaxed">
+            All 9 crypto mini apps enforce cryptographic signatures. Bare numeric Telegram IDs <strong>cannot sign transactions or claim yields</strong>. Connecting via 1-Tap QR Login or Phone Login gives the cloud engine authentic permissions to mine 24/7 without battery drain.
+          </p>
+          <div class="grid grid-cols-2 gap-2 pt-1 text-[10px] text-slate-400">
+            <div class="flex items-center gap-1.5">
+              <span class="text-emerald-400">✓</span> <span>Zero Battery Drain</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-emerald-400">✓</span> <span>Non-Custodial Keys</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-emerald-400">✓</span> <span>9 Bots Automated</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-emerald-400">✓</span> <span>Disconnect Anytime</span>
+            </div>
           </div>
         </div>
       </div>
@@ -1095,68 +1066,14 @@
       };
     }
 
-    function onInputDataChanged() {
-      const val = (document.getElementById('input-raw-data').value || '').trim();
-      const previewBox = document.getElementById('parse-preview-box');
-      const previewTitle = document.getElementById('parse-preview-title');
-      const previewUser = document.getElementById('parse-preview-user');
-      const previewHash = document.getElementById('parse-preview-hash');
+    function onInputDataChanged() {}
+    async function pasteFromClipboard() {}
 
-      if (!val || val.length < 3) {
-        if (previewBox) previewBox.classList.add('hidden');
-        return;
-      }
-
-      // Check pure numeric Telegram ID (6-12 digits)
-      if (/^[1-9][0-9]{5,11}$/.test(val)) {
-        if (previewBox) previewBox.classList.remove('hidden');
-        if (previewTitle) previewTitle.textContent = "Verified Telegram User ID";
-        if (previewUser) previewUser.textContent = `User ID: ${val}`;
-        if (previewHash) previewHash.textContent = "Status: 24/7 Cloud Automated";
-        return;
-      }
-
-      // Check phone number
-      if (val.startsWith("+") || /^01[3-9][0-9]{8}$/.test(val)) {
-        if (previewBox) previewBox.classList.remove('hidden');
-        if (previewTitle) previewTitle.textContent = "Telegram Phone Number";
-        if (previewUser) previewUser.textContent = `Phone: ${val}`;
-        if (previewHash) previewHash.textContent = "Status: 24/7 Cloud Automated";
-        return;
-      }
-
-      const p = parseInitDataString(val);
-      if (p.user || p.hash) {
-        if (previewBox) previewBox.classList.remove('hidden');
-        if (previewTitle) previewTitle.textContent = "Verified Telegram Auth Token";
-        const fn = [p.user?.first_name, p.user?.last_name].filter(Boolean).join(' ') || p.user?.username || 'Verified User';
-        const uid = p.user?.id ? ` (ID: ${p.user.id})` : '';
-        if (previewUser) previewUser.textContent = `User: ${fn}${uid}`;
-        if (previewHash) previewHash.textContent = `Token: ${p.hash ? p.hash.slice(0, 16) + '...' : 'Present'}`;
-      } else {
-        if (previewBox) previewBox.classList.add('hidden');
-      }
+    // Submit Connect Account (Guides to Authentic Login)
+    async function submitConnectAccount() {
+      showToast("Please use 1-Tap QR Login or Phone Login above to connect your device!");
+      startQrConnectModal();
     }
-
-    async function pasteFromClipboard() {
-      try {
-        if (navigator.clipboard && navigator.clipboard.readText) {
-          const text = await navigator.clipboard.readText();
-          if (text) {
-            document.getElementById('input-raw-data').value = text;
-            onInputDataChanged();
-            showToast("Pasted from clipboard");
-          }
-        } else {
-          showToast("Long press inside the box to paste");
-        }
-      } catch (_) {
-        showToast("Long press inside the box to paste");
-      }
-    }
-
-    // Fetch User Profile from Edge Mesh (with Instant Cache Hydration)
-    async function loadUserProfile() {
       try {
         const cached = localStorage.getItem(`aaa_user_profile_${currentUserId}`);
         if (cached) {
@@ -1558,46 +1475,10 @@
       }
     }
 
-    // Submit Connect Account
+    // Submit Connect Account (Guides to Authentic Login)
     async function submitConnectAccount() {
-      const raw = document.getElementById('input-raw-data').value.trim();
-      const label = document.getElementById('input-label').value.trim() || 'main';
-      const btn = document.getElementById('btn-submit-connect');
-
-      if (!raw) {
-        showToast("Please enter a Telegram ID, phone, or auth link");
-        return;
-      }
-
-      btn.disabled = true;
-      btn.innerHTML = `<span class="inline-block w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> Connecting...`;
-
-      try {
-        const resData = await apiRequest('/api/user/account/add', {
-          method: "POST",
-          body: JSON.stringify({
-            user_id: currentUserId,
-            pool: selectedPool,
-            raw_data: raw,
-            label: label
-          })
-        });
-
-        if (resData && resData.ok) {
-          showToast(`Account "${label}" connected successfully`);
-          document.getElementById('input-raw-data').value = "";
-          onInputDataChanged();
-          await loadUserProfile();
-          switchTab('accounts');
-        } else {
-          showToast(resData?.error || "Failed to connect. Check ID/phone or slots.");
-        }
-      } catch (err) {
-        showToast("Error: " + err.message);
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>Connect Account to Cloud Miner</span>`;
-      }
+      showToast("Please use 1-Tap QR Login or Phone Login above to connect your device!");
+      startQrConnectModal();
     }
 
     // Remove Account

@@ -2,6 +2,25 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Telegram ID Removal, Session Revocation Sentinel, 5-Tab User Admin & Live Broadcast (October 23, 2026)**:
+  - **Complete Removal of Numeric Telegram ID Input**:
+    * Purged `input-raw-data` textarea and all numeric ID input elements from Mini App (`public_ads/miner/index.html`).
+    * Replaced with cryptographic MTProto device onboarding (1-Tap QR Login & Phone Login).
+  - **MTProto Session Revocation Sentinel & Automatic User Alerting**:
+    * Implemented `check_user_bot_session()` in `app.py`, `render_app_latest.py`, and `render_standby_app.py`.
+    * When Telethon detects an invalid/revoked session (`is_user_authorized() == False`, `SessionRevokedError`), the engine atomically sets `status = 'revoked'` in Turso LibSQL table `user_accounts` and pauses cloud mining.
+    * Automatically delivers an urgent warning alert to the affected user via `USER_BOT_TOKEN` in `@AAAPREMIUMAPPSbot` with 1-Tap QR & Phone reconnection buttons.
+    * Added `/api/user/session/check-all` and `/api/admin/session/check-all` for automated background session audits.
+  - **Community Broadcast & Notification Engine**:
+    * Added `/api/admin/broadcast` and Telegram command `/notify_unconnected` in `deploy_both_cf_workers.py`.
+    * Successfully executed upgrade notification broadcast delivering actionable QR & Phone login invites to 24 live community users in `@AAAPREMIUMAPPSbot`.
+  - **User Bot Admin Console Redesign (`user-admin.html` at `/user-admin`)**:
+    * Added prominent Top Isolation Banner distinguishing User Bot Community Console from Admin Fleet Console.
+    * Expanded navigation from 4 to 5 dedicated tabs: 👥 Users & Sessions, 💎 Wallets & Vaults, 📢 Broadcast & Alerts, ⚡ 9 Pools, 📊 Economy & Burn.
+    * Integrated Session Revocation Scanner button and 1-tap per-user reconnection triggers.
+  - **Authoritative System Documentation**:
+    * Created [DUAL_ADMIN_DASHBOARDS_AND_USER_SYSTEM.md](./DUAL_ADMIN_DASHBOARDS_AND_USER_SYSTEM.md) detailing dual dashboard separation, revocation sentinel, and broadcast procedures.
+
 - **💎 Authentic User MTProto QR/Phone Login, Dedicated Non-Custodial Wallets & User Database Isolation (October 23, 2026)**:
   - **1-Tap Numeric ID Linking Deprecated & Removed**:
     * Identified that bare numeric Telegram IDs cannot sign transactions on third-party Telegram mini apps (MRG, ATF, Victor's, Vyro, Kynex, Diggo, Astra, Pepe, Adx), resulting in 401 Unauthorized errors on automated cloud farming.

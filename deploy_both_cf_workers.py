@@ -3517,6 +3517,151 @@ fi
       }
     }
 
+    // 7.166 Community Broadcast Notification API (@AAAPREMIUMAPPSbot)
+    if (path === "/api/admin/broadcast" && request.method === "POST") {
+      const adminCheck = await verifyAdminRequest(request);
+      if (!adminCheck.ok) return new Response(JSON.stringify({ ok: false, error: "Unauthorized: Admin authentication required" }), { status: 401, headers: corsHeaders });
+      try {
+        const body = await request.json().catch(() => ({}));
+        const target = body.target || "all";
+        const customText = body.message || "";
+        const uToken = env.USER_BOT_TOKEN || "";
+        if (!uToken) return new Response(JSON.stringify({ ok: false, error: "USER_BOT_TOKEN missing" }), { status: 500, headers: corsHeaders });
+
+        let uids = [];
+        try {
+          const res = await fetch(`${UPSTASH_URL}/smembers/ub_registered_users`, {
+            headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` }
+          });
+          const d = await res.json();
+          uids = d.result || [];
+        } catch (_) {}
+
+        let recipients = [];
+        if (target === "all") {
+          recipients = [...uids];
+        } else {
+          for (const uid of uids) {
+            try {
+              const uRes = await fetch(`${UPSTASH_URL}/get/ub_user:${uid}`, { headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` } });
+              const uData = await uRes.json();
+              if (uData.result) {
+                const prof = typeof uData.result === "string" ? JSON.parse(uData.result) : uData.result;
+                const accs = prof.accounts || [];
+                const hasAcc = accs.length > 0;
+                const isRevoked = accs.some(a => a.status === "revoked") || prof.session_status === "revoked";
+                if (target === "no_account" && !hasAcc) recipients.push(uid);
+                else if (target === "revoked" && isRevoked) recipients.push(uid);
+                else if (target === "active" && hasAcc && !isRevoked) recipients.push(uid);
+              }
+            } catch (_) {}
+          }
+        }
+
+        const defaultOnboardMsg = 
+          `🚀 *Upgrade Alert: Connect Your Account for 24/7 Cloud Auto-Mining!* 🌟\n\n` +
+          `Hey Miner! We have fully upgraded AAA AUTO MINING with *1-Tap QR Login & Phone Login* for continuous cloud automation!\n\n` +
+          `⛏️ *Why connect your real device session?*\n` +
+          `• 3rd-party bots (*MRG, ATF, Victor's, Vyro, Kynex, Diggo, Astra, Pepe, Adx*) require authentic sessions to claim yields.\n` +
+          `• Old numeric Telegram IDs cannot sign transactions and have been retired.\n` +
+          `• Dedicated 5-chain non-custodial wallet suite included with 100% private key ownership!\n\n` +
+          `👉 *Tap below to connect in seconds and start earning 24/7 with zero battery drain:*`;
+
+        const msgToSend = customText || defaultOnboardMsg;
+        let sentCount = 0;
+        let failCount = 0;
+
+        for (const uid of recipients) {
+          try {
+            const resp = await fetch(`https://api.telegram.org/bot${uToken}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: uid,
+                text: msgToSend,
+                parse_mode: "Markdown",
+                reply_markup: {
+                  inline_keyboard: [
+                    [{ text: "📱 1-Tap QR Login (Fastest)", callback_data: "ub_login_qr" }],
+                    [{ text: "📱 Phone Login", callback_data: "ub_login_phone" }],
+                    [{ text: "💎 My Wallets & Keys", callback_data: "ub_wallets" }]
+                  ]
+                }
+              })
+            });
+            const rData = await resp.json().catch(() => ({}));
+            if (rData.ok) sentCount++;
+            else failCount++;
+          } catch (_) {
+            failCount++;
+          }
+        }
+
+        return new Response(JSON.stringify({
+          ok: true,
+          total: recipients.length,
+          sent: sentCount,
+          failed: failCount,
+          target
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
+    // 7.167 Check All User Sessions API & Revocation Scanner
+    if (path === "/api/admin/session/check-all" && (request.method === "POST" || request.method === "GET")) {
+      const adminCheck = await verifyAdminRequest(request);
+      if (!adminCheck.ok) return new Response(JSON.stringify({ ok: false, error: "Unauthorized: Admin authentication required" }), { status: 401, headers: corsHeaders });
+      try {
+        const renderRes = await fetch("https://my-agy-fleet-standby-node2.onrender.com/api/user/session/check-all", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        }).catch(() => null);
+        if (renderRes && renderRes.ok) {
+          const rData = await renderRes.json();
+          return new Response(JSON.stringify(rData), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+        }
+        return new Response(JSON.stringify({ ok: true, message: "Session scanner dispatched to Render Node 2" }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
+    // 7.168 Send Individual Reconnect Prompt
+    if (path === "/api/admin/session/notify" && request.method === "POST") {
+      const adminCheck = await verifyAdminRequest(request);
+      if (!adminCheck.ok) return new Response(JSON.stringify({ ok: false, error: "Unauthorized: Admin authentication required" }), { status: 401, headers: corsHeaders });
+      try {
+        const body = await request.json().catch(() => ({}));
+        const uid = body.uid;
+        const uToken = env.USER_BOT_TOKEN || "";
+        if (!uid || !uToken) return new Response(JSON.stringify({ ok: false, error: "uid and USER_BOT_TOKEN required" }), { status: 400, headers: corsHeaders });
+        const text = body.text || 
+          `⚠️ *Telegram Session Disconnected* 🔴\n\nYour account session was disconnected or expired. Please tap below to reconnect via 1-Tap QR Login or Phone Login to resume 24/7 cloud mining!`;
+        const resp = await fetch(`https://api.telegram.org/bot${uToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: uid,
+            text,
+            parse_mode: "Markdown",
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: "📱 1-Tap QR Login", callback_data: "ub_login_qr" }],
+                [{ text: "📱 Phone Login", callback_data: "ub_login_phone" }],
+                [{ text: "💎 My Wallets & Keys", callback_data: "ub_wallets" }]
+              ]
+            }
+          })
+        });
+        const rData = await resp.json().catch(() => ({}));
+        return new Response(JSON.stringify(rData), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
     // 7.15 Dedicated AAA Telegram Mini App Integration Endpoints (Login, Relink, Verification, Admin Bot Bridge)
     if (path.startsWith("/api/telegram/") && (request.method === "POST" || request.method === "GET")) {
       try {
@@ -13907,6 +14052,79 @@ Reply to Arif naturally:`;
               `2️⃣ *📱 Phone Login:* Tap button below or send your phone number (e.g. \`+8801...\`)\n\n` +
               `💎 *Wallets:* A non-custodial 5-chain wallet suite is automatically created with full private key ownership.`;
             await sendUserReply(promptConnect, connectKeyboard);
+            return;
+          }
+
+          // 3.85 Admin Community Broadcast Command (/notify_unconnected, /broadcast, /notify_users)
+          if ((text.startsWith("/notify_unconnected") || text.startsWith("/notify_users") || text.startsWith("/broadcast")) && isOwner) {
+            await sendUserChatAction("typing");
+            let uids = [];
+            try {
+              const res = await fetch(`${UPSTASH_URL}/smembers/ub_registered_users`, { headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` } });
+              const d = await res.json();
+              uids = d.result || [];
+            } catch (_) {}
+
+            let targetUids = [];
+            const onlyUnconnected = text.startsWith("/notify_unconnected") || !text.includes("all");
+            if (onlyUnconnected) {
+              for (const u of uids) {
+                try {
+                  const pRes = await fetch(`${UPSTASH_URL}/get/ub_user:${u}`, { headers: { "Authorization": `Bearer ${UPSTASH_TOKEN}` } });
+                  const pData = await pRes.json();
+                  if (pData.result) {
+                    const prof = typeof pData.result === "string" ? JSON.parse(pData.result) : pData.result;
+                    if (!(prof.accounts && prof.accounts.length > 0)) targetUids.push(u);
+                  }
+                } catch (_) {}
+              }
+            } else {
+              targetUids = [...uids];
+            }
+
+            const customMsgMatch = text.match(/^\/(?:notify_unconnected|notify_users|broadcast)(?:\s+(.+))?$/s);
+            const customMsg = customMsgMatch && customMsgMatch[1] ? customMsgMatch[1].trim() : "";
+
+            const defaultOnboardMsg = 
+              `🚀 *Upgrade Alert: Connect Your Account for 24/7 Cloud Auto-Mining!* 🌟\n\n` +
+              `Hey Miner! We have fully upgraded AAA AUTO MINING with *1-Tap QR Login & Phone Login* for continuous cloud automation!\n\n` +
+              `⛏️ *Why connect your real device session?*\n` +
+              `• 3rd-party bots (*MRG, ATF, Victor's, Vyro, Kynex, Diggo, Astra, Pepe, Adx*) require authentic sessions to claim yields.\n` +
+              `• Old numeric Telegram IDs cannot sign transactions and have been retired.\n` +
+              `• Dedicated 5-chain non-custodial wallet suite included with 100% private key ownership!\n\n` +
+              `👉 *Tap below to connect in seconds and start earning 24/7 with zero battery drain:*`;
+
+            const msgToSend = customMsg || defaultOnboardMsg;
+            let sentCount = 0;
+            let failCount = 0;
+
+            for (const tu of targetUids) {
+              try {
+                const resp = await fetch(`https://api.telegram.org/bot${uBotToken}/sendMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: tu,
+                    text: msgToSend,
+                    parse_mode: "Markdown",
+                    reply_markup: {
+                      inline_keyboard: [
+                        [{ text: "📱 1-Tap QR Login (Fastest)", callback_data: "ub_login_qr" }],
+                        [{ text: "📱 Phone Login", callback_data: "ub_login_phone" }],
+                        [{ text: "💎 My Wallets & Keys", callback_data: "ub_wallets" }]
+                      ]
+                    }
+                  })
+                });
+                const rData = await resp.json().catch(() => ({}));
+                if (rData.ok) sentCount++;
+                else failCount++;
+              } catch (_) {
+                failCount++;
+              }
+            }
+
+            await sendUserReply(`📢 *Broadcast Report:*\n• *Target:* ${onlyUnconnected ? "Unconnected Users" : "All Users"}\n• *Total Identified:* ${targetUids.length}\n• *Successfully Sent:* ${sentCount}\n• *Failed:* ${failCount}`);
             return;
           }
 
