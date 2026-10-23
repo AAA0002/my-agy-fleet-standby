@@ -1575,7 +1575,7 @@ async def token_health_and_refresh_watchdog():
         await asyncio.sleep(1800)
 
 # =====================================================================
-# 24/7 AUTONOMOUS CLOUD FLEET AD-FARMING ENGINE (18 Accounts x 1,000 Ads/Day)
+# 24/7 AUTONOMOUS CLOUD FLEET AD-FARMING ENGINE (20 Accounts x 1,000 Ads/Day)
 # =====================================================================
 FLEET_20_ACCOUNTS_MAP = [
     {"index": 1, "uid": "6727787768", "name": "Arif Hossain (Master)"},

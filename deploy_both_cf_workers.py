@@ -1387,8 +1387,8 @@ async function getFleetTokens(env) {
 
 const DEFAULT_FLEET_DATA = {
   ok: true,
-  count: 18,
-  active: 18,
+  count: 20,
+  active: 20,
   bnb_balance: 0.000812,
   kynex_balance: 4050,
   ton_balance: 1.42,
@@ -1410,7 +1410,9 @@ const DEFAULT_FLEET_DATA = {
     { index: 15, name: "Tiffany Тарасов", user_id: 7749125802, phone: "+8801906045479", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
     { index: 16, name: "Roger Волков", user_id: 7954290138, phone: "+8801304151082", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
     { index: 17, name: "Kevin Смирнов", user_id: 8841038141, phone: "+8801879273559", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
-    { index: 18, name: "Mary Каримов", user_id: 8975442879, phone: "+8801839716506", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" }
+    { index: 18, name: "Mary Каримов", user_id: 8975442879, phone: "+8801839716506", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" },
+    { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801917631528", mining_active: true, kynex_coins: 4050, atf_balance: 150.0, status: "Active" }
   ]
 };
 
@@ -1903,7 +1905,7 @@ let memDeletedAccounts = null;
 let memDeletedAccountsTs = 0;
 let lastMiniappTokensKvWrite = 0;
 let memSessionHealth = {
-  healthy: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+  healthy: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
   revoked: [],
   lastCheck: 0
 };
@@ -2844,15 +2846,15 @@ fi
     }
 
     // 7. Fleet Live Telemetry Query (Fast In-Memory -> Upstash Redis -> KV -> Default Fallback)
-    if (path === "/api/fleet/live" || path === "/api/status" || path === "/api/fleet-status" || path === "/api/stats") {
+    if (path === "/api/fleet/live" || path === "/api/status" || path === "/api/fleet-status" || path === "/api/fleet/status" || path === "/api/stats") {
       try {
         try {
           if (Date.now() - memSessionHealth.lastCheck > 30000) {
             const smR = await upstashSmembers("fleet:revoked_sessions", 5000);
             if (Array.isArray(smR)) {
-              const rNums = smR.map(Number).filter(n => !isNaN(n) && n > 0 && n <= 18);
+              const rNums = smR.map(Number).filter(n => !isNaN(n) && n > 0 && n <= 20);
               memSessionHealth.revoked = rNums;
-              memSessionHealth.healthy = Array.from({ length: 18 }, (_, i) => i + 1).filter(x => !memSessionHealth.revoked.includes(x));
+              memSessionHealth.healthy = Array.from({ length: 20 }, (_, i) => i + 1).filter(x => !memSessionHealth.revoked.includes(x));
               memSessionHealth.lastCheck = Date.now();
             }
           }
@@ -2890,7 +2892,7 @@ fi
           return stateObj;
         };
 
-        if (memFleetState && Array.isArray(memFleetState.accounts) && memFleetState.accounts.length >= 18) {
+        if (memFleetState && Array.isArray(memFleetState.accounts) && memFleetState.accounts.length >= 20) {
           memFleetState = ensureFullFleet(memFleetState);
           return new Response(JSON.stringify(memFleetState), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=15", ...corsHeaders } });
         }
@@ -2935,7 +2937,7 @@ fi
           }
         } catch (_) {}
 
-        // 3. Fallback to robust DEFAULT_FLEET_DATA (18 Accounts)
+        // 3. Fallback to robust DEFAULT_FLEET_DATA (20 Accounts)
         const fallbackFleet = ensureFullFleet({ ...DEFAULT_FLEET_DATA });
         memFleetState = fallbackFleet;
         ctx.waitUntil(upstashSet("fleet:live_state", fallbackFleet));
@@ -4671,7 +4673,7 @@ fi
           role: "Executive Operations & Fleet Command Bot",
           status: "online",
           version: "5.0-executive",
-          fleet_size: 18,
+          fleet_size: 20,
           active_bots: 9,
           supported_bots: [
             "MRG Miner (@mrgminerbot)",
@@ -4936,7 +4938,7 @@ fi
 
           return `⚡ *MY AGY AI — LIVE OPERATIONS COMMAND CENTER*\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `📊 *Fleet Telegram Sessions (18 Nodes):*\n` +
+            `📊 *Fleet Telegram Sessions (20 Nodes):*\n` +
             `• 🟢 *MTProto Online:* \`${activeCount}/${accounts.length} Accounts\` (${Math.round(activeCount/accounts.length*100)}% Online) ✅\n` +
             `• ⚡ *Cloud WebApp Farming:* \`${Math.max(atfCount, accounts.length)}/${accounts.length} Accounts\` (100% Active in Cloud)\n` +
             `• 🔄 *Session Guardian:* 24h token auto-refresh active via Render Node 2\n\n` +
@@ -4956,7 +4958,7 @@ fi
             `• 🌐 *VM Ingress:* \`2000-agqvyhmhjo2ajhpryq6lz5ewcy.instabox.tech\`\n` +
             `• 🔄 *CI/CD Redundancy:* GitHub Actions + CircleCI Failover Active\n` +
             `• 🌐 *Edge Mesh:* 5 Cloudflare Worker Shards Active\n` +
-            `• 💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • 18 Configured TON Wallets\n` +
+            `• 💰 *On-Chain Vault:* \`${liveBnb.toFixed(6)} BNB\` • 20 Configured TON Wallets\n` +
             `• 🛡️ *Zero-Phone Load:* 100% Cloud-First • Pure Accumulation Mode\n` +
             `━━━━━━━━━━━━━━━━━━━━━━\n` +
             `⏱️ *Live Sync Timestamp:* \`${dhakaTime}\`\n\n` +
@@ -5056,7 +5058,7 @@ fi
               `📊 *Session Health Summary:*\n` +
               `• 🟢 *MTProto Online:* \`${activeList.length}/${accounts.length} Accounts\` (${pct}% Online)\n` +
               `• 🔴 *Needs Re-link:* \`${revokedList.length} Accounts\` (${revokedIndicesStr})\n` +
-              `• ⚡ *REST WebApp Mining:* \`18/20 Accounts Active\` (100% automated via cloud workers)\n\n` +
+              `• ⚡ *REST WebApp Mining:* \`${accounts.length}/${accounts.length} Accounts Active\` (100% automated via cloud workers)\n\n` +
               `🟢 *Active MTProto Sessions (${activeList.length}):*\n` +
               activeList.map(a => `• *#${a.idx}* ${a.name} (\`${a.phone}\`) — 🟢 Online`).join("\n") + `\n\n` +
               `🔴 *Needs Re-link (${revokedList.length}):*\n` +
@@ -6224,7 +6226,7 @@ fi
                 `• Node 1 (US-East Edge): 🟢 Online (42ms)\n` +
                 `• Node 2 (EU-Central Edge): 🟢 Online (38ms)\n` +
                 `• Node 3 (Global Shard): 🟢 Online (45ms)\n` +
-                `• Node 4 (Singapore APAC D1 SQL): 🟢 Online (18 Accounts Active)\n` +
+                `• Node 4 (Singapore APAC D1 SQL): 🟢 Online (20 Accounts Active)\n` +
                 `• Node 5 (Secondary Mining Engine): 🟢 Online (2m Cron Active)\n\n` +
                 `🚀 *Render Compute Nodes (Single-Active Protocol):*\n` +
                 `• Primary Host (Node 2 Frankfurt - abidhasanch): 🟢 Active Coordinator ($0 Free Tier)\n` +
@@ -7008,8 +7010,8 @@ fi
             } else if (cbData === "btn_briefing") {
               ctx.waitUntil((async () => {
                 const health = await getSessionHealthState();
-                const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size}/18 accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 9 legitimate mining bots active (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
-                const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size}/18 mining${health.revoked.size > 0 ? `, ${health.revoked.size} need re-link` : ' (100% online)'} across multi-cloud nodes.`;
+                const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size}/20 accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 9 legitimate mining bots active (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
+                const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size}/20 mining${health.revoked.size > 0 ? `, ${health.revoked.size} need re-link` : ' (100% online)'} across multi-cloud nodes.`;
                 const prov = aiData.provider || "Cloudflare Workers AI";
                 const mod = aiData.model || "@cf/meta/llama-3.1-8b-instruct";
                 const msgText = `📊 *MY AGY AI — Daily Executive Briefing*\n━━━━━━━━━━━━━━━━━━━━━━\n${ans}\n━━━━━━━━━━━━━━━━━━━━━━\n🤖 _Generated by ${prov} (${mod})_`;
@@ -8048,7 +8050,7 @@ fi
             }
             const b1 = await getBscBal(w1);
             const rep = `🪙 *On-Chain BNB Vault & Wallet Tracker*\n\n` +
-              `• *Binance BEP-20 Vault (All 18 Accounts):* \`${b1.toFixed(6)} BNB\`\n` +
+              `• *Binance BEP-20 Vault (All 20 Accounts):* \`${b1.toFixed(6)} BNB\`\n` +
               `  \`0xfda4182001672b9f0f09e2118242e543e35ed5ce\`\n` +
               `• *Binance TON Vault (Main Account):*\n` +
               `  \`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT\`\n` +
@@ -8834,7 +8836,7 @@ fi
               `• *Status:* Active & Auto-Mining ✅\n` +
               `• *Automation:* Auto Math Challenge Solver, Hashrate Boost, Cooldown Tasks\n` +
               `• *Payout Network:* TON Blockchain\n` +
-              `• *Accounts:* \`${health.healthy.size}/18 Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
+              `• *Accounts:* \`${health.healthy.size}/20 Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -8850,7 +8852,7 @@ fi
               `• *Status:* Active & Auto-Mining ✅\n` +
               `• *Automation:* Cloud Turnstile Solvers, Arcade Mining, Daily Check-in, Level Upgrades\n` +
               `• *Payout Network:* TON Blockchain\n` +
-              `• *Accounts:* \`${health.healthy.size}/18 Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
+              `• *Accounts:* \`${health.healthy.size}/20 Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -8866,7 +8868,7 @@ fi
               `• *Status:* Active & Auto-Mining ✅\n` +
               `• *Automation:* Mining Start/Claim, Task Verification, TonConnect 2.0 Wallets\n` +
               `• *Payout Network:* TON / VYRO DEX\n` +
-              `• *Accounts:* \`${health.healthy.size}/18 Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
+              `• *Accounts:* \`${health.healthy.size}/20 Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -8882,7 +8884,7 @@ fi
               `• *Status:* Active & Auto-Mining ✅\n` +
               `• *Automation:* Firebase RTDB Auth, Energy Management, Daily Checkin, Ads Rewards\n` +
               `• *Payout Network:* Firebase Cloud / KNX\n` +
-              `• *Accounts:* \`${health.healthy.size}/18 Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
+              `• *Accounts:* \`${health.healthy.size}/20 Active\`${health.revoked.size > 0 ? ` (🔴 ${health.revoked.size} Need Re-link)` : ""}\n` +
               `━━━━━━━━━━━━━━━━━━━━━━`;
             await sendReply(rep, statusInlineKeyboard);
           })());
@@ -9129,11 +9131,11 @@ fi
               `⭐ *Binance Web3 Vault (Account #10 - Tanvir Ahmed 10):*\n` +
               `• BEP-20: \`0x017841f26d5b79cc8c5eb20c65367bb645cc2610\`\n` +
               `• TON: \`UQBeouWxf367f6oa9B66xSf6toi-rHTy6ljp_N1b7x2s5LKH\`\n\n` +
-              `🔐 *16 Self-Custody Worker Wallets (Gram / Tonkeeper):*\n` +
-              `• Nodes 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18\n` +
+              `🔐 *18 Self-Custody Worker Wallets (Gram / Tonkeeper):*\n` +
+              `• Nodes 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20\n` +
               `• 100% Isolated 24-word seeds for anti-sybil pool verification.\n\n` +
-              `💡 *Command Tip:* Send \`/wallet <1-18>\` (e.g. \`/wallet 5\`) to inspect any account's full keys & 24-word seed phrase!\n\n` +
-              `🛡️ _All 18 verified wallets are continuously monitored and secured in the cloud._`;
+              `💡 *Command Tip:* Send \`/wallet <1-20>\` (e.g. \`/wallet 5\`) to inspect any account's full keys & 24-word seed phrase!\n\n` +
+              `🛡️ _All 20 verified wallets are continuously monitored and secured in the cloud._`;
             await sendReply(rep, statusInlineKeyboard);
           })());
           return new Response("OK");
@@ -9214,7 +9216,7 @@ fi
               `• Node 1 (US-East Edge): 🟢 Online (42ms)\n` +
               `• Node 2 (EU-Central Edge): 🟢 Online (38ms)\n` +
               `• Node 3 (Global Shard): 🟢 Online (45ms)\n` +
-              `• Node 4 (Singapore APAC D1 SQL): 🟢 Online (18 Accounts Active)\n` +
+              `• Node 4 (Singapore APAC D1 SQL): 🟢 Online (20 Accounts Active)\n` +
               `• Node 5 (Secondary Mining Engine): 🟢 Online (2m Cron Active)\n\n` +
               `🚀 *Render Compute Nodes (Single-Active Protocol):*\n` +
               `• Primary Host (Node 2 Frankfurt - abidhasanch): 🟢 Active Coordinator ($0 Free Tier)\n` +
@@ -10007,7 +10009,7 @@ fi
           if (userLower.includes("harvest") || userLower.includes("farm all") || userLower.includes("claim all")) {
             await queueHarvestAction();
             const health = await getSessionHealthState();
-            await sendReply(`🌾 *Fleet Harvest Dispatched!*\n\n${health.healthy.size}/18 active accounts across all 9 active mining pools (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI) have been queued for harvesting on Cloudflare Edge.${health.revoked.size > 0 ? `\n\n⚠️ ${health.revoked.size} accounts skipped — session re-link required via Session Audit.` : ""}`, statusInlineKeyboard);
+            await sendReply(`🌾 *Fleet Harvest Dispatched!*\n\n${health.healthy.size}/20 active accounts across all 9 active mining pools (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI) have been queued for harvesting on Cloudflare Edge.${health.revoked.size > 0 ? `\n\n⚠️ ${health.revoked.size} accounts skipped — session re-link required via Session Audit.` : ""}`, statusInlineKeyboard);
             return;
           }
 
@@ -10023,7 +10025,7 @@ fi
           }
 
           if (userLower.includes("stones") && (userLower.includes("status") || userLower.includes("balance") || userLower.includes("wd") || userLower.includes("cooldown"))) {
-            await sendReply(`🚫 *STONES MINERS DECOMMISSIONED & PURGED*\n\n• *Status:* 🚫 Banned & Purged per Operator Directive\n• *Action Taken:* All 18 fleet accounts permanently blocked @stoneswithestand_bot, left scam channels, and deleted dialog history.\n• *Fleet Focus:* 100% active on the 9 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI).`, statusInlineKeyboard);
+            await sendReply(`🚫 *STONES MINERS DECOMMISSIONED & PURGED*\n\n• *Status:* 🚫 Banned & Purged per Operator Directive\n• *Action Taken:* All 20 fleet accounts permanently blocked @stoneswithestand_bot, left scam channels, and deleted dialog history.\n• *Fleet Focus:* 100% active on the 9 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI).`, statusInlineKeyboard);
             return;
           }
 
@@ -10056,9 +10058,9 @@ fi
               }
             } catch (_) {}
 
-            const systemPrompt = `You are Ari, the personal cloud AI assistant for Arif's 18-account automated crypto and mining fleet (MY AGY AI).
+            const systemPrompt = `You are Ari, the personal cloud AI assistant for Arif's 20-account automated crypto and mining fleet (MY AGY AI).
 Live Fleet Context:
-- 18 active accounts mining 24/7 across the 9 active legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, and AdxEarn AI. All discontinued & scammer bots (Stones, AI Lab, UltraWallet, FINVORA, ART, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, USDT QUAD, TAC, Ominix) have been permanently purged and blocked.
+- 20 active accounts mining 24/7 across the 9 active legitimate bots: MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, and AdxEarn AI. All discontinued & scammer bots (Stones, AI Lab, UltraWallet, FINVORA, ART, Apex, Ainovum, TRX Power, Bitcoin Cloud, Tensor, Ton Trader, USDT QUAD, TAC, Ominix) have been permanently purged and blocked.
 - Policy: ATF Miner is in 100% farming & accumulation mode (NO withdrawals; let balance grow).
 - Policy (Admin Fleet Accounts): MRG Miner is strictly in 100% Holding & Compounding mode (NO auto-withdrawals) to preserve peak levels (Level 1..50), maximum hashrate (5.5 TH/s), and squad referral qualifications.
 - Vault BEP-20 (BNB, USDT): 0xfda4182001672b9f0f09e2118242e543e35ed5ce (Live Balance: ${liveBnb.toFixed(6)} BNB).
@@ -10085,8 +10087,8 @@ Reply to Arif naturally:`;
           }
 
           const defaultRep = `⚡ *MY AGY AI Operations Hub*\n\n` +
-            `• 🟢 18 Accounts Online & Autonomously Mining in Cloud\n` +
-            `• 🤖 5 Legitimate Pools: MRG • ATF • Victor's Company • VyroDrop • Kynex Network\n` +
+            `• 🟢 20 Accounts Online & Autonomously Mining in Cloud\n` +
+            `• 🤖 9 Active Pools: MRG • ATF • Victor's Company • VyroDrop • Kynex Network • DiggoMiner • Astra • PepeGram • AdxEarn AI\n` +
             `• 💡 Use the toolbar buttons below to manage fleet operations:`;
           await sendReply(defaultRep, statusInlineKeyboard);
         })());
