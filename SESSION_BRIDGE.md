@@ -77,6 +77,14 @@
 6. **GitHub Actions Turnstile Solver & CI/CD Pipeline Green**:
    - Fixed Python f-string escaping in `window.turnstile.render` hook inside `mrg_turnstile_solver.py`.
    - Verified GitHub Actions runs (Runs `39633362685`, `39634493201`, `39713197934`) all completed with `✓ SUCCESS`. Zero quota or minute exhaustion.
+7. **Real-Time Channel Departure/Rejoin Sentinel**:
+   - Registered `chat_member` and `my_chat_member` in Telegram Webhook allowed updates across all edge mesh deployment triggers.
+   - Built dedicated `update.chat_member` sentinel in `/user-bot-webhook`: instantly intercepts channel leaves across all 3 official community channels, pauses mining, and sends a DM with 1-tap rejoin and verify buttons; automatically confirms rejoins and resumes 24/7 cloud mining.
+8. **Client-Side Parser Parity & Instant Cache Hydration**:
+   - Modernized `parseInitDataString` across `public_ads/miner/index.html` and `public/app/index.html` with 3-pass URL decoding and multi-format prefix support (`#tgWebAppData=`, `tgWebAppData=`, `%23tgWebAppData`, etc.).
+   - Added instant `localStorage` cache hydration to eliminate UI flicker on mobile connections.
+9. **Short-Text Directive & Comprehensive Guide**:
+   - Condensed all User Bot messages (slot limits, link guides, connection menus, AI greetings, daily streaks) to short, punchy formats while preserving the comprehensive long master guide.
 
 
 ---

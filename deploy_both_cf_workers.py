@@ -2503,7 +2503,7 @@ export default {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               url: `${baseDomain}/user-bot-webhook`,
-              allowed_updates: ["message", "edited_message", "callback_query", "channel_post", "edited_channel_post"],
+              allowed_updates: ["message", "edited_message", "callback_query", "channel_post", "edited_channel_post", "pre_checkout_query", "chat_member", "my_chat_member"],
               drop_pending_updates: false
             })
           });
@@ -10816,6 +10816,88 @@ Reply to Arif naturally:`;
           return new Response("OK");
         }
 
+        // 14.01 Real-Time Channel Departure & Rejoin Sentinel (Auto-detects when user leaves/joins any official channel)
+        const chatMember = update.chat_member;
+        if (chatMember) {
+          const chChat = chatMember.chat;
+          const chId = chChat?.id;
+          const chTitle = chChat?.title || "Official Channel";
+          const chUsername = chChat?.username ? `@${chChat.username}` : chTitle;
+          const targetUser = chatMember.new_chat_member?.user || chatMember.from;
+          const targetUid = targetUser?.id;
+          const newStatus = chatMember.new_chat_member?.status;
+
+          const ALL_COMMUNITY_CHANNELS = [
+            { id: -1003684868577, name: "Community Hub", username: "@AAAAutoMiner", url: "https://t.me/AAAAutoMiner" },
+            { id: -1004255751168, name: "Announcements", username: "@AAAAUTOMINING", url: "https://t.me/AAAAUTOMINING" },
+            { id: -1004332544939, name: "Live Activity", username: "@AAA_ACTIVITY", url: "https://t.me/AAA_ACTIVITY" }
+          ];
+
+          const isMonitored = ALL_COMMUNITY_CHANNELS.some(c => c.id === chId);
+          if (isMonitored && targetUid && !targetUser.is_bot) {
+            // Case A: User left or was kicked/banned from an official channel
+            if (["left", "kicked", "banned"].includes(newStatus)) {
+              ctx.waitUntil((async () => {
+                const profile = await getUserProfile(targetUid, targetUser);
+                profile.joined_channels = false;
+                await saveUserProfile(targetUid, profile);
+
+                const chCheck = await checkUserChannels(targetUid);
+                const gate = renderGate(profile, chCheck, targetUid);
+                const missingNames = chCheck.missing.map(m => m.username || m.name).join(", ");
+
+                const alertText = `⚠️ *Channel Departure Alert*\n\n` +
+                  `You left *${chTitle}* (${chUsername})!\n` +
+                  `Your 24/7 cloud mining is paused.\n\n` +
+                  `Please rejoin ${missingNames} to resume!`;
+
+                await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: targetUid,
+                    text: alertText,
+                    parse_mode: "Markdown",
+                    reply_markup: gate.markup
+                  })
+                }).catch(() => {});
+              })());
+            }
+
+            // Case B: User joined, rejoined, or was promoted in an official channel
+            if (["member", "administrator", "creator"].includes(newStatus)) {
+              ctx.waitUntil((async () => {
+                const chCheck = await checkUserChannels(targetUid);
+                if (chCheck.ok) {
+                  const profile = await getUserProfile(targetUid, targetUser);
+                  profile.joined_channels = true;
+                  const dailyCost = (profile.accounts || []).length * 100;
+                  if (profile.points >= dailyCost) {
+                    profile.farming_active = true;
+                  }
+                  await saveUserProfile(targetUid, profile);
+
+                  const welcomeBackMsg = `✅ *Access Restored!* 🟢\n\n` +
+                    `Welcome back to *${chTitle}*!\n` +
+                    `All 3 channels are active. 24/7 cloud mining has resumed.`;
+
+                  await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: targetUid,
+                      text: welcomeBackMsg,
+                      parse_mode: "Markdown",
+                      reply_markup: userMainKeyboard
+                    })
+                  }).catch(() => {});
+                }
+              })());
+            }
+          }
+          return new Response("OK");
+        }
+
         const broadcastMilestoneUnlocked = async (title, minerName, uid, achievement, bonusText = "") => {
           const uidStr = String(uid);
           const maskedUid = uidStr.length > 5 ? `${uidStr.slice(0, 4)}****${uidStr.slice(-2)}` : uidStr;
@@ -13001,13 +13083,11 @@ Reply to Arif naturally:`;
             else if (lowerT.includes("pepe")) detectedName = "🐸 PepeGram";
             else if (lowerT.includes("adx")) detectedName = "💎 AdxEarn AI";
 
-            const helpMsg = `💡 *${detectedName} Launch Link Detected!*\n\n` +
-              `To connect this bot to 24/7 cloud mining, you need the web authorization token:\n\n` +
-              `1️⃣ Open **${detectedName}** in Telegram on your phone.\n` +
-              `2️⃣ Tap the **3 dots (\`...\`)** in the top-right corner of the Mini App screen.\n` +
-              `3️⃣ Tap **"Copy Link"**.\n` +
-              `4️⃣ Paste that link right here!\n\n` +
-              `_Our cloud engine will automatically detect it and activate 24/7 autonomous mining!_`;
+            const helpMsg = `💡 *${detectedName} Link Detected*\n\n` +
+              `To connect this bot to 24/7 mining:\n` +
+              `1️⃣ Open **${detectedName}**\n` +
+              `2️⃣ Tap **\`...\`** (top-right) > **Copy Link**\n` +
+              `3️⃣ Paste that link right here!`;
             await sendUserReply(helpMsg, activeUserKeyboard);
           })());
           return new Response("OK");
@@ -13338,11 +13418,9 @@ Reply to Arif naturally:`;
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
             if (profile.accounts.length >= totalSlots) {
               const slotLimitMsg = `⚠️ *Account Slot Limit Reached (${profile.accounts.length}/${totalSlots})*\n\n` +
-                `You are currently using all available slots!\n\n` +
-                `*How to get more slots:*\n` +
-                `1. 🌟 *Subscription Pass*: Weekly & Monthly Passes include extra slots!\n` +
-                `2. 📺 *Watch 50 Ads*: Earn a free bonus slot! (${profile.ads_watched % 50}/50 watched)\n` +
-                `3. 🌟 *Telegram Stars*: Buy permanent slots instantly below!`;
+                `Get more slots:\n` +
+                `• 📺 Watch 50 Ads (+1 Free Slot)\n` +
+                `• 🌟 Upgrade VIP Pass or buy slots below:`;
               await sendUserReply(slotLimitMsg, starsUpgradeKeyboard);
               return;
             }
@@ -13359,10 +13437,10 @@ Reply to Arif naturally:`;
               ]
             };
 
-            const promptConnect = `➕ *Connect Account for 24/7 Mining*\n\n` +
-              `Choose connection method:\n` +
-              `1️⃣ *1-Tap Link:* Tap button below to bind Telegram ID \`${chatId}\`\n` +
-              `2️⃣ *WebApp Link:* Paste any bot Mini App link with \`#tgWebAppData=...\`\n` +
+            const promptConnect = `➕ *Connect Account*\n\n` +
+              `Choose method:\n` +
+              `1️⃣ *1-Tap Link:* Tap button below to bind ID \`${chatId}\`\n` +
+              `2️⃣ *WebApp Link:* Paste link with \`#tgWebAppData=...\`\n` +
               `3️⃣ *Phone Login:* Send phone number (e.g. \`+88017XXXXXXXX\`)`;
             await sendUserReply(promptConnect, connectKeyboard);
             return;
@@ -13605,7 +13683,7 @@ Reply to Arif naturally:`;
           // 8.1 💬 Ari AI & Support Menu Button
           if (text === "💬 Ari AI & Support" || text === "💬 Chat with AI" || text.startsWith("/ai") || text.startsWith("/chat")) {
             const chatAiMsg = `💬 *Ari AI Mining Copilot*\n\n` +
-              `Hello ${senderName}! Ask me any question about cloud mining, points, or the 9 automated bots. Or tap a quick action below:`;
+              `Ask any question about cloud mining or select a quick action:`;
             const chatAiKeyboard = {
               inline_keyboard: [
                 [
@@ -13733,7 +13811,7 @@ Reply to Arif naturally:`;
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   url: targetUrl,
-                  allowed_updates: ["message", "edited_message", "callback_query", "channel_post", "edited_channel_post"],
+                  allowed_updates: ["message", "edited_message", "callback_query", "channel_post", "edited_channel_post", "pre_checkout_query", "chat_member", "my_chat_member"],
                   drop_pending_updates: false
                 })
               }).catch(() => null);
@@ -14127,14 +14205,14 @@ async def main():
                     cur_uwh = await resp.json()
                     cur_uurl = (cur_uwh.get("result") or {}).get("url", "")
                     cur_uallowed = (cur_uwh.get("result") or {}).get("allowed_updates", [])
-                    needs_update = (cur_uurl != user_target_wh) or ("channel_post" not in cur_uallowed) or ("pre_checkout_query" not in cur_uallowed)
+                    needs_update = (cur_uurl != user_target_wh) or ("channel_post" not in cur_uallowed) or ("pre_checkout_query" not in cur_uallowed) or ("chat_member" not in cur_uallowed)
                     if needs_update:
-                        print(f"📡 Setting User Bot Webhook to {user_target_wh} (with channel_post cross-posting)...")
+                        print(f"📡 Setting User Bot Webhook to {user_target_wh} (with channel_post cross-posting & chat_member sentinel)...")
                         async with session.post(
                             f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setWebhook",
                             json={
                                 "url": user_target_wh,
-                                "allowed_updates": ["message", "edited_message", "callback_query", "pre_checkout_query", "channel_post", "edited_channel_post"],
+                                "allowed_updates": ["message", "edited_message", "callback_query", "pre_checkout_query", "channel_post", "edited_channel_post", "chat_member", "my_chat_member"],
                                 "drop_pending_updates": False
                             }
                         ) as s_resp:

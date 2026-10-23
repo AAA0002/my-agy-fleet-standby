@@ -760,19 +760,40 @@
       });
     }
 
-    // Real-Time Client-Side initData & WebApp URL Parser
+    // Real-Time Client-Side initData & WebApp URL Parser (Matches Edge Mesh Parser)
     function parseInitDataString(raw) {
       let text = String(raw || "").trim();
+
+      if (text.includes("%23tgWebAppData")) {
+        try { text = decodeURIComponent(text); } catch (_) {}
+      }
       if (text.includes("#tgWebAppData=")) {
-        text = text.split("#tgWebAppData=")[1].split("&tgWebAppVersion=")[0];
+        text = text.split("#tgWebAppData=")[1];
       } else if (text.includes("tgWebAppData=")) {
-        text = text.split("tgWebAppData=")[1].split("&tgWebAppVersion=")[0];
+        text = text.split("tgWebAppData=")[1];
+      } else if (text.includes("#tgWebAppInitData=")) {
+        text = text.split("#tgWebAppInitData=")[1];
+      } else if (text.includes("tgWebAppInitData=")) {
+        text = text.split("tgWebAppInitData=")[1];
+      } else if (text.includes("initData=")) {
+        text = text.split("initData=")[1];
       } else if (text.includes("#")) {
         text = text.split("#")[1];
       }
 
+      text = text.trim().split(/\s+/)[0];
+      if (text.includes("&tgWebAppVersion=")) {
+        text = text.split("&tgWebAppVersion=")[0];
+      }
+
       let decoded = text;
-      try { decoded = decodeURIComponent(text); } catch (_) {}
+      for (let i = 0; i < 3; i++) {
+        try {
+          if (decoded.includes("%")) {
+            decoded = decodeURIComponent(decoded);
+          }
+        } catch (_) { break; }
+      }
 
       const params = new URLSearchParams(decoded.includes("=") ? decoded : text);
       let userObj = null;
@@ -838,8 +859,19 @@
       }
     }
 
-    // Fetch User Profile from Edge Mesh
+    // Fetch User Profile from Edge Mesh (with Instant Cache Hydration)
     async function loadUserProfile() {
+      try {
+        const cached = localStorage.getItem(`aaa_user_profile_${currentUserId}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.profile) {
+            currentUserProfile = parsed.profile;
+            renderProfileUI(parsed);
+          }
+        }
+      } catch (_) {}
+
       try {
         let resp = null;
         for (const base of API_ENDPOINTS) {
@@ -852,8 +884,9 @@
 
         if (resp && resp.ok) {
           currentUserProfile = resp.profile;
+          try { localStorage.setItem(`aaa_user_profile_${currentUserId}`, JSON.stringify(resp)); } catch (_) {}
           renderProfileUI(resp);
-        } else {
+        } else if (!currentUserProfile) {
           // Fallback to local default
           renderProfileUI({
             profile: {

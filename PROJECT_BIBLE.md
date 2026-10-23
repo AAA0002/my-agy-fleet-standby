@@ -1514,7 +1514,23 @@ Whenever you perform work in this repository:
   - Verified live profile query returns all 9 pools and 80 slots.
   - Verified `/miner` serves updated responsive dashboard with zero phone load on Samsung Galaxy A30.
 
-### 30. Full-System Audit, Secret Hygiene Hardening & Edge Mesh Optimization (October 23, 2026)
+### 31. Real-Time Channel Departure/Rejoin Sentinel & Client-Side Parser Parity (October 23, 2026)
+* **Real-Time Channel Departure Sentinel (`update.chat_member`)**:
+  - Registered `"chat_member"` and `"my_chat_member"` across all `setWebhook` calls in `deploy_both_cf_workers.py`.
+  - Implemented proactive `update.chat_member` sentinel in `/user-bot-webhook`:
+    * When a user leaves, is kicked, or is banned from any of the 3 official channels (`@AAAAutoMiner`, `@AAAAUTOMINING`, `@AAA_ACTIVITY`), the bot immediately intercepts the event, marks `profile.joined_channels = false`, pauses autonomous farming, and delivers a targeted DM in Telegram with direct 1-tap rejoin and verify buttons.
+    * When a user rejoins, the bot confirms channel membership via `checkUserChannels`, marks `profile.joined_channels = true`, resumes 24/7 cloud mining, and delivers a welcome-back confirmation.
+* **Edge-Parity Client-Side Parser & URL Decoder**:
+  - Upgraded client-side `parseInitDataString` in both `public_ads/miner/index.html` and `public/app/index.html` to achieve 100% parity with the Cloudflare Edge parser.
+  - Supports `#tgWebAppData=`, `tgWebAppData=`, `#tgWebAppInitData=`, `tgWebAppInitData=`, `initData=`, `%23tgWebAppData`, and 3-pass recursive URL decoding for nested mobile browser formats.
+* **Instant Cache Hydration (Zero UI Flicker)**:
+  - Added `localStorage` hydration (`aaa_user_profile_${currentUserId}`) to `public_ads/miner/index.html` and `public/app/index.html`.
+  - Eliminates loading skeleton flicker on mobile devices by restoring cached profile state immediately while fresh background API calls resolve.
+* **Short-Text Condensation Hardening**:
+  - Further condensed all user-facing bot messages across `deploy_both_cf_workers.py` (link guidance, slot limits, connection prompts, copilot greetings) to short, punchy formats while preserving the comprehensive User Guide.
+* **Live Edge Mesh Deployment**:
+  - Successfully deployed updated Cloudflare Worker to Node 4 (`https://restore-agy.agorameet.workers.dev`).
+  - Verified webhook configuration with `getWebhookInfo`: all 8 update types active (`message`, `edited_message`, `channel_post`, `edited_channel_post`, `callback_query`, `pre_checkout_query`, `my_chat_member`, `chat_member`).
 * **Secret Hygiene & Proxy Key Hardening**:
   - Cleaned up `victors_cloud_phone_launcher.py` and `victors_sb_solver.py` by removing hardcoded fallback proxy tokens.
   - Added complete environment variable fallback (`WEBSHARE_KEY_2`, `WEBSHARE_KEY`, `WEBSHARE_KEY_1`) matching `mrg_turnstile_solver.py` to ensure high-availability rotating residential proxies without secret leakage.
