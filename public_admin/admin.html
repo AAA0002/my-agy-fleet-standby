@@ -576,7 +576,7 @@ function App() {
 
   // Instant Harvest
   const handleInstantHarvest = async () => {
-    showToast("Harvest queued across all 18 accounts & 5 mining pools...", "info");
+    showToast("Harvest queued across all 18 accounts & 9 mining pools...", "info");
     haptic("heavy");
     try {
       const res = await fetchMeshApi("/api/harvest", { method: "POST" });
@@ -817,10 +817,10 @@ function App() {
         )
       ),
 
-      // 5 Mining Bots Status Card
+      // 9 Mining Bots Status Card
       React.createElement("div", { className: `rounded-2xl p-3.5 mb-3.5 border ${cardBg}` },
         React.createElement("div", { className: "flex items-center justify-between mb-2" },
-          React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400" }, "Active Mining Bots (5/5)"),
+          React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400" }, "Active Mining Bots (9/9)"),
           React.createElement("span", { className: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold px-1.5 py-0.2 rounded" }, "100% CLOUD")
         ),
         React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-1.5" },
@@ -829,7 +829,11 @@ function App() {
             { name: "ATF Miner", chain: "TON", icon: "🪙" },
             { name: "Victor's Co", chain: "TON", icon: "🏢" },
             { name: "VyroDrop", chain: "TON", icon: "💧" },
-            { name: "Kynex Net", chain: "KNX", icon: "💎" }
+            { name: "Kynex Net", chain: "KNX", icon: "💎" },
+            { name: "DiggoMiner", chain: "DGO", icon: "⛏️" },
+            { name: "Astra Airdrop", chain: "AST", icon: "🚀" },
+            { name: "PepeGram", chain: "TON", icon: "🐸" },
+            { name: "AdxEarn AI", chain: "ADX", icon: "🤖" }
           ].map((b, bIdx) => React.createElement("div", {
             key: bIdx,
             className: `p-2 rounded-xl border flex items-center justify-between ${subCardBg}`
@@ -928,7 +932,7 @@ function App() {
               )
             ),
             React.createElement("div", { className: "flex flex-wrap gap-1 text-[8px] font-mono font-medium text-center" },
-              ["⚡ MRG", "🪙 ATF", "🏢 Victor", "💧 Vyro", "💎 Kynex", "⛏️ Diggo", "🍃 Leaf", "⭐ Astra", "🐸 Pepe"].map((botName, bIdx) => React.createElement("div", {
+              ["⚡ MRG", "🪙 ATF", "🏢 Victor", "💧 Vyro", "💎 Kynex", "⛏️ Diggo", "⭐ Astra", "🐸 Pepe", "🤖 AdxEarn"].map((botName, bIdx) => React.createElement("div", {
                 key: bIdx,
                 className: `rounded px-1.5 py-0.5 border ${subCardBg} text-slate-400 truncate`
               }, botName))
@@ -994,7 +998,7 @@ function App() {
             React.createElement("div", { className: "w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-black text-sm" }, "💎"),
             React.createElement("div", null,
               React.createElement("div", { className: `font-black text-xs ${isDark ? 'text-white' : 'text-slate-900'}` }, "TON Blockchain (18 Accounts Bound)"),
-              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "ATF, MRG, Victor's, VyroDrop, Kynex, Diggo, LeafEarn, Astra, PepeGram, AdxEarn AI")
+              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "ATF, MRG, Victor's, VyroDrop, Kynex, Diggo, Astra, PepeGram, AdxEarn AI")
             )
           ),
           React.createElement("span", { className: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full" }, "18/18 Bound")

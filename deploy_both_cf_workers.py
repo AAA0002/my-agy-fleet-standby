@@ -9117,7 +9117,7 @@ fi
           const parts = text.split(/\s+/);
           const bMsg = parts.slice(1).join(" ").trim();
           if (!bMsg) {
-            await sendReply("Usage: `/broadcast <message>`\nExample: `/broadcast 🚀 Big update! All 7 pools are active & paying out!`", statusInlineKeyboard);
+            await sendReply("Usage: `/broadcast <message>`\nExample: `/broadcast 🚀 Big update! All 9 pools are active & paying out!`", statusInlineKeyboard);
             return new Response("OK");
           }
           ctx.waitUntil((async () => {
@@ -10520,9 +10520,13 @@ Reply to Arif naturally:`;
       const now = Date.now();
       const hasActivePass = profile.subscription_expiry && profile.subscription_expiry > now;
       const dailyCost = hasActivePass ? 0 : (accs.length * 100);
-      const todayStr = new Date().toISOString().slice(0, 10);
-      const lastClaimStr = profile.last_daily_claim ? new Date(profile.last_daily_claim).toISOString().slice(0, 10) : "";
-      const canClaimDaily = lastClaimStr !== todayStr;
+      const elapsedDaily = now - (profile.last_daily_claim || 0);
+      const COOLDOWN_DAILY_MS = 24 * 3600 * 1000;
+      const canClaimDaily = elapsedDaily >= COOLDOWN_DAILY_MS;
+      const dailyRemainingMs = canClaimDaily ? 0 : (COOLDOWN_DAILY_MS - elapsedDaily);
+      const streakContinues = (profile.last_daily_claim || 0) > 0 && elapsedDaily < (48 * 3600 * 1000);
+      const expectedStreak = canClaimDaily ? (streakContinues ? ((profile.daily_streak || 0) + 1) : 1) : (profile.daily_streak || 1);
+      const nextDailyReward = expectedStreak === 1 ? 50 : (expectedStreak === 2 ? 60 : (expectedStreak === 3 ? 75 : (expectedStreak === 4 ? 85 : 100)));
 
       return new Response(JSON.stringify({
         ok: true,
@@ -10543,6 +10547,9 @@ Reply to Arif naturally:`;
           daily_cost: dailyCost,
           runway_days: hasActivePass ? "Unlimited" : (dailyCost > 0 ? Math.floor(profile.points / dailyCost) : "Unlimited"),
           can_claim_daily: canClaimDaily,
+          daily_remaining_ms: dailyRemainingMs,
+          daily_reward: nextDailyReward,
+          expected_streak: expectedStreak,
           accounts: accs
         },
         pools: poolsData
@@ -10567,6 +10574,7 @@ Reply to Arif naturally:`;
         if (!uid) return new Response(JSON.stringify({ ok: false, error: "Missing user_id" }), { status: 400, headers: corsHeaders });
 
         const rawData = String(body.raw_data || body.initData || body.url || "").trim();
+        const cleanRaw = rawData.replace(/^id:\s*/i, "").replace(/^@/, "").trim();
         const label = String(body.label || "").trim() || `acc_${Date.now().toString().slice(-4)}`;
         const pool = String(body.pool || "all").toLowerCase();
 
@@ -10581,15 +10589,15 @@ Reply to Arif naturally:`;
           accName = [parsed.user?.first_name, parsed.user?.last_name].filter(Boolean).join(" ") || parsed.user?.username || label;
           initDataStr = parsed.clean_data;
           authType = "tgWebAppData";
-        } else if (/^[1-9][0-9]{5,11}$/.test(rawData)) {
-          accUserId = rawData;
+        } else if (/^[1-9][0-9]{5,11}$/.test(cleanRaw)) {
+          accUserId = cleanRaw;
           accName = label !== "main" ? label : `User ${accUserId.slice(-4)}`;
           authType = "telegram_id";
-        } else if (rawData.startsWith("+") || /^01[3-9][0-9]{8}$/.test(rawData)) {
-          accUserId = rawData;
+        } else if (cleanRaw.startsWith("+") || /^01[3-9][0-9]{8}$/.test(cleanRaw)) {
+          accUserId = cleanRaw;
           accName = label !== "main" ? label : `Phone ${accUserId.slice(-4)}`;
           authType = "phone";
-        } else if (rawData === String(uid)) {
+        } else if (cleanRaw === String(uid)) {
           accUserId = String(uid);
           accName = label !== "main" ? label : "My Account";
           authType = "telegram_id";
@@ -10603,28 +10611,36 @@ Reply to Arif naturally:`;
         const profile = await getUserProfile(uid);
         const totalAllowed = (profile.slots || 1) + (profile.temp_slots || 0);
         const isCovered = profile.subscription_expiry && profile.subscription_expiry > Date.now();
-        if (!isCovered && (profile.accounts || []).length >= totalAllowed) {
+        if (!profile.accounts) profile.accounts = [];
+
+        const existingIdx = profile.accounts.findIndex(a => String(a.user_id) === String(accUserId) && (a.pool === pool || pool === "all" || a.pool === "all"));
+        if (existingIdx === -1 && !isCovered && profile.accounts.length >= totalAllowed) {
           return new Response(JSON.stringify({
             ok: false,
-            error: `Account limit reached (${(profile.accounts || []).length}/${totalAllowed} slots). Watch 50 ads for a permanent slot or upgrade with Telegram Stars!`
+            error: `Account limit reached (${profile.accounts.length}/${totalAllowed} slots). Watch 50 ads for a permanent slot or upgrade with Telegram Stars!`
           }), { status: 403, headers: corsHeaders });
         }
 
+        const prevAcc = existingIdx >= 0 ? profile.accounts[existingIdx] : null;
         const newAccount = {
-          id: `acc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          id: prevAcc?.id || `acc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           pool: pool,
-          label: label,
+          label: (label && !label.startsWith("acc_")) ? label : (prevAcc?.label || label),
           user_id: accUserId,
           acc_user_id: accUserId,
-          name: accName,
-          init_data: initDataStr,
+          name: accName || prevAcc?.name || "Miner",
+          init_data: initDataStr || prevAcc?.init_data || "",
           auth_type: authType,
-          connected_at: Date.now(),
+          connected_at: prevAcc?.connected_at || Date.now(),
           status: "active"
         };
 
-        if (!profile.accounts) profile.accounts = [];
-        profile.accounts.push(newAccount);
+        if (existingIdx >= 0) {
+          profile.accounts[existingIdx] = newAccount;
+        } else {
+          profile.accounts.push(newAccount);
+        }
+
         if (!profile.welcome_gift_claimed && profile.accounts.length === 1) {
           profile.welcome_gift_claimed = true;
           profile.points = (profile.points || 0) + 100;
@@ -10690,18 +10706,39 @@ Reply to Arif naturally:`;
         if (!uid) return new Response(JSON.stringify({ ok: false, error: "Missing user_id" }), { status: 400, headers: corsHeaders });
 
         const profile = await getUserProfile(uid);
-        const todayStr = new Date().toISOString().slice(0, 10);
-        const lastClaimStr = profile.last_daily_claim ? new Date(profile.last_daily_claim).toISOString().slice(0, 10) : "";
-        if (lastClaimStr === todayStr) {
+        const now = Date.now();
+        const lastClaim = profile.last_daily_claim || 0;
+        const elapsed = now - lastClaim;
+        const COOLDOWN_MS = 24 * 3600 * 1000;
+
+        if (elapsed < COOLDOWN_MS) {
+          const remMs = COOLDOWN_MS - elapsed;
+          const h = Math.floor(remMs / 3600000);
+          const m = Math.floor((remMs % 3600000) / 60000);
           return new Response(JSON.stringify({
             ok: false,
-            error: "Daily bonus already claimed today! Check back tomorrow for Day " + ((profile.daily_streak || 0) + 1) + "!"
+            error: `⏳ Daily bonus already claimed! Next claim in ${h}h ${m}m (Day ${profile.daily_streak || 1}).`,
+            cooldown_seconds: Math.floor(remMs / 1000),
+            streak: profile.daily_streak || 1
           }), { status: 400, headers: corsHeaders });
         }
 
-        profile.daily_streak = (profile.daily_streak || 0) + 1;
-        profile.points = (profile.points || 0) + 100;
-        profile.last_daily_claim = Date.now();
+        const streakContinues = lastClaim > 0 && elapsed < (48 * 3600 * 1000);
+        const streak = streakContinues ? ((profile.daily_streak || 0) + 1) : 1;
+        const bonusPts = streak === 1 ? 50 : (streak === 2 ? 60 : (streak === 3 ? 75 : (streak === 4 ? 85 : 100)));
+        const nextPts = streak < 5 ? (streak === 1 ? 60 : (streak === 2 ? 75 : (streak === 3 ? 85 : 100))) : 100;
+
+        profile.daily_streak = streak;
+        profile.points = (profile.points || 0) + bonusPts;
+        profile.last_daily_claim = now;
+
+        const dailyCost = (profile.accounts || []).length * 100;
+        let resumed = false;
+        if (profile.points >= dailyCost) {
+          if (profile.farming_active === false && (profile.accounts || []).length > 0) resumed = true;
+          profile.farming_active = true;
+        }
+
         await saveUserProfile(uid, profile);
 
         const userBotToken = env.USER_BOT_TOKEN || "";
@@ -10710,7 +10747,7 @@ Reply to Arif naturally:`;
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chat_id: uid,
-            text: `🎁 *+100 DAILY BONUS POINTS CLAIMED!* 🔥\n\n• *New Balance:* ${profile.points} Points\n• *Daily Streak:* Day ${profile.daily_streak}\n\n_Keep your streak alive to unlock bonus account slots!_`,
+            text: `🎁 *+${bonusPts} DAILY BONUS POINTS CLAIMED!* 🔥\n\n• *New Balance:* ${profile.points} Points\n• *Daily Streak:* Day ${profile.daily_streak}\n• *Next Streak Reward:* +${nextPts} Pts\n${resumed ? "\n🟢 *Cloud Mining Auto-Resumed!* Points now cover your daily farming cost.\n" : ""}\n_Keep your streak alive to unlock bonus account slots!_`,
             parse_mode: "Markdown"
           })
         }).catch(() => {}));
@@ -10718,9 +10755,10 @@ Reply to Arif naturally:`;
         return new Response(JSON.stringify({
           ok: true,
           points: profile.points,
-          reward: 100,
+          reward: bonusPts,
           streak: profile.daily_streak,
-          message: `Claimed +100 Points! Day ${profile.daily_streak} streak active.`
+          next_reward: nextPts,
+          message: `Claimed +${bonusPts} Points! Day ${profile.daily_streak} streak active.`
         }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
         return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
@@ -11876,7 +11914,7 @@ Reply to Arif naturally:`;
                 `• *Pass Status:* ${passBadge}\n` +
                 `• *Points Balance:* ${profile.points} Pts\n\n` +
                 `📱 *Active Accounts:*\n${accList}\n\n` +
-                `💡 _Every account automatically farms all 10 pools 24/7 in the cloud._`;
+                `💡 _Every account automatically farms all 9 pools 24/7 in the cloud._`;
               const inlineBtns = [
                 [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }],
                 [{ text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }]
@@ -13758,6 +13796,27 @@ Reply to Arif naturally:`;
                 [{ text: `⚡ Live Activity Stream (${status3}) ↗️`, url: "https://t.me/AAA_ACTIVITY" }]
               ]
             });
+            return;
+          }
+
+          // 9.5 Auto-Detect Raw Telegram User ID in chat (e.g. "6727787768" or "id: 6727787768")
+          const rawIdMatch = text.trim().replace(/^id:\s*/i, "").replace(/^@/, "").replace(/[\s\-\(\)]/g, "");
+          const isStandaloneTelegramId = /^[1-9][0-9]{6,11}$/.test(rawIdMatch) && !rawIdMatch.startsWith("01") && !rawIdMatch.startsWith("00") && !text.trim().startsWith("+");
+          if (isStandaloneTelegramId) {
+            const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
+            const promptMsg = `⚡ *TELEGRAM USER ID DETECTED* 📱\n\n` +
+              `• *Detected ID:* \`${rawIdMatch}\`\n` +
+              `• *Action:* Connect to 24/7 cloud mining fleet\n` +
+              `• *Capacity:* ${(profile.accounts || []).length} / ${totalSlots} Slots in use\n\n` +
+              `Tap below to link this account across all 9 automated mining pools:`;
+
+            const bindKeyboard = {
+              inline_keyboard: [
+                [{ text: `⚡ 1-Tap Connect ID (${rawIdMatch})`, callback_data: `ub_bind_id_${rawIdMatch}` }],
+                [{ text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }]
+              ]
+            };
+            await sendUserReply(promptMsg, bindKeyboard);
             return;
           }
 

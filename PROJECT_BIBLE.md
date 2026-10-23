@@ -1546,6 +1546,33 @@ Whenever you perform work in this repository:
   - Node 4 live integration suite: All endpoints (`/health`, `/api/status`, `/miner`, `/ads`, `/api/user/profile`, etc.) returned HTTP 200 with standard CORS.
   - Render Node 2: Frankfurt standby service confirmed healthy (`200 OK`).
 
+### 32. Comprehensive Fleet Hardening, Admin 9-Pool Sync, Daily Bonus Parity & Auto-ID Detection (October 23, 2026)
+* **Admin Dashboard 9-Pool Full Synchronization (`public_admin/admin.html`)**:
+  - Permanently purged legacy references to `LeafEarn` from TON dedicated blockchain cards and account status tags.
+  - Upgraded `Active Mining Bots (5/5)` card to `Active Mining Bots (9/9)` featuring all 9 legitimate active bots: MRG Miner (`⚡`), ATF Miner (`🪙`), Victor's Co (`🏢`), VyroDrop (`💧`), Kynex Net (`💎`), DiggoMiner (`⛏️`), Astra Airdrop (`🚀`), PepeGram (`🐸`), AdxEarn AI (`🤖`).
+  - Updated instant harvest toast message from 5 mining pools to 9 mining pools.
+  - Replaced purged `🍃 Leaf` status tag with `🤖 AdxEarn`.
+  - Synchronized changes across `public/admin.html` and `public_admin/admin/index.html`.
+* **User Admin Console Alignment (`public_admin/user-admin.html`)**:
+  - Expanded `POOLS_LIST` from 5 to all 9 active pools: MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI.
+  - Fixed status badge from `"8/8 Pools Automated"` to `"9/9 Pools Automated"`.
+  - Upgraded account pool matrix to a responsive 3x3 layout.
+  - Synchronized across `public/user-admin.html`, `public_admin/user-admin/index.html`, and `public_admin/users/index.html`.
+* **Daily Bonus & Streak Logic Parity (`/api/user/claim-daily` & `/api/user/profile`)**:
+  - Replaced loose UTC calendar date comparison with a 24-hour elapsed cooldown (`24 * 3600 * 1000`) and a 48-hour streak window, aligning the API with the Telegram bot callback.
+  - Added graduated reward calculations (Day 1: 50 Pts, Day 2: 60 Pts, Day 3: 75 Pts, Day 4: 85 Pts, Day 5+: 100 Pts) and auto-resumed `farming_active = true` when points cover daily cost.
+  - Injected `daily_remaining_ms`, `cooldown_seconds`, and `daily_reward` into `/api/user/profile` and `/api/user/claim-daily`.
+  - Upgraded `public_ads/miner/index.html` and `public/app/index.html`: The Daily Bonus button dynamically displays the live countdown e.g. `Claimed (18h 0m)` instead of a static "Claimed" label, and previews the next reward (e.g. `Claim +60`).
+* **Account Connection Update-in-Place & Input Sanitization (`/api/user/account/add`)**:
+  - Added update-in-place (`findIndex`) so re-linking an existing account or re-tapping 1-Tap Link updates the existing record rather than creating a duplicate or throwing an "Account limit reached" error.
+  - Added input sanitization stripping leading `id:` or `@` prefixes to support user copy-pastes like `id: 6727787768`.
+* **Standalone Telegram ID Auto-Detection in Chat**:
+  - Implemented auto-detector in `/user-bot-webhook` for numeric Telegram IDs (e.g. `6727787768`) sent directly in chat without opening menus. Provides an instant `⚡ 1-Tap Connect ID (<id>)` button instead of routing to conversational AI.
+* **Stale Text Purge in Worker**:
+  - Fixed `/broadcast` usage example ("All 7 pools" -> "All 9 pools") and connected accounts footer ("all 10 pools" -> "all 9 pools").
+* **Live Verification & Edge Deployment**:
+  - Deployed to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified `/health`, `/miner` (87.0 KB), `/fleet` (79.4 KB), `/api/user/profile`, `/api/user/claim-daily`, and `/api/user/account/add` return HTTP 200 with zero errors.
+
 
 
 

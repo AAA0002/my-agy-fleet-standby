@@ -409,10 +409,10 @@ function App() {
   const currencySymbol = currencySymbols[currency] || "$";
 
   const CF_NODES = [
+    "https://restore-agy.agorameet.workers.dev",
     "https://restore-agy.aaaai2.workers.dev",
     "https://restore-agy.aaa-bot.workers.dev",
     "https://restore-agy.aaa222.workers.dev",
-    "https://restore-agy.agorameet.workers.dev",
     "https://restore-agy.aaaai.workers.dev"
   ];
 
@@ -432,7 +432,10 @@ function App() {
           "Authorization": activeToken ? `Bearer ${activeToken}` : (tg?.initData ? `tma ${tg.initData}` : ""),
           "X-Admin-Token": activeToken || ""
         };
-        const resp = await fetch(url, { ...options, headers });
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 6000);
+        const resp = await fetch(url, { ...options, headers, signal: ctrl.signal });
+        clearTimeout(timer);
         if (resp.ok) return await resp.json();
       } catch (_) {}
     }
@@ -573,7 +576,7 @@ function App() {
 
   // Instant Harvest
   const handleInstantHarvest = async () => {
-    showToast("Harvest queued across all 18 accounts & 5 mining pools...", "info");
+    showToast("Harvest queued across all 18 accounts & 9 mining pools...", "info");
     haptic("heavy");
     try {
       const res = await fetchMeshApi("/api/harvest", { method: "POST" });
@@ -814,10 +817,10 @@ function App() {
         )
       ),
 
-      // 5 Mining Bots Status Card
+      // 9 Mining Bots Status Card
       React.createElement("div", { className: `rounded-2xl p-3.5 mb-3.5 border ${cardBg}` },
         React.createElement("div", { className: "flex items-center justify-between mb-2" },
-          React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400" }, "Active Mining Bots (5/5)"),
+          React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400" }, "Active Mining Bots (9/9)"),
           React.createElement("span", { className: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold px-1.5 py-0.2 rounded" }, "100% CLOUD")
         ),
         React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-1.5" },
@@ -826,7 +829,11 @@ function App() {
             { name: "ATF Miner", chain: "TON", icon: "🪙" },
             { name: "Victor's Co", chain: "TON", icon: "🏢" },
             { name: "VyroDrop", chain: "TON", icon: "💧" },
-            { name: "Kynex Net", chain: "KNX", icon: "💎" }
+            { name: "Kynex Net", chain: "KNX", icon: "💎" },
+            { name: "DiggoMiner", chain: "DGO", icon: "⛏️" },
+            { name: "Astra Airdrop", chain: "AST", icon: "🚀" },
+            { name: "PepeGram", chain: "TON", icon: "🐸" },
+            { name: "AdxEarn AI", chain: "ADX", icon: "🤖" }
           ].map((b, bIdx) => React.createElement("div", {
             key: bIdx,
             className: `p-2 rounded-xl border flex items-center justify-between ${subCardBg}`
@@ -900,8 +907,8 @@ function App() {
           },
             React.createElement("div", { className: "flex items-start justify-between mb-1.5" },
               React.createElement("div", { className: "flex items-center gap-2" },
-                React.createElement("span", { className: `w-7 h-7 rounded-xl font-mono text-xs font-black flex items-center justify-center border ${isMaster ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : (isDark ? 'bg-dark-800 text-cyan-400 border-dark-700' : 'bg-blue-50 text-blue-700 border-blue-200')}` },
-                  isMaster ? "👑" : `#${accNum}`
+                React.createElement("span", { className: `w-7 h-7 rounded-xl font-mono text-xs font-black flex items-center justify-center border ${isMaster ? ((acc.session_revoked || acc.status === "Needs Re-link") ? 'bg-amber-500/10 text-amber-400 border-rose-500/50' : 'bg-amber-500/10 text-amber-400 border-emerald-500/50') : (isDark ? 'bg-dark-800 text-cyan-400 border-dark-700' : 'bg-blue-50 text-blue-700 border-blue-200')}` },
+                  isMaster ? (acc.session_revoked || acc.status === "Needs Re-link" ? "👑🔴" : "👑🟢") : `#${accNum}`
                 ),
                 React.createElement("div", null,
                   React.createElement("div", { className: `font-black text-xs ${isDark ? 'text-white' : 'text-slate-900'}` }, acc.name || `Account #${accNum}`),
@@ -915,15 +922,19 @@ function App() {
                 )
               ),
               React.createElement("div", { className: "flex items-center gap-1" },
-                React.createElement("span", { className: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full" },
-                  "🟢 Mining"
-                )
+                (acc.session_revoked || acc.status === "Needs Re-link")
+                  ? React.createElement("span", { className: "bg-rose-500/10 text-rose-400 border border-rose-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" },
+                      "🔴 Needs Re-link"
+                    )
+                  : React.createElement("span", { className: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1" },
+                      "🟢 Mining"
+                    )
               )
             ),
-            React.createElement("div", { className: "grid grid-cols-5 gap-1 text-[8px] font-mono font-medium text-center" },
-              ["⚡ MRG", "🪙 ATF", "🏢 Victor", "💧 Vyro", "💎 Kynex"].map((botName, bIdx) => React.createElement("div", {
+            React.createElement("div", { className: "flex flex-wrap gap-1 text-[8px] font-mono font-medium text-center" },
+              ["⚡ MRG", "🪙 ATF", "🏢 Victor", "💧 Vyro", "💎 Kynex", "⛏️ Diggo", "⭐ Astra", "🐸 Pepe", "🤖 AdxEarn"].map((botName, bIdx) => React.createElement("div", {
                 key: bIdx,
-                className: `rounded py-0.5 border ${subCardBg} text-slate-400 truncate`
+                className: `rounded px-1.5 py-0.5 border ${subCardBg} text-slate-400 truncate`
               }, botName))
             )
           );
@@ -987,7 +998,7 @@ function App() {
             React.createElement("div", { className: "w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center justify-center font-black text-sm" }, "💎"),
             React.createElement("div", null,
               React.createElement("div", { className: `font-black text-xs ${isDark ? 'text-white' : 'text-slate-900'}` }, "TON Blockchain (18 Accounts Bound)"),
-              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "ATF, MRG, Victor's, VyroDrop")
+              React.createElement("div", { className: "text-[10px] text-slate-400 font-mono" }, "ATF, MRG, Victor's, VyroDrop, Kynex, Diggo, Astra, PepeGram, AdxEarn AI")
             )
           ),
           React.createElement("span", { className: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full" }, "18/18 Bound")
@@ -1207,8 +1218,8 @@ function App() {
         React.createElement("h4", { className: `font-black text-xs uppercase tracking-wider mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}` }, "Render Standby Collectors"),
         React.createElement("div", { className: "space-y-1.5 font-mono text-xs" },
           [
-            { name: "Render Node 2 (Frankfurt)", status: "Hot Standby Live", ok: true },
-            { name: "Render Node 3 (Singapore)", status: "Hot Standby Live", ok: true }
+            { name: "Render Node 2 (Frankfurt)", status: "Active Coordinator", ok: true },
+            { name: "Render Node 3 (Oregon)", status: "Cold Standby (Suspended)", ok: true }
           ].map((r, rIdx) => React.createElement("div", {
             key: rIdx,
             className: `p-2.5 rounded-xl border flex items-center justify-between ${subCardBg}`
@@ -1265,7 +1276,11 @@ function App() {
               ),
               React.createElement("div", null,
                 React.createElement("h3", { className: "font-black text-sm" }, selectedAccount.name || `Account #${accNum}`),
-                React.createElement("span", { className: "text-[10px] text-slate-400 font-mono" }, isHost ? "Master Host 👑" : "Worker Node 🟢")
+                React.createElement("span", { className: `text-[10px] font-mono font-bold ${(selectedAccount.session_revoked || selectedAccount.status === "Needs Re-link") ? 'text-rose-400' : 'text-emerald-400'}` },
+                  isHost
+                    ? ((selectedAccount.session_revoked || selectedAccount.status === "Needs Re-link") ? "Master Host 👑 (🔴 Needs Re-link)" : "Master Host 👑 (🟢 Active)")
+                    : ((selectedAccount.session_revoked || selectedAccount.status === "Needs Re-link") ? "Worker Node 🔴 (Needs Re-link)" : "Worker Node 🟢 (Active)")
+                )
               )
             ),
             React.createElement("button", {

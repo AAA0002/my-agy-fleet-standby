@@ -2,6 +2,25 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Comprehensive Fleet Hardening, Admin 9-Pool Sync, Daily Bonus Parity & Auto-ID Detection (October 23, 2026)**:
+  - **Admin & User Admin 9-Pool Full Synchronization**:
+    * `public_admin/admin.html`, `public/admin.html`, and `public_admin/admin/index.html`: Purged legacy references to `LeafEarn`. Updated `Active Mining Bots (5/5)` card to `Active Mining Bots (9/9)` showcasing all 9 legitimate active bots. Updated instant harvest toast from 5 mining pools to 9 mining pools. Replaced purged `🍃 Leaf` status badge with `🤖 AdxEarn`.
+    * `public_admin/user-admin.html`, `public/user-admin.html`, `public_admin/user-admin/index.html`, and `public_admin/users/index.html`: Expanded `POOLS_LIST` from 5 to all 9 active pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI). Fixed badge `"8/8 Pools Automated"` to `"9/9 Pools Automated"` and optimized grid layout to a clean 3x3 responsive grid.
+  - **Daily Bonus & Streak Logic Parity (`/api/user/claim-daily` & `/api/user/profile`)**:
+    * Replaced loose UTC calendar date comparison with a 24-hour elapsed cooldown (`24 * 3600 * 1000`) and a 48-hour streak window, aligning the API with the Telegram bot callback.
+    * Added graduated reward calculations (Day 1: 50 Pts, Day 2: 60 Pts, Day 3: 75 Pts, Day 4: 85 Pts, Day 5+: 100 Pts) and auto-resumed `farming_active = true` when points cover daily cost.
+    * Injected `daily_remaining_ms`, `cooldown_seconds`, and `daily_reward` into `/api/user/profile` and `/api/user/claim-daily`.
+    * Upgraded `public_ads/miner/index.html` and `public/app/index.html`: The Daily Bonus button dynamically displays the live countdown e.g. `Claimed (18h 0m)` instead of a static "Claimed" label, and previews the next reward (e.g. `Claim +60`).
+  - **Account Connection Update-in-Place & Input Sanitization (`/api/user/account/add`)**:
+    * Added update-in-place (`findIndex`) so re-linking an existing account or re-tapping 1-Tap Link updates the existing record rather than creating a duplicate or throwing an "Account limit reached" error.
+    * Added input sanitization stripping leading `id:` or `@` prefixes to support user copy-pastes like `id: 6727787768`.
+  - **Standalone Telegram ID Auto-Detection in Chat**:
+    * Implemented auto-detector in `/user-bot-webhook` for numeric Telegram IDs (e.g. `6727787768`) sent directly in chat without opening menus. Provides an instant `⚡ 1-Tap Connect ID (<id>)` button instead of routing to conversational AI.
+  - **Stale Text Purge in Worker**:
+    * Fixed `/broadcast` usage example ("All 7 pools" -> "All 9 pools") and connected accounts footer ("all 10 pools" -> "all 9 pools").
+  - **Live Verification & Edge Deployment**:
+    * Deployed to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified `/health`, `/miner` (87.0 KB), `/fleet` (79.4 KB), `/api/user/profile`, `/api/user/claim-daily`, and `/api/user/account/add` return HTTP 200 with zero errors.
+
 - **🌟 9-Pool Full Alignment, Tactile Haptics, Dashboard Grid Fix & Menu Action Enhancement (October 23, 2026)**:
   - **9-Pool Complete Alignment & AI Prompt Upgrade**:
     * Upgraded `runUserAiCascade` in `deploy_both_cf_workers.py`: Ari AI Copilot now references all 9 verified active mining pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI) with updated official bot links, replacing legacy 5-pool prompts.

@@ -1191,11 +1191,18 @@
       if (btnDaily) {
         if (p.can_claim_daily === false) {
           btnDaily.disabled = true;
-          btnDaily.textContent = "Claimed";
+          if (p.daily_remaining_ms && p.daily_remaining_ms > 0) {
+            const h = Math.floor(p.daily_remaining_ms / 3600000);
+            const m = Math.floor((p.daily_remaining_ms % 3600000) / 60000);
+            btnDaily.textContent = h > 0 ? `Claimed (${h}h ${m}m)` : `Claimed (${m}m)`;
+          } else {
+            btnDaily.textContent = "Claimed";
+          }
           btnDaily.className = "px-3.5 py-2 rounded-xl bg-slate-800 text-slate-500 font-bold text-xs shrink-0 cursor-not-allowed";
         } else {
           btnDaily.disabled = false;
-          btnDaily.textContent = "Claim +100";
+          const rewardText = p.daily_reward ? `Claim +${p.daily_reward}` : "Claim +100";
+          btnDaily.textContent = rewardText;
           btnDaily.className = "px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs active:scale-95 transition shrink-0 shadow-md";
         }
       }
