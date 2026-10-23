@@ -3662,6 +3662,39 @@ fi
       }
     }
 
+    // 7.169 Proxy User Account Login, Wallet & Session Endpoints to Render Node 2
+    if (path.startsWith("/api/account/login/") || path.startsWith("/api/user/wallet/") || path === "/api/user/session/check") {
+      try {
+        const renderNode = "https://my-agy-fleet-standby-node2.onrender.com";
+        const targetUrl = `${renderNode}${path}${url.search}`;
+        const reqHeaders = new Headers(request.headers);
+        reqHeaders.delete("host");
+        reqHeaders.set("Authorization", `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`);
+        const forwardOptions = {
+          method: request.method,
+          headers: reqHeaders,
+          signal: AbortSignal.timeout(12000)
+        };
+        if (request.method !== "GET" && request.method !== "HEAD") {
+          forwardOptions.body = await request.text();
+        }
+        const renderResp = await fetch(targetUrl, forwardOptions);
+        const respText = await renderResp.text();
+        return new Response(respText, {
+          status: renderResp.status,
+          headers: {
+            "Content-Type": renderResp.headers.get("Content-Type") || "application/json",
+            ...corsHeaders
+          }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: "Render gateway error: " + err.message }), {
+          status: 502,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
     // 7.15 Dedicated AAA Telegram Mini App Integration Endpoints (Login, Relink, Verification, Admin Bot Bridge)
     if (path.startsWith("/api/telegram/") && (request.method === "POST" || request.method === "GET")) {
       try {

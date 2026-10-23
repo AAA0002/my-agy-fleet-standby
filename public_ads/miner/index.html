@@ -1074,6 +1074,9 @@
       showToast("Please use 1-Tap QR Login or Phone Login above to connect your device!");
       startQrConnectModal();
     }
+
+    // Fetch User Profile from Edge Mesh (with Instant Cache Hydration)
+    async function loadUserProfile() {
       try {
         const cached = localStorage.getItem(`aaa_user_profile_${currentUserId}`);
         if (cached) {
@@ -1473,12 +1476,6 @@
       if (el && el.textContent) {
         navigator.clipboard.writeText(el.textContent).then(() => showToast(`Copied ${chain.toUpperCase()} address!`));
       }
-    }
-
-    // Submit Connect Account (Guides to Authentic Login)
-    async function submitConnectAccount() {
-      showToast("Please use 1-Tap QR Login or Phone Login above to connect your device!");
-      startQrConnectModal();
     }
 
     // Remove Account

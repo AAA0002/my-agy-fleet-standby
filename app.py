@@ -4290,16 +4290,21 @@ async def start_qr_login(request: Request):
                 try:
                     user = await qr.wait(timeout=120)
                 except SessionPasswordNeededError:
-                    logger.info(f"[Standby Cloud QR Login] 🔒 2FA password required for Chat {chat_id}. Auto-authenticating...")
-                    for p in [os.getenv("FLEET_2FA_PASSWORD", "Arif216@"), os.getenv("FLEET_2FA_FALLBACK", "Arif-Abid"), "Arif216@", "Arif-Abid"]:
-                        if not p:
-                            continue
-                        try:
-                            user = await temp_client.sign_in(password=p)
-                            logger.info(f"[Standby Cloud QR Login] 🎉 2FA auto-authentication SUCCESSFUL for Chat {chat_id}!")
-                            break
-                        except Exception as err2fa:
-                            logger.warning(f"[Standby Cloud QR Login] 2FA attempt failed with {p[:3]}***: {err2fa}")
+                    if is_user_bot:
+                        session_rec["status"] = "need_2fa"
+                        session_rec["error"] = "Two-step verification (2FA password) is enabled on this account. Please use Phone Login or Telegram Bot to login with 2FA."
+                        logger.info(f"[Standby Cloud QR Login] 🔒 2FA password required for User Bot chat {chat_id}.")
+                    else:
+                        logger.info(f"[Standby Cloud QR Login] 🔒 2FA password required for Fleet Chat {chat_id}. Auto-authenticating...")
+                        for p in [os.getenv("FLEET_2FA_PASSWORD", "Arif216@"), os.getenv("FLEET_2FA_FALLBACK", "Arif-Abid"), "Arif216@", "Arif-Abid"]:
+                            if not p:
+                                continue
+                            try:
+                                user = await temp_client.sign_in(password=p)
+                                logger.info(f"[Standby Cloud QR Login] 🎉 2FA auto-authentication SUCCESSFUL for Chat {chat_id}!")
+                                break
+                            except Exception as err2fa:
+                                logger.warning(f"[Standby Cloud QR Login] 2FA attempt failed with {p[:3]}***: {err2fa}")
 
                 if user:
                     me = await temp_client.get_me()

@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐛 Comprehensive Bug Audit & Gateway Routing Normalization (October 23, 2026)**:
+  - **Mini App Frontend Syntax Bug Fix**:
+    * Identified and resolved top-level `await` syntax error in `public_ads/miner/index.html` caused by a missing `async function loadUserProfile()` declaration.
+    * Removed duplicate `submitConnectAccount()` declaration and validated all `<script>` blocks using Node.js AST check.
+  - **Cloudflare Edge Reverse Proxy for QR & Phone Login**:
+    * Discovered that Mini App calls to `/api/account/login/qr-start`, `/qr-status`, `/send-code`, and `/verify-code` were returning 404 Not Found on Cloudflare Edge Worker (`restore-agy.agorameet.workers.dev`).
+    * Implemented reverse proxy handler in `deploy_both_cf_workers.py` forwarding `/api/account/login/*`, `/api/user/wallet/*`, and `/api/user/session/*` to Render Node 2 with `Host` header sanitization and bearer authentication.
+    * Verified live proxy resolution (`HTTP 200` returning authentic `tg://login?token=...` QR pairing payloads).
+  - **User Bot 2FA Separation during QR Device Onboarding**:
+    * Isolated User Bot accounts from Fleet Admin 2FA passwords in `app.py`, `render_app_latest.py`, and `render_standby_app.py`.
+    * When an end-user has two-step verification enabled, the system returns status `need_2fa` cleanly rather than attempting admin fleet passwords.
+
 - **🚀 Telegram ID Removal, Session Revocation Sentinel, 5-Tab User Admin & Live Broadcast (October 23, 2026)**:
   - **Complete Removal of Numeric Telegram ID Input**:
     * Purged `input-raw-data` textarea and all numeric ID input elements from Mini App (`public_ads/miner/index.html`).
