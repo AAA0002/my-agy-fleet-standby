@@ -2,6 +2,36 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 User Bot Community Realm Isolation & Complete Dual-Dashboard Mobile Redesign (October 23, 2026)**:
+  - **Account #20 (U.S.A. دهیار جاویدان) Community Identification**:
+    * Identified root cause of `#20 U.S.A. دهیار جاویدان` (`user_id: 1474280319`) appearing in Admin Bot: this account is an authentic end-user who registered in the User Bot (`@AAAPREMIUMAPPSbot`), linked accounts for 9 mining pools, watched 11 ads, and accumulated 520 points.
+    * An older cache sync had placed this user's record in `fleet:live_state`, which leaked into the admin roster.
+    * Isolated this user permanently into the User Bot community domain (`ub_user:1474280319` / `community_miners`), fully visible and manageable in the User Bot Admin Dashboard.
+  - **User Bot Admin Dashboard Upgrades (`user-admin.html` at `/user-admin`)**:
+    * **Direct Cloudflare Edge Serving**: Replaced 302 redirect with direct Edge delivery of `user-admin.html` via `__USER_ADMIN_DASHBOARD_HTML_JSON__` across `/user-admin`, `/users-admin`, `/community-admin`, and `/user-dash`.
+    * **Full User Transparency ("See All User Things")**:
+      - Displays complete user profiles: Name, `@username`, Telegram User ID with 1-tap copy, language, and registration date.
+      - Displays 3 Community Channels Gate status (`@AAAAutoMiner`, `@AAAAUTOMINING`, `@AAA_ACTIVITY`) with live verification badge.
+      - Displays connected mining accounts list with account labels, phone numbers, Mining IDs, and protocol bindings.
+      - Displays points financials: Current Points (💎), daily cost (-100 Pts/acc), runway in days, and VIP status.
+      - Displays ad metrics and daily streak: Total ads watched, progress to next bonus slot (X/50 ads), daily streak (🔥).
+      - Displays referral information: Referrer (`referred_by`), referral code, and total invited users.
+      - **Interactive Raw JSON Inspector**: Added expandable modal accordion allowing administrators to inspect the full, untouched JSON object directly from Upstash Redis / Supabase with a 1-tap Copy button.
+      - **Export Community Users to JSON**: Added 1-tap button in the header to download the entire community miner roster as a JSON file.
+    * **Mobile Optimization for Samsung Galaxy A30**:
+      - Added Dark / Light theme toggle with AMOLED power saving and persistence in localStorage.
+      - Responsive layout with touch targets >= 44px, safe area insets for Android gesture bars, and smooth bottom sheet modal.
+  - **User Dashboard Redesign for User Bot (`miner/index.html` at `/miner`)**:
+    * Redesigned KPI metrics strip into a responsive 2x2 grid (Points, Cost, Slots, Streak) preventing cramped text on mobile.
+    * Added prominent 1-Tap Link My Telegram Account button with emerald pulse glow.
+    * Polished 9 supported mining pools cards with live cloud status badges and 1-tap bot links.
+    * Enhanced rewards tab with daily check-in streak flames, rewarded video ad milestone progress, and Stars VIP passes.
+    * Bottom docked navigation with safe area insets for Android gesture navigation.
+  - **Deployments & Synchronization**:
+    * Deployed live to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Synchronized all mirrors: `public_admin/user-admin/index.html`, `public/user-admin.html`, `public_admin/users/index.html`, and `public/app/index.html`.
+
+
 - **🤖 Rule 7 Enacted: Strict Separation of Bot Ecosystems, Channels & Dual Admin Dashboards ("Zero Ecosystem Mixing") (October 23, 2026)**:
   - **Rule 7 Added to Workspace Rules (`AGENTS.md`), Plugin Rules (`aaa-fleet-plugin`), Session Bridge (`SESSION_BRIDGE.md`), and Project Bible (`PROJECT_BIBLE.md`)**:
     * **Independent Bot Ecosystems**:

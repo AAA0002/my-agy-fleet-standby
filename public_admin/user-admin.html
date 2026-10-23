@@ -112,7 +112,11 @@ const iconPaths = {
   crown: '<path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5v-2z" />',
   filter: '<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />',
   lock: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />',
-  key: '<path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4a1 1 0 0 0-1.4 0l-2.1 2.1a1 1 0 0 0 0 1.4Z" /><path d="m15.5 7.5-6.8 6.8a3.5 3.5 0 1 1-4.9-4.9l6.8-6.8" />'
+  key: '<path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4a1 1 0 0 0-1.4 0l-2.1 2.1a1 1 0 0 0 0 1.4Z" /><path d="m15.5 7.5-6.8 6.8a3.5 3.5 0 1 1-4.9-4.9l6.8-6.8" />',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />',
+  sun: '<circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />',
+  moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />',
+  database: '<ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />'
 };
 
 const Icon = ({ name, className = "w-4 h-4", ...props }) => React.createElement("svg", _extends({
@@ -485,6 +489,10 @@ function App() {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [selectedUserDetail, setSelectedUserDetail] = useState(null);
+  const [showRawJson, setShowRawJson] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    try { return localStorage.getItem("atf_admin_theme") === "dark"; } catch (_) { return false; }
+  });
   const [initialLoading, setInitialLoading] = useState(true);
 
   // Quick Point Grant & Deduct Modal
@@ -508,6 +516,36 @@ function App() {
 
   const copyToClipboard = (text, label = "Copied to clipboard") => {
     navigator.clipboard.writeText(text).then(() => showToast(label)).catch(() => showToast("Copy failed", "error"));
+  };
+
+  const exportUsersJson = () => {
+    try {
+      const exportData = {
+        exported_at: new Date().toISOString(),
+        total_users: adminUsers.length,
+        stats: adminStats,
+        users: adminUsers
+      };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `userbot_miners_export_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Exported ${adminUsers.length} community miners to JSON!`, "success");
+    } catch (err) {
+      showToast("Export failed: " + err.message, "error");
+    }
+  };
+
+  const toggleTheme = () => {
+    setIsDarkMode(prev => {
+      const next = !prev;
+      try { localStorage.setItem("atf_admin_theme", next ? "dark" : "light"); } catch (_) {}
+      showToast(next ? "Dark Theme Active" : "Light Theme Active", "info");
+      return next;
+    });
   };
 
   // Primary Data Sync: Fetch Users & Stats Only
@@ -721,18 +759,32 @@ function App() {
         )
       ),
       React.createElement("div", { className: "flex items-center gap-1.5" },
-        React.createElement("span", { className: "text-[10px] font-mono text-slate-400 bg-slate-100 border border-slate-200 px-1.5 py-1 rounded-lg" },
+        React.createElement("span", { className: `text-[10px] font-mono px-1.5 py-1 rounded-lg border ${isDarkMode ? "text-slate-400 bg-slate-900 border-slate-800" : "text-slate-400 bg-slate-100 border-slate-200"}` },
           `${syncCountdown}s`
         ),
         React.createElement("button", {
+          onClick: exportUsersJson,
+          title: "Export All Users to JSON",
+          className: `p-1.5 rounded-lg border transition active:scale-95 cursor-pointer ${isDarkMode ? "bg-slate-900 border-slate-800 text-cyan-400 hover:bg-slate-800" : "bg-white border-slate-200 text-blue-600 shadow-2xs hover:bg-slate-50"}`
+        },
+          React.createElement(Icon, { name: "download", className: "w-3.5 h-3.5" })
+        ),
+        React.createElement("button", {
+          onClick: toggleTheme,
+          title: isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode",
+          className: `p-1.5 rounded-lg border transition active:scale-95 cursor-pointer ${isDarkMode ? "bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800" : "bg-white border-slate-200 text-slate-700 shadow-2xs hover:bg-slate-50"}`
+        },
+          React.createElement(Icon, { name: isDarkMode ? "sun" : "moon", className: "w-3.5 h-3.5" })
+        ),
+        React.createElement("button", {
           onClick: () => setSoundEnabled(!soundEnabled),
-          className: `p-1.5 rounded-lg border transition ${soundEnabled ? "bg-white border-slate-200 text-slate-700 shadow-2xs" : "bg-slate-100 border-transparent text-slate-400"}`
+          className: `p-1.5 rounded-lg border transition ${soundEnabled ? (isDarkMode ? "bg-slate-900 border-slate-800 text-slate-200" : "bg-white border-slate-200 text-slate-700 shadow-2xs") : (isDarkMode ? "bg-slate-950 border-transparent text-slate-600" : "bg-slate-100 border-transparent text-slate-400")}`
         },
           React.createElement(Icon, { name: soundEnabled ? "volume2" : "volumeX", className: "w-3.5 h-3.5" })
         ),
         React.createElement("button", {
           onClick: () => fetchStatus(true),
-          className: `p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 shadow-2xs hover:bg-slate-50 transition active:scale-95 ${syncing ? "animate-spin text-blue-600" : ""}`
+          className: `p-1.5 rounded-lg border transition active:scale-95 ${isDarkMode ? "bg-slate-900 border-slate-800 text-slate-200 hover:bg-slate-800" : "bg-white border-slate-200 text-slate-700 shadow-2xs hover:bg-slate-50"} ${syncing ? "animate-spin text-blue-600" : ""}`
         },
           React.createElement(Icon, { name: "refresh", className: "w-3.5 h-3.5" })
         )
@@ -907,7 +959,7 @@ function App() {
           ),
 
           // User Stats Strip
-          React.createElement("div", { className: "grid grid-cols-4 gap-1.5 bg-slate-50 border border-slate-100 rounded-xl p-2 mb-3 text-center" },
+          React.createElement("div", { className: "grid grid-cols-4 gap-1.5 bg-slate-50 border border-slate-100 rounded-xl p-2 mb-2 text-center" },
             React.createElement("div", null,
               React.createElement("div", { className: "text-[9px] font-bold text-slate-400 uppercase" }, "Balance"),
               React.createElement("div", { className: "text-xs font-black text-slate-900" }, `💎 ${u.points || 0}`)
@@ -923,6 +975,22 @@ function App() {
             React.createElement("div", null,
               React.createElement("div", { className: "text-[9px] font-bold text-slate-400 uppercase" }, "Ads / Streak"),
               React.createElement("div", { className: "text-xs font-bold text-slate-800 font-mono" }, `📺 ${u.ads_watched || 0} • 🔥 ${u.daily_streak || 0}d`)
+            )
+          ),
+
+          // User Channels & Referral Metadata Strip
+          React.createElement("div", { className: "flex flex-wrap items-center gap-1.5 mb-2.5 text-[10px]" },
+            React.createElement("span", { className: `px-2 py-0.5 rounded-md font-semibold border ${u.joined_channels ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"}` },
+              u.joined_channels ? "3 Channels Joined ✅" : "Channels Incomplete ⚠️"
+            ),
+            (u.referral_count > 0) && React.createElement("span", { className: "bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md font-semibold" },
+              `👥 ${u.referral_count} refs`
+            ),
+            u.referred_by && React.createElement("span", { className: "bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded-md font-mono" },
+              `Ref by: ${u.referred_by}`
+            ),
+            u.created_at && React.createElement("span", { className: "text-slate-400 font-mono text-[9px] ml-auto" },
+              `Joined: ${new Date(u.created_at).toLocaleDateString()}`
             )
           ),
 
@@ -995,6 +1063,10 @@ function App() {
               className: "py-1.5 px-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer"
             }, "⚙️ Pts"),
             React.createElement("button", {
+              onClick: () => { setSelectedUserDetail(u); setShowRawJson(false); haptic("light"); },
+              className: "py-1.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[11px] font-bold transition active:scale-95 cursor-pointer"
+            }, "🔍 All"),
+            React.createElement("button", {
               disabled: actionLoadingId?.startsWith(String(u.user_id)),
               onClick: () => handleUserAction(u.user_id, "toggle_farming"),
               className: `py-1.5 px-2.5 rounded-lg text-[11px] font-bold border transition active:scale-95 cursor-pointer disabled:opacity-50 ${
@@ -1049,6 +1121,12 @@ function App() {
             React.createElement("span", { className: "font-bold text-slate-900" }, selectedUserDetail.user_id)
           ),
           React.createElement("div", { className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
+            React.createElement("span", { className: "text-slate-500 font-sans font-bold" }, "3 Official Channels Gate"),
+            React.createElement("span", { className: `font-bold ${selectedUserDetail.joined_channels ? "text-emerald-600" : "text-amber-600"}` },
+              selectedUserDetail.joined_channels ? "✅ Verified (All 3 Joined)" : "⚠️ Incomplete (Not Joined)"
+            )
+          ),
+          React.createElement("div", { className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
             React.createElement("span", { className: "text-slate-500 font-sans font-bold" }, "Total Points"),
             React.createElement("span", { className: "font-bold text-blue-600" }, `💎 ${selectedUserDetail.points || 0} Pts`)
           ),
@@ -1065,6 +1143,36 @@ function App() {
             )
           ),
           React.createElement("div", { className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
+            React.createElement("span", { className: "text-slate-500 font-sans font-bold" }, "Ads Watched & Milestone"),
+            React.createElement("span", { className: "font-bold text-indigo-600" },
+              `📺 ${selectedUserDetail.ads_watched || 0} ads (${(selectedUserDetail.ads_watched || 0) % 50}/50 towards next slot)`
+            )
+          ),
+          React.createElement("div", { className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
+            React.createElement("span", { className: "text-slate-500 font-sans font-bold" }, "Daily Streak & Last Claim"),
+            React.createElement("span", { className: "font-bold text-amber-600" },
+              `🔥 Day ${selectedUserDetail.daily_streak || 0} (${selectedUserDetail.last_daily_claim ? new Date(selectedUserDetail.last_daily_claim).toLocaleDateString() : "Never"})`
+            )
+          ),
+          React.createElement("div", { className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
+            React.createElement("span", { className: "text-slate-500 font-sans font-bold" }, "Last 100 Pts Deduction"),
+            React.createElement("span", { className: "font-bold text-slate-800" },
+              selectedUserDetail.last_deduction_date || "Today"
+            )
+          ),
+          React.createElement("div", { className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
+            React.createElement("span", { className: "text-slate-500 font-sans font-bold" }, "Registration Date"),
+            React.createElement("span", { className: "font-bold text-slate-800" },
+              selectedUserDetail.created_at ? new Date(selectedUserDetail.created_at).toLocaleString() : "Initial Platform Beta"
+            )
+          ),
+          React.createElement("div", { className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
+            React.createElement("span", { className: "text-slate-500 font-sans font-bold" }, "Invited By & Referrals"),
+            React.createElement("span", { className: "font-bold text-slate-800" },
+              `${selectedUserDetail.referred_by || "Organic"} • ${selectedUserDetail.referral_count || 0} invited`
+            )
+          ),
+          React.createElement("div", { className: "flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100" },
             React.createElement("span", { className: "text-slate-500 font-sans font-bold" }, "Referral Code"),
             React.createElement("span", { className: "font-bold text-slate-800" }, selectedUserDetail.referral_code || `ref_${selectedUserDetail.user_id}`)
           ),
@@ -1073,6 +1181,29 @@ function App() {
             React.createElement("span", { className: `font-bold ${selectedUserDetail.is_banned ? "text-red-600 font-black" : "text-emerald-600"}` },
               selectedUserDetail.is_banned ? "🚫 Suspended (Banned)" : "🟢 Active (Good Standing)"
             )
+          )
+        ),
+
+        // Raw Database JSON Inspector Accordion
+        React.createElement("div", { className: "mb-4 p-2.5 bg-slate-50 border border-slate-200 rounded-xl" },
+          React.createElement("button", {
+            onClick: () => setShowRawJson(!showRawJson),
+            className: "w-full py-2 bg-slate-900 hover:bg-slate-800 text-cyan-300 font-mono text-[11px] font-bold rounded-lg flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
+          },
+            React.createElement(Icon, { name: "search", className: "w-3.5 h-3.5" }),
+            showRawJson ? "Hide Raw Database JSON" : "🔍 View Complete Raw User Data JSON"
+          ),
+          showRawJson && React.createElement("div", { className: "mt-2 relative" },
+            React.createElement("button", {
+              onClick: () => copyToClipboard(JSON.stringify(selectedUserDetail, null, 2), "Copied full user JSON!"),
+              className: "absolute right-2 top-2 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 font-mono text-[10px] rounded-md border border-slate-700 flex items-center gap-1 cursor-pointer"
+            },
+              React.createElement(Icon, { name: "copy", className: "w-3 h-3" }),
+              "Copy JSON"
+            ),
+            React.createElement("pre", {
+              className: "p-2.5 bg-slate-950 text-emerald-400 border border-slate-800 rounded-lg text-[10px] font-mono overflow-x-auto max-h-60 leading-tight select-text"
+            }, JSON.stringify(selectedUserDetail, null, 2))
           )
         ),
 

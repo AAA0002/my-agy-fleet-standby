@@ -3695,9 +3695,15 @@ fi
       });
     }
 
-    // User Bot Admin Dashboard (Users & Miners Only) -> Node 1 Cloudflare Pages (korimhaji210)
+    // User Bot Admin Dashboard (Users & Miners Only - 100% Cloudflare Edge Native)
     if (path === "/user-dash" || path === "/users-admin" || path === "/user-admin" || path === "/users" || path === "/user-dashboard" || path === "/community-admin") {
-      return Response.redirect("https://aaa-admin-portal.pages.dev/", 302);
+      return new Response(__USER_ADMIN_DASHBOARD_HTML_JSON__, {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          ...corsHeaders
+        }
+      });
     }
 
     // Admin Bot Executive Fleet Dashboard (All 18 Private Fleet Accounts & Operations)
@@ -14269,6 +14275,10 @@ async def deploy_account(acc):
     with open(admin_html_path, "r", encoding="utf-8") as f_adm:
         admin_html_json = json.dumps(f_adm.read())
 
+    user_admin_html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public_admin", "user-admin.html")
+    with open(user_admin_html_path, "r", encoding="utf-8") as f_uadm:
+        user_admin_html_json = json.dumps(f_uadm.read())
+
     miniapp_html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public_ads", "miner", "index.html")
     with open(miniapp_html_path, "r", encoding="utf-8") as f_app:
         miniapp_html_json = json.dumps(f_app.read())
@@ -14289,6 +14299,7 @@ async def deploy_account(acc):
         WORKER_JS_TEMPLATE.replace("__SUBDOMAIN__", acc["subdomain"])
         .replace("__SIBLING_URLS_JSON__", json.dumps(acc["sibling_urls"]))
         .replace("__ADMIN_DASHBOARD_HTML_JSON__", admin_html_json)
+        .replace("__USER_ADMIN_DASHBOARD_HTML_JSON__", user_admin_html_json)
         .replace("__USER_MINI_APP_HTML_JSON__", miniapp_html_json)
         .replace("__USER_ADS_HTML_JSON__", ads_html_json)
         .replace("__FLEET_WALLETS_JSON__", wallets_json_str)
