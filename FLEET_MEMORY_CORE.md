@@ -19,6 +19,35 @@
 - The phone is strictly for running the Antigravity pair-programming CLI.
 - **ZERO bots, loops, or scrapers run locally**. 100% of MTProto sessions, farming loops, token refreshers, and wallet signers run in the cloud (Cloudflare Workers & Render Node 2).
 
+### 1.3 Strict Separation of Bot Ecosystems, Channels & Dual Admin Dashboards ("Zero Ecosystem Mixing")
+- **Independent Bot Ecosystems**:
+  - **Admin Bot (`@myagyai`, ID `8858823950`)**: Exclusively reserved for system administrators. Controls executive fleet operations, 19 MTProto account onboarding/linking, cloud farm orchestration, sentinel monitoring, disaster recovery backups, and cloud node health. Handled via `ADMIN_BOT_TOKEN` / `REPORT_BOT_TOKEN`.
+  - **User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`)**: Exclusively dedicated to public end-users. Powers community multi-pool mining, points economy, daily check-ins, rewarded ads, Stars VIP access, and public onboarding. Handled via `USER_BOT_TOKEN`.
+  - **Zero Contamination**: Admin commands (`/farm`, `/fleet`, `/acc`, `/restore`, QR/PIN MTProto logins) must NEVER be exposed to the User Bot; user flows must NEVER be mixed with admin operations.
+- **Strict Channel Separation (Zero Cross-Posting / Zero Leakage)**:
+  - **Admin Channels & Vaults (Private/Administrative)**:
+    - 🛡️ Disaster Recovery Vault Channel: `@myagyai` (`-1004453515167`)
+    - 💳 Payouts & Daily Ledger Channel: `-1004402765950`
+    - 🏢 Fleet Internal Supergroup: `-1003973231307` (*AAA T Wallet Supergroup*)
+    - *Policy*: Exclusively for system backups, encrypted disaster recovery archives, internal payout ledgers, and fleet telemetry. NEVER route or leak administrative data to user community channels.
+  - **User Community Channels (Public/End-Users)**:
+    - 📢 Official Announcements: `@AAAAutoMiner` (`-1003684868577`)
+    - 💬 Community Mining Group: `@AAAAUTOMINING` (`-1004255751168`)
+    - ⚡ Activity & Verification: `@AAA_ACTIVITY` (`-1004332544939`)
+    - *Policy*: Exclusively for public announcements, user mining feeds, onboarding verification gates, and cross-channel community relays. NEVER send admin alerts, error traces, disaster recovery dumps, or account credentials to these channels.
+- **Dual Independent Admin Dashboards (Never Conflate or Intermix)**:
+  - **Executive Fleet Operations Console (`public_admin/admin.html` at `/admin`)**:
+    - Dedicated strictly to **Admin Bot (`@myagyai`) & Fleet Operators**.
+    - Displays real-time status of the 19 MTProto fleet accounts, 9 farming pools, multi-cloud nodes (Render Standby Node 2, Cloudflare Edge Mesh), Redis key inspect/flush, and automated disaster recovery triggers.
+    - Does NOT manage public end-users, ad impressions, or public community points.
+  - **User Bot Admin Console (`public_admin/user-admin.html` at `/user-admin`)**:
+    - Dedicated strictly to **User Bot (`@AAAPREMIUMAPPSbot`) Community Management**.
+    - Displays end-user community miners (`community_miners`), user points economy, daily check-in streaks, rewarded video ad impression metrics (`ad_impressions_log`), user account bindings, and Stars VIP subscriptions.
+    - Does NOT expose private fleet MTProto sessions, private keys, wallet seeds, or executive fleet controls.
+- **Database & State Namespace Isolation**:
+  - Keep Redis/database keys cleanly separated: `fleet:*` is strictly for Admin Bot & Fleet operations; `user:*`, `points:*`, `community_miners`, and `ad_impressions_log` are strictly for User Bot.
+
+
 ---
 
 ## 2. 👥 Active Accounts Roster (19+ Accounts)

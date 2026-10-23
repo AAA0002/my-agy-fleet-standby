@@ -2,6 +2,36 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🤖 Rule 7 Enacted: Strict Separation of Bot Ecosystems, Channels & Dual Admin Dashboards ("Zero Ecosystem Mixing") (October 23, 2026)**:
+  - **Rule 7 Added to Workspace Rules (`AGENTS.md`), Plugin Rules (`aaa-fleet-plugin`), Session Bridge (`SESSION_BRIDGE.md`), and Project Bible (`PROJECT_BIBLE.md`)**:
+    * **Independent Bot Ecosystems**:
+      - **Admin Bot (`@myagyai`, ID `8858823950`)**: Exclusively reserved for system administrators. Controls executive fleet operations, 19 MTProto account onboarding/linking, cloud farm orchestration, sentinel monitoring, disaster recovery backups, and cloud node health. Handled via `ADMIN_BOT_TOKEN` / `REPORT_BOT_TOKEN`.
+      - **User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`)**: Exclusively dedicated to public end-users. Powers community multi-pool mining, points economy, daily check-ins, rewarded ads, Stars VIP access, and public onboarding. Handled via `USER_BOT_TOKEN`.
+      - **Zero Contamination**: Admin commands (`/farm`, `/fleet`, `/acc`, `/restore`, QR/PIN MTProto logins) must NEVER be exposed to the User Bot; user flows must NEVER be mixed with admin operations.
+    * **Strict Channel Separation (Zero Cross-Posting / Zero Leakage)**:
+      - **Admin Channels & Vaults (Private/Administrative)**:
+        * 🛡️ Disaster Recovery Vault Channel: `@myagyai` (`-1004453515167`)
+        * 💳 Payouts & Daily Ledger Channel: `-1004402765950`
+        * 🏢 Fleet Internal Supergroup: `-1003973231307` (*AAA T Wallet Supergroup*)
+        * *Policy*: Exclusively for system backups, encrypted disaster recovery archives, internal payout ledgers, and fleet telemetry. NEVER route or leak administrative data to user community channels.
+      - **User Community Channels (Public/End-Users)**:
+        * 📢 Official Announcements: `@AAAAutoMiner` (`-1003684868577`)
+        * 💬 Community Mining Group: `@AAAAUTOMINING` (`-1004255751168`)
+        * ⚡ Activity & Verification: `@AAA_ACTIVITY` (`-1004332544939`)
+        * *Policy*: Exclusively for public announcements, user mining feeds, onboarding verification gates, and cross-channel community relays. NEVER send admin alerts, error traces, disaster recovery dumps, or account credentials to these channels.
+    * **Dual Independent Admin Dashboards (Never Conflate or Intermix)**:
+      - **Executive Fleet Operations Console (`public_admin/admin.html` at `/admin`)**:
+        * Dedicated strictly to **Admin Bot (`@myagyai`) & Fleet Operators**.
+        * Displays real-time status of the 19 MTProto fleet accounts, 9 farming pools, multi-cloud nodes (Render Standby Node 2, Cloudflare Edge Mesh), Redis key inspect/flush, and automated disaster recovery triggers.
+        * Does NOT manage public end-users, ad impressions, or public community points.
+      - **User Bot Admin Console (`public_admin/user-admin.html` at `/user-admin`)**:
+        * Dedicated strictly to **User Bot (`@AAAPREMIUMAPPSbot`) Community Management**.
+        * Displays end-user community miners (`community_miners`), user points economy, daily check-in streaks, rewarded video ad impression metrics (`ad_impressions_log`), user account bindings, and Stars VIP subscriptions.
+        * Does NOT expose private fleet MTProto sessions, private keys, wallet seeds, or executive fleet controls.
+    * **Database & Cache Namespace Isolation**:
+      - Redis and Supabase keys must maintain clean separation: `fleet:*` for Admin Bot & Fleet operations; `user:*`, `points:*`, `community_miners`, and `ad_impressions_log` for User Bot.
+
+
 - **🚀 Fleet Expansion & Dynamic Roster Fix, Strict Index Preservation & Anti-Collision Isolation (October 23, 2026)**:
   - **Dynamic Fleet Roster Beyond Static 18 Accounts**:
     * **Root Cause**: `getFleetAccounts()` in `deploy_both_cf_workers.py` was hardcoded to `DEFAULT_FLEET_ACCOUNTS.map(...)`, which dropped any onboarded account beyond index 18.

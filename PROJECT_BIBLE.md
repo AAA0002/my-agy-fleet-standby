@@ -49,13 +49,27 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
      * **Local Development / Node**: Local untracked `.env` file that is strictly `.gitignore`'d and NEVER committed, pushed, or printed in terminal logs.
    - **Zero Phone Load**: 0 bots on Samsung Galaxy A30; all automated execution stays in the cloud.
 8. **🛡️ User Bot Strict Immutability ("DO NOT TOUCH USER BOT")**:
-   - The User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`, webhook `atf-miner-worker.agorameet.workers.dev`) and its community channels (`-1003684868577`, `@AAAATFAUTOMINING`, `@AAAATF_ACTIVITY`) are exclusively for public end-users and must **NEVER** be modified, redeployed, or tampered with.
+   - The User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`, webhook `atf-miner-worker.agorameet.workers.dev`) and its community channels (`-1003684868577`, `@AAAAUTOMINING`, `@AAA_ACTIVITY`) are exclusively for public end-users and must **NEVER** be modified, redeployed, or tampered with without explicit commander authorization.
    - Keep all admin operations, monitoring, bot routing, and fleet controls strictly on the Admin Bot (`@myagyai`) and admin channels.
 9. **💎 Strict Multi-Chain Wallet Immutability & Master Secrets Vault**:
    - The system **ONLY creates new wallets for genuinely brand-new accounts**, NEVER for old or existing accounts.
    - When an account logs in or reconnects, the system checks `FLEET_STATIC_REGISTRY`, chain-specific JSON vaults (`fleet_*_wallets.json`), and `accounts.json` to 100% preserve existing authentic wallets and private keys with zero regeneration.
    - Brand-new accounts generate dedicated 5-chain non-custodial suites (TON v4r2, EVM BSC/Arb, TRON, Solana, Bitcoin) and automatically archive all secrets across `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt` (local master secrets vault, strictly gitignored), `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md`, `public_admin/fleet_wallets_data.json`, `fleet_*_wallets.json`, `accounts.json`, and Upstash Redis.
    - Farming bots requiring wallet connections (Victor's Company, VyroDrop, MRG, ATF, Astra) automatically bind authentic wallets and initiate mining upon onboarding.
+10. **🤖 Strict Separation of Bot Ecosystems, Channels & Admin Dashboards ("Zero Ecosystem Mixing")**:
+   - **Independent Bot Ecosystems**:
+     * **Admin Bot (`@myagyai`, ID `8858823950`)**: Reserved strictly for administrators. Orchestrates 19 MTProto fleet accounts, 9-pool mining passes, node failover, sentinel monitoring, and disaster recovery archives. Handled via `ADMIN_BOT_TOKEN` / `REPORT_BOT_TOKEN`.
+     * **User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`)**: Dedicated exclusively to public end-users. Manages community multi-pool mining, points economy, daily check-in streaks, rewarded video ads, and Stars VIP passes. Handled via `USER_BOT_TOKEN`.
+     * Never mix bot tokens, commands, webhooks, or handlers. Admin commands (`/farm`, `/fleet`, `/acc`, `/restore`, QR/PIN logins) must NEVER be exposed in the User Bot.
+   - **Strict Channel Separation (Zero Cross-Posting / Zero Leakage)**:
+     * **Admin Channels & Vaults (Private/Administrative)**: Disaster Recovery Vault Channel (`@myagyai`, `-1004453515167`), Payouts & Daily Ledger (`-1004402765950`), and Fleet Internal Supergroup (`-1003973231307`). Strictly for disaster recovery archives, payout logs, and fleet telemetry. NEVER leak administrative data, encrypted archives, or internal fleet telemetry to User Community channels.
+     * **User Community Channels (Public/End-Users)**: Official Announcements (`@AAAAutoMiner`, `-1003684868577`), Community Mining Group (`@AAAAUTOMINING`, `-1004255751168`), and Activity & Verification (`@AAA_ACTIVITY`, `-1004332544939`). Exclusively for community announcements, mining updates, onboarding gates, and user activity. NEVER post admin logs, stack traces, disaster recovery dumps, or session credentials to these channels.
+   - **Dual Independent Admin Dashboards (Never Conflate or Intermix)**:
+     * **Executive Fleet Operations Console (`admin.html` at `/admin`)**: Dedicated strictly to **Admin Bot (`@myagyai`) & Fleet Operators**. Displays real-time status of the 19 MTProto fleet accounts, 9 farming pools, multi-cloud nodes (Render Standby Node 2, Cloudflare Edge Mesh), Redis key inspect/flush, and automated disaster recovery triggers. Does NOT manage public end-users, ad impressions, or public community points.
+     * **User Bot Admin Console (`user-admin.html` at `/user-admin`)**: Dedicated strictly to **User Bot (`@AAAPREMIUMAPPSbot`) Community Management**. Displays end-user community miners (`community_miners`), user points economy, daily check-in streaks, rewarded video ad impression metrics (`ad_impressions_log`), user account bindings, and Stars VIP subscriptions. Does NOT expose private fleet MTProto sessions, private keys, wallet seeds, or executive fleet controls.
+   - **State & Database Isolation**:
+     * Namespace separation in Upstash Redis and Supabase: `fleet:*` strictly for Admin Bot and fleet operations; `user:*`, `points:*`, `community_miners`, and `ad_impressions_log` strictly for User Bot.
+
 
 
 ---

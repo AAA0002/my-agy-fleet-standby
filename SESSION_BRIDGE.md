@@ -38,6 +38,13 @@
    - **MANDATORY**: ALWAYS run `python3 backup_manager.py` before and after any code changes, deployments, or migrations to stream encrypted disaster recovery archives to the Telegram vault channel (`@myagyai`).
 4. **Rule 6 — Strict Secret Hygiene**:
    - ZERO plaintext secrets in chat responses, terminal logs, or git commits. Credentials belong solely in local untracked `.env` (`chmod 600`) or native cloud secret vaults.
+5. **Rule 7 — Strict Separation of Bot Ecosystems, Channels & Admin Dashboards ("Zero Ecosystem Mixing")**:
+   - **Admin Bot (`@myagyai`) vs User Bot (`@AAAPREMIUMAPPSbot`)**: Strictly separate tokens, webhooks, command sets, and workflows. Never mix admin commands into user flows.
+   - **Admin Channels vs User Channels**: Admin channels (Vault `@myagyai`, Payouts `-1004402765950`, Supergroup `-1003973231307`) NEVER receive user announcements or tasks. User community channels (`@AAAAutoMiner`, `@AAAAUTOMINING`, `@AAA_ACTIVITY`) NEVER receive admin logs, error traces, or backups.
+   - **Dual Admin Dashboards**:
+     - **Admin Bot Dashboard** (`public_admin/admin.html` at `/admin`): Dedicated strictly to Fleet Ops (19 accounts, 9 pools, cloud node status, Redis key management).
+     - **User Bot Admin Dashboard** (`public_admin/user-admin.html` at `/user-admin`): Dedicated strictly to Community Miners, points economy, ad metrics, and user VIP passes.
+     - NEVER mix or merge these two dashboards.
 
 ---
 

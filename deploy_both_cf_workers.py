@@ -4982,27 +4982,27 @@ fi
             accounts = memFleetAccounts.map(a => Object.assign({}, a));
           }
 
-          // 1. Upstash Redis (Serverless cloud cache, 0 KV operations)
+          // 1. Upstash Redis fleet:accounts (Primary Canonical Account Registry)
           if (!accounts || accounts.length === 0) {
+            try {
+              const upAccs = await upstashGet("fleet:accounts");
+              if (upAccs) {
+                const parsedAccs = typeof upAccs === "string" ? JSON.parse(upAccs) : upAccs;
+                if (Array.isArray(parsedAccs) && parsedAccs.length >= 18) {
+                  accounts = parsedAccs;
+                }
+              }
+            } catch (_) {}
+          }
+
+          // 1.5 Upstash fleet:live_state fallback
+          if (!accounts || accounts.length < 18) {
             try {
               const upstashRaw = await upstashGet("fleet:live_state");
               if (upstashRaw) {
                 const parsed = typeof upstashRaw === "string" ? JSON.parse(upstashRaw) : upstashRaw;
                 if (parsed && Array.isArray(parsed.accounts) && parsed.accounts.length >= 18) {
                   accounts = parsed.accounts;
-                }
-              }
-            } catch (_) {}
-          }
-
-          // 1.5 Upstash fleet:accounts fallback
-          if (!accounts || accounts.length < 18) {
-            try {
-              const upAccs = await upstashGet("fleet:accounts");
-              if (upAccs) {
-                const parsedAccs = typeof upAccs === "string" ? JSON.parse(upAccs) : upAccs;
-                if (Array.isArray(parsedAccs) && parsedAccs.length > 0) {
-                  accounts = parsedAccs;
                 }
               }
             } catch (_) {}
@@ -5044,11 +5044,13 @@ fi
           const staticUids = new Set(DEFAULT_FLEET_ACCOUNTS.map(m => String(m.user_id).trim()));
           const staticPhones = new Set(DEFAULT_FLEET_ACCOUNTS.map(m => String(m.phone || "").replace(/\D/g, "")));
           const seenDynamicUids = new Set();
+          const BANNED_TEST_UIDS = new Set(["9999999999", "1474280319"]);
 
           (accounts || []).forEach(a => {
             const aUid = String(a.user_id || "").trim();
             const aPhone = String(a.phone || "").replace(/\D/g, "");
-            if (!aUid && !aPhone) return;
+            const aName = String(a.name || "").toLowerCase();
+            if (!aUid || BANNED_TEST_UIDS.has(aUid) || aName.includes("test new") || aName.includes("دهیار")) return;
             if (staticUids.has(aUid) || (aPhone && staticPhones.has(aPhone))) return;
             if (seenDynamicUids.has(aUid)) return;
             seenDynamicUids.add(aUid);
