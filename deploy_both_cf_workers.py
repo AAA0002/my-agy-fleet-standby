@@ -10663,6 +10663,85 @@ Reply to Arif naturally:`;
 
         // (getUserProfile, saveUserProfile, checkUserChannels, broadcastToLiveActivity, broadcastNewMinerJoined, renderGate & userMainKeyboard defined in shared scope above)
 
+        // 14.0 Multi-Channel Auto-Relay & Cross-Poster Engine
+        const channelPost = update.channel_post || update.edited_channel_post;
+        if (channelPost) {
+          const fromChatId = channelPost.chat?.id;
+          const msgId = channelPost.message_id;
+
+          // Master Announcements Channel (-1004255751168, @AAAAUTOMINING)
+          // -> Automatically replicate to Community Hub (-1003684868577) & Live Activity (-1004332544939)
+          if (fromChatId === -1004255751168) {
+            const targets = [
+              { id: -1003684868577, name: "Community Hub" },
+              { id: -1004332544939, name: "Live Activity Stream" }
+            ];
+
+            if (update.channel_post) {
+              const relayedMap = {};
+              for (const tgt of targets) {
+                try {
+                  const res = await fetch(`https://api.telegram.org/bot${userBotToken}/copyMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: tgt.id,
+                      from_chat_id: fromChatId,
+                      message_id: msgId
+                    })
+                  });
+                  if (res.ok) {
+                    const data = await res.json();
+                    if (data.ok && data.result?.message_id) {
+                      relayedMap[String(tgt.id)] = data.result.message_id;
+                    }
+                  }
+                } catch (_) {}
+              }
+              // Save cross-post mapping in Upstash Redis so subsequent edits synchronize across all channels!
+              if (Object.keys(relayedMap).length > 0) {
+                ctx.waitUntil(upstashSet(`relay_msg:${fromChatId}:${msgId}`, relayedMap, 604800).catch(() => {}));
+              }
+            } else if (update.edited_channel_post) {
+              // Edit synchronization across all mirrored channels
+              try {
+                const mapRaw = await upstashGet(`relay_msg:${fromChatId}:${msgId}`);
+                if (mapRaw) {
+                  const rMap = typeof mapRaw === "string" ? JSON.parse(mapRaw) : mapRaw;
+                  const newText = channelPost.text || "";
+                  const newCaption = channelPost.caption || "";
+                  for (const [tgtChatId, tgtMsgId] of Object.entries(rMap)) {
+                    if (newText) {
+                      await fetch(`https://api.telegram.org/bot${userBotToken}/editMessageText`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          chat_id: tgtChatId,
+                          message_id: tgtMsgId,
+                          text: newText,
+                          parse_mode: "Markdown"
+                        })
+                      }).catch(() => {});
+                    } else if (newCaption) {
+                      await fetch(`https://api.telegram.org/bot${userBotToken}/editMessageCaption`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          chat_id: tgtChatId,
+                          message_id: tgtMsgId,
+                          caption: newCaption,
+                          parse_mode: "Markdown"
+                        })
+                      }).catch(() => {});
+                    }
+                  }
+                }
+              } catch (_) {}
+            }
+          }
+          return new Response("OK");
+        }
+
         const broadcastMilestoneUnlocked = async (title, minerName, uid, achievement, bonusText = "") => {
           const uidStr = String(uid);
           const maskedUid = uidStr.length > 5 ? `${uidStr.slice(0, 4)}****${uidStr.slice(-2)}` : uidStr;
@@ -12960,6 +13039,41 @@ Reply to Arif naturally:`;
             return;
           }
 
+          // 0.01 Multi-Channel Broadcast Router (/broadcast, /announce)
+          if ((text.startsWith("/broadcast") || text.startsWith("/announce")) && (String(chatId) === "6727787768" || String(chatId) === (env.OWNER_ID || "6727787768"))) {
+            const broadText = text.replace(/^\/(broadcast|announce)\s*/i, "").trim();
+            if (!broadText) {
+              await sendUserReply("⚠️ *Usage:* `/broadcast <your announcement message>`\n\nThis will post automatically to:\n1️⃣ 📢 @AAAAUTOMINING\n2️⃣ 💬 @AAAAutoMiner\n3️⃣ ⚡ @AAA_ACTIVITY", activeUserKeyboard);
+              return;
+            }
+
+            const targets = [
+              { id: -1004255751168, name: "Announcements (@AAAAUTOMINING)" },
+              { id: -1003684868577, name: "Community Hub (@AAAAutoMiner)" },
+              { id: -1004332544939, name: "Live Activity (@AAA_ACTIVITY)" }
+            ];
+
+            let sentCount = 0;
+            for (const tgt of targets) {
+              try {
+                const res = await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chat_id: tgt.id,
+                    text: broadText,
+                    parse_mode: "Markdown",
+                    disable_web_page_preview: true
+                  })
+                });
+                if (res.ok) sentCount++;
+              } catch (_) {}
+            }
+
+            await sendUserReply(`✅ *Announcement Broadcast Successful!*\n\nDelivered to *${sentCount}/3* official community channels:\n• 📢 Announcements (@AAAAUTOMINING)\n• 💬 Community Hub (@AAAAutoMiner)\n• ⚡ Live Activity (@AAA_ACTIVITY)`, activeUserKeyboard);
+            return;
+          }
+
           // 0. Dedicated Help & User Guide (/help, /guide, /info, /about, "📖 User Guide", "📖 Guide")
           if (text.startsWith("/help") || text.startsWith("/guide") || text === "📖 User Guide" || text === "📖 Guide" || text === "Guide" || text.startsWith("/info") || text.startsWith("/about")) {
             const helpMsg = `📖 *AAA CLOUD MINING — COMPREHENSIVE USER GUIDE* 🤖\n` +
@@ -13993,13 +14107,15 @@ async def main():
                 async with session.get(f"https://api.telegram.org/bot{USER_BOT_TOKEN}/getWebhookInfo") as resp:
                     cur_uwh = await resp.json()
                     cur_uurl = (cur_uwh.get("result") or {}).get("url", "")
-                    if cur_uurl != user_target_wh:
-                        print(f"📡 Setting User Bot Webhook to {user_target_wh}...")
+                    cur_uallowed = (cur_uwh.get("result") or {}).get("allowed_updates", [])
+                    needs_update = (cur_uurl != user_target_wh) or ("channel_post" not in cur_uallowed)
+                    if needs_update:
+                        print(f"📡 Setting User Bot Webhook to {user_target_wh} (with channel_post cross-posting)...")
                         async with session.post(
                             f"https://api.telegram.org/bot{USER_BOT_TOKEN}/setWebhook",
                             json={
                                 "url": user_target_wh,
-                                "allowed_updates": ["message", "edited_message", "callback_query", "pre_checkout_query"],
+                                "allowed_updates": ["message", "edited_message", "callback_query", "pre_checkout_query", "channel_post", "edited_channel_post"],
                                 "drop_pending_updates": False
                             }
                         ) as s_resp:

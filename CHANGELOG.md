@@ -2,6 +2,20 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **📢 Autonomous Multi-Channel Cross-Posting & Auto-Relay Engine (October 23, 2026)**:
+  - **Automated Channel Post Replicator**:
+    * Enabled automated channel post mirroring on Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Whenever an administrator posts in Master Announcements (`-1004255751168`, `@AAAAUTOMINING`), the worker intercepts the `channel_post` update and uses Telegram's `copyMessage` API to replicate the post into:
+      1. 💬 **Community Hub** (`-1003684868577`, `@AAAAutoMiner`)
+      2. ⚡ **Live Activity Stream** (`-1004332544939`, `@AAA_ACTIVITY`)
+  - **Real-Time Edit Synchronization**:
+    * Stores cross-posted message IDs in Upstash Redis (`relay_msg:<from_chat_id>:<msg_id>`).
+    * When an announcement is edited in `@AAAAUTOMINING` (`edited_channel_post`), the worker synchronizes edits in real time using `editMessageText` and `editMessageCaption` across all target channels.
+  - **Admin `/broadcast` & `/announce` Commands**:
+    * Commander Arif (`6727787768`) can also broadcast directly by sending `/broadcast <message>` or `/announce <message>` in chat with `@AAAPREMIUMAPPSbot`, automatically broadcasting to all 3 channels simultaneously.
+  - **Telegram Webhook Updates Expanded**:
+    * Updated `allowed_updates` on `@AAAPREMIUMAPPSbot` webhook to include `channel_post` and `edited_channel_post`. Verified healthy with `ok: true`.
+
 - **🛡️ Mandatory Dual Onboarding Gate: Join 3 Channels + Watch 1 Ad to Unlock Bot (October 23, 2026)**:
   - **Enforced Dual Onboarding Verification**:
     * Implemented strict access gating requiring all new users joining `@AAAPREMIUMAPPSbot` to complete both:

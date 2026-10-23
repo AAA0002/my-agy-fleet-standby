@@ -268,6 +268,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   - **User Community Group**: Chat ID: `-1003684868577` (*AAA Auto Miner*, `https://t.me/AAAAutoMiner`)
   - **Official Public Announcements**: Channel ID: `-1004255751168` (`@AAAAUTOMINING`, `https://t.me/AAAAUTOMINING`)
   - **Live Public Miner Activity Stream**: Channel ID: `-1004332544939` (`@AAA_ACTIVITY`, `https://t.me/AAA_ACTIVITY`)
+  - **Autonomous Channel Cross-Posting Relay**: Posts made in `@AAAAUTOMINING` (or via `/broadcast` in `@AAAPREMIUMAPPSbot`) are automatically mirrored in real-time to both `@AAAAutoMiner` and `@AAA_ACTIVITY` via Telegram `copyMessage` on Cloudflare Edge with edit synchronization.
 
 ### 🛰️ The Complete Master Catalog of Cloud Infrastructure & Verified APIs (from `.env`)
 
