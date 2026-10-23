@@ -1219,32 +1219,8 @@ async def fetch_accounts_from_cloud():
                                             "phone": tinfo.get("phone", "") if isinstance(tinfo, dict) else "",
                                             "status": "active"
                                         }
-                async with http.get(f"{UPSTASH_URL}/smembers/ub_registered_users", headers=up_h, timeout=aiohttp.ClientTimeout(total=4)) as ur_users:
-                    if ur_users.status == 200:
-                        u_list = (await ur_users.json()).get("result", [])
-                        if u_list:
-                            pipe_ub = [["get", f"ub_user:{u}"] for u in u_list[:50]]
-                            async with http.post(f"{UPSTASH_URL}/pipeline", json=pipe_ub, headers=up_h, timeout=aiohttp.ClientTimeout(total=5)) as ub_pipe_r:
-                                if ub_pipe_r.status == 200:
-                                    ub_pipe_d = await ub_pipe_r.json()
-                                    for item in ub_pipe_d:
-                                        rstr = item.get("result")
-                                        if rstr:
-                                            try:
-                                                prof = json.loads(rstr) if isinstance(rstr, str) else rstr
-                                                for ub_acc in (prof.get("accounts") or []):
-                                                    ub_uid = str(ub_acc.get("user_id") or "")
-                                                    if ub_uid and ub_uid.isdigit() and ub_uid not in accounts_map:
-                                                        accounts_map[ub_uid] = {
-                                                            "user_id": int(ub_uid),
-                                                            "name": ub_acc.get("name", f"User_{ub_uid[-4:]}"),
-                                                            "phone": ub_acc.get("phone", ""),
-                                                            "status": ub_acc.get("status", "active")
-                                                        }
-                                            except Exception:
-                                                pass
             except Exception as e_ub:
-                logger.debug(f"User bot account merge note: {e_ub}")
+                logger.debug(f"Fleet account merge note: {e_ub}")
 
     merged = [a for a in accounts_map.values() if isinstance(a, dict) and a.get("user_id")]
     FLEET_ACCOUNTS_CACHE = {str(a.get("user_id")): a for a in merged}
