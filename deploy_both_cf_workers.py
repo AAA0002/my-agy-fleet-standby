@@ -5762,9 +5762,11 @@ fi
                 await sendResilientMessage(chatId, errRep, cancelKeyboard, "Markdown");
               }
             } else if (cbData.startsWith("btn_qr_login_")) {
-              const targetIdx = parseInt(cbData.replace("btn_qr_login_", ""), 10) || 1;
+              const rawIdx = cbData.replace("btn_qr_login_", "");
+              const targetIdx = (rawIdx === "new" || !rawIdx || isNaN(parseInt(rawIdx, 10))) ? null : parseInt(rawIdx, 10);
               const cbMsgId = cb.message ? cb.message.message_id : null;
-              await editOrSendResilientMessage(chatId, cbMsgId, `📱 *Connecting to Render Cloud & Generating QR Session for Account #${targetIdx}...*\n\nPlease wait a moment...`, cancelKeyboard);
+              const slotLabel = targetIdx ? `Account #${targetIdx}` : "New Account";
+              await editOrSendResilientMessage(chatId, cbMsgId, `📱 *Connecting to Render Cloud & Generating QR Session for ${slotLabel}...*\n\nPlease wait a moment...`, cancelKeyboard);
               try {
                 const qRes = await fetch("https://my-agy-fleet-standby-node2.onrender.com/api/account/login/qr-start", {
                   method: "POST",
@@ -5777,7 +5779,7 @@ fi
                 });
                 const qData = await qRes.json();
                 if (qData && qData.ok && qData.url) {
-                  const qrRep = `📱 *1-Tap Telegram QR Login for Account #${targetIdx}*\n` +
+                  const qrRep = `📱 *1-Tap Telegram QR Login for ${slotLabel}*\n` +
                     `━━━━━━━━━━━━━━━━━━━━━━\n` +
                     `✅ *Zero SMS or OTP codes required!*\n` +
                     `Telegram will NEVER block this login because it uses official direct device linking.\n\n` +
@@ -5787,13 +5789,16 @@ fi
                     `🔒 *2FA Password:* Automatic (\`Arif216@\`)\n` +
                     `⏱️ *Link Expiry:* 2 minutes\n` +
                     `━━━━━━━━━━━━━━━━━━━━━━`;
-                  await editOrSendResilientMessage(chatId, cbMsgId, qrRep, {
-                    inline_keyboard: [
-                      [{ text: "⚡ Link Device in Telegram Now", url: qData.url }],
-                      [{ text: "🔄 Refresh QR Link", callback_data: `btn_qr_login_${targetIdx}` }],
-                      [{ text: "🔙 Main Menu", callback_data: "btn_back_main" }]
-                    ]
-                  });
+                  const qrButtons = [
+                    [{ text: "⚡ Link Device in Telegram Now", url: qData.url }]
+                  ];
+                  if (qData.qr_image_url) {
+                    qrButtons.push([{ text: "🖼️ View QR Code Image to Scan", url: qData.qr_image_url }]);
+                  }
+                  qrButtons.push([{ text: "🔄 Refresh QR Link", callback_data: `btn_qr_login_${targetIdx || "new"}` }]);
+                  qrButtons.push([{ text: "🔙 Main Menu", callback_data: "btn_back_main" }]);
+
+                  await editOrSendResilientMessage(chatId, cbMsgId, qrRep, { inline_keyboard: qrButtons });
                 } else {
                   await editOrSendResilientMessage(chatId, cbMsgId, `❌ *Could Not Start QR Session:*\n${qData?.error || "Cluster timeout"}\n\nPlease try again or use the Mini App:`, cancelKeyboard);
                 }
@@ -5848,6 +5853,7 @@ fi
                 `• *Bangladesh:* \`019XXXXXXXX\` or \`19XXXXXXXX\`\n` +
                 `• *Standard:* \`+88017XXXXXXXX\`\n` +
                 `• *International:* \`+1...\`, \`+44...\`, \`+91...\`\n\n` +
+                `💡 *Fast Option:* Tap **[ 📱 1-Tap QR Login ]** below to link instantly with zero SMS!\n\n` +
                 `_(Tap ❌ Cancel Login below to abort)_`;
               const recorded = {
                 id: "act_" + Date.now(),
@@ -5862,7 +5868,13 @@ fi
               if (env.BACKUP_KV) {
                 ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify({ step: "waiting_phone" }), { expirationTtl: 600 }).catch(() => {}));
               }
-              await sendResilientMessage(chatId, rep, cancelKeyboard, "Markdown");
+              const addAccountKeyboard = {
+                inline_keyboard: [
+                  [{ text: "📱 1-Tap QR Login (Zero Code - Recommended)", callback_data: "btn_qr_login_new" }],
+                  [{ text: "❌ Cancel Login", callback_data: "btn_cancel_login" }]
+                ]
+              };
+              await sendResilientMessage(chatId, rep, addAccountKeyboard, "Markdown");
             } else if (cbData === "btn_withdraw" || cbData === "btn_withdraw_all") {
               ctx.waitUntil((async () => {
                 let liveBnb = 0.000622;
@@ -8041,8 +8053,15 @@ fi
             `• *Bangladesh:* \`019XXXXXXXX\` or \`19XXXXXXXX\`\n` +
             `• *Standard:* \`+88017XXXXXXXX\`\n` +
             `• *International:* \`+1...\`, \`+44...\`, \`+91...\`\n\n` +
+            `💡 *Fast Option:* Tap **[ 📱 1-Tap QR Login ]** below to link instantly with zero SMS!\n\n` +
             `_(Tap ❌ Cancel Login below to abort)_`;
-          ctx.waitUntil(sendReply(rep, cancelKeyboard));
+          const addAccountKeyboard = {
+            inline_keyboard: [
+              [{ text: "📱 1-Tap QR Login (Zero Code - Recommended)", callback_data: "btn_qr_login_new" }],
+              [{ text: "❌ Cancel Login", callback_data: "btn_cancel_login" }]
+            ]
+          };
+          ctx.waitUntil(sendResilientMessage(chatId, rep, addAccountKeyboard, "Markdown"));
           return new Response("OK");
         }
 

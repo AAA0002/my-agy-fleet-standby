@@ -9,6 +9,9 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
     * **New Account Fresh Code Request Fix (`btn_request_code_`)**: Resolved bug where `btn_request_code_` only checked existing accounts in `accounts.json`, leaving `phoneToRelink` empty for new accounts. Added fallback to `memLoginFlow.phone`, `login_flow:chatId`, and `last_login_phone:chatId`.
     * **Force Fresh Code Server Bypass**: Added `force_fresh = True` support across `app.py`, `render_app_latest.py`, `render_standby_app.py`, and `deploy_both_cf_workers.py` to bypass the 75s debounce, disconnect stale MTProto sessions, and dispatch a fresh code immediately.
     * **1-Tap Direct QR Device Linking**: Integrated direct QR device linking (`btn_qr_login_${idx}`) into the PIN Pad keyboard and failure screens, allowing instant login via native Telegram device authorization with zero SMS or codes.
+    * **1-Tap QR Onboarding on `➕ Add Account`**: Integrated `[ 📱 1-Tap QR Login (Zero Code - Recommended) ]` directly onto the initial Add Account prompt and `/addaccount` handler for instant zero-SMS onboarding.
+    * **QR Code Image Viewer**: Added `[ 🖼️ View QR Code Image to Scan ]` link to allow instant cross-device scanning from phones or desktop cameras.
+    * **Multi-Token Alert Fallback**: Added multi-token fallback (`REPORT_BOT_TOKEN`, `ALERT_BOT_TOKEN`, `ADMIN_BOT_TOKEN`) across all standby collector apps.
     * **Chat Code Protection**: Added auto-deletion (`deleteMessage`) if 5-digit OTP codes are sent in chat to minimize Telegram code revoking.
     * **Deployed**: Live to Node 4 (`https://restore-agy.agorameet.workers.dev`).
 
