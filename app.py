@@ -1208,54 +1208,94 @@ async def fetch_accounts_from_cloud():
     FLEET_ACCOUNTS_CACHE = {str(a.get("user_id")): a for a in merged}
     return merged
 
-async def solve_bot_challenge_with_cloudflare_ai(question_text: str, bot_name: str = "generic") -> str:
-    """Universal 9-Bot Intelligent Challenge & Math Solver (100% Cloudflare Workers AI)."""
+def solve_challenge_deterministic(question_text: str) -> str:
+    """100% local, instant, deterministic arithmetic & challenge solver (0 network latency, 0 AI dependency)."""
     if not question_text:
         return "0"
+    q_lower = question_text.lower().strip()
 
-    # Fast-path: Standard arithmetic regex check
-    cleaned = re.sub(r"[^\d\+\-\*\/\(\)\s]", " ", question_text)
-    m = re.search(r"(\d+\s*[\+\-\*\/]\s*\d+)", cleaned)
+    word_to_num = {
+        "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
+        "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+        "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
+        "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17,
+        "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30,
+        "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70,
+        "eighty": 80, "ninety": 90, "hundred": 100
+    }
+
+    tokens = re.findall(r"[a-z0-9\+\-\*\/\=]+", q_lower)
+    converted_tokens = []
+    i = 0
+    while i < len(tokens):
+        w = tokens[i]
+        if w in word_to_num:
+            val = word_to_num[w]
+            if i + 1 < len(tokens) and tokens[i+1] in word_to_num and val >= 20 and word_to_num[tokens[i+1]] < 10:
+                val += word_to_num[tokens[i+1]]
+                i += 1
+            converted_tokens.append(str(val))
+        elif w in ("plus", "add", "added", "sum", "+"):
+            converted_tokens.append("+")
+        elif w in ("minus", "subtract", "subtracted", "take", "-"):
+            converted_tokens.append("-")
+        elif w in ("times", "multiplied", "multiply", "*", "x"):
+            converted_tokens.append("*")
+        elif w in ("divided", "divide", "/"):
+            converted_tokens.append("/")
+        elif w.isdigit() or re.match(r"^\d+[\+\-\*\/]\d+$", w):
+            converted_tokens.append(w)
+        i += 1
+
+    normalized = " ".join(converted_tokens)
+
+    # 1. Standard "A op B"
+    m = re.search(r"(\d+)\s*([\+\-\*\/])\s*(\d+)", normalized)
     if m:
-        try:
-            expr = m.group(1).replace(" ", "")
-            parts = re.split(r"([\+\-\*\/])", expr)
-            if len(parts) == 3:
-                a, op, b = int(parts[0]), parts[1], int(parts[2])
-                if op == "+": return str(a + b)
-                if op == "-": return str(a - b)
-                if op == "*": return str(a * b)
-                if op == "/" and b != 0: return str(a // b)
-        except Exception:
-            pass
+        a, op, b = int(m.group(1)), m.group(2), int(m.group(3))
+        if op == "+": return str(a + b)
+        if op == "-": return str(a - b)
+        if op == "*": return str(a * b)
+        if op == "/" and b != 0: return str(a // b)
 
-    # Cloudflare Edge Workers AI solver query
-    for cf_url in CF_WORKER_URLS:
-        try:
-            async with aiohttp.ClientSession() as s:
-                async with s.post(
-                    f"{cf_url}/api/ai/solve",
-                    json={"question": question_text, "bot": bot_name},
-                    headers={"Content-Type": "application/json"},
-                    timeout=aiohttp.ClientTimeout(total=5)
-                ) as r:
-                    if r.status == 200:
-                        d = await r.json()
-                        ans = (d.get("answer") or "").strip()
-                        if ans:
-                            return ans
-        except Exception:
-            continue
-
-    nums = [int(n) for n in re.findall(r"\d+", question_text)]
+    nums = [int(n) for n in re.findall(r"\d+", normalized)]
     if len(nums) >= 2:
-        if "+" in question_text or "plus" in question_text.lower():
+        if any(op in q_lower for op in ["plus", "add", "sum", "+"]):
             return str(nums[0] + nums[1])
-        if "-" in question_text or "minus" in question_text.lower():
+        if any(op in q_lower for op in ["minus", "subtract", "take", "-"]):
             return str(nums[0] - nums[1])
-        if "*" in question_text or "times" in question_text.lower():
+        if any(op in q_lower for op in ["times", "multipl", "*", "product"]):
             return str(nums[0] * nums[1])
+        if any(op in q_lower for op in ["divid", "/"]):
+            return str(nums[0] // nums[1]) if nums[1] != 0 else "0"
+
     return str(nums[0]) if nums else "0"
+
+async def solve_bot_challenge_with_cloudflare_ai(question_text: str, bot_name: str = "generic") -> str:
+    """Universal 9-Bot Challenge Solver with guaranteed deterministic resolution so farming NEVER hangs on AI."""
+    # 1. First, solve deterministically in 0.001ms with zero network requests
+    det_ans = solve_challenge_deterministic(question_text)
+    if det_ans != "0" or not any(c.isalpha() for c in question_text):
+        return det_ans
+
+    # 2. For non-numeric word questions, attempt fast edge AI with a strict 1.0s timeout
+    try:
+        async with aiohttp.ClientSession() as s:
+            async with s.post(
+                "https://restore-agy.agorameet.workers.dev/api/ai/solve",
+                json={"question": question_text, "bot": bot_name},
+                headers={"Content-Type": "application/json"},
+                timeout=aiohttp.ClientTimeout(total=1.0)
+            ) as r:
+                if r.status == 200:
+                    d = await r.json()
+                    ans = (d.get("answer") or "").strip()
+                    if ans:
+                        return ans
+    except Exception:
+        pass
+
+    return det_ans
 
 
 async def ai_classify_bot_prompt(bot_text: str) -> str:

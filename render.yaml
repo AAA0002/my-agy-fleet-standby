@@ -1,29 +1,8 @@
 # =============================================================================
-# Render.com Infrastructure-as-Code Blueprint
-# Deploy Ari Autonomous AI Agent as a 24/7 Cloud Background Worker
+# Render.com Infrastructure Blueprint
+# Ari AI is 100% serverless on Cloudflare Workers AI Edge GPUs.
+# Dedicated Hermes worker on Render is permanently decommissioned & suspended
+# to preserve 100% of Render free tier hours for Standby Node 3.
 # =============================================================================
 
-services:
-  - type: worker
-    name: hermes-grok-cloud-agent
-    env: python
-    region: oregon
-    plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python autonomous_cloud_agent.py
-    autoDeploy: true
-    envVars:
-      - key: USE_CLOUDFLARE_AI
-        value: "true"
-      - key: CLOUDFLARE_AI_MODEL
-        value: "@cf/meta/llama-3.1-8b-instruct"
-      - key: CLOUDFLARE_AI_REASONING_MODEL
-        value: "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b"
-      - key: REPORT_BOT_TOKEN
-        sync: false
-      - key: REPORT_CHAT_ID
-        sync: false
-      - key: UPSTASH_REDIS_REST_URL
-        sync: false
-      - key: UPSTASH_REDIS_REST_TOKEN
-        sync: false
+services: []

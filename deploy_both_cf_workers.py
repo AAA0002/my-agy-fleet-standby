@@ -2142,56 +2142,96 @@ export default {
       throw new Error("Empty DeepSeek response");
     };
 
-    // Universal 9-Bot Intelligent Challenge & Math Solver (100% Cloudflare Workers AI)
-    const solveBotChallengeWithCloudflareAi = async (questionText, botName = "generic") => {
+    // 100% Deterministic Local Math & Word Challenge Solver (0 AI Dependency, 0ms Delay)
+    const solveChallengeDeterministic = (questionText) => {
       if (!questionText || typeof questionText !== "string") return "0";
+      const qLower = questionText.toLowerCase().trim();
+      const wordToNum = {
+        "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
+        "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+        "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
+        "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17,
+        "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30,
+        "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70,
+        "eighty": 80, "ninety": 90, "hundred": 100
+      };
 
-      // Fast-path: Standard arithmetic regex check
-      const cleaned = questionText.replace(/[^\d\+\-\*\/\(\)\s]/g, " ");
-      const parts = cleaned.match(/(\d+)\s*([\+\-\*\/])\s*(\d+)/);
-      if (parts) {
-        const a = parseInt(parts[1], 10), op = parts[2], b = parseInt(parts[3], 10);
+      const tokens = qLower.match(/[a-z0-9\+\-\*\/\=]+/g) || [];
+      const converted = [];
+      let i = 0;
+      while (i < tokens.length) {
+        const w = tokens[i];
+        if (wordToNum[w] !== undefined) {
+          let val = wordToNum[w];
+          if (i + 1 < tokens.length && wordToNum[tokens[i+1]] !== undefined && val >= 20 && wordToNum[tokens[i+1]] < 10) {
+            val += wordToNum[tokens[i+1]];
+            i++;
+          }
+          converted.push(String(val));
+        } else if (["plus", "add", "added", "sum", "+"].includes(w)) {
+          converted.push("+");
+        } else if (["minus", "subtract", "subtracted", "take", "-"].includes(w)) {
+          converted.push("-");
+        } else if (["times", "multiplied", "multiply", "*", "x"].includes(w)) {
+          converted.push("*");
+        } else if (["divided", "divide", "/"].includes(w)) {
+          converted.push("/");
+        } else if (/^\d+$/.test(w) || /^\d+[\+\-\*\/]\d+$/.test(w)) {
+          converted.push(w);
+        }
+        i++;
+      }
+
+      const normalized = converted.join(" ");
+      const m = normalized.match(/(\d+)\s*([\+\-\*\/])\s*(\d+)/);
+      if (m) {
+        const a = parseInt(m[1], 10), op = m[2], b = parseInt(m[3], 10);
         if (op === "+") return String(a + b);
         if (op === "-") return String(a - b);
         if (op === "*") return String(a * b);
         if (op === "/" && b !== 0) return String(Math.floor(a / b));
       }
 
-      // Native Cloudflare Workers AI Inference
+      const nums = (normalized.match(/\d+/g) || []).map(n => parseInt(n, 10));
+      if (nums.length >= 2) {
+        if (qLower.includes("plus") || qLower.includes("add") || qLower.includes("+")) return String(nums[0] + nums[1]);
+        if (qLower.includes("minus") || qLower.includes("sub") || qLower.includes("-")) return String(nums[0] - nums[1]);
+        if (qLower.includes("times") || qLower.includes("mult") || qLower.includes("*")) return String(nums[0] * nums[1]);
+        if (qLower.includes("divid") || qLower.includes("/")) return nums[1] !== 0 ? String(Math.floor(nums[0] / nums[1])) : "0";
+      }
+
+      return nums.length > 0 ? String(nums[0]) : "0";
+    };
+
+    // Universal 9-Bot Challenge & Math Solver with 0 AI Dependency Protection
+    const solveBotChallengeWithCloudflareAi = async (questionText, botName = "generic") => {
+      if (!questionText || typeof questionText !== "string") return "0";
+
+      // 1. Instant deterministic solution in 0.001ms with 0 network latency
+      const detAns = solveChallengeDeterministic(questionText);
+      if (detAns !== "0" || !/[a-zA-Z]/.test(questionText)) {
+        return detAns;
+      }
+
+      // 2. Strict 1.2-second timeout guard for AI to guarantee farming NEVER gets stuck
       if (env.AI) {
         try {
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("AI timeout")), 1200));
           const sysPrompt = `You are an automated challenge and quiz solver for the Telegram mining bot '${botName}'. Output ONLY the concise final answer (a number, word, or short phrase) with ZERO explanation, markdown, or extra words.`;
-          const aiRes = await env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
+          const aiPromise = env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
             messages: [
               { role: "system", content: sysPrompt },
               { role: "user", content: `Question: ${questionText}\nAnswer:` }
             ],
             max_tokens: 32
           });
+          const aiRes = await Promise.race([aiPromise, timeoutPromise]);
           const ans = (aiRes.response || (aiRes.choices && aiRes.choices[0]?.text) || "").trim();
           if (ans) return ans.replace(/^Answer:\s*/i, "").trim();
-        } catch (_) {
-          try {
-            const r1 = await callCfDeepSeekR1(`Solve this challenge for bot '${botName}'. Provide ONLY the direct numerical or short word answer without explanation: ${questionText}`);
-            if (r1 && r1.answer) return r1.answer.trim();
-          } catch (_) {}
-        }
+        } catch (_) {}
       }
 
-      // Fallback: Number word / regex extraction
-      const nums = questionText.match(/\d+/g);
-      if (nums && nums.length >= 2) {
-        if (questionText.toLowerCase().includes("plus") || questionText.includes("+")) {
-          return String(parseInt(nums[0], 10) + parseInt(nums[1], 10));
-        }
-        if (questionText.toLowerCase().includes("minus") || questionText.includes("-")) {
-          return String(parseInt(nums[0], 10) - parseInt(nums[1], 10));
-        }
-        if (questionText.toLowerCase().includes("times") || questionText.toLowerCase().includes("multiplied") || questionText.includes("*")) {
-          return String(parseInt(nums[0], 10) * parseInt(nums[1], 10));
-        }
-      }
-      return nums && nums[0] ? nums[0] : "0";
+      return detAns;
     };
 
     // In-memory Core Fleet AI Cascade (100% Cloudflare Workers AI)
@@ -14692,9 +14732,9 @@ Reply to Arif naturally:`;
       ctx.waitUntil(env.DB.prepare("INSERT INTO fleet_logs (event, details) VALUES (?, ?)").bind("cron_cycle", JSON.stringify({ node: CURRENT_SUBDOMAIN, shard: NODE_SHARD_INDEX, time: new Date().toISOString() })).run().catch(() => {}));
     }
 
-    // 1. Keepalive for Ari Cloud Agent on Render (100% free - keeps agent active with 0 cold starts)
+    // 1. Keepalive for Primary Render Node 2 (Frankfurt) & Relayer
     ctx.waitUntil(
-      fetch("https://hermes-grok-cloud-agent.onrender.com/health", { method: "GET" }).catch(() => null)
+      fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => null)
     );
 
     // 2. Intelligent Cloud-Aware Sentinel Check
@@ -14709,11 +14749,8 @@ Reply to Arif naturally:`;
 
         // Only investigate if local machine has been silent for > 60 minutes
           // Check if Render primary node (Standby Frankfurt, Ari AI, Primary Relayer) are standing guard
-          const [r2, rAri] = await Promise.all([
-            fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => null),
-            fetch("https://hermes-grok-cloud-agent.onrender.com/health", { method: "GET" }).catch(() => null)
-          ]);
-          const cloudStandbyAlive = (r2 && r2.ok) || (rAri && rAri.ok);
+          const r2 = await fetch("https://my-agy-fleet-standby-node2.onrender.com/health", { method: "GET" }).catch(() => null);
+          const cloudStandbyAlive = r2 && r2.ok;
 
           // If Render is alive in the cloud, the fleet is 100% operational - DO NOT send false alarms!
           if (cloudStandbyAlive) {
@@ -14849,7 +14886,7 @@ Reply to Arif naturally:`;
       "https://my-agy-fleet-deno.aaa222.deno.net/health",
       "https://my-agy-fleet-deno2.aaasupporta.deno.net/health",
       "https://my-agy-fleet-standby-node2.onrender.com/health",
-      "https://hermes-grok-cloud-agent.onrender.com/health"
+      "https://atf-mtproto-relayer.onrender.com/wake"
     ];
     for (const edgeUrl of MULTI_CLOUD_EDGES) {
       ctx.waitUntil(fetch(edgeUrl).catch(() => {}));

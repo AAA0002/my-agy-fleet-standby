@@ -55,7 +55,7 @@ jobs:
           RENDER_NODES = [
               ("Render Singapore (Node 1)", "https://my-agy-fleet-standby.onrender.com/health"),
               ("Render Frankfurt (Node 2)", "https://my-agy-fleet-standby-node2.onrender.com/health"),
-              ("Render Singapore (Node 3 Ari AI)", "https://hermes-grok-cloud-agent.onrender.com/health"),
+              ("Render Oregon (Node 3 Standby)", "https://my-agy-fleet-standby-node3.onrender.com/health"),
               ("Render MTProto Relayer Primary", "https://atf-mtproto-relayer.onrender.com/wake")
           ]
           DENO_NODES = [

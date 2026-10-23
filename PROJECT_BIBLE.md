@@ -203,7 +203,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   - **🌐 Dedicated Relayers & Auxiliary AI Services**:
     * Primary MTProto Relayer: `https://atf-mtproto-relayer.onrender.com/wake` (🟢 ONLINE & AUTHENTICATED)
     * Backup MTProto Relayer: `https://atf-mtproto-relayer-backup.onrender.com/wake` (🟢 ONLINE & AUTHENTICATED)
-    * Hermes Ari AI Council Agent: `https://hermes-grok-cloud-agent.onrender.com` (🟢 ONLINE, Koram account, Cloudflare Workers AI Council)
+    * Hermes Ari AI Council Agent on Render: Permanently decommissioned & suspended (`srv-daojdt5g1s2s738jsjmg`) to protect Render free-tier quota; all AI runs 100% serverless on Cloudflare Edge GPUs.
 
 - **GitHub Multi-Account CI/CD & Cloud Compute Fleet (4,000 Free Minutes/Month)**:
   - Account 1 (`AAA0002`):

@@ -154,10 +154,10 @@
       "plan": "free"
     },
     {
-      "name": "Render Node 3 (Ari AI Council)",
-      "url": "https://hermes-grok-cloud-agent.onrender.com",
-      "role": "Hermes-Grok Autonomous Cloud Agent",
-      "region": "singapore",
+      "name": "Render Node 3 (Oregon Standby)",
+      "url": "https://my-agy-fleet-standby-node3.onrender.com",
+      "role": "Standby Cloud Token Refresher (Tertiary Failover)",
+      "region": "oregon",
       "plan": "free"
     },
     {

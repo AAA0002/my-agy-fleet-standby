@@ -16,7 +16,7 @@ const TURSO_TOKEN = Deno.env.get("TURSO_TOKEN") || "";
 const NODES = [
   { name: "Render Singapore (Node 1)", url: "https://my-agy-fleet-standby.onrender.com/health", type: "render" },
   { name: "Render Frankfurt (Node 2)", url: "https://my-agy-fleet-standby-node2.onrender.com/health", type: "render" },
-  { name: "Render Ari AI Council (Node 3)", url: "https://hermes-grok-cloud-agent.onrender.com/health", type: "render" },
+  { name: "Render Standby (Node 3)", url: "https://my-agy-fleet-standby-node3.onrender.com/health", type: "render" },
   { name: "Render MTProto Relayer Primary", url: "https://atf-mtproto-relayer.onrender.com/wake", type: "render" },
   { name: "Cloudflare Shard 0 (aaaai2)", url: "https://restore-agy.aaaai2.workers.dev/health", type: "cloudflare" },
   { name: "Cloudflare Shard 1 (aaa-bot)", url: "https://restore-agy.aaa-bot.workers.dev/health", type: "cloudflare" },

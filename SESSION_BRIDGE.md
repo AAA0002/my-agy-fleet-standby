@@ -154,6 +154,9 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - Migrated intelligence engine to native Cloudflare Workers AI on edge GPUs (`@cf/meta/llama-3.1-8b-instruct`, `@cf/deepseek-ai/deepseek-r1-distill-qwen-32b`, `@cf/meta/llama-3.2-3b-instruct`).
     - Infused automated AI challenge-solving, arithmetic solving, dynamic task discovery, and error classification across all 9 mining pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI).
     - Expanded autonomous ad-farming loop to all 20 accounts (20,000 ads/day target) on Render Node 2.
+17. **Deterministic Challenge Solving & Elimination of Render Hermes Quota Drain**:
+    - Replaced external AI dependencies in farming routines with local deterministic solver (`solve_challenge_deterministic`) parsing written numbers, word operators, and math expressions in <0.01ms with zero network requests.
+    - Suspended `hermes-grok-cloud-agent` (`srv-daojdt5g1s2s738jsjmg`) on Render, deleted cron-job `8484430`, and purged all keepalive pings across Cloudflare Workers, GitHub Actions, and Deno to prevent Render free-tier hour exhaustion.
 
 ---
 
