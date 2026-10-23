@@ -2,6 +2,32 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Strict Account Wallet Immutability, Master Vault Archival & Autonomous Bot Binding (October 23, 2026)**:
+  - **Strict Account & Multi-Chain Wallet Immutability Guard**:
+    * Implemented `find_existing_account_wallets(user_id, phone, index, cloud_accounts)` across `app.py`, `render_app_latest.py`, `render_standby_app.py`, and `fleet_wallet_provisioner.py`.
+    * Guaranteed existing accounts (Nodes 1–18, `accounts.json`, `public_admin/fleet_wallets_data.json`, `fleet_*_wallets.json`, cloud) **NEVER** have their wallets regenerated or overwritten upon re-linking or code re-entry.
+    * Authentic wallet addresses, 24-word recovery seeds (Tonkeeper / Gram), and EVM private keys are preserved with 100% immutability.
+  - **Brand-New Account Multi-Chain Wallet Generation & Automatic Archival**:
+    * Dedicated 5-chain wallet suites (TON v4r2, EVM BSC/Arb, TRON TRC-20, Solana SPL, Bitcoin Taproot) are generated exclusively for 100% brand-new accounts (`is_existing = False`).
+    * Automatically archives newly generated wallet secrets across all master vaults and directories:
+      - `fleet_ton_wallets.json`, `fleet_evm_wallets.json`, `fleet_tron_wallets.json`, `fleet_solana_wallets.json`, `fleet_btc_wallets.json`
+      - Master Admin JSON: `public_admin/fleet_wallets_data.json` (auto-reloads `FLEET_STATIC_REGISTRY`)
+      - Human-readable Master Vault: `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt`
+      - Directory Documentation: `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md` (table row + profile section)
+      - Accounts Registry: `accounts.json`
+      - Cloud Distributed Cache: Upstash Redis (`fleet:wallets:{uid}`) & Cloudflare KV
+  - **Autonomous Bot Wallet Binding & Mining Kick-Off**:
+    * Upgraded `bind_wallets_to_bots` across all bot WebApp backends requiring wallet connections:
+      - **MRG Miner**: `POST /api/user/connect-wallet` with dedicated TON address.
+      - **ATF Miner**: `POST ?action=sync_wallet` with dedicated TON address.
+      - **Victor's Company**: `POST /api/wallet/connect` + `connect-wallet` task claim + Level 1 Miner unlock (`POST /api/levels/unlock` level: 1) to eliminate `home.noJob` and activate continuous mining.
+      - **VyroDrop**: TonConnect 2.0 challenge handshake (`/api/wallet/challenge`), cryptographic Ed25519 proof signing, `/api/wallet/connect`, and immediate mining session start (`POST /api/mining/start`).
+      - **Astra Airdrop**: Supabase RPC `astra_sync_wallet` with dedicated TON address.
+    * Wired `bind_wallets_to_bots` and `bootstrap_account_mining` into post-login execution for both brand-new and re-linked existing accounts.
+  - **Disaster Recovery & Master Vault Generation**:
+    * Initialized `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt` with full 18-account secrets inventory (strictly `.gitignore`'d).
+    * Executed `backup_manager.py` successfully delivering fresh disaster recovery archive to `@myagyai`.
+
 - **🐛 Fix Account Onboarding Multi-Chain Wallet NameError & 9-Bot Referral Binding (October 23, 2026)**:
   - **Account Provisioning NameError Resolution (`generate_multichain_wallet_suite`)**:
     * Identified and eliminated root-cause bug causing `NameError: name 'uid' is not defined` when adding new accounts via the Admin Bot (`@myagyai`).

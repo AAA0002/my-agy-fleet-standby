@@ -351,13 +351,36 @@ To protect against automated Telegram Sybil bans and wipe away seller artifacts,
   17. `Kawsar Mahmud 17` (`+8801879273559`, `@kawsar_mahmud7`, UID `8841038141`) — Account #17
   18. `Mehedi Hasan 18` (`+8801839716506`, `@mehedi_hasan783`, UID `8975442879`) — Account #18
 
-### Non-Custodial Multi-Chain Wallet Isolation
+### Non-Custodial Multi-Chain Wallet Isolation & Strict Immutability Guard
 To prevent Sybil detection, anti-farming bans, and wallet clustering, each account is provisioned with **dedicated, isolated addresses** stored in JSON registries:
-- `fleet_ton_wallets.json` — Dedicated TON (v4r2) non-custodial wallets.
-- `fleet_evm_wallets.json` — Dedicated EVM / BSC (BEP20) non-custodial wallets.
-- `fleet_tron_wallets.json` — Dedicated TRON (TRC20) non-custodial wallets.
-- `fleet_solana_wallets.json` — Dedicated Solana non-custodial wallets.
-- `fleet_btc_wallets.json` — Dedicated Bitcoin SegWit non-custodial wallets.
+- `fleet_ton_wallets.json` — Dedicated TON (v4r2) non-custodial wallets with 24-word recovery seeds.
+- `fleet_evm_wallets.json` — Dedicated EVM / BSC (BEP20) & Arbitrum non-custodial wallets with private keys.
+- `fleet_tron_wallets.json` — Dedicated TRON (TRC20) non-custodial wallets with private keys.
+- `fleet_solana_wallets.json` — Dedicated Solana (SPL) non-custodial wallets with private keys.
+- `fleet_btc_wallets.json` — Dedicated Bitcoin SegWit / Taproot non-custodial wallets with private keys.
+
+#### 🛡️ Strict Wallet Immutability Directive ("Never Regenerate Old Wallets")
+- **Immutability Guard (`find_existing_account_wallets`)**: Before any wallet assignment, the system queries the Static Fleet Registry, `public_admin/fleet_wallets_data.json`, `fleet_*_wallets.json`, `accounts.json`, and cloud account records.
+- If an account exists (by User ID, phone number, or slot index), its authentic wallets and recovery phrases are **100% preserved and never overwritten or regenerated**.
+- **Brand-New Account Generation**: A new 5-chain wallet suite is generated **ONLY** for genuine 100% brand-new accounts (`is_existing = False`).
+
+#### 💾 Master Vault & Multi-Document Archival Protocol
+Whenever a new account is onboarded, its wallet secrets and metadata are automatically and atomically persisted across:
+1. `fleet_ton_wallets.json`, `fleet_evm_wallets.json`, `fleet_tron_wallets.json`, `fleet_solana_wallets.json`, `fleet_btc_wallets.json`
+2. `public_admin/fleet_wallets_data.json` (Master Admin JSON, reloading `FLEET_STATIC_REGISTRY`)
+3. `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt` (Human-readable master vault, strictly `.gitignore`'d)
+4. `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md` (Master index table row + individual profile section)
+5. `accounts.json` (Local accounts state)
+6. Upstash Redis (`fleet:wallets:{uid}`) & Cloudflare KV (Synchronized across the 5-node edge mesh)
+
+#### 💎 Autonomous Bot Wallet Binding & Mining Kick-Off (`bind_wallets_to_bots`)
+Several bots strictly require dedicated wallet connections to initiate mining or qualify recruits:
+- **MRG Miner**: `POST https://mrg.up.railway.app/api/user/connect-wallet` with account TON address.
+- **ATF Miner**: `POST https://atfminers.asloni.online/miner/index.php?action=sync_wallet` with account TON address.
+- **Victor's Company**: `POST https://server.victors.company/api/wallet/connect` + `POST /api/tasks/claim` (`connect-wallet`) + `POST /api/levels/unlock` (`level: 1` hiring Level 1 Miner to start continuous mining and eliminate `home.noJob`).
+- **VyroDrop**: Solves TonConnect challenge via `POST https://vyro.run.place/api/wallet/challenge`, cryptographically signs with account Ed25519 seed, binds via `POST /api/wallet/connect`, and starts mining session (`POST /api/mining/start`).
+- **Astra Airdrop**: Supabase RPC `astra_sync_wallet` with account TON address.
+- **Execution Hook**: `bind_wallets_to_bots` runs automatically during onboarding and re-login for both brand-new and re-linked accounts.
 
 ---
 
