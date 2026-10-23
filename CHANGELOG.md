@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Frictionless 1-Tap Account Connection, Zero "WebApp Link" UX Overhaul & Dashboard Upgrade (October 23, 2026)**:
+  - **Complete Elimination of `*WebApp Link:*` Prompts**:
+    * Completely removed all user-facing references to `*WebApp Link:*`, `#tgWebAppData=...`, and prompts instructing users to extract links via three dots (⋮) across all menus, callbacks, commands, and error messages in `deploy_both_cf_workers.py`.
+    * Upgraded connection flow across bot and dashboard to 3 clear, frictionless methods:
+      1️⃣ *1-Tap Instant Link*: Tap `⚡ 1-Tap Link My Account (<id>)` to connect immediately without typing, SMS, or passwords.
+      2️⃣ *Phone Cloud Login*: Connect via phone number for full cloud MTProto session farming.
+      3️⃣ *Telegram ID*: Reply with any numeric Telegram User ID to register instantly.
+  - **User Bot Status Badge & UX Streamlining**:
+    * Updated status badge across all bot menus (`👥 My Accounts`, `/accounts`, `ub_accounts_list`, `isPureTelegramId`) to `🟢 24/7 Cloud Automated`.
+    * Removed confusing `⚡ Upgrade with WebApp Link (+50 Pts)` buttons and ID-only anxiety prompts.
+    * Replaced link guidance with direct 1-tap connection buttons.
+  - **Login Flow State Machine KV + Upstash Parity**:
+    * Fixed state machine bug where `login_flow:user_<chatId>` was deleted/set in KV but omitted in Upstash Redis, causing lingering flow state on edge nodes.
+    * Synchronized `upstashSet` and `upstashDel` across `ub_bind_id_`, `ub_login_phone`, `waiting_code`, and `waiting_2fa`.
+  - **User Dashboard (`public_ads/miner/index.html`) Upgrade**:
+    * Added prominent `⚡ 1-Tap Link My Telegram Account` button at top of Connect tab with one-click automatic binding using `window.Telegram.WebApp.initData` or `currentUserId`.
+    * Updated input field to accept numeric Telegram IDs (e.g. `6727787768`), phone numbers (`+8801...`), or auth tokens with live visual validation card.
+    * Upgraded backend `/api/user/account/add` to seamlessly accept Telegram IDs, phone numbers, and initData without requiring `#tgWebAppData=...`.
+  - **Live Edge Deployment**:
+    * Deployed and live-tested on Cloudflare Worker Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified `/miner` and `/api/user/account/add` return HTTP 200 with 0 occurrences of `WebApp Link`.
+
 - **⚡ Real-Time Channel Departure/Rejoin Sentinel, Client-Side Parser Parity & Cache Hydration (October 23, 2026)**:
   - **Real-Time Channel Departure Sentinel (`update.chat_member`)**:
     * Resolved critical missing update registration: Added `"chat_member"` and `"my_chat_member"` to `allowed_updates` across all `setWebhook` handlers in `deploy_both_cf_workers.py`.

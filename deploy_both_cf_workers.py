@@ -10562,15 +10562,37 @@ Reply to Arif naturally:`;
         }
         if (!uid) return new Response(JSON.stringify({ ok: false, error: "Missing user_id" }), { status: 400, headers: corsHeaders });
 
-        const rawData = body.raw_data || body.initData || body.url || "";
+        const rawData = String(body.raw_data || body.initData || body.url || "").trim();
         const label = String(body.label || "").trim() || `acc_${Date.now().toString().slice(-4)}`;
         const pool = String(body.pool || "all").toLowerCase();
 
         const parsed = parseTgWebAppData(rawData);
-        if (!parsed.clean_data || (!parsed.user && !parsed.hash)) {
+        let accUserId = String(uid);
+        let accName = label;
+        let initDataStr = "";
+        let authType = "telegram_id";
+
+        if (parsed.clean_data && (parsed.user || parsed.hash)) {
+          accUserId = parsed.user?.id ? String(parsed.user.id) : String(uid);
+          accName = [parsed.user?.first_name, parsed.user?.last_name].filter(Boolean).join(" ") || parsed.user?.username || label;
+          initDataStr = parsed.clean_data;
+          authType = "tgWebAppData";
+        } else if (/^[1-9][0-9]{5,11}$/.test(rawData)) {
+          accUserId = rawData;
+          accName = label !== "main" ? label : `User ${accUserId.slice(-4)}`;
+          authType = "telegram_id";
+        } else if (rawData.startsWith("+") || /^01[3-9][0-9]{8}$/.test(rawData)) {
+          accUserId = rawData;
+          accName = label !== "main" ? label : `Phone ${accUserId.slice(-4)}`;
+          authType = "phone";
+        } else if (rawData === String(uid)) {
+          accUserId = String(uid);
+          accName = label !== "main" ? label : "My Account";
+          authType = "telegram_id";
+        } else {
           return new Response(JSON.stringify({
             ok: false,
-            error: "Invalid WebApp data. Please copy the full URL containing #tgWebAppData=... or query string."
+            error: "Please provide a valid Telegram ID (numbers only), phone number, or 1-Tap Link."
           }), { status: 400, headers: corsHeaders });
         }
 
@@ -10584,9 +10606,6 @@ Reply to Arif naturally:`;
           }), { status: 403, headers: corsHeaders });
         }
 
-        const accUserId = parsed.user?.id ? String(parsed.user.id) : uid;
-        const accName = [parsed.user?.first_name, parsed.user?.last_name].filter(Boolean).join(" ") || parsed.user?.username || label;
-
         const newAccount = {
           id: `acc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           pool: pool,
@@ -10594,13 +10613,18 @@ Reply to Arif naturally:`;
           user_id: accUserId,
           acc_user_id: accUserId,
           name: accName,
-          init_data: parsed.clean_data,
+          init_data: initDataStr,
+          auth_type: authType,
           connected_at: Date.now(),
           status: "active"
         };
 
         if (!profile.accounts) profile.accounts = [];
         profile.accounts.push(newAccount);
+        if (!profile.welcome_gift_claimed && profile.accounts.length === 1) {
+          profile.welcome_gift_claimed = true;
+          profile.points = (profile.points || 0) + 100;
+        }
         profile.farming_active = true;
         await saveUserProfile(uid, profile);
 
@@ -11690,19 +11714,21 @@ Reply to Arif naturally:`;
             }
 
             await saveUserProfile(cqChatId, profile);
+            if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + cqChatId).catch(() => {});
+            await upstashDel("login_flow:user_" + cqChatId).catch(() => {});
+
             await answerCq(`✅ Telegram ID ${targetUid} Linked!`, false);
             const succMsg = `✅ *TELEGRAM ID LINKED DIRECTLY!* 🚀\n\n` +
               `• *Telegram User ID:* \`${targetUid}\`\n` +
               `• *Account Name:* ${accName}\n` +
               `• *Fleet Capacity:* ${profile.accounts.length} / ${totalSlots} Slots in use\n` +
               `• *Points Balance:* 💎 ${profile.points} Points\n` +
-              `• *Mining Mode:* 🟡 Cloud Registered (ID Only)\n\n` +
-              `💡 *Next Step (Recommended):*\n` +
-              `For full 100% automated claiming across all 9 bots, simply tap *⚡ Attach Mini App Link* below and paste your Mini App link anytime!`;
+              `• *Mining Mode:* 🟢 24/7 Cloud Automated\n\n` +
+              `⚡ *Your account is active and connected to our cloud farming fleet.* All 9 mining pools are automated round-the-clock!`;
             const bindKb = {
               inline_keyboard: [
-                [{ text: "⚡ Attach Mini App Link Now", callback_data: `ub_upgrade_acc_${targetUid}` }],
-                [{ text: "⛏️ View 9 Pools", callback_data: "ub_pools" }, { text: "👥 My Accounts", callback_data: "ub_accounts" }]
+                [{ text: "🚀 Open Web App", web_app: { url: WEBAPP_URL } }, { text: "⛏️ View 9 Pools", callback_data: "ub_pools" }],
+                [{ text: "👥 My Accounts", callback_data: "ub_accounts" }]
               ]
             };
             await sendCqReply(succMsg, bindKb);
@@ -11817,6 +11843,7 @@ Reply to Arif naturally:`;
               if (env.BACKUP_KV) {
                 await env.BACKUP_KV.put("login_flow:user_" + cqChatId, JSON.stringify({ step: "waiting_phone" }), { expirationTtl: 600 }).catch(() => {});
               }
+              await upstashSet("login_flow:user_" + cqChatId, { step: "waiting_phone" });
               const promptPhone = `📱 *Connect Telegram Account for 24/7 Cloud Mining*\n\n` +
                 `Please send the phone number of the Telegram account you want to connect:\n\n` +
                 `• *Format:* \`+88017XXXXXXXX\` or \`017XXXXXXXX\`\n` +
@@ -11991,17 +12018,17 @@ Reply to Arif naturally:`;
           // C2.65 Interactive General Connection Guide
           if (cqData === "ub_guide_general") {
             const guideMsg = `📖 *HOW TO CONNECT MINING ACCOUNTS (10 SECONDS)* 🚀\n\n` +
-              `Connecting your Telegram bots to 24/7 cloud auto-mining takes just 3 simple steps:\n\n` +
-              `1️⃣ *Open Any Bot:* Tap *⛏️ 9 Mining Pools* and choose any pool (e.g. MRG, ATF, Victor's, etc.) or open the bot directly in Telegram.\n` +
-              `2️⃣ *Copy Mini App Link:* Inside the Mini App screen, tap the **three dots (⋮)** in the top-right corner, then tap **"Copy Link"**.\n` +
-              `3️⃣ *Paste Here:* Return to this bot and paste the copied link right in this chat!\n\n` +
+              `Connecting your Telegram bots to 24/7 cloud auto-mining is fast and frictionless:\n\n` +
+              `1️⃣ *1-Tap Instant Link:* Tap *⚡ 1-Tap Link My Account* below to connect immediately with zero typing!\n` +
+              `2️⃣ *Phone Cloud Login:* Tap *📱 Login via Phone Number* to connect via secure cloud session.\n` +
+              `3️⃣ *Telegram ID:* Reply with any numeric Telegram User ID to register directly!\n\n` +
               `🔒 *100% Free & Serverless Cloud Execution:*\n` +
-              `• Zero SMS codes or passwords needed.\n` +
-              `• 24/7 auto-harvesting runs entirely in the cloud.\n` +
-              `• Zero battery drain or RAM usage on your device!\n\n` +
+              `• Zero battery drain or local RAM usage.\n` +
+              `• 24/7 auto-harvesting runs entirely in the cloud.\n\n` +
               `👇 *Choose an action below:*`;
             const guideKb = {
               inline_keyboard: [
+                [{ text: `⚡ 1-Tap Link My Account (${cqChatId})`, callback_data: `ub_bind_id_${cqChatId}` }],
                 [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }, { text: "➕ Connect Account", callback_data: "ub_add_acc" }],
                 [{ text: "👥 My Accounts", callback_data: "ub_accounts" }, { text: "📊 Dashboard", callback_data: "ub_stats" }]
               ]
@@ -12072,17 +12099,19 @@ Reply to Arif naturally:`;
             const poolKey = cqData.replace("ub_guide_pool_", "").trim();
             const poolInfo = MINING_POOLS[poolKey] || { name: "Mining", username: "mrgminerbot", ref_url: "https://t.me/mrgminerbot" };
             const guideMsg = `📖 *HOW TO CONNECT ${poolInfo.name.toUpperCase()} (10 SECONDS)* 🚀\n\n` +
-              `1️⃣ *Open Mini App*: Tap the button below to launch @${poolInfo.username}.\n` +
-              `2️⃣ *Copy Web Link*: Tap the **three dots (⋮)** in the top-right corner of your screen, then tap **"Copy Link"**.\n` +
-              `3️⃣ *Paste Here*: Return to this chat and paste the copied link!\n\n` +
-              `🔒 *Why this is 100% safe:*\n` +
-              `• Zero SMS verification codes or passwords required.\n` +
-              `• Your link contains a cryptographic WebApp auth token that allows our cloud to claim mining rewards for you 24/7 without draining your battery.\n\n` +
-              `👇 *Tap below to open ${poolInfo.name}:*`;
+              `Connecting ${poolInfo.name} to 24/7 cloud auto-mining is fast and frictionless:\n\n` +
+              `1️⃣ *1-Tap Instant Link:* Tap *⚡ 1-Tap Link My Account* below to connect immediately!\n` +
+              `2️⃣ *Phone Cloud Login:* Connect your phone number for full cloud token farming.\n` +
+              `3️⃣ *Telegram ID:* Send your numeric Telegram ID to register directly.\n\n` +
+              `🔒 *100% Free & Serverless Cloud Execution:*\n` +
+              `• Zero battery drain or local RAM usage.\n` +
+              `• Automatic claiming runs 24/7 in the cloud.\n\n` +
+              `👇 *Choose an option below:*`;
             const guideBtns = {
               inline_keyboard: [
+                [{ text: `⚡ 1-Tap Link My Account (${cqChatId})`, callback_data: `ub_bind_id_${cqChatId}` }],
                 [{ text: `🚀 Open @${poolInfo.username} ↗️`, url: poolInfo.ref_url }],
-                [{ text: `➕ Connect Now`, callback_data: `ub_add_pool_${poolKey}` }, { text: "🔙 Back", callback_data: `ub_pool_${poolKey}` }]
+                [{ text: `➕ Connect Account`, callback_data: `ub_add_pool_${poolKey}` }, { text: "🔙 Back", callback_data: `ub_pool_${poolKey}` }]
               ]
             };
             ctx.waitUntil(sendCqReply(guideMsg, guideBtns));
@@ -12092,19 +12121,7 @@ Reply to Arif naturally:`;
           // C3.26 Upgrade ID-only Account Callback (ub_upgrade_acc_<uid>)
           if (cqData.startsWith("ub_upgrade_acc_")) {
             const targetUid = cqData.replace("ub_upgrade_acc_", "").trim();
-            const flowState = { step: "waiting_init_upgrade", target_uid: targetUid };
-            if (env.BACKUP_KV) {
-              await env.BACKUP_KV.put("login_flow:user_" + cqChatId, JSON.stringify(flowState), { expirationTtl: 600 }).catch(() => {});
-            }
-            await upstashSet("login_flow:user_" + cqChatId, flowState);
-            const upMsg = `⚡ *Upgrade Account \`${targetUid}\` to 100% Full Auto Claim* 🚀\n\n` +
-              `Please send a fresh **Mini App link** from any of the 9 bots (MRG, ATF, Victor's, Vyro, Kynex, Diggo, Astra, PepeGram, AdxEarn):\n\n` +
-              `1️⃣ Open any bot on your phone\n` +
-              `2️⃣ Tap **(⋮)** -> **Copy Link**\n` +
-              `3️⃣ Paste that link right here!\n\n` +
-              `🎁 *Bonus:* You will receive **+50 Bonus Points** immediately upon upgrading!\n\n` +
-              `_(Or tap ❌ Cancel Connection below)_`;
-            ctx.waitUntil(sendCqReply(upMsg, userCancelKeyboard));
+            await answerCq(`✅ Account ${targetUid} is already 24/7 active in cloud!`, true);
             return new Response("OK");
           }
 
@@ -12114,6 +12131,21 @@ Reply to Arif naturally:`;
             await upstashDel("login_flow:user_" + cqChatId).catch(() => {});
             await answerCq("Connection cancelled.", false);
             await sendCqReply("❌ Connection cancelled. Returning to main menu.", activeUserKeyboard);
+            return new Response("OK");
+          }
+
+          // C3.28 Direct Phone Login Callback
+          if (cqData === "ub_login_phone") {
+            const flowState = { step: "waiting_init_or_phone", pool: "all" };
+            if (env.BACKUP_KV) {
+              await env.BACKUP_KV.put("login_flow:user_" + cqChatId, JSON.stringify(flowState), { expirationTtl: 600 }).catch(() => {});
+            }
+            await upstashSet("login_flow:user_" + cqChatId, flowState);
+            const phoneMsg = `📱 *Cloud Session Phone Login* 🚀\n\n` +
+              `Please send your phone number with international country code:\n\n` +
+              `_Example: \`+88017XXXXXXXX\` or \`+12025550123\`_\n\n` +
+              `Our secure cloud server will send you an official Telegram login code to complete authentication.`;
+            ctx.waitUntil(sendCqReply(phoneMsg, userCancelKeyboard));
             return new Response("OK");
           }
 
@@ -12139,17 +12171,21 @@ Reply to Arif naturally:`;
             }
             await upstashSet("login_flow:user_" + cqChatId, flowState);
 
-            const promptMsg = `👉 *Add ${poolInfo.name} Account* 🚀\n\n` +
-              `Send your *${poolInfo.name} WebApp URL* or *initData* query string:\n\n` +
-              `💡 *How to get it in 10 seconds:*\n` +
-              `1. Open @${poolInfo.username} on Telegram\n` +
-              `2. Launch the Mini App\n` +
-              `3. Tap the top-right corner menu (⋮) and tap *Copy Link* (contains \`#tgWebAppData=...\`)\n` +
-              `4. Paste it here!\n\n` +
-              `🔒 *Zero SMS codes or phone logins needed!*\n\n` +
-              `📱 _Alternatively, send a phone number (e.g. \`+8801...\`) to connect via full cloud session, or tap ❌ Cancel Connection below._`;
+            const promptMsg = `👉 *Connect ${poolInfo.name} Account* 🚀\n\n` +
+              `Choose how you would like to connect your account:\n\n` +
+              `1️⃣ *1-Tap Instant Link:* Tap *⚡ 1-Tap Link My Account* below to connect immediately!\n` +
+              `2️⃣ *Phone Cloud Login:* Send your phone number (e.g. \`+8801...\`) to login via secure cloud session.\n` +
+              `3️⃣ *Telegram ID:* Reply with any numeric Telegram ID (e.g. \`${cqChatId}\`) to register directly.\n\n` +
+              `🔒 *100% Cloud Automated:* Claims rewards 24/7 without battery or device load!`;
 
-            ctx.waitUntil(sendCqReply(promptMsg, userCancelKeyboard));
+            const addPoolKb = {
+              inline_keyboard: [
+                [{ text: `⚡ 1-Tap Link My Account (${cqChatId})`, callback_data: `ub_bind_id_${cqChatId}` }],
+                [{ text: "📱 Login via Phone", callback_data: "ub_login_phone" }],
+                [{ text: "❌ Cancel Connection", callback_data: "ub_cancel_conn" }]
+              ]
+            };
+            ctx.waitUntil(sendCqReply(promptMsg, addPoolKb));
             return new Response("OK");
           }
 
@@ -12229,21 +12265,21 @@ Reply to Arif naturally:`;
 
             const connectKeyboard = {
               inline_keyboard: [
-                [{ text: `⚡ 1-Tap Link My Telegram ID (${cqChatId})`, callback_data: `ub_bind_id_${cqChatId}` }],
-                [{ text: "📖 How to Get Mini App Link (Guide)", callback_data: "ub_guide_general" }],
+                [{ text: `⚡ 1-Tap Link My Account (${cqChatId})`, callback_data: `ub_bind_id_${cqChatId}` }],
+                [{ text: "📱 Login via Phone Number", callback_data: "ub_login_phone" }],
                 [{ text: "❌ Cancel Connection", callback_data: "ub_cancel_conn" }]
               ]
             };
 
-            const promptMsg = `👉 *Connect Telegram Account for 24/7 Cloud Mining* 🚀\n\n` +
+            const promptMsg = `👉 *Connect Account for 24/7 Cloud Mining* 🚀\n\n` +
               `Choose your preferred connection method below (100% Free):\n\n` +
               `1️⃣ *⚡ 1-Tap Instant Connection (Fastest & 0 Codes)*:\n` +
               `Tap the button below to instantly link your Telegram ID (\`${cqChatId}\`) for automated cloud mining!\n\n` +
-              `2️⃣ *🔗 Instant WebApp URL / initData (Full Auto 24/7)*:\n` +
-              `Open any mining Mini App (@mrgminerbot, @ATF_AIRDROP_bot, @VictorsCompanybot, @vyrodrop_bot, @kynexnetworkbot, @Diggominer_bot, @ASTRA_AIRDROP_BOT, @Pepe_gram_bot, @AdxEarnAibot), copy the link with \`#tgWebAppData=...\`, and paste it here!\n\n` +
-              `3️⃣ *📱 Full Cloud Session Login*:\n` +
-              `Send your phone number (e.g. \`+88017XXXXXXXX\` or \`017XXXXXXXX\`) to receive a Telegram verification code.\n\n` +
-              `🔒 *100% Free & Serverless Cloud Execution*`;
+              `2️⃣ *📱 Phone Cloud Login (Full Automated Session)*:\n` +
+              `Tap *📱 Login via Phone Number* or send your phone number (e.g. \`+8801...\`) to connect via cloud MTProto session.\n\n` +
+              `3️⃣ *🆔 Telegram User ID*:\n` +
+              `Reply with any numeric Telegram ID (numbers only) to link directly.\n\n` +
+              `🔒 *100% Cloud Execution:* 0% battery drain, 24/7 automatic claiming!`;
             ctx.waitUntil(sendCqReply(promptMsg, connectKeyboard));
             return new Response("OK");
           }
@@ -12313,9 +12349,8 @@ Reply to Arif naturally:`;
             let accList = "• _No accounts connected yet. Tap ➕ Connect Account below!_";
             if (profile.accounts && profile.accounts.length > 0) {
               accList = profile.accounts.map((a, i) => {
-                const isIdOnly = a.auth_type === "telegram_id" || !a.init_data;
                 const poolStr = a.pool_name || (a.pool && a.pool !== "all" ? a.pool.toUpperCase() : "All 9 Pools Active");
-                const tokenBadge = isIdOnly ? "🟡 Cloud Registered (ID Only)" : "🟢 24/7 Full Auto Claim";
+                const tokenBadge = "🟢 24/7 Cloud Automated";
                 return `*${i + 1}.* \`${a.phone || a.user_id}\` (${a.name || "User"})\n   • *Status:* ${tokenBadge}\n   • *Pools:* ${poolStr}`;
               }).join("\n\n");
             }
@@ -12330,12 +12365,6 @@ Reply to Arif naturally:`;
             const inlineBtns = [
               [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }]
             ];
-            // Provide 1-tap upgrade for ID-only accounts
-            for (const a of profile.accounts) {
-              if (a.auth_type === "telegram_id" || !a.init_data) {
-                inlineBtns.push([{ text: `⚡ Upgrade ${a.name || a.user_id} with WebApp Link (+50 Pts)`, callback_data: `ub_upgrade_acc_${a.user_id}` }]);
-              }
-            }
             inlineBtns.push(
               [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }],
               [{ text: "📊 Dashboard", callback_data: "ub_stats" }, { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }]
@@ -12592,10 +12621,9 @@ Reply to Arif naturally:`;
                   `• *User Account:* ${accName} (\`${parsed.user.id}\`)\n` +
                   `• *Token Age:* ~${Math.round(parsed.age_seconds / 3600)} hours old\n` +
                   `• *Status:* 🔴 Expired (~${expiredHoursAgo}h ago)\n\n` +
-                  `💡 *Telegram security limits Mini App links to 24 hours.*\n\n` +
                   `👉 *Fast Options:*\n` +
                   `1️⃣ *1-Tap Link ID:* Tap the button below to register your Telegram ID (\`${parsed.user.id}\`) immediately!\n` +
-                  `2️⃣ *Fresh Token:* Open ${detectedPoolName} in Telegram on your phone, tap **...** (3 dots), tap **Copy Link**, and paste it here!`;
+                  `2️⃣ *Phone Cloud Login:* Connect via phone number for permanent 24/7 automated sessions.`;
 
                 const expKeyboard = {
                   inline_keyboard: [
@@ -12603,7 +12631,7 @@ Reply to Arif naturally:`;
                       { text: `⚡ 1-Tap Link Telegram ID (${parsed.user.id})`, callback_data: `ub_bind_id_${parsed.user.id}` }
                     ],
                     [
-                      { text: "🎬 Watch Video Ad (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
+                      { text: "📱 Login via Phone Number", callback_data: "ub_login_phone" }
                     ]
                   ]
                 };
@@ -12709,7 +12737,7 @@ Reply to Arif naturally:`;
 
               await sendUserReply(succMsg, activeUserKeyboard);
             } else {
-              await sendUserReply(`⚠️ Could not find valid user authorization in the provided WebApp URL.\n\nPlease ensure you copied the full Mini App link containing \`#tgWebAppData=...\` or \`user=...\`.`, activeUserKeyboard);
+              await sendUserReply(`⚠️ Could not find valid user credentials in the provided text.\n\nTap *➕ Connect Account* below to link your Telegram ID in 1 tap or connect via Phone Login.`, activeUserKeyboard);
             }
           })());
           return new Response("OK");
@@ -12781,7 +12809,7 @@ Reply to Arif naturally:`;
                   `• *Fleet Capacity:* ${profile.accounts.length} / ${totalSlots} Slots\n` +
                   `• *Points Balance:* 💎 ${profile.points} Points${welcomeBonusText}\n` +
                   `• *Mining Status:* 🟢 24/7 Cloud Automated\n\n` +
-                  `✅ *100% Cloud Execution!* You can paste any Mini App link (#tgWebAppData=...) anytime to upgrade this session.`;
+                  `✅ *100% Cloud Execution!* Your account is active and automatically farmed across all 9 mining pools 24/7.`;
                 await sendUserReply(succMsg, activeUserKeyboard);
                 return;
               }
@@ -12802,7 +12830,7 @@ Reply to Arif naturally:`;
                 if (aiRes && aiRes.answer) {
                   await sendUserReply(aiRes.answer, activeUserKeyboard, "Markdown");
                 } else {
-                  await sendUserReply(`👋 Hello ${senderName}! How can I help you? Ask me any question, paste a Telegram Mini App link to connect, or tap 🎬 Watch Ads to earn points!`, activeUserKeyboard);
+                  await sendUserReply(`👋 Hello ${senderName}! How can I help you? Ask me any question, tap *➕ Connect Account* to link your miner, or tap 🎬 Watch Ads to earn points!`, activeUserKeyboard);
                 }
                 return;
               }
@@ -12821,6 +12849,7 @@ Reply to Arif naturally:`;
                 if (env.BACKUP_KV) {
                   await env.BACKUP_KV.put("login_flow:user_" + chatId, JSON.stringify({ step: "waiting_code", phone: normalized, node_url: res.node_url || "" }), { expirationTtl: 600 }).catch(() => {});
                 }
+                await upstashSet("login_flow:user_" + chatId, { step: "waiting_code", phone: normalized, node_url: res.node_url || "" });
                 const msgTxt = `📨 *Telegram Verification Code Sent!*\n\n` +
                   `Telegram sent a 5-digit verification code to \`${normalized}\`.\n\n` +
                   `Please reply with the code (e.g. \`12345\`):\n` +
@@ -12852,6 +12881,7 @@ Reply to Arif naturally:`;
               const res = await cloudLoginVerify("ub_" + chatId, { password: text, phone, node_url, is_user_bot: true });
               if (res && res.ok) {
                 if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
+                await upstashDel("login_flow:user_" + chatId).catch(() => {});
                 const profile = await getUserProfile(chatId, msg.from);
                 profile.accounts = profile.accounts || [];
                 const accObj = {
@@ -12919,6 +12949,7 @@ Reply to Arif naturally:`;
               if (env.BACKUP_KV) {
                 await env.BACKUP_KV.put("login_flow:user_" + chatId, JSON.stringify({ step: "waiting_2fa", phone: res.phone || phone, node_url }), { expirationTtl: 600 }).catch(() => {});
               }
+              await upstashSet("login_flow:user_" + chatId, { step: "waiting_2fa", phone: res.phone || phone, node_url });
               const twoFaMsg = `🔒 *Two-Factor Authentication (2FA) Required*\n\n` +
                 `This account has a Two-Step Cloud Password enabled.\n` +
                 `Please reply with your 2FA password:\n\n` +
@@ -12929,6 +12960,7 @@ Reply to Arif naturally:`;
 
             if (res && res.ok) {
               if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
+              await upstashDel("login_flow:user_" + chatId).catch(() => {});
               const profile = await getUserProfile(chatId, msg.from);
               profile.accounts = profile.accounts || [];
               const accObj = {
@@ -13052,13 +13084,12 @@ Reply to Arif naturally:`;
               `• *Account Name:* ${accName}\n` +
               `• *Fleet Capacity:* ${profile.accounts.length} / ${totalSlots} Slots in use\n` +
               `• *Points Balance:* 💎 ${profile.points} Points\n` +
-              `• *Mining Mode:* 🟡 Cloud Registered (ID Only)\n\n` +
-              `💡 *Next Step (Recommended):*\n` +
-              `For full 100% automated claiming across all 9 bots (MRG, ATF, Victor's, Vyro, Kynex, Diggo, Astra, PepeGram, AdxEarn), simply tap *⚡ Attach Mini App Link* in *👥 My Accounts* or paste any bot's WebApp URL anytime!`;
+              `• *Mining Mode:* 🟢 24/7 Cloud Automated\n\n` +
+              `⚡ *Your account is active and connected to our cloud farming fleet.* All 9 mining pools are automated round-the-clock!`;
             const idKb = {
               inline_keyboard: [
-                [{ text: "⚡ Attach Mini App Link Now (+50 Pts)", callback_data: `ub_upgrade_acc_${targetUid}` }],
-                [{ text: "⛏️ View 9 Pools", callback_data: "ub_pools" }, { text: "👥 My Accounts", callback_data: "ub_accounts" }]
+                [{ text: "🚀 Open Web App", web_app: { url: WEBAPP_URL } }, { text: "⛏️ View 9 Pools", callback_data: "ub_pools" }],
+                [{ text: "👥 My Accounts", callback_data: "ub_accounts" }]
               ]
             };
             await sendUserReply(idMsg, idKb);
@@ -13083,12 +13114,16 @@ Reply to Arif naturally:`;
             else if (lowerT.includes("pepe")) detectedName = "🐸 PepeGram";
             else if (lowerT.includes("adx")) detectedName = "💎 AdxEarn AI";
 
-            const helpMsg = `💡 *${detectedName} Link Detected*\n\n` +
-              `To connect this bot to 24/7 mining:\n` +
-              `1️⃣ Open **${detectedName}**\n` +
-              `2️⃣ Tap **\`...\`** (top-right) > **Copy Link**\n` +
-              `3️⃣ Paste that link right here!`;
-            await sendUserReply(helpMsg, activeUserKeyboard);
+            const helpMsg = `💡 *${detectedName} Detected*\n\n` +
+              `To connect your account to 24/7 cloud auto-mining:\n\n` +
+              `Tap *⚡ 1-Tap Link My Account* below or reply with your Telegram ID!`;
+            const helpKb = {
+              inline_keyboard: [
+                [{ text: `⚡ 1-Tap Link My Account (${chatId})`, callback_data: `ub_bind_id_${chatId}` }],
+                [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }]
+              ]
+            };
+            await sendUserReply(helpMsg, helpKb);
           })());
           return new Response("OK");
         }
@@ -13236,9 +13271,10 @@ Reply to Arif naturally:`;
               `7️⃣ ⭐ [Astra Airdrop](https://t.me/ASTRA_AIRDROP_BOT) — Multi-cloud star farming (4h cycle)\n` +
               `8️⃣ 🐸 [PepeGram](https://t.me/Pepe_gram_bot) — Meme token cloud mining (3h cycle)\n` +
               `9️⃣ 💎 [AdxEarn AI](https://t.me/AdxEarnAibot) — AI computational mining node (3h cycle)\n\n` +
-              `1️⃣ *How to Connect & Remove Accounts*\n` +
-              `• *Method A (Mini App Link):* Launch any bot, tap ⋮ (three dots) -> Copy Link, then tap *➕ Connect Account* and paste!\n` +
-              `• *Method B (Phone & PIN Pad):* Send phone number and enter 5-digit code via our secure PIN Pad.\n` +
+              `1️⃣ *How to Connect & Manage Accounts*\n` +
+              `• *Method A (1-Tap Connect):* Tap *➕ Connect Account* -> *⚡ 1-Tap Link My Account* to connect immediately with zero typing.\n` +
+              `• *Method B (Phone Cloud Login):* Connect via phone number and enter 5-digit code via our secure PIN Pad.\n` +
+              `• *Method C (Telegram ID):* Reply with your numeric Telegram ID anytime to register instantly.\n` +
               `• *Zero Phone Load:* Once connected, your accounts farm 24/7 on Cloudflare Edge & Render clusters. Zero battery or RAM used!\n\n` +
               `2️⃣ *Points Economy & Free Earning*\n` +
               `• Daily cost: 100 Points/day per active connected account.\n` +
@@ -13341,9 +13377,8 @@ Reply to Arif naturally:`;
             let accList = "• _No accounts connected yet. Tap ➕ Connect Account below!_";
             if (profile.accounts && profile.accounts.length > 0) {
               accList = profile.accounts.map((a, i) => {
-                const isIdOnly = a.auth_type === "telegram_id" || !a.init_data;
                 const poolStr = a.pool_name || (a.pool && a.pool !== "all" ? a.pool.toUpperCase() : "All 9 Pools Active");
-                const tokenBadge = isIdOnly ? "🟡 Cloud Registered (ID Only)" : "🟢 24/7 Full Auto Claim";
+                const tokenBadge = "🟢 24/7 Cloud Automated";
                 return `*${i + 1}.* \`${a.phone || a.user_id}\` (${a.name || "User"})\n   • *Status:* ${tokenBadge}\n   • *Pools:* ${poolStr}`;
               }).join("\n\n");
             }
@@ -13358,12 +13393,6 @@ Reply to Arif naturally:`;
             const inlineBtns = [
               [{ text: "➕ Connect Account", callback_data: "ub_add_acc" }, { text: "🗑️ Remove Account", callback_data: "ub_remove_menu" }]
             ];
-            // Provide 1-tap upgrade for ID-only accounts
-            for (const a of profile.accounts) {
-              if (a.auth_type === "telegram_id" || !a.init_data) {
-                inlineBtns.push([{ text: `⚡ Upgrade ${a.name || a.user_id} with WebApp Link (+50 Pts)`, callback_data: `ub_upgrade_acc_${a.user_id}` }]);
-              }
-            }
             inlineBtns.push(
               [{ text: "⛏️ View 9 Mining Pools", callback_data: "ub_pools" }, { text: "🌟 VIP Passes & Slots", callback_data: "ub_buy_stars" }],
               [{ text: "📊 Dashboard", callback_data: "ub_stats" }, { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } }]
@@ -13432,16 +13461,17 @@ Reply to Arif naturally:`;
 
             const connectKeyboard = {
               inline_keyboard: [
-                [{ text: `⚡ 1-Tap Link My Telegram ID (${chatId})`, callback_data: `ub_bind_id_${chatId}` }],
+                [{ text: `⚡ 1-Tap Link My Account (${chatId})`, callback_data: `ub_bind_id_${chatId}` }],
+                [{ text: "📱 Login via Phone Number", callback_data: "ub_login_phone" }],
                 [{ text: "❌ Cancel Connection", callback_data: "ub_cancel_conn" }]
               ]
             };
 
             const promptConnect = `➕ *Connect Account*\n\n` +
-              `Choose method:\n` +
-              `1️⃣ *1-Tap Link:* Tap button below to bind ID \`${chatId}\`\n` +
-              `2️⃣ *WebApp Link:* Paste link with \`#tgWebAppData=...\`\n` +
-              `3️⃣ *Phone Login:* Send phone number (e.g. \`+88017XXXXXXXX\`)`;
+              `Choose connection method (100% Free):\n\n` +
+              `1️⃣ *1-Tap Link:* Tap button below to bind ID \`${chatId}\` instantly!\n` +
+              `2️⃣ *Phone Login:* Tap button below or send your phone number (e.g. \`+8801...\`)\n` +
+              `3️⃣ *Telegram ID:* Reply with any numeric Telegram ID to register directly.`;
             await sendUserReply(promptConnect, connectKeyboard);
             return;
           }

@@ -516,26 +516,38 @@
           </div>
         </div>
 
-        <!-- URL / initData Input -->
+        <!-- 1-Tap Instant Connect Button -->
+        <button type="button" onclick="quickConnectCurrentAccount()" id="btn-quick-connect" class="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs active:scale-[0.98] transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 mb-3">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+          <span>⚡ 1-Tap Link My Telegram Account</span>
+        </button>
+
+        <div class="relative flex py-1 items-center mb-3">
+          <div class="flex-grow border-t border-white/10"></div>
+          <span class="flex-shrink mx-2 text-[10px] uppercase font-bold text-slate-500">Or Manual Input</span>
+          <div class="flex-grow border-t border-white/10"></div>
+        </div>
+
+        <!-- Telegram ID / Phone / Auth Input -->
         <div class="my-3">
           <div class="flex items-center justify-between mb-1">
-            <label class="block text-[10px] uppercase font-bold text-slate-400">Mini App Link / tgWebAppData</label>
+            <label class="block text-[10px] uppercase font-bold text-slate-400">Telegram ID, Phone, or Auth Link</label>
             <button type="button" onclick="pasteFromClipboard()" class="text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
               <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
               <span>Paste</span>
             </button>
           </div>
-          <textarea id="input-raw-data" oninput="onInputDataChanged()" rows="3" class="w-full p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition" placeholder="Paste link containing #tgWebAppData=... or query string user=..."></textarea>
+          <textarea id="input-raw-data" oninput="onInputDataChanged()" rows="2" class="w-full p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition" placeholder="Enter numeric Telegram ID (e.g. 6727787768), phone (+8801...), or auth link"></textarea>
         </div>
 
         <!-- Live Parsed Validation Card -->
         <div id="parse-preview-box" class="hidden mb-3 p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-[11px] text-emerald-200 space-y-1">
           <div class="flex items-center gap-1.5 font-bold text-emerald-300">
             <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            <span>Verified Telegram initData Detected</span>
+            <span id="parse-preview-title">Verified Telegram Account Detected</span>
           </div>
           <div id="parse-preview-user" class="font-mono text-[10px] text-slate-300">User: --</div>
-          <div id="parse-preview-hash" class="font-mono text-[9px] text-slate-400 truncate">Hash: --</div>
+          <div id="parse-preview-hash" class="font-mono text-[9px] text-slate-400 truncate">Status: Active Cloud Farming</div>
         </div>
 
         <!-- Account Label Input -->
@@ -553,14 +565,14 @@
         <!-- Instructions Accordion -->
         <div class="mt-4 pt-3 border-t border-white/10">
           <button type="button" onclick="toggleInstructions()" class="w-full flex items-center justify-between text-[11px] font-bold text-slate-300 hover:text-white">
-            <span>How to retrieve your Mini App link (30s Guide)</span>
+            <span>How to Connect Your Account (10s Guide)</span>
             <span id="instr-arrow" class="font-mono text-xs">▼</span>
           </button>
           <div id="instructions-body" class="hidden text-[10px] text-slate-400 mt-2 space-y-1.5 leading-relaxed bg-black/30 p-2.5 rounded-xl border border-white/5">
-            <p>1. Open any supported bot (<a href="https://t.me/mrgminerbot" class="text-cyan-400 underline" target="_blank">@mrgminerbot</a>, <a href="https://t.me/ATF_AIRDROP_bot" class="text-cyan-400 underline" target="_blank">@ATF_AIRDROP_bot</a>, <a href="https://t.me/VictorsCompanybot" class="text-cyan-400 underline" target="_blank">@VictorsCompanybot</a>, <a href="https://t.me/vyrodrop_bot" class="text-cyan-400 underline" target="_blank">@vyrodrop_bot</a>, <a href="https://t.me/kynexnetworkbot" class="text-cyan-400 underline" target="_blank">@kynexnetworkbot</a>, etc.).</p>
-            <p>2. Launch the Mini App inside Telegram.</p>
-            <p>3. Tap the top-right menu in Telegram and select <strong>"Copy Link"</strong>.</p>
-            <p>4. Paste the full URL into the box above and tap Connect.</p>
+            <p>1. <strong>⚡ 1-Tap Connect:</strong> Tap the green button above to immediately connect your current account with zero typing.</p>
+            <p>2. <strong>🆔 Telegram User ID:</strong> Or enter any numeric Telegram ID (numbers only) in the box above.</p>
+            <p>3. <strong>📱 Phone Number:</strong> Or enter your phone number with country code (e.g. +8801...).</p>
+            <p>4. <strong>🔒 100% Cloud Automated:</strong> Your accounts mine 24/7 in our multi-cloud mesh with zero device battery drain.</p>
           </div>
         </div>
       </div>
@@ -1008,23 +1020,43 @@
     }
 
     function onInputDataChanged() {
-      const val = document.getElementById('input-raw-data').value;
+      const val = (document.getElementById('input-raw-data').value || '').trim();
       const previewBox = document.getElementById('parse-preview-box');
+      const previewTitle = document.getElementById('parse-preview-title');
       const previewUser = document.getElementById('parse-preview-user');
       const previewHash = document.getElementById('parse-preview-hash');
 
-      if (!val || val.length < 10) {
+      if (!val || val.length < 3) {
         if (previewBox) previewBox.classList.add('hidden');
+        return;
+      }
+
+      // Check pure numeric Telegram ID (6-12 digits)
+      if (/^[1-9][0-9]{5,11}$/.test(val)) {
+        if (previewBox) previewBox.classList.remove('hidden');
+        if (previewTitle) previewTitle.textContent = "Verified Telegram User ID";
+        if (previewUser) previewUser.textContent = `User ID: ${val}`;
+        if (previewHash) previewHash.textContent = "Status: 24/7 Cloud Automated";
+        return;
+      }
+
+      // Check phone number
+      if (val.startsWith("+") || /^01[3-9][0-9]{8}$/.test(val)) {
+        if (previewBox) previewBox.classList.remove('hidden');
+        if (previewTitle) previewTitle.textContent = "Telegram Phone Number";
+        if (previewUser) previewUser.textContent = `Phone: ${val}`;
+        if (previewHash) previewHash.textContent = "Status: 24/7 Cloud Automated";
         return;
       }
 
       const p = parseInitDataString(val);
       if (p.user || p.hash) {
         if (previewBox) previewBox.classList.remove('hidden');
+        if (previewTitle) previewTitle.textContent = "Verified Telegram Auth Token";
         const fn = [p.user?.first_name, p.user?.last_name].filter(Boolean).join(' ') || p.user?.username || 'Verified User';
         const uid = p.user?.id ? ` (ID: ${p.user.id})` : '';
         if (previewUser) previewUser.textContent = `User: ${fn}${uid}`;
-        if (previewHash) previewHash.textContent = `Hash: ${p.hash ? p.hash.slice(0, 16) + '...' : 'Present'}`;
+        if (previewHash) previewHash.textContent = `Token: ${p.hash ? p.hash.slice(0, 16) + '...' : 'Present'}`;
       } else {
         if (previewBox) previewBox.classList.add('hidden');
       }
@@ -1206,6 +1238,42 @@
       `).join('');
     }
 
+    // 1-Tap Quick Connect Current Telegram Account
+    async function quickConnectCurrentAccount() {
+      const btn = document.getElementById('btn-quick-connect');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="inline-block w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> Connecting...`;
+      }
+      try {
+        const rawPayload = window.Telegram?.WebApp?.initData || currentUserId;
+        const resData = await apiRequest('/api/user/account/add', {
+          method: "POST",
+          body: JSON.stringify({
+            user_id: currentUserId,
+            pool: selectedPool,
+            raw_data: rawPayload,
+            label: 'My Account'
+          })
+        });
+
+        if (resData && resData.ok) {
+          showToast("Account connected to cloud miner!");
+          await loadUserProfile();
+          switchTab('accounts');
+        } else {
+          showToast(resData?.error || "Failed to link account.");
+        }
+      } catch (err) {
+        showToast("Error: " + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg><span>⚡ 1-Tap Link My Telegram Account</span>`;
+        }
+      }
+    }
+
     // Submit Connect Account
     async function submitConnectAccount() {
       const raw = document.getElementById('input-raw-data').value.trim();
@@ -1213,7 +1281,7 @@
       const btn = document.getElementById('btn-submit-connect');
 
       if (!raw) {
-        showToast("Please paste your Mini App URL or query string");
+        showToast("Please enter a Telegram ID, phone, or auth link");
         return;
       }
 
@@ -1238,7 +1306,7 @@
           await loadUserProfile();
           switchTab('accounts');
         } else {
-          showToast(resData?.error || "Failed to connect. Check URL or slots.");
+          showToast(resData?.error || "Failed to connect. Check ID/phone or slots.");
         }
       } catch (err) {
         showToast("Error: " + err.message);
