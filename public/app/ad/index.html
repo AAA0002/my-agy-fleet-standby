@@ -606,9 +606,9 @@
         <button onclick="closeMiniApp()" class="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 hover:from-emerald-600 hover:to-teal-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
           <span>✕ Close & Return to Telegram</span>
         </button>
-        <button onclick="returnToDashboard()" class="w-full py-2 px-4 bg-white/10 hover:bg-white/15 active:scale-95 text-slate-200 font-semibold text-xs rounded-xl border border-white/10 transition flex items-center justify-center gap-2 cursor-pointer">
-          <span>🚀 View Mining Dashboard</span>
-        </button>
+        <a href="https://t.me/AAAPREMIUMAPPSbot" class="w-full py-2 px-4 bg-white/10 hover:bg-white/15 active:scale-95 text-slate-200 font-semibold text-xs rounded-xl border border-white/10 transition flex items-center justify-center gap-2 cursor-pointer">
+          <span>🤖 Return to @AAAPREMIUMAPPSbot</span>
+        </a>
       </div>
       <div id="rewardModalAutoClose" class="text-[11px] text-slate-400 font-mono">
         Auto-closing in <span id="rewardAutoCloseSec" class="font-bold text-amber-400">7</span>s...
@@ -870,7 +870,7 @@
   </div>
 
   <footer class="w-full max-w-sm pt-2 pb-4 text-center">
-    <button onclick="returnToDashboard()" class="text-xs text-slate-400 hover:text-slate-200 transition cursor-pointer">✕ Return to Mining Console</button>
+    <button onclick="closeMiniApp()" class="text-xs text-slate-400 hover:text-slate-200 transition cursor-pointer">✕ Close & Return to Telegram</button>
   </footer>
 
   <script>
@@ -887,9 +887,16 @@
         async function fetchMeshWithFailover(path, options = {}) {
       const isOriginWorker = typeof window !== "undefined" && window.location.hostname.includes("workers.dev");
       const primaryOrigin = isOriginWorker ? window.location.origin : CF_NODES[0];
+      let cleanPath = String(path);
+      if (cleanPath.startsWith('/') && cleanPath.length > 1 && cleanPath.endsWith('/')) {
+        cleanPath = cleanPath.slice(0, -1);
+      }
+      if (!cleanPath.startsWith('/')) {
+        cleanPath = '/' + cleanPath;
+      }
       const candidateUrls = isOriginWorker 
-        ? [primaryOrigin + path, ...CF_NODES.map(n => n + path)]
-        : CF_NODES.map(n => n + path);
+        ? [primaryOrigin + cleanPath, ...CF_NODES.map(n => n + cleanPath)]
+        : CF_NODES.map(n => n + cleanPath);
       
       for (const url of candidateUrls) {
         try {
@@ -989,9 +996,16 @@
       }
       const tg = window.Telegram?.WebApp;
       try { tg?.HapticFeedback?.notificationOccurred('success'); } catch (e) {}
-      const urlParams = new URLSearchParams(window.location.search);
-      const uid = urlParams.get('user_id') || localStorage.getItem('atf_user_id') || '';
-      window.location.href = '/app/' + (uid ? `?user_id=${encodeURIComponent(uid)}` : '');
+      try {
+        if (tg && typeof tg.close === 'function') {
+          tg.close();
+          return;
+        }
+      } catch (e) {}
+      try {
+        window.close();
+      } catch (e) {}
+      window.location.href = 'https://t.me/AAAPREMIUMAPPSbot';
     }
     window.returnToDashboard = returnToDashboard;
 
@@ -1021,15 +1035,14 @@
       try {
         if (tg && typeof tg.close === 'function') {
           tg.close();
+          return;
         }
       } catch (e) {}
       try {
         window.close();
       } catch (e) {}
 
-      setTimeout(() => {
-        returnToDashboard();
-      }, 500);
+      window.location.href = 'https://t.me/AAAPREMIUMAPPSbot';
     }
     window.closeMiniApp = closeMiniApp;
 
@@ -1900,7 +1913,7 @@
         const currentMode = new URLSearchParams(window.location.search).get('mode') || '';
         const unitId = network === 'gigapub' ? '8160' : '11753248';
         // Single authoritative call to /api/user/verify-ad-chain
-        const verifyRes = await fetchMeshWithFailover(/api/user/verify-ad-chain, {
+        const verifyRes = await fetchMeshWithFailover("/api/user/verify-ad-chain", {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1926,7 +1939,7 @@
           return verifyData;
         } else {
           // Graceful fallback to verify-monetag if needed
-          const fbRes = await fetchMeshWithFailover(/api/user/verify-monetag, {
+          const fbRes = await fetchMeshWithFailover("/api/user/verify-monetag", {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

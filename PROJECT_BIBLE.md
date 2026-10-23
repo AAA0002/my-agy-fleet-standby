@@ -1573,6 +1573,22 @@ Whenever you perform work in this repository:
 * **Live Verification & Edge Deployment**:
   - Deployed to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified `/health`, `/miner` (87.0 KB), `/fleet` (79.4 KB), `/api/user/profile`, `/api/user/claim-daily`, and `/api/user/account/add` return HTTP 200 with zero errors.
 
+### 33. End-to-End System Hardening, Referral Welcome Bonus & Workflow Optimization (October 23, 2026)
+* **Cancellation Flow Upstash Redis Sync**:
+  - Fixed state persistence bug on `/cancel`: Now calls `await upstashDel("login_flow:user_" + chatId)` synchronously alongside KV deletion, ensuring cancelled phone/token login flows don't linger in Redis across edge nodes.
+* **Complete Chat Member Sentinel**:
+  - Added support for `update.my_chat_member` alongside `update.chat_member` in `/user-bot-webhook` to catch bot status events and user channel status updates across all official community channels.
+* **Referral Welcome Bonus Attribution**:
+  - Credited +100 Welcome Points immediately to new users joining via `/start ref_<id>`, fulfilling the referral promise and providing instant points for cloud farming.
+* **Ad Portal Syntax Bug Resolution**:
+  - Fixed unquoted path syntax error in `public/app/ad/index.html` (`/api/user/verify-ad-chain` misinterpreted as invalid regex flags). Synchronized with `public_ads/app/ad/index.html`.
+* **GitHub Actions Workflow Prioritization**:
+  - Prioritized live Node 4 (`https://restore-agy.agorameet.workers.dev`) at index 0 in `cf_urls` across `.github/workflows/cloud_token_refresher.yml` and `.github/workflows/cloud_sweeper.yml` to eliminate up to 45 seconds of backup download timeout delays.
+* **Core Backup Manifest Expansion**:
+  - Added `public_admin/admin.html`, `public_admin/user-admin.html`, and `public/app/index.html` to `CORE_BOT_FILES` in `backup_manager.py`. Verified complete automated disaster recovery archive streamed to `@myagyai`.
+* **Guardrail Script Alignment**:
+  - Updated `start_userbot.sh` reference to point to Node 4 (`agorameet`). Verified zero local bot processes running on local machine.
+
 
 
 

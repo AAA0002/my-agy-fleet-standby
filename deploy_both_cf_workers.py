@@ -10883,7 +10883,7 @@ Reply to Arif naturally:`;
         }
 
         // 14.01 Real-Time Channel Departure & Rejoin Sentinel (Auto-detects when user leaves/joins any official channel)
-        const chatMember = update.chat_member;
+        const chatMember = update.chat_member || update.my_chat_member;
         if (chatMember) {
           const chChat = chatMember.chat;
           const chId = chChat?.id;
@@ -12552,6 +12552,7 @@ Reply to Arif naturally:`;
         const isCancel = (text === "/cancel" || text === "❌ Cancel Connection" || text === "❌ Cancel");
         if (isCancel) {
           if (env.BACKUP_KV) await env.BACKUP_KV.delete("login_flow:user_" + chatId).catch(() => {});
+          await upstashDel("login_flow:user_" + chatId).catch(() => {});
           ctx.waitUntil(cloudLoginCancel("ub_" + chatId));
           ctx.waitUntil(sendUserReply("❌ Account connection cancelled. Returning to main menu.", activeUserKeyboard));
           return new Response("OK");
@@ -13185,6 +13186,7 @@ Reply to Arif naturally:`;
               if (refId.startsWith("ref_")) refId = refId.replace("ref_", "").trim();
               if (/^\d{6,12}$/.test(refId) && refId !== String(chatId) && !profile.referred_by) {
                 profile.referred_by = refId;
+                profile.points = (profile.points || 0) + 100;
                 await saveUserProfile(chatId, profile);
                 // Credit referrer +500 points
                 try {

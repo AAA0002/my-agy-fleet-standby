@@ -83,12 +83,15 @@ CORE_BOT_FILES = [
     "fleet_wallets_data.json",
     "fleet_wallet_provisioner.py",
     "public_admin/fleet_wallets_data.json",
+    "public_admin/admin.html",
+    "public_admin/user-admin.html",
     "FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md",
     "FLEET_MULTICHAIN_WALLETS_DASHBOARD.md",
     "ARCHIVED_ACCOUNT_10_OLD_WALLETS.json",
     "public_ads/miner/index.html",
     "public_ads/index.html",
     "public_ads/vercel.json",
+    "public/app/index.html",
     "SESSION_BRIDGE.md"
 ]
 
