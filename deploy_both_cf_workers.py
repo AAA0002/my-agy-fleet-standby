@@ -9672,6 +9672,174 @@ Reply to Arif naturally:`;
       }
     };
 
+    const broadcastToLiveActivity = async (txt, replyMarkup = null) => {
+      const payload = {
+        chat_id: -1004332544939,
+        text: txt,
+        parse_mode: "Markdown",
+        disable_web_page_preview: true
+      };
+      if (replyMarkup) payload.reply_markup = replyMarkup;
+      const uTok = env.USER_BOT_TOKEN || "";
+      try {
+        await fetch(`https://api.telegram.org/bot${uTok}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      } catch (_) {}
+    };
+
+    const broadcastNewMinerJoined = async (profile, uid, fromObj) => {
+      const fullName = [fromObj?.first_name, fromObj?.last_name].filter(Boolean).join(" ") || profile.first_name || "Miner";
+      const username = fromObj?.username || profile.username || "";
+      const usernameStr = username ? `@${username}` : "_None_";
+      const uidStr = String(uid);
+      const maskedUid = uidStr.length > 5 ? `${uidStr.slice(0, 4)}****${uidStr.slice(-2)}` : uidStr;
+
+      const activityMsg = `🚀 *NEW MINER JOINED!*\n\n` +
+        `👤 ${fullName}\n` +
+        `🔗 ${usernameStr}\n` +
+        `🆔 ID: \`${maskedUid}\`\n\n` +
+        `📦 Slot: 1× Base Cloud\n` +
+        `🎁 Welcome Bonus: +100 Points\n\n` +
+        `⚡ Status: 🟢 Mining Ready\n` +
+        `☁️ Cloud Mining: 24/7\n\n` +
+        `━━━━━━━━━━━━━━━━━━\n` +
+        `🎁 *INVITE & EARN*\n` +
+        `Get +500 Points + bonus slots\n` +
+        `for every friend you invite!\n\n` +
+        `🤖 @AAAPREMIUMAPPSbot\n` +
+        `━━━━━━━━━━━━━━━━━━\n\n` +
+        `👇 *Start your mining journey*`;
+
+      const activityBtns = {
+        inline_keyboard: [
+          [
+            { text: "🚀 Launch Cloud Miner", url: "https://t.me/AAAPREMIUMAPPSbot" },
+            { text: "🎁 Invite & Earn", url: "https://t.me/AAAPREMIUMAPPSbot?start=invite" }
+          ],
+          [
+            { text: "📊 My Rewards", url: "https://t.me/AAAPREMIUMAPPSbot?start=rewards" },
+            { text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" }
+          ],
+          [
+            { text: "💬 Community Hub", url: "https://t.me/AAAAutoMiner" }
+          ]
+        ]
+      };
+
+      await broadcastToLiveActivity(activityMsg, activityBtns);
+    };
+
+    const checkUserChannels = async (uid) => {
+      if (String(uid) === "6727787768") return { ok: true, missing: [] };
+      const channels = [
+        { id: -1003684868577, name: "AAA Auto Miner — Community Hub", username: "@AAAAutoMiner", url: "https://t.me/AAAAutoMiner" },
+        { id: -1004255751168, name: "AAA Auto Miner — Announcements", username: "@AAAAUTOMINING", url: "https://t.me/AAAAUTOMINING" },
+        { id: -1004332544939, name: "AAA ATF Miner — Live Activity", username: "@AAA_ACTIVITY", url: "https://t.me/AAA_ACTIVITY" }
+      ];
+      const missing = [];
+      const uTok = env.USER_BOT_TOKEN || "";
+      for (const ch of channels) {
+        try {
+          const res = await fetch(`https://api.telegram.org/bot${uTok}/getChatMember?chat_id=${ch.id}&user_id=${uid}`);
+          if (res.ok) {
+            const d = await res.json();
+            const status = d.result?.status;
+            if (!["creator", "administrator", "member", "restricted"].includes(status)) {
+              missing.push(ch);
+            }
+          } else {
+            missing.push(ch);
+          }
+        } catch (_) {}
+      }
+      return { ok: missing.length === 0, missing };
+    };
+
+    const renderGate = (profile, chCheck, uid) => {
+      const isJoined1 = !chCheck.missing.some(m => m.id === -1003684868577);
+      const isJoined2 = !chCheck.missing.some(m => m.id === -1004255751168);
+      const isJoined3 = !chCheck.missing.some(m => m.id === -1004332544939);
+      const channelsDone = isJoined1 && isJoined2 && isJoined3;
+      const adsCount = profile.ads_watched || 0;
+      const hasAd = adsCount >= 1;
+      const overallDone = channelsDone && hasAd;
+
+      const status1 = isJoined1 ? "✅ Joined" : "⚠️ Join Required";
+      const status2 = isJoined2 ? "✅ Joined" : "⚠️ Join Required";
+      const status3 = isJoined3 ? "✅ Joined" : "⚠️ Join Required";
+      const statusAd = hasAd ? `✅ Completed (${adsCount} watched)` : "⏳ 0/1 Watched (Required)";
+
+      const caption = `🛡️ *AAA CLOUD MINING — ACCESS GATEWAY* 🚀\n` +
+        `_⚡ Autonomous 24/7 Multi-Bot Cloud Farming Ecosystem_\n\n` +
+        `Welcome ${profile.first_name || "Miner"}! To prevent Sybil bots and activate your free cloud mining across all 9 automated crypto bots, please complete the **2 onboarding steps** below:\n\n` +
+        `*📋 Step 1: Join All 3 Official Community Channels*\n` +
+        `1️⃣ 💬 *Community Hub:* @AAAAutoMiner (${status1})\n` +
+        `2️⃣ 📢 *Announcements:* @AAAAUTOMINING (${status2})\n` +
+        `3️⃣ ⚡ *Live Activity Stream:* @AAA_ACTIVITY (${status3})\n\n` +
+        `*🎬 Step 2: Watch 1 Sponsored Video Ad*\n` +
+        `4️⃣ 📺 *Rewarded Video Ad:* ${statusAd}\n` +
+        `_Watching 1 ad supports 24/7 cloud server costs and rewards you with +20 Mining Points!_\n\n` +
+        `🎁 *Welcome Reward:* Once both steps are complete, you will receive **+100 Free Welcome Points** (1 full day of 24/7 cloud mining)!`;
+
+      const rows = [];
+      rows.push([
+        { text: `${isJoined1 ? "✅" : "👉"} 1. Community Hub`, url: "https://t.me/AAAAutoMiner" },
+        { text: `${isJoined2 ? "✅" : "👉"} 2. Announcements`, url: "https://t.me/AAAAUTOMINING" }
+      ]);
+      rows.push([
+        { text: `${isJoined3 ? "✅" : "👉"} 3. Live Activity Stream`, url: "https://t.me/AAA_ACTIVITY" }
+      ]);
+      rows.push([
+        { text: `${hasAd ? "✅ Ad Watched (+20 Pts)" : "🎬 Step 2: Watch 1 Ad to Unlock (+20 Pts) ⚡"}`, web_app: { url: `https://agy-henna.vercel.app/?uid=${uid}` } }
+      ]);
+      if (!hasAd) {
+        rows.push([
+          { text: "🎁 Claim 1 Ad via Telegram (Fallback)", callback_data: "ub_gate_claim_ad" }
+        ]);
+      }
+      rows.push([
+        { text: overallDone ? "🚀 UNLOCK BOT & CLAIM 100 PTS 🎁" : "🔄 VERIFY & UNLOCK BOT (+100 PTS) 🎁", callback_data: "ub_verify_gate" }
+      ]);
+
+      return {
+        text: caption,
+        markup: { inline_keyboard: rows },
+        isComplete: overallDone,
+        channelsDone,
+        hasAd
+      };
+    };
+
+    const userMainKeyboard = {
+      keyboard: [
+        [
+          { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } },
+          { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
+        ],
+        [
+          { text: "⛏️ Mining Pools" },
+          { text: "➕ Connect Account" }
+        ],
+        [
+          { text: "👥 My Accounts" },
+          { text: "💎 Points & Pass" }
+        ],
+        [
+          { text: "🎁 Daily Bonus" },
+          { text: "👥 Invite Friends" }
+        ],
+        [
+          { text: "📖 User Guide" },
+          { text: "💬 Support" }
+        ]
+      ],
+      resize_keyboard: true,
+      is_persistent: true
+    };
+
     // 13.6 Multi-Network Ad Portal Route (Monetag, GigaPub, Adsterra 7 Formats, HilltopAds VAST 3.0, A-Ads)
     if (path === "/ads" || path === "/app/ad" || path === "/ad" || path === "/adsgram") {
       const redirectTarget = "https://agy-henna.vercel.app/" + (url.search || "");
@@ -9836,6 +10004,61 @@ Reply to Arif naturally:`;
           bonusUnlocked = true;
         }
         await saveUserProfile(uid, profile);
+
+        // Check Gate Unlocking (All 3 Channels + 1 Ad Watched)
+        if (!profile.joined_channels) {
+          try {
+            const chCheck = await checkUserChannels(uid);
+            if (chCheck && chCheck.ok && (profile.ads_watched || 0) >= 1) {
+              profile.joined_channels = true;
+              profile.points = (profile.points || 0) + 100;
+              profile.activity_broadcasted = true;
+              await saveUserProfile(uid, profile);
+              if (ctx && ctx.waitUntil) {
+                ctx.waitUntil(broadcastNewMinerJoined(profile, uid, null).catch(() => {}));
+                const unlockText = `🎉 *CONGRATULATIONS ${profile.first_name || "Miner"}! BOT UNLOCKED!* 🚀\n\n` +
+                  `✅ *Official Channels Joined:* 3/3\n` +
+                  `✅ *First Sponsored Ad Watched:* +20 Points Credited!\n` +
+                  `🎁 *Welcome Bonus:* +100 Free Mining Points Credited!\n\n` +
+                  `💎 *Current Balance:* ${profile.points} Points (~1 full day of 24/7 cloud mining!)\n\n` +
+                  `Your 24/7 autonomous cloud mining account is now fully active across all 9 automated crypto bots! Choose an option below to start:`;
+                ctx.waitUntil(
+                  fetch(`https://api.telegram.org/bot${env.USER_BOT_TOKEN}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: uid,
+                      text: unlockText,
+                      parse_mode: "Markdown",
+                      reply_markup: userMainKeyboard
+                    })
+                  }).catch(() => {})
+                );
+              }
+            } else if (chCheck && !chCheck.ok && !isSilent) {
+              const missingNames = chCheck.missing.map(m => m.username || m.name).join(", ");
+              const step1Text = `🎬 *AD COMPLETED! (+20 POINTS CREDITED)* 👏\n\n` +
+                `✅ *Step 2 (Watch Ad):* Done! (1/1 watched)\n` +
+                `⏳ *Step 1 (Join Channels):* Missing: ${missingNames}\n\n` +
+                `Please join our 3 official channels to complete onboarding and unlock your **+100 Welcome Points**!`;
+              const gate = renderGate(profile, chCheck, uid);
+              if (ctx && ctx.waitUntil) {
+                ctx.waitUntil(
+                  fetch(`https://api.telegram.org/bot${env.USER_BOT_TOKEN}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: uid,
+                      text: step1Text,
+                      parse_mode: "Markdown",
+                      reply_markup: gate.markup
+                    })
+                  }).catch(() => {})
+                );
+              }
+            }
+          } catch (_) {}
+        }
 
         // Daily Ads Counter in Upstash Redis (100% Unlimited - No Daily Cap!)
         const todayStr = new Date().toISOString().slice(0, 10);
@@ -10438,95 +10661,7 @@ Reply to Arif naturally:`;
 
         const userBotToken = env.USER_BOT_TOKEN || "";
 
-        // (getUserProfile & saveUserProfile lifted to shared scope above)
-
-
-        // Helper: Check membership across all 3 official community channels
-        const checkUserChannels = async (uid) => {
-          if (String(uid) === "6727787768") return { ok: true, missing: [] };
-          const channels = [
-            { id: -1003684868577, name: "AAA Auto Miner — Community Hub", username: "@AAAAutoMiner", url: "https://t.me/AAAAutoMiner" },
-            { id: -1004255751168, name: "AAA Auto Miner — Announcements", username: "@AAAAUTOMINING", url: "https://t.me/AAAAUTOMINING" },
-            { id: -1004332544939, name: "AAA ATF Miner — Live Activity", username: "@AAA_ACTIVITY", url: "https://t.me/AAA_ACTIVITY" }
-          ];
-          const missing = [];
-          for (const ch of channels) {
-            try {
-              const res = await fetch(`https://api.telegram.org/bot${userBotToken}/getChatMember?chat_id=${ch.id}&user_id=${uid}`);
-              if (res.ok) {
-                const d = await res.json();
-                const status = d.result?.status;
-                if (!["creator", "administrator", "member", "restricted"].includes(status)) {
-                  missing.push(ch);
-                }
-              } else {
-                // Non-200 (e.g. HTTP 400 PARTICIPANT_ID_INVALID) indicates user has not joined
-                missing.push(ch);
-              }
-            } catch (_) {}
-          }
-          return { ok: missing.length === 0, missing };
-        };
-
-        // Broadcast Event to Official Live Activity Channel (@AAA_ACTIVITY)
-        const broadcastToLiveActivity = async (txt, replyMarkup = null) => {
-          const payload = {
-            chat_id: -1004332544939,
-            text: txt,
-            parse_mode: "Markdown",
-            disable_web_page_preview: true
-          };
-          if (replyMarkup) payload.reply_markup = replyMarkup;
-          try {
-            await fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
-            });
-          } catch (_) {}
-        };
-
-        const broadcastNewMinerJoined = async (profile, uid, fromObj) => {
-          const fullName = [fromObj?.first_name, fromObj?.last_name].filter(Boolean).join(" ") || profile.first_name || "Miner";
-          const username = fromObj?.username || profile.username || "";
-          const usernameStr = username ? `@${username}` : "_None_";
-          const uidStr = String(uid);
-          const maskedUid = uidStr.length > 5 ? `${uidStr.slice(0, 4)}****${uidStr.slice(-2)}` : uidStr;
-
-          const activityMsg = `🚀 *NEW MINER JOINED!*\n\n` +
-            `👤 ${fullName}\n` +
-            `🔗 ${usernameStr}\n` +
-            `🆔 ID: \`${maskedUid}\`\n\n` +
-            `📦 Slot: 1× Base Cloud\n` +
-            `🎁 Welcome Bonus: +100 Points\n\n` +
-            `⚡ Status: 🟢 Mining Ready\n` +
-            `☁️ Cloud Mining: 24/7\n\n` +
-            `━━━━━━━━━━━━━━━━━━\n` +
-            `🎁 *INVITE & EARN*\n` +
-            `Get +500 Points + bonus slots\n` +
-            `for every friend you invite!\n\n` +
-            `🤖 @AAAPREMIUMAPPSbot\n` +
-            `━━━━━━━━━━━━━━━━━━\n\n` +
-            `👇 *Start your mining journey*`;
-
-          const activityBtns = {
-            inline_keyboard: [
-              [
-                { text: "🚀 Launch Cloud Miner", url: "https://t.me/AAAPREMIUMAPPSbot" },
-                { text: "🎁 Invite & Earn", url: "https://t.me/AAAPREMIUMAPPSbot?start=invite" }
-              ],
-              [
-                { text: "📊 My Rewards", url: "https://t.me/AAAPREMIUMAPPSbot?start=rewards" },
-                { text: "📢 Announcements", url: "https://t.me/AAAAUTOMINING" }
-              ],
-              [
-                { text: "💬 Community Hub", url: "https://t.me/AAAAutoMiner" }
-              ]
-            ]
-          };
-
-          await broadcastToLiveActivity(activityMsg, activityBtns);
-        };
+        // (getUserProfile, saveUserProfile, checkUserChannels, broadcastToLiveActivity, broadcastNewMinerJoined, renderGate & userMainKeyboard defined in shared scope above)
 
         const broadcastMilestoneUnlocked = async (title, minerName, uid, achievement, bonusText = "") => {
           const uidStr = String(uid);
@@ -11042,6 +11177,7 @@ Reply to Arif naturally:`;
 
         const BOT_BANNER_URL = "";
 
+        const getGateMarkup = (prof, chChk, uid) => renderGate(prof, chChk, uid).markup;
         const gateInlineKeyboard = {
           inline_keyboard: [
             [
@@ -11052,7 +11188,13 @@ Reply to Arif naturally:`;
               { text: "⚡ Live Activity Stream ↗️", url: "https://t.me/AAA_ACTIVITY" }
             ],
             [
-              { text: "🎖️ VERIFY JOIN & CLAIM 100 PTS 🎁", callback_data: "ub_verify_gate" }
+              { text: "🎬 Step 2: Watch 1 Ad to Unlock (+20 Pts) ⚡", web_app: { url: "https://agy-henna.vercel.app/" } }
+            ],
+            [
+              { text: "🎁 Claim 1 Ad via Telegram (Fallback)", callback_data: "ub_gate_claim_ad" }
+            ],
+            [
+              { text: "🔄 VERIFY & UNLOCK BOT (+100 PTS) 🎁", callback_data: "ub_verify_gate" }
             ]
           ]
         };
@@ -11165,17 +11307,36 @@ Reply to Arif naturally:`;
             }
           }
 
-          // A. Gate Verification Callback
+          // A. Gate Verification Callback (Both Channels AND 1 Ad Required!)
           if (cqData === "ub_verify_gate") {
             const chCheck = await checkUserChannels(cqChatId);
-            if (!chCheck.ok) {
+            const profile = await getUserProfile(cqChatId, cq.from);
+            const adsCount = profile.ads_watched || 0;
+            const hasAd = adsCount >= 1;
+            const gate = renderGate(profile, chCheck, cqChatId);
+
+            if (!chCheck.ok && !hasAd) {
               const missingNames = chCheck.missing.map(m => m.username || m.name).join(", ");
-              await answerCq(`⚠️ You still need to join: ${missingNames}! Please join all 3 channels above, then tap Verify again.`, true);
+              await answerCq(`⚠️ Both steps required! Join ${missingNames} AND watch 1 video ad to unlock.`, true);
+              await sendCqReply(gate.text, gate.markup);
               return new Response("OK");
             }
 
-            await answerCq("✅ Membership verified! 100 Welcome Points awarded!", false);
-            const profile = await getUserProfile(cqChatId, cq.from);
+            if (!chCheck.ok && hasAd) {
+              const missingNames = chCheck.missing.map(m => m.username || m.name).join(", ");
+              await answerCq(`⚠️ Channels missing: ${missingNames}! Please join all 3 channels above, then tap Verify.`, true);
+              await sendCqReply(gate.text, gate.markup);
+              return new Response("OK");
+            }
+
+            if (chCheck.ok && !hasAd) {
+              await answerCq("⚠️ Channels verified (3/3)! Now please watch 1 video ad (Step 2) to unlock the bot.", true);
+              await sendCqReply(gate.text, gate.markup);
+              return new Response("OK");
+            }
+
+            // Both completed!
+            await answerCq("✅ All requirements completed! 100 Welcome Points awarded! Bot unlocked!", false);
             const isFirst = !profile.joined_channels || !profile.activity_broadcasted;
             profile.joined_channels = true;
             profile.activity_broadcasted = true;
@@ -11190,10 +11351,56 @@ Reply to Arif naturally:`;
 
             const dash = renderMiningDashboard(profile, cqChatId, cqSenderName);
             ctx.waitUntil((async () => {
-              await sendCqReply(`🎉 *MEMBERSHIP VERIFIED! +100 WELCOME POINTS AWARDED!* 🎁\n\n` + dash.text, dash.markup);
-              await sendUserReply("🎉 *Account Activated!* Use the dashboard buttons below or launch 🎬 Watch Ads:", activeUserKeyboard);
+              await sendCqReply(`🎉 *ACCESS UNLOCKED! +100 WELCOME POINTS AWARDED!* 🎁\n\n` + dash.text, dash.markup);
+              await sendUserReply("🎉 *Account Activated!* You have 100 Welcome Points for 24/7 cloud mining! Choose an action below or tap 🎬 Watch Ads:", activeUserKeyboard);
             })());
             return new Response("OK");
+          }
+
+          // A.1 Gate Claim 1 Ad via Telegram Fallback
+          if (cqData === "ub_gate_claim_ad") {
+            const profile = await getUserProfile(cqChatId, cq.from);
+            const now = Date.now();
+            const elapsed = Math.floor((now - (profile.last_ad_claim || 0)) / 1000);
+            if (elapsed < 12) {
+              const waitSec = 12 - elapsed;
+              await answerCq(`⏳ Ad cooldown active. Please wait ${waitSec}s.`, true);
+              return new Response("OK");
+            }
+
+            profile.points = (profile.points || 0) + 20;
+            profile.ads_watched = (profile.ads_watched || 0) + 1;
+            profile.last_ad_claim = now;
+            await saveUserProfile(cqChatId, profile);
+
+            const chCheck = await checkUserChannels(cqChatId);
+            if (chCheck.ok) {
+              // Both channels & ad completed!
+              const isFirst = !profile.joined_channels || !profile.activity_broadcasted;
+              profile.joined_channels = true;
+              profile.activity_broadcasted = true;
+              if (isFirst) {
+                profile.points = (profile.points || 0) + 100;
+              }
+              await saveUserProfile(cqChatId, profile);
+              if (isFirst) {
+                ctx.waitUntil(broadcastNewMinerJoined(profile, cqChatId, cq.from));
+              }
+
+              await answerCq("🎉 Ad completed (+20 Pts) & channels verified! +100 Welcome Points awarded! Bot unlocked! 🚀", false);
+              const dash = renderMiningDashboard(profile, cqChatId, cqSenderName);
+              ctx.waitUntil((async () => {
+                await sendCqReply(`🎉 *ACCESS UNLOCKED! +100 WELCOME POINTS AWARDED!* 🎁\n\n` + dash.text, dash.markup);
+                await sendUserReply("🎉 *Account Activated!* Use the dashboard buttons below or launch 🎬 Watch Ads:", activeUserKeyboard);
+              })());
+              return new Response("OK");
+            } else {
+              // Ad completed, but channels still needed
+              await answerCq("✅ Ad completed (+20 Pts)! Now please join all 3 channels above and tap Verify to unlock!", true);
+              const gate = renderGate(profile, chCheck, cqChatId);
+              await sendCqReply(gate.text, gate.markup);
+              return new Response("OK");
+            }
           }
 
           await answerCq();
@@ -12706,27 +12913,28 @@ Reply to Arif naturally:`;
             }
           }
 
-          // Verify Channel Membership (enforce gate for new or unverified users)
-          if (!profile.joined_channels) {
-            const chCheck = await checkUserChannels(chatId);
-            if (!chCheck.ok) {
-              const gateCaption = `🛡️ *AAA CLOUD MINING — ACCESS GATEWAY* 🚀\n` +
-                `_⚡ Autonomous 24/7 Multi-Bot Cloud Farming Ecosystem_\n\n` +
-                `Welcome ${senderName}! To prevent Sybil abuse and unlock continuous **24/7 cloud auto-farming across all 9 official crypto bots**, please join our official community hubs:\n\n` +
-                `1️⃣ 💬 *Community Hub* — @AAAAutoMiner\n` +
-                `2️⃣ 📢 *Announcements* — @AAAAUTOMINING\n` +
-                `3️⃣ ⚡ *Live Activity Stream* — @AAA_ACTIVITY\n\n` +
-                `🎁 *Bonus:* You will receive **100 Free Welcome Points** immediately upon tapping Verify below!`;
-              await sendUserReply(gateCaption, gateInlineKeyboard);
-              return;
-            }
+          // Verify Channel Membership & 1 Ad Watched (enforce gate for new or unverified users)
+          if (!profile.joined_channels || (profile.ads_watched || 0) < 1) {
+            if (String(chatId) === "6727787768" || (profile.accounts && profile.accounts.length > 0)) {
+              profile.joined_channels = true;
+              if ((profile.ads_watched || 0) < 1) profile.ads_watched = 1;
+              await saveUserProfile(chatId, profile);
+            } else {
+              const chCheck = await checkUserChannels(chatId);
+              const gate = renderGate(profile, chCheck, chatId);
+              if (!gate.isComplete) {
+                await sendUserReply(gate.text, gate.markup);
+                return;
+              }
 
-            profile.joined_channels = true;
-            if (!profile.activity_broadcasted) {
-              profile.activity_broadcasted = true;
-              ctx.waitUntil(broadcastNewMinerJoined(profile, chatId, msg.from));
+              profile.joined_channels = true;
+              if (!profile.activity_broadcasted) {
+                profile.activity_broadcasted = true;
+                profile.points = (profile.points || 0) + 100;
+                ctx.waitUntil(broadcastNewMinerJoined(profile, chatId, msg.from));
+              }
+              await saveUserProfile(chatId, profile);
             }
-            await saveUserProfile(chatId, profile);
           }
 
           // E. Process Standard Bot Commands & Menu Buttons

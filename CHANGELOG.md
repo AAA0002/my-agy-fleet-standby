@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ Mandatory Dual Onboarding Gate: Join 3 Channels + Watch 1 Ad to Unlock Bot (October 23, 2026)**:
+  - **Enforced Dual Onboarding Verification**:
+    * Implemented strict access gating requiring all new users joining `@AAAPREMIUMAPPSbot` to complete both:
+      1. Join ALL 3 official community hubs: Community Hub (`@AAAAutoMiner`), Announcements (`@AAAAUTOMINING`), and Live Activity Stream (`@AAA_ACTIVITY`).
+      2. Watch at least 1 sponsored video ad (`ads_watched >= 1`) to support cloud server costs and earn +20 Points.
+    * Users who have not satisfied both requirements cannot access bot commands (`/pools`, `/accounts`, `/daily`, etc.) and are presented with the interactive Access Gateway.
+  - **Dynamic Gateway Dashboard (`renderGate`)**:
+    * Displays real-time status indicators for each requirement (`✅ Joined` vs `⚠️ Join Required`, `✅ Completed (N watched)` vs `⏳ 0/1 Watched (Required)`).
+    * Integrated direct join buttons, 1-tap WebApp ad launch button (`https://agy-henna.vercel.app/?uid=<uid>`), fallback Telegram ad claim (`ub_gate_claim_ad`), and dynamic verification button (`ub_verify_gate`).
+  - **Instant WebApp Ad-Completion Webhook Integration**:
+    * When a user finishes watching an ad on `https://agy-henna.vercel.app/`, `/api/user/claim-ad` automatically checks if all channels are joined.
+    * If both requirements are met, the bot automatically unlocks in background, credits the **+100 Free Welcome Points**, sends a congratulatory Telegram celebration alert with the full reply menu, and broadcasts to `@AAA_ACTIVITY`.
+  - **Telegram Direct Claim Fallback (`ub_gate_claim_ad`)**:
+    * Added fallback Telegram callback handler allowing users on limited devices to claim their 1st ad view directly (+20 Pts) and auto-unlock if channels are joined.
+  - **Edge Deployment & Verification**:
+    * Tested and deployed to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified with simulated Telegram webhook events and cleaned up test records.
+
 - **🤖 User Bot (@AAAPREMIUMAPPSbot) Complete Modernization & Cloudflare Edge Deployment (October 22, 2026)**:
   - **24-Hour Welcome Grace Period & Point Drain Fix**:
     * Resolved the Day 1 point drain issue where newly registered users who joined with 100 welcome points had their points deducted immediately by the daily sweep before having a chance to earn or explore.
