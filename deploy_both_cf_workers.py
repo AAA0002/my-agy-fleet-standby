@@ -1964,7 +1964,7 @@ export default {
       "https://my-agy-fleet-standby-node2.onrender.com"
     ];
 
-    const cloudLoginSendCode = async (phone, targetChatId) => {
+    const cloudLoginSendCode = async (phone, targetChatId, forceFresh = false) => {
       for (const baseUrl of RENDER_LOGIN_URLS) {
         try {
           const res = await fetch(`${baseUrl}/api/account/login/send-code`, {
@@ -1973,7 +1973,7 @@ export default {
               "Content-Type": "application/json",
               "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`
             },
-            body: JSON.stringify({ phone, chat_id: String(targetChatId), secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026" }),
+            body: JSON.stringify({ phone, chat_id: String(targetChatId), force_fresh: Boolean(forceFresh), secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026" }),
             signal: AbortSignal.timeout(35000)
           });
           if (res.ok) {
@@ -4747,8 +4747,11 @@ fi
                 { text: "✅ Verify", callback_data: "pin_submit" }
               ],
               [
-                { text: `🔄 Request Fresh Code (#${padIdx})`, callback_data: `btn_request_code_${accountIndex}` },
-                { text: "❌ Cancel", callback_data: "btn_cancel_login" }
+                { text: `🔄 Request Fresh Code`, callback_data: `btn_request_code_${accountIndex}` },
+                { text: `📱 1-Tap QR Login`, callback_data: `btn_qr_login_${accountIndex}` }
+              ],
+              [
+                { text: "❌ Cancel Login", callback_data: "btn_cancel_login" }
               ]
             ]
           };
@@ -5326,6 +5329,31 @@ fi
                 memLoginFlow.set(String(chatId), flowData);
                 ctx.waitUntil(upstashSet("login_flow:" + chatId, flowData));
                 const errDetail = res ? (res.error || res.message) : "Verification code rejected";
+                const isExpiredOrInvalidated = String(errDetail).toLowerCase().includes("expired") || 
+                                              String(errDetail).toLowerCase().includes("invalidat") || 
+                                              String(errDetail).toLowerCase().includes("shared") ||
+                                              Boolean(res && res.expired);
+
+                if (isExpiredOrInvalidated) {
+                  const expiredRep = `⚠️ *Telegram Verification Code Expired or Revoked*\n\n` +
+                    `• *Target Phone:* \`${phoneToRelink}\`\n\n` +
+                    `*Why this happened:*\n` +
+                    `1. **Security Revocation**: Telegram invalidated this code because it was sent in a chat message or shared.\n` +
+                    `2. **Time Limit**: Telegram login codes expire after 2 minutes.\n\n` +
+                    `👉 *Choose how to proceed:*\n` +
+                    `• Tap **[ 🔄 Request Fresh Code ]** below to receive a brand-new code and tap digits on the PIN Pad (never type code in chat!).\n` +
+                    `• Tap **[ 📱 1-Tap QR Login ]** for instant 1-tap device linking (no SMS or codes needed!).`;
+                  const expiredKeyboard = {
+                    inline_keyboard: [
+                      [{ text: "🔄 Request Fresh Code", callback_data: `btn_request_code_${targetIdx}` }],
+                      [{ text: "📱 1-Tap QR Login (Zero Code)", callback_data: `btn_qr_login_${targetIdx}` }],
+                      [{ text: "❌ Cancel Login", callback_data: "btn_cancel_login" }]
+                    ]
+                  };
+                  await editOrSendResilientMessage(chatId, cbMsgId, expiredRep, expiredKeyboard);
+                  return new Response("OK");
+                }
+
                 const failRep = `❌ *Verification Failed*\n\n` +
                   `*Error:* ${errDetail}\n\n` +
                   `• *Target Phone:* \`${phoneToRelink}\`\n\n` +
@@ -5685,21 +5713,31 @@ fi
               const relinkIdx = parseInt(cbData.replace("btn_relink_", "").replace("btn_request_code_", ""), 10) || 1;
               const accounts = await getFleetAccounts();
               const targetAcc = accounts.find(a => (a.index === relinkIdx) || (accounts.indexOf(a) + 1 === relinkIdx));
-              const phoneToRelink = (targetAcc && targetAcc.phone && targetAcc.phone.length >= 8 && targetAcc.phone !== "N/A" && targetAcc.phone !== "Hidden")
+              let phoneToRelink = (targetAcc && targetAcc.phone && targetAcc.phone.length >= 8 && targetAcc.phone !== "N/A" && targetAcc.phone !== "Hidden")
                 ? targetAcc.phone
                 : (KNOWN_PHONES_BY_INDEX[relinkIdx] || "");
+
+              if (!phoneToRelink) {
+                const curFlow = memLoginFlow.get(String(chatId)) || (await upstashGet("login_flow:" + chatId));
+                if (curFlow && curFlow.phone) {
+                  phoneToRelink = curFlow.phone;
+                } else {
+                  phoneToRelink = (await upstashGet("last_login_phone:" + chatId)) || "";
+                }
+              }
+
               if (!phoneToRelink) {
                 await sendResilientMessage(chatId, `❌ Phone number for Account #${relinkIdx} not found. Please tap ➕ Add Account.`, cancelKeyboard, "Markdown");
                 return;
               }
               const cbMsgId = cb.message ? cb.message.message_id : null;
-              const rep = `🔄 *Requesting Verification Code for Account #${relinkIdx}*\n\n` +
+              const rep = `🔄 *Requesting Fresh Verification Code for Account #${relinkIdx}*\n\n` +
                 `• *Account:* #${relinkIdx} (${targetAcc ? targetAcc.name : "Node " + relinkIdx})\n` +
                 `• *Phone:* \`${phoneToRelink}\`\n\n` +
                 `Connecting to Telegram MTProto...`;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, cancelKeyboard);
 
-              const res = await cloudLoginSendCode(phoneToRelink, chatId);
+              const res = await cloudLoginSendCode(phoneToRelink, chatId, true);
               if (res && res.ok) {
                 const flowData = { step: "waiting_code", phone: phoneToRelink, node_url: res.node_url || "", index: relinkIdx, pinDigits: "" };
                 memLoginFlow.set(String(chatId), flowData);
@@ -7745,6 +7783,15 @@ fi
         // PRIORITY 1: OTP Code verification (5 or 6 digits) - NEVER treat as phone!
         if (isOtpCode && !isCommandOrMenu) {
           ctx.waitUntil((async () => {
+            if (msg && msg.message_id) {
+              try {
+                await fetch(`https://api.telegram.org/bot${alertBotToken}/deleteMessage`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ chat_id: chatId, message_id: msg.message_id })
+                }).catch(() => {});
+              } catch (_) {}
+            }
             await sendChatAction(chatId, "typing");
             let phone = (loginFlowState && loginFlowState.phone) || "";
             let node_url = (loginFlowState && loginFlowState.node_url) || "";
@@ -7813,16 +7860,31 @@ fi
               await sendAnimatedReply(chatId, [succMsg], mainKeyboard);
             } else {
               const errDetail = res ? (res.error || res.message) : "Verification code rejected";
-              const isSharedOrExpired = String(errDetail).toLowerCase().includes("expired") || String(errDetail).toLowerCase().includes("share");
+              const isSharedOrExpired = String(errDetail).toLowerCase().includes("expired") || String(errDetail).toLowerCase().includes("share") || (res && res.expired);
               const targetIdx = targetRelinkIdx || 1;
-              const errMsg = isSharedOrExpired
-                ? `❌ *Verification Failed (Code Expired or Blocked)*\n\n` +
-                  `*Telegram Security Notice:* Telegram invalidated this code or it expired.\n\n` +
-                  `👉 *Fast Solution:* Tap **[ 🔄 Request Fresh Code ]** below and enter the 5-digit code immediately using the on-screen PIN Pad!`
-                : `❌ *Verification Failed*\n\n` +
+              if (isSharedOrExpired) {
+                const failRep = `⚠️ *Telegram Verification Code Expired or Revoked*\n\n` +
+                  `• *Target Phone:* \`${phone}\`\n\n` +
+                  `*Why this happened:*\n` +
+                  `1. **Security Revocation**: Telegram invalidated this code because it was sent in a chat message or shared.\n` +
+                  `2. **Time Limit**: Telegram login codes expire after 2 minutes.\n\n` +
+                  `👉 *Fast Solution:*\n` +
+                  `• Tap **[ 🔄 Request Fresh Code ]** below to receive a new code and enter it via the on-screen PIN Pad (do NOT type in chat).\n` +
+                  `• Tap **[ 📱 1-Tap QR Login ]** for instant login without any codes!`;
+                const expiredKeyboard = {
+                  inline_keyboard: [
+                    [{ text: "🔄 Request Fresh Code", callback_data: `btn_request_code_${targetIdx}` }],
+                    [{ text: "📱 1-Tap QR Login (Zero Code)", callback_data: `btn_qr_login_${targetIdx}` }],
+                    [{ text: "❌ Cancel Login", callback_data: "btn_cancel_login" }]
+                  ]
+                };
+                await sendResilientMessage(chatId, failRep, expiredKeyboard, "Markdown");
+              } else {
+                const errMsg = `❌ *Verification Failed*\n\n` +
                   `*Error:* ${errDetail}\n\n` +
                   `Please check the code and try again via the on-screen PIN Pad:`;
-              await sendResilientMessage(chatId, errMsg, buildPinPadKeyboard(targetIdx, "", phone), "Markdown");
+                await sendResilientMessage(chatId, errMsg, buildPinPadKeyboard("", targetIdx), "Markdown");
+              }
             }
           })());
           return new Response("OK");

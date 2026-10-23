@@ -133,6 +133,13 @@ Certain farming bots require a connected wallet before mining will unlock or pro
       * Fixed `PRIMARY_TON_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"` in `app.py`, `render_app_latest.py`, and `render_standby_app.py`.
       * Fixed missing `import time` in `login_account.py`.
       * Validated 722 KB Cloudflare Edge Worker JS with Node.js (`node -c`, 0 errors).
+15. **Telegram Login Expired/Revoked Code Recovery & 1-Tap QR Fallback**:
+    - Diagnosed Telegram's anti-phishing scanner which revokes authorization codes if typed or shared in chat messages, or after 120s.
+    - Replaced dead-end PIN Pad loop with an intelligent recovery screen presenting `[ 🔄 Request Fresh Code ]` and `[ 📱 1-Tap QR Login (Zero Code) ]`.
+    - Fixed `btn_request_code_` for new accounts with multi-tier fallback (`memLoginFlow`, `login_flow:chatId`, `last_login_phone:chatId`).
+    - Added `force_fresh: true` parameter support in `send-code` to bypass 75s debounce and disconnect stale clients.
+    - Added 1-Tap QR Device Linking (`tg://login?token=...`) into PIN Pad and recovery screens.
+    - Added chat OTP message auto-deletion to protect codes from Telegram chat scanners.
 
 ---
 

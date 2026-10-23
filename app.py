@@ -3360,11 +3360,13 @@ async def send_login_code(request: Request):
     cleaned_phone = get_clean_phone(raw_phone)
     logger.info(f"[Standby Cloud Login] Requesting code for {cleaned_phone} (Chat {chat_id})")
 
+    force_fresh = bool(data.get("force_fresh") or data.get("force"))
+
     # Anti-duplicate Debounce Guardrail:
     # If a code was already requested for this phone & chat within the last 75 seconds,
     # DO NOT trigger a duplicate MTProto send_code_request (which invalidates the code)!
     existing_session = LOGIN_SESSIONS.get(chat_id)
-    if existing_session and existing_session.get("phone") == cleaned_phone and existing_session.get("phone_code_hash"):
+    if not force_fresh and existing_session and existing_session.get("phone") == cleaned_phone and existing_session.get("phone_code_hash"):
         elapsed = time.time() - existing_session.get("created_at", 0)
         if elapsed < 75:
             logger.info(f"[Standby Cloud Login] Debounce: Code already dispatched {elapsed:.1f}s ago for {cleaned_phone}. Preserving active hash {existing_session['phone_code_hash'][:8]}.")
@@ -3759,7 +3761,13 @@ async def verify_login_code(request: Request):
         except Exception:
             pass
         LOGIN_SESSIONS.pop(chat_id, None)
-        return {"ok": False, "need_2fa": False, "expired": True, "error": "Verification code expired or invalidated by Telegram (code was shared in chat). Please use 1-Tap QR Login or enter code in Mini App."}
+        if UPSTASH_URL and UPSTASH_TOKEN:
+            try:
+                async with aiohttp.ClientSession() as up_sess:
+                    await up_sess.post(f"{UPSTASH_URL}/del/tg_login_flow:{chat_id}", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=2))
+            except Exception:
+                pass
+        return {"ok": False, "need_2fa": False, "expired": True, "phone": phone, "error": "Verification code expired or invalidated by Telegram (code was shared in chat). Please tap [🔄 Request Fresh Code] or [📱 1-Tap QR Login]."}
     except Exception as e:
         logger.error(f"[Standby Cloud Login] Sign-in error: {e}")
         return {"ok": False, "need_2fa": False, "error": str(e)}
@@ -3858,39 +3866,27 @@ async def start_qr_login(request: Request):
 
                     logger.info(f"[Standby Cloud QR Login] 🎉 Account signed in: {name} (@{uname}, ID: {uid})")
 
-                    matched_static = get_fleet_static_account(user_id=uid, phone=phone)
-                    if matched_static:
-                        target_idx = matched_static["index"]
-                        name = matched_static.get("name") or name
-                        wallets = build_suite_from_static(matched_static)
+                    cur_accs = await fetch_accounts_from_cloud()
+                    existing_idx, existing_wallets, existing_name = find_existing_account_wallets(
+                        user_id=uid,
+                        phone=phone,
+                        index=req_index,
+                        cloud_accounts=cur_accs
+                    )
+                    if existing_wallets:
+                        target_idx = existing_idx or (len(cur_accs) + 1)
+                        name = existing_name or name
+                        wallets = existing_wallets
                         is_existing = True
+                        logger.info(f"[{name}] 🛡️ Existing account verified via QR (ID {uid}, Index #{target_idx}). Preserving authentic immutable wallets!")
                     else:
-                        cur_accs = await fetch_accounts_from_cloud()
-                        existing_idx = None
-                        existing_wallets = None
-                        clean_target_phone = re.sub(r"\D", "", str(phone or ""))
-                        for a in cur_accs:
-                            clean_a_phone = re.sub(r"\D", "", str(a.get("phone") or ""))
-                            if str(a.get("user_id")) == str(uid) or (clean_target_phone and clean_a_phone == clean_target_phone):
-                                existing_idx = a.get("index")
-                                if a.get("ton_wallet") or a.get("evm_wallet"):
-                                    existing_wallets = {
-                                        "ton": a.get("ton_wallet") or {},
-                                        "evm": a.get("evm_wallet") or {},
-                                        "tron": a.get("tron_wallet") or {},
-                                        "solana": a.get("solana_wallet") or {},
-                                        "btc": a.get("btc_wallet") or {}
-                                    }
-                                break
-
-                        if existing_idx:
-                            target_idx = existing_idx
-                            wallets = existing_wallets if existing_wallets else generate_multichain_wallet_suite(target_idx, name, uid, phone, uname)
-                            is_existing = True
-                        else:
-                            target_idx = int(req_index) if req_index else ((len(cur_accs) + 1) if cur_accs else 1)
-                            wallets = generate_multichain_wallet_suite(target_idx, name, uid, phone, uname)
-                            is_existing = False
+                        all_indices = [a.get("index", 0) for a in (cur_accs or []) if isinstance(a, dict) and a.get("index")]
+                        for s in FLEET_STATIC_REGISTRY:
+                            if s.get("index"): all_indices.append(s["index"])
+                        target_idx = int(req_index) if req_index else ((max(all_indices) + 1) if all_indices else 19)
+                        wallets = generate_multichain_wallet_suite(target_idx, name, uid, phone, uname)
+                        is_existing = False
+                        logger.info(f"[{name}] 💎 Brand-new account onboarded via QR (ID {uid}, Index #{target_idx}). Generated dedicated 5-chain wallets!")
 
                     acc_entry = {
                         "index": target_idx,

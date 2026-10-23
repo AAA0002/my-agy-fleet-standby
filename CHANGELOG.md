@@ -2,6 +2,16 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Telegram Login Code Revocation Recovery, Fresh Code Dispatch & 1-Tap QR Fallback (October 23, 2026)**:
+  - **Telegram Code Revocation & Expiration Flow Hardening**:
+    * **Root Cause Diagnosis**: Identified why `Verification code expired or invalidated by Telegram` occurred. Telegram's automated anti-phishing scanners instantly revoke 5-digit authorization codes if typed or shared in any Telegram chat. Additionally, codes expire after 120 seconds.
+    * **Eliminated Dead-End PIN Pad Trap**: Previously, when `PhoneCodeExpiredError` was returned, the UI presented the PIN Pad and asked the user to retry the same code, leading to repeated failure. Replaced this with an intelligent recovery screen offering `[ 🔄 Request Fresh Code ]` and `[ 📱 1-Tap QR Login (Zero Code) ]`.
+    * **New Account Fresh Code Request Fix (`btn_request_code_`)**: Resolved bug where `btn_request_code_` only checked existing accounts in `accounts.json`, leaving `phoneToRelink` empty for new accounts. Added fallback to `memLoginFlow.phone`, `login_flow:chatId`, and `last_login_phone:chatId`.
+    * **Force Fresh Code Server Bypass**: Added `force_fresh = True` support across `app.py`, `render_app_latest.py`, `render_standby_app.py`, and `deploy_both_cf_workers.py` to bypass the 75s debounce, disconnect stale MTProto sessions, and dispatch a fresh code immediately.
+    * **1-Tap Direct QR Device Linking**: Integrated direct QR device linking (`btn_qr_login_${idx}`) into the PIN Pad keyboard and failure screens, allowing instant login via native Telegram device authorization with zero SMS or codes.
+    * **Chat Code Protection**: Added auto-deletion (`deleteMessage`) if 5-digit OTP codes are sent in chat to minimize Telegram code revoking.
+    * **Deployed**: Live to Node 4 (`https://restore-agy.agorameet.workers.dev`).
+
 - **🛡️ Codebase-Wide Static Symbol Analysis, Zero-Defect Bug Elimination & Persistent Memory Sync (October 23, 2026)**:
   - **Codebase-Wide Symbol Audit via Python `symtable` (73 Files Scanned)**:
     * Executed deep lexical scope and AST analysis across all 73 python files in the workspace.
