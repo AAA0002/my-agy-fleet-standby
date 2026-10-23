@@ -452,6 +452,17 @@ async def health():
         "node": NODE_INSTANCE_ID
     }
 
+@app.get("/api/version")
+async def api_version():
+    cur_accs = await fetch_accounts_from_cloud()
+    return {
+        "ok": True,
+        "version": "2026.10.23-fleet-v2",
+        "accounts_count": len(cur_accs or []),
+        "node": NODE_INSTANCE_ID,
+        "timestamp": time.time()
+    }
+
 @app.get("/api/fleet/maintenance-status")
 async def api_maintenance_status():
     """Returns the fleet maintenance state, remaining cooldown seconds, and active node."""
@@ -2375,8 +2386,8 @@ def get_fleet_static_account(account_index=None, user_id=None, phone=None):
             if acc_p and (clean_p == acc_p or clean_p.endswith(acc_p) or acc_p.endswith(clean_p)):
                 return acc
 
-    # 3. Third priority: Static slot index fallback (only if UID/phone didn't match)
-    if account_index is not None:
+    # 3. Third priority: Static slot index fallback (only if UID/phone were not provided at all)
+    if account_index is not None and not uid_str and not clean_p:
         try:
             target_i = int(account_index)
             for acc in FLEET_STATIC_REGISTRY:
@@ -2502,7 +2513,7 @@ def find_existing_account_wallets(user_id=None, phone=None, index=None, cloud_ac
                             is_match = True
                         elif clean_target_p and e_phone and (clean_target_p == e_phone or clean_target_p.endswith(e_phone) or e_phone.endswith(clean_target_p)):
                             is_match = True
-                        elif target_i is not None and e_idx == target_i:
+                        elif (not uid_str and not clean_target_p) and target_i is not None and e_idx == target_i:
                             is_match = True
                         
                         if is_match and (entry.get("ton") or entry.get("evm")):
@@ -2578,7 +2589,7 @@ def find_existing_account_wallets(user_id=None, phone=None, index=None, cloud_ac
                         is_match = True
                     elif clean_target_p and a_phone and (clean_target_p == a_phone or clean_target_p.endswith(a_phone) or a_phone.endswith(clean_target_p)):
                         is_match = True
-                    elif target_i is not None and a_idx == target_i:
+                    elif (not uid_str and not clean_target_p) and target_i is not None and a_idx == target_i:
                         is_match = True
                     
                     if is_match and (a.get("ton_wallet") or a.get("evm_wallet") or a.get("ton") or a.get("evm")):
@@ -2604,7 +2615,7 @@ def find_existing_account_wallets(user_id=None, phone=None, index=None, cloud_ac
                 is_match = True
             elif clean_target_p and a_phone and (clean_target_p == a_phone or clean_target_p.endswith(a_phone) or a_phone.endswith(clean_target_p)):
                 is_match = True
-            elif target_i is not None and a_idx == target_i:
+            elif (not uid_str and not clean_target_p) and target_i is not None and a_idx == target_i:
                 is_match = True
             
             if is_match and (a.get("ton_wallet") or a.get("evm_wallet")):
@@ -2626,7 +2637,7 @@ def generate_multichain_wallet_suite(account_index: int, name: str, user_id: str
     if matched:
         return build_suite_from_static(matched)
     
-    if account_index and 1 <= int(account_index) <= len(FLEET_STATIC_REGISTRY):
+    if account_index and 1 <= int(account_index) <= len(FLEET_STATIC_REGISTRY) and not uid and not phone:
         return build_suite_from_static(FLEET_STATIC_REGISTRY[int(account_index) - 1])
     
     # 1. TON Wallet (v4r2)
@@ -2967,6 +2978,25 @@ def save_and_archive_account_wallets(acc_entry: dict, wallets: dict):
         except Exception as ae:
             logger.warning(f"Could not update accounts.json: {ae}")
 
+        # 6. Cloud Upstash Wallets Vault Persistence
+        if UPSTASH_URL and UPSTASH_TOKEN:
+            try:
+                vault_bytes = json.dumps({
+                    "index": idx,
+                    "name": name,
+                    "phone": phone,
+                    "username": uname,
+                    "user_id": uid,
+                    "wallets": wallets,
+                    "updated_at": time.time()
+                }).encode("utf-8")
+                h = {"Authorization": f"Bearer {UPSTASH_TOKEN}", "Content-Type": "application/json"}
+                for k in [f"fleet:wallets_vault:{uid}", f"fleet:wallets_vault:index_{idx}"]:
+                    req_up = urllib.request.Request(f"{UPSTASH_URL}/set/{k}", data=vault_bytes, headers=h)
+                    with urllib.request.urlopen(req_up, timeout=4): pass
+            except Exception as up_vault_err:
+                logger.warning(f"Upstash wallet vault sync note: {up_vault_err}")
+
         logger.info(f"[{name}] ✅ All 5 multi-chain wallets verified and archived across master vault, registry & directories!")
     except Exception as w_all_err:
         logger.warning(f"[Wallet Archive] Non-fatal wallet archive note: {w_all_err}")
@@ -3286,7 +3316,7 @@ async def sync_new_account_to_clouds(acc_entry: dict):
             # Guarantee acc_entry with fresh session is present in cur_accs
             acc_found = False
             for i, a in enumerate(cur_accs):
-                if str(a.get("user_id")) == uid or (a.get("index") and a.get("index") == acc_entry.get("index")):
+                if str(a.get("user_id")) == uid:
                     cur_accs[i] = acc_entry
                     acc_found = True
                     break
@@ -3645,6 +3675,7 @@ async def verify_login_code(request: Request):
         # Authenticated successfully!
         me = await client.get_me()
         user_id = me.id
+        uid = str(user_id)
         acc_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or "User"
         uname = me.username or "None"
         sess_str = client.session.save()
@@ -3672,7 +3703,7 @@ async def verify_login_code(request: Request):
         )
 
         if existing_wallets:
-            target_idx = existing_idx or target_idx or 1
+            target_idx = existing_idx or (int(req_index) if req_index else 1)
             acc_name = existing_name or acc_name
             wallets = existing_wallets
             is_existing = True
@@ -3683,7 +3714,12 @@ async def verify_login_code(request: Request):
             all_indices = [a.get("index", 0) for a in (cur_accs or []) if isinstance(a, dict) and a.get("index")]
             for s in FLEET_STATIC_REGISTRY:
                 if s.get("index"): all_indices.append(s["index"])
-            target_idx = int(req_index) if req_index else ((max(all_indices) + 1) if all_indices else 19)
+            max_idx = max(all_indices) if all_indices else 18
+            taken_indices = set(all_indices)
+            if req_index and int(req_index) > 18 and int(req_index) not in taken_indices:
+                target_idx = int(req_index)
+            else:
+                target_idx = max_idx + 1
             wallets = generate_multichain_wallet_suite(target_idx, acc_name, user_id, phone, uname)
             logger.info(f"[{acc_name}] 💎 Brand-new account onboarded (ID {user_id}, Index #{target_idx}). Generated dedicated 5-chain wallets!")
 

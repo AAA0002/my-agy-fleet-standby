@@ -28,6 +28,7 @@
 | 16 | Roger Волков | `+8801304151082` | `7954290138` | `UQANs0...0gYH` | `0xDCd7...87B9` | `TW6uuS...d2ye` | `Df5QF3...n9tM` | `1F7X1s...zTdb` |
 | 17 | Kevin Смирнов | `+8801879273559` | `8841038141` | `UQCDql...dY5j` | `0xFb54...F940` | `TYt7cY...yQhY` | `F17bSU...bZGy` | `15XPTJ...9BEj` |
 | 18 | Mary Каримов | `+8801839716506` | `8975442879` | `UQBcHz...49fL` | `0x349C...d241` | `TEmP9r...xGMb` | `9TKyt8...ak3P` | `18mgSU...w4AK` |
+| 19 | **Adil H** | `+8801804723069` | `8937908003` | `UQCrEZ...w8D` | `0xb20c...63bb` | `Tb20c6...c2c` | `652870...09f7` | `1b20c6...c2c` |
 
 ---
 
@@ -250,3 +251,14 @@
 - **Bitcoin Wallet (BTC):** `18mgSUQZk2HhK2PwQvuF9fMLeCRnnUw4AK`
 - **Custody:** `Isolated Dedicated Worker Key (Preserved in Vault)`
 
+### 19. Adil H (Worker)
+- **Phone Number:** `+8801804723069`
+- **Telegram ID:** `8937908003`
+- **Telegram Username:** `@AdilHassain`
+- **Account Status:** `active`
+- **TON Wallet (v4r2):** `UQCrEZrIMqFq3C-a0h6WK72VWbKkXbvtEVZBRhc5SKINAw8D`
+- **EVM Wallet (BSC / Arb):** `0xb20c6e7f11191edabdd6ecc0036850c2c2df63bb`
+- **TRON Wallet (TRC-20):** `Tb20c6e7f11191edabdd6ecc0036850c2c`
+- **Solana Wallet (SOL):** `652870246489ceb6920eb6092df2139aaf3f3ac609f7`
+- **Bitcoin Wallet (BTC):** `1b20c6e7f11191edabdd6ecc0036850c2c`
+- **Custody:** `Self-Custody (Gram Wallet / Tonkeeper)`

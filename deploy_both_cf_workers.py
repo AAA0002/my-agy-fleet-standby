@@ -5023,16 +5023,39 @@ fi
             } catch (_) {}
           }
 
-          // 3. Static Default Accounts fallback & full 18-node merge
-          const accMap = new Map();
+          // 3. Static Default Accounts fallback & full dynamic multi-account merge
+          const uidMap = new Map();
+          const phoneMap = new Map();
           (accounts || []).forEach(a => {
-            if (a.user_id) accMap.set(String(a.user_id), a);
-            if (a.index) accMap.set(String(a.index), a);
+            if (a.user_id) uidMap.set(String(a.user_id).trim(), a);
+            const p = String(a.phone || "").replace(/\D/g, "");
+            if (p) phoneMap.set(p, a);
           });
-          accounts = DEFAULT_FLEET_ACCOUNTS.map(m => {
-            const ex = accMap.get(String(m.user_id)) || accMap.get(String(m.index));
+
+          // Merge static 18 accounts strictly by user_id or phone (never let index overwrite static nodes)
+          const mergedAccounts = DEFAULT_FLEET_ACCOUNTS.map(m => {
+            const mUid = String(m.user_id).trim();
+            const mPhone = String(m.phone || "").replace(/\D/g, "");
+            const ex = uidMap.get(mUid) || (mPhone ? phoneMap.get(mPhone) : null);
             return ex ? { ...m, ...ex, index: m.index } : Object.assign({}, m);
           });
+
+          // Append any dynamic/onboarded accounts beyond static 18 (e.g. Account #19, #20, etc.)
+          const staticUids = new Set(DEFAULT_FLEET_ACCOUNTS.map(m => String(m.user_id).trim()));
+          const staticPhones = new Set(DEFAULT_FLEET_ACCOUNTS.map(m => String(m.phone || "").replace(/\D/g, "")));
+          const seenDynamicUids = new Set();
+
+          (accounts || []).forEach(a => {
+            const aUid = String(a.user_id || "").trim();
+            const aPhone = String(a.phone || "").replace(/\D/g, "");
+            if (!aUid && !aPhone) return;
+            if (staticUids.has(aUid) || (aPhone && staticPhones.has(aPhone))) return;
+            if (seenDynamicUids.has(aUid)) return;
+            seenDynamicUids.add(aUid);
+            mergedAccounts.push(Object.assign({}, a));
+          });
+
+          accounts = mergedAccounts;
 
           // 4. Load Blacklist of Deleted Accounts with Multi-Layer Failback
           let deletedSet = new Set();
@@ -5221,7 +5244,11 @@ fi
               }
 
               let currentDigits = String(flowData.pinDigits || "");
-              const targetIdx = Number(flowData.index) || 1;
+              let targetIdx = Number(flowData.index);
+              if (!targetIdx || isNaN(targetIdx)) {
+                const curAccs = await getFleetAccounts();
+                targetIdx = curAccs.length + 1;
+              }
               const phoneToRelink = flowData.phone || (KNOWN_PHONES_BY_INDEX[targetIdx] || "");
 
               if (cbData.startsWith("pin_digit_")) {
@@ -7811,7 +7838,11 @@ fi
               try { phone = await upstashGet("last_login_phone:" + chatId) || ""; } catch (_) {}
             }
             const cleanCode = digitsStrict || cleanDigitsOnly;
-            const targetRelinkIdx = (loginFlowState && loginFlowState.index) ? Number(loginFlowState.index) : null;
+            let targetRelinkIdx = (loginFlowState && loginFlowState.index) ? Number(loginFlowState.index) : null;
+            if (!targetRelinkIdx || isNaN(targetRelinkIdx)) {
+              const curAccs = await getFleetAccounts();
+              targetRelinkIdx = curAccs.length + 1;
+            }
             const res = await cloudLoginVerify(chatId, { code: cleanCode, phone, node_url, index: targetRelinkIdx });
             if (res && res.need_2fa) {
               let authed2fa = false;
@@ -7873,7 +7904,7 @@ fi
             } else {
               const errDetail = res ? (res.error || res.message) : "Verification code rejected";
               const isSharedOrExpired = String(errDetail).toLowerCase().includes("expired") || String(errDetail).toLowerCase().includes("share") || (res && res.expired);
-              const targetIdx = targetRelinkIdx || 1;
+              const targetIdx = targetRelinkIdx;
               if (isSharedOrExpired) {
                 const failRep = `⚠️ *Telegram Verification Code Expired or Revoked*\n\n` +
                   `• *Target Phone:* \`${phone}\`\n\n` +
@@ -7919,7 +7950,11 @@ fi
             await sendChatAction(chatId, "typing");
             const phone = loginFlowState ? (loginFlowState.phone || "") : "";
             const node_url = loginFlowState ? (loginFlowState.node_url || "") : "";
-            const targetRelinkIdx = (loginFlowState && loginFlowState.index) ? Number(loginFlowState.index) : null;
+            let targetRelinkIdx = (loginFlowState && loginFlowState.index) ? Number(loginFlowState.index) : null;
+            if (!targetRelinkIdx || isNaN(targetRelinkIdx)) {
+              const curAccs = await getFleetAccounts();
+              targetRelinkIdx = curAccs.length + 1;
+            }
             const res = await cloudLoginVerify(chatId, { password: trimmed, phone, node_url, index: targetRelinkIdx, is_user_bot: false });
             if (res && res.ok) {
               memLoginFlow.delete(String(chatId));
@@ -8012,22 +8047,26 @@ fi
                     break;
                   }
                 }
-                const flowState = { step: "waiting_code", phone: normalized, node_url: res.node_url || "", index: matchedIdx };
+                let targetSlot = matchedIdx;
+                if (!targetSlot) {
+                  const curAccs = await getFleetAccounts();
+                  targetSlot = curAccs.length + 1;
+                }
+                const flowState = { step: "waiting_code", phone: normalized, node_url: res.node_url || "", index: targetSlot, pinDigits: "" };
                 memLoginFlow.set(String(chatId), flowState);
                 ctx.waitUntil(upstashSet("login_flow:" + chatId, flowState));
                 ctx.waitUntil(upstashSet("last_login_phone:" + chatId, normalized));
                 if (env.BACKUP_KV) {
                   ctx.waitUntil(env.BACKUP_KV.put("login_flow:" + chatId, JSON.stringify(flowState), { expirationTtl: 600 }).catch(() => {}));
                 }
-                const matchedRelink = matchedIdx || 1;
-                const msg = `📨 *Verification Code Sent!*\n\n` +
+                const msg = `📨 *Verification Code Sent for Account #${targetSlot}!*\n\n` +
                   `Telegram sent a 5-digit verification code to \`${normalized}\`.\n\n` +
                   `⌨️ *TAP DIGITS ON PIN PAD KEYPAD BELOW:*\n` +
                   `• Do NOT type code as a chat message — tap the buttons below!\n` +
                   `• 100% immune to Telegram anti-phishing blocks.\n` +
                   `• Auto-applies 2FA password (\`Arif216@\`) upon 5th digit.\n\n` +
                   `🔑 *Code:* \`[  •  •  •  •  •  ]\``;
-                await sendResilientMessage(chatId, msg, buildPinPadKeyboard("", matchedRelink), "Markdown");
+                await sendResilientMessage(chatId, msg, buildPinPadKeyboard("", targetSlot), "Markdown");
               } else {
                 const errDetail = res ? (res.error || res.message) : "Failed to connect to Telegram MTProto Gateway";
                 const errMsg = `❌ *Could Not Request Code*\n\n` +
@@ -8621,8 +8660,26 @@ fi
             const accParts = text.trim().split(/\s+/);
             const targetIdx = (accParts.length >= 2 && /^\d+$/.test(accParts[1])) ? parseInt(accParts[1], 10) : null;
 
-            if (targetIdx && targetIdx >= 1 && Array.isArray(STATIC_FLEET_WALLETS) && targetIdx <= STATIC_FLEET_WALLETS.length) {
-              const w = STATIC_FLEET_WALLETS[targetIdx - 1];
+            if (targetIdx && targetIdx >= 1) {
+              const accounts = await getFleetAccounts();
+              if (targetIdx <= accounts.length) {
+                let w = (Array.isArray(STATIC_FLEET_WALLETS) && targetIdx <= STATIC_FLEET_WALLETS.length) ? STATIC_FLEET_WALLETS[targetIdx - 1] : null;
+                const acc = accounts[targetIdx - 1] || accounts.find(a => a.index === targetIdx) || {};
+                if (!w) {
+                  w = {
+                    index: targetIdx,
+                    name: acc.name || `Node ${targetIdx}`,
+                    phone: acc.phone || "",
+                    user_id: acc.user_id || "",
+                    ton: (acc.ton_wallet && acc.ton_wallet.address) || acc.ton || "",
+                    ton_mnemonic: (acc.ton_wallet && acc.ton_wallet.mnemonic) || acc.ton_mnemonic || "",
+                    evm: (acc.evm_wallet && acc.evm_wallet.address) || acc.evm || "",
+                    evm_key: (acc.evm_wallet && acc.evm_wallet.private_key) || acc.evm_key || "",
+                    tron: (acc.tron_wallet && acc.tron_wallet.address) || acc.tron || "",
+                    sol: (acc.solana_wallet && acc.solana_wallet.address) || acc.sol || "",
+                    btc: (acc.btc_wallet && acc.btc_wallet.address) || acc.btc || ""
+                  };
+                }
               let msg = "";
               if (targetIdx === 1) {
                 msg = `👑 *Account #1: Arif Hossain (Master Host)*\n` +
@@ -8662,8 +8719,9 @@ fi
                   `🔐 *TON 24-Word Seed Phrase (1-Tap Copy):*\n<pre>${w.ton_mnemonic || "Archived in Vault"}</pre>\n\n` +
                   `💾 _Archive: FLEET_WALLETS_SECRETS_MASTER_VAULT.txt_`;
               }
-              await sendReply(msg, statusInlineKeyboard);
-              return;
+                await sendReply(msg, statusInlineKeyboard);
+                return;
+              }
             }
 
             let liveBnb = 0.000812;
