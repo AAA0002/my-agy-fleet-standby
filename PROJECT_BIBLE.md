@@ -68,9 +68,15 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
      * **Executive Fleet Operations Console (`admin.html` at `/admin`)**: Dedicated strictly to **Admin Bot (`@myagyai`) & Fleet Operators**. Displays real-time status of the 20 MTProto fleet accounts, 9 farming pools, multi-cloud nodes (Render Standby Node 2, Cloudflare Edge Mesh), Redis key inspect/flush, and automated disaster recovery triggers. Does NOT manage public end-users, ad impressions, or public community points.
      * **User Bot Admin Console (`user-admin.html` at `/user-admin`)**: Dedicated strictly to **User Bot (`@AAAPREMIUMAPPSbot`) Community Management**. Displays end-user community miners (`community_miners`), user points economy, daily check-in streaks, rewarded video ad impression metrics (`ad_impressions_log`), user account bindings, and Stars VIP subscriptions. Does NOT expose private fleet MTProto sessions, private keys, wallet seeds, or executive fleet controls.
    - **State & Database Isolation**:
-     * Namespace separation in Upstash Redis and Supabase: `fleet:*` strictly for Admin Bot and fleet operations; `user:*`, `points:*`, `community_miners`, and `ad_impressions_log` strictly for User Bot.
-
-
+     * Namespace separation in Upstash Redis, Supabase, and Turso LibSQL: `fleet:*` and `accounts.json` strictly for Admin Bot and 20 fleet accounts; `ub_*`, `user:*`, `points:*`, and Turso LibSQL tables `user_accounts` & `user_wallets` strictly for User Bot.
+11. **📱 Authentic User Account Onboarding (QR Login & Phone SMS OTP)**:
+    - **Removal of Fake 1-Tap Numeric ID Linking**: Third-party Telegram mini apps (MRG, ATF, Victor's, Vyro, Kynex, Diggo, Astra, Pepe, Adx) require cryptographic HMAC-SHA256 signatures (`initData`) or MTProto session strings. Bare numeric Telegram IDs cannot sign transactions and fail with `401 Unauthorized`.
+    - **Cloud MTProto Onboarding**: User Bot (`@AAAPREMIUMAPPSbot`) and Mini App (`/miner`) provide authentic QR Login (`tg://login?token=...` via Render Node 2 `/api/account/login/qr-start` with `is_user_bot: true`) and Phone SMS OTP login (`/api/account/login/send-code` & `/verify-code`). Sessions are stored isolated in Turso LibSQL table `user_accounts` and Upstash `ub_user:<uid>:accounts`.
+12. **💎 Dedicated User Wallets & Custom Payout Routing (Turso LibSQL)**:
+    - **5-Chain Non-Custodial Suite**: Every new User Bot user is automatically provisioned a dedicated 5-chain non-custodial wallet suite (TON v4r2, EVM BSC/Arb, TRON, Solana, Bitcoin) saved in Turso LibSQL table `user_wallets`.
+    - **Private Key Ownership & User Retrieval**: Users can view their public addresses, non-custodial recovery mnemonic, and private keys anytime by sending `/wallets`, `/wallet`, or `/keys` in the User Bot, or via the Mini App Vault modal.
+    - **Custom Personal Wallet Binding**: Users can disconnect the default bot wallet and bind their personal TON (UQ/EQ) or EVM (0x) wallet (e.g. Tonkeeper, MetaMask, Trust Wallet) via `/customwallet` or Mini App for direct automated payout routing.
+    - **Zero Contamination**: User accounts and wallets are 100% isolated in Turso LibSQL and Upstash Redis `ub_*` namespace and are never merged into `accounts.json` or `fleet:accounts`.
 
 ---
 

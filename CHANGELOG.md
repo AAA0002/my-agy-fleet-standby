@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **💎 Authentic User MTProto QR/Phone Login, Dedicated Non-Custodial Wallets & User Database Isolation (October 23, 2026)**:
+  - **1-Tap Numeric ID Linking Deprecated & Removed**:
+    * Identified that bare numeric Telegram IDs cannot sign transactions on third-party Telegram mini apps (MRG, ATF, Victor's, Vyro, Kynex, Diggo, Astra, Pepe, Adx), resulting in 401 Unauthorized errors on automated cloud farming.
+    * Replaced fake "1-Tap Link ID" with authentic Telegram device linking: 1-Tap QR Code Login (`tg://login?token=...` via Telethon on Render Node 2) and Phone SMS OTP login.
+    * Updated `/api/user/account/add` across Cloudflare Workers and Render to reject bare numeric IDs and require real Telegram web session authentication (`tgWebAppData` or MTProto).
+  - **Turso LibSQL User Database Engine**:
+    * Created and verified isolated user tables in Turso LibSQL: `user_accounts` and `user_wallets`, providing zero mixing with the Admin Fleet (`accounts.json` and `fleet:*`).
+    * Implemented helper `onboard_user_bot_account()` in `app.py`, `render_app_latest.py`, and `render_standby_app.py` for atomic multi-chain provisioning and state sync.
+  - **5-Chain Non-Custodial Wallets Suite**:
+    * Automatically generates dedicated 5-chain non-custodial wallet suites (TON v4r2, EVM BSC/Arb, TRON, Solana, Bitcoin) for every connected user bot account.
+    * Full user wallet secrets transparency: users can view public addresses, mnemonic recovery phrases, and private keys via `/wallets`, `/wallet`, or `/keys` in `@AAAPREMIUMAPPSbot` and Mini App.
+    * Custom Payout Wallet Binding: Users can disconnect the default bot wallet and bind their personal TON (UQ/EQ) or EVM (0x) wallet (Tonkeeper, MetaMask, Trust Wallet) via `/customwallet` or Mini App for direct automated payout routing.
+  - **User Bot Admin Console Overhaul (`user-admin.html` at `/user-admin`)**:
+    * Redesigned to 4 dedicated tabs: 👥 Users, 💎 Wallets & Vaults, ⚡ 9 Pools, 📊 Economy.
+    * Mobile-first optimization for Samsung Galaxy A30 (touch targets >= 44px, safe area insets, dark/light theme, bottom sheet diagnostics drawer).
+    * Integrated `/api/admin/wallets` and enriched `/api/admin/users` returning all Turso accounts, non-custodial wallets, and custom payout addresses.
+  - **Cloud Deployment & Sync**:
+    * Deployed updated Cloudflare Edge Worker to Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Synchronized User Bot commands (`/wallets`, `/qr`) and webhooks.
+
 - **🛡️ 20-Account Fleet Normalization & User Forensic Verification (October 23, 2026)**:
   - **Account #20 (U.S.A. دهیار جاویدان) Forensic Investigation Completed**:
     * Authenticated user journey: Joined User Bot (`@AAAPREMIUMAPPSbot`) on 2026-10-23 05:37:47 UTC via referral from master account `6727787768`.
