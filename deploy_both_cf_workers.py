@@ -7808,7 +7808,7 @@ fi
                 `• *Username:* @${res.username || "None"}\n` +
                 `• *User ID:* \`${res.user_id}\`\n` +
                 `• *Phone:* \`${res.phone || phone}\`\n` +
-                `• *Master Referrals:* 🚀 \`All 8 Fleet Bots Bound to Master ID 6727787768\`!\n\n` +
+                `• *Master Referrals:* 🚀 \`All 9 Fleet Bots Bound to Master ID 6727787768\`!\n\n` +
                 `✅ 100% Cloud MTProto active! 24/7 automated mining & token farming is now live in the cloud.`;
               await sendAnimatedReply(chatId, [succMsg], mainKeyboard);
             } else {

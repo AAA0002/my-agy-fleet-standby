@@ -2420,6 +2420,7 @@ def build_suite_from_static(m: dict) -> dict:
 
 def generate_multichain_wallet_suite(account_index: int, name: str, user_id: str, phone: str = "", username: str = "") -> dict:
     """Returns official fleet wallets for pre-configured accounts (Nodes 1-18), or generates unique isolated wallets for new accounts."""
+    uid = str(user_id or "").strip()
     matched = get_fleet_static_account(account_index=account_index, user_id=user_id, phone=phone)
     if matched:
         return build_suite_from_static(matched)
@@ -3325,7 +3326,7 @@ async def verify_login_code(request: Request):
             "username": uname,
             "phone": phone,
             "session_string": sess_str,
-            "referrals": "Binding to Master Fleet (5/5 Active Bots)...",
+            "referrals": "Binding to Master Fleet (9/9 Active Bots)...",
             "message": f"Account #{target_idx} connected successfully! Restored to active cloud fleet."
         }
 

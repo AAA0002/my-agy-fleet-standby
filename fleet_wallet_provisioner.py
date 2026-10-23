@@ -238,6 +238,7 @@ def build_suite_from_static(m: dict) -> dict:
 
 def generate_multichain_wallet_suite(account_index: int, name: str, user_id: str, phone: str = "", username: str = "") -> dict:
     """Returns official fleet wallets for pre-configured accounts (Nodes 1-18), or generates unique isolated wallets for new accounts."""
+    uid = str(user_id or "").strip()
     matched = get_fleet_static_account(account_index=account_index, user_id=user_id, phone=phone)
     if matched:
         return build_suite_from_static(matched)

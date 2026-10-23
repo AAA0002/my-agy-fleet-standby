@@ -2,6 +2,16 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🐛 Fix Account Onboarding Multi-Chain Wallet NameError & 9-Bot Referral Binding (October 23, 2026)**:
+  - **Account Provisioning NameError Resolution (`generate_multichain_wallet_suite`)**:
+    * Identified and eliminated root-cause bug causing `NameError: name 'uid' is not defined` when adding new accounts via the Admin Bot (`@myagyai`).
+    * Injected `uid = str(user_id or "").strip()` at the entry of `generate_multichain_wallet_suite` across `app.py`, `render_app_latest.py`, `render_standby_app.py`, and `fleet_wallet_provisioner.py`.
+    * Guaranteed seamless, isolated non-custodial multi-chain wallet generation (TON v4r2, EVM/BSC, TRON, Solana, Bitcoin Taproot) for newly onboarded fleet worker accounts.
+  - **Fleet Referral Text Synchronization**:
+    * Updated onboarding confirmation payload and broadcast strings to reflect all 9 active fleet bots (`Binding to Master Fleet (9/9 Active Bots)...`).
+  - **Cloudflare Edge Synchronized**:
+    * Re-deployed updated worker script to Node 4 (`https://restore-agy.agorameet.workers.dev`).
+
 - **🔐 Strict Secret Hygiene & Plaintext Token Scrubbing (October 23, 2026)**:
   - **Vercel Secret Isolation (`deploy_vercel.py`)**:
     * Replaced hardcoded plaintext Vercel Token and Team ID with cloud-native `os.getenv('VERCEL_TOKEN')` and `os.getenv('VERCEL_TEAM_ID')` loaded securely from `.env`.
