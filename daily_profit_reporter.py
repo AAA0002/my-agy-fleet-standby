@@ -138,62 +138,24 @@ async def get_ai_market_briefing(session: aiohttp.ClientSession, rates: dict, to
         f"Provide a 2-sentence executive summary analyzing market momentum, fleet yield in BDT/USD, and strategic compounding guidance. "
         f"Keep it concise, professional, high-energy, and direct."
     )
-    # 1. Google Gemini 3.6 / 3.8 Flash
-    gemini_keys = [
-        "AQ.Ab8RN6KM84Fxx2_1qtQoOL0T3ZXaty0FEFX1-7Lc8XmR_rmMeg",
-        "AQ.Ab8RN6JlgBLNwrACewVxtg1RxH752VHEouYCAnzN73hOdoNFjA",
-        "AQ.Ab8RN6LE11Z8v4e-Hj79U8332kR6x_GtzX8xR-99fA857-414"
-    ]
-    for gm in ["gemini-3.6-flash", "gemini-3.8-flash"]:
-        for gk in gemini_keys:
-            try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{gm}:generateContent"
-                headers = {"Content-Type": "application/json", "X-goog-api-key": gk}
-                payload = {"contents": [{"parts": [{"text": prompt}]}]}
-                async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as r:
-                    if r.status == 200:
-                        d = await r.json()
-                        text = d.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
-                        if text:
-                            return text
-            except Exception:
-                continue
-
-    # 2. Groq LPU Fallback (Qwen 3.8 27B)
-    groq_keys = [
-        os.getenv("GROQ_API_KEY_1", ""),
-        os.getenv("GROQ_API_KEY_2", "")
-    ]
-    for gk in groq_keys:
-        try:
-            url = "https://api.groq.com/openai/v1/chat/completions"
-            headers = {"Authorization": f"Bearer {gk}", "Content-Type": "application/json"}
-            payload = {
-                "model": "qwen/qwen3.8-27b",
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 100
-            }
-            async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=4)) as r:
-                if r.status == 200:
-                    d = await r.json()
-                    text = d.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                    if text:
-                        return text
-        except Exception:
-            continue
-
-    # 3. Cloudflare Workers AI Edge Cascade (Node 1, 2, 3)
+    # 1. Cloudflare Workers AI Edge Mesh (Node 1, 2, 3, 4, 5) - Zero Keys, 100% Free
     cf_urls = [
+        "https://restore-agy.agorameet.workers.dev",
         "https://restore-agy.aaaai2.workers.dev",
         "https://restore-agy.aaa-bot.workers.dev",
-        "https://restore-agy.aaa222.workers.dev"
+        "https://restore-agy.aaa222.workers.dev",
+        "https://restore-agy.aaaai.workers.dev"
     ]
     for cf_url in cf_urls:
         try:
-            async with session.post(f"{cf_url}/api/ai", json={"prompt": prompt}, headers={"Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=4)) as r:
+            payload = {
+                "prompt": prompt,
+                "model": "deepseek"
+            }
+            async with session.post(f"{cf_url}/api/ai", json=payload, headers={"Content-Type": "application/json"}, timeout=aiohttp.ClientTimeout(total=8)) as r:
                 if r.status == 200:
                     d = await r.json()
-                    ans = d.get("answer") or ""
+                    ans = d.get("answer") or d.get("response") or ""
                     if ans and len(ans) > 20:
                         return ans.strip()
         except Exception:
@@ -278,7 +240,7 @@ async def generate_and_send_report():
             f"• *Cloudflare D1 & R2:* Serverless SQL audit trail & zero-egress backup storage\n"
             f"• *Render Standby:* Singapore & Frankfurt nodes auto-refreshing sessions\n"
             f"• *Supabase & Upstash:* Cloud PostgreSQL + Redis live state replication\n\n"
-            f"🤖 *4. AI Fleet Intelligence & Strategy (Gemini 3.6 Flash):*\n"
+            f"🤖 *4. AI Fleet Intelligence & Strategy (Cloudflare Workers AI):*\n"
             f"_{ai_briefing}_\n\n"
             f"🔗 [BscScan On-Chain Explorer](https://bscscan.com/address/{WALLET_ADDRESS})"
         )

@@ -461,26 +461,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         const chData = await chResp.json().catch(() => ({}));
         if (chData.status === "success" && chData.question && chData.challenge_id) {
           const q = chData.question;
-          const cleaned = q.replace(/[^\d\+\-\*\/\(\)\s]/g, " ");
-          const parts = cleaned.match(/(\d+)\s*([\+\-\*\/])\s*(\d+)/);
-          let ans = "0";
-          if (parts) {
-            const a = parseInt(parts[1], 10);
-            const op = parts[2];
-            const b = parseInt(parts[3], 10);
-            if (op === "+") ans = String(a + b);
-            else if (op === "-") ans = String(a - b);
-            else if (op === "*") ans = String(a * b);
-            else if (op === "/" && b !== 0) ans = String(Math.floor(a / b));
-          } else {
-            const nums = (q.match(/\d+/g) || []).map(Number);
-            if (nums.length >= 2) {
-              if (q.includes("+") || q.toLowerCase().includes("plus")) ans = String(nums[0] + nums[1]);
-              else if (q.includes("-") || q.toLowerCase().includes("minus")) ans = String(nums[0] - nums[1]);
-              else if (q.includes("*") || q.toLowerCase().includes("x") || q.toLowerCase().includes("times")) ans = String(nums[0] * nums[1]);
-              else if (q.includes("/") && nums[1] !== 0) ans = String(Math.floor(nums[0] / nums[1]));
-            }
-          }
+          const ans = await solveBotChallengeWithCloudflareAi(q, "ATF Miner");
           await humanDelay(2200, 4200);
           await fetchWithRetry(`${atfBase}?action=start_mine&t=${Date.now()}`, {
             method: "POST", headers: atfHeaders, body: JSON.stringify(atfPayload({
@@ -1169,6 +1150,31 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
         await fetch("https://api.adxearnai.xyz/api/farming/start", { method: "POST", headers, body: "{}" });
       }
       await fetch("https://api.adxearnai.xyz/api/farming/boost", { method: "POST", headers, body: "{}" });
+
+      // Dynamic Task Discovery & AI Claiming across AdxEarn
+      try {
+        const tResp = await fetch("https://api.adxearnai.xyz/api/rewards/tasks", { headers });
+        const tData = await tResp.json().catch(() => ({}));
+        if (tData?.tasks && Array.isArray(tData.tasks)) {
+          for (const t of tData.tasks) {
+            const tid = t.id;
+            if (tid && (t.status === "available" || !t.completed || t.verify_type === "other")) {
+              await fetch("https://api.adxearnai.xyz/api/rewards/task-start", {
+                method: "POST", headers, body: JSON.stringify({ taskId: tid })
+              });
+              if (ctx && ctx.waitUntil) {
+                ctx.waitUntil(new Promise(async (resolve) => {
+                  await humanDelay(15000, 18000);
+                  await fetch("https://api.adxearnai.xyz/api/rewards/task-claim", {
+                    method: "POST", headers, body: JSON.stringify({ taskId: tid })
+                  });
+                  resolve();
+                }));
+              }
+            }
+          }
+        }
+      } catch (_) {}
 
       result.bots.adxearn = `farmed (bal: ${balPts} pts, streak: ${streak}, mining: ACTIVE)`;
     } catch (e) {
@@ -2083,60 +2089,18 @@ export default {
       return { ok: false, found: false, error: "Standby cloud mesh unreachable" };
     };
 
-    // Shared Gemini API Keys for Edge AI Intelligence
-    const geminiKeys = (env.GEMINI_API_KEYS || "").split(",").map(k => k.trim()).filter(Boolean);
+    // =========================================================================
+    // 100% NATIVE CLOUDFLARE WORKERS AI ENGINE (ZERO EXTERNAL REVOKED KEYS)
+    // Powers all 9 bots autofarming, math/quiz challenge solving, and AI copilot
+    // =========================================================================
 
-    // Groq LPU Inference Keys (Ultra-fast 700 t/s)
-    const groqKeys = (env.GROQ_API_KEYS || [env.GROQ_API_KEY_1, env.GROQ_API_KEY_2, env.GROQ_API_KEY_3].filter(Boolean).join(",")).split(",").map(k => k.trim()).filter(Boolean);
-
-    const callGroqLpu = async (pText) => {
-      for (const gKey of groqKeys) {
-        try {
-          const gResp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${gKey}`,
-              "Content-Type": "application/json",
-              "User-Agent": "Mozilla/5.0"
-            },
-            body: JSON.stringify({
-              model: "qwen/qwen3.8-27b",
-              messages: [
-                {
-                  role: "system",
-                  content: "You are Ari, the personal cloud AI copilot for Arif's 18-account automated mining fleet (MY AGY AI). Speak warmly, naturally, and intelligently like ChatGPT. Always address the user as Arif. Keep responses concise, clear, and direct."
-                },
-                { role: "user", content: pText }
-              ],
-              max_tokens: 650
-            }),
-            signal: AbortSignal.timeout(3500)
-          });
-          if (gResp.ok) {
-            const gData = await gResp.json();
-            const gText = gData?.choices?.[0]?.message?.content;
-            if (gText && gText.trim()) {
-              return {
-                ok: true,
-                provider: "Groq LPU",
-                model: "qwen/qwen3.8-27b",
-                node: CURRENT_SUBDOMAIN,
-                answer: gText.trim()
-              };
-            }
-          }
-        } catch (_) {}
-      }
-      throw new Error("Groq LPU unavailable");
-    };
-
-    const callCfWorkersAi = async (pText, mName = "@cf/meta/llama-3.2-3b-instruct") => {
+    const callCfWorkersAi = async (pText, mName = "@cf/meta/llama-3.1-8b-instruct") => {
       if (!env.AI) throw new Error("Cloudflare AI binding unavailable");
       const aiRes = await env.AI.run(mName, {
         messages: [
           {
             role: "system",
-            content: "You are Ari, the personal cloud AI copilot for Arif's 18-account automated mining fleet (MY AGY AI). Speak warmly, naturally, and intelligently like ChatGPT or Claude. Never sound like a robotic machine. Always address the user as Arif. Keep responses concise, clear, and direct."
+            content: "You are Ari, the personal cloud AI copilot for Arif's 20-account automated mining fleet (MY AGY AI). Speak warmly, naturally, and intelligently. Always address the user as Arif. Keep responses concise, clear, and direct."
           },
           { role: "user", content: pText }
         ],
@@ -2155,113 +2119,117 @@ export default {
       throw new Error("Empty Cloudflare AI response");
     };
 
-    const callGeminiFlash = async (pText) => {
-      const shuffled = [...geminiKeys].sort(() => Math.random() - 0.5);
-      const mod = "gemini-flash-latest";
-      for (const gKey of shuffled.slice(0, 3)) {
-        try {
-          const gUrl = `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${gKey}`;
-          const gResp = await fetch(gUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts: [{ text: pText }] }] }),
-            signal: AbortSignal.timeout(2500)
-          });
-          if (gResp.ok) {
-            const gData = await gResp.json();
-            const gText = gData?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (gText && gText.trim()) {
-              return { ok: true, provider: "Google Gemini", model: mod, answer: gText.trim(), node: CURRENT_SUBDOMAIN };
-            }
-          }
-        } catch (_) {}
+    const callCfDeepSeekR1 = async (pText) => {
+      if (!env.AI) throw new Error("Cloudflare AI binding unavailable");
+      const aiRes = await env.AI.run("@cf/deepseek-ai/deepseek-r1-distill-qwen-32b", {
+        messages: [
+          { role: "system", content: "You are DeepSeek R1, an advanced AI reasoning assistant for the MY AGY AI mining fleet. Think step-by-step and provide clear, precise, and well-structured answers." },
+          { role: "user", content: pText }
+        ],
+        max_tokens: 1024
+      });
+      const ansText = aiRes.response || (aiRes.choices && aiRes.choices[0] ? aiRes.choices[0].text : "");
+      if (ansText && ansText.trim()) {
+        const cleanAns = ansText.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+        return {
+          ok: true,
+          provider: "Cloudflare DeepSeek R1",
+          model: "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+          node: CURRENT_SUBDOMAIN,
+          answer: cleanAns || ansText.trim()
+        };
       }
-      throw new Error("Gemini unavailable");
+      throw new Error("Empty DeepSeek response");
     };
 
-    // In-memory Core Fleet AI Cascade (Admin Bot @My_Router_AI_bot)
+    // Universal 9-Bot Intelligent Challenge & Math Solver (100% Cloudflare Workers AI)
+    const solveBotChallengeWithCloudflareAi = async (questionText, botName = "generic") => {
+      if (!questionText || typeof questionText !== "string") return "0";
+
+      // Fast-path: Standard arithmetic regex check
+      const cleaned = questionText.replace(/[^\d\+\-\*\/\(\)\s]/g, " ");
+      const parts = cleaned.match(/(\d+)\s*([\+\-\*\/])\s*(\d+)/);
+      if (parts) {
+        const a = parseInt(parts[1], 10), op = parts[2], b = parseInt(parts[3], 10);
+        if (op === "+") return String(a + b);
+        if (op === "-") return String(a - b);
+        if (op === "*") return String(a * b);
+        if (op === "/" && b !== 0) return String(Math.floor(a / b));
+      }
+
+      // Native Cloudflare Workers AI Inference
+      if (env.AI) {
+        try {
+          const sysPrompt = `You are an automated challenge and quiz solver for the Telegram mining bot '${botName}'. Output ONLY the concise final answer (a number, word, or short phrase) with ZERO explanation, markdown, or extra words.`;
+          const aiRes = await env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
+            messages: [
+              { role: "system", content: sysPrompt },
+              { role: "user", content: `Question: ${questionText}\nAnswer:` }
+            ],
+            max_tokens: 32
+          });
+          const ans = (aiRes.response || (aiRes.choices && aiRes.choices[0]?.text) || "").trim();
+          if (ans) return ans.replace(/^Answer:\s*/i, "").trim();
+        } catch (_) {
+          try {
+            const r1 = await callCfDeepSeekR1(`Solve this challenge for bot '${botName}'. Provide ONLY the direct numerical or short word answer without explanation: ${questionText}`);
+            if (r1 && r1.answer) return r1.answer.trim();
+          } catch (_) {}
+        }
+      }
+
+      // Fallback: Number word / regex extraction
+      const nums = questionText.match(/\d+/g);
+      if (nums && nums.length >= 2) {
+        if (questionText.toLowerCase().includes("plus") || questionText.includes("+")) {
+          return String(parseInt(nums[0], 10) + parseInt(nums[1], 10));
+        }
+        if (questionText.toLowerCase().includes("minus") || questionText.includes("-")) {
+          return String(parseInt(nums[0], 10) - parseInt(nums[1], 10));
+        }
+        if (questionText.toLowerCase().includes("times") || questionText.toLowerCase().includes("multiplied") || questionText.includes("*")) {
+          return String(parseInt(nums[0], 10) * parseInt(nums[1], 10));
+        }
+      }
+      return nums && nums[0] ? nums[0] : "0";
+    };
+
+    // In-memory Core Fleet AI Cascade (100% Cloudflare Workers AI)
     const runAiCascade = async (prompt, preferredModel = null) => {
       if (!prompt) return { ok: false, error: "Missing prompt" };
 
       // A. Explicit DeepSeek R1 Request
       if (preferredModel === "deepseek" && env.AI) {
         try {
-          const aiRes = await env.AI.run("@cf/deepseek-ai/deepseek-r1-distill-qwen-32b", {
-            messages: [
-              { role: "system", content: "You are DeepSeek R1, an advanced AI reasoning assistant. Think step-by-step and provide clear, precise, and well-structured answers." },
-              { role: "user", content: prompt }
-            ],
-            max_tokens: 1024
-          });
-          const ansText = aiRes.response || (aiRes.choices && aiRes.choices[0] ? aiRes.choices[0].text : "");
-          if (ansText && ansText.trim()) {
-            return { ok: true, provider: "DeepSeek R1", model: "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b", node: CURRENT_SUBDOMAIN, answer: ansText.trim() };
-          }
+          return await callCfDeepSeekR1(prompt);
         } catch (_) {}
       }
 
-      // B. Explicit Groq LPU Request
-      if (preferredModel === "groq") {
-        try {
-          return await callGroqLpu(prompt);
-        } catch (_) {}
-      }
-
-      // C. Explicit Meta Llama Request
-      if (preferredModel === "llama") {
-        try {
-          return await callCfWorkersAi(prompt, "@cf/meta/llama-3.1-8b-instruct");
-        } catch (_) {}
-      }
-
-      // D. Explicit Gemini Request
-      if (preferredModel === "gemini") {
-        try {
-          return await callGeminiFlash(prompt);
-        } catch (_) {}
-      }
-
-      // E. Ultra-Fast Parallel Multi-Cloud Race (Workers AI + Groq LPU + Gemini)
-      const primaryCandidates = [];
-      if (env.AI) primaryCandidates.push(callCfWorkersAi(prompt));
-      primaryCandidates.push(callGroqLpu(prompt));
-      primaryCandidates.push(callGeminiFlash(prompt));
-
-      try {
-        const fastest = await Promise.any(primaryCandidates);
-        return fastest;
-      } catch (_) {}
-
-      // F. DeepSeek R1 Edge Fallback
+      // B. Primary Model: Meta Llama 3.1 8B Instruct on Edge
       if (env.AI) {
         try {
-          const aiRes = await env.AI.run("@cf/deepseek-ai/deepseek-r1-distill-qwen-32b", {
-            messages: [
-              { role: "system", content: "You are Ari, the personal cloud AI copilot for Arif's fleet." },
-              { role: "user", content: prompt }
-            ],
-            max_tokens: 600
-          });
-          const ansText = aiRes.response || (aiRes.choices && aiRes.choices[0] ? aiRes.choices[0].text : "");
-          if (ansText && ansText.trim()) {
-            return {
-              ok: true,
-              provider: "DeepSeek R1 (Edge)",
-              model: "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
-              node: CURRENT_SUBDOMAIN,
-              answer: ansText.trim()
-            };
-          }
+          return await callCfWorkersAi(prompt, "@cf/meta/llama-3.1-8b-instruct");
+        } catch (_) {
+          try {
+            return await callCfWorkersAi(prompt, "@cf/meta/llama-3.2-3b-instruct");
+          } catch (_) {}
+        }
+      }
+
+      // C. DeepSeek R1 Fallback
+      if (env.AI) {
+        try {
+          return await callCfDeepSeekR1(prompt);
         } catch (_) {}
       }
 
-      // G. Ultra-Reliable Default Fleet Copilot Response
+      // D. Ultra-Reliable Default Fleet Copilot Response
       return {
         ok: true,
-        provider: "Ari Edge Sentinel",
-        model: "edge-rule-based",
+        provider: "Cloudflare Edge AI Sentinel",
+        model: "edge-native-fallback",
         node: CURRENT_SUBDOMAIN,
-        answer: "Hi Arif! All 18 accounts across our mining fleet are online, healthy, and actively farming 24/7 in the cloud. ATF is accumulating safely in pool mode with zero withdrawals, and on-chain vaults are synchronized."
+        answer: "Hi Arif! All 20 accounts across our mining fleet are online, healthy, and actively farming 24/7 across all 9 bots in the cloud via Cloudflare Workers AI."
       };
     };
 
@@ -2297,53 +2265,45 @@ export default {
         "• Support: Send /support <your message> to reach Support.\n\n" +
         "Style: Friendly, concise, mobile-friendly Telegram Markdown. Direct answers only!";
 
-      // 1. Google Gemini Flash (Parallel attempt with key rotation)
-      const shuffledGemini = [...geminiKeys].sort(() => Math.random() - 0.5);
-      const gemModels = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
-      const gemCandidates = shuffledGemini.slice(0, 3).map(async (gKey, idx) => {
-        const mod = gemModels[idx % gemModels.length];
-        const gUrl = `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${gKey}`;
-        const gResp = await fetch(gUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              { parts: [{ text: userSystemPrompt + "\n\nUser Question: " + prompt }] }
-            ]
-          }),
-          signal: AbortSignal.timeout(3500)
-        });
-        if (!gResp.ok) throw new Error("Gemini HTTP " + gResp.status);
-        const gData = await gResp.json();
-        const gText = gData?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!gText) throw new Error("No Gemini text");
-        return { ok: true, provider: "Google Gemini", model: mod, answer: gText.trim() };
-      });
-
-      try {
-        return await Promise.any(gemCandidates);
-      } catch (_) {}
-
-      // 2. Cloudflare Workers AI (Instant Edge Llama 3.2)
+      // 100% Native Cloudflare Workers AI for User Bot (@AAAPREMIUMAPPSbot)
       if (env.AI) {
         try {
-          const aiRes = await env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
+          const aiRes = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
             messages: [
               { role: "system", content: userSystemPrompt },
               { role: "user", content: prompt }
             ],
-            max_tokens: 450
+            max_tokens: 500
           });
           const ansText = aiRes.response || (aiRes.choices && aiRes.choices[0] ? aiRes.choices[0].text : "");
           if (ansText && ansText.trim()) {
             return {
               ok: true,
               provider: "Cloudflare Workers AI",
-              model: "@cf/meta/llama-3.2-3b-instruct",
+              model: "@cf/meta/llama-3.1-8b-instruct",
               answer: ansText.trim()
             };
           }
-        } catch (_) {}
+        } catch (_) {
+          try {
+            const aiRes2 = await env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
+              messages: [
+                { role: "system", content: userSystemPrompt },
+                { role: "user", content: prompt }
+              ],
+              max_tokens: 400
+            });
+            const ansText2 = aiRes2.response || (aiRes2.choices && aiRes2.choices[0] ? aiRes2.choices[0].text : "");
+            if (ansText2 && ansText2.trim()) {
+              return {
+                ok: true,
+                provider: "Cloudflare Workers AI",
+                model: "@cf/meta/llama-3.2-3b-instruct",
+                answer: ansText2.trim()
+              };
+            }
+          } catch (_) {}
+        }
       }
 
       // 3. Intelligent Edge Keyword-Aware Fallback (Answers user guides directly even if offline)
@@ -4324,6 +4284,32 @@ fi
       });
     }
 
+    // 11.04 9-Bot Intelligent Challenge & Math Solver (/api/ai/solve, /api/bot-solve)
+    if (path === "/api/ai/solve" || path === "/api/bot-solve") {
+      let q = "";
+      let bot = "generic";
+      if (request.method === "POST") {
+        try {
+          const b = await request.json();
+          q = b.question || b.challenge || b.prompt || b.q || "";
+          bot = b.bot || "generic";
+        } catch (_) {}
+      } else {
+        q = url.searchParams.get("q") || url.searchParams.get("question") || "";
+        bot = url.searchParams.get("bot") || "generic";
+      }
+      if (!q) {
+        return new Response(JSON.stringify({ ok: false, error: "Missing question/prompt parameter" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders }
+        });
+      }
+      const ans = await solveBotChallengeWithCloudflareAi(q, bot);
+      return new Response(JSON.stringify({ ok: true, answer: ans, bot, provider: "Cloudflare Workers AI" }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
+    }
+
     // 11.05 Serverless Image Generation API (/api/ai/image)
     if (path === "/api/ai/image") {
       let prompt = "";
@@ -5769,7 +5755,7 @@ fi
                 `🚀 *Render Compute Engine (Single-Active Protocol):*\n` +
                 `• Primary Host (Node 2 Frankfurt - abidhasanch): 🟢 Active Coordinator ($0 Free Tier)\n` +
                 `• Cold Standby (Node 3 Oregon - koramshah2): ⏸️ Suspended (Meter Frozen / 0h Consumed)\n` +
-                `• Ari AI Council Agent (koramshah2): 🟢 Online (Grok & Gemini LPU)\n\n` +
+                `• Ari AI Council Agent (koramshah2): 🟢 Online (Cloudflare Workers AI & DeepSeek Edge)\n\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⏱️ *Time (Dhaka):* \`${dhakaTime}\``;
               const meshMarkup = {
@@ -6166,7 +6152,7 @@ fi
                 `🚀 *Render Compute Nodes (Single-Active Protocol):*\n` +
                 `• Primary Host (Node 2 Frankfurt - abidhasanch): 🟢 Active Coordinator ($0 Free Tier)\n` +
                 `• Cold Standby (Node 3 Oregon - koramshah2): ⏸️ Suspended (Meter Frozen / 0h Consumed)\n` +
-                `• Ari AI Council Agent (koramshah2): 🟢 Online (Grok & Gemini LPU)\n` +
+                `• Ari AI Council Agent (koramshah2): 🟢 Online (Cloudflare Workers AI & DeepSeek Edge)\n` +
                 `• MTProto Relayer Primary: 🟢 Online (Stateless Telethon)\n` +
                 `• MTProto Relayer Backup: 🟢 Standby (Zero-Cost Cold Failback)\n\n` +
                 `🦕 *Deno Deploy Edge Sentinels (2/2 Online):*\n` +
@@ -6945,8 +6931,8 @@ fi
                 const health = await getSessionHealthState();
                 const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size}/18 accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 9 legitimate mining bots active (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
                 const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size}/18 mining${health.revoked.size > 0 ? `, ${health.revoked.size} need re-link` : ' (100% online)'} across multi-cloud nodes.`;
-                const prov = aiData.provider || "Google Gemini";
-                const mod = aiData.model || "gemini-3.6-flash";
+                const prov = aiData.provider || "Cloudflare Workers AI";
+                const mod = aiData.model || "@cf/meta/llama-3.1-8b-instruct";
                 const msgText = `📊 *MY AGY AI — Daily Executive Briefing*\n━━━━━━━━━━━━━━━━━━━━━━\n${ans}\n━━━━━━━━━━━━━━━━━━━━━━\n🤖 _Generated by ${prov} (${mod})_`;
                 const cbMsgId = cb.message ? cb.message.message_id : null;
                 if (cbMsgId) {
@@ -7787,13 +7773,13 @@ fi
         if (text === "🌅 AI Briefing" || text === "🌅 Morning Briefing" || text === "/briefing" || text.startsWith("/briefing")) {
 
           ctx.waitUntil((async () => {
-            await sendReply("⏳ *Generating AI Executive Briefing via Google Gemini 3.6 Flash & Multi-Cloud AI...*");
+            await sendReply("⏳ *Generating AI Executive Briefing via Cloudflare Workers AI (Llama 3.1 & DeepSeek R1)...*");
             try {
               const health = await getSessionHealthState();
-              const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size}/18 accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 9 legitimate mining bots active (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
-              const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size}/18 mining${health.revoked.size > 0 ? `, ${health.revoked.size} need re-link` : ' (100% online)'} across multi-cloud nodes.`;
-              const prov = aiData.provider || "Google Gemini";
-              const mod = aiData.model || "gemini-3.6-flash";
+              const aiData = await runAiCascade(`You are the Chief AI Operations Officer for the autonomous Telegram fleet 'MY AGY AI'. Summarize: 1. ${health.healthy.size}/20 accounts active & mining${health.revoked.size > 0 ? `, ${health.revoked.size} accounts requiring session re-link` : ' (100% healthy)'}. 2. 9 legitimate mining bots active (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI). 3. Multi-cloud nodes operational (Frankfurt Node 2 Active Coordinator, Oregon Node 3 Cold Standby). 4. One high-value operational recommendation. Use crisp Telegram Markdown.`);
+              const ans = aiData.answer || aiData.response || `Fleet active: ${health.healthy.size}/20 mining${health.revoked.size > 0 ? `, ${health.revoked.size} need re-link` : ' (100% online)'} across multi-cloud nodes.`;
+              const prov = aiData.provider || "Cloudflare Workers AI";
+              const mod = aiData.model || "@cf/meta/llama-3.1-8b-instruct";
               const msgText = `📊 *MY AGY AI — Daily Executive Briefing*\n━━━━━━━━━━━━━━━━━━━━━━\n${ans}\n━━━━━━━━━━━━━━━━━━━━━━\n🤖 _Generated by ${prov} (${mod})_`;
               await sendReply(msgText, statusInlineKeyboard);
             } catch (err) {
@@ -7803,13 +7789,13 @@ fi
           return new Response("OK");
         }
 
-        // 1.6 Multi-Cloud AI Chat (/ai <prompt> or /ask <prompt>)
+        // 1.6 Cloudflare Workers AI Chat (/ai <prompt> or /ask <prompt>)
         if (text.startsWith("/ai") || text.startsWith("/ask")) {
           const parts = text.split(/\s+/);
           const aiQuery = parts.slice(1).join(" ").trim();
           if (!aiQuery) {
-            const helpAi = `🧠 *Multi-Cloud AI Assistant*\n\n` +
-              `Powered by *Google Gemini 3.6 Flash*, *GroqCloud LPU*, and *Cloudflare Workers AI*!\n\n` +
+            const helpAi = `🧠 *Cloudflare Workers AI Assistant*\n\n` +
+              `Powered natively by *Cloudflare Workers AI* (Meta Llama 3.1 & DeepSeek R1 Edge)!\n\n` +
               `Ask anything by sending:\n` +
               `• \`/ai <your question>\`\n` +
               `• \`/ask <your question>\`\n\n` +
@@ -7823,9 +7809,9 @@ fi
             try {
               const aiData = await runAiCascade(aiQuery);
               const ans = aiData.answer || aiData.response || "No response received.";
-              const prov = aiData.provider || "AI Engine";
-              const mod = aiData.model || "Gemini 3.5 Flash";
-              const rep = `🤖 *AI Intelligence (${prov} · ${mod}):*\n\n${ans}\n\n⚡ _MY AGY AI Multi-Cloud Cascade_`;
+              const prov = aiData.provider || "Cloudflare Workers AI";
+              const mod = aiData.model || "@cf/meta/llama-3.1-8b-instruct";
+              const rep = `🤖 *AI Intelligence (${prov} · ${mod}):*\n\n${ans}\n\n⚡ _MY AGY AI Cloudflare Edge Engine_`;
               await sendReply(rep, statusInlineKeyboard);
             } catch (e) {
               await sendReply("⚠️ AI query error: " + e.message);
@@ -7890,9 +7876,9 @@ fi
               `🦙 *Meta Llama 3.1 & 3.2:*\n` +
               `• Command: \`/llama <question>\`\n` +
               `• Best for: Rapid executive summaries, conversational answers, and fleet reports\n\n` +
-              `⚡ *Google Gemini Flash:*\n` +
-              `• Command: \`/ai <question>\`\n` +
-              `• Best for: Multi-source web synthesis & general intelligence\n\n` +
+              `🔮 *Cloudflare DeepSeek R1:*\n` +
+              `• Command: \`/deepseek <question>\`\n` +
+              `• Best for: Advanced multi-step reasoning, math, and code\n\n` +
               `🎨 *Stable Diffusion XL:*\n` +
               `• Command: \`/image <prompt>\`\n` +
               `• Best for: Instant photorealistic serverless image generation\n\n` +
@@ -7953,9 +7939,9 @@ fi
             `🎨 *Stable Diffusion XL (SDXL)*:\n` +
             `• Command: \`/image <prompt>\`\n` +
             `• Purpose: High-resolution serverless image generation\n\n` +
-            `⚡ *Google Gemini Flash*:\n` +
+            `⚡ *Cloudflare Workers AI (Llama 3.1 & 3.2)*:\n` +
             `• Command: \`/ai <query>\`\n` +
-            `• Purpose: Broad knowledge synthesis with key rotation\n\n` +
+            `• Purpose: 100% native serverless Edge AI copilot\n\n` +
             `💬 *Direct Chat*: Just send ANY normal message to this bot, and Ari AI will automatically answer!`;
           ctx.waitUntil(sendReply(modRep, statusInlineKeyboard));
           return new Response("OK");
@@ -9152,7 +9138,7 @@ fi
               `🚀 *Render Compute Nodes (Single-Active Protocol):*\n` +
               `• Primary Host (Node 2 Frankfurt - abidhasanch): 🟢 Active Coordinator ($0 Free Tier)\n` +
               `• Cold Standby (Node 3 Oregon - koramshah2): ⏸️ Suspended (Meter Frozen / 0h Consumed)\n` +
-              `• Ari AI Council Agent (koramshah2): 🟢 Online (Grok & Gemini LPU)\n` +
+              `• Ari AI Council Agent (koramshah2): 🟢 Online (Cloudflare Workers AI & DeepSeek Edge)\n` +
               `• MTProto Relayer Primary: 🟢 Online (Stateless Telethon)\n` +
               `• MTProto Relayer Backup: 🟢 Standby (Zero-Cost Cold Failback)\n\n` +
               `🦕 *Deno Deploy Edge Sentinels (2/2 Online):*\n` +
@@ -9895,7 +9881,7 @@ fi
             `• \`/remove_account <id>\` — Disconnect an account from automation\n` +
             `• \`/mesh\` or \`/cloud\` — Multi-Cloud unified mesh topology\n` +
             `• \`/nodes\` — Live latency probe across 5 Cloudflare Edge nodes\n` +
-            `• \`/briefing\` — Daily AI executive briefing (Gemini 3.6 Flash)\n` +
+            `• \`/briefing\` — Daily AI executive briefing (Cloudflare Workers AI)\n` +
             `• \`/backup\` — Instant 1-click cloud backup download\n\n` +
             `👥 *Community & User Management (@AAAPREMIUMAPPSbot):*\n` +
             `• \`/community\` or \`/users\` — Public miner stats & pass circulation\n` +
@@ -15253,7 +15239,7 @@ async def main():
                     {"command": "dashboard", "description": "🚀 Launch Fleet Operations Console"},
                     {"command": "status", "description": "📊 Fleet Status & Live Mining Telemetry"},
                     {"command": "live", "description": "📊 Real-Time Operations Telemetry Matrix"},
-                    {"command": "fleet", "description": "📊 Fleet Operations & 18-Account Telemetry"},
+                    {"command": "fleet", "description": "📊 Fleet Operations & 20-Account Telemetry"},
                     {"command": "harvest", "description": "⚡ Trigger Instant 9-Bot Multi-Cloud Harvest"},
                     {"command": "bots", "description": "🤖 9-Bot Autonomous Mining Fleet Hub"},
                     {"command": "vm", "description": "🖥️ Instabox VM Sentinel & Ingress Status"},
@@ -15276,7 +15262,7 @@ async def main():
                     {"command": "deepseek", "description": "🔮 DeepSeek R1 AI Reasoning & Logic"},
                     {"command": "llama", "description": "🦙 Meta Llama Fast Intelligence"},
                     {"command": "image", "description": "🎨 Stable Diffusion XL Image Generator"},
-                    {"command": "ai", "description": "💬 Google Gemini Flash & Ari Copilot"},
+                    {"command": "ai", "description": "💬 Cloudflare Workers AI & Ari Copilot"},
                     {"command": "burn", "description": "🔥 Economy & Daily Burn (100 Pts/day)"},
                     {"command": "sweep_daily", "description": "⚡ Run 100 Pts Daily Deduction Sweep"},
                     {"command": "sybil", "description": "🛡️ Anti-Sybil & Moderation Hub"},

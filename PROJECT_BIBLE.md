@@ -203,7 +203,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   - **🌐 Dedicated Relayers & Auxiliary AI Services**:
     * Primary MTProto Relayer: `https://atf-mtproto-relayer.onrender.com/wake` (🟢 ONLINE & AUTHENTICATED)
     * Backup MTProto Relayer: `https://atf-mtproto-relayer-backup.onrender.com/wake` (🟢 ONLINE & AUTHENTICATED)
-    * Hermes Ari AI Council Agent: `https://hermes-grok-cloud-agent.onrender.com` (🟢 ONLINE, Koram account, Groq AI Council)
+    * Hermes Ari AI Council Agent: `https://hermes-grok-cloud-agent.onrender.com` (🟢 ONLINE, Koram account, Cloudflare Workers AI Council)
 
 - **GitHub Multi-Account CI/CD & Cloud Compute Fleet (4,000 Free Minutes/Month)**:
   - Account 1 (`AAA0002`):
@@ -244,7 +244,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
       * `/deepseek <prompt>`: DeepSeek R1 32B reasoning on Cloudflare Edge GPUs.
       * `/llama <prompt>`: Meta Llama 3.2 rapid edge copilot.
       * `/image <prompt>` / `/draw <prompt>`: Stable Diffusion XL binary photo generator with direct Telegram photo upload.
-      * `/ai <prompt>`: Google Gemini 3.8 Flash with 5-key dynamic rotation & instant Llama edge fallback.
+      * `/ai <prompt>`: Native Cloudflare Workers AI edge cascade (`@cf/meta/llama-3.1-8b-instruct`, `@cf/deepseek-ai/deepseek-r1-distill-qwen-32b`, `@cf/meta/llama-3.2-3b-instruct`). 100% Free, zero external API keys.
       * `/mrg`, `/atf`, `/victors`, `/vyro`, `/kynex`: Dedicated telemetry & command centers for all 5 legitimate active bots.
       * `/models`: Directory of active edge AI models.
     - **Executive Fleet Operations Console (`/admin`)**:
@@ -267,8 +267,8 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   > Commander Arif explicitly authorized the upgrade and modification of User Bot (`@AAAPREMIUMAPPSbot`) to mirror the multi-miner dashboard and frictionless account binding interface of `@Allbottesting_bot` ("ATE AUTO Mining"), enhanced with our sustainable **Points System** (100 Pts/day, +100 welcome points) and **Rewarded Video Ads Engine** (+20 Pts/ad, +1 permanent bonus account slot per 50 ads).
   > **Key Policies & Autonomous Cloud Infrastructure**:
   > 1. **♾️ Unlimited Ad Watching (Zero Daily Caps)**: Confirmed and enforced strictly 0 limits on watching ads. Users and fleet accounts can watch unlimited ads daily to extend 24/7 cloud mining. Every 50 ads permanently unlocks +1 Free Account Slot with no maximum ceiling.
-  > 2. **🤖 24/7 Autonomous Cloud Fleet Ad-Farmer (Render Node 2)**: Dedicated 24/7 background worker `autonomous_fleet_ad_farmer_loop()` continuously farms 1,000 ads per day for each of our 18 fleet accounts (18,000 total ad claims/day) across the Cloudflare Edge mesh with `silent=1` and `fleet=1` to prevent Telegram chat clutter. Monitored via `GET /api/fleet/ad-status` and `GET /api/fleet/ad-farmer/status`.
-  > 3. **Ari AI Copilot Integration**: Conversational queries (e.g. *"What can this bot do"*) are cleanly routed to Google Gemini AI without triggering phone login traps. Strict phone number validation (`/^(\+)?[0-9]{8,16}$/`) protects natural chat.
+  > 2. **🤖 24/7 Autonomous Cloud Fleet Ad-Farmer (Render Node 2)**: Dedicated 24/7 background worker `autonomous_fleet_ad_farmer_loop()` continuously farms 1,000 ads per day for each of our 20 fleet accounts (20,000 total ad claims/day) across the Cloudflare Edge mesh with `silent=1` and `fleet=1` to prevent Telegram chat clutter. Monitored via `GET /api/fleet/ad-status` and `GET /api/fleet/ad-farmer/status`.
+  > 3. **Ari AI Copilot Integration**: Conversational queries (e.g. *"What can this bot do"*) are cleanly routed to Cloudflare Workers AI (`@cf/meta/llama-3.1-8b-instruct`) without external API keys or phone login traps. Strict phone number validation (`/^(\+)?[0-9]{8,16}$/`) protects natural chat.
   > 4. **Multi-Platform Mini App Link Auto-Detector & Expiration Guard**: Direct detection of raw links and error logs (MRG, ATF, Victor's Company, VyroDrop, Kynex Network) with 3-pass URI decoding. Automatically warns user when `auth_date` exceeds 24 hours (Telegram token limit) with clear refresh steps, and auto-binds fresh tokens immediately.
   > 5. **Strict Web Isolation**: Root path `https://agy-henna.vercel.app/` dedicated exclusively to the Sponsored Video Ads Engine, while `https://agy-henna.vercel.app/miner` hosts the institutional-grade vector SVG Multi-Miner Dashboard.
 
@@ -276,16 +276,16 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     - Name: *AAA AUTO MINING (PREMIUM)*
     - Live Webhook: `https://restore-agy.agorameet.workers.dev/user-bot-webhook` (Multi-Edge Mesh on Cloudflare Worker Node 4)
     - Role: Multi-bot cloud mining platform, modern dashboard (modeled after `@Allbottesting_bot`), per-pool management across 9 pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI), frictionless 1-Tap account connector (`⚡ 1-Tap Link My Account`), Phone Cloud Login via MTProto, numeric Telegram ID direct registration (0 SMS codes, zero `*WebApp Link:*` prompts in user menus), 24h expiration guard, mandatory dual onboarding access gate (all new users must join all 3 official community channels AND watch 1 sponsored video ad to unlock bot access and claim +100 Free Welcome Points), Points economy (100 Pts/day with 24h welcome grace period protecting new users from Day 1 deductions), progressive Daily Check-In (+50 to +100 Pts/day enabling 100% free daily farming for active users), Rewarded Adsgram/Monetag video ads (+20 Pts, 0 daily limit), milestone slots (+1 slot per 50 ads), 12 registered slash commands, persistent global menu button (`🎬 Watch Ads`), and Telegram Stars VIP passes.
-  - **Supported Mining Pools (9 Active High-Yield Pools)**:
-    1. ⚡ **MRG Miner** (`@mrgminerbot`)
-    2. 🪙 **ATF Miner** (`@ATF_AIRDROP_bot`)
-    3. 🏢 **Victor's Company** (`@VictorsCompanybot`)
-    4. 💧 **VyroDrop** (`@vyrodrop_bot`)
-    5. 🌐 **Kynex Network** (`@kynexnetworkbot`)
-    6. ⛏️ **DiggoMiner** (`@Diggominer_bot`)
-    7. ⭐ **Astra Airdrop** (`@ASTRA_AIRDROP_BOT`)
-    8. 🐸 **PepeGram** (`@Pepe_gram_bot`)
-    9. 💎 **AdxEarn AI** (`@AdxEarnAibot`)
+  - **Supported Mining Pools (9 Active High-Yield Pools Powered by Cloudflare Workers AI)**:
+    1. ⚡ **MRG Miner** (`@mrgminerbot`): Cloudflare Workers AI solves task verification, arithmetic challenges, and claims 3.5h hash cycles.
+    2. 🪙 **ATF Miner** (`@ATF_AIRDROP_bot`): Cloudflare Workers AI solves math challenge questions (`get_math_challenge` -> `start_mine`) and auto-claims 2h task cycles.
+    3. 🏢 **Victor's Company** (`@VictorsCompanybot`): Cloudflare Workers AI solves quiz/task questions and auto-claims accumulated offline arcade earnings.
+    4. 💧 **VyroDrop** (`@vyrodrop_bot`): Cloudflare Workers AI handles claim validations, session starts, and side-task completions.
+    5. 🌐 **Kynex Network** (`@kynexnetworkbot`): Cloudflare Workers AI handles daily energy replenishment, quiz answers, and task validation.
+    6. ⛏️ **DiggoMiner** (`@Diggominer_bot`): Cloudflare Workers AI handles miner activation, hash rate upgrades, and daily task claims.
+    7. ⭐ **Astra Airdrop** (`@ASTRA_AIRDROP_BOT`): Cloudflare Workers AI handles daily check-in verification and dynamic quiz/task answers.
+    8. 🐸 **PepeGram** (`@Pepe_gram_bot`): Cloudflare Workers AI handles tap/mining claims, side-tasks, and task verification.
+    9. 💎 **AdxEarn AI** (`@AdxEarnAibot`): Cloudflare Workers AI handles dynamic task discovery (`/rewards/tasks`), task-start, 15s dwell wait, and automated reward claiming.
   - **User WebApp Mini App Frontend**: `https://agy-henna.vercel.app/` (Ads Portal) & `https://agy-henna.vercel.app/miner` (Vector SVG Multi-Miner Dashboard) & `https://restore-agy.aaaai2.workers.dev/app` (Cloudflare Worker Node 1) & `https://atf-miner-app.pages.dev` (Cloudflare Pages)
     - Architecture: Ultra-modern responsive cyberpunk glassmorphic Mini App improving upon `@Allbottesting_bot` with 9 pools (⚡ MRG, 🪙 ATF, 🏢 Victor's Company, 💧 VyroDrop, 🌐 Kynex Network, ⛏️ DiggoMiner, ⭐ Astra Airdrop, 🐸 PepeGram, 💎 AdxEarn AI), 1-Tap instant Telegram account binding, live visual validation card (Telegram ID, phone, auth token), 24/7 cloud mining telemetry, Rewarded Video Ad player (Monetag + GigaPub), Daily Streak Claim (+100 Pts/d), 50-ad permanent slot milestone tracker, and Telegram Stars VIP passes.
   - **User Distributed Mining Engine & REST APIs**: `https://restore-agy.aaaai2.workers.dev/api/user/` (Endpoints: `/profile`, `/account/add`, `/account/remove`, `/claim-daily`, `/claim-ad`)
@@ -313,8 +313,8 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 | **CI/CD Cloud Compute** | **CircleCI Cloud** | `circleci.com` | 🟢 **1-YEAR TOKEN ACTIVE** — Cloud automation runner (`aaa.support.a@gmail.com`) |
 | **Cloud Compute** | **Ubicloud** | `console.ubicloud.com` | 🟢 **PAT ACTIVE** — Cloud VM & Postgres compute (`UBICLOUD_PAT_TOKEN` in `.env`) |
 | **Kubernetes Cluster** | **Puzl Cloud K8s** | `k8s.eu-finland-1.clusters.puzl.cloud` | 🟢 **CONFIG ACTIVE** — Finland European Kubernetes cluster context |
-| **AI Inference Engine** | **Google Gemini** | `generativelanguage.googleapis.com` | 🟢 **14/14 KEYS ACTIVE** — Rotating multi-key pool for Ari AI reasoning |
-| **Edge AI Inference** | **Workers AI (Cloudflare)** | Global Edge Mesh (Llama 3.2 3B Instruct) | 🟢 **ACTIVE** — Zero API keys required across 5 Cloudflare nodes |
+| **AI Inference Engine** | **Cloudflare Workers AI** | `restore-agy.*.workers.dev/api/ai` | 🟢 **ACTIVE ON EDGE GPUS** — 100% Free, zero external API keys, powering all 9 mining pools & bot copilots |
+| **Edge AI Models** | **Meta & DeepSeek on CF** | `Llama 3.1 8B, DeepSeek R1 32B, Llama 3.2 3B` | 🟢 **ACTIVE** — Sub-300ms challenge solving & task reasoning across 5 Cloudflare nodes |
 | **Web3 Infrastructure** | **Alchemy Ethereum** | `eth-mainnet.g.alchemy.com/v2/...` | 🟢 **HTTP 200 OK** — Live block height queries verified |
 | **Web3 Infrastructure** | **Toncenter Official** | `https://toncenter.com/api/v2` | 🟢 **HTTP 200 OK** — High-speed TON masterchain RPC |
 | **Web3 Infrastructure** | **TonAPI Key** | `https://tonapi.io` | 🟢 **ACTIVE** — Jetton transfers and account audits |

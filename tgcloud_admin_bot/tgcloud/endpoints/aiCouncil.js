@@ -22,7 +22,7 @@ Answer with concise, authoritative, executive advice. Format with clean bullet p
 
   const fullPrompt = `${systemContext}\n\n[USER QUERY / MODE: ${mode}]\n${prompt}`;
 
-  // Try Cloudflare Edge AI Mesh first (100% Free, Edge Groq LPU / Qwen / Llama 3)
+  // Try Cloudflare Edge AI Mesh first (100% Free, Edge DeepSeek / Llama 3)
   for (const nodeUrl of CF_AI_ENDPOINTS) {
     try {
       const resp = await fetch(nodeUrl, {
@@ -40,8 +40,8 @@ Answer with concise, authoritative, executive advice. Format with clean bullet p
           return {
             ok: true,
             answer: data.answer || data.response || data.text,
-            provider: data.provider || 'Cloudflare Edge AI (Groq LPU)',
-            model: data.model || 'qwen/qwen3.8-27b',
+            provider: data.provider || 'Cloudflare Edge AI',
+            model: data.model || 'meta/llama-3.1-8b',
             timestamp: Date.now()
           };
         }

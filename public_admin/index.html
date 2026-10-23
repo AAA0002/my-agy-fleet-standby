@@ -175,7 +175,7 @@
       <div class="card-clean p-2.5 rounded-2xl flex flex-col justify-between cursor-pointer active:scale-95 transition" id="cardAiShortcut">
         <div class="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
           <span>Ari AI Copilot</span>
-          <span class="text-blue-600 font-mono">Groq LPU</span>
+          <span class="text-blue-600 font-mono">Cloudflare AI</span>
         </div>
         <div class="my-1">
           <div class="text-sm font-black text-blue-700 flex items-center gap-1">
@@ -267,7 +267,7 @@
             </div>
             <div>
               <h3 class="font-bold text-xs text-slate-900">Ari AI Fleet Commander</h3>
-              <p class="text-[10px] text-slate-500 font-medium">Groq LPU Engine • Edge Dual-Verification</p>
+              <p class="text-[10px] text-slate-500 font-medium">Cloudflare Workers AI • Edge Dual-Verification</p>
             </div>
           </div>
           <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
@@ -1752,7 +1752,7 @@
 
       respBox.classList.remove('hidden');
       respText.innerText = 'Ari AI is analyzing fleet telemetry and compiling intelligence...';
-      modelBadge.innerText = 'Querying Groq LPU...';
+      modelBadge.innerText = 'Querying Cloudflare Workers AI...';
 
       try {
         const res = await fetch('https://restore-agy.aaaai2.workers.dev/ai', {
@@ -1766,7 +1766,7 @@
         const data = await res.json();
         const answer = data.answer || data.response || 'Diagnostic complete. All fleet systems nominal.';
         respText.innerText = answer;
-        modelBadge.innerText = `${data.provider || 'Groq LPU'} • ${data.model || 'qwen3.8-27b'}`;
+        modelBadge.innerText = `${data.provider || 'Cloudflare AI'} • ${data.model || 'Edge Llama / DeepSeek'}`;
 
         document.getElementById('btnCopyAi').onclick = () => copyToClipboard(answer, 'AI Diagnostic copied!');
       } catch (err) {

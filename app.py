@@ -140,28 +140,7 @@ UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKE
 TURSO_URL = os.getenv("TURSO_URL") or os.getenv("TURSO_DB_URL") or "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io"
 TURSO_TOKEN = os.getenv("TURSO_TOKEN") or os.getenv("TURSO_DB_TOKEN") or ""
 
-CACHED_GEMINI_KEYS = []
-
-async def get_gemini_keys() -> list:
-    global CACHED_GEMINI_KEYS
-    if CACHED_GEMINI_KEYS:
-        return CACHED_GEMINI_KEYS
-    env_k = os.getenv("GEMINI_API_KEYS", "")
-    if env_k:
-        CACHED_GEMINI_KEYS = [k.strip() for k in env_k.split(",") if k.strip()]
-        return CACHED_GEMINI_KEYS
-    if UPSTASH_URL and UPSTASH_TOKEN:
-        try:
-            async with aiohttp.ClientSession() as s:
-                async with s.get(f"{UPSTASH_URL}/get/fleet:gemini_keys", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=4)) as r:
-                    if r.status == 200:
-                        data = await r.json()
-                        res = data.get("result")
-                        if res:
-                            CACHED_GEMINI_KEYS = [k.strip() for k in res.split(",") if k.strip()]
-        except Exception:
-            pass
-    return CACHED_GEMINI_KEYS
+# Cloudflare Workers AI is used exclusively for all AI tasks (zero external keys needed)
 
 # =====================================================================
 # DISTRIBUTED MTPROTO COORDINATOR & ACCOUNT CONCURRENCY LOCK ENGINE
@@ -1229,36 +1208,58 @@ async def fetch_accounts_from_cloud():
     FLEET_ACCOUNTS_CACHE = {str(a.get("user_id")): a for a in merged}
     return merged
 
-CACHED_GROQ_KEYS = []
+async def solve_bot_challenge_with_cloudflare_ai(question_text: str, bot_name: str = "generic") -> str:
+    """Universal 9-Bot Intelligent Challenge & Math Solver (100% Cloudflare Workers AI)."""
+    if not question_text:
+        return "0"
 
-async def get_groq_keys() -> list:
-    global CACHED_GROQ_KEYS
-    if CACHED_GROQ_KEYS:
-        return CACHED_GROQ_KEYS
-    env_keys = [
-        os.getenv("GROQ_API_KEY_1"),
-        os.getenv("GROQ_API_KEY_2"),
-        os.getenv("GROQ_API_KEY_3"),
-        os.getenv("GROQ_API_KEY")
-    ]
-    CACHED_GROQ_KEYS = [k for k in env_keys if k]
-    if not CACHED_GROQ_KEYS and UPSTASH_URL and UPSTASH_TOKEN:
+    # Fast-path: Standard arithmetic regex check
+    cleaned = re.sub(r"[^\d\+\-\*\/\(\)\s]", " ", question_text)
+    m = re.search(r"(\d+\s*[\+\-\*\/]\s*\d+)", cleaned)
+    if m:
         try:
-            async with aiohttp.ClientSession() as s:
-                async with s.get(f"{UPSTASH_URL}/get/fleet:groq_keys", headers={"Authorization": f"Bearer {UPSTASH_TOKEN}"}, timeout=aiohttp.ClientTimeout(total=4)) as r:
-                    if r.status == 200:
-                        data = await r.json()
-                        res = data.get("result")
-                        if res:
-                            parsed = json.loads(res) if isinstance(res, str) else res
-                            if isinstance(parsed, list):
-                                CACHED_GROQ_KEYS = [k for k in parsed if k]
+            expr = m.group(1).replace(" ", "")
+            parts = re.split(r"([\+\-\*\/])", expr)
+            if len(parts) == 3:
+                a, op, b = int(parts[0]), parts[1], int(parts[2])
+                if op == "+": return str(a + b)
+                if op == "-": return str(a - b)
+                if op == "*": return str(a * b)
+                if op == "/" and b != 0: return str(a // b)
         except Exception:
             pass
-    return CACHED_GROQ_KEYS
+
+    # Cloudflare Edge Workers AI solver query
+    for cf_url in CF_WORKER_URLS:
+        try:
+            async with aiohttp.ClientSession() as s:
+                async with s.post(
+                    f"{cf_url}/api/ai/solve",
+                    json={"question": question_text, "bot": bot_name},
+                    headers={"Content-Type": "application/json"},
+                    timeout=aiohttp.ClientTimeout(total=5)
+                ) as r:
+                    if r.status == 200:
+                        d = await r.json()
+                        ans = (d.get("answer") or "").strip()
+                        if ans:
+                            return ans
+        except Exception:
+            continue
+
+    nums = [int(n) for n in re.findall(r"\d+", question_text)]
+    if len(nums) >= 2:
+        if "+" in question_text or "plus" in question_text.lower():
+            return str(nums[0] + nums[1])
+        if "-" in question_text or "minus" in question_text.lower():
+            return str(nums[0] - nums[1])
+        if "*" in question_text or "times" in question_text.lower():
+            return str(nums[0] * nums[1])
+    return str(nums[0]) if nums else "0"
+
 
 async def ai_classify_bot_prompt(bot_text: str) -> str:
-    """Uses Cloudflare Edge AI (Gemini + Groq + Cloudflare Workers AI) with Groq direct fallback."""
+    """Uses Cloudflare Edge Workers AI for intelligent prompt classification."""
     prompt = (
         f"The Telegram bot sent this message during a withdrawal: '{bot_text}'. "
         f"Classify what the bot requires from the user. Respond with ONLY one word: "
@@ -1267,7 +1268,6 @@ async def ai_classify_bot_prompt(bot_text: str) -> str:
         f"or WAIT (asking to wait or showing status)."
     )
 
-    # 1. Primary: Cloudflare Edge Multi-Cloud AI Cascade (Gemini Flash -> Groq -> Workers AI)
     for cf_url in CF_WORKER_URLS:
         try:
             async with aiohttp.ClientSession() as s:
@@ -1286,27 +1286,6 @@ async def ai_classify_bot_prompt(bot_text: str) -> str:
         except Exception:
             continue
 
-    # 2. Secondary Fallback: Direct Groq API
-    keys = await get_groq_keys()
-    for k in keys:
-        try:
-            async with aiohttp.ClientSession() as s:
-                payload = {
-                    "model": "qwen/qwen3.8-27b",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 10,
-                    "temperature": 0.1
-                }
-                headers = {"Authorization": f"Bearer {k}", "Content-Type": "application/json"}
-                async with s.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=3)) as r:
-                    if r.status == 200:
-                        d = await r.json()
-                        ans = d.get("choices", [{}])[0].get("message", {}).get("content", "").strip().upper()
-                        for valid in ["WALLET", "EMAIL", "AMOUNT", "CONFIRM", "WAIT"]:
-                            if valid in ans:
-                                return valid
-        except Exception:
-            continue
     return "UNKNOWN"
 
 async def check_and_auto_withdraw_cloud(acc: dict) -> dict:
@@ -1495,14 +1474,16 @@ FLEET_18_ACCOUNTS_MAP = [
     {"index": 15, "uid": "7749125802", "name": "Tasnim Farhana 15"},
     {"index": 16, "uid": "7954290138", "name": "Rashedul Islam 16"},
     {"index": 17, "uid": "8841038141", "name": "Kawsar Mahmud 17"},
-    {"index": 18, "uid": "8975442879", "name": "Mehedi Hasan 18"}
+    {"index": 18, "uid": "8975442879", "name": "Mehedi Hasan 18"},
+    {"index": 19, "uid": "8937908003", "name": "Adil H 19"},
+    {"index": 20, "uid": "8609131528", "name": "Asaduzzaman Sarker 20"}
 ]
 
 FLEET_AD_FARMER_STATE = {
     "status": "starting",
     "today": "",
     "total_ads_today": 0,
-    "total_target": 18000,
+    "total_target": 20000,
     "last_claim_ts": 0,
     "errors": 0,
     "accounts": {}
@@ -1511,11 +1492,11 @@ FLEET_AD_FARMER_STATE = {
 async def autonomous_fleet_ad_farmer_loop():
     """
     24/7 Autonomous Cloud Fleet Ad-Farming Loop.
-    Automatically watches and claims ads from our User Bot for each of our 18 fleet accounts,
-    targeting 1,000 ads per account per day (18,000 total ad claims/day) across the Cloudflare Edge mesh.
+    Automatically watches and claims ads from our User Bot for each of our 20 fleet accounts,
+    targeting 1,000 ads per account per day (20,000 total ad claims/day) across the Cloudflare Edge mesh.
     Respects rate limits, runs 100% in the cloud on Render Node 2 with 0 phone load.
     """
-    logger.info("[Ad Farmer] 🎬 Initializing 24/7 Autonomous Fleet Ad-Farming Loop (18 accounts x 1,000 ads/day)...")
+    logger.info("[Ad Farmer] 🎬 Initializing 24/7 Autonomous Fleet Ad-Farming Loop (20 accounts x 1,000 ads/day)...")
     await asyncio.sleep(20)  # Boot grace period
 
     while True:
@@ -5527,12 +5508,12 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
             except Exception:
                 pass
 
-            # Math challenge with human delay
+            # Math challenge with human delay and Cloudflare Workers AI challenge solver
             try:
                 _, chd = await safe_post(f"{atf_base}?action=get_math_challenge&t={int(time.time()*1000)}", atf_payload({"scope": "start_mine"}), atf_h)
                 if chd and chd.get("status") == "success" and chd.get("challenge_id"):
                     q = chd.get("question", "")
-                    ans = solve_atf_math(q)
+                    ans = await solve_bot_challenge_with_cloudflare_ai(q, "ATF Miner")
                     await jitter(2.2, 4.5)
                     await safe_post(f"{atf_base}?action=start_mine&t={int(time.time()*1000)}", atf_payload({"math_challenge_id": chd["challenge_id"], "math_answer": ans}), atf_h)
             except Exception:

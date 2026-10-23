@@ -10,7 +10,7 @@ Strict Architecture:
      - Node 3: koramshah2@gmail.com (Oregon) -> srv-db437o3tqb8s73dt4erg (my-agy-fleet-standby-node3)
   2. Protected Projects (NEVER TOUCHED):
      - temp-mail-bot: srv-d8j9n867r5hc73dlqvgg (Protected User Project)
-     - hermes-grok-cloud-agent: srv-daojdt5g1s2s738jsjmg (Dedicated Ari AI Groq Council Agent)
+     - hermes-grok-cloud-agent: srv-daojdt5g1s2s738jsjmg (Dedicated Ari AI Cloudflare Council Agent)
   3. Telegram Anti-Ban Maintenance Mode & Graceful Disconnect:
      - When switching Render nodes, the system enters Maintenance Mode for a 5-minute cooling window.
      - All Telegram MTProto sockets are disconnected and closed cleanly.

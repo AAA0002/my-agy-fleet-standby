@@ -13,14 +13,12 @@ services:
     startCommand: python autonomous_cloud_agent.py
     autoDeploy: true
     envVars:
-      - key: GEMINI_API_KEYS
-        sync: false
-      - key: GROQ_API_KEY_1
-        sync: false
-      - key: GROQ_API_KEY_2
-        sync: false
-      - key: GROQ_API_KEY_3
-        sync: false
+      - key: USE_CLOUDFLARE_AI
+        value: "true"
+      - key: CLOUDFLARE_AI_MODEL
+        value: "@cf/meta/llama-3.1-8b-instruct"
+      - key: CLOUDFLARE_AI_REASONING_MODEL
+        value: "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b"
       - key: REPORT_BOT_TOKEN
         sync: false
       - key: REPORT_CHAT_ID

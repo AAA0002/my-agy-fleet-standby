@@ -2,6 +2,31 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🤖 100% Native Cloudflare Workers AI Migration & Total Purge of Revoked Gemini/Groq APIs (October 23, 2026)**:
+  - **Complete Deprecation & Eradication of Revoked APIs**:
+    * Permanently purged all revoked API keys (`GEMINI_API_KEYS`, `GROQ_API_KEY_1`, `GROQ_API_KEY_2`, `GROQ_API_KEY_3`) from `.env`, `render.yaml`, `deploy_both_cf_workers.py`, `app.py`, `render_app_latest.py`, `render_standby_app.py`, `autonomous_cloud_agent.py`, `daily_profit_reporter.py`, and GitHub Actions workflows (`fleet_sentinel.yml`).
+    * Eradicated all references from documentation (`PROJECT_BIBLE.md`, `SESSION_BRIDGE.md`) and UI components (`admin.html`, `index.html`, `dashboard.html`).
+  - **Native Cloudflare Workers AI Edge Inference Architecture**:
+    * Integrated zero-key, zero-cost Edge GPU models via Cloudflare Workers AI:
+      - Primary General: `@cf/meta/llama-3.1-8b-instruct`
+      - High-Speed / Micro-Tasks: `@cf/meta/llama-3.2-3b-instruct`
+      - Deep Reasoning & Math: `@cf/deepseek-ai/deepseek-r1-distill-qwen-32b`
+    * Deployed native API endpoints `/api/ai/solve` and `/api/bot-solve` on Cloudflare Edge Worker for sub-300ms challenge resolution without external rate limits or token exhaustion.
+  - **Cloudflare Workers AI Autonomous Engine Across All 9 Mining Pools**:
+    * **ATF Miner** (`@ATF_AIRDROP_bot`): Automated math challenge and puzzle solver (`get_math_challenge` -> `start_mine`) and 2-hour task cycle claims.
+    * **AdxEarn AI** (`@AdxEarnAibot`): Dynamic task discovery (`/rewards/tasks`), task-start, 15-second dwell verification, and automated reward claiming.
+    * **MRG Miner** (`@mrgminerbot`): Dynamic arithmetic challenge answering and 3.5-hour hashrate claim cycles.
+    * **Victor's Company** (`@VictorsCompanybot`): Automated quiz/task question answering and offline arcade profit harvesting.
+    * **VyroDrop** (`@vyrodrop_bot`): Claim validation, session initialization, and side-task completions.
+    * **Kynex Network** (`@kynexnetworkbot`): Daily energy replenishment, quiz answers, and task verification.
+    * **DiggoMiner** (`@Diggominer_bot`): Miner activation, hash rate upgrades, and daily task claims.
+    * **Astra Airdrop** (`@ASTRA_AIRDROP_BOT`): Daily check-in verification and quiz/task answers.
+    * **PepeGram** (`@Pepe_gram_bot`): Tap/mining claims, side-tasks, and task verification.
+  - **Autonomous 24/7 Ad-Farmer Expansion (All 20 Accounts)**:
+    * Expanded `FLEET_20_ACCOUNTS_MAP` in Render Node 2 (`render_standby_app.py`, `app.py`, `render_app_latest.py`) to all 20 accounts (#00 through #19, including Account #18 `Adil H` and Account #19 `Asaduzzaman Sarker`).
+    * Total fleet target updated to 20,000 ads/day (1,000 ads/account/day) with zero phone load.
+
+
 - **⚡ Full Fleet 20-Account Referral Resolution & Cloud Farming Audit (October 23, 2026)**:
   - **Root Cause Analysis — Missing Automatic Referral Trigger**:
     * Identified critical logic flaw in `app.py`, `render_app_latest.py`, and `render_standby_app.py` lines 4142 and 4366: referral binding was guarded by `if not is_existing and acc_entry.get("is_new_onboarding"):`. Because `is_new_onboarding` was never populated anywhere in the application, new accounts added via phone code or QR pairing completely bypassed `bind_account_master_referrals()`.

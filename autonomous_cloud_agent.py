@@ -6,7 +6,7 @@ ARI AUTONOMOUS AI AGENT (100% Free Multi-Model Council)
 =============================================================================
 Hostable on: Render.com (Cloud Background Worker) & Cloudflare Edge
 Cognitive Engine:
-  - Primary Proposer: Google Gemini 3.6 Flash / 3.5 Flash Lite (14-Key Rotating Pool)
+  - Primary Proposer: Cloudflare Workers AI (DeepSeek R1 32B / Llama 3.1 8B)
   - Safety Judge & Verifier: Cloudflare Workers AI (Llama 3.2 3B Instruct) across 3 Edge Nodes
 Core Features:
   - Anti-Stupid Dual-Verification Layer (Plan -> Critique -> Approve)
@@ -39,10 +39,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("AriAgent")
 
-# Credentials & Key Pools
-GEMINI_KEYS = [k.strip() for k in os.getenv("GEMINI_API_KEYS", "").split(",") if k.strip()]
-GROQ_KEYS = [os.getenv(f"GROQ_API_KEY_{i}") for i in [1, 2, 3] if os.getenv(f"GROQ_API_KEY_{i}")]
-
+# Credentials & Cloud Endpoints (100% Cloudflare Workers AI - Zero External Keys)
 REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "")
 REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
 PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
@@ -79,74 +76,41 @@ RENDER_STANDBY_NODES = [
 
 class MultiModelCouncil:
     """
-    Orchestrates Google Gemini 2.5 Flash and Cloudflare Workers AI with automatic key rotation,
-    cross-model validation, and zero-downtime failover.
+    Orchestrates native Cloudflare Workers AI across the edge GPU mesh with
+    cross-model validation (DeepSeek R1 / Llama 3.1 Proposer + Llama 3.2 Safety Judge)
+    and zero-downtime failover. 100% free, zero external keys, zero rate limits.
     """
     def __init__(self):
-        self.gemini_idx = 0
         self.cf_node_idx = 0
-        self.gemini_models = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"]
 
-    def rotate_gemini_key(self) -> str:
-        if not GEMINI_KEYS:
-            return ""
-        key = GEMINI_KEYS[self.gemini_idx % len(GEMINI_KEYS)]
-        self.gemini_idx += 1
-        return key
-
-    async def query_gemini_proposer(self, session: aiohttp.ClientSession, prompt: str) -> Optional[str]:
-        """Queries Google Gemini across the 14-key pool with active models, falling back to Cloudflare AI."""
-        for attempt in range(min(8, len(GEMINI_KEYS))):
-            key = self.rotate_gemini_key()
-            model = self.gemini_models[attempt % len(self.gemini_models)]
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
-            try:
-                payload = {
-                    "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {
-                        "temperature": 0.2,
-                        "responseMimeType": "application/json"
-                    }
-                }
-                async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=8)) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        candidates = data.get("candidates", [])
-                        if candidates:
-                            text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                            if text:
-                                return text
-                    elif resp.status == 429:
-                        logger.debug(f"[Council: Gemini] Key ending ...{key[-6:]} rate limited. Rotating key...")
-            except Exception as e:
-                logger.debug(f"[Council: Gemini] Attempt error: {e}")
-            await asyncio.sleep(0.2)
-
-        # Fallback to Cloudflare Workers AI Proposer (Zero-cost, Zero-rate-limit)
-        logger.info("[Council: Failover] Gemini busy. Falling back to Cloudflare Workers AI Proposer...")
-        for node_url in CF_AI_NODES:
+    async def query_ai_proposer(self, session: aiohttp.ClientSession, prompt: str) -> Optional[str]:
+        """Queries Cloudflare Workers AI with DeepSeek R1 / Llama 3.1 for high-level tactical reasoning."""
+        for i in range(len(CF_AI_NODES)):
+            node_url = CF_AI_NODES[(self.cf_node_idx + i) % len(CF_AI_NODES)]
             try:
                 cf_payload = {
                     "prompt": (
                         "You are the Lead Autonomous Fleet Commander (Ari AI Council).\n"
                         "Decide the best next operational step. Output JSON ONLY with keys: thought, action, target_account, confidence.\n\n"
                         f"{prompt}"
-                    )
+                    ),
+                    "model": "deepseek"
                 }
-                async with session.post(node_url, json=cf_payload, timeout=aiohttp.ClientTimeout(total=8)) as cf_r:
+                async with session.post(node_url, json=cf_payload, timeout=aiohttp.ClientTimeout(total=10)) as cf_r:
                     if cf_r.status == 200:
                         d = await cf_r.json()
-                        ans = d.get("answer", "")
+                        ans = d.get("answer") or d.get("response") or ""
                         if ans:
                             m = re.search(r"\{.*\}", ans, re.DOTALL)
                             return m.group(0) if m else ans
-            except Exception:
+            except Exception as e:
+                logger.debug(f"[Council: CF Proposer] Node {node_url} failed: {e}")
                 continue
         return None
 
     async def query_safety_judge(self, session: aiohttp.ClientSession, prompt: str) -> Optional[str]:
         """
-        Queries Cloudflare Workers AI (Llama 3.2 3B Instruct) across the 3 Edge Nodes.
+        Queries Cloudflare Workers AI (Llama 3.2 3B Instruct) across the Edge Nodes.
         100% Free, zero-cost, no API keys, zero rate limits.
         """
         for i in range(len(CF_AI_NODES)):
@@ -159,21 +123,21 @@ class MultiModelCouncil:
                         "Output valid JSON ONLY with format:\n"
                         '{"approved": true, "reason": "concise explanation", "sanitized_action": "action_name"}\n\n'
                         f"PROPOSAL AND STATE:\n{prompt}"
-                    )
+                    ),
+                    "model": "llama"
                 }
                 async with session.post(node_url, json=judge_payload, timeout=aiohttp.ClientTimeout(total=8)) as resp:
                     if resp.status == 200:
                         data = await resp.json()
-                        ans = data.get("answer", "")
+                        ans = data.get("answer") or data.get("response") or ""
                         if ans:
-                            # Extract JSON substring
                             m = re.search(r"\{.*\}", ans, re.DOTALL)
                             if m:
                                 self.cf_node_idx = (self.cf_node_idx + i + 1) % len(CF_AI_NODES)
                                 return m.group(0)
                             return ans
             except Exception as e:
-                logger.debug(f"[Council: CF AI] {node_url} note: {e}")
+                logger.debug(f"[Council: CF Judge] {node_url} note: {e}")
                 continue
         return None
 
@@ -185,7 +149,7 @@ class MultiModelCouncil:
     ) -> Dict[str, Any]:
         """
         Two-Model Dual-Verification Loop:
-        1. Google Gemini Flash proposes tactical action
+        1. Cloudflare Workers AI (DeepSeek R1 / Llama 3.1) proposes tactical action
         2. Cloudflare Workers AI (Llama 3.2 3B) audits & critiques the plan
         3. If approved, returns executable action.
         """
@@ -214,7 +178,7 @@ Decide the best next operational step. Output JSON ONLY:
   "confidence": 0.0 to 1.0
 }}
 """
-        plan_str = await self.query_gemini_proposer(session, proposer_prompt)
+        plan_str = await self.query_ai_proposer(session, proposer_prompt)
         try:
             plan = json.loads(plan_str) if plan_str else {"action": "rest", "thought": "Failover default rest"}
         except Exception:
@@ -431,7 +395,7 @@ class AutonomousAriAgent:
                 )
                 return
 
-        # 2. Decide (Multi-Model Council: Gemini Proposer + Cloudflare Llama 3.2 3B Judge)
+        # 2. Decide (Multi-Model Council: Cloudflare DeepSeek R1 Proposer + Llama 3.2 3B Judge)
         decision = await self.council.decide_with_anti_stupid_verification(session, state, lessons)
         act = decision.get("action")
         thought = decision.get("thought", "")
@@ -472,10 +436,10 @@ class AutonomousAriAgent:
 
 async def main():
     logger.info("=============================================================================")
-    logger.info("  ARI AUTONOMOUS AGENT (Google Gemini 2.5 Flash + Cloudflare AI)")
+    logger.info("  ARI AUTONOMOUS AGENT (100% Cloudflare Workers AI Edge Mesh)")
     logger.info("=============================================================================")
-    logger.info(f"• Gemini Key Pool: {len(GEMINI_KEYS)} keys loaded")
-    logger.info(f"• Safety Judge: Cloudflare Workers AI (@cf/meta/llama-3.2-3b-instruct across 3 nodes)")
+    logger.info(f"• Proposer & Reasoning: Cloudflare Workers AI (DeepSeek R1 32B / Llama 3.1 8B)")
+    logger.info(f"• Safety Judge: Cloudflare Workers AI (@cf/meta/llama-3.2-3b-instruct across Edge Nodes)")
     logger.info(f"• Render Failover Nodes: {len(RENDER_STANDBY_NODES)} standby nodes armed")
     logger.info("=============================================================================")
 
@@ -487,10 +451,10 @@ async def main():
             session,
             "🚀 *Ari Autonomous Cloud Agent Activated!*\n\n"
             "• **Host:** Cloud-Native / Render Node 3 (Singapore)\n"
-            "• **Council:** `Google Gemini 2.5 Flash` (Proposer) + `Cloudflare Llama 3.2 3B` (Judge)\n"
+            "• **Council:** `Cloudflare Workers AI` (DeepSeek R1 + Llama 3.2 Dual-Verification)\n"
             "• **Failover:** Render Standby (Singapore + Frankfurt) auto-collection armed\n"
             "• **Memory:** Serverless Persistent Reflexion Vector Store\n"
-            "• **Status:** Overseeing 13 accounts 24/7 autonomously."
+            "• **Status:** Overseeing 20 accounts 24/7 autonomously."
         )
 
         while True:

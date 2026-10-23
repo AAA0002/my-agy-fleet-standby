@@ -149,6 +149,11 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - Added `force_fresh: true` parameter support in `send-code` to bypass 75s debounce and disconnect stale clients.
     - Added 1-Tap QR Device Linking (`tg://login?token=...`) into PIN Pad and recovery screens.
     - Added chat OTP message auto-deletion to protect codes from Telegram chat scanners.
+16. **100% Native Cloudflare Workers AI Migration & Revoked Keys Purged**:
+    - Permanently eradicated all revoked Google Gemini and Groq API keys and dependencies from the codebase, `.env`, and documentation.
+    - Migrated intelligence engine to native Cloudflare Workers AI on edge GPUs (`@cf/meta/llama-3.1-8b-instruct`, `@cf/deepseek-ai/deepseek-r1-distill-qwen-32b`, `@cf/meta/llama-3.2-3b-instruct`).
+    - Infused automated AI challenge-solving, arithmetic solving, dynamic task discovery, and error classification across all 9 mining pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI).
+    - Expanded autonomous ad-farming loop to all 20 accounts (20,000 ads/day target) on Render Node 2.
 
 ---
 
