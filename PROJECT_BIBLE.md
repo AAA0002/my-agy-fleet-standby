@@ -1491,6 +1491,29 @@ Whenever you perform work in this repository:
   - Created dedicated multi-threaded deep audit engine querying all 5 active bot backends concurrently.
   - Confirmed 18/18 active on ATF Miner, 18/18 active on Kynex Network, 18 valid on MRG, and Victor's accounts ready for Turnstile qualification.
 
+### 29. WebApp Mining Dashboard Modernization, Mesh Auto-Failover & Multi-Pool Bug Fixes (October 23, 2026)
+* **Dual-Node API Mesh Auto-Failover in WebApp Dashboard (`public_ads/miner/index.html`)**:
+  - Resolved mesh disconnect by adding primary active Node 4 (`https://restore-agy.agorameet.workers.dev`) to `API_ENDPOINTS`.
+  - Implemented centralized `apiRequest(path, options)` dispatcher with `AbortController` (6s timeout) providing seamless client-side failover between Vercel same-origin, Node 4, Node 1 (`aaaai2`), Node 2 (`aaa-bot`), and Node 3 (`aaa222`).
+  - Automatically injects `Authorization: tma <initData>` and `X-User-Id` headers on all mesh queries.
+  - Added instant session caching in `localStorage` (`aaa_user_profile`) to eliminate UI loading flicker.
+* **Dynamic 9-Pool Backend Architecture & Slot Calculation**:
+  - Updated `/api/user/profile` endpoint to dynamically iterate over all 9 protocols in `MINING_POOLS` (`mrg`, `atf`, `victors`, `vyro`, `kynex`, `diggo`, `astra`, `pepegram`, `adxearn`), returning real-time connected account counts and harvest cycles.
+  - Fixed KPI slot calculation in `renderProfileUI` to compute `totalSlots = (p.slots || 1) + (p.temp_slots || 0)` and render `+N bonus slots`.
+  - Updated dashboard hero and grid headers from `5 Supported Mining Protocols` to `9 Supported Mining Protocols`.
+* **Multi-Identifier Account Disconnection Hardening**:
+  - Hardened backend `/api/user/account/remove` and Telegram User Bot callback `ub_disconnect_` to match across `id`, `label`, `user_id`, `acc_user_id`, and `phone`.
+  - Fixed `ub_remove_menu` which previously generated `ub_disconnect_undefined` for Mini App URL accounts.
+* **Bidirectional 3-Channel Auto-Relay Engine**:
+  - Upgraded multi-channel cross-poster to handle posts and edits bidirectionally across all 3 community channels: `@AAAAutoMiner` (`-1003684868577`), `@AAAAUTOMINING` (`-1004255751168`), and `@AAA_ACTIVITY` (`-1004332544939`).
+  - Added `relay_copied:<tgt_id>:<new_msg_id>` Upstash Redis tracking for zero loop amplification risk.
+* **Telegram Stars Webhook Registration**:
+  - Added `pre_checkout_query` to `allowed_updates` on `@AAAPREMIUMAPPSbot` webhook for instant Telegram Stars VIP pass processing.
+* **Live Cloud Deployment & Edge Verification**:
+  - Deployed updated worker script to Cloudflare Edge Node 4 (`https://restore-agy.agorameet.workers.dev`).
+  - Verified live profile query returns all 9 pools and 80 slots.
+  - Verified `/miner` serves updated responsive dashboard with zero phone load on Samsung Galaxy A30.
+
 
 
 

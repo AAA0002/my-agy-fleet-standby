@@ -2,6 +2,30 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 WebApp Mining Dashboard Modernization, Mesh Failover & Multi-Pool Bug Fixes (October 23, 2026)**:
+  - **Dual-Node API Mesh Auto-Failover in WebApp Dashboard**:
+    * Resolved critical mesh disconnect where client-side API calls in `public_ads/miner/index.html` omitted the active primary Cloudflare worker node (`https://restore-agy.agorameet.workers.dev`).
+    * Implemented centralized `apiRequest(path, options)` dispatcher with `AbortController` (6s timeout) that prioritizes relative requests (`""`), fails over instantly to Node 4 (`agorameet.workers.dev`), Node 1 (`aaaai2.workers.dev`), Node 2, and Node 3.
+    * Automatically injects `Authorization: tma <initData>` and `X-User-Id` headers on all mesh calls.
+    * Gracefully handles 400/403 validation responses without uselessly retrying subsequent nodes.
+    * Added local user profile persistence in `localStorage` (`aaa_user_profile`) to eliminate UI flicker on startup.
+  - **Dynamic 9-Pool Backend Architecture & Slot Calculation**:
+    * Fixed `/api/user/profile` endpoint which previously hardcoded only 5 pools (`mrg`, `atf`, `victors`, `vyro`, `kynex`). Now dynamically iterates over all 9 registered protocols in `MINING_POOLS` (including `diggo`, `astra`, `pepegram`, `adxearn`), returning real-time connected account counts and harvest cycles.
+    * Fixed slot calculation bug in dashboard KPI (`renderProfileUI`): now computes `totalSlots = (p.slots || 1) + (p.temp_slots || 0)` and dynamically renders `+N bonus slots` or `+1 per 50 ads`.
+    * Updated dashboard hero header from `5 Supported Mining Protocols` to `9 Supported Mining Protocols` across all 9 crypto bots.
+  - **Multi-Identifier Account Disconnect Hardening**:
+    * Hardened backend account disconnect endpoint (`/api/user/account/remove`) and Telegram User Bot callback (`ub_disconnect_`) to match against `a.id`, `a.label`, `a.user_id`, `a.acc_user_id`, and `a.phone`.
+    * Fixed `ub_remove_menu` in User Bot which previously generated `ub_disconnect_undefined` for Mini App URL connected accounts lacking standard phone numbers.
+  - **Bidirectional 3-Channel Auto-Relay Engine**:
+    * Upgraded multi-channel cross-poster to handle posts and edits bidirectionally across all 3 official community hubs: `@AAAAutoMiner` (`-1003684868577`), `@AAAAUTOMINING` (`-1004255751168`), and `@AAA_ACTIVITY` (`-1004332544939`).
+    * Added `relay_copied:<tgt_id>:<new_msg_id>` tracking in Upstash Redis to prevent infinite forwarding loops between interconnected channels.
+  - **Telegram Stars Pre-Checkout Webhook Registration**:
+    * Added `pre_checkout_query` to `allowed_updates` in `@AAAPREMIUMAPPSbot` webhook configuration, ensuring VIP pass payments via Telegram Stars are immediately acknowledged and approved.
+  - **Cloudflare Edge Node 4 Verified Live**:
+    * Deployed updated Worker JavaScript to Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Confirmed `/api/user/profile?user_id=6727787768` returns all 9 pools and 80 slots (`1 base + 79 temp`).
+    * Confirmed `/miner` serves updated dashboard HTML with zero phone load.
+
 - **🛡️ Live Channel Departure Gate Enforcement & Short-Text Directive (October 23, 2026)**:
   - **Live Channel Departure Gate Enforcement**:
     * Resolved channel departure detection issue where users who left an official channel were not prompted to rejoin.

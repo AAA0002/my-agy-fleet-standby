@@ -10499,11 +10499,19 @@ Reply to Arif naturally:`;
 
       const profile = await getUserProfile(uid);
       const accs = profile.accounts || [];
-      const mrgCount = accs.filter(a => a.pool === "mrg" || a.pool === "all" || !a.pool).length;
-      const atfCount = accs.filter(a => a.pool === "atf" || a.pool === "all" || !a.pool).length;
-      const victorsCount = accs.filter(a => a.pool === "victors" || a.pool === "all" || !a.pool).length;
-      const vyroCount = accs.filter(a => a.pool === "vyro" || a.pool === "all" || !a.pool).length;
-      const kynexCount = accs.filter(a => a.pool === "kynex" || a.pool === "all" || !a.pool).length;
+
+      const poolsData = {};
+      for (const [pKey, pVal] of Object.entries(MINING_POOLS)) {
+        const pCount = accs.filter(a => a.pool === pKey || a.pool === "all" || !a.pool).length;
+        poolsData[pKey] = {
+          name: pVal.name,
+          bot: "@" + pVal.username,
+          accounts_count: pCount,
+          cycle: pVal.cycle,
+          icon: pVal.icon,
+          ref_url: pVal.ref_url
+        };
+      }
 
       const now = Date.now();
       const hasActivePass = profile.subscription_expiry && profile.subscription_expiry > now;
@@ -10533,13 +10541,7 @@ Reply to Arif naturally:`;
           can_claim_daily: canClaimDaily,
           accounts: accs
         },
-        pools: {
-          mrg: { name: "MRG Miner", bot: "@mrgminerbot", accounts_count: mrgCount, cycle: "4 hours" },
-          atf: { name: "ATF Miner", bot: "@ATF_AIRDROP_bot", accounts_count: atfCount, cycle: "24 hours" },
-          victors: { name: "Victor's Company", bot: "@VictorsCompanybot", accounts_count: victorsCount, cycle: "8 hours" },
-          vyro: { name: "VyroDrop", accounts_count: vyroCount, bot: "@vyrodrop_bot", cycle: "12 hours" },
-          kynex: { name: "Kynex Network", accounts_count: kynexCount, bot: "@kynexnetworkbot", cycle: "12 hours" }
-        }
+        pools: poolsData
       }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
@@ -10589,6 +10591,7 @@ Reply to Arif naturally:`;
           id: `acc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           pool: pool,
           label: label,
+          user_id: accUserId,
           acc_user_id: accUserId,
           name: accName,
           init_data: parsed.clean_data,
@@ -10633,7 +10636,13 @@ Reply to Arif naturally:`;
         const accId = body.account_id || body.id;
         const profile = await getUserProfile(uid);
         const prevCount = (profile.accounts || []).length;
-        profile.accounts = (profile.accounts || []).filter(a => a.id !== accId && a.label !== accId);
+        profile.accounts = (profile.accounts || []).filter(a =>
+          String(a.id) !== String(accId) &&
+          String(a.label) !== String(accId) &&
+          String(a.user_id || "") !== String(accId) &&
+          String(a.acc_user_id || "") !== String(accId) &&
+          String(a.phone || "").replace("+", "") !== String(accId).replace("+", "")
+        );
         await saveUserProfile(uid, profile);
         return new Response(JSON.stringify({
           ok: true,
@@ -10723,13 +10732,21 @@ Reply to Arif naturally:`;
           const fromChatId = channelPost.chat?.id;
           const msgId = channelPost.message_id;
 
-          // Master Announcements Channel (-1004255751168, @AAAAUTOMINING)
-          // -> Automatically replicate to Community Hub (-1003684868577) & Live Activity (-1004332544939)
-          if (fromChatId === -1004255751168) {
-            const targets = [
-              { id: -1003684868577, name: "Community Hub" },
-              { id: -1004332544939, name: "Live Activity Stream" }
-            ];
+          const ALL_COMMUNITY_CHANNELS = [
+            { id: -1003684868577, name: "Community Hub (@AAAAutoMiner)" },
+            { id: -1004255751168, name: "Announcements (@AAAAUTOMINING)" },
+            { id: -1004332544939, name: "Live Activity (@AAA_ACTIVITY)" }
+          ];
+
+          const isOfficialChannel = ALL_COMMUNITY_CHANNELS.some(c => c.id === fromChatId);
+          if (isOfficialChannel) {
+            // Loop guard: Check if this post was created by our own relay bot
+            const isRelayedMsg = await upstashGet(`relay_copied:${fromChatId}:${msgId}`);
+            if (isRelayedMsg) {
+              return new Response("OK");
+            }
+
+            const targets = ALL_COMMUNITY_CHANNELS.filter(c => c.id !== fromChatId);
 
             if (update.channel_post) {
               const relayedMap = {};
@@ -10747,7 +10764,10 @@ Reply to Arif naturally:`;
                   if (res.ok) {
                     const data = await res.json();
                     if (data.ok && data.result?.message_id) {
-                      relayedMap[String(tgt.id)] = data.result.message_id;
+                      const newMsgId = data.result.message_id;
+                      relayedMap[String(tgt.id)] = newMsgId;
+                      // Mark copied message so it won't be looped back when Telegram notifies of channel_post
+                      ctx.waitUntil(upstashSet(`relay_copied:${tgt.id}:${newMsgId}`, true, 604800).catch(() => {}));
                     }
                   }
                 } catch (_) {}
@@ -12072,7 +12092,8 @@ Reply to Arif naturally:`;
               [{ text: "🔙 Back to Pools", callback_data: "ub_pools" }, { text: "📊 Dashboard", callback_data: "ub_stats" }]
             ];
             for (const a of poolAccs) {
-              viewBtns.push([{ text: `🗑️ Remove ${a.label || a.name || a.user_id}`, callback_data: `ub_disconnect_${a.user_id || a.phone || a.id}` }]);
+              const accKey = a.id || a.user_id || a.acc_user_id || a.phone || a.label;
+              viewBtns.push([{ text: `🗑️ Remove ${a.label || a.name || a.user_id || a.id}`, callback_data: `ub_disconnect_${accKey}` }]);
             }
             ctx.waitUntil(sendCqReply(viewMsg, { inline_keyboard: viewBtns }));
             return new Response("OK");
@@ -12149,11 +12170,18 @@ Reply to Arif naturally:`;
             const targetUid = cqData.replace("ub_disconnect_", "").trim();
             const profile = await getUserProfile(cqChatId, cq.from);
             const targetStr = String(targetUid).replace("+", "");
-            const removedAcc = (profile.accounts || []).find(a => String(a.user_id) === targetStr || String(a.phone || "").replace("+", "") === targetStr);
-            profile.accounts = (profile.accounts || []).filter(a => String(a.user_id) !== targetStr && String(a.phone || "").replace("+", "") !== targetStr);
+            const matchAcc = (a) => {
+              return String(a.id || "") === targetStr ||
+                     String(a.user_id || "") === targetStr ||
+                     String(a.acc_user_id || "") === targetStr ||
+                     String(a.phone || "").replace("+", "") === targetStr ||
+                     String(a.label || "") === targetStr;
+            };
+            const removedAcc = (profile.accounts || []).find(matchAcc);
+            profile.accounts = (profile.accounts || []).filter(a => !matchAcc(a));
             await saveUserProfile(cqChatId, profile);
             const totalSlots = (profile.slots || 1) + (profile.temp_slots || 0);
-            const accDesc = removedAcc ? `${removedAcc.name || "Account"} (\`${removedAcc.phone || removedAcc.user_id}\`)` : `Account \`${targetUid}\``;
+            const accDesc = removedAcc ? `${removedAcc.name || removedAcc.label || "Account"} (\`${removedAcc.phone || removedAcc.user_id || removedAcc.acc_user_id || removedAcc.id}\`)` : `Account \`${targetUid}\``;
             const repMsg = `✅ *Account Disconnected Successfully!* 🗑️\n\n` +
               `• *Removed:* ${accDesc}\n` +
               `• *Slots In Use:* ${profile.accounts.length} / ${totalSlots}\n` +
@@ -12177,9 +12205,11 @@ Reply to Arif naturally:`;
             const promptTxt = `🗑️ *SELECT AN ACCOUNT TO DISCONNECT:*\n\n` +
               `Choose the account you want to remove from 24/7 cloud mining:\n\n` +
               `⚠️ _Disconnecting an account immediately frees up its cloud slot._`;
-            const buttons = profile.accounts.map(a => [
-              { text: `🗑️ Disconnect: ${a.name || a.phone} (${a.phone || a.user_id})`, callback_data: `ub_disconnect_${a.user_id || a.phone}` }
-            ]);
+            const buttons = profile.accounts.map(a => {
+              const accKey = a.id || a.user_id || a.acc_user_id || a.phone || a.label;
+              const accDisplay = a.name || a.label || a.phone || a.user_id || "Account";
+              return [{ text: `🗑️ Disconnect: ${accDisplay}`, callback_data: `ub_disconnect_${accKey}` }];
+            });
             buttons.push([{ text: "🔙 Back to Accounts", callback_data: "ub_accounts_list" }]);
             ctx.waitUntil(sendCqReply(promptTxt, { inline_keyboard: buttons }));
             return new Response("OK");
@@ -14097,7 +14127,7 @@ async def main():
                     cur_uwh = await resp.json()
                     cur_uurl = (cur_uwh.get("result") or {}).get("url", "")
                     cur_uallowed = (cur_uwh.get("result") or {}).get("allowed_updates", [])
-                    needs_update = (cur_uurl != user_target_wh) or ("channel_post" not in cur_uallowed)
+                    needs_update = (cur_uurl != user_target_wh) or ("channel_post" not in cur_uallowed) or ("pre_checkout_query" not in cur_uallowed)
                     if needs_update:
                         print(f"📡 Setting User Bot Webhook to {user_target_wh} (with channel_post cross-posting)...")
                         async with session.post(

@@ -226,14 +226,14 @@
           </span>
         </div>
         <p class="text-[11px] text-slate-300 leading-relaxed">
-          Cloudflare Edge and Render nodes execute continuous token claims, hashrate boosters, and daily quests across all 5 official bots automatically.
+          Cloudflare Edge and Render nodes execute continuous token claims, hashrate boosters, and daily quests across all 9 official bots automatically.
         </p>
       </div>
 
-      <!-- 5 Verified Pools Grid -->
+      <!-- 9 Verified Pools Grid -->
       <div class="space-y-2">
         <div class="flex items-center justify-between px-1">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 font-display">5 Supported Mining Protocols</h2>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 font-display">9 Supported Mining Protocols</h2>
           <span class="text-[10px] font-mono text-cyan-400">Multi-Edge Architecture</span>
         </div>
 
@@ -557,7 +557,7 @@
             <span id="instr-arrow" class="font-mono text-xs">▼</span>
           </button>
           <div id="instructions-body" class="hidden text-[10px] text-slate-400 mt-2 space-y-1.5 leading-relaxed bg-black/30 p-2.5 rounded-xl border border-white/5">
-            <p>1. Open any supported bot (<a href="https://t.me/mrgminerbot" class="text-cyan-400 underline" target="_blank">@mrgminerbot</a>, <a href="https://t.me/ATF_AIRDROP_bot" class="text-cyan-400 underline" target="_blank">@ATF_AIRDROP_bot</a>, <a href="https://t.me/VictorsCompanybot" class="text-cyan-400 underline" target="_blank">@VictorsCompanybot</a>).</p>
+            <p>1. Open any supported bot (<a href="https://t.me/mrgminerbot" class="text-cyan-400 underline" target="_blank">@mrgminerbot</a>, <a href="https://t.me/ATF_AIRDROP_bot" class="text-cyan-400 underline" target="_blank">@ATF_AIRDROP_bot</a>, <a href="https://t.me/VictorsCompanybot" class="text-cyan-400 underline" target="_blank">@VictorsCompanybot</a>, <a href="https://t.me/vyrodrop_bot" class="text-cyan-400 underline" target="_blank">@vyrodrop_bot</a>, <a href="https://t.me/kynexnetworkbot" class="text-cyan-400 underline" target="_blank">@kynexnetworkbot</a>, etc.).</p>
             <p>2. Launch the Mini App inside Telegram.</p>
             <p>3. Tap the top-right menu in Telegram and select <strong>"Copy Link"</strong>.</p>
             <p>4. Paste the full URL into the box above and tap Connect.</p>
@@ -817,13 +817,48 @@
     let isSoundOn = true;
     let adCountdownInterval = null;
 
-    // Dual-Node API Mesh
+    // Dual-Node API Mesh with Auto-Failover
     const API_ENDPOINTS = [
-      "", // Same origin (relative)
+      "", // Same origin (relative for Vercel)
+      "https://restore-agy.agorameet.workers.dev",
       "https://restore-agy.aaaai2.workers.dev",
       "https://restore-agy.aaa-bot.workers.dev",
       "https://restore-agy.aaa222.workers.dev"
     ];
+
+    // Standardized Multi-Edge Mesh Request Dispatcher
+    async function apiRequest(path, options = {}) {
+      let lastError = null;
+      for (const base of API_ENDPOINTS) {
+        try {
+          const url = `${base}${path}`;
+          const headers = {
+            "Content-Type": "application/json",
+            "X-User-Id": currentUserId,
+            ...(options.headers || {})
+          };
+          if (window.Telegram?.WebApp?.initData) {
+            headers["Authorization"] = `tma ${window.Telegram.WebApp.initData}`;
+          }
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 6000);
+          const r = await fetch(url, { ...options, headers, signal: ctrl.signal });
+          clearTimeout(timer);
+          if (r.ok) {
+            return await r.json().catch(() => ({ ok: true }));
+          } else {
+            const errData = await r.json().catch(() => ({}));
+            lastError = errData.error || `HTTP ${r.status}`;
+            if (r.status === 400 || r.status === 403) {
+              return { ok: false, error: lastError, status: r.status };
+            }
+          }
+        } catch (e) {
+          lastError = e.message;
+        }
+      }
+      return { ok: false, error: lastError || "Network mesh unreachable" };
+    }
 
     // Initialize Telegram WebApp
     (function initTWA() {
@@ -861,6 +896,7 @@
         } catch (_) {}
       }
       if (u) {
+        try { localStorage.setItem('aaa_user_profile', JSON.stringify(u)); } catch (_) {}
         currentUserId = String(u.id);
         const nameEl = document.getElementById('user-name');
         const badgeEl = document.getElementById('user-id-badge');
@@ -993,15 +1029,7 @@
     // Fetch User Profile from Edge Mesh
     async function loadUserProfile() {
       try {
-        let resp = null;
-        for (const base of API_ENDPOINTS) {
-          try {
-            const url = `${base}/api/user/profile?user_id=${currentUserId}`;
-            const r = await fetch(url, { headers: { "X-User-Id": currentUserId } });
-            if (r.ok) { resp = await r.json(); break; }
-          } catch (_) {}
-        }
-
+        const resp = await apiRequest(`/api/user/profile?user_id=${currentUserId}`);
         if (resp && resp.ok) {
           currentUserProfile = resp.profile;
           renderProfileUI(resp);
@@ -1032,10 +1060,21 @@
       const streakEl = document.getElementById('stat-streak');
       const earnStreakBadge = document.getElementById('earn-streak-badge');
 
+      const totalSlots = p.slots || ((p.base_slots || 1) + (p.temp_slots || 0));
       if (ptsEl) ptsEl.textContent = (p.points || 0);
       if (runwayEl) runwayEl.textContent = `~${p.runway_days || 1} days`;
       if (costEl) costEl.textContent = `${p.daily_cost || 0} Pts/d`;
-      if (slotsEl) slotsEl.textContent = `${(p.accounts || []).length} / ${p.slots || 1}`;
+      if (slotsEl) slotsEl.textContent = `${(p.accounts || []).length} / ${totalSlots}`;
+      const slotSub = document.getElementById('stat-slot-sub');
+      if (slotSub) {
+        if ((p.temp_slots || 0) > 0) {
+          slotSub.textContent = `+${p.temp_slots} bonus slots`;
+          slotSub.className = "text-[8px] text-emerald-400 font-semibold truncate";
+        } else {
+          slotSub.textContent = "+1 per 50 ads";
+          slotSub.className = "text-[8px] text-slate-400 truncate";
+        }
+      }
       if (streakEl) streakEl.textContent = `Day ${p.daily_streak || 1}`;
       if (earnStreakBadge) earnStreakBadge.textContent = `Streak: Day ${p.daily_streak || 1} Active`;
 
@@ -1149,31 +1188,17 @@
       btn.innerHTML = `<span class="inline-block w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> Connecting...`;
 
       try {
-        let ok = false;
-        let resData = null;
-        for (const base of API_ENDPOINTS) {
-          try {
-            const r = await fetch(`${base}/api/user/account/add`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "X-User-Id": currentUserId },
-              body: JSON.stringify({
-                user_id: currentUserId,
-                pool: selectedPool,
-                raw_data: raw,
-                label: label
-              })
-            });
-            if (r.ok) {
-              resData = await r.json();
-              ok = true;
-              break;
-            } else {
-              resData = await r.json().catch(() => ({}));
-            }
-          } catch (_) {}
-        }
+        const resData = await apiRequest('/api/user/account/add', {
+          method: "POST",
+          body: JSON.stringify({
+            user_id: currentUserId,
+            pool: selectedPool,
+            raw_data: raw,
+            label: label
+          })
+        });
 
-        if (ok && resData?.ok) {
+        if (resData && resData.ok) {
           showToast(`Account "${label}" connected successfully`);
           document.getElementById('input-raw-data').value = "";
           onInputDataChanged();
@@ -1194,19 +1219,20 @@
     async function removeAccount(accId) {
       if (!confirm("Are you sure you want to disconnect this account?")) return;
       try {
-        for (const base of API_ENDPOINTS) {
-          try {
-            const r = await fetch(`${base}/api/user/account/remove`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "X-User-Id": currentUserId },
-              body: JSON.stringify({ user_id: currentUserId, account_id: accId })
-            });
-            if (r.ok) break;
-          } catch (_) {}
+        const res = await apiRequest('/api/user/account/remove', {
+          method: "POST",
+          body: JSON.stringify({ user_id: currentUserId, account_id: accId })
+        });
+        if (res && res.ok) {
+          showToast("Account disconnected");
+        } else {
+          showToast(res?.error || "Failed to disconnect");
         }
+        await loadUserProfile();
+      } catch (_) {
         showToast("Account disconnected");
         await loadUserProfile();
-      } catch (_) {}
+      }
     }
 
     // Claim Daily Bonus
@@ -1215,21 +1241,12 @@
       btn.disabled = true;
       btn.textContent = "Claiming...";
       try {
-        let ok = false;
-        let resData = null;
-        for (const base of API_ENDPOINTS) {
-          try {
-            const r = await fetch(`${base}/api/user/claim-daily`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "X-User-Id": currentUserId },
-              body: JSON.stringify({ user_id: currentUserId })
-            });
-            if (r.ok) { resData = await r.json(); ok = true; break; }
-            else { resData = await r.json().catch(() => ({})); }
-          } catch (_) {}
-        }
+        const resData = await apiRequest('/api/user/claim-daily', {
+          method: "POST",
+          body: JSON.stringify({ user_id: currentUserId })
+        });
 
-        if (ok && resData?.ok) {
+        if (resData && resData.ok) {
           showToast(`Claimed +${resData.reward || 100} Points (Day ${resData.streak})`);
           await loadUserProfile();
         } else {
@@ -1280,20 +1297,12 @@
       playBox.classList.add('hidden');
 
       try {
-        let ok = false;
-        let resData = null;
-        for (const base of API_ENDPOINTS) {
-          try {
-            const r = await fetch(`${base}/api/user/claim-ad`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "X-User-Id": currentUserId },
-              body: JSON.stringify({ user_id: currentUserId })
-            });
-            if (r.ok) { resData = await r.json(); ok = true; break; }
-          } catch (_) {}
-        }
+        const resData = await apiRequest('/api/user/claim-ad', {
+          method: "POST",
+          body: JSON.stringify({ user_id: currentUserId })
+        });
 
-        if (ok && resData?.ok) {
+        if (resData && resData.ok) {
           showToast(`+${resData.points_awarded || 20} Points Credited (Balance: ${resData.new_balance} Pts)`);
           hapticFeedback();
           await loadUserProfile();

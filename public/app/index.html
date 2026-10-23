@@ -664,9 +664,10 @@
     let isSoundOn = true;
     let adCountdownInterval = null;
 
-    // Dual-Node API Mesh
+    // Dual-Node API Mesh with Auto-Failover
     const API_ENDPOINTS = [
       "", // Same origin (relative)
+      "https://restore-agy.agorameet.workers.dev",
       "https://restore-agy.aaaai2.workers.dev",
       "https://restore-agy.aaa-bot.workers.dev",
       "https://restore-agy.aaa222.workers.dev"

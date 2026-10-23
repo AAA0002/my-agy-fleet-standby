@@ -3,8 +3,8 @@
   "public": true,
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/ai", "destination": "https://restore-agy.aaaai2.workers.dev/ai" },
-    { "source": "/api/:path*", "destination": "https://restore-agy.aaaai2.workers.dev/api/:path*" },
+    { "source": "/ai", "destination": "https://restore-agy.agorameet.workers.dev/ai" },
+    { "source": "/api/:path*", "destination": "https://restore-agy.agorameet.workers.dev/api/:path*" },
     { "source": "/miner", "destination": "/miner/index.html" },
     { "source": "/miner/(.*)", "destination": "/miner/index.html" },
     { "source": "/app/ad", "destination": "/index.html" },
