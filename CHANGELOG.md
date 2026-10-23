@@ -2,6 +2,16 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔐 Strict Secret Hygiene & Plaintext Token Scrubbing (October 23, 2026)**:
+  - **Vercel Secret Isolation (`deploy_vercel.py`)**:
+    * Replaced hardcoded plaintext Vercel Token and Team ID with cloud-native `os.getenv('VERCEL_TOKEN')` and `os.getenv('VERCEL_TEAM_ID')` loaded securely from `.env`.
+  - **GitHub Actions Secret Scrubbing (`.github/workflows/cloud_sweeper.yml`)**:
+    * Scrubbed hardcoded dRPC and TONAPI keys, replacing them with `${{ secrets.DRPC_KEY }}` and `${{ secrets.TONAPI_KEY }}` GitHub repository secrets.
+  - **Cloudflare Tunnel Token Scrubbing (`cloudflared_tunnel.sh`)**:
+    * Scrubbed raw hardcoded Cloudflare Tunnel JWT, replacing with dynamic `${CLOUDFLARE_TUNNEL_TOKEN:-}` environment variable.
+  - **Comprehensive Codebase Audit**:
+    * Scanned 100% of tracked Git files with multi-pattern secret scanner — confirmed **0** plaintext tokens or secret leaks remaining.
+
 - **🌐 Multi-Cloud Route Parity, 9-Bot Message Standardization, Failover Hardening & Vercel Cleanup (October 23, 2026)**:
   - **Ad Portal & Miner Routing Parity (Vercel & Static Hosting)**:
     * Created dedicated `public_ads/ad/index.html` and `public/ad/index.html` mirroring `public_ads/index.html` to prevent 404 Not Found errors on `/ad` across Vercel and static hosting providers.

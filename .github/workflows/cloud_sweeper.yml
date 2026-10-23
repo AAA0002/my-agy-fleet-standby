@@ -138,7 +138,7 @@ jobs:
           REPORT_BOT_TOKEN: "${{ secrets.REPORT_BOT_TOKEN }}"
           REPORT_CHAT_ID: "6727787768"
           PAYOUT_CHANNEL_ID: "-1004402765950"
-          DRPC_API_KEY: "Aj3ei0uTXUwutp4cQUkyTyjgB8oqtDAR8YBVEl_NDNxu"
-          TONAPI_KEY: "AGCD63WTWLGKKWYAAAAKRKZU45HTYMDI3PV7UBKKL6QDVIHG54NQDVNSQF7W3LQJ3X77QKY"
+          DRPC_API_KEY: "${{ secrets.DRPC_KEY }}"
+          TONAPI_KEY: "${{ secrets.TONAPI_KEY }}"
         run: |
           python cloud_wallet_sweeper.py --notify

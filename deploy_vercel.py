@@ -5,9 +5,13 @@ import hashlib
 import time
 import urllib.request
 import urllib.error
+from dotenv import load_dotenv
 
-TOKEN = 'vcp_3mspd9O3CPSBrt4jjTo9h3OXwOV6JT069jJNfvDXinPE04NwR73gb3LE'
-TEAM_ID = 'team_C2l6j4UJ0x8Cwu7xvYtxBn02'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
+
+TOKEN = os.getenv('VERCEL_TOKEN', '')
+TEAM_ID = os.getenv('VERCEL_TEAM_ID', '')
 
 ADMIN_PROJECT = {'id': 'prj_ogrrPM7nncstax8qNgDhmtZ4IgLE', 'name': 'my-agy-ai-fleet'} # agy-aaa000.vercel.app
 ADMIN_PROJECT_2 = {'id': 'prj_cRQOVIEldwoVTdZy45GQ95hcGhy1', 'name': 'aaa-free-ai'}       # aaa-free-ai.vercel.app
