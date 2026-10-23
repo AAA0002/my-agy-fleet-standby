@@ -2,6 +2,26 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🛡️ 20-Account Fleet Normalization & User Forensic Verification (October 23, 2026)**:
+  - **Account #20 (U.S.A. دهیار جاویدان) Forensic Investigation Completed**:
+    * Authenticated user journey: Joined User Bot (`@AAAPREMIUMAPPSbot`) on 2026-10-23 05:37:47 UTC via referral from master account `6727787768`.
+    * Claimed welcome gift (+100 Pts), watched 11 rewarded ads (+220 Pts, 520 Pts total balance).
+    * Linked account at 05:47:23 UTC via Mini App `/api/user/account/add` using `auth_type: "telegram_id"` (direct Telegram ID linking).
+    * Identified previous leak: An older cache sync endpoint injected this record into `fleet:live_state` which was read by the Admin Bot roster.
+    * Completely isolated this user to the User Bot namespace (`ub_user:1474280319` / `ub_registered_users`), visible exclusively in the User Bot Admin Console (`user-admin.html`).
+  - **Account #20 Real Fleet Account Established**:
+    * Established `Asaduzzaman Sarker` (`+8801312863569`, `user_id: 8609131528`) as the legitimate Account #20 across all fleet databases.
+    * Added to `accounts.json`, Upstash Redis `fleet:accounts`, `fleet:live_state`, `DEFAULT_FLEET_ACCOUNTS` in `deploy_both_cf_workers.py`, and `public_admin/fleet_wallets_data.json`.
+    * Verified multi-chain wallet addresses and keys: EVM (`0xd5805b81a2aa366d29395d491bdb35ddab3629fb`), TON (`UQCdmqN5C5b4vaxl02K4a11wM1Bs5wfLwg4vPPVjWC2Jg0DE`), TRON (`TVS6hMHnmwew9HZbM6j7aQ5KrsLE1V6oap`), Solana (`CzewjbfNXKQRDsc6oJhGe1FPtrQinhEoQKE7eArQF99`), Bitcoin (`1KBrc3ipkoxtNQFNE8zJxKvKujT95pA5n6`).
+  - **Cloud Infrastructure & Webhooks Verification**:
+    * Cloudflare Edge Worker Node 4 (`https://restore-agy.agorameet.workers.dev`): 🟢 Healthy (HTTP 200).
+    * Render Standby Node 2 (`https://my-agy-fleet-standby-node2.onrender.com`): 🟢 Healthy (HTTP 200).
+    * Admin Bot Webhook (`@myagyai`): 🟢 Healthy (HTTP 200, 0 pending updates).
+    * User Bot Webhook (`@AAAPREMIUMAPPSbot`): 🟢 Healthy (HTTP 200, 0 pending updates).
+    * User Bot Admin Console (`/user-admin`): 🟢 Healthy, tracking 48 community users with full transparency.
+    * User Bot Mini App Dashboard (`/miner`): 🟢 Healthy, fully mobile-responsive.
+
+
 - **💎 User Bot Community Realm Isolation & Complete Dual-Dashboard Mobile Redesign (October 23, 2026)**:
   - **Account #20 (U.S.A. دهیار جاویدان) Community Identification**:
     * Identified root cause of `#20 U.S.A. دهیار جاویدان` (`user_id: 1474280319`) appearing in Admin Bot: this account is an authentic end-user who registered in the User Bot (`@AAAPREMIUMAPPSbot`), linked accounts for 9 mining pools, watched 11 ads, and accumulated 520 points.

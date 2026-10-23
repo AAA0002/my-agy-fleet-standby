@@ -2057,7 +2057,9 @@ export default {
       15: "+8801906045479",
       16: "+8801304151082",
       17: "+8801879273559",
-      18: "+8801839716506"
+      18: "+8801839716506",
+      19: "+8801804723069",
+      20: "+8801312863569"
     };
 
     const fetchFleetOtp = async (targetIdx) => {
@@ -4667,7 +4669,7 @@ fi
               activeList.map(a => `• *#${a.idx}* ${a.name} (\`${a.phone}\`) — 🟢 Online`).join("\n") + `\n` +
               `━━━━━━━━━━━━━━━━━━━━━━\n` +
               `⏱️ *Audit Timestamp:* \`${dhakaTime}\`\n\n` +
-              `✅ *All 18 fleet accounts are healthy, authorized, and actively mining in the cloud.*`;
+              `✅ *All ${accounts.length} fleet accounts are healthy, authorized, and actively mining in the cloud.*`;
 
             relinkBtns.push([
               { text: "🔄 Refresh Audit", callback_data: "btn_session_audit" },
@@ -4919,7 +4921,9 @@ fi
           "7749125802": "+8801906045479",
           "7954290138": "+8801304151082",
           "8841038141": "+8801879273559",
-          "8975442879": "+8801839716506"
+          "8975442879": "+8801839716506",
+          "8937908003": "+8801804723069",
+          "8609131528": "+8801312863569"
         };
 
         const KNOWN_PHONES_BY_INDEX = {
@@ -4940,7 +4944,9 @@ fi
           15: "+8801906045479",
           16: "+8801304151082",
           17: "+8801879273559",
-          18: "+8801839716506"
+          18: "+8801839716506",
+          19: "+8801804723069",
+          20: "+8801312863569"
         };
 
         const DEFAULT_FLEET_ACCOUNTS = [
@@ -4961,7 +4967,9 @@ fi
           { index: 15, name: "Tasnim Farhana 15", user_id: 7749125802, phone: "+8801906045479" },
           { index: 16, name: "Rashedul Islam 16", user_id: 7954290138, phone: "+8801304151082" },
           { index: 17, name: "Kawsar Mahmud 17", user_id: 8841038141, phone: "+8801879273559" },
-          { index: 18, name: "Mehedi Hasan 18", user_id: 8975442879, phone: "+8801839716506" }
+          { index: 18, name: "Mehedi Hasan 18", user_id: 8975442879, phone: "+8801839716506" },
+          { index: 19, name: "Adil H", user_id: 8937908003, phone: "+8801804723069" },
+          { index: 20, name: "Asaduzzaman Sarker", user_id: 8609131528, phone: "+8801312863569" }
         ];
 
         const STATIC_FLEET_WALLETS = __FLEET_WALLETS_JSON__;

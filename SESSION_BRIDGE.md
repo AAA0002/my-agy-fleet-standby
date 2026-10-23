@@ -13,7 +13,7 @@
 * **Workspace**: `/root/workspace` (PRoot / Phone) & `/data/workspace/AAA_AUTO` (Cloud VM).
 * **Git Repository**: `AAA0002/ATL` (clean HTTPS remotes: `origin` and `standby_repo`).
 * **Architecture**: 100% Cloud-First Autonomous Telegram Mini-App Mining & Multi-Chain Wallet Fleet.
-* **Accounts**: **19 Telegram Accounts** (1 Master Account + 17 Static Worker Accounts + 1 Newly Onboarded Account #19 Adil H) farming in parallel.
+* **Accounts**: **20 Telegram Accounts** (1 Master Account + 17 Static Worker Accounts + Account #19 Adil H + Account #20 Asaduzzaman Sarker) farming in parallel.
 * **Master System Memory Core**: See [FLEET_MEMORY_CORE.md](./FLEET_MEMORY_CORE.md) for complete system memory, account roster, and operational invariants.
 * **5 Active Legitimate Fleet Bots**:
   1. **MRG Miner** (`@mrg_miner_bot`) — Cloudflare Turnstile Solver, Level 95+ Auto-Upgrade & auto-claim.

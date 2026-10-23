@@ -21,7 +21,7 @@
 
 ### 1.3 Strict Separation of Bot Ecosystems, Channels & Dual Admin Dashboards ("Zero Ecosystem Mixing")
 - **Independent Bot Ecosystems**:
-  - **Admin Bot (`@myagyai`, ID `8858823950`)**: Exclusively reserved for system administrators. Controls executive fleet operations, 19 MTProto account onboarding/linking, cloud farm orchestration, sentinel monitoring, disaster recovery backups, and cloud node health. Handled via `ADMIN_BOT_TOKEN` / `REPORT_BOT_TOKEN`.
+  - **Admin Bot (`@myagyai`, ID `8858823950`)**: Exclusively reserved for system administrators. Controls executive fleet operations, 20 MTProto account onboarding/linking, cloud farm orchestration, sentinel monitoring, disaster recovery backups, and cloud node health. Handled via `ADMIN_BOT_TOKEN` / `REPORT_BOT_TOKEN`.
   - **User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`)**: Exclusively dedicated to public end-users. Powers community multi-pool mining, points economy, daily check-ins, rewarded ads, Stars VIP access, and public onboarding. Handled via `USER_BOT_TOKEN`.
   - **Zero Contamination**: Admin commands (`/farm`, `/fleet`, `/acc`, `/restore`, QR/PIN MTProto logins) must NEVER be exposed to the User Bot; user flows must NEVER be mixed with admin operations.
 - **Strict Channel Separation (Zero Cross-Posting / Zero Leakage)**:
@@ -38,7 +38,7 @@
 - **Dual Independent Admin Dashboards (Never Conflate or Intermix)**:
   - **Executive Fleet Operations Console (`public_admin/admin.html` at `/admin`)**:
     - Dedicated strictly to **Admin Bot (`@myagyai`) & Fleet Operators**.
-    - Displays real-time status of the 19 MTProto fleet accounts, 9 farming pools, multi-cloud nodes (Render Standby Node 2, Cloudflare Edge Mesh), Redis key inspect/flush, and automated disaster recovery triggers.
+    - Displays real-time status of the 20 MTProto fleet accounts, 9 farming pools, multi-cloud nodes (Render Standby Node 2, Cloudflare Edge Mesh), Redis key inspect/flush, and automated disaster recovery triggers.
     - Does NOT manage public end-users, ad impressions, or public community points.
   - **User Bot Admin Console (`public_admin/user-admin.html` at `/user-admin`)**:
     - Dedicated strictly to **User Bot (`@AAAPREMIUMAPPSbot`) Community Management**.
