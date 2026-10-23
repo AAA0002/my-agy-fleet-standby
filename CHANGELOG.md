@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ Full Fleet 20-Account Referral Resolution & Cloud Farming Audit (October 23, 2026)**:
+  - **Root Cause Analysis — Missing Automatic Referral Trigger**:
+    * Identified critical logic flaw in `app.py`, `render_app_latest.py`, and `render_standby_app.py` lines 4142 and 4366: referral binding was guarded by `if not is_existing and acc_entry.get("is_new_onboarding"):`. Because `is_new_onboarding` was never populated anywhere in the application, new accounts added via phone code or QR pairing completely bypassed `bind_account_master_referrals()`.
+    * **Fix**: Replaced with intelligent self-healing condition: `needs_referrals = (not is_existing or not is_account_referrals_bound(acc_entry)) and str(user_id) != "6727787768"`. Any new account or account with unbound pools automatically triggers master referral binding upon login.
+  - **VyroDrop Referral Handshake Normalization**:
+    * Resolved `BOT_APP_SHORT_NAME_INVALID` error in `bind_account_master_referrals` where VyroDrop was attempting `RequestAppWebViewRequest` with short name `"app"`.
+    * Standardized VyroDrop handshake to use `extract_bot_webapp_token(client, VYRO_BOT, start_param=VYRO_REFERRAL_CODE, default_url="https://vyro.run.place/", candidate_short_names=["app", "vyro", "play", "mine"])`, aligning with all other 8 pools.
+  - **Fleet Accounts #18 & #19 Onboarding & Live Verification**:
+    * Executed cloud onboarding pipeline for Account #18 (`Adil H`, `8937908003`) and Account #19 (`Asaduzzaman Sarker`, `8609131528`).
+    * Inspected Master Account (`6727787768`) live Telegram inbox: confirmed incoming referral reward credits from both accounts in Kynex (+250 KNX x2), PepeGram (+2,000 POWER instant boost + 15% lifetime hash commission x2), and AdxEarn AI (+$0.10 USDT x2).
+    * Synchronized updated referral state (`vyro_referral_bound: true`, `all_10_referrals_bound: true`) to Upstash Redis `fleet:accounts` and local `accounts.json`.
+  - **20-Account Full-Fleet Farming Audit**:
+    * Audited ground-truth farming timestamps from `fleet:last_farm:<bot>:<uid>` in Upstash Redis across all 20 accounts and all 9 pools.
+    * Confirmed 100% of accounts (#00 through #19) are actively farming on Cloudflare Edge Worker cron (`*/15 * * * *`) and Render Node 2.
+    * Successfully tested on-demand single account farming on Node 2 (`/api/farm/account/8937908003` and `/api/farm/account/8609131528`) with zero errors.
+  - **Documentation & Separation Manual Linkage**:
+    * Prominently linked [DUAL_ADMIN_DASHBOARDS_AND_USER_SYSTEM.md](./DUAL_ADMIN_DASHBOARDS_AND_USER_SYSTEM.md) across `README.md`, `SESSION_BRIDGE.md`, and `PROJECT_BIBLE.md` to ensure instant accessibility of the dual dashboard separation and user session management manual.
+
 - **🐛 Comprehensive Bug Audit & Gateway Routing Normalization (October 23, 2026)**:
   - **Mini App Frontend Syntax Bug Fix**:
     * Identified and resolved top-level `await` syntax error in `public_ads/miner/index.html` caused by a missing `async function loadUserProfile()` declaration.

@@ -3,7 +3,7 @@
 Autonomous task automation, multi-account Telegram fleet orchestration, and decentralized on-chain telemetry engine.
 
 > 📖 **CRITICAL ARCHITECTURE DOCUMENTATION**:
-> All AI assistants, operators, and developers must read **[PROJECT_BIBLE.md](./PROJECT_BIBLE.md)** for the complete system topology, 16-bot matrix, 24-hour session collector architecture, operational cheat sheet, and multi-chain wallet protocols.
+> All AI assistants, operators, and developers must read **[PROJECT_BIBLE.md](./PROJECT_BIBLE.md)** and **[DUAL_ADMIN_DASHBOARDS_AND_USER_SYSTEM.md](./DUAL_ADMIN_DASHBOARDS_AND_USER_SYSTEM.md)** for the complete system topology, dual independent admin dashboards (`/admin` vs `/user-admin`), 9-bot farming matrix, 24-hour session collector architecture, operational cheat sheet, and multi-chain wallet protocols.
 
 ---
 
