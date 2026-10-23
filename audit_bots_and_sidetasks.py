@@ -148,6 +148,8 @@ def solve_atf_math(question_text: str) -> str:
 
     return str(nums[0]) if nums else "0"
 
+solve_challenge_deterministic = solve_atf_math
+
 async def test_bot_farming_and_sidetasks(uid, name, tokens, acc_info):
     is_owner = (str(uid) == MASTER_UID)
     report = {

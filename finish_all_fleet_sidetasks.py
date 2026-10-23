@@ -221,6 +221,9 @@ def solve_atf_math(question_text: str) -> str:
     return str(nums[0]) if nums else "0"
 
 
+solve_challenge_deterministic = solve_atf_math
+
+
 async def jitter(min_s: float = 0.5, max_s: float = 1.5):
     await asyncio.sleep(random.uniform(min_s, max_s))
 
