@@ -47,7 +47,7 @@ PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
 UPSTASH_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://pleasant-locust-220893.upstash.io")
 UPSTASH_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
 
-CF_SECRET_KEY = os.getenv("CF_SECRET_KEY", "agy_cf_secret_7d36994e_2026")
+CF_SECRET_KEY = os.getenv("CF_SECRET_KEY") or os.getenv("SECRET_KEY", "")
 
 # Target Wallets
 MASTER_EVM_VAULT = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"

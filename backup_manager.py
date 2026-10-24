@@ -189,8 +189,9 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
                 "https://restore-agy.agorameet.workers.dev/upload",
                 "https://restore-agy.aaaai.workers.dev/upload"
             ]
+            cf_sec = os.getenv("SECRET_KEY") or os.getenv("CF_SECRET_KEY", "")
             cf_headers = {
-                "Authorization": "Bearer agy_cf_secret_7d36994e_2026",
+                "Authorization": f"Bearer {cf_sec}",
                 "Content-Type": "application/zip",
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
             }

@@ -234,7 +234,7 @@ Tap any account node below. The cloud cluster will automatically connect to Tele
 🛡️ *Choose your preferred login method:*
 
 1️⃣ 📱 *1-Tap QR Login (Zero Code • Recommended)*
-   Telegram's official trusted device link. Zero SMS, no code sharing flags, auto-authenticates 2FA (\`Arif216@\`) in 0.5s!
+   Telegram's official trusted device link. Zero SMS, no code sharing flags, auto-authenticates 2FA automatically in 0.5s!
 
 2️⃣ ⌨️ *SMS Verification Code (Interactive PIN Pad)*
    Dispatches official code to \`${knownPhone}\`. Enter via buttons to prevent chat text inspection.
@@ -302,7 +302,7 @@ Tap the button below to directly open Telegram Device Link:
 Scan this QR code image:
 ${res.qr_image_url}
 
-🔐 *Instant Auto-2FA:* Once scanned, 2FA (\`Arif216@\`) completes automatically in 0.5s!`;
+🔐 *Instant Auto-2FA:* Once scanned, 2FA automatically completes automatically in 0.5s!`;
 
       await replyOrEdit(chatId, messageId, qrBanner, buildQrLoginKeyboard(idx, res.url));
     } else {
@@ -345,7 +345,7 @@ ${res.qr_image_url}
 
 Please enter your 5-digit verification code using the PIN pad buttons below:
 
-🔐 *Instant Auto-2FA:* 2FA password (\`Arif216@\`) authenticates automatically in 0.5s!`;
+🔐 *Instant Auto-2FA:* 2FA password automatically authenticates automatically in 0.5s!`;
 
       await replyOrEdit(chatId, messageId, pinBanner, buildPinPadKeyboard('', idx));
       return;
@@ -393,7 +393,7 @@ Telegram dispatched an official 5-digit verification code to \`${knownPhone}\`.
 ⚠️ *DO NOT TYPE CODE IN CHAT!*
 Telegram blocks codes sent as chat text. Tap the buttons below:
 
-🔐 *Instant Auto-2FA:* 2FA password (\`Arif216@\`) authenticates automatically!`;
+🔐 *Instant Auto-2FA:* 2FA password automatically authenticates automatically!`;
 
       await replyOrEdit(chatId, messageId, pinBanner, buildPinPadKeyboard('', idx));
     } else {
@@ -454,7 +454,7 @@ Telegram blocks codes sent as chat text. Tap the buttons below:
         text: `Verifying code ${currentDigits}...`
       }).catch(() => {});
 
-      await replyOrEdit(chatId, messageId, `🔄 *Verifying Telegram Code \`${currentDigits}\` on cloud cluster...*\n\n• Target Phone: \`${session.phone}\`\n• Auto-Authenticating 2FA: \`Arif216@\`\n\n_Please wait < 2 seconds..._`, null);
+      await replyOrEdit(chatId, messageId, `🔄 *Verifying Telegram Code \`${currentDigits}\` on cloud cluster...*\n\n• Target Phone: \`${session.phone}\`\n• Auto-Authenticating 2FA: \`Automatic (Vault)\`\n\n_Please wait < 2 seconds..._`, null);
 
       const res = await verifyLoginCode({
         chatId,

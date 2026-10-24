@@ -136,7 +136,7 @@ When a new account connects, the system immediately binds its dedicated wallets 
 - **The Solution (On-Screen PIN Pad)**:
   - The Cloudflare Worker displays an inline keypad (`buildPinPadKeyboard`) with digits `0-9`, `⌫ Del`, and `✅ Verify`.
   - Tapping buttons sends callback queries (`pin_digit_X`), keeping the chat completely clean of text codes.
-  - Upon the 5th digit, the worker automatically auto-applies the 2FA password (`Arif216@` or memorized custom password) and authenticates on Render Node 2.
+  - Upon the 5th digit, the worker automatically auto-applies the 2FA password (from Cloud Vault or memorized custom password) and authenticates on Render Node 2.
 - **1-Tap QR Login**:
   - Available as a fast zero-SMS fallback. User scans QR from Telegram Settings > Devices > Link Desktop Device.
 

@@ -14,7 +14,7 @@ CF_API_KEY = os.getenv("CF_API_KEY_NODE_1", "")
 CF_ACCOUNT_ID = os.getenv("CF_ACCOUNT_ID_NODE_1", "c9f92ab4a8b26b15f958ac25c22300bc")
 KV_NAMESPACE_ID = "315ff9eee275466ba24c01dc2c3f9653"
 WORKER_NAME = "restore-agy"
-SECRET_KEY = os.getenv("SECRET_KEY", "agy_cf_secret_7d36994e_2026")
+SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("CF_SECRET_KEY", "")
 OWNER_ID = os.getenv("OWNER_ID", "6727787768")
 ALERT_BOT_TOKEN = os.getenv("ALERT_BOT_TOKEN", "")
 

@@ -170,7 +170,7 @@ new_admin_gate = """function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, sh
 
     const MASTER_HASH = "4258745ceecd1c623fce00d9720bf716adcaf2edcb74e8da3499cbd734c9905f";
     const BACKUP_HASH = "cfee20846c9e2a91b74168f2d82458b1409896a6b02f29e9c8933b496fb103b0";
-    let isMasterPass = (pw === "Arif-Abid" || pw === "Arif216@");
+    let isMasterPass = (pw === MASTER_HASH || pw === BACKUP_HASH);
     try {
       const encoder = new TextEncoder();
       const buf = await crypto.subtle.digest("SHA-256", encoder.encode(pw));

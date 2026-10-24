@@ -28,7 +28,7 @@ API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")
 GMAIL_USER = os.getenv("GMAIL_ADDRESS", "aaa.support.a@gmail.com")
 GMAIL_APP_PASS = os.getenv("GMAIL_APP_PASSWORD", "").strip()
 
-PASSWORDS = ["Arif216@", "Arif-Abid"]
+PASSWORDS = [p for p in [os.getenv("FLEET_2FA_PASSWORD", ""), os.getenv("FLEET_2FA_FALLBACK", "")] if p]
 
 
 def fetch_confirm_code(min_email_id: int, max_wait: int = 40):

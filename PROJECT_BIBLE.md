@@ -690,11 +690,11 @@ To prevent resource leakages, unbounded database list growth, and local disk bal
   * **2-Hour Token TTL Watchdog**: `token_health_and_refresh_watchdog()` refreshes Telegram WebApp tokens if older than 2 hours (7,200s), ensuring tokens for VyroDrop and other bots never expire silently in the background.
 
 ### 2. Edge-to-Render Cloud Secret Key Hardening
-- Replaced vulnerable default fallback secret key (`"YOUR_SHARED_SECRET_KEY"`) in Cloudflare Edge dispatcher with production shared secret (`"agy_cf_secret_7d36994e_2026"`), guaranteeing that automated edge failover triggers to Render Standby Nodes never fail with HTTP 401 Unauthorized.
+- Replaced vulnerable default fallback secret key (`"YOUR_SHARED_SECRET_KEY"`) in Cloudflare Edge dispatcher with production shared secret (`os.getenv("SECRET_KEY")`), guaranteeing that automated edge failover triggers to Render Standby Nodes never fail with HTTP 401 Unauthorized.
 
 ### 3. Render 24h WebApp Token Collector Coordination
 - Render Frankfurt Node 2 (`my-agy-fleet-standby-node2.onrender.com`) acts as the primary cloud token extraction worker.
-- Dispatched via `POST /collect-tokens?secret=agy_cf_secret_7d36994e_2026&force=1`, extracting fresh signed `tgWebAppData` query strings across all 18 accounts and syncing atomically to Cloudflare KV and Upstash Redis without burning local device CPU.
+- Dispatched via `POST /collect-tokens?secret=$SECRET_KEY&force=1`, extracting fresh signed `tgWebAppData` query strings across all 18 accounts and syncing atomically to Cloudflare KV and Upstash Redis without burning local device CPU.
 
 ### 4. AAA Telegram Mini App & Admin Bot Deep Fusion
 - **Live Vercel Mini App**: `https://agy-aaa000.vercel.app/`
@@ -824,8 +824,8 @@ curl -s https://restore-agy.aaaai2.workers.dev/api/farm/status | jq .
 ### 2. Trigger Immediate Cloud Farm
 Trigger an immediate harvest across all 5 legitimate bots on Cloudflare Workers:
 ```bash
-curl -s -X POST https://restore-agy.aaaai2.workers.dev/api/farm/all \
-  -H "Authorization: Bearer agy_cf_secret_7d36994e_2026" \
+curl -s -X POST https://restore-agy.agorameet.workers.dev/api/farm/all \
+  -H "Authorization: Bearer $SECRET_KEY" \
   -H "Content-Type: application/json" \
   -d '{"all": true, "bot": "all"}'
 ```
@@ -852,8 +852,8 @@ import json, requests
 with open("accounts.json") as f:
     accs = json.load(f)
 master = [a for a in accs if str(a.get("user_id")) == "6727787768"]
-r = requests.post("https://my-agy-fleet-standby.onrender.com/collect-tokens",
-  headers={"Authorization": "Bearer agy_cf_secret_7d36994e_2026"}, json={"accounts": master})
+r = requests.post("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens",
+  headers={"Authorization": f"Bearer {os.getenv('SECRET_KEY')}"}, json={"accounts": master})
 print(r.json())
 '
 ```

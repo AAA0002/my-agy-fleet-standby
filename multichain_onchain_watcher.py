@@ -62,7 +62,7 @@ UPSTASH_REDIS_REST_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
 TONAPI_KEY = os.getenv("TONAPI_KEY", "DVNSQF7W3LQJ3X77QKY")
 ETHERSCAN_API_KEY = os.getenv("ETHERSCAN_API_KEY", "")
 DRPC_KEY = os.getenv("DRPC_API_KEY", "")
-TONCENTER_API_KEY = os.getenv("TONCENTER_API_KEY", "16b726fb32eb7cedc95169da8aa3948829e1140d770dc740ffeb75b1a51862ad")
+TONCENTER_API_KEY = os.getenv("TONCENTER_API_KEY", "")
 ALCHEMY_ETH_RPC = os.getenv("ALCHEMY_ETH_RPC", "https://eth-mainnet.g.alchemy.com/v2/alch_bx0bDWIy7_g3VQaH6HPG8")
 
 CF_WORKER_URLS = [
@@ -70,7 +70,7 @@ CF_WORKER_URLS = [
     os.getenv("CF_WORKER_URL_2", "https://restore-agy.aaa-bot.workers.dev"),
     os.getenv("CF_WORKER_URL_3", "https://restore-agy.aaa222.workers.dev")
 ]
-SECRET_KEY = os.getenv("CF_SECRET_KEY", "agy_cf_secret_7d36994e_2026")
+SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("CF_SECRET_KEY", "")
 
 BSC_RPCS = [
     "https://bsc-dataseed.binance.org",

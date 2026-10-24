@@ -31,7 +31,7 @@ jobs:
 
       - name: Fetch Accounts from Cloudflare R2 / KV Archive
         env:
-          CF_SECRET_KEY: "agy_cf_secret_7d36994e_2026"
+          CF_SECRET_KEY: "${{ secrets.CF_SECRET_KEY || secrets.SECRET_KEY }}"
         run: |
           python - << 'EOF'
           import os
@@ -93,15 +93,17 @@ jobs:
 
       - name: Delegate MTProto Token Refresh to Render Node 2 (Frankfurt Primary)
         env:
-          CF_SECRET_KEY: "agy_cf_secret_7d36994e_2026"
+          CF_SECRET_KEY: "${{ secrets.CF_SECRET_KEY || secrets.SECRET_KEY }}"
         run: |
           python - << 'EOF'
           import urllib.request, json
           # Strict 1-IP Pinning: ONLY Render Node 2 in Frankfurt connects to Telegram MTProto.
           # Zero Telethon connections on GitHub Actions to guarantee NO multi-IP collisions or AuthKeyDuplicatedError.
-          url = "https://my-agy-fleet-standby-node2.onrender.com/collect-tokens?secret=agy_cf_secret_7d36994e_2026&sync=1"
+          import os
+          sec = os.environ.get("CF_SECRET_KEY", "")
+          url = f"https://my-agy-fleet-standby-node2.onrender.com/collect-tokens?secret={sec}&sync=1"
           try:
-              req = urllib.request.Request(url, headers={"Authorization": "Bearer agy_cf_secret_7d36994e_2026"})
+              req = urllib.request.Request(url, headers={"Authorization": f"Bearer {sec}"})
               with urllib.request.urlopen(req, timeout=90) as resp:
                   data = json.loads(resp.read().decode())
                   print(f"✅ Render Node 2 Token Collection Succeeded: {data}")
@@ -147,7 +149,7 @@ jobs:
                       url,
                       data=json.dumps({"source": "github_actions_failure_failover"}).encode(),
                       headers={
-                          "Authorization": "Bearer agy_cf_secret_7d36994e_2026",
+                          "Authorization": f"Bearer {os.environ.get('CF_SECRET_KEY', '')}",
                           "Content-Type": "application/json"
                       }
                   )

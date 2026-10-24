@@ -1,5 +1,5 @@
 // tgcloud/lib/config.js — Centralized configuration for AAA AUTO mesh
-export const SECRET_KEY = (typeof process !== "undefined" && process.env?.SECRET_KEY) || "agy_cf_secret_7d36994e_2026";
+export const SECRET_KEY = (typeof process !== "undefined" && (process.env?.SECRET_KEY || process.env?.CF_SECRET_KEY)) || "";
 export const OWNER_ID = (typeof process !== "undefined" && process.env?.OWNER_ID) || "6727787768";
 
 export const CF_WORKER_URLS = [

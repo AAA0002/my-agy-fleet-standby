@@ -59,7 +59,7 @@ if os.path.exists(env_file):
 
 UPSTASH_URL = env.get("UPSTASH_URL") or env.get("UPSTASH_REDIS_REST_URL") or "https://pleasant-locust-220893.upstash.io"
 UPSTASH_TOKEN = env.get("UPSTASH_TOKEN") or env.get("UPSTASH_REDIS_REST_TOKEN") or ""
-SECRET_KEY = env.get("SECRET_KEY") or "agy_cf_secret_7d36994e_2026"
+SECRET_KEY = env.get("SECRET_KEY") or env.get("CF_SECRET_KEY") or ""
 
 CF_WORKERS = [
     "https://restore-agy.aaaai2.workers.dev",

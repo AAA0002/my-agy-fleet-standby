@@ -110,12 +110,12 @@ logger = logging.getLogger("RenderSessionCollector")
 
 app = FastAPI(title="MY AGY AI — Standby Batch Session Link Collector")
 
-SECRET_KEY = os.getenv("SECRET_KEY", "agy_cf_secret_7d36994e_2026")
+SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("CF_SECRET_KEY", "")
 API_ID = int(os.getenv("TELEGRAM_API_ID", "37321306"))
 API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")
 REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
 REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN") or os.getenv("ALERT_BOT_TOKEN") or os.getenv("ADMIN_BOT_TOKEN") or ""
-USER_BOT_TOKEN = os.getenv("USER_BOT_TOKEN") or "8167732110:AAGQA6bBgRwaChFIWPvs9uCt6aZ3j1VGCn8"
+USER_BOT_TOKEN = os.getenv("USER_BOT_TOKEN", "")
 PRIMARY_CHAT_ID = "6727787768"
 PRIMARY_TON_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
 PRIMARY_EVM_WALLET = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
@@ -4116,9 +4116,9 @@ async def verify_login_code(request: Request):
                         logger.warning(f"[Standby Cloud Login] Upstash custom 2FA lookup error: {e_mem}")
 
                 # Tier 2: Standard Fleet Passwords from cloud environment
-                env_pw1 = os.getenv("FLEET_2FA_PASSWORD", "Arif216@")
-                env_pw2 = os.getenv("FLEET_2FA_FALLBACK", "Arif-Abid")
-                for p_env in [env_pw1, env_pw2, "Arif216@", "Arif-Abid"]:
+                env_pw1 = os.getenv("FLEET_2FA_PASSWORD", "")
+                env_pw2 = os.getenv("FLEET_2FA_FALLBACK", "")
+                for p_env in [env_pw1, env_pw2]:
                     if p_env and p_env not in two_fa_passwords:
                         two_fa_passwords.append(p_env)
 
@@ -4394,7 +4394,7 @@ async def start_qr_login(request: Request):
                         logger.info(f"[Standby Cloud QR Login] 🔒 2FA password required for User Bot chat {chat_id}.")
                     else:
                         logger.info(f"[Standby Cloud QR Login] 🔒 2FA password required for Fleet Chat {chat_id}. Auto-authenticating...")
-                        for p in [os.getenv("FLEET_2FA_PASSWORD", "Arif216@"), os.getenv("FLEET_2FA_FALLBACK", "Arif-Abid"), "Arif216@", "Arif-Abid"]:
+                        for p in [os.getenv("FLEET_2FA_PASSWORD", ""), os.getenv("FLEET_2FA_FALLBACK", "")]:
                             if not p:
                                 continue
                             try:
@@ -4662,7 +4662,7 @@ async def get_account_otp(acc_target: str, request: Request):
         sess = target_acc.get("session_string")
         name = target_acc.get("name", f"Account #{target_idx}")
         phone = target_acc.get("phone", "N/A")
-        password_2fa = os.getenv("FLEET_2FA_PASSWORD", "Arif216@")
+        password_2fa = os.getenv("FLEET_2FA_PASSWORD", "")
 
         if not sess:
             return {"ok": False, "found": False, "error": f"No active session string for {name} ({phone})"}

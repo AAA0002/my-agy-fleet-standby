@@ -37,7 +37,7 @@ jobs:
 
       - name: Fetch Encrypted Fleet Wallets from Cloudflare Edge & IPFS
         env:
-          CF_SECRET_KEY: "agy_cf_secret_7d36994e_2026"
+          CF_SECRET_KEY: "${{ secrets.CF_SECRET_KEY || secrets.SECRET_KEY }}"
         run: |
           python - << 'EOF'
           import os
@@ -103,7 +103,7 @@ jobs:
 
       - name: Trigger Cloudflare Edge Autonomous Fleet Sweeps
         env:
-          CF_SECRET_KEY: "agy_cf_secret_7d36994e_2026"
+          CF_SECRET_KEY: "${{ secrets.CF_SECRET_KEY || secrets.SECRET_KEY }}"
         run: |
           python - << 'EOF'
           import urllib.request

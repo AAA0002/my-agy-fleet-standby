@@ -109,7 +109,7 @@ ACCOUNTS = [
 ]
 
 WORKER_NAME = "restore-agy"
-SECRET_KEY = os.getenv("SECRET_KEY", "agy_cf_secret_7d36994e_2026")
+SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("CF_SECRET_KEY", "")
 OWNER_ID = os.getenv("OWNER_ID", "6727787768")
 ALERT_BOT_TOKEN = os.getenv("ALERT_BOT_TOKEN", "")
 USER_BOT_TOKEN = os.getenv("USER_BOT_TOKEN", "")
@@ -1979,9 +1979,9 @@ export default {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`
+              "Authorization": `Bearer ${env.SECRET_KEY}`
             },
-            body: JSON.stringify({ phone, chat_id: String(targetChatId), force_fresh: Boolean(forceFresh), secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026" }),
+            body: JSON.stringify({ phone, chat_id: String(targetChatId), force_fresh: Boolean(forceFresh), secret: env.SECRET_KEY }),
             signal: AbortSignal.timeout(35000)
           });
           if (res.ok) {
@@ -2008,14 +2008,14 @@ export default {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`
+              "Authorization": `Bearer ${env.SECRET_KEY}`
             },
             body: JSON.stringify({
               phone,
               code: code || "",
               password: password || "",
               chat_id: String(targetChatId),
-              secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026",
+              secret: env.SECRET_KEY,
               index: index || null,
               is_user_bot: isUser
             }),
@@ -2501,7 +2501,7 @@ export default {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`,
+                "Authorization": `Bearer ${env.SECRET_KEY}`,
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
               },
               body: JSON.stringify({ origin: "cf_harvest_action" })
@@ -2532,7 +2532,7 @@ export default {
     // 1.1 Trigger Direct Webhook Sync from Cloudflare Edge
     if (path === "/api/sync-telegram-webhooks" || path === "/sync-webhooks") {
       const sec = url.searchParams.get("secret") || request.headers.get("X-Secret");
-      if (sec !== env.SECRET_KEY && sec !== "agy_cf_secret_7d36994e_2026") {
+      if (sec !== env.SECRET_KEY) {
         return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
       }
 
@@ -3088,7 +3088,7 @@ fi
           const encoder = new TextEncoder();
           const pwBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(password));
           const hexHash = Array.from(new Uint8Array(pwBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-          if (hexHash === masterHash || password === "Arif-Abid" || password === "Arif216@" || hexHash === "cfee20846c9e2a91b74168f2d82458b1409896a6b02f29e9c8933b496fb103b0") {
+          if (hexHash === masterHash || hexHash === "cfee20846c9e2a91b74168f2d82458b1409896a6b02f29e9c8933b496fb103b0") {
             authValid = true;
             authMethod = "password";
           }
@@ -3166,7 +3166,7 @@ fi
           const hexHash = Array.from(new Uint8Array(pwBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
           const sbAdmin = await supabaseGetAdminAuth("6727787768");
           const masterHash = sbAdmin?.password_hash || "4258745ceecd1c623fce00d9720bf716adcaf2edcb74e8da3499cbd734c9905f";
-          if (hexHash !== masterHash && password !== "Arif-Abid" && password !== "Arif216@" && hexHash !== "cfee20846c9e2a91b74168f2d82458b1409896a6b02f29e9c8933b496fb103b0") {
+          if (hexHash !== masterHash && hexHash !== "cfee20846c9e2a91b74168f2d82458b1409896a6b02f29e9c8933b496fb103b0") {
             return new Response(JSON.stringify({ ok: false, error: "Invalid master password" }), { status: 401, headers: corsHeaders });
           }
         }
@@ -3708,7 +3708,7 @@ fi
         const targetUrl = `${renderNode}${path}${url.search}`;
         const reqHeaders = new Headers(request.headers);
         reqHeaders.delete("host");
-        reqHeaders.set("Authorization", `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`);
+        reqHeaders.set("Authorization", `Bearer ${env.SECRET_KEY}`);
         const forwardOptions = {
           method: request.method,
           headers: reqHeaders,
@@ -4140,7 +4140,7 @@ fi
     if ((path === "/api/miniapp/tokens/sync" || path === "/api/tokens" || path === "/api/tokens/sync" || path === "/api/fleet/tokens/sync") && request.method === "POST") {
       try {
         const auth = request.headers.get("Authorization") || "";
-        const expectedSecret = env.SECRET_KEY || "agy_cf_secret_7d36994e_2026";
+        const expectedSecret = env.SECRET_KEY;
         if (auth !== `Bearer ${expectedSecret}`) {
           return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), { status: 401, headers: corsHeaders });
         }
@@ -4255,7 +4255,7 @@ fi
         ctx.waitUntil((async () => {
           await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
             method: "POST",
-            headers: { "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`, "Content-Type": "application/json" },
+            headers: { "Authorization": `Bearer ${env.SECRET_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({ source: "api_tokens_refresh_trigger" })
           }).catch(() => {});
         })());
@@ -4529,7 +4529,7 @@ fi
             method: request.method,
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`,
+              "Authorization": `Bearer ${env.SECRET_KEY}`,
               "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
             },
             body: (request.method !== "GET" && request.method !== "HEAD") ? await request.text().catch(() => null) : undefined
@@ -4633,7 +4633,7 @@ fi
             try {
               await fetch("https://my-agy-fleet-standby-node2.onrender.com/api/farm/cloud-all", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}` },
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
                 body: JSON.stringify({ all: true, bot: "all" })
               });
             } catch (_) {}
@@ -5665,7 +5665,7 @@ fi
                 const verifyingRep = `🔄 *Verifying Telegram Code \`${currentDigits}\` on cloud cluster...*\n\n` +
                   `• *Account:* #${targetIdx}\n` +
                   `• *Target Phone:* \`${phoneToRelink}\`\n` +
-                  `• *Auto-Authenticating 2FA:* \`Arif216@\`\n\n` +
+                  `• *Auto-Authenticating 2FA:* \`Automatic (Vault)\`\n\n` +
                   `_Connecting to MTProto socket... please wait < 2 seconds..._`;
                 await editOrSendResilientMessage(chatId, cbMsgId, verifyingRep, null);
 
@@ -5677,7 +5677,7 @@ fi
                 });
 
                 if (res && res.need_2fa) {
-                  for (const fallbackPw of ["Arif216@", "Arif-Abid"]) {
+                  for (const fallbackPw of [env.FLEET_2FA_PASSWORD].filter(Boolean)) {
                     const res2fa = await cloudLoginVerify(chatId, {
                       password: fallbackPw,
                       phone: phoneToRelink,
@@ -5787,7 +5787,7 @@ fi
                 `Telegram sent a 5-digit verification code to \`${phoneToRelink}\`.\n\n` +
                 `⌨️ *TAP DIGITS ON PIN PAD KEYPAD BELOW:*\n` +
                 `• Zero text typing in chat = 100% immune to Telegram anti-phishing blocks!\n` +
-                `• 2FA password (\`Arif216@\`) will be applied automatically upon 5th digit.\n\n` +
+                `• 2FA password will be applied automatically upon 5th digit.\n\n` +
                 `🔑 *Code:* \`[  ${slots}  ]\``;
               await editOrSendResilientMessage(chatId, cbMsgId, rep, buildPinPadKeyboard(currentDigits, targetIdx));
               return new Response("OK");
@@ -6010,7 +6010,7 @@ fi
               const targetAccObj = accounts[targetIdx - 1];
               const nameStr = (targetAccObj ? targetAccObj.name : data.name) || `Account #${targetIdx}`;
               const phoneStr = (targetAccObj ? targetAccObj.phone : data.phone) || KNOWN_PHONES_BY_INDEX[targetIdx] || "N/A";
-              const pwdStr = data.password_2fa || "Arif216@";
+              const pwdStr = data.password_2fa || env.FLEET_2FA_PASSWORD || "";
 
               let rep = "";
               let markup = {};
@@ -6165,7 +6165,7 @@ fi
                   `⌨️ *TAP DIGITS ON PIN PAD KEYPAD BELOW:*\n` +
                   `• Do NOT type code as a chat message — tap the buttons below!\n` +
                   `• 100% immune to Telegram anti-phishing blocks.\n` +
-                  `• Auto-applies 2FA password (\`Arif216@\`) upon 5th digit.\n\n` +
+                  `• Auto-applies 2FA password automatically upon 5th digit.\n\n` +
                   `🔑 *Code:* \`[  •  •  •  •  •  ]\``;
                 await editOrSendResilientMessage(chatId, cbMsgId, codeRep, buildPinPadKeyboard("", relinkIdx));
               } else {
@@ -6186,9 +6186,9 @@ fi
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`
+                    "Authorization": `Bearer ${env.SECRET_KEY}`
                   },
-                  body: JSON.stringify({ chat_id: String(chatId), index: targetIdx, secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026" }),
+                  body: JSON.stringify({ chat_id: String(chatId), index: targetIdx, secret: env.SECRET_KEY }),
                   signal: AbortSignal.timeout(25000)
                 });
                 const qData = await qRes.json();
@@ -6200,7 +6200,7 @@ fi
                     `👉 *How to Complete (Choose either option):*\n` +
                     `1️⃣ *Method 1 (Instant):* Tap the button below to authorize this session directly in Telegram.\n` +
                     `2️⃣ *Method 2:* Open Telegram on your phone → *Settings* → *Devices* → *Link Desktop Device* and scan or confirm.\n\n` +
-                    `🔒 *2FA Password:* Automatic (\`Arif216@\`)\n` +
+                    `🔒 *2FA Password:* Automatic (Cloud Vault)\n` +
                     `⏱️ *Link Expiry:* 2 minutes\n` +
                     `━━━━━━━━━━━━━━━━━━━━━━`;
                   const qrButtons = [
@@ -7335,7 +7335,7 @@ fi
                   `Telegram sent a 5-digit verification code to \`${targetPhone}\`.\n\n` +
                   `⌨️ *TAP DIGITS ON PIN PAD KEYPAD BELOW:*\n` +
                   `• Zero chat typing = 100% immune to Telegram anti-phishing blocks!\n` +
-                  `• Auto-applies 2FA password (\`Arif216@\`) upon 5th digit.\n\n` +
+                  `• Auto-applies 2FA password automatically upon 5th digit.\n\n` +
                   `🔑 *Code:* \`[  •  •  •  •  •  ]\``;
                 await sendReply(rep, buildPinPadKeyboard("", reqIdx));
                 return;
@@ -7376,9 +7376,9 @@ fi
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`
+                  "Authorization": `Bearer ${env.SECRET_KEY}`
                 },
-                body: JSON.stringify({ chat_id: String(chatId), index: reqIdx, secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026" }),
+                body: JSON.stringify({ chat_id: String(chatId), index: reqIdx, secret: env.SECRET_KEY }),
                 signal: AbortSignal.timeout(25000)
               });
               const qData = await qRes.json();
@@ -7390,7 +7390,7 @@ fi
                   `👉 *How to Complete (Choose either option):*\n` +
                   `1️⃣ *Method 1 (Instant):* Tap the button below to authorize this session directly in Telegram.\n` +
                   `2️⃣ *Method 2:* Open Telegram on your phone → *Settings* → *Devices* → *Link Desktop Device* and scan or confirm.\n\n` +
-                  `🔒 *2FA Password:* Automatic (\`Arif216@\`)\n` +
+                  `🔒 *2FA Password:* Automatic (Cloud Vault)\n` +
                   `⏱️ *Link Expiry:* 2 minutes\n` +
                   `━━━━━━━━━━━━━━━━━━━━━━`;
                 await sendReply(qrRep, {
@@ -8237,7 +8237,7 @@ fi
             const res = await cloudLoginVerify(chatId, { code: cleanCode, phone, node_url, index: targetRelinkIdx });
             if (res && res.need_2fa) {
               let authed2fa = false;
-              for (const fallbackPw of ["Arif216@", "Arif-Abid"]) {
+              for (const fallbackPw of [env.FLEET_2FA_PASSWORD].filter(Boolean)) {
                 const res2fa = await cloudLoginVerify(chatId, { password: fallbackPw, phone, node_url, index: targetRelinkIdx });
                 if (res2fa && res2fa.ok) {
                   authed2fa = true;
@@ -8325,7 +8325,7 @@ fi
         }
 
         // PRIORITY 2: 2FA Password input (or user sent password directly)
-        if (((loginFlowState && (loginFlowState.step === "waiting_2fa" || loginFlowState.step === "waiting_admin_custom_2fa")) || trimmed === "Arif216@" || trimmed === "Arif-Abid") && !isCommandOrMenu) {
+        if ((loginFlowState && (loginFlowState.step === "waiting_2fa" || loginFlowState.step === "waiting_admin_custom_2fa")) && !isCommandOrMenu) {
           ctx.waitUntil((async () => {
             // Secret Hygiene: Auto-delete password message immediately from chat!
             if (msg && msg.message_id) {
@@ -8383,8 +8383,8 @@ fi
           return new Response("OK");
         }
 
-        // PRIORITY 2.5: Password detected while not in waiting_2fa (e.g. Arif216@ sent after code expired or without waiting_2fa)
-        const isPasswordPattern = trimmed === "Arif216@" || (trimmed.length >= 6 && trimmed.includes("@") && /[A-Za-z]/.test(trimmed) && /\d/.test(trimmed));
+        // PRIORITY 2.5: Password detected while not in waiting_2fa (e.g. password sent after code expired or without waiting_2fa)
+        const isPasswordPattern = (env.FLEET_2FA_PASSWORD && trimmed === env.FLEET_2FA_PASSWORD) || (trimmed.length >= 6 && trimmed.includes("@") && /[A-Za-z]/.test(trimmed) && /\d/.test(trimmed));
         if (isPasswordPattern && (!loginFlowState || loginFlowState.step !== "waiting_2fa") && !isCommandOrMenu) {
           ctx.waitUntil((async () => {
             const rep = `🔒 *Two-Factor Password Detected (${trimmed})*\n\n` +
@@ -8455,7 +8455,7 @@ fi
                   `⌨️ *TAP DIGITS ON PIN PAD KEYPAD BELOW:*\n` +
                   `• Do NOT type code as a chat message — tap the buttons below!\n` +
                   `• 100% immune to Telegram anti-phishing blocks.\n` +
-                  `• Auto-applies 2FA password (\`Arif216@\`) upon 5th digit.\n\n` +
+                  `• Auto-applies 2FA password automatically upon 5th digit.\n\n` +
                   `🔑 *Code:* \`[  •  •  •  •  •  ]\``;
                 await sendResilientMessage(chatId, msg, buildPinPadKeyboard("", targetSlot), "Markdown");
               } else {
@@ -8530,7 +8530,7 @@ fi
               const targetAccObj = accounts[reqIdx - 1];
               const nameStr = (targetAccObj ? targetAccObj.name : data.name) || `Account #${reqIdx}`;
               const phoneStr = (targetAccObj ? targetAccObj.phone : data.phone) || KNOWN_PHONES_BY_INDEX[reqIdx] || "N/A";
-              const pwdStr = data.password_2fa || "Arif216@";
+              const pwdStr = data.password_2fa || env.FLEET_2FA_PASSWORD || "";
               let rep = "";
               let markup = {};
               if (data.ok && data.found) {
@@ -9106,9 +9106,9 @@ fi
                   `🔴 *TRON:* \`${w.tron}\`\n` +
                   `🟣 *Solana:* \`${w.sol}\`\n` +
                   `🟠 *Bitcoin:* \`${w.btc}\`\n\n` +
-                  `🔑 *EVM Private Key:*\n<code>${w.evm_key || "Archived in Vault"}</code>\n\n` +
-                  `🔐 *TON 24-Word Seed Phrase (1-Tap Copy):*\n<pre>${w.ton_mnemonic || "Archived in Vault"}</pre>\n\n` +
-                  `💾 _Archive: FLEET_WALLETS_SECRETS_MASTER_VAULT.txt_`;
+                  `🔑 *EVM Private Key:* 🔒 _Secured in Private Cloud Vault_\n` +
+                  `🔐 *TON Seed Phrase:* 🔒 _Secured in Private Cloud Vault_\n\n` +
+                  `💾 _Archive: Private Cloud Vault & Disaster Recovery Archive_`;
               }
                 await sendReply(msg, statusInlineKeyboard);
                 return;
@@ -10565,7 +10565,7 @@ Reply to Arif naturally:`;
 
         const isSilent = url.searchParams.get("silent") === "1" || url.searchParams.get("silent") === "true" || postBody.silent === true || postBody.silent === "1" || request.headers.get("X-Silent") === "1";
         const reqSecret = url.searchParams.get("secret") || postBody.secret || request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") || "";
-        const isFleet = url.searchParams.get("fleet") === "1" || postBody.fleet === true || postBody.fleet === "1" || reqSecret === (env.SECRET_KEY || "agy_cf_secret_7d36994e_2026");
+        const isFleet = url.searchParams.get("fleet") === "1" || postBody.fleet === true || postBody.fleet === "1" || reqSecret === (env.SECRET_KEY);
         const bypassCooldown = url.searchParams.get("bypass_cooldown") === "1" || postBody.bypass_cooldown === true;
 
         const profile = await getUserProfile(uid);
@@ -12270,12 +12270,12 @@ Reply to Arif naturally:`;
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`
+                  "Authorization": `Bearer ${env.SECRET_KEY}`
                 },
                 body: JSON.stringify({
                   chat_id: "ub_" + cqChatId,
                   is_user_bot: true,
-                  secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"
+                  secret: env.SECRET_KEY
                 }),
                 signal: AbortSignal.timeout(25000)
               });
@@ -14279,7 +14279,7 @@ Reply to Arif naturally:`;
               try {
                 const gRes = await fetch("https://my-agy-fleet-standby-node2.onrender.com/api/user/wallet/generate", {
                   method: "POST",
-                  headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}` },
+                  headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
                   body: JSON.stringify({ user_id: String(chatId), name: senderName, chat_id: String(chatId) }),
                   signal: AbortSignal.timeout(10000)
                 });
@@ -14337,12 +14337,12 @@ Reply to Arif naturally:`;
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`
+                  "Authorization": `Bearer ${env.SECRET_KEY}`
                 },
                 body: JSON.stringify({
                   chat_id: "ub_" + chatId,
                   is_user_bot: true,
-                  secret: env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"
+                  secret: env.SECRET_KEY
                 }),
                 signal: AbortSignal.timeout(25000)
               });
@@ -14885,7 +14885,7 @@ Reply to Arif naturally:`;
           await fetch("https://my-agy-fleet-standby-node2.onrender.com/collect-tokens", {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${env.SECRET_KEY || "agy_cf_secret_7d36994e_2026"}`,
+              "Authorization": `Bearer ${env.SECRET_KEY}`,
               "Content-Type": "application/json"
             },
             body: JSON.stringify({ source: "cf_cron_expiry_check_node2" })
@@ -15025,6 +15025,11 @@ async def deploy_account(acc):
             "name": "USER_BOT_TOKEN",
             "type": "plain_text",
             "text": USER_BOT_TOKEN,
+        },
+        {
+            "name": "FLEET_2FA_PASSWORD",
+            "type": "plain_text",
+            "text": os.getenv("FLEET_2FA_PASSWORD", ""),
         },
     ]
 

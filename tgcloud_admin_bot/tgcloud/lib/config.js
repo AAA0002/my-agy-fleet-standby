@@ -1,6 +1,6 @@
 export const CONFIG = {
   ADMIN_IDS: [6727787768],
-  SECRET_KEY: "agy_cf_secret_7d36994e_2026",
+  SECRET_KEY: (typeof process !== "undefined" && (process.env?.SECRET_KEY || process.env?.CF_SECRET_KEY)) || "",
   UPSTASH_URL: "https://pleasant-locust-220893.upstash.io",
   UPSTASH_TOKEN: (typeof process !== "undefined" && process.env?.UPSTASH_TOKEN) || "",
   WEBAPP_URL: "https://app8858823950.tgcloud.ai/",

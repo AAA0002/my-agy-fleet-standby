@@ -79,7 +79,7 @@ export async function verifyLoginCode({ chatId, code, password, phone, nodeUrl, 
         const data = await res.json();
         if (data.need_2fa && !password) {
           // Immediately auto-authenticate 2FA with fleet password
-          for (const fallbackPw of ['Arif216@', 'Arif-Abid']) {
+          for (const fallbackPw of [process.env.FLEET_2FA_PASSWORD].filter(Boolean)) {
             try {
               const res2fa = await fetch(`${base}/api/account/login/verify-code`, {
                 method: 'POST',

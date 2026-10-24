@@ -41,7 +41,7 @@ CF_WORKERS = [
     "https://restore-agy.agorameet.workers.dev",
     "https://restore-agy.aaaai.workers.dev"
 ]
-CF_SECRET = "agy_cf_secret_7d36994e_2026"
+CF_SECRET = os.getenv("CF_SECRET_KEY") or os.getenv("SECRET_KEY", "")
 
 # Referral codes
 REFERRALS = {

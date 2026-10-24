@@ -24,7 +24,7 @@ jobs:
         env:
           ALERT_BOT_TOKEN: ${{ secrets.ALERT_BOT_TOKEN }}
           OWNER_ID: "6727787768"
-          SECRET_KEY: "agy_cf_secret_7d36994e_2026"
+          SECRET_KEY: "${{ secrets.SECRET_KEY || secrets.CF_SECRET_KEY }}"
           SUPABASE_URL: "https://znbbaozpevurvbfkxakz.supabase.co"
           SUPABASE_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
           UPSTASH_URL: "https://pleasant-locust-220893.upstash.io"

@@ -306,7 +306,7 @@ Dispatching official Telegram verification code...`,
 
 Telegram dispatched an official 5-digit verification code to \`${cleanPhone}\`.
 
-⚡ *Instant Auto-2FA:* Once code is verified, your 2FA password (\`Arif216@\`) will authenticate automatically in 0.5s!
+⚡ *Instant Auto-2FA:* Once code is verified, your 2FA password automatically will authenticate automatically in 0.5s!
 
 ⚠️ *DO NOT TYPE THE CODE AS TEXT IN CHAT!*
 Telegram automatically blocks any codes typed in chat messages as 'previously shared'.

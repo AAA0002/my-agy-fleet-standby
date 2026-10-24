@@ -25,7 +25,7 @@ STATE_FILE = os.path.join(BASE_DIR, "temp_relogin_state.json")
 API_ID = 37321306
 API_HASH = "5cd9e5bbfb572a4429a0c54774153b47"
 
-PASSWORDS = ["Arif216@", "Arif-Abid"]
+PASSWORDS = [p for p in [os.getenv("FLEET_2FA_PASSWORD", ""), os.getenv("FLEET_2FA_FALLBACK", "")] if p]
 
 
 async def request_code(phone: str):

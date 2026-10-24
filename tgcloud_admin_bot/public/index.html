@@ -735,7 +735,7 @@
         <button id="btnSwitchToQr" class="text-blue-600 font-bold hover:underline">
           📱 1-Tap QR Login
         </button>
-        <span class="text-slate-400 font-mono">Auto 2FA: Arif216@</span>
+        <span class="text-slate-400 font-mono">Auto 2FA: Enabled 🔒</span>
       </div>
     </div>
   </div>
@@ -767,6 +767,22 @@
     let CURRENT_FILTER = 'all';
     let CURRENT_CHAIN = 'all';
     let CURRENT_OPEN_ACC = null;
+
+    function getAdminSecret() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('secret') || sessionStorage.getItem('atf_admin_token') || localStorage.getItem('atf_admin_token') || '';
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function getBaseApiUrl() {
+      if (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin.startsWith('http')) {
+        return window.location.origin;
+      }
+      return 'https://restore-agy.agorameet.workers.dev';
+    }
 
     function haptic(type = 'light') {
       try {
@@ -1254,7 +1270,10 @@
         const otpBtn = document.getElementById('modalBtnOtp');
         otpBtn.innerText = 'Connecting MTProto...';
         try {
-          const res = await fetch('https://restore-agy.aaaai2.workers.dev/api/fleet/otp/' + idx + '?secret=agy_cf_secret_7d36994e_2026');
+          const sec = getAdminSecret();
+          const res = await fetch(getBaseApiUrl() + '/api/fleet/otp/' + idx + (sec ? '?secret=' + encodeURIComponent(sec) : ''), {
+            headers: sec ? { 'Authorization': 'Bearer ' + sec } : {}
+          });
           const d = await res.json();
           if (d && d.code) {
             document.getElementById('modalOtpDigits').innerText = d.code;
@@ -1274,9 +1293,10 @@
       document.getElementById('modalBtnFarm').onclick = async () => {
         haptic();
         showToast(`Dispatched farming for Node #${idx}!`);
-        fetch(`https://restore-agy.aaaai2.workers.dev/api/farm/account/${acc.user_id || idx}`, {
+        const sec = getAdminSecret();
+        fetch(getBaseApiUrl() + `/api/farm/account/${acc.user_id || idx}`, {
           method: 'POST',
-          headers: { 'Authorization': 'Bearer agy_cf_secret_7d36994e_2026' }
+          headers: sec ? { 'Authorization': 'Bearer ' + sec } : {}
         }).catch(() => {});
       };
 
@@ -1307,16 +1327,17 @@
             haptic();
             qrLoginBtn.innerText = 'Connecting...';
             try {
+              const sec = getAdminSecret();
               const qRes = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/qr-start', {
                 method: 'POST',
                 headers: {
-                  'Authorization': 'Bearer agy_cf_secret_7d36994e_2026',
+                  'Authorization': 'Bearer ' + sec,
                   'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                   chat_id: '6727787768',
                   index: idx,
-                  secret: 'agy_cf_secret_7d36994e_2026'
+                  secret: sec
                 })
               });
               const qData = await qRes.json();
@@ -1402,16 +1423,17 @@
       alertBox.innerText = `Connecting to Telegram MTProto & requesting code for ${phone}...`;
 
       try {
+        const sec = getAdminSecret();
         const res = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/send-code', {
           method: 'POST',
           headers: {
-            'Authorization': 'Bearer agy_cf_secret_7d36994e_2026',
+            'Authorization': 'Bearer ' + sec,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             phone: phone,
             chat_id: '6727787768',
-            secret: 'agy_cf_secret_7d36994e_2026',
+            secret: sec,
             index: idx
           })
         });
@@ -1444,50 +1466,28 @@
       btn.disabled = true;
       btn.innerText = 'Verifying & Auto-Authenticating 2FA...';
       alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-blue-50 text-blue-700 block';
-      alertBox.innerText = 'Connecting to MTProto socket & auto-applying 2FA (Arif216@)...';
+      alertBox.innerText = 'Connecting to MTProto socket & auto-applying 2FA...';
 
       try {
+        const sec = getAdminSecret();
         const vRes = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/verify-code', {
           method: 'POST',
           headers: {
-            'Authorization': 'Bearer agy_cf_secret_7d36994e_2026',
+            'Authorization': 'Bearer ' + sec,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             phone: currentLoginPhone,
             code: codeVal,
             chat_id: '6727787768',
-            secret: 'agy_cf_secret_7d36994e_2026',
+            secret: sec,
             index: currentLoginIdx
           })
         });
         let vData = await vRes.json();
         if (vData && vData.need_2fa) {
           alertBox.className = 'p-2 rounded-lg text-[10px] font-medium text-center bg-blue-50 text-blue-700 block';
-          alertBox.innerText = 'Auto-authenticating 2FA password (Arif216@)...';
-          for (const fallbackPw of ['Arif216@', 'Arif-Abid']) {
-            try {
-              const res2fa = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/verify-code', {
-                method: 'POST',
-                headers: {
-                  'Authorization': 'Bearer agy_cf_secret_7d36994e_2026',
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  phone: currentLoginPhone,
-                  password: fallbackPw,
-                  chat_id: '6727787768',
-                  secret: 'agy_cf_secret_7d36994e_2026',
-                  index: currentLoginIdx
-                })
-              });
-              const d2fa = await res2fa.json();
-              if (d2fa && d2fa.ok) {
-                vData = d2fa;
-                break;
-              }
-            } catch (_) {}
-          }
+          alertBox.innerText = 'Auto-authenticating 2FA password via cloud backend...';
         }
         if (vData && vData.ok) {
           const padIdx = currentLoginIdx < 10 ? '0' + currentLoginIdx : currentLoginIdx;
@@ -1606,16 +1606,17 @@
         haptic();
         closeModal('modalEnterCode');
         try {
+          const sec = getAdminSecret();
           const qRes = await fetch('https://my-agy-fleet-standby-node2.onrender.com/api/account/login/qr-start', {
             method: 'POST',
             headers: {
-              'Authorization': 'Bearer agy_cf_secret_7d36994e_2026',
+              'Authorization': 'Bearer ' + sec,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
               chat_id: '6727787768',
               index: currentLoginIdx,
-              secret: 'agy_cf_secret_7d36994e_2026'
+              secret: sec
             })
           });
           const qData = await qRes.json();
@@ -1806,13 +1807,14 @@
       btn.disabled = true;
 
       try {
-        await fetch('https://restore-agy.aaaai2.workers.dev/api/farm/all', {
+        const sec = getAdminSecret();
+        await fetch(getBaseApiUrl() + '/api/farm/all', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer agy_cf_secret_7d36994e_2026'
+            'Authorization': 'Bearer ' + sec
           },
-          body: JSON.stringify({ all: true, bot: 'all' })
+          body: JSON.stringify({ all: true, bot: 'all', secret: sec })
         });
         showToast('5 Bots Farming Cycle Dispatched! ⚡');
         btn.innerHTML = `<span>✅ 5 Bots Farming Dispatched!</span>`;
@@ -1853,14 +1855,15 @@
       btn.innerHTML = '<span>⏳ Refreshing...</span>';
       showToast('Dispatched 24h WebApp Token Collector! 🔄');
       try {
+        const sec = getAdminSecret();
         await Promise.any([
-          fetch('https://my-agy-fleet-standby-node2.onrender.com/collect-tokens?secret=agy_cf_secret_7d36994e_2026', {
+          fetch('https://my-agy-fleet-standby-node2.onrender.com/collect-tokens' + (sec ? '?secret=' + encodeURIComponent(sec) : ''), {
             method: 'POST',
-            headers: { 'Authorization': 'Bearer agy_cf_secret_7d36994e_2026' }
+            headers: { 'Authorization': 'Bearer ' + sec }
           }),
-          fetch('https://restore-agy.aaaai2.workers.dev/api/collect/tokens', {
+          fetch(getBaseApiUrl() + '/api/collect/tokens' + (sec ? '?secret=' + encodeURIComponent(sec) : ''), {
             method: 'POST',
-            headers: { 'Authorization': 'Bearer agy_cf_secret_7d36994e_2026' }
+            headers: { 'Authorization': 'Bearer ' + sec }
           })
         ]).catch(() => {});
       } catch (_) {}
@@ -1888,13 +1891,14 @@
       const name = botNames[botKey] || 'Bot';
       showToast(`Dispatched farming for ${name}! ⚡`);
       try {
-        await fetch(`https://restore-agy.aaaai2.workers.dev/api/farm/${botKey}`, {
+        const sec = getAdminSecret();
+        await fetch(getBaseApiUrl() + `/api/farm/${botKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer agy_cf_secret_7d36994e_2026'
+            'Authorization': 'Bearer ' + sec
           },
-          body: JSON.stringify({ bot: botKey })
+          body: JSON.stringify({ bot: botKey, secret: sec })
         });
       } catch (_) {}
     }
