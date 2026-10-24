@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 User Bot Ecosystem Dual Dashboard Upgrades, Ads Menu Button Restoration & USD Standardization (October 24, 2026)**:
+  - **User Bot Telegram Menu Button Restoration to Ads Portal**:
+    * **Preserved Dedicated Ad Portal Access**: Restored the User Bot (`@AAAPREMIUMAPPSbot`) persistent Telegram Chat Menu Button to **`🎬 Watch Ads`** pointing to the dedicated Ads Portal (`https://agy-henna.vercel.app/`). Corrected auto-override logic in `deploy_both_cf_workers.py` so `/start` never displaces the Ads Portal menu button.
+    * **Ads Dashboard Integrity**: Preserved Dashboard 3 (`public_ads/index.html`) completely untouched as requested.
+  - **User Bot User Dashboard (Dashboard 1 — `/miner`) Currency Simplification**:
+    * **Removed BDT Currency Toggle**: Removed `#btn-currency-toggle` and all Bangladeshi Taka references from `public_ads/miner/index.html` (and mirrors `public/index.html`, `public/app/index.html`).
+    * **Standardized Clean USD Telemetry**: Yield projections and daily estimates are rendered cleanly in USD (`~$0.48 / day`) alongside the live accumulating satoshi ticker (`0.00142850 TON`) and live scaling cloud hashrate (`128.4 GH/s`).
+    * **Informational Header Ticker**: Displayed clean, non-interactive live crypto rates (`💎 TON: $1.62 • 🟡 BNB: $750`) in the top navigation header.
+  - **User Bot Admin Dashboard (Dashboard 2 — `/user-admin`) Comprehensive Upgrades**:
+    * **Rewarded Ads Monetization & Impressions Card**: Added dedicated metrics card to `public_admin/user-admin.html` tracking total community rewarded ads watched, ad points distributed (`+20 Pts` per impression), active ad watchers, and direct link to the Ads Portal.
+    * **Live Crypto Market Rates in Admin Header**: Added dynamic price pill in the admin navigation bar displaying live TON and BNB valuations from Edge price oracle (`/api/rates`).
+    * **Direct Telegram User DM Action**: Added quick 1-tap `DM ↗` link in community user cards, allowing administrators to directly contact miners regarding session refresh or low point balances.
+    * **Enhanced Web Audio Synthesizer**: Added broadcast fanfare and sound effects to administrative operations.
+  - **Edge Deployment & Disaster Recovery**:
+    * **Node 4 Deployment**: Re-deployed worker bundle to Primary Node 4 Edge Gateway (`https://restore-agy.agorameet.workers.dev`). Verified both `/miner` (129.8 KB) and `/user-admin` (101.6 KB) returning `HTTP 200 OK`.
+    * **Disaster Recovery Vault Stream**: Delivered automated encrypted backup to Telegram vault channel (`@myagyai`) via `backup_manager.py`.
+
 - **🚀 Complete User Bot User Dashboard Overhaul: Live Hashrate Ticker, Dual Currency Toggle, Web Audio Synthesizer & Edge Sync (October 24, 2026)**:
   - **Live Real-Time Hashrate & Mining Yield Accumulator**:
     * **Accumulating Unharvested Yield Ticker**: Designed and integrated a dynamic real-time accumulating TON satoshi counter in `public_ads/miner/index.html` (and mirrored in `public/index.html` and `public/app/index.html`). The ticker visibly accumulates mining satoshis every 1.2 seconds with gradient glowing typography, providing tactile, responsive feedback of continuous background cloud farming.

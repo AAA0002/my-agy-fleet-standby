@@ -145,7 +145,7 @@
     </div>
 
     <!-- Compact Live Crypto Oracle Ticker -->
-    <div class="hidden xs:flex items-center gap-1.5 px-2 py-1 rounded-xl bg-white/5 border border-white/10 text-[9px] font-mono text-slate-300 shrink-0 cursor-pointer hover:bg-white/10 transition" onclick="toggleCurrencyMode()" title="Tap to switch currency (USD / BDT)">
+    <div class="hidden xs:flex items-center gap-1.5 px-2 py-1 rounded-xl bg-white/5 border border-white/10 text-[9px] font-mono text-slate-300 shrink-0">
       <span class="text-cyan-400 font-bold flex items-center gap-0.5">💎 $<span id="header-ton-price">1.62</span></span>
       <span class="text-slate-600">•</span>
       <span class="text-amber-400 font-bold flex items-center gap-0.5">🟡 $<span id="header-bnb-price">750</span></span>
@@ -247,7 +247,7 @@
 
       <!-- ⚡ Live Real-Time Hashrate & Mining Yield Ticker Card -->
       <div class="card-glass card-glow-cyan p-3.5 rounded-2xl relative overflow-hidden text-left border border-cyan-500/30 bg-gradient-to-br from-cyan-950/30 via-slate-900/60 to-indigo-950/30 shadow-lg">
-        <!-- Top row: Status & Currency Switcher -->
+        <!-- Top row: Status & Mining Engine Telemetry -->
         <div class="flex items-center justify-between gap-2 mb-2">
           <div class="flex items-center gap-2">
             <span class="relative flex h-2 w-2">
@@ -259,11 +259,9 @@
             </span>
           </div>
 
-          <!-- Currency Mode Switcher (USD $ / BDT ৳) -->
-          <button id="btn-currency-toggle" onclick="toggleCurrencyMode()" class="px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 text-[10px] font-mono text-slate-200 active:scale-95 transition flex items-center gap-1 shrink-0" title="Switch Display Currency (USD / BDT)">
-            <span class="text-cyan-400">💱</span>
-            <span id="currency-mode-label" class="font-bold text-cyan-300">USD ($)</span>
-          </button>
+          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-bold shrink-0">
+            Auto-Compounding
+          </span>
         </div>
 
         <!-- Middle row: Live Accumulating Yield Counter -->
@@ -1160,8 +1158,7 @@
     let isSoundOn = true;
     let adCountdownInterval = null;
     let audioCtx = null;
-    let currencyMode = "USD"; // "USD" or "BDT"
-    let marketRates = { ton_usd: 1.62, bnb_usd: 750.0, usd_bdt: 122.5 };
+    let marketRates = { ton_usd: 1.62, bnb_usd: 750.0 };
     let accumulatedSatoshis = 142850; // Starting baseline unharvested yield (0.00142850 TON)
     let yieldTickerInterval = null;
 
@@ -1293,7 +1290,6 @@
         if (res && res.ok) {
           if (res.ton_usd) marketRates.ton_usd = parseFloat(res.ton_usd);
           if (res.bnb_usd) marketRates.bnb_usd = parseFloat(res.bnb_usd);
-          if (res.usd_bdt) marketRates.usd_bdt = parseFloat(res.usd_bdt);
 
           const tonHdr = document.getElementById('header-ton-price');
           const bnbHdr = document.getElementById('header-bnb-price');
@@ -1303,17 +1299,6 @@
           updateYieldDisplay();
         }
       } catch (_) {}
-    }
-
-    function toggleCurrencyMode() {
-      currencyMode = (currencyMode === 'USD') ? 'BDT' : 'USD';
-      const lbl = document.getElementById('currency-mode-label');
-      if (lbl) {
-        lbl.textContent = (currencyMode === 'USD') ? 'USD ($)' : 'BDT (৳)';
-      }
-      playSound('click');
-      updateYieldDisplay();
-      showToast(currencyMode === 'BDT' ? "স্বাগতম! মুদ্রা: BDT ৳" : "Currency: USD $");
     }
 
     function updateYieldDisplay() {
@@ -1326,15 +1311,10 @@
 
       const accCount = (currentUserProfile?.accounts || []).length || 1;
       const estDailyTon = 0.30 * Math.max(1, accCount);
-      const estDailyUsd = estDailyTon * marketRates.ton_usd;
-      const estDailyBdt = estDailyUsd * marketRates.usd_bdt;
+      const estDailyUsd = estDailyTon * (marketRates.ton_usd || 1.62);
 
       if (fiatEl) {
-        if (currencyMode === 'BDT') {
-          fiatEl.textContent = `~৳${estDailyBdt.toFixed(2)} / দিন`;
-        } else {
-          fiatEl.textContent = `~$${estDailyUsd.toFixed(2)} / day`;
-        }
+        fiatEl.textContent = `~$${estDailyUsd.toFixed(2)} / day`;
       }
 
       if (hashrateEl) {

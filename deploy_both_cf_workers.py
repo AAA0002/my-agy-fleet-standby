@@ -14109,15 +14109,15 @@ Reply to Arif naturally:`;
             const dash = renderMiningDashboard(profile, chatId, senderName);
             await sendUserReply(dash.text, dash.markup);
 
-            // Ensure persistent Chat Menu Button on User Bot launches the full cloud mining app
+            // Ensure persistent Chat Menu Button on User Bot launches the Ads Portal
             if (ctx && ctx.waitUntil) {
               const menuPayload = {
                 chat_id: chatId,
                 menu_button: {
                   type: "web_app",
-                  text: "🚀 Launch Miner",
+                  text: "🎬 Watch Ads",
                   web_app: {
-                    url: "https://restore-agy.agorameet.workers.dev/miner"
+                    url: "https://agy-henna.vercel.app/"
                   }
                 }
               };
@@ -15347,9 +15347,9 @@ async def main():
             user_menu_payload = {
                 "menu_button": {
                     "type": "web_app",
-                    "text": "🚀 Launch Miner",
+                    "text": "🎬 Watch Ads",
                     "web_app": {
-                        "url": "https://restore-agy.agorameet.workers.dev/miner"
+                        "url": "https://agy-henna.vercel.app/"
                     }
                 }
             }
@@ -15359,7 +15359,7 @@ async def main():
                     json=user_menu_payload
                 ) as resp:
                     res_umenu = await resp.json()
-                    print(f"🚀 User Bot Global Menu Button (Launch Miner): {res_umenu.get('ok')} ({res_umenu.get('description', 'OK')})")
+                    print(f"🎬 User Bot Global Menu Button (Watch Ads): {res_umenu.get('ok')} ({res_umenu.get('description', 'OK')})")
             except Exception as e:
                 print(f"⚠️ Error setting User Bot menu button: {e}")
 

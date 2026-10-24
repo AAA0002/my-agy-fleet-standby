@@ -179,9 +179,12 @@ Certain farming bots require a connected wallet before mining will unlock or pro
 22. **Complete User Bot User Dashboard Overhaul & Interactive Audio-Visual Experience**:
     - Overhauled public user dashboard in `public_ads/miner/index.html` (mirrored in `public/index.html` and `public/app/index.html`).
     - Integrated live accumulating TON satoshi yield ticker with real-time scaling cloud hashrate telemetry (`128.4 GH/s`).
-    - Added dual currency switcher (`USD $` / `BDT ৳`) with live 24h yield estimates and header crypto rates oracle ticker (`💎 TON: $1.62 • 🟡 BNB: $750`).
     - Implemented authentic zero-asset Web Audio API synthesizer (`playSound(type)`) supporting `'click'`, `'harvest'`, `'claim'`, `'reward'`, and `'copy'`.
     - Added celebratory glowing ripple animation on all 9 pool cards (`.harvest-celebration`) and 30-second silent background poller (`setInterval(loadUserProfile, 30000)`).
+23. **User Bot Ecosystem Dual Dashboard Upgrades, Ads Menu Button Restoration & USD Standardization**:
+    - Restored User Bot (`@AAAPREMIUMAPPSbot`) persistent Telegram Chat Menu Button to **`🎬 Watch Ads`** pointing to Ads Portal (`https://agy-henna.vercel.app/`). Dashboard 3 (`public_ads/index.html`) left completely untouched.
+    - Standardized Dashboard 1 (`/miner`) in clean USD ($), removing the BDT currency switcher button and calculations.
+    - Upgraded Dashboard 2 (`/user-admin`): Added Rewarded Ads Monetization & Impressions Card (tracking ads watched, ad points distributed, active watchers), live crypto prices in header bar (`💎 TON: $1.62 • 🟡 BNB: $750`), direct user Telegram `DM ↗` links, and enhanced Web Audio broadcast fanfare.
     - Deployed to Primary Cloudflare Edge Gateway Node 4 (`agorameet.workers.dev`) and verified `HTTP 200 OK`. Delivered disaster recovery archive to `@myagyai`.
 
 ---
