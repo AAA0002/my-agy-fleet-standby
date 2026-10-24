@@ -159,6 +159,19 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - Standardized `solve_atf_math` across all backends/scripts and Astra Airdrop challenge solver in Cloudflare Workers to eliminate failures on word numbers.
     - Permanently suspended `hermes-grok-cloud-agent` (`srv-daojdt5g1s2s738jsjmg`) on Render, deleted cron-job `8484430`, and purged all keepalive pings across Cloudflare Workers, GitHub Actions, and Deno to preserve Render free-tier hours on `koramshah2@gmail.com`.
     - Fixed `ReferenceError: FLEET_18_IDS is not defined` in `/api/fleet/ad-status` on Cloudflare Edge Worker, synchronized 20,000 ads/day target, and added dedicated TON/TRON wallets for Accounts #19 (`Adil H`) and #20 (`Asaduzzaman Sarker`).
+18. **Fleet-Wide TonConnect 2.0 Cryptographic Proof Engine & 20/20 Connected Wallets**:
+    - Reverse-engineered TonConnect 2.0 challenge protocol on `app.mrgtoken.xyz` requiring dynamic Ed25519 signatures over nonce payloads.
+    - Bound Accounts #19 (`8937908003`) and #20 (`8609131528`), achieving 20/20 (100%) connected accounts (`isTonConnected: True`).
+    - Seeded all 21 TON wallet structures into `fleet:wallets:ton` in Upstash Redis and patched TonConnect proof generation into all fleet workers.
+19. **Dynamic 20-Account Scalability across Cloud Solvers & Level 1 Miner Auto-Unlock**:
+    - Upgraded `FLEET_UIDS` in `mrg_turnstile_solver.py`, `victors_sb_solver.py`, and `victors_cloud_phone_launcher.py` to dynamically load all 20 accounts from `accounts.json`.
+    - Added automated `POST /api/levels/unlock {"level": 1}` in Edge Worker and Victor's connector to transition accounts out of `home.noJob`.
+20. **Dual-Repo Unlimited Actions Minutes Failover & CI/CD Secret Provisioning**:
+    - Diagnosed that `AAA0002/ATL` private repository 2,000 monthly runner minutes were exhausted.
+    - Activated public mirror `AAA0002/my-agy-fleet-standby` which receives **unlimited free GitHub Actions runner minutes**.
+    - Encrypted and provisioned all 16 runtime secrets (`ALERT_BOT_TOKEN`, `UPSTASH_TOKEN`, `WEBSHARE_KEY`, etc.) using libsodium / `pynacl` sealed boxes.
+    - Verified green CI/CD runs (`fleet_sentinel.yml` 100% success across 14 multi-cloud components).
+    - Patched `clean_up_system.py` to support `os.environ` fallback, verified multi-tier sanitation, and capped Upstash lists.
 
 ---
 

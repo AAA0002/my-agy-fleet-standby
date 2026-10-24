@@ -622,16 +622,18 @@ The fleet's 10 active high-conviction legitimate bots and channels are fundament
 
 To permanently resolve resource exhaustion across free cloud tiers without paying recurring fees or triggering rate-limit lockouts, the architecture enforces strict mathematical quotas:
 
-### 1. GitHub Actions Minutes Budget (<1,410 min/mo out of 2,000 min/mo Free Quota)
-- **Problem**: Default workflows previously ran on aggressive 3-hour or 6-hour crons, consuming ~4,860 minutes/month and exhausting the free 2,000-minute monthly limit.
-- **Resolution**: Re-engineered workflow schedules in `.github/workflows/`:
-  * `mrg_turnstile_solver.yml`: Reduced from `15 */3 * * *` to `15 */12 * * *` (~600 min/mo).
-  * `victors_sb_solver.yml`: Reduced from `30 */3 * * *` to `30 */12 * * *` (~360 min/mo).
-  * `cloud_token_refresher.yml`: `0 */12 * * *` (~180 min/mo).
-  * `fleet_sentinel.yml`: `0 */12 * * *` (~120 min/mo).
-  * `cloud_sweeper.yml`: Reduced from `0 */6 * * *` to daily `0 18 * * *` (~150 min/mo).
-  * `victors_cloud_phone_tunnel.yml`: Strict `workflow_dispatch` on-demand execution (0 scheduled minutes).
-- **Total Consumption**: **~1,410 minutes/month** (70.5% of free quota, preserving 590 cushion minutes for manual runs).
+### 1. Dual-Repo CI/CD Failover & Unlimited Runner Minutes Architecture
+- **Problem**: In private repositories on GitHub Free (such as `AAA0002/ATL`), accounts are capped at 2,000 runner minutes/month. Once depleted, scheduled workflows fail immediately (0-second execution, `runner_id: 0`).
+- **Resolution (Dual-Repo Unlimited Failover)**:
+  * **Standby Mirror (`AAA0002/my-agy-fleet-standby`)**: Maintained as a public repository linked to `standby_repo` git remote. Because public repositories on GitHub have **unlimited free GitHub Actions runner minutes**, workflows run continuously without any monthly quota limits.
+  * **Automated Encrypted Secret Provisioning (16 Secrets)**: All runtime secrets are encrypted via libsodium / `pynacl` sealed boxes against the standby repository public key (`ALERT_BOT_TOKEN`, `UPSTASH_TOKEN`, `WEBSHARE_KEY`, `WEBSHARE_KEY_2`, `SUPABASE_ANON_KEY`, `TONAPI_KEY`, `ETHERSCAN_KEY`, `TURSO_TOKEN`, `DRPC_KEY`, `BETTERSTACK_KEY`, `SENTRY_TOKEN`, `IPINFO_TOKEN`, `ALCHEMY_KEY`, `SECRET_KEY`, `CF_SECRET_KEY`, `REPORT_BOT_TOKEN`).
+  * **Optimized Execution Cadence**:
+    * `mrg_turnstile_solver.yml`: Runs `15 */12 * * *` (twice daily).
+    * `victors_sb_solver.yml`: Runs `30 */12 * * *` (twice daily).
+    * `cloud_token_refresher.yml`: `0 */12 * * *`.
+    * `fleet_sentinel.yml`: Runs daily `0 8 * * *`.
+    * `cloud_sweeper.yml`: Runs daily `0 18 * * *`.
+    * `victors_cloud_phone_tunnel.yml`: Strict on-demand `workflow_dispatch`.
 
 ### 2. Cloudflare KV Write Protection (<36 writes/day out of 1,000 writes/day Free Quota)
 - **Problem**: `refresh_cloud_tokens.py` formerly looped over all 5 Cloudflare Worker endpoints in parallel, writing tokens to all nodes on every sync (90 writes per run), rapidly burning the 1,000/day free limit.

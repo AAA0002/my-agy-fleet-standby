@@ -46,9 +46,26 @@ if os.path.exists(ENV_FILE):
                 k, v = line.split("=", 1)
                 env_config[k.strip()] = v.strip().strip('"').strip("'")
 
-UPSTASH_URL = env_config.get("UPSTASH_REDIS_REST_URL") or env_config.get("UPSTASH_URL")
-UPSTASH_TOKEN = env_config.get("UPSTASH_REDIS_REST_TOKEN") or env_config.get("UPSTASH_TOKEN")
-GH_PAT = env_config.get("GITHUB_USERBOT_PAT") or env_config.get("GITHUB_FINE_GRAINED_PAT")
+UPSTASH_URL = (
+    env_config.get("UPSTASH_REDIS_REST_URL")
+    or env_config.get("UPSTASH_URL")
+    or os.environ.get("UPSTASH_REDIS_REST_URL")
+    or os.environ.get("UPSTASH_URL")
+)
+UPSTASH_TOKEN = (
+    env_config.get("UPSTASH_REDIS_REST_TOKEN")
+    or env_config.get("UPSTASH_TOKEN")
+    or os.environ.get("UPSTASH_REDIS_REST_TOKEN")
+    or os.environ.get("UPSTASH_TOKEN")
+)
+GH_PAT = (
+    env_config.get("GITHUB_USERBOT_PAT")
+    or env_config.get("GITHUB_FINE_GRAINED_PAT")
+    or os.environ.get("GITHUB_USERBOT_PAT")
+    or os.environ.get("GITHUB_FINE_GRAINED_PAT")
+    or os.environ.get("GH_TOKEN")
+    or os.environ.get("GITHUB_TOKEN")
+)
 GH_REPO = "AAA0002/ATL"
 
 # -----------------------------------------------------------------------------
