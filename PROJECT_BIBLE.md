@@ -1074,7 +1074,7 @@ Whenever you perform work in this repository:
   - `POST /api/telegram/verify-password`: Authorizes 2FA cloud password.
   - `POST /api/telegram/relink`: Requests relink code for existing fleet account.
   - `POST /api/telegram/notify-admin`: Direct alert bridge to Telegram channel `@myagyai`.
-  - `GET /api/fleet/live`: Live fleet telemetry across all 18 accounts and 5 legitimate bots.
+  - `GET /api/fleet/live`: Live fleet telemetry across all 20 accounts and 5 legitimate bots.
   - `GET /api/fleet/otp`: 1-tap OTP retrieval from Render MTProto relays.
 * **Direct WebApp Integration & Commands**:
   - Primary button: `📱 AAA Telegram App` (launches `https://agy-aaa000.vercel.app/`)
@@ -1108,7 +1108,7 @@ Whenever you perform work in this repository:
   - The Session Audit (`/audit`, `btn_session_audit`) presents **"📱 1-Tap QR #X"** as the primary 1-click option for all revoked nodes.
   - `btn_relink_` provides an explicit choice between 1-Tap QR (Zero Code) and Request 5-Digit Code (for Mini App).
 * **9-Bot Cloud Fleet Auto-Farming Verification**:
-  - All 18 accounts actively cycle through the 9 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, LeafEarn, Astra Airdrop, PepeGram).
+  - All 20 accounts actively cycle through the 9 legitimate bots (MRG, ATF, Victor's, VyroDrop, Kynex, DiggoMiner, LeafEarn, Astra Airdrop, PepeGram).
   - Short 3m–5m retry backoff prevents accounts from getting trapped in hours of cooldown on transient network errors.
 
 ### 6.1 Upstash Redis Pipeline Bug Fix & Full 18-Account Synthesis (October 13, 2026)

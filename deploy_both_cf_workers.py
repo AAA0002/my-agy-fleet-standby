@@ -310,9 +310,10 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
         meD = await meResp.json().catch(() => ({}));
         const targetTonW = FLEET_TON_WALLETS[String(uid)];
         if (targetTonW && (!meD.user?.isTonConnected || meD.user?.tonWalletAddress !== targetTonW)) {
-          await fetchWithRetry("https://mrg.up.railway.app/api/user/connect-wallet", {
-            method: "POST", headers: mrgHeaders, body: JSON.stringify({ initData: mrgInit, address: targetTonW, balance: 0 })
-          }, 1, 600).catch(() => {});
+          fetch("https://my-agy-fleet-standby-node2.onrender.com/api/farm/account/" + uid, {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + (env.SECRET_KEY || "8167732110:AAE...") }
+          }).catch(() => {});
         }
         const tasks = meD.tasks || [];
         const completed = new Set(meD.completedTaskIds || []);
@@ -577,6 +578,9 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
           await humanDelay(600, 1200);
           await fetchWithRetry("https://server.victors.company/api/tasks/claim", {
             method: "POST", headers: vHeaders, body: JSON.stringify({ taskId: "connect-wallet" })
+          }, 1, 500).catch(() => {});
+          await fetchWithRetry("https://server.victors.company/api/levels/unlock", {
+            method: "POST", headers: vHeaders, body: JSON.stringify({ level: 1 })
           }, 1, 500).catch(() => {});
         }
 

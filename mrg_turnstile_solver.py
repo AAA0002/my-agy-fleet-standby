@@ -169,26 +169,42 @@ def get_webshare_proxy() -> dict | None:
     return None
 
 
-FLEET_UIDS = [
-    6727787768,  # Master (Arif Hossain)
-    8881914294,  # Nancy
-    7648254021,  # Koram
-    8826375659,  # Arif
-    8450010161,  # Nadim
-    8782429452,  # Kaitlyn
-    7734849205,  # Node 7
-    8025472383,  # Node 8
-    8851426148,  # Node 9
-    8203342513,  # Node 10
-    8190649727,  # MD. Arif
-    7487048946,  # Sanzida
-    8741547543,  # Abid (3)
-    8727040932,  # Node 14
-    7749125802,  # Node 15
-    7954290138,  # Node 16
-    8975442879,  # Node 17
-    8841038141   # Node 18
-]
+ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
+
+def load_all_fleet_uids() -> list:
+    if os.path.exists(ACCOUNTS_FILE):
+        try:
+            with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
+                accs = json.load(f)
+                uids = [int(a["user_id"]) for a in accs if a.get("user_id")]
+                if len(uids) >= 18:
+                    return uids
+        except Exception:
+            pass
+    return [
+        6727787768,  # Master (Arif Hossain)
+        8881914294,  # Nancy
+        7648254021,  # Koram
+        8826375659,  # Arif
+        8450010161,  # Nadim
+        8782429452,  # Kaitlyn
+        7734849205,  # Node 7
+        8025472383,  # Node 8
+        8851426148,  # Node 9
+        8203342513,  # Node 10
+        8190649727,  # MD. Arif
+        7487048946,  # Sanzida
+        8741547543,  # Abid (3)
+        8727040932,  # Node 14
+        7749125802,  # Node 15
+        7954290138,  # Node 16
+        8841038141,  # Node 17
+        8975442879,  # Node 18
+        8937908003,  # Node 19
+        8609131528   # Node 20
+    ]
+
+FLEET_UIDS = load_all_fleet_uids()
 
 
 def send_tg_alert(text: str):
@@ -2290,7 +2306,7 @@ async def run_mrg_auto_solver():
     # 6. Telegram Telemetry Notification
     report_msg = (
         f"🚀 <b>5-Bot Fleet Cloud Turnstile & Multi-Farming Engine Report</b>\n\n"
-        f"• <b>Total Fleet Accounts:</b> 18\n"
+        f"• <b>Total Fleet Accounts:</b> {len(FLEET_UIDS)}\n"
         f"• <b>MRG Pass Solved:</b> {solved_count}/{needed_count}\n"
         f"• <b>ATF Captcha Solved:</b> {atf_solved}/{len(atf_accounts)}\n"
         f"• <b>Victor's Pass Solved:</b> {victors_solved}/{len(victors_accounts)}\n"

@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 System-Wide Cloud Infrastructure Hardening: 20-Account Dynamic Scalability & Edge Worker Autonomous TonConnect Dispatch (October 24, 2026)**:
+  - **Dynamic 20-Account Scaling across Cloud Solvers**:
+    * **`mrg_turnstile_solver.py`**: Refactored static `FLEET_UIDS` array (which was capped at 18 accounts) to use `load_all_fleet_uids()`, dynamically reading from `accounts.json` with a 20-account fallback. Accounts #19 (`8937908003`) and #20 (`8609131528`) are now fully included in the automated 12-hour cloud Turnstile solver schedule.
+    * **`victors_sb_solver.py` & `victors_cloud_phone_launcher.py`**: Upgraded both solvers to dynamic loading, ensuring newly added accounts participate in Cloudflare Turnstile bypasses, Level 1 Miner unlocks, and Deep Mine arcade automated expeditions.
+    * **Dynamic Reporting Telemetry**: Corrected hardcoded `"Total Fleet Accounts: 18"` in Telegram report alerts to `{len(FLEET_UIDS)}`.
+  - **Edge Worker TonConnect Protocol & Level Unlock Hardening**:
+    * **Cryptographic Proxy Dispatch**: Patched line 312 in `deploy_both_cf_workers.py` so when an account is detected with an unbound MRG TON wallet (`!meD.user?.isTonConnected`), the worker asynchronously dispatches a request to Render Standby Node 2 `/api/farm/account/{uid}` to cryptographically sign and connect using the TonConnect 2.0 proof engine.
+    * **Victor's Company Level 1 Miner Auto-Unlock**: Added automatic `POST /api/levels/unlock {"level": 1}` invocation immediately upon wallet binding in the Edge Worker, ensuring recruit accounts transition out of `home.noJob` and begin harvesting mining yields autonomously.
+    * **Mesh Deployment & Verification**: Re-deployed the Edge Worker bundle to Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified health (`HTTP 200`), primary cron trigger (`*/15 * * * *`), and automated background farming (`farmed_count: 20`).
+  - **Bot Ecosystem & Channel Hygiene Verification**:
+    * **Full Compliance Verification**: Verified strict separation of bot tokens, commands, webhooks, and channel routes between the Admin Bot (`@myagyai`) and User Bot (`@AAAPREMIUMAPPSbot`). Verified zero phone load (Rule 4) and continuous off-machine durability (Rule 5).
+
 - **🚀 Fleet-Wide Autonomous Wallet Binding Engine & TonConnect 2.0 Proof Upgrade (October 24, 2026)**:
   - **Identified Missing Wallet Bindings on New Accounts**:
     * **Audit & Root Cause**: Investigated user observation that new accounts lacked wallet bindings needed by some farming bots. Discovered that Accounts #19 (`8937908003`) and #20 (`8609131528`) had `isTonConnected: False` in MRG Miner because MRG recently updated `/api/user/connect-wallet` to enforce TonConnect 2.0 cryptographic proof of ownership (`tonProof` with payload nonce from `/api/user/ton-proof-payload`), returning `400 Bad Request: "Wallet ownership proof is missing. Please reconnect your wallet."` on legacy raw address submissions.
