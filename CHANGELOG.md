@@ -13,7 +13,9 @@ All notable changes, architectural decisions, and modifications for the `AAA AUT
     * **GitHub Actions Workflows**: Updated all active automated workflows (`fleet_sentinel.yml`, `victors_sb_solver.yml`, `cloud_token_refresher.yml`, `cloud_sweeper.yml`, `victors_cloud_phone_tunnel.yml`, `mrg_turnstile_solver.yml`) to point to `rich-emu-106119.upstash.io`.
     * **Render Standby Node 2 Synchronization**: Updated Render service environment variables (`srv-dan5q00ae00c73djummg` / `my-agy-fleet-standby-node2`) via Render API: updated `UPSTASH_URL`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_TOKEN`, and `UPSTASH_REDIS_REST_TOKEN` to the new database credentials. Set `fleet:active_render_node` to `"node2"`.
     * **Edge Worker Re-deployment**: Patched line 8079 in `deploy_both_cf_workers.py` to use `UPSTASH_URL` and re-deployed the Cloudflare Edge Worker bundle to Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified health and farm status return HTTP 200 with 20 accounts active.
-  - **Bug Fixes & Scratch Cleanup**:
+  - **Bug Fixes, Auditor Upgrades & Scratch Cleanup**:
+    * **Multi-Source Token Pipeline in Live Auditor**: Upgraded `audit_fleet_live.py` to concurrently aggregate session tokens across `fleet_miniapp_tokens`, `miniapp_tokens`, and all atomic `fleet:tokens:*` keys in Upstash Redis. Added intelligent HTTP 401 classification distinguishing ephemeral 24h expiration (`auth_date_too_old`) from credential errors.
+    * **Fleet Side-Tasks Auditor Alignment**: Updated `audit_bots_and_sidetasks.py` to natively track all 20 accounts (`[01/20] ... [20/20]`), confirming 100% responsive 4/4 status across active fleet nodes.
     * **Syntax Error Cleanup**: Removed truncated scratch file `scripts/scratch/wallet_tab_code.js` which caused `SyntaxError: Unexpected end of input`.
     * **Autofarming Verification**: Queried live telemetry across Render Standby Node 2 and Cloudflare Edge; confirmed that the auto-farming bot is running across all 20 accounts (`farmed_count: 20`) across all active pools.
 

@@ -18,6 +18,7 @@ payouts.json
 payout_ledger.json
 payout_balances.json
 *_state.json
+*report.json
 .onchain_state.json
 FLEET_*.txt
 FLEET_MULTICHAIN_WALLETS_DASHBOARD.md

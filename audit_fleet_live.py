@@ -84,6 +84,16 @@ async def audit_single_account(session: aiohttp.ClientSession, uid: str, acc: di
                     u = d.get("user") or {}
                     bal = u.get("total_balance") or u.get("balance") or 0
                     res["atf"] = f"🟢 {float(bal):.1f}"
+                elif r.status == 401:
+                    try:
+                        d = await r.json()
+                        reason = d.get("reason", "")
+                        if "auth_date" in reason or "old" in reason or "expired" in reason:
+                            res["atf"] = "🔴 Exp (24h)"
+                        else:
+                            res["atf"] = "🔴 401 Auth"
+                    except Exception:
+                        res["atf"] = "🔴 401 Exp"
                 else:
                     res["atf"] = f"🔴 {r.status}"
         except Exception:
@@ -348,13 +358,41 @@ async def audit_all_accounts():
 
         accounts.sort(key=lambda x: int(x.get("index", 999)))
 
-        # 2. Load miniapp_tokens
+        # 2. Load miniapp_tokens from fleet_miniapp_tokens, miniapp_tokens & individual fleet:tokens:*
         tokens_map = {}
         try:
+            async with session.get(f"{UPSTASH_URL}/get/fleet_miniapp_tokens", headers=headers) as r:
+                if r.status == 200:
+                    raw = (await r.json()).get("result")
+                    if raw:
+                        tokens_map.update(json.loads(raw) if isinstance(raw, str) else raw)
             async with session.get(f"{UPSTASH_URL}/get/miniapp_tokens", headers=headers) as r:
                 if r.status == 200:
                     raw = (await r.json()).get("result")
-                    tokens_map = json.loads(raw) if raw else {}
+                    if raw:
+                        for k, v in (json.loads(raw) if isinstance(raw, str) else raw).items():
+                            if k not in tokens_map:
+                                tokens_map[k] = v
+                            else:
+                                tokens_map[k].update(v)
+            async with session.get(f"{UPSTASH_URL}/keys/fleet:tokens:*", headers=headers) as r:
+                if r.status == 200:
+                    k_list = (await r.json()).get("result", [])
+                    if k_list:
+                        pipe_payload = [["get", k] for k in k_list]
+                        async with session.post(f"{UPSTASH_URL}/pipeline", json=pipe_payload, headers=headers) as pr:
+                            if pr.status == 200:
+                                p_res = await pr.json()
+                                for item in p_res:
+                                    res_str = item.get("result")
+                                    if res_str:
+                                        t_item = json.loads(res_str) if isinstance(res_str, str) else res_str
+                                        u_id = str(t_item.get("account_id") or "")
+                                        if u_id:
+                                            if u_id not in tokens_map:
+                                                tokens_map[u_id] = t_item
+                                            else:
+                                                tokens_map[u_id].update(t_item)
         except Exception:
             pass
 
