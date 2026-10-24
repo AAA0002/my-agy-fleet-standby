@@ -48,6 +48,7 @@ WALLET_ADDRESS = "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 WALLETS = [
     "0xfda4182001672b9f0f09e2118242e543e35ed5ce"
 ]
+TON_PRIMARY_WALLET = "UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT"
 REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "")
 PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
 ADMIN_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
@@ -130,6 +131,29 @@ async def get_onchain_bnb(session: aiohttp.ClientSession) -> float:
         pass
     return 0.0
 
+async def get_onchain_ton(session: aiohttp.ClientSession) -> float:
+    """Queries on-chain TON balance from TonAPI / Toncenter with fallback."""
+    if TONAPI_KEY:
+        try:
+            headers = {"Authorization": f"Bearer {TONAPI_KEY}"}
+            url = f"https://tonapi.io/v2/accounts/{TON_PRIMARY_WALLET}"
+            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    return int(data.get("balance", 0)) / 1e9
+        except Exception:
+            pass
+    try:
+        url = f"https://toncenter.com/api/v2/getAddressBalance?address={TON_PRIMARY_WALLET}"
+        async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+            if resp.status == 200:
+                d = await resp.json()
+                if d.get("ok"):
+                    return int(d.get("result", 0)) / 1e9
+    except Exception:
+        pass
+    return 0.0
+
 async def get_ai_market_briefing(session: aiohttp.ClientSession, rates: dict, total_payouts_bnb: float, wallet_bnb: float) -> str:
     prompt = (
         f"You are the autonomous AI Chief Financial Officer for MY AGY AI Fleet. "
@@ -167,6 +191,7 @@ async def generate_and_send_report():
     async with aiohttp.ClientSession() as session:
         rates = await get_live_rates(session)
         wallet_bnb = await get_onchain_bnb(session)
+        wallet_ton = await get_onchain_ton(session)
         
         # Load fleet accounts
         accs = []
@@ -202,9 +227,12 @@ async def generate_and_send_report():
         total_payouts_bnb = sum(float(p.get("amount", 0)) for p in payouts)
         
         bnb_price = rates["bnb"]
+        ton_price = rates.get("ton", 1.60)
         bdt_rate = rates["bdt"]
         wallet_usd = wallet_bnb * bnb_price
         wallet_bdt = wallet_usd * bdt_rate
+        wallet_ton_usd = wallet_ton * ton_price
+        wallet_ton_bdt = wallet_ton_usd * bdt_rate
         
         daily_potential_bnb = total_accounts * 0.000055
         daily_potential_usd = daily_potential_bnb * bnb_price
@@ -236,7 +264,9 @@ async def generate_and_send_report():
             f"• *Kynex Network:* RTDB energy auto-refill & custom token cloud claim\n"
             f"• *DiggoMiner & Astra:* Deterministic challenge solver & zero-delay edge claims\n"
             f"• *PepeGram & AdxEarn AI:* 24h mining loops & automated task rewards\n"
-            f"• *TON Price (TonAPI):* `${rates.get('ton', 1.38):.2f} USD`\n\n"
+            f"• *On-Chain Target TON:* `{TON_PRIMARY_WALLET}`\n"
+            f"• *Live On-Chain TON Balance:* `{wallet_ton:.4f} TON` (`~${wallet_ton_usd:.2f} USD` / `~৳{wallet_ton_bdt:.0f} BDT`)\n"
+            f"• *TON Price (TonAPI):* `${ton_price:.2f} USD`\n\n"
             f"🛡️ *3. Cloud Infrastructure & 100% Free Edge Mesh:*\n"
             f"• *Cloudflare 5x Mesh:* APAC + Global edge nodes (Nodes 1, 2, 3, 4, 5)\n"
             f"• *Cloudflare Workers AI:* Serverless Llama 3.2 & DeepSeek R1 edge intelligence (0 keys)\n"

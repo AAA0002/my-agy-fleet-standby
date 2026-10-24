@@ -66,10 +66,24 @@ TONCENTER_API_KEY = os.getenv("TONCENTER_API_KEY", "")
 ALCHEMY_ETH_RPC = os.getenv("ALCHEMY_ETH_RPC", "https://eth-mainnet.g.alchemy.com/v2/alch_bx0bDWIy7_g3VQaH6HPG8")
 
 CF_WORKER_URLS = [
+    os.getenv("CF_WORKER_URL_4", "https://restore-agy.agorameet.workers.dev"),
     os.getenv("CF_WORKER_URL_1", "https://restore-agy.aaaai2.workers.dev"),
     os.getenv("CF_WORKER_URL_2", "https://restore-agy.aaa-bot.workers.dev"),
-    os.getenv("CF_WORKER_URL_3", "https://restore-agy.aaa222.workers.dev")
+    os.getenv("CF_WORKER_URL_3", "https://restore-agy.aaa222.workers.dev"),
+    os.getenv("CF_WORKER_URL_5", "https://restore-agy.aaaai.workers.dev")
 ]
+
+def load_fleet_ton_wallets() -> dict:
+    """Loads all 20 fleet TON wallets dynamically from fleet_ton_wallets.json."""
+    wallets_path = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
+    if os.path.exists(wallets_path):
+        try:
+            with open(wallets_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return {k: v.get("address") for k, v in data.items() if k != "_guide" and v.get("address")}
+        except Exception:
+            pass
+    return {}
 SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("CF_SECRET_KEY", "")
 
 BSC_RPCS = [
@@ -498,6 +512,21 @@ async def run_multichain_check(session: aiohttp.ClientSession) -> dict:
                 state["total_confirmed_deposits"] = state.get("total_confirmed_deposits", 0) + 1
         state["ton_balance"] = ton_bal
         results["ton"] = ton_bal
+
+    # 3.1 Fleet-Wide TON Balance Aggregator (Across All 20 Accounts)
+    fleet_ton_wallets = load_fleet_ton_wallets()
+    last_fleet_ton_check = state.get("last_fleet_ton_check_at", 0)
+    if fleet_ton_wallets and (time.time() - last_fleet_ton_check > 21600 or "fleet_ton_total" not in state):
+        fleet_ton_sum = max(0.0, ton_bal) if ton_bal >= 0 else 0.0
+        for uid, addr in fleet_ton_wallets.items():
+            if addr and addr != TON_PRIMARY_WALLET:
+                b = await query_ton_balance(session, addr)
+                if b > 0:
+                    fleet_ton_sum += b
+                await asyncio.sleep(0.15)
+        state["fleet_ton_total"] = fleet_ton_sum
+        state["last_fleet_ton_check_at"] = time.time()
+        results["fleet_ton_total"] = fleet_ton_sum
 
     state["last_checked_at"] = time.time()
     state["prices"] = prices

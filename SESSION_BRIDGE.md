@@ -172,6 +172,10 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - Encrypted and provisioned all 16 runtime secrets (`ALERT_BOT_TOKEN`, `UPSTASH_TOKEN`, `WEBSHARE_KEY`, etc.) using libsodium / `pynacl` sealed boxes.
     - Verified green CI/CD runs (`fleet_sentinel.yml` 100% success across 14 multi-cloud components).
     - Patched `clean_up_system.py` to support `os.environ` fallback, verified multi-tier sanitation, and capped Upstash lists.
+21. **Fleet Directory Generator Dynamic Resolution, Multi-Chain Watcher 5-Node Sync & TON Treasury Ledger**:
+    - Fixed hardcoded path `/root/projects/AAA_AUTO` in `generate_fleet_directory.py` to dynamic `BASE_DIR`, regenerating `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md` (265 lines) covering all 20 accounts.
+    - Upgraded `multichain_onchain_watcher.py` with all 5 Cloudflare nodes (Node 4 `agorameet` primary) and fleet-wide TON balance aggregation.
+    - Added on-chain TON vault tracking (`get_onchain_ton`) and BDT/USD valuation to `daily_profit_reporter.py`.
 
 ---
 

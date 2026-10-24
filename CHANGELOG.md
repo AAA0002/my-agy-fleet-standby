@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Fleet Directory Generator Fix, Multi-Chain Watcher 5-Node Sync & TON Treasury Ledger (October 24, 2026)**:
+  - **`generate_fleet_directory.py` Directory Resolution & 20-Account Profile Expansion**:
+    * **Eliminated Hardcoded Workspace Path**: Fixed `BASE_DIR = "/root/projects/AAA_AUTO"` in `generate_fleet_directory.py` which caused `FileNotFoundError` in cloud environments. Updated to dynamic `os.path.dirname(os.path.abspath(__file__))`.
+    * **Dynamic 20-Account Markdown Directory Generation**: Successfully regenerated `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md` (265 lines) cataloging all 20 accounts from Account #01 Arif Hossain down to Account #19 Adil H and Account #20 Asaduzzaman Sarker, mapping their dedicated isolated TON (v4r2) and EVM (BSC/Arbitrum) addresses.
+  - **`multichain_onchain_watcher.py` Primary Edge Gateway & Fleet TON Aggregation**:
+    * **Node 4 Gateway Inclusion**: Updated `CF_WORKER_URLS` in `multichain_onchain_watcher.py` to include all 5 Cloudflare edge mesh nodes, setting Node 4 (`https://restore-agy.agorameet.workers.dev`) as the primary target for real-time multichain balance and payout sync.
+    * **Fleet-Wide TON Balance Watcher**: Added `load_fleet_ton_wallets()` and periodic multi-account TON balance polling to aggregate total on-chain TON holdings across all 20 accounts into watcher state (`fleet_ton_total`).
+  - **`daily_profit_reporter.py` Dual On-Chain Treasury Reporting**:
+    * **On-Chain TON Vault Tracking**: Added `get_onchain_ton` integrating TonAPI.io and Toncenter RPC to query the primary TON vault (`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`), calculating live USD and BDT market valuations.
+    * **Comprehensive Multi-Chain Ledger**: Upgraded the daily financial ledger broadcast to include both BNB and TON on-chain balances, explorer links, and 20-account farming status.
+
+
 - **🚀 CI/CD Standby Failover, 16-Secret Provisioning, Autonomous Sanitation & Full Fleet Health Verification (October 24, 2026)**:
   - **CI/CD Architecture Diagnosis & Standby Failover**:
     * **Root Cause of 1-Second Workflow Failures**: Investigated failed GitHub Actions runs on `AAA0002/ATL` (`audit_fleet` and `solve_and_farm_mrg` completing in 1 second with `runner_id: 0`, billable ms: 0). Diagnosed that `AAA0002/ATL` is a private repository whose monthly quota of 2,000 free runner minutes was 100% exhausted, causing GitHub to immediately fail queued jobs without runner allocation.

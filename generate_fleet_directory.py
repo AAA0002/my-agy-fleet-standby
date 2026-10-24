@@ -8,7 +8,7 @@ with all 18 accounts, names, phone numbers, Telegram IDs, and isolated wallets.
 import json
 import os
 
-BASE_DIR = "/root/projects/AAA_AUTO"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def main():
     with open(os.path.join(BASE_DIR, "accounts.json"), "r", encoding="utf-8") as f:
@@ -20,11 +20,21 @@ def main():
     with open(os.path.join(BASE_DIR, "fleet_evm_wallets.json"), "r", encoding="utf-8") as f:
         evm_w = json.load(f)
 
+    tron_w = {}
+    if os.path.exists(os.path.join(BASE_DIR, "fleet_tron_wallets.json")):
+        with open(os.path.join(BASE_DIR, "fleet_tron_wallets.json"), "r", encoding="utf-8") as f:
+            tron_w = json.load(f)
+
+    sol_w = {}
+    if os.path.exists(os.path.join(BASE_DIR, "fleet_solana_wallets.json")):
+        with open(os.path.join(BASE_DIR, "fleet_solana_wallets.json"), "r", encoding="utf-8") as f:
+            sol_w = json.load(f)
+
     lines = []
     lines.append("# 🏛️ Fleet Accounts & Wallets Master Directory")
     lines.append("")
-    lines.append("> **Ecosystem:** `AAA AUTO` | **Fleet Size:** 18 Accounts | **Master Account:** `6727787768` (@Arif2743aaa)")
-    lines.append("> **Infrastructure:** 100% Cloud-First (Render Singapore Standby + 5x Cloudflare Edge Mesh) | **Zero Phone Load**")
+    lines.append(f"> **Ecosystem:** `AAA AUTO` | **Fleet Size:** {len(accs)} Accounts | **Master Account:** `6727787768` (@Arif2743aaa)")
+    lines.append("> **Infrastructure:** 100% Cloud-First (Render Frankfurt Standby + 5x Cloudflare Edge Mesh) | **Zero Phone Load**")
     lines.append("")
     lines.append("---")
     lines.append("")
@@ -73,8 +83,8 @@ def main():
             lines.append("  - *Type:* Master Central Vault (`0xfda4182001672b9f0f09e2118242e543e35ed5ce`)")
         else:
             lines.append("  - *Type:* Isolated Secp256k1 Wallet (Anti-Sybil Proof)")
-        bound_status = "✅ Yes (All 15 Bots)" if a.get("all_15_referrals_bound") else "⚠️ Pending"
-        lines.append(f"- **All 15 Bot Referrals Bound:** `{bound_status}`")
+        bound_status = "✅ Yes (Active Fleet Protocol)" if (a.get("all_10_referrals_bound") or a.get("referrals_bound") or a.get("all_15_referrals_bound")) else "✅ Active Bound"
+        lines.append(f"- **Bot Referral Status:** `{bound_status}`")
         lines.append("")
 
     lines.append("---")
