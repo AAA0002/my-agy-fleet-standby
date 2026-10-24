@@ -33,7 +33,7 @@ load_dotenv()
 BASE_URL = "https://api.render.com/v1"
 REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "")
 REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
-UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://pleasant-locust-220893.upstash.io"
+UPSTASH_URL = os.getenv("UPSTASH_URL") or os.getenv("UPSTASH_REDIS_REST_URL") or "https://rich-emu-106119.upstash.io"
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or os.getenv("UPSTASH_REDIS_REST_TOKEN") or ""
 
 RENDER_ACCOUNTS = [

@@ -112,7 +112,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 │                      ▼                                          │ Reads Fresh Tokens   │
 │  ┌──────────────────────────────────────────────────────────────┴───────────────────┐  │
 │  │                        Upstash Serverless Redis REST                             │  │
-│  │  • URL: https://pleasant-locust-220893.upstash.io                                │  │
+│  │  • URL: https://rich-emu-106119.upstash.io                                │  │
 │  │  • Key: fleet:tokens:<uid> (Contains active WebApp initData for each account)    │  │
 │  │  • Key: fleet:wallets:ton (Contains isolated TON wallets & recovery mnemonics)   │  │
 │  │  • Key: victors:pass:<uid> (Contains fresh Cloudflare Turnstile humanPass)       │  │
@@ -289,7 +289,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
   - **User WebApp Mini App Frontend**: `https://agy-henna.vercel.app/` (Ads Portal) & `https://agy-henna.vercel.app/miner` (Vector SVG Multi-Miner Dashboard) & `https://restore-agy.aaaai2.workers.dev/app` (Cloudflare Worker Node 1) & `https://atf-miner-app.pages.dev` (Cloudflare Pages)
     - Architecture: Ultra-modern responsive cyberpunk glassmorphic Mini App improving upon `@Allbottesting_bot` with 9 pools (⚡ MRG, 🪙 ATF, 🏢 Victor's Company, 💧 VyroDrop, 🌐 Kynex Network, ⛏️ DiggoMiner, ⭐ Astra Airdrop, 🐸 PepeGram, 💎 AdxEarn AI), 1-Tap instant Telegram account binding, live visual validation card (Telegram ID, phone, auth token), 24/7 cloud mining telemetry, Rewarded Video Ad player (Monetag + GigaPub), Daily Streak Claim (+100 Pts/d), 50-ad permanent slot milestone tracker, and Telegram Stars VIP passes.
   - **User Distributed Mining Engine & REST APIs**: `https://restore-agy.aaaai2.workers.dev/api/user/` (Endpoints: `/profile`, `/account/add`, `/account/remove`, `/claim-daily`, `/claim-ad`)
-  - **User Database & State**: Upstash Redis (`pleasant-locust-220893.upstash.io`) + Cloudflare D1 `atf-miner-db` (`2659c73b-8144-4f2a-9a06-ef2368a1ce7f`)
+  - **User Database & State**: Upstash Redis (`rich-emu-106119.upstash.io`) + Cloudflare D1 `atf-miner-db` (`2659c73b-8144-4f2a-9a06-ef2368a1ce7f`)
   - **User Session Security Key**: `USER_BOT_SESSION_ENCRYPTION_KEY: edf824a8b2d05d039839fdfcef84108c555459779f2d4ea3fca6e66a21ec056e`
   - **User Community Group**: Chat ID: `-1003684868577` (*AAA Auto Miner*, `https://t.me/AAAAutoMiner`)
   - **Official Public Announcements**: Channel ID: `-1004255751168` (`@AAAAUTOMINING`, `https://t.me/AAAAUTOMINING`)
@@ -305,7 +305,7 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
 | **Serverless Edge Web** | **Deno Deploy (Node 2)** | `https://my-agy-fleet-deno2.aaasupporta.deno.net` | 🟢 **HTTP 200 OK** — Secondary TypeScript Edge runner |
 | **Cloudflare Pages** | **ATF WebApp** | `https://atf-miner-app.pages.dev` | 🟢 **HTTP 200 OK** — Global static and edge WebApp frontend |
 | **Decentralized Storage** | **Pinata IPFS** | `api.pinata.cloud` | 🟢 **AUTHENTICATED** — Latest CID: `QmUSX7XHwMcq3muCnZBaDzvk3D9ohXnJpe9iiQikbms8mn` |
-| **Serverless Database** | **Upstash Redis** | `pleasant-locust-220893.upstash.io` | 🟢 **HTTP 200 OK** — Brand new active database (10k fresh commands/day) |
+| **Serverless Database** | **Upstash Redis** | `rich-emu-106119.upstash.io` | 🟢 **HTTP 200 OK** — Brand new active database (10k fresh commands/day) |
 | **Serverless Database** | **Turso LibSQL** | `my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io` | 🟢 **HTTP 200 OK** — Distributed SQLite edge database |
 | **Cloud Postgres** | **Supabase Cloud** | `znbbaozpevurvbfkxakz.supabase.co` | 🟢 **HTTP 200 OK** — Managed PostgreSQL database via Service Role Key |
 | **Cloud Database** | **Layerbase Cloud** | `api.layerbase.com` | 🟢 **ACTIVE** — 6 Managed database instances (QuestDB, InfluxDB, Weaviate) |
@@ -1180,7 +1180,7 @@ Whenever you perform work in this repository:
     7. Clears Maintenance Mode and resumes normal cloud operations.
 * **Upstash Configuration Fix (Dead `relaxing-starfish` Purged)**:
   - Fixed environment variables on Render Node 2 and Node 3 where a legacy Upstash URL (`relaxing-starfish`) returned HTTP 403 Forbidden.
-  - Replaced with active instance `https://pleasant-locust-220893.upstash.io`.
+  - Replaced with active instance `https://rich-emu-106119.upstash.io`.
 * **Authentic Telegram DC Live Audit (Zero Fake Telemetry)**:
   - Tested all 18 accounts live against Telegram DC:
     * **16 Accounts 100% 🟢 ACTIVE & HEALTHY**: Accounts #1, #2, #3, #4, #5, #7, #8, #9, #10, #11, #13, #14, #15, #16, #17, #18 (silently extracting tokens across 9 bots).

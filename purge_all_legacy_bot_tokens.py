@@ -47,7 +47,7 @@ if os.path.exists(env_file):
                 k, v = line.split("=", 1)
                 env[k.strip()] = v.strip().strip('"').strip("'")
 
-UPSTASH_URL = env.get("UPSTASH_URL") or env.get("UPSTASH_REDIS_REST_URL") or "https://pleasant-locust-220893.upstash.io"
+UPSTASH_URL = env.get("UPSTASH_URL") or env.get("UPSTASH_REDIS_REST_URL") or "https://rich-emu-106119.upstash.io"
 UPSTASH_TOKEN = env.get("UPSTASH_TOKEN") or env.get("UPSTASH_REDIS_REST_TOKEN") or ""
 SECRET_KEY = env.get("SECRET_KEY") or env.get("CF_SECRET_KEY") or ""
 

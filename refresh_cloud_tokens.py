@@ -35,7 +35,7 @@ API_HASH = os.getenv("TELEGRAM_API_HASH") or os.getenv("API_HASH", "5cd9e5bbfb57
 REPORT_CHAT_ID = int(os.getenv("REPORT_CHAT_ID", "6727787768"))
 CF_SECRET_KEY = os.getenv("CF_SECRET_KEY") or os.getenv("SECRET_KEY", "")
 
-UPSTASH_URL = os.getenv("UPSTASH_URL") or "https://pleasant-locust-220893.upstash.io"
+UPSTASH_URL = os.getenv("UPSTASH_URL") or "https://rich-emu-106119.upstash.io"
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or ""
 
 CF_NODES = [

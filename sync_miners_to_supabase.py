@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-UPSTASH_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://pleasant-locust-220893.upstash.io")
+UPSTASH_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://rich-emu-106119.upstash.io")
 UPSTASH_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://znbbaozpevurvbfkxakz.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")

@@ -28,7 +28,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("victors_wallet_connector")
 
-UPSTASH_URL = os.getenv("UPSTASH_URL") or "https://pleasant-locust-220893.upstash.io"
+UPSTASH_URL = os.getenv("UPSTASH_URL") or "https://rich-emu-106119.upstash.io"
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or ""
 VICTORS_API = "https://server.victors.company/api"
 VICTORS_ORIGIN = "https://app.victors.company"

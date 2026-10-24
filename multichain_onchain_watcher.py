@@ -57,7 +57,7 @@ BETTERSTACK_HEARTBEAT_URL = os.getenv("BETTERSTACK_HEARTBEAT_URL", "https://upti
 # Cloud integrations
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://znbbaozpevurvbfkxakz.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_ANON_KEY")
-UPSTASH_REDIS_REST_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://pleasant-locust-220893.upstash.io")
+UPSTASH_REDIS_REST_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://rich-emu-106119.upstash.io")
 UPSTASH_REDIS_REST_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
 TONAPI_KEY = os.getenv("TONAPI_KEY", "DVNSQF7W3LQJ3X77QKY")
 ETHERSCAN_API_KEY = os.getenv("ETHERSCAN_API_KEY", "")

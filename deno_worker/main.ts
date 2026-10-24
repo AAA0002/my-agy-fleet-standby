@@ -7,7 +7,7 @@ const CHAT_ID = Deno.env.get("REPORT_CHAT_ID") || "6727787768";
 // Cloud Integrations
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "https://znbbaozpevurvbfkxakz.supabase.co";
 const SUPABASE_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
-const UPSTASH_URL = Deno.env.get("UPSTASH_REDIS_REST_URL") || "https://pleasant-locust-220893.upstash.io";
+const UPSTASH_URL = Deno.env.get("UPSTASH_REDIS_REST_URL") || "https://rich-emu-106119.upstash.io";
 const UPSTASH_TOKEN = Deno.env.get("UPSTASH_REDIS_REST_TOKEN") || "";
 const TONAPI_KEY = Deno.env.get("TONAPI_KEY") || "";
 const TURSO_URL = Deno.env.get("TURSO_URL") || "https://my-agy-fleet-db-aaa2743.aws-ap-south-1.turso.io";

@@ -29,7 +29,7 @@ API_HASH = os.getenv("TELEGRAM_API_HASH", "5cd9e5bbfb572a4429a0c54774153b47")
 PRIMARY_ID = "6727787768"
 VICTORS_REF = "ref_A20AA96F18"
 
-UPSTASH_URL = os.getenv("UPSTASH_URL") or "https://pleasant-locust-220893.upstash.io"
+UPSTASH_URL = os.getenv("UPSTASH_URL") or "https://rich-emu-106119.upstash.io"
 UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or ""
 
 if not UPSTASH_TOKEN:

@@ -1,7 +1,7 @@
 export const CONFIG = {
   ADMIN_IDS: [6727787768],
   SECRET_KEY: (typeof process !== "undefined" && (process.env?.SECRET_KEY || process.env?.CF_SECRET_KEY)) || "",
-  UPSTASH_URL: "https://pleasant-locust-220893.upstash.io",
+  UPSTASH_URL: "https://rich-emu-106119.upstash.io",
   UPSTASH_TOKEN: (typeof process !== "undefined" && process.env?.UPSTASH_TOKEN) || "",
   WEBAPP_URL: "https://app8858823950.tgcloud.ai/",
   BACKEND_NODES: [
@@ -57,7 +57,7 @@ export const SECRET_KEY = CONFIG.SECRET_KEY;
 export const OWNER_ID = "6727787768";
 export const CF_WORKER_URLS = CONFIG.EDGE_MESH;
 export const RENDER_NODES = CONFIG.BACKEND_NODES;
-export const UPSTASH_URL = "https://pleasant-locust-220893.upstash.io";
+export const UPSTASH_URL = "https://rich-emu-106119.upstash.io";
 export const UPSTASH_TOKEN = (typeof process !== "undefined" && process.env?.UPSTASH_TOKEN) || "";
 export const BROWSER_HEADERS = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",

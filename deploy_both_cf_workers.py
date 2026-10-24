@@ -1417,7 +1417,7 @@ const DEFAULT_FLEET_DATA = {
 };
 
 // High-Performance Upstash Serverless Redis REST Configuration (with In-Memory Caching to stay well below 10k/day limit)
-const UPSTASH_URL = "https://pleasant-locust-220893.upstash.io";
+const UPSTASH_URL = "https://rich-emu-106119.upstash.io";
 const UPSTASH_TOKEN = "__UPSTASH_TOKEN__";
 
 // Turso LibSQL Edge Database (9 Billion Operations/Month Quota Mesh)
@@ -8076,7 +8076,7 @@ fi
         // 1.8 Force Fleet Sync (/sync)
         if (text === "/sync" || text.startsWith("/sync")) {
           ctx.waitUntil((async () => {
-            const upstashUrl = "https://pleasant-locust-220893.upstash.io";
+            const upstashUrl = "https://rich-emu-106119.upstash.io";
             const upstashToken = env.UPSTASH_REDIS_REST_TOKEN || env.UPSTASH_TOKEN || "";
             await fetch(`${upstashUrl}/set/fleet:pending_action`, {
               method: "POST",

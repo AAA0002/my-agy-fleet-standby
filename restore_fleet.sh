@@ -53,7 +53,7 @@ done
 # Fallback: If Cloudflare archive is unreachable, try Decentralized Pinata IPFS via Upstash Redis
 if [ "$BACKUP_DOWNLOADED" -eq 0 ]; then
     echo "  Checking latest decentralized IPFS backup via Upstash & Pinata Gateway..."
-    LATEST_CID=$(curl -sSL -m 6 -H "Authorization: Bearer ${UPSTASH_TOKEN:-$UPSTASH_REDIS_REST_TOKEN}" "https://pleasant-locust-220893.upstash.io/get/fleet:latest_ipfs_cid" 2>/dev/null | grep -o '"result":"[^"]*"' | cut -d'"' -f4 || true)
+    LATEST_CID=$(curl -sSL -m 6 -H "Authorization: Bearer ${UPSTASH_TOKEN:-$UPSTASH_REDIS_REST_TOKEN}" "https://rich-emu-106119.upstash.io/get/fleet:latest_ipfs_cid" 2>/dev/null | grep -o '"result":"[^"]*"' | cut -d'"' -f4 || true)
     if [ -n "$LATEST_CID" ] && [ "$LATEST_CID" != "null" ]; then
         echo "  Found IPFS CID: $LATEST_CID. Fetching from Pinata IPFS Gateway..."
         if curl -sSL -f -m 35 "https://gateway.pinata.cloud/ipfs/$LATEST_CID" -o "$BASE_DIR/latest_backup.zip" 2>/dev/null; then

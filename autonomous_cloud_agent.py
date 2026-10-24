@@ -44,7 +44,7 @@ REPORT_BOT_TOKEN = os.getenv("REPORT_BOT_TOKEN", "")
 REPORT_CHAT_ID = os.getenv("REPORT_CHAT_ID", "6727787768")
 PAYOUT_CHANNEL_ID = os.getenv("PAYOUT_CHANNEL_ID", "-1004402765950")
 
-UPSTASH_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://pleasant-locust-220893.upstash.io")
+UPSTASH_URL = os.getenv("UPSTASH_REDIS_REST_URL", "https://rich-emu-106119.upstash.io")
 UPSTASH_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
 
 CF_SECRET_KEY = os.getenv("CF_SECRET_KEY") or os.getenv("SECRET_KEY", "")
