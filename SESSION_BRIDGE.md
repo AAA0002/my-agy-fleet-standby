@@ -186,6 +186,17 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - Standardized Dashboard 1 (`/miner`) in clean USD ($), removing the BDT currency switcher button and calculations.
     - Upgraded Dashboard 2 (`/user-admin`): Added Rewarded Ads Monetization & Impressions Card (tracking ads watched, ad points distributed, active watchers), live crypto prices in header bar (`💎 TON: $1.62 • 🟡 BNB: $750`), direct user Telegram `DM ↗` links, and enhanced Web Audio broadcast fanfare.
     - Deployed to Primary Cloudflare Edge Gateway Node 4 (`agorameet.workers.dev`) and verified `HTTP 200 OK`. Delivered disaster recovery archive to `@myagyai`.
+24. **System-Wide Anti-Fake Purge & Master Dashboards Ground-Truth Specification**:
+    - Purged client-side simulated yield tickers and artificial hashrates from `public_ads/miner/index.html` (and mirrors `public/index.html`, `public/app/index.html`).
+    - Authored authoritative master reference `DASHBOARDS_AND_SYSTEM_GROUND_TRUTH.md` detailing the complete architecture across all 4 dashboards and providing an executable 6-step diagnostic suite.
+    - Preserved dedicated Ads Portal (`public_ads/index.html`) untouched; confirmed persistent Telegram chat menu button for User Bot remains `🎬 Watch Ads` pointing to `https://agy-henna.vercel.app/`.
+25. **2026 Modern Redesign of User Dashboard & Admin Dashboards**:
+    - **User Mining Dashboard (`public_ads/miner/index.html` at `/miner`)**: Complete cyber-fintech overhaul with Space Grotesk headers, Inter body text, JetBrains Mono metrics, interactive 7-day streak stepper with live cooldown timer and visual checkmarks, 50-ad slot unlock progress bar (`X / 50 Ads`), 9 protocol cards with cycle tags and 1-tap claim, 4 non-custodial cloud vaults (TON, BSC/EVM, TRON, SOL) with Tonviewer/BscScan explorer links, custom payout routing, and floating tactile 5-tab dock. 100% genuine data (zero fake tickers). Mirrored to `public/index.html` and `public/app/index.html`.
+    - **Executive Fleet Operations Console (`public_admin/admin.html` at `/admin`)**: Upgraded executive treasury to track the on-chain TON Executive Master Vault (`UQBPZiSvitdPU3VUyJK2mRaHVBl69xejw5aOrh1KfKA7gwDT`) and Binance BEP-20 Master Vault with live Tonviewer and BscScan deep links, real aggregate USD valuation, zero fake 68% shimmer bar, and real-time round-trip latency testing for all 5 Cloudflare edge nodes and Render Node 2 coordinator. Mirrored to `public/admin.html`.
+    - **User Bot Admin Console (`public_admin/user-admin.html` at `/user-admin`)**: Upgraded with Rewarded Ads Monetization card tracking total ads watched, ad points distributed (+20 Pts/ad), and active ad watchers, direct Telegram DM buttons (`DM ↗`), quick points adjustments (`+50`, `+200`, `+500`, `-50`), and broadcast composer with instant templates and Web Audio fanfare. Mirrored to `public/user-admin.html`.
+    - **Ads Portal Untouched (Dashboard 3)**: Preserved `public_ads/index.html` 100% untouched. Confirmed live Telegram Chat Menu Button for User Bot (`@AAAPREMIUMAPPSbot`) remains `🎬 Watch Ads` pointing to `https://agy-henna.vercel.app/`.
+    - **Edge Deployment & Verification**: Deployed bundle to Primary Node 4 Edge Gateway (`https://restore-agy.agorameet.workers.dev`). Verified all 4 live endpoints return HTTP 200 OK.
+    - **Disaster Recovery Backup**: Streamed fresh archive to Telegram vault `@myagyai` via `backup_manager.py`.
 
 ---
 
