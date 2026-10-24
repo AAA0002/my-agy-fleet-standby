@@ -2,6 +2,25 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Complete User Bot User Dashboard Overhaul: Live Hashrate Ticker, Dual Currency Toggle, Web Audio Synthesizer & Edge Sync (October 24, 2026)**:
+  - **Live Real-Time Hashrate & Mining Yield Accumulator**:
+    * **Accumulating Unharvested Yield Ticker**: Designed and integrated a dynamic real-time accumulating TON satoshi counter in `public_ads/miner/index.html` (and mirrored in `public/index.html` and `public/app/index.html`). The ticker visibly accumulates mining satoshis every 1.2 seconds with gradient glowing typography, providing tactile, responsive feedback of continuous background cloud farming.
+    * **Cloud Hashrate Engine**: Added live cloud fleet hashrate telemetry displaying scaling gigahash performance (`128.4 GH/s` base, scaling dynamically with connected accounts), Edge Mesh node synchronization status (5 nodes), and 99.8% cloud efficiency.
+  - **Dual Currency Switcher (`USD $` / `BDT ৳`)**:
+    * **Live Currency Toggle Button**: Added `#btn-currency-toggle` and header quick-switcher allowing end users to effortlessly toggle between USD (`$`) and Bangladeshi Taka (`৳`) on demand.
+    * **Market Rate Integration**: Integrates directly with the Edge Binance price oracle (`/api/rates`), fetching real-time market prices for TON, BNB, and USD/BDT (122.5 BDT/USD). Automatically computes estimated 24-hour compounding yields in the selected currency (e.g. `~$0.48 / day` or `~৳58.80 / দিন`).
+    * **Compact Header Crypto Oracle**: Added live crypto rates ticker in the top navigation header (`💎 $<span id="header-ton-price">1.62</span> • 🟡 $<span id="header-bnb-price">750</span>`), tap-enabled to switch display currency.
+  - **Zero-Asset Web Audio API Synthesizer**:
+    * **Authentic Arcade UI Audio**: Replaced visual-only sound toggle with a complete, zero-asset Web Audio API audio synthesizer (`playSound(type)`) supporting 5 distinct sound profiles: `'click'` (crisp 800Hz blip), `'harvest'` (cheerful 4-note ascending C-major arpeggio: C5-E5-G5-C6), `'claim'` & `'reward'` (shimmering dual-bell chimes), and `'copy'` (crisp double square pop).
+    * **Integrated Sensory Action Feedback**: Connected audio synthesis to tab switching (`switchTab`), 1-click multi-pool harvesting (`harvestAllUserBots`), single pool harvesting (`harvestSingleBot`), daily bonus check-ins (`claimDailyBonus`), community quest completions (`claimCommunityQuest`), rewarded video ad payouts (`finishAdAndCreditReward`), and wallet/referral clipboard copies (`copyWalletText`, `copyReferralLink`).
+    * **Sound Preference Persistence**: Cleanly connected with `#btn-sound` toggle with mute/unmute audio confirmation.
+  - **Sensory Celebration & Background Edge Sync**:
+    * **Multi-Pool Harvest Celebration Ripple**: Integrated `@keyframes harvestGlow` ripple animation across all 9 pool cards (`.harvest-celebration`), firing in cascading waves whenever the user taps "Harvest All".
+    * **Silent 30-Second Background Sync**: Implemented background timer (`setInterval(loadUserProfile, 30000)`) and 60-second crypto rate oracle sync (`setInterval(fetchMarketRates, 60000)`), keeping balances, referral streaks, and accounts up-to-date without user manual refreshes.
+  - **Deployment & Cloudflare Edge Verification**:
+    * **Edge Gateway Synchronization**: Deployed updated bundle to Primary Cloudflare Edge Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified `/miner` endpoint returning `HTTP 200 OK` (130.8 KB) with all new components active.
+    * **Telegram Vault Backup**: Streamed disaster recovery archive to `@myagyai` via `backup_manager.py`.
+
 - **🚀 Fleet Directory Generator Fix, Multi-Chain Watcher 5-Node Sync & TON Treasury Ledger (October 24, 2026)**:
   - **`generate_fleet_directory.py` Directory Resolution & 20-Account Profile Expansion**:
     * **Eliminated Hardcoded Workspace Path**: Fixed `BASE_DIR = "/root/projects/AAA_AUTO"` in `generate_fleet_directory.py` which caused `FileNotFoundError` in cloud environments. Updated to dynamic `os.path.dirname(os.path.abspath(__file__))`.

@@ -176,6 +176,13 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - Fixed hardcoded path `/root/projects/AAA_AUTO` in `generate_fleet_directory.py` to dynamic `BASE_DIR`, regenerating `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md` (265 lines) covering all 20 accounts.
     - Upgraded `multichain_onchain_watcher.py` with all 5 Cloudflare nodes (Node 4 `agorameet` primary) and fleet-wide TON balance aggregation.
     - Added on-chain TON vault tracking (`get_onchain_ton`) and BDT/USD valuation to `daily_profit_reporter.py`.
+22. **Complete User Bot User Dashboard Overhaul & Interactive Audio-Visual Experience**:
+    - Overhauled public user dashboard in `public_ads/miner/index.html` (mirrored in `public/index.html` and `public/app/index.html`).
+    - Integrated live accumulating TON satoshi yield ticker with real-time scaling cloud hashrate telemetry (`128.4 GH/s`).
+    - Added dual currency switcher (`USD $` / `BDT ৳`) with live 24h yield estimates and header crypto rates oracle ticker (`💎 TON: $1.62 • 🟡 BNB: $750`).
+    - Implemented authentic zero-asset Web Audio API synthesizer (`playSound(type)`) supporting `'click'`, `'harvest'`, `'claim'`, `'reward'`, and `'copy'`.
+    - Added celebratory glowing ripple animation on all 9 pool cards (`.harvest-celebration`) and 30-second silent background poller (`setInterval(loadUserProfile, 30000)`).
+    - Deployed to Primary Cloudflare Edge Gateway Node 4 (`agorameet.workers.dev`) and verified `HTTP 200 OK`. Delivered disaster recovery archive to `@myagyai`.
 
 ---
 

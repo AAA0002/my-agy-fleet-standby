@@ -81,7 +81,11 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     - **Zero Contamination**: User accounts and wallets are 100% isolated in Turso LibSQL and Upstash Redis `ub_*` namespace and are never merged into `accounts.json` or `fleet:accounts`.
 13. **📱 Public User Bot User Dashboard (`/miner`, `/app`, `/dashboard`)**:
     - **Location & Mirrors**: `public_ads/miner/index.html` mirrored at `public/index.html` and `public/app/index.html`, embedded in Cloudflare Edge Worker bundle as `__USER_MINI_APP_HTML_JSON__` and served via `/miner`, `/app`, and Telegram WebApp menu button of `@AAAPREMIUMAPPSbot`.
-    - **1-Click Multi-Pool Cloud Harvest**: Action bar in `tab-hub` triggers `/api/farm/all` to concurrently harvest yields across all 9 mining pools, plus single `⚡` buttons on each protocol card.
+    - **Live Real-Time Hashrate & Accumulating Yield Ticker**: Continuous accumulating TON satoshi counter visibly ticking upwards every 1.2s with scaling cloud hashrate telemetry (`128.4 GH/s` base, scaling dynamically with connected miner accounts) and active 5-node Edge Mesh synchronization indicators.
+    - **Dual Currency Switcher (`USD $` / `BDT ৳`)**: Live toggle (`#btn-currency-toggle`) and header crypto oracle ticker (`💎 TON: $1.62 • 🟡 BNB: $750`) connected to `/api/rates`, dynamically calculating estimated 24h yields in USD and Bangladeshi Taka.
+    - **Zero-Asset Web Audio API Synthesizer**: Arcade-quality Web Audio API sound generator (`playSound(type)`) supporting 5 distinct sound profiles (`'click'`, `'harvest'`, `'claim'`, `'reward'`, `'copy'`) connected to `#btn-sound` toggle.
+    - **1-Click Multi-Pool Cloud Harvest**: Action bar in `tab-hub` triggers `/api/farm/all` to concurrently harvest yields across all 9 mining pools, single `⚡` buttons on each protocol card, and visual celebration ripple pulses (`.harvest-celebration`).
+    - **Silent 30-Second Background Poller**: Real-time background sync (`setInterval(loadUserProfile, 30000)`) and rates updater (`setInterval(fetchMarketRates, 60000)`).
     - **Two-Step 2FA Phone Login**: `phone-step-3` handles 2FA Cloud Passwords seamlessly without locking users out.
     - **Community Quests Engine**: Free points (+50 Pts each, +150 Pts total) for joining official channels (`@AAAAutoMiner`, `@AAAAUTOMINING`, `@AAA_ACTIVITY`) verified and credited via `/api/user/claim-quest`.
 
