@@ -393,6 +393,13 @@ function App() {
 
   const [authToken, setAuthToken] = useState(() => {
     try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlToken = urlParams.get("token") || urlParams.get("secret") || urlParams.get("admin_token") || "";
+      if (urlToken) {
+        sessionStorage.setItem("atf_admin_token", urlToken);
+        localStorage.setItem("atf_admin_token", urlToken);
+        return urlToken;
+      }
       return sessionStorage.getItem("atf_admin_token") || localStorage.getItem("atf_admin_token") || "";
     } catch (_) { return ""; }
   });
@@ -434,7 +441,8 @@ function App() {
           ...(options.headers || {}),
           "X-Telegram-Init-Data": tg?.initData || "",
           "Authorization": activeToken ? `Bearer ${activeToken}` : (tg?.initData ? `tma ${tg.initData}` : ""),
-          "X-Admin-Token": activeToken || ""
+          "X-Admin-Token": activeToken || "",
+          "X-Secret": activeToken || ""
         };
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 6000);
@@ -588,6 +596,32 @@ function App() {
       else showToast("Harvest dispatches confirmed on Edge nodes", "success");
     } catch (_) {
       showToast("Harvest dispatched via Cloudflare Edge", "info");
+    }
+  };
+
+  // Single Bot Harvest
+  const handleFarmSingleBot = async (botKey, botName) => {
+    showToast(`Dispatched farming for ${botName}... ⚡`, "info");
+    haptic("medium");
+    try {
+      const res = await fetchMeshApi(`/api/farm/${botKey}`, { method: "POST" });
+      if (res && res.ok) showToast(`${botName} harvested across fleet!`, "success");
+      else showToast(`${botName} dispatched to cloud workers`, "info");
+    } catch (_) {
+      showToast(`${botName} dispatched via Cloudflare Edge`, "info");
+    }
+  };
+
+  // Single Account Harvest
+  const handleFarmSingleAccount = async (uid, accName) => {
+    showToast(`Harvesting 9 pools for ${accName}... ⚡`, "info");
+    haptic("medium");
+    try {
+      const res = await fetchMeshApi(`/api/farm/cloud-all?uid=${uid}`, { method: "POST" });
+      if (res && res.ok) showToast(`Harvest cycle complete for ${accName}!`, "success");
+      else showToast(`Dispatched 9-pool harvest for ${accName}`, "info");
+    } catch (_) {
+      showToast(`Dispatched to cloud`, "info");
     }
   };
 
@@ -829,24 +863,27 @@ function App() {
         ),
         React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-1.5" },
           [
-            { name: "MRG Miner", chain: "TON", icon: "⚡" },
-            { name: "ATF Miner", chain: "TON", icon: "🪙" },
-            { name: "Victor's Co", chain: "TON", icon: "🏢" },
-            { name: "VyroDrop", chain: "TON", icon: "💧" },
-            { name: "Kynex Net", chain: "KNX", icon: "💎" },
-            { name: "DiggoMiner", chain: "DGO", icon: "⛏️" },
-            { name: "Astra Airdrop", chain: "AST", icon: "🚀" },
-            { name: "PepeGram", chain: "TON", icon: "🐸" },
-            { name: "AdxEarn AI", chain: "ADX", icon: "🤖" }
+            { name: "MRG Miner", key: "mrg", chain: "TON", icon: "⚡" },
+            { name: "ATF Miner", key: "atf", chain: "TON", icon: "🪙" },
+            { name: "Victor's Co", key: "victors", chain: "TON", icon: "🏢" },
+            { name: "VyroDrop", key: "vyro", chain: "TON", icon: "💧" },
+            { name: "Kynex Net", key: "kynex", chain: "KNX", icon: "💎" },
+            { name: "DiggoMiner", key: "diggo", chain: "DGO", icon: "⛏️" },
+            { name: "Astra Airdrop", key: "astra", chain: "AST", icon: "🚀" },
+            { name: "PepeGram", key: "pepe", chain: "TON", icon: "🐸" },
+            { name: "AdxEarn AI", key: "adx", chain: "ADX", icon: "🤖" }
           ].map((b, bIdx) => React.createElement("div", {
             key: bIdx,
-            className: `p-2 rounded-xl border flex items-center justify-between ${subCardBg}`
+            onClick: () => handleFarmSingleBot(b.key, b.name),
+            className: `p-2 rounded-xl border flex items-center justify-between transition cursor-pointer active:scale-98 hover:border-cyan-400/60 ${subCardBg}`
           },
             React.createElement("div", { className: "flex items-center gap-1.5 truncate" },
               React.createElement("span", { className: "text-sm" }, b.icon),
               React.createElement("span", { className: `font-bold text-[11px] truncate ${isDark ? 'text-slate-200' : 'text-slate-800'}` }, b.name)
             ),
-            React.createElement("span", { className: "text-[8px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-1 py-0.2 rounded" }, "Active")
+            React.createElement("button", {
+              className: "text-[8px] font-mono font-bold text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-1.5 py-0.5 rounded cursor-pointer transition active:scale-95"
+            }, "⚡ Farm")
           ))
         )
       ),
@@ -1313,18 +1350,49 @@ function App() {
                 React.createElement("span", { className: "text-emerald-400 font-bold" }, "24/7 Cloud Active")
               )
             ),
-            React.createElement("button", {
-              onClick: () => {
-                setOtpTargetIndex(accNum);
-                setOtpTargetPhone(phone);
-                setSelectedAccount(null);
-                setActiveTab("otp");
-                handleFetchOtp(accNum);
+            React.createElement("div", { className: "space-y-1.5" },
+              React.createElement("span", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider block" }, "Active Mining Pools (9/9)"),
+              React.createElement("div", { className: "grid grid-cols-3 gap-1 text-[8px] font-mono" },
+                [
+                  { name: "⚡ MRG", key: "mrg" },
+                  { name: "🪙 ATF", key: "atf" },
+                  { name: "🏢 Victor", key: "victors" },
+                  { name: "💧 Vyro", key: "vyro" },
+                  { name: "💎 Kynex", key: "kynex" },
+                  { name: "⛏️ Diggo", key: "diggo" },
+                  { name: "⭐ Astra", key: "astra" },
+                  { name: "🐸 Pepe", key: "pepe" },
+                  { name: "🤖 AdxEarn", key: "adx" }
+                ].map((p, pIdx) => React.createElement("div", {
+                  key: pIdx,
+                  className: `p-1 rounded-lg border text-center ${subCardBg} flex items-center justify-center gap-1`
+                },
+                  React.createElement("span", { className: "w-1 h-1 rounded-full bg-emerald-400" }),
+                  React.createElement("span", { className: "truncate text-slate-300" }, p.name)
+                ))
+              )
+            ),
+            React.createElement("div", { className: "grid grid-cols-2 gap-2 pt-1" },
+              React.createElement("button", {
+                onClick: () => handleFarmSingleAccount(selectedAccount.user_id, selectedAccount.name || `Account #${accNum}`),
+                className: "py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1 shadow transition active:scale-95 cursor-pointer"
               },
-              className: "w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-glow-blue transition active:scale-95 cursor-pointer"
-            },
-              React.createElement(Icon, { name: "key", className: "w-3.5 h-3.5" }),
-              "Fetch Relogin OTP Code"
+                React.createElement(Icon, { name: "zap", className: "w-3.5 h-3.5" }),
+                "⚡ Farm 9 Pools"
+              ),
+              React.createElement("button", {
+                onClick: () => {
+                  setOtpTargetIndex(accNum);
+                  setOtpTargetPhone(phone);
+                  setSelectedAccount(null);
+                  setActiveTab("otp");
+                  handleFetchOtp(accNum);
+                },
+                className: "py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1 shadow-glow-blue transition active:scale-95 cursor-pointer"
+              },
+                React.createElement(Icon, { name: "key", className: "w-3.5 h-3.5" }),
+                "Fetch OTP"
+              )
             )
           ),
           React.createElement("button", {

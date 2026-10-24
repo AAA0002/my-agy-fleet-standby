@@ -158,20 +158,12 @@ export async function checkQrStatus(chatId, nodeUrl) {
   return { ok: false, status: 'error' };
 }
 
-// Parallel Dual-Shard Cloud Farming across Render Nodes
+// Parallel Cloud Farming across Render Active Node 2
 export async function dispatchParallelFarming() {
   const node2 = CONFIG.BACKEND_NODES[0] || "https://my-agy-fleet-standby-node2.onrender.com";
-  const node3 = CONFIG.BACKEND_NODES[1] || "https://my-agy-fleet-standby-node3.onrender.com";
 
   const promises = [
-    fetch(`${node2}/api/farm/cloud-all?shard=1`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${CONFIG.SECRET_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    }).catch(e => ({ ok: false, error: e.message })),
-    fetch(`${node3}/api/farm/cloud-all?shard=2`, {
+    fetch(`${node2}/api/farm/cloud-all`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${CONFIG.SECRET_KEY}`,
@@ -185,7 +177,7 @@ export async function dispatchParallelFarming() {
   }
 
   await Promise.allSettled(promises);
-  return { ok: true, dispatched: true, shards: [1, 2] };
+  return { ok: true, dispatched: true, node: "node2" };
 }
 
 // Non-blocking, parallelized cancel — NEVER blocks Telegram command response!

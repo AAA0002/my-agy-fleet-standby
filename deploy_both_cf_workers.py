@@ -231,7 +231,7 @@ const FLEET_TRON_WALLETS = {
   "8609131528": "TVS6hMHnmwew9HZbM6j7aQ5KrsLE1V6oap"
 };
 
-async function farmSingleAccountAllBots(uid, accData, env, ctx) {
+async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null) {
   const result = { user_id: uid, bots: {} };
   const isOwner = String(uid) === (env.OWNER_ID || "6727787768");
 
@@ -1207,7 +1207,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx) {
     { name: "adxearn", fn: farmAdxearn, hasData: Boolean(accData.adxearn_init_data) },
   ];
 
-  const activeRoutines = botRoutines.filter(b => b.hasData);
+  const activeRoutines = botRoutines.filter(b => b.hasData && (!targetBot || targetBot === "all" || b.name === targetBot.toLowerCase()));
   for (let i = activeRoutines.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [activeRoutines[i], activeRoutines[j]] = [activeRoutines[j], activeRoutines[i]];
@@ -1920,6 +1920,18 @@ export default {
 
     const verifyAdminRequest = async (req) => {
       const authHeader = req.headers.get("Authorization") || "";
+      const rawBearer = authHeader.startsWith("Bearer ") ? authHeader.replace(/^Bearer\s+/i, "").trim() : "";
+      const rawAdminToken = req.headers.get("X-Admin-Token")?.trim() || "";
+      const rawSecretHeader = req.headers.get("X-Secret")?.trim() || "";
+      const urlSecret = url.searchParams.get("secret")?.trim() || url.searchParams.get("token")?.trim() || url.searchParams.get("admin_token")?.trim() || "";
+
+      if (env.SECRET_KEY && (rawBearer === env.SECRET_KEY || rawAdminToken === env.SECRET_KEY || rawSecretHeader === env.SECRET_KEY || urlSecret === env.SECRET_KEY)) {
+        return { ok: true, user: "admin", uid: "6727787768" };
+      }
+      if (env.FLEET_2FA_PASSWORD && (rawBearer === env.FLEET_2FA_PASSWORD || rawAdminToken === env.FLEET_2FA_PASSWORD || rawSecretHeader === env.FLEET_2FA_PASSWORD || urlSecret === env.FLEET_2FA_PASSWORD)) {
+        return { ok: true, user: "admin", uid: "6727787768" };
+      }
+
       let token = "";
       if (authHeader.startsWith("Bearer adm_sess_")) {
         token = authHeader.replace(/^Bearer\s+/i, "").trim();
@@ -3088,7 +3100,7 @@ fi
           const encoder = new TextEncoder();
           const pwBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(password));
           const hexHash = Array.from(new Uint8Array(pwBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-          if (hexHash === masterHash || hexHash === "cfee20846c9e2a91b74168f2d82458b1409896a6b02f29e9c8933b496fb103b0") {
+          if (hexHash === masterHash || hexHash === "cfee20846c9e2a91b74168f2d82458b1409896a6b02f29e9c8933b496fb103b0" || (env.SECRET_KEY && password === env.SECRET_KEY) || (env.FLEET_2FA_PASSWORD && password === env.FLEET_2FA_PASSWORD)) {
             authValid = true;
             authMethod = "password";
           }
@@ -4547,9 +4559,11 @@ fi
     }
 
     // 12.5 Autonomous Cloud Farming Engine (9 Legitimate Bots: MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra Airdrop, PepeGram, AdxEarn AI)
-    if (path === "/api/farm/all" || path === "/api/fleet/claim-all" || path === "/api/farm/bnb" || path === "/api/farm/execute" || path === "/api/fleet/harvest" || path === "/api/harvest") {
+    const isFarmPath = path === "/api/farm/all" || path === "/api/fleet/claim-all" || path === "/api/farm/bnb" || path === "/api/farm/execute" || path === "/api/fleet/harvest" || path === "/api/harvest" || (path.startsWith("/api/farm/") && !path.startsWith("/api/farm/account/") && path !== "/api/farm/status" && path !== "/api/farm/cloud-all");
+    if (isFarmPath) {
       try {
         const body = await request.json().catch(() => ({}));
+        const reqBotMatch = path.startsWith("/api/farm/") ? path.replace("/api/farm/", "").toLowerCase() : (body.bot || url.searchParams.get("bot") || "all");
         let targetUids = [];
         if (body.tgId || body.user_id) {
           targetUids = [body.tgId || body.user_id];
@@ -4562,7 +4576,7 @@ fi
           if (state && state.accounts) {
             targetUids = state.accounts.map(a => a.user_id).filter(Boolean);
           } else {
-            targetUids = [6727787768, 8826375659, 8450010161, 8782429452, 7734849205, 8025472383, 8851426148, 8203342513, 8881914294, 7648254021, 8190649727, 7487048946, 8741547543, 8727040932, 7749125802, 7954290138, 8841038141, 8975442879];
+            targetUids = DEFAULT_FLEET_ACCOUNTS.map(a => a.user_id);
           }
           // Dynamically merge all account IDs present in miniapp_tokens so newly onboarded accounts are always farmed
           try {
@@ -4625,28 +4639,26 @@ fi
           ctx.waitUntil(runBnbGalaxy());
         }
 
-        // If path is /api/farm/all or body.bot === "all", also trigger full multi-bot farming in background
-        const isAllBots = path === "/api/farm/all" || body.bot === "all" || url.searchParams.get("bot") === "all";
-        if (isAllBots) {
-          ctx.waitUntil((async () => {
-            // Forward full fleet sweep to single active Render Node 2
-            try {
-              await fetch("https://my-agy-fleet-standby-node2.onrender.com/api/farm/cloud-all", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
-                body: JSON.stringify({ all: true, bot: "all" })
-              });
-            } catch (_) {}
-            try {
-              const tokens = await getFleetTokens(env);
-              if (!tokens) return;
-              for (const uid of targetUids.slice(0, 4)) {
-                const accData = tokens[String(uid)] || {};
-                await farmSingleAccountAllBots(uid, accData, env, ctx);
-              }
-            } catch (_) {}
-          })());
-        }
+        // Trigger multi-bot or single-bot farming in background
+        const isAllBots = reqBotMatch === "all" || reqBotMatch === "execute" || reqBotMatch === "harvest" || path === "/api/farm/all";
+        ctx.waitUntil((async () => {
+          // Forward sweep to single active Render Node 2
+          try {
+            await fetch("https://my-agy-fleet-standby-node2.onrender.com/api/farm/cloud-all", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.SECRET_KEY}` },
+              body: JSON.stringify({ all: true, bot: reqBotMatch })
+            });
+          } catch (_) {}
+          try {
+            const tokens = await getFleetTokens(env);
+            if (!tokens) return;
+            for (const uid of targetUids.slice(0, 4)) {
+              const accData = tokens[String(uid)] || {};
+              await farmSingleAccountAllBots(uid, accData, env, ctx, reqBotMatch);
+            }
+          } catch (_) {}
+        })());
 
         return new Response(JSON.stringify({
           ok: true,
@@ -15155,8 +15167,8 @@ async def main():
         except Exception as e:
             print(f"⚠️ Error setting admin bot webhook: {e}")
 
-        # 1. USER BOT SYNCHRONIZATION (@AAAPREMIUMAPPSbot - Dedicated Public Community Platform)
-        if USER_BOT_TOKEN:
+        # 1. USER BOT IMMUTABILITY (Rule 1: "DO NOT TOUCH USER BOT" - preserve without tampering)
+        if USER_BOT_TOKEN and os.getenv("TOUCH_USER_BOT") == "1":
             user_target_wh = "https://restore-agy.agorameet.workers.dev/user-bot-webhook"
             try:
                 async with session.get(f"https://api.telegram.org/bot{USER_BOT_TOKEN}/getWebhookInfo") as resp:

@@ -346,7 +346,8 @@ function App() {
           ...(options.headers || {}),
           "X-Telegram-Init-Data": tg?.initData || "",
           "Authorization": activeToken ? `Bearer ${activeToken}` : (tg?.initData ? `tma ${tg.initData}` : ""),
-          "X-Admin-Token": activeToken || ""
+          "X-Admin-Token": activeToken || "",
+          "X-Secret": activeToken || ""
         };
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 6000);

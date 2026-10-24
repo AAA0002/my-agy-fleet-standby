@@ -5343,7 +5343,7 @@ async def fetch_cloud_miniapp_tokens(session: aiohttp.ClientSession) -> dict:
 FLEET_LAST_FARM_CACHE = {}
 
 
-async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, acc_tokens: dict, force: bool = False) -> dict:
+async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, acc_tokens: dict, force: bool = False, target_bot: str = "all") -> dict:
     """
     Farms all 4 legitimate active bots (MRG, ATF, Victor's Company, VyroDrop) for a single account.
     Engineered with:
@@ -6447,7 +6447,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
         if not b["has_data"]:
             status["bots"][b["name"]] = "skipped (no initData)"
 
-    active_routines = [b for b in bot_routines if b["has_data"]]
+    active_routines = [b for b in bot_routines if b["has_data"] and (not target_bot or target_bot == "all" or b["name"] == target_bot.lower())]
     random.shuffle(active_routines)
 
     now_ts = int(time.time())
@@ -6526,7 +6526,7 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
     return status
 
 
-async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, accounts: list = None, tokens_map: dict = None, force: bool = False) -> dict:
+async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, accounts: list = None, tokens_map: dict = None, force: bool = False, target_bot: str = "all") -> dict:
     """Executes full autonomous cloud farming and task completions across all 9 legitimate bots for all fleet accounts."""
     created_session = False
     if session is None:
@@ -6590,7 +6590,7 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                     except Exception as ex_e:
                         logger.warning(f"[Farm Task] On-the-fly extraction note for {uid_str}: {ex_e}")
                 try:
-                    res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=force), timeout=180.0)
+                    res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=force, target_bot=target_bot), timeout=180.0)
                     if isinstance(res, dict) and any(("token_expired" in str(v).lower() or "token_invalid" in str(v).lower() or "unauthorized" in str(v).lower()) for v in res.get("bots", {}).values()):
                         if a_dict.get("session_string") or a_dict.get("session"):
                             try:
@@ -6599,7 +6599,7 @@ async def run_cloud_fleet_farming_cycle(session: aiohttp.ClientSession = None, a
                                     t_dict.update(fresh_toks)
                                     tokens_map[uid_str] = t_dict
                                     asyncio.create_task(sync_account_tokens_to_clouds(t_dict))
-                                    res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=True), timeout=180.0)
+                                    res = await asyncio.wait_for(farm_single_account_bots(session, a_dict, t_dict, force=True, target_bot=target_bot), timeout=180.0)
                             except Exception:
                                 pass
                     return res
@@ -6642,6 +6642,12 @@ async def api_farm_cloud_all(request: Request):
     if auth != f"Bearer {SECRET_KEY}" and req_secret != SECRET_KEY:
         pass
 
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+    target_bot = request.query_params.get("bot") or body.get("bot") or "all"
     sync_mode = request.query_params.get("sync") == "1"
     force_mode = request.query_params.get("force") == "1"
     shard_param = str(request.query_params.get("shard") or os.getenv("NODE_SHARD") or "all").lower()
@@ -6663,7 +6669,7 @@ async def api_farm_cloud_all(request: Request):
                     logger.info(f"[Farm Trigger] Partition Shard 2: Selected accounts {midpoint+1}-{total} ({len(accounts)}/{total} accounts)")
 
                 tokens = await fetch_cloud_miniapp_tokens(session)
-                res = await run_cloud_fleet_farming_cycle(session, accounts, tokens, force=force_mode)
+                res = await run_cloud_fleet_farming_cycle(session, accounts, tokens, force=force_mode, target_bot=target_bot)
                 LAST_FARM_RUN["status"] = "completed"
                 LAST_FARM_RUN["farmed_count"] = res.get("farmed_count", 0)
                 LAST_FARM_RUN["total_accounts"] = res.get("total_accounts", len(accounts) if accounts else 0)

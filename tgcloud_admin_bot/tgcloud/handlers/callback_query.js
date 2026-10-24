@@ -568,25 +568,27 @@ Please reply directly with the full phone number including international country
   }
 
   if (data === 'btn_farm_all') {
-    await replyOrEdit(chatId, messageId, "⚡ *Dispatching Dual-Shard Cloud Mining across 5 Bots...*\n\n• Shard 1 (Nodes 01-09) → Render Node 2 (Frankfurt)\n• Shard 2 (Nodes 10-18) → Render Node 3 (Oregon)\n\n_Executing 100% in cloud, 0% phone load..._", null);
+    await replyOrEdit(chatId, messageId, "⚡ *Dispatching 100% Cloud Mining across 9 Pools...*\n\n• Target: All 20 Fleet Accounts (Nodes 01-20)\n• Backend: Render Standby Node 2 (Frankfurt)\n\n_Executing 100% in cloud, 0% phone load..._", null);
     await dispatchParallelFarming().catch(() => {});
     
     const banner = 
 `┌──────────────────────────────┐
-│  ⚡ *AUTONOMOUS 5-BOT FARM*  │
+│  ⚡ *AUTONOMOUS 9-POOL FARM* │
 └──────────────────────────────┘
 
-🚀 Dispatched parallel dual-shard farming across all 18 nodes:
+🚀 Dispatched cloud harvest across all 20 nodes & 9 mining pools:
 
-◈ 🪙 *MRG Miner*         → Turnstile Pass Verification & Harvest
-◈ ⚡ *ATF Miner*         → Cloud Captcha & Mining Cycle
-◈ 👑 *Victor's Company*  → Proof-of-Pass & Level Compounding
+◈ ⚡ *MRG Miner*         → Turnstile Pass Verification & Harvest
+◈ 🪙 *ATF Miner*         → Cloud Captcha & Mining Cycle
+◈ 🏢 *Victor's Company*  → Proof-of-Pass & Level Compounding
 ◈ 💧 *VyroDrop*          → Wallet Sync & Airdrop Farming
-◈ 🌐 *Kynex Network*     → Session Token Claim & Node Mining
+◈ 💎 *Kynex Network*     → Session Token Claim & Node Mining
+◈ ⛏️ *DiggoMiner*        → 30-Day JWT Cached Session Claim
+◈ ⭐ *Astra Airdrop*     → Supabase Egress Aware Auto-Claim
+◈ 🐸 *PepeGram*          → 6h Hash Production Harvest
+◈ 🤖 *AdxEarn AI*        → Rewarded Ads Farming Cycle
 
-📡 *Parallel Shard Architecture:*
-• \`Shard 1 (Nodes 01-09)\` → Render Node 2 (Frankfurt)
-• \`Shard 2 (Nodes 10-18)\` → Render Node 3 (Oregon)
+📡 *Cloud Architecture:* Render Node 2 (Frankfurt) • 3x Cloudflare Edge Mesh
 ⚡ *Phone Impact:* \`0% CPU • 0% RAM • 100% Cloud Execution\``;
 
     const live = await fetchFleetLive();

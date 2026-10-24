@@ -283,7 +283,7 @@
       <div class="space-y-1">
         <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quick AI Diagnostics</div>
         <div class="grid grid-cols-2 gap-1.5 text-[10px]">
-          <button class="ai-quick-btn min-h-[48px] p-2 rounded-xl card-clean text-left hover:border-blue-400 active:scale-95 transition" data-prompt="Run a full security and sybil anti-ban audit across all 18 nodes and 5 active bots.">
+          <button class="ai-quick-btn min-h-[48px] p-2 rounded-xl card-clean text-left hover:border-blue-400 active:scale-95 transition" data-prompt="Run a full security and sybil anti-ban audit across all 20 nodes and 9 active mining pools.">
             <span class="font-bold text-blue-700 block">🛡️ Security & Sybil</span>
             <span class="text-slate-500 text-[9px]">Check fleet health & risks</span>
           </button>
@@ -291,8 +291,8 @@
             <span class="font-bold text-emerald-700 block">📈 Yield & Compound</span>
             <span class="text-slate-500 text-[9px]">Optimal re-invest plan</span>
           </button>
-          <button class="ai-quick-btn min-h-[48px] p-2 rounded-xl card-clean text-left hover:border-blue-400 active:scale-95 transition" data-prompt="Review all 5 legitimate bots (MRG, ATF, Victor's Company, VyroDrop, Kynex Network) and recommend best claim cycle.">
-            <span class="font-bold text-indigo-700 block">🤖 5 Bots Strategy</span>
+          <button class="ai-quick-btn min-h-[48px] p-2 rounded-xl card-clean text-left hover:border-blue-400 active:scale-95 transition" data-prompt="Review all 9 active mining pools (MRG, ATF, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, Astra, PepeGram, AdxEarn AI) and recommend best claim cycle.">
+            <span class="font-bold text-indigo-700 block">🤖 9 Pools Strategy</span>
             <span class="text-slate-500 text-[9px]">Claim cycles & upgrades</span>
           </button>
           <button class="ai-quick-btn min-h-[48px] p-2 rounded-xl card-clean text-left hover:border-blue-400 active:scale-95 transition" data-prompt="Provide a step-by-step action plan to re-link offline worker sessions.">
@@ -332,7 +332,7 @@
     <!-- TAB 4: 5 BOTS MINING SUITE                               -->
     <!-- ======================================================== -->
     <div id="tabBots" class="tab-pane hidden space-y-2.5">
-      <!-- 5 Bots Header Banner -->
+      <!-- 9 Bots Header Banner -->
       <div class="p-3 rounded-2xl bg-gradient-to-tr from-blue-50 via-indigo-50 to-white border border-blue-100 space-y-1">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -340,12 +340,12 @@
               🤖
             </div>
             <div>
-              <h3 class="font-bold text-xs text-slate-900">5 Legitimate Active Mining Bots</h3>
+              <h3 class="font-bold text-xs text-slate-900">9 Legitimate Active Mining Pools</h3>
               <p class="text-[10px] text-slate-500 font-medium">100% Cloud Execution • Zero Phone Load</p>
             </div>
           </div>
           <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-            ● 5 ACTIVE
+            ● 9 ACTIVE
           </span>
         </div>
       </div>
@@ -480,6 +480,110 @@
             </button>
           </div>
         </div>
+
+        <!-- Bot 6: DiggoMiner -->
+        <div class="card-clean p-3 rounded-2xl space-y-2">
+          <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-base border border-teal-200">⛏️</span>
+              <div>
+                <div class="font-bold text-xs text-slate-900">DiggoMiner</div>
+                <div class="text-[10px] text-blue-600 font-mono">@DiggoMinerBot</div>
+              </div>
+            </div>
+            <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">● 100% CLOUD</span>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-slate-500 font-medium">
+            <span>30-Day JWT Cached Session & Auto-Mining</span>
+            <span class="font-mono text-slate-700 font-bold">8h Auto-Claim</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-0.5">
+            <button class="min-h-[36px] py-1.5 px-2 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="farmSingleBot('diggo')">
+              <span>⚡ Farm Diggo</span>
+            </button>
+            <button class="min-h-[36px] py-1.5 px-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="openTelegramBot('DiggoMinerBot')">
+              <span>↗️ Open Bot</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Bot 7: PepeGram -->
+        <div class="card-clean p-3 rounded-2xl space-y-2">
+          <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-xl bg-lime-50 text-lime-700 flex items-center justify-center font-bold text-base border border-lime-200">🐸</span>
+              <div>
+                <div class="font-bold text-xs text-slate-900">PepeGram</div>
+                <div class="text-[10px] text-blue-600 font-mono">@PepeGramBot</div>
+              </div>
+            </div>
+            <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">● 100% CLOUD</span>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-slate-500 font-medium">
+            <span>6-Hour Hash Production & Token Claim</span>
+            <span class="font-mono text-slate-700 font-bold">6h Cycle</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-0.5">
+            <button class="min-h-[36px] py-1.5 px-2 bg-lime-50 hover:bg-lime-100 text-lime-700 border border-lime-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="farmSingleBot('pepe')">
+              <span>⚡ Farm Pepe</span>
+            </button>
+            <button class="min-h-[36px] py-1.5 px-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="openTelegramBot('PepeGramBot')">
+              <span>↗️ Open Bot</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Bot 8: AdxEarn AI -->
+        <div class="card-clean p-3 rounded-2xl space-y-2">
+          <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-base border border-purple-200">🤖</span>
+              <div>
+                <div class="font-bold text-xs text-slate-900">AdxEarn AI</div>
+                <div class="text-[10px] text-blue-600 font-mono">@AdxEarnBot</div>
+              </div>
+            </div>
+            <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">● 100% CLOUD</span>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-slate-500 font-medium">
+            <span>Rewarded Ad Verification & Autonomous Yields</span>
+            <span class="font-mono text-slate-700 font-bold">Daily Cycle</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-0.5">
+            <button class="min-h-[36px] py-1.5 px-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="farmSingleBot('adx')">
+              <span>⚡ Farm AdxEarn</span>
+            </button>
+            <button class="min-h-[36px] py-1.5 px-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="openTelegramBot('AdxEarnBot')">
+              <span>↗️ Open Bot</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Bot 9: Astra Airdrop -->
+        <div class="card-clean p-3 rounded-2xl space-y-2">
+          <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-xl bg-orange-50 text-orange-700 flex items-center justify-center font-bold text-base border border-orange-200">⭐</span>
+              <div>
+                <div class="font-bold text-xs text-slate-900">Astra Airdrop</div>
+                <div class="text-[10px] text-blue-600 font-mono">@astra_airdrop_bot</div>
+              </div>
+            </div>
+            <span class="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">● 100% CLOUD</span>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-slate-500 font-medium">
+            <span>Supabase Egress-Aware Claim & Energy Sync</span>
+            <span class="font-mono text-slate-700 font-bold">12h Cycle</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-0.5">
+            <button class="min-h-[36px] py-1.5 px-2 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="farmSingleBot('astra')">
+              <span>⚡ Farm Astra</span>
+            </button>
+            <button class="min-h-[36px] py-1.5 px-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold rounded-xl text-[11px] active:scale-95 transition flex items-center justify-center gap-1" onclick="openTelegramBot('astra_airdrop_bot')">
+              <span>↗️ Open Bot</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -545,7 +649,7 @@
     </button>
     <button class="nav-item flex flex-col items-center justify-center flex-1 py-1 text-slate-400 font-medium active:scale-95 transition" data-tab="bots">
       <span class="text-base leading-none">🤖</span>
-      <span class="text-[10px] mt-1">5 Bots</span>
+      <span class="text-[10px] mt-1">9 Pools</span>
     </button>
     <button class="nav-item flex flex-col items-center justify-center flex-1 py-1 text-slate-400 font-medium active:scale-95 transition" data-tab="mesh">
       <span class="text-base leading-none">🌐</span>
@@ -656,7 +760,7 @@
         <h4 class="font-bold text-xs text-slate-900">📦 Export Multi-Chain Treasury</h4>
         <button id="modalExportClose" class="w-7 h-7 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center text-xs">✕</button>
       </div>
-      <p class="text-[11px] text-slate-600">Export all 90 non-custodial addresses across 18 accounts in standard format:</p>
+      <p class="text-[11px] text-slate-600">Export all 100 non-custodial addresses across 20 accounts in standard format:</p>
       <div class="flex gap-2">
         <button id="btnExportJson" class="flex-1 min-h-[40px] py-2 bg-blue-50 text-blue-700 border border-blue-200 font-bold rounded-xl text-xs active:scale-95 transition">Copy JSON</button>
         <button id="btnExportCsv" class="flex-1 min-h-[40px] py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold rounded-xl text-xs active:scale-95 transition">Copy CSV</button>
@@ -1760,7 +1864,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            prompt: `You are Ari AI Council for AAA AUTO fleet (18 Telegram accounts, 5 mining bots: MRG, ATF, Victor's Company, VyroDrop, Kynex). Answer clearly and concisely with markdown formatting:\n\n${promptText}`
+            prompt: `You are Ari AI Council for AAA AUTO fleet (20 Telegram accounts, 9 mining pools: MRG, ATF, Victor's Company, VyroDrop, Kynex, Diggo, Astra, PepeGram, AdxEarn AI). Answer clearly and concisely with markdown formatting:\n\n${promptText}`
           })
         });
 
@@ -1771,7 +1875,7 @@
 
         document.getElementById('btnCopyAi').onclick = () => copyToClipboard(answer, 'AI Diagnostic copied!');
       } catch (err) {
-        respText.innerText = "🛡️ Ari AI Edge Summary: All 18 nodes connected. 5 bots active in 100% cloud compounding mode with 0 phone load. Re-link pending worker accounts to maximize satoshi accumulation.";
+        respText.innerText = "🛡️ Ari AI Edge Summary: All 20 nodes connected. 9 mining pools active in 100% cloud compounding mode with 0 phone load. Re-link pending worker accounts to maximize satoshi accumulation.";
         modelBadge.innerText = 'Edge Heuristic Mode';
       } finally {
         btn.innerHTML = origText;
@@ -1886,7 +1990,11 @@
         atf: 'ATF Miner',
         victors: "Victor's Company",
         vyro: 'VyroDrop',
-        kynex: 'Kynex Network'
+        kynex: 'Kynex Network',
+        diggo: 'DiggoMiner',
+        pepe: 'PepeGram',
+        adx: 'AdxEarn AI',
+        astra: 'Astra Airdrop'
       };
       const name = botNames[botKey] || 'Bot';
       showToast(`Dispatched farming for ${name}! ⚡`);
