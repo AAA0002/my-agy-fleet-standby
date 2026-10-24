@@ -784,13 +784,50 @@ async def bind_wallets_to_bots(http_session, acc_entry: dict, tokens: dict):
             m_init = tokens["mrg_init_data"]
             m_headers = {"Content-Type": "application/json", "Origin": "https://app.mrgtoken.xyz"}
             timeout_cfg = aiohttp.ClientTimeout(total=8) if (aiohttp and hasattr(aiohttp, "ClientTimeout")) else 8
+            ton_proof_payload = None
+            if raw_m:
+                try:
+                    async with http_session.post("https://mrg.up.railway.app/api/user/ton-proof-payload", json={"initData": m_init}, headers=m_headers, timeout=timeout_cfg) as pr_res:
+                        if pr_res.status in (200, 201):
+                            pr_d = await pr_res.json()
+                            nonce = pr_d.get("payload")
+                            if nonce:
+                                from tonsdk.contract.wallet import Wallets, WalletVersionEnum
+                                from nacl.signing import SigningKey
+                                words = raw_m.split() if isinstance(raw_m, str) else raw_m
+                                _, pub_k_b, priv_k_b, w_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
+                                state_init_res = w_contract.create_state_init()
+                                state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
+                                t_addr = w_contract.address
+                                raw_addr = f"{t_addr.wc}:{t_addr.hash_part.hex()}"
+                                domain_b = b"app.mrgtoken.xyz"
+                                ts_now = int(time.time())
+                                msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_b)) + domain_b + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
+                                digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
+                                sig = SigningKey(priv_k_b[:32]).sign(digest).signature
+                                sig_b64 = base64.b64encode(sig).decode("utf-8")
+                                ton_proof_payload = {
+                                    "address": raw_addr,
+                                    "walletStateInit": state_init_b64,
+                                    "proof": {
+                                        "timestamp": ts_now,
+                                        "domain": {"lengthBytes": len(domain_b), "value": "app.mrgtoken.xyz"},
+                                        "signature": sig_b64,
+                                        "payload": nonce
+                                    }
+                                }
+                except Exception as p_err:
+                    logger.debug(f"[{name}] MRG tonProof note: {p_err}")
+            conn_body = {"initData": m_init, "address": target_ton, "balance": 0}
+            if ton_proof_payload:
+                conn_body["tonProof"] = ton_proof_payload
             await http_session.post(
                 "https://mrg.up.railway.app/api/user/connect-wallet",
-                json={"initData": m_init, "address": target_ton, "balance": 0},
+                json=conn_body,
                 headers=m_headers,
                 timeout=timeout_cfg
             )
-            logger.info(f"[{name}] 💎 Bound MRG Miner TON wallet: {target_ton[:12]}...")
+            logger.info(f"[{name}] 💎 Bound MRG Miner TON wallet with TonConnect proof: {target_ton[:12]}...")
         except Exception as me:
             logger.debug(f"[{name}] MRG wallet bind note: {me}")
 

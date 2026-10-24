@@ -33,19 +33,29 @@ UPSTASH_TOKEN = os.getenv("UPSTASH_TOKEN") or ""
 VICTORS_API = "https://server.victors.company/api"
 VICTORS_ORIGIN = "https://app.victors.company"
 
-FLEET_UIDS = [
-    8881914294,  # Nancy
-    8826375659,  # Arif
-    8450010161,  # Nadim
-    8782429452,  # Kaitlyn
-    7734849205,  # Node 7
-    8851426148,  # Node 9
-    8203342513,  # Node 10
-    8190649727,  # MD. Arif
-    8741547543,  # Abid (3)
-    7954290138,  # Node 16
-    8975442879   # Node 17
-]
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
+FLEET_WALLETS_FILE = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
+
+def load_fleet_uids() -> list:
+    """Loads all fleet user IDs from accounts.json, preserving order."""
+    if os.path.exists(ACCOUNTS_FILE):
+        try:
+            with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
+                accs = json.load(f)
+                uids = [int(a["user_id"]) for a in accs if a.get("user_id")]
+                if uids:
+                    return uids
+        except Exception as e:
+            logger.warning(f"Error loading accounts.json: {e}")
+    return [
+        6727787768, 8881914294, 7648254021, 8826375659, 8450010161,
+        8782429452, 7734849205, 8025472383, 8851426148, 8203342513,
+        8190649727, 7487048946, 8741547543, 8727040932, 7749125802,
+        7954290138, 8841038141, 8975442879, 8937908003, 8609131528
+    ]
+
+FLEET_UIDS = load_fleet_uids()
 
 
 def get_upstash(key: str):
@@ -140,19 +150,27 @@ def create_victors_ton_proof(wallet_entry: dict, nonce: str) -> tuple:
 
 
 def process_fleet_accounts():
-    logger.info("📡 Loading miniapp_tokens and TON wallets from Upstash...")
+    logger.info("📡 Loading miniapp_tokens and TON wallets from Upstash and local vault...")
     miniapp = get_upstash("miniapp_tokens") or {}
     wallets = get_upstash("fleet:wallets:ton") or {}
+    
+    # Merge local fallback wallets
+    if os.path.exists(FLEET_WALLETS_FILE):
+        try:
+            with open(FLEET_WALLETS_FILE, "r", encoding="utf-8") as f:
+                local_w = json.load(f)
+                for k, v in local_w.items():
+                    if k not in wallets or not wallets[k].get("mnemonic"):
+                        wallets[k] = v
+        except Exception as fe:
+            logger.warning(f"Error reading local wallets: {fe}")
 
     success_count = 0
     total = len(FLEET_UIDS)
 
     for uid in FLEET_UIDS:
         p_data = get_upstash(f"victors:pass:{uid}")
-        if not p_data or not p_data.get("humanPass"):
-            logger.warning(f"UID {uid}: No humanPass found in Upstash. Skipping.")
-            continue
-        hp = p_data["humanPass"]
+        hp = p_data.get("humanPass") if (p_data and isinstance(p_data, dict)) else None
 
         v_init = None
         if str(uid) in miniapp and miniapp[str(uid)].get("victors_init_data"):
@@ -166,19 +184,20 @@ def process_fleet_accounts():
             logger.warning(f"UID {uid}: No victors_init_data found. Skipping.")
             continue
 
-        w_entry = wallets.get(str(uid))
+        w_entry = wallets.get(str(uid)) or wallets.get(int(uid))
         if not w_entry:
-            logger.warning(f"UID {uid}: No TON wallet configured in Upstash. Skipping.")
+            logger.warning(f"UID {uid}: No TON wallet configured. Skipping.")
             continue
 
         headers = {
             "Authorization": f"tma {v_init}",
-            "x-human-pass": str(hp),
             "Content-Type": "application/json",
             "Origin": VICTORS_ORIGIN,
             "Referer": f"{VICTORS_ORIGIN}/",
             "User-Agent": "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Mobile"
         }
+        if hp:
+            headers["x-human-pass"] = str(hp)
 
         logger.info(f"--------------------------------------------------")
         logger.info(f"🚀 Processing UID {uid}...")
@@ -187,6 +206,8 @@ def process_fleet_accounts():
         me_code, me_res = safe_get(f"{VICTORS_API}/me", headers)
         if me_code != 200 or not isinstance(me_res, dict) or not me_res.get("success"):
             logger.warning(f"UID {uid}: /me request failed: {me_code} {me_res}")
+            if me_code == 401 and "HUMAN_REQUIRED" in str(me_res):
+                logger.warning(f"UID {uid}: Needs fresh Cloudflare Turnstile humanPass. Solve via cloud runner.")
             continue
 
         user = me_res.get("user", {})
@@ -217,6 +238,7 @@ def process_fleet_accounts():
                     if c_code in (200, 201) and isinstance(c_res, dict) and c_res.get("success"):
                         logger.info(f"💎 UID {uid}: Successfully connected TON wallet {friendly_addr[:12]}... (walletOwned=True)!")
                         success_count += 1
+                        safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": "connect-wallet"}, headers)
                     else:
                         logger.warning(f"UID {uid}: Connect wallet error: {c_code} {c_res}")
                 else:
@@ -225,13 +247,17 @@ def process_fleet_accounts():
                 logger.info(f"💎 UID {uid}: TON wallet already connected and verified owned.")
                 success_count += 1
 
-            # 4. Claim Social Tasks
-            for tid in ["follow-victors-company-on-x", "like-retweet-comment-on-x", "subscribe-vic-on-youtube"]:
+            # 4. Unlock Level 1 Miner to start farming & remove home.noJob
+            u_code, u_res = safe_post(f"{VICTORS_API}/levels/unlock", {"level": 1}, headers)
+            logger.info(f"⛏️ UID {uid}: Level 1 Miner unlock status: {u_code}")
+
+            # 5. Claim Tasks
+            for tid in ["connect-wallet", "follow-victors-company-on-x", "like-retweet-comment-on-x", "subscribe-vic-on-youtube"]:
                 t_code, t_res = safe_post(f"{VICTORS_API}/tasks/claim", {"taskId": tid}, headers)
                 if t_code in (200, 201) and isinstance(t_res, dict) and t_res.get("success"):
                     logger.info(f"🎁 UID {uid}: Claimed '{tid}' (+{t_res.get('reward')} VIC)!")
 
-            # 5. Mining Claim
+            # 6. Mining Claim
             m_code, m_res = safe_post(f"{VICTORS_API}/mining/claim", {}, headers)
             logger.info(f"⛏️ UID {uid}: Mining accrual claim result: {m_code}")
         except Exception as e:

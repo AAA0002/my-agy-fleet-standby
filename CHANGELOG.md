@@ -2,6 +2,24 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Fleet-Wide Autonomous Wallet Binding Engine & TonConnect 2.0 Proof Upgrade (October 24, 2026)**:
+  - **Identified Missing Wallet Bindings on New Accounts**:
+    * **Audit & Root Cause**: Investigated user observation that new accounts lacked wallet bindings needed by some farming bots. Discovered that Accounts #19 (`8937908003`) and #20 (`8609131528`) had `isTonConnected: False` in MRG Miner because MRG recently updated `/api/user/connect-wallet` to enforce TonConnect 2.0 cryptographic proof of ownership (`tonProof` with payload nonce from `/api/user/ton-proof-payload`), returning `400 Bad Request: "Wallet ownership proof is missing. Please reconnect your wallet."` on legacy raw address submissions.
+    * **Hardcoded Fleet List in Victor's Company Connector**: Found that `victors_fleet_wallet_connector.py` had a static list of only 11 account UIDs, skipping accounts #01, #03, #12, #14, #15, #17, #19, and #20.
+    * **Missing Upstash Key**: Found that Upstash Redis key `fleet:wallets:ton` had 0 keys, while individual vaults `fleet:wallets_vault:*` were populated, causing scripts looking up `fleet:wallets:ton` to fail lookups.
+  - **Cryptographic TonConnect 2.0 Proof Implementation**:
+    * **MRG TonConnect 2.0 Protocol Reverse Engineering**: Analyzed the production frontend bundle (`https://app.mrgtoken.xyz/assets/index-Dupd5i0q.js`) and implemented bit-exact TonConnect 2.0 signature generation: fetches nonce from `/api/user/ton-proof-payload`, builds binary buffer `ton-proof-item-v2/` + workchain + address hash + domain (`app.mrgtoken.xyz`) + timestamp + nonce, computes SHA-256 digest, and signs with account's Ed25519 private key from `fleet_ton_wallets.json`.
+    * **100% MRG Wallet Connectivity**: Executed cryptographic TonConnect proof binding for Accounts #19 and #20, achieving 20/20 (100%) connected accounts with `isTonConnected: True` across the entire fleet.
+  - **System-Wide Codebase Wallet Logic Upgrades**:
+    * **`render_standby_app.py` & `app.py` & `render_app_latest.py`**: Upgraded MRG wallet binding routine (lines 5475-5515) to automatically fetch `/api/user/ton-proof-payload` and attach `tonProof` payload whenever any account connects or reconnects its TON payout wallet.
+    * **`setup_fleet_mrg_wallets.py`**: Added `create_mrg_ton_proof` and updated `bind_wallets_to_mrg` to request nonce from `/api/user/ton-proof-payload` and attach `tonProof` to `connect-wallet` requests.
+    * **`finish_all_fleet_sidetasks.py`**: Added `create_mrg_ton_proof` and updated `sweep_mrg_tasks` so unattended automated side-task sweeps autonomously generate and submit TonConnect 2.0 cryptographic proofs.
+    * **`fleet_wallet_provisioner.py`**: Upgraded `bind_wallets_to_bots` (lines 781-830) to generate and attach `tonProof` for MRG.
+    * **`victors_fleet_wallet_connector.py`**: Refactored to dynamically load all 20 fleet account UIDs from `accounts.json`, load fallback wallets from `fleet_ton_wallets.json`, unlock Level 1 Miner (`POST /api/levels/unlock {"level": 1}`) to remove `home.noJob`, and claim `connect-wallet` reward tasks.
+    * **Upstash Database Key Sync**: Uploaded all 21 TON wallet structures into Upstash Redis key `fleet:wallets:ton` with full Ed25519 mnemonics and addresses.
+  - **Comprehensive Live Audit Verification**:
+    * **Fleet-Wide Verification**: Executed `python3 audit_bots_and_sidetasks.py` across all 20 accounts: verified 20/20 accounts active/responsive across all 4 production farming bots (MRG Miner, ATF Miner, Victor's Company, VyroDrop) with all 20 accounts holding connected TON wallets.
+
 - **🚀 Rule 1 & Rule 7 Directive Evolution: Zero Ecosystem Mixing (Full Development Allowed, Zero Mixing) & Full Bot Suite Upgrade (October 24, 2026)**:
   - **Directive Evolution ("You CAN Touch, But DO NOT Mix")**:
     * **Full Development Authority**: Transitioned Rule 1 and Rule 7 from strict user bot immutability to full development, improvement, and deployment authority across both the Admin Bot (`@myagyai`) and User Bot (`@AAAPREMIUMAPPSbot`).

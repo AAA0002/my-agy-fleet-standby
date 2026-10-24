@@ -1,6 +1,9 @@
 import os
 import json
 import time
+import struct
+import hashlib
+import base64
 import urllib.request
 import urllib.parse
 from telethon.sync import TelegramClient
@@ -9,6 +12,7 @@ from telethon.tl.functions.messages import RequestAppWebViewRequest
 from telethon.tl.types import InputBotAppShortName
 from dotenv import load_dotenv
 try:
+    from nacl.signing import SigningKey
     from tonsdk.contract.wallet import Wallets, WalletVersionEnum
     HAS_TON_SDK = True
 except Exception:
@@ -24,6 +28,34 @@ FLEET_WALLETS_FILE = os.path.join(BASE_DIR, "fleet_ton_wallets.json")
 PRIMARY_ID = "6727787768"
 MRG_REF = "ref_IRN1G3XD"
 MRG_API = "https://mrg.up.railway.app"
+
+def create_mrg_ton_proof(wallet_info: dict, nonce: str) -> dict:
+    """Signs TonConnect 2.0 cryptographic proof for MRG Miner."""
+    words = wallet_info["mnemonic"].split() if isinstance(wallet_info["mnemonic"], str) else wallet_info["mnemonic"]
+    _, pub_k, priv_k, wallet_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
+    state_init_res = wallet_contract.create_state_init()
+    state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
+    t_addr = wallet_contract.address
+    wc = t_addr.wc
+    addr_hash = t_addr.hash_part
+    raw_addr = f"{wc}:{addr_hash.hex()}"
+    domain = "app.mrgtoken.xyz"
+    domain_b = domain.encode("utf-8")
+    ts_now = int(time.time())
+    msg = b"ton-proof-item-v2/" + struct.pack(">i", wc) + addr_hash + struct.pack("<I", len(domain_b)) + domain_b + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
+    digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
+    sig = SigningKey(priv_k[:32]).sign(digest).signature
+    sig_b64 = base64.b64encode(sig).decode("utf-8")
+    return {
+        "address": raw_addr,
+        "walletStateInit": state_init_b64,
+        "proof": {
+            "timestamp": ts_now,
+            "domain": {"lengthBytes": len(domain_b), "value": domain},
+            "signature": sig_b64,
+            "payload": nonce
+        }
+    }
 
 def generate_fleet_wallets(accounts):
     existing_wallets = {}
@@ -150,11 +182,31 @@ def bind_wallets_to_mrg(accounts, wallets_data):
 
             time.sleep(1.5)
 
-            # 2. Connect Wallet
+            # 2. Connect Wallet with TonConnect 2.0 Proof
             try:
+                ton_proof_payload = None
+                if HAS_TON_SDK and wallet_info.get("mnemonic"):
+                    try:
+                        req_payload = urllib.request.Request(
+                            f"{MRG_API}/api/user/ton-proof-payload",
+                            data=json.dumps({"initData": init_data}).encode(),
+                            headers=headers
+                        )
+                        with urllib.request.urlopen(req_payload, timeout=10) as pr:
+                            pd = json.loads(pr.read())
+                            nonce = pd.get("payload")
+                            if nonce:
+                                ton_proof_payload = create_mrg_ton_proof(wallet_info, nonce)
+                    except Exception as p_err:
+                        print(f"  Note proof-payload: {p_err}")
+
+                conn_body = {"initData": init_data, "address": ton_addr, "balance": 0}
+                if ton_proof_payload:
+                    conn_body["tonProof"] = ton_proof_payload
+
                 req_conn = urllib.request.Request(
                     f"{MRG_API}/api/user/connect-wallet",
-                    data=json.dumps({"initData": init_data, "address": ton_addr, "balance": 0}).encode(),
+                    data=json.dumps(conn_body).encode(),
                     headers=headers
                 )
                 with urllib.request.urlopen(req_conn, timeout=12) as r:
@@ -173,7 +225,7 @@ def bind_wallets_to_mrg(accounts, wallets_data):
                     time.sleep(1.5)
                     req_conn2 = urllib.request.Request(
                         f"{MRG_API}/api/user/connect-wallet",
-                        data=json.dumps({"initData": init_data, "address": ton_addr, "balance": 0}).encode(),
+                        data=json.dumps(conn_body).encode(),
                         headers=headers
                     )
                     with urllib.request.urlopen(req_conn2, timeout=12) as r2:

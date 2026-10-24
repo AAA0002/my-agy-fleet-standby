@@ -5477,8 +5477,44 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                 cur_ton_w = u_obj_init.get("tonWalletAddress", "")
                 target_ton_w = (acc.get("ton_wallet") or {}).get("address") or (FLEET_TON_CACHE.get(str(uid)) or {}).get("address") or (PRIMARY_TON_WALLET if is_owner else None)
                 if target_ton_w and (not is_ton_conn or not cur_ton_w or cur_ton_w != target_ton_w):
-                    await safe_post("https://mrg.up.railway.app/api/user/connect-wallet", {"initData": m_init, "address": target_ton_w, "balance": 0}, req_headers=m_headers)
-                    logger.info(f"[{name}] ⛏️ [MRG] Bound dedicated TON wallet: {target_ton_w[:10]}...")
+                    ton_proof_payload = None
+                    w_entry = (acc.get("ton_wallet") or {}) if (acc.get("ton_wallet") or {}).get("mnemonic") else FLEET_TON_CACHE.get(str(uid), {})
+                    if w_entry and w_entry.get("mnemonic") and HAS_TONSDK:
+                        try:
+                            _, np_res = await safe_post("https://mrg.up.railway.app/api/user/ton-proof-payload", {"initData": m_init}, req_headers=m_headers)
+                            if np_res and isinstance(np_res, dict) and np_res.get("payload"):
+                                nonce = np_res["payload"]
+                                words = w_entry["mnemonic"].split() if isinstance(w_entry["mnemonic"], str) else w_entry["mnemonic"]
+                                _, pub_k_b, priv_k_b, w_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
+                                state_init_res = w_contract.create_state_init()
+                                state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
+                                t_addr = w_contract.address
+                                raw_addr = f"{t_addr.wc}:{t_addr.hash_part.hex()}"
+                                domain = "app.mrgtoken.xyz"
+                                domain_b = domain.encode("utf-8")
+                                ts_now = int(time.time())
+                                msg = b"ton-proof-item-v2/" + struct.pack(">i", t_addr.wc) + t_addr.hash_part + struct.pack("<I", len(domain_b)) + domain_b + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
+                                digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
+                                from nacl.signing import SigningKey
+                                sig = SigningKey(priv_k_b[:32]).sign(digest).signature
+                                sig_b64 = base64.b64encode(sig).decode("utf-8")
+                                ton_proof_payload = {
+                                    "address": raw_addr,
+                                    "walletStateInit": state_init_b64,
+                                    "proof": {
+                                        "timestamp": ts_now,
+                                        "domain": {"lengthBytes": len(domain_b), "value": domain},
+                                        "signature": sig_b64,
+                                        "payload": nonce
+                                    }
+                                }
+                        except Exception as proof_err:
+                            logger.debug(f"[{name}] MRG tonProof note: {proof_err}")
+                    conn_body = {"initData": m_init, "address": target_ton_w, "balance": 0}
+                    if ton_proof_payload:
+                        conn_body["tonProof"] = ton_proof_payload
+                    c_code, c_resp = await safe_post("https://mrg.up.railway.app/api/user/connect-wallet", conn_body, req_headers=m_headers)
+                    logger.info(f"[{name}] ⛏️ [MRG] Bound dedicated TON wallet with TonConnect proof: {target_ton_w[:10]}... (res: {c_code})")
 
                 completed = set(me_d.get("completedTaskIds", []))
                 for t in me_d.get("tasks", []):

@@ -33,6 +33,8 @@ import uuid
 import hashlib
 import hmac
 import logging
+import struct
+import base64
 import urllib.parse
 import urllib.request
 from typing import Dict, Any, List
@@ -142,6 +144,41 @@ def get_ton_wallet_address(acc: dict, uid: str) -> str:
     if isinstance(w_entry, dict) and w_entry.get("address"):
         return w_entry["address"]
     return ""
+
+
+def create_mrg_ton_proof(wallet_entry: dict, nonce: str) -> dict:
+    """Signs TonConnect 2.0 cryptographic proof for MRG Miner."""
+    try:
+        from nacl.signing import SigningKey
+        from tonsdk.contract.wallet import Wallets, WalletVersionEnum
+        words = wallet_entry["mnemonic"].split() if isinstance(wallet_entry["mnemonic"], str) else wallet_entry["mnemonic"]
+        _, pub_k, priv_k, wallet_contract = Wallets.from_mnemonics(mnemonics=words, version=WalletVersionEnum.v4r2)
+        state_init_res = wallet_contract.create_state_init()
+        state_init_b64 = base64.b64encode(state_init_res["state_init"].to_boc(False)).decode("utf-8")
+        t_addr = wallet_contract.address
+        wc = t_addr.wc
+        addr_hash = t_addr.hash_part
+        raw_addr = f"{wc}:{addr_hash.hex()}"
+        domain = "app.mrgtoken.xyz"
+        domain_b = domain.encode("utf-8")
+        ts_now = int(time.time())
+        msg = b"ton-proof-item-v2/" + struct.pack(">i", wc) + addr_hash + struct.pack("<I", len(domain_b)) + domain_b + struct.pack("<Q", ts_now) + nonce.encode("utf-8")
+        digest = hashlib.sha256(b"\xff\xff" + b"ton-connect" + hashlib.sha256(msg).digest()).digest()
+        sig = SigningKey(priv_k[:32]).sign(digest).signature
+        sig_b64 = base64.b64encode(sig).decode("utf-8")
+        return {
+            "address": raw_addr,
+            "walletStateInit": state_init_b64,
+            "proof": {
+                "timestamp": ts_now,
+                "domain": {"lengthBytes": len(domain_b), "value": domain},
+                "signature": sig_b64,
+                "payload": nonce
+            }
+        }
+    except Exception as e:
+        logger.debug(f"MRG proof creation error: {e}")
+        return None
 
 
 def solve_atf_math(question_text: str) -> str:
@@ -323,12 +360,29 @@ async def sweep_mrg_tasks(session: aiohttp.ClientSession, uid: str, name: str, m
         res["balance"] = in_bal
         res["level"] = cur_lvl
 
-        # 2. Bind TON Wallet
+        # 2. Bind TON Wallet with TonConnect 2.0 Proof
         is_ton_conn = u_obj.get("isTonConnected", False)
         target_ton_w = get_ton_wallet_address(acc, uid)
         if target_ton_w and not is_ton_conn:
-            async with session.post("https://mrg.up.railway.app/api/user/connect-wallet", json={"initData": m_init, "address": target_ton_w, "balance": 0}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as cr:
-                if cr.status == 200:
+            w_entry = ton_wallets.get(str(uid)) or (acc.get("ton_wallet") if isinstance(acc.get("ton_wallet"), dict) else {})
+            ton_proof_payload = None
+            if w_entry and w_entry.get("mnemonic"):
+                try:
+                    async with session.post("https://mrg.up.railway.app/api/user/ton-proof-payload", json={"initData": m_init}, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as npr:
+                        if npr.status == 200:
+                            np_d = await npr.json()
+                            nonce = np_d.get("payload") if isinstance(np_d, dict) else None
+                            if nonce:
+                                ton_proof_payload = create_mrg_ton_proof(w_entry, nonce)
+                except Exception as p_err:
+                    logger.debug(f"[{name}] MRG nonce fetch note: {p_err}")
+
+            conn_body = {"initData": m_init, "address": target_ton_w, "balance": 0}
+            if ton_proof_payload:
+                conn_body["tonProof"] = ton_proof_payload
+
+            async with session.post("https://mrg.up.railway.app/api/user/connect-wallet", json=conn_body, headers=m_headers, timeout=aiohttp.ClientTimeout(total=8)) as cr:
+                if cr.status in (200, 201):
                     res["notes"].append("ton_wallet_bound")
 
         # 3. Tasks Completion
