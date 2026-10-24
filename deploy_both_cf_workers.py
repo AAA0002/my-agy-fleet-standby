@@ -10441,7 +10441,7 @@ Reply to Arif naturally:`;
     const userMainKeyboard = {
       keyboard: [
         [
-          { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } },
+          { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } },
           { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
         ],
         [
@@ -10450,15 +10450,15 @@ Reply to Arif naturally:`;
         ],
         [
           { text: "👥 My Accounts" },
-          { text: "💎 Points & Pass" }
+          { text: "💎 My Wallets" }
         ],
         [
-          { text: "🎁 Daily Bonus" },
+          { text: "🎯 Community Quests" },
+          { text: "🎁 Daily Bonus" }
+        ],
+        [
+          { text: "💎 Points & Pass" },
           { text: "👥 Invite Friends" }
-        ],
-        [
-          { text: "📖 User Guide" },
-          { text: "💬 Support" }
         ]
       ],
       resize_keyboard: true,
@@ -12038,7 +12038,7 @@ Reply to Arif naturally:`;
         const userMainKeyboard = {
           keyboard: [
             [
-              { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } },
+              { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } },
               { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
             ],
             [
@@ -12050,12 +12050,12 @@ Reply to Arif naturally:`;
               { text: "💎 My Wallets" }
             ],
             [
-              { text: "💎 Points & Pass" },
+              { text: "🎯 Community Quests" },
               { text: "🎁 Daily Bonus" }
             ],
             [
-              { text: "👥 Invite Friends" },
-              { text: "📖 User Guide" }
+              { text: "💎 Points & Pass" },
+              { text: "👥 Invite Friends" }
             ]
           ],
           resize_keyboard: true,
@@ -12066,7 +12066,7 @@ Reply to Arif naturally:`;
         const ownerUserKeyboard = {
           keyboard: [
             [
-              { text: "🚀 Open Web App", web_app: { url: "https://agy-henna.vercel.app/miner" } },
+              { text: "🚀 Open Web App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } },
               { text: "🎬 Watch Ads (+20 Pts)", web_app: { url: "https://agy-henna.vercel.app/" } }
             ],
             [
@@ -12078,12 +12078,12 @@ Reply to Arif naturally:`;
               { text: "💎 My Wallets" }
             ],
             [
-              { text: "💎 Points & Pass" },
+              { text: "🎯 Community Quests" },
               { text: "🎁 Daily Bonus" }
             ],
             [
               { text: "👥 Invite Friends" },
-              { text: "👑 User Admin Dashboard", web_app: { url: "https://aaa-admin-portal.pages.dev/" } }
+              { text: "👑 User Admin Console", web_app: { url: "https://restore-agy.agorameet.workers.dev/user-admin" } }
             ]
           ],
           resize_keyboard: true,
@@ -14105,15 +14105,15 @@ Reply to Arif naturally:`;
             const dash = renderMiningDashboard(profile, chatId, senderName);
             await sendUserReply(dash.text, dash.markup);
 
-            // Ensure persistent Chat Menu Button on User Bot is ALWAYS set to Watch Ads
+            // Ensure persistent Chat Menu Button on User Bot launches the full cloud mining app
             if (ctx && ctx.waitUntil) {
               const menuPayload = {
                 chat_id: chatId,
                 menu_button: {
                   type: "web_app",
-                  text: "🎬 Watch Ads",
+                  text: "🚀 Launch Miner",
                   web_app: {
-                    url: "https://agy-henna.vercel.app/"
+                    url: "https://restore-agy.agorameet.workers.dev/miner"
                   }
                 }
               };
@@ -14125,6 +14125,52 @@ Reply to Arif naturally:`;
                 }).catch(() => {})
               );
             }
+            return;
+          }
+
+          // 1.1 🚀 Open Cloud Miner Mini App (/miner, /app, /miniapp)
+          if (text === "/miner" || text === "/app" || text === "/miniapp" || text === "🚀 Open Web App" || text === "🚀 Launch Miner") {
+            const minerMsg = `🚀 *AAA AUTO CLOUD MINER* ⚡\n\n` +
+              `• *Multi-Pool Engine:* 9 Autonomous Cloud Pools\n` +
+              `• *Non-Custodial Vault:* TON, BSC, TRON, Solana\n` +
+              `• *Features:* 1-Click Harvest, Community Quests, Rewarded Ads\n` +
+              `• *Zero Phone Load:* 100% Cloud-First • Zero Battery Drain\n\n` +
+              `Tap below to launch your personal mining dashboard:`;
+            await sendUserReply(minerMsg, {
+              inline_keyboard: [
+                [{ text: "🚀 Open Cloud Mining Dashboard", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }],
+                [{ text: "⛏️ 9 Supported Pools", callback_data: "ub_pools" }, { text: "💎 My Wallets", callback_data: "ub_wallets" }]
+              ]
+            });
+            return;
+          }
+
+          // 1.2 🎯 Community Quests (+150 Pts Total) (/quests, /quest)
+          if (text === "/quests" || text === "/quest" || text === "🎯 Community Quests" || text === "🎯 Quests") {
+            const quests = profile.claimed_quests || {};
+            const chClaimed = !!quests["channel"];
+            const grpClaimed = !!quests["group"];
+            const actClaimed = !!quests["activity"];
+            const totalClaimed = (chClaimed ? 50 : 0) + (grpClaimed ? 50 : 0) + (actClaimed ? 50 : 0);
+
+            const qMsg = `🎯 *COMMUNITY QUESTS (+150 PTS TOTAL)* ⚡\n\n` +
+              `Join our official network channels to earn free cloud mining points:\n\n` +
+              `1️⃣ *Official Announcements* (@AAAAutoMiner)\n` +
+              `   • Status: ${chClaimed ? "✅ Claimed (+50 Pts)" : "⏳ Available (+50 Pts)"}\n\n` +
+              `2️⃣ *Mining Community Hub* (@AAAAUTOMINING)\n` +
+              `   • Status: ${grpClaimed ? "✅ Claimed (+50 Pts)" : "⏳ Available (+50 Pts)"}\n\n` +
+              `3️⃣ *Live Telemetry & Activity Feed* (@AAA_ACTIVITY)\n` +
+              `   • Status: ${actClaimed ? "✅ Claimed (+50 Pts)" : "⏳ Available (+50 Pts)"}\n\n` +
+              `• *Total Earned from Quests:* ${totalClaimed} / 150 Pts\n` +
+              `• *Current Balance:* ${profile.points} Pts\n\n` +
+              `_Tap below to join official channels, then claim inside the Miner Dashboard!_`;
+
+            const qButtons = [
+              [{ text: "📢 @AAAAutoMiner", url: "https://t.me/AAAAutoMiner" }, { text: "💬 @AAAAUTOMINING", url: "https://t.me/AAAAUTOMINING" }],
+              [{ text: "⚡ @AAA_ACTIVITY", url: "https://t.me/AAA_ACTIVITY" }],
+              [{ text: "🚀 Open Dashboard to Claim Rewards", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }]
+            ];
+            await sendUserReply(qMsg, { inline_keyboard: qButtons });
             return;
           }
 
@@ -15240,8 +15286,8 @@ async def main():
         except Exception as e:
             print(f"⚠️ Error setting admin bot webhook: {e}")
 
-        # 1. USER BOT IMMUTABILITY (Rule 1: "DO NOT TOUCH USER BOT" - preserve without tampering)
-        if USER_BOT_TOKEN and os.getenv("TOUCH_USER_BOT") == "1":
+        # 1. USER BOT ECOSYSTEM SYNCHRONIZATION (Zero Ecosystem Mixing Directive: Full Development Allowed, Zero Mixing)
+        if USER_BOT_TOKEN:
             user_target_wh = "https://restore-agy.agorameet.workers.dev/user-bot-webhook"
             try:
                 async with session.get(f"https://api.telegram.org/bot{USER_BOT_TOKEN}/getWebhookInfo") as resp:
@@ -15273,8 +15319,8 @@ async def main():
                 "• ⚡ MRG • 🪙 ATF • 🏢 Victor\'s • 💧 VyroDrop\n"
                 "• 🌐 Kynex • ⛏️ Diggo • ⭐ Astra • 🐸 Pepe • 💎 AdxEarn\n\n"
                 "💎 Free Welcome Points • 📅 Daily Streak (+50-100 Pts)\n"
-                "🎬 Unlimited Rewarded Ads (+20 Pts) • 👥 Referrals (+500 Pts)\n"
-                "🌟 Telegram Stars VIP Passes • 🔒 100% Cloud-First"
+                "🎯 Community Quests (+150 Pts) • 🎬 Rewarded Ads (+20 Pts)\n"
+                "👥 Referrals (+500 Pts) • 🌟 Telegram Stars VIP Passes • 🔒 100% Cloud-First"
             )
             user_short_desc = "⚡ Autonomous 24/7 Cloud Mining across 9 crypto bots with zero phone load!"
             try:
@@ -15297,9 +15343,9 @@ async def main():
             user_menu_payload = {
                 "menu_button": {
                     "type": "web_app",
-                    "text": "🎬 Watch Ads",
+                    "text": "🚀 Launch Miner",
                     "web_app": {
-                        "url": "https://agy-henna.vercel.app/"
+                        "url": "https://restore-agy.agorameet.workers.dev/miner"
                     }
                 }
             }
@@ -15309,16 +15355,18 @@ async def main():
                     json=user_menu_payload
                 ) as resp:
                     res_umenu = await resp.json()
-                    print(f"🎬 User Bot Global Menu Button (Watch Ads): {res_umenu.get('ok')} ({res_umenu.get('description', 'OK')})")
+                    print(f"🚀 User Bot Global Menu Button (Launch Miner): {res_umenu.get('ok')} ({res_umenu.get('description', 'OK')})")
             except Exception as e:
                 print(f"⚠️ Error setting User Bot menu button: {e}")
 
             user_commands_payload = {
                 "commands": [
                     {"command": "start", "description": "🚀 Open Mining Dashboard & Pools"},
+                    {"command": "miner", "description": "🚀 Open Cloud Mining Dashboard"},
                     {"command": "pools", "description": "⛏️ 9 Supported Cloud Mining Pools"},
                     {"command": "accounts", "description": "👥 View & Manage Connected Accounts"},
                     {"command": "wallets", "description": "💎 Non-Custodial Wallets & Recovery Keys"},
+                    {"command": "quests", "description": "🎯 Earn +150 Points from Community Tasks"},
                     {"command": "qr", "description": "📱 1-Tap QR Device Login"},
                     {"command": "connect", "description": "➕ Add Account via QR / Phone / WebApp"},
                     {"command": "points", "description": "💎 Points Balance & VIP Passes"},

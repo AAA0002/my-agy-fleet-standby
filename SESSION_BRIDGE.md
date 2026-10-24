@@ -29,7 +29,7 @@
 
 1. **Rule 1 — Strict Bot & Project Boundary**:
    - Never touch `@AAATelegramIdBot` (`AAA2743/AA`).
-   - **User Bot Strict Immutability ("DO NOT TOUCH USER BOT")**: The User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`, webhook `atf-miner-worker.agorameet.workers.dev`) is exclusively for end-users and must **NEVER** be modified, redeployed, or tampered with. Admin operations stay strictly on `@myagyai` and admin channels.
+   - **Zero Ecosystem Mixing (Full Development Allowed, Zero Mixing)**: You CAN touch, improve, modify, deploy, and upgrade the User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`), its webhook, and its mini app. However, you must NEVER mix the Admin Bot (`@myagyai`) and User Bot ecosystems: keep tokens, code, command handlers, channels, databases, and dashboards 100% strictly isolated.
 2. **Rule 4 — Zero Phone Load Directive (Samsung Galaxy A30)**:
    - ZERO bots, ZERO daemon loops, and ZERO MTProto relay listeners run locally on the phone.
    - All bot listeners, farming cycles, token refreshers, and solving run 100% in the cloud (Cloudflare Workers, Render, GitHub Actions, Cloud VM).

@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Rule 1 & Rule 7 Directive Evolution: Zero Ecosystem Mixing (Full Development Allowed, Zero Mixing) & Full Bot Suite Upgrade (October 24, 2026)**:
+  - **Directive Evolution ("You CAN Touch, But DO NOT Mix")**:
+    * **Full Development Authority**: Transitioned Rule 1 and Rule 7 from strict user bot immutability to full development, improvement, and deployment authority across both the Admin Bot (`@myagyai`) and User Bot (`@AAAPREMIUMAPPSbot`).
+    * **Zero Ecosystem Mixing (Strict Contamination Barrier)**: Enforced strict zero contamination between Admin Bot operations and User Bot community workflows. Admin commands (`/farm`, `/fleet`, `/acc`, `/restore`, QR/PIN MTProto logins, server health, private account seeds) must NEVER be exposed in the User Bot or to public users.
+    * **Zero Channel Cross-Posting / Leakage**: Admin channels (`@myagyai` `-1004453515167`, ledger `-1004402765950`, internal group `-1003973231307`) remain 100% isolated from User Community channels (`@AAAAutoMiner` `-1003684868577`, `@AAAAUTOMINING` `-1004255751168`, `@AAA_ACTIVITY` `-1004332544939`).
+    * **Documentation Update**: Synchronized updated directives across `AGENTS.md`, `PROJECT_BIBLE.md`, `SESSION_BRIDGE.md`, and plugin rules `AGENTS.md`.
+  - **User Bot Full Integration & Synchronization**:
+    * **Automated Sync**: Removed blocking `TOUCH_USER_BOT` environment variable check in `deploy_both_cf_workers.py` so the User Bot webhook, descriptions, commands, and global menu buttons synchronize automatically on deployment.
+    * **Global Menu Button Upgrade**: Configured User Bot global menu button to `🚀 Launch Miner` pointing directly to the upgraded 9-pool dashboard (`https://restore-agy.agorameet.workers.dev/miner`).
+    * **Command Handlers & Registry**: Added dedicated message handlers for `/miner`, `/app`, `/miniapp` and `/quests`, `/quest` to `@AAAPREMIUMAPPSbot`. Registered all 16 official user commands with Telegram Bot API.
+    * **Persistent Reply Keyboards**: Updated `userMainKeyboard` and `ownerUserKeyboard` to include `🎯 Community Quests`, linking the User Admin console directly to `https://restore-agy.agorameet.workers.dev/user-admin`.
+
 - **🚀 User Bot User Dashboard Overhaul: Multi-Chain Wallets, 2FA Cloud Login, 1-Click Multi-Pool Harvest & Community Quests (October 24, 2026)**:
   - **Non-Custodial Multi-Chain Wallet & Custom Payout Vault**:
     * **Resolved Missing HTML Elements**: Added the missing "Non-Custodial Wallet Suite & Payout Routing" card in `tab-accounts` in `public_ads/miner/index.html` (and mirrored to `public/index.html` and `public/app/index.html`). This fixes the broken references to `input-custom-wallet` and `custom-wallet-status`.

@@ -48,9 +48,10 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
      * **Upstash Redis**: Authenticated HTTPS REST key-value storage with cloud-managed bearer tokens.
      * **Local Development / Node**: Local untracked `.env` file that is strictly `.gitignore`'d and NEVER committed, pushed, or printed in terminal logs.
    - **Zero Phone Load**: 0 bots on Samsung Galaxy A30; all automated execution stays in the cloud.
-8. **🛡️ User Bot Strict Immutability ("DO NOT TOUCH USER BOT")**:
-   - The User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`, webhook `atf-miner-worker.agorameet.workers.dev`) and its community channels (`-1003684868577`, `@AAAAUTOMINING`, `@AAA_ACTIVITY`) are exclusively for public end-users and must **NEVER** be modified, redeployed, or tampered with without explicit commander authorization.
-   - Keep all admin operations, monitoring, bot routing, and fleet controls strictly on the Admin Bot (`@myagyai`) and admin channels.
+8. **🛡️ Zero Ecosystem Mixing (Full Development Allowed, Zero Mixing)**:
+   - You **CAN** develop, touch, improve, modify, deploy, and upgrade the User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`), its webhooks, its mini app, and its services to provide continuous UX and mining improvements.
+   - You must **NEVER** mix the Admin Bot (`@myagyai`) and User Bot ecosystems: keep tokens, code, command handlers, channels, databases, and dashboards 100% strictly isolated.
+   - Keep all admin operations, fleet monitoring, 20-account multi-DC relays, and master fleet controls strictly on the Admin Bot (`@myagyai`) and private admin channels. Admin commands (`/farm`, `/fleet`, `/acc`, `/restore`, QR/PIN MTProto logins, server health, private account seeds) must NEVER be exposed in the User Bot.
 9. **💎 Strict Multi-Chain Wallet Immutability & Master Secrets Vault**:
    - The system **ONLY creates new wallets for genuinely brand-new accounts**, NEVER for old or existing accounts.
    - When an account logs in or reconnects, the system checks `FLEET_STATIC_REGISTRY`, chain-specific JSON vaults (`fleet_*_wallets.json`), and `accounts.json` to 100% preserve existing authentic wallets and private keys with zero regeneration.

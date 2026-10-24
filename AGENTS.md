@@ -8,7 +8,7 @@
 ## 1. 🛡️ Strict Project Isolation & Bot Boundary
 - **No Cross-Project Contamination**: Never mix code, configurations, packages, or context from `/root/projects/AAA` or other projects into this workspace.
 - **Separate Bot Isolation**: `@AAATelegramIdBot` (repository `AAA2743/AA`) is a completely distinct project and must never be touched, modified, or merged into `AAA_AUTO`.
-- **User Bot Strict Immutability ("DO NOT TOUCH USER BOT")**: The User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`, webhook `atf-miner-worker.agorameet.workers.dev`) and its community channels (`-1003684868577`, `@AAAATFAUTOMINING`, `@AAAATF_ACTIVITY`) are exclusively for end-users and must **NEVER** be modified, redeployed, or tampered with. Keep all admin operations strictly on the Admin Bot (`@myagyai`) and admin channels.
+- **Zero Ecosystem Mixing (Full Development Allowed, Zero Mixing)**: You CAN touch, improve, modify, deploy, and upgrade the User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`), its webhook, and its mini app. However, you must NEVER mix the Admin Bot (`@myagyai`) and User Bot ecosystems: keep tokens, code, command handlers, channels, databases, and dashboards 100% strictly isolated.
 - **Self-Contained**: Everything relating to this project must remain strictly within `/root/projects/AAA_AUTO`.
 - **Clean Boundaries**: Never modify system or other workspace files unless explicitly requested.
 
@@ -69,10 +69,11 @@
 ---
 
 ## 7. 🤖 Strict Separation of Bot Ecosystems, Channels & Admin Dashboards ("Zero Ecosystem Mixing")
-- **Independent Bot Identities & Responsibilities**:
-  - **Admin Bot (`@myagyai`, ID `8858823950`)**: Exclusively reserved for system administrators. Controls executive fleet operations, 19 MTProto account onboarding/linking, cloud farm orchestration, sentinel monitoring, disaster recovery backups, and cloud node health. Handled via `ADMIN_BOT_TOKEN` / `REPORT_BOT_TOKEN`.
+- **Independent Bot Identities & Responsibilities (Full Development Allowed, Zero Mixing)**:
+  - Both the Admin Bot and User Bot can be actively maintained, improved, and deployed.
+  - **Admin Bot (`@myagyai`, ID `8858823950`)**: Exclusively reserved for system administrators. Controls executive fleet operations, 20 MTProto account onboarding/linking, cloud farm orchestration, sentinel monitoring, disaster recovery backups, and cloud node health. Handled via `ADMIN_BOT_TOKEN` / `REPORT_BOT_TOKEN`.
   - **User Bot (`@AAAPREMIUMAPPSbot`, ID `8167732110`)**: Exclusively dedicated to public end-users. Powers community multi-pool mining, points economy, daily check-ins, rewarded ads, Stars VIP access, and public onboarding. Handled via `USER_BOT_TOKEN`.
-  - **Zero Contamination**: Never mix user bot code, tokens, or handlers into admin operations, and never expose admin commands (`/farm`, `/fleet`, `/acc`, `/restore`, QR/PIN MTProto logins) to the User Bot.
+  - **Zero Contamination**: Never mix user bot code, tokens, or handlers into admin operations, and never expose admin commands (`/farm`, `/fleet`, `/acc`, `/restore`, QR/PIN MTProto logins, server health, private account seeds) to the User Bot.
 - **Strict Channel Separation (Zero Cross-Posting / Zero Leakage)**:
   - **Admin Channels & Vaults (Private/Administrative)**:
     - 🛡️ Disaster Recovery Vault Channel: `@myagyai` (`-1004453515167`)
