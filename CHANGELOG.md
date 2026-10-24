@@ -2,6 +2,21 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 System-Wide Anti-Fake Purge & Master Dashboards Ground-Truth Specification (October 24, 2026)**:
+  - **Complete Removal of Simulated / Fake Data (Zero-Fake Guarantee)**:
+    * **Purged Simulated Yield Ticker**: Removed the client-side simulated satoshi accumulator and artificial hashrate ticker from `public_ads/miner/index.html` (and mirrors `public/index.html`, `public/app/index.html`).
+    * **100% Authentic Ground-Truth Telemetry**: The User Dashboard exclusively renders genuine profile points, real cloud account slots, verified 9-pool connections, real daily streaks, real days of runway, and non-custodial multi-chain wallet addresses.
+  - **Authoritative Master Reference (`DASHBOARDS_AND_SYSTEM_GROUND_TRUTH.md`)**:
+    * **Exhaustive System Specification**: Authored `DASHBOARDS_AND_SYSTEM_GROUND_TRUTH.md` detailing the complete architecture across all 4 system dashboards:
+      1. Dashboard 1: User Miner Dashboard (`/miner`)
+      2. Dashboard 2: User Bot Admin Console (`/user-admin`)
+      3. Dashboard 3: Dedicated Ads Portal (`/ads`, `https://agy-henna.vercel.app/`)
+      4. Dashboard 4: Executive Fleet Dashboard (`/admin`)
+    * **Automated Sanity & Bug-Hunting Checklist**: Created an executable 6-step diagnostic suite to immediately verify menu buttons, HTTP 200 responses, zero fake tickers, and mirror synchronization across any cloud or local environment.
+  - **Verification & Deployment**:
+    * **Edge Gateway Verified**: Verified all 4 dashboards returning HTTP 200 on Primary Node 4 Edge Gateway (`https://restore-agy.agorameet.workers.dev`).
+    * **Vault Archive**: Streamed disaster recovery archive to `@myagyai` via `backup_manager.py`.
+
 - **🚀 User Bot Ecosystem Dual Dashboard Upgrades, Ads Menu Button Restoration & USD Standardization (October 24, 2026)**:
   - **User Bot Telegram Menu Button Restoration to Ads Portal**:
     * **Preserved Dedicated Ad Portal Access**: Restored the User Bot (`@AAAPREMIUMAPPSbot`) persistent Telegram Chat Menu Button to **`🎬 Watch Ads`** pointing to the dedicated Ads Portal (`https://agy-henna.vercel.app/`). Corrected auto-override logic in `deploy_both_cf_workers.py` so `/start` never displaces the Ads Portal menu button.

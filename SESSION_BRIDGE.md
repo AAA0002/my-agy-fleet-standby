@@ -192,6 +192,7 @@ Certain farming bots require a connected wallet before mining will unlock or pro
 ## 📂 7. Key File Index
 
 - **Master System Bible**: [`PROJECT_BIBLE.md`](file:///data/workspace/AAA_AUTO/PROJECT_BIBLE.md) (Full technical architecture, 1300+ lines).
+- **Dashboards Ground Truth & Anti-Fake Guide**: [`DASHBOARDS_AND_SYSTEM_GROUND_TRUTH.md`](file:///data/workspace/AAA_AUTO/DASHBOARDS_AND_SYSTEM_GROUND_TRUTH.md) (Authoritative 4-dashboard roles, URLs, files & sanity checklist).
 - **Audit Changelog**: [`CHANGELOG.md`](file:///data/workspace/AAA_AUTO/CHANGELOG.md) (All git commits and milestone logs).
 - **Mandatory Directives**: [`AGENTS.md`](file:///data/workspace/AAA_AUTO/AGENTS.md) (Strict rules, boundaries, and operational protocols).
 - **Session Bridge (This File)**: [`SESSION_BRIDGE.md`](file:///data/workspace/AAA_AUTO/SESSION_BRIDGE.md).

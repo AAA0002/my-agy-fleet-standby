@@ -245,65 +245,6 @@
         </p>
       </div>
 
-      <!-- ⚡ Live Real-Time Hashrate & Mining Yield Ticker Card -->
-      <div class="card-glass card-glow-cyan p-3.5 rounded-2xl relative overflow-hidden text-left border border-cyan-500/30 bg-gradient-to-br from-cyan-950/30 via-slate-900/60 to-indigo-950/30 shadow-lg">
-        <!-- Top row: Status & Mining Engine Telemetry -->
-        <div class="flex items-center justify-between gap-2 mb-2">
-          <div class="flex items-center gap-2">
-            <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-            </span>
-            <span class="text-[10px] uppercase tracking-wider font-mono text-cyan-400 font-bold flex items-center gap-1">
-              <span>Cloud Hashrate Engine</span>
-            </span>
-          </div>
-
-          <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-bold shrink-0">
-            Auto-Compounding
-          </span>
-        </div>
-
-        <!-- Middle row: Live Accumulating Yield Counter -->
-        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 pt-1 pb-2 border-b border-white/10">
-          <div>
-            <div class="text-[10px] uppercase font-semibold text-slate-400 flex items-center gap-1">
-              <span>Accumulating Unharvested Yield</span>
-              <span class="text-[9px] text-emerald-400 font-mono">(Live)</span>
-            </div>
-            <div class="flex items-baseline gap-2 mt-0.5">
-              <span id="live-accumulated-yield" class="text-xl sm:text-2xl font-black font-mono text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-teal-200 to-emerald-300">
-                0.00142850
-              </span>
-              <span class="text-xs font-bold font-mono text-cyan-400">TON</span>
-            </div>
-          </div>
-          
-          <div class="text-left sm:text-right">
-            <div class="text-[9px] uppercase text-slate-400 font-mono">Est. 24h Yield</div>
-            <div id="live-fiat-yield" class="text-sm font-bold font-mono text-emerald-400">
-              ~$0.48 / day
-            </div>
-          </div>
-        </div>
-
-        <!-- Bottom row: Real-time Cloud Metrics -->
-        <div class="grid grid-cols-3 gap-2 pt-2 text-[10px] font-mono">
-          <div class="flex flex-col">
-            <span class="text-slate-400 text-[8px] uppercase">Fleet Hashrate</span>
-            <span id="live-hashrate-speed" class="text-cyan-300 font-bold">128.4 GH/s</span>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-slate-400 text-[8px] uppercase">Active Edge Mesh</span>
-            <span class="text-emerald-400 font-bold">5 Nodes Synced</span>
-          </div>
-          <div class="flex flex-col text-right">
-            <span class="text-slate-400 text-[8px] uppercase">Efficiency</span>
-            <span class="text-purple-300 font-bold">99.8% Cloud</span>
-          </div>
-        </div>
-      </div>
-
       <!-- 1-Click Multi-Pool Cloud Harvest Action Bar -->
       <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3 border border-cyan-500/30 bg-gradient-to-r from-cyan-950/40 via-indigo-950/30 to-purple-950/40 shadow-lg">
         <div class="flex items-center gap-2.5 min-w-0">
@@ -1159,8 +1100,6 @@
     let adCountdownInterval = null;
     let audioCtx = null;
     let marketRates = { ton_usd: 1.62, bnb_usd: 750.0 };
-    let accumulatedSatoshis = 142850; // Starting baseline unharvested yield (0.00142850 TON)
-    let yieldTickerInterval = null;
 
     // 5-Node Edge Mesh with Auto-Failover
     const API_ENDPOINTS = [
@@ -1295,45 +1234,8 @@
           const bnbHdr = document.getElementById('header-bnb-price');
           if (tonHdr) tonHdr.textContent = marketRates.ton_usd.toFixed(2);
           if (bnbHdr) bnbHdr.textContent = Math.round(marketRates.bnb_usd);
-
-          updateYieldDisplay();
         }
       } catch (_) {}
-    }
-
-    function updateYieldDisplay() {
-      const yieldEl = document.getElementById('live-accumulated-yield');
-      const fiatEl = document.getElementById('live-fiat-yield');
-      const hashrateEl = document.getElementById('live-hashrate-speed');
-
-      const tonAmount = (accumulatedSatoshis / 1e8).toFixed(8);
-      if (yieldEl) yieldEl.textContent = tonAmount;
-
-      const accCount = (currentUserProfile?.accounts || []).length || 1;
-      const estDailyTon = 0.30 * Math.max(1, accCount);
-      const estDailyUsd = estDailyTon * (marketRates.ton_usd || 1.62);
-
-      if (fiatEl) {
-        fiatEl.textContent = `~$${estDailyUsd.toFixed(2)} / day`;
-      }
-
-      if (hashrateEl) {
-        const ghSpeed = (128.4 * Math.max(1, accCount)).toFixed(1);
-        hashrateEl.textContent = `${ghSpeed} GH/s`;
-      }
-    }
-
-    function startYieldTicker() {
-      if (yieldTickerInterval) clearInterval(yieldTickerInterval);
-      yieldTickerInterval = setInterval(() => {
-        const accCount = (currentUserProfile?.accounts || []).length || 1;
-        const step = Math.floor(Math.random() * 22) + (12 * Math.max(1, accCount));
-        accumulatedSatoshis += step;
-        const yieldEl = document.getElementById('live-accumulated-yield');
-        if (yieldEl) {
-          yieldEl.textContent = (accumulatedSatoshis / 1e8).toFixed(8);
-        }
-      }, 1200);
     }
 
     function triggerCelebrationRipple() {
@@ -1707,8 +1609,6 @@
           cwEl.className = "text-[10px] text-emerald-400 font-mono font-semibold";
         }
       }
-
-      updateYieldDisplay();
     }
 
     function renderAccountsList(accs) {
@@ -1998,8 +1898,6 @@
         }
         playSound('harvest');
         triggerCelebrationRipple();
-        accumulatedSatoshis += 85000;
-        updateYieldDisplay();
         showToast("🟢 Cloud harvest completed across all active mining pools!", "success");
         setTimeout(loadUserProfile, 2000);
       } catch (e) {
@@ -2311,7 +2209,6 @@
       resolveUser();
       loadUserProfile();
       fetchMarketRates();
-      startYieldTicker();
 
       // 30-Second Silent Background Poller (Rule 4: Zero Phone Load, Cloud-First Sync)
       setInterval(loadUserProfile, 30000);
