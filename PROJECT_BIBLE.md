@@ -74,10 +74,15 @@ If you are an AI assistant (Antigravity, Claude, GPT, Gemini, Llama) starting a 
     - **Removal of Fake 1-Tap Numeric ID Linking**: Third-party Telegram mini apps (MRG, ATF, Victor's, Vyro, Kynex, Diggo, Astra, Pepe, Adx) require cryptographic HMAC-SHA256 signatures (`initData`) or MTProto session strings. Bare numeric Telegram IDs cannot sign transactions and fail with `401 Unauthorized`.
     - **Cloud MTProto Onboarding**: User Bot (`@AAAPREMIUMAPPSbot`) and Mini App (`/miner`) provide authentic QR Login (`tg://login?token=...` via Render Node 2 `/api/account/login/qr-start` with `is_user_bot: true`) and Phone SMS OTP login (`/api/account/login/send-code` & `/verify-code`). Sessions are stored isolated in Turso LibSQL table `user_accounts` and Upstash `ub_user:<uid>:accounts`.
 12. **💎 Dedicated User Wallets & Custom Payout Routing (Turso LibSQL)**:
-    - **5-Chain Non-Custodial Suite**: Every new User Bot user is automatically provisioned a dedicated 5-chain non-custodial wallet suite (TON v4r2, EVM BSC/Arb, TRON, Solana, Bitcoin) saved in Turso LibSQL table `user_wallets`.
-    - **Private Key Ownership & User Retrieval**: Users can view their public addresses, non-custodial recovery mnemonic, and private keys anytime by sending `/wallets`, `/wallet`, or `/keys` in the User Bot, or via the Mini App Vault modal.
-    - **Custom Personal Wallet Binding**: Users can disconnect the default bot wallet and bind their personal TON (UQ/EQ) or EVM (0x) wallet (e.g. Tonkeeper, MetaMask, Trust Wallet) via `/customwallet` or Mini App for direct automated payout routing.
+    - **5-Chain Non-Custodial Suite**: Every new User Bot user is automatically provisioned a dedicated 5-chain non-custodial wallet suite (TON v4r2, EVM BSC/Arb, TRON, Solana, Bitcoin) saved in Turso LibSQL table `user_wallets` and Upstash `ub_wallet:{uid}`.
+    - **Private Key Ownership & User Retrieval**: Users can view their public addresses, non-custodial recovery mnemonic, and private keys anytime by sending `/wallets`, `/wallet`, or `/keys` in the User Bot, or via the Mini App Vault modal (`revealWalletSecrets()`).
+    - **Custom Personal Wallet Binding**: Users can disconnect the default bot wallet and bind their personal TON (UQ/EQ) or EVM (0x) wallet (e.g. Tonkeeper, MetaMask, Trust Wallet) via `/customwallet` or Mini App (`submitCustomWallet()`) for direct automated payout routing via `/api/user/wallet/custom`.
     - **Zero Contamination**: User accounts and wallets are 100% isolated in Turso LibSQL and Upstash Redis `ub_*` namespace and are never merged into `accounts.json` or `fleet:accounts`.
+13. **📱 Public User Bot User Dashboard (`/miner`, `/app`, `/dashboard`)**:
+    - **Location & Mirrors**: `public_ads/miner/index.html` mirrored at `public/index.html` and `public/app/index.html`, embedded in Cloudflare Edge Worker bundle as `__USER_MINI_APP_HTML_JSON__` and served via `/miner`, `/app`, and Telegram WebApp menu button of `@AAAPREMIUMAPPSbot`.
+    - **1-Click Multi-Pool Cloud Harvest**: Action bar in `tab-hub` triggers `/api/farm/all` to concurrently harvest yields across all 9 mining pools, plus single `⚡` buttons on each protocol card.
+    - **Two-Step 2FA Phone Login**: `phone-step-3` handles 2FA Cloud Passwords seamlessly without locking users out.
+    - **Community Quests Engine**: Free points (+50 Pts each, +150 Pts total) for joining official channels (`@AAAAutoMiner`, `@AAAAUTOMINING`, `@AAA_ACTIVITY`) verified and credited via `/api/user/claim-quest`.
 
 ---
 

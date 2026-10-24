@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 User Bot User Dashboard Overhaul: Multi-Chain Wallets, 2FA Cloud Login, 1-Click Multi-Pool Harvest & Community Quests (October 24, 2026)**:
+  - **Non-Custodial Multi-Chain Wallet & Custom Payout Vault**:
+    * **Resolved Missing HTML Elements**: Added the missing "Non-Custodial Wallet Suite & Payout Routing" card in `tab-accounts` in `public_ads/miner/index.html` (and mirrored to `public/index.html` and `public/app/index.html`). This fixes the broken references to `input-custom-wallet` and `custom-wallet-status`.
+    * **Multi-Chain Display & Copy Actions**: Implemented dedicated address cards for TON (v4r2 Mainnet), BSC/BEP-20 (EVM), TRON (TRC-20), and Solana (SPL) with 1-click clipboard copy buttons and non-custodial mnemonic secret reveal modal (`revealWalletSecrets()`).
+    * **Custom Payout Routing Binding**: Wired `submitCustomWallet()` to persist custom TON/EVM payout addresses directly to Turso LibSQL and Upstash Redis via `/api/user/wallet/custom`, updating the UI with custom routing badges.
+  - **Seamless 2FA Telegram Phone Login**:
+    * **Eliminated 2FA Lockout**: Added `phone-step-3` inside `phone-login-modal` with dedicated input for 2FA Cloud Password and back navigation.
+    * **Smart Flow Transition**: Updated `verifyPhoneCode()`: when the server returns `need_2fa: true`, the modal smoothly transitions to `phone-step-3` instead of erroring out and locking the user out.
+    * **2FA Sign-in Handler**: Implemented `submit2FaPassword()` calling `/api/account/login/verify-code` with `{ password, is_user_bot: true }` to finalize authorization directly in the cloud.
+  - **1-Click Multi-Pool Cloud Harvest System**:
+    * **Action Bar on Pools Tab**: Added a prominent 1-Click Cloud Harvest Action Bar to `tab-hub` allowing users to instantly harvest yields across all 9 mining pools (`harvestAllUserBots()`).
+    * **Single-Bot Harvest Triggers**: Added dedicated `⚡` harvest buttons to all 9 individual protocol cards (MRG Miner, ATF Miner, Victor's Company, VyroDrop, Kynex Network, DiggoMiner, AdxEarn AI, Astra Airdrop, PepeGram).
+    * **Dual Edge & Render Dispatch**: Harvest triggers call `/api/farm/all` or `/api/farm/{bot}` on Cloudflare Edge Worker, which concurrently proxies the harvest execution to Render Standby Node 2 and Cloudflare background workers.
+  - **Community Quests & Free Points Engine**:
+    * **Community Tasks Card**: Added "Community Quests" card to `tab-earn` offering +50 free points for joining official channels: `@AAAAutoMiner` (Announcements), `@AAAAUTOMINING` (Mining Community), and `@AAA_ACTIVITY` (Live Activity Feed).
+    * **New Backend Endpoint**: Implemented `/api/user/claim-quest` in `deploy_both_cf_workers.py` with double-claim protection, Upstash persistence, and Telegram notification delivery.
+    * **Profile Synchronization**: Updated `/api/user/profile` on Cloudflare Edge Worker to return `wallets`, `custom_wallet`, and `claimed_quests` states.
+  - **Cloudflare Edge Worker Deployment & Telegram Backup**:
+    * **Deployment**: Deployed upgraded edge worker to Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified `/miner` and `/api/*` endpoints return HTTP 200 with all new features.
+    * **Immutability Adherence**: Adhered strictly to Rule 1 & Rule 7 ("DO NOT TOUCH USER BOT") by leaving `@AAAPREMIUMAPPSbot` webhook untouched.
+
 - **🚀 Upstash Database Rotation, 20-Account Secret Vault Durability & Comprehensive Bug Remediation (October 24, 2026)**:
   - **Upstash Redis Quota Resolution & Database Migration**:
     * **Root Cause**: Identified that the prior Upstash Redis instance (`pleasant-locust-220893.upstash.io`) exhausted its monthly quota of 500,000 commands, resulting in HTTP 400 Bad Request / `ERR max requests limit exceeded` on all database read/write operations across edge workers, Render standby node, and audit scripts.

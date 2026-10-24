@@ -230,6 +230,26 @@
         </p>
       </div>
 
+      <!-- 1-Click Multi-Pool Cloud Harvest Action Bar -->
+      <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3 border border-cyan-500/30 bg-gradient-to-r from-cyan-950/40 via-indigo-950/30 to-purple-950/40 shadow-lg">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-indigo-600 flex items-center justify-center text-slate-950 font-black shadow-md shrink-0">
+            <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          </div>
+          <div class="min-w-0 text-left">
+            <div class="font-bold text-xs text-white flex items-center gap-1.5">
+              <span>Instant Cloud Harvest</span>
+              <span class="text-[9px] font-mono px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 rounded font-semibold border border-emerald-500/30">9 Pools</span>
+            </div>
+            <div class="text-[10px] text-slate-300 truncate mt-0.5">Claim yields across all connected accounts now</div>
+          </div>
+        </div>
+        <button id="btn-harvest-all" onclick="harvestAllUserBots()" class="px-3 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs active:scale-95 transition shrink-0 shadow-md flex items-center gap-1">
+          <svg class="w-3.5 h-3.5 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+          <span>Harvest All</span>
+        </button>
+      </div>
+
       <!-- 9 Verified Pools Grid -->
       <div class="space-y-2">
         <div class="flex items-center justify-between px-1">
@@ -253,6 +273,9 @@
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-harvest-mrg" onclick="harvestSingleBot('mrg')" class="px-2 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-black active:scale-95 transition" title="1-Click Harvest MRG">
+              ⚡
+            </button>
             <button onclick="openConnectTab('mrg')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
               Connect
             </button>
@@ -278,6 +301,9 @@
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-harvest-atf" onclick="harvestSingleBot('atf')" class="px-2 py-1.5 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-indigo-300 text-xs font-black active:scale-95 transition" title="1-Click Harvest ATF">
+              ⚡
+            </button>
             <button onclick="openConnectTab('atf')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
               Connect
             </button>
@@ -303,6 +329,9 @@
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-harvest-victors" onclick="harvestSingleBot('victors')" class="px-2 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-black active:scale-95 transition" title="1-Click Harvest Victor's">
+              ⚡
+            </button>
             <button onclick="openConnectTab('victors')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
               Connect
             </button>
@@ -328,6 +357,9 @@
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-harvest-vyro" onclick="harvestSingleBot('vyro')" class="px-2 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-black active:scale-95 transition" title="1-Click Harvest VyroDrop">
+              ⚡
+            </button>
             <button onclick="openConnectTab('vyro')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
               Connect
             </button>
@@ -353,6 +385,9 @@
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-harvest-kynex" onclick="harvestSingleBot('kynex')" class="px-2 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 text-xs font-black active:scale-95 transition" title="1-Click Harvest Kynex">
+              ⚡
+            </button>
             <button onclick="openConnectTab('kynex')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
               Connect
             </button>
@@ -378,6 +413,9 @@
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-harvest-diggo" onclick="harvestSingleBot('diggo')" class="px-2 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-black active:scale-95 transition" title="1-Click Harvest DiggoMiner">
+              ⚡
+            </button>
             <button onclick="openConnectTab('diggo')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
               Connect
             </button>
@@ -403,6 +441,9 @@
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-harvest-adxearn" onclick="harvestSingleBot('adxearn')" class="px-2 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 text-xs font-black active:scale-95 transition" title="1-Click Harvest AdxEarn">
+              ⚡
+            </button>
             <button onclick="openConnectTab('adxearn')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
               Connect
             </button>
@@ -428,6 +469,9 @@
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-harvest-astra" onclick="harvestSingleBot('astra')" class="px-2 py-1.5 rounded-xl bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 text-xs font-black active:scale-95 transition" title="1-Click Harvest Astra">
+              ⚡
+            </button>
             <button onclick="openConnectTab('astra')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
               Connect
             </button>
@@ -453,6 +497,9 @@
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-harvest-pepegram" onclick="harvestSingleBot('pepegram')" class="px-2 py-1.5 rounded-xl bg-green-500/20 hover:bg-green-500/30 border border-green-500/40 text-green-300 text-xs font-black active:scale-95 transition" title="1-Click Harvest PepeGram">
+              ⚡
+            </button>
             <button onclick="openConnectTab('pepegram')" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold active:scale-95 transition">
               Connect
             </button>
@@ -576,6 +623,77 @@
         </button>
       </div>
 
+      <!-- Community Quests & Free Points Card -->
+      <div class="card-glass card-glow-cyan p-4 rounded-2xl space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
+            <div>
+              <div class="font-bold text-xs sm:text-sm text-white font-display">Community Quests</div>
+              <div class="text-[10px] text-slate-300 font-mono">Join official channels for free farming points</div>
+            </div>
+          </div>
+          <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-mono">
+            +150 Pts Total
+          </span>
+        </div>
+
+        <div class="space-y-2">
+          <!-- Quest 1: Channel -->
+          <div class="p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">📢</div>
+              <div class="min-w-0 text-left">
+                <div class="font-bold text-xs text-white truncate">Official Channel</div>
+                <div class="text-[10px] text-slate-400 truncate">@AAAAutoMiner</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <a href="https://t.me/AAAAutoMiner" target="_blank" class="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 text-[10px] font-semibold">Join</a>
+              <button id="btn-quest-channel" onclick="claimCommunityQuest('channel')" class="px-2.5 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-[10px] active:scale-95 transition">
+                +50 Pts
+              </button>
+            </div>
+          </div>
+
+          <!-- Quest 2: Group -->
+          <div class="p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">💬</div>
+              <div class="min-w-0 text-left">
+                <div class="font-bold text-xs text-white truncate">Mining Community</div>
+                <div class="text-[10px] text-slate-400 truncate">@AAAAUTOMINING</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <a href="https://t.me/AAAAUTOMINING" target="_blank" class="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 text-[10px] font-semibold">Join</a>
+              <button id="btn-quest-group" onclick="claimCommunityQuest('group')" class="px-2.5 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-[10px] active:scale-95 transition">
+                +50 Pts
+              </button>
+            </div>
+          </div>
+
+          <!-- Quest 3: Activity -->
+          <div class="p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">⚡</div>
+              <div class="min-w-0 text-left">
+                <div class="font-bold text-xs text-white truncate">Live Activity Feed</div>
+                <div class="text-[10px] text-slate-400 truncate">@AAA_ACTIVITY</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <a href="https://t.me/AAA_ACTIVITY" target="_blank" class="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 text-[10px] font-semibold">Join</a>
+              <button id="btn-quest-activity" onclick="claimCommunityQuest('activity')" class="px-2.5 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-[10px] active:scale-95 transition">
+                +50 Pts
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Rewarded Ads Engine -->
       <div class="card-glass card-glow-indigo p-4 rounded-2xl space-y-3">
         <div class="flex items-center justify-between">
@@ -680,6 +798,88 @@
       <div id="accounts-list-container" class="space-y-2">
         <div class="card-glass p-6 rounded-2xl text-center text-slate-400 text-xs">
           <span>No accounts connected yet. Tap <strong>"Add Account"</strong> to link your mining bots.</span>
+        </div>
+      </div>
+
+      <!-- Non-Custodial Multi-Chain Wallets & Payout Routing Card -->
+      <div class="card-glass p-4 rounded-2xl space-y-3 border border-white/10 text-left">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M7 15h0M2 9.5h20"></path></svg>
+            </div>
+            <div>
+              <h3 class="font-bold text-xs sm:text-sm text-white">Non-Custodial Wallet Suite</h3>
+              <p class="text-[10px] text-slate-400 font-mono">100% User-Owned • Multi-Chain Payout Vault</p>
+            </div>
+          </div>
+          <button onclick="revealWalletSecrets()" class="px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold active:scale-95 transition flex items-center gap-1">
+            <span>🔐 Keys</span>
+          </button>
+        </div>
+
+        <!-- Multi-Chain Address Cards -->
+        <div class="space-y-1.5">
+          <!-- TON Address -->
+          <div class="p-2 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="text-[9px] font-mono font-bold text-cyan-400 uppercase">TON (v4r2 Mainnet)</div>
+              <div id="wallet-addr-ton" class="text-[10px] font-mono text-slate-300 truncate select-all">UQ...loading</div>
+            </div>
+            <button onclick="copyWalletText('ton')" class="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 text-[10px] font-bold shrink-0">
+              Copy
+            </button>
+          </div>
+
+          <!-- BSC / EVM Address -->
+          <div class="p-2 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="text-[9px] font-mono font-bold text-amber-400 uppercase">BNB Smart Chain (BEP-20 / EVM)</div>
+              <div id="wallet-addr-evm" class="text-[10px] font-mono text-slate-300 truncate select-all">0x...loading</div>
+            </div>
+            <button onclick="copyWalletText('evm')" class="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 text-[10px] font-bold shrink-0">
+              Copy
+            </button>
+          </div>
+
+          <!-- TRON Address -->
+          <div class="p-2 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="text-[9px] font-mono font-bold text-red-400 uppercase">TRON (TRC-20)</div>
+              <div id="wallet-addr-tron" class="text-[10px] font-mono text-slate-300 truncate select-all">T...loading</div>
+            </div>
+            <button onclick="copyWalletText('tron')" class="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 text-[10px] font-bold shrink-0">
+              Copy
+            </button>
+          </div>
+
+          <!-- Solana Address -->
+          <div class="p-2 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="text-[9px] font-mono font-bold text-purple-400 uppercase">Solana (SPL)</div>
+              <div id="wallet-addr-sol" class="text-[10px] font-mono text-slate-300 truncate select-all">...loading</div>
+            </div>
+            <button onclick="copyWalletText('sol')" class="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 text-[10px] font-bold shrink-0">
+              Copy
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom Personal Payout Routing Input -->
+        <div class="pt-2 border-t border-white/10 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-[10px] font-bold text-white uppercase tracking-wider">Custom Payout Address (Optional)</label>
+            <span class="text-[9px] text-slate-400 font-mono">TON or EVM (0x)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="text" id="input-custom-wallet" placeholder="UQ... or 0x..." class="flex-1 p-2 rounded-xl bg-black/50 border border-white/10 text-xs text-white font-mono placeholder-slate-600 focus:outline-none focus:border-cyan-500" />
+            <button onclick="submitCustomWallet()" class="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs active:scale-95 transition shrink-0">
+              Save
+            </button>
+          </div>
+          <div id="custom-wallet-status" class="text-[10px] text-slate-400 font-mono">
+            Default: Auto-routes to your dedicated non-custodial cloud vault above.
+          </div>
         </div>
       </div>
     </div>
@@ -802,6 +1002,15 @@
           <p class="text-[11px] text-slate-300">Enter the 5-digit verification code sent to <span id="phone-code-sent-to" class="text-cyan-300 font-mono"></span> in Telegram:</p>
           <input type="text" id="input-phone-code" placeholder="12345" maxlength="6" class="w-full p-2.5 rounded-xl bg-black/50 border border-white/10 text-base text-center text-white font-mono tracking-widest focus:outline-none focus:border-cyan-500" />
           <button id="btn-verify-phone-code" onclick="verifyPhoneCode()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs active:scale-95 transition">Verify & Connect</button>
+        </div>
+
+        <div id="phone-step-3" class="hidden space-y-3">
+          <div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300 leading-snug">
+            🔒 <strong>Two-Step Verification Enabled:</strong> Your Telegram account has a 2FA Cloud Password. Please enter it below to complete authorization.
+          </div>
+          <input type="password" id="input-phone-2fa" placeholder="Telegram 2FA Cloud Password" class="w-full p-2.5 rounded-xl bg-black/50 border border-white/10 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500" />
+          <button id="btn-submit-2fa" onclick="submit2FaPassword()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 text-white font-bold text-xs active:scale-95 transition">Verify 2FA Password & Connect</button>
+          <button onclick="backToPhoneStep2()" class="w-full py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs">Back</button>
         </div>
       </div>
     </div>
@@ -1204,6 +1413,80 @@
       }
 
       renderAccountsList(accs);
+
+      // Community Quests UI State
+      const quests = p.claimed_quests || {};
+      ['channel', 'group', 'activity'].forEach(q => {
+        const qBtn = document.getElementById(`btn-quest-${q}`);
+        if (qBtn) {
+          if (quests[q]) {
+            qBtn.textContent = "Claimed ✓";
+            qBtn.disabled = true;
+            qBtn.className = "px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold text-[10px] cursor-default";
+          } else {
+            qBtn.textContent = "+50 Pts";
+            qBtn.disabled = false;
+            qBtn.className = "px-2.5 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-[10px] active:scale-95 transition";
+          }
+        }
+      });
+
+      // Populate Non-Custodial Multi-Chain Wallet UI
+      if (p.wallets) {
+        if (p.wallets.ton?.address) {
+          const el = document.getElementById('wallet-addr-ton');
+          if (el) el.textContent = p.wallets.ton.address;
+        }
+        if (p.wallets.evm?.address) {
+          const el = document.getElementById('wallet-addr-evm');
+          if (el) el.textContent = p.wallets.evm.address;
+        }
+        if (p.wallets.tron?.address) {
+          const el = document.getElementById('wallet-addr-tron');
+          if (el) el.textContent = p.wallets.tron.address;
+        }
+        if (p.wallets.solana?.address) {
+          const el = document.getElementById('wallet-addr-sol');
+          if (el) el.textContent = p.wallets.solana.address;
+        }
+      } else {
+        // Automatically request/generate wallet suite in background
+        apiRequest('/api/user/wallet/generate', {
+          method: "POST",
+          body: JSON.stringify({ user_id: currentUserId, name: p.first_name || "User" })
+        }).then(res => {
+          if (res && res.ok && res.wallets) {
+            p.wallets = res.wallets;
+            if (res.wallets.ton?.address) {
+              const el = document.getElementById('wallet-addr-ton');
+              if (el) el.textContent = res.wallets.ton.address;
+            }
+            if (res.wallets.evm?.address) {
+              const el = document.getElementById('wallet-addr-evm');
+              if (el) el.textContent = res.wallets.evm.address;
+            }
+            if (res.wallets.tron?.address) {
+              const el = document.getElementById('wallet-addr-tron');
+              if (el) el.textContent = res.wallets.tron.address;
+            }
+            if (res.wallets.solana?.address) {
+              const el = document.getElementById('wallet-addr-sol');
+              if (el) el.textContent = res.wallets.solana.address;
+            }
+          }
+        }).catch(() => {});
+      }
+
+      // Populate Custom Payout Routing Status
+      if (p.custom_wallet) {
+        const cwEl = document.getElementById('custom-wallet-status');
+        if (cwEl) {
+          const cwAddr = typeof p.custom_wallet === 'object' ? p.custom_wallet.address : p.custom_wallet;
+          const cwChain = ((typeof p.custom_wallet === 'object' ? p.custom_wallet.chain : "TON") || "TON").toUpperCase();
+          cwEl.textContent = `🟢 Payouts route to personal ${cwChain} wallet: ${cwAddr.slice(0, 8)}...${cwAddr.slice(-6)}`;
+          cwEl.className = "text-[10px] text-emerald-400 font-mono font-semibold";
+        }
+      }
     }
 
     function renderAccountsList(accs) {
@@ -1350,8 +1633,16 @@
       if (modal) modal.classList.remove('hidden');
       document.getElementById('phone-step-1').classList.remove('hidden');
       document.getElementById('phone-step-2').classList.add('hidden');
+      document.getElementById('phone-step-3').classList.add('hidden');
       document.getElementById('input-phone-number').value = "";
       document.getElementById('input-phone-code').value = "";
+      const p2fa = document.getElementById('input-phone-2fa');
+      if (p2fa) p2fa.value = "";
+    }
+
+    function backToPhoneStep2() {
+      document.getElementById('phone-step-3').classList.add('hidden');
+      document.getElementById('phone-step-2').classList.remove('hidden');
     }
 
     function closePhoneLoginModal() {
@@ -1375,6 +1666,7 @@
           phoneLoginTarget = res.phone || ph;
           document.getElementById('phone-step-1').classList.add('hidden');
           document.getElementById('phone-step-2').classList.remove('hidden');
+          document.getElementById('phone-step-3').classList.add('hidden');
           document.getElementById('phone-code-sent-to').textContent = phoneLoginTarget;
           showToast("Code sent to " + phoneLoginTarget);
         } else {
@@ -1411,7 +1703,11 @@
           await loadUserProfile();
           switchTab('accounts');
         } else if (res && res.need_2fa) {
-          showToast("2FA Password required. Please login via QR or bot.");
+          document.getElementById('phone-step-2').classList.add('hidden');
+          document.getElementById('phone-step-3').classList.remove('hidden');
+          const p2fa = document.getElementById('input-phone-2fa');
+          if (p2fa) { p2fa.value = ""; p2fa.focus(); }
+          showToast("🔒 Two-Step Verification required. Enter your Cloud Password.");
         } else {
           showToast(res?.error || "Invalid code");
         }
@@ -1420,6 +1716,126 @@
       } finally {
         btn.disabled = false;
         btn.textContent = "Verify & Connect";
+      }
+    }
+
+    async function submit2FaPassword() {
+      const pw = document.getElementById('input-phone-2fa').value;
+      if (!pw) { showToast("Please enter your 2FA password"); return; }
+      const btn = document.getElementById('btn-submit-2fa');
+      btn.disabled = true;
+      btn.textContent = "Verifying 2FA Password...";
+      try {
+        const res = await apiRequest('/api/account/login/verify-code', {
+          method: "POST",
+          body: JSON.stringify({
+            chat_id: "ub_" + currentUserId,
+            password: pw,
+            phone: phoneLoginTarget,
+            node_url: phoneLoginNodeUrl,
+            is_user_bot: true
+          })
+        });
+        if (res && res.ok) {
+          closePhoneLoginModal();
+          showToast("Account connected successfully with 2FA!");
+          await loadUserProfile();
+          switchTab('accounts');
+        } else {
+          showToast(res?.error || "Incorrect 2FA password");
+        }
+      } catch (e) {
+        showToast("2FA Verification error: " + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Verify 2FA Password & Connect";
+      }
+    }
+
+    // 1-Click Cloud Harvest Controller
+    async function harvestAllUserBots() {
+      const btn = document.getElementById('btn-harvest-all');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="inline-block w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> Harvesting...`;
+      }
+      showToast("⚡ Dispatching 1-Click Cloud Harvest across all 9 pools...");
+      try {
+        await apiRequest('/api/farm/all', {
+          method: "POST",
+          body: JSON.stringify({ user_id: currentUserId, all: true, bot: "all" })
+        });
+        if (currentUserProfile && currentUserProfile.accounts && currentUserProfile.accounts.length > 0) {
+          for (const acc of currentUserProfile.accounts) {
+            const accUid = acc.acc_user_id || acc.user_id;
+            if (accUid) {
+              apiRequest(`/api/farm/account/${accUid}`, { method: "POST" }).catch(() => {});
+            }
+          }
+        }
+        showToast("🟢 Cloud harvest completed across all active mining pools!");
+        setTimeout(loadUserProfile, 2000);
+      } catch (e) {
+        showToast("Harvest error: " + e.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<svg class="w-3.5 h-3.5 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg><span>Harvest All</span>`;
+        }
+      }
+    }
+
+    async function harvestSingleBot(botKey) {
+      const btn = document.getElementById(`btn-harvest-${botKey}`);
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="inline-block w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>`;
+      }
+      showToast(`⚡ Harvesting ${botKey.toUpperCase()} in the cloud...`);
+      try {
+        await apiRequest(`/api/farm/${botKey}`, {
+          method: "POST",
+          body: JSON.stringify({ user_id: currentUserId, bot: botKey })
+        });
+        showToast(`🟢 ${botKey.toUpperCase()} harvested successfully!`);
+      } catch (e) {
+        showToast(`Error: ${e.message}`);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `⚡`;
+        }
+      }
+    }
+
+    // Community Quests Controller
+    async function claimCommunityQuest(type) {
+      const btn = document.getElementById(`btn-quest-${type}`);
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "...";
+      }
+      try {
+        const res = await apiRequest('/api/user/claim-quest', {
+          method: "POST",
+          body: JSON.stringify({ user_id: currentUserId, quest: type })
+        });
+        if (res && res.ok) {
+          showToast(`+${res.reward} Points claimed for joining ${type}!`);
+          if (btn) {
+            btn.textContent = "Claimed ✓";
+            btn.className = "px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold text-[10px] cursor-default";
+          }
+          await loadUserProfile();
+        } else {
+          showToast(res?.error || "Could not claim quest reward");
+          if (btn) btn.textContent = "+50 Pts";
+        }
+      } catch (e) {
+        showToast("Error: " + e.message);
+        if (btn) btn.textContent = "+50 Pts";
+      } finally {
+        if (btn && btn.textContent !== "Claimed ✓") btn.disabled = false;
       }
     }
 

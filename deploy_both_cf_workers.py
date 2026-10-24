@@ -11094,6 +11094,19 @@ Reply to Arif naturally:`;
       const expectedStreak = canClaimDaily ? (streakContinues ? ((profile.daily_streak || 0) + 1) : 1) : (profile.daily_streak || 1);
       const nextDailyReward = expectedStreak === 1 ? 50 : (expectedStreak === 2 ? 60 : (expectedStreak === 3 ? 75 : (expectedStreak === 4 ? 85 : 100)));
 
+      let userWallets = null;
+      try {
+        const wRaw = await upstashGet(`ub_wallet:${uid}`);
+        if (wRaw) userWallets = typeof wRaw === "string" ? JSON.parse(wRaw) : wRaw;
+      } catch (_) {}
+      let customWallet = null;
+      try {
+        const cwTon = await upstashGet(`ub_custom_wallet:${uid}:ton`);
+        const cwEvm = await upstashGet(`ub_custom_wallet:${uid}:evm`);
+        if (cwTon) customWallet = { chain: "ton", address: cwTon };
+        else if (cwEvm) customWallet = { chain: "evm", address: cwEvm };
+      } catch (_) {}
+
       return new Response(JSON.stringify({
         ok: true,
         user_id: uid,
@@ -11116,7 +11129,10 @@ Reply to Arif naturally:`;
           daily_remaining_ms: dailyRemainingMs,
           daily_reward: nextDailyReward,
           expected_streak: expectedStreak,
-          accounts: accs
+          accounts: accs,
+          wallets: userWallets || profile.wallets || null,
+          custom_wallet: customWallet || profile.custom_wallet || null,
+          claimed_quests: profile.claimed_quests || {}
         },
         pools: poolsData
       }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
@@ -11322,6 +11338,63 @@ Reply to Arif naturally:`;
           streak: profile.daily_streak,
           next_reward: nextPts,
           message: `Claimed +${bonusPts} Points! Day ${profile.daily_streak} streak active.`
+        }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
+      }
+    }
+
+    // 13.14 Mini App Community Quest Claim API (+50 Points per verified channel)
+    if (path === "/api/user/claim-quest" && request.method === "POST") {
+      try {
+        const body = await request.json().catch(() => ({}));
+        let uid = body.user_id || body.uid;
+        if (!uid) return new Response(JSON.stringify({ ok: false, error: "Missing user_id" }), { status: 400, headers: corsHeaders });
+        const questType = String(body.quest || "").toLowerCase().trim();
+        const validQuests = ["channel", "group", "activity"];
+        if (!validQuests.includes(questType)) {
+          return new Response(JSON.stringify({ ok: false, error: "Invalid quest type" }), { status: 400, headers: corsHeaders });
+        }
+
+        const profile = await getUserProfile(uid);
+        if (!profile.claimed_quests) profile.claimed_quests = {};
+        if (profile.claimed_quests[questType]) {
+          return new Response(JSON.stringify({
+            ok: false,
+            error: "Quest already claimed!",
+            claimed: true
+          }), { status: 400, headers: corsHeaders });
+        }
+
+        const questBonus = 50;
+        profile.claimed_quests[questType] = Date.now();
+        profile.points = (profile.points || 0) + questBonus;
+        await saveUserProfile(uid, profile);
+
+        const questNames = {
+          channel: "Official Announcements (@AAAAutoMiner)",
+          group: "Community Mining Hub (@AAAAUTOMINING)",
+          activity: "Live Activity Feed (@AAA_ACTIVITY)"
+        };
+
+        const userBotToken = env.USER_BOT_TOKEN || "";
+        ctx.waitUntil(fetch(`https://api.telegram.org/bot${userBotToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: uid,
+            text: `🎯 *+${questBonus} COMMUNITY QUEST BONUS CLAIMED!* ⚡\n\n• *Completed:* ${questNames[questType] || questType}\n• *Reward:* +${questBonus} Points\n• *New Balance:* ${profile.points} Points\n\n_Keep mining 24/7 in the cloud with zero phone load!_`,
+            parse_mode: "Markdown"
+          })
+        }).catch(() => {}));
+
+        return new Response(JSON.stringify({
+          ok: true,
+          points: profile.points,
+          reward: questBonus,
+          quest: questType,
+          claimed_quests: profile.claimed_quests,
+          message: `Claimed +${questBonus} Points for joining ${questType}!`
         }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
       } catch (err) {
         return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: corsHeaders });
