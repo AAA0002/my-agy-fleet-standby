@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🚀 Fleet Wallets Directory, On-Chain Deposit QR Modals, Token Reward Chips & User Roster Export (October 24, 2026)**:
+  - **Executive Fleet Operations Console (`public_admin/admin.html` & `public/admin.html` at `/admin`)**:
+    * **Integrated 20-Account 5-Chain Wallets Directory**: Injected `FLEET_WALLETS_REGISTRY` covering 20 MTProto accounts across TON, EVM, TRON, SOL, and BTC into Tab 2 (Wallets). Added chain selector pills (`ALL`, `TON`, `EVM`, `TRON`, `SOL`, `BTC`), search query filter, 1-tap fast copy, and direct block explorer deep links (Tonviewer, BscScan, Tronscan, Solscan, Mempool.space).
+    * **Account Details Modal Drawer Wallets**: Enhanced Tab 1 account drawer (`selectedAccount`) to display non-custodial deposit addresses per account.
+  - **User Mining Dashboard (`public_ads/miner/index.html` & mirrors `public/index.html`, `public/app/index.html` at `/miner`)**:
+    * **Non-Custodial Deposit QR Modal**: Added `#wallet-qr-modal` with high-resolution dynamically generated QR codes (`https://api.qrserver.com/...`), verified non-custodial address display, 1-tap copy, and explorer link.
+    * **QR Code Trigger Buttons**: Embedded QR trigger buttons alongside Copy and Explorer buttons on each of the 4 multi-chain cloud vault cards (TON, BSC/EVM, TRON, SOL).
+    * **Dedicated Reward Token Chips**: Added explicit reward token badges across all 9 protocol cards (`Earn TON`, `Earn ATF`, `Earn VYRO`, `Earn KNX`, `Earn DGO`, `Earn AST`, `Earn PEPE`, `Earn ADX`).
+  - **User Bot Admin Console (`public_admin/user-admin.html` & `public/user-admin.html` at `/user-admin`)**:
+    * **One-Click User Roster Export (JSON)**: Added "Export JSON" button in the search & filter bar that downloads the complete `adminUsers` JSON snapshot with a single click.
+    * **Broadcast Composer Live Character & Line Counter**: Added real-time character counter (`X / 4096 chars`) with Telegram limit overflow alert and line counter to prevent delivery failures.
+  - **Zero Ecosystem Mixing & Zero Phone Load**:
+    * Preserved 100% strict isolation between Admin Bot (`@myagyai`) and User Bot (`@AAAPREMIUMAPPSbot`).
+    * Preserved Ads Portal (`public_ads/index.html` at `https://agy-henna.vercel.app/`) 100% untouched.
+    * Verified User Bot Chat Menu Button is `🎬 Watch Ads` pointing to `https://agy-henna.vercel.app/`.
+    * Kept Samsung Galaxy A30 phone 100% free of bots and background processes.
+  - **Deployment & Disaster Recovery**:
+    * Deployed to Cloudflare Edge Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Verified all 4 dashboards (`/miner`, `/user-admin`, `/admin`, `/ads`) return `HTTP 200 OK`.
+    * Streamed disaster recovery archive to `@myagyai` via `backup_manager.py`.
+
 - **🚀 Complete 2026 Modern Redesign of User Dashboard & Admin Dashboards (October 24, 2026)**:
   - **User Dashboard (`public_ads/miner/index.html` at `/miner`) Modern Cyber-Fintech Overhaul**:
     * **Visual Hierarchy & Styling**: Upgraded to 2026 open-source standard with dark cyber-fintech palette (`#070b14`), luminous glassmorphism cards (`card-glass`, `card-glow-*`), Space Grotesk headers, Inter body typography, and JetBrains Mono metrics.

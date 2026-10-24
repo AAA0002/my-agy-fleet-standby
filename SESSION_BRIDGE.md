@@ -197,6 +197,13 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Ads Portal Untouched (Dashboard 3)**: Preserved `public_ads/index.html` 100% untouched. Confirmed live Telegram Chat Menu Button for User Bot (`@AAAPREMIUMAPPSbot`) remains `🎬 Watch Ads` pointing to `https://agy-henna.vercel.app/`.
     - **Edge Deployment & Verification**: Deployed bundle to Primary Node 4 Edge Gateway (`https://restore-agy.agorameet.workers.dev`). Verified all 4 live endpoints return HTTP 200 OK.
     - **Disaster Recovery Backup**: Streamed fresh archive to Telegram vault `@myagyai` via `backup_manager.py`.
+26. **Fleet Wallets Directory, On-Chain Deposit QR Modals, Reward Chips & Roster Export**:
+    - **Executive Fleet Operations Console (`public_admin/admin.html` & `public/admin.html`)**: Integrated 20-account 5-chain non-custodial wallets directory into Tab 2 (Wallets) with chain selector filter pills (`ALL`, `TON`, `EVM`, `TRON`, `SOL`, `BTC`), search filter, fast copy, and direct block explorer links (Tonviewer, BscScan, Tronscan, Solscan, Mempool.space). Added account deposit addresses to the Tab 1 account drawer.
+    - **User Mining Dashboard (`public_ads/miner/index.html` & `public/index.html`, `public/app/index.html`)**: Added `#wallet-qr-modal` for viewing high-resolution QR codes of non-custodial cloud wallets (TON, EVM, TRON, SOL) with 1-tap copy and explorer links. Added QR code trigger buttons on all 4 multi-chain wallet cards. Added dedicated reward token chips across all 9 protocol cards (`Earn TON`, `Earn ATF`, `Earn VYRO`, `Earn KNX`, `Earn DGO`, `Earn AST`, `Earn PEPE`, `Earn ADX`).
+    - **User Bot Admin Console (`public_admin/user-admin.html` & `public/user-admin.html`)**: Added "Export JSON" button to user search bar to download complete community miners snapshot. Added live character counter (`X / 4096 chars`) with Telegram limit overflow alert and line counter in the broadcast composer.
+    - **Ads Portal Untouched & Menu Button Verified**: `public_ads/index.html` 100% untouched. User Bot Telegram Chat Menu Button verified as `🎬 Watch Ads` pointing to `https://agy-henna.vercel.app/`.
+    - **Edge Deployment & Verification**: Deployed to Node 4 Edge Gateway (`https://restore-agy.agorameet.workers.dev`). All 4 endpoints return HTTP 200 OK.
+    - **Disaster Recovery Backup**: Fresh archive delivered to `@myagyai` via `backup_manager.py`.
 
 ---
 

@@ -408,6 +408,24 @@ function App() {
   const [showRawJson, setShowRawJson] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
+  // Export Community Users Snapshot
+  const exportUsersJson = () => {
+    try {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(adminUsers, null, 2));
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", "community_miners_" + new Date().toISOString().slice(0, 10) + ".json");
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast("Downloaded users JSON snapshot!");
+      if (soundEnabled) playSound("success");
+    } catch (err) {
+      showToast("Failed to export JSON", "error");
+    }
+  };
+
+
   // Quick Points Modal
   const [grantModalUser, setGrantModalUser] = useState(null);
   const [customPointsInput, setCustomPointsInput] = useState("100");
@@ -821,21 +839,32 @@ function App() {
 
       // Search & Filter Bar
       React.createElement("div", { className: "space-y-2" },
-        React.createElement("div", { className: "relative" },
-          React.createElement("input", {
-            type: "text",
-            value: userSearchQuery,
-            onChange: (e) => setUserSearchQuery(e.target.value),
-            placeholder: "Search phone, user ID, name, or wallet address...",
-            className: `w-full pl-9 pr-8 py-2.5 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-500 font-medium ${isDarkMode ? "bg-slate-900 border border-slate-800 text-white placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 shadow-2xs placeholder-slate-400"}`
-          }),
-          React.createElement("div", { className: "absolute left-3 top-3 text-slate-400" },
-            React.createElement(Icon, { name: "search", className: "w-3.5 h-3.5" })
+        React.createElement("div", { className: "flex items-center gap-2" },
+          React.createElement("div", { className: "relative flex-1" },
+            React.createElement("input", {
+              type: "text",
+              value: userSearchQuery,
+              onChange: (e) => setUserSearchQuery(e.target.value),
+              placeholder: "Search phone, user ID, name, or wallet address...",
+              className: `w-full pl-9 pr-8 py-2.5 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-500 font-medium ${isDarkMode ? "bg-slate-900 border border-slate-800 text-white placeholder-slate-500" : "bg-white border border-slate-200 text-slate-900 shadow-2xs placeholder-slate-400"}`
+            }),
+            React.createElement("div", { className: "absolute left-3 top-3 text-slate-400" },
+              React.createElement(Icon, { name: "search", className: "w-3.5 h-3.5" })
+            ),
+            userSearchQuery && React.createElement("button", {
+              onClick: () => setUserSearchQuery(""),
+              className: "absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 p-1"
+            }, React.createElement(Icon, { name: "x", className: "w-3 h-3" }))
           ),
-          userSearchQuery && React.createElement("button", {
-            onClick: () => setUserSearchQuery(""),
-            className: "absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 p-1"
-          }, React.createElement(Icon, { name: "x", className: "w-3 h-3" }))
+          React.createElement("button", {
+            onClick: exportUsersJson,
+            title: "Export Users Roster as JSON",
+            className: `px-3 py-2.5 rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 transition active:scale-95 ${isDarkMode ? "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700" : "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs"}`
+          },
+            React.createElement(Icon, { name: "download", className: "w-3.5 h-3.5" }),
+            React.createElement("span", { className: "hidden sm:inline" }, "Export JSON"),
+            React.createElement("span", { className: "sm:hidden" }, "Export")
+          )
         ),
 
         // Filter Chips Bar
@@ -1267,14 +1296,23 @@ function App() {
 
         // Message Textarea
         React.createElement("div", null,
-          React.createElement("label", { className: "block text-[10px] uppercase font-bold text-slate-400 mb-1" }, "Broadcast Message Content (Markdown Supported):"),
+          React.createElement("div", { className: "flex items-center justify-between mb-1" },
+            React.createElement("label", { className: "block text-[10px] uppercase font-bold text-slate-400" }, "Broadcast Message Content (Markdown Supported):"),
+            React.createElement("span", {
+              className: `text-[10px] font-mono ${broadcastText.length > 4096 ? "text-red-400 font-bold" : "text-slate-400"}`
+            }, `${broadcastText.length} / 4096 chars`)
+          ),
           React.createElement("textarea", {
             rows: 5,
             value: broadcastText,
             onChange: (e) => setBroadcastText(e.target.value),
             placeholder: "Enter message text to broadcast...",
             className: `w-full p-2.5 rounded-xl border text-xs font-mono leading-relaxed focus:outline-none focus:border-blue-500 transition ${isDarkMode ? "bg-slate-950 border-slate-800 text-slate-200" : "bg-white border-slate-200 text-slate-900"}`
-          })
+          }),
+          React.createElement("div", { className: "flex items-center justify-between text-[10px] font-mono mt-1 px-1 text-slate-400" },
+            React.createElement("span", null, broadcastText.length > 4096 ? "⚠️ Exceeds Telegram 4096 limit" : "✓ Within Telegram message limit"),
+            React.createElement("span", null, `${broadcastText ? broadcastText.split('\n').length : 0} lines`)
+          )
         ),
 
         // Live Action Buttons Attached to Every Broadcast
