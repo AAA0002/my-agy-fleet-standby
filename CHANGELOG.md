@@ -2,6 +2,40 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎨 Cyber-Fintech "Add Account & Login" Overhaul, 1-Tap Device Link & Seamless Auth Fallback Upgrade (October 25, 2026)**:
+  - **Comprehensive Overhaul of User Dashboard "Add Account / Connect Account" Interface (`#tab-connect` & `#tab-accounts`)**:
+    * **Visual Aesthetics & Cyber-Fintech Polish**: Transformed the Add Account flow from basic gray boxes into a modern cyber-fintech dashboard with glowing gradient frames (`card-glow-cyan`, `card-glow-indigo`), dynamic interactive hover transitions (`card-method`), and crisp typography.
+    * **Dynamic Visual Slot Allocation Meter**: Designed a live account slots visualizer in both `#tab-connect` and `#tab-accounts` (`updateSlotsWidget()`) featuring:
+      - Slot summary header: `Connected Accounts: X / Y Slots Active`.
+      - Visual slot pill strip displaying connected slots with pulsing green indicators, available slots with `➕ Ready to Link` buttons, and locked slots showing `🔒 Unlock with 50 Ads or Stars VIP`.
+    * **Target Mining Protocol Filter**: Added a high-contrast multi-chip protocol selector (`All 9 Pools`, `MRG`, `ATF`, `Victor's`, `Vyro`, `Kynex`, `Diggo`, `AdxEarn`, `Astra`, `PepeGram`) that dynamically highlights target pools and binds accounts to chosen pools.
+    * **4 Clear, Styled Connection Cards**:
+      1. **Hero Method 1 (⚡ 1-Tap Telegram Device Link - Recommended)**: Neon cyan-to-indigo card highlighting 0 SMS codes, 0 typing, and instant official device pairing.
+      2. **Method 2 (📱 QR Code Device Scanner)**: Dark glass card with glowing scanner icon for scanning from a secondary phone or desktop computer.
+      3. **Method 3 (📞 Cloud Phone Login)**: Deep indigo glass card for receiving 5-digit verification codes in the official Telegram app with full Two-Factor (2FA) Cloud Password support.
+      4. **Method 4 (🔑 Advanced WebApp URL / Query Data Importer)**: Collapsible accordion for power users allowing direct import of exported WebApp links with automatic bot detection.
+  - **Eliminated Bare Telegram ID Rejection Bug**:
+    * **Root Cause**: Previously, if `window.Telegram?.WebApp?.initData` was empty or missing (e.g. external browser, standard WebViews), tapping `⚡ 1-Tap Link My Telegram Account` sent a bare numeric ID which triggered a 400 rejection: `"Bare Telegram IDs are not supported. Third-party mining pools require cryptographic authentication..."`.
+    * **Backend Fallback (`/api/user/account/add`)**: Enhanced edge worker to check the `Authorization: tma <initData>` and `X-Telegram-Init-Data` request headers before rejecting. If cryptographic data is truly absent, the endpoint returns an informative `{ ok: false, need_device_auth: true, error: ... }`.
+    * **Frontend Seamless 1-Tap Pairing**: In `quickConnectCurrentAccount()`, if `initData` is present, it connects immediately. If absent or if `need_device_auth` is received, it smoothly launches `startQrConnectModal()` with toast `"⚡ Launching Telegram Device Pairing..."` and automatically triggers the Telegram pairing link without showing any cryptic errors.
+  - **Ultra-Stylish QR Code Modal (`#qr-connect-modal`)**:
+    * Redesigned with rounded-3xl container, glowing cyan frame (`card-glow-cyan`), and **Animated Laser Scan Line (`.scan-laser`)** sweeping smoothly across the QR code with corner targeting brackets (`.reticle-corner`).
+    * Added real-time countdown timer (`⏱️ Expires in 120s`) with automatic token refresh upon expiry.
+    * Added primary action button `⚡ Link Device in Telegram Now` (calling `window.Telegram.WebApp.openTelegramLink(res.url)` to open Telegram's native device link dialog directly).
+  - **Ultra-Stylish Phone Login Modal (`#phone-login-modal`)**:
+    * Implemented a 3-step progress stepper pill bar: `[1. Phone] ── [2. Code] ── [3. 2FA Cloud Pass]`.
+    * Step 1 includes country code quick helpers (`+880`, `+1`, `+91`, `+44`).
+    * Step 2 features large, spaced 5-digit verification code input with auto-focus.
+    * Step 3 supports 2FA Cloud Password with eye visibility toggle (`👁️`).
+  - **User Bot (`@AAAPREMIUMAPPSbot`) Chat & Menu Upgrades**:
+    * In `deploy_both_cf_workers.py`, upgraded the `➕ Connect Account` menu response with active slots breakdown, cloud node health, and modern inline buttons (`⚡ 1-Tap QR Device Link`, `📱 Login via Phone`, `🌐 Open Cyber Miner Dashboard`, `💎 My Wallets & Keys`).
+    * In `ub_login_qr`, upgraded handler to deliver the actual scannable QR code directly as a Telegram photo message with the inline button `⚡ Link Device in Telegram Now`, giving mobile users 1-tap confirmation and desktop users instant camera scanning.
+  - **Synchronization & Edge Deployment**:
+    * Synchronized `public_ads/miner/index.html` across all mirrors: `public/index.html` and `public/app/index.html`.
+    * Kept Ads Portal (`public_ads/index.html` at `/ads` / `https://agy-henna.vercel.app/`) **100% UNTOUCHED**.
+    * Deployed to Cloudflare Edge Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Streamed disaster recovery archive to `@myagyai` via `backup_manager.py`.
+
 - **🎯 9-Bot Fleet Farming Diagnostic, Turnstile Double-Click Elimination & Comprehensive 9-Bot Audit Suite (October 25, 2026)**:
   - **Identified & Resolved Auto-Mining Inactivity Causes Across Fleet Bots**:
     * **Root Cause 1 (Cloudflare Turnstile Double-Click Collision)**: In `mrg_turnstile_solver.py`, the solver previously executed both `await page.touchscreen.tap(click_x, click_y)` and `await page.mouse.down() / mouse.up()` on the exact same pixel coordinates across 5 critical functions (`solve_turnstile_for_account`, programmatic MRG, `solve_victors_turnstile`, programmatic Victor's, and `solve_vyro_wallet_onboarding`). In mobile emulation mode (`is_mobile: True, has_touch: True`), firing a touch tap followed immediately by mouse down/up triggered a double-click collision on Cloudflare Turnstile, causing Cloudflare to cancel or reset the widget and fail with `turnstile_load_timeout` or HTTP 403.

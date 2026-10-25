@@ -11164,11 +11164,23 @@ Reply to Arif naturally:`;
         const label = String(body.label || "").trim() || `acc_${Date.now().toString().slice(-4)}`;
         const pool = String(body.pool || "all").toLowerCase();
 
-        const parsed = parseTgWebAppData(rawData);
+        let parsed = parseTgWebAppData(rawData);
         let accUserId = String(uid);
         let accName = label;
         let initDataStr = "";
         let authType = "";
+
+        // Fallback: If rawData didn't yield parsed user/hash, inspect Authorization or X-Telegram-Init-Data header
+        if (!parsed.clean_data || (!parsed.user && !parsed.hash)) {
+          const authH = request.headers.get("Authorization") || request.headers.get("X-Telegram-Init-Data") || "";
+          if (authH) {
+            const hRaw = authH.replace(/^tma\s+/i, "").trim();
+            const hParsed = parseTgWebAppData(hRaw);
+            if (hParsed.clean_data && (hParsed.user || hParsed.hash)) {
+              parsed = hParsed;
+            }
+          }
+        }
 
         if (parsed.clean_data && (parsed.user || parsed.hash)) {
           accUserId = parsed.user?.id ? String(parsed.user.id) : String(uid);
@@ -11186,7 +11198,8 @@ Reply to Arif naturally:`;
         } else {
           return new Response(JSON.stringify({
             ok: false,
-            error: "Bare Telegram IDs are not supported. Third-party mining pools require cryptographic authentication (QR Code scan or Phone login) to claim rewards."
+            need_device_auth: true,
+            error: "Cryptographic device authorization required. Third-party mining pools require authentic session linking (1-Tap QR Scan or Phone Login) to claim rewards."
           }), { status: 400, headers: corsHeaders });
         }
 
@@ -12387,16 +12400,30 @@ Reply to Arif naturally:`;
                 const qrButtons = [
                   [{ text: "⚡ Link Device in Telegram Now", url: qData.url }]
                 ];
-                if (qData.qr_image_url) {
-                  qrButtons.push([{ text: "🖼️ View QR Code to Scan", url: qData.qr_image_url }]);
-                }
                 qrButtons.push([
                   { text: "🔄 Refresh QR Code", callback_data: "ub_login_qr" },
                   { text: "📱 Login via Phone", callback_data: "ub_login_phone" }
                 ]);
-                qrButtons.push([{ text: "❌ Cancel", callback_data: "ub_cancel_conn" }]);
+                qrButtons.push([
+                  { text: "🌐 Open Cyber Miner App", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } },
+                  { text: "❌ Cancel", callback_data: "ub_cancel_conn" }
+                ]);
 
-                ctx.waitUntil(sendCqReply(qrRep, { inline_keyboard: qrButtons }));
+                if (qData.qr_image_url) {
+                  ctx.waitUntil(fetch(`https://api.telegram.org/bot${userBotToken}/sendPhoto`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chat_id: cqChatId,
+                      photo: qData.qr_image_url,
+                      caption: qrRep,
+                      parse_mode: "Markdown",
+                      reply_markup: { inline_keyboard: qrButtons }
+                    })
+                  }).catch(() => sendCqReply(qrRep, { inline_keyboard: qrButtons })));
+                } else {
+                  ctx.waitUntil(sendCqReply(qrRep, { inline_keyboard: qrButtons }));
+                }
               } else {
                 ctx.waitUntil(sendCqReply(`❌ *Could Not Start QR Session:*\n${qData?.error || "Render node waking up"}\n\nPlease try again or use Phone Login:`, userCancelKeyboard));
               }
@@ -14284,18 +14311,29 @@ Reply to Arif naturally:`;
 
             const connectKeyboard = {
               inline_keyboard: [
-                [{ text: "📱 1-Tap QR Login (Fastest & 0 Codes)", callback_data: "ub_login_qr" }],
-                [{ text: "📱 Login via Phone Number", callback_data: "ub_login_phone" }],
-                [{ text: "💎 My Wallets & Secrets", callback_data: "ub_wallets" }],
-                [{ text: "❌ Cancel Connection", callback_data: "ub_cancel_conn" }]
+                [{ text: "⚡ 1-Tap QR Device Link (Fastest - 0 Codes)", callback_data: "ub_login_qr" }],
+                [{ text: "📱 Login via Phone Number (+ Country Code)", callback_data: "ub_login_phone" }],
+                [{ text: "🌐 Open Cyber Miner Dashboard", web_app: { url: "https://restore-agy.agorameet.workers.dev/miner" } }],
+                [
+                  { text: "💎 My Wallets & Keys", callback_data: "ub_wallets" },
+                  { text: "❌ Cancel", callback_data: "ub_cancel_conn" }
+                ]
               ]
             };
 
-            const promptConnect = `➕ *Connect Account for 24/7 Cloud Mining*\n\n` +
-              `Choose connection method (100% Free):\n\n` +
-              `1️⃣ *📱 1-Tap QR Login:* Tap button below to link device directly in Telegram!\n` +
-              `2️⃣ *📱 Phone Login:* Tap button below or send your phone number (e.g. \`+8801...\`)\n\n` +
-              `💎 *Wallets:* A non-custodial 5-chain wallet suite is automatically created with full private key ownership.`;
+            const promptConnect = `➕ *Connect Account for 24/7 Cloud Mining* 🚀\n` +
+              `━━━━━━━━━━━━━━━━━━━━━━\n` +
+              `• *Active Slots:* ${profile.accounts.length} / ${totalSlots} Connected\n` +
+              `• *Cloud Nodes:* 🟢 Frankfurt Standby Node 2 Active\n` +
+              `• *Protocols:* All 9 Pools Automated 24/7\n\n` +
+              `👉 *Choose Connection Method:*\n\n` +
+              `1️⃣ *⚡ 1-Tap QR Device Link (Fastest):*\n` +
+              `Link your Telegram session directly with zero SMS codes and zero typing!\n\n` +
+              `2️⃣ *📱 Phone Cloud Login:*\n` +
+              `Receive an official 5-digit verification code in Telegram with 2FA password support.\n\n` +
+              `3️⃣ *🌐 Cyber Miner Dashboard:*\n` +
+              `Manage slots, track real-time hash balances, and configure payout wallets.\n\n` +
+              `💎 *Non-Custodial Keys:* Full private key ownership for TON, BSC/EVM, TRON, SOL, BTC automatically created.`;
             await sendUserReply(promptConnect, connectKeyboard);
             return;
           }

@@ -226,6 +226,26 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Comprehensive 9-Bot Audit Suite (`audit_bots_and_sidetasks.py`)**: Expanded audit coverage from 4 to all 9 bots across all 20 accounts. Fixed ATF Miner balance/level parsing. Fixed Kynex Network `verifyTelegramAuth` and Firebase token exchange. Integrated DiggoMiner 30-day JWT fallback. Added graceful handling of Astra Airdrop developer Supabase egress quota pause (`HTTP 402`).
     - **Render Node 2 Side-Task Sweep Verified**: Executed cloud side-task sweep via `POST /api/tasks/sweep-all` on Render Node 2 (Frankfurt) with 0 local phone load.
     - **Disaster Recovery Backup**: Fresh archive streamed to `@myagyai` via `backup_manager.py`.
+30. **Cyber-Fintech "Add Account & Login" Overhaul, 1-Tap Device Link & Seamless Auth Fallback Upgrade**:
+    - **User Dashboard Add Account & Connect Hub Overhaul (`#tab-connect` & `#tab-accounts`)**:
+      * Transformed the interface with high-tech cyber-fintech styling (`card-glow-cyan`, `card-glow-indigo`, `card-method`).
+      * Added dynamic visual slot allocation meter (`updateSlotsWidget()`) showing active, available, and locked slots (`Connected Accounts: X / Y Slots Active`).
+      * Added high-contrast protocol selector chips (`All 9 Pools`, `MRG`, `ATF`, `Victor's`, `Vyro`, `Kynex`, `Diggo`, `AdxEarn`, `Astra`, `PepeGram`).
+      * Implemented 4 connection cards: ⚡ 1-Tap Telegram Device Link (Recommended), 📱 QR Code Device Scanner, 📞 Cloud Phone Login (SMS OTP + 2FA), and 🔑 Advanced WebApp URL / Query Importer.
+    - **Eliminated Bare Telegram ID Rejection Bug**:
+      * If `initData` is empty in `quickConnectCurrentAccount()`, edge worker checks `Authorization: tma ...` header, and if absent returns `{ ok: false, need_device_auth: true }`.
+      * Frontend automatically launches the 1-Tap Telegram device pairing flow and triggers native Telegram authorization without showing any cryptic errors.
+    - **Ultra-Stylish Modals with Animated Cyber Laser**:
+      * `#qr-connect-modal`: Features glowing rounded-3xl container, animated laser scanning line (`.scan-laser`), corner reticles (`.reticle-corner`), 120s countdown timer with auto-refresh, and direct `⚡ Link Device in Telegram Now` button.
+      * `#phone-login-modal`: Features 3-step progress stepper (`[1. Phone] ── [2. Code] ── [3. 2FA Cloud Pass]`), country code quick helpers (`+880`, `+1`, `+91`, `+44`), large spaced 5-digit verification code input, and cloud 2FA password handling with visibility toggle (`👁️`).
+    - **User Bot (`@AAAPREMIUMAPPSbot`) Chat & Menu Upgrades**:
+      * Upgraded `➕ Connect Account` with slots breakdown and modern inline buttons.
+      * Upgraded `ub_login_qr` to deliver scannable QR code directly as a Telegram photo message with inline button `⚡ Link Device in Telegram Now`.
+    - **Sync & Edge Deployment**:
+      * Synchronized `public_ads/miner/index.html` across mirrors `public/index.html` and `public/app/index.html`.
+      * Ads Portal (`public_ads/index.html` at `/ads` / `https://agy-henna.vercel.app/`) kept 100% untouched.
+      * Deployed to Cloudflare Edge Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`).
+      * Streamed disaster recovery archive to `@myagyai` via `backup_manager.py`.
 
 ---
 

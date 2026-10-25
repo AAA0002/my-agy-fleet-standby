@@ -167,6 +167,53 @@
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.08); }
     }
+    @keyframes scanLaser {
+      0% { top: 4%; opacity: 0.9; }
+      50% { top: 92%; opacity: 1; }
+      100% { top: 4%; opacity: 0.9; }
+    }
+    .scan-laser {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #06b6d4, #38bdf8, #06b6d4, transparent);
+      box-shadow: 0 0 14px 2px rgba(6, 182, 212, 0.95);
+      animation: scanLaser 2.4s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .reticle-corner {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-color: #06b6d4;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .reticle-tl { top: 8px; left: 8px; border-top: 2px solid #06b6d4; border-left: 2px solid #06b6d4; border-top-left-radius: 6px; }
+    .reticle-tr { top: 8px; right: 8px; border-top: 2px solid #06b6d4; border-right: 2px solid #06b6d4; border-top-right-radius: 6px; }
+    .reticle-bl { bottom: 8px; left: 8px; border-bottom: 2px solid #06b6d4; border-left: 2px solid #06b6d4; border-bottom-left-radius: 6px; }
+    .reticle-br { bottom: 8px; right: 8px; border-bottom: 2px solid #06b6d4; border-right: 2px solid #06b6d4; border-bottom-right-radius: 6px; }
+    .card-method {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card-method:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px -4px rgba(6, 182, 212, 0.25);
+    }
+    .card-method:active {
+      transform: scale(0.98);
+    }
+    .pool-chip {
+      transition: all 0.2s ease;
+    }
+    .pool-chip.active-pool {
+      background: rgba(6, 182, 212, 0.2);
+      border-color: rgba(6, 182, 212, 0.6);
+      color: #38bdf8;
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+    }
   </style>
 </head>
 <body class="flex flex-col min-h-screen text-slate-100 selection:bg-cyan-500/20">
@@ -598,55 +645,172 @@
     <!-- ---------------------------------------------------- -->
     <!-- TAB 2: CONNECT ACCOUNT (AUTHENTIC CLOUD ONBOARDING)  -->
     <!-- ---------------------------------------------------- -->
-    <div id="tab-connect" class="hidden space-y-3 text-left">
-      <div class="card-glass p-4 rounded-2xl space-y-3">
-        <div class="flex items-center gap-2.5">
-          <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+    <div id="tab-connect" class="hidden space-y-3.5 text-left">
+      <!-- Hero Header & Cloud Mesh Status -->
+      <div class="card-glass p-4 rounded-2xl space-y-3 border border-white/10">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500/20 to-indigo-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 shadow-md">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <h2 class="font-bold text-xs sm:text-sm text-white font-display">Link Mining Account</h2>
+                <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">24/7 CLOUD</span>
+              </div>
+              <p class="text-[10px] text-slate-400 font-mono">Autonomous Cloud Nodes Harvest All 9 Pools Continuously</p>
+            </div>
           </div>
-          <div>
-            <h2 class="font-bold text-xs sm:text-sm text-white font-display">Connect Mining Bot Account</h2>
-            <p class="text-[10px] text-slate-400">Link your Telegram account to 24/7 cloud node execution</p>
+          <button onclick="switchTab('accounts')" class="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 text-[10px] font-mono flex items-center gap-1">
+            <span>View Accounts</span> ↗
+          </button>
+        </div>
+
+        <!-- Visual Slot Allocation Meter Strip -->
+        <div class="p-3 rounded-xl bg-black/40 border border-white/5 space-y-2">
+          <div class="flex items-center justify-between text-[10px] font-mono">
+            <span class="text-slate-400 font-semibold uppercase tracking-wider">Account Slots Active:</span>
+            <span id="connect-slots-summary" class="text-cyan-400 font-bold">0 / 1 Active</span>
+          </div>
+          <!-- Dynamic Visual Slot Pills -->
+          <div id="connect-slots-strip" class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <div class="px-2.5 py-1.5 rounded-xl bg-cyan-500/10 border border-dashed border-cyan-500/30 flex items-center gap-1.5 text-[10px] font-mono text-cyan-300 shrink-0">
+              <span>➕</span>
+              <span class="font-bold">Slot 1:</span>
+              <span class="text-cyan-400 font-semibold">Ready to Link</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between text-[9px] text-slate-400 pt-0.5">
+            <span>Need more slots? Watch 50 Ads or get Stars VIP.</span>
+            <button onclick="switchTab('earn')" class="text-amber-400 font-semibold hover:underline">+ Get Slots</button>
           </div>
         </div>
 
-        <!-- 1-Tap Quick Link Current Device Account -->
-        <div class="p-3 rounded-xl bg-cyan-950/30 border border-cyan-500/30 space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-cyan-300">Fast Cloud Onboarding</span>
-            <span class="text-[9px] font-mono px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 rounded font-semibold">Recommended</span>
+        <!-- Target Mining Protocol Selector -->
+        <div class="space-y-1.5 pt-1">
+          <div class="flex items-center justify-between text-[10px] font-mono">
+            <span class="text-slate-400 font-semibold uppercase tracking-wider">Target Mining Protocols:</span>
+            <span class="text-cyan-400 font-bold text-[9px]" id="selected-pool-label">All 9 Pools Selected</span>
           </div>
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 scrollbar-none">
+            <button onclick="selectMiningPool('all')" data-pool="all" class="pool-chip active-pool px-3 py-1.5 rounded-xl border text-[10px] font-mono font-bold shrink-0">
+              🌐 All 9 Pools
+            </button>
+            <button onclick="selectMiningPool('mrg')" data-pool="mrg" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
+              ⚡ MRG
+            </button>
+            <button onclick="selectMiningPool('atf')" data-pool="atf" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
+              🪙 ATF
+            </button>
+            <button onclick="selectMiningPool('victors')" data-pool="victors" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
+              🏢 Victor's
+            </button>
+            <button onclick="selectMiningPool('vyro')" data-pool="vyro" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
+              💧 Vyro
+            </button>
+            <button onclick="selectMiningPool('kynex')" data-pool="kynex" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
+              🌐 Kynex
+            </button>
+            <button onclick="selectMiningPool('diggo')" data-pool="diggo" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
+              ⛏️ Diggo
+            </button>
+            <button onclick="selectMiningPool('adxearn')" data-pool="adxearn" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
+              💎 AdxEarn
+            </button>
+            <button onclick="selectMiningPool('astra')" data-pool="astra" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
+              ⭐ Astra
+            </button>
+            <button onclick="selectMiningPool('pepegram')" data-pool="pepegram" class="pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0">
+              🐸 PepeGram
+            </button>
+          </div>
+        </div>
+
+        <!-- METHOD 1: 1-Tap Quick Telegram Device Link (HERO CARD) -->
+        <div class="p-3.5 rounded-2xl bg-gradient-to-br from-cyan-950/40 via-indigo-950/30 to-slate-900/60 border border-cyan-500/40 card-glow-cyan space-y-3 card-method relative overflow-hidden">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center text-xs font-black">⚡</span>
+              <span class="text-xs font-black text-white font-display">1-Tap Telegram Device Link</span>
+            </div>
+            <span class="text-[9px] font-mono px-2 py-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded-full font-bold">Recommended • 0 Codes</span>
+          </div>
+
           <p class="text-[11px] text-slate-300 leading-relaxed">
-            Instantly connect the Telegram account you are currently using. Cloud nodes will harvest all 9 mining protocols automatically.
+            Link your Telegram account using official Telegram direct device pairing. Authorizes 24/7 cloud node claiming with <strong>zero SMS codes</strong>, <strong>zero typing</strong>, and <strong>zero risk of account lockouts</strong>.
           </p>
-          <button id="btn-quick-connect" onclick="quickConnectCurrentAccount()" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-black text-xs active:scale-95 transition shadow-md flex items-center justify-center gap-1.5">
-            <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+
+          <div class="grid grid-cols-2 gap-1.5 text-[10px] text-slate-300 font-mono">
+            <div class="flex items-center gap-1.5">
+              <span class="text-cyan-400">✓</span> <span>0 SMS verification codes</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-cyan-400">✓</span> <span>Official Telegram security</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-cyan-400">✓</span> <span>Autonomous 24/7 cloud farm</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-cyan-400">✓</span> <span>Zero phone battery drain</span>
+            </div>
+          </div>
+
+          <button id="btn-quick-connect" onclick="quickConnectCurrentAccount()" class="w-full py-3 px-3 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-black text-xs active:scale-95 transition shadow-lg flex items-center justify-center gap-2">
+            <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
             <span>⚡ 1-Tap Link My Telegram Account</span>
           </button>
         </div>
 
-        <!-- Or MTProto Multi-Account Connecting (QR & Phone Login) -->
-        <div class="pt-2 border-t border-white/10 space-y-2">
-          <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Alternative: Connect Secondary Account</div>
+        <!-- ALTERNATIVE METHODS: QR Scanner & Phone SMS Login -->
+        <div class="space-y-2 pt-1">
+          <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider font-mono">Alternative Connection Methods:</div>
           <div class="grid grid-cols-2 gap-2">
-            <button onclick="startQrConnectModal()" class="p-3 rounded-xl card-glass hover:border-cyan-500/40 text-left active:scale-95 transition">
-              <div class="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center mb-1.5">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <!-- Method 2: QR Scanner -->
+            <button onclick="startQrConnectModal()" class="p-3.5 rounded-2xl card-glass border-cyan-500/20 hover:border-cyan-500/40 text-left active:scale-95 transition card-method flex flex-col justify-between">
+              <div>
+                <div class="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mb-2">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                </div>
+                <div class="font-bold text-xs text-white">QR Code Login</div>
+                <div class="text-[9px] text-slate-400 mt-0.5 leading-tight">Scan from Telegram Settings on another device or desktop</div>
               </div>
-              <div class="font-bold text-xs text-white">QR Code Login</div>
-              <div class="text-[9px] text-slate-400 mt-0.5">Scan from Telegram Settings</div>
+              <div class="text-[9px] text-cyan-300 font-mono mt-2 font-semibold">📸 Scan QR ↗</div>
             </button>
-            <button onclick="openPhoneLoginModal()" class="p-3 rounded-xl card-glass hover:border-indigo-500/40 text-left active:scale-95 transition">
-              <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-1.5">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+
+            <!-- Method 3: Phone SMS Login -->
+            <button onclick="openPhoneLoginModal()" class="p-3.5 rounded-2xl card-glass border-indigo-500/20 hover:border-indigo-500/40 text-left active:scale-95 transition card-method flex flex-col justify-between">
+              <div>
+                <div class="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-2">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </div>
+                <div class="font-bold text-xs text-white">Phone SMS Login</div>
+                <div class="text-[9px] text-slate-400 mt-0.5 leading-tight">Receive 5-digit code in official Telegram app with 2FA</div>
               </div>
-              <div class="font-bold text-xs text-white">Phone SMS Login</div>
-              <div class="text-[9px] text-slate-400 mt-0.5">Receive 5-digit Telegram code</div>
+              <div class="text-[9px] text-indigo-300 font-mono mt-2 font-semibold">📞 Enter Phone ↗</div>
             </button>
           </div>
         </div>
 
-        <!-- Security & Zero Load Notice -->
+        <!-- METHOD 4 (Advanced): Import WebApp URL / Query String -->
+        <details class="p-3 rounded-xl bg-slate-900/60 border border-white/5 space-y-2 group">
+          <summary class="text-[10px] font-mono text-slate-400 uppercase tracking-wider font-bold cursor-pointer hover:text-white flex items-center justify-between">
+            <span>Advanced: Import Mining WebApp URL / Session</span>
+            <span class="text-xs transition-transform group-open:rotate-180">▼</span>
+          </summary>
+          <div class="pt-2 space-y-2">
+            <p class="text-[10px] text-slate-400 leading-relaxed">
+              If you copied a WebApp URL or initData from a mining bot (e.g. MRG, ATF, Vyro), paste it below. The system will auto-detect the bot.
+            </p>
+            <div class="flex items-center gap-2">
+              <input type="text" id="input-manual-session" placeholder="https://...#tgWebAppData=... or query_id=..." class="flex-1 p-2 rounded-xl bg-black/60 border border-white/10 text-xs text-white font-mono placeholder-slate-600 focus:outline-none focus:border-cyan-500" />
+              <button id="btn-import-session" onclick="importManualSession()" class="px-3 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs active:scale-95 transition shrink-0">
+                Import
+              </button>
+            </div>
+          </div>
+        </details>
+
+        <!-- Zero Phone Load Guarantee Banner -->
         <div class="p-3 rounded-xl bg-slate-900/60 border border-white/5 space-y-1.5">
           <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
             <svg class="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
@@ -906,20 +1070,23 @@
     <!-- ---------------------------------------------------- -->
     <!-- TAB 4: MY CONNECTED ACCOUNTS & WALLETS               -->
     <!-- ---------------------------------------------------- -->
-    <div id="tab-accounts" class="hidden space-y-3 text-left">
+    <div id="tab-accounts" class="hidden space-y-3.5 text-left">
       <div class="flex items-center justify-between px-1">
         <div>
-          <h2 class="font-bold text-xs sm:text-sm text-white">Connected Accounts</h2>
+          <div class="flex items-center gap-1.5">
+            <h2 class="font-bold text-xs sm:text-sm text-white font-display">Connected Accounts</h2>
+            <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">24/7 CLOUD</span>
+          </div>
           <p class="text-[10px] text-slate-400 font-mono" id="accounts-count-summary">0 Accounts Active</p>
         </div>
-        <button onclick="openConnectTab('all')" class="px-2.5 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold active:scale-95 transition flex items-center gap-1">
-          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          <span>Add Account</span>
+        <button onclick="openConnectTab('all')" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 text-xs font-black active:scale-95 transition flex items-center gap-1.5 shadow-md">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>➕ Add Account</span>
         </button>
       </div>
 
-      <div id="accounts-list-container" class="space-y-2">
-        <div class="card-glass p-6 rounded-2xl text-center text-slate-400 text-xs">
+      <div id="accounts-list-container" class="space-y-2.5">
+        <div class="card-glass p-6 rounded-2xl text-center text-slate-400 text-xs border border-white/5">
           <span>No accounts connected yet. Tap <strong>"Add Account"</strong> to link your mining bots.</span>
         </div>
       </div>
@@ -1175,59 +1342,156 @@
   <!-- 5. MODALS & OVERLAYS                                     -->
   <!-- ======================================================== -->
   <!-- QR Code Modal -->
-  <div id="qr-connect-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="card-glass w-full max-w-sm p-5 rounded-3xl text-center space-y-3 relative border border-cyan-500/30">
-      <button onclick="closeQrConnectModal()" class="absolute top-3 right-3 text-slate-400 hover:text-white p-1">✕</button>
-      <div class="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto text-xl">📱</div>
-      <h3 class="text-sm font-bold text-white">Connect via QR Code</h3>
-      <p class="text-[11px] text-slate-300">Scan this code in Telegram <strong>Settings → Devices → Link Desktop Device</strong></p>
-      <div class="w-52 h-52 bg-white p-2 rounded-2xl mx-auto flex items-center justify-center shadow-lg">
-        <img id="qr-code-image" class="w-full h-full object-contain" alt="QR Code" />
+  <div id="qr-connect-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-xl flex items-center justify-center p-4">
+    <div class="card-glass card-glow-cyan w-full max-w-sm p-5 rounded-3xl text-center space-y-3.5 relative border border-cyan-500/40 shadow-2xl animate-scale-up">
+      <button onclick="closeQrConnectModal()" class="absolute top-3.5 right-3.5 text-slate-400 hover:text-white p-1.5 rounded-xl bg-white/5 active:scale-95 transition">✕</button>
+      
+      <!-- Modal Header -->
+      <div class="flex items-center gap-3 text-left">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-indigo-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 shrink-0 shadow-md">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h3 class="text-sm font-bold text-white font-display">Telegram Device Pairing</h3>
+            <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">100% OFFICIAL</span>
+          </div>
+          <p class="text-[10px] text-slate-400 font-mono">0 SMS Codes • Zero Device Load • 24/7 Cloud</p>
+        </div>
       </div>
-      <div id="qr-modal-status" class="text-[10px] font-mono text-cyan-300">Generating secure connection link...</div>
-      <button id="btn-qr-direct-link" class="w-full py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs active:scale-95 transition">
-        Open Link in Telegram
+
+      <!-- Live QR Scanner Box with Animated Cyber Laser -->
+      <div class="relative w-56 h-56 bg-white p-2.5 rounded-2xl mx-auto shadow-2xl overflow-hidden flex items-center justify-center border-2 border-cyan-500/40">
+        <!-- Laser scan line -->
+        <div class="scan-laser"></div>
+        <!-- Reticle corners -->
+        <div class="reticle-corner reticle-tl"></div>
+        <div class="reticle-corner reticle-tr"></div>
+        <div class="reticle-corner reticle-bl"></div>
+        <div class="reticle-corner reticle-br"></div>
+        <!-- QR image -->
+        <img id="qr-code-image" class="w-full h-full object-contain relative z-0 rounded-lg" alt="QR Code" />
+        <div id="qr-loading-spinner" class="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center gap-2 text-cyan-400 text-xs font-mono">
+          <span class="w-6 h-6 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin"></span>
+          <span>Generating Token...</span>
+        </div>
+      </div>
+
+      <!-- Real-Time Status & Expiry Bar -->
+      <div class="flex items-center justify-between px-2 text-[10px] font-mono">
+        <div id="qr-modal-status" class="text-cyan-300 flex items-center gap-1.5 font-semibold">
+          <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 pulse-dot inline-block"></span>
+          <span>Waiting for confirmation...</span>
+        </div>
+        <div id="qr-modal-countdown" class="text-slate-400">⏱️ Expires: <span class="text-amber-400 font-bold" id="qr-timer-val">120s</span></div>
+      </div>
+
+      <!-- Direct 1-Tap Action Button -->
+      <button id="btn-qr-direct-link" class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-black text-xs active:scale-95 transition shadow-lg flex items-center justify-center gap-1.5">
+        <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+        <span>⚡ Link Device in Telegram Now</span>
       </button>
+
+      <!-- Secondary Actions & Instructions -->
+      <div class="grid grid-cols-2 gap-2 pt-1 border-t border-white/10 text-center">
+        <button onclick="startQrConnectModal()" class="py-2 px-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-[10px] font-semibold active:scale-95 transition flex items-center justify-center gap-1">
+          <span>🔄 Refresh QR</span>
+        </button>
+        <button onclick="closeQrConnectModal(); openPhoneLoginModal();" class="py-2 px-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-indigo-300 text-[10px] font-semibold active:scale-95 transition flex items-center justify-center gap-1">
+          <span>📞 Use Phone Login</span>
+        </button>
+      </div>
+
+      <!-- Quick Guidance -->
+      <div class="text-[10px] text-slate-400 text-left bg-black/40 p-2.5 rounded-xl border border-white/5 leading-relaxed font-mono">
+        <span class="text-white font-semibold">👉 On phone:</span> Tap button above to confirm in Telegram.<br>
+        <span class="text-white font-semibold">👉 On PC:</span> Open Telegram → <strong>Settings → Devices → Link Desktop Device</strong> and scan.
+      </div>
     </div>
   </div>
 
   <!-- Phone Login Modal -->
-  <div id="phone-login-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="card-glass w-full max-w-sm p-5 rounded-3xl text-left space-y-3 relative border border-indigo-500/30">
-      <button onclick="closePhoneLoginModal()" class="absolute top-3 right-3 text-slate-400 hover:text-white p-1">✕</button>
-      <div class="flex items-center gap-2">
-        <div class="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center">📞</div>
+  <div id="phone-login-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-xl flex items-center justify-center p-4">
+    <div class="card-glass card-glow-indigo w-full max-w-sm p-5 rounded-3xl text-left space-y-3.5 relative border border-indigo-500/40 shadow-2xl animate-scale-up">
+      <button onclick="closePhoneLoginModal()" class="absolute top-3.5 right-3.5 text-slate-400 hover:text-white p-1.5 rounded-xl bg-white/5 active:scale-95 transition">✕</button>
+      
+      <!-- Modal Header -->
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+        </div>
         <div>
-          <h3 class="text-xs font-bold text-white">Phone SMS Login</h3>
-          <p class="text-[10px] text-slate-400">Receive 5-digit code in Telegram app</p>
+          <div class="flex items-center gap-1.5">
+            <h3 class="text-sm font-bold text-white font-display">Cloud Phone Login</h3>
+            <span class="text-[8px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30">SECURE MTPROTO</span>
+          </div>
+          <p class="text-[10px] text-slate-400 font-mono">Official Telegram OTP Code Verification</p>
         </div>
       </div>
 
+      <!-- Stepper Pill Indicator -->
+      <div class="grid grid-cols-3 gap-1.5 text-center text-[10px] font-mono pt-1">
+        <div id="phone-pill-1" class="py-1 rounded-lg bg-indigo-500/30 text-indigo-300 border border-indigo-500/50 font-bold">1. Phone</div>
+        <div id="phone-pill-2" class="py-1 rounded-lg bg-white/5 text-slate-500 border border-white/5 font-semibold">2. Code</div>
+        <div id="phone-pill-3" class="py-1 rounded-lg bg-white/5 text-slate-500 border border-white/5 font-semibold">3. 2FA Pass</div>
+      </div>
+
       <!-- Step 1: Phone -->
-      <div id="phone-step-1" class="space-y-2">
-        <label class="text-[10px] font-mono text-slate-400">International Phone Number (with country code):</label>
-        <input type="text" id="input-phone-number" placeholder="+8801700000000" class="w-full p-2.5 rounded-xl bg-black/50 border border-white/10 text-xs text-white font-mono focus:outline-none focus:border-indigo-500" />
-        <button id="btn-send-phone-code" onclick="requestPhoneCode()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs active:scale-95 transition">
-          Send Verification Code
+      <div id="phone-step-1" class="space-y-3">
+        <div>
+          <label class="text-[10px] font-mono text-slate-400">Phone Number (with country code):</label>
+          <input type="tel" id="input-phone-number" placeholder="+8801700000000" class="w-full mt-1 p-3 rounded-xl bg-black/60 border border-white/10 text-xs text-white font-mono placeholder-slate-600 focus:outline-none focus:border-indigo-500" />
+        </div>
+        <!-- Country Code Quick Helpers -->
+        <div class="flex items-center gap-1 text-[10px] font-mono text-slate-400">
+          <span>Quick:</span>
+          <button type="button" onclick="setCountryCode('+880')" class="px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/10 text-indigo-300">+880 (BD)</button>
+          <button type="button" onclick="setCountryCode('+1')" class="px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/10 text-indigo-300">+1 (US)</button>
+          <button type="button" onclick="setCountryCode('+91')" class="px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/10 text-indigo-300">+91 (IN)</button>
+          <button type="button" onclick="setCountryCode('+44')" class="px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/10 text-indigo-300">+44 (UK)</button>
+        </div>
+        <button id="btn-send-phone-code" onclick="requestPhoneCode()" class="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold text-xs active:scale-95 transition shadow-md flex items-center justify-center gap-1.5">
+          <span>Send Telegram Verification Code</span>
         </button>
       </div>
 
       <!-- Step 2: Code -->
-      <div id="phone-step-2" class="hidden space-y-2">
-        <label class="text-[10px] font-mono text-slate-400">Enter 5-digit code sent to <span id="phone-code-sent-to" class="text-indigo-400"></span>:</label>
-        <input type="text" id="input-phone-code" placeholder="12345" class="w-full p-2.5 rounded-xl bg-black/50 border border-white/10 text-xs text-white font-mono text-center tracking-widest text-lg font-bold focus:outline-none focus:border-indigo-500" />
-        <button id="btn-verify-phone-code" onclick="verifyPhoneCode()" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs active:scale-95 transition">
-          Verify & Connect
+      <div id="phone-step-2" class="hidden space-y-3">
+        <div class="p-2.5 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-[11px] text-slate-300">
+          Telegram sent an official 5-digit verification code to <span id="phone-code-sent-to" class="text-indigo-300 font-bold font-mono"></span> in your Telegram app.
+        </div>
+        <div>
+          <label class="text-[10px] font-mono text-slate-400">5-Digit Telegram Verification Code:</label>
+          <input type="text" id="input-phone-code" maxlength="6" placeholder="• • • • •" class="w-full mt-1 p-3 rounded-xl bg-black/60 border border-white/10 text-sm text-center text-white font-mono tracking-[0.4em] font-black focus:outline-none focus:border-indigo-500" />
+        </div>
+        <button id="btn-verify-phone-code" onclick="verifyPhoneCode()" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-bold text-xs active:scale-95 transition shadow-md flex items-center justify-center gap-1.5">
+          <span>Verify & Connect Account</span>
         </button>
+        <div class="text-center">
+          <button type="button" onclick="openPhoneLoginModal()" class="text-[10px] text-slate-400 hover:text-white underline">Change Phone Number</button>
+        </div>
       </div>
 
       <!-- Step 3: 2FA Password -->
-      <div id="phone-step-3" class="hidden space-y-2">
-        <label class="text-[10px] font-mono text-slate-400">Two-Step Verification Password:</label>
-        <input type="password" id="input-phone-2fa" placeholder="Cloud Password" class="w-full p-2.5 rounded-xl bg-black/50 border border-white/10 text-xs text-white font-mono focus:outline-none focus:border-indigo-500" />
-        <button id="btn-submit-2fa" onclick="submit2FaPassword()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs active:scale-95 transition">
-          Verify 2FA Password & Connect
+      <div id="phone-step-3" class="hidden space-y-3">
+        <div class="p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-[11px] text-slate-300">
+          🔒 <strong>Two-Step Verification Enabled</strong>: Please enter your Telegram Cloud Password.
+        </div>
+        <div>
+          <label class="text-[10px] font-mono text-slate-400">Telegram Cloud Password (2FA):</label>
+          <div class="relative mt-1">
+            <input type="password" id="input-phone-2fa" placeholder="Enter cloud password" class="w-full p-3 pr-10 rounded-xl bg-black/60 border border-white/10 text-xs text-white font-mono focus:outline-none focus:border-indigo-500" />
+            <button type="button" onclick="togglePasswordVisibility('input-phone-2fa')" class="absolute right-3 top-3 text-slate-400 hover:text-white text-xs">👁️</button>
+          </div>
+        </div>
+        <button id="btn-submit-2fa" onclick="submit2FaPassword()" class="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs active:scale-95 transition shadow-md flex items-center justify-center gap-1.5">
+          <span>Verify 2FA Password & Connect</span>
         </button>
+      </div>
+
+      <!-- Privacy Note -->
+      <div class="text-[9px] text-slate-500 font-mono text-center">
+        🔒 Non-custodial session • Encrypted cloud memory • Disconnect anytime
       </div>
     </div>
   </div>
@@ -1533,7 +1797,7 @@
     }
 
     function openConnectTab(pool = 'all') {
-      selectedPool = pool;
+      selectMiningPool(pool);
       switchTab('connect');
     }
 
@@ -1769,92 +2033,300 @@
       }
     }
 
-    function renderAccountsList(accs) {
-      const container = document.getElementById('accounts-list-container');
-      const summaryEl = document.getElementById('accounts-count-summary');
-      if (summaryEl) summaryEl.textContent = `${accs.length} Account${accs.length === 1 ? '' : 's'} Active`;
+    // Slots & Account Allocation Visualizer
+    function updateSlotsWidget(profile) {
+      const p = profile || currentUserProfile || {};
+      const totalSlots = p.slots || ((p.base_slots || 1) + (p.temp_slots || 0));
+      const accs = p.accounts || [];
+      const used = accs.length;
 
-      if (!container) return;
-      if (!accs || accs.length === 0) {
-        container.innerHTML = `
-          <div class="card-glass p-6 rounded-2xl text-center text-slate-400 text-xs">
-            <svg class="w-8 h-8 text-slate-600 mx-auto mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
-            <span>No accounts connected yet. Tap <strong>"Add Account"</strong> to link your mining bots.</span>
-          </div>`;
-        return;
+      const summary1 = document.getElementById('accounts-count-summary');
+      const summary2 = document.getElementById('connect-slots-summary');
+      if (summary1) summary1.textContent = `${used} / ${totalSlots} Slots Active`;
+      if (summary2) summary2.textContent = `${used} / ${totalSlots} Slots Active`;
+
+      const strip = document.getElementById('connect-slots-strip');
+      if (strip) {
+        let html = '';
+        for (let i = 0; i < Math.max(totalSlots, used + 1); i++) {
+          if (i < used) {
+            const acc = accs[i];
+            const accName = acc.name || acc.label || `Account #${i + 1}`;
+            html += `
+              <div class="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center gap-1.5 text-[10px] font-mono text-emerald-300 shrink-0">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot"></span>
+                <span class="font-bold">Slot ${i + 1}:</span>
+                <span class="truncate max-w-[95px] text-white">${accName}</span>
+              </div>`;
+          } else if (i < totalSlots) {
+            html += `
+              <div class="px-2.5 py-1.5 rounded-xl bg-cyan-500/10 border border-dashed border-cyan-500/40 flex items-center gap-1.5 text-[10px] font-mono text-cyan-300 shrink-0 cursor-pointer hover:bg-cyan-500/20 transition" onclick="quickConnectCurrentAccount()">
+                <span>➕</span>
+                <span class="font-bold">Slot ${i + 1}:</span>
+                <span class="text-cyan-400 font-semibold">Ready to Link</span>
+              </div>`;
+          } else {
+            html += `
+              <div class="px-2.5 py-1.5 rounded-xl bg-white/5 border border-white/5 flex items-center gap-1.5 text-[10px] font-mono text-slate-500 shrink-0 cursor-pointer hover:text-slate-400" onclick="switchTab('earn')">
+                <span>🔒</span>
+                <span>Slot ${i + 1}: Locked (+50 Ads)</span>
+              </div>`;
+          }
+        }
+        strip.innerHTML = html;
       }
-
-      const poolLabels = { mrg: 'MRG Miner', atf: 'ATF Miner', victors: "Victor's", vyro: 'VyroDrop', kynex: 'Kynex', diggo: 'DiggoMiner', adxearn: 'AdxEarn AI', astra: 'Astra', pepegram: 'PepeGram', all: 'All 9 Pools' };
-
-      container.innerHTML = accs.map(a => `
-        <div class="card-glass p-3 rounded-2xl flex items-center justify-between gap-3">
-          <div class="min-w-0 text-left">
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-xs text-white truncate font-mono">${a.label}</span>
-              <span class="text-[9px] font-mono px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 rounded font-semibold">${poolLabels[a.pool] || a.pool.toUpperCase()}</span>
-            </div>
-            <div class="text-[10px] text-slate-400 font-mono mt-0.5 truncate">User: ${a.name || a.acc_user_id || 'Active'}</div>
-            <div class="text-[9px] text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot inline-block"></span>
-              <span>24/7 Cloud Mining Active</span>
-            </div>
-          </div>
-          <button onclick="removeAccount('${a.id || a.label}')" class="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold active:scale-95 transition shrink-0 border border-rose-500/20" title="Remove">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-          </button>
-        </div>
-      `).join('');
     }
 
-    // 1-Tap Quick Connect Current Telegram Account
-    async function quickConnectCurrentAccount() {
-      const btn = document.getElementById('btn-quick-connect');
+    // Target Mining Pool Filter Controller
+    function selectMiningPool(pKey) {
+      selectedPool = pKey;
+      const labelEl = document.getElementById('selected-pool-label');
+      const poolLabels = {
+        all: 'All 9 Pools Selected (Recommended)',
+        mrg: 'MRG Miner Selected',
+        atf: 'ATF Miner Selected',
+        victors: "Victor's Company Selected",
+        vyro: 'VyroDrop Selected',
+        kynex: 'Kynex Network Selected',
+        diggo: 'DiggoMiner Selected',
+        adxearn: 'AdxEarn AI Selected',
+        astra: 'Astra Airdrop Selected',
+        pepegram: 'PepeGram Selected'
+      };
+      if (labelEl) labelEl.textContent = poolLabels[pKey] || `${pKey.toUpperCase()} Selected`;
+
+      document.querySelectorAll('.pool-chip').forEach(btn => {
+        if (btn.dataset.pool === pKey) {
+          btn.className = "pool-chip active-pool px-3 py-1.5 rounded-xl border text-[10px] font-mono font-bold shrink-0";
+        } else {
+          btn.className = "pool-chip px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:text-white text-[10px] font-mono font-semibold shrink-0";
+        }
+      });
+      hapticFeedback();
+      playSound('click');
+    }
+
+    // Advanced: Import Manual WebApp URL / Query String
+    async function importManualSession() {
+      const input = document.getElementById('input-manual-session');
+      const val = (input ? input.value : "").trim();
+      if (!val) { showToast("Please paste WebApp URL or initData"); return; }
+      const btn = document.getElementById('btn-import-session');
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `<span class="inline-block w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> Connecting...`;
+        btn.textContent = "Verifying...";
       }
       try {
-        const rawPayload = window.Telegram?.WebApp?.initData || currentUserId;
         const resData = await apiRequest('/api/user/account/add', {
           method: "POST",
           body: JSON.stringify({
             user_id: currentUserId,
             pool: selectedPool,
-            raw_data: rawPayload,
-            label: 'My Account'
+            raw_data: val,
+            label: 'Imported Session'
           })
         });
-
         if (resData && resData.ok) {
-          showToast("Account connected to cloud miner!");
+          showToast("Session verified & connected!");
+          if (input) input.value = "";
           await loadUserProfile();
           switchTab('accounts');
         } else {
-          showToast(resData?.error || "Failed to link account.");
+          showToast(resData?.error || "Invalid session data");
+        }
+      } catch (e) {
+        showToast("Error: " + e.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "Import";
+        }
+      }
+    }
+
+    // Stepper Helper for Phone Login Modal
+    function updatePhoneStepper(step) {
+      ['1', '2', '3'].forEach(s => {
+        const pill = document.getElementById(`phone-pill-${s}`);
+        if (!pill) return;
+        if (s === String(step)) {
+          pill.className = "py-1 rounded-lg bg-indigo-500/30 text-indigo-300 border border-indigo-500/50 font-bold shadow-sm";
+        } else if (parseInt(s, 10) < step) {
+          pill.className = "py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold";
+        } else {
+          pill.className = "py-1 rounded-lg bg-white/5 text-slate-500 border border-white/5 font-semibold";
+        }
+      });
+    }
+
+    function setCountryCode(code) {
+      const input = document.getElementById('input-phone-number');
+      if (input) {
+        input.value = code;
+        input.focus();
+      }
+    }
+
+    function togglePasswordVisibility(id) {
+      const input = document.getElementById(id);
+      if (input) {
+        input.type = input.type === 'password' ? 'text' : 'password';
+      }
+    }
+
+    // High-Tech Cyber Connected Accounts Card Renderer
+    function renderAccountsList(accs) {
+      const container = document.getElementById('accounts-list-container');
+      const p = currentUserProfile || {};
+      updateSlotsWidget(p);
+
+      if (!container) return;
+      if (!accs || accs.length === 0) {
+        container.innerHTML = `
+          <div class="card-glass p-6 rounded-2xl text-center space-y-3 border border-white/5">
+            <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto text-xl shadow-inner">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+            </div>
+            <div>
+              <div class="font-bold text-xs sm:text-sm text-white font-display">No Mining Accounts Connected</div>
+              <p class="text-[10px] text-slate-400 mt-0.5 leading-relaxed">Link your Telegram account to start autonomous 24/7 cloud harvesting across all 9 mining protocols.</p>
+            </div>
+            <button onclick="openConnectTab('all')" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-black text-xs active:scale-95 transition shadow-md">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+              <span>⚡ Connect Your Account in 1-Tap</span>
+            </button>
+          </div>`;
+        return;
+      }
+
+      const poolLabels = {
+        mrg: '⚡ MRG Miner',
+        atf: '🪙 ATF Miner',
+        victors: "🏢 Victor's",
+        vyro: '💧 VyroDrop',
+        kynex: '🌐 Kynex',
+        diggo: '⛏️ DiggoMiner',
+        adxearn: '💎 AdxEarn AI',
+        astra: '⭐ Astra',
+        pepegram: '🐸 PepeGram',
+        all: '🌐 All 9 Pools'
+      };
+
+      container.innerHTML = accs.map((a, idx) => {
+        const initial = (a.name || a.label || 'M').charAt(0).toUpperCase();
+        const pLabel = poolLabels[a.pool] || (a.pool ? a.pool.toUpperCase() : 'All 9 Pools');
+        return `
+        <div class="card-glass p-3.5 rounded-2xl flex items-center justify-between gap-3 border border-white/10 hover:border-cyan-500/30 transition">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center font-black text-white text-xs shadow-md shrink-0 ring-1 ring-white/20">
+              ${initial}
+            </div>
+            <div class="min-w-0 text-left">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-xs text-white truncate font-display">${a.name || a.label || `Account #${idx + 1}`}</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 rounded font-semibold border border-cyan-500/30">${pLabel}</span>
+              </div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5 truncate flex items-center gap-1.5">
+                <span>UID: ${a.acc_user_id || a.user_id || 'Active'}</span>
+                <span>•</span>
+                <span class="text-slate-500">${a.phone ? a.phone : 'Cloud Session'}</span>
+              </div>
+              <div class="text-[9px] text-emerald-400 font-semibold flex items-center gap-1 mt-0.5 font-mono">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot inline-block"></span>
+                <span>24/7 Cloud Node Active (Frankfurt Standby)</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="harvestAllUserBots()" class="p-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 text-xs font-bold active:scale-95 transition border border-cyan-500/20" title="Harvest Now">
+              ⚡
+            </button>
+            <button onclick="removeAccount('${a.id || a.label}')" class="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold active:scale-95 transition border border-rose-500/20" title="Disconnect Account">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // 1-Tap Quick Connect Telegram Device Account
+    async function quickConnectCurrentAccount() {
+      const btn = document.getElementById('btn-quick-connect');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="inline-block w-4 h-4 border-2 border-slate-950/20 border-t-slate-950 rounded-full animate-spin"></span> Connecting...`;
+      }
+      try {
+        const initData = window.Telegram?.WebApp?.initData || "";
+        // If initData is present, attempt direct cryptographic link
+        if (initData) {
+          const resData = await apiRequest('/api/user/account/add', {
+            method: "POST",
+            body: JSON.stringify({
+              user_id: currentUserId,
+              pool: selectedPool,
+              raw_data: initData,
+              label: 'My Account'
+            })
+          });
+
+          if (resData && resData.ok) {
+            showToast("Account connected to cloud miner!");
+            await loadUserProfile();
+            switchTab('accounts');
+            return;
+          }
+        }
+
+        // If initData is absent or requires device pairing, seamlessly launch 1-Tap QR / Device Link
+        showToast("⚡ Launching Telegram Device Pairing...");
+        await startQrConnectModal();
+        // If in Telegram WebApp, auto-trigger the link button
+        const directBtn = document.getElementById('btn-qr-direct-link');
+        if (directBtn && window.Telegram?.WebApp?.openTelegramLink) {
+          setTimeout(() => directBtn.click(), 400);
         }
       } catch (err) {
         showToast("Error: " + err.message);
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg><span>⚡ 1-Tap Link My Telegram Account</span>`;
+          btn.innerHTML = `<svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg><span>⚡ 1-Tap Link My Telegram Account</span>`;
         }
       }
     }
 
     // QR Code, Phone Login & Non-Custodial Wallet Logic
     let qrPollInterval = null;
+    let qrTimerInterval = null;
+    let qrTimeRemaining = 120;
     let phoneLoginNodeUrl = "";
     let phoneLoginTarget = "";
+
+    function updateQrTimer() {
+      const el = document.getElementById('qr-timer-val');
+      if (el) el.textContent = `${qrTimeRemaining}s`;
+      if (qrTimeRemaining <= 0) {
+        if (qrTimerInterval) clearInterval(qrTimerInterval);
+        startQrConnectModal(); // auto-refresh
+      } else {
+        qrTimeRemaining--;
+      }
+    }
 
     async function startQrConnectModal() {
       const modal = document.getElementById('qr-connect-modal');
       const img = document.getElementById('qr-code-image');
       const linkBtn = document.getElementById('btn-qr-direct-link');
       const statusText = document.getElementById('qr-modal-status');
+      const spin = document.getElementById('qr-loading-spinner');
       if (modal) modal.classList.remove('hidden');
-      if (statusText) statusText.textContent = "Connecting to Render Cloud & generating QR link...";
+      if (spin) spin.classList.remove('hidden');
+      if (statusText) statusText.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-cyan-400 pulse-dot inline-block"></span><span>Generating secure connection link...</span>`;
       if (img) img.src = "";
+
+      if (qrTimerInterval) { clearInterval(qrTimerInterval); qrTimerInterval = null; }
+      qrTimeRemaining = 120;
 
       try {
         const res = await apiRequest('/api/account/login/qr-start', {
@@ -1862,7 +2334,13 @@
           body: JSON.stringify({ chat_id: "ub_" + currentUserId, is_user_bot: true })
         });
         if (res && res.ok && res.url) {
-          if (img && res.qr_image_url) img.src = res.qr_image_url;
+          if (img && res.qr_image_url) {
+            img.src = res.qr_image_url;
+            img.onload = () => { if (spin) spin.classList.add('hidden'); };
+          } else {
+            if (spin) spin.classList.add('hidden');
+          }
+
           if (linkBtn) {
             linkBtn.onclick = () => {
               if (window.Telegram?.WebApp?.openTelegramLink) {
@@ -1872,7 +2350,9 @@
               }
             };
           }
-          if (statusText) statusText.textContent = "Scan QR or tap button to authorize in Telegram.";
+          if (statusText) statusText.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot inline-block"></span><span>Waiting for Telegram confirmation...</span>`;
+
+          qrTimerInterval = setInterval(updateQrTimer, 1000);
 
           if (qrPollInterval) clearInterval(qrPollInterval);
           qrPollInterval = setInterval(async () => {
@@ -1881,17 +2361,31 @@
               if (sRes && sRes.status === "success") {
                 clearInterval(qrPollInterval);
                 qrPollInterval = null;
+                if (qrTimerInterval) { clearInterval(qrTimerInterval); qrTimerInterval = null; }
                 closeQrConnectModal();
-                showToast("Account connected successfully via QR!");
+                showToast("🎉 Account connected successfully to cloud miner!");
                 await loadUserProfile();
                 switchTab('accounts');
+              } else if (sRes && sRes.status === "need_2fa") {
+                clearInterval(qrPollInterval);
+                qrPollInterval = null;
+                if (qrTimerInterval) { clearInterval(qrTimerInterval); qrTimerInterval = null; }
+                closeQrConnectModal();
+                openPhoneLoginModal();
+                document.getElementById('phone-step-1').classList.add('hidden');
+                document.getElementById('phone-step-2').classList.add('hidden');
+                document.getElementById('phone-step-3').classList.remove('hidden');
+                updatePhoneStepper(3);
+                showToast("🔒 2FA Password required for this account");
               }
             } catch (_) {}
           }, 2000);
         } else {
+          if (spin) spin.classList.add('hidden');
           if (statusText) statusText.textContent = "Could not start QR: " + (res?.error || "Timeout");
         }
       } catch (err) {
+        if (spin) spin.classList.add('hidden');
         if (statusText) statusText.textContent = "Connection error: " + err.message;
       }
     }
@@ -1900,6 +2394,10 @@
       if (qrPollInterval) {
         clearInterval(qrPollInterval);
         qrPollInterval = null;
+      }
+      if (qrTimerInterval) {
+        clearInterval(qrTimerInterval);
+        qrTimerInterval = null;
       }
       const modal = document.getElementById('qr-connect-modal');
       if (modal) modal.classList.add('hidden');
@@ -1911,6 +2409,7 @@
       document.getElementById('phone-step-1').classList.remove('hidden');
       document.getElementById('phone-step-2').classList.add('hidden');
       document.getElementById('phone-step-3').classList.add('hidden');
+      updatePhoneStepper(1);
       document.getElementById('input-phone-number').value = "";
       document.getElementById('input-phone-code').value = "";
       const p2fa = document.getElementById('input-phone-2fa');
@@ -1939,6 +2438,7 @@
           document.getElementById('phone-step-1').classList.add('hidden');
           document.getElementById('phone-step-2').classList.remove('hidden');
           document.getElementById('phone-step-3').classList.add('hidden');
+          updatePhoneStepper(2);
           document.getElementById('phone-code-sent-to').textContent = phoneLoginTarget;
           showToast("Code sent to " + phoneLoginTarget);
         } else {
@@ -1948,7 +2448,7 @@
         showToast("Error: " + e.message);
       } finally {
         btn.disabled = false;
-        btn.textContent = "Send Verification Code";
+        btn.textContent = "Send Telegram Verification Code";
       }
     }
 
@@ -1977,6 +2477,7 @@
         } else if (res && res.need_2fa) {
           document.getElementById('phone-step-2').classList.add('hidden');
           document.getElementById('phone-step-3').classList.remove('hidden');
+          updatePhoneStepper(3);
           const p2fa = document.getElementById('input-phone-2fa');
           if (p2fa) { p2fa.value = ""; p2fa.focus(); }
           showToast("🔒 Two-Step Verification required. Enter your Cloud Password.");
@@ -1987,7 +2488,7 @@
         showToast("Verification error: " + e.message);
       } finally {
         btn.disabled = false;
-        btn.textContent = "Verify & Connect";
+        btn.textContent = "Verify & Connect Account";
       }
     }
 
