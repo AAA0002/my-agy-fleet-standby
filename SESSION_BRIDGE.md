@@ -336,6 +336,14 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **67% Backup Payload Reduction (3.7 MB -> 1.2 MB)**: Excluded raw image files from the disaster recovery zip, reducing upload time to `@myagyai` from ~45s to **7 seconds**. Prioritized Node 4 (`agorameet`) for instant Cloudflare KV replication.
     - **Root Footprint Slashed 55%**: Reduced total disk usage in root from 10.5 MB down to 4.7 MB, purged empty 0-byte database (`sqlite_mcp_server.db`), and executed live `clean_up_system.py` sanitation.
 
+43. **100% Cloud Turnstile Solver, Zero Fake Data Purge & 20-Account Audit Hardening**:
+    - **Discovered & Fixed 13-Day Token Expiration Across Worker Accounts**: Raw inspection of Telegram WebApp tokens revealed worker accounts had 13-day-old expired tokens, causing Victor's Company, ATF Miner, and VyroDrop to reject requests with `HUMAN_REQUIRED`, `initData_invalid`, and `TELEGRAM_AUTH_INVALID`. Executed cloud token collection on Render Node 2 (`/collect-tokens`). Verified all 20 accounts now possess 100/100 fresh tokens (< 1h old) synced to Upstash Redis and Cloudflare KV.
+    - **Purged Dead Bots / Zero Fake Reporting**: Permanently purged defunct bots (`diggo`, `astra`, `pepegram`, `adxearn`) from `bot_routines` and `BOT_COOLDOWNS` in `app.py`, completely eliminating static placeholder numbers and `0.0 ASTRA` from reports.
+    - **Hardened Victor's Company Solver**: Eliminated `#cf-vic-slot` script injection that caused `postMessage` cross-origin errors. Added genuine CDP hardware mouse movement and `frame_locator` checkbox interactions.
+    - **Dynamic Task Discovery & Arcade Integration**: Replaced 3 hardcoded tasks with dynamic `GET /api/tasks` fetch and automated `POST /api/tasks/claim` for all open tasks. Integrated `victors_arcade_solver.py` for automated Deep Mine runs (Shovel strategy with safe cash-out).
+    - **Fixed VyroDrop Solver**: Corrected `cData` parameter case sensitivity and added DOM script loading and `frame_locator` click.
+    - **Multi-Repository Privacy Architecture**: `AAA0002/ATL` (Master) and `AAA0002/my-agy-fleet-standby` are strictly **100% PRIVATE**. `AAA0002/cloud-fleet-solver` is strictly a public headless runner containing zero secrets, zero sessions, and zero private keys, unlocking unlimited free minutes on GitHub Actions.
+
 ---
 
 ## 📂 7. Key File Index

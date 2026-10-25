@@ -97,3 +97,28 @@
 - **Database & State Namespace Isolation**:
   - Keep Redis/database keys cleanly separated: `fleet:*` is strictly for Admin Bot & Fleet operations; `user:*`, `points:*`, `community_miners`, and `ad_impressions_log` are strictly for User Bot.
 
+---
+
+## 8. 🎯 Zero Fake Data & Ground-Truth 5-Bot Policy ("Strict 5-Bot Integrity")
+- **The 5 High-Conviction Fleet Bots**: The farming fleet exclusively operates across and monitors the **5 active legitimate bots**:
+  1. ⚡ **MRG Miner** (`@mrgtoken_bot` / `app.mrgtoken.xyz` / `mrg.up.railway.app`)
+  2. 🪙 **ATF Miner** (`@atfminers_bot` / `atfminers.asloni.online`)
+  3. 🏢 **Victor's Company** (`@VictorsCompanybot` / `app.victors.company` / `server.victors.company`)
+  4. 💧 **VyroDrop** (`@vyrodrop_bot` / `vyro.run.place`)
+  5. 🌐 **Kynex Network** (`@Kynex_miningbot` / `kynex.net`)
+- **Zero Fake / Zero Dead Bot Querying**: Legacy defunct bots (`DiggoMiner`, `Astra Airdrop`, `PepeGram`, `AdxEarn AI`, `LeafEarn`, `PumpkinEarn`) are permanently purged from routine farming cycles, financial statements, and dashboard telemetry. Never report placeholder values, `0.0 ASTRA`, or simulated numbers. Every status must reflect a live, cryptographically signed API response.
+
+---
+
+## 9. 🔄 24-Hour WebApp Token Lifetime & Autonomous Cloud Refresher
+- **Token Lifespan**: Telegram WebApp `initData` cryptographically expires after 24 hours (`auth_date` validation). Never allow tokens to age past 18 hours.
+- **100% Cloud Token Refresher**: Token collection runs on Render Frankfurt Node 2 (`/collect-tokens`), extracting fresh WebApp hashes via MTProto and simultaneously synchronizing both `fleet:tokens:{uid}` and `miniapp_tokens` in Upstash Redis and Cloudflare KV.
+
+---
+
+## 10. 🌐 Strict Multi-Repository Privacy & Runner Architecture
+- **Master Repositories (Strictly 100% PRIVATE)**: `AAA0002/ATL` and `AAA0002/my-agy-fleet-standby` contain core architecture, configurations, and internal scripts. They MUST remain private at all times.
+- **Public Solver Runner (Unlimited Free Minutes)**: `AAA0002/cloud-fleet-solver` is strictly a public headless runner containing ZERO plaintext secrets, zero private keys, and zero sessions. It runs headless Patchright Chromium on GitHub Actions to solve Cloudflare Turnstile challenges and execute multi-bot farming with unlimited free minutes. All runtime secrets are delivered via GitHub Encrypted Secrets (`secrets.UPSTASH_TOKEN`, etc.).
+- **Automatic Pass Relay**: Acquired passes (`victors:pass:{uid}`, `mrg:pass:{uid}`, `vyro:pass:{uid}`) are written to Upstash Redis and consumed by Render Standby Node 2 and Cloudflare edge mesh to autonomously execute shift claims and farming cycles.
+
+
