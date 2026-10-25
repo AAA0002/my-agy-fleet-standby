@@ -43,6 +43,7 @@ async def solve_deep_mine_expeditions(session: aiohttp.ClientSession, headers: d
             me_data = await resp.json()
             user = me_data.get("state", {}).get("user", {})
             balance = user.get("inAppBalance", 0.0)
+            stats["initial_balance"] = balance
             stats["final_balance"] = balance
     except Exception as e:
         logger.error(f"[{account_name}] Failed to fetch /me: {e}")

@@ -604,7 +604,7 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
           }, 1, 600).catch(() => {});
         }
 
-        // 6. Tasks
+        // 6. Tasks (with 4.2s link verification debounce)
         try {
           const tResp = await fetchWithRetry("https://server.victors.company/api/tasks", {
             method: "GET", headers: vHeaders
@@ -614,10 +614,15 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
             const tasks = tData.tasks || [];
             if (Array.isArray(tasks)) {
               for (const t of tasks) {
-                if (t && t.id && !t.claimed) {
-                  await humanDelay(600, 1200);
+                const tid = t?.id || t?.taskId;
+                if (t && tid && !t.claimed && t.status !== "done") {
+                  if (t.kind === "link_visit" || t.kind === "telegram_channel" || t.kind === "partner_api" || t.url) {
+                    await humanDelay(4100, 4300);
+                  } else {
+                    await humanDelay(500, 1000);
+                  }
                   await fetchWithRetry("https://server.victors.company/api/tasks/claim", {
-                    method: "POST", headers: vHeaders, body: JSON.stringify({ taskId: t.id })
+                    method: "POST", headers: vHeaders, body: JSON.stringify({ taskId: tid })
                   }, 1, 500).catch(() => {});
                 }
               }
@@ -634,26 +639,37 @@ async function farmSingleAccountAllBots(uid, accData, env, ctx, targetBot = null
           method: "POST", headers: vHeaders, body: JSON.stringify({})
         }, 1, 600).catch(() => {});
 
-        // 8. Arcade Minigame Mining (Play 1 run)
+        // 8. Arcade Minigame Mining (Safe Rows 0 & 1 only: 0% bust chance)
         try {
           const arcResp = await fetchWithRetry("https://server.victors.company/api/arcade", {
             method: "GET", headers: vHeaders
           }, 1, 800).catch(() => null);
           if (arcResp && arcResp.ok) {
             const arcData = await arcResp.json().catch(() => ({}));
-            if (arcData && arcData.runsLeft > 0) {
-              const stResp = await fetchWithRetry("https://server.victors.company/api/arcade/mine/start", {
-                method: "POST", headers: vHeaders, body: JSON.stringify({ tool: "pickaxe", items: [] })
-              }, 1, 600).catch(() => null);
-              if (stResp && stResp.ok) {
-                for (let d = 0; d < 4; d++) {
-                  await humanDelay(500, 1000);
+            const games = Array.isArray(arcData.games) ? arcData.games : [];
+            const mineGame = games.find(g => g && g.id === "mine");
+            const playsLeft = mineGame ? (mineGame.playsLeft || 0) : (arcData.runsLeft || 0);
+            if (playsLeft > 0 || arcData.mine) {
+              let activeRun = arcData.mine;
+              if (!activeRun) {
+                const stResp = await fetchWithRetry("https://server.victors.company/api/arcade/mine/start", {
+                  method: "POST", headers: vHeaders, body: JSON.stringify({ tool: "shovel", items: {} })
+                }, 1, 600).catch(() => null);
+                if (stResp && stResp.ok) {
+                  const sData = await stResp.json().catch(() => ({}));
+                  activeRun = sData.run;
+                }
+              }
+              if (activeRun && activeRun.status === "active") {
+                // Dig strictly safe rows 0 and 1 (safeRows = 2: 0% bust chance)
+                for (let d = 0; d < 2; d++) {
+                  await humanDelay(400, 800);
                   const digResp = await fetchWithRetry("https://server.victors.company/api/arcade/mine/dig", {
                     method: "POST", headers: vHeaders, body: JSON.stringify({ x: 4, y: d })
                   }, 1, 500).catch(() => null);
-                  if (digResp) {
+                  if (digResp && digResp.ok) {
                     const digData = await digResp.json().catch(() => ({}));
-                    if (digData && digData.result === "bust") break;
+                    if (digData && digData.result) break;
                   }
                 }
                 await fetchWithRetry("https://server.victors.company/api/arcade/mine/end", {

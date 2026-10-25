@@ -2,6 +2,23 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🎮 Victor's Company Arcade Game Expansion, Reverse-Engineered Task Verification & GitHub Actions Quota Protection (October 25, 2026)**:
+  - **Eradicated Private GitHub Actions Runner Quota Burn**:
+    * Identified that `AAA0002/ATL` (private repository) was running 332 workflow runs against the 2,000 monthly private minutes quota until limits were reached.
+    * Disabled all 6 workflows on `AAA0002/ATL` via GitHub API (`PUT /repos/AAA0002/ATL/actions/workflows/{id}/disable`).
+    * Preserved 100% of autonomous cloud workflows on `AAA0002/my-agy-fleet-standby` (public repository), where GitHub Actions provides **100% UNLIMITED FREE RUNNER MINUTES**.
+  - **Reverse-Engineered Victor's Company Frontend (`index-zbWoZZBc.js`)**:
+    * Extracted complete API contracts for arcade minigames and jobs board: `mineStart`, `mineDig`, `mineUse`, `mineEnd`, `underground` (WebSocket multiplayer), `crew` (Co-op 4-miner expedition), and `rush` (PvP 3-minute race).
+    * Discovered that the Victor's frontend enforces a mandatory 4-second debounce buffer (`Date.now() - R > 4e3`) after visiting link/channel/partner tasks before enabling the claim button.
+  - **Upgraded Victor's Company Task & Game Harvest Engine (`finish_all_fleet_sidetasks.py`, `app.py`, `deploy_both_cf_workers.py`)**:
+    * Injected 4.2-second verification buffer for `link_visit`, `telegram_channel`, and `partner_api` tasks before invoking `POST /api/tasks/claim`.
+    * Added Level 1 Miner unlock routine (`POST /api/levels/unlock` with `level: 1`) to eliminate `home.noJob` and guarantee continuous passive mining (+100 V/day).
+    * Added accumulated mining claim (`POST /api/mining/claim`) to feed `inAppBalance` for purchasing Deep Mine shovel gear.
+    * Hardened Deep Mine solver in Cloudflare Edge Worker (`deploy_both_cf_workers.py`) to equip shovel (`tool: "shovel", items: {}`) and dig strictly safe rows 0 and 1 (`safeRows = 2`: strictly 0% bust chance).
+    * Fixed initial balance stat tracking in `victors_arcade_solver.py`.
+  - **Production Deployment**:
+    * Deployed updated edge worker engine to Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified live webhooks and 24/7 cron trigger.
+
 - **🧹 Redundant Codebase Harmonization & Canonical `app.py` Single Source of Truth (October 25, 2026)**:
   - **820+ KB Redundant Code Elimination**:
     * Identified that `render_standby_app.py` (412 KB) and `render_app_latest.py` (412 KB) were 100% byte-for-byte identical duplicates of `app.py` (412 KB), cluttering the workspace and inflating backup archives by >820 KB.
