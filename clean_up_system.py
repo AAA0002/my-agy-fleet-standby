@@ -279,6 +279,33 @@ def sanitize_upstash_redis(dry_run: bool = False) -> dict:
     except Exception as ue:
         logger.debug(f"Upstash pass audit note: {ue}")
 
+    # 3.3 Purge legacy defunct bot keys from Upstash Redis (Strict 5-Bot Integrity)
+    dead_patterns = [
+        "fleet:diggo:*", "fleet:astra:*", "fleet:pepegram:*", "fleet:adxearn:*",
+        "fleet:last_farm:diggo:*", "fleet:last_farm:astra:*", "fleet:last_farm:pepegram:*", "fleet:last_farm:adxearn:*",
+        "fleet:farm_error:diggo:*", "fleet:farm_error:astra:*", "fleet:farm_error:pepegram:*", "fleet:farm_error:adxearn:*"
+    ]
+    for dp in dead_patterns:
+        try:
+            req_d = urllib.request.Request(f"{UPSTASH_URL}/keys/{dp}", headers=headers)
+            with urllib.request.urlopen(req_d, timeout=6) as rd:
+                if rd.status == 200:
+                    d_keys = json.loads(rd.read().decode()).get("result", [])
+                    if d_keys:
+                        pipe_del = [["del", k] for k in d_keys]
+                        if not dry_run:
+                            req_pdel = urllib.request.Request(
+                                f"{UPSTASH_URL}/pipeline",
+                                data=json.dumps(pipe_del).encode(),
+                                headers=headers
+                            )
+                            with urllib.request.urlopen(req_pdel, timeout=8) as rpd:
+                                pass
+                        stats["stale_passes_purged"] += len(d_keys)
+                        logger.info(f"  🧹 Purged {len(d_keys)} legacy dead bot keys ({dp}).")
+        except Exception as dpe:
+            logger.debug(f"Dead key sweep error for {dp}: {dpe}")
+
     logger.info(f"✅ Upstash Hygiene Complete: {stats['lists_trimmed']} lists capped, {stats['stale_passes_purged']} expired keys purged.")
     return stats
 

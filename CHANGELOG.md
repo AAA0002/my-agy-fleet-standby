@@ -2,6 +2,17 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **⚡ System-Wide Resilience, Self-Healing & Infrastructure Optimization (October 25, 2026)**:
+  - **Slashed 293 Lines of Dead Code in Edge Worker Bundle (`deploy_both_cf_workers.py`)**:
+    * Excised unused dead bot helper functions (`farmDiggo`, `farmAstra`, `farmPepegram`, `farmAdxearn`) from the Cloudflare Worker template.
+    * Slashed worker bundle size and accelerated script evaluation across Cloudflare V8 edge isolates.
+  - **Automated Upstash Redis Dead Key Garbage Collection (`clean_up_system.py`)**:
+    * Integrated pattern-based automated sweeping of legacy bot keys (`fleet:diggo:*`, `fleet:astra:*`, `fleet:pepegram:*`, `fleet:adxearn:*`, and corresponding `last_farm` / `farm_error` records).
+    * Executed live sweep, safely purging **100 stale legacy keys** from Upstash Redis and pruning 5 old GitHub Actions workflow runs.
+  - **PRoot & Mobile Detection Hardening (`restore.sh`)**:
+    * Upgraded device detection to verify both Android Termux and Samsung Galaxy A30 PRoot environments (`/data/data/com.termux`, `/system/build.prop`), guaranteeing that mobile devices never launch local daemon loops (Zero Phone Load Directive).
+    * Added missing solvers and reporting engines to the executable permissions list.
+
 - **🐛 Comprehensive Fleet Bug Hunt & Codebase Hardening (October 25, 2026)**:
   - **Eliminated Dead Bots from Cloudflare Workers Template (`deploy_both_cf_workers.py`)**:
     * Purged defunct bots (`diggo`, `astra`, `pepegram`, `adxearn`) from `BOT_COOLDOWNS` and `botRoutines` inside the Cloudflare Edge Worker bundle.

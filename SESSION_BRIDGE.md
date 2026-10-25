@@ -353,6 +353,11 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Token Refresher Streamlined (`refresh_cloud_tokens.py`)**: Removed legacy webview requests for defunct bots, cutting token extraction runtime by ~45%.
     - **Financial Reporter Enhanced (`daily_profit_reporter.py`)**: Added VyroDrop to mining totals and updated Render Node 1/Node 2/Node 3 cloud infrastructure status.
 
+45. **System-Wide Resilience & Sanitation Engine Upgrade**:
+    - **Edge Worker Footprint Reduced (`deploy_both_cf_workers.py`)**: Slashed 293 lines of unused dead code (`farmDiggo`, `farmAstra`, `farmPepegram`, `farmAdxearn`), accelerating cold start times across Cloudflare Edge nodes.
+    - **Redis Key Garbage Collection (`clean_up_system.py`)**: Implemented automated sweeping for legacy defunct bot records, successfully eliminating 100 stale keys from Upstash Redis and pruning 5 old GitHub Actions workflow runs.
+    - **Mobile & PRoot Detection Hardening (`restore.sh`)**: Added PRoot and Android environment detection to strictly prevent local background bot execution on Samsung Galaxy A30 during system recovery.
+
 ---
 
 ## 📂 7. Key File Index

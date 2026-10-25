@@ -15,11 +15,13 @@ cd "$BASE_DIR"
 
 # 1. Detect environment and install packages
 echo "📦 Checking system dependencies..."
-IS_TERMUX=false
-if command -v pkg &> /dev/null; then
-    echo "📱 Android Termux environment detected."
-    IS_TERMUX=true
-    pkg update -y && pkg install -y python tmux git unzip curl
+IS_MOBILE=false
+if command -v pkg &> /dev/null || [ -d "/data/data/com.termux" ] || [ -f "/system/build.prop" ]; then
+    echo "📱 Mobile/Termux/PRoot environment detected (Samsung Galaxy A30)."
+    IS_MOBILE=true
+    if command -v pkg &> /dev/null; then
+        pkg update -y && pkg install -y python tmux git unzip curl
+    fi
 elif command -v apt-get &> /dev/null; then
     echo "🖥️ Linux VPS environment detected."
     if [ "$(id -u)" -eq 0 ]; then
@@ -76,11 +78,11 @@ if [ -f "requirements.txt" ]; then
 fi
 
 # 7. Make all scripts executable
-chmod +x bot_supervisor.sh start_userbot.sh stop_userbot.sh login_account.py phone_detector.py proxy_manager.py backup_manager.py restore.sh restore_fleet.sh cloudflared_tunnel.sh autonomous_cloud_agent.py refresh_cloud_tokens.py render_failover_manager.py deploy_both_cf_workers.py 2>/dev/null || true
+chmod +x bot_supervisor.sh start_userbot.sh stop_userbot.sh login_account.py phone_detector.py proxy_manager.py backup_manager.py restore.sh restore_fleet.sh cloudflared_tunnel.sh autonomous_cloud_agent.py refresh_cloud_tokens.py render_failover_manager.py deploy_both_cf_workers.py clean_up_system.py daily_profit_reporter.py kynex_miner.py mrg_turnstile_solver.py victors_arcade_solver.py finish_all_fleet_sidetasks.py 2>/dev/null || true
 
-# 8. Start 24/7 background supervisor daemon (Linux VPS only; Termux is 100% cloud-first)
-if [ "$IS_TERMUX" = true ]; then
-    echo "📱 Android Termux detected (Samsung Galaxy A30)."
+# 8. Start 24/7 background supervisor daemon (Linux VPS only; Mobile/Termux/PRoot is 100% cloud-first)
+if [ "$IS_MOBILE" = true ]; then
+    echo "📱 Mobile/PRoot detected (Samsung Galaxy A30)."
     echo "🛡️ Zero Phone Load Directive: Bot daemon loops run 100% in the cloud."
     echo "======================================================"
     echo "  🎉 RESTORATION 100% COMPLETE!"
