@@ -5877,7 +5877,11 @@ async def farm_single_account_bots(session: aiohttp.ClientSession, acc: dict, ac
                             if isinstance(t, dict):
                                 tid = t.get("taskId") or t.get("id")
                                 if tid and (t.get("status") == "open" or not t.get("claimed")):
-                                    await jitter(0.4, 0.9)
+                                    t_kind = t.get("kind", "")
+                                    if t_kind in ("link_visit", "telegram_channel", "partner_api") or t.get("url"):
+                                        await asyncio.sleep(4.2)
+                                    else:
+                                        await jitter(0.4, 0.9)
                                     await safe_post("https://server.victors.company/api/tasks/claim", json_data={"taskId": tid}, req_headers=v_h)
 
                 # 7. Referral claim bonus & commission
