@@ -350,9 +350,9 @@ Certain farming bots require a connected wallet before mining will unlock or pro
 - **Standalone 1-Click Restore**: [`restore.sh`](file:///data/workspace/AAA_AUTO/restore.sh) (Restores full system anywhere).
 - **Multi-Chain Wallet Provisioner**: [`fleet_wallet_provisioner.py`](file:///data/workspace/AAA_AUTO/fleet_wallet_provisioner.py).
 - **Cloud Collector Services**:
-  - [`render_standby_app.py`](file:///data/workspace/AAA_AUTO/render_standby_app.py)
-  - [`render_app_latest.py`](file:///data/workspace/AAA_AUTO/render_app_latest.py)
-  - [`app.py`](file:///data/workspace/AAA_AUTO/app.py)
+  - [`app.py`](file:///data/workspace/AAA_AUTO/app.py) (Canonical primary FastAPI fleet application & 24/7 Cloud Wealth Watchdog)
+  - [`render_standby_app.py`](file:///data/workspace/AAA_AUTO/render_standby_app.py) (Lightweight backward-compatible proxy forwarding to `app.py`)
+  - [`render_app_latest.py`](file:///data/workspace/AAA_AUTO/render_app_latest.py) (Lightweight backward-compatible proxy forwarding to `app.py`)
 - **Fleet Wallets & Master Vaults**:
   - `FLEET_WALLETS_SECRETS_MASTER_VAULT.txt` (Local master secrets vault with mnemonics/keys; strictly gitignored).
   - `FLEET_ACCOUNTS_AND_WALLETS_DIRECTORY.md` (Public markdown directory).

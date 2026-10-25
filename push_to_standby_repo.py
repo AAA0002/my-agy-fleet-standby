@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 push_to_standby_repo.py
-Synchronizes render_standby_app.py as app.py to GitHub repo AAA0002/my-agy-fleet-standby,
+Synchronizes canonical app.py to GitHub repo AAA0002/my-agy-fleet-standby,
 triggering automatic deployment on Render Node 1 (Singapore) and Node 2 (Frankfurt).
 """
 
@@ -12,7 +12,7 @@ import hashlib
 import urllib.request
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-STANDBY_SRC = os.path.join(BASE_DIR, "render_standby_app.py")
+STANDBY_SRC = os.path.join(BASE_DIR, "app.py")
 
 # Read credentials from .env
 env = {}

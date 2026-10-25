@@ -8386,3 +8386,10 @@ async def cloud_wealth_automation_watchdog():
             logger.error(f"[Cloud Wealth Watchdog] Cycle error: {e}")
 
         await asyncio.sleep(1800)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 10000))
+    uvicorn.run("app:app", host="0.0.0.0", port=port, reload=False)
+

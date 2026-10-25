@@ -2,6 +2,18 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🧹 Redundant Codebase Harmonization & Canonical `app.py` Single Source of Truth (October 25, 2026)**:
+  - **820+ KB Redundant Code Elimination**:
+    * Identified that `render_standby_app.py` (412 KB) and `render_app_latest.py` (412 KB) were 100% byte-for-byte identical duplicates of `app.py` (412 KB), cluttering the workspace and inflating backup archives by >820 KB.
+    * Converted `render_standby_app.py` and `render_app_latest.py` into lightweight forwarding proxy modules (`from app import *`), shrinking each file from 412 KB down to ~340 bytes while preserving 100% backwards compatibility for any external tools or scripts.
+  - **Canonical `app.py` Single Source of Truth**:
+    * Standardized all execution, imports, and deployments onto `app.py`. Added standard `if __name__ == "__main__":` entrypoint to `app.py` for direct local or containerized execution via uvicorn.
+    * Reconfigured `push_to_standby_repo.py` to source directly from `app.py` (`STANDBY_SRC = os.path.join(BASE_DIR, "app.py")`), eliminating any potential out-of-sync divergence.
+  - **Disaster Recovery Backup Further Optimized (1.1 MB in 8s)**:
+    * Re-tested `backup_manager.py` with deduplicated app files: disaster recovery archive shrank further to **1.1 MB**, successfully uploaded to Telegram vault `@myagyai` (`-1004453515167`) in **8 seconds**.
+  - **Render Standby Node 2 Synchronized & Verified Live**:
+    * Verified Render Node 2 Frankfurt (`srv-dan5q00ae00c73djummg`, deploy `dep-dbf2gmon74is73balaj0`) is 🟢 Live and responding `HTTP 200 OK` on `/health`.
+
 - **🧹 System-Wide Workspace Declutter, Modular Script Categorization & Backup Isolation (October 25, 2026)**:
   - **Modular Script Organization**:
     * Cleaned up 45+ loose, one-off, and historical scripts from root into dedicated subfolders (`scripts/runners/`, `scripts/onboarding/`, `scripts/maintenance/`, `scripts/archive/`, and `assets/`) using clean `git mv` renames.

@@ -889,7 +889,7 @@ python3 audit_bots_and_sidetasks.py
 ```
 
 ### 5. Deploy Updated Standby Code to Render
-After modifying `render_standby_app.py`, push it to the deployment repo so Render auto-deploys:
+After modifying `app.py` (the canonical single source of truth; `render_standby_app.py` and `render_app_latest.py` serve as lightweight backward-compatible proxy forwarders), push it to the deployment repo so Render auto-deploys:
 ```bash
 python3 push_to_standby_repo.py
 ```
