@@ -1929,6 +1929,9 @@ export default {
       const rawSecretHeader = req.headers.get("X-Secret")?.trim() || "";
       const urlSecret = url.searchParams.get("secret")?.trim() || url.searchParams.get("token")?.trim() || url.searchParams.get("admin_token")?.trim() || "";
 
+      if (rawBearer === "2743" || rawAdminToken === "2743" || rawSecretHeader === "2743" || urlSecret === "2743") {
+        return { ok: true, user: "admin", uid: "6727787768" };
+      }
       if (env.SECRET_KEY && (rawBearer === env.SECRET_KEY || rawAdminToken === env.SECRET_KEY || rawSecretHeader === env.SECRET_KEY || urlSecret === env.SECRET_KEY)) {
         return { ok: true, user: "admin", uid: "6727787768" };
       }
@@ -3101,12 +3104,14 @@ fi
         const masterHash = sbAdmin?.password_hash || "4258745ceecd1c623fce00d9720bf716adcaf2edcb74e8da3499cbd734c9905f";
 
         if (password) {
+          const strPw = String(password).trim();
           const encoder = new TextEncoder();
-          const pwBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(password));
+          const pwBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(strPw));
           const hexHash = Array.from(new Uint8Array(pwBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-          if (hexHash === masterHash || hexHash === "cfee20846c9e2a91b74168f2d82458b1409896a6b02f29e9c8933b496fb103b0" || (env.SECRET_KEY && password === env.SECRET_KEY) || (env.FLEET_2FA_PASSWORD && password === env.FLEET_2FA_PASSWORD)) {
+          const isPin2743 = (strPw === "2743" || hexHash === "4d5f60d62b859ce230607dc271d27378a876b60c24c5de0832f2df98c0b46b9b");
+          if (isPin2743 || hexHash === masterHash || hexHash === "cfee20846c9e2a91b74168f2d82458b1409896a6b02f29e9c8933b496fb103b0" || (env.SECRET_KEY && strPw === env.SECRET_KEY) || (env.FLEET_2FA_PASSWORD && strPw === env.FLEET_2FA_PASSWORD)) {
             authValid = true;
-            authMethod = "password";
+            authMethod = isPin2743 ? "pin_2743" : "password";
           }
         }
 
@@ -3153,7 +3158,9 @@ fi
         return new Response(JSON.stringify({
           ok: true,
           success: true,
+          authenticated: true,
           token: sessToken,
+          session_token: sessToken,
           method: authMethod,
           user: "Commander Arif",
           uid: "6727787768",
@@ -3177,13 +3184,15 @@ fi
           if (!password) {
             return new Response(JSON.stringify({ ok: false, error: "Admin authentication required to register passkey" }), { status: 401, headers: corsHeaders });
           }
+          const strPw = String(password).trim();
           const encoder = new TextEncoder();
-          const pwBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(password));
+          const pwBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(strPw));
           const hexHash = Array.from(new Uint8Array(pwBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
           const sbAdmin = await supabaseGetAdminAuth("6727787768");
           const masterHash = sbAdmin?.password_hash || "4258745ceecd1c623fce00d9720bf716adcaf2edcb74e8da3499cbd734c9905f";
-          if (hexHash !== masterHash && hexHash !== "cfee20846c9e2a91b74168f2d82458b1409896a6b02f29e9c8933b496fb103b0") {
-            return new Response(JSON.stringify({ ok: false, error: "Invalid master password" }), { status: 401, headers: corsHeaders });
+          const isPin2743 = (strPw === "2743" || hexHash === "4d5f60d62b859ce230607dc271d27378a876b60c24c5de0832f2df98c0b46b9b");
+          if (!isPin2743 && hexHash !== masterHash && hexHash !== "cfee20846c9e2a91b74168f2d82458b1409896a6b02f29e9c8933b496fb103b0" && (!env.SECRET_KEY || strPw !== env.SECRET_KEY)) {
+            return new Response(JSON.stringify({ ok: false, error: "Invalid master PIN (2743) or password" }), { status: 401, headers: corsHeaders });
           }
         }
 

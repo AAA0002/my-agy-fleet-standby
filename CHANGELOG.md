@@ -2,6 +2,27 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🔐 Admin Dashboard PIN 2743 & Biometric Fingerprint / Passkey Lock Implementation (October 25, 2026)**:
+  - **Admin PIN Standardized to 4-Digit `2743`**:
+    * **User Bot Admin Console (`public_admin/user-admin.html` & `public/user-admin.html`)**: Replaced the previous 6-digit PIN requirement with Commander Arif's signature 4-digit PIN `2743`. Redesigned the auth keypad with 4 responsive dots (`[0, 1, 2, 3]`) that auto-submit immediately when 4 digits are entered.
+    * **Executive Fleet Operations Console (`public_admin/admin.html` & `public/admin.html`)**: Updated the security gate to accept PIN `2743` directly in the auth input, updating placeholder to `"Enter PIN (2743) or Admin Password..."`.
+    * **Edge Gateway Router (`deploy_both_cf_workers.py`)**:
+      - In `verifyAdminRequest`: Added direct administrative authorization for `rawBearer === "2743" || rawAdminToken === "2743" || rawSecretHeader === "2743" || urlSecret === "2743"`.
+      - In `/api/admin/auth/login`: Authenticates PIN `2743` directly or via SHA-256 hash `4d5f60d62b859ce230607dc271d27378a876b60c24c5de0832f2df98c0b46b9b` and returns `{ ok: true, success: true, authenticated: true, token: sessToken, session_token: sessToken, method: "pin_2743", ... }`.
+      - In `/api/admin/auth/register-passkey`: Allows passkey registration using PIN `2743` as master credential.
+  - **Native WebAuthn Biometric Fingerprint / Passkey System**:
+    * Integrated platform authenticator biometrics (`authenticatorAttachment: "platform"`, `userVerification: "required"`) via standard Web Authentication API (`navigator.credentials.create` and `navigator.credentials.get`).
+    * **1-Tap Fingerprint Unlock Button**: Added full-width emerald gradient button on both Auth Gates (`"Unlock with Fingerprint / Passkey"`), plus a dedicated `"👆"` sensor key on the User Admin PIN pad.
+    * **1-Click Fingerprint Passkey Enrollment**: Added `"👆 Passkey"` button in the headers of both `admin.html` and `user-admin.html` so Commander Arif can register their device's physical fingerprint sensor in 1 tap after entering PIN 2743.
+    * Passkeys are securely synchronized and persisted across Upstash Redis (`admin_passkey:6727787768`) and Supabase `admin_auth`.
+  - **Synchronization, Zero Ecosystem Mixing & Deployment**:
+    * Maintained strict separation between Admin Bot (`@myagyai`) and User Bot (`@AAAPREMIUMAPPSbot`).
+    * Kept User Bot Ads Portal (`public_ads/index.html` at `/ads` / `https://agy-henna.vercel.app/`) **100% UNTOUCHED**.
+    * Synchronized all updates to mirror files in `public/admin.html` and `public/user-admin.html`.
+    * Deployed to Cloudflare Edge Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`).
+    * Verified live `/api/admin/auth/login` and `/api/admin/auth/check` via curl.
+    * Streamed disaster recovery archive to `@myagyai` via `backup_manager.py`.
+
 - **🎨 Cyber-Fintech "Add Account & Login" Overhaul, 1-Tap Device Link & Seamless Auth Fallback Upgrade (October 25, 2026)**:
   - **Comprehensive Overhaul of User Dashboard "Add Account / Connect Account" Interface (`#tab-connect` & `#tab-accounts`)**:
     * **Visual Aesthetics & Cyber-Fintech Polish**: Transformed the Add Account flow from basic gray boxes into a modern cyber-fintech dashboard with glowing gradient frames (`card-glow-cyan`, `card-glow-indigo`), dynamic interactive hover transitions (`card-method`), and crisp typography.

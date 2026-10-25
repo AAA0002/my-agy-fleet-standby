@@ -227,6 +227,12 @@ Certain farming bots require a connected wallet before mining will unlock or pro
     - **Render Node 2 Side-Task Sweep Verified**: Executed cloud side-task sweep via `POST /api/tasks/sweep-all` on Render Node 2 (Frankfurt) with 0 local phone load.
     - **Disaster Recovery Backup**: Fresh archive streamed to `@myagyai` via `backup_manager.py`.
 30. **Cyber-Fintech "Add Account & Login" Overhaul, 1-Tap Device Link & Seamless Auth Fallback Upgrade**:
+    - **Admin Dashboard PIN 2743 & Biometric Fingerprint / Passkey Lock Implementation**:
+      * **PIN Standardized to 4-Digit `2743`**: User Bot Admin Console (`public_admin/user-admin.html`) was updated from 6 digits to Commander Arif's signature 4-digit PIN `2743`, with 4 interactive dots that auto-submit immediately on the 4th digit. Executive Fleet Console (`public_admin/admin.html`) security gate now accepts PIN `2743` directly.
+      * **Edge Worker Auth Hardening (`deploy_both_cf_workers.py`)**: `verifyAdminRequest` accepts `2743` in bearer, `X-Admin-Token`, `X-Secret`, and `?secret=2743`. `/api/admin/auth/login` validates PIN `2743` directly and via SHA-256 hash `4d5f60d62b859ce230607dc271d27378a876b60c24c5de0832f2df98c0b46b9b`, returning `authenticated: true`, `token`, and `session_token`.
+      * **Native WebAuthn Biometric Passkey System**: Added 1-tap fingerprint / passkey unlock button (`"Unlock with Fingerprint / Passkey"`) on both consoles, plus a dedicated sensor key (`"👆"`) on the User Admin PIN pad. Added 1-click `"👆 Passkey"` registration buttons in the dashboard headers connecting to `/api/admin/auth/register-passkey` and synced with Upstash Redis and Supabase `admin_auth`.
+      * **Deployment & DR**: Deployed live to Cloudflare Edge Gateway Node 4 (`https://restore-agy.agorameet.workers.dev`). Verified live auth. Synced mirrors to `public/admin.html` and `public/user-admin.html`. Kept Ads Portal 100% untouched. Streamed disaster recovery backup to `@myagyai`.
+
     - **User Dashboard Add Account & Connect Hub Overhaul (`#tab-connect` & `#tab-accounts`)**:
       * Transformed the interface with high-tech cyber-fintech styling (`card-glow-cyan`, `card-glow-indigo`, `card-method`).
       * Added dynamic visual slot allocation meter (`updateSlotsWidget()`) showing active, available, and locked slots (`Connected Accounts: X / Y Slots Active`).

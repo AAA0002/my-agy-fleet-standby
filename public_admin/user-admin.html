@@ -185,15 +185,18 @@ const BLOCK_EXPLORERS = {
 function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnabled, isDarkMode }) {
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
   const [authError, setAuthError] = useState("");
 
+  const PIN_LENGTH = 4; // Commander Arif's signature 4-digit PIN 2743
+
   const handleDigit = (d) => {
-    if (pin.length >= 6) return;
+    if (pin.length >= PIN_LENGTH) return;
     const nextPin = pin + d;
     setPin(nextPin);
     haptic("light");
     if (soundEnabled) playSound("click");
-    if (nextPin.length === 6) {
+    if (nextPin.length === PIN_LENGTH) {
       submitAuth(nextPin);
     }
   };
@@ -214,12 +217,12 @@ function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnable
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: pinValue, is_pin: true })
       });
-      if (res && res.authenticated) {
+      if (res && (res.authenticated || res.ok || res.token)) {
         haptic("success");
         if (soundEnabled) playSound("success");
-        onSuccess(res.session_token, res);
+        onSuccess(res.token || res.session_token, res);
       } else {
-        setAuthError(res?.error || "Invalid PIN. Try again.");
+        setAuthError(res?.error || "Invalid PIN (2743). Try again.");
         setPin("");
         haptic("error");
       }
@@ -232,20 +235,89 @@ function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnable
     }
   };
 
+  const handleBiometricLogin = async () => {
+    setAuthError("");
+    setBiometricLoading(true);
+    haptic("medium");
+
+    try {
+      if (!window.PublicKeyCredential) {
+        setAuthError("Biometrics/Passkeys not supported in this browser.");
+        setBiometricLoading(false);
+        return;
+      }
+
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+
+      const assertion = await navigator.credentials.get({
+        publicKey: {
+          challenge,
+          rpId: window.location.hostname,
+          userVerification: "preferred",
+          timeout: 60000
+        }
+      });
+
+      if (assertion && assertion.id) {
+        const res = await fetchMeshApi("/api/admin/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            passkey_credential_id: assertion.id,
+            credential_id: assertion.id
+          })
+        });
+
+        if (res && (res.authenticated || res.ok || res.token)) {
+          haptic("success");
+          if (soundEnabled) playSound("success");
+          onSuccess(res.token || res.session_token, res);
+          return;
+        } else {
+          setAuthError(res?.error || "Passkey not recognized. Enter PIN 2743 first, then tap 'Passkey' to register.");
+        }
+      }
+    } catch (err) {
+      if (err.name !== "NotAllowedError" && err.name !== "AbortError") {
+        setAuthError("Biometric info: " + err.message);
+      }
+    } finally {
+      setBiometricLoading(false);
+    }
+  };
+
   return React.createElement("div", {
     className: `min-h-screen flex flex-col items-center justify-center px-4 py-8 max-w-sm mx-auto ${isDarkMode ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900"}`
   },
-    React.createElement("div", { className: "w-16 h-16 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-3xl mb-4 shadow-lg shadow-blue-500/20" }, "👑"),
-    React.createElement("h1", { className: "text-lg font-black tracking-tight mb-1 uppercase" }, "User Bot Operations"),
-    React.createElement("p", { className: "text-xs text-slate-400 mb-6 text-center" }, "Enter Admin PIN to manage community miners, wallets & economy"),
+    React.createElement("div", { className: "w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 text-white flex items-center justify-center text-3xl mb-3 shadow-lg shadow-blue-500/20" }, "👑"),
+    React.createElement("h1", { className: "text-lg font-black tracking-tight mb-0.5 uppercase" }, "User Bot Operations"),
+    React.createElement("p", { className: "text-xs text-slate-400 mb-5 text-center" }, "Commander Arif · PIN (2743) or Biometric Sensor"),
 
-    // PIN Dots
-    React.createElement("div", { className: "flex items-center gap-3 mb-6" },
-      [0, 1, 2, 3, 4, 5].map(idx => React.createElement("div", {
+    // 1-Tap Biometric Fingerprint / Passkey Button
+    React.createElement("button", {
+      type: "button",
+      onClick: handleBiometricLogin,
+      disabled: biometricLoading || loading,
+      className: "w-full py-3 px-4 mb-5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white text-xs font-black shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer transition active:scale-98 disabled:opacity-50"
+    },
+      React.createElement("span", { className: "text-base" }, "👆"),
+      biometricLoading ? "Scanning Fingerprint..." : "Unlock with Fingerprint / Passkey"
+    ),
+
+    React.createElement("div", { className: "flex items-center gap-2 w-full mb-5" },
+      React.createElement("div", { className: `flex-1 border-t ${isDarkMode ? "border-slate-800" : "border-slate-200"}` }),
+      React.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono" }, "Or Enter PIN 2743"),
+      React.createElement("div", { className: `flex-1 border-t ${isDarkMode ? "border-slate-800" : "border-slate-200"}` })
+    ),
+
+    // PIN Dots (4 digits)
+    React.createElement("div", { className: "flex items-center gap-4 mb-6" },
+      [0, 1, 2, 3].map(idx => React.createElement("div", {
         key: idx,
-        className: `w-3.5 h-3.5 rounded-full transition-all duration-150 ${
+        className: `w-4 h-4 rounded-full transition-all duration-200 ${
           pin.length > idx
-            ? "bg-blue-600 scale-110 shadow-xs"
+            ? "bg-blue-600 scale-125 shadow-sm shadow-blue-500/50"
             : (isDarkMode ? "bg-slate-800 border border-slate-700" : "bg-slate-200 border border-slate-300")
         }`
       }))
@@ -254,28 +326,37 @@ function AdminAuthGate({ onSuccess, fetchMeshApi, haptic, showToast, soundEnable
     authError && React.createElement("div", { className: "text-xs font-bold text-red-500 mb-4 text-center animate-shake" }, authError),
 
     // Numeric Keypad
-    React.createElement("div", { className: "grid grid-cols-3 gap-2.5 w-full mb-4" },
-      ["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "⌫"].map((keyVal) => {
-        const isAction = keyVal === "C" || keyVal === "⌫";
+    React.createElement("div", { className: "grid grid-cols-3 gap-2.5 w-full mb-3" },
+      ["1", "2", "3", "4", "5", "6", "7", "8", "9", "👆", "0", "⌫"].map((keyVal) => {
+        const isAction = keyVal === "👆" || keyVal === "⌫";
         return React.createElement("button", {
           key: keyVal,
-          disabled: loading,
+          disabled: loading || biometricLoading,
           onClick: () => {
-            if (keyVal === "C") { setPin(""); haptic("medium"); }
+            if (keyVal === "👆") handleBiometricLogin();
             else if (keyVal === "⌫") handleBackspace();
             else handleDigit(keyVal);
           },
           className: `tap-target py-3 rounded-xl text-base font-bold transition active:scale-95 flex items-center justify-center cursor-pointer ${
-            isAction
-              ? (isDarkMode ? "bg-slate-900 text-slate-400 hover:bg-slate-800" : "bg-slate-200 text-slate-600 hover:bg-slate-300")
-              : (isDarkMode ? "bg-slate-900 text-white border border-slate-800 hover:bg-slate-850" : "bg-white text-slate-900 border border-slate-200 shadow-2xs hover:bg-slate-50")
+            keyVal === "👆"
+              ? "bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30"
+              : isAction
+                ? (isDarkMode ? "bg-slate-900 text-slate-400 hover:bg-slate-800" : "bg-slate-200 text-slate-600 hover:bg-slate-300")
+                : (isDarkMode ? "bg-slate-900 text-white border border-slate-800 hover:bg-slate-850" : "bg-white text-slate-900 border border-slate-200 shadow-2xs hover:bg-slate-50")
           }`
         }, keyVal);
       })
     ),
 
-    React.createElement("div", { className: "text-[11px] text-slate-400 font-mono text-center" },
-      loading ? "Verifying with Cloudflare Mesh..." : "Protected by SHA-256 HMAC & Turso Edge"
+    pin.length > 0 && React.createElement("button", {
+      type: "button",
+      onClick: () => { setPin(""); haptic("light"); },
+      className: "text-[11px] text-slate-400 hover:text-slate-200 underline mb-3 transition cursor-pointer"
+    }, "Clear PIN"),
+
+    React.createElement("div", { className: "text-[10px] text-slate-500 font-mono text-center flex items-center justify-center gap-1.5" },
+      React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" }),
+      loading ? "Verifying with Cloudflare Mesh..." : "Protected by Edge Mesh & WebAuthn Biometrics"
     )
   );
 }
@@ -560,6 +641,75 @@ function App() {
     }
   };
 
+  // Register Biometric Passkey / Fingerprint for 1-Tap Unlock
+  const registerBiometricPasskey = async () => {
+    if (!window.PublicKeyCredential) {
+      showToast("Passkeys/WebAuthn not supported on this device/browser", "error");
+      return;
+    }
+    try {
+      haptic("medium");
+      showToast("Touch fingerprint sensor to register passkey...", "info");
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+      const userIdBytes = new TextEncoder().encode("6727787768");
+
+      const credential = await navigator.credentials.create({
+        publicKey: {
+          challenge,
+          rp: {
+            name: "AAA Auto User Operations",
+            id: window.location.hostname
+          },
+          user: {
+            id: userIdBytes,
+            name: "arif",
+            displayName: "Commander Arif"
+          },
+          pubKeyCredParams: [
+            { alg: -7, type: "public-key" },  // ES256
+            { alg: -257, type: "public-key" } // RS256
+          ],
+          authenticatorSelection: {
+            authenticatorAttachment: "platform", // Native mobile fingerprint / Face ID
+            userVerification: "required",
+            residentKey: "preferred"
+          },
+          timeout: 60000,
+          attestation: "none"
+        }
+      });
+
+      if (credential && credential.id) {
+        const res = await fetchMeshApi("/api/admin/auth/register-passkey", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            credential_id: credential.id,
+            password: "2743"
+          })
+        });
+
+        if (res && res.ok) {
+          try {
+            localStorage.setItem("admin_passkey_cred_id", credential.id);
+          } catch (_) {}
+          showToast("Fingerprint passkey registered successfully! 👆", "success");
+          haptic("success");
+          if (soundEnabled) playSound("success");
+        } else {
+          showToast(res?.error || "Failed to register passkey", "error");
+          haptic("error");
+        }
+      }
+    } catch (err) {
+      if (err.name !== "NotAllowedError" && err.name !== "AbortError") {
+        showToast("Passkey registration: " + err.message, "error");
+        haptic("error");
+      }
+    }
+  };
+
   // Filtered Users List
   const filteredUsers = useMemo(() => {
     return adminUsers.filter(u => {
@@ -713,6 +863,14 @@ function App() {
         ),
         React.createElement("span", { className: `text-[10px] font-mono px-1.5 py-1 rounded-lg border ${isDarkMode ? "text-slate-400 bg-slate-900 border-slate-800" : "text-slate-400 bg-slate-100 border-slate-200"}` },
           `${syncCountdown}s`
+        ),
+        React.createElement("button", {
+          onClick: registerBiometricPasskey,
+          title: "Register Fingerprint Passkey for One-Tap Unlock",
+          className: `tap-target px-2 py-1 rounded-xl border text-[10px] font-bold transition active:scale-95 cursor-pointer flex items-center gap-1 ${isDarkMode ? "bg-slate-900 border-slate-800 text-emerald-400 hover:bg-slate-850" : "bg-white border-slate-200 text-emerald-600 shadow-2xs hover:bg-slate-50"}`
+        },
+          React.createElement("span", { className: "text-xs" }, "👆"),
+          "Passkey"
         ),
         React.createElement("button", {
           onClick: toggleTheme,
