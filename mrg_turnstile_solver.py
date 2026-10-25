@@ -701,28 +701,28 @@ async def solve_turnstile_for_account(browser, acc_info: dict) -> bool:
                     }}
                 }}
 
-                if (window.turnstile && typeof window.turnstile.render === 'function') {
+                if (window.turnstile && typeof window.turnstile.render === 'function') {{
                     renderWidget();
-                } else {
-                    if (!document.querySelector('script[src*=\"challenges.cloudflare.com/turnstile\"]')) {
+                }} else {{
+                    if (!document.querySelector('script[src*=\"challenges.cloudflare.com/turnstile\"]')) {{
                         const s = document.createElement('script');
                         s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
                         s.async = true;
                         s.defer = true;
                         document.head.appendChild(s);
-                    }
+                    }}
                     let attempts = 0;
-                    const iv = setInterval(() => {
+                    const iv = setInterval(() => {{
                         attempts++;
-                        if (window.turnstile && typeof window.turnstile.render === 'function') {
+                        if (window.turnstile && typeof window.turnstile.render === 'function') {{
                             clearInterval(iv);
                             renderWidget();
-                        } else if (attempts > 120) {
+                        }} else if (attempts > 120) {{
                             clearInterval(iv);
-                            resolve({ success: false, error: 'turnstile_load_timeout' });
-                        }
-                    }, 100);
-                }
+                            resolve({{ success: false, error: 'turnstile_load_timeout' }});
+                        }}
+                    }}, 100);
+                }}
 
                 setTimeout(() => {{
                     resolve({{ success: false, error: 'timeout_20s' }});
