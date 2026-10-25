@@ -48,6 +48,7 @@ yarn-debug.log*
 *.db
 
 # Build outputs & archives
+backups/
 *.zip
 dist/
 build/

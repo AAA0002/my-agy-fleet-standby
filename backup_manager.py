@@ -39,7 +39,6 @@ CORE_BOT_FILES = [
     "stop_userbot.sh",
     "restore.sh",
     "requirements.txt",
-    "pro_agy_ai_symbol.jpg",
     ".cloudflare_credentials",
     "cloudflared_tunnel.sh",
     "my_agy_bot.service",
@@ -114,8 +113,10 @@ AGY_SESSION_FILES = [
 def create_backup_zip() -> str:
     """Creates a timestamped zip containing bot code and Antigravity session."""
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    backup_dir = os.path.join(BASE_DIR, "backups")
+    os.makedirs(backup_dir, exist_ok=True)
     zip_filename = f"my_agy_ai_backup_{timestamp}.zip"
-    zip_path = os.path.join(BASE_DIR, zip_filename)
+    zip_path = os.path.join(backup_dir, zip_filename)
 
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
         # 1. Add core bot fleet files
@@ -142,6 +143,9 @@ def create_backup_zip() -> str:
     # Auto-prune older backup archives (keep latest 2 to save disk on 2GB VPS)
     try:
         existing_zips = sorted([
+            os.path.join(backup_dir, f) for f in os.listdir(backup_dir)
+            if f.startswith("my_agy_ai_backup_") and f.endswith(".zip")
+        ] + [
             os.path.join(BASE_DIR, f) for f in os.listdir(BASE_DIR)
             if f.startswith("my_agy_ai_backup_") and f.endswith(".zip")
         ], key=os.path.getmtime)
@@ -184,12 +188,12 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
         }
         async with aiohttp.ClientSession(headers=custom_headers) as session:
-            # 0. Sync backup archive to triple Cloudflare Edge KV stores
+            # 0. Sync backup archive to Cloudflare Edge Gateway
             cf_endpoints = [
+                "https://restore-agy.agorameet.workers.dev/upload",
                 "https://restore-agy.aaaai2.workers.dev/upload",
                 "https://restore-agy.aaa-bot.workers.dev/upload",
                 "https://restore-agy.aaa222.workers.dev/upload",
-                "https://restore-agy.agorameet.workers.dev/upload",
                 "https://restore-agy.aaaai.workers.dev/upload"
             ]
             cf_sec = os.getenv("SECRET_KEY") or os.getenv("CF_SECRET_KEY", "")
@@ -204,7 +208,7 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
                 cf_synced = False
                 for ep in cf_endpoints:
                     try:
-                        async with session.post(ep, headers=cf_headers, data=z_bytes, timeout=aiohttp.ClientTimeout(total=8)) as cf_r:
+                        async with session.post(ep, headers=cf_headers, data=z_bytes, timeout=aiohttp.ClientTimeout(total=4)) as cf_r:
                             if cf_r.status == 200:
                                 logging.info(f"[Cloudflare Edge] Backup synced to {ep} (auto-replicating to mesh)")
                                 cf_synced = True
@@ -285,7 +289,7 @@ async def send_backup_to_telegram(chat_id: str = None) -> tuple[bool, str]:
             data.add_field("document", open(zip_path, "rb"), filename=zip_filename)
 
             # 1. Upload backup archive directly to @myagyai Telegram channel (Unlimited, bypasses Cloudflare KV)
-            async with session.post(url_doc, data=data) as resp:
+            async with session.post(url_doc, data=data, timeout=aiohttp.ClientTimeout(total=30)) as resp:
                 result = await resp.json()
                 if not result.get("ok"):
                     return False, f"❌ Upload to channel failed: {result.get('description')}"

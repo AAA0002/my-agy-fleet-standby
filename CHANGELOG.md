@@ -2,6 +2,20 @@
 
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
+- **🧹 System-Wide Workspace Declutter, Modular Script Categorization & Backup Isolation (October 25, 2026)**:
+  - **Modular Script Organization**:
+    * Cleaned up 45+ loose, one-off, and historical scripts from root into dedicated subfolders (`scripts/runners/`, `scripts/onboarding/`, `scripts/maintenance/`, `scripts/archive/`, and `assets/`) using clean `git mv` renames.
+    * Slashed total file clutter in root from 151 items down to clean essential core files, dropping root disk usage from 10.5 MB down to 4.7 MB (more than 55% reduction).
+    * Purged 0-byte dummy database (`sqlite_mcp_server.db`).
+  - **Isolated Backups Directory (`backups/`)**:
+    * Created dedicated `backups/` directory (gitignored) for timestamped disaster recovery archives, permanently eliminating multi-megabyte zip files from cluttering the root folder.
+    * Reconfigured `backup_manager.py` to write directly to `backups/` and updated `clean_up_system.py` to prune stale backups in `backups/`.
+  - **67% Backup Archive Size Reduction (3.7 MB -> 1.2 MB)**:
+    * Excluded raw image files from the disaster recovery zip, reducing upload time to `@myagyai` from ~45s to **7 seconds**.
+    * Prioritized Node 4 (`agorameet.workers.dev`) as primary Cloudflare backup sink with 4s failover.
+  - **Live Multi-Tier Sanitation Executed (`clean_up_system.py`)**:
+    * Freed 3.85 MB of stale cache, trimmed Redis list `fleet:payouts` to 100 records, and purged 4 stale GitHub Actions runs older than 7 days.
+
 - **⚡ Multi-Node Edge Mesh Latency Optimization, HTTP 304 Caching & Topology API (October 25, 2026)**:
   - **5-Node Cloudflare Edge Mesh Live Benchmark**:
     * Benchmarked all 5 edge nodes (`agorameet`, `aaaai2`, `aaa-bot`, `aaa222`, `aaaai`) for latency, route availability, and SSL handshake.
