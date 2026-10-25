@@ -645,11 +645,9 @@ function App() {
   }, []);
 
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [currency, setCurrency] = useState("USD");
-  const currencyRates = { USD: 1, EUR: 0.92, BDT: 122.5, INR: 84.0, GBP: 0.78 };
-  const currencySymbols = { USD: "$", EUR: "€", BDT: "৳", INR: "₹", GBP: "£" };
-  const currencyRate = currencyRates[currency] || 1;
-  const currencySymbol = currencySymbols[currency] || "$";
+  const currencyRate = 1;
+  const currencySymbol = "$";
+  const currency = "USD";
 
   const CF_NODES = [
     "https://restore-agy.agorameet.workers.dev",
@@ -726,7 +724,7 @@ function App() {
   // 5 Main Navigation Tabs: fleet, wallets, ai, otp, mesh
   const [activeTab, setActiveTab] = useState("fleet");
   const [fleet, setFleet] = useState(DEFAULT_FLEET);
-  const [rates, setRates] = useState({ bnb_usd: 749.5, ton_usd: 1.62, arb_usd: 0.21, btc_usd: 80000.0, usd_bdt: 122.5 });
+  const [rates, setRates] = useState({ bnb_usd: 749.5, ton_usd: 1.62, arb_usd: 0.21, btc_usd: 80000.0 });
   const [bnbBalance, setBnbBalance] = useState(0.000812);
   const [tonBalance, setTonBalance] = useState(2.450);
   const [syncing, setSyncing] = useState(false);

@@ -3,6 +3,9 @@
 All notable changes, architectural decisions, and modifications for the `AAA AUTO` project will be documented in this file.
 
 - **🚀 Complete User Dashboard & Bot v6.0 Cache-Busting Upgrade & Direct Telegram Push (October 25, 2026)**:
+  - **Purged Legacy Dual Currency Switcher & Rates from Admin Console**:
+    * Completely eliminated legacy multi-currency conversion dictionary (`currencyRates`, `currencySymbols` with BDT `৳`, EUR `€`, INR `₹`) and `usd_bdt` rate state from [`public_admin/admin.html`](file:///data/workspace/AAA_AUTO/public_admin/admin.html) and [`public/admin.html`](file:///data/workspace/AAA_AUTO/public/admin.html).
+    * Streamlined the entire Executive Fleet Operations Console to standard, crystal-clear USD ($) valuation.
   - **Diagnosed Why User Saw Old Dashboard**:
     * **Root Cause 1 (Old Chat Message URLs)**: In Telegram chat history, existing inline buttons on previously delivered messages permanently retained hardcoded links to the frozen Vercel build (`https://agy-henna.vercel.app/miner`, 81 KB file with 5 bots and LeafEarn from weeks ago). Tapping those historical buttons reloaded the outdated Vercel page.
     * **Root Cause 2 (Telegram WebView Cache)**: Android System WebView in Telegram caches Web App resources aggressively by URL. Without explicit version query parameters, opening `/miner` continued serving cached assets from disk.
